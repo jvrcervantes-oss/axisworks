@@ -189,10 +189,33 @@ section{ position:relative; z-index:4; padding-block:var(--sec) }
 .sec-head{ display:flex; flex-direction:column; gap:18px; margin-bottom:56px }
 
 /* ---------- hero ---------- */
-.hero{ min-height:100svh; display:flex; align-items:center; padding-top:72px; position:relative; z-index:4 }
-.hero__grid{ display:grid; gap:28px }
+.hero{ min-height:100svh; display:flex; align-items:center; padding-top:96px; padding-bottom:48px; position:relative; z-index:4 }
+.hero__grid{ display:grid; grid-template-columns:1.12fr 0.88fr; gap:clamp(32px,5vw,72px); align-items:center; width:min(var(--shell),100% - var(--pad)*2); }
+.hero__content{ display:flex; flex-direction:column; gap:26px; min-width:0 }
 .hero h1{ max-width:14ch }
 .hero h1 .x{ color:var(--signal); display:inline-block }
+
+/* hero media — precision viewfinder, bleeds to the right edge */
+.hero__media{ position:relative; margin:0;
+  margin-right:calc(-1 * max(var(--pad), (100vw - var(--shell))/2)); }
+.hero__frame{ position:relative; aspect-ratio:3/4; max-height:78vh; overflow:hidden;
+  background:var(--ink); border:1px solid var(--line); }
+.hero__vid{ width:100%; height:100%; object-fit:cover; display:block; will-change:transform; transform:scale(1.04); }
+.hero__scan{ position:absolute; left:0; right:0; top:0; height:1px; background:var(--signal); opacity:0; }
+.hero__cap{ position:absolute; left:16px; bottom:14px; font-family:var(--f-mono); font-size:11px;
+  letter-spacing:.18em; color:var(--steel); text-transform:uppercase; }
+.hero__cap .x{ color:var(--signal) }
+.tick{ position:absolute; width:14px; height:14px; z-index:2; pointer-events:none }
+.tick.tl{ top:10px; left:10px; border-top:1px solid var(--steel); border-left:1px solid var(--steel) }
+.tick.tr{ top:10px; right:10px; border-top:1px solid var(--steel); border-right:1px solid var(--steel) }
+.tick.bl{ bottom:10px; left:10px; border-bottom:1px solid var(--steel); border-left:1px solid var(--steel) }
+.tick.br{ bottom:10px; right:10px; border-bottom:1px solid var(--steel); border-right:1px solid var(--steel) }
+@media(max-width:880px){
+  .hero{ min-height:auto; padding-top:120px }
+  .hero__grid{ grid-template-columns:1fr; gap:40px }
+  .hero__media{ margin-right:0; order:2 }
+  .hero__frame{ aspect-ratio:4/3; max-height:none }
+}
 .hero__row{ display:flex; flex-wrap:wrap; align-items:center; gap:22px; margin-top:14px }
 .btn{ display:inline-flex; align-items:center; gap:10px; font-size:15px; font-weight:500; padding:15px 26px;
   cursor:pointer; border:1px solid transparent; transition:background .25s,color .25s,border-color .25s; }
@@ -201,8 +224,8 @@ section{ position:relative; z-index:4; padding-block:var(--sec) }
 .btn--ghost{ border-color:var(--graphite); color:var(--ink) }
 .btn--ghost:hover{ background:var(--ink); color:var(--bone); border-color:var(--ink) }
 .btn .ar{ transition:transform .25s } .btn:hover .ar{ transform:translateX(4px) }
-.hero__stats{ display:flex; flex-wrap:wrap; gap:clamp(28px,6vw,72px); margin-top:64px;
-  padding-top:30px; border-top:1px solid var(--line); }
+.hero__stats{ display:grid; grid-template-columns:repeat(2,max-content); gap:24px clamp(40px,5vw,72px);
+  margin-top:clamp(36px,5vh,56px); padding-top:30px; border-top:1px solid var(--line); }
 .stat .n{ font-family:var(--f-display); font-weight:700; font-size:clamp(30px,4vw,46px); line-height:1; }
 .stat .l{ font-family:var(--f-mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase;
   color:var(--steel); margin-top:10px }
@@ -371,19 +394,31 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
 <!-- HERO -->
 <section class="hero" id="hero">
   <div class="shell hero__grid">
-    <p class="eyebrow rv">DIGITAL STUDIO <span class="x">✕</span> <span data-i18n="hero_eyebrow">EST. 2026</span></p>
-    <h1 class="rv"><span data-i18n="hero_h1a">Precision-built</span><br><span data-i18n="hero_h1b">websites</span> <span class="x">✕</span> <span data-i18n="hero_h1c">brands</span>.</h1>
-    <p class="lead rv" data-i18n="hero_lead">A two-person studio where engineering meets craft. We measure twice, align everything, and build things that last. No templates. No noise.</p>
-    <div class="hero__row rv">
-      <a href="#contact" class="btn btn--signal" id="magnet"><span data-i18n="cta_start">Start a project</span> <span class="ar">→</span></a>
-      <a href="#work" class="btn btn--ghost"><span data-i18n="cta_work">See the work</span></a>
+    <div class="hero__content">
+      <p class="eyebrow rv">DIGITAL STUDIO <span class="x">✕</span> <span data-i18n="hero_eyebrow">EST. 2026</span></p>
+      <h1 class="rv"><span data-i18n="hero_h1a">Precision-built</span><br><span data-i18n="hero_h1b">websites</span> <span class="x">✕</span> <span data-i18n="hero_h1c">brands</span>.</h1>
+      <p class="lead rv" data-i18n="hero_lead">A two-person studio where engineering meets craft. We measure twice, align everything, and build things that last. No templates. No noise.</p>
+      <div class="hero__row rv">
+        <a href="#contact" class="btn btn--signal" id="magnet"><span data-i18n="cta_start">Start a project</span> <span class="ar">→</span></a>
+        <a href="#work" class="btn btn--ghost"><span data-i18n="cta_work">See the work</span></a>
+      </div>
+      <div class="hero__stats rv">
+        <div class="stat"><div class="n" data-count="3">0</div><div class="l" data-i18n="stat_projects">Live projects</div></div>
+        <div class="stat"><div class="n" data-count="2">0</div><div class="l" data-i18n="stat_disc">Disciplines, one axis</div></div>
+        <div class="stat"><div class="n">EN<span class="x-sig">✕</span>ES</div><div class="l" data-i18n="stat_lang">Two languages</div></div>
+        <div class="stat"><div class="n">100<span class="x-sig">%</span></div><div class="l" data-i18n="stat_custom">Custom-built</div></div>
+      </div>
     </div>
-    <div class="hero__stats rv">
-      <div class="stat"><div class="n" data-count="3">0</div><div class="l" data-i18n="stat_projects">Live projects</div></div>
-      <div class="stat"><div class="n" data-count="2">0</div><div class="l" data-i18n="stat_disc">Disciplines, one axis</div></div>
-      <div class="stat"><div class="n">EN<span class="x-sig">✕</span>ES</div><div class="l" data-i18n="stat_lang">Two languages</div></div>
-      <div class="stat"><div class="n">100<span class="x-sig">%</span></div><div class="l" data-i18n="stat_custom">Custom-built</div></div>
-    </div>
+    <figure class="hero__media rv" aria-hidden="true">
+      <div class="hero__frame">
+        <video class="hero__vid" id="heroVid" muted loop playsinline preload="metadata" poster="assets/images/hero.png">
+          <source src="assets/videos/hero.mp4" type="video/mp4">
+        </video>
+        <span class="hero__scan" id="heroScan"></span>
+        <i class="tick tl"></i><i class="tick tr"></i><i class="tick bl"></i><i class="tick br"></i>
+        <span class="hero__cap">FIG.00 — PRECISION <span class="x">✕</span> CRAFT</span>
+      </div>
+    </figure>
   </div>
 </section>
 
@@ -662,7 +697,11 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   if(document.readyState==='complete') finish(); else window.addEventListener('load', finish);
 
   /* reveals + scroll-driven motion */
+  var heroVid = document.getElementById('heroVid'), heroScan = document.getElementById('heroScan');
+  function playHero(){ if(heroVid && !reduce){ var p = heroVid.play(); if(p && p.catch) p.catch(function(){}); } }
+
   function startReveal(){
+    playHero();
     if(reduce || !window.gsap){
       document.querySelectorAll('.rv').forEach(function(el){ el.classList.add('is-in'); });
       runCounters();
@@ -671,6 +710,14 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
     gsap.registerPlugin(ScrollTrigger);
 
     gsap.to('.hero .rv', { opacity:1, y:0, duration:.7, ease:'power2.out', stagger:.09, delay:.05, onStart: runCounters });
+
+    /* hero media — scroll parallax + signal scan sweep */
+    gsap.to('.hero__vid', { yPercent:-6, scale:1.14, ease:'none',
+      scrollTrigger:{ trigger:'.hero', start:'top top', end:'bottom top', scrub:true }});
+    if(heroScan){
+      gsap.fromTo(heroScan, { top:'0%', opacity:0 }, { top:'100%', opacity:.5, ease:'none',
+        scrollTrigger:{ trigger:'.hero', start:'top top', end:'bottom top', scrub:true }});
+    }
 
     gsap.utils.toArray('section:not(.hero)').forEach(function(sec){
       gsap.to(sec.querySelectorAll('.rv'), {
