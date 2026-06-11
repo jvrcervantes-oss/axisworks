@@ -189,7 +189,7 @@ section{ position:relative; z-index:4; padding-block:var(--sec) }
 .sec-head{ display:flex; flex-direction:column; gap:18px; margin-bottom:56px }
 
 /* ---------- hero — WebGL 360 motion vector ---------- */
-.hero{ position:relative; z-index:4; background:#0d1014; color:var(--bone); height:420vh; }
+.hero{ position:relative; z-index:4; background:#0d1014; color:var(--bone); height:520vh; }
 .hero__sticky{ position:sticky; top:0; height:100svh; min-height:600px; overflow:hidden; }
 #gl{ position:absolute; inset:0; width:100%; height:100%; display:block; z-index:0; }
 
@@ -206,6 +206,14 @@ section{ position:relative; z-index:4; padding-block:var(--sec) }
 .hero__hint i{ width:1px; height:38px; background:var(--steel); display:block;
   animation:hintpulse 2.2s ease-in-out infinite }
 @keyframes hintpulse{ 0%,100%{ transform:scaleY(.35); opacity:.3; transform-origin:top } 50%{ transform:scaleY(1); opacity:.7; transform-origin:top } }
+
+/* Act 3 brand line */
+.hero__brand{ position:absolute; z-index:60; left:50%; top:24%; transform:translate(-50%,-50%);
+  width:min(var(--shell),100% - var(--pad)*2); text-align:center; pointer-events:none; opacity:0; }
+.hero__brand .eyebrow{ color:var(--steel) }
+.hero__brand .eyebrow::before{ background:var(--steel) }
+.hero__brand h2{ font-family:var(--f-display); font-weight:700; color:var(--bone);
+  font-size:clamp(28px,4.4vw,54px); line-height:1.06; letter-spacing:-.01em; margin-top:18px }
 
 /* per-project captions */
 .hero__caps{ position:absolute; z-index:60; left:0; right:0; bottom:clamp(40px,9vh,90px);
@@ -429,33 +437,19 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   <div class="hero__sticky">
     <canvas id="gl" aria-hidden="true"></canvas>
 
-    <div class="hero__count" aria-hidden="true"><b id="heroNum">01</b> / 03 — <span data-i18n="hero_count">SELECTED WORK</span></div>
+    <div class="hero__count" aria-hidden="true"><b id="heroAct">ACT 1</b> <span>/ 04</span></div>
 
+    <!-- Act 1 — the claim, the ✕ alone in the void -->
     <div class="hero__intro" id="heroIntro">
       <p class="eyebrow">DIGITAL STUDIO <span class="x">✕</span> <span data-i18n="hero_eyebrow">EST. 2026</span></p>
       <h1><span data-i18n="hero_h1a">Precision-built</span> <span data-i18n="hero_h1b">websites</span> <span class="x">✕</span> <span data-i18n="hero_h1c">brands</span>.</h1>
       <span class="hero__hint"><span data-i18n="hero_hint">SCROLL TO EXPLORE</span><i></i></span>
     </div>
 
-    <div class="hero__caps" id="heroCaps">
-      <div class="cap">
-        <div class="cap__label">01 — TOURISM <span class="x">✕</span> BOOKING</div>
-        <div class="cap__title">Bali Moto Adventures</div>
-        <div class="cap__sub" data-i18n="cap1_sub">Premium expeditions that fill the calendar.</div>
-        <a class="cap__link" href="https://balimotoadventures.com" target="_blank" rel="noopener"><span data-i18n="cap_view">View site</span> →</a>
-      </div>
-      <div class="cap">
-        <div class="cap__label">02 — REAL ESTATE <span class="x">✕</span> LUXURY</div>
-        <div class="cap__title">Lawang Estate</div>
-        <div class="cap__sub" data-i18n="cap2_sub">Cinematic luxury that earns its price.</div>
-        <a class="cap__link" href="#work"><span data-i18n="cap_view">View site</span> →</a>
-      </div>
-      <div class="cap">
-        <div class="cap__label">03 — RENTAL <span class="x">✕</span> DELIVERY</div>
-        <div class="cap__title">Sumba Rental Motorbike</div>
-        <div class="cap__sub" data-i18n="cap3_sub">Mobility, delivered to the airport.</div>
-        <a class="cap__link" href="https://sumba.balibestmotorcycle.com" target="_blank" rel="noopener"><span data-i18n="cap_view">View site</span> →</a>
-      </div>
+    <!-- Act 3 — chaos snaps onto the axis -->
+    <div class="hero__brand" id="heroBrand" aria-hidden="true">
+      <p class="eyebrow" style="justify-content:center"><span data-i18n="hero_brand_eyebrow">FROM CHAOS TO PRECISION</span></p>
+      <h2 data-i18n="hero_brand_h">We measure twice.<br>Everything aligns.</h2>
     </div>
   </div>
 
@@ -603,6 +597,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
     "nav_services":"Servicios","nav_work":"Trabajo","nav_process":"Proceso","nav_studio":"Estudio","nav_cta":"Empezar proyecto",
     "hero_eyebrow":"EST. 2026",
     "hero_count":"TRABAJO SELECCIONADO","hero_hint":"DESLIZA PARA EXPLORAR","cap_view":"Ver web",
+    "hero_brand_eyebrow":"DEL CAOS A LA PRECISIÓN","hero_brand_h":"Medimos dos veces.<br>Todo encaja.",
     "cap1_sub":"Expediciones premium que llenan el calendario.",
     "cap2_sub":"Lujo cinematográfico que justifica su precio.",
     "cap3_sub":"Movilidad, entregada en el aeropuerto.",
@@ -830,8 +825,8 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const heroEl = document.getElementById('hero');
 const canvas = document.getElementById('gl');
 const intro = document.getElementById('heroIntro');
-const caps = [...document.querySelectorAll('#heroCaps .cap')];
-const heroNum = document.getElementById('heroNum');
+const brand = document.getElementById('heroBrand');
+const heroAct = document.getElementById('heroAct');
 const clamp = (v,a,b)=> v<a?a:(v>b?b:v);
 const smooth = t => t*t*(3-2*t);
 const lerp = (a,b,t)=> a+(b-a)*t;
@@ -907,87 +902,94 @@ function init(){
     streaks.add(s);
   }
 
-  // 3 website panels — ✕ stays centred, scroll cycles through them one at a time
-  const rig = new THREE.Group(); scene.add(rig);
+  // 3D grid — the technical plane the work emerges over (Act 2) and melts into (Act 4)
+  const grid = new THREE.GridHelper(60, 60, 0x4a5158, 0x262b30);
+  grid.position.y = -2.48; grid.material.transparent = true; grid.material.opacity = 0; grid.material.depthWrite = false;
+  scene.add(grid);
+
+  // 3 website panels — scatter in the void (Act 2) → snap onto the ✕ axis (Act 3)
   const imgs = ['assets/images/work-balimoto.jpg','assets/images/work-lawang.jpg','assets/images/work-sumba.jpg'];
-  const radius = 3.6, slabW = 2.5, slabH = slabW*10/16;
+  const slabW = 2.15, slabH = slabW*10/16;
   const edgeMat = new THREE.MeshStandardMaterial({ color:0x0d1014, roughness:0.4, metalness:0.3 });
+  const chaos    = [ new THREE.Vector3(-3.7,1.7,-2.4), new THREE.Vector3(3.3,-1.5,1.7), new THREE.Vector3(1.1,2.3,-4.3) ];
+  const chaosRot = [ {x:-0.25,y:0.55}, {x:0.18,y:-0.62}, {x:-0.12,y:0.42} ];
+  const aligned  = [ new THREE.Vector3(-2.55,0,1.3), new THREE.Vector3(0,0,1.3), new THREE.Vector3(2.55,0,1.3) ];
   const slabs = [];
   imgs.forEach((src,i)=>{
     const tex = texLoader.load(src); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
-    const faceMat = new THREE.MeshBasicMaterial({ map:tex, toneMapped:false, transparent:true }); // unlit screen — true colours, no wash
+    const faceMat = new THREE.MeshBasicMaterial({ map:tex, toneMapped:false, transparent:true }); // unlit — true colours
     const slab = new THREE.Mesh(new THREE.BoxGeometry(slabW, slabH, 0.1), [edgeMat,edgeMat,edgeMat,edgeMat,faceMat,edgeMat]);
-    slab.castShadow = true;
-    const ang = (i/3)*Math.PI*2;
-    slab.userData = { baseAngle:ang, faceMat };
-    slab.position.set(Math.sin(ang)*radius, 0.1, Math.cos(ang)*radius);
-    slab.rotation.y = ang;
-    rig.add(slab); slabs.push(slab);
+    slab.castShadow = true; slab.userData = { faceMat };
+    scene.add(slab); slabs.push(slab);
   });
 
   const ptr = { x:0, y:0, tx:0, ty:0 };
   addEventListener('pointermove', e=>{ ptr.tx = e.clientX/innerWidth-0.5; ptr.ty = e.clientY/innerHeight-0.5; }, {passive:true});
 
+  function setOverlay(el, o, ty){ if(!el) return; el.style.opacity = o.toFixed(3); el.style.transform = `translate(-50%,-50%) translateY(${ty.toFixed(1)}px)`; }
   function progress(){ const total = heroEl.offsetHeight - innerHeight; return total>0 ? clamp(scrollY/total,0,1) : 0; }
   function resize(){ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); }
   resize(); addEventListener('resize', resize);
 
-  const _v = new THREE.Vector3();
-  let pS = 0;
+  const _a = new THREE.Vector3();
+  let pS = 0, actLabel = '';
   const clock = new THREE.Clock();
   function frame(){
     requestAnimationFrame(frame);
     const t = clock.getElapsedTime();
-    pS = lerp(pS, progress(), 0.09);
+    pS = lerp(pS, progress(), 0.085);
     const p = pS;
+    ptr.x = lerp(ptr.x, ptr.tx, 0.05); ptr.y = lerp(ptr.y, ptr.ty, 0.05);
 
-    const introOut = smooth(clamp(p/0.14,0,1));
-    if(intro){ intro.style.opacity = (1-introOut).toFixed(3); intro.style.transform = `translate(-50%,-50%) translateY(${(-introOut*40).toFixed(1)}px) scale(${(1-introOut*0.05).toFixed(3)})`; }
+    // ---- the four acts ----
+    const introOut = smooth(clamp((p-0.03)/0.13, 0, 1));   // Act1: the claim leaves
+    const pull     = smooth(clamp((p-0.12)/0.20, 0, 1));   // Act2: camera retreats
+    const appear   = smooth(clamp((p-0.20)/0.18, 0, 1));   // Act2: panels emerge
+    const snap     = smooth(clamp((p-0.46)/0.18, 0, 1));   // Act3: chaos -> aligned
+    const exit     = smooth(clamp((p-0.80)/0.20, 0, 1));   // Act4: hand-off
 
-    const show = clamp((p-0.14)/0.86, 0, 1);
-    const seg = show*(slabs.length-1);
-    const si = Math.floor(Math.min(seg, slabs.length-1.0001));
-    const active = Math.min(si + smooth(clamp((seg-si-0.12)/0.76, 0, 1)), slabs.length-1); // dwell on each
-    rig.rotation.y = -active*(Math.PI*2/3);
+    // camera — close in the void, retreats as the portfolio emerges, pushes through at the seam
+    camera.position.x = ptr.x*1.1;
+    camera.position.y = (1.25 + pull*0.25) - ptr.y*0.7;
+    camera.position.z = lerp(5.5, 9.4, pull) - exit*3.2;
+    camera.lookAt(0, 0.1, 0);
 
-    xGroup.scale.setScalar(lerp(1.18, 1.05, introOut));
-    xGroup.rotation.y = Math.sin(t*0.3)*0.16 + ptr.x*0.5;
-    xGroup.rotation.x = Math.sin(t*0.26)*0.05 - ptr.y*0.22;
-    xGroup.position.y = lerp(-0.7, 0.08, introOut);
-    xGroup.position.z = lerp(0.4, -0.45, introOut);
+    // ✕ — enormous in the void, settles as the axis everything aligns to
+    xGroup.scale.setScalar(lerp(1.95, 1.0, pull));
+    xGroup.rotation.y = Math.sin(t*0.3)*0.14 + ptr.x*0.5;
+    xGroup.rotation.x = Math.sin(t*0.26)*0.05 - ptr.y*0.2;
+    xGroup.position.y = lerp(0.0, 0.05, pull);
+    xGroup.position.z = lerp(0.3, -0.3, pull);
 
-    let activeIdx = 0, best = -2;
+    // panels — scattered depths, then snap precisely onto the axis
     slabs.forEach((s,i)=>{
-      const ang = s.userData.baseAngle + rig.rotation.y;
-      const front = Math.cos(ang);
-      const f = clamp((front+0.15)/1.15, 0, 1);
-      const fade = Math.pow(f, 1.5);                        // only the front panel (+ transition) is visible
-      s.visible = introOut > 0.01 && fade > 0.02;
-      s.position.y = 0.1 + f*0.12;
-      s.scale.setScalar(lerp(0.2, 1.0, fade) * introOut);
-      s.userData.faceMat.opacity = lerp(0.0, 1, fade) * introOut;
-      if(front > best){ best = front; activeIdx = i; }
+      s.visible = appear > 0.01;
+      _a.lerpVectors(chaos[i], aligned[i], snap);
+      s.position.copy(_a);
+      s.rotation.y = lerp(chaosRot[i].y, 0, snap);
+      s.rotation.x = lerp(chaosRot[i].x, 0, snap);
+      s.scale.setScalar(lerp(0.62, 1.0, appear));
+      s.userData.faceMat.opacity = appear;
     });
 
-    const streakOn = clamp((introOut-0.15)/0.85,0,1);
+    // grid — fades in with the portfolio, firms up at the snap, brightens into the seam
+    grid.material.opacity = appear*0.4 + snap*0.22 + exit*0.28;
+    grid.position.y = lerp(-2.48, -1.85, exit);
+
+    // motion-vector streaks — busy in the chaos, calm once aligned
+    const streakOn = appear * (1 - snap*0.7) * (1 - exit);
     streaks.children.forEach((s)=>{
-      const u = s.userData; const a = u.a + t*u.sp*0.28;
+      const u = s.userData; const a = u.a + t*u.sp*0.3;
       s.position.set(Math.cos(a)*u.r, u.y + Math.sin(t*0.2+u.ph)*0.35, Math.sin(a)*u.r);
       s.lookAt(camera.position); s.scale.set(u.len,1,1);
       s.material.opacity = (0.09 + 0.11*Math.sin(t*1.6+u.ph)) * streakOn;
     });
 
-    const capsOn = clamp((p-0.16)/0.05, 0, 1);
-    caps.forEach((c,i)=>{
-      const ang = slabs[i].userData.baseAngle + rig.rotation.y;
-      c.style.opacity = (clamp((Math.cos(ang)-0.6)/0.4, 0, 1)*capsOn).toFixed(3);
-    });
-    if(heroNum) heroNum.textContent = '0'+(activeIdx+1);
-
-    ptr.x = lerp(ptr.x, ptr.tx, 0.05); ptr.y = lerp(ptr.y, ptr.ty, 0.05);
-    camera.position.x = ptr.x*1.3;
-    camera.position.y = 1.4 - ptr.y*0.8;
-    camera.lookAt(0, 0.12, 0);
+    // overlays + act indicator
+    setOverlay(intro, 1-introOut, -introOut*40);
+    setOverlay(brand, smooth(clamp((p-0.52)/0.12,0,1)) * (1-exit), 0);
+    const act = p<0.16?1 : p<0.46?2 : p<0.80?3 : 4;
+    if(heroAct && ('ACT '+act)!==actLabel){ actLabel='ACT '+act; heroAct.textContent = actLabel; }
 
     renderer.render(scene, camera);
   }
