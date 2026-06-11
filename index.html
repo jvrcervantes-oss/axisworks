@@ -192,7 +192,7 @@ section{ position:relative; z-index:4; padding-block:var(--sec) }
 .sec-head{ display:flex; flex-direction:column; gap:18px; margin-bottom:56px }
 
 /* ---------- hero — WebGL 360 motion vector ---------- */
-.hero{ position:relative; z-index:4; background:#0d1014; color:var(--bone); height:440vh; padding:0; }
+.hero{ position:relative; z-index:4; background:#0d1014; color:var(--bone); height:380vh; padding:0; }
 .hero__sticky{ position:sticky; top:0; height:100svh; min-height:600px; overflow:hidden; }
 #gl{ position:absolute; inset:0; width:100%; height:100%; display:block; z-index:0; }
 /* Act 4 — fixed Bone seam that bridges the dark world into the light page (under the nav) */
@@ -1038,7 +1038,7 @@ function init(){
 
     // ---- Act 4 sub-phases (smooth, cinematic) ----
     const dive  = smooth(exit);                            // camera flies into the ✕'s crossing point
-    const seamT = smooth(clamp((exit-0.40)/0.45, 0, 1));   // the light OPENS from that point
+    const seamT = smooth(clamp((exit-0.62)/0.30, 0, 1));   // the light OPENS late & fast from that point
 
     // camera — journeys through the world, then flies straight into the ✕'s crossing point
     const zBase = lerp(6.0, 8.8, pull);
@@ -1091,8 +1091,8 @@ function init(){
       // the canvas itself is already full Bone here, so the overlay only bridges the
       // dive → release moment, then fades fast so the page shows as it scrolls in.
       var rel = heroEl.offsetHeight - innerHeight;       // sticky releases
-      var up = clamp((scrollY - (rel - innerHeight*0.32)) / (innerHeight*0.32), 0, 1);
-      var dn = clamp((scrollY - rel) / (innerHeight*0.3), 0, 1);
+      var up = clamp((scrollY - (rel - innerHeight*0.18)) / (innerHeight*0.18), 0, 1);
+      var dn = clamp((scrollY - rel) / (innerHeight*0.15), 0, 1);
       heroSeam.style.opacity = (up*(1-dn)).toFixed(3);
     }
     if(heroCount) heroCount.style.opacity = (1 - seamT).toFixed(3);
