@@ -1037,62 +1037,53 @@ function init(){
     const exit     = smooth(clamp((p-0.80)/0.20, 0, 1));   // Act4: hand-off
 
     // ---- Act 4 sub-phases (smooth, cinematic) ----
-    const xExit = smooth(clamp((exit-0.05)/0.55, 0, 1));   // ✕ flies up-left to become the wordmark
-    const dive  = smooth(exit);                            // camera enters the central card
-    const seamT = smooth(clamp((exit-0.45)/0.40, 0, 1));   // emerge through into the Bone page
+    const dive  = smooth(exit);                            // camera flies into the ✕'s crossing point
+    const seamT = smooth(clamp((exit-0.40)/0.45, 0, 1));   // the light OPENS from that point
 
-    // camera — journeys through the world, then dives into the central card
+    // camera — journeys through the world, then flies straight into the ✕'s crossing point
     const zBase = lerp(6.0, 8.8, pull);
+    const xZ = lerp(0.3, -0.3, pull);                      // the ✕'s depth
     camera.position.x = ptr.x*1.0*(1-exit);
-    camera.position.y = ((1.15 + pull*0.2) - ptr.y*0.55)*(1-exit*0.85);
-    camera.position.z = lerp(zBase, 2.05, dive);
-    camera.lookAt(0, 0.05*(1-exit), 0);
+    camera.position.y = ((1.15 + pull*0.2) - ptr.y*0.55)*(1-exit);
+    camera.position.z = lerp(zBase, xZ + 0.55, dive);      // stop just in front of the point
+    camera.lookAt(0, 0, xZ);
 
-    // ✕ — glowing axis of the void; on exit it flies up-left and becomes the wordmark ✕
-    xGroup.scale.setScalar(lerp(lerp(1.9, 1.0, pull), 0.16, xExit));
-    xGroup.rotation.y = Math.sin(t*0.28)*0.13 + ptr.x*0.45;
-    xGroup.rotation.x = Math.sin(t*0.24)*0.05 - ptr.y*0.18;
-    xGroup.position.x = lerp(0, -2.7, xExit);
-    xGroup.position.y = lerp(lerp(0.0, 0.05, pull), 1.95, xExit);
-    xGroup.position.z = lerp(lerp(0.3, -0.3, pull), camera.position.z - 3.0, xExit);
-    xMat.emissiveIntensity = (0.17 + 0.06*Math.sin(t*1.6)) * (1 - xExit*0.5);
-    xMat.opacity = 1 - smooth(clamp((xExit-0.55)/0.45, 0, 1));
+    // ✕ — stays centred and IGNITES as we enter its point (the portal into the page)
+    xGroup.scale.setScalar(lerp(lerp(1.9, 1.0, pull), 1.18, dive));
+    xGroup.rotation.y = (Math.sin(t*0.28)*0.13 + ptr.x*0.45) * (1-dive);
+    xGroup.rotation.x = (Math.sin(t*0.24)*0.05 - ptr.y*0.18) * (1-dive);
+    xGroup.position.set(0, 0, xZ);
+    xMat.emissiveIntensity = (0.17 + 0.06*Math.sin(t*1.6)) + dive*0.6;
+    xMat.opacity = 1;
 
     // world — emerges in Act2, recedes as we pass through
-    const worldOn = smooth(clamp((p-0.10)/0.18, 0, 1)) * (1 - exit*0.6);
+    const worldOn = smooth(clamp((p-0.10)/0.18, 0, 1)) * (1 - exit*0.7);
     floorGrid.material.opacity = 0.6*worldOn;
     ceilGrid.material.opacity  = 0.4*worldOn;
     particles.material.opacity = 0.55*worldOn;
     particles.rotation.y = t*0.012;
 
-    // cards — scatter (Act2) → snap (Act3) → the central card opens as the doorway (Act4)
+    // cards — scatter (Act2) → snap (Act3) → drift outward to clear the way (Act4)
     cards.forEach((g,i)=>{
-      g.visible = appear > 0.01;
+      g.visible = appear > 0.01 && exit < 0.85;
       _a.lerpVectors(chaos[i], aligned[i], snap);
       g.rotation.y = lerp(chaosRot[i].y, 0, snap) + (1-snap)*Math.sin(t*0.4+i)*0.05;
       g.rotation.x = lerp(chaosRot[i].x, 0, snap);
-      if(i === 1){
-        g.position.copy(_a);
-        g.scale.setScalar(lerp(appear, 5.2, dive*dive));
-        g.userData.labelMat.opacity = appear * (1 - smooth(clamp(exit/0.35, 0, 1)));
-        g.userData.frameMat.opacity = (0.2 + 0.7*snap) * appear * (1 - exit);
-      } else {
-        var dir = i === 0 ? -1 : 1;
-        g.position.set(_a.x + dir*exit*7.5, _a.y + exit*1.4, _a.z);
-        g.scale.setScalar(appear * (1 - exit*0.5));
-        g.userData.labelMat.opacity = appear * (1 - exit*1.6);
-        g.userData.frameMat.opacity = (0.2 + 0.7*snap) * appear * (1 - exit*1.6);
-      }
+      var dir = i === 0 ? -1 : (i === 2 ? 1 : 0);
+      g.position.set(_a.x + dir*exit*6, _a.y + (i===1?-1.4:1.1)*exit*3, _a.z + exit*2.5);
+      g.scale.setScalar(appear * (1 - exit));
+      g.userData.labelMat.opacity = appear * (1 - exit*2.0);
+      g.userData.frameMat.opacity = (0.2 + 0.7*snap) * appear * (1 - exit*2.0);
     });
 
-    // the seam — a Bone plane inside the world we pass into (brightens the dive)…
+    // the seam — Bone light that OPENS from the ✕'s crossing point and floods the view
     if(seamT > 0.001){
       seam.visible = true;
-      _f.set(0,0,-1).applyQuaternion(camera.quaternion);
-      seam.position.copy(camera.position).addScaledVector(_f, 1.4);
+      seam.position.set(0, 0, xZ + 0.05);
       seam.quaternion.copy(camera.quaternion);
-      seam.scale.set(9, 9, 1);
-      seam.material.opacity = seamT;     // the canvas itself becomes full Bone at the end
+      var ss = seamT * 8;
+      seam.scale.set(ss, ss, 1);
+      seam.material.opacity = clamp(seamT*1.6, 0, 1);
     } else { seam.visible = false; }
     // …and a fixed DOM Bone overlay that bridges seamlessly into the (light) page.
     // Driven by raw scroll: rises before the sticky releases, fades once inside the sections.
