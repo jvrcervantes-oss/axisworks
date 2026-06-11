@@ -124,7 +124,7 @@ a{color:inherit;text-decoration:none}
 @media(max-width:760px){ .hud{display:none} }
 
 /* ---------- vertical axis + scroll progress ---------- */
-.axis{ position:fixed; top:0; bottom:0; left:max(var(--pad),calc((100vw - var(--shell))/2));
+.axis{ position:fixed; top:0; bottom:0; right:max(var(--pad),calc((100vw - var(--shell))/2));
   width:1px; background:var(--line); z-index:3; pointer-events:none; }
 .axis__fill{ position:absolute; top:0; left:-0.5px; width:2px; height:0; background:var(--signal); }
 .axis__node{ position:absolute; top:0; left:50%; width:12px; height:12px; transform:translate(-50%,-50%);
@@ -354,9 +354,12 @@ header:not(.scrolled) .lang button[aria-pressed="true"]{ background:var(--bone);
   background:
     repeating-linear-gradient(135deg,var(--line-soft) 0 1px,transparent 1px 9px),
     var(--ink); }
-.person__portrait span{ position:absolute; left:18px; bottom:16px; font-family:var(--f-mono); font-size:11px;
-  letter-spacing:.16em; color:var(--steel) }
-.person__portrait .mono-x{ position:absolute; top:16px; right:18px; bottom:auto; left:auto; color:var(--signal); font-size:18px }
+.person__portrait img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  object-position:top center; filter:grayscale(1) contrast(1.04) brightness(.97); transition:filter .5s ease; }
+.person:hover .person__portrait img{ filter:grayscale(0) contrast(1) brightness(1) }
+.person__portrait span{ position:absolute; left:18px; bottom:16px; z-index:2; font-family:var(--f-mono); font-size:11px;
+  letter-spacing:.16em; color:var(--bone); mix-blend-mode:difference }
+.person__portrait .mono-x{ position:absolute; top:16px; right:18px; bottom:auto; left:auto; z-index:2; color:var(--signal); font-size:18px }
 .person__role{ font-family:var(--f-mono); font-size:12px; letter-spacing:.18em; text-transform:uppercase;
   color:var(--signal-ink); margin-top:20px }
 .person h3{ margin-top:8px }
@@ -576,16 +579,22 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   </div>
   <div class="shell who__grid rv">
     <div class="person">
-      <div class="person__portrait"><span class="mono-x">✕</span><span>FIG.01 — BUILD</span></div>
+      <div class="person__portrait">
+        <img src="assets/images/Javier1.png" alt="Javier — development and engineering" loading="lazy">
+        <span class="mono-x">✕</span><span>FIG.01 — BUILD</span>
+      </div>
       <div class="person__role" data-i18n="who_1role">Development &amp; engineering</div>
       <h3>Javier</h3>
       <p data-i18n="who_1p">Writes the code, designs the systems, ships the sites. The build side of the studio.</p>
     </div>
     <div class="who__x" aria-hidden="true">✕</div>
     <div class="person">
-      <div class="person__portrait"><span class="mono-x">✕</span><span>FIG.02 — BRAND</span></div>
+      <div class="person__portrait">
+        <img src="assets/images/Andrea2.jpg" alt="Andrea — design, content and social" loading="lazy">
+        <span class="mono-x">✕</span><span>FIG.02 — BRAND</span>
+      </div>
       <div class="person__role" data-i18n="who_2role">Design, content &amp; social</div>
-      <h3 data-i18n="who_2name">Design partner</h3>
+      <h3>Andrea</h3>
       <p data-i18n="who_2p">Shapes the brand, the content and the voice. The design side of the studio.</p>
     </div>
   </div>
