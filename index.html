@@ -192,7 +192,7 @@ section{ position:relative; z-index:4; padding-block:var(--sec) }
 .sec-head{ display:flex; flex-direction:column; gap:18px; margin-bottom:56px }
 
 /* ---------- hero — WebGL 360 motion vector ---------- */
-.hero{ position:relative; z-index:4; background:#0d1014; color:var(--bone); height:380vh; padding:0; }
+.hero{ position:relative; z-index:5; background:#0d1014; color:var(--bone); height:380vh; padding:0; }
 .hero__sticky{ position:sticky; top:0; height:100svh; min-height:600px; overflow:hidden; }
 #gl{ position:absolute; inset:0; width:100%; height:100%; display:block; z-index:0; }
 /* Act 4 — fixed Bone seam that bridges the dark world into the light page (under the nav) */
@@ -1012,6 +1012,12 @@ function init(){
   function resize(){ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight, false); }
   resize(); addEventListener('resize', resize);
 
+  // pull the next section up to the sticky's release point so the light flash lands ON it (no empty tail)
+  const _svc = document.getElementById('services');
+  if(_svc) _svc.style.marginTop = '-100vh';
+  // the hero overlaps the section beneath it now — make it click-through (nothing in it is interactive)
+  heroEl.style.pointerEvents = 'none';
+
   // Act 4 — the Bone "seam" plane we pass through into the real (light) page
   const seam = new THREE.Mesh(
     new THREE.PlaneGeometry(1,1),
@@ -1038,7 +1044,7 @@ function init(){
 
     // ---- Act 4 sub-phases (smooth, cinematic) ----
     const dive  = smooth(exit);                            // camera flies into the ✕'s crossing point
-    const seamT = smooth(clamp((exit-0.62)/0.30, 0, 1));   // the light OPENS late & fast from that point
+    const seamT = smooth(clamp((exit-0.55)/0.28, 0, 1));   // the light OPENS late & fast from that point
 
     // camera — journeys through the world, then flies straight into the ✕'s crossing point
     const zBase = lerp(6.0, 8.8, pull);
@@ -1085,16 +1091,12 @@ function init(){
       seam.scale.set(ss, ss, 1);
       seam.material.opacity = clamp(seamT*1.6, 0, 1);
     } else { seam.visible = false; }
-    // …and a fixed DOM Bone overlay that bridges seamlessly into the (light) page.
-    // Driven by raw scroll: rises before the sticky releases, fades once inside the sections.
-    if(heroSeam){
-      // the canvas itself is already full Bone here, so the overlay only bridges the
-      // dive → release moment, then fades fast so the page shows as it scrolls in.
-      var rel = heroEl.offsetHeight - innerHeight;       // sticky releases
-      var up = clamp((scrollY - (rel - innerHeight*0.18)) / (innerHeight*0.18), 0, 1);
-      var dn = clamp((scrollY - rel) / (innerHeight*0.15), 0, 1);
-      heroSeam.style.opacity = (up*(1-dn)).toFixed(3);
-    }
+    // Bridge with NO empty tail: once the light is full, the canvas fades and the hero turns
+    // transparent, revealing the Services section — which is pulled up (-100vh, set in init) to
+    // sit exactly at the sticky's release point. So the white flash IS the arrival at the section.
+    canvas.style.opacity = (1 - smooth(clamp((exit-0.86)/0.14, 0, 1))).toFixed(3);
+    heroEl.style.backgroundColor = exit > 0.8 ? 'transparent' : '';
+    if(heroSeam) heroSeam.style.opacity = '0';
     if(heroCount) heroCount.style.opacity = (1 - seamT).toFixed(3);
 
     // motion-vector streaks — busy in the chaos, calm once aligned
