@@ -907,21 +907,23 @@ function init(){
     streaks.add(s);
   }
 
-  // 3 website panels orbiting the ✕ (solar system)
+  // 3 website panels — ✕ stays centred, scroll cycles through them one at a time
+  const rig = new THREE.Group(); scene.add(rig);
   const imgs = ['assets/images/work-balimoto.jpg','assets/images/work-lawang.jpg','assets/images/work-sumba.jpg'];
-  const ORB_R = 3.15, slabW = 1.9, slabH = slabW*10/16;
+  const radius = 3.6, slabW = 2.5, slabH = slabW*10/16;
   const edgeMat = new THREE.MeshStandardMaterial({ color:0x0d1014, roughness:0.4, metalness:0.3 });
   const slabs = [];
   imgs.forEach((src,i)=>{
-    const tex = texLoader.load(src); tex.colorSpace = THREE.SRGBColorSpace;
-    const faceMat = new THREE.MeshStandardMaterial({ map:tex, roughness:0.4, metalness:0.0, transparent:true });
-    const slab = new THREE.Mesh(new THREE.BoxGeometry(slabW, slabH, 0.08), [edgeMat,edgeMat,edgeMat,edgeMat,faceMat,edgeMat]);
-    slab.castShadow = true; slab.rotation.x = -0.05;
-    const grp = new THREE.Group(); grp.add(slab);
-    grp.userData = { baseAngle:(i/3)*Math.PI*2, faceMat };
-    scene.add(grp); slabs.push(grp);
+    const tex = texLoader.load(src); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+    const faceMat = new THREE.MeshBasicMaterial({ map:tex, toneMapped:false, transparent:true }); // unlit screen — true colours, no wash
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(slabW, slabH, 0.1), [edgeMat,edgeMat,edgeMat,edgeMat,faceMat,edgeMat]);
+    slab.castShadow = true;
+    const ang = (i/3)*Math.PI*2;
+    slab.userData = { baseAngle:ang, faceMat };
+    slab.position.set(Math.sin(ang)*radius, 0.1, Math.cos(ang)*radius);
+    slab.rotation.y = ang;
+    rig.add(slab); slabs.push(slab);
   });
-  const composed = [ new THREE.Vector3(-2.7,0.15,1.5), new THREE.Vector3(0,-0.12,2.5), new THREE.Vector3(2.7,0.15,1.5) ];
 
   const ptr = { x:0, y:0, tx:0, ty:0 };
   addEventListener('pointermove', e=>{ ptr.tx = e.clientX/innerWidth-0.5; ptr.ty = e.clientY/innerHeight-0.5; }, {passive:true});
@@ -943,29 +945,28 @@ function init(){
     if(intro){ intro.style.opacity = (1-introOut).toFixed(3); intro.style.transform = `translate(-50%,-50%) translateY(${(-introOut*40).toFixed(1)}px) scale(${(1-introOut*0.05).toFixed(3)})`; }
 
     const show = clamp((p-0.14)/0.86, 0, 1);
-    const composeT = smooth(clamp((p-0.82)/0.18, 0, 1));    // final: gather the 3 together
-    const orbit = show*Math.PI*2*0.92 + t*0.05;             // panels revolve around the ✕
+    const seg = show*(slabs.length-1);
+    const si = Math.floor(Math.min(seg, slabs.length-1.0001));
+    const active = Math.min(si + smooth(clamp((seg-si-0.12)/0.76, 0, 1)), slabs.length-1); // dwell on each
+    rig.rotation.y = -active*(Math.PI*2/3);
 
-    xGroup.scale.setScalar(lerp(1.18, 1.06, introOut));
+    xGroup.scale.setScalar(lerp(1.18, 1.05, introOut));
     xGroup.rotation.y = Math.sin(t*0.3)*0.16 + ptr.x*0.5;
     xGroup.rotation.x = Math.sin(t*0.26)*0.05 - ptr.y*0.22;
     xGroup.position.y = lerp(-0.7, 0.08, introOut);
-    xGroup.position.z = lerp(0.4, -0.2, introOut);
+    xGroup.position.z = lerp(0.4, -0.45, introOut);
 
     let activeIdx = 0, best = -2;
-    slabs.forEach((g,i)=>{
-      const ang = g.userData.baseAngle + orbit;
-      const ox = Math.sin(ang)*ORB_R, oz = Math.cos(ang)*ORB_R, oy = 0.12 + Math.sin(ang*2)*0.12;
-      const c = composed[i];
-      _v.set(lerp(ox,c.x,composeT), lerp(oy,c.y,composeT), lerp(oz,c.z,composeT));
-      g.position.copy(_v);
-      g.lookAt(camera.position);                            // billboard, texture face (+z) toward camera
-      const depth = clamp((g.position.z + ORB_R) / (ORB_R*2), 0, 1);
-      g.scale.setScalar(lerp(0.78, 1.12, depth) * lerp(0.25, 1, introOut));
-      g.userData.faceMat.opacity = lerp(0.42, 1, depth) * introOut;
-      g.visible = introOut > 0.01;
-      const frontness = Math.cos(ang);
-      if(frontness > best){ best = frontness; activeIdx = i; }
+    slabs.forEach((s,i)=>{
+      const ang = s.userData.baseAngle + rig.rotation.y;
+      const front = Math.cos(ang);
+      const f = clamp((front+0.15)/1.15, 0, 1);
+      const fade = Math.pow(f, 1.5);                        // only the front panel (+ transition) is visible
+      s.visible = introOut > 0.01 && fade > 0.02;
+      s.position.y = 0.1 + f*0.12;
+      s.scale.setScalar(lerp(0.2, 1.0, fade) * introOut);
+      s.userData.faceMat.opacity = lerp(0.0, 1, fade) * introOut;
+      if(front > best){ best = front; activeIdx = i; }
     });
 
     const streakOn = clamp((introOut-0.15)/0.85,0,1);
@@ -973,13 +974,13 @@ function init(){
       const u = s.userData; const a = u.a + t*u.sp*0.28;
       s.position.set(Math.cos(a)*u.r, u.y + Math.sin(t*0.2+u.ph)*0.35, Math.sin(a)*u.r);
       s.lookAt(camera.position); s.scale.set(u.len,1,1);
-      s.material.opacity = (0.10 + 0.12*Math.sin(t*1.6+u.ph)) * streakOn;
+      s.material.opacity = (0.09 + 0.11*Math.sin(t*1.6+u.ph)) * streakOn;
     });
 
-    const capsOn = clamp((p-0.16)/0.05,0,1) * (1-composeT);
+    const capsOn = clamp((p-0.16)/0.05, 0, 1);
     caps.forEach((c,i)=>{
-      const ang = slabs[i].userData.baseAngle + orbit;
-      c.style.opacity = (clamp((Math.cos(ang)-0.78)/0.22,0,1)*capsOn).toFixed(3);
+      const ang = slabs[i].userData.baseAngle + rig.rotation.y;
+      c.style.opacity = (clamp((Math.cos(ang)-0.6)/0.4, 0, 1)*capsOn).toFixed(3);
     });
     if(heroNum) heroNum.textContent = '0'+(activeIdx+1);
 
