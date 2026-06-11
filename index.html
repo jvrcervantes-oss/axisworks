@@ -142,8 +142,11 @@ a{color:inherit;text-decoration:none}
 .eyebrow::before{ content:""; width:28px; height:1px; background:var(--steel); flex:none }
 
 /* ---------- nav ---------- */
-header{ position:fixed; top:0; left:0; right:0; z-index:20; transition:background .3s,border-color .3s;
+header{ position:fixed; top:0; left:0; right:0; z-index:20;
+  transition:background .3s,border-color .3s,opacity .6s ease,transform .6s ease;
   border-bottom:1px solid transparent; }
+/* Act 1 — the nav is absent in the void; it enters when the world emerges (Act 2) */
+header.hero-lead{ opacity:0; transform:translateY(-14px); pointer-events:none; }
 header.scrolled{ background:color-mix(in srgb,var(--bone) 86%,transparent); backdrop-filter:blur(8px);
   border-bottom:1px solid var(--line); }
 .nav{ display:flex; align-items:center; justify-content:space-between; height:72px; }
@@ -192,6 +195,8 @@ section{ position:relative; z-index:4; padding-block:var(--sec) }
 .hero{ position:relative; z-index:4; background:#0d1014; color:var(--bone); height:520vh; }
 .hero__sticky{ position:sticky; top:0; height:100svh; min-height:600px; overflow:hidden; }
 #gl{ position:absolute; inset:0; width:100%; height:100%; display:block; z-index:0; }
+/* Act 4 — fixed Bone seam that bridges the dark world into the light page (under the nav) */
+.hero__seam{ position:fixed; inset:0; z-index:15; background:var(--bone); opacity:0; pointer-events:none; }
 
 /* intro overlay */
 .hero__intro{ position:absolute; z-index:60; left:50%; top:33%; transform:translate(-50%,-50%);
@@ -422,7 +427,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
 <div class="hud hud--meta" aria-hidden="true"><span data-i18n="hud">PRECISION SYSTEM · v1.0</span></div>
 
 <!-- NAV -->
-<header id="hdr">
+<header id="hdr" class="hero-lead">
   <div class="shell nav">
     <a href="#top" class="brand" aria-label="AxisWorks home">AXIS<span class="x">✕</span>WORKS</a>
     <nav class="nav__links" id="navLinks">
@@ -614,6 +619,9 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   </div>
 </footer>
 
+<!-- Act 4 — fixed Bone seam that bridges the dark hero into the light page -->
+<div class="hero__seam" id="heroSeam" aria-hidden="true"></div>
+
 <!-- CONTENT DICTIONARY -->
 <script type="application/json" id="i18n">
 {
@@ -692,7 +700,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   var overHero = true; /* dark nav while the sticky WebGL hero owns the viewport */
   var heroSection = document.getElementById('hero');
   function onScroll(){
-    if(heroSection) overHero = window.scrollY < (heroSection.offsetHeight - window.innerHeight - 8);
+    if(heroSection) overHero = window.scrollY < (heroSection.offsetHeight - window.innerHeight*1.5);
     hdr.classList.toggle('scrolled', window.scrollY > 20 && !overHero);
   }
   onScroll(); window.addEventListener('scroll', onScroll, {passive:true});
@@ -845,6 +853,11 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
       card.addEventListener('pointerleave', function(){ inner.style.transform = ''; });
     });
   }
+
+  /* safety net: if the WebGL hero module never runs (e.g. CDN blocked), reveal the nav anyway */
+  setTimeout(function(){
+    if(!window.__axisHero){ var h = document.getElementById('hdr'); if(h){ h.classList.remove('hero-lead'); h.inert = false; } }
+  }, 2500);
 })();
 </script>
 
@@ -866,16 +879,21 @@ const canvas = document.getElementById('gl');
 const intro = document.getElementById('heroIntro');
 const brand = document.getElementById('heroBrand');
 const heroAct = document.getElementById('heroAct');
+const heroSeam = document.getElementById('heroSeam');
+const heroCount = document.querySelector('.hero__count');
+const hdr = document.getElementById('hdr');
 const clamp = (v,a,b)=> v<a?a:(v>b?b:v);
 const smooth = t => t*t*(3-2*t);
 const lerp = (a,b,t)=> a+(b-a)*t;
 
 function hasWebGL(){ try{ const c=document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2')||c.getContext('webgl'))); }catch(e){ return false; } }
 
+window.__axisHero = true; // signal the IIFE safety net that the hero module executed
 if(reduce || !canvas || !hasWebGL()){
   if(heroEl) heroEl.classList.add('is-static');
+  if(hdr){ hdr.classList.remove('hero-lead'); hdr.inert = false; }   // fallback: nav visible from the start
 } else {
-  try { init(); } catch(e){ console.error('[hero gl]', e); if(heroEl) heroEl.classList.add('is-static'); }
+  try { init(); } catch(e){ console.error('[hero gl]', e); if(heroEl) heroEl.classList.add('is-static'); if(hdr){ hdr.classList.remove('hero-lead'); hdr.inert = false; } }
 }
 
 function init(){
@@ -920,7 +938,7 @@ function init(){
 
   // corporate ✕ — extruded crossed bars, premium glossy Signal, lit from within
   const xGroup = new THREE.Group();
-  const xMat = new THREE.MeshPhysicalMaterial({ color:0xE2581C, metalness:0.5, roughness:0.15, clearcoat:1.0, clearcoatRoughness:0.1, envMapIntensity:1.2, emissive:0xE2581C, emissiveIntensity:0.2 });
+  const xMat = new THREE.MeshPhysicalMaterial({ color:0xE2581C, metalness:0.5, roughness:0.15, clearcoat:1.0, clearcoatRoughness:0.1, envMapIntensity:1.2, emissive:0xE2581C, emissiveIntensity:0.2, transparent:true });
   const barGeo = new RoundedBoxGeometry(3.8, 0.66, 0.66, 6, 0.18);
   const bar1 = new THREE.Mesh(barGeo, xMat); bar1.rotation.z = Math.PI/4;
   const bar2 = new THREE.Mesh(barGeo, xMat); bar2.rotation.z = -Math.PI/4;
@@ -985,7 +1003,14 @@ function init(){
   function resize(){ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); }
   resize(); addEventListener('resize', resize);
 
-  const _a = new THREE.Vector3();
+  // Act 4 — the Bone "seam" plane we pass through into the real (light) page
+  const seam = new THREE.Mesh(
+    new THREE.PlaneGeometry(1,1),
+    new THREE.MeshBasicMaterial({ color:0xF4F2EC, transparent:true, opacity:0, depthTest:false, fog:false })
+  );
+  seam.renderOrder = 999; seam.visible = false; scene.add(seam);
+
+  const _a = new THREE.Vector3(), _f = new THREE.Vector3();
   let pS = 0, actLabel = '';
   const clock = new THREE.Clock();
   function frame(){
@@ -1002,38 +1027,74 @@ function init(){
     const snap     = smooth(clamp((p-0.46)/0.18, 0, 1));   // Act3: chaos -> aligned
     const exit     = smooth(clamp((p-0.80)/0.20, 0, 1));   // Act4: hand-off
 
-    // camera — flies through the world: close on the ✕ in Act1, journeys in 2-3, dives through at the seam
-    camera.position.x = ptr.x*1.0;
-    camera.position.y = (1.15 + pull*0.2) - ptr.y*0.55;
-    camera.position.z = lerp(6.0, 8.8, pull) - exit*6.0;
-    camera.lookAt(ptr.x*0.4, 0.05, 0);
+    // ---- Act 4 sub-phases (smooth, cinematic) ----
+    const xExit = smooth(clamp((exit-0.05)/0.55, 0, 1));   // ✕ flies up-left to become the wordmark
+    const dive  = smooth(exit);                            // camera enters the central card
+    const seamT = smooth(clamp((exit-0.45)/0.40, 0, 1));   // emerge through into the Bone page
 
-    // ✕ — enormous & glowing in the void, settles as the axis everything aligns to
-    xGroup.scale.setScalar(lerp(1.9, 1.0, pull));
+    // camera — journeys through the world, then dives into the central card
+    const zBase = lerp(6.0, 8.8, pull);
+    camera.position.x = ptr.x*1.0*(1-exit);
+    camera.position.y = ((1.15 + pull*0.2) - ptr.y*0.55)*(1-exit*0.85);
+    camera.position.z = lerp(zBase, 2.05, dive);
+    camera.lookAt(0, 0.05*(1-exit), 0);
+
+    // ✕ — glowing axis of the void; on exit it flies up-left and becomes the wordmark ✕
+    xGroup.scale.setScalar(lerp(lerp(1.9, 1.0, pull), 0.16, xExit));
     xGroup.rotation.y = Math.sin(t*0.28)*0.13 + ptr.x*0.45;
     xGroup.rotation.x = Math.sin(t*0.24)*0.05 - ptr.y*0.18;
-    xGroup.position.y = lerp(0.0, 0.05, pull);
-    xGroup.position.z = lerp(0.3, -0.3, pull);
-    xMat.emissiveIntensity = 0.17 + 0.06*Math.sin(t*1.6);
+    xGroup.position.x = lerp(0, -2.7, xExit);
+    xGroup.position.y = lerp(lerp(0.0, 0.05, pull), 1.95, xExit);
+    xGroup.position.z = lerp(lerp(0.3, -0.3, pull), camera.position.z - 3.0, xExit);
+    xMat.emissiveIntensity = (0.17 + 0.06*Math.sin(t*1.6)) * (1 - xExit*0.5);
+    xMat.opacity = 1 - smooth(clamp((xExit-0.55)/0.45, 0, 1));
 
-    // world — emerges from the fog in Act2, drifts for parallax life
-    const worldOn = smooth(clamp((p-0.10)/0.18, 0, 1));
+    // world — emerges in Act2, recedes as we pass through
+    const worldOn = smooth(clamp((p-0.10)/0.18, 0, 1)) * (1 - exit*0.6);
     floorGrid.material.opacity = 0.6*worldOn;
     ceilGrid.material.opacity  = 0.4*worldOn;
     particles.material.opacity = 0.55*worldOn;
     particles.rotation.y = t*0.012;
 
-    // cards — emerge scattered (Act2), snap precisely onto the axis (Act3)
+    // cards — scatter (Act2) → snap (Act3) → the central card opens as the doorway (Act4)
     cards.forEach((g,i)=>{
       g.visible = appear > 0.01;
       _a.lerpVectors(chaos[i], aligned[i], snap);
-      g.position.copy(_a);
       g.rotation.y = lerp(chaosRot[i].y, 0, snap) + (1-snap)*Math.sin(t*0.4+i)*0.05;
       g.rotation.x = lerp(chaosRot[i].x, 0, snap);
-      g.scale.setScalar(lerp(0.0, 1.0, appear));
-      g.userData.labelMat.opacity = appear * (1 - exit*0.6);
-      g.userData.frameMat.opacity = (0.2 + 0.7*snap) * appear * (1 - exit*0.6);
+      if(i === 1){
+        g.position.copy(_a);
+        g.scale.setScalar(lerp(appear, 5.2, dive*dive));
+        g.userData.labelMat.opacity = appear * (1 - smooth(clamp(exit/0.35, 0, 1)));
+        g.userData.frameMat.opacity = (0.2 + 0.7*snap) * appear * (1 - exit);
+      } else {
+        var dir = i === 0 ? -1 : 1;
+        g.position.set(_a.x + dir*exit*7.5, _a.y + exit*1.4, _a.z);
+        g.scale.setScalar(appear * (1 - exit*0.5));
+        g.userData.labelMat.opacity = appear * (1 - exit*1.6);
+        g.userData.frameMat.opacity = (0.2 + 0.7*snap) * appear * (1 - exit*1.6);
+      }
     });
+
+    // the seam — a Bone plane inside the world we pass into (brightens the dive)…
+    if(seamT > 0.001){
+      seam.visible = true;
+      _f.set(0,0,-1).applyQuaternion(camera.quaternion);
+      seam.position.copy(camera.position).addScaledVector(_f, 1.4);
+      seam.quaternion.copy(camera.quaternion);
+      seam.scale.set(9, 9, 1);
+      seam.material.opacity = seamT;     // the canvas itself becomes full Bone at the end
+    } else { seam.visible = false; }
+    // …and a fixed DOM Bone overlay that bridges seamlessly into the (light) page.
+    // Driven by raw scroll: rises before the sticky releases, fades once inside the sections.
+    if(heroSeam){
+      var rel = heroEl.offsetHeight - innerHeight;       // sticky releases
+      var bottom = heroEl.offsetTop + heroEl.offsetHeight; // the dark canvas has fully scrolled away
+      var up = clamp((scrollY - (rel - innerHeight*0.5)) / (innerHeight*0.5), 0, 1);
+      var dn = clamp((scrollY - bottom) / (innerHeight*0.28), 0, 1);
+      heroSeam.style.opacity = (up*(1-dn)).toFixed(3);
+    }
+    if(heroCount) heroCount.style.opacity = (1 - seamT).toFixed(3);
 
     // motion-vector streaks — busy in the chaos, calm once aligned
     const streakOn = appear * (1 - snap*0.6) * (1 - exit);
@@ -1049,6 +1110,9 @@ function init(){
     setOverlay(brand, smooth(clamp((p-0.52)/0.12,0,1)) * (1-exit), 0);
     const act = p<0.16?1 : p<0.46?2 : p<0.80?3 : 4;
     if(heroAct && ('ACT '+act)!==actLabel){ actLabel='ACT '+act; heroAct.textContent = actLabel; }
+
+    // Act 1 silence → the nav enters as the world emerges (Act 2)
+    if(hdr){ var lead = pull < 0.12; if(hdr.classList.contains('hero-lead') !== lead){ hdr.classList.toggle('hero-lead', lead); hdr.inert = lead; } }
 
     renderer.render(scene, camera);
   }
