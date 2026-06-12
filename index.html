@@ -149,6 +149,8 @@ header{ position:fixed; top:0; left:0; right:0; z-index:20;
 header.hero-lead{ opacity:0; transform:translateY(-14px); pointer-events:none; }
 header.scrolled{ background:color-mix(in srgb,var(--bone) 86%,transparent); backdrop-filter:blur(8px);
   border-bottom:1px solid var(--line); }
+/* dark scrim keeps the light nav legible over the brightest video frames */
+header:not(.scrolled):not(.hero-lead){ background:linear-gradient(180deg, rgba(8,11,14,.72), rgba(8,11,14,0)); }
 .nav{ display:flex; align-items:center; justify-content:space-between; height:72px; }
 .brand{ font-family:var(--f-display); font-weight:700; font-size:19px; letter-spacing:.04em;
   display:flex; align-items:center; }
@@ -197,6 +199,8 @@ section:not(.hero){ scroll-snap-align:start }
 .hero{ position:relative; z-index:5; background:#0d1014; color:var(--bone); height:380vh; padding:0; }
 .hero__sticky{ position:sticky; top:0; height:100svh; min-height:600px; overflow:hidden; }
 #heroVideo{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; z-index:0; background:#0b0f13; }
+/* bone dissolve at the end of the scrub — the film hands off into the light page */
+.hero__handoff{ position:absolute; inset:0; z-index:70; background:var(--bone); opacity:0; pointer-events:none; }
 /* Act 4 — fixed Bone seam that bridges the dark world into the light page (under the nav) */
 .hero__seam{ position:fixed; inset:0; z-index:15; background:var(--bone); opacity:0; pointer-events:none; }
 
@@ -548,6 +552,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
 <section class="hero" id="hero">
   <div class="hero__sticky">
     <video id="heroVideo" muted playsinline preload="auto" poster="assets/videos/hero_poster.png" aria-hidden="true"><source src="assets/videos/hero.mp4" type="video/mp4"></video>
+    <div class="hero__handoff" aria-hidden="true"></div>
 
     <div class="hero__count" aria-hidden="true"><b id="heroAct">ACT 1</b> <span>/ 04</span></div>
 
@@ -1116,6 +1121,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   var intro = document.getElementById('heroIntro');
   var brand = document.getElementById('heroBrand');
   var heroAct = document.getElementById('heroAct');
+  var handoff = document.querySelector('.hero__handoff');
   var hdr = document.getElementById('hdr');
   var clamp = function(x,a,b){ return x<a?a:(x>b?b:x); };
   var smooth = function(t){ return t*t*(3-2*t); };
@@ -1160,6 +1166,9 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
     // "everything aligns" rises in the back third, clears before the hand-off
     var brandIn = smooth(clamp((pS-0.54)/0.12,0,1)) * (1 - smooth(clamp((pS-0.9)/0.08,0,1)));
     if(brand){ brand.style.opacity = brandIn.toFixed(3); }
+
+    // dissolve the film into the bone page over the last stretch of the scrub
+    if(handoff){ handoff.style.opacity = smooth(clamp((pS-0.9)/0.1, 0, 1)).toFixed(3); }
 
     // chapter readout
     var act = pS<0.16?1 : pS<0.54?2 : pS<0.9?3 : 4;
