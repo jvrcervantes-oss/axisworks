@@ -81,7 +81,7 @@
   --f-body:'Inter',sans-serif;
   --f-mono:'JetBrains Mono',monospace;
   --shell:1280px; --gut:32px; --pad:clamp(20px,5vw,64px);
-  --sec:clamp(96px,14vh,168px);
+  --sec:clamp(72px,10vh,120px);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -189,7 +189,7 @@ h3{ font-family:var(--f-display); font-weight:500; font-size:clamp(20px,2.4vw,26
 .x-sig{ color:var(--signal) }
 
 section{ position:relative; z-index:4; padding-block:var(--sec) }
-.sec-head{ display:flex; flex-direction:column; gap:18px; margin-bottom:56px }
+.sec-head{ display:flex; flex-direction:column; gap:18px; margin-bottom:40px }
 
 /* ---------- hero — WebGL 360 motion vector ---------- */
 .hero{ position:relative; z-index:5; background:#0d1014; color:var(--bone); height:380vh; padding:0; }
@@ -1200,43 +1200,43 @@ function init(){
     streaks.add(s);
   }
 
-  // 3 project pieces — frosted-glass cards with the name etched (no screenshots)
-  const projects = [
-    { title:'Bali Moto Adventures',   tag:'01 — TOURISM ✕ BOOKING' },
-    { title:'Lawang Estate',          tag:'02 — REAL ESTATE ✕ LUXURY' },
-    { title:'Sumba Rental Motorbike', tag:'03 — RENTAL ✕ DELIVERY' }
-  ];
-  const cardW = 2.5, cardH = 1.5;
-  const glassMat = new THREE.MeshPhysicalMaterial({ color:0x121820, metalness:0, roughness:0.2, transmission:0.92, thickness:0.6, ior:1.45, transparent:true, envMapIntensity:1.0, attenuationColor:0x2a3a48, attenuationDistance:2.0 });
-  const chaos    = [ new THREE.Vector3(-3.7,1.7,-2.4), new THREE.Vector3(3.3,-1.5,1.7), new THREE.Vector3(1.1,2.3,-4.3) ];
-  const chaosRot = [ {x:-0.25,y:0.55}, {x:0.18,y:-0.62}, {x:-0.12,y:0.42} ];
-  const aligned  = [ new THREE.Vector3(-2.78,0,1.2), new THREE.Vector3(0,0,1.2), new THREE.Vector3(2.78,0,1.2) ];
-  function labelTexture(proj){
-    const c = document.createElement('canvas'); c.width=1024; c.height=614; const x=c.getContext('2d');
+  // the ✕ names the two disciplines it crosses — flat CAD callouts on the upper arms
+  function armLabelTexture(word, sub){
+    const c = document.createElement('canvas'); c.width=1024; c.height=512; const x=c.getContext('2d');
     x.clearRect(0,0,c.width,c.height); x.textAlign='center';
-    x.fillStyle='#E2581C'; x.font='500 30px "JetBrains Mono", monospace'; x.fillText(proj.tag, 512, 250);
-    x.fillStyle='#F4F2EC'; x.font='700 76px "Space Grotesk", sans-serif';
-    let line='', y=350; const lines=[];
-    proj.title.split(' ').forEach(w=>{ if((line+w).length>15){ lines.push(line.trim()); line=w+' '; } else line+=w+' '; }); lines.push(line.trim());
-    lines.forEach((ln,k)=> x.fillText(ln, 512, y + k*82));
+    x.fillStyle='#F4F2EC'; x.font='700 150px "Space Grotesk", sans-serif'; x.fillText(word, 512, 252);
+    x.strokeStyle='#E2581C'; x.lineWidth=6; x.beginPath(); x.moveTo(362,302); x.lineTo(662,302); x.stroke();
+    x.fillStyle='#9AA0A8'; x.font='500 38px "JetBrains Mono", monospace'; x.fillText(sub, 512, 378);
     const tx = new THREE.CanvasTexture(c); tx.colorSpace=THREE.SRGBColorSpace; tx.anisotropy=8; return tx;
   }
-  const cards = [];
-  projects.forEach((proj)=>{
-    const g = new THREE.Group();
-    const glass = new THREE.Mesh(new RoundedBoxGeometry(cardW, cardH, 0.1, 4, 0.07), glassMat); g.add(glass);
-    const frame = new THREE.LineSegments(
-      new THREE.EdgesGeometry(new THREE.PlaneGeometry(cardW*0.995, cardH*0.99)),
-      new THREE.LineBasicMaterial({ color:0xE2581C, transparent:true, opacity:0, fog:true }));
-    frame.position.z = 0.055; g.add(frame);
-    const labelMat = new THREE.MeshBasicMaterial({ map:labelTexture(proj), transparent:true, opacity:0, depthWrite:false, toneMapped:false, fog:false });
-    const label = new THREE.Mesh(new THREE.PlaneGeometry(cardW*0.95, cardW*0.95*614/1024), labelMat);
-    label.position.z = 0.062; g.add(label);
-    g.userData = { frameMat:frame.material, labelMat };
-    scene.add(g); cards.push(g);
+  const armLabels = [
+    { word:'BUILD', sub:'Development ✕ Engineering', pos:[-1.78,1.66,0.3], tip:[-1.24,1.2,0.06] },
+    { word:'BRAND', sub:'Design ✕ Content',          pos:[ 1.78,1.66,0.3], tip:[ 1.24,1.2,0.06] }
+  ];
+  const labels = [];
+  armLabels.forEach((L)=>{
+    const mat = new THREE.MeshBasicMaterial({ map:armLabelTexture(L.word,L.sub), transparent:true, opacity:0, depthWrite:false, depthTest:false, toneMapped:false, fog:false });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.85), mat);
+    m.position.set(L.pos[0], L.pos[1], L.pos[2]); m.renderOrder = 5;
+    const leaderMat = new THREE.LineBasicMaterial({ color:0x9aa0a8, transparent:true, opacity:0, fog:false });
+    const leader = new THREE.LineSegments(
+      new THREE.BufferGeometry().setFromPoints([ new THREE.Vector3(L.pos[0],L.pos[1]-0.34,L.pos[2]), new THREE.Vector3(L.tip[0],L.tip[1],L.tip[2]) ]),
+      leaderMat);
+    leader.renderOrder = 4;
+    xGroup.add(m, leader);
+    labels.push({ mat, leaderMat, mesh:m, leader, pos:L.pos });
   });
   if(document.fonts && document.fonts.ready){
-    document.fonts.ready.then(()=>{ cards.forEach((g,i)=>{ g.userData.labelMat.map.dispose(); g.userData.labelMat.map = labelTexture(projects[i]); g.userData.labelMat.needsUpdate = true; }); });
+    document.fonts.ready.then(()=>{ labels.forEach((L,i)=>{ const a=armLabels[i]; L.mat.map.dispose(); L.mat.map = armLabelTexture(a.word,a.sub); L.mat.needsUpdate = true; }); });
+  }
+  // keep the callouts inside a narrow (portrait) viewport — pull them in, shrink, drop the leaders
+  function layoutLabels(){
+    const portrait = (innerWidth/innerHeight) < 0.95;
+    labels.forEach((L,i)=>{
+      const sign = i===0 ? -1 : 1;
+      if(portrait){ L.mesh.position.set(sign*0.86, 1.5, 0.3); L.mesh.scale.setScalar(0.6); L.leader.visible = false; }
+      else { L.mesh.position.set(L.pos[0], L.pos[1], L.pos[2]); L.mesh.scale.setScalar(1); L.leader.visible = true; }
+    });
   }
 
   const ptr = { x:0, y:0, tx:0, ty:0 };
@@ -1244,7 +1244,7 @@ function init(){
 
   function setOverlay(el, o, ty){ if(!el) return; el.style.opacity = o.toFixed(3); el.style.transform = `translate(-50%,-50%) translateY(${ty.toFixed(1)}px)`; }
   function progress(){ const total = heroEl.offsetHeight - innerHeight; return total>0 ? clamp(scrollY/total,0,1) : 0; }
-  function resize(){ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight, false); }
+  function resize(){ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight, false); layoutLabels(); }
   resize(); addEventListener('resize', resize);
 
   // pull the next section up to the sticky's release point so the light flash lands ON it (no empty tail)
@@ -1304,18 +1304,9 @@ function init(){
     particles.material.opacity = 0.55*worldOn;
     particles.rotation.y = t*0.012;
 
-    // cards — scatter (Act2) → snap (Act3) → drift outward to clear the way (Act4)
-    cards.forEach((g,i)=>{
-      g.visible = appear > 0.01 && exit < 0.85;
-      _a.lerpVectors(chaos[i], aligned[i], snap);
-      g.rotation.y = lerp(chaosRot[i].y, 0, snap) + (1-snap)*Math.sin(t*0.4+i)*0.05;
-      g.rotation.x = lerp(chaosRot[i].x, 0, snap);
-      var dir = i === 0 ? -1 : (i === 2 ? 1 : 0);
-      g.position.set(_a.x + dir*exit*6, _a.y + (i===1?-1.4:1.1)*exit*3, _a.z + exit*2.5);
-      g.scale.setScalar(appear * (1 - exit));
-      g.userData.labelMat.opacity = appear * (1 - exit*2.0);
-      g.userData.frameMat.opacity = (0.2 + 0.7*snap) * appear * (1 - exit*2.0);
-    });
+    // the two discipline labels fade in with the world (Act2) and clear out as we dive through (Act4)
+    const labO = appear * (1 - clamp(exit*2.2, 0, 1));
+    labels.forEach((L)=>{ L.mat.opacity = labO; L.leaderMat.opacity = labO*0.55; });
 
     // the seam — Bone light that OPENS from the ✕'s crossing point and floods the view
     if(seamT > 0.001){
