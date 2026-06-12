@@ -385,6 +385,87 @@ header:not(.scrolled) .lang button[aria-pressed="true"]{ background:var(--bone);
 .btn--ghost-d{ border-color:#ffffff40; color:var(--bone) }
 .btn--ghost-d:hover{ background:var(--bone); color:var(--ink); border-color:var(--bone) }
 
+/* contact — two columns: the message ✕ the origin target */
+.contact__grid{ display:grid; grid-template-columns:1.05fr .95fr; align-items:center; gap:clamp(36px,6vw,88px) }
+@media(max-width:880px){ .contact__grid{ grid-template-columns:1fr; gap:52px } }
+.contact h2{ max-width:none }
+
+/* the journey that began in the void resolves at the origin — 00,00 */
+.origin{ position:relative; aspect-ratio:1/1; width:min(100%,420px); margin-inline:auto;
+  border:1px solid #ffffff1f; }
+.origin__corner{ position:absolute; width:13px; height:13px; border:1px solid var(--steel); }
+.origin__corner.tl{ top:-1px; left:-1px; border-right:0; border-bottom:0 }
+.origin__corner.tr{ top:-1px; right:-1px; border-left:0; border-bottom:0 }
+.origin__corner.bl{ bottom:-1px; left:-1px; border-right:0; border-top:0 }
+.origin__corner.br{ bottom:-1px; right:-1px; border-left:0; border-top:0 }
+.origin__rule{ position:absolute; background:var(--steel); opacity:.45 }
+.origin__rule--h{ left:0; right:0; top:50%; height:1px; transform:scaleX(0); transform-origin:left }
+.origin__rule--v{ top:0; bottom:0; left:50%; width:1px; transform:scaleY(0); transform-origin:top }
+.origin.is-locked .origin__rule--h{ transform:scaleX(1); transition:transform 1s cubic-bezier(.6,0,.2,1) }
+.origin.is-locked .origin__rule--v{ transform:scaleY(1); transition:transform 1s .1s cubic-bezier(.6,0,.2,1) }
+.origin__x{ position:absolute; top:50%; left:50%; width:42px; height:42px;
+  transform:translate(-50%,-50%) scale(0) rotate(-45deg) }
+.origin.is-locked .origin__x{ transform:translate(-50%,-50%) scale(1) rotate(0);
+  transition:transform .7s .55s cubic-bezier(.2,.8,.2,1) }
+.origin__x line{ stroke:var(--signal); stroke-width:4; stroke-linecap:square }
+.origin__ping{ position:absolute; top:50%; left:50%; width:42px; height:42px; pointer-events:none;
+  transform:translate(-50%,-50%) scale(.4); border:1px solid var(--signal); opacity:0 }
+.origin.is-locked .origin__ping{ animation:ping 1.2s .62s cubic-bezier(.2,.7,.3,1) }
+@keyframes ping{ 0%{ transform:translate(-50%,-50%) scale(.5); opacity:.6 }
+  100%{ transform:translate(-50%,-50%) scale(3.6); opacity:0 } }
+.origin__label{ position:absolute; left:14px; top:13px; font-family:var(--f-mono); font-size:11px;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--steel) }
+.origin__label b{ color:var(--signal); font-weight:500 }
+.origin__read{ position:absolute; left:14px; bottom:13px; font-family:var(--f-mono); font-size:12px;
+  letter-spacing:.06em; color:var(--steel); display:flex; gap:18px }
+.origin__read b{ color:var(--bone); font-weight:500 }
+
+/* signature reveal — a ruler is laid under each section heading */
+.sec-head{ position:relative }
+.measure{ display:block; height:1px; background:var(--line); transform:scaleX(0); transform-origin:left;
+  position:relative; margin-top:2px }
+.measure::before,.measure::after{ content:""; position:absolute; top:-4px; width:1px; height:9px; background:var(--steel) }
+.measure::before{ left:0 } .measure::after{ right:0 }
+.measure i{ position:absolute; right:-3px; top:50%; width:7px; height:7px; background:var(--signal);
+  transform:translateY(-50%) rotate(45deg); opacity:0; transition:opacity .3s }
+
+/* ---------- pricing ---------- */
+.price-toggle{ display:inline-flex; border:1px solid var(--line); font-family:var(--f-mono); font-size:12px;
+  letter-spacing:.12em; text-transform:uppercase; margin-bottom:48px }
+.price-toggle button{ background:none; border:0; padding:11px 20px; color:var(--steel); cursor:pointer;
+  font:inherit; letter-spacing:inherit; text-transform:inherit; display:inline-flex; align-items:center; gap:8px;
+  transition:color .2s,background .2s }
+.price-toggle button + button{ border-left:1px solid var(--line) }
+.price-toggle button[aria-pressed="true"]{ background:var(--ink); color:var(--bone) }
+.price-toggle .save{ color:var(--signal); font-size:11px }
+
+.pricing__grid{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gut); align-items:stretch }
+@media(max-width:760px){ .pricing__grid{ grid-template-columns:1fr } }
+.plan{ position:relative; display:flex; flex-direction:column; background:var(--bone);
+  border:1px solid var(--line); padding:clamp(28px,3.4vw,42px) }
+.plan--featured{ background:var(--ink); color:var(--bone); border-color:var(--ink) }
+.plan--featured .eyebrow{ color:var(--steel) } .plan--featured .eyebrow::before{ background:var(--steel) }
+.plan--featured .eyebrow .x{ color:var(--signal) }
+.plan__badge{ position:absolute; top:-1px; right:-1px; background:var(--signal); color:var(--signal-text);
+  font-family:var(--f-mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; padding:6px 12px }
+.plan__head .eyebrow{ margin-bottom:18px }
+.plan h3{ margin-top:2px }
+.plan__desc{ color:var(--graphite); margin-top:10px; font-size:15px; max-width:32ch }
+.plan--featured .plan__desc{ color:var(--steel) }
+.plan__price{ display:flex; align-items:flex-start; gap:3px; margin:32px 0 2px; font-family:var(--f-display); line-height:1 }
+.plan__cur{ font-size:24px; font-weight:500; margin-top:9px }
+.plan__num{ font-size:clamp(46px,6vw,64px); font-weight:700; letter-spacing:-.02em }
+.plan__per{ display:flex; flex-direction:column; margin:9px 0 0 8px; font-family:var(--f-mono) }
+.plan__period{ font-size:13px; color:var(--steel); font-weight:400 }
+.plan__sub{ font-size:11px; color:var(--signal); margin-top:5px; min-height:13px }
+.plan__list{ list-style:none; margin:28px 0 0; font-family:var(--f-mono); font-size:13px; letter-spacing:.02em }
+.plan__list li{ padding:13px 0; border-top:1px solid var(--line); display:flex; gap:11px; align-items:baseline }
+.plan--featured .plan__list li{ border-color:#ffffff1f }
+.plan__list li::before{ content:"✕"; color:var(--signal); font-size:11px; flex:none }
+.plan__list{ margin-bottom:32px }
+.plan__cta{ margin-top:auto; align-self:flex-start }
+.pricing__note{ font-family:var(--f-mono); font-size:12px; color:var(--steel); margin-top:26px; letter-spacing:.02em }
+
 /* ---------- footer ---------- */
 footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff14; position:relative; z-index:4 }
 .foot{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:18px; align-items:center;
@@ -438,6 +519,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
       <a href="#work" data-i18n="nav_work">Work</a>
       <a href="#process" data-i18n="nav_process">Process</a>
       <a href="#studio" data-i18n="nav_studio">Studio</a>
+      <a href="#pricing" data-i18n="nav_pricing">Pricing</a>
       <div class="lang" role="group" aria-label="Language">
         <button data-lang="en" aria-pressed="true">EN</button>
         <button data-lang="es" aria-pressed="false">ES</button>
@@ -484,6 +566,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   <div class="shell sec-head rv">
     <p class="eyebrow">01 — <span data-i18n="svc_eyebrow">WHAT WE DO</span></p>
     <h2 data-i18n="svc_h2">Two disciplines that cross at one point.</h2>
+    <span class="measure" aria-hidden="true"><i></i></span>
   </div>
   <div class="shell">
     <div class="cross rv">
@@ -519,6 +602,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   <div class="shell sec-head rv">
     <p class="eyebrow">02 — <span data-i18n="work_eyebrow">SELECTED WORK</span></p>
     <h2 data-i18n="work_h2">Shipped, live and earning.</h2>
+    <span class="measure" aria-hidden="true"><i></i></span>
   </div>
   <div class="shell work__grid">
     <div class="tcard rv">
@@ -559,6 +643,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   <div class="shell sec-head rv">
     <p class="eyebrow">03 — <span data-i18n="proc_eyebrow">HOW WE WORK</span></p>
     <h2 data-i18n="proc_h2">Measure twice. Build once.</h2>
+    <span class="measure" aria-hidden="true"><i></i></span>
   </div>
   <div class="shell">
     <div class="proc__track rv">
@@ -576,6 +661,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   <div class="shell sec-head rv">
     <p class="eyebrow">04 — <span data-i18n="who_eyebrow">THE STUDIO</span></p>
     <h2 data-i18n="who_h2">Two people. One axis.</h2>
+    <span class="measure" aria-hidden="true"><i></i></span>
   </div>
   <div class="shell who__grid rv">
     <div class="person">
@@ -600,22 +686,91 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   </div>
 </section>
 
+<!-- PRICING -->
+<section id="pricing">
+  <div class="shell sec-head rv">
+    <p class="eyebrow">05 — <span data-i18n="pr_eyebrow">PRICING</span></p>
+    <h2 data-i18n="pr_h2">Two plans. One standard.</h2>
+    <span class="measure" aria-hidden="true"><i></i></span>
+  </div>
+  <div class="shell">
+    <div class="price-toggle rv" role="group" aria-label="Billing period">
+      <button type="button" data-bill="monthly" aria-pressed="true" data-i18n="pr_monthly">Monthly</button>
+      <button type="button" data-bill="annual" aria-pressed="false"><span data-i18n="pr_annual">Annual</span> <span class="save">−22%</span></button>
+    </div>
+    <div class="pricing__grid">
+      <div class="plan rv">
+        <div class="plan__head">
+          <p class="eyebrow"><span data-i18n="pr_a_tag">WEB</span></p>
+          <h3 data-i18n="pr_a_name">Website</h3>
+          <p class="plan__desc" data-i18n="pr_a_desc">Your site, always current and looked after.</p>
+        </div>
+        <div class="plan__price">
+          <span class="plan__cur">€</span>
+          <span class="plan__num" data-monthly="100" data-annual="936">100</span>
+          <span class="plan__per"><b class="plan__period">/mo</b><span class="plan__sub"></span></span>
+        </div>
+        <ul class="plan__list">
+          <li data-i18n="pr_a_1">Unlimited maintenance &amp; changes*</li>
+          <li data-i18n="pr_a_2">Sitemap included</li>
+          <li data-i18n="pr_a_3">Basic SEO, done by us</li>
+        </ul>
+        <a href="#contact" class="btn btn--ghost plan__cta" data-i18n="pr_a_cta">Choose Website</a>
+      </div>
+      <div class="plan plan--featured rv">
+        <span class="plan__badge" data-i18n="pr_badge">RECOMMENDED</span>
+        <div class="plan__head">
+          <p class="eyebrow"><span data-i18n="pr_b_tag">WEB <span class="x">✕</span> SOCIAL</span></p>
+          <h3 data-i18n="pr_b_name">Website + Social</h3>
+          <p class="plan__desc" data-i18n="pr_b_desc">Your site cared for, plus a living social presence.</p>
+        </div>
+        <div class="plan__price">
+          <span class="plan__cur">€</span>
+          <span class="plan__num" data-monthly="200" data-annual="1872">200</span>
+          <span class="plan__per"><b class="plan__period">/mo</b><span class="plan__sub"></span></span>
+        </div>
+        <ul class="plan__list">
+          <li data-i18n="pr_b_1">Everything in Website</li>
+          <li data-i18n="pr_b_2">2 social posts / month</li>
+          <li data-i18n="pr_b_3">Sitemap &amp; basic SEO</li>
+        </ul>
+        <a href="#contact" class="btn btn--signal plan__cta" data-i18n="pr_b_cta">Choose Web ✕ Social</a>
+      </div>
+    </div>
+    <p class="pricing__note rv" data-i18n="pr_note">*Maintenance and changes that stay within the site's original vision. Annual billing saves 22%.</p>
+  </div>
+</section>
+
 </main>
 
 <!-- CONTACT -->
 <section class="contact" id="contact">
-  <div class="shell">
-    <p class="eyebrow rv">05 — <span data-i18n="ct_eyebrow">START HERE</span></p>
-    <h2 class="rv" style="margin-top:18px" data-i18n="ct_h2">Have something worth building well?</h2>
-    <p class="lead rv" style="color:var(--steel);margin-top:18px" data-i18n="ct_lead">Tell us what you're working on. We reply in English or Spanish, usually within a day.</p>
-    <div class="contact__row rv">
-      <a href="mailto:hello@axisworks.studio" class="btn btn--signal"><span>hello@axisworks.studio</span> <span class="ar">→</span></a>
-      <a href="https://wa.me/" target="_blank" rel="noopener" class="btn btn--ghost-d" id="waCta"><span data-i18n="ct_wa">WhatsApp</span></a>
+  <div class="shell contact__grid">
+    <div class="contact__col">
+      <p class="eyebrow rv">06 — <span data-i18n="ct_eyebrow">START HERE</span></p>
+      <h2 class="rv" style="margin-top:18px" data-i18n="ct_h2">Have something worth building well?</h2>
+      <p class="lead rv" style="color:var(--steel);margin-top:18px" data-i18n="ct_lead">Tell us what you're working on. We reply in English or Spanish, usually within a day.</p>
+      <div class="contact__row rv">
+        <a href="mailto:hello@axisworks.studio" class="btn btn--signal"><span>hello@axisworks.studio</span> <span class="ar">→</span></a>
+        <a href="https://wa.me/" target="_blank" rel="noopener" class="btn btn--ghost-d" id="waCta"><span data-i18n="ct_wa">WhatsApp</span></a>
+      </div>
+      <div class="contact__meta rv">
+        <div><span data-i18n="ct_email_l">EMAIL</span><b>hello@axisworks.studio</b></div>
+        <div><span data-i18n="ct_based_l">BASED</span><b>Spain <span style="color:var(--signal)">✕</span> Bali</b></div>
+        <div><span data-i18n="ct_lang_l">LANGUAGES</span><b>English / Español</b></div>
+      </div>
     </div>
-    <div class="contact__meta rv">
-      <div><span data-i18n="ct_email_l">EMAIL</span><b>hello@axisworks.studio</b></div>
-      <div><span data-i18n="ct_based_l">BASED</span><b>Spain <span style="color:var(--signal)">✕</span> Bali</b></div>
-      <div><span data-i18n="ct_lang_l">LANGUAGES</span><b>English / Español</b></div>
+    <div class="contact__origin rv" aria-hidden="true">
+      <div class="origin" id="origin">
+        <i class="origin__corner tl"></i><i class="origin__corner tr"></i>
+        <i class="origin__corner bl"></i><i class="origin__corner br"></i>
+        <span class="origin__rule origin__rule--h"></span>
+        <span class="origin__rule origin__rule--v"></span>
+        <span class="origin__ping"></span>
+        <svg class="origin__x" viewBox="0 0 64 64"><g><line x1="16" y1="16" x2="48" y2="48"/><line x1="48" y1="16" x2="16" y2="48"/></g></svg>
+        <div class="origin__label">FIG.06 — <span data-i18n="ct_origin">THE ORIGIN</span> · <b id="ostatus">ALIGNED</b></div>
+        <div class="origin__read"><span>X <b id="ox">00.00</b></span><span>Y <b id="oy">00.00</b></span></div>
+      </div>
     </div>
   </div>
 </section>
@@ -636,7 +791,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
 {
   "es": {
     "hud":"SISTEMA DE PRECISIÓN · v1.0",
-    "nav_services":"Servicios","nav_work":"Trabajo","nav_process":"Proceso","nav_studio":"Estudio","nav_cta":"Empezar proyecto",
+    "nav_services":"Servicios","nav_work":"Trabajo","nav_process":"Proceso","nav_studio":"Estudio","nav_pricing":"Precios","nav_cta":"Empezar proyecto",
     "hero_eyebrow":"EST. 2026",
     "hero_count":"TRABAJO SELECCIONADO","hero_hint":"DESLIZA PARA EXPLORAR","cap_view":"Ver web",
     "hero_brand_eyebrow":"DEL CAOS A LA PRECISIÓN","hero_brand_h":"Medimos dos veces.<br>Todo encaja.",
@@ -661,9 +816,18 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
     "who_eyebrow":"EL ESTUDIO","who_h2":"Dos personas. Un eje.",
     "who_1role":"Desarrollo e ingeniería","who_1p":"Escribe el código, diseña los sistemas, publica las webs. El lado build del estudio.",
     "who_2role":"Diseño, contenido y social","who_2name":"Socia de diseño","who_2p":"Da forma a la marca, al contenido y a la voz. El lado design del estudio.",
+    "pr_eyebrow":"PRECIOS","pr_h2":"Dos planes. Un estándar.",
+    "pr_monthly":"Mensual","pr_annual":"Anual",
+    "pr_a_tag":"WEB","pr_a_name":"Web","pr_a_desc":"Tu web, siempre actualizada y cuidada.",
+    "pr_a_1":"Mantenimiento y cambios ilimitados*","pr_a_2":"Sitemap incluido","pr_a_3":"SEO básico que podemos hacer","pr_a_cta":"Elegir Web",
+    "pr_badge":"RECOMENDADO",
+    "pr_b_tag":"WEB <span class=\"x\">✕</span> REDES","pr_b_name":"Web + Redes","pr_b_desc":"Tu web cuidada, más presencia activa en redes.",
+    "pr_b_1":"Todo lo del plan Web","pr_b_2":"2 posts en redes al mes","pr_b_3":"Sitemap y SEO básico","pr_b_cta":"Elegir Web ✕ Redes",
+    "pr_note":"*Mantenimiento y cambios que no se alejen de la visión original de la web. El pago anual ahorra un 22%.",
     "ct_eyebrow":"EMPIEZA AQUÍ","ct_h2":"¿Tienes algo que merezca construirse bien?",
     "ct_lead":"Cuéntanos en qué trabajas. Respondemos en español o inglés, normalmente en un día.",
     "ct_wa":"WhatsApp","ct_email_l":"EMAIL","ct_based_l":"DESDE","ct_lang_l":"IDIOMAS",
+    "ct_origin":"EL ORIGEN",
     "foot_made":"HECHO CON PRECISIÓN"
   }
 }
@@ -695,6 +859,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
       b.setAttribute('aria-pressed', b.getAttribute('data-lang') === lang);
     });
     try{ localStorage.setItem('aw_lang', lang); }catch(e){}
+    if(typeof refreshPricing === 'function') refreshPricing();
   }
   document.querySelectorAll('.lang button').forEach(function(b){
     b.addEventListener('click', function(){ setLang(b.getAttribute('data-lang')); });
@@ -775,6 +940,31 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   var wa = document.getElementById('waCta');
   if(wa){ wa.href = WA_NUMBER ? ('https://wa.me/'+WA_NUMBER) : 'mailto:hello@axisworks.studio'; }
 
+  /* pricing — monthly ✕ annual toggle (annual = −22%, with monthly-equivalent readout) */
+  var billMode = 'monthly';
+  function refreshPricing(){
+    var pricing = document.getElementById('pricing'); if(!pricing) return;
+    var es = document.documentElement.lang === 'es', annual = billMode === 'annual';
+    pricing.querySelectorAll('[data-bill]').forEach(function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-bill') === billMode);
+    });
+    pricing.querySelectorAll('.plan__num').forEach(function(n){
+      var val = +(annual ? n.getAttribute('data-annual') : n.getAttribute('data-monthly'));
+      n.textContent = val.toLocaleString('en-US');
+      var per = n.parentElement.querySelector('.plan__period');
+      var sub = n.parentElement.querySelector('.plan__sub');
+      if(per) per.textContent = annual ? (es ? '/año' : '/yr') : (es ? '/mes' : '/mo');
+      if(sub) sub.textContent = annual ? ('≈ €' + Math.round(val/12) + (es ? '/mes' : '/mo')) : '';
+    });
+  }
+  (function(){
+    var pricing = document.getElementById('pricing'); if(!pricing) return;
+    pricing.querySelectorAll('[data-bill]').forEach(function(b){
+      b.addEventListener('click', function(){ billMode = b.getAttribute('data-bill'); refreshPricing(); });
+    });
+    refreshPricing();
+  })();
+
   /* loader */
   var loader = document.getElementById('loader'), read = document.getElementById('loaderRead');
   var p = 0;
@@ -792,9 +982,10 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   function startReveal(){
     if(reduce || !window.gsap){
       document.querySelectorAll('.rv').forEach(function(el){ el.classList.add('is-in'); });
+      document.querySelectorAll('.measure').forEach(function(m){ m.style.transform='scaleX(1)'; var d=m.querySelector('i'); if(d) d.style.opacity=1; });
       var hsec = document.getElementById('hero'); if(hsec) hsec.classList.add('is-static');
       overHero = false; onScroll();
-      runCounters();
+      runCounters(); lockOrigin();
       return;
     }
     gsap.registerPlugin(ScrollTrigger);
@@ -833,6 +1024,40 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
       scrollTrigger:{ trigger:'.cross', start:'top 72%', once:true }});
     gsap.from('.cross__mark', { scale:0, rotation:-90, duration:.6, ease:'back.out(2)', delay:.45,
       scrollTrigger:{ trigger:'.cross', start:'top 72%', once:true }});
+
+    /* signature reveal — lay the ruler under each section heading */
+    gsap.utils.toArray('.sec-head').forEach(function(sh){
+      var m = sh.querySelector('.measure'); if(!m) return;
+      gsap.fromTo(m, { scaleX:0 }, { scaleX:1, duration:.9, ease:'power3.inOut',
+        scrollTrigger:{ trigger:sh, start:'top 82%', once:true },
+        onComplete:function(){ var d = m.querySelector('i'); if(d) d.style.opacity = 1; }});
+    });
+
+    /* the origin locks when contact enters — the blueprint resolves at 00,00 */
+    var origin = document.getElementById('origin');
+    if(origin){
+      ScrollTrigger.create({ trigger:origin, start:'top 78%', once:true, onEnter:lockOrigin });
+    }
+  }
+
+  /* lock the origin target: draw the crosshair, flip status, settle the readout to 00,00 */
+  var originLocked = false;
+  function lockOrigin(){
+    if(originLocked) return; originLocked = true;
+    var o = document.getElementById('origin'); if(!o) return;
+    o.classList.add('is-locked');
+    var ox = document.getElementById('ox'), oy = document.getElementById('oy'), st = document.getElementById('ostatus');
+    if(reduce){ if(st) st.textContent='ALIGNED'; if(ox) ox.textContent='00.00'; if(oy) oy.textContent='00.00'; return; }
+    if(st) st.textContent = 'CALIBRATING';
+    var fx = 18.42, fy = -11.07, dur = 1000, t0 = performance.now();
+    function fmt(v){ return (v<0?'-':' ') + Math.abs(v).toFixed(2).padStart(5,'0'); }
+    (function tick(now){
+      var p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      if(ox) ox.textContent = fmt(fx * (1 - e));
+      if(oy) oy.textContent = fmt(fy * (1 - e));
+      if(p < 1){ requestAnimationFrame(tick); }
+      else { if(ox) ox.textContent = '00.00'; if(oy) oy.textContent = '00.00'; if(st) st.textContent = 'ALIGNED'; }
+    })(t0);
   }
 
   /* counters */
