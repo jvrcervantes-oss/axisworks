@@ -442,10 +442,20 @@ header:not(.scrolled) .lang button[aria-pressed="true"]{ background:var(--bone);
 .pricing__grid{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gut); align-items:stretch }
 @media(max-width:760px){ .pricing__grid{ grid-template-columns:1fr } }
 .plan{ position:relative; display:flex; flex-direction:column; background:var(--bone);
-  border:1px solid var(--line); padding:clamp(28px,3.4vw,42px) }
-.plan--featured{ background:var(--ink); color:var(--bone); border-color:var(--ink) }
+  border:1px solid var(--ink); padding:clamp(28px,3.4vw,42px); transition:border-color .25s,transform .25s }
+.plan:hover{ border-color:var(--signal) }
+/* CAD registration ticks — opposite corners, ties the cards to the blueprint */
+.plan::before,.plan::after{ content:""; position:absolute; width:11px; height:11px;
+  border:1px solid var(--steel); pointer-events:none }
+.plan::before{ top:6px; left:6px; border-right:0; border-bottom:0 }
+.plan::after{ bottom:6px; right:6px; border-left:0; border-top:0 }
+.plan--featured{ background:var(--ink); color:var(--bone); border-color:var(--ink);
+  border-top:2px solid var(--signal) }
+.plan--featured::before,.plan--featured::after{ border-color:#ffffff3a }
 .plan--featured .eyebrow{ color:var(--steel) } .plan--featured .eyebrow::before{ background:var(--steel) }
 .plan--featured .eyebrow .x{ color:var(--signal) }
+/* keep the dark-card CTA visible on hover (no ink-on-ink) */
+.plan--featured .btn--signal:hover{ background:var(--bone); color:var(--ink) }
 .plan__badge{ position:absolute; top:-1px; right:-1px; background:var(--signal); color:var(--signal-text);
   font-family:var(--f-mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; padding:6px 12px }
 .plan__head .eyebrow{ margin-bottom:18px }
@@ -518,8 +528,8 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
       <a href="#services" data-i18n="nav_services">Services</a>
       <a href="#work" data-i18n="nav_work">Work</a>
       <a href="#process" data-i18n="nav_process">Process</a>
-      <a href="#studio" data-i18n="nav_studio">Studio</a>
       <a href="#pricing" data-i18n="nav_pricing">Pricing</a>
+      <a href="#studio" data-i18n="nav_studio">Studio</a>
       <div class="lang" role="group" aria-label="Language">
         <button data-lang="en" aria-pressed="true">EN</button>
         <button data-lang="es" aria-pressed="false">ES</button>
@@ -656,40 +666,10 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   </div>
 </section>
 
-<!-- STUDIO / WHO -->
-<section id="studio">
-  <div class="shell sec-head rv">
-    <p class="eyebrow">04 — <span data-i18n="who_eyebrow">THE STUDIO</span></p>
-    <h2 data-i18n="who_h2">Two people. One axis.</h2>
-    <span class="measure" aria-hidden="true"><i></i></span>
-  </div>
-  <div class="shell who__grid rv">
-    <div class="person">
-      <div class="person__portrait">
-        <img src="assets/images/Javier1.png" alt="Javier — development and engineering" loading="lazy">
-        <span class="mono-x">✕</span><span>FIG.01 — BUILD</span>
-      </div>
-      <div class="person__role" data-i18n="who_1role">Development &amp; engineering</div>
-      <h3>Javier</h3>
-      <p data-i18n="who_1p">Writes the code, designs the systems, ships the sites. The build side of the studio.</p>
-    </div>
-    <div class="who__x" aria-hidden="true">✕</div>
-    <div class="person">
-      <div class="person__portrait">
-        <img src="assets/images/Andrea2.jpg" alt="Andrea — design, content and social" loading="lazy">
-        <span class="mono-x">✕</span><span>FIG.02 — BRAND</span>
-      </div>
-      <div class="person__role" data-i18n="who_2role">Design, content &amp; social</div>
-      <h3>Andrea</h3>
-      <p data-i18n="who_2p">Shapes the brand, the content and the voice. The design side of the studio.</p>
-    </div>
-  </div>
-</section>
-
 <!-- PRICING -->
 <section id="pricing">
   <div class="shell sec-head rv">
-    <p class="eyebrow">05 — <span data-i18n="pr_eyebrow">PRICING</span></p>
+    <p class="eyebrow">04 — <span data-i18n="pr_eyebrow">PRICING</span></p>
     <h2 data-i18n="pr_h2">Two plans. One standard.</h2>
     <span class="measure" aria-hidden="true"><i></i></span>
   </div>
@@ -738,6 +718,36 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
       </div>
     </div>
     <p class="pricing__note rv" data-i18n="pr_note">*Maintenance and changes that stay within the site's original vision. Annual billing saves 22%.</p>
+  </div>
+</section>
+
+<!-- STUDIO / WHO -->
+<section id="studio">
+  <div class="shell sec-head rv">
+    <p class="eyebrow">05 — <span data-i18n="who_eyebrow">THE STUDIO</span></p>
+    <h2 data-i18n="who_h2">Two people. One axis.</h2>
+    <span class="measure" aria-hidden="true"><i></i></span>
+  </div>
+  <div class="shell who__grid rv">
+    <div class="person">
+      <div class="person__portrait">
+        <img src="assets/images/Javier1.png" alt="Javier — development and engineering" loading="lazy">
+        <span class="mono-x">✕</span><span>FIG.01 — BUILD</span>
+      </div>
+      <div class="person__role" data-i18n="who_1role">Development &amp; engineering</div>
+      <h3>Javier</h3>
+      <p data-i18n="who_1p">Writes the code, designs the systems, ships the sites. The build side of the studio.</p>
+    </div>
+    <div class="who__x" aria-hidden="true">✕</div>
+    <div class="person">
+      <div class="person__portrait">
+        <img src="assets/images/Andrea2.jpg" alt="Andrea — design, content and social" loading="lazy">
+        <span class="mono-x">✕</span><span>FIG.02 — BRAND</span>
+      </div>
+      <div class="person__role" data-i18n="who_2role">Design, content &amp; social</div>
+      <h3>Andrea</h3>
+      <p data-i18n="who_2p">Shapes the brand, the content and the voice. The design side of the studio.</p>
+    </div>
   </div>
 </section>
 
