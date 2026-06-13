@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AxisWorks — Precision-built websites &amp; brands</title>
-<meta name="description" content="AxisWorks is a two-person digital studio building precision websites and brands. Development & engineering ✕ design & content. Spain ✕ Bali. No templates. No noise.">
+<meta name="description" content="AxisWorks is a two-person digital studio building precision websites and brands. Development ✕ design & content. Spain ✕ Bali. No templates. No noise.">
 <meta name="theme-color" content="#15181C">
 <link rel="canonical" href="https://axisworks.studio/">
 
@@ -64,7 +64,7 @@
       "priceRange": "$$$",
       "url": "https://axisworks.studio/",
       "makesOffer": [
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Web development & engineering" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Web development" } },
         { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Brand, content & social design" } }
       ]
     }
@@ -84,7 +84,7 @@
   --sec:clamp(72px,10vh,120px);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth; scroll-snap-type:y proximity}
+html{scroll-behavior:smooth}
 body{
   font-family:var(--f-body); color:var(--ink); background:var(--bone);
   font-size:17px; line-height:1.65; -webkit-font-smoothing:antialiased;
@@ -149,8 +149,6 @@ header{ position:fixed; top:0; left:0; right:0; z-index:20;
 header.hero-lead{ opacity:0; transform:translateY(-14px); pointer-events:none; }
 header.scrolled{ background:color-mix(in srgb,var(--bone) 86%,transparent); backdrop-filter:blur(8px);
   border-bottom:1px solid var(--line); }
-/* dark scrim keeps the light nav legible over the brightest video frames */
-header:not(.scrolled):not(.hero-lead){ background:linear-gradient(180deg, rgba(8,11,14,.72), rgba(8,11,14,0)); }
 .nav{ display:flex; align-items:center; justify-content:space-between; height:72px; }
 .brand{ font-family:var(--f-display); font-weight:700; font-size:19px; letter-spacing:.04em;
   display:flex; align-items:center; }
@@ -191,16 +189,12 @@ h3{ font-family:var(--f-display); font-weight:500; font-size:clamp(20px,2.4vw,26
 .x-sig{ color:var(--signal) }
 
 section{ position:relative; z-index:4; padding-block:var(--sec) }
-/* each scroll settles on a content section; the hero stays a free scroll-scrub */
-section:not(.hero){ scroll-snap-align:start }
 .sec-head{ display:flex; flex-direction:column; gap:18px; margin-bottom:40px }
 
 /* ---------- hero — WebGL 360 motion vector ---------- */
 .hero{ position:relative; z-index:5; background:#0d1014; color:var(--bone); height:380vh; padding:0; }
 .hero__sticky{ position:sticky; top:0; height:100svh; min-height:600px; overflow:hidden; }
-#heroVideo{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; z-index:0; background:#0b0f13; }
-/* bone dissolve at the end of the scrub — the film hands off into the light page */
-.hero__handoff{ position:absolute; inset:0; z-index:70; background:var(--bone); opacity:0; pointer-events:none; }
+#gl{ position:absolute; inset:0; width:100%; height:100%; display:block; z-index:0; }
 /* Act 4 — fixed Bone seam that bridges the dark world into the light page (under the nav) */
 .hero__seam{ position:fixed; inset:0; z-index:15; background:var(--bone); opacity:0; pointer-events:none; }
 
@@ -259,7 +253,7 @@ header:not(.scrolled) .lang button[aria-pressed="true"]{ background:var(--bone);
 .hero__a11y{ position:absolute; left:-9999px; top:0; width:1px; height:1px; overflow:hidden; list-style:none; }
 .hero.is-static{ height:auto }
 .hero.is-static .hero__sticky{ position:static; height:auto; min-height:0; padding:140px 0 80px }
-.hero.is-static #heroVideo{ display:none }
+.hero.is-static #gl{ display:none }
 .hero.is-static .hero__intro{ position:static; transform:none; margin-inline:auto }
 .hero.is-static .hero__hint{ display:none }
 .hero.is-static .hero__caps,.hero.is-static .hero__count{ display:none }
@@ -506,7 +500,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
 
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:.001ms !important; transition-duration:.001ms !important }
-  html{ scroll-behavior:auto; scroll-snap-type:none }
+  html{ scroll-behavior:auto }
   .rv{ opacity:1; transform:none }
 }
 </style>
@@ -551,8 +545,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
 <!-- HERO — WebGL 360 motion vector: the corporate ✕ as a 3D centerpiece -->
 <section class="hero" id="hero">
   <div class="hero__sticky">
-    <video id="heroVideo" muted playsinline preload="auto" poster="assets/videos/hero_poster.png" aria-hidden="true"><source src="assets/videos/hero.mp4" type="video/mp4"></video>
-    <div class="hero__handoff" aria-hidden="true"></div>
+    <canvas id="gl" aria-hidden="true"></canvas>
 
     <div class="hero__count" aria-hidden="true"><b id="heroAct">ACT 1</b> <span>/ 04</span></div>
 
@@ -589,7 +582,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
     <div class="cross rv">
       <div class="panel panel--build">
         <p class="eyebrow" style="color:var(--steel)"><span data-i18n="svc_build_tag">BUILD</span></p>
-        <div class="panel-tag" data-i18n="svc_build_h">Development &amp; engineering</div>
+        <div class="panel-tag" data-i18n="svc_build_h">Development</div>
         <p data-i18n="svc_build_p">Fast, hand-coded websites and stores. Booking flows, payments, automation and the infrastructure behind them.</p>
         <ul>
           <li data-i18n="svc_build_1">Websites &amp; e-commerce</li>
@@ -624,7 +617,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   <div class="shell work__grid">
     <div class="tcard rv">
       <a class="tcard__inner" href="https://balimotoadventures.com" target="_blank" rel="noopener" aria-label="Bali Moto Adventures">
-        <div class="tcard__media"><img src="assets/images/work-balimoto.jpg" alt="Bali Moto Adventures website" loading="lazy" width="1440" height="900"></div>
+        <div class="tcard__media"><img src="assets/images/work-balimoto.png" alt="Bali Moto Adventures website" loading="lazy" width="1440" height="900"></div>
         <span class="tcard__go" aria-hidden="true">↗</span>
         <div class="tcard__chip">
           <div class="tcard__tag">01 / TOURISM <span class="x">✕</span> BOOKING</div>
@@ -634,7 +627,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
     </div>
     <div class="tcard rv">
       <a class="tcard__inner" href="#work" aria-label="Lawang Estate">
-        <div class="tcard__media"><img src="assets/images/work-lawang.jpg" alt="Lawang Estate website" loading="lazy" width="1440" height="900"></div>
+        <div class="tcard__media"><img src="assets/images/work-lawang.png" alt="Lawang Estate website" loading="lazy" width="1440" height="900"></div>
         <span class="tcard__go" aria-hidden="true">↗</span>
         <div class="tcard__chip">
           <div class="tcard__tag">02 / REAL ESTATE <span class="x">✕</span> LUXURY</div>
@@ -644,11 +637,31 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
     </div>
     <div class="tcard rv">
       <a class="tcard__inner" href="https://sumba.balibestmotorcycle.com" target="_blank" rel="noopener" aria-label="Sumba Rental Motorbike">
-        <div class="tcard__media"><img src="assets/images/work-sumba.jpg" alt="Sumba Rental Motorbike website" loading="lazy" width="1440" height="900"></div>
+        <div class="tcard__media"><img src="assets/images/work-sumba.png" alt="Sumba Rental Motorbike website" loading="lazy" width="1440" height="900"></div>
         <span class="tcard__go" aria-hidden="true">↗</span>
         <div class="tcard__chip">
           <div class="tcard__tag">03 / RENTAL <span class="x">✕</span> DELIVERY</div>
           <div class="tcard__name">Sumba Rental Motorbike</div>
+        </div>
+      </a>
+    </div>
+    <div class="tcard rv">
+      <a class="tcard__inner" href="#work" aria-label="IDS Fincas">
+        <div class="tcard__media"><img src="assets/images/work-ids.png" alt="IDS Fincas client portal" loading="lazy" width="1440" height="900"></div>
+        <span class="tcard__go" aria-hidden="true">↗</span>
+        <div class="tcard__chip">
+          <div class="tcard__tag">04 / PROPERTY <span class="x">✕</span> PORTAL</div>
+          <div class="tcard__name">IDS Fincas</div>
+        </div>
+      </a>
+    </div>
+    <div class="tcard rv">
+      <a class="tcard__inner" href="#work" aria-label="Carbón">
+        <div class="tcard__media"><img src="assets/images/work-burger.png" alt="Carbón burger website" loading="lazy" width="1440" height="900"></div>
+        <span class="tcard__go" aria-hidden="true">↗</span>
+        <div class="tcard__chip">
+          <div class="tcard__tag">05 / HOSPITALITY <span class="x">✕</span> BRAND</div>
+          <div class="tcard__name">Carbón</div>
         </div>
       </a>
     </div>
@@ -699,8 +712,8 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
         </div>
         <ul class="plan__list">
           <li data-i18n="pr_a_1">Unlimited maintenance &amp; changes*</li>
-          <li data-i18n="pr_a_2">Sitemap included</li>
-          <li data-i18n="pr_a_3">Basic SEO, done by us</li>
+          <li data-i18n="pr_a_2">100% Mobile-Responsive Design</li>
+          <li data-i18n="pr_a_3">SSL + SEM + Google Indexing</li>
         </ul>
         <a href="#contact" class="btn btn--ghost plan__cta" data-i18n="pr_a_cta">Choose Website</a>
       </div>
@@ -718,8 +731,8 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
         </div>
         <ul class="plan__list">
           <li data-i18n="pr_b_1">Everything in Website</li>
-          <li data-i18n="pr_b_2">2 social posts / month</li>
-          <li data-i18n="pr_b_3">Sitemap &amp; basic SEO</li>
+          <li data-i18n="pr_b_2">Content Calendar</li>
+          <li data-i18n="pr_b_3">Profile Optimization + Visual Branding Consistency</li>
         </ul>
         <a href="#contact" class="btn btn--signal plan__cta" data-i18n="pr_b_cta">Choose Web ✕ Social</a>
       </div>
@@ -738,12 +751,12 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   <div class="shell who__grid rv">
     <div class="person">
       <div class="person__portrait">
-        <img src="assets/images/Javier1.png" alt="Javier — development and engineering" loading="lazy">
+        <img src="assets/images/Javier1.png" alt="Javier — development" loading="lazy">
         <span class="mono-x">✕</span><span>FIG.01 — BUILD</span>
       </div>
-      <div class="person__role" data-i18n="who_1role">Development &amp; engineering</div>
+      <div class="person__role" data-i18n="who_1role">Development</div>
       <h3>Javier</h3>
-      <p data-i18n="who_1p">Writes the code, designs the systems, ships the sites. The build side of the studio.</p>
+      <p data-i18n="who_1p">Designs the systems, ships the sites. The build side of the studio.</p>
     </div>
     <div class="who__x" aria-hidden="true">✕</div>
     <div class="person">
@@ -836,10 +849,10 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
     "pr_eyebrow":"PRECIOS","pr_h2":"Dos planes. Un estándar.",
     "pr_monthly":"Mensual","pr_annual":"Anual",
     "pr_a_tag":"WEB","pr_a_name":"Web","pr_a_desc":"Tu web, siempre actualizada y cuidada.",
-    "pr_a_1":"Mantenimiento y cambios ilimitados*","pr_a_2":"Sitemap incluido","pr_a_3":"SEO básico que podemos hacer","pr_a_cta":"Elegir Web",
+    "pr_a_1":"Mantenimiento y cambios ilimitados*","pr_a_2":"100% Diseño adaptado a móvil","pr_a_3":"SSL + SEM + Google Indexing","pr_a_cta":"Elegir Web",
     "pr_badge":"RECOMENDADO",
     "pr_b_tag":"WEB <span class=\"x\">✕</span> REDES","pr_b_name":"Web + Redes","pr_b_desc":"Tu web cuidada, más presencia activa en redes.",
-    "pr_b_1":"Todo lo del plan Web","pr_b_2":"2 posts en redes al mes","pr_b_3":"Sitemap y SEO básico","pr_b_cta":"Elegir Web ✕ Redes",
+    "pr_b_1":"Todo lo del plan Web","pr_b_2":"Calendario de posts","pr_b_3":"Optimización de perfil + consistencia visual de marca","pr_b_cta":"Elegir Web ✕ Redes",
     "pr_note":"*Mantenimiento y cambios que no se alejen de la visión original de la web. El pago anual ahorra un 22%.",
     "ct_eyebrow":"EMPIEZA AQUÍ","ct_h2":"¿Tienes algo que merezca construirse bien?",
     "ct_lead":"Cuéntanos en qué trabajas. Respondemos en español o inglés, normalmente en un día.",
@@ -1112,73 +1125,257 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
 })();
 </script>
 
-<!-- video hero — the 12s chaos→precision film, scrubbed by scroll -->
-<script>
-(function(){
-  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var heroEl = document.getElementById('hero');
-  var v = document.getElementById('heroVideo');
-  var intro = document.getElementById('heroIntro');
-  var brand = document.getElementById('heroBrand');
-  var heroAct = document.getElementById('heroAct');
-  var handoff = document.querySelector('.hero__handoff');
-  var hdr = document.getElementById('hdr');
-  var clamp = function(x,a,b){ return x<a?a:(x>b?b:x); };
-  var smooth = function(t){ return t*t*(3-2*t); };
+<!-- WebGL hero: corporate ✕ + 3D project slabs (Three.js) -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-  window.__axisHero = true; // the hero manages its own nav reveal
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const heroEl = document.getElementById('hero');
+const canvas = document.getElementById('gl');
+const intro = document.getElementById('heroIntro');
+const brand = document.getElementById('heroBrand');
+const heroAct = document.getElementById('heroAct');
+const heroSeam = document.getElementById('heroSeam');
+const heroCount = document.querySelector('.hero__count');
+const hdr = document.getElementById('hdr');
+const clamp = (v,a,b)=> v<a?a:(v>b?b:v);
+const smooth = t => t*t*(3-2*t);
+const lerp = (a,b,t)=> a+(b-a)*t;
 
-  if(reduce || !v){
-    if(heroEl) heroEl.classList.add('is-static');
-    if(hdr){ hdr.classList.remove('hero-lead'); hdr.inert = false; }
-    return;
+function hasWebGL(){ try{ const c=document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2')||c.getContext('webgl'))); }catch(e){ return false; } }
+
+window.__axisHero = true; // signal the IIFE safety net that the hero module executed
+if(reduce || !canvas || !hasWebGL()){
+  if(heroEl) heroEl.classList.add('is-static');
+  if(hdr){ hdr.classList.remove('hero-lead'); hdr.inert = false; }   // fallback: nav visible from the start
+} else {
+  try { init(); } catch(e){ console.error('[hero gl]', e); if(heroEl) heroEl.classList.add('is-static'); if(hdr){ hdr.classList.remove('hero-lead'); hdr.inert = false; } }
+}
+
+function init(){
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.04;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x070a0c);
+  scene.fog = new THREE.FogExp2(0x070a0c, 0.05);
+
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.05).texture;
+
+  const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.1, 120);
+  camera.position.set(0, 1.2, 8.4);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.18));
+  const key = new THREE.DirectionalLight(0xffffff, 1.5);
+  key.position.set(5, 9, 6); scene.add(key);
+  const rim = new THREE.PointLight(0x71808d, 14, 50, 1.4); rim.position.set(-8, 4, -6); scene.add(rim);
+
+  // ---- the technical world: an infinite blueprint corridor in fog ----
+  function makeGrid(y, size, div, c1, c2, op){
+    const g = new THREE.GridHelper(size, div, c1, c2);
+    g.position.y = y; g.material.transparent = true; g.material.opacity = op; g.material.depthWrite = false; g.material.fog = true;
+    return g;
+  }
+  const floorGrid = makeGrid(-3.0, 180, 180, 0x3a434c, 0x1b2127, 0); scene.add(floorGrid);
+  const ceilGrid  = makeGrid( 6.6, 180, 180, 0x2a323a, 0x151a1f, 0); scene.add(ceilGrid);
+
+  // floating measurement particles (parallax dust at depth)
+  const COUNT = 340, pPos = new Float32Array(COUNT*3);
+  for(let i=0;i<COUNT;i++){ pPos[i*3]=(Math.random()-0.5)*46; pPos[i*3+1]=(Math.random()-0.5)*11+1.4; pPos[i*3+2]=(Math.random()*-52)+8; }
+  const pGeo = new THREE.BufferGeometry(); pGeo.setAttribute('position', new THREE.BufferAttribute(pPos,3));
+  const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({ color:0x9aa0a8, size:0.035, transparent:true, opacity:0, depthWrite:false, fog:true }));
+  scene.add(particles);
+
+  // corporate ✕ — extruded crossed bars, premium glossy Signal, lit from within
+  const xGroup = new THREE.Group();
+  const xMat = new THREE.MeshPhysicalMaterial({ color:0xE2581C, metalness:0.5, roughness:0.15, clearcoat:1.0, clearcoatRoughness:0.1, envMapIntensity:1.2, emissive:0xE2581C, emissiveIntensity:0.2, transparent:true });
+  const barGeo = new RoundedBoxGeometry(3.8, 0.66, 0.66, 6, 0.18);
+  const bar1 = new THREE.Mesh(barGeo, xMat); bar1.rotation.z = Math.PI/4;
+  const bar2 = new THREE.Mesh(barGeo, xMat); bar2.rotation.z = -Math.PI/4;
+  xGroup.add(bar1, bar2); scene.add(xGroup);
+  const xLight = new THREE.PointLight(0xE2581C, 24, 36, 1.7); xLight.position.set(0, 0, 0.5); xGroup.add(xLight); // the ✕ glows into the fog
+
+  // motion-vector streaks drifting around the centre
+  const streaks = new THREE.Group(); scene.add(streaks);
+  const streakGeo = new THREE.PlaneGeometry(1, 0.014);
+  for(let i=0;i<48;i++){
+    const warm = Math.random() < 0.5;
+    const m = new THREE.MeshBasicMaterial({ color: warm?0xE2581C:0xb8bec4, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false, fog:true });
+    const s = new THREE.Mesh(streakGeo, m);
+    s.userData = { a:Math.random()*Math.PI*2, r:3+Math.random()*6, y:(Math.random()-0.5)*5.5, len:0.6+Math.random()*2.4, sp:0.2+Math.random()*0.6, ph:Math.random()*Math.PI*2 };
+    streaks.add(s);
   }
 
-  var dur = 12, ready = false;
-  v.muted = true; v.playsInline = true;
-  v.addEventListener('loadedmetadata', function(){ if(v.duration && isFinite(v.duration)) dur = v.duration; });
-  // pull the whole clip into memory (blob) so scroll-seeks are instant — no re-buffering mid-scrub
-  fetch('assets/videos/hero.mp4').then(function(r){ return r.blob(); }).then(function(b){
-    v.addEventListener('loadeddata', function(){
-      if(v.duration && isFinite(v.duration)) dur = v.duration;
-      try { var pr = v.play(); if(pr && pr.then){ pr.then(function(){ v.pause(); }).catch(function(){}); } } catch(e){}
-      ready = true;
-    }, { once:true });
-    v.src = URL.createObjectURL(b); v.load();
-  }).catch(function(){ ready = true; }); // fallback: scrub the streamed <source>
+  // 3 project pieces — frosted-glass cards with the name etched (no screenshots)
+  const projects = [
+    { title:'Bali Moto Adventures',   tag:'01 — TOURISM ✕ BOOKING' },
+    { title:'Lawang Estate',          tag:'02 — REAL ESTATE ✕ LUXURY' },
+    { title:'Sumba Rental Motorbike', tag:'03 — RENTAL ✕ DELIVERY' }
+  ];
+  const cardW = 2.5, cardH = 1.5;
+  const glassMat = new THREE.MeshPhysicalMaterial({ color:0x121820, metalness:0, roughness:0.2, transmission:0.92, thickness:0.6, ior:1.45, transparent:true, envMapIntensity:1.0, attenuationColor:0x2a3a48, attenuationDistance:2.0 });
+  const chaos    = [ new THREE.Vector3(-3.7,1.7,-2.4), new THREE.Vector3(3.3,-1.5,1.7), new THREE.Vector3(1.1,2.3,-4.3) ];
+  const chaosRot = [ {x:-0.25,y:0.55}, {x:0.18,y:-0.62}, {x:-0.12,y:0.42} ];
+  const aligned  = [ new THREE.Vector3(-2.78,0,1.2), new THREE.Vector3(0,0,1.2), new THREE.Vector3(2.78,0,1.2) ];
+  function labelTexture(proj){
+    const c = document.createElement('canvas'); c.width=1024; c.height=614; const x=c.getContext('2d');
+    x.clearRect(0,0,c.width,c.height); x.textAlign='center';
+    x.fillStyle='#E2581C'; x.font='500 30px "JetBrains Mono", monospace'; x.fillText(proj.tag, 512, 250);
+    x.fillStyle='#F4F2EC'; x.font='700 76px "Space Grotesk", sans-serif';
+    let line='', y=350; const lines=[];
+    proj.title.split(' ').forEach(w=>{ if((line+w).length>15){ lines.push(line.trim()); line=w+' '; } else line+=w+' '; }); lines.push(line.trim());
+    lines.forEach((ln,k)=> x.fillText(ln, 512, y + k*82));
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace=THREE.SRGBColorSpace; tx.anisotropy=8; return tx;
+  }
+  const cards = [];
+  projects.forEach((proj)=>{
+    const g = new THREE.Group();
+    const glass = new THREE.Mesh(new RoundedBoxGeometry(cardW, cardH, 0.1, 4, 0.07), glassMat); g.add(glass);
+    const frame = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.PlaneGeometry(cardW*0.995, cardH*0.99)),
+      new THREE.LineBasicMaterial({ color:0xE2581C, transparent:true, opacity:0, fog:true }));
+    frame.position.z = 0.055; g.add(frame);
+    const labelMat = new THREE.MeshBasicMaterial({ map:labelTexture(proj), transparent:true, opacity:0, depthWrite:false, toneMapped:false, fog:false });
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(cardW*0.95, cardW*0.95*614/1024), labelMat);
+    label.position.z = 0.062; g.add(label);
+    g.userData = { frameMat:frame.material, labelMat };
+    scene.add(g); cards.push(g);
+  });
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(()=>{ cards.forEach((g,i)=>{ g.userData.labelMat.map.dispose(); g.userData.labelMat.map = labelTexture(projects[i]); g.userData.labelMat.needsUpdate = true; }); });
+  }
 
-  function progress(){ var total = heroEl.offsetHeight - innerHeight; return total>0 ? clamp(scrollY/total,0,1) : 0; }
+  const ptr = { x:0, y:0, tx:0, ty:0 };
+  addEventListener('pointermove', e=>{ ptr.tx = e.clientX/innerWidth-0.5; ptr.ty = e.clientY/innerHeight-0.5; }, {passive:true});
 
-  var pS = 0, actLabel = '';
+  function setOverlay(el, o, ty){ if(!el) return; el.style.opacity = o.toFixed(3); el.style.transform = `translate(-50%,-50%) translateY(${ty.toFixed(1)}px)`; }
+  function progress(){ const total = heroEl.offsetHeight - innerHeight; return total>0 ? clamp(scrollY/total,0,1) : 0; }
+  function resize(){ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight, false); }
+  resize(); addEventListener('resize', resize);
+
+  // pull the next section up to the sticky's release point so the light flash lands ON it (no empty tail)
+  const _svc = document.getElementById('services');
+  if(_svc) _svc.style.marginTop = '-100vh';
+  // the hero overlaps the section beneath it now — make it click-through (nothing in it is interactive)
+  heroEl.style.pointerEvents = 'none';
+
+  // Act 4 — the Bone "seam" plane we pass through into the real (light) page
+  const seam = new THREE.Mesh(
+    new THREE.PlaneGeometry(1,1),
+    new THREE.MeshBasicMaterial({ color:0xF4F2EC, transparent:true, opacity:0, depthTest:false, fog:false })
+  );
+  seam.renderOrder = 999; seam.visible = false; scene.add(seam);
+
+  const _a = new THREE.Vector3(), _f = new THREE.Vector3();
+  let pS = 0, actLabel = '';
+  const clock = new THREE.Clock();
   function frame(){
     requestAnimationFrame(frame);
-    var p = progress();
-    pS += (p - pS) * 0.14;                          // ease the scrub so it glides
-    if(ready && dur && !v.seeking){
-      var t = pS * (dur - 0.06);
-      if(Math.abs((v.currentTime||0) - t) > 0.008){ try{ v.currentTime = t; }catch(e){} }
-    }
+    const t = clock.getElapsedTime();
+    pS = lerp(pS, progress(), 0.085);
+    const p = pS;
+    ptr.x = lerp(ptr.x, ptr.tx, 0.05); ptr.y = lerp(ptr.y, ptr.ty, 0.05);
 
-    // intro claim leaves first
-    var introOut = smooth(clamp((pS-0.02)/0.12, 0, 1));
-    if(intro){ intro.style.opacity = (1-introOut).toFixed(3); intro.style.transform = 'translate(-50%,-50%) translateY('+(-introOut*40).toFixed(1)+'px)'; }
+    // ---- the four acts ----
+    const introOut = smooth(clamp((p-0.03)/0.13, 0, 1));   // Act1: the claim leaves
+    const pull     = smooth(clamp((p-0.12)/0.20, 0, 1));   // Act2: camera retreats
+    const appear   = smooth(clamp((p-0.20)/0.18, 0, 1));   // Act2: panels emerge
+    const snap     = smooth(clamp((p-0.46)/0.18, 0, 1));   // Act3: chaos -> aligned
+    const exit     = smooth(clamp((p-0.80)/0.20, 0, 1));   // Act4: hand-off
 
-    // "everything aligns" rises in the back third, clears before the hand-off
-    var brandIn = smooth(clamp((pS-0.54)/0.12,0,1)) * (1 - smooth(clamp((pS-0.9)/0.08,0,1)));
-    if(brand){ brand.style.opacity = brandIn.toFixed(3); }
+    // ---- Act 4 sub-phases (smooth, cinematic) ----
+    const dive  = smooth(exit);                            // camera flies into the ✕'s crossing point
+    const seamT = smooth(clamp((exit-0.55)/0.28, 0, 1));   // the light OPENS late & fast from that point
 
-    // dissolve the film into the bone page over the last stretch of the scrub
-    if(handoff){ handoff.style.opacity = smooth(clamp((pS-0.9)/0.1, 0, 1)).toFixed(3); }
+    // camera — journeys through the world, then flies straight into the ✕'s crossing point
+    const zBase = lerp(6.0, 8.8, pull);
+    const xZ = lerp(0.3, -0.3, pull);                      // the ✕'s depth
+    camera.position.x = ptr.x*1.0*(1-exit);
+    camera.position.y = ((1.15 + pull*0.2) - ptr.y*0.55)*(1-exit);
+    camera.position.z = lerp(zBase, xZ + 0.55, dive);      // stop just in front of the point
+    camera.lookAt(0, 0, xZ);
 
-    // chapter readout
-    var act = pS<0.16?1 : pS<0.54?2 : pS<0.9?3 : 4;
+    // ✕ — stays centred and IGNITES as we enter its point (the portal into the page)
+    xGroup.scale.setScalar(lerp(lerp(1.9, 1.0, pull), 1.18, dive));
+    xGroup.rotation.y = (Math.sin(t*0.28)*0.13 + ptr.x*0.45) * (1-dive);
+    xGroup.rotation.x = (Math.sin(t*0.24)*0.05 - ptr.y*0.18) * (1-dive);
+    xGroup.position.set(0, 0, xZ);
+    xMat.emissiveIntensity = (0.17 + 0.06*Math.sin(t*1.6)) + dive*0.6;
+    xMat.opacity = 1;
+
+    // world — emerges in Act2, recedes as we pass through
+    const worldOn = smooth(clamp((p-0.10)/0.18, 0, 1)) * (1 - exit*0.7);
+    floorGrid.material.opacity = 0.6*worldOn;
+    ceilGrid.material.opacity  = 0.4*worldOn;
+    particles.material.opacity = 0.55*worldOn;
+    particles.rotation.y = t*0.012;
+
+    // cards — scatter (Act2) → snap (Act3) → drift outward to clear the way (Act4)
+    cards.forEach((g,i)=>{
+      g.visible = appear > 0.01 && exit < 0.85;
+      _a.lerpVectors(chaos[i], aligned[i], snap);
+      g.rotation.y = lerp(chaosRot[i].y, 0, snap) + (1-snap)*Math.sin(t*0.4+i)*0.05;
+      g.rotation.x = lerp(chaosRot[i].x, 0, snap);
+      var dir = i === 0 ? -1 : (i === 2 ? 1 : 0);
+      g.position.set(_a.x + dir*exit*6, _a.y + (i===1?-1.4:1.1)*exit*3, _a.z + exit*2.5);
+      g.scale.setScalar(appear * (1 - exit));
+      g.userData.labelMat.opacity = appear * (1 - exit*2.0);
+      g.userData.frameMat.opacity = (0.2 + 0.7*snap) * appear * (1 - exit*2.0);
+    });
+
+    // the seam — Bone light that OPENS from the ✕'s crossing point and floods the view
+    if(seamT > 0.001){
+      seam.visible = true;
+      seam.position.set(0, 0, xZ + 0.05);
+      seam.quaternion.copy(camera.quaternion);
+      var ss = seamT * 8;
+      seam.scale.set(ss, ss, 1);
+      seam.material.opacity = clamp(seamT*1.6, 0, 1);
+    } else { seam.visible = false; }
+    // Bridge with NO empty tail: once the light is full, the canvas fades and the hero turns
+    // transparent, revealing the Services section — which is pulled up (-100vh, set in init) to
+    // sit exactly at the sticky's release point. So the white flash IS the arrival at the section.
+    canvas.style.opacity = (1 - smooth(clamp((exit-0.86)/0.14, 0, 1))).toFixed(3);
+    heroEl.style.backgroundColor = exit > 0.8 ? 'transparent' : '';
+    if(heroSeam) heroSeam.style.opacity = '0';
+    if(heroCount) heroCount.style.opacity = (1 - seamT).toFixed(3);
+
+    // motion-vector streaks — busy in the chaos, calm once aligned
+    const streakOn = appear * (1 - snap*0.6) * (1 - exit);
+    streaks.children.forEach((s)=>{
+      const u = s.userData; const a = u.a + t*u.sp*0.3;
+      s.position.set(Math.cos(a)*u.r, u.y + Math.sin(t*0.2+u.ph)*0.35, Math.sin(a)*u.r);
+      s.lookAt(camera.position); s.scale.set(u.len,1,1);
+      s.material.opacity = (0.08 + 0.10*Math.sin(t*1.6+u.ph)) * streakOn;
+    });
+
+    // overlays + act indicator
+    setOverlay(intro, 1-introOut, -introOut*40);
+    setOverlay(brand, smooth(clamp((p-0.52)/0.12,0,1)) * (1-exit), 0);
+    const act = p<0.16?1 : p<0.46?2 : p<0.80?3 : 4;
     if(heroAct && ('ACT '+act)!==actLabel){ actLabel='ACT '+act; heroAct.textContent = actLabel; }
 
-    // the nav enters once we leave the opening void
-    if(hdr){ var lead = pS < 0.05; if(hdr.classList.contains('hero-lead') !== lead){ hdr.classList.toggle('hero-lead', lead); hdr.inert = lead; } }
+    // Act 1 silence → the nav enters as the world emerges (Act 2)
+    if(hdr){ var lead = pull < 0.12; if(hdr.classList.contains('hero-lead') !== lead){ hdr.classList.toggle('hero-lead', lead); hdr.inert = lead; } }
+
+    renderer.render(scene, camera);
   }
-  requestAnimationFrame(frame);
-})();
+  frame();
+}
 </script>
 </body>
 </html>
