@@ -513,6 +513,9 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
 /* ---------- reveal ---------- */
 .rv{ opacity:0; transform:translateY(16px) }
 .rv.is-in{ opacity:1; transform:none }
+/* Work cards plot in like a blueprint: left→right clip wipe + lift, staggered */
+.rv-card{ clip-path:inset(0 100% 0 0); transform:translateY(22px) }
+.rv-card.is-in{ clip-path:inset(0 0 0 0) }
 
 /* ---------- loader ---------- */
 #loader{ position:fixed; inset:0; z-index:50; background:var(--bone); display:flex; align-items:center;
@@ -529,6 +532,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   *{ animation-duration:.001ms !important; transition-duration:.001ms !important }
   html{ scroll-behavior:auto }
   .rv{ opacity:1; transform:none }
+  .rv-card{ clip-path:none; transform:none }
 }
 </style>
 </head>
@@ -642,7 +646,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
     <span class="measure" aria-hidden="true"><i></i></span>
   </div>
   <div class="shell work__grid">
-    <div class="tcard rv">
+    <div class="tcard rv rv-card">
       <a class="tcard__inner" href="https://balimotoadventures.com" target="_blank" rel="noopener" aria-label="Bali Moto Adventures">
         <div class="tcard__media"><img src="assets/images/work-balimoto.png" alt="Bali Moto Adventures website" loading="lazy" width="1440" height="900"></div>
         <span class="tcard__go" aria-hidden="true">↗</span>
@@ -652,7 +656,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
         </div>
       </a>
     </div>
-    <div class="tcard rv">
+    <div class="tcard rv rv-card">
       <a class="tcard__inner" href="#work" aria-label="Lawang Estate">
         <div class="tcard__media"><img src="assets/images/work-lawang.png" alt="Lawang Estate website" loading="lazy" width="1440" height="900"></div>
         <span class="tcard__go" aria-hidden="true">↗</span>
@@ -662,7 +666,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
         </div>
       </a>
     </div>
-    <div class="tcard rv">
+    <div class="tcard rv rv-card">
       <a class="tcard__inner" href="https://sumba.balibestmotorcycle.com" target="_blank" rel="noopener" aria-label="Sumba Rental Motorbike">
         <div class="tcard__media"><img src="assets/images/work-sumba.png" alt="Sumba Rental Motorbike website" loading="lazy" width="1440" height="900"></div>
         <span class="tcard__go" aria-hidden="true">↗</span>
@@ -672,7 +676,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
         </div>
       </a>
     </div>
-    <div class="tcard rv">
+    <div class="tcard rv rv-card">
       <a class="tcard__inner" href="#work" aria-label="IDS Fincas">
         <div class="tcard__media"><img src="assets/images/work-ids.png" alt="IDS Fincas client portal" loading="lazy" width="1440" height="900"></div>
         <span class="tcard__go" aria-hidden="true">↗</span>
@@ -682,7 +686,7 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
         </div>
       </a>
     </div>
-    <div class="tcard rv">
+    <div class="tcard rv rv-card">
       <a class="tcard__inner" href="#work" aria-label="Carbón">
         <div class="tcard__media"><img src="assets/images/work-burger.png" alt="Carbón burger website" loading="lazy" width="1440" height="900"></div>
         <span class="tcard__go" aria-hidden="true">↗</span>
@@ -1048,11 +1052,20 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
     gsap.registerPlugin(ScrollTrigger);
 
     gsap.utils.toArray('section:not(.hero)').forEach(function(sec){
-      gsap.to(sec.querySelectorAll('.rv'), {
+      gsap.to(sec.querySelectorAll('.rv:not(.rv-card)'), {
         opacity:1, y:0, duration:.7, ease:'power2.out', stagger:.08,
         scrollTrigger:{ trigger:sec, start:'top 78%', once:true }
       });
     });
+
+    /* Work cards: each project plots in — left→right clip wipe + lift, staggered */
+    var workCards = document.querySelectorAll('#work .rv-card');
+    if(workCards.length){
+      gsap.to(workCards, {
+        opacity:1, y:0, clipPath:'inset(0 0% 0 0)', duration:.85, ease:'power3.out', stagger:.13,
+        scrollTrigger:{ trigger:'#work', start:'top 72%', once:true }
+      });
+    }
 
     var fill = document.getElementById('axisFill'), node = document.getElementById('axisNode');
     ScrollTrigger.create({
