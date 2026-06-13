@@ -252,6 +252,9 @@ section{ position:relative; z-index:4; padding-block:var(--sec) }
 header:not(.scrolled) .brand{ color:var(--bone) }
 header:not(.scrolled) .nav__links a{ color:#c9cdd2 }
 header:not(.scrolled) .nav__links a:hover{ color:var(--bone) }
+/* the CTA is a filled button in every state — keep its label light, never inherit nav-link text colors (fixes ink-on-ink on hover) */
+header .nav__links a.nav__cta,
+header .nav__links a.nav__cta:hover{ color:var(--signal-text) }
 header:not(.scrolled) .nav__burger span{ background:var(--bone) }
 header:not(.scrolled) .lang{ border-color:#ffffff33 }
 /* over the dark hero the active language fills bone instead of ink */
