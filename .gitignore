@@ -6,3 +6,9 @@ Marketing and Design/
 *.md
 _hf_refs/
 index - copia.html
+
+# Comercial (Fase 1) — secretos y datos sensibles, NUNCA subir
+comercial/suscripcion/private/config.php
+comercial/chatbot/private/config.php
+comercial/chatbot/private/leads.csv
+comercial/previews/

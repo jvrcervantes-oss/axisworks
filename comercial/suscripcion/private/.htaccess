@@ -1,0 +1,2 @@
+# Bloquear todo acceso web a esta carpeta (secretos)
+Require all denied

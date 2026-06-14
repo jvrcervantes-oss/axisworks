@@ -1,0 +1,32 @@
+{
+  "negocio": "Peluquería Mara",
+  "slug": "peluqueria-mara",
+  "sector": "belleza",
+  "tagline": "Tu estilo, cuidado al detalle en el centro de Murcia",
+  "color_acento": "#B5476B",
+  "ciudad": "Murcia",
+  "telefono": "+34 968 12 34 56",
+  "whatsapp": "+34 600 123 456",
+  "email": "hola@peluqueriamara.es",
+  "direccion": "Calle Mayor 14, 30001 Murcia",
+  "horario": "Mar–Sáb · 9:30–20:00",
+  "cta": "Reserva tu cita",
+  "hero_imagen": "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=1600&q=80",
+  "servicios": [
+    { "icono": "✂", "titulo": "Corte y peinado", "desc": "Asesoría de imagen personalizada y acabado profesional para tu día a día o eventos." },
+    { "icono": "🎨", "titulo": "Color y mechas", "desc": "Balayage, mechas e iluminaciones con productos de gama alta que cuidan tu cabello." },
+    { "icono": "✨", "titulo": "Tratamientos", "desc": "Hidratación profunda, keratina y rituales reparadores para un pelo sano y con brillo." }
+  ],
+  "sobre_titulo": "Más de 15 años haciendo que te veas bien",
+  "sobre": "En Peluquería Mara combinamos técnica, tendencia y un trato cercano. Nuestro equipo se forma cada año en las últimas técnicas para ofrecerte el mejor resultado en un espacio acogedor.",
+  "sobre_imagen": "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200&q=80",
+  "galeria": [
+    "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=800&q=80",
+    "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=800&q=80",
+    "https://images.unsplash.com/photo-1599387737838-626cd58c8b4c?w=800&q=80"
+  ],
+  "resenas": [
+    { "autor": "Laura G.", "estrella": 5, "texto": "Salgo encantada cada vez. Mara entiende perfectamente lo que quiero y el trato es inmejorable." },
+    { "autor": "Carmen R.", "estrella": 5, "texto": "El mejor balayage que me han hecho nunca. Profesionales de verdad." }
+  ]
+}
