@@ -67,16 +67,11 @@
       "image": "https://axisworks.studio/assets/og.jpg",
       "url": "https://axisworks.studio/",
       "makesOffer": [
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Web development" },
-          "price": "100", "priceCurrency": "EUR",
-          "priceSpecification": { "@type": "UnitPriceSpecification", "price": "100",
-            "priceCurrency": "EUR", "unitCode": "MON", "referenceQuantity":
-            { "@type": "QuantitativeValue", "value": "1", "unitCode": "MON" } } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Brand, content & social design" },
-          "price": "200", "priceCurrency": "EUR",
-          "priceSpecification": { "@type": "UnitPriceSpecification", "price": "200",
-            "priceCurrency": "EUR", "unitCode": "MON", "referenceQuantity":
-            { "@type": "QuantitativeValue", "value": "1", "unitCode": "MON" } } }
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Custom tool suites" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Web design & development" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Social media, SEO & SEM" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Meta sales funnels" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Brand & management advisory" } }
       ]
     }
   ]
@@ -367,6 +362,24 @@ header:not(.scrolled) .lang button[aria-pressed="true"]{ color:var(--ink) }
 .panel--brand{ background:var(--bone); color:var(--ink); border:1px solid var(--ink);
   position:absolute; right:0; top:180px; width:60%; min-height:380px; z-index:6 }
 .panel-tag{ font-family:var(--f-display); font-weight:700; font-size:clamp(26px,3.2vw,36px); }
+/* La banda de advisory: se apoya en el eje, debajo del cruce. No es un tercer panel —
+   es la viga sobre la que descansan los dos, que es lo que el servicio es en realidad. */
+.advisory{ margin-top:clamp(40px,6vw,72px); padding-top:30px; border-top:1px solid var(--ink);
+  display:grid; grid-template-columns:minmax(0,.34fr) minmax(0,1fr); gap:clamp(20px,4vw,56px) }
+/* `.eyebrow` es flex con align-items:center; como celda de grid se estira a toda la
+   altura de la fila y el texto quedaba centrado a media banda en vez de alineado con
+   el titular. `align-self:start` la devuelve a su sitio. */
+.advisory .eyebrow{ align-self:start; margin-top:10px }
+.advisory h3{ font-family:var(--f-display); font-weight:700; letter-spacing:-.01em;
+  font-size:clamp(22px,2.6vw,32px); line-height:1.1 }
+.advisory p{ margin-top:14px; color:var(--graphite); max-width:58ch }
+@media(max-width:820px){ .advisory{ grid-template-columns:1fr; gap:16px } }
+
+/* La línea de "sin tarifa publicada": el precio sale del alcance, no de un plan. */
+.svc__ask{ margin-top:clamp(36px,5vw,60px); display:flex; flex-wrap:wrap; align-items:center;
+  gap:22px; font-size:clamp(16px,1.6vw,19px); color:var(--graphite) }
+.svc__ask span{ max-width:52ch }
+
 /* the ✕ sits on the true crossing of the two panel borders — not the geometric centre */
 .cross__mark{ position:absolute; z-index:7; top:180px; left:60%; transform:translate(-50%,-50%);
   width:60px; height:60px; }
@@ -523,58 +536,6 @@ header:not(.scrolled) .lang button[aria-pressed="true"]{ color:var(--ink) }
 .measure i{ position:absolute; right:-3px; top:50%; width:7px; height:7px; background:var(--signal);
   transform:translateY(-50%) rotate(45deg); opacity:0; transition:opacity .3s }
 
-/* ---------- pricing ---------- */
-.price-toggle{ display:inline-flex; border:1px solid var(--line); font-family:var(--f-mono); font-size:12px;
-  letter-spacing:.12em; text-transform:uppercase; margin-bottom:48px }
-.price-toggle button{ border:0; padding:11px 20px; color:var(--steel-text); cursor:pointer;
-  font:inherit; letter-spacing:inherit; text-transform:inherit; display:inline-flex; align-items:center; gap:8px;
-  background-image:linear-gradient(90deg,var(--ink) 0 50%,transparent 50% 100%);
-  background-size:200% 100%; background-position:100% 0;
-  transition:color .25s, background-position .42s cubic-bezier(.2,.8,.2,1), transform .12s ease }
-.price-toggle button[aria-pressed="false"]:hover{ color:var(--ink) }
-.price-toggle button + button{ border-left:1px solid var(--line) }
-.price-toggle button[aria-pressed="true"]{ background-position:0 0; color:var(--bone) }
-.price-toggle button:active{ transform:translateY(1px) }
-.price-toggle .save{ color:var(--signal-ink); font-size:11px }
-
-.pricing__grid{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gut); align-items:stretch }
-@media(max-width:760px){ .pricing__grid{ grid-template-columns:1fr } }
-.plan{ position:relative; display:flex; flex-direction:column; background:var(--bone);
-  border:1px solid var(--ink); padding:clamp(28px,3.4vw,42px); transition:border-color .25s,transform .25s }
-.plan:hover{ border-color:var(--signal) }
-/* CAD registration ticks — opposite corners, ties the cards to the blueprint */
-.plan::before,.plan::after{ content:""; position:absolute; width:11px; height:11px;
-  border:1px solid var(--steel); pointer-events:none }
-.plan::before{ top:6px; left:6px; border-right:0; border-bottom:0 }
-.plan::after{ bottom:6px; right:6px; border-left:0; border-top:0 }
-.plan--featured{ background:var(--ink); color:var(--bone); border-color:var(--ink);
-  border-top:2px solid var(--signal) }
-.plan--featured::before,.plan--featured::after{ border-color:#ffffff3a }
-.plan--featured .eyebrow{ color:var(--steel) } .plan--featured .eyebrow::before{ background:var(--steel) }
-.plan--featured .eyebrow .x{ color:var(--signal) }
-/* dark-card CTA: same Relleno wipe but to bone (no ink-on-ink) */
-.plan--featured .btn--signal{ background-image:linear-gradient(90deg,var(--bone) 0 50%,var(--signal) 50% 100%) }
-.plan--featured .btn--signal:hover{ background-position:0 0; color:var(--ink) }
-.plan__badge{ position:absolute; top:-1px; right:-1px; background:var(--signal); color:var(--ink);
-  font-family:var(--f-mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; padding:6px 12px }
-.plan__head .eyebrow{ margin-bottom:18px }
-.plan h3{ margin-top:2px }
-.plan__desc{ color:var(--graphite); margin-top:10px; font-size:15px; max-width:32ch }
-.plan--featured .plan__desc{ color:var(--steel) }
-.plan__price{ display:flex; align-items:flex-start; gap:3px; margin:32px 0 2px; font-family:var(--f-display); line-height:1 }
-.plan__cur{ font-size:24px; font-weight:500; margin-top:9px }
-.plan__num{ font-size:clamp(46px,6vw,64px); font-weight:700; letter-spacing:-.02em }
-.plan__per{ display:flex; flex-direction:column; margin:9px 0 0 8px; font-family:var(--f-mono) }
-.plan__period{ font-size:13px; color:var(--steel-text); font-weight:400 }
-.plan__sub{ font-size:11px; color:var(--signal-ink); margin-top:5px; min-height:13px }
-.plan__list{ list-style:none; margin:28px 0 0; font-family:var(--f-mono); font-size:13px; letter-spacing:.02em }
-.plan__list li{ padding:13px 0; border-top:1px solid var(--line); display:flex; gap:11px; align-items:baseline }
-.plan--featured .plan__list li{ border-color:#ffffff1f }
-.plan__list li::before{ content:"✕"; color:var(--steel); font-size:11px; flex:none }
-.plan__list{ margin-bottom:32px }
-.plan__cta{ margin-top:auto; align-self:flex-start }
-.pricing__note{ font-family:var(--f-mono); font-size:12px; color:var(--steel-text); margin-top:26px; letter-spacing:.02em }
-
 /* ---------- footer ---------- */
 footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff14; position:relative; z-index:4 }
 .foot{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:18px; align-items:center;
@@ -635,7 +596,6 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
       <a href="#services" data-i18n="nav_services">Services</a>
       <a href="#work" data-i18n="nav_work">Work</a>
       <a href="#process" data-i18n="nav_process">Process</a>
-      <a href="#pricing" data-i18n="nav_pricing">Pricing</a>
       <a href="#studio" data-i18n="nav_studio">Studio</a>
       <div class="lang" role="group" aria-label="Language">
         <button data-lang="en" aria-pressed="true">EN</button>
@@ -689,28 +649,41 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
     <div class="cross rv">
       <div class="panel panel--build">
         <p class="eyebrow" style="color:var(--steel)"><span data-i18n="svc_build_tag">BUILD</span></p>
-        <div class="panel-tag" data-i18n="svc_build_h">Development</div>
-        <p data-i18n="svc_build_p">Fast, hand-coded websites and stores. Booking flows, payments, automation and the infrastructure behind them.</p>
+        <div class="panel-tag" data-i18n="svc_build_h">Software &amp; web</div>
+        <p data-i18n="svc_build_p">Hand-coded tools built around how your business actually runs, and the websites that front them.</p>
         <ul>
-          <li data-i18n="svc_build_1">Websites &amp; e-commerce</li>
-          <li data-i18n="svc_build_2">Payments &amp; booking systems</li>
-          <li data-i18n="svc_build_3">Automation &amp; integrations</li>
+          <li data-i18n="svc_build_1">Custom tool suites</li>
+          <li data-i18n="svc_build_2">Web design &amp; development</li>
         </ul>
       </div>
       <div class="panel panel--brand">
-        <p class="eyebrow"><span data-i18n="svc_brand_tag">BRAND</span></p>
-        <div class="panel-tag" data-i18n="svc_brand_h">Design, content &amp; social</div>
-        <p data-i18n="svc_brand_p">Identity, art direction and the content that fills it. Visual systems built to convert and made to be lived with.</p>
+        <p class="eyebrow"><span data-i18n="svc_brand_tag">GROW</span></p>
+        <div class="panel-tag" data-i18n="svc_brand_h">Reach &amp; acquisition</div>
+        <p data-i18n="svc_brand_p">Getting the work in front of the right people, and turning that attention into enquiries.</p>
         <ul>
-          <li data-i18n="svc_brand_1">Brand &amp; visual identity</li>
-          <li data-i18n="svc_brand_2">Content &amp; art direction</li>
-          <li data-i18n="svc_brand_3">Social &amp; campaigns</li>
+          <li data-i18n="svc_brand_1">Social, SEO &amp; SEM</li>
+          <li data-i18n="svc_brand_2">Meta sales funnels — campaigns &amp; creative</li>
         </ul>
       </div>
       <div class="cross__mark" aria-hidden="true">
         <svg viewBox="0 0 64 64"><g stroke="#E2581C" stroke-width="4" stroke-linecap="square"><line x1="14" y1="14" x2="50" y2="50"/><line x1="50" y1="14" x2="14" y2="50"/></g></svg>
       </div>
     </div>
+
+    <!-- El advisory no es una viñeta de ninguno de los dos lados: atraviesa a los dos, así que
+         va sobre el eje, debajo del cruce. -->
+    <div class="advisory rv">
+      <p class="eyebrow"><span data-i18n="svc_adv_tag">ADVISORY</span></p>
+      <div class="advisory__body">
+        <h3 data-i18n="svc_adv_h">Management, brand and direction.</h3>
+        <p data-i18n="svc_adv_p">We also sit on the other side of the table: helping companies decide where they are going, how the brand should carry them there, and what to build first.</p>
+      </div>
+    </div>
+
+    <p class="svc__ask rv">
+      <span data-i18n="svc_ask">Every project is quoted on its own. Tell us what you need and we will come back with scope and a price.</span>
+      <a href="#contact" class="btn btn--ghost"><span data-i18n="svc_ask_cta">Talk to us</span> <span class="ar" aria-hidden="true">→</span></a>
+    </p>
   </div>
 </section>
 
@@ -790,61 +763,6 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   </div>
 </section>
 
-<!-- PRICING -->
-<section id="pricing">
-  <div class="shell sec-head rv">
-    <p class="eyebrow"><span data-i18n="pr_eyebrow">PRICING</span></p>
-    <h2 data-i18n="pr_h2">Two plans. One standard.</h2>
-    <span class="measure" aria-hidden="true"><i></i></span>
-  </div>
-  <div class="shell">
-    <div class="price-toggle rv" role="group" aria-label="Billing period">
-      <button type="button" data-bill="monthly" aria-pressed="true" data-i18n="pr_monthly">Monthly</button>
-      <button type="button" data-bill="annual" aria-pressed="false"><span data-i18n="pr_annual">Annual</span> <span class="save">−22%</span></button>
-    </div>
-    <div class="pricing__grid">
-      <div class="plan rv">
-        <div class="plan__head">
-          <p class="eyebrow"><span data-i18n="pr_a_tag">WEB</span></p>
-          <h3 data-i18n="pr_a_name">Website</h3>
-          <p class="plan__desc" data-i18n="pr_a_desc">Your site, always current and looked after.</p>
-        </div>
-        <div class="plan__price">
-          <span class="plan__cur">€</span>
-          <span class="plan__num" data-monthly="100" data-annual="936">100</span>
-          <span class="plan__per"><b class="plan__period">/mo</b><span class="plan__sub"></span></span>
-        </div>
-        <ul class="plan__list">
-          <li data-i18n="pr_a_1">Unlimited maintenance &amp; changes*</li>
-          <li data-i18n="pr_a_2">100% mobile-responsive design</li>
-          <li data-i18n="pr_a_3">SSL + SEM + Google Indexing</li>
-        </ul>
-        <a href="#contact" class="btn btn--ghost plan__cta" data-i18n="pr_a_cta">Choose website</a>
-      </div>
-      <div class="plan plan--featured rv">
-        <span class="plan__badge" data-i18n="pr_badge">RECOMMENDED</span>
-        <div class="plan__head">
-          <p class="eyebrow"><span data-i18n="pr_b_tag">WEB <span class="x">✕</span> SOCIAL</span></p>
-          <h3 data-i18n="pr_b_name">Website + Social</h3>
-          <p class="plan__desc" data-i18n="pr_b_desc">Your site cared for, plus a living social presence.</p>
-        </div>
-        <div class="plan__price">
-          <span class="plan__cur">€</span>
-          <span class="plan__num" data-monthly="200" data-annual="1872">200</span>
-          <span class="plan__per"><b class="plan__period">/mo</b><span class="plan__sub"></span></span>
-        </div>
-        <ul class="plan__list">
-          <li data-i18n="pr_b_1">Everything in Website</li>
-          <li data-i18n="pr_b_2">Content calendar</li>
-          <li data-i18n="pr_b_3">Profile optimisation + visual brand consistency</li>
-        </ul>
-        <a href="#contact" class="btn btn--signal plan__cta" data-i18n="pr_b_cta">Choose Web ✕ Social</a>
-      </div>
-    </div>
-    <p class="pricing__note rv" data-i18n="pr_note">*Maintenance and changes that stay within the site's original vision. Annual billing saves 22%.</p>
-  </div>
-</section>
-
 <!-- STUDIO / WHO -->
 <section id="studio">
   <div class="shell sec-head rv">
@@ -917,23 +835,20 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   </div>
 </footer>
 
-<!-- Act 4 — fixed Bone seam that bridges the dark hero into the light page -->
 
 <!-- CONTENT DICTIONARY -->
 <script type="application/json" id="i18n">
 {
   "es": {
     "hud":"SISTEMA DE PRECISIÓN · v1.0",
-    "nav_services":"Servicios","nav_work":"Trabajo","nav_process":"Proceso","nav_studio":"Estudio","nav_pricing":"Precios","nav_cta":"Empezar proyecto",
+    "nav_services":"Servicios","nav_work":"Trabajo","nav_process":"Proceso","nav_studio":"Estudio","nav_cta":"Empezar proyecto",
     "hero_eyebrow":"EST. 2026",
     "hero_kind":"ESTUDIO DIGITAL","tag_1":"TURISMO ✕ RESERVAS","tag_2":"INMOBILIARIA ✕ LUJO","tag_3":"ALQUILER ✕ ENTREGA","tag_4":"FINCAS ✕ PORTAL","tag_5":"HOSTELERÍA ✕ MARCA","ct_based_v":"España ✕ Bali","hero_cta":"Empezar un proyecto","hero_cta2":"Ver el trabajo","hero_lead":"Dos personas, sin plantillas. Medimos dos veces y te lo entregamos funcionando.","hero_st_cal":"CALIBRANDO","hero_st_ok":"ALINEADO",
     "hero_h1a":"","hero_h1b":"Webs","hero_h1c":"marcas de precisión",
-    "svc_eyebrow":"QUÉ HACEMOS","svc_h2":"Dos disciplinas que se cruzan en un punto.",
-    "svc_build_tag":"BUILD","svc_build_h":"Desarrollo e ingeniería","svc_build_p":"Webs y tiendas rápidas, escritas a mano. Reservas, pagos, automatización y la infraestructura que las sostiene.",
-    "svc_build_1":"Webs y e-commerce","svc_build_2":"Pagos y reservas","svc_build_3":"Automatización e integraciones",
-    "svc_brand_tag":"BRAND","svc_brand_h":"Diseño, contenido y social","svc_brand_p":"Identidad, dirección de arte y el contenido que la llena. Sistemas visuales que convierten y con los que se puede convivir.",
-    "svc_brand_1":"Marca e identidad visual","svc_brand_2":"Contenido y dirección de arte","svc_brand_3":"Social y campañas",
-    "work_eyebrow":"TRABAJO SELECCIONADO","work_h2":"Trabajo seleccionado.",
+    "svc_adv_tag":"ADVISORY","svc_adv_h":"Gestión, marca y rumbo.","svc_adv_p":"También nos sentamos al otro lado de la mesa: ayudamos a decidir hacia dónde va la empresa, cómo la marca la lleva hasta ahí y qué construir primero.","svc_ask":"Cada proyecto se presupuesta por separado. Cuéntanos qué necesitas y te devolvemos alcance y precio.","svc_ask_cta":"Hablamos","svc_eyebrow":"QUÉ HACEMOS","svc_h2":"Dos disciplinas que se cruzan en un punto.",
+    "svc_build_tag":"BUILD","svc_build_h":"Software y web","svc_build_p":"Herramientas programadas a mano alrededor de cómo funciona de verdad tu negocio, y las webs que las visten.",
+    "svc_build_1":"Suites de herramientas a medida","svc_build_2":"Diseño y desarrollo web","svc_brand_tag":"CAPTACIÓN","svc_brand_h":"Alcance y captación","svc_brand_p":"Poner el trabajo delante de la gente adecuada, y convertir esa atención en consultas.",
+    "svc_brand_1":"Redes sociales, SEO y SEM","svc_brand_2":"Funnels de venta en Meta — campañas y creatividades","work_eyebrow":"TRABAJO SELECCIONADO","work_h2":"Trabajo seleccionado.",
     "proc_eyebrow":"CÓMO TRABAJAMOS","proc_h2":"Medir dos veces. Construir una.",
     "proc_1h":"Medir","proc_1p":"Mapeamos los objetivos y los límites antes de diseñar nada.",
     "proc_2h":"Construir","proc_2p":"Escrito a mano, estructurado, rápido. Diseño y desarrollo en las mismas manos.",
@@ -942,14 +857,6 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
     "who_eyebrow":"EL ESTUDIO","who_h2":"Dos personas. Un eje.",
     "who_1role":"Desarrollo e ingeniería","who_1p":"Escribe el código, diseña los sistemas, publica las webs. El lado build del estudio.",
     "who_2role":"Diseño, contenido y social","who_2p":"Da forma a la marca, al contenido y a la voz. El lado design del estudio.",
-    "pr_eyebrow":"PRECIOS","pr_h2":"Dos planes. Un estándar.",
-    "pr_monthly":"Mensual","pr_annual":"Anual",
-    "pr_a_tag":"WEB","pr_a_name":"Web","pr_a_desc":"Tu web, siempre actualizada y cuidada.",
-    "pr_a_1":"Mantenimiento y cambios ilimitados*","pr_a_2":"100% adaptado a móvil","pr_a_3":"SSL + SEM + Google Indexing","pr_a_cta":"Elegir web",
-    "pr_badge":"RECOMENDADO",
-    "pr_b_tag":"WEB <span class=\"x\">✕</span> REDES","pr_b_name":"Web + Redes","pr_b_desc":"Tu web cuidada, más presencia activa en redes.",
-    "pr_b_1":"Todo lo del plan Web","pr_b_2":"Calendario de publicaciones","pr_b_3":"Optimización de perfil + consistencia visual de marca","pr_b_cta":"Elegir web ✕ redes",
-    "pr_note":"*Mantenimiento y cambios que no se alejen de la visión original de la web. El pago anual ahorra un 22%.",
     "ct_eyebrow":"EMPIEZA AQUÍ","ct_h2":"¿Tienes algo que merezca construirse bien?",
     "ct_lead":"Cuéntanos en qué trabajas. Respondemos en español o inglés, normalmente en un día.",
     "ct_wa":"WhatsApp","ct_email_l":"EMAIL","ct_based_l":"DESDE","ct_lang_l":"IDIOMAS",
@@ -985,7 +892,6 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
       b.setAttribute('aria-pressed', b.getAttribute('data-lang') === lang);
     });
     try{ localStorage.setItem('aw_lang', lang); }catch(e){}
-    if(typeof refreshPricing === 'function') refreshPricing();
   }
   document.querySelectorAll('.lang button').forEach(function(b){
     b.addEventListener('click', function(){ setLang(b.getAttribute('data-lang')); });
@@ -1113,31 +1019,6 @@ footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff1
   var WA_NUMBER = "";
   var wa = document.getElementById('waCta');
   if(wa){ wa.href = WA_NUMBER ? ('https://wa.me/'+WA_NUMBER) : 'mailto:hello@axisworks.studio'; }
-
-  /* pricing — monthly ✕ annual toggle (annual = −22%, with monthly-equivalent readout) */
-  var billMode = 'monthly';
-  function refreshPricing(){
-    var pricing = document.getElementById('pricing'); if(!pricing) return;
-    var es = document.documentElement.lang === 'es', annual = billMode === 'annual';
-    pricing.querySelectorAll('[data-bill]').forEach(function(b){
-      b.setAttribute('aria-pressed', b.getAttribute('data-bill') === billMode);
-    });
-    pricing.querySelectorAll('.plan__num').forEach(function(n){
-      var val = +(annual ? n.getAttribute('data-annual') : n.getAttribute('data-monthly'));
-      n.textContent = val.toLocaleString('en-US');
-      var per = n.parentElement.querySelector('.plan__period');
-      var sub = n.parentElement.querySelector('.plan__sub');
-      if(per) per.textContent = annual ? (es ? '/año' : '/yr') : (es ? '/mes' : '/mo');
-      if(sub) sub.textContent = annual ? ('≈ €' + Math.round(val/12) + (es ? '/mes' : '/mo')) : '';
-    });
-  }
-  (function(){
-    var pricing = document.getElementById('pricing'); if(!pricing) return;
-    pricing.querySelectorAll('[data-bill]').forEach(function(b){
-      b.addEventListener('click', function(){ billMode = b.getAttribute('data-bill'); refreshPricing(); });
-    });
-    refreshPricing();
-  })();
 
   /* loader */
   var loader = document.getElementById('loader'), read = document.getElementById('loaderRead');

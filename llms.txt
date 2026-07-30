@@ -1,7 +1,7 @@
 # AxisWorks
 
-> AxisWorks es un estudio de dos personas que diseña y programa webs a medida. Hacemos
-> desarrollo web, identidad de marca y contenido. Trabajamos en español e inglés, desde
+> AxisWorks es un estudio de dos personas que diseña y programa webs y herramientas a
+> medida, y ayuda a sus clientes a captar clientes. Trabajamos en español e inglés, desde
 > España y Bali.
 
 ## Contacto
@@ -9,19 +9,23 @@
 - Web: https://axisworks.studio
 
 ## Key facts
-- What we do: custom websites, web apps, brand identity and motion design
+- What we do: custom tool suites, web design and development, social/SEO/SEM, Meta sales
+  funnels, and brand and management advisory
 - Approach: hand-coded, non-template, design and development in the same hands
 - Languages: English and Spanish
 - Based: Spain ✕ Bali
 
 ## Services
-- Web design and development (frontend and backend)
-- Brand identity and design systems
-- Motion design and premium interactions
+- **Custom tool suites** — internal tools built around how the business actually runs
+- **Web design and development** — hand-coded sites and the infrastructure behind them
+- **Social media, SEO and SEM** — organic reach and paid search
+- **Meta sales funnels** — campaigns and creative built to bring in enquiries
+- **Advisory** — management, brand and direction: where the company is going, how the
+  brand carries it there, and what to build first
 
 ## Pricing
-- Web: from €100/month — maintenance and unlimited changes included
-- Web ✕ Social: from €200/month — adds content calendar and profile work
+No published rates. Every project is quoted on its own scope. Contact
+hello@axisworks.studio and we come back with scope and a price.
 
 ## Selected work
 Live and in production:
