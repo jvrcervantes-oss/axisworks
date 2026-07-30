@@ -1,20 +1,34 @@
 # AxisWorks
 
-> Precision-built websites and brand identities. A digital studio that designs and develops high-end, custom web experiences — no templates. Services span web design, frontend/backend development, branding and motion.
+> AxisWorks es un estudio de dos personas que diseña y programa webs a medida. Hacemos
+> desarrollo web, identidad de marca y contenido. Trabajamos en español e inglés, desde
+> España y Bali.
+
+## Contacto
+- Email: hello@axisworks.studio
+- Web: https://axisworks.studio
 
 ## Key facts
 - What we do: custom websites, web apps, brand identity and motion design
-- Approach: precision-built, non-template, design-engineering driven
-- Website: https://axisworks.studio
+- Approach: hand-coded, non-template, design and development in the same hands
+- Languages: English and Spanish
+- Based: Spain ✕ Bali
 
 ## Services
 - Web design and development (frontend and backend)
 - Brand identity and design systems
 - Motion design and premium interactions
 
+## Pricing
+- Web: from €100/month — maintenance and unlimited changes included
+- Web ✕ Social: from €200/month — adds content calendar and profile work
+
 ## Selected work
-- Bali Moto Adventures — motorcycle tour platform
+Live and in production:
+- Bali Moto Adventures — motorcycle tour platform · https://balimotoadventures.com
+- Sumba Rental — motorbike rental with airport delivery · https://sumba.balibestmotorcycle.com
+
+In development (no public URL yet):
 - Lawang Estate — tropical real estate showcase
-- Sumba Rental — motorbike rental with airport delivery
 - IDS Fincas — client portal for a property management firm
 - CARBÓN — layered storytelling site for a gourmet burger brand
