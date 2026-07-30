@@ -1,0 +1,82 @@
+# ═══════════════════════════════════════════════════════════════════
+# Seguridad — base obligatoria del estudio · 30-jul-2026
+# Estándar: contexto/seguridad_2026.md §1 (vía estática + JSON).
+# Plantilla verificada en producción: proyectos/B2K/.htaccess (15-jul-2026).
+#
+# Se añade el día del primer deploy real: hasta ahora el sitio estaba pusheado
+# pero sin dominio al que apuntar, y salía a producción SIN cabeceras, con
+# listado de directorios abierto y sin bloquear ficheros internos.
+# ═══════════════════════════════════════════════════════════════════
+
+# ── 1. Cabeceras de seguridad ──────────────────────────────────────
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+  Header always set X-Frame-Options "SAMEORIGIN"
+
+  # CSP en REPORT-ONLY primero: no bloquea, solo reporta en consola.
+  # Orígenes inventariados por grep sobre index.html (30-jul-2026):
+  #   script  → GSAP/Three (cdnjs, jsdelivr)
+  #   style   → Google Fonts · font → gstatic
+  #   No hay analítica ni píxel todavía: cuando se añadan, van AQUÍ primero.
+  # PARA PASAR A ENFORCE: navegar el sitio entero, revisar violaciones en
+  # consola, corregir, y solo entonces renombrar a Content-Security-Policy.
+  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'"
+</IfModule>
+
+# ── 2. Sin listado de directorios ──────────────────────────────────
+Options -Indexes
+
+# ── 3. Ficheros que nunca deben servirse en público ────────────────
+# El `*.md` del .gitignore ya evita que suban, pero esto cubre lo que llegue
+# por otra vía (subida manual, resto de una restauración). Cinturón y tirantes:
+# la fuga de Sumba del 15-jul fue exactamente un .md servido con 200.
+# OJO: los .txt NO se bloquean — robots.txt, llms.txt y la verificación del
+# hosting son .txt y tienen que responder 200.
+<FilesMatch "\.(md|sql|zip|bak|log|csv|sh|ini|yml|yaml|psd|ai|py)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# ── 4. Nada de .git ni ficheros ocultos ────────────────────────────
+RedirectMatch 404 /\.git
+<FilesMatch "^\.">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+</FilesMatch>
+
+# ── 5. URLs limpias — norma de agencia (28-jul-2026) ───────────────
+# En la barra nunca se ve `.html` ni `.php`.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME}\.html -f
+  RewriteRule ^(.+?)/?$ $1.html [L]
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME}\.php -f
+  RewriteRule ^(.+?)/?$ $1.php [L]
+</IfModule>
+
+# ── 6. Compresión y caché ──────────────────────────────────────────
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 6 months"
+  ExpiresByType image/svg+xml "access plus 6 months"
+  ExpiresByType image/webp "access plus 6 months"
+  ExpiresByType video/mp4 "access plus 6 months"
+  # El HTML no se cachea: es lo que cambia en cada despliegue.
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
