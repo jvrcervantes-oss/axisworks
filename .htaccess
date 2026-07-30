@@ -57,6 +57,10 @@ RedirectMatch 404 /\.git
 # En la barra nunca se ve `.html` ni `.php`.
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  # `www` servía un 200 propio en vez de redirigir (verificado 30-jul-2026): dos URLs
+  # con el mismo contenido. El canonical lo tapa, pero el 301 es lo que corresponde.
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME}\.html -f
   RewriteRule ^(.+?)/?$ $1.html [L]
