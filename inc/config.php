@@ -20,7 +20,7 @@ const EMAIL = 'hello@axisworks.studio';
  * del que dependen 17 páginas, cacheado 12 meses sin sello, es el fallo que
  * la suite de Lawang ya resolvió sellando `brand.css`. Se sube a mano al
  * tocar site.css — vive AQUÍ y en ningún otro sitio. */
-const VER = '20260902a';
+const VER = '20260903a';
 
 /* ── El mapa de rutas: un solo dueño ──────────────────────────────────
  * Lo consumen tres cosas — el hreflang, el conmutador de idioma y los

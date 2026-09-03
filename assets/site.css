@@ -90,12 +90,16 @@ header.scrolled{ background:color-mix(in srgb,var(--bone) 86%,transparent); back
 .lang a::after{ display:none }
 .lang a:hover{ color:var(--ink); background:var(--line-soft) }
 .lang .lang__on{ background:var(--ink); color:var(--bone) }
+/* Idéntico al del home, valor a valor: el mismo botón no puede verse relleno
+   en Signal en la portada y hueco en una hoja. */
 .nav__cta{ display:inline-flex; align-items:center; gap:8px; padding:9px 16px;
-  border:1px solid var(--ink); font-weight:500;
-  background-image:linear-gradient(90deg,var(--ink) 0 50%,transparent 50% 100%);
-  background-size:200% 100%; background-position:100% 0; transition:background-position .4s cubic-bezier(.2,.8,.2,1),color .3s; }
+  background-image:linear-gradient(90deg,var(--ink) 0 50%,var(--signal) 50% 100%);
+  background-size:200% 100%; background-position:100% 0;
+  color:var(--ink); font-size:13px; font-weight:500;
+  transition:background-position .42s cubic-bezier(.2,.8,.2,1), transform .12s ease }
 .nav__cta::after{ display:none !important }
-.nav__cta:hover{ background-position:0 0; color:var(--bone) !important }
+.nav__cta:hover{ background-position:0 0; color:var(--bone) }
+.nav__cta:active{ transform:translateY(1px) }
 .nav__burger{ display:none; background:none; border:0; cursor:pointer; flex-direction:column; gap:5px;
   padding:10px; min-height:44px; }
 .nav__burger span{ width:22px; height:2px; background:var(--ink); display:block; transition:.3s }
@@ -258,7 +262,12 @@ main{ position:relative; z-index:4 }
 /* Los dos paneles del cruce ya no llevan viñetas: el catálogo real vive
    aquí abajo. Un plano no lista las piezas dentro del dibujo. */
 .leyenda{ margin-top:clamp(48px,6vw,88px); border-top:1px solid var(--line) }
-.leyenda__grid{ display:grid; grid-template-columns:1fr 1fr; gap:0 clamp(28px,5vw,72px) }
+/* Se llena por COLUMNAS, no por filas. Con el flujo por filas, B07 acababa al
+   lado de G01 y cada renglón mezclaba los dos brazos — que es justo el eje que
+   la sección defiende. Con siete filas por columna, BUILD ocupa la izquierda
+   entera y GROW + ADVISORY la derecha, y la leyenda vuelve a leerse como la ✕. */
+.leyenda__grid{ display:grid; grid-auto-flow:column; grid-template-rows:repeat(7,auto);
+  grid-auto-columns:1fr; gap:0 clamp(28px,5vw,72px) }
 .leyenda__row{ display:flex; align-items:baseline; gap:14px; padding:13px 0;
   border-bottom:1px solid var(--line-soft); font-family:var(--f-mono); font-size:13px;
   letter-spacing:.04em; }
@@ -270,7 +279,7 @@ a.leyenda__row:hover .ar{ transform:translateX(4px) }
 /* Fila sin página: sin flecha y sin hover. Media afordancia no se entrega. */
 .leyenda__row--flat{ color:var(--steel-text) }
 .leyenda__row--flat .nom{ color:var(--steel-text) }
-@media(max-width:760px){ .leyenda__grid{ grid-template-columns:1fr } }
+@media(max-width:760px){ .leyenda__grid{ grid-auto-flow:row; grid-template-rows:none } }
 
 /* ---------- hub ---------- */
 .hub__eje{ font-family:var(--f-mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase;

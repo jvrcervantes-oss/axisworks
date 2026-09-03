@@ -52,7 +52,10 @@ $HOME = [
 'es' => [
   'hud'=>'SISTEMA DE PRECISIÓN · v1.0',
   'hero_kind'=>'ESTUDIO DIGITAL','hero_eyebrow'=>'EST. 2026',
-  'hero_h1a'=>'Software','hero_h1b'=>'y marcas','hero_h1c'=>'de precisión',
+  /* La ✕ va ENTRE los dos sustantivos, no antes del complemento: el titular
+     es «Software ✕ marcas de precisión», no «Software y marcas ✕ de precisión».
+     Por eso el primer hueco va vacío, igual que hacía el diccionario viejo. */
+  'hero_h1a'=>'','hero_h1b'=>'Software','hero_h1c'=>'marcas de precisión',
   'hero_lead'=>'Dos personas, sin plantillas. Construimos las herramientas con las que funciona una empresa — y las campañas que se las llenan.',
   'hero_cta'=>'Empezar un proyecto','hero_cta2'=>'Ver qué construimos',
   'hero_st_cal'=>'CALIBRANDO','hero_st_ok'=>'ALINEADO',
