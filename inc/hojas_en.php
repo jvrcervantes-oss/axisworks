@@ -34,8 +34,8 @@ $HOJAS_EN = [
   'caso'=>[
     'img'=>'work-lawang.jpg','alt'=>'Lawang Estate — internal suite',
     'titulo'=>'Lawang Estate — a property developer in Bali',
-    'texto'=>'Contracts with remote digital signature, invoices and receipts, construction progress, buyers, payment schedules, unit catalogue, documentation and a portal where each buyer sees their own contracts and payments. Twelve tools under one menu, one shared shell, one login. A person is registered in exactly one place; every other tool reads them from there.',
-    'cifras'=>[['12','tools, one menu'],['3','interface languages'],['1','sign-up point per person']],
+    'texto'=>'Contracts with remote digital signature, invoices and receipts, construction progress, buyers, payment schedules, unit catalogue, documentation and a portal where each buyer sees their own contracts and payments. Eleven tools under one menu, one shared shell, one login. A person is registered in exactly one place; every other tool reads them from there.',
+    'cifras'=>[['11','tools, one menu'],['2','interface languages'],['1','sign-up point per person']],
   ],
   'faq'=>[
     ['Is this an ERP?','Sometimes it replaces one, more often it sits beside one. An off-the-shelf ERP is good at what every company does the same way — accounting, payroll. It is bad at the part that makes you different, and that part is usually where the money and the mistakes are. We build that part.'],
@@ -109,7 +109,7 @@ $HOJAS_EN = [
     'img'=>'work-balimoto.jpg','alt'=>'Bali Moto Adventures — WhatsApp bot',
     'titulo'=>'Bali Moto Adventures — live, on the official API',
     'texto'=>'A tour operator&rsquo;s bot: it answers about routes and prices, books appointments straight into Google Calendar, sends Stripe payment links, and schedules its own follow-up when a lead says &ldquo;let me think about it&rdquo;. It reaches the team through the same panel that holds the leads.',
-    'cifras'=>[['24/7','answering, in production'],['0','placeholders reachable by a customer'],['1','human handover line, enforced in code']],
+    'cifras'=>[['24/7','answering, in production'],['1','safety net that blocks the send'],['1','human handover line, enforced in code']],
   ],
   'faq'=>[
     ['Will it get our number banned?','Not if it is built on the official Business API with registered templates, which is how we build them. Unofficial bridges are the ones that get numbers banned, and they are cheaper for exactly that reason.'],
@@ -177,13 +177,13 @@ $HOJAS_EN = [
     ['Construction','Progress per unit, tied to the contract that pays for it.'],
     ['Buyers','One registration per person, read by every other tool.'],
     ['Buyer portal','Each buyer sees their own contracts, payments and documents — and nobody else&rsquo;s.'],
-    ['Languages','Interface and documents in English, Spanish and Bahasa Indonesia.'],
+    ['Languages','Documents in English, Spanish and Bahasa Indonesia; interface in English and Spanish.'],
   ],
   'caso'=>[
     'img'=>'work-lawang.jpg','alt'=>'Lawang Estate — developer suite',
     'titulo'=>'Lawang Estate — Bali',
-    'texto'=>'Twelve tools under one menu: contracts with remote digital signature, invoices and receipts, unit catalogue, construction, buyers, payment schedules, documentation and the buyer portal. Every price is read from the document that sets it, and a buyer exists in exactly one place. The public showcase and the internal suite share one database.',
-    'cifras'=>[['12','tools, one login'],['3','languages, ES · EN · ID'],['1','source per price']],
+    'texto'=>'Eleven tools under one menu: contracts with remote digital signature, invoices and receipts, unit catalogue, construction, buyers, payment schedules, documentation and the buyer portal. Every price is read from the document that sets it, and a buyer exists in exactly one place. The public showcase and the internal suite share one database.',
+    'cifras'=>[['11','tools, one login'],['2','interface languages'],['1','source per price']],
   ],
   'faq'=>[
     ['Do you work with developers outside Bali?','Yes. The projects that shaped this are in Bali and Sumba, and the model — documents, schedules, units, buyers — is the same wherever the units are.'],

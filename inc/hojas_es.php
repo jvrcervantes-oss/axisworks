@@ -14,7 +14,7 @@ $HOJAS_ES = [
   'desc'=>'Herramientas internas escritas para cómo trabaja tu empresa: contratos, facturas, inventario, permisos y portal de cliente, todo leyendo un solo dato. Estudio de dos personas.',
   'eyebrow'=>'HOJA B01 — BUILD',
   'h1'=>'Software de gestión a medida para empresas',
-  'lead'=>'Casi ninguna empresa necesita otra plataforma a la que adaptarse. Necesita que las doce cosas que hace cada día dejen de vivir en hojas de cálculo, hilos de WhatsApp y la memoria de una persona.',
+  'lead'=>'Casi ninguna empresa necesita otra plataforma a la que adaptarse. Necesita que las veinte cosas que hace cada día dejen de vivir en hojas de cálculo, hilos de WhatsApp y la memoria de una persona.',
   'spec'=>[
     'Una suite interna no es una plantilla con tu logo. Está escrita en tu vocabulario, imprime tus documentos y aplica tus permisos — que son justo las tres cosas que el software enlatado te obliga a rodear.',
     'Diseñamos contra un fallo concreto: <b>el mismo dato viviendo en dos sitios</b>. Es el error más caro que conocemos y nunca parece un error. Un precio que vive en el contrato y otra vez en la pantalla de operaciones se separa, y un día algo se factura al doble. No es hipotético: nos ha pasado y por eso cada herramienta que construimos lee una sola fuente por dato, y añadir una herramienta nueva nunca significa copiar una lista.',
@@ -32,8 +32,8 @@ $HOJAS_ES = [
   'caso'=>[
     'img'=>'work-lawang.jpg','alt'=>'Suite interna de una promotora inmobiliaria',
     'titulo'=>'Una promotora inmobiliaria que vendía sobre plano en carpetas',
-    'texto'=>'Contratos con firma digital remota, facturas y recibos, avance de obra, compradores, calendario de vencimientos, catálogo de unidades, documentación y un portal donde cada comprador ve sus propios contratos y pagos. Doce herramientas bajo un solo menú, una cáscara compartida, un solo acceso. Una persona se da de alta en un único sitio y todas las demás herramientas la leen de ahí. (Opera en Indonesia; el problema es el mismo en Murcia.)',
-    'cifras'=>[['12','herramientas, un menú'],['3','idiomas de interfaz'],['1','alta por persona']],
+    'texto'=>'Contratos con firma digital remota, facturas y recibos, avance de obra, compradores, calendario de vencimientos, catálogo de unidades, documentación y un portal donde cada comprador ve sus propios contratos y pagos. Once herramientas bajo un solo menú, una cáscara compartida, un solo acceso. Una persona se da de alta en un único sitio y todas las demás herramientas la leen de ahí. (Opera en Indonesia; el problema es el mismo en Murcia.)',
+    'cifras'=>[['11','herramientas, un menú'],['2','idiomas de interfaz'],['1','alta por persona']],
   ],
   'faq'=>[
     ['¿Esto es un ERP?','A veces sustituye a uno, más a menudo convive con él. Un ERP enlatado es bueno en lo que todas las empresas hacen igual —contabilidad, nóminas— y malo justo en la parte que te hace diferente, que suele ser donde están el dinero y los errores. Esa parte es la que construimos.'],
@@ -107,7 +107,7 @@ $HOJAS_ES = [
     'img'=>'work-balimoto.jpg','alt'=>'Bot de WhatsApp en producción',
     'titulo'=>'Un operador turístico que contestaba a mano el mismo mensaje veinte veces al día',
     'texto'=>'El bot responde sobre rutas y precios, reserva citas directamente en Google Calendar, manda enlaces de pago de Stripe y se agenda su propio seguimiento cuando un lead dice «me lo reviso». Llega al equipo por el mismo panel donde están los leads.',
-    'cifras'=>[['24/7','contestando, en producción'],['0','huecos sin rellenar al alcance de un cliente'],['1','línea de traspaso, escrita en código']],
+    'cifras'=>[['24/7','contestando, en producción'],['1','red de seguridad que frena el envío'],['1','línea de traspaso, escrita en código']],
   ],
   'faq'=>[
     ['¿Nos van a banear el número?','No si está construido sobre la API oficial de Business con plantillas dadas de alta, que es como los hacemos. Los que banean números son los puentes no oficiales, y son más baratos exactamente por eso.'],
