@@ -7,7 +7,7 @@
  *   · `tools/unificar.py` es gate de PUSH y solo mira ficheros .html. 17
  *     páginas estáticas con su <nav> inline no pueden ser byte-idénticas
  *     (cada una lleva su idioma y su contraparte), así que el trinquete
- *     habría subido de 1/1 a 17/17 y el trabajo se moría en el commit.
+ *     habría subido de 1/1 a 16/16 y el trabajo se moría en el commit.
  *   · Con includes no hay nada que regenerar, así que no hay nada que
  *     olvidar: la divergencia deja de ser posible por construcción, que
  *     es lo único que aguanta a dos operadores.
@@ -17,7 +17,7 @@ const SITE  = 'https://axisworks.studio';
 const EMAIL = 'hello@axisworks.studio';
 
 /* Sello de caché. El .htaccess cachea CSS UN AÑO (línea 78): un stylesheet
- * del que dependen 17 páginas, cacheado 12 meses sin sello, es el fallo que
+ * del que dependen 16 páginas, cacheado 12 meses sin sello, es el fallo que
  * la suite de Lawang ya resolvió sellando `brand.css`. Se sube a mano al
  * tocar site.css — vive AQUÍ y en ningún otro sitio. */
 const VER = '20260903b';
