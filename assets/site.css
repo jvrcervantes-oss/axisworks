@@ -158,6 +158,15 @@ main{ position:relative; z-index:4 }
   position:relative; z-index:4; }
 .hoja__grid{ display:grid; grid-template-columns:minmax(0,7fr) minmax(0,4fr);
   gap:clamp(32px,5vw,72px); align-items:start; }
+/* Se apila EN CUANTO deja de caber, no solo en móvil. Sin esto la cabecera
+   seguía a dos columnas a 390px: el h1 quedaba encajonado en 193px cuando
+   necesitaba 234, y su última palabra se metía debajo del cuadro de
+   rotulación, que se pinta encima. Medido en producción en las 14 hojas
+   («development», «Automatización») — era de plantilla, no de una página. */
+@media(max-width:820px){
+  .hoja__grid{ grid-template-columns:1fr; gap:34px }
+  .tblock{ max-width:420px }
+}
 .hoja__head h1{ margin-top:22px; max-width:16ch }
 .hoja__head .lead{ margin-top:26px; max-width:52ch; font-size:clamp(17px,1.8vw,21px) }
 

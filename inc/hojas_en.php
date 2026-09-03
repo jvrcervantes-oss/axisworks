@@ -23,8 +23,11 @@ $HOJAS_EN = [
     ['Data model','One source per fact. Prices, dates and names are written once and read everywhere.'],
     ['Documents','Contracts, invoices and receipts generated as PDF from the record itself — not typed twice.'],
     ['Roles &amp; permissions','Per user and per tool. What someone cannot do, they cannot see.'],
-    ['Client portal','A door for the people outside the company, on the same data, with its own rules.'],
-    ['Integrations','Payments, calendars, spreadsheets, messaging — wherever the data already lives.'],
+    /* Los dos `id` son el destino de B05 y B06 de la leyenda del home. Sin
+       ellos el enlace lleva al principio de la página en silencio, que es la
+       media afordancia que Diseño vetó. El lado ES ya los tenía. */
+    ['Client portal','<span id="portal"></span>A door for the people outside the company, on the same data, with its own rules.'],
+    ['Integrations','<span id="integraciones"></span>Payments, calendars, spreadsheets, messaging — wherever the data already lives.'],
     ['Languages','The interface in as many languages as the team actually speaks.'],
     ['Handover','Source code, database and deployment. Written so the next developer can read it.'],
   ],
