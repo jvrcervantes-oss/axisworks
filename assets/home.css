@@ -1,0 +1,483 @@
+/* home.css -- lo especifico de la portada: el instrumento de medida, el
+ * cruce de servicios, las tarjetas de trabajo, el proceso, los retratos y
+ * el origen del bloque de contacto.
+ *
+ * Los TOKENS no estan aqui: viven en site.css y en ningun otro sitio. Es la
+ * unica parte que de verdad puede divergir -- una paleta definida dos veces
+ * acaba con dos valores de Signal y nadie sabiendo cual manda.
+ * Se carga DESPUES de site.css. */
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--f-body); color:var(--ink); background:var(--bone);
+  font-size:17px; line-height:1.65; -webkit-font-smoothing:antialiased;
+  overflow-x:hidden; position:relative;
+}
+body::before{ /* milimetrado paper — the technical plan surface */
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    linear-gradient(var(--line-soft) 1px,transparent 1px),
+    linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+  background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(ellipse 120% 90% at 50% 30%,#000 55%,transparent 100%);
+  mask-image:radial-gradient(ellipse 120% 90% at 50% 30%,#000 55%,transparent 100%);
+  opacity:.5;
+}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--signal);color:var(--ink)}
+
+/* ---------- shell / 12-col reticle ---------- */
+.shell{ width:min(var(--shell),100% - var(--pad)*2); margin-inline:auto; position:relative; }
+.reticle{ position:fixed; inset:0; z-index:1; pointer-events:none; display:flex; justify-content:center; }
+/* Visible siempre. Hasta el 30-jul-2026 la apagaba el módulo WebGL para redibujarla al
+   ritmo de la costura del Acto 4; sin ese hero, la retícula es lo que dice ser: la
+   estructura de la página, dibujada de arriba abajo. */
+.reticle__inner{ width:min(var(--shell),100% - var(--pad)*2); height:100%; position:relative; }
+.reticle__inner span{ position:absolute; top:0; bottom:0; width:1px; background:var(--line); }
+.reticle__inner span:nth-child(1){left:0} .reticle__inner span:nth-child(2){left:25%}
+.reticle__inner span:nth-child(3){left:50%} .reticle__inner span:nth-child(4){left:75%}
+.reticle__inner span:nth-child(5){left:100%}
+@media(max-width:760px){ .reticle__inner span:nth-child(2),.reticle__inner span:nth-child(4){display:none} }
+
+/* ---------- crosshair canvas + HUD ---------- */
+#cad{ position:fixed; inset:0; z-index:2; pointer-events:none; }
+.hud{ position:fixed; z-index:3; font-family:var(--f-mono); font-size:11px;
+  letter-spacing:.12em; color:var(--steel); pointer-events:none; user-select:none; }
+.hud--coords{ left:var(--pad); bottom:22px; }
+.hud--meta{ right:var(--pad); bottom:22px; text-align:right; }
+.hud b{ color:var(--graphite); font-weight:500 }
+@media(max-width:760px){ .hud{display:none} }
+
+/* ---------- vertical axis + scroll progress ---------- */
+.axis{ position:fixed; top:0; bottom:0; right:max(var(--pad),calc((100vw - var(--shell))/2));
+  width:1px; background:var(--line); z-index:3; pointer-events:none; }
+.axis__fill{ position:absolute; top:0; left:-0.5px; width:2px; height:0; background:var(--signal); }
+.axis__node{ position:absolute; top:0; left:50%; width:12px; height:12px; transform:translate(-50%,-50%);
+  transition:top .1s linear; opacity:0; }
+.axis__node::before,.axis__node::after{ content:""; position:absolute; top:50%; left:50%; width:12px; height:2px;
+  background:var(--signal); transform-origin:center; }
+.axis__node::before{ transform:translate(-50%,-50%) rotate(45deg) }
+.axis__node::after{ transform:translate(-50%,-50%) rotate(-45deg) }
+@media(max-width:760px){ .axis{display:none} }
+
+/* ---------- mono eyebrow ---------- */
+.eyebrow{ font-family:var(--f-mono); font-weight:500; font-size:12px; letter-spacing:.25em;
+  text-transform:uppercase; color:var(--steel-text); display:flex; align-items:center; gap:12px; }
+.eyebrow .x{ color:var(--signal-ink) }
+.eyebrow::before{ content:""; width:28px; height:1px; background:var(--steel); flex:none }
+
+/* ---------- nav ---------- */
+header{ position:fixed; top:0; left:0; right:0; z-index:20;
+  transition:background .3s,border-color .3s,opacity .6s ease,transform .6s ease;
+  border-bottom:1px solid transparent; }
+/* Act 1 — the nav is absent in the void; it enters when the world emerges (Act 2) */
+header.scrolled{ background:color-mix(in srgb,var(--bone) 86%,transparent); backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line); }
+.nav{ display:flex; align-items:center; justify-content:space-between; height:72px; }
+.brand{ font-family:var(--f-display); font-weight:700; font-size:19px; letter-spacing:.04em;
+  display:flex; align-items:center; }
+.brand .x{ color:var(--signal); margin:0 .08em; display:inline-block; transition:transform .4s cubic-bezier(.2,.8,.2,1) }
+.brand:hover .x{ transform:rotate(45deg) }
+.nav__links{ display:flex; align-items:center; gap:30px; font-size:14px; }
+.nav__links a{ position:relative; color:var(--graphite); transition:color .2s }
+.nav__links a::after{ content:""; position:absolute; left:0; bottom:-5px; width:0; height:1px;
+  background:var(--signal); transition:width .25s }
+.nav__links a:hover{ color:var(--ink) } .nav__links a:hover::after{ width:100% }
+.lang{ display:flex; font-family:var(--f-mono); font-size:11px; border:1px solid var(--line); }
+.lang button{ border:0; padding:9px 11px; min-height:44px; color:var(--steel-text); cursor:pointer;
+  background-image:linear-gradient(90deg,var(--ink) 0 50%,transparent 50% 100%);
+  background-size:200% 100%; background-position:100% 0;
+  font-family:inherit; font-size:inherit; letter-spacing:.1em;
+  transition:color .25s, background-position .42s cubic-bezier(.2,.8,.2,1), transform .12s ease }
+.lang button[aria-pressed="false"]:hover{ color:var(--ink) }
+.lang button[aria-pressed="true"]{ background-position:0 0; color:var(--bone) }
+.lang button:active{ transform:translateY(1px) }
+.nav__cta{ display:inline-flex; align-items:center; gap:8px; padding:9px 16px;
+  background-image:linear-gradient(90deg,var(--ink) 0 50%,var(--signal) 50% 100%);
+  background-size:200% 100%; background-position:100% 0;
+  color:var(--ink); font-size:13px; font-weight:500;
+  transition:background-position .42s cubic-bezier(.2,.8,.2,1), transform .12s ease }
+.nav__cta:hover{ background-position:0 0 }
+.nav__cta:active{ transform:translateY(1px) }
+.nav__burger{ display:none; background:none; border:0; cursor:pointer; flex-direction:column; gap:5px;
+  padding:6px; min-width:44px; min-height:44px; justify-content:center; align-items:center }
+.nav__burger span{ width:22px; height:2px; background:var(--ink); display:block; transition:.3s }
+@media(max-width:880px){
+  .nav__links{ position:fixed; inset:72px 0 auto 0; background:var(--bone); flex-direction:column;
+    align-items:flex-start; gap:0; padding:var(--pad); border-bottom:1px solid var(--line);
+    transform:translateY(-120%); transition:transform .4s cubic-bezier(.2,.8,.2,1); }
+  .nav__links.open{ transform:translateY(0) }
+  .nav__links a{ width:100%; padding:14px 0; font-size:18px; border-bottom:1px solid var(--line-soft) }
+  .nav__burger{ display:flex }
+  .nav__links .lang{ margin-top:10px }
+}
+
+/* ---------- type ---------- */
+h1{ font-family:var(--f-display); font-weight:700; line-height:1.04; letter-spacing:-.015em;
+  font-size:clamp(40px,8.2vw,86px); }
+h2{ font-family:var(--f-display); font-weight:500; line-height:1.08; letter-spacing:-.01em;
+  font-size:clamp(30px,4.6vw,44px); }
+h3{ font-family:var(--f-display); font-weight:500; font-size:clamp(20px,2.4vw,26px); }
+.lead{ font-size:clamp(17px,2vw,20px); color:var(--graphite); max-width:46ch }
+.mono{ font-family:var(--f-mono) }
+.x-sig{ color:var(--signal) }
+
+section{ position:relative; z-index:4; padding-block:var(--sec) }
+.sec-head{ display:flex; flex-direction:column; gap:18px; margin-bottom:40px }
+
+/* ---------- hero — una pantalla, la ✕ como instrumento de medida ----------
+   Sustituye al mundo Three.js de 4 actos y 380vh (30-jul-2026). El motivo no fue
+   estético: cuatro pantallas de scroll antes de ver qué vende el estudio, y 255 KB de
+   motor 3D en una web cuyo argumento es "hand-coded, fast". Aquí no hay dependencia
+   nueva: la retícula, la mira CAD y el HUD de coordenadas ya existían en la página —
+   el hero viejo los tapaba con un fondo opaco. Ahora son el hero.
+   La interacción ES el claim: las dos líneas de la ✕ nacen desalineadas y convergen a
+   medida que el cursor se acerca. "We measure twice. Everything aligns." */
+.hero{ position:relative; z-index:5; background:#0d1014; color:var(--bone);
+  min-height:100svh; padding:0; display:grid; align-items:center; overflow:hidden; }
+/* El plano de dibujo: milimetrado propio, porque el de body::before es para Bone y
+   sobre Ink no se ve. Mismo paso de 48px, así la retícula no se parte en la costura. */
+.hero::before{ content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    linear-gradient(#ffffff0a 1px,transparent 1px),
+    linear-gradient(90deg,#ffffff0a 1px,transparent 1px);
+  background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(ellipse 110% 80% at 50% 45%,#000 45%,transparent 100%);
+  mask-image:radial-gradient(ellipse 110% 80% at 50% 45%,#000 45%,transparent 100%); }
+
+/* La ✕ grande: trazo geométrico de grosor uniforme (brief §2), no el glifo de la fuente.
+   En Signal a baja opacidad = línea de construcción, no un bloque que compita con el CTA,
+   que es el único protagonista Signal del viewport. */
+/* Hoja de plano: la anotación a la izquierda, el dibujo a la derecha. Centrar la ✕ en
+   el viewport con el texto alineado a la izquierda la dejaba flotando sin sitio. */
+.hero__body{ position:relative; z-index:2; width:min(var(--shell),100% - var(--pad)*2);
+  margin-inline:auto; padding-block:clamp(110px,15vh,170px);
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,.62fr); gap:clamp(32px,5vw,72px);
+  align-items:center }
+
+/* La ✕ grande: trazo geométrico de grosor uniforme (brief §2), no el glifo de la fuente.
+   Las dos líneas son distintas a propósito — una es la marca (Signal) y la otra la medida
+   (Steel). Cuando convergen, la marca y la medida coinciden: es el claim del estudio
+   dibujado. Y de paso Signal aparece una vez, no dos. */
+.hero__mark{ position:relative; z-index:1; width:min(38vw,380px); aspect-ratio:1;
+  pointer-events:none }
+.hero__mark svg{ width:100%; height:100%; display:block; overflow:visible }
+/* Grosor en unidades del viewBox, NO `non-scaling-stroke`: con 1,5px fijos el aspa salía
+   como un pelo y no se leía como el mismo monograma del logo, que es proporcionalmente
+   mucho más grueso (4 sobre un viewBox de 64). Así escala con la marca. */
+.hero__mark line{ stroke-width:3.2; stroke-linecap:square;
+  transition:opacity .5s ease }
+.hero__mark .m1{ stroke:var(--signal); opacity:.62 }
+.hero__mark .m2{ stroke:var(--steel);  opacity:.34 }
+.hero.is-aligned .hero__mark .m1{ opacity:1 }
+.hero.is-aligned .hero__mark .m2{ opacity:.6 }
+/* Marcas de registro en las esquinas del encuadre: es lo que convierte un aspa en un
+   instrumento. Puramente CSS, sin nodos extra.
+   `width:fit-content` es obligatorio: sin él el marco ocupa toda la columna del grid y
+   las marcas se van a esquinas que no tienen nada que ver con la ✕. */
+.hero__frame{ position:relative; width:fit-content; margin-inline:auto }
+.hero__frame::before,.hero__frame::after{ content:""; position:absolute; width:13px; height:13px;
+  border:1px solid #ffffff26 }
+.hero__frame::before{ left:-16px; top:-16px; border-right:0; border-bottom:0 }
+.hero__frame::after{ right:-16px; bottom:-16px; border-left:0; border-top:0 }
+
+.hero .eyebrow{ color:var(--steel) }
+.hero .eyebrow::before{ background:var(--steel) }
+.hero h1{ font-family:var(--f-display); font-weight:700; line-height:1.02;
+  letter-spacing:-.018em; font-size:clamp(40px,6.4vw,76px); margin:26px 0 0;
+  max-width:13ch; color:var(--bone) }
+.hero h1 .x{ color:var(--signal) }
+.hero__lead{ margin-top:26px; max-width:42ch; color:#c2c6cb;
+  font-size:clamp(16px,1.5vw,19px) }
+.hero__acts{ display:flex; flex-wrap:wrap; gap:14px; margin-top:40px }
+
+/* Lectura del instrumento: SOLO el estado. Las coordenadas ya las pinta el HUD global
+   que vive en toda la página (#cx/#cy) — dos lecturas a la vez se pisaban en la esquina. */
+.hero__read{ margin-top:26px; text-align:center; font-family:var(--f-mono); font-size:11px;
+  letter-spacing:.18em; color:var(--steel) }
+.hero__state{ display:inline-flex; align-items:center; gap:9px }
+.hero__state i{ width:6px; height:6px; background:var(--steel); display:block;
+  transition:background-color .3s ease }
+.hero.is-aligned .hero__state i{ background:var(--signal) }
+.hero__state .st-ok{ display:none }
+.hero.is-aligned .st-cal{ display:none }
+.hero.is-aligned .st-ok{ display:inline }
+
+/* Por debajo de 980px el instrumento se va a la esquina inferior derecha, sangrando
+   fuera del encuadre. Centrado detrás del texto cruzaba el h1 y el párrafo: con 12px de
+   grosor, aunque vaya al 22%, eso no es textura de fondo, es ruido encima de la copia. */
+@media(max-width:980px){
+  .hero__body{ grid-template-columns:1fr; gap:0 }
+  .hero__instr{ position:absolute; right:-14%; bottom:-8%; z-index:0; pointer-events:none }
+  .hero__mark{ width:min(76vw,380px) }
+  .hero__mark .m1{ opacity:.30 } .hero__mark .m2{ opacity:.18 }
+  .hero__frame::before,.hero__frame::after{ display:none }
+  .hero__read{ display:none }
+}
+
+/* Sin puntero (móvil, táctil) o con reduced-motion no hay convergencia que contar: la ✕
+   nace ya alineada. No es un apaño — es el estado final del mismo mecanismo. */
+@media(hover:none),(prefers-reduced-motion:reduce){
+  .hero__mark line{ opacity:.4 } .hero__mark .m2{ opacity:.26 }
+}
+
+/* nav over the dark hero */
+header:not(.scrolled) .brand{ color:var(--bone) }
+header:not(.scrolled) .nav__links a{ color:#c9cdd2 }
+header:not(.scrolled) .nav__links a:hover{ color:var(--bone) }
+/* El CTA es un botón relleno en todos sus estados: nunca hereda el color de los enlaces
+   del nav. En reposo el relleno es Signal y la etiqueta va en Ink (4,79:1 — con la
+   etiqueta clara daba 3,42:1 y no pasaba AA); al hacer hover el relleno se barre a Ink
+   y la etiqueta se aclara con él. */
+header .nav__links a.nav__cta{ color:var(--ink) }
+header .nav__links a.nav__cta:hover{ color:var(--bone) }
+header:not(.scrolled) .nav__burger span{ background:var(--bone) }
+header:not(.scrolled) .lang{ border-color:#ffffff33 }
+/* over the dark hero the active language fills bone instead of ink */
+header:not(.scrolled) .lang button{ background-image:linear-gradient(90deg,var(--bone) 0 50%,transparent 50% 100%) }
+header:not(.scrolled) .lang button[aria-pressed="false"]:hover{ color:var(--bone) }
+header:not(.scrolled) .lang button[aria-pressed="true"]{ color:var(--ink) }
+
+
+/* Relleno: the ink wipes in from the left (gradient on the element so bare-text CTAs work too).
+   Empuje: a precise 1px press on :active. No bounce, no glow — mechanical, on-blueprint. */
+.btn{ display:inline-flex; align-items:center; gap:10px; font-size:15px; font-weight:500; padding:15px 26px;
+  cursor:pointer; border:1px solid transparent; background-size:200% 100%; background-position:100% 0;
+  transition:background-position .42s cubic-bezier(.2,.8,.2,1), color .25s, border-color .25s, gap .25s, transform .12s ease; }
+.btn:active{ transform:translateY(1px) }
+.btn--signal{ background-image:linear-gradient(90deg,var(--ink) 0 50%,var(--signal) 50% 100%); color:var(--ink) }
+.btn--signal:hover{ background-position:0 0; color:var(--bone) }
+.btn--ghost{ border-color:var(--graphite); color:var(--ink);
+  background-image:linear-gradient(90deg,var(--ink) 0 50%,transparent 50% 100%) }
+.btn--ghost:hover{ background-position:0 0; color:var(--bone); border-color:var(--ink) }
+.btn .ar{ transition:transform .35s cubic-bezier(.2,.8,.2,1) } .btn:hover{ gap:14px } .btn:hover .ar{ transform:translateX(4px) }
+/* ---------- services: Build ✕ Brand cross ---------- */
+.cross{ position:relative; min-height:560px; }
+.panel{ padding:clamp(28px,4vw,46px); position:relative; }
+.panel .eyebrow{ margin-bottom:22px }
+.panel p{ color:inherit; opacity:.82; max-width:34ch; margin-top:16px }
+.panel ul{ list-style:none; margin-top:26px; font-family:var(--f-mono); font-size:13px; letter-spacing:.04em }
+.panel ul li{ padding:11px 0; border-top:1px solid currentColor; opacity:.72;
+  display:flex; align-items:center; gap:12px }
+.panel ul li::before{ content:"✕"; color:var(--steel); opacity:1; font-size:11px }
+.panel--build{ background:var(--ink); color:var(--bone); position:absolute; top:0; left:0;
+  width:60%; min-height:380px; z-index:5 }
+.panel--brand{ background:var(--bone); color:var(--ink); border:1px solid var(--ink);
+  position:absolute; right:0; top:180px; width:60%; min-height:380px; z-index:6 }
+.panel-tag{ font-family:var(--f-display); font-weight:700; font-size:clamp(26px,3.2vw,36px); }
+/* La banda de advisory: se apoya en el eje, debajo del cruce. No es un tercer panel —
+   es la viga sobre la que descansan los dos, que es lo que el servicio es en realidad. */
+.advisory{ margin-top:clamp(40px,6vw,72px); padding-top:30px; border-top:1px solid var(--ink);
+  display:grid; grid-template-columns:minmax(0,.34fr) minmax(0,1fr); gap:clamp(20px,4vw,56px) }
+/* `.eyebrow` es flex con align-items:center; como celda de grid se estira a toda la
+   altura de la fila y el texto quedaba centrado a media banda en vez de alineado con
+   el titular. `align-self:start` la devuelve a su sitio. */
+.advisory .eyebrow{ align-self:start; margin-top:10px }
+.advisory h3{ font-family:var(--f-display); font-weight:700; letter-spacing:-.01em;
+  font-size:clamp(22px,2.6vw,32px); line-height:1.1 }
+.advisory p{ margin-top:14px; color:var(--graphite); max-width:58ch }
+@media(max-width:820px){ .advisory{ grid-template-columns:1fr; gap:16px } }
+
+/* La línea de "sin tarifa publicada": el precio sale del alcance, no de un plan. */
+.svc__ask{ margin-top:clamp(36px,5vw,60px); display:flex; flex-wrap:wrap; align-items:center;
+  gap:22px; font-size:clamp(16px,1.6vw,19px); color:var(--graphite) }
+.svc__ask span{ max-width:52ch }
+
+/* the ✕ sits on the true crossing of the two panel borders — not the geometric centre */
+.cross__mark{ position:absolute; z-index:7; top:180px; left:60%; transform:translate(-50%,-50%);
+  width:60px; height:60px; }
+.cross__mark svg{ width:100%; height:100%; display:block }
+@media(max-width:820px){
+  .cross{ min-height:0; display:flex; flex-direction:column; gap:0 }
+  .panel--build,.panel--brand{ position:static; width:100%; min-height:0 }
+  .panel--brand{ border-top:0 }
+  .cross__mark{ position:relative; top:auto; left:auto; transform:none; margin:-32px auto; background:var(--bone); }
+}
+
+/* ---------- work — interactive 3D-tilt cards (brand-adapted) ---------- */
+.work__grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:var(--gut) }
+/* Cinco tarjetas en tres columnas dejaban una celda muerta abajo a la derecha. Sobre
+   seis columnas caben 2+3 sin hueco. Las dos primeras salen a mayor tamaño por
+   posición, no por criterio: el orden del portafolio no lo decide esta hoja. */
+/* Los span SOLO por encima de 820px. Definirlos siempre y resetearlos en la media
+   query de móvil no funcionaba: `.work__grid > .tcard{grid-column:auto}` tiene menos
+   especificidad que el `:nth-child` que intentaba anular, así que perdía y las dos
+   primeras tarjetas salían más anchas que las otras tres a 390px (medido). */
+@media(min-width:821px){
+  .work__grid > .tcard:nth-child(-n+2){ grid-column:span 3 }
+  .work__grid > .tcard:nth-child(n+3){ grid-column:span 2 }
+}
+.tcard{ perspective:1100px }
+/* the tilting plane — NO overflow here (overflow!=visible would flatten the 3D) */
+.tcard__inner{ position:relative; display:block; aspect-ratio:16/12; background:var(--ink);
+  border:1px solid var(--line); transform-style:preserve-3d; will-change:transform;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1), border-color .3s; }
+.tcard:hover .tcard__inner{ border-color:var(--signal) }
+.tcard__media{ position:absolute; inset:0; overflow:hidden }
+.tcard__media img{ width:100%; height:100%; object-fit:cover; object-position:top center;
+  transition:transform .6s cubic-bezier(.2,.8,.2,1); filter:saturate(.97) }
+.tcard:hover .tcard__media img{ transform:scale(1.05) }
+/* sharp label chip, lifts in 3D */
+.tcard__chip{ position:absolute; left:-1px; bottom:-1px; max-width:92%; background:var(--ink);
+  border-top:2px solid var(--signal); padding:13px 20px 14px 15px; transform:translateZ(38px) }
+.tcard__tag{ font-family:var(--f-mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--steel) }
+.tcard__tag .x{ color:var(--steel-text) }
+.tcard__name{ font-family:var(--f-display); font-weight:500; font-size:19px; color:var(--bone); margin-top:5px }
+/* launch chip, top-right, lifts most */
+.tcard__go{ position:absolute; top:-1px; right:-1px; width:44px; height:44px; display:grid; place-items:center;
+  background:var(--ink); border-left:1px solid var(--line); border-bottom:1px solid var(--line);
+  color:var(--bone); font-size:16px; transform:translateZ(55px);
+  transition:background .25s,color .25s,transform .3s cubic-bezier(.2,.8,.2,1) }
+.tcard:hover .tcard__go{ background:var(--signal); color:var(--ink); transform:translateZ(55px) translate(2px,-2px) }
+@media(max-width:820px){ .work__grid{ grid-template-columns:1fr; gap:34px } }
+
+/* ---------- process ---------- */
+.proc__track{ display:grid; grid-template-columns:repeat(4,1fr); gap:var(--gut); position:relative; margin-top:24px }
+.proc__line{ position:absolute; top:7px; left:0; height:1px; width:100%; background:var(--line) }
+.proc__line i{ position:absolute; left:0; top:0; height:100%; width:0; background:var(--signal) }
+.step{ position:relative; padding-top:34px }
+.step__node{ position:absolute; top:0; left:0; width:15px; height:15px }
+.step__node::before,.step__node::after{ content:""; position:absolute; top:50%; left:50%; width:15px; height:2px;
+  background:var(--steel); transform-origin:center }
+.step__node::before{ transform:translate(-50%,-50%) rotate(45deg) }
+.step__node::after{ transform:translate(-50%,-50%) rotate(-45deg) }
+.step:last-child .step__node::before,.step:last-child .step__node::after{ background:var(--graphite) }
+.step .num{ font-family:var(--f-mono); font-size:12px; color:var(--steel-text); letter-spacing:.1em }
+.step h3{ margin:10px 0 8px }
+.step p{ font-size:15px; color:var(--graphite) }
+@media(max-width:820px){
+  .proc__track{ grid-template-columns:1fr; gap:0 }
+  .proc__line{ top:0; left:7px; width:1px; height:100% }
+  .proc__line i{ width:100%; height:0 }
+  .step{ padding:0 0 40px 36px } .step__node{ top:4px }
+}
+
+/* ---------- who ---------- */
+.who__grid{ display:grid; grid-template-columns:1fr auto 1fr; align-items:stretch; gap:clamp(20px,4vw,56px) }
+.person{ display:flex; flex-direction:column }
+.person__portrait{ aspect-ratio:4/5; border:1px solid var(--line); position:relative; overflow:hidden;
+  background:
+    repeating-linear-gradient(135deg,var(--line-soft) 0 1px,transparent 1px 9px),
+    var(--ink); }
+.person__portrait img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  object-position:top center; filter:grayscale(1) contrast(1.04) brightness(.97); transition:filter .5s ease; }
+.person:hover .person__portrait img{ filter:grayscale(0) contrast(1) brightness(1) }
+.person__portrait span{ position:absolute; left:18px; bottom:16px; z-index:2; font-family:var(--f-mono); font-size:11px;
+  letter-spacing:.16em; color:var(--bone); mix-blend-mode:difference }
+.person__portrait .mono-x{ position:absolute; top:16px; right:18px; bottom:auto; left:auto; z-index:2; color:var(--steel); font-size:18px }
+.person__role{ font-family:var(--f-mono); font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--signal-ink); margin-top:20px }
+.person h3{ margin-top:8px }
+.person p{ font-size:15px; color:var(--graphite); margin-top:10px; max-width:32ch }
+/* El monograma es un trazo geométrico de grosor uniforme (brief §2), no el glifo ✕ de
+   Space Grotesk: el glifo tiene grosor modulado y remates distintos, así que la marca
+   salía en dos versiones incompatibles en la misma página — y la falsa, a 84px, era la
+   dominante. Mismo SVG que .cross__mark, en Steel (el Signal se reserva para esa). */
+.who__x{ align-self:center; width:clamp(36px,5vw,56px); height:clamp(36px,5vw,56px); line-height:0 }
+.who__x svg{ width:100%; height:100%; display:block }
+@media(max-width:820px){
+  .who__grid{ grid-template-columns:1fr; gap:18px }
+  .who__x{ margin:6px 0 }
+}
+
+/* ---------- contact (inverted Ink block) ---------- */
+.contact{ background:var(--ink); color:var(--bone); }
+.contact h2{ color:var(--bone); max-width:18ch }
+.contact .eyebrow{ color:var(--steel) }
+.contact .eyebrow::before{ background:var(--steel) }
+.contact .eyebrow .x{ color:var(--signal) }
+.contact__row{ display:flex; flex-wrap:wrap; gap:18px; margin-top:40px }
+.contact__meta{ display:flex; flex-wrap:wrap; gap:40px; margin-top:54px; padding-top:28px;
+  border-top:1px solid #ffffff1f; font-family:var(--f-mono); font-size:13px; color:var(--steel) }
+.contact__meta b{ display:block; color:var(--bone); font-weight:500; margin-top:6px;
+  font-family:var(--f-body); letter-spacing:0; font-size:15px }
+.btn--ghost-d{ border-color:#ffffff40; color:var(--bone);
+  background-image:linear-gradient(90deg,var(--bone) 0 50%,transparent 50% 100%) }
+.btn--ghost-d:hover{ background-position:0 0; color:var(--ink); border-color:var(--bone) }
+
+/* contact — two columns: the message ✕ the origin target */
+.contact__grid{ display:grid; grid-template-columns:1.05fr .95fr; align-items:center; gap:clamp(36px,6vw,88px) }
+@media(max-width:880px){ .contact__grid{ grid-template-columns:1fr; gap:52px } }
+.contact h2{ max-width:none }
+
+/* the journey that began in the void resolves at the origin — 00,00 */
+.origin{ position:relative; aspect-ratio:1/1; width:min(100%,420px); margin-inline:auto;
+  border:1px solid #ffffff1f; }
+.origin__corner{ position:absolute; width:13px; height:13px; border:1px solid var(--steel); }
+.origin__corner.tl{ top:-1px; left:-1px; border-right:0; border-bottom:0 }
+.origin__corner.tr{ top:-1px; right:-1px; border-left:0; border-bottom:0 }
+.origin__corner.bl{ bottom:-1px; left:-1px; border-right:0; border-top:0 }
+.origin__corner.br{ bottom:-1px; right:-1px; border-left:0; border-top:0 }
+.origin__rule{ position:absolute; background:var(--steel); opacity:.45 }
+.origin__rule--h{ left:0; right:0; top:50%; height:1px; transform:scaleX(0); transform-origin:left }
+.origin__rule--v{ top:0; bottom:0; left:50%; width:1px; transform:scaleY(0); transform-origin:top }
+.origin.is-locked .origin__rule--h{ transform:scaleX(1); transition:transform 1s cubic-bezier(.6,0,.2,1) }
+.origin.is-locked .origin__rule--v{ transform:scaleY(1); transition:transform 1s .1s cubic-bezier(.6,0,.2,1) }
+.origin__x{ position:absolute; top:50%; left:50%; width:42px; height:42px;
+  transform:translate(-50%,-50%) scale(0) rotate(-45deg) }
+.origin.is-locked .origin__x{ transform:translate(-50%,-50%) scale(1) rotate(0);
+  transition:transform .7s .55s cubic-bezier(.2,.8,.2,1) }
+.origin__x line{ stroke:var(--signal); stroke-width:4; stroke-linecap:square }
+.origin__ping{ position:absolute; top:50%; left:50%; width:42px; height:42px; pointer-events:none;
+  transform:translate(-50%,-50%) scale(.4); border:1px solid var(--signal); opacity:0 }
+.origin.is-locked .origin__ping{ animation:ping 1.2s .62s cubic-bezier(.2,.7,.3,1) }
+@keyframes ping{ 0%{ transform:translate(-50%,-50%) scale(.5); opacity:.6 }
+  100%{ transform:translate(-50%,-50%) scale(3.6); opacity:0 } }
+.origin__label{ position:absolute; left:14px; top:13px; font-family:var(--f-mono); font-size:11px;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--steel) }
+.origin__label b{ color:var(--signal); font-weight:500 }
+.origin__read{ position:absolute; left:14px; bottom:13px; font-family:var(--f-mono); font-size:12px;
+  letter-spacing:.06em; color:var(--steel); display:flex; gap:18px }
+.origin__read b{ color:var(--bone); font-weight:500 }
+
+/* signature reveal — a ruler is laid under each section heading */
+.sec-head{ position:relative }
+.measure{ display:block; height:1px; background:var(--line); transform:scaleX(0); transform-origin:left;
+  position:relative; margin-top:2px }
+.measure::before,.measure::after{ content:""; position:absolute; top:-4px; width:1px; height:9px; background:var(--steel) }
+.measure::before{ left:0 } .measure::after{ right:0 }
+.measure i{ position:absolute; right:-3px; top:50%; width:7px; height:7px; background:var(--signal);
+  transform:translateY(-50%) rotate(45deg); opacity:0; transition:opacity .3s }
+
+/* ---------- footer ---------- */
+footer{ background:var(--ink); color:var(--steel); border-top:1px solid #ffffff14; position:relative; z-index:4 }
+.foot{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:18px; align-items:center;
+  padding-block:34px; font-family:var(--f-mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase }
+.foot .x{ color:var(--steel) }
+.foot a:hover{ color:var(--bone) }
+
+/* ---------- reveal ---------- */
+.rv{ opacity:0; transform:translateY(16px) }
+.rv.is-in{ opacity:1; transform:none }
+/* Work cards plot in like a blueprint: left→right clip wipe + lift, staggered */
+.rv-card{ clip-path:inset(0 100% 0 0); transform:translateY(22px) }
+.rv-card.is-in{ clip-path:inset(0 0 0 0) }
+
+/* ---------- loader ---------- */
+#loader{ position:fixed; inset:0; z-index:50; background:var(--bone); display:flex; align-items:center;
+  justify-content:center; flex-direction:column; gap:22px; }
+#loader.done{ opacity:0; visibility:hidden; transition:opacity .6s,visibility .6s }
+.loader__x{ width:54px; height:54px }
+.loader__x line{ stroke:var(--signal); stroke-width:3.4; stroke-linecap:square;
+  stroke-dasharray:54; stroke-dashoffset:54; animation:draw .6s .15s forwards cubic-bezier(.6,0,.2,1) }
+.loader__x line:nth-child(2){ animation-delay:.32s }
+@keyframes draw{ to{ stroke-dashoffset:0 } }
+.loader__read{ font-family:var(--f-mono); font-size:11px; letter-spacing:.3em; color:var(--steel); text-transform:uppercase }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.001ms !important; transition-duration:.001ms !important }
+  html{ scroll-behavior:auto }
+  .rv{ opacity:1; transform:none }
+  .rv-card{ clip-path:none; transform:none }
+}
+
+/* ---------- el recuento de cada brazo ----------
+   Sustituye a las viñetas que antes vivían dentro de los paneles. El
+   catálogo entero está en la leyenda de abajo; aquí solo queda cuántas
+   piezas cuelgan de cada lado, que es lo que convierte la asimetría
+   7 contra 3 en un dato del plano en vez de en un desnivel. */
+.panel__n{ font-family:var(--f-mono); font-size:12px; letter-spacing:.24em;
+  margin-top:auto; padding-top:26px; opacity:.55; }
+.panel{ display:flex; flex-direction:column }

@@ -7,18 +7,8 @@
     <span><?= $t['foot'] ?></span>
   </div>
 </footer>
-<script>
-/* Lo único que necesita JS en una hoja: el menú en móvil. Sin GSAP — una
- * página de servicio es texto, y clonar los dos <script> del home habría
- * sido 2 peticiones de CDN por página para nada. */
-(function(){
-  var h=document.getElementById('hdr'),b=document.getElementById('burger'),n=document.getElementById('navLinks');
-  function s(){ h.classList.toggle('scrolled', window.scrollY>10); }
-  s(); addEventListener('scroll', s, {passive:true});
-  if(b) b.addEventListener('click', function(){
-    var o=n.classList.toggle('open');
-    b.setAttribute('aria-expanded', o?'true':'false');
-    b.classList.toggle('is-open', o);
-  });
-})();
-</script>
+<?php /* La navegación es LA misma en las 16 páginas, así que es un fichero y no
+        una copia por página. Nada de GSAP aquí: una hoja de servicio es texto, y
+        clonar los dos <script> de CDN del home habrían sido 2 peticiones por
+        página para nada. */ ?>
+<script src="/assets/nav.js?v=<?= VER ?>" defer></script>

@@ -53,6 +53,12 @@ RedirectMatch 404 /\.git
   </IfModule>
 </FilesMatch>
 
+# ── 4 bis. Que se sirve en una carpeta ─────────────────────────────
+# Explicito y con PHP primero: `index.html` sigue en el repo un commit mas
+# como red de rescate del cambio a plantillas, y el orden por defecto del
+# servidor no puede ser quien decida cual de los dos es la portada.
+DirectoryIndex index.php index.html
+
 # ── 5. URLs limpias — norma de agencia (28-jul-2026) ───────────────
 # En la barra nunca se ve `.html` ni `.php`.
 <IfModule mod_rewrite.c>
@@ -65,6 +71,12 @@ RedirectMatch 404 /\.git
   # `inc/` son las piezas compartidas (plantillas y textos), no páginas.
   # Sin esto responden 200 en blanco y son URLs rastreables de la nada.
   RewriteRule ^inc/ - [F,L]
+
+  # El sitemap y el llms.txt se GENERAN del catálogo (ver sitemap.php), pero
+  # robots.txt y Search Console esperan estas dos extensiones. El rewrite es
+  # lo que deja tener las dos cosas: una sola fuente y la URL de siempre.
+  RewriteRule ^sitemap\.xml$ sitemap.php [L]
+  RewriteRule ^llms\.txt$ llms.php [L]
 
   # ── Una URL, no dos ─────────────────────────────────────────────
   # `/index`, `/index.php` y `/es/index` son el mismo contenido que `/`
