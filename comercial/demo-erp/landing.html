@@ -6,216 +6,422 @@
 <meta name="robots" content="noindex">
 <title>Módulos del ERP · Demo</title>
 <!-- Portada de la demo del ERP (AxisWorks/comercial/demo-erp). build.py la copia a
-     dist/index.html. Cada tarjeta enlaza a su pantalla en la demo; las marcadas
-     «en camino» no tienen pantalla todavía. Sin precios a propósito: el precio
-     de un cliente nunca se fija en una página (hard stop del estudio). -->
+     dist/index.html. Piel: sistema «Enterprise Precision» (ClaudeCode/ERP/DESIGN.md,
+     24-sep). Del diseño se tomó la piel y la composición, NO su texto: la guía pedía
+     precios, SLA, certificaciones, integraciones y testimonios que no existen. Aquí
+     solo hay capacidades vistas en el código de la v4. Sin precios: el precio de un
+     cliente nunca se fija en una página (hard stop del estudio). -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --lino: #fbf9f4; --papel: #ffffff; --linea: #e4e2dd; --tinta: #1b1c19; --gris: #5f6158;
-    --acento: #485B37; --acento-suave: #eef1e8;
+    --fondo: #f8f9ff; --blanco: #ffffff; --tarjeta: #f8fafc; --borde: #e2e8f0; --borde-in: #c7d2fe;
+    --tinta: #0f172a; --texto: #475569; --suave: #64748b; --tenue: #94a3b8;
+    --indigo: #4f46e5; --indigo-h: #4338ca; --indigo-50: #eef2ff; --indigo-700: #4338ca;
+    --cian: #06b6d4; --cian-50: #ecfeff; --cian-700: #0e7490; --navy: #0f172a; --navy-2: #1e1b4b;
+    --ok: #10b981;
+    --sombra-1: 0 4px 20px -2px rgba(15,23,42,.04), 0 2px 6px -1px rgba(15,23,42,.02);
+    --sombra-2: 0 20px 25px -5px rgba(15,23,42,.08), 0 8px 10px -6px rgba(15,23,42,.03);
+    --brillo: 0 0 25px rgba(79,70,229,.15), inset 0 0 0 1px rgba(99,102,241,.35);
   }
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: var(--lino); color: var(--tinta);
-    font: 400 16px/1.55 "Instrument Sans", system-ui, sans-serif; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--fondo); color: var(--texto); font: 400 16px/24px Inter, system-ui, sans-serif; }
+  h1, h2, h3 { font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif; color: var(--tinta); }
   a { color: inherit; }
-  .marco { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
-  @media (max-width: 640px) { .marco { padding: 0 16px; } .marca { font-size: 11px; letter-spacing: .12em; } .entrar { padding: 9px 16px; font-size: 13px; } .hero { padding-top: 56px; } }
+  .num { font-variant-numeric: tabular-nums; }
+  .marco { max-width: 1280px; margin: 0 auto; padding-left: 80px; padding-right: 80px; }
+  @media (max-width: 1023px) { .marco { padding-left: 48px; padding-right: 48px; } }
+  @media (max-width: 767px) { .marco { padding-left: 20px; padding-right: 20px; } }
 
-  header.cab { border-bottom: 1px solid var(--linea); }
-  header.cab .marco { display: flex; justify-content: space-between; align-items: center; height: 64px; }
-  .marca { font: 500 13px/1 "Instrument Sans", sans-serif; letter-spacing: .18em; text-transform: uppercase; }
-  .entrar { white-space: nowrap; text-decoration: none; background: var(--acento); color: #fff; padding: 10px 20px;
-    border-radius: 999px; font-size: 14px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 8px;
+    font: 600 14px/20px Inter, sans-serif; text-decoration: none; cursor: pointer; border: 1px solid transparent;
+    transition: background .2s, border-color .2s, box-shadow .2s; white-space: nowrap; }
+  .btn-p { background: var(--indigo); color: #fff; box-shadow: 0 4px 12px -2px rgba(79,70,229,.25); }
+  .btn-p:hover { background: var(--indigo-h); }
+  .btn-s { background: transparent; color: var(--tinta); border-color: var(--borde); }
+  .btn-s:hover { background: #f1f5f9; }
+  .btn:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
 
-  .hero { padding-top: 88px; padding-bottom: 56px; }
-  .hero .eti { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--gris); }
-  .hero h1 { font: 400 clamp(44px, 7vw, 88px)/1.02 "Cormorant Garamond", serif; margin: 18px 0 24px; letter-spacing: -.01em; max-width: 13ch; }
-  .hero p { max-width: 58ch; color: var(--gris); font-size: 18px; margin: 0; }
+  header.nav { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,.9);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid #f1f5f9; }
+  header.nav .marco { display: flex; align-items: center; gap: 32px; height: 68px; }
+  .logo { display: flex; align-items: center; gap: 10px; font: 800 17px/1 "Plus Jakarta Sans", sans-serif; color: var(--tinta); text-decoration: none; letter-spacing: -.02em; white-space: nowrap; }
+  .logo i { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--indigo), var(--cian)); display: block; flex: none; }
+  .nav-links { display: flex; gap: 24px; font: 500 14px/20px Inter, sans-serif; }
+  .nav-links a { text-decoration: none; color: var(--texto); }
+  .nav-links a:hover { color: var(--indigo); }
+  .nav-cta { margin-left: auto; display: flex; gap: 12px; }
+  @media (max-width: 1023px) { .nav-links { display: none; } }
+  @media (max-width: 560px) { .nav-cta .btn-s { display: none; } .btn { height: 40px; padding: 0 16px; } header.nav .marco { gap: 12px; } }
 
-  .barra { position: sticky; top: 0; z-index: 5; background: var(--lino); border-top: 1px solid var(--linea);
-    border-bottom: 1px solid var(--linea); }
-  .barra .marco { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding-top: 14px; padding-bottom: 14px; }
-  .cuenta { font: 400 30px/1 "Cormorant Garamond", serif; }
-  .cuenta small { font: 400 13px/1 "Instrument Sans", sans-serif; color: var(--gris); margin-left: 6px; }
+  .hero { padding-top: 88px; padding-bottom: 24px; text-align: center; }
+  .insignia { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px;
+    background: var(--cian-50); color: var(--cian-700); font: 600 12px/16px Inter, sans-serif; }
+  .insignia .pulso { width: 7px; height: 7px; border-radius: 50%; background: var(--cian); animation: pulso 2s infinite; }
+  @keyframes pulso { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+  .hero h1 { font-size: 56px; line-height: 64px; font-weight: 800; letter-spacing: -.03em; margin: 22px auto 20px; max-width: 18ch; }
+  .hero h1 span { color: var(--indigo); }
+  .hero p.lead { font-size: 18px; line-height: 28px; max-width: 62ch; margin: 0 auto; }
+  .hero .ctas { display: flex; gap: 12px; justify-content: center; margin-top: 32px; flex-wrap: wrap; }
+  .metricas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 64px; text-align: left; }
+  .metrica { background: var(--blanco); border: 1px solid var(--borde); border-radius: 16px; padding: 20px 22px; box-shadow: var(--sombra-1); }
+  .metrica b { display: block; font: 800 40px/48px "Plus Jakarta Sans", sans-serif; color: var(--tinta); letter-spacing: -.02em; }
+  .metrica b.cian { color: var(--cian-700); }
+  .metrica span { font-size: 14px; line-height: 20px; color: var(--suave); }
+  @media (max-width: 900px) { .metricas { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 767px) { .hero { padding-top: 56px; } .hero h1 { font-size: 36px; line-height: 44px; } .metricas { gap: 12px; margin-top: 40px; } .metrica { padding: 16px; } .metrica b { font-size: 32px; line-height: 40px; } }
 
-  section.area { padding: 56px 0 8px; }
-  .area-cab { display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: baseline; margin-bottom: 20px; }
-  .area-cab h2 { font: 400 32px/1.1 "Cormorant Garamond", serif; margin: 0; }
-  .area-cab p { margin: 0; color: var(--gris); max-width: 60ch; }
-  @media (max-width: 760px) { .area-cab { grid-template-columns: 1fr; gap: 6px; } }
+  section.bloque { padding-top: 96px; scroll-margin-top: 72px; }
+  .eyebrow { font: 600 12px/16px Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--indigo-700); }
+  .bloque h2 { font-size: 40px; line-height: 48px; font-weight: 700; letter-spacing: -.02em; margin: 10px 0 12px; }
+  .bloque .sub { font-size: 18px; line-height: 28px; max-width: 64ch; margin: 0 0 32px; }
+  @media (max-width: 767px) { .bloque h2 { font-size: 28px; line-height: 36px; } section.bloque { padding-top: 72px; } }
 
-  /* bordes en la tarjeta, no en la rejilla: así los huecos de la última fila quedan en lino, no en gris */
-  .rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); padding: 1px 0 0 1px; }
-  .mod { background: var(--papel); border: 1px solid var(--linea); margin: -1px 0 0 -1px; padding: 22px 22px 18px; display: flex; flex-direction: column; gap: 10px; min-height: 196px; }
-  .mod.off { background: var(--lino); }
-  .mod.off h3, .mod.off p { color: #9a9c93; }
-  .mod-cab { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-  .mod h3 { font: 500 16px/1.3 "Instrument Sans", sans-serif; margin: 0; }
-  .mod p { margin: 0; font-size: 14px; color: var(--gris); flex: 1; }
-  .mod .pie { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-  .mod .pie a { color: var(--acento); text-decoration: none; }
+  .filtros { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 20px; scrollbar-width: none; }
+  .filtros button { flex: none; font: 600 14px/20px Inter, sans-serif; background: var(--tarjeta); color: var(--texto);
+    border: 1px solid var(--borde); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  .filtros button[aria-pressed="true"] { background: var(--indigo-50); color: var(--indigo); border-color: var(--borde-in); }
+  .config { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 32px; align-items: start; }
+  .catalogo { grid-column: span 8; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .resumen { grid-column: span 4; position: sticky; top: 92px; }
+  @media (max-width: 1023px) { .catalogo, .resumen { grid-column: 1 / -1; } .resumen { position: static; } }
+  @media (max-width: 640px) { .catalogo { grid-template-columns: 1fr; } }
+
+  .mod { position: relative; background: var(--blanco); border: 1px solid var(--borde); border-radius: 16px; padding: 18px 18px 16px;
+    box-shadow: var(--sombra-1); display: flex; flex-direction: column; gap: 10px; transition: transform .2s, box-shadow .2s, border-color .2s; }
+  .mod:hover { transform: translateY(-2px); box-shadow: var(--brillo); }
+  .mod.on { border-color: var(--borde-in); }
+  .mod.on::before { content: ""; position: absolute; left: 16px; right: 16px; top: -1px; height: 1px; background: linear-gradient(90deg, var(--indigo), var(--cian)); }
+  .mod.off { background: var(--tarjeta); box-shadow: none; }
+  .mod.off h3, .mod.off p, .mod.off li { color: var(--tenue); }
+  .mod[hidden] { display: none; }
+  .mod-cab { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; }
+  .mod h3 { font-size: 18px; line-height: 26px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
+  .mod .area { font: 600 12px/16px Inter, sans-serif; color: var(--suave); margin-top: 2px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font: 600 12px/16px Inter, sans-serif; padding: 3px 10px; border-radius: 999px; background: var(--indigo-50); color: var(--indigo-700); }
+  .tag.cian { background: var(--cian-50); color: var(--cian-700); }
+  .mod p { margin: 0; font-size: 14px; line-height: 20px; }
+  .mod ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .mod li { font-size: 14px; line-height: 20px; padding-left: 22px; position: relative; color: var(--texto); }
+  .mod li::before, .panel li::before, .caso li::before { content: ""; position: absolute; left: 2px; top: 5px; width: 10px; height: 6px;
+    border-left: 2px solid var(--ok); border-bottom: 2px solid var(--ok); transform: rotate(-45deg); }
+  .mod.off li::before { border-color: var(--tenue); }
+  .mod .pie { margin-top: auto; padding-top: 6px; font: 600 13px/18px Inter, sans-serif; }
+  .mod .pie a { color: var(--indigo); text-decoration: none; }
   .mod .pie a:hover { text-decoration: underline; }
-  .sello { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--gris); }
-  .sello.camino { color: var(--acento); }
+  .mod .pie .nota { color: var(--suave); font-weight: 500; }
+  .mod.camino { background: linear-gradient(180deg, #fff, var(--cian-50)); }
 
-  /* interruptor: pastilla, sin sombra */
-  .sw { position: relative; flex: none; width: 40px; height: 22px; border-radius: 999px; border: 1px solid var(--linea);
-    background: var(--lino); cursor: pointer; padding: 0; transition: background .18s, border-color .18s; }
-  .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
-    background: #b9bbb2; transition: transform .18s, background .18s; }
-  .sw[aria-checked="true"] { background: var(--acento); border-color: var(--acento); }
-  .sw[aria-checked="true"]::after { transform: translateX(18px); background: #fff; }
-  .sw[disabled] { cursor: default; opacity: .6; }
-  .sw:focus-visible, .entrar:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+  .sw { position: relative; flex: none; width: 44px; height: 24px; border-radius: 999px; border: 0; background: #cbd5e1; cursor: pointer; padding: 0; transition: background .2s; }
+  .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.2); transition: transform .2s; }
+  .sw[aria-checked="true"] { background: var(--indigo); }
+  .sw[aria-checked="true"]::after { transform: translateX(20px); }
+  .sw[disabled] { cursor: default; opacity: .7; }
 
-  .camino-bloque { margin-top: 72px; padding-top: 56px; padding-bottom: 72px; border-top: 1px solid var(--linea); }
-  .camino-bloque .rejilla .mod { background: var(--acento-suave); }
-  .camino-bloque .rejilla .mod.off { background: var(--lino); }
+  .panel { background: linear-gradient(160deg, var(--navy), var(--navy-2)); color: #cbd5e1; border-radius: 24px; padding: 24px; border: 1px solid #6366f1; box-shadow: var(--sombra-2); }
+  .panel .eyebrow { color: #a5b4fc; }
+  .panel .cuenta { font: 800 48px/56px "Plus Jakarta Sans", sans-serif; color: #fff; letter-spacing: -.02em; margin-top: 8px; }
+  .panel .cuenta small { font: 500 14px/20px Inter, sans-serif; color: #94a3b8; letter-spacing: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0; max-height: 220px; overflow: auto; }
+  .chips span { font: 600 12px/16px Inter, sans-serif; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.1); color: #e2e8f0; border: 1px solid rgba(255,255,255,.15); }
+  .chips span.camino { background: rgba(6,182,212,.15); color: #67e8f9; border-color: rgba(6,182,212,.35); }
+  .panel hr { border: 0; border-top: 1px solid rgba(255,255,255,.12); margin: 16px 0; }
+  .panel ul { list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 8px; font-size: 14px; line-height: 20px; }
+  .panel li, .caso li { padding-left: 22px; position: relative; }
+  .panel li::before, .caso li::before { border-color: var(--cian); }
+  .panel .btn { width: 100%; justify-content: center; }
+  .panel .btn-c { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.2); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); margin-top: 10px; }
+  .panel .btn-c:hover { background: rgba(255,255,255,.16); }
 
-  footer { border-top: 1px solid var(--linea); padding: 28px 0 40px; color: var(--gris); font-size: 13px; }
-  @media (prefers-reduced-motion: reduce) { .sw, .sw::after { transition: none; } }
+  .tabla { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--blanco); border: 1px solid var(--borde); border-radius: 16px; overflow: hidden; box-shadow: var(--sombra-1); }
+  .tabla th, .tabla td { text-align: left; padding: 16px 20px; border-bottom: 1px solid var(--borde); vertical-align: top; font-size: 14px; line-height: 20px; }
+  .tabla tr:last-child th, .tabla tr:last-child td { border-bottom: 0; }
+  .tabla th { width: 30%; color: var(--tinta); font: 600 14px/20px Inter, sans-serif; background: var(--tarjeta); }
+  .tabla code { font: 500 12px/16px ui-monospace, "JetBrains Mono", Menlo, monospace; background: var(--indigo-50); color: var(--indigo-700); padding: 2px 6px; border-radius: 6px; }
+  @media (max-width: 640px) { .tabla, .tabla tbody, .tabla tr, .tabla th, .tabla td { display: block; width: 100%; } .tabla th { border-bottom: 0; padding-bottom: 4px; } }
+
+  .integ { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .int { background: var(--blanco); border: 1px solid var(--borde); border-radius: 16px; padding: 20px; box-shadow: var(--sombra-1); }
+  .int h3 { font-size: 18px; line-height: 26px; margin: 10px 0 6px; }
+  .int p { margin: 0; font-size: 14px; line-height: 20px; }
+  @media (max-width: 900px) { .integ { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .integ { grid-template-columns: 1fr; } }
+
+  .caso { background: linear-gradient(160deg, var(--navy), var(--navy-2)); border-radius: 24px; padding: 40px; color: #cbd5e1;
+    display: grid; grid-template-columns: 5fr 7fr; gap: 40px; border: 1px solid rgba(99,102,241,.4); }
+  .caso h3 { color: #fff; font-size: 32px; line-height: 40px; margin: 10px 0 0; letter-spacing: -.02em; }
+  .caso .eyebrow { color: #a5b4fc; }
+  .caso ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; font-size: 16px; line-height: 24px; }
+  @media (max-width: 900px) { .caso { grid-template-columns: 1fr; padding: 28px; gap: 24px; } .caso h3 { font-size: 26px; line-height: 34px; } }
+
+  .faq { display: grid; gap: 12px; max-width: 860px; }
+  .faq details { background: var(--blanco); border: 1px solid var(--borde); border-radius: 16px; padding: 0 20px; box-shadow: var(--sombra-1); }
+  .faq summary { list-style: none; cursor: pointer; padding: 18px 0; font: 600 16px/24px "Plus Jakarta Sans", sans-serif; color: var(--tinta); display: flex; justify-content: space-between; gap: 16px; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; color: var(--indigo); font-size: 22px; line-height: 24px; transition: transform .2s; flex: none; }
+  .faq details[open] summary::after { transform: rotate(45deg); }
+  .faq details p { margin: 0 0 18px; font-size: 15px; line-height: 24px; }
+
+  footer { margin-top: 96px; background: var(--navy); color: #94a3b8; }
+  footer .marco { padding-top: 32px; padding-bottom: 32px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 14px; }
+  footer .logo { color: #fff; }
+
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .mod, .sw, .sw::after { transition: none; } .insignia .pulso { animation: none; } }
 </style>
 </head>
 <body>
 
-<header class="cab">
+<header class="nav">
   <div class="marco">
-    <span class="marca">ERP inmobiliario · AxisWorks</span>
-    <a class="entrar" href="/intranet/v4/home/">Entrar a la demo</a>
+    <a class="logo" href="#"><i aria-hidden="true"></i>ERP inmobiliario</a>
+    <nav class="nav-links" aria-label="Secciones">
+      <a href="#modulos">Módulos</a>
+      <a href="#especificaciones">Especificaciones</a>
+      <a href="#integraciones">Integraciones</a>
+      <a href="#faq">Preguntas</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="btn btn-s" href="#modulos">Ver módulos</a>
+      <a class="btn btn-p" href="/intranet/v4/home/">Entrar a la demo</a>
+    </div>
   </div>
 </header>
 
 <main>
-  <div class="marco hero">
-    <div class="eti">Caso real: promotora en Bali · datos de la demo inventados</div>
-    <h1>Un ERP que se monta por módulos</h1>
-    <p>Cada empresa activa lo que usa y el resto no le estorba. Los módulos comparten la misma base:
-      un contrato firmado ya sabe qué parcela reserva, qué factura toca emitir y qué comisión genera.
-      Aquí están todos: apaga los que no usarías y abre cualquiera en la demo.</p>
-  </div>
+  <section class="marco hero">
+    <span class="insignia"><span class="pulso" aria-hidden="true"></span>En producción en una promotora de Bali</span>
+    <h1>El ERP que se monta según tu negocio, <span>no al revés</span></h1>
+    <p class="lead">Cada empresa activa los módulos que usa. Todos comparten la misma base: un contrato firmado ya sabe
+      qué parcela reserva, qué factura toca emitir y qué comisión genera. Los datos de esta demo son inventados.</p>
+    <div class="ctas">
+      <a class="btn btn-p" href="/intranet/v4/home/">Entrar a la demo</a>
+      <a class="btn btn-s" href="#modulos">Ver los módulos</a>
+    </div>
+    <div class="metricas">
+      <div class="metrica"><b class="num" id="m-mod">0</b><span>módulos en producción</span></div>
+      <div class="metrica"><b class="num cian">3</b><span>idiomas en los contratos: español, inglés e indonesio</span></div>
+      <div class="metrica"><b class="num">2</b><span>idiomas en la intranet: español e inglés</span></div>
+      <div class="metrica"><b class="num" id="m-cam">0</b><span>módulos nuevos en camino</span></div>
+    </div>
+  </section>
 
-  <div class="barra">
-    <div class="marco">
-      <div class="cuenta" aria-live="polite"><span id="n-activos">0</span><small>módulos activos</small></div>
-      <div class="cuenta"><span id="n-camino">0</span><small>en camino marcados</small></div>
+  <section class="marco bloque" id="modulos">
+    <div class="eyebrow">Configurador</div>
+    <h2>Todos los módulos, activables uno a uno</h2>
+    <p class="sub">Aquí están todos encendidos. Apaga los que no usarías y abre cualquiera en la demo.</p>
+    <div class="filtros" role="group" aria-label="Filtrar por área" id="filtros"></div>
+    <div class="config">
+      <div class="catalogo" id="catalogo"></div>
+      <aside class="resumen" aria-label="Resumen de tu configuración">
+        <div class="panel">
+          <div class="eyebrow">Tu configuración</div>
+          <div class="cuenta num" aria-live="polite"><span id="r-on">0</span><small> de <span id="r-total">0</span> módulos</small></div>
+          <div class="chips" id="r-chips"></div>
+          <hr>
+          <ul>
+            <li>Base siempre incluida: panel del día, equipo y permisos, ajustes</li>
+            <li>Permisos por persona: cada uno ve sus herramientas y sus proyectos</li>
+            <li>Varias sociedades y monedas en el mismo sistema</li>
+          </ul>
+          <a class="btn btn-p" href="/intranet/v4/home/">Entrar a la demo</a>
+          <a class="btn btn-c" href="#especificaciones">Ver especificaciones</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="marco bloque" id="especificaciones">
+    <div class="eyebrow">Especificaciones</div>
+    <h2>Lo técnico, sin letra pequeña</h2>
+    <p class="sub">Cómo está construido lo que ves en la demo.</p>
+    <table class="tabla">
+      <tbody>
+        <tr><th>Base de datos</th><td>PostgreSQL gestionado en Supabase. Seguridad por fila (<code>RLS</code>): cada consulta devuelve solo lo que ese usuario puede ver, aunque alguien manipule la pantalla.</td></tr>
+        <tr><th>Usuarios y permisos</th><td>Roles de dirección, administración, jefe de ventas y agente. Cada persona tiene su lista de herramientas y de proyectos.</td></tr>
+        <tr><th>Idiomas</th><td>Intranet en español e inglés. Contratos en español, inglés e indonesio.</td></tr>
+        <tr><th>Sociedades y monedas</th><td>Varias sociedades emisoras con sus datos fiscales, y operaciones en euros y en rupias.</td></tr>
+        <tr><th>Firma de contratos</th><td>Firma electrónica con enlace que caduca, estado por firmante y aviso cuando una firma está a punto de vencer.</td></tr>
+        <tr><th>Trazabilidad</th><td>Quién creó cada contrato y cada factura, y quién consultó los datos de contacto de un lead y cuándo.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="marco bloque" id="integraciones">
+    <div class="eyebrow">Integraciones</div>
+    <h2>Conectado a lo que ya usa el equipo</h2>
+    <p class="sub">Las conexiones que funcionan hoy en el caso real.</p>
+    <div class="integ">
+      <article class="int"><span class="tag">Captación</span><h3>Meta Ads</h3><p>Los leads de los formularios entran solos en el CRM, y el piloto de campañas lee el gasto y los resultados de cada una.</p></article>
+      <article class="int"><span class="tag cian">Mensajería</span><h3>WhatsApp</h3><p>El setter IA atiende al lead por WhatsApp y el comercial le escribe desde su ficha.</p></article>
+      <article class="int"><span class="tag">CRM externo</span><h3>GoHighLevel</h3><p>Los leads que vienen de GoHighLevel conservan su rastro dentro del CRM del ERP.</p></article>
+      <article class="int"><span class="tag cian">Datos</span><h3>Google Sheets</h3><p>El parcelario de un proyecto se puede mantener en una hoja y volcarse al ERP.</p></article>
+      <article class="int"><span class="tag">Carga masiva</span><h3>Importación CSV</h3><p>Unidades y parcelas se cargan de golpe desde un CSV en la pantalla de proyectos.</p></article>
+      <article class="int"><span class="tag cian">Correo</span><h3>Email</h3><p>Contratos y facturas se envían desde el ERP y queda registro de cada envío.</p></article>
+    </div>
+  </section>
+
+  <section class="marco bloque">
+    <div class="caso">
+      <div>
+        <div class="eyebrow">Caso real</div>
+        <h3>Una promotora con tres proyectos en Bali, en un solo sistema</h3>
       </div>
+      <ul>
+        <li>Del lead de Meta al contrato firmado sin salir del ERP.</li>
+        <li>Contratos en tres idiomas y cobros por hitos de obra, cada uno con su factura y su recibí.</li>
+        <li>Comisiones del equipo comercial que se generan solas desde la venta.</li>
+        <li>Obra, entregas y un portal para que cada comprador siga lo suyo.</li>
+      </ul>
     </div>
-  </div>
+  </section>
 
-  <div class="marco" id="areas"></div>
-
-  <div class="marco camino-bloque">
-    <div class="area-cab">
-      <h2>En camino</h2>
-      <p>Lo que se está construyendo ahora. Si marcas alguno, entra en la conversación de tu proyecto
-        desde el primer día.</p>
+  <section class="marco bloque" id="faq">
+    <div class="eyebrow">Preguntas</div>
+    <h2>Lo que suele preguntarse</h2>
+    <div class="faq">
+      <details><summary>¿Se pueden activar o quitar módulos después?</summary>
+        <p>Sí. Cada módulo es una herramienta de la intranet y comparte la misma base que el resto, así que añadir uno más adelante no obliga a migrar nada. Dentro de la empresa, además, cada herramienta se da o se quita por persona desde Equipo y permisos.</p></details>
+      <details><summary>¿Cómo se cargan los datos que ya tenemos en Excel?</summary>
+        <p>Proyectos y parcelas se importan desde CSV en la propia pantalla de proyectos. El resto se revisa caso a caso en la llamada.</p></details>
+      <details><summary>¿Quién ve qué?</summary>
+        <p>Dirección lo ve todo. Un agente ve sus leads, sus operaciones y los proyectos que tiene asignados. Esa separación la hace la base de datos, no solo la pantalla.</p></details>
+      <details><summary>¿Dónde están los datos?</summary>
+        <p>En una base PostgreSQL gestionada en Supabase, con seguridad por fila y copias de seguridad. Esta demo no toca esa base: todo lo que ves son datos inventados que viven en tu navegador.</p></details>
     </div>
-    <div class="rejilla" id="camino"></div>
-  </div>
+  </section>
 </main>
 
 <footer>
-  <div class="marco">Demo con datos inventados. Ninguna acción sale de este navegador. AxisWorks.</div>
+  <div class="marco">
+    <span class="logo"><i aria-hidden="true"></i>ERP inmobiliario · AxisWorks</span>
+    <span>Demo con datos inventados. Ninguna acción sale de este navegador.</span>
+  </div>
 </footer>
 
 <script>
 (function () {
-  /* nucleo: siempre activo, no se puede apagar */
-  var AREAS = [
-    { t: 'Base', d: 'Lo que lleva cualquier ERP, se activen o no los demás módulos.', m: [
-      ['home', 'Panel del día', 'Lo que está esperando a alguien hoy: reservas que vencen, facturas sin cobrar, firmas pendientes. Cada aviso lleva a la pantalla que lo resuelve.', '/intranet/v4/home/', 1],
-      ['usuarios', 'Equipo y permisos', 'Roles de dirección, administración, jefe de ventas y agente. Cada persona ve las herramientas y los proyectos que le tocan.', '/intranet/v4/usuarios/', 1],
-      ['ajustes', 'Ajustes', 'Parámetros de la empresa, modo mantenimiento y la intranet en español o inglés.', '/intranet/v4/ajustes/', 1]
-    ]},
-    { t: 'Ventas', d: 'Del primer contacto a la venta cerrada, con el equipo comercial dentro.', m: [
-      ['crm', 'CRM de leads', 'Los leads de Meta entran solos. Embudo por etapas, próximo paso con fecha, agenda y aviso cuando alguien lleva días sin tocarse.', '/intranet/leads/'],
-      ['setter', 'Setter IA en WhatsApp', 'Un asistente que atiende al lead por WhatsApp, lo cualifica y lo deja listo para el comercial.', '/intranet/leads/'],
-      ['campanas', 'Piloto de campañas', 'Vigila las campañas de Meta Ads: pausa lo que no trae leads y mueve presupuesto al que sí, siempre dentro del tope que marca dirección.', '/intranet/leads/'],
-      ['operaciones', 'Operaciones', 'Una fila por venta: reserva, bloqueo y construcción del mismo comprador juntos, con lo cobrado y lo pendiente de toda la cadena.', '/intranet/v4/operaciones/'],
-      ['reservas', 'Reservas', 'Reservas que vencen, prórrogas y el paso de reserva a bloqueo de parcela, antes de que caduque.', '/intranet/v4/reservas/'],
-      ['compradores', 'Compradores', 'Directorio de compradores e inversores con su KYC, sus documentos y todas sus operaciones.', '/intranet/v4/compradores/'],
-      ['comisiones', 'Comisiones', 'Equipos, condiciones por tramo y reparto a cada comercial. Las comisiones se generan solas desde la venta y dirección las aprueba y paga.', '/intranet/v4/comisiones/']
-    ]},
-    { t: 'Documentos', d: 'Contratos y comunicación con el comprador, trazables.', m: [
-      ['contratos', 'Contratos', 'Generador de contratos en español, inglés e indonesio, firma electrónica y registro de versiones.', '/intranet/v4/contratos/'],
-      ['asistente', 'Asistente de respuestas', 'Redacta la respuesta a la duda de un comprador citando su propio contrato. El equipo la revisa antes de enviarla.', '/intranet/v4/asistente/'],
-      ['soporte', 'Soporte al comprador', 'Bandeja de consultas de compradores por categoría, con su historial.', '/intranet/v4/soporte/'],
-      ['comunicacion', 'Comunicados', 'Avisos a todos los compradores de un proyecto, o solo a algunos, con registro de envío.', '/intranet/v4/comunicacion/'],
-      ['portal', 'Portal del comprador', 'Cada comprador ve sus contratos, pagos, facturas y fotos de su obra con su propio acceso.', null]
-    ]},
-    { t: 'Dinero', d: 'Facturar, cobrar y saber qué entra y cuándo.', m: [
-      ['facturas', 'Facturación', 'Facturas y proformas por sociedad emisora y en varias monedas, enlazadas al contrato que las origina.', '/intranet/v4/facturas/'],
-      ['recibos', 'Cobros y recibís', 'Cada cobro con su justificante, aplicado a las facturas que salda.', '/intranet/v4/recibos/'],
-      ['vencimientos', 'Vencimientos y tesorería', 'Calendario de pagos por hitos de cada contrato: qué vence, qué está vencido y qué no tiene fecha.', '/intranet/v4/vencimientos/'],
-      ['cuentas', 'Cuentas de cobro', 'Qué cuenta bancaria aparece en cada contrato y factura, según proyecto y sociedad.', '/intranet/v4/cuentas/'],
-      ['sociedades', 'Sociedades emisoras', 'Varias empresas del grupo en el mismo ERP, cada una con sus datos fiscales y su logo en los documentos.', '/intranet/v4/sociedades/'],
-      ['comisionadmin', 'Comisión de administración', 'Tarifas y liquidación de la comisión que cobra la gestora a cada proyecto.', '/intranet/v4/comision-admin/']
-    ]},
-    { t: 'Producto y obra', d: 'Lo que se vende y cómo avanza su construcción.', m: [
-      ['proyectos', 'Proyectos y parcelario', 'Cada promoción con sus parcelas, precios y estado: libre, reservada, bloqueada o vendida.', '/intranet/v4/proyectos/'],
-      ['modelos', 'Catálogo de modelos', 'Modelos de vivienda con sus techos, extras, planos y precios de construcción.', '/intranet/v4/modelos/'],
-      ['obra', 'Control de obra', 'Fase de cada unidad, fecha de entrega, fotos y partes de trabajo.', '/intranet/v4/obra/'],
-      ['creatividades', 'Creatividades', 'Biblioteca de piezas para redes y anuncios de cada proyecto.', null]
-    ]}
+  /* [clave, nombre, área, etiquetas, descripción, capacidades, url, base]. Solo capacidades vistas en la v4. */
+  var MODULOS = [
+    ['home', 'Panel del día', 'Base', ['Incluido'], 'Lo que está esperando a alguien hoy, con enlace a la pantalla que lo resuelve.',
+      ['Reservas que vencen en uno o dos días', 'Facturas con saldo pendiente', 'Firmas pendientes y vencimientos críticos'], '/intranet/v4/home/', 1],
+    ['usuarios', 'Equipo y permisos', 'Base', ['Incluido', 'Roles'], 'Quién entra y qué ve cada persona.',
+      ['Roles de dirección, administración, jefe de ventas y agente', 'Herramientas y proyectos por persona'], '/intranet/v4/usuarios/', 1],
+    ['ajustes', 'Ajustes', 'Base', ['Incluido'], 'Parámetros de la empresa y de la intranet.',
+      ['Modo mantenimiento', 'Intranet en español o inglés'], '/intranet/v4/ajustes/', 1],
+
+    ['crm', 'CRM de leads', 'Ventas', ['Meta Ads', 'Embudo'], 'Los leads entran solos y cada uno tiene su próximo paso con fecha.',
+      ['Embudo por etapas configurable', 'Bandeja «para hoy» con los retrasos en rojo', 'Agenda y reparto entre closers'], '/intranet/leads/'],
+    ['setter', 'Setter IA en WhatsApp', 'Ventas', ['WhatsApp', 'IA'], 'Un asistente que atiende al lead por WhatsApp y lo cualifica.',
+      ['Conversación desde el primer mensaje', 'Lead listo para el comercial'], '/intranet/leads/'],
+    ['campanas', 'Piloto de campañas', 'Ventas', ['Meta Ads', 'Automático'], 'Vigila las campañas y mueve presupuesto dentro del tope de dirección.',
+      ['Pausa lo que no trae leads', 'Registro de cada decisión con su motivo'], '/intranet/leads/'],
+    ['operaciones', 'Operaciones', 'Ventas', ['Cadena de venta'], 'Una fila por venta: reserva, bloqueo y construcción del mismo comprador, juntos.',
+      ['Precio pactado, cobrado y pendiente', 'Filtros por firma y por cobro', 'Ficha completa de la venta'], '/intranet/v4/operaciones/'],
+    ['reservas', 'Reservas', 'Ventas', ['Plazos'], 'Reservas que vencen y el paso a bloqueo de parcela a tiempo.',
+      ['Prórrogas registradas', 'Aviso antes de que caduquen'], '/intranet/v4/reservas/'],
+    ['compradores', 'Compradores', 'Ventas', ['KYC'], 'Directorio de compradores e inversores con sus documentos.',
+      ['Estado de KYC', 'Todas sus operaciones en su ficha'], '/intranet/v4/compradores/'],
+    ['comisiones', 'Comisiones', 'Ventas', ['Equipos', 'Automático'], 'Lo que se debe a cada comercial, generado desde la venta.',
+      ['Condiciones por tramo y equipos', 'Aprobar y marcar como pagada', 'Reparto a closers'], '/intranet/v4/comisiones/'],
+
+    ['contratos', 'Contratos', 'Documentos', ['3 idiomas', 'Firma electrónica'], 'Generador de contratos con registro de versiones.',
+      ['Español, inglés e indonesio', 'Firma electrónica con caducidad', 'Estado por firmante'], '/intranet/v4/contratos/'],
+    ['asistente', 'Asistente de respuestas', 'Documentos', ['IA'], 'Redacta la respuesta a un comprador citando su propio contrato.',
+      ['El equipo la revisa antes de enviarla', 'Frena los temas que dirección no ha cerrado'], '/intranet/v4/asistente/'],
+    ['soporte', 'Soporte al comprador', 'Documentos', ['Tickets'], 'Consultas de compradores por categoría, con su historial.',
+      ['Abierto o resuelto', 'Conversación dentro de la ficha'], '/intranet/v4/soporte/'],
+    ['comunicacion', 'Comunicados', 'Documentos', ['Envíos'], 'Avisos a todos los compradores de un proyecto o solo a algunos.',
+      ['Registro de cada envío'], '/intranet/v4/comunicacion/'],
+    ['portal', 'Portal del comprador', 'Documentos', ['Acceso propio'], 'Cada comprador ve sus contratos, pagos, facturas y obra.',
+      ['Acceso por enlace, sin contraseña que recordar'], null],
+
+    ['facturas', 'Facturación', 'Dinero', ['Multimoneda', 'Multi-sociedad'], 'Facturas y proformas enlazadas al contrato que las origina.',
+      ['Por sociedad emisora', 'Euros y rupias', 'Estado de cobro de cada factura'], '/intranet/v4/facturas/'],
+    ['recibos', 'Cobros y recibís', 'Dinero', ['Justificantes'], 'Cada cobro con su justificante, aplicado a las facturas que salda.',
+      ['Un recibí puede saldar varias facturas', 'Aviso de recibís sin justificante'], '/intranet/v4/recibos/'],
+    ['vencimientos', 'Vencimientos y tesorería', 'Dinero', ['Hitos'], 'Calendario de pagos por hitos de cada contrato.',
+      ['Qué vence, qué está vencido y qué no tiene fecha', 'Filtro por sociedad y moneda'], '/intranet/v4/vencimientos/'],
+    ['cuentas', 'Cuentas de cobro', 'Dinero', ['Bancos'], 'Qué cuenta aparece en cada contrato y factura.',
+      ['Por proyecto y por sociedad'], '/intranet/v4/cuentas/'],
+    ['sociedades', 'Sociedades emisoras', 'Dinero', ['Multi-sociedad'], 'Varias empresas del grupo en el mismo ERP.',
+      ['Datos fiscales y logo por sociedad'], '/intranet/v4/sociedades/'],
+    ['comisionadmin', 'Comisión de administración', 'Dinero', ['Gestora'], 'Tarifas y liquidación de la comisión de la gestora por proyecto.',
+      ['Líneas por proyecto'], '/intranet/v4/comision-admin/'],
+
+    ['proyectos', 'Proyectos y parcelario', 'Producto y obra', ['Inventario', 'CSV'], 'Cada promoción con sus parcelas, precios y estado.',
+      ['Libre, reservada, bloqueada o vendida', 'Cartera, cobrado y pendiente por proyecto', 'Importación desde CSV'], '/intranet/v4/proyectos/'],
+    ['modelos', 'Catálogo de modelos', 'Producto y obra', ['Catálogo'], 'Modelos de vivienda con techos, extras y documentos.',
+      ['Precio de construcción por modelo', 'Planos y documentos adjuntos'], '/intranet/v4/modelos/'],
+    ['obra', 'Control de obra', 'Producto y obra', ['Entregas'], 'Fase de cada unidad, fecha de entrega y fotos.',
+      ['Próximas entregas', 'Partes de trabajo'], '/intranet/v4/obra/'],
+    ['creatividades', 'Creatividades', 'Producto y obra', ['Marketing'], 'Biblioteca de piezas para redes y anuncios de cada proyecto.',
+      ['Por proyecto'], null]
   ];
   var CAMINO = [
-    ['contabilidad', 'Contabilidad', 'Asientos generados desde las facturas y los cobros que ya están en el ERP, plan de cuentas por sociedad y exportación para la gestoría.'],
-    ['dashboard', 'Dashboard financiero', 'Ventas, cobros, pendiente y previsión de caja por proyecto y por sociedad, en una sola pantalla para dirección.'],
+    ['contabilidad', 'Contabilidad', 'Asientos generados desde las facturas y los cobros del ERP, plan de cuentas por sociedad y exportación para la gestoría.'],
+    ['dashboard', 'Dashboard financiero', 'Ventas, cobros, pendiente y previsión de caja por proyecto y por sociedad, en una pantalla para dirección.'],
     ['radar', 'Radar de cobros', 'Aprende cómo paga cada comprador y avisa antes de que un hito se retrase, con el recordatorio ya redactado.'],
     ['dataroom', 'Sala de datos del inversor', 'Documentación de cada proyecto para inversores, con marca de agua por persona y registro de quién abre qué.'],
-    ['postventa', 'Postventa y garantías', 'Incidencias después de la entrega: quién las abre, qué contratista las arregla y en qué plazo de garantía caen.']
+    ['postventa', 'Postventa y garantías', 'Incidencias después de la entrega: quién las abre, qué contratista las arregla y en qué garantía caen.']
   ];
-  var CLAVE = 'demo-erp-modulos-v2';   // v2: sin packs, todo activo de partida
+  var AREAS = ['Todos', 'Base', 'Ventas', 'Documentos', 'Dinero', 'Producto y obra', 'En camino'];
+
+  var CLAVE = 'demo-erp-modulos-v3';
   var estado = {};
   try { estado = JSON.parse(localStorage.getItem(CLAVE) || '{}') || {}; } catch (e) { estado = {}; }
   function guarda() { try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) {} }
+  if (!Object.keys(estado).length) MODULOS.forEach(function (m) { estado[m[0]] = true; });   // todo encendido de partida
+  MODULOS.forEach(function (m) { if (m[7]) estado[m[0]] = true; });
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-  function tarjeta(k, nombre, texto, url, nucleo, camino) {
-    var on = nucleo || !!estado[k];
-    var pie = camino ? '<span class="sello camino">En camino</span>'
-      : (url ? '<a href="' + url + '">Ver en la demo &rarr;</a>' : '<span class="sello">Se enseña en la llamada</span>');
-    return '<article class="mod' + (on ? '' : ' off') + '" data-k="' + k + '">' +
-      '<div class="mod-cab"><h3>' + esc(nombre) + '</h3>' +
-      '<button type="button" class="sw" role="switch" aria-checked="' + String(!!on) + '" aria-label="' +
-        (camino ? 'Me interesa: ' : 'Activar ') + esc(nombre) + '"' + (nucleo ? ' disabled' : '') + '></button></div>' +
-      '<p>' + esc(texto) + '</p>' +
-      '<div class="pie">' + pie + (nucleo ? '<span class="sello">Incluido</span>' : '') + '</div></article>';
-  }
-
-  document.getElementById('areas').innerHTML = AREAS.map(function (a) {
-    return '<section class="area"><div class="area-cab"><h2>' + esc(a.t) + '</h2><p>' + esc(a.d) + '</p></div>' +
-      '<div class="rejilla">' + a.m.map(function (m) { return tarjeta(m[0], m[1], m[2], m[3], m[4], false); }).join('') + '</div></section>';
+  document.getElementById('catalogo').innerHTML = MODULOS.map(function (m) {
+    var pie = m[6] ? '<a href="' + m[6] + '">Ver en la demo &rarr;</a>' : '<span class="nota">Se enseña en la llamada</span>';
+    return '<article class="mod" data-k="' + m[0] + '" data-area="' + esc(m[2]) + '">' +
+      '<div class="mod-cab"><div><h3>' + esc(m[1]) + '</h3><div class="area">' + esc(m[2]) + '</div></div>' +
+      '<button type="button" class="sw" role="switch" aria-label="Activar ' + esc(m[1]) + '"' + (m[7] ? ' disabled' : '') + '></button></div>' +
+      '<div class="tags">' + m[3].map(function (t, i) { return '<span class="tag' + (i % 2 ? ' cian' : '') + '">' + esc(t) + '</span>'; }).join('') + '</div>' +
+      '<p>' + esc(m[4]) + '</p><ul>' + m[5].map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ul>' +
+      '<div class="pie">' + pie + '</div></article>';
+  }).concat(CAMINO.map(function (m) {
+    return '<article class="mod camino" data-k="' + m[0] + '" data-area="En camino" data-camino="1">' +
+      '<div class="mod-cab"><div><h3>' + esc(m[1]) + '</h3><div class="area">En camino</div></div>' +
+      '<button type="button" class="sw" role="switch" aria-label="Me interesa: ' + esc(m[1]) + '"></button></div>' +
+      '<div class="tags"><span class="tag cian">En desarrollo</span></div><p>' + esc(m[2]) + '</p>' +
+      '<div class="pie"><span class="nota">Sin pantalla todavía · marca si te interesa</span></div></article>';
+  })).join('');
+  document.getElementById('filtros').innerHTML = AREAS.map(function (a, i) {
+    return '<button type="button" aria-pressed="' + (i === 0) + '" data-area="' + esc(a) + '">' + esc(a) + '</button>';
   }).join('');
-  document.getElementById('camino').innerHTML = CAMINO.map(function (m) { return tarjeta(m[0], m[1], m[2], null, false, true); }).join('');
 
-  var todos = [], deCamino = CAMINO.map(function (m) { return m[0]; });
-  AREAS.forEach(function (a) { a.m.forEach(function (m) { if (!m[4]) todos.push(m[0]); }); });
-  if (!Object.keys(estado).length) todos.forEach(function (k) { estado[k] = true; });   // todo activo de partida
+  document.getElementById('r-total').textContent = MODULOS.length;
+  document.getElementById('m-mod').textContent = MODULOS.length;
+  document.getElementById('m-cam').textContent = CAMINO.length;
 
   function pinta() {
+    var chips = [];
     document.querySelectorAll('.mod').forEach(function (el) {
-      var k = el.getAttribute('data-k'), sw = el.querySelector('.sw');
-      if (sw.disabled) return;
-      var on = !!estado[k];
-      sw.setAttribute('aria-checked', String(on));
-      el.classList.toggle('off', !on);
+      var k = el.getAttribute('data-k'), on = !!estado[k], camino = el.hasAttribute('data-camino');
+      el.querySelector('.sw').setAttribute('aria-checked', String(on));
+      el.classList.toggle('on', on && !camino);
+      el.classList.toggle('off', !on && !camino);
+      if (on) chips.push('<span' + (camino ? ' class="camino"' : '') + '>' + esc(el.querySelector('h3').textContent) + '</span>');
     });
-    var nucleo = document.querySelectorAll('.sw[disabled]').length;
-    document.getElementById('n-activos').textContent = nucleo + todos.filter(function (k) { return estado[k]; }).length;
-    document.getElementById('n-camino').textContent = deCamino.filter(function (k) { return estado[k]; }).length;
+    document.getElementById('r-on').textContent = MODULOS.filter(function (m) { return estado[m[0]]; }).length;
+    document.getElementById('r-chips').innerHTML = chips.join('');
   }
 
   document.addEventListener('click', function (ev) {
     var sw = ev.target.closest('.sw');
-    if (sw && !sw.disabled) {
-      var k = sw.closest('.mod').getAttribute('data-k');
-      estado[k] = !estado[k]; guarda(); pinta();
+    if (sw && !sw.disabled) { var k = sw.closest('.mod').getAttribute('data-k'); estado[k] = !estado[k]; guarda(); pinta(); return; }
+    var f = ev.target.closest('#filtros button');
+    if (f) {
+      var area = f.getAttribute('data-area');
+      document.querySelectorAll('#filtros button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === f)); });
+      document.querySelectorAll('.mod').forEach(function (el) { el.hidden = area !== 'Todos' && el.getAttribute('data-area') !== area; });
     }
   });
   pinta();
