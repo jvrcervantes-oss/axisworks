@@ -83,8 +83,9 @@ $HOME = [
   'proc_out'=>'OUTPUT','proc_phase'=>'PHASE',
 
   'who_eyebrow'=>'SHEET STD-01 // THE STUDIO','who_h2'=>'A two-person studio with an AI team behind it.',
-  'who_1role'=>'Engineering &amp; architecture','who_1p'=>'Designs the systems and writes the code. The build side of the studio.',
+  'who_1role'=>'Engineering &amp; architecture','who_1p'=>'Designs the systems.',
   'who_2role'=>'Design &amp; content','who_2p'=>'Shapes the brand, the content and the voice. The design side of the studio.',
+  'who_3role'=>'Artificial intelligence','who_3p'=>'Our AI, trained for all of this. It runs the nine departments below.',
   'deps_t'=>'THE NINE AI DEPARTMENTS',
   'deps_note'=>'Each department is an AI agent working to written rules. Javier and Andrea direct the work and sign off on what ships.',
   'deps'=>[
@@ -174,8 +175,9 @@ $HOME = [
   'proc_out'=>'ENTREGA','proc_phase'=>'FASE',
 
   'who_eyebrow'=>'HOJA STD-01 // EL ESTUDIO','who_h2'=>'Un estudio de dos personas con un equipo de IA detrás.',
-  'who_1role'=>'Ingeniería y arquitectura','who_1p'=>'Diseña los sistemas y escribe el código. El lado build del estudio.',
+  'who_1role'=>'Ingeniería y arquitectura','who_1p'=>'Diseña los sistemas.',
   'who_2role'=>'Diseño y contenido','who_2p'=>'Da forma a la marca, al contenido y a la voz. El lado design del estudio.',
+  'who_3role'=>'Inteligencia artificial','who_3p'=>'Nuestra IA, entrenada para todo esto. Mueve los nueve departamentos de abajo.',
   'deps_t'=>'LOS NUEVE DEPARTAMENTOS DE IA',
   'deps_note'=>'Cada departamento es un agente de IA que trabaja con reglas escritas. Javier y Andrea dirigen el trabajo y dan el visto bueno a lo que sale.',
   'deps'=>[

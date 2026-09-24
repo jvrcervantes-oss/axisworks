@@ -214,23 +214,24 @@ $jsonld = [
   </div>
 </section>
 
-<!-- 06 · ESTUDIO — dos personas y los nueve departamentos -->
+<!-- 06 · ESTUDIO — dos personas, Pepito (la IA) y los nueve departamentos -->
 <section class="band" id="studio">
   <div class="shell">
     <div class="shead"><div><p class="eyebrow"><span><?= $hm['who_eyebrow'] ?></span></p><h2><?= $hm['who_h2'] ?></h2></div></div>
     <div class="dirs">
+      <?php foreach ([
+        ['01','BUILD','Javier','javier','who_1role','who_1p'],
+        ['02','DESIGN','Andrea','andrea','who_2role','who_2p'],
+        ['03','AI','Pepito','pepito','who_3role','who_3p'],
+      ] as [$n,$eje,$nom,$img,$rol,$txt]): ?>
       <div class="dir">
-        <p class="dir__top"><span>DIR_NODE_01</span><span>BUILD</span></p>
-        <h3>Javier</h3>
-        <p class="dir__role"><?= $hm['who_1role'] ?></p>
-        <p class="dir__p"><?= $hm['who_1p'] ?></p>
+        <img class="dir__img" src="/assets/images/team-<?= $img ?>.webp" alt="<?= e($nom . ' — ' . strip_tags(html_entity_decode($hm[$rol]))) ?>" width="640" height="640" loading="lazy" decoding="async">
+        <p class="dir__top"><span>DIR_NODE_<?= $n ?></span><span><?= $eje ?></span></p>
+        <h3><?= $nom ?></h3>
+        <p class="dir__role"><?= $hm[$rol] ?></p>
+        <p class="dir__p"><?= $hm[$txt] ?></p>
       </div>
-      <div class="dir">
-        <p class="dir__top"><span>DIR_NODE_02</span><span>DESIGN</span></p>
-        <h3>Andrea</h3>
-        <p class="dir__role"><?= $hm['who_2role'] ?></p>
-        <p class="dir__p"><?= $hm['who_2p'] ?></p>
-      </div>
+      <?php endforeach; ?>
     </div>
     <p class="lbl deps__t"><?= $hm['deps_t'] ?></p>
     <ul class="deps">
