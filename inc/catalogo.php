@@ -27,11 +27,10 @@ $PRODUCTOS = [
     '/services/custom-business-software#portal','/es/servicios/software-de-gestion-a-medida#portal'],
   ['B06','BUILD','Integrations &amp; data','Integraciones y datos',
     '/services/custom-business-software#integraciones','/es/servicios/software-de-gestion-a-medida#integraciones'],
-  /* El destino ES es `/es/#work`, no `/#work`: la segunda columna es SIEMPRE la
-     ruta española, y con `/#work` un visitante en español acababa en el home
-     inglés desde su propia leyenda. */
+  /* Sin destino desde el 24-sep-2026: apuntaba a `#work`, y el owner retiró
+     esa sección de la portada. Fila plana hasta que tenga hoja propia. */
   ['B07','BUILD','Web design &amp; development','Diseño y desarrollo web',
-    '/#work','/es/#work'],
+    null,null],
   ['G01','GROW','Meta sales funnels','Funnels de venta en Meta',
     '/services/meta-ads','/es/servicios/meta-ads'],
   ['G02','GROW','SEO, SEM &amp; AI search','SEO, SEM y buscadores de IA',

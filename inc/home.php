@@ -13,10 +13,8 @@
  *   · El instrumento del hero sigue siendo la ✕ que converge con el cursor
  *     (v9): Stitch pintó un anillo giratorio genérico; el anillo queda como
  *     retícula estática y la ✕ dentro es la pieza.
- *   · Work no estaba en el mockup pero sí en el encargo a Stitch
- *     (`prompt_stitch.md` §4): es la única prueba real de la web, y la nav y
- *     B07 apuntan a `#work`. Se queda, en el lenguaje nuevo.
- * Los IDs de ancla (#services #work #process #studio #contact) no cambian:
+ *   · Work (capturas de proyectos) retirado por el owner el 24-sep-2026.
+ * Los IDs de ancla (#services #process #studio #contact) no cambian:
  * los usan `nav.php`, `catalogo.php` y las 12 hojas. `#erp` es nuevo.
  */
 require_once __DIR__ . '/config.php';
@@ -55,13 +53,6 @@ $jsonld = [
    'url'=>SITE.$url,'email'=>EMAIL,'makesOffer'=>$ofertas],
 ];
 
-$work = [
-  ['https://balimotoadventures.com','work-balimoto.jpg','Bali Moto Adventures',1200,582,'tag_1'],
-  [null,'work-lawang.jpg','Lawang Estate',1200,608,'tag_2'],
-  ['https://sumba.balibestmotorcycle.com','work-sumba.jpg','Sumba Rental Motorbike',1200,590,'tag_3'],
-  [null,'work-ids.jpg','IDS Fincas',1200,795,'tag_4'],
-  [null,'work-burger.jpg','Carbón',1200,730,'tag_5'],
-];
 ?><!DOCTYPE html>
 <html lang="<?= $lang ?>">
 <head>
@@ -201,24 +192,6 @@ $work = [
     <div class="cat__foot">
       <span class="mono dim"><?= $hm['cat_ask'] ?></span>
       <a href="<?= $hub ?>" class="btn btn--term">[ <?= $t['index'] ?> ]</a>
-    </div>
-  </div>
-</section>
-
-<!-- 04 · WORK — capturas reales. No estaba en el mockup; sí en el encargo. -->
-<section class="band" id="work">
-  <div class="shell">
-    <div class="shead"><div><p class="eyebrow"><span><?= $hm['work_eyebrow'] ?></span></p><h2><?= $hm['work_h2'] ?></h2></div></div>
-    <div class="work">
-      <?php foreach ($work as $i => $w):
-        $tag = '<div class="work__cap"><span class="dim">0' . ($i+1) . ' / ' . $hm[$w[5]] . '</span><b>' . $w[2] . '</b><span class="pill' . ($w[0] ? '' : ' pill--off') . '">' . ($w[0] ? $hm['work_live'] . ' ↗' : $hm['work_private']) . '</span></div>';
-        $img = '<div class="work__media"><img src="/assets/images/' . $w[1] . '" alt="' . e($w[2]) . '" loading="lazy" width="' . $w[3] . '" height="' . $w[4] . '"></div>'; ?>
-        <?php if ($w[0]): ?>
-        <a class="work__item" href="<?= $w[0] ?>" target="_blank" rel="noopener"><?= $img . $tag ?></a>
-        <?php else: ?>
-        <div class="work__item"><?= $img . $tag ?></div>
-        <?php endif; ?>
-      <?php endforeach; ?>
     </div>
   </div>
 </section>

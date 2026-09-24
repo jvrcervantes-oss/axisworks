@@ -26,7 +26,6 @@ $ancla   = function ($id) use ($en_home, $inicio) { return $en_home ? "#$id" : $
     <nav class="nav__links" id="navLinks">
       <a href="<?= $ancla('erp') ?>">ERP</a>
       <a href="<?= $hub ?>"><?= $t['nav_services'] ?></a>
-      <a href="<?= $ancla('work') ?>"><?= $t['nav_work'] ?></a>
       <a href="<?= $ancla('process') ?>"><?= $t['nav_process'] ?></a>
       <a href="<?= $ancla('studio') ?>"><?= $t['nav_studio'] ?></a>
       <div class="lang" role="group" aria-label="Language">

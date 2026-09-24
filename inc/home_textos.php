@@ -72,10 +72,6 @@ $HOME = [
   ],
   'cat_ask'=>'Every project is quoted on its own scope. No price list.',
 
-  'work_eyebrow'=>'SHEET WRK-01 // FIELD WORK','work_h2'=>'Selected work.',
-  'tag_1'=>'TOURISM ✕ BOOKING','tag_2'=>'REAL ESTATE ✕ LUXURY','tag_3'=>'RENTAL ✕ DELIVERY',
-  'tag_4'=>'PROPERTY ✕ PORTAL','tag_5'=>'HOSPITALITY ✕ BRAND',
-  'work_live'=>'LIVE','work_private'=>'PRIVATE',
 
   'proc_eyebrow'=>'SHEET PRC-01 // FOUR PHASES','proc_h2'=>'Measure twice. Build once.',
   'proc'=>[
@@ -167,10 +163,6 @@ $HOME = [
   ],
   'cat_ask'=>'Cada proyecto se presupuesta por su alcance. No hay tarifa.',
 
-  'work_eyebrow'=>'HOJA WRK-01 // TRABAJO DE CAMPO','work_h2'=>'Trabajo seleccionado.',
-  'tag_1'=>'TURISMO ✕ RESERVAS','tag_2'=>'INMOBILIARIA ✕ LUJO','tag_3'=>'ALQUILER ✕ ENTREGA',
-  'tag_4'=>'FINCAS ✕ PORTAL','tag_5'=>'HOSTELERÍA ✕ MARCA',
-  'work_live'=>'EN VIVO','work_private'=>'PRIVADO',
 
   'proc_eyebrow'=>'HOJA PRC-01 // CUATRO FASES','proc_h2'=>'Medir dos veces. Construir una.',
   'proc'=>[
