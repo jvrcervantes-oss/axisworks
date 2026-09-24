@@ -54,145 +54,145 @@ if ($H['codigo'] !== 'DOC') {
 <?php require __DIR__ . '/nav.php'; ?>
 
 <main class="hj">
-  <?php /* Rediseño 24-sep-2026 (owner: «muy pobre el diseño… quita las fotos»).
-     La hoja habla ya el lenguaje de la portada: bandas con filete, cabecera con
-     barra de datos, y el caso real como PANEL con la forma de la herramienta de
-     Lawang (datos de ejemplo), no como una captura en gris. */
+  <?php /* v3 (24-sep-2026): composición de la página del ERP de Stitch
+     (proyecto «AxisWorks Studio Website», pantalla «AxisWorks ERP — Flagship
+     Business OS»), sobre nuestros tokens y nuestro texto. De Stitch se tomó la
+     PIEL: espacio de trabajo oscuro con barra de módulos, esquema enmarcado,
+     directorio en tarjetas, cita centrada, preguntas en tarjetas y cierre en caja.
+     No se tomó su texto (latencias, ISO, importes, «Spain × Bali», nombres). */
   $C = $H['caso'] ?? null; $P = $H['panel'] ?? null;
-  /* El chip dice QUÉ es en palabras del cliente (el nombre del producto), no
-     el número de plano: «SHEET B01 — BUILD» era nuestra metáfora, no su idioma. */
   $chip = $H['chip'] ?? null;
   if (!$chip) foreach ($PRODUCTOS as $p) if ($p[0] === $H['codigo']) $chip = $lang === 'es' ? $p[3] : $p[2];
   $chip = $chip ?: $H['eyebrow'];
   $S = $t['hj_s']; ?>
+
+  <!-- CABECERA -->
   <section class="hj-head">
-    <div class="shell hj-head__grid">
-      <div class="hj-head__col">
-        <p class="hj-chip"><i></i><?= $chip ?></p>
-        <h1><?= $H['h1'] ?></h1>
-        <p class="hj-lead"><?= $H['lead'] ?></p>
-        <?php if ($P): ?><p class="hj-proof"><?= $t['hj_proof'] ?></p><?php endif; ?>
-        <?php if ($C): ?>
-        <div class="hj-data">
-          <?php foreach ($C['cifras'] as $i => $c): ?>
-          <div><b<?= $i === 0 ? ' class="acc"' : '' ?>><?= $c[0] ?></b><span><?= $c[1] ?></span></div>
-          <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
-        <div class="hj-acts">
-          <a href="<?= e(correo($H['asunto'])) ?>" class="btn btn--signal btn--sm"><span><?= $t['nav_cta'] ?></span> <span class="ar" aria-hidden="true">→</span></a>
-          <?php if ($P): ?><a href="#campo" class="btn btn--term btn--sm">[ <?= $t['hj_case_btn'] ?> ]</a><?php endif; ?>
-        </div>
+    <span class="hj-reg hj-reg--tl" aria-hidden="true">+</span><span class="hj-reg hj-reg--tr" aria-hidden="true">+</span>
+    <div class="shell">
+      <p class="hj-chip"><?= $chip ?></p>
+      <h1><?= $H['h1'] ?></h1>
+      <p class="hj-lead"><?= $H['lead'] ?></p>
+      <?php if ($P): ?><p class="hj-proof"><?= $t['hj_proof'] ?></p><?php endif; ?>
+      <div class="hj-acts">
+        <a href="<?= e(correo($H['asunto'])) ?>" class="btn btn--signal btn--sm"><span><?= $t['nav_cta'] ?></span> <span class="ar" aria-hidden="true">→</span></a>
+        <?php if ($P): ?><a href="#campo" class="btn btn--ghost btn--sm">[ <?= $t['hj_case_btn'] ?> ]</a><?php endif; ?>
       </div>
-      <aside class="hj-side">
-        <?php if (!empty($H['regla'])): ?>
-        <div class="hj-rule">
-          <p class="hj-rule__l"><?= $t['hj_principle'] ?></p>
-          <p class="hj-rule__t"><?= $H['regla'] ?></p>
-        </div>
-        <?php endif; ?>
-        <?php if ($P): ?><p class="hj-bridge"><?= $t['hj_bridge'] ?></p><?php endif; ?>
-      </aside>
     </div>
   </section>
 
-  <section class="hj-band">
+  <?php if ($C && $P): ?>
+  <!-- 02 · EL ESPACIO DE TRABAJO -->
+  <section class="hj-sec hj-sec--tint" id="campo">
+    <div class="shell">
+      <div class="hj-shead">
+        <p class="hj-tag">[<?= $S[1] ?>]</p>
+        <h2><?= $C['titulo'] ?></h2>
+        <p class="hj-shead__sub"><?= $C['texto'] ?></p>
+      </div>
+      <div class="ws">
+        <div class="ws__bar">
+          <span class="ws__name">AXISWORKS <b>//</b> <?= $P['tool'] ?></span>
+          <span class="ws__sample"><?= $t['hj_sample'] ?></span>
+        </div>
+        <div class="ws__body">
+          <?php if (!empty($H['modulos'])): ?>
+          <aside class="ws__side">
+            <p class="ws__lbl"><?= $t['hj_modules'] ?> // <?= count($H['modulos']) ?></p>
+            <ul><?php foreach ($H['modulos'] as $i => $m): ?><li<?= $i === 0 ? ' class="on"' : '' ?>><?= $m ?></li><?php endforeach; ?></ul>
+          </aside>
+          <?php endif; ?>
+          <div class="ws__main">
+            <?php if (!empty($P['pie'])): ?><p class="ws__alert"><span><?= $t['hj_live'] ?></span><?= $P['pie'] ?></p><?php endif; ?>
+            <div class="ws__tbl">
+              <table>
+                <thead><tr><?php foreach ($P['th'] as $i => $th): ?><th<?= $i === count($P['th'])-1 ? ' class="r"' : '' ?>><?= $th ?></th><?php endforeach; ?></tr></thead>
+                <tbody>
+                <?php foreach ($P['rows'] as $r):
+                  $alerta = array_pop($r); $n = count($r); ?>
+                  <tr><?php foreach ($r as $i => $v):
+                    if ($i === 0)          echo '<td class="ref">' . $v . '</td>';
+                    elseif ($i === 1)      echo '<td class="it">' . $v . '</td>';
+                    elseif ($i === $n - 1) echo '<td class="r' . ($alerta ? ' due' : '') . '">' . $v . '</td>';
+                    elseif ($i === $n - 2) echo '<td><span class="ws__st">' . $v . '</span></td>';
+                    else                   echo '<td class="dm">' . $v . '</td>';
+                  endforeach; ?></tr>
+                <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+            <div class="ws__kpis">
+              <?php foreach ($C['cifras'] as $i => $c): ?>
+              <div><span><?= $c[1] ?></span><b<?= $i === 0 ? ' class="acc"' : '' ?>><?= $c[0] ?></b></div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="hj-note"><?= $t['hj_sample_note'] ?></p>
+    </div>
+  </section>
+  <?php endif; ?>
+
+  <!-- 01 · QUÉ ES + la regla como cita -->
+  <section class="hj-sec">
     <div class="shell hj-split">
-      <p class="hj-eyebrow">01 · <?= $S[0] ?></p>
+      <div>
+        <p class="hj-tag">[<?= $S[0] ?>]</p>
+      </div>
       <div class="prosa">
-        <?php /* Un párrafo a la vista; el resto plegado pero en el HTML (Google lo lee). */
-        $sp = $H['spec']; echo '<p class="hj-first">' . array_shift($sp) . "</p>\n";
+        <?php $sp = $H['spec']; echo '<p class="hj-first">' . array_shift($sp) . "</p>\n";
         if ($sp): ?><details class="hj-more"><summary><?= $t['hj_more'] ?></summary><?php foreach ($sp as $p) echo "<p>$p</p>\n"; ?></details><?php endif; ?>
       </div>
     </div>
-  </section>
-
-  <?php if ($C): ?>
-  <section class="hj-band" id="campo">
+    <?php if (!empty($H['regla'])): ?>
     <div class="shell">
-      <div class="hj-shead">
-        <div><p class="hj-eyebrow">02 · <?= $S[1] ?></p><h2><?= $C['titulo'] ?></h2></div>
-        <?php if ($P): ?><p class="hj-shead__aside"><?= $t['hj_sample_note'] ?></p><?php endif; ?>
-      </div>
-      <?php if ($P): ?>
-      <div class="hj-panel">
-        <div class="hj-panel__bar">
-          <span class="hj-panel__name"><i></i><?= $P['tool'] ?></span>
-          <span class="pill pill--ink"><?= $t['hj_sample'] ?></span>
-        </div>
-        <?php if (!empty($P['pie'])): ?><p class="hj-panel__pie"><?= $P['pie'] ?></p><?php endif; ?>
-        <div class="hj-panel__main">
-          <div class="hj-panel__tbl tbl-wrap">
-            <table class="tbl">
-              <thead><tr><?php foreach ($P['th'] as $i => $th): ?><th<?= $i === count($P['th'])-1 ? ' class="r"' : '' ?>><?= $th ?></th><?php endforeach; ?></tr></thead>
-              <tbody>
-              <?php foreach ($P['rows'] as $r):
-                $alerta = array_pop($r); $n = count($r); ?>
-                <tr><?php foreach ($r as $i => $v):
-                  if ($i === 0)            echo '<td class="dim">' . $v . '</td>';
-                  elseif ($i === 1)        echo '<td><b>' . $v . '</b></td>';
-                  elseif ($i === $n - 1)   echo '<td class="r' . ($alerta ? ' due' : '') . '">' . $v . '</td>';
-                  elseif ($i === $n - 2)   echo '<td><span class="tag">' . $v . '</span></td>';
-                  else                     echo '<td class="dim">' . $v . '</td>';
-                endforeach; ?></tr>
-              <?php endforeach; ?>
-              </tbody>
-            </table>
-          </div>
-          <div class="hj-panel__side">
-            <p class="lbl"><?= $t['hj_live'] ?></p>
-            <p class="hj-panel__txt"><?= $C['texto'] ?></p>
-          </div>
-        </div>
-        <?php if (!empty($H['modulos'])): ?>
-        <div class="hj-panel__mods">
-          <p class="lbl"><?= $t['hj_modules'] ?> · <?= count($H['modulos']) ?></p>
-          <ul><?php foreach ($H['modulos'] as $m): ?><li><?= $m ?></li><?php endforeach; ?></ul>
-        </div>
-        <?php endif; ?>
-      </div>
-      <?php else: ?>
-      <div class="hj-caso"><p><?= $C['texto'] ?></p></div>
-      <?php endif; ?>
+      <figure class="hj-quote">
+        <span class="hj-reg hj-reg--tl" aria-hidden="true">+</span><span class="hj-reg hj-reg--tr" aria-hidden="true">+</span>
+        <figcaption><?= $t['hj_principle'] ?></figcaption>
+        <blockquote>&ldquo;<?= $H['regla'] ?>&rdquo;</blockquote>
+        <?php if ($P): ?><p class="hj-quote__bridge"><?= $t['hj_bridge'] ?></p><?php endif; ?>
+      </figure>
     </div>
+    <?php endif; ?>
   </section>
-  <?php endif; ?>
 
   <?php if (!empty($H['flujo'])): ?>
-  <section class="hj-band hj-band--ink">
+  <!-- 03 · FLUJO, como esquema enmarcado -->
+  <section class="hj-sec hj-sec--tint">
     <div class="shell">
-      <div class="hj-shead hj-shead--inv"><div><p class="hj-eyebrow">03 · <?= $S[2] ?></p></div></div>
-      <ol class="hj-flow" style="--n:<?= count($H['flujo']) ?>">
-        <?php foreach ($H['flujo'] as $i => $f): ?>
-        <li><span class="hj-flow__n"><?= sprintf('%02d', $i+1) ?></span><b><?= $f[0] ?></b><span class="hj-flow__d"><?= $f[1] ?></span></li>
-        <?php endforeach; ?>
-      </ol>
+      <div class="hj-shead"><p class="hj-tag">[<?= $S[2] ?>]</p></div>
+      <div class="sch">
+        <p class="sch__bar"><span><?= strtoupper(strip_tags($chip)) ?> // <?= strtoupper($S[2]) ?></span><span><?= count($H['flujo']) ?> <?= $t['hj_steps'] ?></span></p>
+        <ol class="sch__flow" style="--n:<?= count($H['flujo']) ?>">
+          <?php foreach ($H['flujo'] as $i => $f): ?>
+          <li<?= $i === 0 ? ' class="first"' : '' ?>><span class="sch__n"><?= sprintf('%02d', $i+1) ?></span><b><?= $f[0] ?></b><span class="sch__d"><?= $f[1] ?></span></li>
+          <?php endforeach; ?>
+        </ol>
+      </div>
     </div>
   </section>
   <?php endif; ?>
 
-  <section class="hj-band">
+  <!-- 04 · QUÉ INCLUYE, como directorio de tarjetas -->
+  <section class="hj-sec">
     <div class="shell">
-      <div class="hj-shead"><div><p class="hj-eyebrow">04 · <?= $S[3] ?></p></div></div>
-      <div class="tbl-wrap tbl-wrap--box">
-        <table class="tbl hj-scope">
-          <thead><tr><?php foreach ($t['hj_scope_th'] as $th): ?><th><?= $th ?></th><?php endforeach; ?></tr></thead>
-          <tbody>
-          <?php foreach ($H['scope'] as $i => $r): ?>
-            <tr><td class="cod"><?= sprintf('%02d', $i+1) ?></td><td class="nom"><?= $r[0] ?></td><td class="val"><?= $r[1] ?></td></tr>
-          <?php endforeach; ?>
-          </tbody>
-        </table>
+      <div class="hj-shead"><p class="hj-tag">[<?= $S[3] ?>]</p></div>
+      <div class="dir-grid">
+        <?php foreach ($H['scope'] as $i => $r): ?>
+        <div class="dir-card"><p class="dir-card__c"><?= $H['codigo'] ?>-<?= sprintf('%02d', $i+1) ?></p><h3><?= $r[0] ?></h3><p><?= $r[1] ?></p></div>
+        <?php endforeach; ?>
       </div>
     </div>
   </section>
 
-  <section class="hj-band">
-    <div class="shell hj-split">
-      <p class="hj-eyebrow">05 · <?= $S[4] ?></p>
-      <div class="faq">
-        <?php foreach ($H['faq'] as $f): ?>
-        <details><summary><?= $f[0] ?></summary><div class="faq__a"><?= $f[1] ?></div></details>
+  <!-- 05 · PREGUNTAS, en tarjetas y con la respuesta a la vista -->
+  <section class="hj-sec hj-sec--tint">
+    <div class="shell">
+      <div class="hj-shead"><p class="hj-tag">[<?= $S[4] ?>]</p></div>
+      <div class="faq-grid">
+        <?php foreach ($H['faq'] as $i => $f): ?>
+        <div class="faq-card"><p class="faq-card__c"><?= sprintf('%02d', $i+1) ?> //</p><h3><?= $f[0] ?></h3><div class="faq-card__a"><?= $f[1] ?></div></div>
         <?php endforeach; ?>
       </div>
     </div>
@@ -204,24 +204,20 @@ if ($H['codigo'] !== 'DOC') {
       <?php if ($next): ?><a class="nx" href="<?= e($HOJAS[$lang][$next]['url']) ?>"><?= $t['next'] ?> →<b><?= $HOJAS[$lang][$next]['h1'] ?></b></a><?php else: ?><a class="nx" href="<?= $hub ?>"><?= $t['index'] ?> →</a><?php endif; ?>
     </nav>
   </div>
-  <section class="cta" id="contact">
+
+  <!-- CIERRE en caja -->
+  <section class="hj-close" id="contact">
+    <span class="hj-reg hj-reg--tl" aria-hidden="true">+</span><span class="hj-reg hj-reg--tr" aria-hidden="true">+</span>
     <div class="shell">
-      <p class="eyebrow"><?= $t['nav_cta'] ?></p>
-      <h2 style="margin-top:18px"><?= $t['cta_h'] ?></h2>
-      <p><?= $t['cta_p'] ?></p>
-      <div class="cta__row">
-        <?php /* El asunto lleva la página de origen: sin esto llega un correo
-                 y no hay forma de saber qué hoja trae clientes y cuál no. */ ?>
+      <div class="hj-close__box">
+        <p class="hj-chip hj-chip--c"><?= $t['nav_cta'] ?></p>
+        <h2><?= $t['cta_h'] ?></h2>
+        <p><?= $t['cta_p'] ?></p>
         <a href="<?= e(correo($H['asunto'])) ?>" class="btn btn--signal"><span><?= EMAIL ?></span> <span class="ar" aria-hidden="true">→</span></a>
-        <a href="<?= $hub ?>" class="btn btn--ghost-d"><span><?= $t['index'] ?></span></a>
-      </div>
-      <div class="cta__meta">
-        <div>EMAIL<b><?= EMAIL ?></b></div>
-        <div><?= $lang === 'es' ? 'IDIOMAS' : 'LANGUAGES' ?><b><?= $t['langs'] ?></b></div>
+        <p class="hj-close__meta"><span><?= $lang === 'es' ? 'IDIOMAS' : 'LANGUAGES' ?>: <?= $t['langs'] ?></span><a href="<?= $hub ?>"><?= $t['index'] ?> →</a></p>
       </div>
     </div>
   </section>
-
 </main>
 <?php require __DIR__ . '/footer.php'; ?>
 </body>

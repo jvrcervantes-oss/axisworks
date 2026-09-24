@@ -6,6 +6,7 @@
  * publicando ese 403 como nodo rastreable. */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/catalogo.php';
+require_once __DIR__ . '/home_textos.php';   /* la línea de alcance de cada producto: una sola fuente con la portada */
 
 $H = $HUBS[$LANG];
 $lang = $H['lang']; $url = $H['url']; $t = $T[$lang];
@@ -31,58 +32,91 @@ $jsonld = [
 <html lang="<?= $lang ?>">
 <head>
 <?php require __DIR__ . '/head.php'; ?>
+<link rel="stylesheet" href="/assets/hoja.css?v=<?= VER ?>">
 </head>
 <body>
-<div class="reticle" aria-hidden="true"><div class="reticle__inner"><span></span><span></span><span></span><span></span><span></span></div></div>
 <?php require __DIR__ . '/nav.php'; ?>
-
-<main class="hoja">
-  <div class="hoja__head shell">
-    <div class="hoja__grid">
+<?php
+/* v3 (24-sep-2026): composición de la pantalla de Stitch «Services // 11
+   Products on Two Axes» sobre nuestros tokens. De Stitch NO se tomó su texto
+   (ciclos en semanas, latencias, uptime, «Spain × Bali»): las tarjetas dicen
+   qué es cada producto con la misma línea que la portada. */
+$alc = $HOME[$lang]['alcance'];
+$cuenta = array_count_values(array_column($PRODUCTOS, 1));
+$porEje = [];
+foreach ($PRODUCTOS as $p) $porEje[$p[1]][] = $p;
+$nomP = function ($cod) use ($PRODUCTOS, $lang, $col) {
+  foreach ($PRODUCTOS as $p) if ($p[0] === $cod) return [$lang === 'es' ? $p[3] : $p[2], $p[$col]];
+  return ['', null];
+}; ?>
+<main class="hb">
+  <section class="hb-head">
+    <span class="hj-reg hj-reg--tl" aria-hidden="true">+</span><span class="hj-reg hj-reg--tr" aria-hidden="true">+</span>
+    <div class="shell hb-head__grid">
       <div>
-        <p class="eyebrow"><?= $H['eyebrow'] ?></p>
+        <p class="hj-chip"><?= $H['eyebrow'] ?></p>
         <h1><?= $H['h1'] ?></h1>
-        <p class="lead"><?= $H['lead'] ?></p>
+        <p class="hj-lead"><?= $H['lead'] ?></p>
       </div>
-      <aside class="tblock">
-        <svg class="tblock__x" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/></svg>
-        <div class="tblock__row"><span><?= $t['sheet'] ?></span><b><?= $H['codigo'] ?></b></div>
-        <div class="tblock__row"><span><?= $t['axis'] ?></span><b>BUILD ✕ GROW</b></div>
-        <div class="tblock__row"><span><?= $t['rev'] ?></span><b>2026-09</b></div>
-        <div class="tblock__row"><span><?= $t['lang_l'] ?></span><b>EN / ES</b></div>
-      </aside>
+      <div class="hb-spec">
+        <p><span><?= $H['spec'][0] ?></span><b class="acc"><?= count($PRODUCTOS) ?></b></p>
+        <p><span><?= $H['spec'][1] ?></span><b><?= $cuenta['BUILD'] ?? 0 ?></b></p>
+        <p><span><?= $H['spec'][2] ?></span><b><?= $cuenta['GROW'] ?? 0 ?></b></p>
+        <p><span><?= $H['spec'][3] ?></span><b><?= $cuenta['ADVISORY'] ?? 0 ?></b></p>
+        <p><span><?= $H['spec'][4] ?></span><b>2026-09</b></p>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <div class="shell hoja__body">
-    <section>
-      <?php $eje_actual = ''; foreach ($PRODUCTOS as $p):
-        if ($p[1] !== $eje_actual) { $eje_actual = $p[1]; echo '<p class="hub__eje">'.$eje_actual."</p>\n"; }
-        $nombre = $lang === 'es' ? $p[3] : $p[2];
-        $destino = $p[$col];
-        $clase = 'leyenda__row' . ($destino ? '' : ' leyenda__row--flat');
-      ?>
-        <?php if ($destino): ?>
-        <a class="<?= $clase ?>" href="<?= e($destino) ?>"><span class="cod"><?= $p[0] ?></span><span class="nom"><?= $nombre ?></span><span class="ar" aria-hidden="true">→</span></a>
-        <?php else: ?>
-        <div class="<?= $clase ?>"><span class="cod"><?= $p[0] ?></span><span class="nom"><?= $nombre ?></span></div>
-        <?php endif; ?>
-      <?php endforeach; ?>
-    </section>
-  </div>
-
-  <section class="cta" id="contact">
-    <div class="shell">
-      <p class="eyebrow"><?= $t['nav_cta'] ?></p>
-      <h2 style="margin-top:18px"><?= $t['cta_h'] ?></h2>
-      <p><?= $t['cta_p'] ?></p>
-      <div class="cta__row">
-        <a href="<?= e(correo(($lang === 'es' ? 'Consulta — ' : 'Enquiry — ') . $url)) ?>" class="btn btn--signal"><span><?= EMAIL ?></span> <span class="ar" aria-hidden="true">→</span></a>
-        <a href="<?= $inicio ?>" class="btn btn--ghost-d"><span><?= $t['nav_home'] ?></span></a>
+  <section class="hb-axes">
+    <div class="shell hb-axes__grid">
+      <div class="hb-axes__txt">
+        <div><p class="hj-tag">[<?= $H['axes_tag'] ?>]</p><h2><?= $H['axes_h'] ?></h2><p><?= $H['axes_p'] ?></p></div>
+        <p class="hb-legend">X: <b>BUILD</b> // Y: <b>GROW</b> // ✕: <b>ADVISORY</b></p>
       </div>
-      <div class="cta__meta">
-        <div>EMAIL<b><?= EMAIL ?></b></div>
-        <div><?= $lang === 'es' ? 'IDIOMAS' : 'LANGUAGES' ?><b><?= $t['langs'] ?></b></div>
+      <div class="hb-plane" aria-hidden="true">
+        <span class="hb-q hb-q--tl"><?= $H['quad'][0] ?></span>
+        <span class="hb-q hb-q--tr"><?= $H['quad'][1] ?></span>
+        <span class="hb-q hb-q--bl"><?= $H['quad'][2] ?></span>
+        <span class="hb-q hb-q--br"><?= $H['quad'][3] ?></span>
+        <span class="hb-ax hb-ax--x">BUILD →</span><span class="hb-ax hb-ax--y">GROW ↑</span>
+        <?php [$a01, $a01u] = $nomP('A01'); ?>
+        <div class="hb-core"><span>A01 // <?= $H['core_l'] ?></span><b><?= $a01 ?></b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hb-cat">
+    <div class="shell">
+      <p class="hj-tag">[<?= $H['cat_tag'] ?>]</p>
+      <h2><?= $H['cat_h'] ?></h2>
+      <?php foreach ($porEje as $eje => $lista): ?>
+      <p class="hb-axis<?= $eje === 'ADVISORY' ? ' hb-axis--ink' : '' ?>"><?= $eje ?> <span>// <?= $H['ejes'][$eje] ?> · <?= count($lista) ?></span></p>
+      <div class="hb-cards">
+        <?php foreach ($lista as $p):
+          $nombre = $lang === 'es' ? $p[3] : $p[2]; $dest = $p[$col];
+          $tag = $dest ? 'a' : 'div'; $wide = $eje === 'ADVISORY' ? ' hb-card--wide' : ''; ?>
+        <<?= $tag ?> class="hb-card<?= $wide ?>"<?= $dest ? ' href="' . e($dest) . '"' : '' ?>>
+          <p class="hb-card__top"><span><?= $p[0] ?></span><span><?= $eje ?></span></p>
+          <h3><?= $nombre ?></h3>
+          <p><?= $alc[$p[0]] ?? '' ?></p>
+          <?php if ($dest): ?><span class="hb-card__go"><?= $H['go'] ?></span><?php endif; ?>
+        </<?= $tag ?>>
+        <?php endforeach; ?>
+      </div>
+      <?php endforeach; ?>
+    </div>
+  </section>
+
+  <section class="hj-close" id="contact">
+    <span class="hj-reg hj-reg--tl" aria-hidden="true">+</span><span class="hj-reg hj-reg--tr" aria-hidden="true">+</span>
+    <div class="shell">
+      <div class="hj-close__box">
+        <p class="hj-chip hj-chip--c"><?= $t['nav_cta'] ?></p>
+        <h2><?= $t['cta_h'] ?></h2>
+        <p><?= $t['cta_p'] ?></p>
+        <a href="<?= e(correo(($lang === 'es' ? 'Consulta — ' : 'Enquiry — ') . $url)) ?>" class="btn btn--signal"><span><?= EMAIL ?></span> <span class="ar" aria-hidden="true">→</span></a>
+        <p class="hj-close__meta"><span><?= $lang === 'es' ? 'IDIOMAS' : 'LANGUAGES' ?>: <?= $t['langs'] ?></span><a href="<?= $inicio ?>"><?= $t['nav_home'] ?> →</a></p>
       </div>
     </div>
   </section>
