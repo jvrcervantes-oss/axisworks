@@ -20,7 +20,9 @@
 declare(strict_types=1);
 
 const CT_DESTINO  = 'hello@axisworks.studio';
-const CT_REMITE   = 'web@axisworks.studio';
+/* Hostinger rechaza mail() si el remitente no es un buzón que exista en el
+   dominio: web@ no existe (probado en producción el 24-sep, mail() = false). */
+const CT_REMITE   = 'hello@axisworks.studio';
 const CT_ORIGEN   = 'axisworks.studio';
 const CT_MIN_SEG  = 3;
 const CT_MAX_SEG  = 7200;
