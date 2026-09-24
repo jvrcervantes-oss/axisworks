@@ -128,7 +128,7 @@
       var num = TIPO_PREF[tipo] + '000' + (++nC);
       var c = fila(Object.assign({}, plantK, { id: 'c-' + nC, tipo: tipo, numero: num, comprador_nombre: cli.full_name,
         proyecto_nombre: u.proyecto, precio_total: precio, moneda: u.moneda, fecha_firma: firmado ? dia(diasFirma) : null,
-        datos: { fields: { parcela_codigo: u.codigo }, hitos: [] }, created_at: ts(diasFirma - 3), bloqueado: !!firmado,
+        datos: { fields: Object.assign(tipo === 'construccion' ? {} : { parcela_codigo: u.codigo }, { adq1_pasaporte: cli.passport_number, adq1_email: cli.email }), hitos: [] }, created_at: ts(diasFirma - 3), bloqueado: !!firmado,
         pdf_firmado_path: null, creado_por: agente.email, cobrado: 0, contrato_id: 'c-' + nC,
         compradores: [{ client_id: cli.id, rol: 'adquiriente_1', clients: { id: cli.id, full_name: cli.full_name, email: cli.email } }], contrato_padre_id: padre ? padre.id : null,
         proyecto_id: u.proyecto_id, unidad_id: u.id, nombre_contrato: TIPO_NOMBRE[tipo], parcela_codigo: u.codigo, soc: u._p.soc }));
