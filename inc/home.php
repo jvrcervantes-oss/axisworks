@@ -214,15 +214,17 @@ $jsonld = [
   </div>
 </section>
 
-<!-- 06 · ESTUDIO — dos personas, Pepito (el CEO, una IA) y sus trece departamentos, cada uno con su cara -->
+<!-- 06 · ESTUDIO — organigrama: Javier · Pepito (CEO, una IA) · Andrea al mismo nivel;
+     debajo, los 13 departamentos por sección (BUILD/GROW/CONTROL) y lo que produce cada uno -->
 <section class="band" id="studio">
   <div class="shell">
     <div class="shead"><div><p class="eyebrow"><span><?= $hm['who_eyebrow'] ?></span></p><h2><?= $hm['who_h2'] ?></h2></div></div>
+    <div class="org">
     <div class="dirs">
       <?php foreach ([
         ['01','BUILD','Javier','javier','who_1role','who_1p'],
-        ['02','DESIGN','Andrea','andrea','who_2role','who_2p'],
         ['03','CEO','Pepito','pepito','who_3role','who_3p'],
+        ['02','DESIGN','Andrea','andrea','who_2role','who_2p'],
       ] as [$n,$eje,$nom,$img,$rol,$txt]): ?>
       <div class="dir">
         <img class="dir__img" src="/assets/images/team-<?= $img ?>.webp" alt="<?= e($nom . ' — ' . strip_tags(html_entity_decode($hm[$rol]))) ?>" width="640" height="640" loading="lazy" decoding="async">
@@ -233,13 +235,43 @@ $jsonld = [
       </div>
       <?php endforeach; ?>
     </div>
-    <p class="lbl deps__t"><?= $hm['deps_t'] ?></p>
-    <ul class="deps">
-      <?php $caras = ['dev','design','data','security','marketing','legal','docs','bots','deploy','admin','arch','comms','org'];
-      foreach ($hm['deps'] as $i => $d): ?>
-      <li><img class="deps__img" src="/assets/images/dep-<?= $caras[$i] ?>.webp" alt="" width="360" height="360" loading="lazy" decoding="async"><span class="dim"><?= sprintf('DEP.%02d', $i+1) ?></span><b><?= $d[0] ?></b><span class="dim"><?= $d[1] ?></span></li>
+    <?php
+    /* Un producto con código sale de $PRODUCTOS (nombre + enlace del idioma);
+       el resto es texto plano. Mismo criterio que el cuadro de piezas: sin
+       hoja propia, sin flecha. */
+    $porCodigo = [];
+    foreach ($PRODUCTOS as $p) $porCodigo[$p[0]] = $p;
+    $producto = function ($x) use ($porCodigo, $lang, $col) {
+      if (!isset($porCodigo[$x])) return '<span class="org__p">' . $x . '</span>';
+      $p = $porCodigo[$x]; $nom = $lang === 'es' ? $p[3] : $p[2];
+      $cod = '<code>' . $p[0] . '</code> ';
+      return $p[$col]
+        ? '<a class="org__p" href="' . e($p[$col]) . '">' . $cod . $nom . ' <span class="ar" aria-hidden="true">→</span></a>'
+        : '<span class="org__p">' . $cod . $nom . '</span>';
+    }; ?>
+    <p class="org__lead"><span class="dim"><?= $hm['org_lead'] ?> //</span> <?= $producto($hm['org_top']) ?></p>
+    <p class="org__bus"><span><?= $hm['deps_t'] ?></span></p>
+    <div class="org__secs">
+      <?php $n = 0; foreach ($hm['org'] as [$eje, $lema, $deps]): ?>
+      <section class="org__sec" aria-label="<?= $eje ?>">
+        <p class="org__head"><b><?= $eje ?></b> <span><?= $lema ?></span></p>
+        <ul class="org__deps">
+          <?php foreach ($deps as [$cara, $nom, $hace, $prods]): $n++; ?>
+          <li class="org__dep">
+            <div class="org__node">
+              <img src="/assets/images/dep-<?= $cara ?>.webp" alt="" width="360" height="360" loading="lazy" decoding="async">
+              <div><span class="dim"><?= sprintf('DEP.%02d', $n) ?></span><b><?= $nom ?></b><span class="org__hace"><?= $hace ?></span></div>
+            </div>
+            <ul class="org__prods">
+              <?php foreach ($prods as $x): ?><li><?= $producto($x) ?></li><?php endforeach; ?>
+            </ul>
+          </li>
+          <?php endforeach; ?>
+        </ul>
+      </section>
       <?php endforeach; ?>
-    </ul>
+    </div>
+    </div>
     <p class="deps__note"><?= $hm['deps_note'] ?></p>
   </div>
 </section>

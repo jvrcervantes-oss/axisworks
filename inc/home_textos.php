@@ -88,12 +88,30 @@ $HOME = [
   'who_3role'=>'CEO · artificial intelligence','who_3p'=>'Our AI, trained for all of this. The studio&rsquo;s CEO: it briefs, delegates to the thirteen departments below and checks their work.',
   'deps_t'=>'REPORTING TO PEPITO // THIRTEEN AI DEPARTMENTS',
   'deps_note'=>'Each department is an AI agent working to written rules, and reports to Pepito. Javier and Andrea direct the work and sign off on what ships.',
-  'deps'=>[
-    ['Development','writes the code'],['Design','art direction'],['Data','integrations &amp; APIs'],
-    ['Security','audits &amp; secrets'],['Marketing','Meta Ads &amp; SEO'],['Legal','contracts &amp; policies'],
-    ['Docs','proposals &amp; reports'],['Bots','WhatsApp engine'],['Deploy','ships &amp; verifies'],
-    ['Admin','billing &amp; tax'],['Architecture','3D house models'],['Comms','press &amp; media'],
-    ['Organisation','runs the studio itself'],
+  /* Organigrama: sección → departamento [cara, nombre, qué hace, productos].
+     Un producto con código (B01…) sale de $PRODUCTOS con su nombre y su enlace;
+     uno en texto es un entregable sin hoja propia y va plano. */
+  'org_lead'=>'DIRECTION','org_top'=>'A01',
+  'org'=>[
+    ['BUILD','The software',[
+      ['dev','Development','writes the code',['B01','B02','B05','B07']],
+      ['data','Data','integrations &amp; APIs',['B06']],
+      ['bots','Bots','WhatsApp engine',['B03','B04']],
+      ['arch','Architecture','3D house models',['3D models of homes for sale, from the client&rsquo;s plans']],
+      ['deploy','Deploy','ships &amp; verifies',['Hosting, go-live and checks in production']],
+    ]],
+    ['GROW','Brand &amp; demand',[
+      ['design','Design','art direction',['Brand identity','Interface design for every product']],
+      ['marketing','Marketing','Meta Ads &amp; SEO',['G01','G02','G03']],
+      ['comms','Comms','press &amp; media',['Press releases and press kits']],
+    ]],
+    ['CONTROL','Rules, money &amp; paperwork',[
+      ['security','Security','audits &amp; secrets',['Security audits','Secrets and incident response']],
+      ['legal','Legal','contracts &amp; policies',['Client contracts','Privacy, terms and cookies']],
+      ['admin','Admin','billing &amp; tax',['Invoicing and tax filings']],
+      ['docs','Docs','proposals &amp; reports',['Proposals, reports and handovers']],
+      ['org','Organisation','runs the studio itself',['The studio&rsquo;s own structure: departments and rules']],
+    ]],
   ],
 
   'ct_eyebrow'=>'// TERMINAL PROTOCOL 01-INTAKE','ct_h2'=>'Initiate project intake.',
@@ -182,12 +200,27 @@ $HOME = [
   'who_3role'=>'CEO · inteligencia artificial','who_3p'=>'Nuestra IA, entrenada para todo esto. El CEO del estudio: recibe el encargo, lo reparte entre los trece departamentos de abajo y revisa lo que entregan.',
   'deps_t'=>'BAJO PEPITO // TRECE DEPARTAMENTOS DE IA',
   'deps_note'=>'Cada departamento es un agente de IA que trabaja con reglas escritas y responde ante Pepito. Javier y Andrea dirigen el trabajo y dan el visto bueno a lo que sale.',
-  'deps'=>[
-    ['Desarrollo','escribe el código'],['Diseño','dirección de arte'],['Datos','integraciones y APIs'],
-    ['Seguridad','auditorías y secretos'],['Marketing','Meta Ads y SEO'],['Legal','contratos y políticas'],
-    ['Documentación','propuestas e informes'],['Bots','motor de WhatsApp'],['Deploy','publica y verifica'],
-    ['Administración','facturación y fiscalidad'],['Arquitectura','viviendas en 3D'],['Comunicación','prensa y medios'],
-    ['Organización','la estructura del estudio'],
+  'org_lead'=>'DIRECCIÓN','org_top'=>'A01',
+  'org'=>[
+    ['BUILD','El software',[
+      ['dev','Desarrollo','escribe el código',['B01','B02','B05','B07']],
+      ['data','Datos','integraciones y APIs',['B06']],
+      ['bots','Bots','motor de WhatsApp',['B03','B04']],
+      ['arch','Arquitectura','viviendas en 3D',['Modelos 3D de viviendas en venta, a partir de los planos del cliente']],
+      ['deploy','Deploy','publica y verifica',['Alojamiento, puesta en marcha y comprobación en producción']],
+    ]],
+    ['GROW','Marca y demanda',[
+      ['design','Diseño','dirección de arte',['Identidad de marca','Diseño de interfaz de cada producto']],
+      ['marketing','Marketing','Meta Ads y SEO',['G01','G02','G03']],
+      ['comms','Comunicación','prensa y medios',['Notas y kits de prensa']],
+    ]],
+    ['CONTROL','Reglas, dinero y papeles',[
+      ['security','Seguridad','auditorías y secretos',['Auditorías de seguridad','Secretos y respuesta a incidentes']],
+      ['legal','Legal','contratos y políticas',['Contratos con clientes','Privacidad, términos y cookies']],
+      ['admin','Administración','facturación y fiscalidad',['Facturación y modelos fiscales']],
+      ['docs','Documentación','propuestas e informes',['Propuestas, informes y entregas']],
+      ['org','Organización','la estructura del estudio',['La estructura del propio estudio: departamentos y reglas']],
+    ]],
   ],
 
   'ct_eyebrow'=>'// PROTOCOLO 01-ALTA','ct_h2'=>'Iniciar alta de proyecto.',
