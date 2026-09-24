@@ -13,6 +13,7 @@
      cliente nunca se fija en una página (hard stop del estudio). -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -79,62 +80,103 @@
   .bloque .sub { font-size: 18px; line-height: 28px; max-width: 64ch; margin: 0 0 32px; }
   @media (max-width: 767px) { .bloque h2 { font-size: 28px; line-height: 36px; } section.bloque { padding-top: 72px; } }
 
-  .filtros { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 20px; scrollbar-width: none; }
-  .filtros button { flex: none; font: 600 14px/20px Inter, sans-serif; background: var(--tarjeta); color: var(--texto);
-    border: 1px solid var(--borde); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
-  .filtros button[aria-pressed="true"] { background: var(--indigo-50); color: var(--indigo); border-color: var(--borde-in); }
-  .config { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 32px; align-items: start; }
-  .catalogo { grid-column: span 8; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-  .resumen { grid-column: span 4; position: sticky; top: 92px; }
-  @media (max-width: 1023px) { .catalogo, .resumen { grid-column: 1 / -1; } .resumen { position: static; } }
-  @media (max-width: 640px) { .catalogo { grid-template-columns: 1fr; } }
+  /* Configurador: calco del de Stitch («NexusERP - Plataforma ERP Modular», #configurador), medido a 1440 px */
+  .ms { font-family: "Material Symbols Outlined"; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal;
+    text-transform: none; display: inline-block; white-space: nowrap; direction: ltr; font-feature-settings: "liga"; -webkit-font-smoothing: antialiased; }
+  .cfg { background: #f8f9ff; padding: 64px 0; scroll-margin-top: 68px; }
+  .cfg-marco { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
+  @media (max-width: 1023px) { .cfg-marco { padding: 0 48px; } }
+  @media (max-width: 767px) { .cfg-marco { padding: 0 20px; } }
+  .cfg-cab { text-align: center; max-width: 768px; margin: 0 auto 40px; }
+  .cfg-eyebrow { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 9999px; background: #e2dfff; color: #0f0069;
+    font: 600 12px/16px Inter, sans-serif; letter-spacing: .6px; text-transform: uppercase; margin-bottom: 4px; }
+  .cfg-cab h2 { font: 700 40px/48px "Plus Jakarta Sans", sans-serif; letter-spacing: -1px; color: #0b1c30; margin: 0; }
+  .cfg-cab p { font: 400 16px/24px Inter, sans-serif; color: #464555; margin: 4px 0 0; }
+  @media (max-width: 767px) { .cfg-cab h2 { font-size: 28px; line-height: 36px; } }
+  .cfg-filtros { display: inline-flex; align-items: center; padding: 4px; margin-top: 16px; background: #e5eeff; border-radius: 9999px;
+    box-shadow: inset 0 2px 4px 0 rgba(0,0,0,.05); max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .cfg-filtros button { flex: none; padding: 4px 16px; border: 0; border-radius: 9999px; background: transparent; color: #464555;
+    font: 600 14px/20px Inter, sans-serif; cursor: pointer; transition: all .15s cubic-bezier(.4,0,.2,1); }
+  .cfg-filtros button:hover { color: #0b1c30; }
+  .cfg-filtros button[aria-pressed="true"] { background: #fff; color: #3525cd; box-shadow: 0 1px 2px 0 rgba(0,0,0,.05); }
+  .cfg-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 32px; align-items: start; }
+  .cfg-lista { grid-column: span 7; display: flex; flex-direction: column; gap: 16px; }
+  .cfg-lado { grid-column: span 5; position: sticky; top: 96px; }
+  @media (max-width: 1023px) { .cfg-lista, .cfg-lado { grid-column: 1 / -1; } .cfg-lado { position: static; } }
 
-  .mod { position: relative; background: var(--blanco); border: 1px solid var(--borde); border-radius: 16px; padding: 18px 18px 16px;
-    box-shadow: var(--sombra-1); display: flex; flex-direction: column; gap: 10px; transition: transform .2s, box-shadow .2s, border-color .2s; }
-  .mod:hover { transform: translateY(-2px); box-shadow: var(--brillo); }
-  .mod.on { border-color: var(--borde-in); }
-  .mod.on::before { content: ""; position: absolute; left: 16px; right: 16px; top: -1px; height: 1px; background: linear-gradient(90deg, var(--indigo), var(--cian)); }
-  .mod.off { background: var(--tarjeta); box-shadow: none; }
-  .mod.off h3, .mod.off p, .mod.off li { color: var(--tenue); }
-  .mod[hidden] { display: none; }
-  .mod-cab { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; }
-  .mod h3 { font-size: 18px; line-height: 26px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
-  .mod .area { font: 600 12px/16px Inter, sans-serif; color: var(--suave); margin-top: 2px; }
+  .cfg-card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 2px 0 rgba(0,0,0,.05); cursor: pointer;
+    transition: all .15s cubic-bezier(.4,0,.2,1); }
+  .cfg-card:hover { box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1); }
+  .cfg-card.on { background-image: linear-gradient(to right, #fff, rgba(226,223,255,.1), #fff); }
+  .cfg-card.off { opacity: .8; }
+  .cfg-card.fija { cursor: default; }
+  .cfg-card[hidden] { display: none; }
+  .cfg-card:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+  .cfg-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+  .cfg-id { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .cfg-ico { flex: none; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #dce9ff; color: #41485e; }
+  .cfg-card.on .cfg-ico { background: #e2dfff; color: #3525cd; }
+  .cfg-ico .ms { font-size: 24px; }
+  .cfg-card h3 { font: 600 20px/28px "Plus Jakarta Sans", sans-serif; color: #0b1c30; margin: 0; }
+  .cfg-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; }
+  .cfg-tag { padding: 2px 4px; border-radius: 4px; font: 600 12px/16px Inter, sans-serif; background: #e5eeff; color: #464555; }
+  .cfg-tag.p { background: rgba(53,37,205,.1); color: #3525cd; }
+  .cfg-tag.s { background: #ecfeff; color: #00687a; }
+  .cfg-ver { margin-left: 4px; font: 600 12px/16px Inter, sans-serif; color: #3525cd; text-decoration: none; }
+  .cfg-ver:hover { text-decoration: underline; }
+  .cfg-chk { flex: none; width: 24px; height: 24px; border-radius: 9999px; display: flex; align-items: center; justify-content: center;
+    background: #e5eeff; color: #777587; box-shadow: 0 1px 2px 0 rgba(0,0,0,.05); border: 0; padding: 0; cursor: pointer; transition: all .15s cubic-bezier(.4,0,.2,1); }
+  .cfg-card.on .cfg-chk, .cfg-card.marcada .cfg-chk { background: #3525cd; color: #fff; }
+  .cfg-chk .ms { font-size: 16px; }
+  .cfg-card p.cfg-desc { font: 400 14px/20px Inter, sans-serif; color: #464555; margin: 4px 0 8px; }
+  .cfg-feats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; padding-top: 4px; }
+  @media (max-width: 639px) { .cfg-feats { grid-template-columns: 1fr; } }
+  .cfg-feat { display: flex; align-items: center; gap: 6px; font: 400 14px/20px Inter, sans-serif; color: #0b1c30; }
+  .cfg-feat .ms { font-size: 16px; color: #00687a; flex: none; }
+
+  .cfg-res { position: relative; overflow: hidden; background: #fff; border-radius: 16px; padding: 24px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1); }
+  .cfg-franja { position: absolute; top: 0; left: 0; right: 0; height: 6px; background-image: linear-gradient(to right, #3525cd, #00687a, #4f46e5); }
+  .cfg-res-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; }
+  .cfg-res-eyebrow { font: 700 12px/16px Inter, sans-serif; letter-spacing: .6px; text-transform: uppercase; color: #00687a; }
+  .cfg-res h3 { font: 600 24px/32px "Plus Jakarta Sans", sans-serif; color: #0b1c30; margin: 0; }
+  .cfg-badge { flex: none; padding: 4px 8px; border-radius: 9999px; background: rgba(53,37,205,.1); color: #3525cd; font: 700 14px/20px Inter, sans-serif; }
+  .cfg-pills-bloque { padding: 8px 0; }
+  .cfg-pills-lbl { display: block; margin-bottom: 4px; font: 600 12px/16px Inter, sans-serif; color: #464555; }
+  .cfg-pills { display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; }
+  .cfg-pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; background: #e5eeff; color: #0b1c30; font: 600 12px/16px Inter, sans-serif; }
+  .cfg-pill button { border: 0; background: none; padding: 0; color: #777587; cursor: pointer; display: inline-flex; }
+  .cfg-pill button:hover { color: #ba1a1a; }
+  .cfg-pill .ms { font-size: 14px; }
+  .cfg-caja { background: #eff4ff; border-radius: 12px; padding: 16px; margin: 16px 0; }
+  .cfg-fila { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font: 400 14px/20px Inter, sans-serif; color: #464555; }
+  .cfg-fila b { font-weight: 600; color: #0b1c30; }
+  .cfg-fila.s { color: #00687a; }
+  .cfg-fila.s b { font-weight: 700; color: #00687a; }
+  .cfg-fila.s span { display: flex; align-items: center; gap: 4px; }
+  .cfg-fila .ms { font-size: 16px; }
+  .cfg-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 4px; margin-top: 4px; }
+  .cfg-total-lbl { font: 600 20px/28px "Plus Jakarta Sans", sans-serif; color: #0b1c30; }
+  .cfg-total-sub { display: block; font: 600 12px/16px Inter, sans-serif; color: #464555; }
+  .cfg-total-num { font: 700 40px/48px "Plus Jakarta Sans", sans-serif; letter-spacing: -1px; color: #3525cd; text-align: right; white-space: nowrap; }
+  .cfg-total-num small { font: 400 14px/20px "Plus Jakarta Sans", sans-serif; letter-spacing: 0; color: #464555; }
+  .cfg-checks { display: grid; gap: 4px; margin-bottom: 24px; }
+  .cfg-check { display: flex; align-items: center; gap: 8px; font: 400 14px/20px Inter, sans-serif; color: #464555; }
+  .cfg-check .ms { font-size: 18px; color: #00687a; flex: none; }
+  .cfg-boton { width: 100%; margin-top: 4px; padding: 16px 0; border-radius: 8px; background: #4f46e5; color: #fff; text-decoration: none;
+    display: flex; align-items: center; justify-content: center; gap: 8px; font: 600 14px/20px Inter, sans-serif;
+    box-shadow: 0 10px 15px -3px rgba(79,70,229,.3), 0 4px 6px -4px rgba(79,70,229,.3); transition: all .15s cubic-bezier(.4,0,.2,1); }
+  .cfg-boton:hover { background: #3525cd; }
+  .cfg-boton .ms { font-size: 18px; }
+  .cfg-pie { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 4px; font: 600 12px/16px Inter, sans-serif; color: #464555; }
+  .cfg-pie .ms { font-size: 14px; color: #00687a; }
+
   .tags { display: flex; flex-wrap: wrap; gap: 6px; }
   .tag { font: 600 12px/16px Inter, sans-serif; padding: 3px 10px; border-radius: 999px; background: var(--indigo-50); color: var(--indigo-700); }
   .tag.cian { background: var(--cian-50); color: var(--cian-700); }
-  .mod p { margin: 0; font-size: 14px; line-height: 20px; }
-  .mod ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
-  .mod li { font-size: 14px; line-height: 20px; padding-left: 22px; position: relative; color: var(--texto); }
-  .mod li::before, .panel li::before, .caso li::before { content: ""; position: absolute; left: 2px; top: 5px; width: 10px; height: 6px;
-    border-left: 2px solid var(--ok); border-bottom: 2px solid var(--ok); transform: rotate(-45deg); }
-  .mod.off li::before { border-color: var(--tenue); }
-  .mod .pie { margin-top: auto; padding-top: 6px; font: 600 13px/18px Inter, sans-serif; }
-  .mod .pie a { color: var(--indigo); text-decoration: none; }
-  .mod .pie a:hover { text-decoration: underline; }
-  .mod .pie .nota { color: var(--suave); font-weight: 500; }
-  .mod.camino { background: linear-gradient(180deg, #fff, var(--cian-50)); }
-
-  .sw { position: relative; flex: none; width: 44px; height: 24px; border-radius: 999px; border: 0; background: #cbd5e1; cursor: pointer; padding: 0; transition: background .2s; }
-  .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.2); transition: transform .2s; }
-  .sw[aria-checked="true"] { background: var(--indigo); }
-  .sw[aria-checked="true"]::after { transform: translateX(20px); }
-  .sw[disabled] { cursor: default; opacity: .7; }
-
-  .panel { background: linear-gradient(160deg, var(--navy), var(--navy-2)); color: #cbd5e1; border-radius: 24px; padding: 24px; border: 1px solid #6366f1; box-shadow: var(--sombra-2); }
-  .panel .eyebrow { color: #a5b4fc; }
-  .panel .cuenta { font: 800 48px/56px "Plus Jakarta Sans", sans-serif; color: #fff; letter-spacing: -.02em; margin-top: 8px; }
-  .panel .cuenta small { font: 500 14px/20px Inter, sans-serif; color: #94a3b8; letter-spacing: 0; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0; max-height: 220px; overflow: auto; }
-  .chips span { font: 600 12px/16px Inter, sans-serif; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.1); color: #e2e8f0; border: 1px solid rgba(255,255,255,.15); }
-  .chips span.camino { background: rgba(6,182,212,.15); color: #67e8f9; border-color: rgba(6,182,212,.35); }
-  .panel hr { border: 0; border-top: 1px solid rgba(255,255,255,.12); margin: 16px 0; }
-  .panel ul { list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 8px; font-size: 14px; line-height: 20px; }
-  .panel li, .caso li { padding-left: 22px; position: relative; }
-  .panel li::before, .caso li::before { border-color: var(--cian); }
-  .panel .btn { width: 100%; justify-content: center; }
-  .panel .btn-c { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.2); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); margin-top: 10px; }
-  .panel .btn-c:hover { background: rgba(255,255,255,.16); }
+  .caso li { padding-left: 22px; position: relative; }
+  .caso li::before { content: ""; position: absolute; left: 2px; top: 5px; width: 10px; height: 6px;
+    border-left: 2px solid var(--cian); border-bottom: 2px solid var(--cian); transform: rotate(-45deg); }
 
   .tabla { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--blanco); border: 1px solid var(--borde); border-radius: 16px; overflow: hidden; box-shadow: var(--sombra-1); }
   .tabla th, .tabla td { text-align: left; padding: 16px 20px; border-bottom: 1px solid var(--borde); vertical-align: top; font-size: 14px; line-height: 20px; }
@@ -169,7 +211,7 @@
   footer .marco { padding-top: 32px; padding-bottom: 32px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 14px; }
   footer .logo { color: #fff; }
 
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .mod, .sw, .sw::after { transition: none; } .insignia .pulso { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .cfg-card, .cfg-chk, .cfg-filtros button { transition: none; } .insignia .pulso { animation: none; } }
 </style>
 </head>
 <body>
@@ -209,28 +251,48 @@
     </div>
   </section>
 
-  <section class="marco bloque" id="modulos">
-    <div class="eyebrow">Configurador</div>
-    <h2>Todos los módulos, activables uno a uno</h2>
-    <p class="sub">Aquí están todos encendidos. Apaga los que no usarías y abre cualquiera en la demo.</p>
-    <div class="filtros" role="group" aria-label="Filtrar por área" id="filtros"></div>
-    <div class="config">
-      <div class="catalogo" id="catalogo"></div>
-      <aside class="resumen" aria-label="Resumen de tu configuración">
-        <div class="panel">
-          <div class="eyebrow">Tu configuración</div>
-          <div class="cuenta num" aria-live="polite"><span id="r-on">0</span><small> de <span id="r-total">0</span> módulos</small></div>
-          <div class="chips" id="r-chips"></div>
-          <hr>
-          <ul>
-            <li>Base siempre incluida: panel del día, equipo y permisos, ajustes</li>
-            <li>Permisos por persona: cada uno ve sus herramientas y sus proyectos</li>
-            <li>Varias sociedades y monedas en el mismo sistema</li>
-          </ul>
-          <a class="btn btn-p" href="/intranet/v4/home/">Entrar a la demo</a>
-          <a class="btn btn-c" href="#especificaciones">Ver especificaciones</a>
-        </div>
-      </aside>
+  <section class="cfg" id="modulos">
+    <div class="cfg-marco">
+      <div class="cfg-cab">
+        <span class="cfg-eyebrow">Configurador de módulos</span>
+        <h2>Monta tu AxisWorks ERP a medida</h2>
+        <p>Haz clic para activar o desactivar cada módulo. Cada tarjeta lleva a su pantalla en la demo, con datos inventados.</p>
+        <div class="cfg-filtros" role="group" aria-label="Filtrar por área" id="filtros"></div>
+      </div>
+      <div class="cfg-grid">
+        <div class="cfg-lista" id="catalogo"></div>
+        <aside class="cfg-lado" aria-label="Resumen de selección">
+          <div class="cfg-res">
+            <div class="cfg-franja"></div>
+            <div class="cfg-res-cab">
+              <div>
+                <span class="cfg-res-eyebrow">Resumen de selección</span>
+                <h3>Tu ERP a medida</h3>
+              </div>
+              <span class="cfg-badge num" id="r-badge">0 de 0 módulos</span>
+            </div>
+            <div class="cfg-pills-bloque">
+              <span class="cfg-pills-lbl">Módulos seleccionados:</span>
+              <div class="cfg-pills" id="r-chips"></div>
+            </div>
+            <div class="cfg-caja">
+              <div class="cfg-fila"><span>Módulos de la base (siempre incluidos)</span><b class="num" id="r-base">3</b></div>
+              <div class="cfg-fila s"><span><span class="ms" aria-hidden="true">verified</span> Módulos en camino marcados</span><b class="num" id="r-cam">0</b></div>
+              <div class="cfg-total">
+                <div><span class="cfg-total-lbl">Módulos activos</span><span class="cfg-total-sub">El precio depende de los módulos: se ve en la llamada</span></div>
+                <div class="cfg-total-num num" aria-live="polite"><span id="r-on">0</span><small id="r-de">/0</small></div>
+              </div>
+            </div>
+            <div class="cfg-checks">
+              <div class="cfg-check"><span class="ms" aria-hidden="true">done_all</span><span>Permisos por persona: herramientas y proyectos</span></div>
+              <div class="cfg-check"><span class="ms" aria-hidden="true">done_all</span><span>Varias sociedades y monedas en el mismo sistema</span></div>
+              <div class="cfg-check"><span class="ms" aria-hidden="true">done_all</span><span>Contratos en español, inglés e indonesio</span></div>
+            </div>
+            <a class="cfg-boton" href="/intranet/v4/home/"><span>Entrar a la demo con estos módulos</span><span class="ms" aria-hidden="true">rocket_launch</span></a>
+            <div class="cfg-pie"><span class="ms" aria-hidden="true">verified_user</span><span>Datos de demostración · nada sale de este navegador</span></div>
+          </div>
+        </aside>
+      </div>
     </div>
   </section>
 
@@ -369,6 +431,13 @@
     ['postventa', 'Postventa y garantías', 'Incidencias después de la entrega: quién las abre, qué contratista las arregla y en qué garantía caen.']
   ];
   var AREAS = ['Todos', 'Base', 'Ventas', 'Documentos', 'Dinero', 'Producto y obra', 'En camino'];
+  /* Icono Material Symbols de cada módulo (mismo juego de iconos que el diseño de Stitch) */
+  var ICONO = { home: 'dashboard', usuarios: 'group', ajustes: 'tune', crm: 'person_search', setter: 'forum', campanas: 'campaign',
+    operaciones: 'swap_horiz', reservas: 'event_upcoming', compradores: 'badge', comisiones: 'payments', contratos: 'contract',
+    asistente: 'smart_toy', soporte: 'support_agent', comunicacion: 'mail', portal: 'account_circle', facturas: 'receipt_long',
+    recibos: 'request_quote', vencimientos: 'event', cuentas: 'account_balance', sociedades: 'domain', comisionadmin: 'price_change',
+    proyectos: 'apartment', modelos: 'villa', obra: 'construction', creatividades: 'palette',
+    contabilidad: 'account_balance_wallet', dashboard: 'query_stats', radar: 'radar', dataroom: 'folder_shared', postventa: 'handyman' };
 
   var CLAVE = 'demo-erp-modulos-v3';
   var estado = {};
@@ -378,52 +447,73 @@
   MODULOS.forEach(function (m) { if (m[7]) estado[m[0]] = true; });
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function ms(n) { return '<span class="ms" aria-hidden="true">' + n + '</span>'; }
 
+  function tarjeta(k, nombre, area, tags, desc, caps, url, base, camino) {
+    var ver = url ? '<a class="cfg-ver" href="' + url + '">Ver en la demo &rarr;</a>' : '<span class="cfg-tag">' + (camino ? 'Sin pantalla todavía' : 'Se enseña en la llamada') + '</span>';
+    return '<article class="cfg-card' + (base ? ' fija' : '') + '" data-k="' + k + '" data-area="' + esc(area) + '"' + (camino ? ' data-camino="1"' : '') +
+      (base ? '' : ' tabindex="0" role="switch"') + ' aria-label="' + esc((camino ? 'Me interesa: ' : 'Módulo ') + nombre) + '">' +
+      '<div class="cfg-top"><div class="cfg-id"><div class="cfg-ico">' + ms(ICONO[k] || 'widgets') + '</div><div><h3>' + esc(nombre) + '</h3>' +
+      '<div class="cfg-tags">' + tags.map(function (t, i) { return '<span class="cfg-tag' + (i === 0 ? (camino ? ' s' : ' p') : '') + '">' + esc(t) + '</span>'; }).join('') + ver + '</div></div></div>' +
+      '<span class="cfg-chk" aria-hidden="true"></span></div>' +
+      '<p class="cfg-desc">' + esc(desc) + '</p>' +
+      (caps.length ? '<div class="cfg-feats">' + caps.map(function (c) { return '<div class="cfg-feat">' + ms('check_circle') + '<span>' + esc(c) + '</span></div>'; }).join('') + '</div>' : '') +
+      '</article>';
+  }
   document.getElementById('catalogo').innerHTML = MODULOS.map(function (m) {
-    var pie = m[6] ? '<a href="' + m[6] + '">Ver en la demo &rarr;</a>' : '<span class="nota">Se enseña en la llamada</span>';
-    return '<article class="mod" data-k="' + m[0] + '" data-area="' + esc(m[2]) + '">' +
-      '<div class="mod-cab"><div><h3>' + esc(m[1]) + '</h3><div class="area">' + esc(m[2]) + '</div></div>' +
-      '<button type="button" class="sw" role="switch" aria-label="Activar ' + esc(m[1]) + '"' + (m[7] ? ' disabled' : '') + '></button></div>' +
-      '<div class="tags">' + m[3].map(function (t, i) { return '<span class="tag' + (i % 2 ? ' cian' : '') + '">' + esc(t) + '</span>'; }).join('') + '</div>' +
-      '<p>' + esc(m[4]) + '</p><ul>' + m[5].map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ul>' +
-      '<div class="pie">' + pie + '</div></article>';
+    return tarjeta(m[0], m[1], m[2], m[3], m[4], m[5], m[6], !!m[7], false);
   }).concat(CAMINO.map(function (m) {
-    return '<article class="mod camino" data-k="' + m[0] + '" data-area="En camino" data-camino="1">' +
-      '<div class="mod-cab"><div><h3>' + esc(m[1]) + '</h3><div class="area">En camino</div></div>' +
-      '<button type="button" class="sw" role="switch" aria-label="Me interesa: ' + esc(m[1]) + '"></button></div>' +
-      '<div class="tags"><span class="tag cian">En desarrollo</span></div><p>' + esc(m[2]) + '</p>' +
-      '<div class="pie"><span class="nota">Sin pantalla todavía · marca si te interesa</span></div></article>';
+    return tarjeta(m[0], m[1], 'En camino', ['En desarrollo'], m[2], [], null, false, true);
   })).join('');
   document.getElementById('filtros').innerHTML = AREAS.map(function (a, i) {
     return '<button type="button" aria-pressed="' + (i === 0) + '" data-area="' + esc(a) + '">' + esc(a) + '</button>';
   }).join('');
 
-  document.getElementById('r-total').textContent = MODULOS.length;
-  document.getElementById('m-mod').textContent = MODULOS.length;
+  var total = MODULOS.length, nBase = MODULOS.filter(function (m) { return m[7]; }).length;
+  document.getElementById('m-mod').textContent = total;
   document.getElementById('m-cam').textContent = CAMINO.length;
+  document.getElementById('r-base').textContent = nBase;
+  document.getElementById('r-de').textContent = '/' + total;
 
   function pinta() {
-    var chips = [];
-    document.querySelectorAll('.mod').forEach(function (el) {
-      var k = el.getAttribute('data-k'), on = !!estado[k], camino = el.hasAttribute('data-camino');
-      el.querySelector('.sw').setAttribute('aria-checked', String(on));
+    var pills = [];
+    document.querySelectorAll('.cfg-card').forEach(function (el) {
+      var k = el.getAttribute('data-k'), on = !!estado[k], camino = el.hasAttribute('data-camino'), base = el.classList.contains('fija');
       el.classList.toggle('on', on && !camino);
       el.classList.toggle('off', !on && !camino);
-      if (on) chips.push('<span' + (camino ? ' class="camino"' : '') + '>' + esc(el.querySelector('h3').textContent) + '</span>');
+      el.classList.toggle('marcada', on && camino);
+      if (!base) el.setAttribute('aria-checked', String(on));
+      el.querySelector('.cfg-chk').innerHTML = ms(on ? 'check' : 'add');
+      if (on && !camino) pills.push('<span class="cfg-pill"><span>' + esc(el.querySelector('h3').textContent) + '</span>' +
+        (base ? '' : '<button type="button" data-quita="' + k + '" aria-label="Quitar ' + esc(el.querySelector('h3').textContent) + '">' + ms('close') + '</button>') + '</span>');
     });
-    document.getElementById('r-on').textContent = MODULOS.filter(function (m) { return estado[m[0]]; }).length;
-    document.getElementById('r-chips').innerHTML = chips.join('');
+    var n = MODULOS.filter(function (m) { return estado[m[0]]; }).length;
+    document.getElementById('r-on').textContent = n;
+    document.getElementById('r-badge').textContent = n + ' de ' + total + ' módulos';
+    document.getElementById('r-cam').textContent = CAMINO.filter(function (m) { return estado[m[0]]; }).length;
+    document.getElementById('r-chips').innerHTML = pills.join('');
+  }
+  function alterna(el) {
+    if (!el || el.classList.contains('fija')) return;
+    var k = el.getAttribute('data-k'); estado[k] = !estado[k]; guarda(); pinta();
   }
 
   document.addEventListener('click', function (ev) {
-    var sw = ev.target.closest('.sw');
-    if (sw && !sw.disabled) { var k = sw.closest('.mod').getAttribute('data-k'); estado[k] = !estado[k]; guarda(); pinta(); return; }
+    var q = ev.target.closest('[data-quita]');
+    if (q) { estado[q.getAttribute('data-quita')] = false; guarda(); pinta(); return; }
+    if (ev.target.closest('a')) return;   // «Ver en la demo» navega, no alterna
+    var card = ev.target.closest('.cfg-card');
+    if (card) { alterna(card); return; }
     var f = ev.target.closest('#filtros button');
     if (f) {
       var area = f.getAttribute('data-area');
       document.querySelectorAll('#filtros button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === f)); });
-      document.querySelectorAll('.mod').forEach(function (el) { el.hidden = area !== 'Todos' && el.getAttribute('data-area') !== area; });
+      document.querySelectorAll('.cfg-card').forEach(function (el) { el.hidden = area !== 'Todos' && el.getAttribute('data-area') !== area; });
     }
+  });
+  document.addEventListener('keydown', function (ev) {
+    var card = ev.target.closest && ev.target.closest('.cfg-card');
+    if (card && (ev.key === ' ' || ev.key === 'Enter') && ev.target === card) { ev.preventDefault(); alterna(card); }
   });
   pinta();
 })();
