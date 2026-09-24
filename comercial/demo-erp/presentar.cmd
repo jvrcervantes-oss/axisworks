@@ -8,5 +8,5 @@ rem el navegador no tenga guardada una sesion real de ese origen.
 rem Para cerrar: Ctrl+C en esta ventana.
 cd /d "%~dp0"
 python build.py || (echo. & echo El build ha fallado: no se presenta. & pause & exit /b 1)
-start "" msedge --inprivate "http://127.0.0.1:8977/intranet/v4/home/"
+start "" msedge --inprivate "http://127.0.0.1:8977/"
 python -m http.server 8977 --bind 127.0.0.1 --directory dist

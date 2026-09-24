@@ -171,11 +171,17 @@ def guard_demo():
             aborta('el doble de QA ha cambiado y no encuentro (1 vez): ' + viejo[:70])
         doble = doble.replace(viejo, nuevo)
     doble = doble.replace("'qa-user-1'", "'d-u-1'").replace('qa@axisworks.test', 'direccion@demo.test')
+    # Botón «← Módulos» en todas las pantallas: vuelve a la landing (el guard es nuestro).
+    volver = ("document.addEventListener('DOMContentLoaded',function(){var a=document.createElement('a');a.href='/';"
+              "a.textContent='← Módulos';a.setAttribute('aria-label','Volver a los módulos');"
+              "a.style.cssText='position:fixed;left:16px;bottom:16px;z-index:2147483000;background:#485B37;color:#fff;"
+              "padding:8px 16px;border-radius:999px;font:500 13px/1.2 system-ui,sans-serif;text-decoration:none';"
+              "document.body.appendChild(a);});\n")
     # Sesión real que el presentador pudiera tener en este origen: fuera antes de nada (Seguridad #2).
     limpia_sesion = ("(function(){try{[localStorage,sessionStorage].forEach(function(s){for(var i=s.length-1;i>=0;i--){"
                      "var k=s.key(i);if(k&&k.indexOf('sb-')===0)s.removeItem(k);}});}catch(e){}})();\n")
     return ('/* GENERADO por AxisWorks/comercial/demo-erp/build.py — no editar. Demo: datos inventados, sin red real. */\n'
-            + limpia_sesion + datos + '\n' + doble)
+            + limpia_sesion + volver + datos + '\n' + doble)
 
 
 def neutraliza():
@@ -202,7 +208,8 @@ def paginas_propias():
     redir = ('<!doctype html><meta charset="utf-8"><title>Demo</title>'
              '<script>location.replace("/intranet/v4/home/")</script>')
     open(os.path.join(carpeta, 'index.html'), 'w', encoding='utf-8').write(redir)
-    open(os.path.join(DIST, 'index.html'), 'w', encoding='utf-8').write(redir)
+    # Portada: la landing de módulos (fuente: landing.html, al lado de este script).
+    shutil.copy2(os.path.join(AQUI, 'landing.html'), os.path.join(DIST, 'index.html'))
     aviso = ('<!doctype html><html lang="es"><meta charset="utf-8"><title>{t} · Demo</title>'
              '<body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;'
              'background:#fbf9f4;font:16px/1.6 system-ui,sans-serif;color:#2b2b25"><div style="max-width:30rem;padding:2rem">'
@@ -220,6 +227,10 @@ def paginas_propias():
     # enseña el mismo aviso, para que «Ver en el generador» no acabe en un 404.
     open(os.path.join(DIST, 'contracts', 'app.html'), 'w', encoding='utf-8').write(
         aviso.format(t='Generador de contratos', m='En la demo no se incluye: sus plantillas son documentos del cliente. Lo enseñamos en la llamada con un documento de ejemplo.'))
+    d = os.path.join(carpeta, 'creatividades')   # está en el menú de la v4; sin esto, 404 en directo
+    os.makedirs(d, exist_ok=True)
+    open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(aviso.format(
+        t='Creatividades', m='La biblioteca de piezas de cada proyecto se enseña en la llamada: son anuncios reales del cliente.'))
     for sitio in ('portal', 'entrar'):
         d = os.path.join(DIST, sitio)
         os.makedirs(d, exist_ok=True)

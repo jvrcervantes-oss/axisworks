@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Módulos del ERP · Demo</title>
+<!-- Portada de la demo del ERP (AxisWorks/comercial/demo-erp). build.py la copia a
+     dist/index.html. Cada tarjeta enlaza a su pantalla en la demo; las marcadas
+     «en camino» no tienen pantalla todavía. Sin precios a propósito: el precio
+     de un cliente nunca se fija en una página (hard stop del estudio). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --lino: #fbf9f4; --papel: #ffffff; --linea: #e4e2dd; --tinta: #1b1c19; --gris: #5f6158;
+    --acento: #485B37; --acento-suave: #eef1e8;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--lino); color: var(--tinta);
+    font: 400 16px/1.55 "Instrument Sans", system-ui, sans-serif; }
+  a { color: inherit; }
+  .marco { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  @media (max-width: 640px) { .marco { padding: 0 16px; } .marca { font-size: 11px; letter-spacing: .12em; } .entrar { padding: 9px 16px; font-size: 13px; } .hero { padding-top: 56px; } }
+
+  header.cab { border-bottom: 1px solid var(--linea); }
+  header.cab .marco { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+  .marca { font: 500 13px/1 "Instrument Sans", sans-serif; letter-spacing: .18em; text-transform: uppercase; }
+  .entrar { white-space: nowrap; text-decoration: none; background: var(--acento); color: #fff; padding: 10px 20px;
+    border-radius: 999px; font-size: 14px; }
+
+  .hero { padding-top: 88px; padding-bottom: 56px; }
+  .hero .eti { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--gris); }
+  .hero h1 { font: 400 clamp(44px, 7vw, 88px)/1.02 "Cormorant Garamond", serif; margin: 18px 0 24px; letter-spacing: -.01em; max-width: 13ch; }
+  .hero p { max-width: 58ch; color: var(--gris); font-size: 18px; margin: 0; }
+
+  .barra { position: sticky; top: 0; z-index: 5; background: var(--lino); border-top: 1px solid var(--linea);
+    border-bottom: 1px solid var(--linea); }
+  .barra .marco { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+  .cuenta { font: 400 30px/1 "Cormorant Garamond", serif; }
+  .cuenta small { font: 400 13px/1 "Instrument Sans", sans-serif; color: var(--gris); margin-left: 6px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+  .presets button { font: inherit; font-size: 13px; background: transparent; border: 1px solid var(--linea);
+    color: var(--tinta); padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+  .presets button:hover, .presets button.on { border-color: var(--acento); color: var(--acento); }
+
+  section.area { padding: 56px 0 8px; }
+  .area-cab { display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: baseline; margin-bottom: 20px; }
+  .area-cab h2 { font: 400 32px/1.1 "Cormorant Garamond", serif; margin: 0; }
+  .area-cab p { margin: 0; color: var(--gris); max-width: 60ch; }
+  @media (max-width: 760px) { .area-cab { grid-template-columns: 1fr; gap: 6px; } }
+
+  /* bordes en la tarjeta, no en la rejilla: así los huecos de la última fila quedan en lino, no en gris */
+  .rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); padding: 1px 0 0 1px; }
+  .mod { background: var(--papel); border: 1px solid var(--linea); margin: -1px 0 0 -1px; padding: 22px 22px 18px; display: flex; flex-direction: column; gap: 10px; min-height: 196px; }
+  .mod.off { background: var(--lino); }
+  .mod.off h3, .mod.off p { color: #9a9c93; }
+  .mod-cab { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+  .mod h3 { font: 500 16px/1.3 "Instrument Sans", sans-serif; margin: 0; }
+  .mod p { margin: 0; font-size: 14px; color: var(--gris); flex: 1; }
+  .mod .pie { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+  .mod .pie a { color: var(--acento); text-decoration: none; }
+  .mod .pie a:hover { text-decoration: underline; }
+  .sello { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--gris); }
+  .sello.camino { color: var(--acento); }
+
+  /* interruptor: pastilla, sin sombra */
+  .sw { position: relative; flex: none; width: 40px; height: 22px; border-radius: 999px; border: 1px solid var(--linea);
+    background: var(--lino); cursor: pointer; padding: 0; transition: background .18s, border-color .18s; }
+  .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+    background: #b9bbb2; transition: transform .18s, background .18s; }
+  .sw[aria-checked="true"] { background: var(--acento); border-color: var(--acento); }
+  .sw[aria-checked="true"]::after { transform: translateX(18px); background: #fff; }
+  .sw[disabled] { cursor: default; opacity: .6; }
+  .sw:focus-visible, .presets button:focus-visible, .entrar:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+
+  .camino-bloque { margin-top: 72px; padding-top: 56px; padding-bottom: 72px; border-top: 1px solid var(--linea); }
+  .camino-bloque .rejilla .mod { background: var(--acento-suave); }
+  .camino-bloque .rejilla .mod.off { background: var(--lino); }
+
+  footer { border-top: 1px solid var(--linea); padding: 28px 0 40px; color: var(--gris); font-size: 13px; }
+  @media (prefers-reduced-motion: reduce) { .sw, .sw::after { transition: none; } }
+</style>
+</head>
+<body>
+
+<header class="cab">
+  <div class="marco">
+    <span class="marca">ERP inmobiliario · AxisWorks</span>
+    <a class="entrar" href="/intranet/v4/home/">Entrar a la demo</a>
+  </div>
+</header>
+
+<main>
+  <div class="marco hero">
+    <div class="eti">Caso real: promotora en Bali · datos de la demo inventados</div>
+    <h1>Un ERP que se monta por módulos</h1>
+    <p>Cada empresa activa lo que usa y el resto no le estorba. Los módulos comparten la misma base:
+      un contrato firmado ya sabe qué parcela reserva, qué factura toca emitir y qué comisión genera.
+      Marca los que te interesan y abre cualquiera en la demo.</p>
+  </div>
+
+  <div class="barra">
+    <div class="marco">
+      <div class="cuenta" aria-live="polite"><span id="n-activos">0</span><small>módulos activos</small></div>
+      <div class="cuenta"><span id="n-camino">0</span><small>en camino marcados</small></div>
+      <div class="presets" role="group" aria-label="Configuraciones de partida">
+        <button type="button" data-preset="esencial">Esencial</button>
+        <button type="button" data-preset="promotora">Promotora</button>
+        <button type="button" data-preset="completo">Completo</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="marco" id="areas"></div>
+
+  <div class="marco camino-bloque">
+    <div class="area-cab">
+      <h2>En camino</h2>
+      <p>Lo que se está construyendo ahora. Si marcas alguno, entra en la conversación de tu proyecto
+        desde el primer día.</p>
+    </div>
+    <div class="rejilla" id="camino"></div>
+  </div>
+</main>
+
+<footer>
+  <div class="marco">Demo con datos inventados. Ninguna acción sale de este navegador. AxisWorks.</div>
+</footer>
+
+<script>
+(function () {
+  /* nucleo: siempre activo, no se puede apagar */
+  var AREAS = [
+    { t: 'Base', d: 'Lo que lleva cualquier ERP, se activen o no los demás módulos.', m: [
+      ['home', 'Panel del día', 'Lo que está esperando a alguien hoy: reservas que vencen, facturas sin cobrar, firmas pendientes. Cada aviso lleva a la pantalla que lo resuelve.', '/intranet/v4/home/', 1],
+      ['usuarios', 'Equipo y permisos', 'Roles de dirección, administración, jefe de ventas y agente. Cada persona ve las herramientas y los proyectos que le tocan.', '/intranet/v4/usuarios/', 1],
+      ['ajustes', 'Ajustes', 'Parámetros de la empresa, modo mantenimiento y la intranet en español o inglés.', '/intranet/v4/ajustes/', 1]
+    ]},
+    { t: 'Ventas', d: 'Del primer contacto a la venta cerrada, con el equipo comercial dentro.', m: [
+      ['crm', 'CRM de leads', 'Los leads de Meta entran solos. Embudo por etapas, próximo paso con fecha, agenda y aviso cuando alguien lleva días sin tocarse.', '/intranet/leads/'],
+      ['setter', 'Setter IA en WhatsApp', 'Un asistente que atiende al lead por WhatsApp, lo cualifica y lo deja listo para el comercial.', '/intranet/leads/'],
+      ['campanas', 'Piloto de campañas', 'Vigila las campañas de Meta Ads: pausa lo que no trae leads y mueve presupuesto al que sí, siempre dentro del tope que marca dirección.', '/intranet/leads/'],
+      ['operaciones', 'Operaciones', 'Una fila por venta: reserva, bloqueo y construcción del mismo comprador juntos, con lo cobrado y lo pendiente de toda la cadena.', '/intranet/v4/operaciones/'],
+      ['reservas', 'Reservas', 'Reservas que vencen, prórrogas y el paso de reserva a bloqueo de parcela, antes de que caduque.', '/intranet/v4/reservas/'],
+      ['compradores', 'Compradores', 'Directorio de compradores e inversores con su KYC, sus documentos y todas sus operaciones.', '/intranet/v4/compradores/'],
+      ['comisiones', 'Comisiones', 'Equipos, condiciones por tramo y reparto a cada comercial. Las comisiones se generan solas desde la venta y dirección las aprueba y paga.', '/intranet/v4/comisiones/']
+    ]},
+    { t: 'Documentos', d: 'Contratos y comunicación con el comprador, trazables.', m: [
+      ['contratos', 'Contratos', 'Generador de contratos en español, inglés e indonesio, firma electrónica y registro de versiones.', '/intranet/v4/contratos/'],
+      ['asistente', 'Asistente de respuestas', 'Redacta la respuesta a la duda de un comprador citando su propio contrato. El equipo la revisa antes de enviarla.', '/intranet/v4/asistente/'],
+      ['soporte', 'Soporte al comprador', 'Bandeja de consultas de compradores por categoría, con su historial.', '/intranet/v4/soporte/'],
+      ['comunicacion', 'Comunicados', 'Avisos a todos los compradores de un proyecto, o solo a algunos, con registro de envío.', '/intranet/v4/comunicacion/'],
+      ['portal', 'Portal del comprador', 'Cada comprador ve sus contratos, pagos, facturas y fotos de su obra con su propio acceso.', null]
+    ]},
+    { t: 'Dinero', d: 'Facturar, cobrar y saber qué entra y cuándo.', m: [
+      ['facturas', 'Facturación', 'Facturas y proformas por sociedad emisora y en varias monedas, enlazadas al contrato que las origina.', '/intranet/v4/facturas/'],
+      ['recibos', 'Cobros y recibís', 'Cada cobro con su justificante, aplicado a las facturas que salda.', '/intranet/v4/recibos/'],
+      ['vencimientos', 'Vencimientos y tesorería', 'Calendario de pagos por hitos de cada contrato: qué vence, qué está vencido y qué no tiene fecha.', '/intranet/v4/vencimientos/'],
+      ['cuentas', 'Cuentas de cobro', 'Qué cuenta bancaria aparece en cada contrato y factura, según proyecto y sociedad.', '/intranet/v4/cuentas/'],
+      ['sociedades', 'Sociedades emisoras', 'Varias empresas del grupo en el mismo ERP, cada una con sus datos fiscales y su logo en los documentos.', '/intranet/v4/sociedades/'],
+      ['comisionadmin', 'Comisión de administración', 'Tarifas y liquidación de la comisión que cobra la gestora a cada proyecto.', '/intranet/v4/comision-admin/']
+    ]},
+    { t: 'Producto y obra', d: 'Lo que se vende y cómo avanza su construcción.', m: [
+      ['proyectos', 'Proyectos y parcelario', 'Cada promoción con sus parcelas, precios y estado: libre, reservada, bloqueada o vendida.', '/intranet/v4/proyectos/'],
+      ['modelos', 'Catálogo de modelos', 'Modelos de vivienda con sus techos, extras, planos y precios de construcción.', '/intranet/v4/modelos/'],
+      ['obra', 'Control de obra', 'Fase de cada unidad, fecha de entrega, fotos y partes de trabajo.', '/intranet/v4/obra/'],
+      ['creatividades', 'Creatividades', 'Biblioteca de piezas para redes y anuncios de cada proyecto.', null]
+    ]}
+  ];
+  var CAMINO = [
+    ['contabilidad', 'Contabilidad', 'Asientos generados desde las facturas y los cobros que ya están en el ERP, plan de cuentas por sociedad y exportación para la gestoría.'],
+    ['dashboard', 'Dashboard financiero', 'Ventas, cobros, pendiente y previsión de caja por proyecto y por sociedad, en una sola pantalla para dirección.'],
+    ['radar', 'Radar de cobros', 'Aprende cómo paga cada comprador y avisa antes de que un hito se retrase, con el recordatorio ya redactado.'],
+    ['dataroom', 'Sala de datos del inversor', 'Documentación de cada proyecto para inversores, con marca de agua por persona y registro de quién abre qué.'],
+    ['postventa', 'Postventa y garantías', 'Incidencias después de la entrega: quién las abre, qué contratista las arregla y en qué plazo de garantía caen.']
+  ];
+  var PRESETS = {
+    esencial: ['crm', 'operaciones', 'compradores', 'contratos', 'facturas', 'recibos', 'proyectos'],
+    promotora: ['crm', 'operaciones', 'reservas', 'compradores', 'comisiones', 'contratos', 'soporte', 'portal',
+      'facturas', 'recibos', 'vencimientos', 'cuentas', 'proyectos', 'modelos', 'obra'],
+    completo: null
+  };
+
+  var CLAVE = 'demo-erp-modulos';
+  var estado = {};
+  try { estado = JSON.parse(localStorage.getItem(CLAVE) || '{}') || {}; } catch (e) { estado = {}; }
+  function guarda() { try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) {} }
+  if (!Object.keys(estado).length) PRESETS.promotora.forEach(function (k) { estado[k] = true; });
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function tarjeta(k, nombre, texto, url, nucleo, camino) {
+    var on = nucleo || !!estado[k];
+    var pie = camino ? '<span class="sello camino">En camino</span>'
+      : (url ? '<a href="' + url + '">Ver en la demo &rarr;</a>' : '<span class="sello">Se enseña en la llamada</span>');
+    return '<article class="mod' + (on ? '' : ' off') + '" data-k="' + k + '">' +
+      '<div class="mod-cab"><h3>' + esc(nombre) + '</h3>' +
+      '<button type="button" class="sw" role="switch" aria-checked="' + String(!!on) + '" aria-label="' +
+        (camino ? 'Me interesa: ' : 'Activar ') + esc(nombre) + '"' + (nucleo ? ' disabled' : '') + '></button></div>' +
+      '<p>' + esc(texto) + '</p>' +
+      '<div class="pie">' + pie + (nucleo ? '<span class="sello">Incluido</span>' : '') + '</div></article>';
+  }
+
+  document.getElementById('areas').innerHTML = AREAS.map(function (a) {
+    return '<section class="area"><div class="area-cab"><h2>' + esc(a.t) + '</h2><p>' + esc(a.d) + '</p></div>' +
+      '<div class="rejilla">' + a.m.map(function (m) { return tarjeta(m[0], m[1], m[2], m[3], m[4], false); }).join('') + '</div></section>';
+  }).join('');
+  document.getElementById('camino').innerHTML = CAMINO.map(function (m) { return tarjeta(m[0], m[1], m[2], null, false, true); }).join('');
+
+  var todos = [], deCamino = CAMINO.map(function (m) { return m[0]; });
+  AREAS.forEach(function (a) { a.m.forEach(function (m) { if (!m[4]) todos.push(m[0]); }); });
+
+  function pinta() {
+    document.querySelectorAll('.mod').forEach(function (el) {
+      var k = el.getAttribute('data-k'), sw = el.querySelector('.sw');
+      if (sw.disabled) return;
+      var on = !!estado[k];
+      sw.setAttribute('aria-checked', String(on));
+      el.classList.toggle('off', !on);
+    });
+    var nucleo = document.querySelectorAll('.sw[disabled]').length;
+    document.getElementById('n-activos').textContent = nucleo + todos.filter(function (k) { return estado[k]; }).length;
+    document.getElementById('n-camino').textContent = deCamino.filter(function (k) { return estado[k]; }).length;
+    document.querySelectorAll('.presets button').forEach(function (b) {
+      var lista = PRESETS[b.getAttribute('data-preset')] || todos;
+      var igual = todos.every(function (k) { return !!estado[k] === (lista.indexOf(k) !== -1); });
+      b.classList.toggle('on', igual);
+    });
+  }
+
+  document.addEventListener('click', function (ev) {
+    var sw = ev.target.closest('.sw');
+    if (sw && !sw.disabled) {
+      var k = sw.closest('.mod').getAttribute('data-k');
+      estado[k] = !estado[k]; guarda(); pinta(); return;
+    }
+    var b = ev.target.closest('.presets button');
+    if (b) {
+      var lista = PRESETS[b.getAttribute('data-preset')] || todos;
+      todos.forEach(function (k) { estado[k] = lista.indexOf(k) !== -1; });
+      guarda(); pinta();
+    }
+  });
+  pinta();
+})();
+</script>
+</body>
+</html>
