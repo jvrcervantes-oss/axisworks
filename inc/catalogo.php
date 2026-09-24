@@ -24,21 +24,19 @@ $PRODUCTOS = [
   ['B04','BUILD','Automation &amp; autonomous agents','Automatizaciones y agentes autónomos',
     '/services/business-process-automation','/es/servicios/automatizacion-de-procesos'],
   ['B05','BUILD','Client portals','Portales de cliente',
-    '/services/custom-business-software#portal','/es/servicios/software-de-gestion-a-medida#portal'],
+    '/services/client-portals','/es/servicios/portal-de-clientes'],
   ['B06','BUILD','Integrations &amp; data','Integraciones y datos',
-    '/services/custom-business-software#integraciones','/es/servicios/software-de-gestion-a-medida#integraciones'],
-  /* Sin destino desde el 24-sep-2026: apuntaba a `#work`, y el owner retiró
-     esa sección de la portada. Fila plana hasta que tenga hoja propia. */
+    '/services/integrations','/es/servicios/integraciones-y-datos'],
   ['B07','BUILD','Web design &amp; development','Diseño y desarrollo web',
-    null,null],
+    '/services/web-design-development','/es/servicios/diseno-y-desarrollo-web'],
   ['G01','GROW','Meta sales funnels','Funnels de venta en Meta',
     '/services/meta-ads','/es/servicios/meta-ads'],
   ['G02','GROW','SEO, SEM &amp; AI search','SEO, SEM y buscadores de IA',
-    null,null],
+    '/services/seo-sem','/es/servicios/seo-y-sem'],
   ['G03','GROW','Social &amp; content','Redes y contenido',
-    '/services/meta-ads#social','/es/servicios/meta-ads#redes'],
+    '/services/social-content','/es/servicios/redes-sociales-y-contenido'],
   ['A01','ADVISORY','Management, brand &amp; direction','Gestión, marca y rumbo',
-    null,null],
+    '/services/management-brand-direction','/es/servicios/gestion-marca-y-rumbo'],
 ];
 
 /* Los hubs. No son adorno: `/services/` sería un 403 sin ellos —el
@@ -74,9 +72,13 @@ $HOJAS = ['en' => $HOJAS_EN, 'es' => $HOJAS_ES];
  * en una colección. */
 $ORDEN = [
   'en' => ['custom-business-software','custom-crm','whatsapp-ai-chatbot',
-           'business-process-automation','property-developer-software','meta-ads'],
+           'business-process-automation','client-portals','integrations',
+           'web-design-development','property-developer-software','meta-ads',
+           'seo-sem','social-content','management-brand-direction'],
   'es' => ['software-de-gestion-a-medida','crm-a-medida','chatbot-whatsapp-ia',
-           'automatizacion-de-procesos','meta-ads','cuanto-cuesta-un-software-a-medida'],
+           'automatizacion-de-procesos','portal-de-clientes','integraciones-y-datos',
+           'diseno-y-desarrollo-web','meta-ads','seo-y-sem','redes-sociales-y-contenido',
+           'gestion-marca-y-rumbo','cuanto-cuesta-un-software-a-medida'],
 ];
 
 /* Textos de cáscara: nav, footer y los rótulos que se repiten. Un solo sitio

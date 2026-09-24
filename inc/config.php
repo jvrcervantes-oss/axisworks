@@ -34,6 +34,13 @@ $PARES = [
   '/services/whatsapp-ai-chatbot'            => '/es/servicios/chatbot-whatsapp-ia',
   '/services/business-process-automation'    => '/es/servicios/automatizacion-de-procesos',
   '/services/meta-ads'                       => '/es/servicios/meta-ads',
+  /* 24-sep-2026: las seis del catálogo que no tenían hoja (owner). */
+  '/services/client-portals'                 => '/es/servicios/portal-de-clientes',
+  '/services/integrations'                   => '/es/servicios/integraciones-y-datos',
+  '/services/web-design-development'         => '/es/servicios/diseno-y-desarrollo-web',
+  '/services/seo-sem'                        => '/es/servicios/seo-y-sem',
+  '/services/social-content'                 => '/es/servicios/redes-sociales-y-contenido',
+  '/services/management-brand-direction'     => '/es/servicios/gestion-marca-y-rumbo',
   /* Sin par a propósito (Marketing, SERP medida 2-sep-2026): el EN va
    * vertical —donde están nuestras cinco pruebas y la SERP está casi
    * vacía— y el ES va a pyme española. No son traducciones, así que
