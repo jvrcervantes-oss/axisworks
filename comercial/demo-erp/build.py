@@ -48,7 +48,7 @@ SB_KEY_RE = re.compile(r'sb_publishable_[A-Za-z0-9_\-]+')
 # Pantallas de la v4 que NO entran (Legal, revisión previa 24-sep).
 FUERA_V4 = {'_plan', 'generador-contratos', 'contratos-inversor'}
 # Nada que case con esto puede acabar en dist/ (Seguridad).
-PROHIBIDO = re.compile(r'(apoderados|/firma-|firma_|/anexos/|/folletos/|/templates/|/_plan/|\.sql$|\.test\.js$|/_[^/]*$|'
+PROHIBIDO = re.compile(r'(/contracts/app\.html$|apoderados|/firma-|firma_|/anexos/|/folletos/|/templates/|/_plan/|\.sql$|\.test\.js$|/_[^/]*$|'
                        r'Backups|/private/|credentials|token\.json|\.md$|\.py$|\.zip$)', re.I)
 EXT_TEXTO = ('.html', '.js', '.css', '.json', '.svg')
 EXT_OK = EXT_TEXTO + ('.woff', '.woff2', '.ttf', '.otf', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.ico')
@@ -216,6 +216,10 @@ def paginas_propias():
         d = os.path.join(DIST, 'intranet', 'v4', carpeta_v4)
         os.makedirs(d, exist_ok=True)
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(aviso.format(t=t, m=m))
+    # El generador clásico lleva el texto de las cláusulas inline (Legal): su ruta
+    # enseña el mismo aviso, para que «Ver en el generador» no acabe en un 404.
+    open(os.path.join(DIST, 'contracts', 'app.html'), 'w', encoding='utf-8').write(
+        aviso.format(t='Generador de contratos', m='En la demo no se incluye: sus plantillas son documentos del cliente. Lo enseñamos en la llamada con un documento de ejemplo.'))
     for sitio in ('portal', 'entrar'):
         d = os.path.join(DIST, sitio)
         os.makedirs(d, exist_ok=True)
@@ -228,7 +232,9 @@ def verifica():
         for f in fichs:
             p = os.path.join(raiz, f)
             r = rel(p)
-            if PROHIBIDO.search(r):
+            aviso_propio = r == '/contracts/app.html' and os.path.getsize(p) < 5000 and \
+                'En la demo no se incluye' in open(p, encoding='utf-8').read()
+            if PROHIBIDO.search(r) and not aviso_propio:
                 malos.append('prohibido: ' + r)
             if f.endswith(EXT_TEXTO):
                 t = open(p, encoding='utf-8', errors='replace').read()
