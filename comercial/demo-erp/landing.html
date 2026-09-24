@@ -1,471 +1,407 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
 <title>AxisWorks ERP · Demo</title>
-<!-- Portada de la demo del ERP (AxisWorks/comercial/demo-erp). build.py la copia a
-     dist/index.html. Piel: sistema «Enterprise Precision» (ClaudeCode/ERP/DESIGN.md,
-     24-sep). Del diseño se tomó la piel y la composición, NO su texto: la guía pedía
-     precios, SLA, certificaciones, integraciones y testimonios que no existen. Aquí
-     solo hay capacidades vistas en el código de la v4. Sin precios: el precio de un
-     cliente nunca se fija en una página (hard stop del estudio). -->
+<!-- Portada de la demo (build.py la copia a dist/index.html). Calco de composición y piel del Stitch
+     «NexusERP · plataforma ERP modular» (ClaudeCode/ERP/stitch_modular_erp_landing_page, 24-sep): mismo
+     Tailwind config y clases. Su texto NO: logos de clientes, SLA, certificaciones, testimonios con
+     personas y formulario eran inventados; aquí solo hay capacidades que existen en la v4. El catálogo
+     sale de /demo/catalogo.js (fuente única con la demo, el panel y el tour). -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%234f46e5%22/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --fondo: #f8f9ff; --blanco: #ffffff; --tarjeta: #f8fafc; --borde: #e2e8f0; --borde-in: #c7d2fe;
-    --tinta: #0f172a; --texto: #475569; --suave: #64748b; --tenue: #94a3b8;
-    --indigo: #4f46e5; --indigo-h: #4338ca; --indigo-50: #eef2ff; --indigo-700: #4338ca;
-    --cian: #06b6d4; --cian-50: #ecfeff; --cian-700: #0e7490; --navy: #0f172a; --navy-2: #1e1b4b;
-    --ok: #10b981;
-    --sombra-1: 0 4px 20px -2px rgba(15,23,42,.04), 0 2px 6px -1px rgba(15,23,42,.02);
-    --sombra-2: 0 20px 25px -5px rgba(15,23,42,.08), 0 8px 10px -6px rgba(15,23,42,.03);
-    --brillo: 0 0 25px rgba(79,70,229,.15), inset 0 0 0 1px rgba(99,102,241,.35);
-  }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: var(--fondo); color: var(--texto); font: 400 16px/24px Inter, system-ui, sans-serif; }
-  h1, h2, h3 { font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif; color: var(--tinta); }
-  a { color: inherit; }
-  .num { font-variant-numeric: tabular-nums; }
-  .marco { max-width: 1280px; margin: 0 auto; padding-left: 80px; padding-right: 80px; }
-  @media (max-width: 1023px) { .marco { padding-left: 48px; padding-right: 48px; } }
-  @media (max-width: 767px) { .marco { padding-left: 20px; padding-right: 20px; } }
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"surface-container-lowest":"#ffffff","surface-variant":"#d3e4fe","on-secondary-container":"#006172","on-tertiary-fixed-variant":"#3f465c","on-background":"#0b1c30","primary-fixed":"#e2dfff","inverse-surface":"#213145","on-tertiary":"#ffffff","on-error":"#ffffff","surface-container-highest":"#d3e4fe","on-tertiary-fixed":"#131b2e","inverse-primary":"#c3c0ff","tertiary-fixed":"#dae2fd","secondary":"#00687a","on-error-container":"#93000a","inverse-on-surface":"#eaf1ff","surface-container-high":"#dce9ff","on-tertiary-container":"#d4dbf5","surface-tint":"#4d44e3","on-surface":"#0b1c30","tertiary":"#41485e","surface-bright":"#f8f9ff","background":"#f8f9ff","error":"#ba1a1a","surface-dim":"#cbdbf5","on-primary":"#ffffff","on-primary-container":"#dad7ff","surface-container-low":"#eff4ff","surface-container":"#e5eeff","on-secondary-fixed-variant":"#004e5c","secondary-fixed-dim":"#4cd7f6","tertiary-fixed-dim":"#bec6e0","primary":"#3525cd","surface":"#f8f9ff","secondary-container":"#57dffe","on-secondary-fixed":"#001f26","on-primary-fixed":"#0f0069","on-primary-fixed-variant":"#3323cc","tertiary-container":"#586076","primary-fixed-dim":"#c3c0ff","on-surface-variant":"#464555","secondary-fixed":"#acedff","primary-container":"#4f46e5","error-container":"#ffdad6","on-secondary":"#ffffff","outline-variant":"#c7c4d8","outline":"#777587"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"margin-md":"3rem","space-sm":"0.5rem","space-xl":"2.5rem","gutter":"1.5rem","margin":"1.25rem","margin-lg":"5rem","space-lg":"1.5rem","space-xs":"0.25rem","space-2xl":"4rem","space-md":"1rem","gutter-lg":"2rem"},"fontFamily":{"body-xl":["Inter"],"headline-lg":["Plus Jakarta Sans"],"label-md":["Inter"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"headline-xl":["Plus Jakarta Sans"],"body-md":["Inter"],"body-sm":["Inter"],"display-hero":["Plus Jakarta Sans"],"code-metric":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"body-xl":["18px",{"lineHeight":"28px","fontWeight":"400"}],"headline-lg":["32px",{"lineHeight":"40px","fontWeight":"700"}],"label-md":["14px",{"lineHeight":"20px","fontWeight":"600"}],"headline-md":["24px",{"lineHeight":"32px","fontWeight":"600"}],"label-sm":["12px",{"lineHeight":"16px","fontWeight":"600"}],"display-hero-mobile":["36px",{"lineHeight":"44px","fontWeight":"800"}],"headline-xl-mobile":["28px",{"lineHeight":"36px","fontWeight":"700"}],"headline-xl":["40px",{"lineHeight":"48px","fontWeight":"700"}],"body-md":["16px",{"lineHeight":"24px","fontWeight":"400"}],"body-sm":["14px",{"lineHeight":"20px","fontWeight":"400"}],"display-hero":["56px",{"lineHeight":"64px","fontWeight":"800"}],"code-metric":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["20px",{"lineHeight":"28px","fontWeight":"600"}]}}}}</script>
 
-  .btn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 8px;
-    font: 600 14px/20px Inter, sans-serif; text-decoration: none; cursor: pointer; border: 1px solid transparent;
-    transition: background .2s, border-color .2s, box-shadow .2s; white-space: nowrap; }
-  .btn-p { background: var(--indigo); color: #fff; box-shadow: 0 4px 12px -2px rgba(79,70,229,.25); }
-  .btn-p:hover { background: var(--indigo-h); }
-  .btn-s { background: transparent; color: var(--tinta); border-color: var(--borde); }
-  .btn-s:hover { background: #f1f5f9; }
-  .btn:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
-
-  header.nav { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,.9);
-    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid #f1f5f9; }
-  header.nav .marco { display: flex; align-items: center; gap: 32px; height: 68px; }
-  .logo { display: flex; align-items: center; gap: 10px; font: 800 17px/1 "Plus Jakarta Sans", sans-serif; color: var(--tinta); text-decoration: none; letter-spacing: -.02em; white-space: nowrap; }
-  .logo i { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--indigo), var(--cian)); display: block; flex: none; }
-  .nav-links { display: flex; gap: 24px; font: 500 14px/20px Inter, sans-serif; }
-  .nav-links a { text-decoration: none; color: var(--texto); }
-  .nav-links a:hover { color: var(--indigo); }
-  .nav-cta { margin-left: auto; display: flex; gap: 12px; }
-  @media (max-width: 1023px) { .nav-links { display: none; } }
-  @media (max-width: 560px) { .nav-cta .btn-s { display: none; } .btn { height: 40px; padding: 0 16px; } header.nav .marco { gap: 12px; } }
-
-  .hero { padding-top: 88px; padding-bottom: 24px; text-align: center; }
-  .insignia { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px;
-    background: var(--cian-50); color: var(--cian-700); font: 600 12px/16px Inter, sans-serif; }
-  .insignia .pulso { width: 7px; height: 7px; border-radius: 50%; background: var(--cian); animation: pulso 2s infinite; }
-  @keyframes pulso { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
-  .hero h1 { font-size: 56px; line-height: 64px; font-weight: 800; letter-spacing: -.03em; margin: 22px auto 20px; max-width: 18ch; }
-  .hero h1 span { color: var(--indigo); }
-  .hero p.lead { font-size: 18px; line-height: 28px; max-width: 62ch; margin: 0 auto; }
-  .hero .ctas { display: flex; gap: 12px; justify-content: center; margin-top: 32px; flex-wrap: wrap; }
-  .metricas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 64px; text-align: left; }
-  .metrica { background: var(--blanco); border: 1px solid var(--borde); border-radius: 16px; padding: 20px 22px; box-shadow: var(--sombra-1); }
-  .metrica b { display: block; font: 800 40px/48px "Plus Jakarta Sans", sans-serif; color: var(--tinta); letter-spacing: -.02em; }
-  .metrica b.cian { color: var(--cian-700); }
-  .metrica span { font-size: 14px; line-height: 20px; color: var(--suave); }
-  @media (max-width: 900px) { .metricas { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 767px) { .hero { padding-top: 56px; } .hero h1 { font-size: 36px; line-height: 44px; } .metricas { gap: 12px; margin-top: 40px; } .metrica { padding: 16px; } .metrica b { font-size: 32px; line-height: 40px; } }
-
-  section.bloque { padding-top: 96px; scroll-margin-top: 72px; }
-  .eyebrow { font: 600 12px/16px Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--indigo-700); }
-  .bloque h2 { font-size: 40px; line-height: 48px; font-weight: 700; letter-spacing: -.02em; margin: 10px 0 12px; }
-  .bloque .sub { font-size: 18px; line-height: 28px; max-width: 64ch; margin: 0 0 32px; }
-  @media (max-width: 767px) { .bloque h2 { font-size: 28px; line-height: 36px; } section.bloque { padding-top: 72px; } }
-
-  /* Configurador: calco del de Stitch («NexusERP - Plataforma ERP Modular», #configurador), medido a 1440 px */
-  .ms { font-family: "Material Symbols Outlined"; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal;
-    text-transform: none; display: inline-block; white-space: nowrap; direction: ltr; font-feature-settings: "liga"; -webkit-font-smoothing: antialiased; }
-  .cfg { background: #f8f9ff; padding: 64px 0; scroll-margin-top: 68px; }
-  .cfg-marco { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
-  @media (max-width: 1023px) { .cfg-marco { padding: 0 48px; } }
-  @media (max-width: 767px) { .cfg-marco { padding: 0 20px; } }
-  .cfg-cab { text-align: center; max-width: 768px; margin: 0 auto 40px; }
-  .cfg-eyebrow { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 9999px; background: #e2dfff; color: #0f0069;
-    font: 600 12px/16px Inter, sans-serif; letter-spacing: .6px; text-transform: uppercase; margin-bottom: 4px; }
-  .cfg-cab h2 { font: 700 40px/48px "Plus Jakarta Sans", sans-serif; letter-spacing: -1px; color: #0b1c30; margin: 0; }
-  .cfg-cab p { font: 400 16px/24px Inter, sans-serif; color: #464555; margin: 4px 0 0; }
-  @media (max-width: 767px) { .cfg-cab h2 { font-size: 28px; line-height: 36px; } }
-  .cfg-filtros { display: inline-flex; align-items: center; padding: 4px; margin-top: 16px; background: #e5eeff; border-radius: 9999px;
-    box-shadow: inset 0 2px 4px 0 rgba(0,0,0,.05); max-width: 100%; overflow-x: auto; scrollbar-width: none; }
-  .cfg-filtros button { flex: none; padding: 4px 16px; border: 0; border-radius: 9999px; background: transparent; color: #464555;
-    font: 600 14px/20px Inter, sans-serif; cursor: pointer; transition: all .15s cubic-bezier(.4,0,.2,1); }
-  .cfg-filtros button:hover { color: #0b1c30; }
-  .cfg-filtros button[aria-pressed="true"] { background: #fff; color: #3525cd; box-shadow: 0 1px 2px 0 rgba(0,0,0,.05); }
-  .cfg-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 32px; align-items: start; }
-  .cfg-lista { grid-column: span 7; display: flex; flex-direction: column; gap: 16px; }
-  .cfg-lado { grid-column: span 5; position: sticky; top: 96px; }
-  @media (max-width: 1023px) { .cfg-lista, .cfg-lado { grid-column: 1 / -1; } .cfg-lado { position: static; } }
-
-  .cfg-card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 2px 0 rgba(0,0,0,.05); cursor: pointer;
-    transition: all .15s cubic-bezier(.4,0,.2,1); }
-  .cfg-card:hover { box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1); }
-  .cfg-card.on { background-image: linear-gradient(to right, #fff, rgba(226,223,255,.1), #fff); }
-  .cfg-card.off { opacity: .8; }
-  .cfg-card.fija { cursor: default; }
-  .cfg-card[hidden] { display: none; }
-  .cfg-card:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
-  .cfg-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
-  .cfg-id { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .cfg-ico { flex: none; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #dce9ff; color: #41485e; }
-  .cfg-card.on .cfg-ico { background: #e2dfff; color: #3525cd; }
-  .cfg-ico .ms { font-size: 24px; }
-  .cfg-card h3 { font: 600 20px/28px "Plus Jakarta Sans", sans-serif; color: #0b1c30; margin: 0; }
-  .cfg-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; }
-  .cfg-tag { padding: 2px 4px; border-radius: 4px; font: 600 12px/16px Inter, sans-serif; background: #e5eeff; color: #464555; }
-  .cfg-tag.p { background: rgba(53,37,205,.1); color: #3525cd; }
-  .cfg-tag.s { background: #ecfeff; color: #00687a; }
-  .cfg-ver { margin-left: 4px; font: 600 12px/16px Inter, sans-serif; color: #3525cd; text-decoration: none; }
-  .cfg-ver:hover { text-decoration: underline; }
-  .cfg-der { flex: none; display: flex; flex-direction: column; align-items: flex-end; }
-  .cfg-precio { font: 700 20px/28px "Plus Jakarta Sans", sans-serif; color: #3525cd; white-space: nowrap; }
-  .cfg-precio small { font: 400 14px/20px "Plus Jakarta Sans", sans-serif; color: #464555; }
-  .cfg-precio.suave { font: 600 14px/28px Inter, sans-serif; color: #464555; }
-  .cfg-chk { flex: none; width: 24px; height: 24px; border-radius: 9999px; display: flex; align-items: center; justify-content: center;
-    background: #e5eeff; color: #777587; box-shadow: 0 1px 2px 0 rgba(0,0,0,.05); border: 0; padding: 0; cursor: pointer; transition: all .15s cubic-bezier(.4,0,.2,1); }
-  .cfg-card.on .cfg-chk, .cfg-card.marcada .cfg-chk { background: #3525cd; color: #fff; }
-  .cfg-chk .ms { font-size: 16px; }
-  .cfg-card p.cfg-desc { font: 400 14px/20px Inter, sans-serif; color: #464555; margin: 4px 0 8px; }
-  .cfg-feats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; padding-top: 4px; }
-  @media (max-width: 639px) { .cfg-feats { grid-template-columns: 1fr; } }
-  .cfg-feat { display: flex; align-items: center; gap: 6px; font: 400 14px/20px Inter, sans-serif; color: #0b1c30; }
-  .cfg-feat .ms { font-size: 16px; color: #00687a; flex: none; }
-
-  .cfg-res { position: relative; overflow: hidden; background: #fff; border-radius: 16px; padding: 24px;
-    box-shadow: 0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1); }
-  .cfg-franja { position: absolute; top: 0; left: 0; right: 0; height: 6px; background-image: linear-gradient(to right, #3525cd, #00687a, #4f46e5); }
-  .cfg-res-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; }
-  .cfg-res-eyebrow { font: 700 12px/16px Inter, sans-serif; letter-spacing: .6px; text-transform: uppercase; color: #00687a; }
-  .cfg-res h3 { font: 600 24px/32px "Plus Jakarta Sans", sans-serif; color: #0b1c30; margin: 0; }
-  .cfg-badge { flex: none; padding: 4px 8px; border-radius: 9999px; background: rgba(53,37,205,.1); color: #3525cd; font: 700 14px/20px Inter, sans-serif; }
-  .cfg-pills-bloque { padding: 8px 0; }
-  .cfg-pills-lbl { display: block; margin-bottom: 4px; font: 600 12px/16px Inter, sans-serif; color: #464555; }
-  .cfg-pills { display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; }
-  .cfg-pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; background: #e5eeff; color: #0b1c30; font: 600 12px/16px Inter, sans-serif; }
-  .cfg-pill button { border: 0; background: none; padding: 0; color: #777587; cursor: pointer; display: inline-flex; }
-  .cfg-pill button:hover { color: #ba1a1a; }
-  .cfg-pill .ms { font-size: 14px; }
-  .cfg-caja { background: #eff4ff; border-radius: 12px; padding: 16px; margin: 16px 0; }
-  .cfg-fila { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font: 400 14px/20px Inter, sans-serif; color: #464555; }
-  .cfg-fila b { font-weight: 600; color: #0b1c30; }
-  .cfg-fila.s { color: #00687a; }
-  .cfg-fila.s b { font-weight: 700; color: #00687a; }
-  .cfg-fila.s span { display: flex; align-items: center; gap: 4px; }
-  .cfg-fila .ms { font-size: 16px; }
-  .cfg-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 4px; margin-top: 4px; }
-  .cfg-total-lbl { font: 600 20px/28px "Plus Jakarta Sans", sans-serif; color: #0b1c30; }
-  .cfg-total-sub { display: block; font: 600 12px/16px Inter, sans-serif; color: #464555; }
-  .cfg-total-num { font: 700 40px/48px "Plus Jakarta Sans", sans-serif; letter-spacing: -1px; color: #3525cd; text-align: right; white-space: nowrap; }
-  .cfg-total-num small { font: 400 14px/20px "Plus Jakarta Sans", sans-serif; letter-spacing: 0; color: #464555; }
-  .cfg-checks { display: grid; gap: 4px; margin-bottom: 24px; }
-  .cfg-check { display: flex; align-items: center; gap: 8px; font: 400 14px/20px Inter, sans-serif; color: #464555; }
-  .cfg-check .ms { font-size: 18px; color: #00687a; flex: none; }
-  .cfg-boton { width: 100%; margin-top: 4px; padding: 16px 0; border-radius: 8px; background: #4f46e5; color: #fff; text-decoration: none;
-    display: flex; align-items: center; justify-content: center; gap: 8px; font: 600 14px/20px Inter, sans-serif;
-    box-shadow: 0 10px 15px -3px rgba(79,70,229,.3), 0 4px 6px -4px rgba(79,70,229,.3); transition: all .15s cubic-bezier(.4,0,.2,1); }
-  .cfg-boton:hover { background: #3525cd; }
-  .cfg-boton .ms { font-size: 18px; }
-  .cfg-pie { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 4px; font: 600 12px/16px Inter, sans-serif; color: #464555; }
-  .cfg-pie .ms { font-size: 14px; color: #00687a; }
-
-  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  .tag { font: 600 12px/16px Inter, sans-serif; padding: 3px 10px; border-radius: 999px; background: var(--indigo-50); color: var(--indigo-700); }
-  .tag.cian { background: var(--cian-50); color: var(--cian-700); }
-  .caso li { padding-left: 22px; position: relative; }
-  .caso li::before { content: ""; position: absolute; left: 2px; top: 5px; width: 10px; height: 6px;
-    border-left: 2px solid var(--cian); border-bottom: 2px solid var(--cian); transform: rotate(-45deg); }
-
-  .tabla { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--blanco); border: 1px solid var(--borde); border-radius: 16px; overflow: hidden; box-shadow: var(--sombra-1); }
-  .tabla th, .tabla td { text-align: left; padding: 16px 20px; border-bottom: 1px solid var(--borde); vertical-align: top; font-size: 14px; line-height: 20px; }
-  .tabla tr:last-child th, .tabla tr:last-child td { border-bottom: 0; }
-  .tabla th { width: 30%; color: var(--tinta); font: 600 14px/20px Inter, sans-serif; background: var(--tarjeta); }
-  .tabla code { font: 500 12px/16px ui-monospace, "JetBrains Mono", Menlo, monospace; background: var(--indigo-50); color: var(--indigo-700); padding: 2px 6px; border-radius: 6px; }
-  @media (max-width: 640px) { .tabla, .tabla tbody, .tabla tr, .tabla th, .tabla td { display: block; width: 100%; } .tabla th { border-bottom: 0; padding-bottom: 4px; } }
-
-  .integ { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-  .int { background: var(--blanco); border: 1px solid var(--borde); border-radius: 16px; padding: 20px; box-shadow: var(--sombra-1); }
-  .int h3 { font-size: 18px; line-height: 26px; margin: 10px 0 6px; }
-  .int p { margin: 0; font-size: 14px; line-height: 20px; }
-  @media (max-width: 900px) { .integ { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 560px) { .integ { grid-template-columns: 1fr; } }
-
-  .caso { background: linear-gradient(160deg, var(--navy), var(--navy-2)); border-radius: 24px; padding: 40px; color: #cbd5e1;
-    display: grid; grid-template-columns: 5fr 7fr; gap: 40px; border: 1px solid rgba(99,102,241,.4); }
-  .caso h3 { color: #fff; font-size: 32px; line-height: 40px; margin: 10px 0 0; letter-spacing: -.02em; }
-  .caso .eyebrow { color: #a5b4fc; }
-  .caso ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; font-size: 16px; line-height: 24px; }
-  @media (max-width: 900px) { .caso { grid-template-columns: 1fr; padding: 28px; gap: 24px; } .caso h3 { font-size: 26px; line-height: 34px; } }
-
-  .faq { display: grid; gap: 12px; max-width: 860px; }
-  .faq details { background: var(--blanco); border: 1px solid var(--borde); border-radius: 16px; padding: 0 20px; box-shadow: var(--sombra-1); }
-  .faq summary { list-style: none; cursor: pointer; padding: 18px 0; font: 600 16px/24px "Plus Jakarta Sans", sans-serif; color: var(--tinta); display: flex; justify-content: space-between; gap: 16px; }
-  .faq summary::-webkit-details-marker { display: none; }
-  .faq summary::after { content: "+"; color: var(--indigo); font-size: 22px; line-height: 24px; transition: transform .2s; flex: none; }
-  .faq details[open] summary::after { transform: rotate(45deg); }
-  .faq details p { margin: 0 0 18px; font-size: 15px; line-height: 24px; }
-
-  footer { margin-top: 96px; background: var(--navy); color: #94a3b8; }
-  footer .marco { padding-top: 32px; padding-bottom: 32px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 14px; }
-  footer .logo { color: #fff; }
-
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .cfg-card, .cfg-chk, .cfg-filtros button { transition: none; } .insignia .pulso { animation: none; } }
-</style>
+<style>html{scroll-behavior:smooth}.module-card:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}</style>
 </head>
-<body>
-
-<header class="nav">
-  <div class="marco">
-    <a class="logo" href="#"><i aria-hidden="true"></i>AxisWorks ERP</a>
-    <nav class="nav-links" aria-label="Secciones">
-      <a href="#modulos">Módulos</a>
-      <a href="#especificaciones">Especificaciones</a>
-      <a href="#integraciones">Integraciones</a>
-      <a href="#faq">Preguntas</a>
-    </nav>
-    <div class="nav-cta">
-      <button type="button" class="btn btn-s" data-tour>Tour guiado</button>
-      <a class="btn btn-p" href="/intranet/v4/home/">Entrar a la demo</a>
-    </div>
-  </div>
+<body class="bg-surface font-body-md text-on-surface antialiased">
+<header class="fixed top-0 left-0 right-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(11,28,48,0.04)]">
+<div class="h-20 max-w-[1280px] mx-auto px-margin md:px-margin-md lg:px-gutter-lg flex items-center justify-between gap-space-md">
+<a class="flex items-center gap-space-sm shrink-0" href="#">
+<span class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-container to-secondary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">deployed_code</span></span>
+<span class="font-headline-sm text-headline-sm text-on-surface tracking-tight hidden sm:inline-block">AxisWorks ERP</span>
+</a>
+<nav class="hidden xl:flex items-center gap-space-sm">
+<a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#configurador">Módulos</a>
+<a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#capacidades">Capacidades</a>
+<a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#integraciones">Integraciones</a>
+<a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#caso">Caso real</a>
+<a class="px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#faq">Preguntas</a>
+</nav>
+<div class="flex items-center gap-space-sm shrink-0">
+<a class="hidden md:inline-flex items-center justify-center gap-1 px-space-md py-space-sm rounded-lg bg-surface-container-low text-on-surface font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-all" href="/panel/"><span class="material-symbols-outlined text-[18px] text-primary">space_dashboard</span>Panel de control</a>
+<a class="inline-flex items-center justify-center px-space-md py-space-sm rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shadow-[0_4px_16px_rgba(79,70,229,0.25)] hover:bg-primary transition-all" href="/intranet/v4/home/">Entrar a la demo</a>
+</div>
+</div>
 </header>
+<main class="w-full pt-20 bg-surface">
+<div class="flex flex-col w-full">
 
-<main>
-  <section class="marco hero">
-    <span class="insignia"><span class="pulso" aria-hidden="true"></span>En producción en una promotora de Bali</span>
-    <h1>El ERP que se monta según tu negocio, <span>no al revés</span></h1>
-    <p class="lead">Cada empresa activa los módulos que usa. Todos comparten la misma base: un contrato firmado ya sabe
-      qué parcela reserva, qué factura toca emitir y qué comisión genera. Los datos de esta demo son inventados.</p>
-    <div class="ctas">
-      <button type="button" class="btn btn-p" data-tour>&#9654;&#xFE0E;&nbsp; Tour guiado</button>
-      <a class="btn btn-s" href="/intranet/v4/home/">Entrar a la demo</a>
-      <a class="btn btn-s" href="#modulos">Ver los módulos</a>
-    </div>
-    <div class="metricas">
-      <div class="metrica"><b class="num" id="m-mod">0</b><span>módulos en producción</span></div>
-      <div class="metrica"><b class="num cian">3</b><span>idiomas en los contratos: español, inglés e indonesio</span></div>
-      <div class="metrica"><b class="num">2</b><span>idiomas en la intranet: español e inglés</span></div>
-      <div class="metrica"><b class="num" id="m-cam">0</b><span>módulos nuevos en camino</span></div>
-    </div>
-  </section>
+<section class="relative w-full overflow-hidden bg-surface-container-lowest pb-space-2xl">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[450px] bg-gradient-to-b from-primary-fixed/30 via-secondary-fixed/20 to-transparent blur-3xl pointer-events-none -z-10"></div>
+<div class="absolute -top-32 right-[-100px] w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<div class="max-w-[1280px] mx-auto px-margin md:px-margin-md lg:px-gutter-lg pt-space-xl md:pt-space-2xl flex flex-col items-center text-center">
+<div class="inline-flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm shadow-sm hover:shadow transition-all mb-space-lg">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span>Nuevo: tour guiado y panel de control de tu ERP</span>
+</div>
+<h1 class="font-headline-xl md:font-display-hero text-headline-xl md:text-display-hero text-on-surface tracking-tight max-w-4xl mx-auto">
+El ERP modular que se monta según tu negocio, <span class="bg-gradient-to-r from-primary via-primary-container to-secondary bg-clip-text text-transparent">no al revés</span>
+</h1>
+<p class="font-body-xl text-body-xl text-on-surface-variant max-w-3xl mt-space-md mb-space-xl">
+Activa solo los módulos que usas. Todos comparten la misma base: un contrato firmado ya sabe qué parcela reserva, qué factura toca emitir y qué comisión genera. Los datos de esta demo son inventados.
+</p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-space-md w-full max-w-md">
+<a class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-xl py-space-md rounded-lg bg-primary text-on-primary font-label-md text-label-md shadow-lg shadow-primary/25 hover:bg-primary-container transition-all" href="#configurador">
+<span>Configurar mi ERP</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</a>
+<button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-lg py-space-md rounded-lg bg-surface-container text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-all" data-tour type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">play_circle</span>
+<span>Tour guiado (3 min)</span>
+</button>
+</div>
+<div class="w-full mt-space-2xl pt-space-xl bg-surface-container-low/60 rounded-xl p-space-lg shadow-sm">
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-space-md">
+En producción en una promotora inmobiliaria de Bali
+</p>
+<div class="flex flex-wrap items-center justify-center gap-space-xl opacity-80 mb-space-lg">
+<div class="flex items-center gap-space-xs font-headline-sm text-headline-sm text-on-surface font-bold"><span class="material-symbols-outlined text-primary">translate</span> Contratos ES · EN · ID</div>
+<div class="flex items-center gap-space-xs font-headline-sm text-headline-sm text-on-surface font-bold"><span class="material-symbols-outlined text-secondary">currency_exchange</span> Euros y rupias</div>
+<div class="flex items-center gap-space-xs font-headline-sm text-headline-sm text-on-surface font-bold"><span class="material-symbols-outlined text-primary">draw</span> Firma electrónica</div>
+<div class="flex items-center gap-space-xs font-headline-sm text-headline-sm text-on-surface font-bold"><span class="material-symbols-outlined text-secondary">forum</span> WhatsApp y Meta Ads</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md max-w-3xl mx-auto pt-space-md bg-surface-container-lowest rounded-lg p-space-md shadow-sm">
+<div class="flex flex-col items-center"><span class="font-headline-md text-headline-md text-primary" id="m-mod">25</span><span class="font-body-sm text-body-sm text-on-surface-variant">módulos en producción</span></div>
+<div class="flex flex-col items-center"><span class="font-headline-md text-headline-md text-secondary" id="m-cam">5</span><span class="font-body-sm text-body-sm text-on-surface-variant">módulos nuevos en camino</span></div>
+<div class="flex flex-col items-center"><span class="font-headline-md text-headline-md text-on-surface">1 base</span><span class="font-body-sm text-body-sm text-on-surface-variant">propia por cliente, sin datos compartidos</span></div>
+</div>
+</div>
+</div>
+</section>
 
-  <section class="cfg" id="modulos">
-    <div class="cfg-marco">
-      <div class="cfg-cab">
-        <span class="cfg-eyebrow">Configurador de módulos</span>
-        <h2>Monta tu AxisWorks ERP a medida</h2>
-        <p>Haz clic para activar o desactivar cada módulo. Cada tarjeta lleva a su pantalla en la demo, con datos inventados.</p>
-        <div class="cfg-filtros" role="group" aria-label="Filtrar por área" id="filtros"></div>
-      </div>
-      <div class="cfg-grid">
-        <div class="cfg-lista" id="catalogo"></div>
-        <aside class="cfg-lado" aria-label="Resumen de selección">
-          <div class="cfg-res">
-            <div class="cfg-franja"></div>
-            <div class="cfg-res-cab">
-              <div>
-                <span class="cfg-res-eyebrow">Resumen de selección</span>
-                <h3>Tu ERP a medida</h3>
-              </div>
-              <span class="cfg-badge num" id="r-badge">0 de 0 módulos</span>
-            </div>
-            <div class="cfg-pills-bloque">
-              <span class="cfg-pills-lbl">Módulos seleccionados:</span>
-              <div class="cfg-pills" id="r-chips"></div>
-            </div>
-            <div class="cfg-caja">
-              <div class="cfg-fila"><span>Base: panel, equipo y ajustes</span><b class="num" id="r-base">190 €/mes</b></div>
-              <div class="cfg-fila"><span id="r-mod-lbl">Módulos</span><b class="num" id="r-mod">0 €/mes</b></div>
-              <div class="cfg-fila s"><span><span class="ms" aria-hidden="true">verified</span> Implantación (pago único)</span><b class="num">desde 2.500 €</b></div>
-              <div class="cfg-total">
-                <div><span class="cfg-total-lbl">Total estimado</span><span class="cfg-total-sub">Cuota mensual en EUR, impuestos no incluidos</span></div>
-                <div class="cfg-total-num num" aria-live="polite"><span id="r-total">0 €</span><small>/mes</small></div>
-              </div>
-            </div>
-            <div class="cfg-checks">
-              <div class="cfg-check"><span class="ms" aria-hidden="true">done_all</span><span>Permisos por persona: herramientas y proyectos</span></div>
-              <div class="cfg-check"><span class="ms" aria-hidden="true">done_all</span><span>Varias sociedades y monedas en el mismo sistema</span></div>
-              <div class="cfg-check"><span class="ms" aria-hidden="true">done_all</span><span>Contratos en español, inglés e indonesio</span></div>
-            </div>
-            <a class="cfg-boton" href="/intranet/v4/home/"><span>Entrar a la demo con estos módulos</span><span class="ms" aria-hidden="true">rocket_launch</span></a>
-            <div class="cfg-pie"><span class="ms" aria-hidden="true">verified_user</span><span>Precios orientativos de prueba · WhatsApp e IA a coste</span></div>
-          </div>
-        </aside>
-      </div>
-    </div>
-  </section>
+<section class="w-full bg-surface py-space-2xl scroll-mt-20" id="configurador">
+<div class="max-w-[1280px] mx-auto px-margin md:px-margin-md lg:px-gutter-lg">
+<div class="text-center max-w-3xl mx-auto mb-space-lg">
+<span class="inline-flex items-center gap-space-xs px-space-sm py-space-xs rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm uppercase tracking-wider mb-space-xs">Ecosistema modular</span>
+<h2 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Catálogo vivo de <span id="n-cat">30</span> módulos AxisWorks ERP</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">Aquí están todos encendidos. Apaga los que no usarías: la demo, el panel de control y el tour enseñan solo lo que marques.</p>
+</div>
+<div class="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm mb-space-lg border border-surface-container">
+<div class="flex flex-col md:flex-row gap-space-sm items-stretch md:items-center justify-between mb-space-sm">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-2 rounded-xl bg-surface-container-low font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="module-search" placeholder="Buscar módulos por nombre, código o capacidad..." type="text">
+</div>
+<div class="flex items-center gap-1.5 flex-wrap shrink-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant mr-1">Selección:</span>
+<button class="px-2.5 py-1 rounded-lg bg-surface-container text-primary font-label-sm text-label-sm hover:bg-primary hover:text-on-primary transition-all" data-seleccion="todo" type="button">Todo encendido</button>
+<button class="px-2.5 py-1 rounded-lg bg-surface-container-high text-outline hover:text-error hover:bg-surface-container font-label-sm text-label-sm transition-all" data-seleccion="base" type="button">Solo la base</button>
+</div>
+</div>
+<div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-label-sm font-label-sm" id="category-filters"></div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-start">
+<div class="lg:col-span-7 flex flex-col gap-space-lg" id="modules-container"></div>
+<div class="lg:col-span-5 lg:sticky top-24">
+<div class="bg-surface-container-lowest rounded-2xl p-space-lg shadow-xl relative overflow-hidden border border-surface-container">
+<div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary via-secondary to-primary-container"></div>
+<div class="flex items-center justify-between pb-space-sm gap-space-sm">
+<div>
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-secondary font-bold">Cotizador en tiempo real</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Resumen de tu ERP</h3>
+</div>
+<span class="px-space-sm py-1 rounded-full bg-primary/10 text-primary font-label-md text-label-md font-bold text-center" id="selected-counter-badge">0 de 0 módulos</span>
+</div>
+<div class="py-space-xs">
+<div class="flex justify-between items-center mb-1.5">
+<span class="text-label-sm font-label-sm text-on-surface-variant font-semibold">Módulos activos:</span>
+<span class="text-[12px] text-outline" id="catalog-coverage-label">0% del catálogo</span>
+</div>
+<div class="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto p-1 bg-surface-container-low/50 rounded-xl border border-surface-container" id="active-modules-list"></div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-md my-space-md">
+<div class="flex justify-between items-center text-body-sm font-body-sm text-on-surface-variant mb-1"><span>Base: panel, equipo y ajustes</span><span class="font-semibold text-on-surface" id="summary-base">190 €/mes</span></div>
+<div class="flex justify-between items-center text-body-sm font-body-sm text-on-surface-variant mb-1"><span id="summary-mod-lbl">Módulos</span><span class="font-semibold text-on-surface" id="summary-subtotal">0 €/mes</span></div>
+<div class="flex justify-between items-center text-body-sm font-body-sm text-secondary mb-1"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">verified</span> Implantación (pago único)</span><span class="font-bold" id="summary-impl">desde 2.500 €</span></div>
+<div class="pt-space-xs mt-space-xs border-t border-surface-container flex justify-between items-baseline gap-space-sm">
+<div><span class="text-headline-sm font-headline-sm text-on-surface">Total estimado</span><span class="text-label-sm font-label-sm text-on-surface-variant block">Cuota mensual en EUR, impuestos no incluidos</span></div>
+<div class="text-right"><div class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight whitespace-nowrap" id="summary-total">0 €<span class="text-body-sm font-normal text-on-surface-variant">/mes</span></div></div>
+</div>
+</div>
+<div class="space-y-1 mb-space-md text-body-sm font-body-sm text-on-surface-variant">
+<div class="flex items-center gap-2"><span class="material-symbols-outlined text-secondary text-[18px]">done_all</span><span>Permisos por persona: herramientas y proyectos</span></div>
+<div class="flex items-center gap-2"><span class="material-symbols-outlined text-secondary text-[18px]">done_all</span><span>Una base de datos propia para tu empresa</span></div>
+<div class="flex items-center gap-2"><span class="material-symbols-outlined text-secondary text-[18px]">done_all</span><span>Contratos en español, inglés e indonesio</span></div>
+</div>
+<div class="flex flex-col gap-space-xs">
+<a class="w-full mt-space-xs py-space-md rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shadow-lg shadow-primary-container/30 hover:bg-primary transition-all flex items-center justify-center gap-2" href="/intranet/v4/home/"><span>Entrar a la demo con estos módulos</span><span class="material-symbols-outlined text-[18px]">rocket_launch</span></a>
+<a class="w-full py-space-sm rounded-lg bg-surface-container text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-all flex items-center justify-center gap-2" href="/panel/"><span class="material-symbols-outlined text-[18px] text-primary">space_dashboard</span><span>Ver el panel de control</span></a>
+<div class="flex items-center justify-center gap-space-xs text-label-sm font-label-sm text-on-surface-variant mt-1"><span class="material-symbols-outlined text-[14px] text-secondary">verified_user</span><span>Precios orientativos de prueba · WhatsApp e IA a coste</span></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
 
-  <section class="marco bloque" id="especificaciones">
-    <div class="eyebrow">Especificaciones</div>
-    <h2>Lo técnico, sin letra pequeña</h2>
-    <p class="sub">Cómo está construido lo que ves en la demo.</p>
-    <table class="tabla">
-      <tbody>
-        <tr><th>Base de datos</th><td>PostgreSQL gestionado en Supabase. Seguridad por fila (<code>RLS</code>): cada consulta devuelve solo lo que ese usuario puede ver, aunque alguien manipule la pantalla.</td></tr>
-        <tr><th>Usuarios y permisos</th><td>Roles de dirección, administración, jefe de ventas y agente. Cada persona tiene su lista de herramientas y de proyectos.</td></tr>
-        <tr><th>Idiomas</th><td>Intranet en español e inglés. Contratos en español, inglés e indonesio.</td></tr>
-        <tr><th>Sociedades y monedas</th><td>Varias sociedades emisoras con sus datos fiscales, y operaciones en euros y en rupias.</td></tr>
-        <tr><th>Firma de contratos</th><td>Firma electrónica con enlace que caduca, estado por firmante y aviso cuando una firma está a punto de vencer.</td></tr>
-        <tr><th>Trazabilidad</th><td>Quién creó cada contrato y cada factura, y quién consultó los datos de contacto de un lead y cuándo.</td></tr>
-      </tbody>
-    </table>
-  </section>
+<section class="w-full bg-surface-container-low py-space-2xl scroll-mt-20" id="capacidades">
+<div class="max-w-[1280px] mx-auto px-margin md:px-margin-md lg:px-gutter-lg">
+<div class="text-center max-w-3xl mx-auto mb-space-xl">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary font-bold">Transparencia funcional</span>
+<h2 class="font-headline-xl text-headline-xl text-on-surface tracking-tight mt-1">Matriz de capacidades por área</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">Qué trae cada grupo de módulos, tal como funciona hoy en producción.</p>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-md overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[700px]">
+<thead><tr class="bg-surface-container text-on-surface font-label-md text-label-md">
+<th class="py-space-md px-space-lg">Capacidad</th><th class="py-space-md px-space-md">Ventas</th><th class="py-space-md px-space-md">Documentos</th><th class="py-space-md px-space-md">Dinero</th><th class="py-space-md px-space-md">Producto y obra</th>
+</tr></thead>
+<tbody class="text-body-sm font-body-sm text-on-surface-variant">
+<tr class="hover:bg-surface-container-low/50 transition-colors"><td class="py-space-md px-space-lg font-semibold text-on-surface">Permisos por persona y seguridad por fila</td><td class="py-space-md px-space-md"><span class="material-symbols-outlined text-secondary text-[20px]">check_circle</span></td><td class="py-space-md px-space-md"><span class="material-symbols-outlined text-secondary text-[20px]">check_circle</span></td><td class="py-space-md px-space-md"><span class="material-symbols-outlined text-secondary text-[20px]">check_circle</span></td><td class="py-space-md px-space-md"><span class="material-symbols-outlined text-secondary text-[20px]">check_circle</span></td></tr>
+<tr class="bg-surface-container-low/30 hover:bg-surface-container-low/60 transition-colors"><td class="py-space-md px-space-lg font-semibold text-on-surface">Automatización</td><td class="py-space-md px-space-md text-primary font-medium">Leads de Meta al CRM y piloto de campañas</td><td class="py-space-md px-space-md">Recordatorios y caducidad de firmas</td><td class="py-space-md px-space-md">Comisiones generadas desde la venta</td><td class="py-space-md px-space-md">Estado de parcela al firmar o liberar</td></tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors"><td class="py-space-md px-space-lg font-semibold text-on-surface">Inteligencia artificial</td><td class="py-space-md px-space-md text-primary font-medium">Setter en WhatsApp</td><td class="py-space-md px-space-md text-primary font-medium">Respuestas que citan el contrato</td><td class="py-space-md px-space-md">—</td><td class="py-space-md px-space-md">—</td></tr>
+<tr class="bg-surface-container-low/30 hover:bg-surface-container-low/60 transition-colors"><td class="py-space-md px-space-lg font-semibold text-on-surface">Idiomas</td><td class="py-space-md px-space-md">Intranet ES · EN</td><td class="py-space-md px-space-md text-secondary font-medium">Contratos ES · EN · ID</td><td class="py-space-md px-space-md">Intranet ES · EN</td><td class="py-space-md px-space-md">Intranet ES · EN</td></tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors"><td class="py-space-md px-space-lg font-semibold text-on-surface">Varias sociedades y monedas</td><td class="py-space-md px-space-md">—</td><td class="py-space-md px-space-md"><span class="material-symbols-outlined text-secondary text-[20px]">check_circle</span></td><td class="py-space-md px-space-md text-secondary font-medium">Euros y rupias, por sociedad emisora</td><td class="py-space-md px-space-md">—</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
 
-  <section class="marco bloque" id="integraciones">
-    <div class="eyebrow">Integraciones</div>
-    <h2>Conectado a lo que ya usa el equipo</h2>
-    <p class="sub">Las conexiones que funcionan hoy en el caso real.</p>
-    <div class="integ">
-      <article class="int"><span class="tag">Captación</span><h3>Meta Ads</h3><p>Los leads de los formularios entran solos en el CRM, y el piloto de campañas lee el gasto y los resultados de cada una.</p></article>
-      <article class="int"><span class="tag cian">Mensajería</span><h3>WhatsApp</h3><p>El setter IA atiende al lead por WhatsApp y el comercial le escribe desde su ficha.</p></article>
-      <article class="int"><span class="tag">CRM externo</span><h3>GoHighLevel</h3><p>Los leads que vienen de GoHighLevel conservan su rastro dentro del CRM del ERP.</p></article>
-      <article class="int"><span class="tag cian">Datos</span><h3>Google Sheets</h3><p>El parcelario de un proyecto se puede mantener en una hoja y volcarse al ERP.</p></article>
-      <article class="int"><span class="tag">Carga masiva</span><h3>Importación CSV</h3><p>Unidades y parcelas se cargan de golpe desde un CSV en la pantalla de proyectos.</p></article>
-      <article class="int"><span class="tag cian">Correo</span><h3>Email</h3><p>Contratos y facturas se envían desde el ERP y queda registro de cada envío.</p></article>
-    </div>
-  </section>
+<section class="w-full bg-surface py-space-2xl scroll-mt-20" id="integraciones">
+<div class="max-w-[1280px] mx-auto px-margin md:px-margin-md lg:px-gutter-lg">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-center">
+<div class="lg:col-span-6 flex flex-col gap-space-md">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">Conectividad abierta</span>
+<h2 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Un solo producto que se actualiza en todas las empresas a la vez</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Cada empresa tiene su propia base de datos. Las mejoras se escriben una vez y se aplican a todas, primero en un entorno de pruebas.</p>
+<div class="grid grid-cols-2 gap-space-md pt-space-xs">
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm"><div class="w-8 h-8 rounded-lg bg-surface-container text-secondary flex items-center justify-center mb-2"><span class="material-symbols-outlined text-[20px]">database</span></div><h4 class="font-headline-sm text-headline-sm text-on-surface">Base propia</h4><p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Tus datos no comparten base con los de otra empresa.</p></div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm"><div class="w-8 h-8 rounded-lg bg-surface-container text-primary flex items-center justify-center mb-2"><span class="material-symbols-outlined text-[20px]">upgrade</span></div><h4 class="font-headline-sm text-headline-sm text-on-surface">Mejoras para todos</h4><p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Cada cambio pasa antes por la demo y luego llega a cada cliente en orden.</p></div>
+</div>
+</div>
+<div class="lg:col-span-6 bg-surface-container-low rounded-2xl p-space-xl relative overflow-hidden shadow-inner">
+<div class="text-center mb-space-md"><span class="font-label-md text-label-md text-on-surface font-semibold">Integraciones funcionando hoy</span></div>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-space-md">
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col items-center text-center"><span class="material-symbols-outlined text-primary text-[32px] mb-1">campaign</span><span class="font-label-md text-label-md text-on-surface">Meta Ads</span><span class="text-label-sm text-secondary font-semibold mt-1">Leads al CRM</span></div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col items-center text-center"><span class="material-symbols-outlined text-secondary text-[32px] mb-1">forum</span><span class="font-label-md text-label-md text-on-surface">WhatsApp</span><span class="text-label-sm text-on-surface-variant mt-1">Setter IA</span></div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col items-center text-center"><span class="material-symbols-outlined text-primary-container text-[32px] mb-1">hub</span><span class="font-label-md text-label-md text-on-surface">GoHighLevel</span><span class="text-label-sm text-on-surface-variant mt-1">Trazabilidad</span></div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col items-center text-center"><span class="material-symbols-outlined text-on-surface text-[32px] mb-1">table_chart</span><span class="font-label-md text-label-md text-on-surface">Google Sheets</span><span class="text-label-sm text-on-surface-variant mt-1">Parcelario</span></div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col items-center text-center"><span class="material-symbols-outlined text-secondary text-[32px] mb-1">upload_file</span><span class="font-label-md text-label-md text-on-surface">Importación CSV</span><span class="text-label-sm text-on-surface-variant mt-1">Carga masiva</span></div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col items-center text-center"><span class="material-symbols-outlined text-primary text-[32px] mb-1">mail</span><span class="font-label-md text-label-md text-on-surface">Email</span><span class="text-label-sm text-secondary font-semibold mt-1">Envío con registro</span></div>
+</div>
+</div>
+</div>
+</div>
+</section>
 
-  <section class="marco bloque">
-    <div class="caso">
-      <div>
-        <div class="eyebrow">Caso real</div>
-        <h3>Una promotora con tres proyectos en Bali, en un solo sistema</h3>
-      </div>
-      <ul>
-        <li>Del lead de Meta al contrato firmado sin salir del ERP.</li>
-        <li>Contratos en tres idiomas y cobros por hitos de obra, cada uno con su factura y su recibí.</li>
-        <li>Comisiones del equipo comercial que se generan solas desde la venta.</li>
-        <li>Obra, entregas y un portal para que cada comprador siga lo suyo.</li>
-      </ul>
-    </div>
-  </section>
+<section class="w-full bg-surface-container-low py-space-2xl scroll-mt-20" id="caso">
+<div class="max-w-[1280px] mx-auto px-margin md:px-margin-md lg:px-gutter-lg">
+<div class="text-center max-w-3xl mx-auto mb-space-xl">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">Caso real</span>
+<h2 class="font-headline-xl text-headline-xl text-on-surface tracking-tight mt-1">Una promotora con tres proyectos en Bali, en un solo sistema</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-space-xs">Lo que el ERP hace cada día en producción.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter-lg">
+<div class="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm flex flex-col justify-between"><div><div class="flex items-center gap-1 text-secondary mb-space-sm"><span class="material-symbols-outlined text-[22px]">trending_up</span></div><p class="font-headline-sm text-headline-sm text-on-surface mb-space-xs">Del lead de Meta al contrato firmado sin salir del ERP.</p><p class="font-body-sm text-body-sm text-on-surface-variant">El lead entra solo, el comercial le escribe desde su ficha y el contrato se genera y se firma desde la misma operación.</p></div><div class="flex items-center gap-space-sm pt-space-md mt-space-md"><span class="w-12 h-12 rounded-full bg-primary-fixed text-primary flex items-center justify-center"><span class="material-symbols-outlined">group</span></span><div><p class="font-label-md text-label-md text-on-surface">Equipo comercial</p><p class="font-body-sm text-body-sm text-on-surface-variant">CRM · Operaciones · Contratos</p></div></div></div>
+<div class="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm flex flex-col justify-between"><div><div class="flex items-center gap-1 text-secondary mb-space-sm"><span class="material-symbols-outlined text-[22px]">account_balance</span></div><p class="font-headline-sm text-headline-sm text-on-surface mb-space-xs">Cobros por hitos de obra, cada uno con su factura y su recibí.</p><p class="font-body-sm text-body-sm text-on-surface-variant">El calendario de pagos sale del contrato, y lo cobrado y lo pendiente se calculan con los recibís, no a mano.</p></div><div class="flex items-center gap-space-sm pt-space-md mt-space-md"><span class="w-12 h-12 rounded-full bg-primary-fixed text-primary flex items-center justify-center"><span class="material-symbols-outlined">receipt_long</span></span><div><p class="font-label-md text-label-md text-on-surface">Administración</p><p class="font-body-sm text-body-sm text-on-surface-variant">Facturación · Cobros · Tesorería</p></div></div></div>
+<div class="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm flex flex-col justify-between"><div><div class="flex items-center gap-1 text-secondary mb-space-sm"><span class="material-symbols-outlined text-[22px]">construction</span></div><p class="font-headline-sm text-headline-sm text-on-surface mb-space-xs">Obra, entregas y un portal para que cada comprador siga lo suyo.</p><p class="font-body-sm text-body-sm text-on-surface-variant">La fase de cada villa, la próxima entrega y las fotos, visibles para el comprador con su propio acceso.</p></div><div class="flex items-center gap-space-sm pt-space-md mt-space-md"><span class="w-12 h-12 rounded-full bg-primary-fixed text-primary flex items-center justify-center"><span class="material-symbols-outlined">apartment</span></span><div><p class="font-label-md text-label-md text-on-surface">Dirección y obra</p><p class="font-body-sm text-body-sm text-on-surface-variant">Proyectos · Obra · Portal</p></div></div></div>
+</div>
+</div>
+</section>
 
-  <section class="marco bloque" id="faq">
-    <div class="eyebrow">Preguntas</div>
-    <h2>Lo que suele preguntarse</h2>
-    <div class="faq">
-      <details><summary>¿Se pueden activar o quitar módulos después?</summary>
-        <p>Sí. Cada módulo es una herramienta de la intranet y comparte la misma base que el resto, así que añadir uno más adelante no obliga a migrar nada. Dentro de la empresa, además, cada herramienta se da o se quita por persona desde Equipo y permisos.</p></details>
-      <details><summary>¿Cómo se cargan los datos que ya tenemos en Excel?</summary>
-        <p>Proyectos y parcelas se importan desde CSV en la propia pantalla de proyectos. El resto se revisa caso a caso en la llamada.</p></details>
-      <details><summary>¿Quién ve qué?</summary>
-        <p>Dirección lo ve todo. Un agente ve sus leads, sus operaciones y los proyectos que tiene asignados. Esa separación la hace la base de datos, no solo la pantalla.</p></details>
-      <details><summary>¿Dónde están los datos?</summary>
-        <p>En una base PostgreSQL gestionada en Supabase, con seguridad por fila y copias de seguridad. Esta demo no toca esa base: todo lo que ves son datos inventados que viven en tu navegador.</p></details>
-    </div>
-  </section>
+<section class="w-full bg-surface py-space-2xl scroll-mt-20" id="faq">
+<div class="max-w-[880px] mx-auto px-margin md:px-margin-md lg:px-gutter-lg">
+<div class="text-center mb-space-xl">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary font-bold">Despeja tus dudas</span>
+<h2 class="font-headline-xl text-headline-xl text-on-surface tracking-tight mt-1">Preguntas frecuentes sobre AxisWorks ERP</h2>
+</div>
+<div class="flex flex-col gap-space-sm">
+<details class="group bg-surface-container-lowest rounded-xl p-space-md shadow-sm transition-all"><summary class="flex justify-between items-center font-headline-sm text-headline-sm text-on-surface cursor-pointer list-none"><span>¿Se pueden activar o quitar módulos después?</span><span class="material-symbols-outlined text-primary group-open:rotate-180 transition-transform">expand_more</span></summary><div class="mt-space-sm text-body-md font-body-md text-on-surface-variant">Sí. Cada módulo comparte la misma base que el resto, así que añadir uno más adelante no obliga a migrar nada. Dentro de la empresa, además, cada herramienta se da o se quita por persona.</div></details>
+<details class="group bg-surface-container-lowest rounded-xl p-space-md shadow-sm transition-all"><summary class="flex justify-between items-center font-headline-sm text-headline-sm text-on-surface cursor-pointer list-none"><span>¿Cómo se cargan los datos que ya tenemos en Excel?</span><span class="material-symbols-outlined text-primary group-open:rotate-180 transition-transform">expand_more</span></summary><div class="mt-space-sm text-body-md font-body-md text-on-surface-variant">Proyectos y parcelas se importan desde CSV en la propia pantalla de proyectos. El resto se revisa caso a caso en la implantación.</div></details>
+<details class="group bg-surface-container-lowest rounded-xl p-space-md shadow-sm transition-all"><summary class="flex justify-between items-center font-headline-sm text-headline-sm text-on-surface cursor-pointer list-none"><span>¿Quién ve qué dentro de la empresa?</span><span class="material-symbols-outlined text-primary group-open:rotate-180 transition-transform">expand_more</span></summary><div class="mt-space-sm text-body-md font-body-md text-on-surface-variant">Dirección lo ve todo. Un agente ve sus leads, sus operaciones y los proyectos que tiene asignados. Esa separación la hace la base de datos, no solo la pantalla.</div></details>
+<details class="group bg-surface-container-lowest rounded-xl p-space-md shadow-sm transition-all"><summary class="flex justify-between items-center font-headline-sm text-headline-sm text-on-surface cursor-pointer list-none"><span>¿Dónde están mis datos?</span><span class="material-symbols-outlined text-primary group-open:rotate-180 transition-transform">expand_more</span></summary><div class="mt-space-sm text-body-md font-body-md text-on-surface-variant">En una base PostgreSQL propia para tu empresa, gestionada en Supabase, con seguridad por fila y copias de seguridad. Esta demo no toca ninguna base real: todo lo que ves son datos inventados.</div></details>
+</div>
+</div>
+</section>
+
+<section class="w-full bg-gradient-to-r from-on-background via-primary to-primary-container text-on-primary py-space-2xl relative overflow-hidden">
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(87,223,254,0.15),transparent_60%)] pointer-events-none"></div>
+<div class="max-w-[1280px] mx-auto px-margin md:px-margin-md lg:px-gutter-lg relative z-10 flex flex-col items-center text-center">
+<span class="inline-flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-surface-container-lowest/10 backdrop-blur-md text-on-primary font-label-sm text-label-sm mb-space-md"><span class="material-symbols-outlined text-secondary-fixed text-[16px]">play_circle</span>Tour guiado de 3 minutos</span>
+<h2 class="font-headline-xl md:font-display-hero text-headline-xl md:text-display-hero font-bold tracking-tight max-w-3xl">¿Lo vemos funcionando con tus módulos?</h2>
+<p class="font-body-xl text-body-xl text-primary-fixed max-w-2xl mt-space-md mb-space-xl">Recorre el ERP con los módulos que has marcado: del lead que entra por Meta a la villa entregada.</p>
+<div class="flex flex-col sm:flex-row items-center gap-space-md w-full max-w-md justify-center">
+<button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-xl py-space-md rounded-lg bg-surface-container-lowest text-primary font-label-md text-label-md shadow-xl hover:bg-surface-bright transition-all" data-tour type="button"><span>Empezar el tour</span><span class="material-symbols-outlined text-[18px]">play_arrow</span></button>
+<a class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-lg py-space-md rounded-lg bg-surface-container-lowest/10 backdrop-blur-md text-on-primary font-label-md text-label-md hover:bg-surface-container-lowest/20 transition-all" href="/intranet/v4/home/"><span class="material-symbols-outlined text-[18px]">login</span><span>Entrar a la demo</span></a>
+</div>
+<p class="font-body-sm text-body-sm text-primary-fixed/80 mt-space-lg">Datos de demostración · Nada sale de este navegador</p>
+</div>
+</section>
+</div>
 </main>
-
-<footer>
-  <div class="marco">
-    <span class="logo"><i aria-hidden="true"></i>AxisWorks ERP</span>
-    <span>Demo con datos inventados. Ninguna acción sale de este navegador.</span>
-  </div>
+<footer class="w-full bg-surface-container-low text-on-surface">
+<div class="max-w-[1280px] mx-auto px-margin md:px-margin-md lg:px-gutter-lg pt-space-2xl pb-space-xl">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg pb-space-xl">
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<div class="flex items-center gap-space-sm"><span class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-container to-secondary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">deployed_code</span></span><span class="font-headline-sm text-headline-sm text-on-surface">AxisWorks ERP</span></div>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-md">ERP modular de AxisWorks. Un solo producto, una base de datos propia por empresa y los módulos que cada una necesita.</p>
+<div class="flex flex-wrap items-center gap-space-sm pt-space-xs">
+<div class="inline-flex items-center gap-space-xs px-space-sm py-space-xs rounded-full bg-surface-container-lowest shadow-[0_1px_4px_rgba(11,28,48,0.04)]"><span class="material-symbols-outlined text-secondary text-[16px]">verified_user</span><span class="font-label-sm text-label-sm text-on-surface-variant">Seguridad por fila</span></div>
+<div class="inline-flex items-center gap-space-xs px-space-sm py-space-xs rounded-full bg-surface-container-lowest shadow-[0_1px_4px_rgba(11,28,48,0.04)]"><span class="material-symbols-outlined text-secondary text-[16px]">database</span><span class="font-label-sm text-label-sm text-on-surface-variant">Base propia por empresa</span></div>
+<div class="inline-flex items-center gap-space-xs px-space-sm py-space-xs rounded-full bg-surface-container-lowest shadow-[0_1px_4px_rgba(11,28,48,0.04)]"><span class="material-symbols-outlined text-secondary text-[16px]">draw</span><span class="font-label-sm text-label-sm text-on-surface-variant">Firma electrónica</span></div>
+</div>
+</div>
+<div class="lg:col-span-7 flex flex-col gap-space-lg">
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-[0_2px_12px_rgba(11,28,48,0.03)]">
+<h4 class="font-headline-sm text-headline-sm text-on-surface mb-space-xs">Recorre la demo</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">El tour guiado enseña cada módulo que tengas marcado, con datos inventados.</p>
+<div class="flex flex-col sm:flex-row gap-space-sm">
+<button class="px-space-lg py-space-sm rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container transition-all" data-tour type="button">Tour guiado</button>
+<a class="px-space-lg py-space-sm rounded-lg bg-surface text-on-surface font-label-md text-label-md hover:bg-surface-container transition-all text-center" href="/panel/">Panel de control</a>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-gutter py-space-xl">
+<div class="flex flex-col gap-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Módulos</span><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#configurador">Ventas</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#configurador">Documentos</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#configurador">Dinero</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#configurador">Producto y obra</a></div>
+<div class="flex flex-col gap-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Plataforma</span><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="/panel/">Panel de control</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#capacidades">Capacidades</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#integraciones">Integraciones</a></div>
+<div class="flex flex-col gap-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Recursos</span><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#caso">Caso real</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#faq">Preguntas frecuentes</a></div>
+<div class="flex flex-col gap-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Demo</span><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="/intranet/v4/home/">Entrar a la demo</a><button class="text-left font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" data-tour type="button">Tour guiado</button></div>
+</div>
+<div class="pt-space-md border-t border-surface-container flex flex-col md:flex-row justify-between gap-space-sm font-body-sm text-body-sm text-on-surface-variant"><span>© 2026 AxisWorks. Demo con datos inventados.</span><span>Ninguna acción sale de este navegador.</span></div>
+</div>
 </footer>
-
 <script src="/demo/catalogo.js"></script>
 <script>
 (function () {
   var CAT = window.AXW_CATALOGO, MODULOS = CAT.MODULOS, CAMINO = CAT.CAMINO;
-  var AREAS = ['Todos', 'Base', 'Ventas', 'Documentos', 'Dinero', 'Producto y obra', 'En camino'];
-  /* Icono Material Symbols de cada módulo (mismo juego de iconos que el diseño de Stitch) */
-  var ICONO = { home: 'dashboard', usuarios: 'group', ajustes: 'tune', crm: 'person_search', setter: 'forum', campanas: 'campaign',
-    operaciones: 'swap_horiz', reservas: 'event_upcoming', compradores: 'badge', comisiones: 'payments', contratos: 'contract',
-    asistente: 'smart_toy', soporte: 'support_agent', comunicacion: 'mail', portal: 'account_circle', facturas: 'receipt_long',
-    recibos: 'request_quote', vencimientos: 'event', cuentas: 'account_balance', sociedades: 'domain', comisionadmin: 'price_change',
-    proyectos: 'apartment', modelos: 'villa', obra: 'construction', creatividades: 'palette',
-    contabilidad: 'account_balance_wallet', dashboard: 'query_stats', radar: 'radar', dataroom: 'folder_shared', postventa: 'handyman' };
-
-  /* Precios de prueba (borrador del 24-sep): base 190 €/mes con sus 3 módulos; estándar 49; IA o automatización 99 */
-  var BASE_MES = 190, PRECIO_STD = 49, PRECIO_IA = 99, IA = { setter: 1, campanas: 1, asistente: 1 };
-  function precio(k) { return IA[k] ? PRECIO_IA : PRECIO_STD; }
-  function eur(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' €'; }   // es-ES no agrupa 4 cifras
+  var precio = CAT.precio, eur = CAT.eur, P = CAT.PRECIO;   // precios y códigos: catalogo.js (fuente única con el panel)
+  var AREAS = ['Base', 'Ventas', 'Documentos', 'Dinero', 'Producto y obra', 'En camino'];
+  var AREA_INFO = { 'Base': 'dashboard', 'Ventas': 'trending_up', 'Documentos': 'description',
+    'Dinero': 'payments', 'Producto y obra': 'apartment', 'En camino': 'rocket_launch' };
   var estado = CAT.leeEstado();
   function guarda() { CAT.guardaEstado(estado); }
-
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function ms(n) { return '<span class="ms" aria-hidden="true">' + n + '</span>'; }
+  function ms(n, c) { return '<span class="material-symbols-outlined ' + (c || '') + '">' + n + '</span>'; }
 
-  function tarjeta(k, nombre, area, tags, desc, caps, url, base, camino) {
-    var ver = url ? '<a class="cfg-ver" href="' + url + '">Ver en la demo &rarr;</a>' : '<span class="cfg-tag">' + (camino ? 'Sin pantalla todavía' : 'Se enseña en la llamada') + '</span>';
-    return '<article class="cfg-card' + (base ? ' fija' : '') + '" data-k="' + k + '" data-area="' + esc(area) + '"' + (camino ? ' data-camino="1"' : '') +
-      (base ? '' : ' tabindex="0" role="switch"') + ' aria-label="' + esc((camino ? 'Me interesa: ' : 'Módulo ') + nombre) + '">' +
-      '<div class="cfg-top"><div class="cfg-id"><div class="cfg-ico">' + ms(ICONO[k] || 'widgets') + '</div><div><h3>' + esc(nombre) + '</h3>' +
-      '<div class="cfg-tags">' + tags.map(function (t, i) { return '<span class="cfg-tag' + (i === 0 ? (camino ? ' s' : ' p') : '') + '">' + esc(t) + '</span>'; }).join('') + ver + '</div></div></div>' +
-      '<div class="cfg-der">' + (camino ? '<span class="cfg-precio suave">Por definir</span>' : base ? '<span class="cfg-precio">Incluido</span>'
-        : '<span class="cfg-precio">' + eur(precio(k)) + '<small>/mes</small></span>') + '<span class="cfg-chk" aria-hidden="true"></span></div></div>' +
-      '<p class="cfg-desc">' + esc(desc) + '</p>' +
-      (caps.length ? '<div class="cfg-feats">' + caps.map(function (c) { return '<div class="cfg-feat">' + ms('check_circle') + '<span>' + esc(c) + '</span></div>'; }).join('') + '</div>' : '') +
-      '</article>';
+  /* Cada módulo con su área, código y precio, para pintar y para buscar */
+  var TODOS = [];
+  AREAS.forEach(function (a) {
+    MODULOS.filter(function (m) { return m[2] === a; }).forEach(function (m) {
+      TODOS.push({ k: m[0], nombre: m[1], area: a, tags: m[3], caps: m[5], url: m[6], base: !!m[7], camino: false, codigo: CAT.CODIGO[m[0]] });
+    });
+    if (a === 'En camino') CAMINO.forEach(function (m) {
+      TODOS.push({ k: m[0], nombre: m[1], area: a, tags: ['En desarrollo'], caps: [m[2]], url: null, base: false, camino: true, codigo: CAT.CODIGO[m[0]] });
+    });
+  });
+
+  function tarjeta(m) {
+    var pr = m.camino ? 'Por definir' : m.base ? 'Incluido' : eur(precio(m.k)) + '/m';
+    return '<div class="module-card relative p-3 rounded-xl border border-surface-container ' + (m.base ? 'cursor-default' : 'cursor-pointer') + ' transition-all" data-k="' + m.k + '"' +
+      (m.base ? '' : ' role="switch" tabindex="0"') + ' aria-label="' + esc(m.nombre) + '">' +
+      '<div class="flex items-start justify-between gap-2"><div class="flex items-center gap-1.5 flex-wrap">' +
+      '<span class="font-label-sm font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[11px]">' + m.codigo + '</span>' +
+      '<span class="bg-surface-container text-on-surface-variant px-1.5 py-0.5 rounded text-[10px] font-semibold">' + esc(m.base ? 'Base' : (m.tags[0] || '')) + '</span></div>' +
+      '<div class="flex items-center gap-1.5 shrink-0"><span class="font-bold text-primary text-sm">' + pr + '</span>' +
+      '<span class="chk w-5 h-5 rounded-full flex items-center justify-center"></span></div></div>' +
+      '<h4 class="font-headline-sm text-[15px] text-on-surface font-semibold mt-1">' + esc(m.nombre) + '</h4>' +
+      '<ul class="text-[12px] text-on-surface-variant space-y-0.5 mt-1">' + m.caps.slice(0, 2).map(function (c) {
+        return '<li class="flex items-start gap-1">' + ms('check', 'text-secondary text-[14px] mt-[1px]') + '<span>' + esc(c) + '</span></li>'; }).join('') + '</ul>' +
+      (m.url ? '<a class="inline-flex items-center gap-0.5 mt-1.5 text-[11px] font-semibold text-primary hover:underline" href="' + m.url + '">Ver en la demo' + ms('arrow_outward', 'text-[13px]') + '</a>' : '') +
+      '</div>';
   }
-  document.getElementById('catalogo').innerHTML = MODULOS.map(function (m) {
-    return tarjeta(m[0], m[1], m[2], m[3], m[4], m[5], m[6], !!m[7], false);
-  }).concat(CAMINO.map(function (m) {
-    return tarjeta(m[0], m[1], 'En camino', ['En desarrollo'], m[2], [], null, false, true);
-  })).join('');
-  document.getElementById('filtros').innerHTML = AREAS.map(function (a, i) {
-    return '<button type="button" aria-pressed="' + (i === 0) + '" data-area="' + esc(a) + '">' + esc(a) + '</button>';
+  document.getElementById('modules-container').innerHTML = AREAS.map(function (a) {
+    var mods = TODOS.filter(function (m) { return m.area === a; });
+    return '<div class="cat-section bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container" data-area="' + esc(a) + '">' +
+      '<div class="flex items-center justify-between pb-space-sm mb-space-sm border-b border-surface-container"><div class="flex items-center gap-space-xs">' +
+      '<div class="w-8 h-8 rounded-lg bg-primary-fixed text-primary flex items-center justify-center">' + ms(AREA_INFO[a], 'text-[18px]') + '</div>' +
+      '<h3 class="font-headline-sm text-headline-sm text-on-surface">' + esc(a) + '</h3></div>' +
+      '<span class="text-label-sm font-label-sm text-on-surface-variant">' + mods.length + ' módulos</span></div>' +
+      '<div class="grid grid-cols-1 md:grid-cols-2 gap-3">' + mods.map(tarjeta).join('') + '</div></div>';
   }).join('');
-
-  var total = MODULOS.length, nBase = MODULOS.filter(function (m) { return m[7]; }).length;
-  document.getElementById('m-mod').textContent = total;
+  var BTN_ON = 'cat-btn px-3 py-1.5 rounded-full bg-primary text-on-primary shrink-0 transition-all';
+  var BTN_OFF = 'cat-btn px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface shrink-0 transition-all';
+  document.getElementById('category-filters').innerHTML = ['Todos'].concat(AREAS).map(function (a, i) {
+    var n = a === 'Todos' ? TODOS.length : TODOS.filter(function (m) { return m.area === a; }).length;
+    return '<button class="' + (i ? BTN_OFF : BTN_ON) + '" data-area="' + esc(a) + '" type="button">' + esc(a) + ' (' + n + ')</button>';
+  }).join('');
+  document.getElementById('n-cat').textContent = TODOS.length;
+  document.getElementById('m-mod').textContent = MODULOS.length;
   document.getElementById('m-cam').textContent = CAMINO.length;
-  document.getElementById('r-base').textContent = eur(BASE_MES) + '/mes';
 
+  var ACTIVA = ['border-primary/40', 'bg-gradient-to-r', 'from-surface-container-lowest', 'via-primary-fixed/20', 'to-surface-container-lowest', 'shadow-sm'];
   function pinta() {
     var pills = [];
-    document.querySelectorAll('.cfg-card').forEach(function (el) {
-      var k = el.getAttribute('data-k'), on = !!estado[k], camino = el.hasAttribute('data-camino'), base = el.classList.contains('fija');
-      el.classList.toggle('on', on && !camino);
-      el.classList.toggle('off', !on && !camino);
-      el.classList.toggle('marcada', on && camino);
-      if (!base) el.setAttribute('aria-checked', String(on));
-      el.querySelector('.cfg-chk').innerHTML = ms(on ? 'check' : 'add');
-      if (on && !camino) pills.push('<span class="cfg-pill"><span>' + esc(el.querySelector('h3').textContent) + '</span>' +
-        (base ? '' : '<button type="button" data-quita="' + k + '" aria-label="Quitar ' + esc(el.querySelector('h3').textContent) + '">' + ms('close') + '</button>') + '</span>');
+    document.querySelectorAll('.module-card').forEach(function (el) {
+      var k = el.getAttribute('data-k'), m = TODOS.filter(function (x) { return x.k === k; })[0], on = !!estado[k];
+      ACTIVA.forEach(function (c) { el.classList.toggle(c, on); });
+      el.classList.toggle('opacity-70', !on);
+      if (!m.base) el.setAttribute('aria-checked', String(on));
+      var chk = el.querySelector('.chk');
+      chk.className = 'chk w-5 h-5 rounded-full flex items-center justify-center ' + (on ? 'bg-primary text-on-primary' : 'bg-surface-container text-outline');
+      chk.innerHTML = ms(on ? 'check' : 'add', 'text-[14px]');
+      if (on && !m.camino) pills.push('<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-container text-on-surface font-label-sm text-label-sm"><span>' + esc(m.nombre) + '</span>' +
+        (m.base ? '' : '<button type="button" class="inline-flex" data-quita="' + k + '" aria-label="Quitar ' + esc(m.nombre) + '">' + ms('close', 'text-[14px] text-outline hover:text-error') + '</button>') + '</div>');
     });
-    var n = MODULOS.filter(function (m) { return estado[m[0]]; }).length;
-    var extra = MODULOS.filter(function (m) { return !m[7] && estado[m[0]]; });
-    var nIa = extra.filter(function (m) { return IA[m[0]]; }).length, nStd = extra.length - nIa;
-    var cuota = nStd * PRECIO_STD + nIa * PRECIO_IA;
-    document.getElementById('r-mod-lbl').textContent = 'Módulos: ' + nStd + ' × 49 €' + (nIa ? ' + ' + nIa + ' × 99 €' : '');
-    document.getElementById('r-mod').textContent = eur(cuota) + '/mes';
-    document.getElementById('r-total').textContent = eur(BASE_MES + cuota);
-    document.getElementById('r-badge').textContent = n + ' de ' + total + ' módulos';
-    document.getElementById('r-chips').innerHTML = pills.join('');
+    var c = CAT.cuota(estado), nIa = c.ia, nStd = c.std;
+    document.getElementById('selected-counter-badge').textContent = c.activos + ' de ' + MODULOS.length + ' módulos';
+    document.getElementById('catalog-coverage-label').textContent = Math.round(c.activos * 100 / MODULOS.length) + '% del catálogo';
+    document.getElementById('active-modules-list').innerHTML = pills.join('');
+    document.getElementById('summary-mod-lbl').textContent = 'Módulos: ' + nStd + ' × ' + eur(P.modulo) + (nIa ? ' + ' + nIa + ' × ' + eur(P.ia) : '');
+    document.getElementById('summary-base').textContent = eur(P.base) + '/mes';
+    document.getElementById('summary-impl').textContent = 'desde ' + eur(P.implantacion);
+    document.getElementById('summary-subtotal').textContent = eur(c.modulos) + '/mes';
+    document.getElementById('summary-total').innerHTML = eur(c.total) + '<span class="text-body-sm font-normal text-on-surface-variant">/mes</span>';
   }
   function alterna(el) {
-    if (!el || el.classList.contains('fija')) return;
-    var k = el.getAttribute('data-k'); estado[k] = !estado[k]; guarda(); pinta();
+    var k = el.getAttribute('data-k'), m = TODOS.filter(function (x) { return x.k === k; })[0];
+    if (!m || m.base) return;
+    estado[k] = !estado[k]; guarda(); pinta();
   }
-
+  var areaActual = 'Todos';
+  function filtra() {
+    var q = document.getElementById('module-search').value.trim().toLowerCase();
+    document.querySelectorAll('.cat-section').forEach(function (sec) {
+      var vis = 0;
+      sec.querySelectorAll('.module-card').forEach(function (el) {
+        var m = TODOS.filter(function (x) { return x.k === el.getAttribute('data-k'); })[0];
+        var texto = (m.nombre + ' ' + m.codigo + ' ' + m.tags.join(' ') + ' ' + m.caps.join(' ')).toLowerCase();
+        var ok = (areaActual === 'Todos' || m.area === areaActual) && (!q || texto.indexOf(q) !== -1);
+        el.classList.toggle('hidden', !ok); if (ok) vis++;
+      });
+      sec.classList.toggle('hidden', !vis);
+    });
+  }
   document.addEventListener('click', function (ev) {
     var q = ev.target.closest('[data-quita]');
     if (q) { estado[q.getAttribute('data-quita')] = false; guarda(); pinta(); return; }
-    if (ev.target.closest('a')) return;   // «Ver en la demo» navega, no alterna
-    var card = ev.target.closest('.cfg-card');
+    var s = ev.target.closest('[data-seleccion]');
+    if (s) { MODULOS.concat(CAMINO).forEach(function (m) { if (!m[7]) estado[m[0]] = s.getAttribute('data-seleccion') === 'todo' && !CAMINO.some(function (c) { return c[0] === m[0]; }); }); guarda(); pinta(); return; }
+    if (ev.target.closest('a')) return;
+    var card = ev.target.closest('.module-card');
     if (card) { alterna(card); return; }
-    var f = ev.target.closest('#filtros button');
+    var f = ev.target.closest('#category-filters button');
     if (f) {
-      var area = f.getAttribute('data-area');
-      document.querySelectorAll('#filtros button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === f)); });
-      document.querySelectorAll('.cfg-card').forEach(function (el) { el.hidden = area !== 'Todos' && el.getAttribute('data-area') !== area; });
+      areaActual = f.getAttribute('data-area');
+      document.querySelectorAll('#category-filters button').forEach(function (b) { b.className = b === f ? BTN_ON : BTN_OFF; });
+      filtra();
     }
   });
   document.addEventListener('keydown', function (ev) {
-    var card = ev.target.closest && ev.target.closest('.cfg-card');
-    if (card && (ev.key === ' ' || ev.key === 'Enter') && ev.target === card) { ev.preventDefault(); alterna(card); }
+    var card = ev.target.closest && ev.target.closest('.module-card');
+    if (card && ev.target === card && (ev.key === ' ' || ev.key === 'Enter')) { ev.preventDefault(); alterna(card); }
   });
+  document.getElementById('module-search').addEventListener('input', filtra);
   pinta();
 })();
 </script>
 <script src="/demo/tour.js"></script>
-<script>document.addEventListener('click',function(e){if(e.target.closest('[data-tour]')&&window.axtTour)window.axtTour.empezar();});</script>
-</body>
-</html>
+<script>document.addEventListener('click', function (e) { if (e.target.closest('[data-tour]') && window.axtTour) window.axtTour.empezar(); });</script>
+</body></html>

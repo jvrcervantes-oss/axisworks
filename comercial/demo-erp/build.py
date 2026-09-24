@@ -30,6 +30,7 @@ Revisión previa (24-sep, Seguridad + Legal), cada regla con su porqué:
 - Se niega a escribir fuera de su `dist/` o dentro de `proyectos/Lawang/`: un
   guard falso escrito ahí lo desplegaría el webhook de Lawang.
 """
+import json
 import os
 import re
 import shutil
@@ -207,6 +208,34 @@ def neutraliza():
     return n
 
 
+def datos_instancia():
+    """Lo que el panel enseña de la base, sacado de erp/ (nunca inventado): la línea base sellada más reciente,
+    sus objetos, las migraciones publicadas y las tablas/funciones propias de cada módulo según erp/modulos.json.
+    Solo nombres de esquema, ningún dato. El tamaño del equipo sale de demo_datos.js (personas inventadas)."""
+    erp = os.path.join(AGENCIA, 'erp')
+    selladas = sorted(f for f in os.listdir(os.path.join(erp, 'linea_base')) if re.fullmatch(r'linea_base_\d{14}\.sql', f))
+    if not selladas:
+        aborta('no hay línea base sellada en erp/linea_base/')
+    sql = open(os.path.join(erp, 'linea_base', selladas[-1]), encoding='utf-8').read()
+    migs = sorted(f[:-4] for f in os.listdir(os.path.join(erp, 'migraciones')) if re.fullmatch(r'\d{14}_[a-z0-9_]+\.sql', f))
+    registro = json.load(open(os.path.join(erp, 'modulos.json'), encoding='utf-8'))['modulos']
+    # Claves del catálogo de la demo → claves del registro de la base (nombres distintos para lo mismo).
+    alias = {'crm': 'leads', 'comisionadmin': 'comision-admin', 'usuarios': 'base'}
+    catalogo = open(os.path.join(AQUI, 'catalogo.js'), encoding='utf-8').read()
+    modulos = {}
+    for k in re.findall(r"\[\s*'([a-z_]+)', '[^']*', '(?:Base|Ventas|Documentos|Dinero|Producto y obra)'", catalogo):
+        r = registro.get(alias.get(k, k)) or {}
+        modulos[k] = {'tablas': sorted(r.get('tablas', [])), 'funciones': sorted(r.get('funciones', []))}
+    datos = open(os.path.join(AQUI, 'demo_datos.js'), encoding='utf-8').read()
+    equipo = re.search(r'var EQUIPO = \[(.*?)\];', datos, re.S)
+    return {'version': selladas[-1][11:25], 'migraciones': migs,
+            'tablas': len(re.findall(r'^CREATE TABLE (?:IF NOT EXISTS )?public\.', sql, re.M | re.I)),
+            'funciones': len(re.findall(r'^CREATE (?:OR REPLACE )?FUNCTION public\.', sql, re.M | re.I)),
+            'politicas': len(re.findall(r'^CREATE POLICY ', sql, re.M | re.I)),
+            'equipo': len(re.findall(r'\bemail\s*:', equipo.group(1))) if equipo else None,
+            'modulos': modulos}
+
+
 def paginas_propias():
     carpeta = os.path.join(DIST, 'intranet')
     redir = ('<!doctype html><meta charset="utf-8"><title>Demo</title>'
@@ -218,6 +247,12 @@ def paginas_propias():
     shutil.copy2(os.path.join(AQUI, 'tour.js'), os.path.join(DIST, 'demo', 'tour.js'))
     shutil.copy2(os.path.join(AQUI, 'catalogo.js'), os.path.join(DIST, 'demo', 'catalogo.js'))
     shutil.copy2(os.path.join(AQUI, 'modulos_demo.js'), os.path.join(DIST, 'demo', 'modulos.js'))
+    # Panel de control de la instancia (Stitch «Architecture Studio», 24-sep) + sus datos de la base.
+    os.makedirs(os.path.join(DIST, 'panel'), exist_ok=True)
+    shutil.copy2(os.path.join(AQUI, 'panel.html'), os.path.join(DIST, 'panel', 'index.html'))
+    open(os.path.join(DIST, 'demo', 'instancia.js'), 'w', encoding='utf-8').write(
+        '/* GENERADO por build.py desde erp/ — no editar. */\nwindow.AXW_INSTANCIA = '
+        + json.dumps(datos_instancia(), ensure_ascii=False) + ';\n')
     aviso = ('<!doctype html><html lang="es"><meta charset="utf-8"><title>{t} · Demo</title>'
              '<body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;'
              'background:#fbf9f4;font:16px/1.6 system-ui,sans-serif;color:#2b2b25"><div style="max-width:30rem;padding:2rem">'

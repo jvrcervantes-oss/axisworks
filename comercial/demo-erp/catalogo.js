@@ -109,6 +109,30 @@
     for (var n = 0; n < todos.length; n++) if (todos[n][0] === k) return todos[n][1];
     return k;
   }
+  /* Precios de BORRADOR (owner, 24-sep: «estamos testing»). Viven aquí para que la landing y el panel de
+     control no den dos cuotas distintas para la misma selección. */
+  var PRECIO = { base: 190, modulo: 49, ia: 99, implantacion: 2500 };
+  var IA = { setter: 1, campanas: 1, asistente: 1 };
+  function precio(k) { return IA[k] ? PRECIO.ia : PRECIO.modulo; }
+  function cuota(e) {
+    var r = { activos: 0, std: 0, ia: 0, total: PRECIO.base };
+    MODULOS.forEach(function (m) {
+      if (!e[m[0]]) return;
+      r.activos++;
+      if (m[7]) return;
+      if (IA[m[0]]) r.ia++; else r.std++;
+    });
+    r.modulos = r.std * PRECIO.modulo + r.ia * PRECIO.ia;
+    r.total += r.modulos;
+    return r;
+  }
+  function eur(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' €'; }   // es-ES no agrupa 4 cifras
+  /* Código corto por área (BAS-01, VEN-03…), el mismo en la landing y en el panel. */
+  var PREF = { 'Base': 'BAS', 'Ventas': 'VEN', 'Documentos': 'DOC', 'Dinero': 'DIN', 'Producto y obra': 'OBR' };
+  var CODIGO = {}, cuenta = {};
+  MODULOS.forEach(function (m) { cuenta[m[2]] = (cuenta[m[2]] || 0) + 1; CODIGO[m[0]] = PREF[m[2]] + '-' + ('0' + cuenta[m[2]]).slice(-2); });
+  CAMINO.forEach(function (m, i) { CODIGO[m[0]] = 'NEW-' + ('0' + (i + 1)).slice(-2); });
   window.AXW_CATALOGO = { MODULOS: MODULOS, CAMINO: CAMINO, RUTAS: RUTAS, PESTANAS: PESTANAS,
-    leeEstado: leeEstado, guardaEstado: guardaEstado, moduloDeRuta: moduloDeRuta, nombre: nombre };
+    leeEstado: leeEstado, guardaEstado: guardaEstado, moduloDeRuta: moduloDeRuta, nombre: nombre,
+    PRECIO: PRECIO, IA: IA, precio: precio, cuota: cuota, eur: eur, CODIGO: CODIGO };
 })();
