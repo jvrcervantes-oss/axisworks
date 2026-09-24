@@ -70,55 +70,54 @@ $work = [
 </head>
 <body class="home">
 
-<canvas id="cad" aria-hidden="true"></canvas>
-<div class="axis" aria-hidden="true"><div class="axis__fill" id="axisFill"></div><div class="axis__node" id="axisNode"></div></div>
-<div class="hud hud--coords" aria-hidden="true">X <b id="cx">000</b> &nbsp; Y <b id="cy">000</b></div>
-
 <?php require __DIR__ . '/nav.php'; ?>
 
 <main id="top">
 
-<!-- 01 · HERO — anotación a la izquierda, instrumento a la derecha -->
+<!-- 01 · HERO — calco del mockup de Stitch (2.ª pasada, 24-sep, a petición del
+     owner: «alta fidelidad, sobre todo el hero»). La ✕ convergente se retira; el
+     instrumento es la retícula CAD giratoria del mockup. -->
 <section class="band hero" id="hero">
-  <span class="tele tele--tl" aria-hidden="true"><?= $hm['hud'] ?></span>
-  <span class="tele tele--tr" aria-hidden="true">SCALE 1:1 // UNITS PX</span>
+  <span class="tele tele--tl" aria-hidden="true">COORD: [X <b id="cx">000</b> ✕ Y <b id="cy">000</b>] // GRID: REF-00</span>
+  <span class="tele tele--tr" aria-hidden="true">DATUM: AW-01 // TOL: ±0.0001MM</span>
   <div class="shell hero__grid">
     <div class="hero__col">
-      <p class="chip"><i></i><?= $hm['hero_chip'] ?><span class="chip__based"> <span class="sep">//</span> <?= $t['based'] ?></span></p>
-      <h1><?= $hm['hero_h1'] ?></h1>
-      <p class="hero__lead"><?= $hm['hero_lead'] ?></p>
-      <div class="hero__data">
-        <div><span><?= $hm['m1_k'] ?></span><b><?= $hm['m1_v'] ?></b></div>
-        <div><span><?= $hm['m2_k'] ?></span><b><?= $hm['m2_v'] ?></b></div>
-        <div><span><?= $hm['m3_k'] ?></span><b><?= $hm['m3_v'] ?></b></div>
+      <div class="hero__top">
+        <p class="chip"><i></i><?= $hm['hero_chip'] ?><span class="chip__based"> <span class="sep">//</span> <?= $t['based'] ?></span></p>
+        <h1><?= $hm['hero_h1'] ?></h1>
+        <p class="hero__lead"><?= $hm['hero_lead'] ?></p>
       </div>
-      <div class="hero__acts">
-        <a href="#contact" class="btn btn--signal"><span><?= $hm['hero_cta'] ?></span> <span class="ar" aria-hidden="true">→</span></a>
-        <a href="#erp" class="btn btn--term">[ <?= $hm['hero_cta2'] ?> ]</a>
+      <div class="hero__bottom">
+        <div class="hero__data">
+          <div><span><?= $hm['m1_k'] ?></span><b><?= $hm['m1_v'] ?></b></div>
+          <div><span><?= $hm['m2_k'] ?></span><b class="acc"><?= $hm['m2_v'] ?></b></div>
+          <div><span><?= $hm['m3_k'] ?></span><b><?= $hm['m3_v'] ?></b></div>
+        </div>
+        <div class="hero__acts">
+          <a href="#contact" class="btn btn--signal btn--sm"><span><?= $hm['hero_cta'] ?></span> <span class="ar" aria-hidden="true">→</span></a>
+          <a href="#erp" class="btn btn--term btn--sm">[ <?= $hm['hero_cta2'] ?> ]</a>
+          <span class="hero__sheet">SHEET ID: AW-01-HERO</span>
+        </div>
       </div>
     </div>
 
     <div class="instr" aria-hidden="true">
-      <div class="instr__bar"><span><?= $hm['instr'] ?></span><span class="instr__st"><span class="st-cal"><?= $hm['hero_st_cal'] ?></span><span class="st-ok"><?= $hm['hero_st_ok'] ?></span></span></div>
+      <div class="instr__bar"><span><?= $hm['instr'] ?></span><span class="instr__st"><?= $hm['instr_al'] ?></span></div>
       <div class="instr__field">
-        <svg class="instr__ring" viewBox="0 0 200 200">
-          <circle cx="100" cy="100" r="92" stroke-dasharray="2 4"/>
-          <circle cx="100" cy="100" r="70"/>
-          <circle cx="100" cy="100" r="48" stroke-dasharray="8 4"/>
-          <line x1="100" y1="0" x2="100" y2="200"/><line x1="0" y1="100" x2="200" y2="100"/>
+        <svg class="instr__ring" viewBox="0 0 200 200" fill="none">
+          <circle cx="100" cy="100" r="90" stroke-dasharray="2 4" stroke-width="1"/>
+          <circle cx="100" cy="100" r="70" stroke-width=".75"/>
+          <circle cx="100" cy="100" r="50" stroke-dasharray="8 4" stroke-width=".5"/>
+          <line x1="100" y1="0" x2="100" y2="200" stroke-width=".75"/>
+          <line x1="0" y1="100" x2="200" y2="100" stroke-width=".75"/>
+          <path d="M100 15 L105 25 L95 25 Z"/><path d="M185 100 L175 105 L175 95 Z"/>
+          <path d="M100 185 L95 175 L105 175 Z"/><path d="M15 100 L25 95 L25 105 Z"/>
         </svg>
-        <span class="card card--n">000°</span><span class="card card--e">090°</span>
-        <span class="card card--s">180°</span><span class="card card--w">270°</span>
-        <div class="hero__mark" id="heroMark">
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-            <!-- m2 primero: en SVG el orden del marcado es el orden de capas, y en el
-                 cruce la línea de medida (Steel) tapaba al acento. -->
-            <line class="m2" x1="92" y1="8" x2="8" y2="92"/>
-            <line class="m1" x1="8" y1="8" x2="92" y2="92"/>
-          </svg>
-        </div>
+        <div class="instr__core"><span class="instr__plus">+</span><span class="instr__fix">0,0 // FIXED</span></div>
+        <span class="card card--n">000° N</span><span class="card card--e">090° E</span>
+        <span class="card card--s">180° S</span><span class="card card--w">270° W</span>
       </div>
-      <div class="instr__foot"><span class="instr__hint"><?= $hm['instr_hint'] ?></span><span class="pill"><i></i>STATUS: <span class="st-cal"><?= $hm['hero_st_cal'] ?></span><span class="st-ok"><?= $hm['hero_st_ok'] ?></span></span></div>
+      <div class="instr__foot"><span><?= $hm['instr_mode'] ?></span><span class="pill pill--acc"><?= $hm['instr_status'] ?></span></div>
     </div>
   </div>
 </section>
@@ -232,7 +231,7 @@ $work = [
     <ol class="proc">
       <?php foreach ($hm['proc'] as $i => $f): ?>
       <li class="proc__step">
-        <div class="proc__top"><span><?= $hm['proc_phase'] ?>_0<?= $i+1 ?></span><span class="x-s" aria-hidden="true">✕</span></div>
+        <div class="proc__top"><span><?= $hm['proc_phase'] ?>_0<?= $i+1 ?></span><span class="x-acc" aria-hidden="true">✕</span></div>
         <h3>0<?= $i+1 ?> <?= $f[0] ?></h3>
         <p><?= $f[1] ?></p>
         <p class="proc__out"><?= $hm['proc_out'] ?>: <?= $f[2] ?></p>
@@ -248,22 +247,16 @@ $work = [
     <div class="shead"><div><p class="eyebrow"><span><?= $hm['who_eyebrow'] ?></span></p><h2><?= $hm['who_h2'] ?></h2></div></div>
     <div class="dirs">
       <div class="dir">
-        <div class="dir__img"><img src="/assets/images/Javier1.jpg" alt="Javier — <?= e(strip_tags(html_entity_decode($hm['who_1role']))) ?>" loading="lazy"></div>
-        <div class="dir__txt">
-          <p class="dir__top"><span>DIR_01</span><span>FIG.01 — BUILD</span></p>
-          <h3>Javier</h3>
-          <p class="dir__role"><?= $hm['who_1role'] ?></p>
-          <p><?= $hm['who_1p'] ?></p>
-        </div>
+        <p class="dir__top"><span>DIR_NODE_01</span><span>BUILD</span></p>
+        <h3>Javier</h3>
+        <p class="dir__role"><?= $hm['who_1role'] ?></p>
+        <p class="dir__p"><?= $hm['who_1p'] ?></p>
       </div>
       <div class="dir">
-        <div class="dir__img"><img src="/assets/images/Andrea2.jpg" alt="Andrea — <?= e(strip_tags(html_entity_decode($hm['who_2role']))) ?>" loading="lazy"></div>
-        <div class="dir__txt">
-          <p class="dir__top"><span>DIR_02</span><span>FIG.02 — DESIGN</span></p>
-          <h3>Andrea</h3>
-          <p class="dir__role"><?= $hm['who_2role'] ?></p>
-          <p><?= $hm['who_2p'] ?></p>
-        </div>
+        <p class="dir__top"><span>DIR_NODE_02</span><span>DESIGN</span></p>
+        <h3>Andrea</h3>
+        <p class="dir__role"><?= $hm['who_2role'] ?></p>
+        <p class="dir__p"><?= $hm['who_2p'] ?></p>
       </div>
     </div>
     <p class="lbl deps__t"><?= $hm['deps_t'] ?></p>
@@ -283,30 +276,23 @@ $work = [
      por Seguridad. El formulario compone un mailto con el asunto de la página
      (la bandeja es el informe de atribución mientras no haya analítica). -->
 <section class="contact" id="contact">
-  <div class="shell">
+  <div class="contact__in">
     <div class="shead shead--inv">
       <div><p class="eyebrow"><span><?= $hm['ct_eyebrow'] ?></span></p><h2><?= $hm['ct_h2'] ?></h2></div>
-      <p class="shead__aside"><?= $hm['ct_lead'] ?></p>
+      <p class="contact__tag">DIRECT DISPATCH // EN · ES</p>
     </div>
-    <div class="contact__grid">
-      <form class="intake" id="intake" data-to="<?= EMAIL ?>" data-subject="<?= e($hm['asunto']) ?>"
-            data-l-name="<?= e($hm['m_name']) ?>" data-l-company="<?= e($hm['m_company']) ?>" data-l-brief="<?= e($hm['m_brief']) ?>">
-        <div class="intake__row">
-          <label class="field"><span class="field__l"><?= $hm['f_name'] ?> <i><?= $hm['f_req'] ?></i></span><input name="name" type="text" required autocomplete="name"></label>
-          <label class="field"><span class="field__l"><?= $hm['f_company'] ?> <i><?= $hm['f_opt'] ?></i></span><input name="company" type="text" autocomplete="organization"></label>
-        </div>
-        <label class="field"><span class="field__l"><?= $hm['f_brief'] ?> <i><?= $hm['f_req'] ?></i></span><textarea name="brief" rows="4" required placeholder="<?= e($hm['f_brief_ph']) ?>"></textarea></label>
-        <div class="intake__act">
-          <button type="submit" class="btn btn--signal"><span><?= $hm['f_send'] ?></span> <span class="ar" aria-hidden="true">→</span></button>
-          <p class="intake__note"><?= $hm['f_note'] ?> <a href="<?= e(correo($hm['asunto'])) ?>"><?= EMAIL ?></a></p>
-        </div>
-      </form>
-      <dl class="contact__meta">
-        <div><dt><?= $hm['ct_email_l'] ?></dt><dd><a href="<?= e(correo($hm['asunto'])) ?>"><?= EMAIL ?></a></dd></div>
-        <div><dt><?= $hm['ct_based_l'] ?></dt><dd><?= $hm['ct_based_v'] ?></dd></div>
-        <div><dt><?= $hm['ct_lang_l'] ?></dt><dd>English / Español</dd></div>
-      </dl>
-    </div>
+    <form class="intake" id="intake" data-to="<?= EMAIL ?>" data-subject="<?= e($hm['asunto']) ?>"
+          data-l-name="<?= e($hm['m_name']) ?>" data-l-email="<?= e($hm['m_email']) ?>" data-l-brief="<?= e($hm['m_brief']) ?>">
+      <div class="intake__row">
+        <label class="field"><span class="field__l"><?= $hm['f_name'] ?> <i><?= $hm['f_req'] ?></i></span><input name="name" type="text" required autocomplete="name"></label>
+        <label class="field"><span class="field__l"><?= $hm['f_email'] ?> <i><?= $hm['f_req'] ?></i></span><input name="email" type="email" required autocomplete="email"></label>
+      </div>
+      <label class="field"><span class="field__l"><?= $hm['f_brief'] ?> <i><?= $hm['f_spec'] ?></i></span><textarea name="brief" rows="3" required placeholder="<?= e($hm['f_brief_ph']) ?>"></textarea></label>
+      <div class="intake__act">
+        <button type="submit" class="btn btn--signal btn--sm"><span><?= $hm['f_send'] ?></span> <span class="ar" aria-hidden="true">→</span></button>
+        <p class="intake__note"><?= $hm['f_note'] ?> <a href="<?= e(correo($hm['asunto'])) ?>"><?= EMAIL ?></a></p>
+      </div>
+    </form>
   </div>
 </section>
 

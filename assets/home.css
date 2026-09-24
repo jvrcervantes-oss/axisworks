@@ -12,98 +12,84 @@
  * --line-soft para las filas interiores. Dos intensidades y ni una más.
  * ═══════════════════════════════════════════════════════════════════ */
 
-/* ---------- fijos: mira CAD, eje de scroll, lectura de coordenadas ---------- */
-#cad{ position:fixed; inset:0; z-index:30; pointer-events:none; }
-.hud{ position:fixed; z-index:30; font-family:var(--f-mono); font-size:11px; letter-spacing:.14em;
-  color:var(--steel-text); pointer-events:none; }
-.hud--coords{ left:var(--pad); bottom:18px; background:var(--bone); padding:3px 7px; border:1px solid var(--line) }
-.hud b{ color:var(--graphite); font-weight:500 }
-.axis{ position:fixed; top:64px; bottom:0; right:14px; width:1px; background:var(--line); z-index:15; pointer-events:none }
-.axis__fill{ position:absolute; top:0; left:-0.5px; width:2px; height:0; background:var(--ink); }
-.axis__node{ position:absolute; top:0; left:50%; width:11px; height:11px; transform:translate(-50%,-50%); opacity:0 }
-.axis__node::before,.axis__node::after{ content:""; position:absolute; top:50%; left:50%; width:11px; height:1.5px;
-  background:var(--ink); }
-.axis__node::before{ transform:translate(-50%,-50%) rotate(45deg) }
-.axis__node::after{ transform:translate(-50%,-50%) rotate(-45deg) }
-@media(max-width:760px), (pointer:coarse){ .hud,#cad{ display:none } }
-@media(max-width:760px){ .axis{ display:none } }
+/* ---------- densidad del mockup (2.ª pasada, 24-sep) ----------
+   Stitch trabaja a sangre con 48px de margen y bandas de 40px: la portada
+   es una hoja densa, no una sucesión de pantallas. Sin papel milimetrado:
+   la retícula son los propios bordes de los paneles. */
+body.home::before{ display:none }
+.home .shell{ width:calc(100% - 2*var(--mar)); max-width:none }
+.home{ --mar:clamp(16px,3.4vw,48px) }
 
 /* ---------- bandas ---------- */
 main{ padding-top:64px }
-.band{ position:relative; z-index:4; border-bottom:1px solid var(--line); padding-block:clamp(56px,6vw,96px) }
-.band h2,.contact h2{ text-transform:uppercase; font-size:clamp(26px,3vw,38px); line-height:1.12;
-  letter-spacing:-.02em; max-width:26ch; margin-top:10px }
-.eyebrow{ color:var(--signal-ink); font-size:11px; letter-spacing:.16em }
+.band{ position:relative; z-index:4; border-bottom:1px solid var(--line); padding-block:40px }
+.band h2,.contact h2{ text-transform:uppercase; font-size:clamp(28px,2.6vw,36px); line-height:1.22;
+  font-weight:500; letter-spacing:-.02em; max-width:30ch; margin-top:4px }
+.eyebrow{ color:var(--signal-ink); font-size:11px; font-weight:600; letter-spacing:.08em }
 .eyebrow::before{ display:none }
 .mono{ font-family:var(--f-mono) }
 
 /* Cabecera de banda: título a la izquierda, nota a la derecha, filete debajo. */
 .shead{ display:flex; justify-content:space-between; align-items:flex-end; gap:24px;
-  padding-bottom:18px; margin-bottom:28px; border-bottom:1px solid var(--line) }
-.shead__aside{ font-size:13px; color:var(--graphite); max-width:36ch; padding:8px 12px;
-  border:1px solid var(--line); background:var(--paper); flex:none }
+  padding-bottom:12px; margin-bottom:24px; border-bottom:1px solid var(--line) }
+.shead__aside{ font-size:13px; color:var(--ink); max-width:36ch; padding:4px 10px;
+  border:1px solid var(--line); background:var(--paper); flex:none; line-height:1.5 }
 @media(max-width:820px){ .shead{ flex-direction:column; align-items:flex-start } .shead__aside{ flex:initial } }
 
-/* Telemetría de esquina. Decorado, nunca dato: no dice nada que haya que creerse. */
-.tele{ position:absolute; top:12px; font-family:var(--f-mono); font-size:10px; letter-spacing:.14em;
+/* Telemetría de esquina. Decorado, nunca dato. */
+.tele{ position:absolute; top:8px; font-family:var(--f-mono); font-size:11px; letter-spacing:.02em;
   color:var(--steel-text); text-transform:uppercase }
-.tele--tl{ left:var(--pad) } .tele--tr{ right:var(--pad) }
+.tele b{ font-weight:400; color:var(--graphite) }
+.tele--tl{ left:16px } .tele--tr{ right:16px }
 @media(max-width:640px){ .tele--tr{ display:none } }
 
 /* ═══ 01 · HERO ═══ */
-.hero{ padding-block:clamp(48px,5vw,72px) clamp(48px,5vw,72px) }
-.hero__grid{ display:grid; grid-template-columns:minmax(0,7fr) minmax(0,5fr); gap:clamp(28px,4vw,56px); align-items:stretch }
-.hero__col{ display:flex; flex-direction:column; justify-content:space-between; gap:28px }
-.chip{ display:inline-flex; align-items:center; gap:8px; align-self:flex-start; padding:5px 10px;
-  border:1px solid var(--line); background:var(--paper); font-family:var(--f-mono); font-size:11px;
-  letter-spacing:.12em; text-transform:uppercase; color:var(--signal-ink) }
+.hero{ padding-block:40px }
+.hero__grid{ display:grid; grid-template-columns:minmax(0,7fr) minmax(0,5fr); gap:24px; align-items:stretch; padding-top:8px }
+.hero__col{ display:flex; flex-direction:column; justify-content:space-between; gap:24px }
+.chip{ display:inline-flex; align-items:center; gap:6px; align-self:flex-start; padding:4px 8px;
+  border:1px solid var(--line); background:var(--paper); font-family:var(--f-mono); font-size:11px; font-weight:600;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--signal-ink) }
 .chip i{ width:6px; height:6px; background:var(--signal-ink); display:block }
-.chip .sep{ color:var(--steel) }
-@media(max-width:560px){ .chip__based{ display:none } }
-/* Dos líneas a escritorio, como el mockup: a 80px se partía en cuatro. */
-.hero h1{ text-transform:uppercase; font-size:clamp(36px,4.3vw,64px); line-height:1; letter-spacing:-.035em;
-  max-width:18ch; margin-top:22px }
-.hero__lead{ font-size:clamp(17px,1.6vw,20px); color:var(--graphite); max-width:48ch; margin-top:22px }
-.hero__data{ display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line); background:var(--paper) }
-.hero__data div{ padding:12px 14px; display:flex; flex-direction:column; gap:4px }
-.hero__data div+div{ border-left:1px solid var(--line) }
-.hero__data span{ font-family:var(--f-mono); font-size:10px; letter-spacing:.14em; color:var(--steel-text) }
-.hero__data b{ font-family:var(--f-mono); font-size:12px; font-weight:500; letter-spacing:.04em }
-.hero__acts{ display:flex; flex-wrap:wrap; gap:12px }
+.hero__top{ display:flex; flex-direction:column }
+.hero h1{ text-transform:uppercase; font-weight:600; font-size:clamp(36px,3.9vw,56px); line-height:1.02;
+  letter-spacing:-.03em; max-width:18ch; margin-top:16px }
+.hero__lead{ font-size:18px; line-height:28px; letter-spacing:-.01em; color:var(--graphite); max-width:36rem; margin-top:16px }
+.hero__bottom{ display:flex; flex-direction:column; gap:16px }
+.hero__data{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:8px; border:1px solid var(--line); background:#fff }
+.hero__data div{ display:flex; flex-direction:column; gap:2px }
+.hero__data div+div{ border-left:1px solid var(--line); padding-left:8px }
+.hero__data span{ font-family:var(--f-mono); font-size:11px; color:var(--steel-text); text-transform:uppercase }
+.hero__data b{ font-family:var(--f-mono); font-size:13px; font-weight:600; letter-spacing:.04em }
+.hero__data b.acc{ color:var(--signal-ink) }
+.hero__acts{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding-top:4px }
+.btn--sm{ min-height:0; padding:12px 24px; font-size:13px; letter-spacing:.06em }
+.hero__sheet{ margin-left:auto; font-family:var(--f-mono); font-size:11px; color:var(--steel-text) }
 
-/* El instrumento: caja bordeada con barra de título, retícula estática y la ✕. */
-.instr{ border:1px solid var(--line); background:var(--paper); display:flex; flex-direction:column }
+/* El instrumento: la retícula CAD del mockup, girando despacio (60 s por vuelta). */
+.instr{ border:1px solid var(--line); background:#fff; padding:16px; display:flex; flex-direction:column; justify-content:space-between }
 .instr__bar,.instr__foot{ display:flex; justify-content:space-between; align-items:center; gap:12px;
-  padding:10px 14px; font-family:var(--f-mono); font-size:10px; letter-spacing:.14em; color:var(--steel-text) }
-.instr__bar{ border-bottom:1px solid var(--line) } .instr__foot{ border-top:1px solid var(--line) }
-.instr__st{ color:var(--ink) }
-.hero.is-aligned .instr__st{ color:var(--signal-ink) }
-.instr__field{ position:relative; flex:1; min-height:340px; display:flex; align-items:center; justify-content:center; overflow:hidden }
-.instr__ring{ position:absolute; width:min(88%,360px); aspect-ratio:1; fill:none; stroke:var(--steel); stroke-width:.6; opacity:.7 }
-.card{ position:absolute; font-family:var(--f-mono); font-size:10px; letter-spacing:.1em; color:var(--steel-text) }
-.card--n{ top:8px; left:50%; transform:translateX(-50%) } .card--s{ bottom:8px; left:50%; transform:translateX(-50%) }
-.card--e{ right:10px; top:50%; transform:translateY(-50%) } .card--w{ left:10px; top:50%; transform:translateY(-50%) }
-.hero__mark{ position:relative; z-index:1; width:min(52%,210px); aspect-ratio:1 }
-.hero__mark svg{ width:100%; height:100%; display:block; overflow:visible }
-/* Grosor en unidades del viewBox (no non-scaling-stroke): así escala como el logo. */
-.hero__mark line{ stroke-width:5; stroke-linecap:square; transition:opacity .4s }
-.hero__mark .m1{ stroke:var(--signal); opacity:.7 }
-.hero__mark .m2{ stroke:var(--steel);  opacity:.45 }
-.hero.is-aligned .hero__mark .m1{ opacity:1 }
-.hero.is-aligned .hero__mark .m2{ opacity:.75 }
-.st-ok{ display:none }
-.hero.is-aligned .st-ok{ display:inline } .hero.is-aligned .st-cal{ display:none }
-.hero.is-aligned .pill i{ background:var(--signal) }
-.hero.is-aligned .pill{ border-color:var(--signal-ink); color:var(--signal-ink) }
-@media(max-width:980px){
-  .hero__grid{ grid-template-columns:1fr }
-  .instr__field{ min-height:260px }
-  .instr__hint{ display:none }
-}
+  font-family:var(--f-mono); font-size:11px; color:var(--steel-text) }
+.instr__bar{ border-bottom:1px solid var(--line); padding-bottom:4px }
+.instr__foot{ border-top:1px solid var(--line); padding-top:4px }
+.instr__st{ color:var(--signal-ink); font-weight:600 }
+.instr__field{ position:relative; height:256px; margin-block:16px; display:flex; align-items:center; justify-content:center }
+.instr__ring{ width:224px; height:224px; color:var(--steel); stroke:currentColor; animation:spin 60s linear infinite }
+.instr__ring path{ fill:currentColor; stroke:none }
+@keyframes spin{ to{ transform:rotate(360deg) } }
+.instr__core{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none }
+.instr__plus{ font-family:var(--f-display); font-size:20px; line-height:1; color:var(--signal-ink) }
+.instr__fix{ margin-top:4px; padding:0 4px; font-family:var(--f-mono); font-size:11px; color:var(--ink);
+  background:var(--bone); border:1px solid var(--line) }
+.card{ position:absolute; font-family:var(--f-mono); font-size:11px; color:var(--steel-text) }
+.card--n{ top:4px; left:50%; transform:translateX(-50%) } .card--s{ bottom:4px; left:50%; transform:translateX(-50%) }
+.card--e{ right:4px; top:50%; transform:translateY(-50%) } .card--w{ left:4px; top:50%; transform:translateY(-50%) }
+.pill--acc{ background:#BD49171A; border-color:#BD491733; color:var(--signal-ink); font-weight:600; letter-spacing:.04em }
+@media(max-width:1023px){ .hero__grid{ grid-template-columns:1fr } }
+@media(max-width:640px){ .hero__sheet{ display:none } .chip__based{ display:none } }
 @media(max-width:560px){
   .hero__data{ grid-template-columns:1fr }
-  .hero__data div+div{ border-left:0; border-top:1px solid var(--line) }
-  .hero__data div{ flex-direction:row; justify-content:space-between; align-items:baseline }
+  .hero__data div+div{ border-left:0; border-top:1px solid var(--line); padding:6px 0 0 }
 }
 
 /* ═══ 02 · ERP ═══ */
@@ -208,7 +194,7 @@ main{ padding-top:64px }
 .proc__step:last-child{ background:var(--bone) }
 .proc__top{ display:flex; justify-content:space-between; font-family:var(--f-mono); font-size:10px;
   letter-spacing:.14em; color:var(--steel-text) }
-.proc__top .x-s{ font-size:14px }
+.proc__top .x-acc{ font-size:16px; font-weight:700; color:var(--signal-ink) }
 .proc__step h3{ text-transform:uppercase; font-size:20px; letter-spacing:-.01em }
 .proc__step p{ font-size:14px; color:var(--graphite); line-height:1.55 }
 .proc__out{ margin-top:auto; padding-top:12px; border-top:1px solid var(--line-soft);
@@ -224,25 +210,21 @@ main{ padding-top:64px }
 }
 
 /* ═══ 06 · ESTUDIO ═══ */
-.dirs{ display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--line); background:var(--paper) }
-.dir{ display:grid; grid-template-columns:140px minmax(0,1fr) }
+.dirs{ display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--line); background:#fff }
+.dir{ padding:16px; display:flex; flex-direction:column; gap:4px }
 .dir+.dir{ border-left:1px solid var(--line) }
-.dir__img{ border-right:1px solid var(--line); overflow:hidden }
-.dir__img img{ width:100%; height:100%; object-fit:cover; filter:grayscale(1) contrast(1.05); transition:filter .5s }
-.dir:hover .dir__img img{ filter:none }
-.dir__txt{ padding:16px 18px }
-.dir__top{ display:flex; justify-content:space-between; gap:10px; font-family:var(--f-mono); font-size:10px;
-  letter-spacing:.14em; color:var(--steel-text) }
-.dir h3{ text-transform:uppercase; font-size:24px; margin-top:8px }
-.dir__role{ font-family:var(--f-mono); font-size:12px; color:var(--signal-ink); margin-top:2px }
-.dir__txt p:last-child{ font-size:14px; color:var(--graphite); margin-top:10px; line-height:1.55 }
-.deps__t{ margin-top:36px; margin-bottom:10px }
-.deps{ list-style:none; display:grid; grid-template-columns:repeat(9,1fr); border:1px solid var(--line); background:var(--paper) }
-.deps li{ padding:12px 8px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px;
-  font-family:var(--f-mono); font-size:10px; letter-spacing:.06em }
+.dir__top{ display:flex; justify-content:space-between; gap:10px; font-family:var(--f-mono); font-size:11px; color:var(--steel-text) }
+.dir h3{ text-transform:uppercase; font-size:24px; line-height:32px; letter-spacing:-.01em }
+.dir__role{ font-family:var(--f-mono); font-size:13px; font-weight:500; color:var(--signal-ink) }
+.dir__p{ font-size:13px; color:var(--graphite); padding-top:4px; line-height:20px }
+.deps__t{ margin-top:24px; margin-bottom:4px }
+.deps{ list-style:none; display:grid; grid-template-columns:repeat(9,1fr); border:1px solid var(--line); background:#fff }
+.deps li{ padding:8px; height:96px; display:flex; flex-direction:column; justify-content:space-between; align-items:center; text-align:center;
+  font-family:var(--f-mono); font-size:11px }
 .deps li+li{ border-left:1px solid var(--line) }
-.deps b{ font-size:12px; font-weight:500; letter-spacing:.02em; color:var(--ink) }
-.deps__note{ margin-top:14px; font-size:14px; color:var(--graphite); max-width:70ch }
+.deps b{ font-size:13px; font-weight:600; color:var(--ink) }
+.deps li span:last-child{ color:var(--signal-ink); font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:.04em }
+.deps__note{ margin-top:12px; font-size:13px; color:var(--graphite); max-width:80ch }
 @media(max-width:1100px){
   .deps{ grid-template-columns:repeat(3,1fr) }
   .deps li+li{ border-left:0 }
@@ -254,40 +236,31 @@ main{ padding-top:64px }
   .dir+.dir{ border-left:0; border-top:1px solid var(--line) }
 }
 @media(max-width:420px){
-  .dir{ grid-template-columns:96px minmax(0,1fr) }
   .deps{ grid-template-columns:1fr 1fr }
   .deps li:not(:nth-child(3n+1)){ border-left:0 }
   .deps li:nth-child(even){ border-left:1px solid var(--line) }
   .deps li:nth-child(n+3){ border-top:1px solid var(--line) }
 }
 
-/* ═══ 07 · ALTA DE PROYECTO (Ink) ═══ */
-.contact{ position:relative; z-index:4; background:var(--ink); color:var(--bone); padding-block:clamp(56px,6vw,96px) }
+/* ═══ 07 · ALTA DE PROYECTO (invertido, centrado a 896px como el mockup) ═══ */
+.contact{ position:relative; z-index:4; background:var(--ink); color:var(--bone); padding:40px var(--mar) }
+.contact__in{ max-width:896px; margin-inline:auto }
 .contact h2{ color:var(--bone) }
-.shead--inv{ border-bottom-color:#ffffff24 }
+.shead--inv{ border-bottom-color:#9AA0A866; margin-bottom:24px }
 .shead--inv .eyebrow{ color:var(--signal) }
-.shead--inv .shead__aside{ background:transparent; border-color:#ffffff24; color:#c2c6cb; font-size:14px }
-.contact__grid{ display:grid; grid-template-columns:minmax(0,8fr) minmax(0,4fr); gap:clamp(28px,4vw,56px) }
+.contact__tag{ font-family:var(--f-mono); font-size:11px; color:var(--steel) }
 .intake{ display:flex; flex-direction:column; gap:16px }
 .intake__row{ display:grid; grid-template-columns:1fr 1fr; gap:16px }
-.field{ display:flex; flex-direction:column; gap:6px }
-.field__l{ display:flex; justify-content:space-between; font-family:var(--f-mono); font-size:10px;
-  letter-spacing:.14em; text-transform:uppercase; color:var(--steel) }
+.field{ display:flex; flex-direction:column; gap:4px }
+.field__l{ display:flex; justify-content:space-between; font-family:var(--f-mono); font-size:11px;
+  text-transform:uppercase; color:var(--steel) }
 .field__l i{ font-style:normal }
 .field input,.field textarea{ font:inherit; font-size:15px; color:var(--ink); background:var(--bone);
-  border:1px solid #ffffff40; border-radius:0; padding:11px 12px; resize:vertical }
-.field input:focus,.field textarea:focus{ outline:1px solid var(--signal); outline-offset:-2px; border-color:var(--signal) }
+  border:1px solid #9AA0A866; border-radius:0; padding:10px 8px; resize:none }
+.field input:focus,.field textarea:focus{ outline:none; border-color:var(--signal) }
 .field textarea::placeholder{ color:#6B6F75 }
-.intake__act{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin-top:4px }
-.intake__note{ font-family:var(--f-mono); font-size:11px; letter-spacing:.04em; color:var(--steel); max-width:44ch }
+.intake__act{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding-top:4px }
+.intake__note{ font-family:var(--f-mono); font-size:11px; color:var(--steel); max-width:24rem }
 .intake__note a{ color:var(--bone); border-bottom:1px solid #ffffff40 }
 .contact .btn--signal:hover{ background:var(--bone); border-color:var(--bone); color:var(--ink) }
-.contact__meta{ border:1px solid #ffffff24; align-self:start }
-.contact__meta div{ padding:14px 16px; display:flex; flex-direction:column; gap:4px }
-.contact__meta div+div{ border-top:1px solid #ffffff24 }
-.contact__meta dt{ font-family:var(--f-mono); font-size:10px; letter-spacing:.14em; color:var(--steel) }
-.contact__meta dd{ font-size:15px; color:var(--bone); word-break:break-all }
-@media(max-width:820px){
-  .contact__grid{ grid-template-columns:1fr }
-  .intake__row{ grid-template-columns:1fr }
-}
+@media(max-width:700px){ .intake__row{ grid-template-columns:1fr } }
