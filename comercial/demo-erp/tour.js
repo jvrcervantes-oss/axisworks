@@ -88,6 +88,13 @@
       b: 'Todo lo que has visto son módulos que se activan uno a uno sobre la misma base. Elige los tuyos en la página de módulos.' }
   ];
 
+  /* Solo los pasos de módulos encendidos en la landing (catalogo.js). El módulo de cada paso sale de su
+     propia ruta, con el mismo catálogo que usa el menú de la demo: no hay una segunda lista. */
+  if (window.AXW_CATALOGO) {
+    var ESTADO_MOD = window.AXW_CATALOGO.leeEstado();
+    PASOS = PASOS.filter(function (p) { var k = window.AXW_CATALOGO.moduloDeRuta(p.p); return !k || ESTADO_MOD[k]; });
+  }
+
   /* ── Estado ─────────────────────────────────────────────────────────── */
   function lee() { try { var v = JSON.parse(sessionStorage.getItem(CLAVE) || 'null'); return v && typeof v.i === 'number' ? v : null; } catch (e) { return null; } }
   function guarda(i) { try { sessionStorage.setItem(CLAVE, JSON.stringify({ i: i })); } catch (e) {} }

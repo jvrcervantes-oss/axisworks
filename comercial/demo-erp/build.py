@@ -177,9 +177,10 @@ def guard_demo():
               "a.style.cssText='position:fixed;left:16px;bottom:16px;z-index:2147483000;background:#485B37;color:#fff;"
               "padding:8px 16px;border-radius:999px;font:500 13px/1.2 system-ui,sans-serif;text-decoration:none';"
               "document.body.appendChild(a);});\n"
-              # Tour guiado (tour.js): se reanuda solo en cada pantalla si hay un tour en curso.
-              "(function(){var s=document.createElement('script');s.src='/demo/tour.js';s.defer=true;"
-              "(document.head||document.documentElement).appendChild(s);})();\n")
+              # catalogo.js (fuente única de módulos) → modulos.js (menú y aviso de módulo apagado) → tour.js, en
+              # ese orden: un script insertado por JS es asíncrono salvo async=false.
+              "['/demo/catalogo.js','/demo/modulos.js','/demo/tour.js'].forEach(function(u){var s=document.createElement('script');"
+              "s.src=u;s.async=false;(document.head||document.documentElement).appendChild(s);});\n")
     # Sesión real que el presentador pudiera tener en este origen: fuera antes de nada (Seguridad #2).
     limpia_sesion = ("(function(){try{[localStorage,sessionStorage].forEach(function(s){for(var i=s.length-1;i>=0;i--){"
                      "var k=s.key(i);if(k&&k.indexOf('sb-')===0)s.removeItem(k);}});}catch(e){}})();\n")
@@ -215,6 +216,8 @@ def paginas_propias():
     shutil.copy2(os.path.join(AQUI, 'landing.html'), os.path.join(DIST, 'index.html'))
     os.makedirs(os.path.join(DIST, 'demo'), exist_ok=True)
     shutil.copy2(os.path.join(AQUI, 'tour.js'), os.path.join(DIST, 'demo', 'tour.js'))
+    shutil.copy2(os.path.join(AQUI, 'catalogo.js'), os.path.join(DIST, 'demo', 'catalogo.js'))
+    shutil.copy2(os.path.join(AQUI, 'modulos_demo.js'), os.path.join(DIST, 'demo', 'modulos.js'))
     aviso = ('<!doctype html><html lang="es"><meta charset="utf-8"><title>{t} · Demo</title>'
              '<body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;'
              'background:#fbf9f4;font:16px/1.6 system-ui,sans-serif;color:#2b2b25"><div style="max-width:30rem;padding:2rem">'
