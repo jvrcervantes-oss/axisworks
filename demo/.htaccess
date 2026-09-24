@@ -1,0 +1,11 @@
+# GENERADO por comercial/demo-erp/build.py --publico — no editar.
+# demo.axisworks.studio: la demo del ERP. Fuera de ese host, redirige a él.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTP_HOST} !^demo\.axisworks\.studio$ [NC]
+  RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=301,L]
+</IfModule>
+<IfModule mod_headers.c>
+  Header always set X-Robots-Tag "noindex, nofollow"
+</IfModule>
+DirectoryIndex index.html

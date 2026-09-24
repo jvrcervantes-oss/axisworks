@@ -49,9 +49,9 @@
   ];
 
   var PROYECTOS = [
-    { id: 'p-1', nombre: 'Palm Field', pref: 'PF', n: 12, suelo: [55000, 80000], obra: [110000, 180000], moneda: 'EUR', soc: 'tepi_sungai', modelos: ['Dune', 'Lagoon', 'Canopy'] },
-    { id: 'p-2', nombre: 'Bonian Village', pref: 'BV', n: 10, suelo: [48000, 70000], obra: [95000, 150000], moneda: 'EUR', soc: 'san_dal_woods', modelos: ['Lagoon', 'Canopy'] },
-    { id: 'p-3', nombre: 'Sumba Hills', pref: 'SH', n: 16, suelo: [28000, 45000], obra: [44000, 90000], moneda: 'EUR', soc: 'tepi_sungai', modelos: ['Pool Suite', 'Dune'] }
+    { id: 'p-1', nombre: 'Cemara Estate', pref: 'CE', n: 12, suelo: [55000, 80000], obra: [110000, 180000], moneda: 'EUR', soc: 'tepi_sungai', modelos: ['Dune', 'Lagoon', 'Canopy'] },
+    { id: 'p-2', nombre: 'Tirta Village', pref: 'TV', n: 10, suelo: [48000, 70000], obra: [95000, 150000], moneda: 'EUR', soc: 'san_dal_woods', modelos: ['Lagoon', 'Canopy'] },
+    { id: 'p-3', nombre: 'Batu Ridge', pref: 'BR', n: 16, suelo: [28000, 45000], obra: [44000, 90000], moneda: 'EUR', soc: 'tepi_sungai', modelos: ['Pool Suite', 'Dune'] }
   ];
 
   var TIPO_NOMBRE = { reserva_parcela: 'Bloqueo de Parcela', carta_reserva: 'Carta de Reserva', construccion: 'Contrato de Construcción' };

@@ -1,0 +1,38 @@
+
+:root{
+  
+  --tg:#485B37;  
+  --dl:#104C4F;  
+  --be:#42210B;  
+  --sc:#8F9B7A;  
+  --va:#2E3437;  
+  --ss:#BEB3A5;  
+  
+  --borde-control:#8A8474;
+  --rl:#F5F0E6;  
+  --ink:#2E3437; --muted:#6b6c66;
+
+  
+  --brand-primary: var(--tg);
+  --brand-deep:    var(--dl);
+  --brand-accent:  var(--be);
+  --brand-paper:   var(--rl);
+
+  
+  --font-display: 'Jost', sans-serif;
+  --font-serif:   'Jost', sans-serif;
+  
+  --font-cifra:   'Instrument Sans', sans-serif;
+  --font-body:    'Jost', sans-serif;
+
+  
+  --brand-mark:      url(brand/tiki-totem.png);        
+  --brand-logo:      url(brand/axw-logo-v3.png);    
+  --brand-logo-dark: url(brand/axw-logo-v3-dark.png); 
+
+  
+  --grain-opacity: .14;   
+  --grain-contrast: .55;  
+  --curves-opacity: .12;  
+  --mark-opacity: .10;    
+}

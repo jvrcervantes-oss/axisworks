@@ -15,3 +15,7 @@ comercial/previews/
 
 # Demo del ERP (bundle generado por comercial/demo-erp/build.py) — nunca al webroot publico
 comercial/demo-erp/dist/
+
+# Herramientas del build publico de la demo del ERP
+comercial/demo-erp/node_modules/
+comercial/demo-erp/package-lock.json

@@ -1,0 +1,9 @@
+{
+  "name": "axisworks-demo-erp",
+  "private": true,
+  "description": "Herramientas del build publico de la demo (build.py --publico): quitan los comentarios internos del codigo antes de publicar.",
+  "devDependencies": {
+    "html-minifier-terser": "7.2.0",
+    "terser": "5.36.0"
+  }
+}

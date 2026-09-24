@@ -1,0 +1,1 @@
+(function(){var CLAVE="axw_idioma_ui";var v=null;try{v=localStorage.getItem(CLAVE)}catch(e){}window.LW_IDIOMA=v==="en"?"en":"es";window.lwSetIdioma=function(idioma){window.LW_IDIOMA=idioma==="en"?"en":"es";try{localStorage.setItem(CLAVE,window.LW_IDIOMA)}catch(e){}}})();

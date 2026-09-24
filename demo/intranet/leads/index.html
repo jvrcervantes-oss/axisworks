@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/favicon.png">
+<title>AxisWorks Demo · CRM de leads</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/contracts/assets/axw.css?v=3a0d1366">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+
+<script src="/contracts/assets/idioma.js?v=78ab8eba"></script>
+<script src="/contracts/assets/i18n.js?v=b8d710c2"></script>
+<script src="/contracts/assets/herramientas.js?v=c209502e"></script>
+<script src="/contracts/assets/avisos.js?v=38fd8c40" defer="defer"></script><script src="/contracts/assets/topbar.js?v=8444fd68" defer="defer"></script>
+<script src="/contracts/assets/cierre.js?v=911e89aa"></script><script src="/contracts/assets/guard.js?v=1d256fc0" data-herramienta="leads"></script>
+<script src="/contracts/assets/suite.js?v=3cf4a63a"></script>
+<link rel="stylesheet" href="/intranet/leads/leads.css?v=9">
+<style>
+  *{ box-sizing:border-box; } html,body{ margin:0; }
+  body{ font-family:'Inter',ui-sans-serif,system-ui,sans-serif; background:#F8FAFC; color:#0F172A; }
+</style>
+</head>
+<body class="crm">
+  
+  <header class="lw-topbar" data-titulo="CRM de leads">
+    <div class="lw-spacer"></div>
+    <button type="button" class="lw-btn" id="btnRefrescar"><i class="ph ph-arrows-clockwise"></i><span data-lwt>Refrescar</span></button>
+  </header>
+
+  
+  <div id="avisoAlcance" class="aviso" hidden style="margin:12px 16px 0"></div>
+
+  <nav class="crm-nav" id="nav" role="tablist">
+    
+    <button role="tab" data-v="hoy" aria-selected="true"><i class="ph ph-flag"></i><span data-lwt>Hoy</span> <span class="cuenta" id="c-hoy">—</span></button>
+    <button role="tab" data-v="pipeline" aria-selected="false"><i class="ph ph-kanban"></i><span data-lwt>Pipeline</span> <span class="cuenta" id="c-pipeline">—</span></button>
+    <button role="tab" data-v="bandeja" aria-selected="false"><i class="ph ph-chats-circle"></i><span data-lwt>Bandeja</span></button>
+    
+    <button role="tab" data-v="panel" aria-selected="false" id="tabCampanas" hidden><i class="ph ph-chart-line-up"></i><span data-lwt>Campañas</span></button>
+    <button role="tab" data-v="automatismos" aria-selected="false" id="tabAutomatismos" hidden><i class="ph ph-flow-arrow"></i><span data-lwt>Automatismos</span></button>
+    
+    <span class="crm-nav-sep" aria-hidden="true" data-lwt="· WhatsApp Bot">· WhatsApp Bot</span>
+    <button role="tab" data-v="setter" aria-selected="false"><i class="ph ph-robot"></i><span data-lwt>Setter IA</span></button>
+    <button role="tab" data-v="agenda" aria-selected="false" id="tabAgenda" hidden><i class="ph ph-video-camera"></i><span data-lwt>Agenda</span></button>
+    
+    <span class="crm-nav-sep" aria-hidden="true" data-lwt="· Dirección">· Dirección</span>
+    <button role="tab" data-v="closers" aria-selected="false" id="tabClosers" hidden><i class="ph ph-trophy"></i><span data-lwt>Closers</span></button>
+    
+    <button role="tab" data-v="trazabilidad" aria-selected="false" id="tabTrazabilidad" hidden><i class="ph ph-git-merge"></i><span data-lwt>Trazabilidad</span></button>
+  </nav>
+
+  
+  <section class="crm-vista" id="v-hoy">
+    <div class="kpis" id="kpis-hoy"></div>
+    <div class="filtros">
+      <div class="seg" id="filtroHoy">
+        <button data-mias="0" aria-pressed="true" data-lwt="Todo el equipo">Todo el equipo</button>
+        <button data-mias="1" aria-pressed="false" data-lwt="Solo mías">Solo mías</button>
+      </div>
+    </div>
+    <div class="caja">
+      <header><div><h2 data-lwt="Lo que toca hoy">Lo que toca hoy</h2>
+        <p data-lwt="Vencidas y de hoy. El próximo paso de cada lead se pone desde su ficha.">Vencidas y de hoy. El próximo paso de cada lead se pone desde su ficha.</p></div></header>
+      <div id="listaHoy" class="citas"></div>
+    </div>
+  </section>
+
+  
+  <section class="crm-vista" id="v-pipeline" hidden>
+    <div class="kpis" id="kpis-pipeline"></div>
+    <div class="aviso rojo" id="avisoTipos" hidden></div>
+    <div class="aviso oro" id="avisoEstados" hidden></div>
+    <div class="filtros">
+      <input type="search" id="q" data-lwt-ph placeholder="Buscar por nombre, email o teléfono…" autocomplete="off">
+      
+      <div class="seg" id="filtroDueno">
+        <button data-d="todos" aria-pressed="true" data-lwt="Todos">Todos</button>
+        <button data-d="mios" aria-pressed="false" data-lwt="Mis leads">Mis leads</button>
+        <button data-d="libres" aria-pressed="false" data-lwt="Sin dueño">Sin dueño</button>
+      </div>
+      <div class="seg" id="canales"></div>
+      
+      <button type="button" class="btn mini" id="btnEstructura" hidden>
+        <i class="ph ph-sliders-horizontal"></i><span data-lwt="Editar tablero">Editar tablero</span>
+      </button>
+    </div>
+    <div class="tablero" id="tablero"><p class="vacio" data-lwt="Cargando…">Cargando…</p></div>
+  </section>
+
+  
+  <section class="crm-vista" id="v-bandeja" hidden>
+    <div class="filtros">
+      <input type="search" id="qb" data-lwt-ph placeholder="Buscar en la bandeja…" autocomplete="off">
+      <div class="seg" id="filtroBandeja">
+        <button data-fb="todos" aria-pressed="true" data-lwt="Todos">Todos</button>
+        <button data-fb="sintocar" aria-pressed="false" data-lwt="Sin tocar">Sin tocar</button>
+        <button data-fb="parados" aria-pressed="false" data-lwt="Parados +14d">Parados +14d</button>
+      </div>
+    </div>
+    <div class="bandeja" id="bandeja"></div>
+  </section>
+
+  
+  <section class="crm-vista" id="v-panel" hidden>
+    <div class="kpis" id="kpis-panel"></div>
+    <div class="aviso gris" id="avisoPanel" hidden></div>
+    <div class="caja" style="margin-bottom:16px">
+      <header>
+        <div>
+          <h2 data-lwt="Leads y gasto, semana a semana">Leads y gasto, semana a semana</h2>
+          <p data-lwt="Leads recibidos frente a lo invertido en Meta. El gasto lo trae el vigilante cada 4 h.">Leads recibidos frente a lo invertido en Meta. El gasto lo trae el vigilante cada 4 h.</p>
+        </div>
+      </header>
+      <div id="grafica" style="padding:16px"></div>
+    </div>
+    <div class="caja">
+      <header>
+        <div>
+          <h2 data-lwt="Rendimiento por campaña">Rendimiento por campaña</h2>
+          <p id="subCampanas">—</p>
+        </div>
+      </header>
+      <div class="tabla-scroll"><table class="tabla" id="tCampanas"></table></div>
+    </div>
+  </section>
+
+  
+  <section class="crm-vista" id="v-automatismos" hidden>
+    <div class="kpis" id="kpis-auto"></div>
+    <div class="aviso gris">
+      <span data-lwt>Estos automatismos los ejecuta AxisWorks sobre las campañas de la empresa, cada 4 horas.</span>
+      <span data-lwt>Aquí se ven</span> <b data-lwt="en solo lectura">en solo lectura</b><span data-lwt>: qué vigila cada regla y qué ha hecho de verdad.</span>
+      <span data-lwt>Para cambiar un umbral o un tope de gasto, habla con el estudio.</span>
+    </div>
+    <div class="caja" style="margin-bottom:16px">
+      <header><div><h2 data-lwt="El flujo">El flujo</h2><p data-lwt="De un formulario de Meta a una tarjeta en el pipeline.">De un formulario de Meta a una tarjeta en el pipeline.</p></div></header>
+      <div id="flujo" style="padding:18px 16px"></div>
+    </div>
+    <div class="caja" style="margin-bottom:16px">
+      <header><div><h2 data-lwt="Reglas activas">Reglas activas</h2><p id="subReglas">—</p></div></header>
+      <div id="reglas" style="padding:14px 16px"></div>
+    </div>
+    <div class="caja">
+      <header><div><h2 data-lwt="Lo que han hecho">Lo que han hecho</h2><p id="subAcciones">—</p></div></header>
+      <div class="tabla-scroll"><table class="tabla" id="tAcciones"></table></div>
+    </div>
+  </section>
+
+  
+  <section class="crm-vista" id="v-setter" hidden>
+    <div class="kpis" id="kpis-setter"></div>
+    <div class="aviso gris" id="avisoSetter" hidden></div>
+    <div class="caja">
+      <header>
+        <div>
+          <h2 data-lwt="Conversaciones del bot">Conversaciones del bot</h2>
+          <p id="subSetter" data-lwt="El bot de WhatsApp de la empresa, en vivo. Pausar detiene la IA para ese lead: a partir de ahí responde una persona.">El bot de WhatsApp de la empresa, en vivo. Pausar detiene la IA para ese lead: a partir de ahí responde una persona.</p>
+        </div>
+        <button type="button" class="btn" id="btnRefrescarSetter"><i class="ph ph-arrows-clockwise"></i><span data-lwt>Refrescar</span></button>
+      </header>
+      
+      <div class="wa" id="wa">
+        <div class="wa-lista" id="tSetter"></div>
+        <div class="wa-chat" id="waChat" data-vacio="1">
+          <div class="wa-nada">
+            <i class="ph ph-chats-circle"></i>
+            <p data-lwt="Elige una conversación">Elige una conversación</p>
+            <span data-lwt="Los mensajes del bot con cada lead, tal y como los ve el cliente.">Los mensajes del bot con cada lead, tal y como los ve el cliente.</span>
+          </div>
+        </div>
+        
+        <aside class="wa-ficha" id="waFicha"></aside>
+      </div>
+    </div>
+  </section>
+
+  
+  <section class="crm-vista" id="v-agenda" hidden>
+    <div class="kpis" id="kpis-agenda"></div>
+    <div class="aviso gris" id="avisoAgendaMeet" hidden data-lwt="El enlace de Google Meet se genera solo en cuanto el estudio active el acceso de Google Workspace. Hasta entonces, la cita se agenda igual — el closer comparte su propio enlace con el lead.">
+      El enlace de Google Meet se genera solo en cuanto el estudio active el acceso de Google Workspace. Hasta entonces, la cita se agenda igual — el closer comparte su propio enlace con el lead.
+    </div>
+    <div class="caja" style="margin-bottom:16px">
+      <header><div><h2 data-lwt="Nueva cita">Nueva cita</h2><p data-lwt="Agenda la llamada de venta de un lead con su closer.">Agenda la llamada de venta de un lead con su closer.</p></div></header>
+      <div style="padding:16px">
+        <input type="hidden" id="agCitaId">
+        <div class="fila-campos">
+          <div class="campo"><label for="agTelefono" data-lwt="Teléfono del lead">Teléfono del lead</label><input type="tel" id="agTelefono" placeholder="+34600000000"></div>
+          <div class="campo"><label for="agNombre" data-lwt="Nombre">Nombre</label><input type="text" id="agNombre" data-lwt-ph placeholder="Nombre del lead"></div>
+          <div class="campo"><label for="agCuando" data-lwt="Fecha y hora">Fecha y hora</label><input type="datetime-local" id="agCuando"></div>
+          <div class="campo"><label for="agCloser" data-lwt="Closer">Closer</label><input type="email" id="agCloser" data-lwt-ph placeholder="vacío = tú mismo"></div>
+        </div>
+        <div class="campo"><label for="agNotas" data-lwt="Notas">Notas</label><input type="text" id="agNotas" data-lwt-ph placeholder="Contexto para quien atienda la llamada"></div>
+        <div style="display:flex;gap:8px">
+          <button type="button" class="btn pri" id="btnAgendarGuardar"><i class="ph ph-calendar-plus"></i><span data-lwt>Agendar</span></button>
+          <button type="button" class="btn" id="btnAgendarCancelar" hidden data-lwt="Cancelar edición">Cancelar edición</button>
+        </div>
+      </div>
+    </div>
+    <div class="caja">
+      <header><div><h2 data-lwt="Próximas llamadas">Próximas llamadas</h2><p id="subAgenda">—</p></div></header>
+      <div id="tAgenda" class="citas"></div>
+    </div>
+  </section>
+
+  
+  <section class="crm-vista" id="v-closers" hidden>
+    <div class="kpis" id="kpis-closers"></div>
+
+    <div class="aviso oro" id="avisoAtribucion" hidden></div>
+
+    <div class="caja" style="margin-bottom:16px">
+      <header>
+        <div>
+          <h2 data-lwt="Quién vende">Quién vende</h2>
+          <p id="subRanking">—</p>
+        </div>
+        
+        <div class="seg" id="filtroCadenas">
+          <button data-raices="0" aria-pressed="true" data-lwt="Todo lo firmado">Todo lo firmado</button>
+          <button data-raices="1" aria-pressed="false" data-lwt="Solo contratos raíz">Solo contratos raíz</button>
+        </div>
+      </header>
+      <div class="tabla-scroll"><table class="tabla" id="tRanking"></table></div>
+    </div>
+
+    
+    <div class="caja" id="cajaReparto" style="margin-bottom:16px">
+      <header>
+        <div>
+          <h2 data-lwt="Quién atiende cada campaña">Quién atiende cada campaña</h2>
+          <p id="subReparto">—</p>
+        </div>
+      </header>
+      <div id="tReparto" class="citas"></div>
+    </div>
+  </section>
+
+  
+  <section class="crm-vista" id="v-trazabilidad" hidden>
+    <div class="kpis" id="kpis-traza"></div>
+
+    
+    <div class="aviso oro" role="status" style="margin-bottom:16px" data-lwt="Una coincidencia es una señal para revisar, no un veredicto: que alguien esté en dos funnels no prueba que juegue a dos bandas. El descuento se decide con la política de siempre.">Una coincidencia es una señal para revisar, no un veredicto: que alguien esté en dos funnels no prueba que juegue a dos bandas. El descuento se decide con la política de siempre.</div>
+
+    <div class="caja" style="margin-bottom:16px">
+      <header>
+        <div>
+          <h2 data-lwt="Personas en más de un funnel">Personas en más de un funnel</h2>
+          <p id="subTraza">—</p>
+        </div>
+        <button type="button" class="btn" id="btnTrazaSync"><i class="ph ph-arrows-clockwise"></i><span data-lwt>Sincronizar ahora</span></button>
+      </header>
+      <div id="tTraza" class="citas"></div>
+    </div>
+
+    <div class="caja">
+      <header>
+        <div>
+          <h2 data-lwt="Cuentas GoHighLevel conectadas">Cuentas GoHighLevel conectadas</h2>
+          <p data-lwt="Solo lectura: nunca se escribe en la cuenta del sales manager. Una cuenta nace apagada hasta que la actives.">Solo lectura: nunca se escribe en la cuenta del sales manager. Una cuenta nace apagada hasta que la actives.</p>
+        </div>
+      </header>
+      <div class="tabla-scroll"><table class="tabla" id="tTrazaCuentas"></table></div>
+      <details style="margin-top:14px">
+        <summary class="btn pri" style="list-style:none"><i class="ph ph-plus"></i><span data-lwt>Nueva cuenta</span></summary>
+        <div style="margin-top:12px">
+          <div class="fila-campos">
+            
+            <div class="campo"><label for="tzManager" data-lwt="Sales manager">Sales manager</label><select id="tzManager"><option value="" data-lwt="Elige uno…">Elige uno…</option></select></div>
+            <div class="campo"><label for="tzLocation" data-lwt="Location ID">Location ID</label><input type="text" id="tzLocation" autocomplete="off"></div>
+            <div class="campo"><label for="tzEtiqueta" data-lwt="Etiqueta de contactos AxisWorks Demo">Etiqueta de contactos AxisWorks Demo</label><input type="text" id="tzEtiqueta" autocomplete="off"></div>
+          </div>
+          <div class="campo"><label for="tzToken" data-lwt="Token (pit-…) con permiso solo de lectura de contactos">Token (pit-…) con permiso solo de lectura de contactos</label><input type="password" id="tzToken" autocomplete="off"></div>
+          <button type="button" class="btn pri" id="btnTrazaAlta"><i class="ph ph-plug"></i><span data-lwt>Conectar cuenta</span></button>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+
+<script src="/contracts/assets/dialogo.js?v=cefc9e4e"></script>
+<script src="/contracts/assets/suite-comun.js?v=24701ad2"></script>
+<script src="/intranet/leads/leads.js?v=18"></script>
+</body>
+</html>

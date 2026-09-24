@@ -15,8 +15,11 @@ lanzar y la demo enseña la versión nueva. Nunca se edita `dist/` a mano.
 Revisión previa (24-sep, Seguridad + Legal), cada regla con su porqué:
 - `dist/` está en .gitignore del repo AxisWorks, que despliega a Hostinger: el
   bundle lleva código de un cliente y un guard que siempre dice super_admin.
-  Se presenta EN LOCAL compartiendo pantalla. Publicarlo en un servidor es otra
-  decisión (Seguridad + Legal otra vez).
+  Se presenta EN LOCAL compartiendo pantalla.
+- PUBLICARLO (owner, 24-sep: demo.axisworks.studio con marca neutra) solo con
+  `python build.py --publico`: sin comentarios, sin marca ni nombres de Lawang,
+  y se niega a copiar a `AxisWorks/demo/` si queda un rastro (ver `publica()`).
+  El push del repo lo despliega; el subdominio apunta a esa carpeta.
 - La URL y la clave de Supabase se cambian por `demo.invalid`: si el candado de
   red tuviera un hueco, no hay dónde llegar. La RLS no es la red: hay RPC que un
   anónimo SÍ puede leer, y `leads` admite INSERT anónimo.
@@ -46,11 +49,62 @@ SB_URL = 'https://vtulllundrfennhjddhc.supabase.co'
 SB_HOST = 'vtulllundrfennhjddhc'
 SB_KEY_RE = re.compile(r'sb_publishable_[A-Za-z0-9_\-]+')
 
-# Pantallas de la v4 que NO entran (Legal, revisión previa 24-sep).
-FUERA_V4 = {'_plan', 'generador-contratos', 'contratos-inversor'}
-# Nada que case con esto puede acabar en dist/ (Seguridad).
+# Pantallas de la v4 que NO entran (Legal, revisión previa 24-sep). `movil`: maquetas con el texto de un
+# contrato real y fotos del cliente (24-sep, al preparar la versión pública).
+FUERA_V4 = {'_plan', 'generador-contratos', 'contratos-inversor', 'movil'}
+# Nada que case con esto puede acabar en dist/ (Seguridad). El hub de maqueta de la v4 y el constructor de
+# dossier son material de marketing del cliente, no del ERP.
 PROHIBIDO = re.compile(r'(/contracts/app\.html$|apoderados|/firma-|firma_|/anexos/|/folletos/|/templates/|/_plan/|\.sql$|\.test\.js$|/_[^/]*$|'
-                       r'Backups|/private/|credentials|token\.json|\.md$|\.py$|\.zip$)', re.I)
+                       r'Backups|/private/|credentials|token\.json|\.md$|\.py$|\.zip$|'
+                       r'/intranet/v4/index\.html$|/intranet/v4/movil/|/intranet/v4/assets/img/|/intranet/dossier/)', re.I)
+
+# ── Versión PÚBLICA (demo.axisworks.studio, owner 24-sep: «marca neutra, dispara») ──────────────────────────
+# `python build.py --publico` construye lo mismo y además: quita los comentarios (limpia_publico.js), cambia marca,
+# promociones, sociedades y logo por inventados, y se NIEGA a copiar a `demo/` si queda un rastro de Lawang.
+# Porqué: el código viene de la intranet de un cliente; sus comentarios y literales cuentan sus sociedades, sus
+# representantes y sus incidentes. Sin su OK escrito (AXW-11) nada suyo sale en una web pública.
+DESTINO_PUBLICO = os.path.abspath(os.path.join(AQUI, '..', '..', 'demo'))   # raíz de demo.axisworks.studio
+# Orden: de lo más largo y concreto a lo general. Se aplica al texto y a los nombres de fichero.
+REEMPLAZOS_PUBLICO = [
+    ('proyectos/Lawang/_qa_double_guard.js', 'el doble de la demo'),
+    ('Lawang Tropical Properties', 'AxisWorks Demo'),
+    ('Lawang Properties &amp; Suite', 'AxisWorks ERP'), ('Lawang Properties & Suite', 'AxisWorks ERP'),
+    ('PROPERTIES &amp; SUITE', 'ERP · DEMO'), ('PROPERTIES & SUITE', 'ERP · DEMO'),
+    ('PT. LAWANG PROPERTIES BALI', 'PT DEMO NUSANTARA'), ('Lawang Properties', 'AxisWorks Demo'),
+    ('Intranet Lawang', 'AxisWorks ERP'), ('Lawang Intranet', 'AxisWorks ERP'), ('Lawang v4', 'AxisWorks ERP'),
+    ('Pagos de Lawang', 'Pagos de la empresa'), ('paga Lawang', 'paga la empresa'), ('pide a Lawang', 'pide a la empresa'),
+    ('cobrar a Lawang', 'cobrar a la empresa'), ('A Lawang', 'A la empresa'), ('Lawang no gestiona', 'La empresa no gestiona'),
+    ('PT Lawang', 'PT Demo Nusantara'), ('de Lawang', 'de la empresa'),
+    ('KITAS_Inversion_Lawang_Rev04.pdf', 'KITAS_Inversion_Rev04.pdf'),
+    ('lawangproperties\\.com', 'axisworks\\.studio'), ('lawangproperties.com', 'axisworks.studio'),
+    ('Palm Field by Balian Hills', 'Cemara Estate'), ('Bonian Village by Balian Hills', 'Tirta Village'),
+    ('PALM FIELD', 'CEMARA ESTATE'), ('Palm Field', 'Cemara Estate'), ('palmfield', 'cemara'),
+    ('Bonian Beach', 'Tirta Beach'), ('Bonian Village', 'Tirta Village'), ('Bonian', 'Tirta'), ('bonian', 'tirta'),
+    ('BALIAN', 'CEMARA'), ('Balian', 'Cemara'),
+    ('Sumba Hills', 'Batu Ridge'), ('sumbahills', 'baturidge'), ('sumba-hills', 'batu-ridge'), ('Sumba', 'Batu'), ('sumba', 'batu'),
+    ('cc00014_timon', 'cc00014_norte'), ('CC00014 Timon', 'CC00014 Norte'), ('Timon', 'Norte'),
+    ('Tepi Sun Gai', 'Demo Nusantara'), ('tepi_sungai', 'soc_norte'), ('sandal_woods_ltd', 'soc_sur_ltd'),
+    ('san_dal_woods', 'soc_sur'), ('Sandal Woods', 'Demo Selatan'), ('Sandalwoods', 'Demo Selatan'),
+    ('HOLMACA', 'DEMO'), ('Holmaca', 'Demo'), ('Karana', 'Demo'),
+    ('LAWANG_', 'AXW_'), ('LAWANG', 'AXISWORKS'), ('lawang', 'axw'),
+]
+# «Lawang» suelto va al final y con cuidado: dentro de un identificador (pintaLawang, window.Lawang) un
+# reemplazo con espacio rompe el JavaScript (24-sep: «Unexpected identifier 'Demo'» en todas las pantallas).
+# Pegado a letra, dígito, $, punto, paréntesis, corchete o = → identificador → «Axw»; si no, es texto visible.
+LAWANG_SUELTO = re.compile(r'Lawang')
+
+
+def cambia_lawang(t):
+    def uno(m):
+        a = t[m.start() - 1] if m.start() else ''
+        b = t[m.end()] if m.end() < len(t) else ''
+        if re.match(r'[\w$.]', a) or re.match(r'[\w$.(\[=]', b):
+            return 'Axw'
+        return 'AxisWorks Demo'
+    return LAWANG_SUELTO.sub(uno, t)
+# Lo que no puede quedar en la versión pública. `timon` sin letra delante: «Multimoneda» no es un rastro.
+RASTRO = re.compile(r'lawang|palm ?field|bonian|sumba|holmaca|sandal ?woods?|karana|(?<![a-z])timon|monjong|balian|'
+                    r'tepi ?sun ?gai|tepi_sungai|san_dal_woods', re.I)
 EXT_TEXTO = ('.html', '.js', '.css', '.json', '.svg')
 EXT_OK = EXT_TEXTO + ('.woff', '.woff2', '.ttf', '.otf', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.ico')
 REF_RE = re.compile(r'''["'(=]\s*(/(?:contracts|intranet|assets|media|fonts)/[^"'()\s?#<>]+)''')
@@ -166,6 +220,18 @@ def guard_demo():
          "      if (Array.isArray(datos) && obj._ord) { datos = datos.slice().sort(function (a, b) { for (var i = 0; i < obj._ord.length; i++) { var c = obj._ord[i][0], x = a[c], y = b[c]; if (x === y) continue; if (x == null) return 1; if (y == null) return -1; return (x < y ? -1 : 1) * (obj._ord[i][1] ? 1 : -1); } return 0; }); }\n"
          "      if (Array.isArray(datos) && obj._lim != null && !obj._count) datos = datos.slice(0, obj._lim);"),
         ("console.warn('[qa-doble] MODO QA activo", "console.info('[demo] ERP de demostración — datos inventados, sin red real'); void ('"),
+        # Algunas RPC del doble devuelven una promesa pelada y el Panel financiero les encadena .select()
+        # (24-sep: «sb.rpc(...).select is not a function»). Envoltorio: si no es encadenable, los filtros
+        # devuelven la misma promesa, que ya trae las filas.
+        ("    rpc: function (nombre, args) {\n      console.warn('[qa-doble] rpc bloqueada (no real):', nombre, args);",
+         "    rpc: function (nombre, args) {\n"
+         "      var r = this._rpc(nombre, args);\n"
+         "      if (r && typeof r.then === 'function' && typeof r.select !== 'function') {\n"
+         "        ['select', 'order', 'limit', 'eq', 'neq', 'gte', 'lte', 'in', 'is', 'range'].forEach(function (k) { r[k] = function () { return r; }; });\n"
+         "      }\n"
+         "      return r;\n"
+         "    },\n"
+         "    _rpc: function (nombre, args) {"),
     ]
     for viejo, nuevo in cambios:
         if doble.count(viejo) != 1:
@@ -273,6 +339,10 @@ def paginas_propias():
     # enseña el mismo aviso, para que «Ver en el generador» no acabe en un 404.
     open(os.path.join(DIST, 'contracts', 'app.html'), 'w', encoding='utf-8').write(
         aviso.format(t='Generador de contratos', m='En la demo no se incluye: sus plantillas son documentos del cliente. Lo enseñamos en la llamada con un documento de ejemplo.'))
+    d = os.path.join(carpeta, 'dossier')   # el menú enlaza el constructor de dossier: aviso, no 404
+    os.makedirs(d, exist_ok=True)
+    open(os.path.join(d, 'builder.html'), 'w', encoding='utf-8').write(aviso.format(
+        t='Dossier comercial', m='En la demo no se incluye: el dossier lleva el material de marca de cada cliente.'))
     d = os.path.join(carpeta, 'creatividades')   # está en el menú de la v4; sin esto, 404 en directo
     os.makedirs(d, exist_ok=True)
     open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(aviso.format(
@@ -289,7 +359,7 @@ def verifica():
         for f in fichs:
             p = os.path.join(raiz, f)
             r = rel(p)
-            aviso_propio = r == '/contracts/app.html' and os.path.getsize(p) < 5000 and \
+            aviso_propio = r in ('/contracts/app.html', '/intranet/dossier/builder.html') and os.path.getsize(p) < 5000 and \
                 'En la demo no se incluye' in open(p, encoding='utf-8').read()
             if PROHIBIDO.search(r) and not aviso_propio:
                 malos.append('prohibido: ' + r)
@@ -309,6 +379,95 @@ def verifica():
                           envoltorio, DIST], cwd=AGENCIA)
     if pii.returncode != 0:
         aborta('pii_maqueta.py no da el visto bueno (o no tiene índice): ver salida de arriba')
+
+
+def logos_neutros():
+    """Logo y favicon de la demo en lugar de los de Lawang, con el mismo tamaño para no mover la maqueta.
+    Ojo, nombres al revés de lo que parecen: el logo «-dark» es el de texto OSCURO (va sobre fondo claro)."""
+    from PIL import Image, ImageDraw, ImageFont
+    def fuente(tam):
+        for f in ('segoeuib.ttf', 'arialbd.ttf'):
+            try:
+                return ImageFont.truetype(os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', f), tam)
+            except OSError:
+                continue
+        return ImageFont.load_default()
+    marca = os.path.join(DIST, 'contracts', 'assets', 'brand')
+    for nombre, color in (('axw-logo-v3.png', (238, 240, 251, 255)), ('axw-logo-v3-dark.png', (15, 23, 48, 255))):
+        im = Image.new('RGBA', (1726, 240), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        d.rounded_rectangle((0, 30, 180, 210), radius=36, fill=(79, 70, 229, 255))
+        d.text((90, 120), 'A', font=fuente(130), fill=(255, 255, 255, 255), anchor='mm')
+        d.text((230, 120), 'AxisWorks Demo', font=fuente(150), fill=color, anchor='lm')
+        os.makedirs(marca, exist_ok=True)
+        im.save(os.path.join(marca, nombre))
+    fav = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
+    d = ImageDraw.Draw(fav)
+    d.rounded_rectangle((0, 0, 31, 31), radius=7, fill=(79, 70, 229, 255))
+    d.text((16, 16), 'A', font=fuente(22), fill=(255, 255, 255, 255), anchor='mm')
+    fav.save(os.path.join(DIST, 'favicon.png'))
+
+
+def publica():
+    """Versión pública: sin comentarios, sin marca ni nombres de Lawang, y comprobado antes de copiar a demo/."""
+    r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), DIST], cwd=AQUI)
+    if r.returncode != 0:
+        aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
+    # Nombres de fichero primero (el logo, la hoja lawang.css…), después el texto que los nombra.
+    for raiz, dirs, fichs in os.walk(DIST, topdown=False):
+        for f in fichs + dirs:
+            nuevo = f
+            for a, b in REEMPLAZOS_PUBLICO:
+                nuevo = nuevo.replace(a, b)
+            nuevo = nuevo.replace('Lawang', 'Axw')
+            if nuevo != f:
+                os.replace(os.path.join(raiz, f), os.path.join(raiz, nuevo))
+    for raiz, _d, fichs in os.walk(DIST):
+        for f in fichs:
+            if not f.endswith(EXT_TEXTO):
+                continue
+            p = os.path.join(raiz, f)
+            t = open(p, encoding='utf-8', errors='replace').read()
+            t2 = t
+            for a, b in REEMPLAZOS_PUBLICO:
+                t2 = t2.replace(a, b)
+            t2 = cambia_lawang(t2)
+            if t2 != t:
+                open(p, 'w', encoding='utf-8', newline='').write(t2)
+    logos_neutros()
+    restos = []
+    for raiz, _d, fichs in os.walk(DIST):
+        for f in fichs:
+            p = os.path.join(raiz, f)
+            if RASTRO.search(f):
+                restos.append('nombre de fichero: ' + rel(p))
+            if f.endswith(EXT_TEXTO):
+                for m in RASTRO.finditer(open(p, encoding='utf-8', errors='replace').read()):
+                    restos.append('%s: …%s…' % (rel(p), m.group(0)))
+    if restos:
+        aborta('quedan rastros de Lawang, no se publica:\n  ' + '\n  '.join(restos[:40]))
+    # Copia a demo/: se vacía por dentro (la carpeta es del repo) y se rellena con lo comprobado.
+    if not DESTINO_PUBLICO.endswith(os.path.join('AxisWorks', 'demo')):
+        aborta('destino público inesperado: ' + DESTINO_PUBLICO)
+    os.makedirs(DESTINO_PUBLICO, exist_ok=True)
+    for x in os.listdir(DESTINO_PUBLICO):
+        p = os.path.join(DESTINO_PUBLICO, x)
+        shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
+    for x in os.listdir(DIST):
+        s = os.path.join(DIST, x)
+        shutil.copytree(s, os.path.join(DESTINO_PUBLICO, x)) if os.path.isdir(s) else shutil.copy2(s, DESTINO_PUBLICO)
+    # Solo se sirve desde demo.axisworks.studio: por axisworks.studio/demo/ las rutas absolutas no casan.
+    open(os.path.join(DESTINO_PUBLICO, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(
+        '# GENERADO por comercial/demo-erp/build.py --publico — no editar.\n'
+        '# demo.axisworks.studio: la demo del ERP. Fuera de ese host, redirige a él.\n'
+        '<IfModule mod_rewrite.c>\n  RewriteEngine On\n'
+        '  RewriteCond %{HTTP_HOST} !^demo\\.axisworks\\.studio$ [NC]\n'
+        '  RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=301,L]\n</IfModule>\n'
+        '<IfModule mod_headers.c>\n  Header always set X-Robots-Tag "noindex, nofollow"\n</IfModule>\n'
+        'DirectoryIndex index.html\n')
+    open(os.path.join(DESTINO_PUBLICO, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
+    total = sum(len(f) for _r, _d, f in os.walk(DESTINO_PUBLICO))
+    print('OK versión pública en %s: %d ficheros, sin rastros de Lawang' % (os.path.relpath(DESTINO_PUBLICO, AGENCIA), total))
 
 
 def main():
@@ -332,6 +491,8 @@ def main():
     print('OK dist/: %d ficheros · %d con Supabase neutralizado' % (total, n))
     if faltan:
         print('Referencias que no existen en Lawang (no se copian): ' + ', '.join(sorted(faltan)[:15]))
+    if '--publico' in sys.argv:
+        publica()
 
 
 if __name__ == '__main__':

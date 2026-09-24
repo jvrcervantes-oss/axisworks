@@ -1,0 +1,210 @@
+<!DOCTYPE html><html lang="es" style=""><head>
+<script src="/contracts/assets/cierre.js?v=911e89aa"></script><script src="/contracts/assets/guard.js?v=1d256fc0" data-herramienta="vencimientos"></script>
+<script src="/contracts/assets/idioma.js?v=78ab8eba"></script>
+<script src="/contracts/assets/i18n.js?v=b8d710c2" defer="defer"></script>
+<script src="/contracts/assets/dinero.js?v=a442e362" defer="defer"></script><script src="/intranet/facturas/totales.js" defer="defer"></script><script src="/contracts/assets/operaciones-cuentas.js?v=c76d3606" defer="defer"></script><script src="/contracts/assets/vocabulario.js?v=fd814f9b" defer="defer"></script><script src="/contracts/assets/suite-comun.js?v=24701ad2" defer="defer"></script><script src="/contracts/assets/entities.js?v=e015c66a" defer="defer"></script><script src="/intranet/vencimientos/logica.js?v=567781fe" defer="defer"></script><script src="/contracts/assets/avisos.js?v=38fd8c40" defer="defer"></script><script src="../assets/datos.js?v=b5b32e48" defer="defer"></script>
+<meta name="robots" content="noindex">
+<script src="../assets/nav.js?v=98958012" defer="defer"></script>
+<link href="../assets/shell.css?v=1a777d68" rel="stylesheet">
+<script src="/contracts/assets/dialogo.js?v=cefc9e4e" defer="defer"></script><script src="../assets/editores.js?v=edaabb4c" defer="defer"></script><script src="../assets/maqueta.js?v=ad84f3c7" defer="defer"></script><meta charset="utf-8"><meta content="width=device-width,initial-scale=1" name="viewport"><title>AxisWorks ERP — Consola Operativa</title><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="../assets/fonts/fonts.css" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}#sidebar-root{transition:width 0.25s cubic-bezier(0.4,0,0.2,1);}#main-stage,#topbar-stage{transition:padding-left 0.25s cubic-bezier(0.4,0,0.2,1),left 0.25s cubic-bezier(0.4,0,0.2,1);}.sidebar-collapsed #sidebar-root{width:68px;}.sidebar-collapsed #main-stage{padding-left:68px;}.sidebar-collapsed #topbar-stage{left:68px;}.sidebar-collapsed .nav-text-item,.sidebar-collapsed .nav-section-title,.sidebar-collapsed .sidebar-full-brand,.sidebar-collapsed .sidebar-user-details{display:none;}.sidebar-collapsed .nav-link-anchor{justify-content:center;padding-left:0;padding-right:0;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"primary-fixed-dim":"#b8cea1","inverse-surface":"#30312d","tertiary-container":"#6f4a61","on-tertiary-container":"#edbdd8","on-primary-container":"#bcd2a5","secondary-fixed-dim":"#9ad0d3","surface-variant":"#e4e2dd","territorial-green":"#485B37","burnt-earth":"#42210B","outline-variant":"#c5c8bc","on-tertiary-fixed-variant":"#5f3c52","on-secondary-container":"#356b6e","stone-sand":"#BEB3A5","control-border":"#8A8474","on-secondary-fixed-variant":"#144e51","inverse-primary":"#b8cea1","surface-container-high":"#e9e8e3","on-primary-fixed":"#0f2003",tertiary:"#563349","error-container":"#ffdad6","volcanic-ash":"#2E3437","on-primary":"#ffffff",outline:"#75786e","surface-container-low":"#f5f4ee","on-surface-variant":"#44483f","on-error-container":"#93000a","on-error":"#ffffff","on-background":"#1b1c19","on-secondary":"#ffffff","tertiary-fixed-dim":"#e9b9d4",surface:"#fbf9f4","deep-lagoon":"#104C4F","inverse-on-surface":"#f2f1eb","surface-dim":"#dbdad5",background:"#fbf9f4","surface-tint":"#51643f","primary-fixed":"#d3eabb","surface-container-highest":"#e4e2dd",error:"#ba1a1a","secondary-container":"#b3e9ed","surface-container-lowest":"#ffffff","on-primary-fixed-variant":"#3a4c2a","on-surface":"#1b1c19","surface-container":"#efeee8","raw-linen":"#F5F0E6",secondary:"#316669","surface-bright":"#fbf9f4","surface-alt":"#F1EBDD",primary:"#314322","on-tertiary-fixed":"#2e1125","on-secondary-fixed":"#002021","soft-canopy":"#8F9B7A","primary-container":"#485b37","on-tertiary":"#ffffff","tertiary-fixed":"#ffd8ed","secondary-fixed":"#b6ecef"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"margin-mobile":"16px","margin-desktop":"48px","element-gap":"16px",gutter:"24px"},fontFamily:{"label-md":["Neue Kabel"],"body-lg":["Neue Kabel"],"headline-lg":["Neue Kabel"],"body-md":["Neue Kabel"],"body-sm":["Neue Kabel"],"headline-sm":["Neue Kabel"],"kpi-number":["Neue Kabel"],"headline-md":["Neue Kabel"]},fontSize:{"label-md":["14px",{lineHeight:"20px",fontWeight:"600"}],"body-lg":["18px",{lineHeight:"28px",fontWeight:"500"}],"headline-lg":["40px",{lineHeight:"48px",fontWeight:"600"}],"body-md":["15px",{lineHeight:"24px",fontWeight:"500"}],"body-sm":["13px",{lineHeight:"20px",fontWeight:"500"}],"headline-sm":["24px",{lineHeight:"32px",fontWeight:"600"}],"kpi-number":["36px",{lineHeight:"40px",fontWeight:"600"}],"headline-md":["32px",{lineHeight:"40px",fontWeight:"600"}]}}}}</script></head><body class="bg-raw-linen font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between py-6 px-4 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col gap-6"><div class="flex items-center justify-between px-2"><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-deep-lagoon tracking-wider font-semibold leading-none">AXISWORKS</span><span class="font-body-sm text-body-sm text-outline tracking-widest uppercase leading-none mt-1">ERP · DEMO</span></div><button class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">left_panel_close</span></button></div><nav class="flex flex-col gap-5 overflow-y-auto max-h-[calc(100vh-220px)] pr-1" data-active-classes="bg-primary-container text-on-primary font-bold rounded-xl"><div class="flex flex-col gap-1"><span class="px-3 font-body-sm text-body-sm text-outline uppercase tracking-wider">Seguimiento</span><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="home" href="#"><span class="material-symbols-outlined text-[20px]">dashboard</span><span class="">Home</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="operaciones" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span><span class="">Operaciones</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="soporte" href="#"><span class="material-symbols-outlined text-[20px]">support_agent</span><span class="">Soporte</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="vencimientos" href="#"><span class="material-symbols-outlined text-[20px]">event_busy</span><span class="">Vencimientos</span></a></div><div class="flex flex-col gap-1"><span class="px-3 font-body-sm text-body-sm text-outline uppercase tracking-wider">Documentación</span><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="contratos" href="#"><span class="material-symbols-outlined text-[20px]">history_edu</span><span class="">Contratos</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="creatividades" href="#"><span class="material-symbols-outlined text-[20px]">palette</span><span class="">Creatividades</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="documentacion" href="#"><span class="material-symbols-outlined text-[20px]">folder</span><span class="">Documentación</span></a></div><div class="flex flex-col gap-1"><span class="px-3 font-body-sm text-body-sm text-outline uppercase tracking-wider">Administración</span><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="facturas" href="#"><span class="material-symbols-outlined text-[20px]">receipt_long</span><span class="">Facturas</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="recibos" href="#"><span class="material-symbols-outlined text-[20px]">payments</span><span class="">Recibos</span></a></div><div class="flex flex-col gap-1"><span class="px-3 font-body-sm text-body-sm text-outline uppercase tracking-wider">Base de Datos</span><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="proyectos" href="#"><span class="material-symbols-outlined text-[20px]">apartment</span><span class="">Proyectos</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="obra" href="#"><span class="material-symbols-outlined text-[20px]">foundation</span><span class="">Obra</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="compradores" href="#"><span class="material-symbols-outlined text-[20px]">badge</span><span class="">Compradores</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="usuarios" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span class="">Usuarios</span></a></div></nav></div><div class="flex flex-col gap-3 pt-4 border-t border-outline/20"><div class="flex items-center justify-between px-3"><span class="font-body-sm text-body-sm text-outline uppercase tracking-wider">Idioma</span><div class="flex items-center bg-surface-container p-1 rounded-full"><button class="px-3 py-0.5 rounded-full font-label-md text-label-md bg-deep-lagoon text-on-primary" type="button">ES</button><button class="px-3 py-0.5 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface" type="button">EN</button></div></div><a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="login" href="#"><span class="material-symbols-outlined text-[20px]">logout</span><span class="">Cerrar Sesión</span></a></div></aside><div class="pl-72" id="main-stage"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-low/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 px-gutter flex items-center justify-between"><div class="flex items-center gap-4"></div><div class="flex items-center gap-4"><button class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Buscar" type="button"><span class="material-symbols-outlined text-[20px]">search</span></button><button class="relative w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Notificaciones" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 w-4 h-4 bg-error text-on-error font-body-sm text-[10px] rounded-full flex items-center justify-center font-bold whitespace-nowrap" data-lw="k-avisos">—</span></button><div class="flex items-center gap-3 pl-3 border-l border-outline/20"><div class="flex flex-col text-right"><span class="font-label-md text-label-md text-on-surface leading-tight" data-lw-user>Usuario del equipo</span><span class="font-body-sm text-body-sm text-outline leading-tight" data-lw-rol>—</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="relative pt-16 bg-raw-linen min-h-screen px-6 lg:px-8 py-8"><div class="flex flex-col w-full">
+<section class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-8">
+<div class="space-y-1">
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Vencimientos &amp; Tesorería</h1>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+
+<button class="inline-flex items-center gap-2 bg-surface-container-lowest hover:bg-surface-container-low text-deep-lagoon font-label-md text-label-md px-5 py-2.5 rounded-full shadow-sm transition-all duration-150" type="button">
+<span class="material-symbols-outlined text-[18px]">file_download</span>
+        Exportar previsión de caja
+      </button>
+<button class="inline-flex items-center gap-2 bg-deep-lagoon hover:bg-primary text-on-primary font-label-md text-label-md px-5 py-2.5 rounded-full shadow-sm transition-all duration-150" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+        + Registrar hito
+      </button>
+</div>
+</section>
+<section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-body-sm uppercase tracking-widest text-control-border font-semibold">Vence en 90 días</span>
+<span class="w-7 h-7 rounded-full bg-surface-container-low flex items-center justify-center text-deep-lagoon">
+<span class="material-symbols-outlined text-[16px]">account_balance_wallet</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="font-kpi-number text-headline-md text-deep-lagoon" data-lw="k-prevision">—</div>
+<div class="flex items-center gap-2 mt-1.5">
+<span class="px-2 py-0.5 rounded-full bg-soft-canopy/25 text-territorial-green font-label-md text-[11px] font-semibold" data-lw="k-prevision-chip">—</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-body-sm uppercase tracking-widest text-control-border font-semibold">Vencimientos Críticos</span>
+<span class="w-7 h-7 rounded-full bg-burnt-earth/10 flex items-center justify-center text-burnt-earth">
+<span class="material-symbols-outlined text-[16px]">priority_high</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="font-kpi-number text-headline-md text-burnt-earth" data-lw="k-criticos">—</div>
+<div class="flex items-center gap-2 mt-1.5">
+<span class="px-2 py-0.5 rounded-full bg-burnt-earth/15 text-burnt-earth font-label-md text-[11px] font-semibold">&lt; 7 días límite</span>
+<span class="text-on-surface-variant font-body-sm text-[12px]" data-lw="k-criticos-total">—</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-body-sm uppercase tracking-widest text-control-border font-semibold">Vencidos Sin Regularizar</span>
+<span class="w-7 h-7 rounded-full bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="font-kpi-number text-headline-md text-error" data-lw="k-vencidos-n">—</div>
+<div class="flex items-center gap-2 mt-1.5">
+<span class="px-2 py-0.5 rounded-full bg-error-container text-error font-label-md text-[11px] font-semibold" data-lw="k-vencidos-chip">—</span>
+<span class="text-on-surface-variant font-body-sm text-[12px]" data-lw="k-vencidos-total">—</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-body-sm uppercase tracking-widest text-control-border font-semibold">Cobrado en cartera</span>
+<span class="w-7 h-7 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-[16px]">payments</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="font-kpi-number text-headline-md text-deep-lagoon" data-lw="k-cobrado">—</div>
+<div class="mt-1.5 text-on-surface-variant font-label-md text-[11px] font-semibold" data-lw="k-cobrado-pie">—</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-body-sm uppercase tracking-widest text-control-border font-semibold">Cartera</span>
+<span class="w-7 h-7 rounded-full bg-surface-container-low flex items-center justify-center text-deep-lagoon">
+<span class="material-symbols-outlined text-[16px]">account_balance</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="font-kpi-number text-headline-md text-deep-lagoon" data-lw="k-cartera">—</div>
+<div class="mt-1.5 text-on-surface-variant font-label-md text-[11px] font-semibold" data-lw="k-cartera-pie">—</div>
+</div>
+</div>
+</section>
+
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+<div class="xl:col-span-12 flex flex-col gap-6 min-w-0">
+
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col gap-4">
+<div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+<div class="flex flex-wrap items-center gap-2" data-lw-chips="empresa" data-lw-on="bg-deep-lagoon text-on-secondary font-semibold shadow-sm" data-lw-off="bg-surface-container text-on-surface-variant hover:bg-surface-container-high" data-lw-base="px-4 py-1.5 rounded-full font-label-md text-label-md transition-colors">
+<span class="font-label-md text-[11px] uppercase tracking-widest text-control-border font-semibold">Empresa</span>
+</div>
+<div class="flex flex-wrap items-center gap-2" data-lw-chips="moneda" data-lw-on="bg-deep-lagoon text-on-secondary font-semibold shadow-sm" data-lw-off="bg-surface-container text-on-surface-variant hover:bg-surface-container-high" data-lw-base="px-4 py-1.5 rounded-full font-label-md text-label-md transition-colors">
+<span class="font-label-md text-[11px] uppercase tracking-widest text-control-border font-semibold">Moneda</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
+<div class="flex flex-wrap items-center gap-2" data-lw-chips="estado" data-lw-on="bg-deep-lagoon text-on-secondary font-semibold shadow-sm" data-lw-off="bg-surface-container text-on-surface-variant hover:bg-surface-container-high" data-lw-base="px-4 py-1.5 rounded-full font-label-md text-label-md transition-colors">
+<span class="font-label-md text-[11px] uppercase tracking-widest text-control-border font-semibold">Estado</span>
+</div>
+
+<button type="button" id="venc-chip-sinfirmar" hidden class="px-4 py-1.5 rounded-full font-label-md text-label-md transition-colors bg-surface-container text-on-surface-variant hover:bg-surface-container-high" title="Mientras se da de alta el histórico, «sin firmar» significa «aún no marcado», no «aún no acordado»">Incluir sin firmar</button>
+</div>
+<div id="venc-avisos"></div>
+</div>
+
+<div class="space-y-3">
+<div class="flex items-center justify-between px-1 flex-wrap gap-2">
+<h2 class="font-headline-sm text-headline-sm text-volcanic-ash" id="venc-tabla-titulo">Todos los vencimientos</h2>
+<span class="text-body-sm font-body-sm text-control-border" id="venc-resumen">—</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-control-border font-label-md text-[11px] uppercase tracking-wider select-none">
+<th class="py-3.5 px-5 font-semibold">Vence</th>
+<th class="py-3.5 px-4 font-semibold">Contrato</th>
+<th class="py-3.5 px-4 font-semibold">Comprador</th>
+<th class="py-3.5 px-4 font-semibold">Concepto</th>
+<th class="py-3.5 px-4 font-semibold text-right">Importe</th>
+<th class="py-3.5 px-4 font-semibold text-right">Cubierto</th>
+<th class="py-3.5 px-4 font-semibold text-right">Pendiente</th>
+<th class="py-3.5 px-5 font-semibold">Estado</th>
+</tr>
+</thead>
+<tbody id="venc-tbody" class="text-on-surface font-body-sm text-body-sm">
+<tr><td class="py-8 px-5 text-center text-control-border" colspan="8">Trayendo los vencimientos…</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="flex items-center justify-end gap-3" id="venc-pager" hidden>
+<button type="button" id="venc-pag-antes" class="px-3.5 py-1.5 rounded-full bg-surface-container-lowest hover:bg-surface-container-high text-on-surface font-label-md text-body-sm transition-colors shadow-sm disabled:opacity-40" disabled="disabled">← Anteriores</button>
+<span class="text-body-sm font-body-sm text-control-border" id="venc-pag-info">—</span>
+<button type="button" id="venc-pag-despues" class="px-3.5 py-1.5 rounded-full bg-surface-container-lowest hover:bg-surface-container-high text-on-surface font-label-md text-body-sm transition-colors shadow-sm disabled:opacity-40">Siguientes →</button>
+</div>
+</div>
+
+<div class="space-y-3">
+<h2 class="font-headline-sm text-headline-sm text-volcanic-ash px-1">Por proyecto</h2>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-control-border font-label-md text-[11px] uppercase tracking-wider select-none">
+<th class="py-3.5 px-5 font-semibold">Proyecto</th>
+<th class="py-3.5 px-4 font-semibold text-right">Cartera</th>
+<th class="py-3.5 px-4 font-semibold text-right">Cobrado</th>
+<th class="py-3.5 px-4 font-semibold text-right">Vence en 90 días</th>
+<th class="py-3.5 px-5 font-semibold text-right">Vencido</th>
+</tr>
+</thead>
+<tbody id="venc-tproy" class="text-on-surface font-body-sm text-body-sm">
+<tr><td class="py-8 px-5 text-center text-control-border" colspan="5">Trayendo proyectos…</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div class="space-y-3">
+<h2 class="font-headline-sm text-headline-sm text-volcanic-ash px-1">Facturas con vencimiento propio</h2>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-control-border font-label-md text-[11px] uppercase tracking-wider select-none">
+<th class="py-3.5 px-5 font-semibold">Vence</th>
+<th class="py-3.5 px-4 font-semibold">Factura</th>
+<th class="py-3.5 px-4 font-semibold">Cliente</th>
+<th class="py-3.5 px-4 font-semibold text-right">Importe</th>
+<th class="py-3.5 px-5 font-semibold">Estado</th>
+</tr>
+</thead>
+<tbody id="venc-tfact" class="text-on-surface font-body-sm text-body-sm">
+<tr><td class="py-8 px-5 text-center text-control-border" colspan="5">Trayendo facturas…</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-control-border px-1">Una factura emitida con fecha de vencimiento es una promesa aparte del calendario de hitos: se lista para que nada con fecha se quede sin vigilar, pero no se suma a la cascada — su cobro ya entra por el recibí.</p>
+</div>
+
+</div>
+</div>
+</div></main></div>
+
+
+
+
+
+
+
+
+
+</body></html>
