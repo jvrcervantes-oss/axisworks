@@ -138,7 +138,8 @@ try {
     'Content-Transfer-Encoding: 8bit',
     'X-Mailer: axisworks-contacto',
   ]);
-  $ok = mail(CT_DESTINO, mb_encode_mimeheader($asunto, 'UTF-8'), $cuerpo, $cab, '-f' . CT_REMITE);
+  /* Sin `-f`: en Hostinger compartido el sobre lo pone el servidor. */
+  $ok = mail(CT_DESTINO, mb_encode_mimeheader($asunto, 'UTF-8'), $cuerpo, $cab);
 
   /* Log sin datos personales: fecha, página, resultado. */
   @file_put_contents($d . '/envios.log', date('c') . "\t$pagina\t" . ($ok ? 'ok' : 'fallo') . "\n", FILE_APPEND | LOCK_EX);
