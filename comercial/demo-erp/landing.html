@@ -184,7 +184,7 @@
       <a href="#faq">Preguntas</a>
     </nav>
     <div class="nav-cta">
-      <a class="btn btn-s" href="#modulos">Ver módulos</a>
+      <button type="button" class="btn btn-s" data-tour>Tour guiado</button>
       <a class="btn btn-p" href="/intranet/v4/home/">Entrar a la demo</a>
     </div>
   </div>
@@ -197,7 +197,8 @@
     <p class="lead">Cada empresa activa los módulos que usa. Todos comparten la misma base: un contrato firmado ya sabe
       qué parcela reserva, qué factura toca emitir y qué comisión genera. Los datos de esta demo son inventados.</p>
     <div class="ctas">
-      <a class="btn btn-p" href="/intranet/v4/home/">Entrar a la demo</a>
+      <button type="button" class="btn btn-p" data-tour>&#9654;&#xFE0E;&nbsp; Tour guiado</button>
+      <a class="btn btn-s" href="/intranet/v4/home/">Entrar a la demo</a>
       <a class="btn btn-s" href="#modulos">Ver los módulos</a>
     </div>
     <div class="metricas">
@@ -427,5 +428,7 @@
   pinta();
 })();
 </script>
+<script src="/demo/tour.js"></script>
+<script>document.addEventListener('click',function(e){if(e.target.closest('[data-tour]')&&window.axtTour)window.axtTour.empezar();});</script>
 </body>
 </html>
