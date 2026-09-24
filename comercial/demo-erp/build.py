@@ -18,7 +18,7 @@ Revisión previa (24-sep, Seguridad + Legal), cada regla con su porqué:
   Se presenta EN LOCAL compartiendo pantalla.
 - PUBLICARLO (owner, 24-sep: demo.axisworks.studio con marca neutra) solo con
   `python build.py --publico`: sin comentarios, sin marca ni nombres de Lawang,
-  y se niega a copiar a `AxisWorks/demo/` si queda un rastro (ver `publica()`).
+  y se niega a copiar a `AxisWorks/dist/demo-erp/` si queda un rastro (ver `publica()`).
   El push del repo lo despliega; el subdominio apunta a esa carpeta.
 - La URL y la clave de Supabase se cambian por `demo.invalid`: si el candado de
   red tuviera un hueco, no hay dónde llegar. La RLS no es la red: hay RPC que un
@@ -60,10 +60,12 @@ PROHIBIDO = re.compile(r'(/contracts/app\.html$|apoderados|/firma-|firma_|/anexo
 
 # ── Versión PÚBLICA (demo.axisworks.studio, owner 24-sep: «marca neutra, dispara») ──────────────────────────
 # `python build.py --publico` construye lo mismo y además: quita los comentarios (limpia_publico.js), cambia marca,
-# promociones, sociedades y logo por inventados, y se NIEGA a copiar a `demo/` si queda un rastro de Lawang.
+# promociones, sociedades y logo por inventados, y se NIEGA a copiar a `dist/demo-erp/` si queda un rastro de Lawang.
 # Porqué: el código viene de la intranet de un cliente; sus comentarios y literales cuentan sus sociedades, sus
 # representantes y sus incidentes. Sin su OK escrito (AXW-11) nada suyo sale en una web pública.
-DESTINO_PUBLICO = os.path.abspath(os.path.join(AQUI, '..', '..', 'demo'))   # raíz de demo.axisworks.studio
+# `dist/` en la ruta a propósito: los controles de push del estudio (unificar.py, fallos_mudos.py) ya saltan
+# las carpetas `dist` como código generado; este código se revisa en su origen, el repo de Lawang.
+DESTINO_PUBLICO = os.path.abspath(os.path.join(AQUI, '..', '..', 'dist', 'demo-erp'))   # raíz de demo.axisworks.studio
 # Orden: de lo más largo y concreto a lo general. Se aplica al texto y a los nombres de fichero.
 REEMPLAZOS_PUBLICO = [
     ('proyectos/Lawang/_qa_double_guard.js', 'el doble de la demo'),
@@ -446,8 +448,8 @@ def publica():
                     restos.append('%s: …%s…' % (rel(p), m.group(0)))
     if restos:
         aborta('quedan rastros de Lawang, no se publica:\n  ' + '\n  '.join(restos[:40]))
-    # Copia a demo/: se vacía por dentro (la carpeta es del repo) y se rellena con lo comprobado.
-    if not DESTINO_PUBLICO.endswith(os.path.join('AxisWorks', 'demo')):
+    # Copia a dist/demo-erp/: se vacía por dentro (la carpeta es del repo) y se rellena con lo comprobado.
+    if not DESTINO_PUBLICO.endswith(os.path.join('AxisWorks', 'dist', 'demo-erp')):
         aborta('destino público inesperado: ' + DESTINO_PUBLICO)
     os.makedirs(DESTINO_PUBLICO, exist_ok=True)
     for x in os.listdir(DESTINO_PUBLICO):
