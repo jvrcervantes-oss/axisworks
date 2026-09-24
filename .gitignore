@@ -12,3 +12,6 @@ comercial/suscripcion/private/config.php
 comercial/chatbot/private/config.php
 comercial/chatbot/private/leads.csv
 comercial/previews/
+
+# Demo del ERP (bundle generado por comercial/demo-erp/build.py) — nunca al webroot publico
+comercial/demo-erp/dist/
