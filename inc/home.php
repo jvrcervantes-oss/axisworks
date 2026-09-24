@@ -214,7 +214,7 @@ $jsonld = [
   </div>
 </section>
 
-<!-- 06 · ESTUDIO — dos personas, Pepito (la IA) y los nueve departamentos -->
+<!-- 06 · ESTUDIO — dos personas, Pepito (el CEO, una IA) y sus trece departamentos, cada uno con su cara -->
 <section class="band" id="studio">
   <div class="shell">
     <div class="shead"><div><p class="eyebrow"><span><?= $hm['who_eyebrow'] ?></span></p><h2><?= $hm['who_h2'] ?></h2></div></div>
@@ -222,7 +222,7 @@ $jsonld = [
       <?php foreach ([
         ['01','BUILD','Javier','javier','who_1role','who_1p'],
         ['02','DESIGN','Andrea','andrea','who_2role','who_2p'],
-        ['03','AI','Pepito','pepito','who_3role','who_3p'],
+        ['03','CEO','Pepito','pepito','who_3role','who_3p'],
       ] as [$n,$eje,$nom,$img,$rol,$txt]): ?>
       <div class="dir">
         <img class="dir__img" src="/assets/images/team-<?= $img ?>.webp" alt="<?= e($nom . ' — ' . strip_tags(html_entity_decode($hm[$rol]))) ?>" width="640" height="640" loading="lazy" decoding="async">
@@ -235,8 +235,9 @@ $jsonld = [
     </div>
     <p class="lbl deps__t"><?= $hm['deps_t'] ?></p>
     <ul class="deps">
-      <?php foreach ($hm['deps'] as $i => $d): ?>
-      <li><span class="dim">DEP.0<?= $i+1 ?></span><b><?= $d[0] ?></b><span class="dim"><?= $d[1] ?></span></li>
+      <?php $caras = ['dev','design','data','security','marketing','legal','docs','bots','deploy','admin','arch','comms','org'];
+      foreach ($hm['deps'] as $i => $d): ?>
+      <li><img class="deps__img" src="/assets/images/dep-<?= $caras[$i] ?>.webp" alt="" width="360" height="360" loading="lazy" decoding="async"><span class="dim"><?= sprintf('DEP.%02d', $i+1) ?></span><b><?= $d[0] ?></b><span class="dim"><?= $d[1] ?></span></li>
       <?php endforeach; ?>
     </ul>
     <p class="deps__note"><?= $hm['deps_note'] ?></p>

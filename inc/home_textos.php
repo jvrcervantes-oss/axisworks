@@ -9,7 +9,7 @@
  * composición; su TEXTO no. Nada de lo que hay aquí es una métrica: el
  * mockup traía latencias, tasas de conversión, «42 leads hoy», ciudades y
  * coordenadas que no salen de ninguna fuente, y se cayeron todas. Lo que
- * queda son hechos de estructura (una base por cliente, dos personas, nueve
+ * queda son hechos de estructura (una base por cliente, dos personas, trece
  * departamentos) que se pueden defender uno por uno. */
 
 $HOME = [
@@ -21,7 +21,7 @@ $HOME = [
   'hero_lead'=>'Custom business software, built and maintained by two people and a team of AI departments. No templates, no bloat.',
   'hero_cta'=>'Start project','hero_cta2'=>'Inspect ERP',
   'm1_k'=>'ARCHITECTURE','m1_v'=>'1 DATABASE / CLIENT',
-  'm2_k'=>'DIRECTORS','m2_v'=>'02 + 9 AI DEPTS',
+  'm2_k'=>'DIRECTORS','m2_v'=>'02 + CEO + 13 AI',
   'm3_k'=>'LANGUAGES','m3_v'=>'EN / ES',
   'instr'=>'INSTRUMENT: RETICLE_CAD_v4','instr_al'=>'ALIGNMENT: 100.00%','instr_mode'=>'MODE: REALTIME TELEMETRY','instr_status'=>'STATUS: ALIGNED',
   'hero_st_cal'=>'CALIBRATING','hero_st_ok'=>'ALIGNED',
@@ -85,13 +85,15 @@ $HOME = [
   'who_eyebrow'=>'SHEET STD-01 // THE STUDIO','who_h2'=>'A two-person studio with an AI team behind it.',
   'who_1role'=>'Engineering &amp; architecture','who_1p'=>'Designs the systems.',
   'who_2role'=>'Design &amp; content','who_2p'=>'Shapes the brand, the content and the voice. The design side of the studio.',
-  'who_3role'=>'Artificial intelligence','who_3p'=>'Our AI, trained for all of this. It runs the nine departments below.',
-  'deps_t'=>'THE NINE AI DEPARTMENTS',
-  'deps_note'=>'Each department is an AI agent working to written rules. Javier and Andrea direct the work and sign off on what ships.',
+  'who_3role'=>'CEO · artificial intelligence','who_3p'=>'Our AI, trained for all of this. The studio&rsquo;s CEO: it briefs, delegates to the thirteen departments below and checks their work.',
+  'deps_t'=>'REPORTING TO PEPITO // THIRTEEN AI DEPARTMENTS',
+  'deps_note'=>'Each department is an AI agent working to written rules, and reports to Pepito. Javier and Andrea direct the work and sign off on what ships.',
   'deps'=>[
     ['Development','writes the code'],['Design','art direction'],['Data','integrations &amp; APIs'],
     ['Security','audits &amp; secrets'],['Marketing','Meta Ads &amp; SEO'],['Legal','contracts &amp; policies'],
     ['Docs','proposals &amp; reports'],['Bots','WhatsApp engine'],['Deploy','ships &amp; verifies'],
+    ['Admin','billing &amp; tax'],['Architecture','3D house models'],['Comms','press &amp; media'],
+    ['Organisation','runs the studio itself'],
   ],
 
   'ct_eyebrow'=>'// TERMINAL PROTOCOL 01-INTAKE','ct_h2'=>'Initiate project intake.',
@@ -113,7 +115,7 @@ $HOME = [
   'hero_lead'=>'Software de gestión a medida, construido y mantenido por dos personas y un equipo de departamentos de IA. Sin plantillas, sin relleno.',
   'hero_cta'=>'Empezar proyecto','hero_cta2'=>'Ver el ERP',
   'm1_k'=>'ARQUITECTURA','m1_v'=>'1 BASE DE DATOS / CLIENTE',
-  'm2_k'=>'DIRECCIÓN','m2_v'=>'02 + 9 DEPTOS IA',
+  'm2_k'=>'DIRECCIÓN','m2_v'=>'02 + CEO + 13 IA',
   'm3_k'=>'IDIOMAS','m3_v'=>'ES / EN',
   'instr'=>'INSTRUMENTO: RETICLE_CAD_v4','instr_al'=>'ALINEACIÓN: 100.00%','instr_mode'=>'MODO: TELEMETRÍA EN VIVO','instr_status'=>'ESTADO: ALINEADO',
   'hero_st_cal'=>'CALIBRANDO','hero_st_ok'=>'ALINEADO',
@@ -177,13 +179,15 @@ $HOME = [
   'who_eyebrow'=>'HOJA STD-01 // EL ESTUDIO','who_h2'=>'Un estudio de dos personas con un equipo de IA detrás.',
   'who_1role'=>'Ingeniería y arquitectura','who_1p'=>'Diseña los sistemas.',
   'who_2role'=>'Diseño y contenido','who_2p'=>'Da forma a la marca, al contenido y a la voz. El lado design del estudio.',
-  'who_3role'=>'Inteligencia artificial','who_3p'=>'Nuestra IA, entrenada para todo esto. Mueve los nueve departamentos de abajo.',
-  'deps_t'=>'LOS NUEVE DEPARTAMENTOS DE IA',
-  'deps_note'=>'Cada departamento es un agente de IA que trabaja con reglas escritas. Javier y Andrea dirigen el trabajo y dan el visto bueno a lo que sale.',
+  'who_3role'=>'CEO · inteligencia artificial','who_3p'=>'Nuestra IA, entrenada para todo esto. El CEO del estudio: recibe el encargo, lo reparte entre los trece departamentos de abajo y revisa lo que entregan.',
+  'deps_t'=>'BAJO PEPITO // TRECE DEPARTAMENTOS DE IA',
+  'deps_note'=>'Cada departamento es un agente de IA que trabaja con reglas escritas y responde ante Pepito. Javier y Andrea dirigen el trabajo y dan el visto bueno a lo que sale.',
   'deps'=>[
     ['Desarrollo','escribe el código'],['Diseño','dirección de arte'],['Datos','integraciones y APIs'],
     ['Seguridad','auditorías y secretos'],['Marketing','Meta Ads y SEO'],['Legal','contratos y políticas'],
     ['Documentación','propuestas e informes'],['Bots','motor de WhatsApp'],['Deploy','publica y verifica'],
+    ['Administración','facturación y fiscalidad'],['Arquitectura','viviendas en 3D'],['Comunicación','prensa y medios'],
+    ['Organización','la estructura del estudio'],
   ],
 
   'ct_eyebrow'=>'// PROTOCOLO 01-ALTA','ct_h2'=>'Iniciar alta de proyecto.',
