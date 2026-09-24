@@ -366,3 +366,45 @@ a.leyenda__row:hover .ar{ transform:translateX(4px) }
 .tbl .r{ text-align:right }
 .tbl .due{ color:var(--signal-ink); font-weight:500 }
 .btn--sm{ min-height:0; padding:12px 24px; font-size:13px; letter-spacing:.06em }
+
+/* Carrusel de herramientas (inc/herramientas.php). Monocromo; se para al pasar el
+   ratón y no se mueve con prefers-reduced-motion. Dos copias de la pista = bucle sin salto. */
+.tools{ position:relative; z-index:4; border-bottom:1px solid var(--line); padding-block:20px 22px; overflow:hidden; background:var(--paper) }
+.tools__l{ width:min(1280px, 100% - 2*clamp(16px,3.4vw,48px)); margin:0 auto 14px; font-family:var(--f-mono); font-size:11px;
+  font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--steel-text) }
+.tools__win{ display:flex; width:max-content; animation:tools-run 60s linear infinite;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent); mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent) }
+.tools:hover .tools__win{ animation-play-state:paused }
+.tools__track{ list-style:none; display:flex; gap:12px; padding-right:12px }
+.tools__track li{ display:flex; align-items:center; gap:10px; padding:10px 16px; border:1px solid var(--line); background:#fff;
+  color:var(--graphite); white-space:nowrap; transition:color .2s,border-color .2s }
+.tools__track li:hover{ color:var(--ink); border-color:var(--ink) }
+.tools__track svg{ width:20px; height:20px; flex:none }
+.tools__track span{ font-family:var(--f-mono); font-size:13px; font-weight:500; letter-spacing:.02em }
+@keyframes tools-run{ to{ transform:translateX(-50%) } }
+@media (prefers-reduced-motion:reduce){
+  .tools__win{ animation:none; width:auto; flex-wrap:wrap; -webkit-mask-image:none; mask-image:none; padding-inline:16px }
+  .tools__track[aria-hidden]{ display:none } .tools__track{ flex-wrap:wrap }
+}
+
+/* Formulario de contacto (inc/form_contacto.php), compartido. */
+.intake{ display:flex; flex-direction:column; gap:16px }
+.intake__row{ display:grid; grid-template-columns:1fr 1fr; gap:16px }
+.field{ display:flex; flex-direction:column; gap:4px }
+.field__l{ display:flex; justify-content:space-between; font-family:var(--f-mono); font-size:11px;
+  text-transform:uppercase; color:var(--steel) }
+.field__l i{ font-style:normal }
+.field input,.field textarea{ font:inherit; font-size:15px; color:var(--ink); background:var(--bone);
+  border:1px solid #9AA0A866; border-radius:0; padding:10px 8px; resize:none }
+.field input:focus,.field textarea:focus{ outline:none; border-color:var(--signal) }
+.field textarea::placeholder{ color:#6B6F75 }
+.intake__act{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding-top:4px }
+.intake__row{ } @media(max-width:700px){ .intake__row{ grid-template-columns:1fr } }
+.fc-hp{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden }
+.fc-msg{ font-family:var(--f-mono); font-size:12px; line-height:1.5; max-width:30rem; min-height:1em }
+.fc-msg a{ border-bottom:1px solid currentColor }
+.fc-msg--ok{ color:#3FA66B } .fc-msg--err,.fc-msg--lim,.fc-msg--val{ color:var(--signal) }
+.fc-capa1{ font-size:12px; line-height:1.55; opacity:.8; max-width:60ch }
+.fc-capa1 a{ border-bottom:1px solid currentColor }
+.contact .fc-capa1{ color:#c2c6cb } .contact .fc-msg{ color:var(--bone) }
+.foot__legal a{ color:inherit; border-bottom:1px solid var(--line) } .foot__legal a:hover{ color:var(--signal-ink) }

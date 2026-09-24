@@ -39,9 +39,12 @@ $hojas_pie = array_filter($PRODUCTOS, function ($p) use ($col) {
     </div>
   </div>
   <div class="shell foot__bar">
-    <span>© 2026 AXISWORKS</span>
+    <span>© 2026 AXISWORKS · PT MAHKOTA PROPERTY GLOBAL</span>
+    <span class="foot__legal"><?php $lgp = $lang === 'es' ? ['/es/aviso-legal','/es/privacidad','/es/cookies'] : ['/legal-notice','/privacy','/cookies']; ?>
+      <a href="<?= $lgp[0] ?>"><?= $t['lg_legal'] ?></a> · <a href="<?= $lgp[1] ?>"><?= $t['lg_privacy'] ?></a> · <a href="<?= $lgp[2] ?>"><?= $t['lg_cookies'] ?></a></span>
     <span><?= $t['foot'] ?></span>
   </div>
 </footer>
 <?php /* Nada de GSAP aquí: la navegación es un fichero pequeño y compartido. */ ?>
 <script src="/assets/nav.js?v=<?= VER ?>" defer></script>
+<script src="/assets/contacto.js?v=<?= VER ?>" defer></script>

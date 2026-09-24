@@ -14,7 +14,8 @@ require_once __DIR__ . '/inc/catalogo.php';
 
 header('Content-Type: application/xml; charset=UTF-8');
 
-$rutas = ['/', '/es/', '/services/', '/es/servicios/'];
+$rutas = ['/', '/es/', '/services/', '/es/servicios/',
+          '/legal-notice', '/privacy', '/cookies', '/es/aviso-legal', '/es/privacidad', '/es/cookies'];
 foreach ($ORDEN as $lg => $slugs) {
   foreach ($slugs as $s) $rutas[] = $HOJAS[$lg][$s]['url'];
 }

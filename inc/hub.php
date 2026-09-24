@@ -108,6 +108,7 @@ $nomP = function ($cod) use ($PRODUCTOS, $lang, $col) {
     </div>
   </section>
 
+  <?php require __DIR__ . '/herramientas.php'; ?>
   <section class="hj-close" id="contact">
     <span class="hj-reg hj-reg--tl" aria-hidden="true">+</span><span class="hj-reg hj-reg--tr" aria-hidden="true">+</span>
     <div class="shell">
@@ -115,7 +116,7 @@ $nomP = function ($cod) use ($PRODUCTOS, $lang, $col) {
         <p class="hj-chip hj-chip--c"><?= $t['nav_cta'] ?></p>
         <h2><?= $t['cta_h'] ?></h2>
         <p><?= $t['cta_p'] ?></p>
-        <a href="<?= e(correo(($lang === 'es' ? 'Consulta — ' : 'Enquiry — ') . $url)) ?>" class="btn btn--signal"><span><?= EMAIL ?></span> <span class="ar" aria-hidden="true">→</span></a>
+        <?php $fc_pagina = $url; require __DIR__ . '/form_contacto.php'; ?>
         <p class="hj-close__meta"><span><?= $lang === 'es' ? 'IDIOMAS' : 'LANGUAGES' ?>: <?= $t['langs'] ?></span><a href="<?= $inicio ?>"><?= $t['nav_home'] ?> →</a></p>
       </div>
     </div>

@@ -244,18 +244,6 @@ a.org__p .ar{ color:var(--signal-ink) }
 .shead--inv{ border-bottom-color:#9AA0A866; margin-bottom:24px }
 .shead--inv .eyebrow{ color:var(--signal) }
 .contact__tag{ font-family:var(--f-mono); font-size:11px; color:var(--steel) }
-.intake{ display:flex; flex-direction:column; gap:16px }
-.intake__row{ display:grid; grid-template-columns:1fr 1fr; gap:16px }
-.field{ display:flex; flex-direction:column; gap:4px }
-.field__l{ display:flex; justify-content:space-between; font-family:var(--f-mono); font-size:11px;
-  text-transform:uppercase; color:var(--steel) }
-.field__l i{ font-style:normal }
-.field input,.field textarea{ font:inherit; font-size:15px; color:var(--ink); background:var(--bone);
-  border:1px solid #9AA0A866; border-radius:0; padding:10px 8px; resize:none }
-.field input:focus,.field textarea:focus{ outline:none; border-color:var(--signal) }
-.field textarea::placeholder{ color:#6B6F75 }
-.intake__act{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding-top:4px }
 .intake__note{ font-family:var(--f-mono); font-size:11px; color:var(--steel); max-width:24rem }
 .intake__note a{ color:var(--bone); border-bottom:1px solid #ffffff40 }
 .contact .btn--signal:hover{ background:var(--bone); border-color:var(--bone); color:var(--ink) }
-@media(max-width:700px){ .intake__row{ grid-template-columns:1fr } }

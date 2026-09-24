@@ -71,6 +71,8 @@ DirectoryIndex index.php index.html
   # `inc/` son las piezas compartidas (plantillas y textos), no páginas.
   # Sin esto responden 200 en blanco y son URLs rastreables de la nada.
   RewriteRule ^inc/ - [F,L]
+  # Secreto y estado del formulario de contacto: nunca por web (24-sep-2026).
+  RewriteRule ^(private|api/_estado)/ - [F,L]
 
   # El sitemap y el llms.txt se GENERAN del catálogo (ver sitemap.php), pero
   # robots.txt y Search Console esperan estas dos extensiones. El rewrite es

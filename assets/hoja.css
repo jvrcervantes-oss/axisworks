@@ -196,3 +196,20 @@ a.hb-card:hover .hb-card__go{ color:var(--signal-ink) }
   .hb-cards{ grid-template-columns:1fr }
   .hb-plane{ min-height:320px } .hb-q{ font-size:10px; padding:4px 6px }
 }
+
+/* El formulario dentro del cierre en caja (fondo claro). */
+.hj-close__box .intake{ text-align:left; margin-top:8px }
+.hj-close__box .field__l{ color:var(--steel-text) }
+.hj-close__box .field input,.hj-close__box .field textarea{ background:#fff; border-color:var(--line) }
+.hj-close__box .fc-capa1{ color:var(--graphite) }
+
+/* Páginas legales: una columna legible, secciones numeradas. */
+.lg__body{ max-width:760px }
+.lg__sec{ padding-block:22px; border-top:1px solid var(--line) }
+.lg__sec:first-child{ border-top:0; padding-top:0 }
+.lg__sec h2{ font-weight:500; font-size:22px; letter-spacing:-.01em; text-transform:none; margin-bottom:12px }
+.lg__sec h2 span{ font-family:var(--f-mono); font-size:12px; color:var(--signal-ink); margin-right:6px }
+.lg__sec p,.lg__sec li{ font-size:16px; line-height:1.65; color:var(--graphite) }
+.lg__sec p+p,.lg__sec p+ul,.lg__sec ul+p{ margin-top:10px }
+.lg__sec ul{ padding-left:20px } .lg__sec li+li{ margin-top:4px }
+.lg__sec a{ color:var(--signal-ink); border-bottom:1px solid var(--line) }

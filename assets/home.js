@@ -22,20 +22,5 @@
     }, {passive:true});
   }
 
-  /* ---- alta de proyecto: compone un mailto con el brief ----
-     No hay backend a propósito (buzón sin confirmar como receptor, AXW-2). El asunto
-     lleva la página de origen: la bandeja es el informe de atribución. */
-  var form = document.getElementById('intake');
-  if(form){
-    form.addEventListener('submit', function(e){
-      e.preventDefault();
-      if(!form.reportValidity()) return;
-      var d = form.dataset, f = form.elements;
-      var nombre = f.name.value.trim(), correo = f.email.value.trim();
-      var cuerpo = d.lName + ': ' + nombre + '\n' + d.lEmail + ': ' + correo + '\n\n' +
-        d.lBrief + ':\n' + f.brief.value.trim() + '\n';
-      location.href = 'mailto:' + d.to + '?subject=' + encodeURIComponent(d.subject + ' — ' + nombre) +
-        '&body=' + encodeURIComponent(cuerpo);
-    });
-  }
+  /* El alta de proyecto la envía assets/contacto.js (24-sep-2026). */
 })();

@@ -113,6 +113,8 @@ $jsonld = [
   </div>
 </section>
 
+<?php require __DIR__ . '/herramientas.php'; ?>
+
 <!-- 02 · ERP — el producto principal, con su panel de ejemplo -->
 <section class="band" id="erp">
   <div class="shell">
@@ -288,18 +290,7 @@ $jsonld = [
       <div><p class="eyebrow"><span><?= $hm['ct_eyebrow'] ?></span></p><h2><?= $hm['ct_h2'] ?></h2></div>
       <p class="contact__tag">DIRECT DISPATCH // EN · ES</p>
     </div>
-    <form class="intake" id="intake" data-to="<?= EMAIL ?>" data-subject="<?= e($hm['asunto']) ?>"
-          data-l-name="<?= e($hm['m_name']) ?>" data-l-email="<?= e($hm['m_email']) ?>" data-l-brief="<?= e($hm['m_brief']) ?>">
-      <div class="intake__row">
-        <label class="field"><span class="field__l"><?= $hm['f_name'] ?> <i><?= $hm['f_req'] ?></i></span><input name="name" type="text" required autocomplete="name"></label>
-        <label class="field"><span class="field__l"><?= $hm['f_email'] ?> <i><?= $hm['f_req'] ?></i></span><input name="email" type="email" required autocomplete="email"></label>
-      </div>
-      <label class="field"><span class="field__l"><?= $hm['f_brief'] ?> <i><?= $hm['f_spec'] ?></i></span><textarea name="brief" rows="3" required placeholder="<?= e($hm['f_brief_ph']) ?>"></textarea></label>
-      <div class="intake__act">
-        <button type="submit" class="btn btn--signal btn--sm"><span><?= $hm['f_send'] ?></span> <span class="ar" aria-hidden="true">→</span></button>
-        <p class="intake__note"><?= $hm['f_note'] ?> <a href="<?= e(correo($hm['asunto'])) ?>"><?= EMAIL ?></a></p>
-      </div>
-    </form>
+    <?php $fc_pagina = $url; require __DIR__ . '/form_contacto.php'; ?>
   </div>
 </section>
 

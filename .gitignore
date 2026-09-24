@@ -19,3 +19,7 @@ comercial/demo-erp/dist/
 # Herramientas del build publico de la demo del ERP
 comercial/demo-erp/node_modules/
 comercial/demo-erp/package-lock.json
+
+# Formulario de contacto (24-sep-2026): el secreto se genera en el servidor, nunca en git
+private/secreto.php
+api/_estado/
