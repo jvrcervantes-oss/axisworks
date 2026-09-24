@@ -83,17 +83,28 @@
     { p: '/intranet/v4/usuarios/', cap: 'Equipo', t: { texto: 'USUARIOS ACTIVOS', fila: true },
       h: 'Quién entra y qué ve',
       b: 'Dirección, administración, jefe de ventas y agente, con herramientas y proyectos por persona. La separación la hace la base de datos, no solo la pantalla.' },
-    { p: '/', cap: 'Final', t: null, hero: true, fin: true,
+    { p: '/panel/', cap: 'Tu panel', t: { css: '#kpis' },
+      h: 'Así lo gestionas tú',
+      b: 'Tras contratar, tu panel de administración: módulos activos, cuota del mes, tu equipo y la versión de tu base de datos, que es la misma en todos los clientes.' },
+    { p: '/panel/', cap: 'Tu panel', t: { css: '#inspector' },
+      h: 'Un módulo más, un clic',
+      b: 'Cada módulo dice qué hace, qué tablas usa y qué pantallas abre. Lo enciendes tú desde aquí y aparece al momento en el menú de todo el equipo.' },
+    { p: '/panel/', cap: 'Final', t: null, hero: true, fin: true,
       h: 'Eso es AxisWorks ERP',
-      b: 'Todo lo que has visto son módulos que se activan uno a uno sobre la misma base. Elige los tuyos en la página de módulos.' }
+      b: 'Módulos que se activan uno a uno sobre la misma base. Ahora entra libre a la demo, o cambia tu selección en el cotizador y repite el tour.' }
   ];
 
   /* Solo los pasos de módulos encendidos en la landing (catalogo.js). El módulo de cada paso sale de su
      propia ruta, con el mismo catálogo que usa el menú de la demo: no hay una segunda lista. */
-  if (window.AXW_CATALOGO) {
-    var ESTADO_MOD = window.AXW_CATALOGO.leeEstado();
-    PASOS = PASOS.filter(function (p) { var k = window.AXW_CATALOGO.moduloDeRuta(p.p); return !k || ESTADO_MOD[k]; });
+  /* Se filtra al ARRANCAR, no al cargar: en la landing se cambian módulos después de cargar la página y el
+     tour tiene que ver esa selección (antes contaba «1 de 22» y luego «2 de 20»). */
+  var GUION = PASOS;
+  function filtraPasos() {
+    if (!window.AXW_CATALOGO) return;
+    var estadoMod = window.AXW_CATALOGO.leeEstado();
+    PASOS = GUION.filter(function (p) { var k = window.AXW_CATALOGO.moduloDeRuta(p.p); return !k || estadoMod[k]; });
   }
+  filtraPasos();
 
   /* ── Estado ─────────────────────────────────────────────────────────── */
   function lee() { try { var v = JSON.parse(sessionStorage.getItem(CLAVE) || 'null'); return v && typeof v.i === 'number' ? v : null; } catch (e) { return null; } }
@@ -440,8 +451,8 @@
     document.removeEventListener('keydown', tecla, true);
     setTimeout(function () { if (raiz) { raiz.remove(); raiz = null; } window.__axtTour = false; }, REDUCIDO ? 0 : 500);
     if (aModulos) {
-      if (aqui() === '/') { var m = document.getElementById('modulos'); if (m) m.scrollIntoView({ behavior: REDUCIDO ? 'auto' : 'smooth' }); }
-      else location.href = '/#modulos';
+      // El tour acaba en el panel: se queda ahí, arriba, con «Entrar con estos módulos» a la vista.
+      window.scrollTo({ top: 0, behavior: REDUCIDO ? 'auto' : 'smooth' });
     }
   }
 
@@ -456,8 +467,13 @@
   }
 
   /* API para la landing (botón «Tour guiado») y reanudación al cargar cada página */
-  window.axtTour = { empezar: function () { arranca(0); } };
+  window.axtTour = { empezar: function () { filtraPasos(); arranca(0); } };
+  var intentos = 0;
   function alCargar() {
+    // El índice guardado apunta a la lista FILTRADA: sin catálogo, la lista entera desplaza cada paso.
+    // Un script insertado por JS no frena DOMContentLoaded, así que puede llegar tarde: se espera hasta 2 s.
+    if (!window.AXW_CATALOGO && intentos++ < 40) return setTimeout(alCargar, 50);
+    filtraPasos();
     var q = new URLSearchParams(location.search);
     if (q.get('tour') === '1') return arranca(0);
     var st = lee();

@@ -172,12 +172,15 @@ def guard_demo():
             aborta('el doble de QA ha cambiado y no encuentro (1 vez): ' + viejo[:70])
         doble = doble.replace(viejo, nuevo)
     doble = doble.replace("'qa-user-1'", "'d-u-1'").replace('qa@axisworks.test', 'direccion@demo.test')
-    # Botón «← Módulos» en todas las pantallas: vuelve a la landing (el guard es nuestro).
-    volver = ("document.addEventListener('DOMContentLoaded',function(){var a=document.createElement('a');a.href='/';"
-              "a.textContent='← Módulos';a.setAttribute('aria-label','Volver a los módulos');"
-              "a.style.cssText='position:fixed;left:16px;bottom:16px;z-index:2147483000;background:#485B37;color:#fff;"
-              "padding:8px 16px;border-radius:999px;font:500 13px/1.2 system-ui,sans-serif;text-decoration:none';"
-              "document.body.appendChild(a);});\n"
+    # «← Módulos · Panel» en todas las pantallas: las dos salidas del recorrido (el guard es nuestro).
+    volver = ("document.addEventListener('DOMContentLoaded',function(){var n=document.createElement('nav');"
+              "n.setAttribute('aria-label','Salir de la demo');"
+              "n.style.cssText='position:fixed;left:16px;bottom:16px;z-index:2147483000;display:flex;background:#485B37;"
+              "border-radius:999px;font:500 13px/1.2 system-ui,sans-serif;overflow:hidden';"
+              "[['/#configurador','← Módulos'],['/panel/','Panel']].forEach(function(x,i){var a=document.createElement('a');"
+              "a.href=x[0];a.textContent=x[1];a.style.cssText='color:#fff;text-decoration:none;padding:8px 14px'"
+              "+(i?';border-left:1px solid rgba(255,255,255,.3)':'');n.appendChild(a);});"
+              "document.body.appendChild(n);});\n"
               # catalogo.js (fuente única de módulos) → modulos.js (menú y aviso de módulo apagado) → tour.js, en
               # ese orden: un script insertado por JS es asíncrono salvo async=false.
               "['/demo/catalogo.js','/demo/modulos.js','/demo/tour.js'].forEach(function(u){var s=document.createElement('script');"

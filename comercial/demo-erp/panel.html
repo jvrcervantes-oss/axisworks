@@ -79,8 +79,8 @@
 <div class="flex items-center gap-space-sm">
 <div class="p-space-xs rounded-lg bg-surface-container-low text-primary-container"><span class="material-symbols-outlined text-[24px]">developer_board</span></div>
 <div>
-<div class="flex items-center gap-space-xs flex-wrap"><span class="font-headline-sm text-headline-sm tracking-tight text-on-surface">Módulos de tu ERP</span><span class="px-space-xs py-[2px] bg-surface-container text-on-surface-variant font-code-metric text-code-metric rounded-full">AxisWorks ERP</span></div>
-<p class="font-body-sm text-body-sm text-on-surface-variant">Enciende o apaga un módulo: el menú de la demo, el tour y la cuota cambian al momento.</p>
+<div class="flex items-center gap-space-xs flex-wrap"><span class="font-headline-sm text-headline-sm tracking-tight text-on-surface">Tu panel de administración</span><span class="px-space-xs py-[2px] bg-surface-container text-on-surface-variant font-code-metric text-code-metric rounded-full">tal como lo verás tras contratar</span></div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Así activas un módulo tú mismo: lo enciendes aquí y aparece al momento en el menú de tu equipo, con la cuota ya recalculada.</p>
 </div>
 </div>
 <div class="flex flex-wrap items-center gap-space-xs">
@@ -92,7 +92,7 @@
 </section>
 <div class="hidden w-full bg-secondary-container text-on-secondary-container px-gutter-lg py-space-xs text-center font-label-sm text-label-sm transition-all" id="actionFeedback" role="status" aria-live="polite"><span id="feedbackText"></span></div>
 <div class="max-w-7xl mx-auto w-full px-margin md:px-gutter-lg py-space-lg flex flex-col gap-space-lg">
-<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md" id="kpis">
 <div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between">
 <div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Módulos activos</span><div class="p-space-xs bg-primary-fixed text-on-primary-fixed rounded-lg"><span class="material-symbols-outlined text-[20px]">view_in_ar</span></div></div>
 <div class="my-space-sm">
@@ -135,7 +135,7 @@
 <div class="flex flex-col gap-space-sm" id="nodesGrid"></div>
 </div>
 <div class="lg:col-span-4 flex flex-col gap-space-md lg:sticky lg:top-20">
-<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm">
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm" id="inspector">
 <div class="flex items-center justify-between pb-space-sm">
 <div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-primary text-[22px]">manage_search</span><h3 class="font-headline-sm text-headline-sm text-on-surface">Inspector de módulo</h3></div>
 <span class="font-code-metric text-code-metric font-bold text-primary bg-surface-container px-space-xs py-0.5 rounded" id="inspectorBadge"></span>
@@ -226,6 +226,9 @@
   /* ---- tarjetas de módulo (calco de .node-card) ---- */
   var sel = 'contratos', area = 'Todos';
   function toggle(m, on) {
+    if (m.camino) return '<button class="px-space-sm py-1 rounded-full font-label-sm text-label-sm whitespace-nowrap flex items-center gap-1 transition-colors ' +
+      (on ? 'bg-secondary text-on-secondary' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high') + '" type="button" aria-pressed="' + String(on) + '" data-alterna="' + m.k + '">' +
+      (on ? ms('check', 'text-[16px]') + 'Te avisamos' : 'Me interesa') + '</button>';
     if (m.base) return '<div class="w-12 h-6 bg-primary-container rounded-full p-1 cursor-not-allowed opacity-90 flex items-center justify-end" title="Incluido en la base"><span class="w-4 h-4 bg-surface-container-lowest rounded-full shadow-sm"></span></div>';
     return '<button class="tgl w-12 h-6 rounded-full p-1 transition-colors flex items-center ' + (on ? 'bg-primary-container' : 'bg-surface-container-highest') +
       '" type="button" role="switch" aria-checked="' + String(on) + '" aria-label="' + (on ? 'Apagar ' : 'Encender ') + esc(m.nombre) + '" data-alterna="' + m.k + '">' +
@@ -236,7 +239,7 @@
     var badge = m.base ? ['bg-primary-fixed text-on-primary-fixed', 'Incluido'] : m.camino ? ['bg-surface-container-high text-on-surface-variant', on ? 'Reservado' : 'En camino']
       : on ? ['bg-secondary-container text-on-secondary-container', 'Activo'] : ['bg-surface-container-high text-on-surface-variant', 'Disponible'];
     var derecha = m.base ? '<span class="font-code-metric text-code-metric text-secondary font-semibold">EN LA BASE</span><span class="font-code-metric text-code-metric text-on-surface-variant">sin coste aparte</span>'
-      : m.camino ? '<span class="font-label-sm text-label-sm font-bold text-on-surface-variant">Precio por definir</span><span class="font-code-metric text-code-metric text-on-surface-variant">' + (on ? 'te avisamos al salir' : 'márcalo si te interesa') + '</span>'
+      : m.camino ? '<span class="font-label-sm text-label-sm font-bold text-on-surface-variant">Próximamente</span><span class="font-code-metric text-code-metric text-on-surface-variant">no suma a la cuota</span>'
       : '<span class="font-label-sm text-label-sm font-bold ' + (on ? 'text-on-surface' : 'text-primary') + '">' + (on ? '' : '+') + eur(CAT.precio(m.k)) + ' / mes</span><span class="font-code-metric text-code-metric text-on-surface-variant">' + (CAT.IA[m.k] ? 'con IA · WhatsApp a coste' : 'módulo estándar') + '</span>';
     var pie = m.caps.slice(0, 2).map(function (c) { return '<span class="px-space-xs py-0.5 rounded bg-surface-container font-code-metric text-[11px] text-on-surface">' + esc(c) + '</span>'; }).join('');
     if (!pie) pie = '<span class="font-code-metric text-code-metric text-on-surface-variant">' + ms('schedule', 'text-[16px] text-outline align-middle') + ' En desarrollo en AxisWorks</span>';
@@ -294,7 +297,7 @@
     h += '<div class="flex flex-col gap-space-xs pt-space-xs">';
     if (m.url && on) h += '<a class="w-full py-space-xs px-space-sm rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center gap-space-xs transition-colors" href="' + m.url + '">' + ms('open_in_new', 'text-[18px]') + '<span>Abrir en la demo</span></a>';
     if (!m.base) h += '<button class="w-full py-space-xs px-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center justify-center gap-space-xs transition-colors" type="button" data-alterna="' + m.k + '">' +
-      ms(on ? 'toggle_off' : 'toggle_on', 'text-[18px]') + '<span>' + (on ? 'Apagar' : m.camino ? 'Me interesa' : 'Encender') + ' este módulo</span></button>';
+      ms(m.camino ? 'notifications' : on ? 'toggle_off' : 'toggle_on', 'text-[18px]') + '<span>' + (m.camino ? (on ? 'Ya no me interesa' : 'Me interesa: avisadme') : (on ? 'Apagar' : 'Encender') + ' este módulo') + '</span></button>';
     h += '</div>';
     document.getElementById('inspectorContent').innerHTML = h;
   }
