@@ -139,7 +139,86 @@
   var CODIGO = {}, cuenta = {};
   MODULOS.forEach(function (m) { cuenta[m[2]] = (cuenta[m[2]] || 0) + 1; CODIGO[m[0]] = PREF[m[2]] + '-' + ('0' + cuenta[m[2]]).slice(-2); });
   CAMINO.forEach(function (m, i) { CODIGO[m[0]] = 'NEW-' + ('0' + (i + 1)).slice(-2); });
+  /* ── PACKS (owner, 25-sep: «hay herramientas que deben ir en bloques») ─────────────────────────────────────
+     Un pack es un bloque de módulos que solo funcionan juntos: facturas sin recibís no saben qué está cobrado;
+     el parcelario sin contratos no sabe qué está vendido. Se enciende o apaga ENTERO. Lo que es opcional de
+     verdad va como módulo SUELTO, con lo que necesita debajo. Las dependencias salen de las auditorías de Datos
+     y Desarrollo del 25-sep (qué tablas y pantallas lee cada módulo).
+     Precio: SIN tarifa nueva. Un pack cuesta la suma de sus módulos con los precios de borrador de arriba (el
+     precio de un pack como producto lo fija el owner: hard stop).
+     [clave, nombre, descripción, módulos, packs que necesita] */
+  var PACKS = [
+    ['base', 'Base', 'Lo que tiene cualquier empresa: el día, el equipo y los ajustes.', ['home', 'usuarios', 'ajustes'], []],
+    ['ventas', 'Ventas y CRM', 'Del lead a la venta cerrada, con cada cliente y su operación.', ['crm', 'operaciones', 'compradores'], ['base']],
+    ['facturacion', 'Facturación y cobros', 'Facturas, recibís y calendario de cobros, por sociedad y cuenta.', ['facturas', 'recibos', 'vencimientos', 'cuentas', 'sociedades'], ['ventas']],
+    ['finanzas', 'Finanzas', 'El dinero de la empresa: panel de dirección, bancos y gastos.', ['finanzas', 'bancos', 'gastos'], ['facturacion']],
+    ['documentos', 'Contratos y documentos', 'Contratos con firma electrónica, soporte al cliente y comunicados.', ['contratos', 'soporte', 'comunicacion'], ['ventas']],
+    ['inmobiliaria', 'Inmobiliaria', 'Para promotoras: parcelario, reservas de parcela, modelos de vivienda y obra.', ['proyectos', 'reservas', 'modelos', 'obra'], ['documentos', 'facturacion']]
+  ];
+  // Sueltos: se añaden uno a uno. [módulo, packs que necesita]
+  var SUELTOS = [
+    ['setter', ['ventas']], ['campanas', ['ventas']], ['asistente', ['documentos']], ['comisiones', ['ventas', 'facturacion']],
+    ['portal', ['documentos', 'facturacion']], ['creatividades', ['inmobiliaria']], ['comisionadmin', ['inmobiliaria', 'facturacion']]
+  ];
+  var PACK_DE = {}, REQ_SUELTO = {};
+  PACKS.forEach(function (p) { p[3].forEach(function (k) { PACK_DE[k] = p[0]; }); });
+  SUELTOS.forEach(function (s) { REQ_SUELTO[s[0]] = s[1]; });
+  function pack(clave) { for (var i = 0; i < PACKS.length; i++) if (PACKS[i][0] === clave) return PACKS[i]; return null; }
+  function packActivo(e, clave) { var p = pack(clave); return !!p && p[3].every(function (k) { return !!e[k]; }); }
+  function precioPack(clave) { var p = pack(clave); return p[0] === 'base' ? PRECIO.base : p[3].reduce(function (s, k) { return s + precio(k); }, 0); }
+  /* Encender/apagar un pack o un suelto respetando los bloques. Devuelve la lista de nombres que se movieron de
+     más (lo que necesitaba o lo que dependía), para poder decirlo en pantalla en vez de hacerlo en silencio. */
+  function dependientesDe(clave) {   // packs y sueltos que necesitan este pack, directa o indirectamente
+    var fuera = { packs: [], sueltos: [] }, cola = [clave], visto = {};
+    while (cola.length) {
+      var c = cola.shift();
+      PACKS.forEach(function (p) { if (p[4].indexOf(c) !== -1 && !visto[p[0]]) { visto[p[0]] = 1; fuera.packs.push(p[0]); cola.push(p[0]); } });
+      SUELTOS.forEach(function (s) { if (s[1].indexOf(c) !== -1 && fuera.sueltos.indexOf(s[0]) === -1) fuera.sueltos.push(s[0]); });
+    }
+    return fuera;
+  }
+  function necesita(claves) {   // todos los packs que hacen falta para estas claves de pack, recursivo
+    var res = [], cola = claves.slice();
+    while (cola.length) { var c = cola.shift(); if (res.indexOf(c) !== -1) continue; res.push(c); var p = pack(c); if (p) cola = cola.concat(p[4]); }
+    return res;
+  }
+  function ponPack(e, clave, on) {
+    var movidos = [];
+    if (clave === 'base') return movidos;   // la base no se apaga
+    if (on) {
+      necesita([clave]).forEach(function (c) {
+        if (!packActivo(e, c) && c !== clave) movidos.push(pack(c)[1]);
+        pack(c)[3].forEach(function (k) { e[k] = true; });
+      });
+    } else {
+      pack(clave)[3].forEach(function (k) { e[k] = false; });
+      var d = dependientesDe(clave);
+      d.packs.forEach(function (c) { if (packActivo(e, c)) movidos.push(pack(c)[1]); pack(c)[3].forEach(function (k) { e[k] = false; }); });
+      d.sueltos.forEach(function (k) { if (e[k]) movidos.push(nombre(k)); e[k] = false; });
+    }
+    return movidos;
+  }
+  function ponSuelto(e, k, on) {
+    var movidos = [];
+    if (on) {
+      necesita(REQ_SUELTO[k] || []).forEach(function (c) {
+        if (!packActivo(e, c)) movidos.push(pack(c)[1]);
+        pack(c)[3].forEach(function (x) { e[x] = true; });
+      });
+    }
+    e[k] = !!on;
+    return movidos;
+  }
+  /* Lo guardado antes de los packs puede traer un pack a medias: se completa (si tenía algo del pack, entero). */
+  function normalizaPacks(e) {
+    PACKS.forEach(function (p) { if (p[3].some(function (k) { return e[k]; })) ponPack(e, p[0], true); });
+    SUELTOS.forEach(function (s) { if (e[s[0]]) ponSuelto(e, s[0], true); });
+    return e;
+  }
+
   window.AXW_CATALOGO = { MODULOS: MODULOS, CAMINO: CAMINO, RUTAS: RUTAS, PESTANAS: PESTANAS,
-    leeEstado: leeEstado, guardaEstado: guardaEstado, moduloDeRuta: moduloDeRuta, nombre: nombre,
-    PRECIO: PRECIO, IA: IA, precio: precio, cuota: cuota, eur: eur, CODIGO: CODIGO };
+    leeEstado: function () { return normalizaPacks(leeEstado()); }, guardaEstado: guardaEstado, moduloDeRuta: moduloDeRuta, nombre: nombre,
+    PRECIO: PRECIO, IA: IA, precio: precio, cuota: cuota, eur: eur, CODIGO: CODIGO,
+    PACKS: PACKS, SUELTOS: SUELTOS, PACK_DE: PACK_DE, REQ_SUELTO: REQ_SUELTO, pack: pack, packActivo: packActivo,
+    precioPack: precioPack, ponPack: ponPack, ponSuelto: ponSuelto, dependientesDe: dependientesDe };
 })();

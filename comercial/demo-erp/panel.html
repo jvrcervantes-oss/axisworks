@@ -248,7 +248,9 @@
       '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pb-space-sm">' +
       '<div class="flex items-start gap-space-sm min-w-0"><div class="p-space-sm rounded-lg shrink-0 ' + (on ? 'bg-primary-container text-on-primary' : 'bg-surface-container-low text-on-surface-variant') + '">' + ms(ICONO[m.k] || 'extension', 'text-[24px]') + '</div>' +
       '<div class="min-w-0"><div class="flex items-center gap-space-xs flex-wrap"><span class="font-headline-sm text-headline-sm text-on-surface">[' + CAT.CODIGO[m.k] + '] ' + esc(m.nombre) + '</span>' +
-      '<span class="px-space-xs py-[2px] rounded-full font-code-metric text-code-metric font-semibold uppercase ' + badge[0] + '">' + badge[1] + '</span></div>' +
+      '<span class="px-space-xs py-[2px] rounded-full font-code-metric text-code-metric font-semibold uppercase ' + badge[0] + '">' + badge[1] + '</span>' +
+      (CAT.PACK_DE[m.k] ? '<span class="px-space-xs py-[2px] rounded-full bg-primary/10 text-primary font-code-metric text-code-metric font-semibold">Pack ' + esc(CAT.pack(CAT.PACK_DE[m.k])[1]) + '</span>'
+        : (CAT.REQ_SUELTO[m.k] ? '<span class="px-space-xs py-[2px] rounded-full bg-surface-container text-on-surface-variant font-code-metric text-code-metric font-semibold">Suelto</span>' : '')) + '</div>' +
       '<p class="font-body-sm text-body-sm text-on-surface-variant">' + esc(m.desc) + '</p></div></div>' +
       '<div class="flex items-center gap-space-md self-end sm:self-center shrink-0"><div class="text-right flex flex-col">' + derecha + '</div>' + toggle(m, on) + '</div></div>' +
       '<div class="pt-space-sm flex flex-wrap items-center justify-between gap-space-xs bg-surface-container-lowest -mx-space-md -mb-space-md p-space-sm rounded-b-xl">' +
@@ -316,15 +318,28 @@
   }
   function pintaTodo() { pintaKpi(); pintaNodos(); pintaInspector(); }
 
+  /* Packs (25-sep): un módulo de un pack se enciende o apaga con su pack entero; un suelto, solo, pero arrastra
+     los packs que necesita. Lo que se mueve de más se dice en la consola y en el aviso. Reglas: catalogo.js. */
   function alterna(k) {
     var m = mod(k);
     if (!m || m.base) return;
-    estado[k] = !estado[k];
+    var c, movidos = [], on;
+    if (m.camino) {
+      estado[k] = !estado[k]; on = estado[k];
+      CAT.guardaEstado(estado);
+      log(on ? 'OK' : 'OFF', CAT.CODIGO[k], on ? m.nombre + ' marcado: se verá en la demo en cuanto salga.' : m.nombre + ' desmarcado.');
+      aviso(m.nombre + (on ? ' marcado.' : ' desmarcado.'));
+      pintaTodo(); return;
+    }
+    var pk = CAT.PACK_DE[k];
+    if (pk) { on = !CAT.packActivo(estado, pk); movidos = CAT.ponPack(estado, pk, on); }
+    else { on = !estado[k]; movidos = CAT.ponSuelto(estado, k, on); }
     CAT.guardaEstado(estado);
-    var c = CAT.cuota(estado);
-    if (m.camino) log(estado[k] ? 'OK' : 'OFF', CAT.CODIGO[k], estado[k] ? m.nombre + ' marcado: se verá en la demo en cuanto salga.' : m.nombre + ' desmarcado.');
-    else log(estado[k] ? 'OK' : 'OFF', CAT.CODIGO[k], m.nombre + (estado[k] ? ' encendido' : ' apagado') + ' · cuota ' + eur(c.total) + '/mes · ' + c.activos + ' módulos.');
-    aviso(m.nombre + (estado[k] ? ' encendido.' : ' apagado.') + ' El menú de la demo ya lo refleja.');
+    c = CAT.cuota(estado);
+    var que = pk ? 'Pack ' + CAT.pack(pk)[1] : m.nombre;
+    log(on ? 'OK' : 'OFF', pk ? pk : CAT.CODIGO[k], que + (on ? ' encendido' : ' apagado') + (movidos.length ? ' (y ' + movidos.join(', ') + ')' : '') +
+        ' · cuota ' + eur(c.total) + '/mes · ' + c.activos + ' módulos.');
+    aviso(que + (on ? ' encendido.' : ' apagado.') + (movidos.length ? (on ? ' También: ' : ' También se apaga: ') + movidos.join(', ') + '.' : '') + ' El menú de la demo ya lo refleja.');
     pintaTodo();
   }
 
@@ -334,7 +349,8 @@
     var s = ev.target.closest('[data-seleccion]');
     if (s) {
       var todo = s.getAttribute('data-seleccion') === 'todo';
-      MODULOS.forEach(function (m) { if (!m[7]) estado[m[0]] = todo; });
+      CAT.PACKS.forEach(function (p) { CAT.ponPack(estado, p[0], todo); });
+      CAT.SUELTOS.forEach(function (x) { CAT.ponSuelto(estado, x[0], todo); });
       CAT.guardaEstado(estado);
       log('INFO', 'panel', todo ? 'Todos los módulos encendidos.' : 'Solo la base: el resto apagado.');
       aviso(todo ? 'Todos los módulos encendidos.' : 'Solo la base encendida.');
