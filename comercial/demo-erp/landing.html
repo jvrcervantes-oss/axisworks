@@ -41,10 +41,6 @@
   .barra .marco { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding-top: 14px; padding-bottom: 14px; }
   .cuenta { font: 400 30px/1 "Cormorant Garamond", serif; }
   .cuenta small { font: 400 13px/1 "Instrument Sans", sans-serif; color: var(--gris); margin-left: 6px; }
-  .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
-  .presets button { font: inherit; font-size: 13px; background: transparent; border: 1px solid var(--linea);
-    color: var(--tinta); padding: 7px 14px; border-radius: 999px; cursor: pointer; }
-  .presets button:hover, .presets button.on { border-color: var(--acento); color: var(--acento); }
 
   section.area { padding: 56px 0 8px; }
   .area-cab { display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: baseline; margin-bottom: 20px; }
@@ -74,7 +70,7 @@
   .sw[aria-checked="true"] { background: var(--acento); border-color: var(--acento); }
   .sw[aria-checked="true"]::after { transform: translateX(18px); background: #fff; }
   .sw[disabled] { cursor: default; opacity: .6; }
-  .sw:focus-visible, .presets button:focus-visible, .entrar:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+  .sw:focus-visible, .entrar:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
 
   .camino-bloque { margin-top: 72px; padding-top: 56px; padding-bottom: 72px; border-top: 1px solid var(--linea); }
   .camino-bloque .rejilla .mod { background: var(--acento-suave); }
@@ -99,17 +95,13 @@
     <h1>Un ERP que se monta por módulos</h1>
     <p>Cada empresa activa lo que usa y el resto no le estorba. Los módulos comparten la misma base:
       un contrato firmado ya sabe qué parcela reserva, qué factura toca emitir y qué comisión genera.
-      Marca los que te interesan y abre cualquiera en la demo.</p>
+      Aquí están todos: apaga los que no usarías y abre cualquiera en la demo.</p>
   </div>
 
   <div class="barra">
     <div class="marco">
       <div class="cuenta" aria-live="polite"><span id="n-activos">0</span><small>módulos activos</small></div>
       <div class="cuenta"><span id="n-camino">0</span><small>en camino marcados</small></div>
-      <div class="presets" role="group" aria-label="Configuraciones de partida">
-        <button type="button" data-preset="esencial">Esencial</button>
-        <button type="button" data-preset="promotora">Promotora</button>
-        <button type="button" data-preset="completo">Completo</button>
       </div>
     </div>
   </div>
@@ -177,18 +169,10 @@
     ['dataroom', 'Sala de datos del inversor', 'Documentación de cada proyecto para inversores, con marca de agua por persona y registro de quién abre qué.'],
     ['postventa', 'Postventa y garantías', 'Incidencias después de la entrega: quién las abre, qué contratista las arregla y en qué plazo de garantía caen.']
   ];
-  var PRESETS = {
-    esencial: ['crm', 'operaciones', 'compradores', 'contratos', 'facturas', 'recibos', 'proyectos'],
-    promotora: ['crm', 'operaciones', 'reservas', 'compradores', 'comisiones', 'contratos', 'soporte', 'portal',
-      'facturas', 'recibos', 'vencimientos', 'cuentas', 'proyectos', 'modelos', 'obra'],
-    completo: null
-  };
-
-  var CLAVE = 'demo-erp-modulos';
+  var CLAVE = 'demo-erp-modulos-v2';   // v2: sin packs, todo activo de partida
   var estado = {};
   try { estado = JSON.parse(localStorage.getItem(CLAVE) || '{}') || {}; } catch (e) { estado = {}; }
   function guarda() { try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) {} }
-  if (!Object.keys(estado).length) PRESETS.promotora.forEach(function (k) { estado[k] = true; });
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
@@ -212,6 +196,7 @@
 
   var todos = [], deCamino = CAMINO.map(function (m) { return m[0]; });
   AREAS.forEach(function (a) { a.m.forEach(function (m) { if (!m[4]) todos.push(m[0]); }); });
+  if (!Object.keys(estado).length) todos.forEach(function (k) { estado[k] = true; });   // todo activo de partida
 
   function pinta() {
     document.querySelectorAll('.mod').forEach(function (el) {
@@ -224,24 +209,13 @@
     var nucleo = document.querySelectorAll('.sw[disabled]').length;
     document.getElementById('n-activos').textContent = nucleo + todos.filter(function (k) { return estado[k]; }).length;
     document.getElementById('n-camino').textContent = deCamino.filter(function (k) { return estado[k]; }).length;
-    document.querySelectorAll('.presets button').forEach(function (b) {
-      var lista = PRESETS[b.getAttribute('data-preset')] || todos;
-      var igual = todos.every(function (k) { return !!estado[k] === (lista.indexOf(k) !== -1); });
-      b.classList.toggle('on', igual);
-    });
   }
 
   document.addEventListener('click', function (ev) {
     var sw = ev.target.closest('.sw');
     if (sw && !sw.disabled) {
       var k = sw.closest('.mod').getAttribute('data-k');
-      estado[k] = !estado[k]; guarda(); pinta(); return;
-    }
-    var b = ev.target.closest('.presets button');
-    if (b) {
-      var lista = PRESETS[b.getAttribute('data-preset')] || todos;
-      todos.forEach(function (k) { estado[k] = lista.indexOf(k) !== -1; });
-      guarda(); pinta();
+      estado[k] = !estado[k]; guarda(); pinta();
     }
   });
   pinta();
