@@ -67,29 +67,18 @@ PROHIBIDO = re.compile(r'(/contracts/app\.html$|apoderados|/firma-|firma_|/anexo
 # las carpetas `dist` como código generado; este código se revisa en su origen, el repo de Lawang.
 DESTINO_PUBLICO = os.path.abspath(os.path.join(AQUI, '..', '..', 'dist', 'demo-erp'))   # raíz de demo.axisworks.studio
 # Orden: de lo más largo y concreto a lo general. Se aplica al texto y a los nombres de fichero.
-REEMPLAZOS_PUBLICO = [
-    ('proyectos/Lawang/_qa_double_guard.js', 'el doble de la demo'),
-    ('Lawang Tropical Properties', 'AxisWorks Demo'),
-    ('Lawang Properties &amp; Suite', 'AxisWorks ERP'), ('Lawang Properties & Suite', 'AxisWorks ERP'),
-    ('PROPERTIES &amp; SUITE', 'ERP · DEMO'), ('PROPERTIES & SUITE', 'ERP · DEMO'),
-    ('PT. LAWANG PROPERTIES BALI', 'PT DEMO NUSANTARA'), ('Lawang Properties', 'AxisWorks Demo'),
-    ('Intranet Lawang', 'AxisWorks ERP'), ('Lawang Intranet', 'AxisWorks ERP'), ('Lawang v4', 'AxisWorks ERP'),
-    ('Pagos de Lawang', 'Pagos de la empresa'), ('paga Lawang', 'paga la empresa'), ('pide a Lawang', 'pide a la empresa'),
-    ('cobrar a Lawang', 'cobrar a la empresa'), ('A Lawang', 'A la empresa'), ('Lawang no gestiona', 'La empresa no gestiona'),
-    ('PT Lawang', 'PT Demo Nusantara'), ('de Lawang', 'de la empresa'),
-    ('KITAS_Inversion_Lawang_Rev04.pdf', 'KITAS_Inversion_Rev04.pdf'),
-    ('lawangproperties\\.com', 'axisworks\\.studio'), ('lawangproperties.com', 'axisworks.studio'),
-    ('Palm Field by Balian Hills', 'Cemara Estate'), ('Bonian Village by Balian Hills', 'Tirta Village'),
-    ('PALM FIELD', 'CEMARA ESTATE'), ('Palm Field', 'Cemara Estate'), ('palmfield', 'cemara'),
-    ('Bonian Beach', 'Tirta Beach'), ('Bonian Village', 'Tirta Village'), ('Bonian', 'Tirta'), ('bonian', 'tirta'),
-    ('BALIAN', 'CEMARA'), ('Balian', 'Cemara'),
-    ('Sumba Hills', 'Batu Ridge'), ('sumbahills', 'baturidge'), ('sumba-hills', 'batu-ridge'), ('Sumba', 'Batu'), ('sumba', 'batu'),
-    ('cc00014_timon', 'cc00014_norte'), ('CC00014 Timon', 'CC00014 Norte'), ('Timon', 'Norte'),
-    ('Tepi Sun Gai', 'Demo Nusantara'), ('tepi_sungai', 'soc_norte'), ('sandal_woods_ltd', 'soc_sur_ltd'),
-    ('san_dal_woods', 'soc_sur'), ('Sandal Woods', 'Demo Selatan'), ('Sandalwoods', 'Demo Selatan'),
-    ('HOLMACA', 'DEMO'), ('Holmaca', 'Demo'), ('Karana', 'Demo'),
-    ('LAWANG_', 'AXW_'), ('LAWANG', 'AXISWORKS'), ('lawang', 'axw'),
-]
+# Las correspondencias nombre real → inventado y la lista de rastros NO viven aquí (este repo es público, y
+# decirlas es deshacer la anonimización — auditoría de Seguridad, 25-sep): private/demo_publico.json del repo
+# privado del estudio. Sin ese fichero, --publico no se puede construir.
+def _privado():
+    ruta = os.path.join(AGENCIA, 'private', 'demo_publico.json')
+    if not os.path.isfile(ruta):
+        return None
+    return json.load(open(ruta, encoding='utf-8'))
+
+
+_PRIV = _privado()
+REEMPLAZOS_PUBLICO = [tuple(x) for x in (_PRIV or {}).get('reemplazos', [])]
 # «Lawang» suelto va al final y con cuidado: dentro de un identificador (pintaLawang, window.Lawang) un
 # reemplazo con espacio rompe el JavaScript (24-sep: «Unexpected identifier 'Demo'» en todas las pantallas).
 # Pegado a letra, dígito, $, punto, paréntesis, corchete o = → identificador → «Axw»; si no, es texto visible.
@@ -105,8 +94,7 @@ def cambia_lawang(t):
         return 'AxisWorks Demo'
     return LAWANG_SUELTO.sub(uno, t)
 # Lo que no puede quedar en la versión pública. `timon` sin letra delante: «Multimoneda» no es un rastro.
-RASTRO = re.compile(r'lawang|palm ?field|bonian|sumba|holmaca|sandal ?woods?|karana|(?<![a-z])timon|monjong|balian|'
-                    r'tepi ?sun ?gai|tepi_sungai|san_dal_woods', re.I)
+RASTRO = re.compile((_PRIV or {}).get('rastro', r'(?!)'), re.I)
 EXT_TEXTO = ('.html', '.js', '.css', '.json', '.svg')
 EXT_OK = EXT_TEXTO + ('.woff', '.woff2', '.ttf', '.otf', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.ico')
 REF_RE = re.compile(r'''["'(=]\s*(/(?:contracts|intranet|assets|media|fonts)/[^"'()\s?#<>]+)''')
@@ -356,7 +344,8 @@ def paginas_propias():
 
 # Textos de ejemplo de la intranet que casan con personas reales (tools/pii_maqueta.py). En la demo se cambian por
 # un marcador neutro; en Lawang los arregla quien lleve esa pantalla. 25-sep: el placeholder del nuevo /asistente/.
-EJEMPLOS_PERSONA = [('a Juan García', 'al comprador de ejemplo A')]
+EJEMPLOS_PERSONA = [('a Juan García', 'al comprador de ejemplo A'),
+                    ('Andrea Lestari', 'Operadora de ejemplo')]   # auditoría de Seguridad, 25-sep
 
 
 def neutraliza_ejemplos():
@@ -483,6 +472,8 @@ def logos_neutros():
 
 def publica():
     """Versión pública: sin comentarios, sin marca ni nombres de Lawang, y comprobado antes de copiar a demo/."""
+    if not _PRIV or not REEMPLAZOS_PUBLICO:
+        aborta('falta private/demo_publico.json (repo privado del estudio): sin él no se puede anonimizar la demo')
     r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), DIST], cwd=AQUI)
     if r.returncode != 0:
         aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
@@ -536,7 +527,22 @@ def publica():
         '<IfModule mod_rewrite.c>\n  RewriteEngine On\n'
         '  RewriteCond %{HTTP_HOST} !^demo\\.axisworks\\.studio$ [NC]\n'
         '  RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=301,L]\n</IfModule>\n'
-        '<IfModule mod_headers.c>\n  Header always set X-Robots-Tag "noindex, nofollow"\n</IfModule>\n'
+        # Cabeceras de seguridad (auditoría de Seguridad, 25-sep: el .htaccess del sitio principal no llega al
+        # subdominio). connect-src 'self' es además la barrera de red de verdad: el doble ya no llama fuera, y si
+        # un build se dejara algo, el navegador lo cortaría igual.
+        '<IfModule mod_headers.c>\n'
+        '  Header always set X-Robots-Tag "noindex, nofollow"\n'
+        '  Header always set Strict-Transport-Security "max-age=31536000"\n'
+        '  Header always set X-Content-Type-Options "nosniff"\n'
+        '  Header always set X-Frame-Options "SAMEORIGIN"\n'
+        '  Header always set Referrer-Policy "strict-origin-when-cross-origin"\n'
+        '  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"\n'
+        '  Header always set Content-Security-Policy "default-src \'self\'; script-src \'self\' \'unsafe-inline\' '
+        'https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src \'self\' '
+        '\'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' data: https://fonts.gstatic.com; img-src '
+        '\'self\' data: blob:; connect-src \'self\'; frame-ancestors \'self\'; base-uri \'self\'; form-action '
+        '\'self\'; object-src \'none\'"\n'
+        '</IfModule>\n'
         'DirectoryIndex index.html\n')
     open(os.path.join(DESTINO_PUBLICO, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(DESTINO_PUBLICO)

@@ -1,0 +1,10 @@
+# El código fuente de la demo del ERP NO se sirve en la web (auditoría de Seguridad, 25-sep): axisworks.studio
+# despliega la raíz del repo, y esta carpeta cuenta de dónde sale la demo. La demo pública es la versión ya
+# limpia de proyectos/AxisWorks/dist/demo-erp/, en https://demo.axisworks.studio
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>
