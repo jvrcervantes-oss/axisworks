@@ -13,7 +13,6 @@
   funnels, and brand and management advisory
 - Approach: hand-coded, non-template, design and development in the same hands
 - Languages: English and Spanish
-- Based: Spain ✕ Bali
 
 ## Services
 - **Custom tool suites** — internal tools built around how the business actually runs

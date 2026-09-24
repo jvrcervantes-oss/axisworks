@@ -34,7 +34,6 @@ $hojas_pie = array_filter($PRODUCTOS, function ($p) use ($col) {
       <dl class="tblock">
         <div class="tblock__row"><dt>EST.</dt><dd>2026</dd></div>
         <div class="tblock__row"><dt><?= $t['lang_l'] ?></dt><dd>EN / ES</dd></div>
-        <div class="tblock__row"><dt><?= $lang === 'es' ? 'DESDE' : 'BASED' ?></dt><dd><?= $t['based'] ?></dd></div>
         <div class="tblock__row"><dt>EMAIL</dt><dd><a href="mailto:<?= EMAIL ?>"><?= EMAIL ?></a></dd></div>
       </dl>
     </div>

@@ -133,7 +133,6 @@ if ($H['codigo'] !== 'DOC') {
       </div>
       <div class="cta__meta">
         <div>EMAIL<b><?= EMAIL ?></b></div>
-        <div><?= $lang === 'es' ? 'DESDE' : 'BASED' ?><b><?= $t['based'] ?></b></div>
         <div><?= $lang === 'es' ? 'IDIOMAS' : 'LANGUAGES' ?><b><?= $t['langs'] ?></b></div>
       </div>
     </div>

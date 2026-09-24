@@ -33,7 +33,7 @@ $title = $lang === 'es'
   : 'AxisWorks — Custom software, AI bots and automation for business';
 $desc = $lang === 'es'
   ? 'Estudio de dos personas: software de gestión a medida, CRM, chatbots de WhatsApp con IA, automatización de procesos y embudos de venta en Meta. En español e inglés.'
-  : 'A two-person studio: custom business software, CRM, WhatsApp AI chatbots, process automation and Meta Ads funnels. We work in English and Spanish, from Spain and Bali.';
+  : 'A two-person studio: custom business software, CRM, WhatsApp AI chatbots, process automation and Meta Ads funnels. We work in English and Spanish.';
 
 /* El `makesOffer` sale del MISMO array que pinta el cuadro de piezas. */
 $ofertas = [];
@@ -74,7 +74,7 @@ $jsonld = [
   <div class="shell hero__grid">
     <div class="hero__col">
       <div class="hero__top">
-        <p class="chip"><i></i><?= $hm['hero_chip'] ?><span class="chip__based"> <span class="sep">//</span> <?= $t['based'] ?></span></p>
+        <p class="chip"><i></i><?= $hm['hero_chip'] ?></p>
         <h1><?= $hm['hero_h1'] ?></h1>
         <p class="hero__lead"><?= $hm['hero_lead'] ?></p>
       </div>

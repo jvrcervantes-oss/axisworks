@@ -83,8 +83,6 @@ header{ position:fixed; top:0; left:0; right:0; z-index:20; background:var(--bon
 .brand__mark{ width:32px; height:32px; display:block }
 .brand__txt{ display:flex; flex-direction:column; border-left:1px solid var(--line); padding-left:8px }
 .brand__word{ font-weight:600; font-size:20px; line-height:1; letter-spacing:-.01em; white-space:nowrap }
-.brand__sub{ font-family:var(--f-mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase;
-  color:var(--steel-text); line-height:1.4; white-space:nowrap; margin-top:3px }
 .brand .x{ color:var(--signal); margin:0 .08em; display:inline-block; transition:transform .4s cubic-bezier(.2,.8,.2,1) }
 .brand:hover .x{ transform:rotate(45deg) }
 .nav__links{ display:flex; align-items:center; gap:26px; font-family:var(--f-mono); font-size:12px;
@@ -124,7 +122,6 @@ header{ position:fixed; top:0; left:0; right:0; z-index:20; background:var(--bon
   .nav__burger.is-open span:nth-child(2){ opacity:0 }
   .nav__burger.is-open span:nth-child(3){ transform:translateY(-7px) rotate(-45deg) }
 }
-@media(max-width:480px){ .brand__sub{ display:none } }
 
 /* ---------- tipografía ---------- */
 h1{ font-family:var(--f-display); font-weight:700; line-height:1.04; letter-spacing:-.015em;

@@ -35,7 +35,7 @@ $abs    = SITE . $url;
 <meta property="og:image" content="<?= e(SITE . $og_img) ?>">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="AxisWorks — development ✕ design, Spain ✕ Bali.">
+<meta property="og:image:alt" content="AxisWorks — development ✕ design.">
 <meta property="og:locale" content="<?= $lang === 'es' ? 'es_ES' : 'en_US' ?>">
 <?php if ($alt): ?><meta property="og:locale:alternate" content="<?= $lang === 'es' ? 'en_US' : 'es_ES' ?>"><?php endif; ?>
 

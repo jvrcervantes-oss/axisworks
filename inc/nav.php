@@ -7,7 +7,7 @@
  * Rediseño 24-sep-2026 (mockup Stitch): barra fija con filete, marca con
  * subtítulo mono y CTA sólido. Del mockup NO se tomó el avatar
  * redondo (un login que no existe) ni «VALENCIA // BALI» (ciudad sin
- * confirmar: se queda «Spain ✕ Bali», que es lo publicado). 2.ª pasada: CTA en
+ * confirmar). Sin ubicación en la web desde el 24-sep (owner). 2.ª pasada: CTA en
  * Signal y chip de estado, como el mockup (el owner pidió alta fidelidad). */
 $inicio  = $lang === 'es' ? '/es/' : '/';
 $hub     = $lang === 'es' ? '/es/servicios/' : '/services/';
@@ -20,8 +20,7 @@ $ancla   = function ($id) use ($en_home, $inicio) { return $en_home ? "#$id" : $
   <div class="shell nav">
     <a href="<?= $inicio ?>" class="brand" aria-label="AxisWorks">
       <img class="brand__mark" src="/assets/favicon.svg" alt="" width="32" height="32">
-      <span class="brand__txt"><span class="brand__word">AXIS<span class="x">✕</span>WORKS</span>
-      <span class="brand__sub"><?= $t['based'] ?></span></span>
+      <span class="brand__txt"><span class="brand__word">AXIS<span class="x">✕</span>WORKS</span></span>
     </a>
     <nav class="nav__links" id="navLinks">
       <a href="<?= $ancla('erp') ?>">ERP</a>

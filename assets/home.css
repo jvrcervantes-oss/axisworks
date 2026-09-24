@@ -87,7 +87,7 @@ main{ padding-top:64px }
 .card--e{ right:4px; top:50%; transform:translateY(-50%) } .card--w{ left:4px; top:50%; transform:translateY(-50%) }
 .pill--acc{ background:#BD49171A; border-color:#BD491733; color:var(--signal-ink); font-weight:600; letter-spacing:.04em }
 @media(max-width:1023px){ .hero__grid{ grid-template-columns:1fr } }
-@media(max-width:640px){ .hero__sheet{ display:none } .chip__based{ display:none } }
+@media(max-width:640px){ .hero__sheet{ display:none } }
 @media(max-width:560px){
   .hero__data{ grid-template-columns:1fr }
   .hero__data div+div{ border-left:0; border-top:1px solid var(--line); padding:6px 0 0 }
