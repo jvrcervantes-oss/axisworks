@@ -2,9 +2,10 @@
 /* Hojas ES. El español va a PYME ESPAÑOLA —«a medida», «para empresas», que
  * es la forma real de la query según la SERP medida el 2-sep-2026— y no es la
  * traducción del inglés: los casos se reencuadran POR PROBLEMA, no por país.
- * Un industrial de Alicante no compra un ERP porque le enseñes villas en Bali;
- * le compra porque reconoce su problema. La prueba se cuenta igual de real,
- * pero entra por donde duele. */
+ * El caso real de cada hoja ya no vive aquí: desde el 24-sep-2026 sale todo de
+ * Lawang y vive en `campo_es.php` (owner: «básate en lo que hemos hecho para
+ * Lawang»). Se sigue contando por el problema —una promotora con 32 herramientas
+ * bajo un menú—, no por la isla. */
 
 $HOJAS_ES = [
 
@@ -28,12 +29,6 @@ $HOJAS_ES = [
     ['Integraciones','<span id="integraciones"></span>Cobros, calendarios, hojas de cálculo, mensajería — allí donde el dato ya vive.'],
     ['Idiomas','La interfaz en tantos idiomas como hable el equipo de verdad.'],
     ['Entrega','Código, base de datos y despliegue. Escrito para que lo lea el siguiente desarrollador.'],
-  ],
-  'caso'=>[
-    'img'=>'work-lawang.jpg','alt'=>'Suite interna de una promotora inmobiliaria',
-    'titulo'=>'Una promotora inmobiliaria que vendía sobre plano en carpetas',
-    'texto'=>'Contratos con firma digital remota, facturas y recibos, avance de obra, compradores, calendario de vencimientos, catálogo de unidades, documentación y un portal donde cada comprador ve sus propios contratos y pagos. Once herramientas bajo un solo menú, una cáscara compartida, un solo acceso. Una persona se da de alta en un único sitio y todas las demás herramientas la leen de ahí. (Opera en Indonesia; el problema es el mismo en Murcia.)',
-    'cifras'=>[['11','herramientas, un menú'],['2','idiomas de interfaz'],['1','alta por persona']],
   ],
   'faq'=>[
     ['¿Esto es un ERP?','A veces sustituye a uno, más a menudo convive con él. Un ERP enlatado es bueno en lo que todas las empresas hacen igual —contabilidad, nóminas— y malo justo en la parte que te hace diferente, que suele ser donde están el dinero y los errores. Esa parte es la que construimos.'],
@@ -66,12 +61,6 @@ $HOJAS_ES = [
     ['Equipo','Roles, asignación e histórico visible de quién hizo qué.'],
     ['Informes','Los tres números con los que de verdad se pilota, no un panel que no abre nadie.'],
   ],
-  'caso'=>[
-    'img'=>'work-sumba.jpg','alt'=>'CRM de flota y reservas',
-    'titulo'=>'Un alquiler de vehículos que perdía la reserva en la segunda consulta',
-    'texto'=>'CRM de flota y disponibilidad, reservas con entrega a domicilio, cobros por pasarela local y equipo editable. Tres idiomas de interfaz, incluido el del país donde trabaja el equipo — porque quien lo usa cada día no es quien lo encargó.',
-    'cifras'=>[['3','idiomas de interfaz'],['2','webs públicas que alimenta'],['1','registro por reserva, de punta a punta']],
-  ],
   'faq'=>[
     ['¿Por qué no HubSpot o Pipedrive?','Si un CRM estándar encaja, úsalo: sale más barato que cualquier cosa que construyamos. Ven cuando no encaja — cuando lo que vendes no es un «trato», cuando tus leads llegan por un sitio que el CRM no sabe leer, o cuando el coste por usuario ya ha superado al de tener el tuyo.'],
     ['¿Puede leer los leads de WhatsApp?','Sí. Es la entrada que más construimos y la que normalmente justifica el proyecto ella sola.'],
@@ -102,12 +91,6 @@ $HOJAS_ES = [
     ['Traspaso','Una línea que el bot no cruza, y un paso limpio a una persona cuando llega a ella.'],
     ['Idiomas','Contesta en el idioma en que se le escribe, incluidos los que habla tu equipo.'],
     ['Visibilidad','Todas las conversaciones legibles por ti, con qué dijo el bot y por qué.'],
-  ],
-  'caso'=>[
-    'img'=>'work-balimoto.jpg','alt'=>'Bot de WhatsApp en producción',
-    'titulo'=>'Un operador turístico que contestaba a mano el mismo mensaje veinte veces al día',
-    'texto'=>'El bot responde sobre rutas y precios, reserva citas directamente en Google Calendar, manda enlaces de pago de Stripe y se agenda su propio seguimiento cuando un lead dice «me lo reviso». Llega al equipo por el mismo panel donde están los leads.',
-    'cifras'=>[['24/7','contestando, en producción'],['1','red de seguridad que frena el envío'],['1','línea de traspaso, escrita en código']],
   ],
   'faq'=>[
     ['¿Nos van a banear el número?','No si está construido sobre la API oficial de Business con plantillas dadas de alta, que es como los hacemos. Los que banean números son los puentes no oficiales, y son más baratos exactamente por eso.'],
@@ -140,12 +123,6 @@ $HOJAS_ES = [
     ['Estado','En base de datos, nunca en disco: un redespliegue no puede hacerle olvidar lo que ya hizo.'],
     ['Auditoría','Cada acción queda registrada, y todas son reversibles por ti.'],
   ],
-  'caso'=>[
-    'img'=>'work-lawang.jpg','alt'=>'Vigilantes autónomos en producción',
-    'titulo'=>'Dos vigilantes, dos negocios, los dos en producción',
-    'texto'=>'Uno revisa gasto y leads cada cuatro horas: puede pausar un conjunto en sequía y repartir presupuesto diario dentro de un tope mensual que fija el dueño, y no puede salirse de esa jaula. El otro lee conversaciones vivas de leads cada media hora y pausa anuncios sin retorno. Los dos avisan por un canal privado de Telegram; ninguno puede crear una campaña ni escribir a un cliente.',
-    'cifras'=>[['4h / 30min','intervalos en producción'],['0','acciones que gasten fuera del tope'],['1:1','canal de aviso, nunca un grupo']],
-  ],
   'faq'=>[
     ['¿Esto es n8n o Zapier?','Esos son buenos uniendo dos servicios que ya tienen botones el uno para el otro. Nosotros escribimos los que necesitan criterio, los que no pueden romperse en silencio y los que tienen que recordar su estado tras un redespliegue.'],
     ['¿Actuaría sin preguntarnos?','Solo en el sentido de frenar algo, y solo dentro de los límites que pongas tú. No puede gastar, ni crear, ni contactar con nadie. Es una propiedad del código, no un ajuste.'],
@@ -176,12 +153,6 @@ $HOJAS_ES = [
     ['Contenido y redes','<span id="redes"></span>El lado orgánico que abarata el de pago: qué publica la cuenta y con qué voz.'],
     ['Vigilancia','Gasto y leads revisados por intervalos, con permiso para pausar y para nada más.'],
     ['Informe','Qué costó, qué produjo y qué vamos a cambiar.'],
-  ],
-  'caso'=>[
-    'img'=>'work-balimoto.jpg','alt'=>'Embudos de Meta Ads en producción',
-    'titulo'=>'Dos cuentas vivas, dos productos opuestos',
-    'texto'=>'Una vende rutas en moto a viajeros y la otra villas a inversores: misma disciplina, embudos contrarios. Las dos con creatividades hechas para móvil, las dos alimentando un CRM que sabe de dónde vino cada lead, y las dos vigiladas por un proceso que puede pausar un conjunto en sequía por su cuenta pero nunca subir el gasto por encima del tope mensual del dueño.',
-    'cifras'=>[['2','cuentas vivas en producción'],['1','tope mensual, nunca superado'],['0','presupuestos subidos sin el dueño']],
   ],
   'faq'=>[
     ['¿Necesitáis acceso a nuestra cuenta publicitaria?','Sí, como socios en tu Business Manager. La propiedad de la cuenta, del píxel y de los públicos sigue siendo tuya, siempre.'],
@@ -215,7 +186,6 @@ $HOJAS_ES = [
     ['Lo que NO lo mueve','El número de pantallas. Es lo que todo el mundo cuenta y lo que menos correlaciona con el trabajo real.'],
   ],
   'caso'=>[
-    'img'=>'work-ids.jpg','alt'=>'Portal de clientes con login, roles y documentos',
     'titulo'=>'Dos proyectos, la misma frase de partida',
     'texto'=>'«Queremos un portal para nuestros clientes.» Uno acabó siendo login, roles, comunidades y documentos por categorías: acotado y previsible. El otro, la misma frase, arrastraba contratos, firmas, cobros y obra — y era diez veces el trabajo. La diferencia no estaba en el número de pantallas; estaba en cuántos documentos tenía que emitir y cuántos sistemas ajenos tenía que leer.',
     'cifras'=>[['5','factores que mueven el precio'],['1','que casi nadie cuenta: las integraciones'],['0','tarifas publicadas']],
@@ -252,12 +222,6 @@ $HOJAS_ES = [
     ['Categorías','Documentos ordenados por categorías que editáis vosotros.'],
     ['Registro','Quién entró y qué abrió, guardado en tu lado.'],
   ],
-  'caso'=>[
-    'img'=>'work-ids.jpg','alt'=>'IDS Fincas — portal de clientes',
-    'titulo'=>'IDS Fincas — administración de fincas en Murcia',
-    'texto'=>'Un portal para una administración de fincas: cada vecino entra y ve los documentos de sus comunidades —puede pertenecer a varias—, ordenados en categorías que la administración edita. Sin autorregistro: el alta llega por un enlace para crear la contraseña, y las descargas comprueban en el servidor que el documento es suyo. El mismo patrón corre para los compradores de una promotora, con contratos y pagos en vez de actas.',
-    'cifras'=>[['N:N','vecinos y comunidades'],['0','documentos que se abren sin permiso'],['1','panel de administración']],
-  ],
   'faq'=>[
     ['¿Nuestros clientes tienen que instalar algo?','No. Es una página web que funciona en el móvil. Entran con su correo.'],
     ['¿Puede un cliente ver el expediente de otro?','No, y no porque el botón esté escondido. La base de datos se niega a devolver lo que no es suyo, escriba la dirección que escriba.'],
@@ -288,12 +252,6 @@ $HOJAS_ES = [
     ['Hojas de cálculo','Leídas donde el equipo aún las usa, sin obligar a migrar el primer día.'],
     ['Mensajería','WhatsApp y Telegram como el canal que una persona ya lee.'],
     ['Fallos','Cada ejecución registrada; una llamada que falla llega a una persona.'],
-  ],
-  'caso'=>[
-    'img'=>'work-sumba.jpg','alt'=>'Integraciones en producción',
-    'titulo'=>'Leads, cobros y calendarios que nadie vuelve a teclear',
-    'texto'=>'En los proyectos que llevamos: los formularios de Meta entran solos en el CRM de una promotora con su campaña pegada; el bot de un operador turístico escribe las reservas en Google Calendar y manda enlaces de pago de Stripe; las reservas de una empresa de alquiler se cobran con su pasarela local; y las aprobaciones le llegan al dueño como un sí o un no en Telegram, y es la base de datos la que hace el cambio.',
-    'cifras'=>[['0','leads tecleados a mano'],['1','dueño por dato'],['1','persona avisada si algo falla']],
   ],
   'faq'=>[
     ['¿Podéis conectar un programa que no tiene API?','A veces: por sus exportaciones, por sus avisos por correo o por una hoja de cálculo en la que escribe. Antes de hacerlo te decimos con franqueza lo frágil que es.'],
@@ -326,12 +284,6 @@ $HOJAS_ES = [
     ['Consultas','Conectadas al CRM, al bot o al calendario, no a una bandeja.'],
     ['Legal','Privacidad, aviso legal y cookies escritos para esa web, no copiados.'],
   ],
-  'caso'=>[
-    'img'=>'work-balimoto.jpg','alt'=>'Web de un operador turístico en producción',
-    'titulo'=>'Dos webs en producción que venden',
-    'texto'=>'Un operador de rutas en moto con calculadora de precio, páginas guía y pago de la reserva, cuyo contenido edita el propio cliente desde un panel; y una web de alquiler con entrega en el aeropuerto. Las dos están en producción y las dos pasan sus consultas a un bot de WhatsApp en vez de a una bandeja; en la del operador, cada precio —tarjetas, guías, calculadora— sale de una sola fuente que edita el cliente.',
-    'cifras'=>[['2','webs en producción'],['1','panel para editar el contenido'],['0','plantillas o maquetadores']],
-  ],
   'faq'=>[
     ['¿Por qué no WordPress o Wix?','Si una plantilla te sirve, es más barata y deberías usarla. Merecemos la pena cuando la web tiene que hacer algo —presupuestar, reservar, cobrar una señal, alimentar un CRM— o cuando la velocidad en el móvil pesa en la venta.'],
     ['¿Podemos editar el contenido nosotros?','Sí. Precios, textos y fotos se cambian desde un panel; no nos necesitas para mover una fecha.'],
@@ -362,12 +314,6 @@ $HOJAS_ES = [
     ['Buscadores de IA','<code>llms.txt</code>, permisos de rastreo y contenido escrito para ser citado.'],
     ['SEM','Búsqueda de pago donde compensa, atada al CRM.'],
     ['Medición','Search Console y analítica instaladas antes de juzgar nada.'],
-  ],
-  'caso'=>[
-    'img'=>'work-balimoto.jpg','alt'=>'Estructura de búsqueda en una web en producción',
-    'titulo'=>'Esta web, y las que llevamos',
-    'texto'=>'axisworks.studio es el ejemplo: páginas en español e inglés emparejadas con hreflang, una hoja por servicio, un sitemap y un <code>llms.txt</code> que salen del mismo catálogo que las páginas, y las direcciones nuevas enviadas por IndexNow al publicarse. Las webs de clientes en producción llevan la misma base, con páginas guía escritas para lo que sus clientes teclean de verdad.',
-    'cifras'=>[['2','idiomas, cada uno con sus direcciones'],['1','catálogo para páginas, sitemap y llms.txt'],['0','posiciones prometidas']],
   ],
   'faq'=>[
     ['¿Nos ponéis los primeros en Google?','Nadie honesto puede prometer eso. Podemos quitar lo que te frena, hacer páginas para lo que buscan tus clientes y después medirlo.'],
@@ -400,12 +346,6 @@ $HOJAS_ES = [
     ['Comunidad','Comentarios y mensajes que llegan a la persona que puede contestarlos.'],
     ['Revisión','Qué hizo cada pieza, leído aparte de lo que hicieron los anuncios.'],
   ],
-  'caso'=>[
-    'img'=>'work-lawang.jpg','alt'=>'Plan de contenido para una promotora',
-    'titulo'=>'Tres cuentas para una promotora',
-    'texto'=>'Una marca matriz y dos proyectos, cada uno con su cuenta y su trabajo: la matriz da confianza con contenido técnico y legal, un proyecto enseña la obra avanzando y el otro vende el lugar. El plan salió de treinta y dos referencias del sector y de auditar el material que ya existía, que resultó ser mucho menos de lo que parecía: grabar no era opcional.',
-    'cifras'=>[['3','cuentas, tres trabajos distintos'],['32','referencias del sector analizadas'],['1','voz por cuenta']],
-  ],
   'faq'=>[
     ['¿Publicáis vosotros?','Sí, o le pasamos el plan y las piezas a tu equipo, como prefieras.'],
     ['¿Grabáis?','Planificamos qué grabar y lo editamos. La grabación se hace contigo o con un equipo local, porque el mejor material es el real.'],
@@ -436,12 +376,6 @@ $HOJAS_ES = [
     ['Registro de decisiones','Cada decisión escrita con su motivo y su fecha.'],
     ['Revisión','Mirar los números cada cierto tiempo contra lo que dijimos que haríamos.'],
     ['Traspaso','Todo documentado para que no dependa de nosotros.'],
-  ],
-  'caso'=>[
-    'img'=>'work-lawang.jpg','alt'=>'Marca y rumbo para una promotora',
-    'titulo'=>'Una promotora, de la marca a la operación',
-    'texto'=>'Para una promotora definimos la identidad de la marca matriz y el trabajo de cada una de sus cuentas, y decidimos con el dueño qué construye después su suite interna. Cada decisión queda escrita con su motivo y su fecha, y eso es lo que permite que dos personas y un equipo de departamentos de IA la lleven sin perder el hilo.',
-    'cifras'=>[['1','sistema de marca en web, documentos y cuentas'],['11','herramientas internas bajo un menú'],['1','registro de decisiones, fechado']],
   ],
   'faq'=>[
     ['¿Esto es consultoría?','En parte, pero además construimos lo que recomendamos. Eso mantiene honesto el consejo: nos toca vivir con él.'],

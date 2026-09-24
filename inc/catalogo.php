@@ -1,6 +1,11 @@
 <?php
 require_once __DIR__ . '/hojas_en.php';
 require_once __DIR__ . '/hojas_es.php';
+require_once __DIR__ . '/campo_en.php';
+require_once __DIR__ . '/campo_es.php';
+/* El caso real (Lawang) se funde en su hoja: campo_*.php es su único dueño. */
+foreach ($CAMPO_EN as $slug => $campo) if (isset($HOJAS_EN[$slug])) $HOJAS_EN[$slug] = $campo + $HOJAS_EN[$slug];
+foreach ($CAMPO_ES as $slug => $campo) if (isset($HOJAS_ES[$slug])) $HOJAS_ES[$slug] = $campo + $HOJAS_ES[$slug];
 
 /* ── Los 11 productos reales del estudio ──────────────────────────────
  * Esta lista es la LEYENDA del home (el «cuadro de piezas» del plano) y
@@ -94,6 +99,9 @@ $T = [
     'langs'=>'English / Español',
     'foot'=>'PRECISION-BUILT','sheet'=>'SHEET','rev'=>'REV','axis'=>'AXIS','lang_l'=>'LANG',
     'breadcrumb_home'=>'Home','breadcrumb_services'=>'Services',
+    'hj_principle'=>'PRINCIPLE','hj_flow'=>'HOW IT FLOWS','hj_sample'=>'SAMPLE DATA','hj_modules'=>'MODULES',
+    'hj_sample_note'=>'Sample data in the shape of the real tool. No names, no amounts.',
+    'hj_live'=>'IN PRODUCTION','hj_case_btn'=>'THE LAWANG CASE','hj_scope_th'=>['#','Component','What it means'],
   ],
   'es' => [
     'nav_services'=>'Servicios','nav_work'=>'Trabajo','nav_process'=>'Proceso',
@@ -105,5 +113,8 @@ $T = [
     'langs'=>'English / Español',
     'foot'=>'HECHO CON PRECISIÓN','sheet'=>'HOJA','rev'=>'REV','axis'=>'EJE','lang_l'=>'IDIOMA',
     'breadcrumb_home'=>'Inicio','breadcrumb_services'=>'Servicios',
+    'hj_principle'=>'PRINCIPIO','hj_flow'=>'CÓMO FLUYE','hj_sample'=>'DATOS DE EJEMPLO','hj_modules'=>'MÓDULOS',
+    'hj_sample_note'=>'Datos de ejemplo con la forma de la herramienta real. Sin nombres ni importes.',
+    'hj_live'=>'EN PRODUCCIÓN','hj_case_btn'=>'EL CASO LAWANG','hj_scope_th'=>['#','Pieza','Qué significa'],
   ],
 ];

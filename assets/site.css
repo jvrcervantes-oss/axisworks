@@ -352,3 +352,17 @@ a.leyenda__row:hover .ar{ transform:translateX(4px) }
   *{ animation:none !important; transition:none !important }
   html{ scroll-behavior:auto }
 }
+
+/* Tablas y botón pequeño: compartidos por portada y hojas (movidos de home.css el 24-sep-2026). */
+/* ---------- tablas ---------- */
+.tbl-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch }
+.tbl-wrap--box{ border:1px solid var(--line); background:var(--paper) }
+.tbl{ width:100%; border-collapse:collapse; font-family:var(--f-mono); font-size:12px; }
+.tbl th{ text-align:left; font-size:10px; font-weight:500; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--steel-text); padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap }
+.tbl td{ padding:10px; border-bottom:1px solid var(--line-soft); white-space:nowrap }
+.tbl tr:last-child td{ border-bottom:0 }
+.tbl b{ font-weight:500 }
+.tbl .r{ text-align:right }
+.tbl .due{ color:var(--signal-ink); font-weight:500 }
+.btn--sm{ min-height:0; padding:12px 24px; font-size:13px; letter-spacing:.06em }

@@ -64,7 +64,6 @@ main{ padding-top:64px }
 .hero__data b{ font-family:var(--f-mono); font-size:13px; font-weight:600; letter-spacing:.04em }
 .hero__data b.acc{ color:var(--signal-ink) }
 .hero__acts{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding-top:4px }
-.btn--sm{ min-height:0; padding:12px 24px; font-size:13px; letter-spacing:.06em }
 .hero__sheet{ margin-left:auto; font-family:var(--f-mono); font-size:11px; color:var(--steel-text) }
 
 /* El instrumento: la retícula CAD del mockup, girando despacio (60 s por vuelta). */
@@ -138,17 +137,6 @@ main{ padding-top:64px }
   .erp__mod+.erp__mod{ border-left:0; border-top:1px solid var(--line) }
 }
 
-/* ---------- tablas ---------- */
-.tbl-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch }
-.tbl-wrap--box{ border:1px solid var(--line); background:var(--paper) }
-.tbl{ width:100%; border-collapse:collapse; font-family:var(--f-mono); font-size:12px; }
-.tbl th{ text-align:left; font-size:10px; font-weight:500; letter-spacing:.14em; text-transform:uppercase;
-  color:var(--steel-text); padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap }
-.tbl td{ padding:10px; border-bottom:1px solid var(--line-soft); white-space:nowrap }
-.tbl tr:last-child td{ border-bottom:0 }
-.tbl b{ font-weight:500 }
-.tbl .r{ text-align:right }
-.tbl .due{ color:var(--signal-ink); font-weight:500 }
 .erp__today .tbl th:first-child,.erp__today .tbl td:first-child{ padding-left:0 }
 .erp__today .tbl th:last-child,.erp__today .tbl td:last-child{ padding-right:0 }
 

@@ -44,13 +44,14 @@ $d = fn($s) => html_entity_decode($s, ENT_QUOTES, 'UTF-8');
 
 ## Selected work
 Live and in production:
+- Lawang Estate — a property developer's website and internal suite: thirty-two tools
+  under one menu (contracts with remote signature, invoices, banks, commissions,
+  construction, CRM, buyer portal), watchers on the ad account · https://lawangproperties.com
 - Bali Moto Adventures — motorcycle tour platform, with a WhatsApp AI bot that books
   and takes payment · https://balimotoadventures.com
 - Sumba Rental — motorbike rental with airport delivery · https://sumba.balibestmotorcycle.com
 
 In development (no public URL yet):
-- Lawang Estate — a property developer's internal suite: twelve tools, contracts with
-  remote digital signature, invoices, construction, buyers and a buyer portal
 - Bali Best Motorcycle — rental CRM: fleet, bookings, payments, three languages
 - IDS Fincas — client portal for a property management firm
 - CARBÓN — layered storytelling site for a gourmet burger brand

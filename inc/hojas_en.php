@@ -30,12 +30,6 @@ $HOJAS_EN = [
     ['Languages','The interface in as many languages as the team actually speaks.'],
     ['Handover','Source code, database and deployment. Written so the next developer can read it.'],
   ],
-  'caso'=>[
-    'img'=>'work-lawang.jpg','alt'=>'Lawang Estate — internal suite',
-    'titulo'=>'Lawang Estate — a property developer in Bali',
-    'texto'=>'Contracts with remote digital signature, invoices and receipts, construction progress, buyers, payment schedules, unit catalogue, documentation and a portal where each buyer sees their own contracts and payments. Eleven tools under one menu, one shared shell, one login. A person is registered in exactly one place; every other tool reads them from there.',
-    'cifras'=>[['11','tools, one menu'],['2','interface languages'],['1','sign-up point per person']],
-  ],
   'faq'=>[
     ['Is this an ERP?','Sometimes it replaces one, more often it sits beside one. An off-the-shelf ERP is good at what every company does the same way — accounting, payroll. It is bad at the part that makes you different, and that part is usually where the money and the mistakes are. We build that part.'],
     ['We already use spreadsheets and they work. Why change?','Spreadsheets work until two people edit them, until a number has to appear in a document, or until someone leaves. The signal is not that the spreadsheet is slow — it is that somebody is retyping.'],
@@ -66,12 +60,6 @@ $HOJAS_EN = [
     ['Follow-up','Reminders that fire on the date the customer said, not when someone remembers.'],
     ['Team','Roles, assignment and a visible history of who did what.'],
     ['Reporting','The three numbers you actually steer by, not a dashboard nobody opens.'],
-  ],
-  'caso'=>[
-    'img'=>'work-sumba.jpg','alt'=>'Bali Best Motorcycle — CRM and fleet',
-    'titulo'=>'Bali Best Motorcycle — rental fleet and bookings',
-    'texto'=>'A CRM for a motorbike rental operator: fleet and availability, bookings with airport delivery, payments through the local provider, and an editable team. Three interface languages, including Bahasa Indonesia, because the people using it every day are not the people who commissioned it.',
-    'cifras'=>[['3','interface languages'],['2','live public sites fed by it'],['1','record per booking, end to end']],
   ],
   'faq'=>[
     ['Why not HubSpot or Pipedrive?','If a standard CRM fits, use it — it is cheaper than anything we would build. Come to us when it does not: when the object you sell is not a &ldquo;deal&rdquo;, when your leads arrive somewhere the CRM cannot read, or when the licence cost per seat has passed the cost of owning the thing.'],
@@ -104,12 +92,6 @@ $HOJAS_EN = [
     ['Languages','Answers in the language it is written to, including the ones your team speaks.'],
     ['Visibility','Every conversation readable by you, with what the bot said and why.'],
   ],
-  'caso'=>[
-    'img'=>'work-balimoto.jpg','alt'=>'Bali Moto Adventures — WhatsApp bot',
-    'titulo'=>'Bali Moto Adventures — live, on the official API',
-    'texto'=>'A tour operator&rsquo;s bot: it answers about routes and prices, books appointments straight into Google Calendar, sends Stripe payment links, and schedules its own follow-up when a lead says &ldquo;let me think about it&rdquo;. It reaches the team through the same panel that holds the leads.',
-    'cifras'=>[['24/7','answering, in production'],['1','safety net that blocks the send'],['1','human handover line, enforced in code']],
-  ],
   'faq'=>[
     ['Will it get our number banned?','Not if it is built on the official Business API with registered templates, which is how we build them. Unofficial bridges are the ones that get numbers banned, and they are cheaper for exactly that reason.'],
     ['Can it use our existing WhatsApp number?','Usually yes, through the official migration or coexistence path. It is a process with Meta rather than a switch, and how long it takes is up to them, not us.'],
@@ -140,12 +122,6 @@ $HOJAS_EN = [
     ['Forbidden by design','Spending, creating, and messaging your customers. Not configurable.'],
     ['State','Kept in the database, never on disk — a redeploy must not make it forget what it already did.'],
     ['Audit','Every action it takes is recorded, and every one is reversible by you.'],
-  ],
-  'caso'=>[
-    'img'=>'work-lawang.jpg','alt'=>'Autonomous watchers in production',
-    'titulo'=>'Two watchers, two businesses, both in production',
-    'texto'=>'One checks ad spend and leads every four hours: it can pause a starving ad set and move daily budget inside a monthly ceiling the owner sets, and it cannot step outside that cage. The other reads live lead conversations every thirty minutes and pauses ads with no return. Both report to their owner on a private Telegram channel; neither can create a campaign or message a customer.',
-    'cifras'=>[['4h / 30min','check intervals in production'],['0','actions that spend outside the ceiling'],['1:1','alert channel, never a group']],
   ],
   'faq'=>[
     ['Is this n8n or Zapier?','Those are good at joining two services that already have buttons for each other. We write the ones that need judgement, that must not break silently, and that have to keep state across a redeploy.'],
@@ -178,12 +154,6 @@ $HOJAS_EN = [
     ['Buyer portal','Each buyer sees their own contracts, payments and documents — and nobody else&rsquo;s.'],
     ['Languages','Documents in English, Spanish and Bahasa Indonesia; interface in English and Spanish.'],
   ],
-  'caso'=>[
-    'img'=>'work-lawang.jpg','alt'=>'Lawang Estate — developer suite',
-    'titulo'=>'Lawang Estate — Bali',
-    'texto'=>'Eleven tools under one menu: contracts with remote digital signature, invoices and receipts, unit catalogue, construction, buyers, payment schedules, documentation and the buyer portal. Every price is read from the document that sets it, and a buyer exists in exactly one place. The public showcase and the internal suite share one database.',
-    'cifras'=>[['11','tools, one login'],['2','interface languages'],['1','source per price']],
-  ],
   'faq'=>[
     ['Do you work with developers outside Bali?','Yes. The projects that shaped this are in Bali and Sumba, and the model — documents, schedules, units, buyers — is the same wherever the units are.'],
     ['Can it handle Hak Sewa and powers of attorney?','Yes, including the part most systems miss: three leases on one plot are not duplicates, and the attorney for the landowner is a different role from the attorney for the buyer.'],
@@ -214,12 +184,6 @@ $HOJAS_EN = [
     ['Content &amp; social','<span id="social"></span>The organic side that makes the paid side cheaper: what the account posts, and in whose voice.'],
     ['Watching','Spend and leads checked on an interval, with the authority to pause and nothing else.'],
     ['Reporting','What it cost, what it produced, and what we are changing next.'],
-  ],
-  'caso'=>[
-    'img'=>'work-balimoto.jpg','alt'=>'Meta Ads funnels in production',
-    'titulo'=>'Two live ad accounts, two very different products',
-    'texto'=>'One sells motorcycle tours to travellers, the other sells villas to investors — same discipline, opposite funnels. Both run creative made for mobile, both feed a CRM that knows where each lead came from, and both are watched by a process that can pause a starving ad set on its own but can never raise spend beyond the owner&rsquo;s monthly ceiling.',
-    'cifras'=>[['2','live accounts in production'],['1','monthly ceiling, never exceeded'],['0','budget raised without the owner']],
   ],
   'faq'=>[
     ['Do you need access to our ad account?','Yes, as a partner on your Business Manager. You keep ownership of the account, the pixel and the audiences — always.'],
@@ -253,12 +217,6 @@ $HOJAS_EN = [
     ['Languages','The portal in the client&rsquo;s language, independent of the team&rsquo;s.'],
     ['Audit','Who entered and what they opened, kept on your side.'],
   ],
-  'caso'=>[
-    'img'=>'work-lawang.jpg','alt'=>'Lawang Estate — buyer portal',
-    'titulo'=>'Lawang Estate — the buyer portal',
-    'texto'=>'Each buyer of a villa or a plot sees their own contracts, payment schedule and receipts, straight from the developer&rsquo;s internal suite. Access is self-service: a buyer with a record and a contract logs in with their email, and the rule is checked on arrival. It is one of the eleven tools of the suite described on <a href="/services/custom-business-software">sheet B01</a>, on the same database.',
-    'cifras'=>[['1','database for the office and the buyers'],['0','manual invitations needed'],['1','file per buyer, and only theirs']],
-  ],
   'faq'=>[
     ['Do our clients need to install anything?','No. It is a web page that works on a phone. They log in with their email.'],
     ['Can a client see another client&rsquo;s file?','No, and not because the button is hidden. The database refuses to return rows that are not theirs, whatever address is typed.'],
@@ -289,12 +247,6 @@ $HOJAS_EN = [
     ['Spreadsheets','Read where the team still keeps them, instead of forcing a migration on day one.'],
     ['Messaging','WhatsApp and Telegram as the channel a human already reads.'],
     ['Failure','Every run recorded; a failed call reaches a person.'],
-  ],
-  'caso'=>[
-    'img'=>'work-sumba.jpg','alt'=>'Integrations in production',
-    'titulo'=>'Leads, payments and calendars that nobody retypes',
-    'texto'=>'Across the projects we run: Meta lead forms arrive in a developer&rsquo;s CRM on their own with their campaign attached; a tour operator&rsquo;s bot writes bookings into Google Calendar and sends Stripe payment links; a rental company&rsquo;s bookings settle through its local payment provider; and approvals travel to the owner as a yes/no on Telegram, with the database doing the change.',
-    'cifras'=>[['0','leads typed in by hand'],['1','owner per fact'],['1','person told when a call fails']],
   ],
   'faq'=>[
     ['Can you connect a tool that has no API?','Sometimes — through its exports, its email notifications or a spreadsheet it writes to. We tell you honestly how fragile that is before building it.'],
@@ -327,12 +279,6 @@ $HOJAS_EN = [
     ['Enquiries','Wired into the CRM, the bot or the calendar — not an inbox.'],
     ['Legal','Privacy, terms and cookies written for the site, not copied.'],
   ],
-  'caso'=>[
-    'img'=>'work-balimoto.jpg','alt'=>'Bali Moto Adventures — website',
-    'titulo'=>'Bali Moto Adventures and Sumba Rental — both live',
-    'texto'=>'A motorcycle tour operator with a price calculator, guide pages and checkout, whose content the client edits from a panel; and a rental site with airport delivery. Both are live and both hand their enquiries to a WhatsApp bot instead of an inbox; on the tour site every price — cards, guide pages, calculator — is read from a single source the client edits.',
-    'cifras'=>[['2','sites live in production'],['1','panel to edit the content'],['0','templates or page builders']],
-  ],
   'faq'=>[
     ['Why not WordPress or Webflow?','If a template fits, it is cheaper and you should use it. We are worth it when the site has to do something — quote, book, take a deposit, feed a CRM — or when speed on a phone matters to the sale.'],
     ['Can we edit the content ourselves?','Yes. Prices, texts and photos are edited from a panel; you do not need us to change a date.'],
@@ -363,12 +309,6 @@ $HOJAS_EN = [
     ['AI search','<code>llms.txt</code>, crawler permissions and content written to be quoted.'],
     ['SEM','Paid search where it pays, tied to the CRM.'],
     ['Measurement','Search Console and analytics installed before anything is judged.'],
-  ],
-  'caso'=>[
-    'img'=>'work-balimoto.jpg','alt'=>'Search structure on a live site',
-    'titulo'=>'This site, and the ones we run',
-    'texto'=>'axisworks.studio is itself the example: English and Spanish pages paired with hreflang, one sheet per service, a sitemap and an <code>llms.txt</code> generated from the same catalogue as the pages, and new URLs submitted through IndexNow when they go live. The live client sites carry the same base, with guide pages written for the query their customers actually type.',
-    'cifras'=>[['2','languages, each with its own addresses'],['1','catalogue feeding pages, sitemap and llms.txt'],['0','positions promised']],
   ],
   'faq'=>[
     ['Can you get us to the first position?','Nobody honest can promise that. We can remove what is holding you back and build pages for what your customers search, and then measure it.'],
@@ -401,12 +341,6 @@ $HOJAS_EN = [
     ['Community','Replies and messages routed to the person who can answer them.'],
     ['Review','What each piece did, read separately from what the ads did.'],
   ],
-  'caso'=>[
-    'img'=>'work-lawang.jpg','alt'=>'Content plan for a property developer',
-    'titulo'=>'Three accounts for one property developer',
-    'texto'=>'A parent brand and two projects, each with its own account and its own job: the parent builds trust with technical and legal content, one project shows the build advancing, and the other sells the place. The plan came from thirty-two references in the sector and from auditing the footage that already existed — which is how we found it was far less than it looked, and that filming was not optional.',
-    'cifras'=>[['3','accounts, three different jobs'],['32','sector references analysed'],['1','voice per account']],
-  ],
   'faq'=>[
     ['Do you post for us?','Yes, or we hand the plan and the pieces to your team — whichever you prefer.'],
     ['Do you film?','We plan what to film and edit it. Filming on site is done with you or with a local crew, because the best material is the real one.'],
@@ -437,12 +371,6 @@ $HOJAS_EN = [
     ['Decision log','Each decision written with its reason and its date.'],
     ['Review','A regular look at the numbers against what we said we would do.'],
     ['Handover','Everything documented so it does not depend on us.'],
-  ],
-  'caso'=>[
-    'img'=>'work-lawang.jpg','alt'=>'Lawang Estate — brand and direction',
-    'titulo'=>'Lawang Estate — from brand to operations',
-    'texto'=>'For a property developer we defined the parent brand identity and the job of each of its social accounts, and we decide with the owner what the internal suite builds next. Every decision is logged with its reason and its date, which is what lets two people and a team of AI departments run it without losing the thread.',
-    'cifras'=>[['1','brand system across web, documents and accounts'],['11','internal tools under one menu'],['1','decision log, dated']],
   ],
   'faq'=>[
     ['Is this consulting?','Partly, but we also build what we recommend. That keeps the advice honest: we have to live with it.'],
