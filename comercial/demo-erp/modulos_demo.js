@@ -51,13 +51,16 @@
     document.head.appendChild(st);
     var d = document.createElement('div');
     d.className = 'axw-aviso'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true');
-    d.innerHTML = '<div><small>Módulo apagado</small><h2>' + CAT.nombre(k) + ' no está en tu configuración</h2>' +
+    d.setAttribute('aria-labelledby', 'axw-aviso-tit');
+    d.innerHTML = '<div><small>Módulo apagado</small><h2 id="axw-aviso-tit">' + CAT.nombre(k) + ' no está en tu configuración</h2>' +
       '<p>Lo apagaste en la página de módulos. Actívalo para verlo en la demo, o vuelve a elegir tus módulos.</p>' +
       '<nav><button type="button" class="p" data-axw-activa>Activarlo y verlo</button><a class="s" href="/#configurador">Configurar módulos</a>' +
       '<a class="s" href="/intranet/v4/home/">Ir al inicio</a></nav></div>';
     document.body.appendChild(d);
     d.querySelector('[data-axw-activa]').addEventListener('click', function () { estado[k] = true; CAT.guardaEstado(estado); location.reload(); });
     d.querySelector('[data-axw-activa]').focus();
+    // Escape: la pantalla detrás es de un módulo apagado, así que cerrar es salir al inicio.
+    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') location.href = '/intranet/v4/home/'; });
   }
 
   function arranca() {

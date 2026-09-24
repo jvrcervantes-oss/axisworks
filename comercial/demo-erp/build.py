@@ -327,11 +327,7 @@ def paginas_propias():
     open(os.path.join(DIST, 'demo', 'instancia.js'), 'w', encoding='utf-8').write(
         '/* GENERADO por build.py desde erp/ — no editar. */\nwindow.AXW_INSTANCIA = '
         + json.dumps(datos_instancia(), ensure_ascii=False) + ';\n')
-    aviso = ('<!doctype html><html lang="es"><meta charset="utf-8"><title>{t} · Demo</title>'
-             '<body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;'
-             'background:#fbf9f4;font:16px/1.6 system-ui,sans-serif;color:#2b2b25"><div style="max-width:30rem;padding:2rem">'
-             '<h1 style="font-weight:500;color:#485B37">{t}</h1><p>{m}</p>'
-             '<p><a href="/intranet/v4/home/" style="color:#485B37">Volver al inicio</a></p></div></body></html>')
+    aviso = AVISO
     for carpeta_v4, t, m in (
             ('generador-contratos', 'Generador de contratos',
              'En la demo no se incluye: sus plantillas son documentos del cliente. Lo enseñamos en la llamada con un documento de ejemplo.'),
@@ -375,6 +371,58 @@ def neutraliza_ejemplos():
                 t2 = t2.replace(a, b)
             if t2 != t:
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
+
+
+AVISO = ('<!doctype html><html lang="es"><meta charset="utf-8"><title>{t} · Demo</title>'
+         '<body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;'
+         'background:#fbf9f4;font:16px/1.6 system-ui,sans-serif;color:#2b2b25"><div style="max-width:30rem;padding:2rem">'
+         '<h1 style="font-weight:500;color:#485B37">{t}</h1><p>{m}</p>'
+         '<p><a href="/intranet/v4/home/" style="color:#485B37">Volver al inicio</a></p></div></body></html>')
+ENLACE_LOCAL = re.compile(r'''(?:src|href)=["'](/[^"'#?]*)''')
+
+
+def enlaces_rotos(raiz_dir):
+    """Rutas locales enlazadas desde el HTML que no existen en la carpeta (ni como fichero ni como carpeta con
+    index.html). Auditoría de Desarrollo (25-sep): la demo tenía 3 enlaces del menú a herramientas clásicas que no
+    se copian → 404 en directo."""
+    rotos = set()
+    for raiz, _d, fichs in os.walk(raiz_dir):
+        for f in fichs:
+            if not f.endswith('.html'):
+                continue
+            for ruta in ENLACE_LOCAL.findall(open(os.path.join(raiz, f), encoding='utf-8', errors='replace').read()):
+                p = os.path.join(raiz_dir, ruta.lstrip('/').replace('/', os.sep))
+                if not (os.path.isfile(p) or os.path.isfile(os.path.join(p, 'index.html'))):
+                    rotos.add(ruta)
+    return sorted(rotos)
+
+
+def avisos_para_rotos():
+    """Cada herramienta enlazada que la demo no trae enseña el aviso, no un 404."""
+    for ruta in enlaces_rotos(DIST):
+        if '.' in os.path.basename(ruta.rstrip('/')):
+            continue                                   # un fichero que falta es un fallo, no una pantalla
+        d = os.path.join(DIST, ruta.strip('/').replace('/', os.sep))
+        os.makedirs(d, exist_ok=True)
+        open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(AVISO.format(
+            t='Herramienta no incluida', m='En la demo no se incluye esta herramienta clásica: la demo enseña la versión 4 del ERP.'))
+
+
+def comprueba_resultado(raiz_dir):
+    """Lo último antes de dar por bueno un build (auditoría de Desarrollo, 25-sep): cada .js sigue siendo JavaScript
+    válido (los reemplazos de texto de --publico ya rompieron una vez todas las pantallas) y ningún enlace local
+    apunta a la nada."""
+    malos = []
+    for raiz, _d, fichs in os.walk(raiz_dir):
+        for f in fichs:
+            if f.endswith('.js'):
+                r = subprocess.run(['node', '--check', os.path.join(raiz, f)], capture_output=True, text=True)
+                if r.returncode:
+                    malos.append('sintaxis: %s — %s' % (os.path.relpath(os.path.join(raiz, f), raiz_dir),
+                                                       (r.stderr.strip().splitlines() or [''])[-1][:120]))
+    malos += ['enlace roto: ' + x for x in enlaces_rotos(raiz_dir)]
+    if malos:
+        aborta('el resultado no se sostiene:\n  ' + '\n  '.join(malos[:30]))
 
 
 def verifica():
@@ -491,6 +539,7 @@ def publica():
         '<IfModule mod_headers.c>\n  Header always set X-Robots-Tag "noindex, nofollow"\n</IfModule>\n'
         'DirectoryIndex index.html\n')
     open(os.path.join(DESTINO_PUBLICO, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
+    comprueba_resultado(DESTINO_PUBLICO)
     total = sum(len(f) for _r, _d, f in os.walk(DESTINO_PUBLICO))
     print('OK versión pública en %s: %d ficheros, sin rastros de Lawang' % (os.path.relpath(DESTINO_PUBLICO, AGENCIA), total))
 
@@ -510,8 +559,10 @@ def main():
     os.makedirs(os.path.dirname(g), exist_ok=True)
     open(g, 'w', encoding='utf-8', newline='').write(guard_demo())
     paginas_propias()
+    avisos_para_rotos()
     n = neutraliza()
     verifica()
+    comprueba_resultado(DIST)
     total = sum(len(f) for _r, _d, f in os.walk(DIST))
     print('OK dist/: %d ficheros · %d con Supabase neutralizado' % (total, n))
     if faltan:
