@@ -165,6 +165,7 @@ $HOJAS_ES = [
 ],
 
 'cuanto-cuesta-un-software-a-medida' => [
+  'chip'=>'Guía de precios',
   'lang'=>'es','url'=>'/es/cuanto-cuesta-un-software-a-medida','codigo'=>'DOC','eje'=>'',
   'title'=>'Cuánto cuesta un software a medida (y qué mueve el precio) — AxisWorks',
   'desc'=>'Qué encarece de verdad un desarrollo a medida, qué lo abarata, y cómo decidir entre comprar una herramienta enlatada o construir la tuya. Sin cifras inventadas.',

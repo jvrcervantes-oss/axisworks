@@ -58,13 +58,20 @@ if ($H['codigo'] !== 'DOC') {
      La hoja habla ya el lenguaje de la portada: bandas con filete, cabecera con
      barra de datos, y el caso real como PANEL con la forma de la herramienta de
      Lawang (datos de ejemplo), no como una captura en gris. */
-  $C = $H['caso'] ?? null; $P = $H['panel'] ?? null; ?>
+  $C = $H['caso'] ?? null; $P = $H['panel'] ?? null;
+  /* El chip dice QUÉ es en palabras del cliente (el nombre del producto), no
+     el número de plano: «SHEET B01 — BUILD» era nuestra metáfora, no su idioma. */
+  $chip = $H['chip'] ?? null;
+  if (!$chip) foreach ($PRODUCTOS as $p) if ($p[0] === $H['codigo']) $chip = $lang === 'es' ? $p[3] : $p[2];
+  $chip = $chip ?: $H['eyebrow'];
+  $S = $t['hj_s']; ?>
   <section class="hj-head">
     <div class="shell hj-head__grid">
       <div class="hj-head__col">
-        <p class="hj-chip"><i></i><?= $H['eyebrow'] ?></p>
+        <p class="hj-chip"><i></i><?= $chip ?></p>
         <h1><?= $H['h1'] ?></h1>
         <p class="hj-lead"><?= $H['lead'] ?></p>
+        <?php if ($P): ?><p class="hj-proof"><?= $t['hj_proof'] ?></p><?php endif; ?>
         <?php if ($C): ?>
         <div class="hj-data">
           <?php foreach ($C['cifras'] as $i => $c): ?>
@@ -78,27 +85,25 @@ if ($H['codigo'] !== 'DOC') {
         </div>
       </div>
       <aside class="hj-side">
-        <div class="tblock">
-          <svg class="tblock__x" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/></svg>
-          <div class="tblock__row"><span><?= $t['sheet'] ?></span><b><?= $H['codigo'] ?></b></div>
-          <?php if ($H['eje']): ?><div class="tblock__row"><span><?= $t['axis'] ?></span><b>✕ <?= $H['eje'] ?></b></div><?php endif; ?>
-          <div class="tblock__row"><span><?= $t['rev'] ?></span><b>2026-09</b></div>
-          <div class="tblock__row"><span><?= $t['lang_l'] ?></span><b><?= par($url) ? 'EN / ES' : strtoupper($lang) ?></b></div>
-        </div>
         <?php if (!empty($H['regla'])): ?>
         <div class="hj-rule">
           <p class="hj-rule__l"><?= $t['hj_principle'] ?></p>
           <p class="hj-rule__t"><?= $H['regla'] ?></p>
         </div>
         <?php endif; ?>
+        <?php if ($P): ?><p class="hj-bridge"><?= $t['hj_bridge'] ?></p><?php endif; ?>
       </aside>
     </div>
   </section>
 
   <section class="hj-band">
     <div class="shell hj-split">
-      <p class="hj-eyebrow">01 // <?= $t['spec'] ?></p>
-      <div class="prosa"><?php foreach ($H['spec'] as $p) echo "<p>$p</p>\n"; ?></div>
+      <p class="hj-eyebrow">01 · <?= $S[0] ?></p>
+      <div class="prosa">
+        <?php /* Un párrafo a la vista; el resto plegado pero en el HTML (Google lo lee). */
+        $sp = $H['spec']; echo '<p class="hj-first">' . array_shift($sp) . "</p>\n";
+        if ($sp): ?><details class="hj-more"><summary><?= $t['hj_more'] ?></summary><?php foreach ($sp as $p) echo "<p>$p</p>\n"; ?></details><?php endif; ?>
+      </div>
     </div>
   </section>
 
@@ -106,7 +111,7 @@ if ($H['codigo'] !== 'DOC') {
   <section class="hj-band" id="campo">
     <div class="shell">
       <div class="hj-shead">
-        <div><p class="hj-eyebrow">02 // <?= $t['case'] ?></p><h2><?= $C['titulo'] ?></h2></div>
+        <div><p class="hj-eyebrow">02 · <?= $S[1] ?></p><h2><?= $C['titulo'] ?></h2></div>
         <?php if ($P): ?><p class="hj-shead__aside"><?= $t['hj_sample_note'] ?></p><?php endif; ?>
       </div>
       <?php if ($P): ?>
@@ -115,6 +120,7 @@ if ($H['codigo'] !== 'DOC') {
           <span class="hj-panel__name"><i></i><?= $P['tool'] ?></span>
           <span class="pill pill--ink"><?= $t['hj_sample'] ?></span>
         </div>
+        <?php if (!empty($P['pie'])): ?><p class="hj-panel__pie"><?= $P['pie'] ?></p><?php endif; ?>
         <div class="hj-panel__main">
           <div class="hj-panel__tbl tbl-wrap">
             <table class="tbl">
@@ -155,7 +161,7 @@ if ($H['codigo'] !== 'DOC') {
   <?php if (!empty($H['flujo'])): ?>
   <section class="hj-band hj-band--ink">
     <div class="shell">
-      <div class="hj-shead hj-shead--inv"><div><p class="hj-eyebrow">03 // <?= $t['hj_flow'] ?></p></div></div>
+      <div class="hj-shead hj-shead--inv"><div><p class="hj-eyebrow">03 · <?= $S[2] ?></p></div></div>
       <ol class="hj-flow" style="--n:<?= count($H['flujo']) ?>">
         <?php foreach ($H['flujo'] as $i => $f): ?>
         <li><span class="hj-flow__n"><?= sprintf('%02d', $i+1) ?></span><b><?= $f[0] ?></b><span class="hj-flow__d"><?= $f[1] ?></span></li>
@@ -167,7 +173,7 @@ if ($H['codigo'] !== 'DOC') {
 
   <section class="hj-band">
     <div class="shell">
-      <div class="hj-shead"><div><p class="hj-eyebrow">04 // <?= $t['scope'] ?></p></div></div>
+      <div class="hj-shead"><div><p class="hj-eyebrow">04 · <?= $S[3] ?></p></div></div>
       <div class="tbl-wrap tbl-wrap--box">
         <table class="tbl hj-scope">
           <thead><tr><?php foreach ($t['hj_scope_th'] as $th): ?><th><?= $th ?></th><?php endforeach; ?></tr></thead>
@@ -183,7 +189,7 @@ if ($H['codigo'] !== 'DOC') {
 
   <section class="hj-band">
     <div class="shell hj-split">
-      <p class="hj-eyebrow">05 // <?= $t['faq'] ?></p>
+      <p class="hj-eyebrow">05 · <?= $S[4] ?></p>
       <div class="faq">
         <?php foreach ($H['faq'] as $f): ?>
         <details><summary><?= $f[0] ?></summary><div class="faq__a"><?= $f[1] ?></div></details>

@@ -110,3 +110,17 @@
 
 /* El cierre en Ink habla como el alta de la portada: mayúsculas. */
 .hj .cta h2{ text-transform:uppercase; font-size:clamp(28px,3vw,44px); line-height:1.1; letter-spacing:-.02em; max-width:22ch }
+
+/* Claridad (24-sep-2026): el caso se presenta arriba, el panel dice qué se
+   está mirando, y el texto largo se pliega. */
+.hj-proof{ font-size:15px; line-height:1.55; color:var(--graphite); padding-left:12px; border-left:2px solid var(--signal-ink); max-width:40rem }
+.hj-proof b{ color:var(--ink); font-weight:600 }
+.hj-bridge{ font-size:15px; line-height:1.55; color:var(--ink); padding:14px 16px; border:1px solid var(--line); background:#fff }
+.hj-panel__pie{ padding:10px 16px; border-bottom:1px solid var(--line); background:#BD49170F; font-size:14px; color:var(--ink) }
+.hj .prosa .hj-first{ font-size:clamp(19px,1.8vw,23px); line-height:1.5; color:var(--ink); max-width:44ch }
+.hj-more{ margin-top:18px; border-top:1px solid var(--line) }
+.hj-more summary{ cursor:pointer; list-style:none; padding:14px 0 4px; font-family:var(--f-mono); font-size:12px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--signal-ink) }
+.hj-more summary::-webkit-details-marker{ display:none }
+.hj-more summary::before{ content:"+ " } .hj-more[open] summary::before{ content:"− " }
+.hj-eyebrow{ letter-spacing:.06em }
