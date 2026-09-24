@@ -17,7 +17,8 @@
    es una hoja densa, no una sucesión de pantallas. Sin papel milimetrado:
    la retícula son los propios bordes de los paneles. */
 body.home::before{ display:none }
-.home .shell{ width:calc(100% - 2*var(--mar)); max-width:none }
+/* Columna de 1280px con margen a los lados (owner, 24-sep: «no a pantalla completa»). */
+.home .shell{ width:min(1280px, 100% - 2*var(--mar)) }
 .home{ --mar:clamp(16px,3.4vw,48px) }
 
 /* ---------- bandas ---------- */
@@ -40,7 +41,7 @@ main{ padding-top:64px }
 .tele{ position:absolute; top:8px; font-family:var(--f-mono); font-size:11px; letter-spacing:.02em;
   color:var(--steel-text); text-transform:uppercase }
 .tele b{ font-weight:400; color:var(--graphite) }
-.tele--tl{ left:16px } .tele--tr{ right:16px }
+.tele--tl{ left:max(var(--mar), (100% - 1280px)/2) } .tele--tr{ right:max(var(--mar), (100% - 1280px)/2) }
 @media(max-width:640px){ .tele--tr{ display:none } }
 
 /* ═══ 01 · HERO ═══ */
