@@ -239,6 +239,26 @@
     facturas.forEach(function (f) { if (f.tipo === 'factura') pendiente[f.id] = f.total; });
     aplic.forEach(function (a) { if (pendiente[a.factura_id] != null) pendiente[a.factura_id] -= a.importe_aplicado; });
 
+    /* ── Operaciones (núcleo del ERP, 25-sep-2026): una por cadena, con la misma regla que la migración
+       20260925090000_operacion_nucleo — cliente = adquiriente_1, borrador si no hay; el hijo hereda la del padre;
+       la factura la de su contrato; el recibí ninguna. La pantalla solo las usa con AXW_NUCLEO_OPERACION. */
+    var operaciones = [], opDe = {};
+    contratos.forEach(function (c) {
+      if (c.contrato_padre_id) return;
+      var comp = cc.filter(function (x) { return x.contrato_id === c.id && x.rol === 'adquiriente_1'; })[0];
+      var id = 'op-' + (operaciones.length + 1);
+      opDe[c.id] = id;
+      operaciones.push(fila({ id: id, referencia: 'OP-2026-' + ('000' + (operaciones.length + 1)).slice(-4),
+        client_id: comp ? comp.client_id : null, tipo: 'inmobiliaria', estado: comp ? 'abierta' : 'borrador',
+        importe_total: null, moneda: c.moneda, proyecto_id: c.proyecto_id, creado_por: c.creado_por,
+        created_at: c.created_at, datos: {} }));
+    });
+    contratos.forEach(function (c) { c.operacion_id = opDe[c.contrato_padre_id || c.id] || null; });
+    var opDeContrato = {};
+    contratos.forEach(function (c) { opDeContrato[c.id] = c.operacion_id; });
+    facturas.forEach(function (f) { f.operacion_id = f.tipo !== 'recibi' && f.contrato_id ? (opDeContrato[f.contrato_id] || null) : null; });
+    tabla('operaciones', operaciones);
+    tabla('operaciones_equipo', operaciones);
     tabla('contratos', contratos);
     tabla('contrato_compradores', cc);
     tabla('contrato_firmas', firmas);

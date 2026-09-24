@@ -256,8 +256,11 @@ def guard_demo():
     # Sesión real que el presentador pudiera tener en este origen: fuera antes de nada (Seguridad #2).
     limpia_sesion = ("(function(){try{[localStorage,sessionStorage].forEach(function(s){for(var i=s.length-1;i>=0;i--){"
                      "var k=s.key(i);if(k&&k.indexOf('sb-')===0)s.removeItem(k);}});}catch(e){}})();\n")
+    # Núcleo del ERP (25-sep): la demo ya enseña la OPERACIÓN. Bandera que Lawang no enciende nunca: su base aún no
+    # tiene la tabla, y el código compartido (operaciones-cuentas.js, datos.js) solo la lee si está encendida.
+    nucleo = 'window.AXW_NUCLEO_OPERACION = true;\n'
     return ('/* GENERADO por AxisWorks/comercial/demo-erp/build.py — no editar. Demo: datos inventados, sin red real. */\n'
-            + limpia_sesion + volver + datos + '\n' + doble)
+            + nucleo + limpia_sesion + volver + datos + '\n' + doble)
 
 
 def neutraliza():
@@ -355,7 +358,27 @@ def paginas_propias():
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(redir)
 
 
+# Textos de ejemplo de la intranet que casan con personas reales (tools/pii_maqueta.py). En la demo se cambian por
+# un marcador neutro; en Lawang los arregla quien lleve esa pantalla. 25-sep: el placeholder del nuevo /asistente/.
+EJEMPLOS_PERSONA = [('a Juan García', 'al comprador de ejemplo A')]
+
+
+def neutraliza_ejemplos():
+    for raiz, _d, fichs in os.walk(DIST):
+        for f in fichs:
+            if not f.endswith(EXT_TEXTO):
+                continue
+            p = os.path.join(raiz, f)
+            t = open(p, encoding='utf-8', errors='replace').read()
+            t2 = t
+            for a, b in EJEMPLOS_PERSONA:
+                t2 = t2.replace(a, b)
+            if t2 != t:
+                open(p, 'w', encoding='utf-8', newline='').write(t2)
+
+
 def verifica():
+    neutraliza_ejemplos()
     malos = []
     for raiz, _d, fichs in os.walk(DIST):
         for f in fichs:
