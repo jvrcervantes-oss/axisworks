@@ -124,6 +124,10 @@
   .cfg-tag.s { background: #ecfeff; color: #00687a; }
   .cfg-ver { margin-left: 4px; font: 600 12px/16px Inter, sans-serif; color: #3525cd; text-decoration: none; }
   .cfg-ver:hover { text-decoration: underline; }
+  .cfg-der { flex: none; display: flex; flex-direction: column; align-items: flex-end; }
+  .cfg-precio { font: 700 20px/28px "Plus Jakarta Sans", sans-serif; color: #3525cd; white-space: nowrap; }
+  .cfg-precio small { font: 400 14px/20px "Plus Jakarta Sans", sans-serif; color: #464555; }
+  .cfg-precio.suave { font: 600 14px/28px Inter, sans-serif; color: #464555; }
   .cfg-chk { flex: none; width: 24px; height: 24px; border-radius: 9999px; display: flex; align-items: center; justify-content: center;
     background: #e5eeff; color: #777587; box-shadow: 0 1px 2px 0 rgba(0,0,0,.05); border: 0; padding: 0; cursor: pointer; transition: all .15s cubic-bezier(.4,0,.2,1); }
   .cfg-card.on .cfg-chk, .cfg-card.marcada .cfg-chk { background: #3525cd; color: #fff; }
@@ -276,11 +280,12 @@
               <div class="cfg-pills" id="r-chips"></div>
             </div>
             <div class="cfg-caja">
-              <div class="cfg-fila"><span>Módulos de la base (siempre incluidos)</span><b class="num" id="r-base">3</b></div>
-              <div class="cfg-fila s"><span><span class="ms" aria-hidden="true">verified</span> Módulos en camino marcados</span><b class="num" id="r-cam">0</b></div>
+              <div class="cfg-fila"><span>Base: panel, equipo y ajustes</span><b class="num" id="r-base">190 €/mes</b></div>
+              <div class="cfg-fila"><span id="r-mod-lbl">Módulos</span><b class="num" id="r-mod">0 €/mes</b></div>
+              <div class="cfg-fila s"><span><span class="ms" aria-hidden="true">verified</span> Implantación (pago único)</span><b class="num">desde 2.500 €</b></div>
               <div class="cfg-total">
-                <div><span class="cfg-total-lbl">Módulos activos</span><span class="cfg-total-sub">El precio depende de los módulos: se ve en la llamada</span></div>
-                <div class="cfg-total-num num" aria-live="polite"><span id="r-on">0</span><small id="r-de">/0</small></div>
+                <div><span class="cfg-total-lbl">Total estimado</span><span class="cfg-total-sub">Cuota mensual en EUR, impuestos no incluidos</span></div>
+                <div class="cfg-total-num num" aria-live="polite"><span id="r-total">0 €</span><small>/mes</small></div>
               </div>
             </div>
             <div class="cfg-checks">
@@ -289,7 +294,7 @@
               <div class="cfg-check"><span class="ms" aria-hidden="true">done_all</span><span>Contratos en español, inglés e indonesio</span></div>
             </div>
             <a class="cfg-boton" href="/intranet/v4/home/"><span>Entrar a la demo con estos módulos</span><span class="ms" aria-hidden="true">rocket_launch</span></a>
-            <div class="cfg-pie"><span class="ms" aria-hidden="true">verified_user</span><span>Datos de demostración · nada sale de este navegador</span></div>
+            <div class="cfg-pie"><span class="ms" aria-hidden="true">verified_user</span><span>Precios orientativos de prueba · WhatsApp e IA a coste</span></div>
           </div>
         </aside>
       </div>
@@ -439,6 +444,10 @@
     proyectos: 'apartment', modelos: 'villa', obra: 'construction', creatividades: 'palette',
     contabilidad: 'account_balance_wallet', dashboard: 'query_stats', radar: 'radar', dataroom: 'folder_shared', postventa: 'handyman' };
 
+  /* Precios de prueba (borrador del 24-sep): base 190 €/mes con sus 3 módulos; estándar 49; IA o automatización 99 */
+  var BASE_MES = 190, PRECIO_STD = 49, PRECIO_IA = 99, IA = { setter: 1, campanas: 1, asistente: 1 };
+  function precio(k) { return IA[k] ? PRECIO_IA : PRECIO_STD; }
+  function eur(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' €'; }   // es-ES no agrupa 4 cifras
   var CLAVE = 'demo-erp-modulos-v3';
   var estado = {};
   try { estado = JSON.parse(localStorage.getItem(CLAVE) || '{}') || {}; } catch (e) { estado = {}; }
@@ -455,7 +464,8 @@
       (base ? '' : ' tabindex="0" role="switch"') + ' aria-label="' + esc((camino ? 'Me interesa: ' : 'Módulo ') + nombre) + '">' +
       '<div class="cfg-top"><div class="cfg-id"><div class="cfg-ico">' + ms(ICONO[k] || 'widgets') + '</div><div><h3>' + esc(nombre) + '</h3>' +
       '<div class="cfg-tags">' + tags.map(function (t, i) { return '<span class="cfg-tag' + (i === 0 ? (camino ? ' s' : ' p') : '') + '">' + esc(t) + '</span>'; }).join('') + ver + '</div></div></div>' +
-      '<span class="cfg-chk" aria-hidden="true"></span></div>' +
+      '<div class="cfg-der">' + (camino ? '<span class="cfg-precio suave">Por definir</span>' : base ? '<span class="cfg-precio">Incluido</span>'
+        : '<span class="cfg-precio">' + eur(precio(k)) + '<small>/mes</small></span>') + '<span class="cfg-chk" aria-hidden="true"></span></div></div>' +
       '<p class="cfg-desc">' + esc(desc) + '</p>' +
       (caps.length ? '<div class="cfg-feats">' + caps.map(function (c) { return '<div class="cfg-feat">' + ms('check_circle') + '<span>' + esc(c) + '</span></div>'; }).join('') + '</div>' : '') +
       '</article>';
@@ -472,8 +482,7 @@
   var total = MODULOS.length, nBase = MODULOS.filter(function (m) { return m[7]; }).length;
   document.getElementById('m-mod').textContent = total;
   document.getElementById('m-cam').textContent = CAMINO.length;
-  document.getElementById('r-base').textContent = nBase;
-  document.getElementById('r-de').textContent = '/' + total;
+  document.getElementById('r-base').textContent = eur(BASE_MES) + '/mes';
 
   function pinta() {
     var pills = [];
@@ -488,9 +497,13 @@
         (base ? '' : '<button type="button" data-quita="' + k + '" aria-label="Quitar ' + esc(el.querySelector('h3').textContent) + '">' + ms('close') + '</button>') + '</span>');
     });
     var n = MODULOS.filter(function (m) { return estado[m[0]]; }).length;
-    document.getElementById('r-on').textContent = n;
+    var extra = MODULOS.filter(function (m) { return !m[7] && estado[m[0]]; });
+    var nIa = extra.filter(function (m) { return IA[m[0]]; }).length, nStd = extra.length - nIa;
+    var cuota = nStd * PRECIO_STD + nIa * PRECIO_IA;
+    document.getElementById('r-mod-lbl').textContent = 'Módulos: ' + nStd + ' × 49 €' + (nIa ? ' + ' + nIa + ' × 99 €' : '');
+    document.getElementById('r-mod').textContent = eur(cuota) + '/mes';
+    document.getElementById('r-total').textContent = eur(BASE_MES + cuota);
     document.getElementById('r-badge').textContent = n + ' de ' + total + ' módulos';
-    document.getElementById('r-cam').textContent = CAMINO.filter(function (m) { return estado[m[0]]; }).length;
     document.getElementById('r-chips').innerHTML = pills.join('');
   }
   function alterna(el) {
