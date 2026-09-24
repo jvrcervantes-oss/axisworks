@@ -48,6 +48,12 @@
       ['Qué vence, qué está vencido y qué no tiene fecha', 'Filtro por sociedad y moneda'], '/intranet/v4/vencimientos/'],
     ['cuentas', 'Cuentas de cobro', 'Dinero', ['Bancos'], 'Qué cuenta aparece en cada contrato y factura.',
       ['Por proyecto y por sociedad'], '/intranet/v4/cuentas/'],
+    ['finanzas', 'Panel financiero', 'Dinero', ['Dirección'], 'El dinero de la empresa en una pantalla, para dirección.',
+      ['Lo cobrado, lo firmado pendiente y cuándo toca cobrarlo', 'Lo facturado sin cobrar y lo que queda por vender'], '/intranet/v4/finanzas/'],
+    ['bancos', 'Bancos y conciliación', 'Dinero', ['Extractos'], 'Cada movimiento del banco enlazado con lo que lo explica.',
+      ['Extractos de las cuentas de cada sociedad', 'Cada línea casada con un recibí, un gasto, una comisión o un traspaso'], '/intranet/v4/bancos/'],
+    ['gastos', 'Gastos y proveedores', 'Dinero', ['Proveedores'], 'Lo que paga la empresa, con su justificante.',
+      ['Factura de proveedor por sociedad, proyecto y categoría', 'Retenciones a proveedores pendientes de ingresar'], '/intranet/v4/gastos/'],
     ['sociedades', 'Sociedades emisoras', 'Dinero', ['Multi-sociedad'], 'Varias empresas del grupo en el mismo ERP.',
       ['Datos fiscales y logo por sociedad'], '/intranet/v4/sociedades/'],
     ['comisionadmin', 'Comisión de administración', 'Dinero', ['Gestora'], 'Tarifas y liquidación de la comisión de la gestora por proyecto.',
@@ -64,15 +70,14 @@
   ];
   var CAMINO = [
     ['contabilidad', 'Contabilidad', 'Asientos generados desde las facturas y los cobros del ERP, plan de cuentas por sociedad y exportación para la gestoría.'],
-    ['dashboard', 'Dashboard financiero', 'Ventas, cobros, pendiente y previsión de caja por proyecto y por sociedad, en una pantalla para dirección.'],
     ['radar', 'Radar de cobros', 'Aprende cómo paga cada comprador y avisa antes de que un hito se retrase, con el recordatorio ya redactado.'],
     ['dataroom', 'Sala de datos del inversor', 'Documentación de cada proyecto para inversores, con marca de agua por persona y registro de quién abre qué.'],
     ['postventa', 'Postventa y garantías', 'Incidencias después de la entrega: quién las abre, qué contratista las arregla y en qué garantía caen.']
   ];
 
   /* Rutas de la demo que son de cada módulo (prefijo de ruta). Un módulo apagado oculta sus enlaces del menú
-     y, si se entra por URL, enseña el aviso con «activarlo». Los módulos «en camino» con pantalla (el
-     dashboard financiero en construcción) solo se ven si se marcan. */
+     y, si se entra por URL, enseña el aviso con «activarlo». (El dashboard financiero, que estuvo «en camino»,
+     es desde el 25-sep el módulo `finanzas`.) */
   var RUTAS = {
     home: ['/intranet/v4/home/'], usuarios: ['/intranet/v4/usuarios/'], ajustes: ['/intranet/v4/ajustes/'],
     crm: ['/intranet/leads/'], operaciones: ['/intranet/v4/operaciones/'], reservas: ['/intranet/v4/reservas/'],
@@ -86,7 +91,7 @@
     proyectos: ['/intranet/v4/proyectos/', '/intranet/v4/proyectos-cuentas/', '/intranet/v4/documentacion/'],
     modelos: ['/intranet/v4/modelos/'], obra: ['/intranet/v4/obra/'],
     creatividades: ['/intranet/creatividades/', '/intranet/v4/creatividades/'],
-    dashboard: ['/intranet/v4/finanzas/']
+    finanzas: ['/intranet/v4/finanzas/'], bancos: ['/intranet/v4/bancos/'], gastos: ['/intranet/v4/gastos/']
   };
   /* Módulos que viven como pestaña dentro de otra pantalla (el CRM): se ocultan por el texto de la pestaña. */
   var PESTANAS = { setter: ['Setter IA', 'WhatsApp bot'], campanas: ['Campañas', 'Automatismos'] };
@@ -95,7 +100,9 @@
   function leeEstado() {
     var e = {};
     try { e = JSON.parse(localStorage.getItem(CLAVE) || '{}') || {}; } catch (x) { e = {}; }
-    if (!Object.keys(e).length) MODULOS.forEach(function (m) { e[m[0]] = true; });   // todo encendido de partida
+    // Todo encendido de partida; y un módulo que no estaba en lo guardado (añadido al catálogo después, como
+    // Finanzas, Bancos y Gastos el 25-sep) también: lo guardado siempre trae las claves apagadas en `false`.
+    MODULOS.forEach(function (m) { if (!(m[0] in e)) e[m[0]] = true; });
     MODULOS.forEach(function (m) { if (m[7]) e[m[0]] = true; });                    // la base no se apaga
     return e;
   }
