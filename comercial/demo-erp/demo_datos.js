@@ -147,7 +147,7 @@
         cliente_nombre: cli.full_name, proyecto_nombre: c.proyecto_nombre, contrato_numero: c.numero, total: total,
         moneda: c.moneda, fecha_emision: dia(dias), datos: { conceptos: [{ desc: concepto, importe: total }] }, anulada: false,
         created_at: ts(dias), creado_por: c.creado_por, tipo: tipo, contrato_id: c.id, enviada: tipo !== 'proforma',
-        fecha_envio: tipo !== 'proforma' ? dia(dias) : null, justificante_path: null, client_id: cli.id,
+        fecha_envio: tipo !== 'proforma' ? dia(dias) : null, justificante_path: tipo === 'recibi' ? 'demo/justificante.pdf' : null, client_id: cli.id,
         proyecto_id: c.proyecto_id, justificantes: tipo === 'recibi' ? [{ path: 'demo/justificante.pdf', nombre: 'transferencia.pdf' }] : [], venc: null }, extra || {}));
       facturas.push(f);
       return f;
