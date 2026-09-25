@@ -20,9 +20,21 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/catalogo.php';
 require_once __DIR__ . '/home_textos.php';
+require_once __DIR__ . '/organigrama.php';   /* GENERADO desde las fichas de los departamentos */
 
 $lang = $LANG;
 $hm   = $HOME[$lang];
+/* El número de departamentos no se escribe: se cuenta. Nace uno en la agencia, se regenera
+   organigrama.php en el cierre de turno y la cifra (13 → 14…) cambia sola en los tres sitios. */
+$org_pal = $ORGANIGRAMA['palabra'][$lang];
+$org_num = ['{N}' => $ORGANIGRAMA['n'], '{PALABRA}' => $org_pal, '{PALABRA_MAY}' => mb_strtoupper($org_pal, 'UTF-8')];
+foreach (['m2_v', 'who_3p', 'deps_t'] as $k) $hm[$k] = strtr($hm[$k], $org_num);
+$hm['org'] = [];
+foreach ($hm['org_secs'] as $eje => $lema) {
+  $deps = [];
+  foreach ($ORGANIGRAMA['deps'] as $d) if ($d['seccion'] === $eje) $deps[] = [$d['cara'], $d[$lang][0], $d[$lang][1], $d[$lang][2], $d['imagen']];
+  if ($deps) $hm['org'][] = [$eje, $lema, $deps];
+}
 $t    = $T[$lang];
 $url  = $lang === 'es' ? '/es/' : '/';
 $hub  = $lang === 'es' ? '/es/servicios/' : '/services/';
@@ -217,7 +229,8 @@ $jsonld = [
 </section>
 
 <!-- 06 · ESTUDIO — organigrama: Javier · Pepito (CEO, una IA) · Andrea al mismo nivel;
-     debajo, los 13 departamentos por sección (BUILD/GROW/CONTROL) y lo que produce cada uno -->
+     debajo, los departamentos por sección (BUILD/GROW/CONTROL) y lo que produce cada uno.
+     Salen de inc/organigrama.php (generado): sin imagen dep-<cara>.webp, recuadro con la inicial -->
 <section class="band" id="studio">
   <div class="shell">
     <div class="shead"><div><p class="eyebrow"><span><?= $hm['who_eyebrow'] ?></span></p><h2><?= $hm['who_h2'] ?></h2></div></div>
@@ -258,10 +271,11 @@ $jsonld = [
       <section class="org__sec" aria-label="<?= $eje ?>">
         <p class="org__head"><b><?= $eje ?></b> <span><?= $lema ?></span></p>
         <ul class="org__deps">
-          <?php foreach ($deps as [$cara, $nom, $hace, $prods]): $n++; ?>
+          <?php foreach ($deps as [$cara, $nom, $hace, $prods, $img]): $n++; ?>
           <li class="org__dep">
             <div class="org__node">
-              <img src="/assets/images/dep-<?= $cara ?>.webp" alt="" width="360" height="360" loading="lazy" decoding="async">
+              <?php if ($img): ?><img src="/assets/images/dep-<?= $cara ?>.webp" alt="" width="360" height="360" loading="lazy" decoding="async">
+              <?php else: ?><span class="org__ini" aria-hidden="true"><?= mb_substr(html_entity_decode(strip_tags($nom), ENT_QUOTES, 'UTF-8'), 0, 1, 'UTF-8') ?></span><?php endif; ?>
               <div><span class="dim"><?= sprintf('DEP.%02d', $n) ?></span><b><?= $nom ?></b><span class="org__hace"><?= $hace ?></span></div>
             </div>
             <ul class="org__prods">

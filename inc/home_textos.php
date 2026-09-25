@@ -9,8 +9,8 @@
  * composición; su TEXTO no. Nada de lo que hay aquí es una métrica: el
  * mockup traía latencias, tasas de conversión, «42 leads hoy», ciudades y
  * coordenadas que no salen de ninguna fuente, y se cayeron todas. Lo que
- * queda son hechos de estructura (una base por cliente, dos personas, trece
- * departamentos) que se pueden defender uno por uno. */
+ * queda son hechos de estructura (una base por cliente, dos personas, los
+ * departamentos, que se cuentan solos desde inc/organigrama.php) que se pueden defender uno por uno. */
 
 $HOME = [
 
@@ -21,7 +21,7 @@ $HOME = [
   'hero_lead'=>'Custom business software, built and maintained by two people and a team of AI departments. No templates, no bloat.',
   'hero_cta'=>'Start project','hero_cta2'=>'Inspect ERP',
   'm1_k'=>'ARCHITECTURE','m1_v'=>'1 DATABASE / CLIENT',
-  'm2_k'=>'DIRECTORS','m2_v'=>'02 + CEO + 13 AI',
+  'm2_k'=>'DIRECTORS','m2_v'=>'02 + CEO + {N} AI',
   'm3_k'=>'LANGUAGES','m3_v'=>'EN / ES',
   'instr'=>'INSTRUMENT: RETICLE_CAD_v4','instr_al'=>'ALIGNMENT: 100.00%','instr_mode'=>'MODE: REALTIME TELEMETRY','instr_status'=>'STATUS: ALIGNED',
   'hero_st_cal'=>'CALIBRATING','hero_st_ok'=>'ALIGNED',
@@ -85,34 +85,17 @@ $HOME = [
   'who_eyebrow'=>'SHEET STD-01 // THE STUDIO','who_h2'=>'A two-person studio with an AI team behind it.',
   'who_1role'=>'Engineering &amp; architecture','who_1p'=>'Designs the systems.',
   'who_2role'=>'Design &amp; content','who_2p'=>'Shapes the brand, the content and the voice. The design side of the studio.',
-  'who_3role'=>'CEO · artificial intelligence','who_3p'=>'Our AI, trained for all of this. The studio&rsquo;s CEO: it briefs, delegates to the thirteen departments below and checks their work.',
-  'deps_t'=>'REPORTING TO PEPITO // THIRTEEN AI DEPARTMENTS',
+  'who_3role'=>'CEO · artificial intelligence','who_3p'=>'Our AI, trained for all of this. The studio&rsquo;s CEO: it briefs, delegates to the {PALABRA} departments below and checks their work.',
+  'deps_t'=>'REPORTING TO PEPITO // {PALABRA_MAY} AI DEPARTMENTS',
   'deps_note'=>'Each department is an AI agent working to written rules, and reports to Pepito. Javier and Andrea direct the work and sign off on what ships.',
   /* Organigrama: sección → departamento [cara, nombre, qué hace, productos].
      Un producto con código (B01…) sale de $PRODUCTOS con su nombre y su enlace;
      uno en texto es un entregable sin hoja propia y va plano. */
   'org_lead'=>'DIRECTION','org_top'=>'A01',
-  'org'=>[
-    ['BUILD','The software',[
-      ['dev','Development','writes the code',['B01','B02','B05','B07']],
-      ['data','Data','integrations &amp; APIs',['B06']],
-      ['bots','Bots','WhatsApp engine',['B03','B04']],
-      ['arch','Architecture','3D house models',['3D models of homes for sale, from the client&rsquo;s plans']],
-      ['deploy','Deploy','ships &amp; verifies',['Hosting, go-live and checks in production']],
-    ]],
-    ['GROW','Brand &amp; demand',[
-      ['design','Design','art direction',['Brand identity','Interface design for every product']],
-      ['marketing','Marketing','Meta Ads &amp; SEO',['G01','G02','G03']],
-      ['comms','Comms','press &amp; media',['Press releases and press kits']],
-    ]],
-    ['CONTROL','Rules, money &amp; paperwork',[
-      ['security','Security','audits &amp; secrets',['Security audits','Secrets and incident response']],
-      ['legal','Legal','contracts &amp; policies',['Client contracts','Privacy, terms and cookies']],
-      ['admin','Admin','billing &amp; tax',['Invoicing and tax filings']],
-      ['docs','Docs','proposals &amp; reports',['Proposals, reports and handovers']],
-      ['org','Organisation','runs the studio itself',['The studio&rsquo;s own structure: departments and rules']],
-    ]],
-  ],
+  /* Los departamentos NO viven aquí: salen de inc/organigrama.php, generado desde la
+     ficha pública de cada departamentos/<d>/prompt.md (tools/organigrama_web.py).
+     Aquí solo queda la frase de cada sección, que es copy. */
+  'org_secs'=>['BUILD'=>'The software', 'GROW'=>'Brand &amp; demand', 'CONTROL'=>'Rules, money &amp; paperwork'],
 
   'ct_eyebrow'=>'// TERMINAL PROTOCOL 01-INTAKE','ct_h2'=>'Initiate project intake.',
   'ct_lead'=>'Tell us what you run on today and what hurts. We reply in English or Spanish, usually within a day.',
@@ -133,7 +116,7 @@ $HOME = [
   'hero_lead'=>'Software de gestión a medida, construido y mantenido por dos personas y un equipo de departamentos de IA. Sin plantillas, sin relleno.',
   'hero_cta'=>'Empezar proyecto','hero_cta2'=>'Ver el ERP',
   'm1_k'=>'ARQUITECTURA','m1_v'=>'1 BASE DE DATOS / CLIENTE',
-  'm2_k'=>'DIRECCIÓN','m2_v'=>'02 + CEO + 13 IA',
+  'm2_k'=>'DIRECCIÓN','m2_v'=>'02 + CEO + {N} IA',
   'm3_k'=>'IDIOMAS','m3_v'=>'ES / EN',
   'instr'=>'INSTRUMENTO: RETICLE_CAD_v4','instr_al'=>'ALINEACIÓN: 100.00%','instr_mode'=>'MODO: TELEMETRÍA EN VIVO','instr_status'=>'ESTADO: ALINEADO',
   'hero_st_cal'=>'CALIBRANDO','hero_st_ok'=>'ALINEADO',
@@ -197,31 +180,14 @@ $HOME = [
   'who_eyebrow'=>'HOJA STD-01 // EL ESTUDIO','who_h2'=>'Un estudio de dos personas con un equipo de IA detrás.',
   'who_1role'=>'Ingeniería y arquitectura','who_1p'=>'Diseña los sistemas.',
   'who_2role'=>'Diseño y contenido','who_2p'=>'Da forma a la marca, al contenido y a la voz. El lado design del estudio.',
-  'who_3role'=>'CEO · inteligencia artificial','who_3p'=>'Nuestra IA, entrenada para todo esto. El CEO del estudio: recibe el encargo, lo reparte entre los trece departamentos de abajo y revisa lo que entregan.',
-  'deps_t'=>'BAJO PEPITO // TRECE DEPARTAMENTOS DE IA',
+  'who_3role'=>'CEO · inteligencia artificial','who_3p'=>'Nuestra IA, entrenada para todo esto. El CEO del estudio: recibe el encargo, lo reparte entre los {PALABRA} departamentos de abajo y revisa lo que entregan.',
+  'deps_t'=>'BAJO PEPITO // {PALABRA_MAY} DEPARTAMENTOS DE IA',
   'deps_note'=>'Cada departamento es un agente de IA que trabaja con reglas escritas y responde ante Pepito. Javier y Andrea dirigen el trabajo y dan el visto bueno a lo que sale.',
   'org_lead'=>'DIRECCIÓN','org_top'=>'A01',
-  'org'=>[
-    ['BUILD','El software',[
-      ['dev','Desarrollo','escribe el código',['B01','B02','B05','B07']],
-      ['data','Datos','integraciones y APIs',['B06']],
-      ['bots','Bots','motor de WhatsApp',['B03','B04']],
-      ['arch','Arquitectura','viviendas en 3D',['Modelos 3D de viviendas en venta, a partir de los planos del cliente']],
-      ['deploy','Deploy','publica y verifica',['Alojamiento, puesta en marcha y comprobación en producción']],
-    ]],
-    ['GROW','Marca y demanda',[
-      ['design','Diseño','dirección de arte',['Identidad de marca','Diseño de interfaz de cada producto']],
-      ['marketing','Marketing','Meta Ads y SEO',['G01','G02','G03']],
-      ['comms','Comunicación','prensa y medios',['Notas y kits de prensa']],
-    ]],
-    ['CONTROL','Reglas, dinero y papeles',[
-      ['security','Seguridad','auditorías y secretos',['Auditorías de seguridad','Secretos y respuesta a incidentes']],
-      ['legal','Legal','contratos y políticas',['Contratos con clientes','Privacidad, términos y cookies']],
-      ['admin','Administración','facturación y fiscalidad',['Facturación y modelos fiscales']],
-      ['docs','Documentación','propuestas e informes',['Propuestas, informes y entregas']],
-      ['org','Organización','la estructura del estudio',['La estructura del propio estudio: departamentos y reglas']],
-    ]],
-  ],
+  /* Los departamentos NO viven aquí: salen de inc/organigrama.php, generado desde la
+     ficha pública de cada departamentos/<d>/prompt.md (tools/organigrama_web.py).
+     Aquí solo queda la frase de cada sección, que es copy. */
+  'org_secs'=>['BUILD'=>'El software', 'GROW'=>'Marca y demanda', 'CONTROL'=>'Reglas, dinero y papeles'],
 
   'ct_eyebrow'=>'// PROTOCOLO 01-ALTA','ct_h2'=>'Iniciar alta de proyecto.',
   'ct_lead'=>'Cuéntanos con qué funcionas hoy y qué te duele. Respondemos en español o inglés, normalmente en un día.',
