@@ -97,6 +97,17 @@
 .sch__d{ font-size:14px; line-height:1.5; color:var(--graphite) }
 
 /* ── Directorio de tarjetas ───────────────────────────── */
+/* Vídeos (G03, 25-sep-2026): tarjeta de directorio con el vídeo vertical encima. Columnas estrechas a propósito:
+   un 9:16 a todo el ancho de la hoja ocupa tres pantallas. */
+.vid-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,300px)); gap:16px }
+.vid-card{ border:1px solid var(--line); background:var(--paper); transition:border-color .2s }
+.vid-card:hover{ border-color:var(--ink) }
+.vid-card video{ display:block; width:100%; height:auto; aspect-ratio:9/16; background:var(--bone); border-bottom:1px solid var(--line) }
+.vid-card figcaption{ padding:14px 18px 20px }
+.vid-card .dir-card__c{ padding-bottom:10px; margin-bottom:12px; border-bottom:1px solid var(--line-soft) }
+.vid-card h3{ font-family:var(--f-display); font-weight:500; font-size:19px; letter-spacing:-.01em; line-height:1.25 }
+.vid-card figcaption p:last-child{ font-size:14px; line-height:1.55; color:var(--graphite); margin-top:8px }
+@media (max-width:560px){ .vid-grid{ grid-template-columns:1fr } }
 .dir-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px }
 .dir-card{ border:1px solid var(--line); background:var(--paper); padding:16px 18px 20px; transition:border-color .2s }
 .dir-card:hover{ border-color:var(--ink) }

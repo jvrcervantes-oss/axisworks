@@ -344,9 +344,21 @@ $HOJAS_EN = [
   'faq'=>[
     ['Do you post for us?','Yes, or we hand the plan and the pieces to your team — whichever you prefer.'],
     ['Do you film?','We plan what to film and edit it. Filming on site is done with you or with a local crew, because the best material is the real one.'],
+    ['Can you make video without a shoot?','Yes. Explainers and spots with voice-over, subtitles and our own music, built in code, like the two above. They work when what you need to show is a process or an idea and there is nothing to film.'],
     ['Can you guarantee followers?','No. Followers you can buy are worth nothing. We plan for enquiries and trust.'],
     ['How is this different from the ads?','Ads buy reach today; content is what people find when they check you out. Each one makes the other cheaper, which is why we do both.'],
     ['What does it cost?','It is quoted on scope: number of accounts, pieces per month and whether filming is involved.'],
+  ],
+  'videos'=>[
+    'titulo'=>'Video made with code: explainers, spots and reels',
+    'texto'=>'We build each video in code. Voice, subtitles and every drawing are synced word by word, and changing a line of the script does not mean redoing the video: it is generated again. These two are for Lawang Estate, vertical for Instagram.',
+    'piezas'=>[
+      ['id'=>'lawang-explicador','formato'=>'EXPLAINER · 1:17','titulo'=>'Can a foreigner buy a villa in Indonesia?',
+       'texto'=>'The two ways to buy, told over the real plans of the villa. In Spanish.','fecha'=>'2026-09-25','iso'=>'PT1M17S','idioma'=>'es'],
+      ['id'=>'lawang-obra','formato'=>'REEL · 1:01','titulo'=>'Do you pay for construction all at once?',
+       'texto'=>'When the build of a villa is paid, in one minute. In Spanish.','fecha'=>'2026-09-25','iso'=>'PT1M1S','idioma'=>'es'],
+    ],
+    'nota'=>'Published with Lawang Estate&rsquo;s permission. Voice, music and drawings made by the studio.',
   ],
   'asunto'=>'Social &amp; content — /services/social-content',
 ],

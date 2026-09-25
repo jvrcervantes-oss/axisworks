@@ -34,6 +34,13 @@ $jsonld = [
               'acceptedAnswer'=>['@type'=>'Answer','text'=>strip_tags(html_entity_decode($f[1],ENT_QUOTES,'UTF-8'))]];
     }, $H['faq'])],
 ];
+/* VideoObject por pieza, del mismo array que pinta la sección de vídeos (misma regla que el FAQ). */
+foreach (($H['videos']['piezas'] ?? []) as $v) {
+  $jsonld[] = ['@type'=>'VideoObject','name'=>strip_tags(html_entity_decode($v['titulo'],ENT_QUOTES,'UTF-8')),
+    'description'=>strip_tags(html_entity_decode($v['texto'],ENT_QUOTES,'UTF-8')),
+    'thumbnailUrl'=>SITE.'/assets/videos/'.$v['id'].'.webp','contentUrl'=>SITE.'/assets/videos/'.$v['id'].'.mp4',
+    'uploadDate'=>$v['fecha'],'duration'=>$v['iso'],'inLanguage'=>$v['idioma']];
+}
 if ($H['codigo'] !== 'DOC') {
   $jsonld[] = ['@type'=>'Service',
     'name'=>strip_tags(html_entity_decode($H['h1'],ENT_QUOTES,'UTF-8')),
@@ -156,6 +163,36 @@ if ($H['codigo'] !== 'DOC') {
     </div>
     <?php endif; ?>
   </section>
+
+  <?php if (!empty($H['videos'])): $V = $H['videos']; /* 25-sep-2026: piezas reales hechas por el estudio (hoy solo G03).
+     preload="none": los MP4 (~4,5 MB) solo se descargan al darle a reproducir; la portada es un WebP de ~20 KB. */ ?>
+  <!-- VÍDEOS -->
+  <section class="hj-sec hj-sec--tint" id="videos">
+    <div class="shell">
+      <div class="hj-shead">
+        <p class="hj-tag">[<?= $S[1] ?>]</p>
+        <h2><?= $V['titulo'] ?></h2>
+        <p class="hj-shead__sub"><?= $V['texto'] ?></p>
+      </div>
+      <div class="vid-grid">
+        <?php foreach ($V['piezas'] as $i => $v): ?>
+        <figure class="vid-card">
+          <video controls playsinline preload="none" width="720" height="1280"
+                 poster="/assets/videos/<?= $v['id'] ?>.webp?v=<?= VER ?>" aria-label="<?= e(strip_tags($v['titulo'])) ?>">
+            <source src="/assets/videos/<?= $v['id'] ?>.mp4?v=<?= VER ?>" type="video/mp4">
+          </video>
+          <figcaption>
+            <p class="dir-card__c"><?= $H['codigo'] ?>-V<?= sprintf('%02d', $i+1) ?> // <?= $v['formato'] ?></p>
+            <h3><?= $v['titulo'] ?></h3>
+            <p><?= $v['texto'] ?></p>
+          </figcaption>
+        </figure>
+        <?php endforeach; ?>
+      </div>
+      <?php if (!empty($V['nota'])): ?><p class="hj-note"><?= $V['nota'] ?></p><?php endif; ?>
+    </div>
+  </section>
+  <?php endif; ?>
 
   <?php if (!empty($H['flujo'])): ?>
   <!-- 03 · FLUJO, como esquema enmarcado -->

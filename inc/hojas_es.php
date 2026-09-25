@@ -350,9 +350,21 @@ $HOJAS_ES = [
   'faq'=>[
     ['¿Publicáis vosotros?','Sí, o le pasamos el plan y las piezas a tu equipo, como prefieras.'],
     ['¿Grabáis?','Planificamos qué grabar y lo editamos. La grabación se hace contigo o con un equipo local, porque el mejor material es el real.'],
+    ['¿Hacéis vídeo sin rodaje?','Sí. Explicadores y spots con locución, subtítulos y música propia, montados con código, como los dos de arriba. Sirven cuando lo que hay que contar es un proceso o una idea y no hay nada que grabar.'],
     ['¿Garantizáis seguidores?','No. Los seguidores que se compran no valen nada. Planificamos para consultas y confianza.'],
     ['¿En qué se diferencia de los anuncios?','Los anuncios compran alcance hoy; el contenido es lo que la gente encuentra cuando te investiga. Cada uno abarata al otro, por eso hacemos los dos.'],
     ['¿Cuánto cuesta?','Se presupuesta por alcance: número de cuentas, piezas al mes y si hay grabación.'],
+  ],
+  'videos'=>[
+    'titulo'=>'Vídeo hecho con código: explicadores, spots y reels',
+    'texto'=>'Montamos cada vídeo con código. La voz, los subtítulos y cada dibujo van sincronizados palabra a palabra, y cambiar una frase del guion no obliga a rehacerlo: se vuelve a generar. Estos dos son de Lawang Estate, en vertical para Instagram.',
+    'piezas'=>[
+      ['id'=>'lawang-explicador','formato'=>'EXPLICADOR · 1:17','titulo'=>'¿Puede un extranjero comprar una villa en Indonesia?',
+       'texto'=>'Las dos formas de comprar, contadas sobre los planos reales de la villa.','fecha'=>'2026-09-25','iso'=>'PT1M17S','idioma'=>'es'],
+      ['id'=>'lawang-obra','formato'=>'REEL · 1:01','titulo'=>'¿Pagas la construcción de golpe?',
+       'texto'=>'En qué momentos se paga la obra de una villa, en un minuto.','fecha'=>'2026-09-25','iso'=>'PT1M1S','idioma'=>'es'],
+    ],
+    'nota'=>'Publicados con permiso de Lawang Estate. Voz, música y dibujos hechos por el estudio.',
   ],
   'asunto'=>'Redes y contenido — /es/servicios/redes-sociales-y-contenido',
 ],
