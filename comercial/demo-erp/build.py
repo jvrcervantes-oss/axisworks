@@ -443,7 +443,7 @@ def verifica():
         aborta('pii_maqueta.py no da el visto bueno (o no tiene índice): ver salida de arriba')
 
 
-def logos_neutros():
+def logos_neutros(texto='AxisWorks Demo'):
     """Logo y favicon de la demo en lugar de los de Lawang, con el mismo tamaño para no mover la maqueta.
     Ojo, nombres al revés de lo que parecen: el logo «-dark» es el de texto OSCURO (va sobre fondo claro)."""
     from PIL import Image, ImageDraw, ImageFont
@@ -460,7 +460,7 @@ def logos_neutros():
         d = ImageDraw.Draw(im)
         d.rounded_rectangle((0, 30, 180, 210), radius=36, fill=(79, 70, 229, 255))
         d.text((90, 120), 'A', font=fuente(130), fill=(255, 255, 255, 255), anchor='mm')
-        d.text((230, 120), 'AxisWorks Demo', font=fuente(150), fill=color, anchor='lm')
+        d.text((230, 120), texto, font=fuente(150), fill=color, anchor='lm')
         os.makedirs(marca, exist_ok=True)
         im.save(os.path.join(marca, nombre))
     fav = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
@@ -579,6 +579,164 @@ def publica():
     print('OK versión pública en %s: %d ficheros, sin rastros de Lawang' % (os.path.relpath(DESTINO_PUBLICO, AGENCIA), total))
 
 
+
+# ── Modo instancia real (F8-lite, 25-sep-2026) ─────────────────────────────────────────────────────────────────────
+# `python build.py --instancia <nombre>` construye el ERP REAL de una instancia de erp/instancias.json: el guard de
+# verdad (login y RLS contra SU base, con su clave publicable), la marca del estudio en lugar de la de Lawang y
+# nada de la demo (ni landing, ni tour, ni doble). Encargo encargos/20260925_estudio_erp_cliente_cero.md.
+# Sale FUERA de este repo, que es público (revisión previa #82, Deploy): a erp/despliegues/<nombre>/ de la agencia,
+# gitignored allí, que es el clon del repo PRIVADO que Hostinger despliega en el subdominio de la instancia.
+DESPLIEGUES = os.path.join(AGENCIA, 'erp', 'despliegues')
+
+
+def _instancia_conf(nombre):
+    reg = json.load(open(os.path.join(AGENCIA, 'erp', 'instancias.json'), encoding='utf-8'))
+    inst = (reg.get('instancias') or {}).get(nombre)
+    if not inst:
+        aborta('instancia desconocida en erp/instancias.json: ' + nombre)
+    if nombre == 'lawang':
+        aborta('Lawang se sirve desde su propio repo, no desde este build')
+    url = ((inst.get('config') or {}).get('url_supabase') or '').rstrip('/')
+    clave = inst.get('clave_publicable') or ''
+    dominio = inst.get('dominio_erp') or ''
+    if not re.fullmatch(r'https://[a-z0-9]{20}\.supabase\.co', url):
+        aborta('url_supabase no válida para %s' % nombre)
+    if not clave.startswith('sb_publishable_'):
+        aborta('falta clave_publicable (sb_publishable_…) de %s: la de servicio no vale nunca' % nombre)
+    if not re.fullmatch(r'[a-z0-9.-]+\.[a-z]{2,}', dominio):
+        aborta('falta dominio_erp de %s en erp/instancias.json' % nombre)
+    return url, clave, dominio, inst.get('marca') or 'AxisWorks'
+
+
+HTACCESS_INSTANCIA = """# GENERADO por comercial/demo-erp/build.py --instancia {nombre} — no editar.
+# {dominio}: el ERP de la instancia. Fuera de ese host, redirige a él.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{{HTTP_HOST}} !^{dominio_re}$ [NC]
+  RewriteRule ^(.*)$ https://{dominio}/$1 [R=301,L]
+</IfModule>
+<IfModule mod_headers.c>
+  Header always set X-Robots-Tag "noindex, nofollow"
+  Header always set Strict-Transport-Security "max-age=31536000"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https://{sb}; connect-src 'self' https://{sb} wss://{sb}; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+</IfModule>
+DirectoryIndex index.html
+"""
+# connect-src: SOLO su base (REST, auth, storage y realtime). Es la barrera de red: aunque un fichero trajera otra
+# URL, el navegador no la llamaría.
+
+QA_DOBLE = re.compile(r'<script>\(function\(\)\{try\{(?:(?!</script>).)*?_qa_double_guard\.js.*?</script>', re.S)
+
+NO_ESTA = ('<!doctype html><html lang="es"><meta charset="utf-8"><title>{t}</title>'
+           '<body style="font:16px system-ui;padding:48px;max-width:560px"><h1 style="font-size:22px">{t}</h1>'
+           '<p>Este módulo no está instalado en esta instancia.</p><p><a href="/intranet/v4/home/">Volver</a></p>')
+
+
+def instancia(nombre):
+    url, clave, dominio, marca = _instancia_conf(nombre)
+    if not _PRIV or not REEMPLAZOS_PUBLICO:
+        aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
+    host_sb = url[len('https://'):]
+    # 0. Sin comentarios, como la pública: los de Lawang cuentan sociedades, personas e incidentes.
+    shutil.copy2(os.path.join(LAWANG, 'contracts', 'assets', 'guard.js'), os.path.join(DIST, 'contracts', 'assets', 'guard.js'))
+    r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), DIST], cwd=AQUI)
+    if r.returncode != 0:
+        aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
+    # 1. Guard REAL: el de Lawang tal cual, con la base de la instancia.
+    g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
+    for raiz, _d, fichs in os.walk(DIST):
+        for f in fichs:
+            if not f.endswith(EXT_TEXTO):
+                continue
+            p = os.path.join(raiz, f)
+            t = open(p, encoding='utf-8', errors='replace').read()
+            t2 = t.replace(SB_URL, url).replace(SB_HOST + '.supabase.co', host_sb)
+            # El cargador del doble de QA (solo localhost+?qa=1) no existe en una instancia real.
+            t2 = QA_DOBLE.sub('', t2)
+            t2 = SB_KEY_RE.sub(clave, t2)
+            for a, b in REEMPLAZOS_PUBLICO:
+                t2 = t2.replace(a, b)
+            t2 = cambia_lawang(t2).replace('AxisWorks Demo', marca)
+            if t2 != t:
+                open(p, 'w', encoding='utf-8', newline='').write(t2)
+    # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
+    t = open(g, encoding='utf-8').read()
+    open(g, 'w', encoding='utf-8', newline='').write(
+        '/* GENERADO por AxisWorks/comercial/demo-erp/build.py --instancia %s — no editar. */\n'
+        'window.AXW_NUCLEO_OPERACION = true;\n' % nombre + t)
+    for raiz, dirs, fichs in os.walk(DIST, topdown=False):
+        for f in fichs + dirs:
+            nuevo = f
+            for a, b in REEMPLAZOS_PUBLICO:
+                nuevo = nuevo.replace(a, b)
+            nuevo = nuevo.replace('Lawang', 'Axw')
+            if nuevo != f:
+                os.replace(os.path.join(raiz, f), os.path.join(raiz, nuevo))
+    logos_neutros(marca)
+    tipografias_libres()
+    # 2. Portada = la intranet. Lo que en la demo es un aviso, aquí dice que no está en esta instancia.
+    redir = ('<!doctype html><meta charset="utf-8"><title>%s</title>'
+             '<script>location.replace("/intranet/")</script>' % marca)
+    if not os.path.isfile(os.path.join(DIST, 'intranet', 'index.html')):
+        aborta('falta la pantalla de acceso /intranet/: el guard real mandaría a un 404')
+    for sitio in ('', 'entrar', 'portal'):
+        d = os.path.join(DIST, sitio)
+        os.makedirs(d, exist_ok=True)
+        open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(redir)
+    for ruta, t in (('intranet/v4/generador-contratos/index.html', 'Generador de contratos'),
+                    ('intranet/v4/contratos-inversor/index.html', 'Portal del comprador'),
+                    ('contracts/app.html', 'Generador de contratos'),
+                    ('intranet/dossier/builder.html', 'Dossier comercial'),
+                    ('intranet/creatividades/index.html', 'Creatividades')):
+        d = os.path.join(DIST, *ruta.split('/'))
+        os.makedirs(os.path.dirname(d), exist_ok=True)
+        open(d, 'w', encoding='utf-8').write(NO_ESTA.format(t=t))
+    avisos_para_rotos()
+    # 3. Comprobaciones: ni rastro de la base de Lawang ni de la demo, ni de ninguna clave que no sea publicable.
+    restos = []
+    for raiz, _d, fichs in os.walk(DIST):
+        for f in fichs:
+            p = os.path.join(raiz, f)
+            if RASTRO.search(f):
+                restos.append('nombre de fichero: ' + rel(p))
+            if not f.endswith(EXT_TEXTO):
+                continue
+            t = open(p, encoding='utf-8', errors='replace').read()
+            if SB_HOST in t or 'demo.invalid' in t or 'LW_DEMO_' in t:
+                restos.append('%s: base de Lawang o doble de la demo' % rel(p))
+            if re.search(r'sb_secret_|service_role', t):
+                restos.append('%s: clave de servicio' % rel(p))
+            for m in RASTRO.finditer(t):
+                restos.append('%s: …%s…' % (rel(p), m.group(0)))
+    if restos:
+        aborta('el build de la instancia no está limpio:\n  ' + '\n  '.join(restos[:40]))
+    comprueba_resultado(DIST)
+    # 4. Copia al clon del repo privado de la instancia (gitignored en la agencia).
+    destino = os.path.join(DESPLIEGUES, nombre)
+    r = subprocess.run(['git', 'check-ignore', '-q', os.path.join(destino, 'x.html')], cwd=AGENCIA)
+    if r.returncode != 0:
+        aborta('erp/despliegues/ no está en .gitignore de la agencia: el build real acabaría en su repo')
+    os.makedirs(destino, exist_ok=True)
+    for x in os.listdir(destino):
+        if x == '.git':
+            continue
+        p = os.path.join(destino, x)
+        shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
+    for x in os.listdir(DIST):
+        s_ = os.path.join(DIST, x)
+        shutil.copytree(s_, os.path.join(destino, x)) if os.path.isdir(s_) else shutil.copy2(s_, destino)
+    open(os.path.join(destino, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(HTACCESS_INSTANCIA.format(
+        nombre=nombre, dominio=dominio, dominio_re=re.escape(dominio), sb=host_sb))
+    open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
+    comprueba_resultado(destino)
+    total = sum(len(f) for r_, _d, f in os.walk(destino) if '.git' not in r_.split(os.sep))
+    print('OK instancia %s en %s: %d ficheros, guard real contra %s' % (nombre, os.path.relpath(destino, AGENCIA), total, host_sb))
+
+
 def main():
     if not os.path.isfile(os.path.join(LAWANG, '_qa_double_guard.js')):
         aborta('falta proyectos/Lawang/_qa_double_guard.js (gitignored: vive solo en este equipo)')
@@ -589,7 +747,15 @@ def main():
         p = os.path.join(DIST, x)
         shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
     copia_v4()
+    if '--instancia' in sys.argv:
+        # El guard real manda a /intranet/ para entrar: es la pantalla de acceso de verdad, no un aviso.
+        copia(os.path.join(LAWANG, 'intranet', 'index.html'), os.path.join(DIST, 'intranet', 'index.html'))
     faltan = cierra_referencias()
+    if '--instancia' in sys.argv:
+        i = sys.argv.index('--instancia')
+        if i + 1 >= len(sys.argv):
+            aborta('uso: build.py --instancia <nombre de erp/instancias.json>')
+        return instancia(sys.argv[i + 1])
     g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
     os.makedirs(os.path.dirname(g), exist_ok=True)
     open(g, 'w', encoding='utf-8', newline='').write(guard_demo())
