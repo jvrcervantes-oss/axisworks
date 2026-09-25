@@ -678,6 +678,7 @@ def instancia(nombre):
                 os.replace(os.path.join(raiz, f), os.path.join(raiz, nuevo))
     logos_neutros(marca)
     tipografias_libres()
+    neutraliza_ejemplos()   # ejemplos de persona que casan con gente real (pii_maqueta)
     # 2. Portada = la intranet. Lo que en la demo es un aviso, aquí dice que no está en esta instancia.
     redir = ('<!doctype html><meta charset="utf-8"><title>%s</title>'
              '<script>location.replace("/intranet/")</script>' % marca)
