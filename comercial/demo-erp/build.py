@@ -496,6 +496,57 @@ def tipografias_libres():
         aborta('quedan tipografías .otf en la versión pública: ' + ', '.join(rel(x) for x in sueltas[:5]))
 
 
+REF_ESTATICO = re.compile(r'''(["'])([^"'\s<>()]+?\.(?:js|css))(\?v=[0-9A-Za-z_-]+)?\1''')
+
+
+def versiona(raiz):
+    """?v=<huella del contenido PUBLICADO> en cada .js/.css local que se referencia (25-sep-2026).
+    El ?v= que trae la v4 es la huella del fichero de LAWANG, no la del que sale de aquí: guard.js se reescribe
+    entero y conservaba su ?v=, y catalogo.js/modulos.js/tour.js iban sin versión. Un navegador que entró el 24-sep
+    siguió usando el catalogo.js de antes de los packs (Hostinger cachea 7 días) y la landing se quedó sin módulos.
+    Se repite hasta que nada cambia: si guard.js cambia al versionar lo que inyecta, cambia también su huella."""
+    import hashlib
+
+    def huella(p):
+        return hashlib.sha1(open(p, 'rb').read()).hexdigest()[:8]
+
+    def resuelve(desde, ruta):
+        # Un nombre suelto («nav.js») no es una carga sino un selector: script[src*="nav.js"] con ?v= deja de casar.
+        if '/' not in ruta or ruta.startswith(('http:', 'https:', '//', 'data:')):
+            return None
+        p = os.path.join(raiz, ruta.lstrip('/')) if ruta.startswith('/') else os.path.join(os.path.dirname(desde), ruta)
+        p = os.path.normpath(p)
+        return p if p.startswith(os.path.normpath(raiz)) and os.path.isfile(p) else None
+
+    def pasada(ext):
+        cambiados = 0
+        for r, _d, fichs in os.walk(raiz):
+            for f in fichs:
+                if not f.endswith(ext):
+                    continue
+                p = os.path.join(r, f)
+                t = open(p, encoding='utf-8', errors='replace').read()
+
+                def uno(m):
+                    destino = resuelve(p, m.group(2))
+                    if not destino:
+                        return m.group(0)
+                    return m.group(1) + m.group(2) + '?v=' + huella(destino) + m.group(1)
+                t2 = REF_ESTATICO.sub(uno, t)
+                if t2 != t:
+                    open(p, 'w', encoding='utf-8', newline='').write(t2)
+                    cambiados += 1
+        return cambiados
+
+    for _ in range(6):                     # primero los .js entre sí, hasta que se estabilizan
+        if not pasada('.js'):
+            break
+    else:
+        aborta('versiona(): las huellas de los .js no se estabilizan (¿referencia circular?)')
+    pasada('.css')
+    pasada('.html')
+
+
 def publica():
     """Versión pública: sin comentarios, sin marca ni nombres de Lawang, y comprobado antes de copiar a demo/."""
     if not _PRIV or not REEMPLAZOS_PUBLICO:
@@ -537,6 +588,7 @@ def publica():
                     restos.append('%s: …%s…' % (rel(p), m.group(0)))
     if restos:
         aborta('quedan rastros de Lawang, no se publica:\n  ' + '\n  '.join(restos[:40]))
+    versiona(DIST)
     # Copia a dist/demo-erp/: se vacía por dentro (la carpeta es del repo) y se rellena con lo comprobado.
     if not DESTINO_PUBLICO.endswith(os.path.join('AxisWorks', 'dist', 'demo-erp')):
         aborta('destino público inesperado: ' + DESTINO_PUBLICO)
