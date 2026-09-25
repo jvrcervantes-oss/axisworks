@@ -470,6 +470,32 @@ def logos_neutros():
     fav.save(os.path.join(DIST, 'favicon.png'))
 
 
+def tipografias_libres():
+    """La demo pública no lleva las tipografías de marca de Lawang (owner, 25-sep, AXW-19): Neue Kabel y The Seasons
+    son identidad del cliente y los .otf venían de fonnts.com, sin licencia web nuestra. Se sustituyen por dos parecidas
+    de Google Fonts (licencia OFL): Jost (geométrica, como Kabel) y Cormorant Garamond (serif de display)."""
+    fuentes = os.path.join(DIST, 'intranet', 'v4', 'assets', 'fonts')
+    if os.path.isdir(fuentes):
+        for f in os.listdir(fuentes):
+            if f.lower().endswith(('.otf', '.ttf', '.woff', '.woff2')):
+                os.remove(os.path.join(fuentes, f))
+        open(os.path.join(fuentes, 'fonts.css'), 'w', encoding='utf-8', newline='\n').write(
+            "@import url('https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,300..800;1,300..800"
+            "&family=Cormorant+Garamond:ital,wght@0,400..700;1,400..700&display=swap');\n")
+    for raiz, _d, fichs in os.walk(DIST):
+        for f in fichs:
+            if not f.endswith(EXT_TEXTO):
+                continue
+            p = os.path.join(raiz, f)
+            t = open(p, encoding='utf-8', errors='replace').read()
+            t2 = t.replace('Neue Kabel', 'Jost').replace('The Seasons', 'Cormorant Garamond')
+            if t2 != t:
+                open(p, 'w', encoding='utf-8', newline='').write(t2)
+    sueltas = [os.path.join(r, f) for r, _d, fs in os.walk(DIST) for f in fs if f.lower().endswith('.otf')]
+    if sueltas:
+        aborta('quedan tipografías .otf en la versión pública: ' + ', '.join(rel(x) for x in sueltas[:5]))
+
+
 def publica():
     """Versión pública: sin comentarios, sin marca ni nombres de Lawang, y comprobado antes de copiar a demo/."""
     if not _PRIV or not REEMPLAZOS_PUBLICO:
@@ -499,6 +525,7 @@ def publica():
             if t2 != t:
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
     logos_neutros()
+    tipografias_libres()
     restos = []
     for raiz, _d, fichs in os.walk(DIST):
         for f in fichs:

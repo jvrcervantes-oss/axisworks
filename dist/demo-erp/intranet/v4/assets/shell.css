@@ -25,7 +25,7 @@ html:has(body.v4-nav-abierta){overflow:hidden;scrollbar-gutter:stable}
 :root{ --t-toast:4200ms; --t-toast-mal:7000ms }
 
 #toast,#toastMal{position:fixed;z-index:var(--z-aviso);display:none;
-  font-family:'Neue Kabel',system-ui,sans-serif}
+  font-family:'Jost',system-ui,sans-serif}
 #toast.show,#toast.on,#toastMal.show,#toastMal.on{display:block}
 
 
@@ -130,10 +130,10 @@ body.lw-listo main{animation:none;visibility:visible}
 @media (max-width:1023px){ #lw-cargando{inset:0} }
 body.v4-nav-plegada #lw-cargando{left:0}
 
-#lw-cargando .lw-c-marca{margin:0;font:600 22px/1 'Neue Kabel',system-ui,sans-serif;
+#lw-cargando .lw-c-marca{margin:0;font:600 22px/1 'Jost',system-ui,sans-serif;
   letter-spacing:.28em;color:#104C4F}
 #lw-cargando .lw-c-dice,#lw-cargando .lw-c-tarda{margin:0;
-  font:400 13px/1.5 'Neue Kabel',system-ui,sans-serif;color:#8A8474;max-width:36ch}
+  font:400 13px/1.5 'Jost',system-ui,sans-serif;color:#8A8474;max-width:36ch}
 
 
 #lw-cargando .lw-c-frases{display:grid}
@@ -170,7 +170,7 @@ body.v4-nav-plegada #lw-cargando{left:0}
   border:1px solid #E4DCCB; border-radius:16px;
   box-shadow:0 25px 50px -12px rgba(0,0,0,.25); overflow:hidden;
   animation:lwDlgEntraV4 200ms ease-out;
-  font-family:'Neue Kabel','Jost',sans-serif;
+  font-family:'Jost','Jost',sans-serif;
 }
 .lw-dlg-cab{ padding:20px 24px 0; display:flex; gap:12px; align-items:flex-start; }
 .lw-dlg-marca{ flex:0 0 3px; align-self:stretch; border-radius:2px; background:#104C4F; margin:2px 0; }
@@ -254,11 +254,11 @@ input.lw-elegible:disabled{ cursor:default; opacity:1; }
 }
 .sui-sel{
   padding:7px 10px; border:1px solid #E4DCCB; border-radius:8px;
-  font:500 12.5px 'Neue Kabel','Jost',sans-serif; color:#2E3437; background:#fff;
+  font:500 12.5px 'Jost','Jost',sans-serif; color:#2E3437; background:#fff;
 }
 .sui-btn{
   padding:7px 12px; border-radius:8px; border:1px solid #E4DCCB; background:#fff;
-  color:#2E3437; font:600 12.5px 'Neue Kabel','Jost',sans-serif; cursor:pointer;
+  color:#2E3437; font:600 12.5px 'Jost','Jost',sans-serif; cursor:pointer;
 }
 .sui-btn:hover{ border-color:#104C4F; }
 .sui-btn.primario{ background:#104C4F; border-color:#104C4F; color:#fff; }
@@ -268,7 +268,7 @@ input.lw-elegible:disabled{ cursor:default; opacity:1; }
 .campo label,.mini{ display:block; font-size:11.5px; font-weight:600; color:#75786e; margin:0 0 4px; }
 .campo input{
   width:100%; box-sizing:border-box; padding:7px 10px; border:1px solid #E4DCCB;
-  border-radius:8px; font:500 12.5px 'Neue Kabel','Jost',sans-serif; color:#2E3437;
+  border-radius:8px; font:500 12.5px 'Jost','Jost',sans-serif; color:#2E3437;
 }
 .campo input:focus{ outline:none; border-color:#104C4F; box-shadow:0 0 0 3px rgba(16,76,79,.12); }
 .flojo{ color:#8A8474; font-weight:500; }
