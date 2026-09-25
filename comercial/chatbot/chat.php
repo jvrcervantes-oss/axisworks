@@ -14,7 +14,7 @@ require_once $config_path;
 // private/config.php define: ANTHROPIC_API_KEY  (y opcional CLAUDE_MODEL)
 
 if (!defined('CLAUDE_MODEL')) {
-    define('CLAUDE_MODEL', 'claude-haiku-4-5-20251001'); // rápido y económico para cualificar
+    define('CLAUDE_MODEL', 'claude-haiku-4-5'); // rápido y económico para cualificar
 }
 
 // ── Same-origin básico (anti-abuso) ──────────────────────────────────
