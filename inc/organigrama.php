@@ -28,7 +28,7 @@ $ORGANIGRAMA = [
       'en' => ['Deploy', 'ships &amp; verifies', ['Hosting, go-live and checks in production']],
       'es' => ['Deploy', 'publica y verifica', ['Alojamiento, puesta en marcha y comprobación en producción']],
     ],
-    ['seccion' => 'BUILD', 'cara' => 'games', 'imagen' => false,
+    ['seccion' => 'BUILD', 'cara' => 'games', 'imagen' => true,
       'en' => ['Games', 'engine &amp; game', ['A game engine and the game built on it']],
       'es' => ['Videojuegos', 'motor y juego', ['Un motor de juego y el juego que corre sobre él']],
     ],
