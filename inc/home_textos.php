@@ -96,6 +96,13 @@ $HOME = [
      ficha pública de cada departamentos/<d>/prompt.md (tools/organigrama_web.py).
      Aquí solo queda la frase de cada sección, que es copy. */
   'org_secs'=>['BUILD'=>'The software', 'GROW'=>'Brand &amp; demand', 'CONTROL'=>'Rules, money &amp; paperwork'],
+  /* Procesos autónomos: no son departamentos (no pasan por organigrama_web.py), trabajan solos
+     con su propio cron y avisan a Pepito. A mano aquí, en los dos idiomas. El producto no se
+     nombra hasta que esté lanzado (decisión del owner, 25-sep-2026). */
+  'auto_t'=>'AUTONOMOUS', 'auto_lema'=>'They run on their own, around the clock, and report to Pepito',
+  'auto'=>[
+    ['padrino', 'The Godfather', 'runs our own products', 'In build', ['Answers the inbox', 'Finds customers', 'Writes the business plan and puts it to work']],
+  ],
 
   'ct_eyebrow'=>'// TERMINAL PROTOCOL 01-INTAKE','ct_h2'=>'Initiate project intake.',
   'ct_lead'=>'Tell us what you run on today and what hurts. We reply in English or Spanish, usually within a day.',
@@ -188,6 +195,10 @@ $HOME = [
      ficha pública de cada departamentos/<d>/prompt.md (tools/organigrama_web.py).
      Aquí solo queda la frase de cada sección, que es copy. */
   'org_secs'=>['BUILD'=>'El software', 'GROW'=>'Marca y demanda', 'CONTROL'=>'Reglas, dinero y papeles'],
+  'auto_t'=>'AUTÓNOMOS', 'auto_lema'=>'Trabajan solos, a todas horas, y responden ante Pepito',
+  'auto'=>[
+    ['padrino', 'El Padrino', 'dirige los productos propios', 'En construcción', ['Atiende el correo', 'Busca clientes', 'Escribe el plan de negocio y lo aplica']],
+  ],
 
   'ct_eyebrow'=>'// PROTOCOLO 01-ALTA','ct_h2'=>'Iniciar alta de proyecto.',
   'ct_lead'=>'Cuéntanos con qué funcionas hoy y qué te duele. Respondemos en español o inglés, normalmente en un día.',

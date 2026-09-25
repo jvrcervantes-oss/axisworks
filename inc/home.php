@@ -287,6 +287,24 @@ $jsonld = [
       </section>
       <?php endforeach; ?>
     </div>
+    <?php if (!empty($hm['auto'])): ?>
+    <section class="org__sec org__auto" aria-label="<?= $hm['auto_t'] ?>">
+      <p class="org__head"><b><?= $hm['auto_t'] ?></b> <span><?= $hm['auto_lema'] ?></span></p>
+      <ul class="org__deps">
+        <?php foreach ($hm['auto'] as $i => [$cara, $nom, $hace, $estado, $prods]): ?>
+        <li class="org__dep">
+          <div class="org__node">
+            <span class="org__ini" aria-hidden="true"><?= mb_substr(html_entity_decode(strip_tags($nom), ENT_QUOTES, 'UTF-8'), $lang === 'es' ? 3 : 4, 1, 'UTF-8') ?></span>
+            <div><span class="dim"><?= sprintf('AUT.%02d', $i + 1) ?> · <?= $estado ?></span><b><?= $nom ?></b><span class="org__hace"><?= $hace ?></span></div>
+          </div>
+          <ul class="org__prods">
+            <?php foreach ($prods as $x): ?><li><span class="org__p"><?= $x ?></span></li><?php endforeach; ?>
+          </ul>
+        </li>
+        <?php endforeach; ?>
+      </ul>
+    </section>
+    <?php endif; ?>
     </div>
     <p class="deps__note"><?= $hm['deps_note'] ?></p>
   </div>
