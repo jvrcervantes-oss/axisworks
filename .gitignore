@@ -23,3 +23,7 @@ comercial/demo-erp/package-lock.json
 # Formulario de contacto (24-sep-2026): el secreto se genera en el servidor, nunca en git
 private/secreto.php
 api/_estado/
+
+# Creador de webs de boda: otro repo (jvrcervantes-oss/bodas) desplegado por Hostinger en public_html/bodas
+/bodas/
+/bodas_datos/
