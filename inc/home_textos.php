@@ -101,6 +101,8 @@ $HOME = [
      nombra hasta que esté lanzado (decisión del owner, 25-sep-2026). */
   'auto_t'=>'AUTONOMOUS', 'auto_lema'=>'They run on their own, around the clock, and report to Pepito',
   'auto'=>[
+    ['vigilante', 'The Watchman', 'guards ad spend &amp; leads', 'Live', ['Checks campaigns and conversations around the clock', 'Pauses what isn&rsquo;t bringing leads', 'Alerts the owner in real time']],
+    ['investigador', 'The Investigator', 'finds sales partners', 'Pilot', ['Finds and ranks agencies that can resell a client&rsquo;s product', 'Prepares the outreach kit', 'A person makes the first contact']],
     ['padrino', 'The Godfather', 'runs our own products', 'In build', ['Answers the inbox', 'Finds customers', 'Writes the business plan and puts it to work']],
   ],
 
@@ -197,6 +199,8 @@ $HOME = [
   'org_secs'=>['BUILD'=>'El software', 'GROW'=>'Marca y demanda', 'CONTROL'=>'Reglas, dinero y papeles'],
   'auto_t'=>'AUTÓNOMOS', 'auto_lema'=>'Trabajan solos, a todas horas, y responden ante Pepito',
   'auto'=>[
+    ['vigilante', 'El Vigilante', 'vigila la inversión y los leads', 'En producción', ['Revisa campañas y conversaciones a todas horas', 'Pausa lo que no trae contactos', 'Avisa al dueño en tiempo real']],
+    ['investigador', 'El Investigador', 'busca socios comerciales', 'Piloto', ['Encuentra y ordena agencias que pueden revender el producto de un cliente', 'Prepara el material de contacto', 'El primer contacto lo hace una persona']],
     ['padrino', 'El Padrino', 'dirige los productos propios', 'En construcción', ['Atiende el correo', 'Busca clientes', 'Escribe el plan de negocio y lo aplica']],
   ],
 
