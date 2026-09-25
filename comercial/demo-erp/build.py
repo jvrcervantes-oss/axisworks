@@ -571,6 +571,14 @@ def publica():
         'https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src '
         '\'self\' data: blob:; connect-src \'self\'; frame-ancestors \'self\'; base-uri \'self\'; form-action '
         '\'self\'; object-src \'none\'"\n'
+        # Hostinger sirve .js/.css con max-age de 7 días y la demo los pide sin versión (/demo/catalogo.js): el
+        # 25-sep un catalogo.js viejo (sin PACKS) cacheado del 24 dejó la landing nueva sin módulos y sin forma de
+        # activarlos. no-cache = el navegador revalida con el ETag en cada visita (304 si no cambió).
+        '  <FilesMatch "\\.(html|js|css|json)$">\n'
+        '    Header unset Expires\n'
+        '    Header unset Cache-Control\n'
+        '    Header always set Cache-Control "no-cache"\n'
+        '  </FilesMatch>\n'
         '</IfModule>\n'
         'DirectoryIndex index.html\n')
     open(os.path.join(DESTINO_PUBLICO, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
