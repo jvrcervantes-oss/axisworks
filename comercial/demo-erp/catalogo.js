@@ -69,7 +69,7 @@
       ['Por proyecto'], null]
   ];
   var CAMINO = [
-    ['contabilidad', 'Contabilidad', 'Asientos generados desde las facturas y los cobros del ERP, plan de cuentas por sociedad y exportación para la gestoría.'],
+    ['contabilidad', 'Contabilidad', 'Asientos generados desde las facturas y los cobros del ERP, plan de cuentas por sociedad y exportación para la gestoría. Llegará dentro del pack Finanzas.'],
     ['radar', 'Radar de cobros', 'Aprende cómo paga cada comprador y avisa antes de que un hito se retrase, con el recordatorio ya redactado.'],
     ['dataroom', 'Sala de datos del inversor', 'Documentación de cada proyecto para inversores, con marca de agua por persona y registro de quién abre qué.'],
     ['postventa', 'Postventa y garantías', 'Incidencias después de la entrega: quién las abre, qué contratista las arregla y en qué garantía caen.']
@@ -151,7 +151,7 @@
     ['base', 'Base', 'Lo que tiene cualquier empresa: el día, el equipo y los ajustes.', ['home', 'usuarios', 'ajustes'], []],
     ['ventas', 'Ventas y CRM', 'Del lead a la venta cerrada, con cada cliente y su operación.', ['crm', 'operaciones', 'compradores'], ['base']],
     ['facturacion', 'Facturación y cobros', 'Facturas, recibís y calendario de cobros, por sociedad y cuenta.', ['facturas', 'recibos', 'vencimientos', 'cuentas', 'sociedades'], ['ventas']],
-    ['finanzas', 'Finanzas', 'El dinero de la empresa: panel de dirección, bancos y gastos.', ['finanzas', 'bancos', 'gastos'], ['facturacion']],
+    ['finanzas', 'Finanzas', 'El dinero de la empresa: panel de dirección, bancos y gastos. La contabilidad, cuando llegue, entra en este pack.', ['finanzas', 'bancos', 'gastos'], ['facturacion']],
     ['documentos', 'Contratos y documentos', 'Contratos con firma electrónica, soporte al cliente y comunicados.', ['contratos', 'soporte', 'comunicacion'], ['ventas']],
     ['inmobiliaria', 'Inmobiliaria', 'Para promotoras: parcelario, reservas de parcela, modelos de vivienda y obra.', ['proyectos', 'reservas', 'modelos', 'obra'], ['documentos', 'facturacion']]
   ];
