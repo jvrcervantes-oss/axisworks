@@ -173,6 +173,24 @@ def cierra_referencias():
     return faltan
 
 
+def escribe_instancia(ficha):
+    """ERP F3 (25-sep-2026): la ficha de la instancia (/contracts/assets/instancia.js) la escribe el build con los datos
+    del destino, en vez de copiar la de Lawang y confiar en los reemplazos de texto. El núcleo (guard.js y la suite) lee
+    host, clave y marca de aquí."""
+    campos = ('sb_url', 'sb_key', 'marca', 'cabecera', 'subcabecera', 'titulo', 'razon_social')
+    faltan = [k for k in campos if not ficha.get(k)]
+    if faltan:
+        aborta('ficha de instancia incompleta: ' + ', '.join(faltan))
+    cuerpo = ',\n'.join('    %s: %s' % (k, json.dumps(ficha[k], ensure_ascii=False)) for k in campos)
+    ruta = os.path.join(DIST, 'contracts', 'assets', 'instancia.js')
+    os.makedirs(os.path.dirname(ruta), exist_ok=True)
+    open(ruta, 'w', encoding='utf-8', newline='\n').write(
+        '/* GENERADO por AxisWorks/comercial/demo-erp/build.py — ficha de esta instancia del ERP. No editar. */\n'
+        '(function () {\n  var ficha = Object.freeze({\n' + cuerpo + '\n  });\n'
+        "  try { Object.defineProperty(window, 'LW_INSTANCIA', { value: ficha, writable: false, configurable: false, enumerable: true }); }\n"
+        '  catch (e) {}\n})();\n')
+
+
 def guard_demo():
     doble = open(os.path.join(LAWANG, '_qa_double_guard.js'), encoding='utf-8').read()
     datos = open(os.path.join(AQUI, 'demo_datos.js'), encoding='utf-8').read()
@@ -745,6 +763,9 @@ def instancia(nombre):
             t2 = cambia_lawang(t2).replace('AxisWorks Demo', marca)
             if t2 != t:
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
+    # ERP F3: su ficha, escrita desde el registro (después de los reemplazos, que ya no la tocan)
+    escribe_instancia({'sb_url': url, 'sb_key': clave, 'marca': marca, 'cabecera': marca.upper(), 'subcabecera': 'ERP',
+                       'titulo': marca + ' ERP', 'razon_social': marca})
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
     # F4: módulos apagados — el cliente no pide lo que la base ya no le da, y el menú no enseña sus pantallas.
     apag = apagados_de(nombre)
@@ -853,6 +874,9 @@ def main():
     g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
     os.makedirs(os.path.dirname(g), exist_ok=True)
     open(g, 'w', encoding='utf-8', newline='').write(guard_demo())
+    escribe_instancia({'sb_url': 'https://demo.invalid', 'sb_key': 'sb_publishable_demo', 'marca': 'AxisWorks Demo',
+                       'cabecera': 'AXISWORKS', 'subcabecera': 'ERP DEMO', 'titulo': 'AxisWorks ERP',
+                       'razon_social': 'AxisWorks Demo'})
     paginas_propias()
     avisos_para_rotos()
     n = neutraliza()
