@@ -696,6 +696,28 @@ NO_ESTA = ('<!doctype html><html lang="es"><meta charset="utf-8"><title>{t}</tit
            '<p>Este módulo no está instalado en esta instancia.</p><p><a href="/intranet/v4/home/">Volver</a></p>')
 
 
+def apagados_de(nombre):
+    """F4 (25-sep): {'t': {tabla: módulo}, 'f': {función: módulo}, 'b': {bucket: módulo}, 'p': [pantallas]} de los
+    módulos APAGADOS de la instancia, desde el registro generado (erp/modulos.json) y su modulos_activos. Sin
+    modulos_activos (todo activo) devuelve None y no se antepone nada."""
+    reg = json.load(open(os.path.join(AGENCIA, 'erp', 'instancias.json'), encoding='utf-8'))['instancias'][nombre]
+    act = (reg.get('config') or {}).get('modulos_activos')
+    if not isinstance(act, list):
+        return None
+    act = set(act) | {'base'}
+    m = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))
+    out = {'t': {}, 'f': {}, 'b': {}, 'p': []}
+    for clase, k in (('tablas', 't'), ('vistas', 't'), ('funciones', 'f'), ('buckets', 'b')):
+        for obj, d in m['objetos'].get(clase, {}).items():
+            if d['clase'] == 'modulo' and d['detalle'] and d['detalle'][0] not in act:
+                out[k][obj] = d['detalle'][0]
+    for mod, d in m['modulos'].items():
+        if mod not in act:
+            out['p'] += [u for u in d.get('pantallas', []) if u.startswith('/intranet/')]
+    out['p'] = sorted(set(out['p']))
+    return out
+
+
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
@@ -724,10 +746,16 @@ def instancia(nombre):
             if t2 != t:
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
+    # F4: módulos apagados — el cliente no pide lo que la base ya no le da, y el menú no enseña sus pantallas.
+    apag = apagados_de(nombre)
+    interruptores = ''
+    if apag:
+        plantilla = open(os.path.join(AQUI, 'apagados_instancia.js'), encoding='utf-8').read()
+        interruptores = plantilla.replace('__AXW_APAGADOS__', json.dumps(apag, ensure_ascii=False, sort_keys=True)) + '\n'
     t = open(g, encoding='utf-8').read()
     open(g, 'w', encoding='utf-8', newline='').write(
         '/* GENERADO por AxisWorks/comercial/demo-erp/build.py --instancia %s — no editar. */\n'
-        'window.AXW_NUCLEO_OPERACION = true;\n' % nombre + t)
+        'window.AXW_NUCLEO_OPERACION = true;\n' % nombre + interruptores + t)
     for raiz, dirs, fichs in os.walk(DIST, topdown=False):
         for f in fichs + dirs:
             nuevo = f
@@ -748,6 +776,11 @@ def instancia(nombre):
         d = os.path.join(DIST, sitio)
         os.makedirs(d, exist_ok=True)
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(redir)
+    # F4: las pantallas de módulos apagados no se sirven (se quedan en «no está instalado»)
+    for u in (apag or {}).get('p', []):
+        f = os.path.join(DIST, *u.strip('/').split('/'), 'index.html')
+        if os.path.isfile(f):
+            open(f, 'w', encoding='utf-8').write(NO_ESTA.format(t='Módulo no instalado'))
     for ruta, t in (('intranet/v4/generador-contratos/index.html', 'Generador de contratos'),
                     ('intranet/v4/contratos-inversor/index.html', 'Portal del comprador'),
                     ('contracts/app.html', 'Generador de contratos'),
