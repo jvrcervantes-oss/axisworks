@@ -348,7 +348,7 @@
       ['IRPF 7 % (inicio de actividad)', 'ES', 'retiene', 7, 1, null, false, 31],
       ['Exenta de IVA', 'ES', 'exenta', 0, 1, 'Operación exenta de IVA, art. 20.Uno LIVA', false, 40],
       ['Entrega intracomunitaria exenta', 'ES', 'exenta', 0, 1, 'Entrega intracomunitaria exenta, art. 25 LIVA', false, 41],
-      ['No sujeta (cliente fuera de la UE)', 'ES', 'no_sujeta', 0, 1, 'Operación no sujeta a IVA, art. 69 LIVA', false, 42],
+      ['No sujeta (servicio a empresa fuera de la UE)', 'ES', 'no_sujeta', 0, 1, 'Operación no sujeta a IVA por reglas de localización, art. 69.Uno.1º LIVA', false, 42],
       ['Inversión del sujeto pasivo', 'ES', 'isp', 0, 1, 'Inversión del sujeto pasivo, art. 84.Uno.2º LIVA', false, 43],
       ['PPN 12 % (base 11/12)', 'ID', 'suma', 12, 0.916667, null, true, 10], ['PPh 23 2 %', 'ID', 'retiene', 2, 1, null, false, 30],
       ['PPN dibebaskan', 'ID', 'exenta', 0, 1, 'PPN dibebaskan', false, 40], ['PPN tidak dipungut', 'ID', 'no_sujeta', 0, 1, 'PPN tidak dipungut', false, 41]
