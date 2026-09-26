@@ -337,6 +337,47 @@
       fila({ id: 'mc-3', hilo_id: 'h-2', client_id: 'cl-6', de: 'equipo', autor: EQUIPO[5].nombre, texto: 'Subidas esta mañana a su portal, en la pestaña Obra.', creado_en: ts(-3, 9) }),
       fila({ id: 'mc-4', hilo_id: 'h-3', client_id: 'cl-9', de: 'comprador', autor: null, texto: 'Necesito una copia firmada de la Carta de Reserva.', creado_en: ts(-2, 10) })
     ]);
+
+    /* ── Impuestos y productos (núcleo del ERP, 26-sep-2026) ──────────────────
+       La semilla de impuestos es la MISMA que pone la migración 20260926170000_impuestos (tipos generales de
+       España e Indonesia: datos públicos, no de ningún cliente); los IMP- y PRD- los pone la base, aquí van a
+       mano. Los productos son inventados. La pantalla solo los usa con AXW_NUCLEO_OPERACION. */
+    var IMP = [
+      ['IVA 21 %', 'ES', 'suma', 21, 1, null, true, 10], ['IVA 10 %', 'ES', 'suma', 10, 1, null, false, 11],
+      ['IVA 4 %', 'ES', 'suma', 4, 1, null, false, 12], ['IRPF 15 %', 'ES', 'retiene', 15, 1, null, false, 30],
+      ['IRPF 7 % (inicio de actividad)', 'ES', 'retiene', 7, 1, null, false, 31],
+      ['Exenta de IVA', 'ES', 'exenta', 0, 1, 'Operación exenta de IVA, art. 20.Uno LIVA', false, 40],
+      ['Entrega intracomunitaria exenta', 'ES', 'exenta', 0, 1, 'Entrega intracomunitaria exenta, art. 25 LIVA', false, 41],
+      ['No sujeta (cliente fuera de la UE)', 'ES', 'no_sujeta', 0, 1, 'Operación no sujeta a IVA, art. 69 LIVA', false, 42],
+      ['Inversión del sujeto pasivo', 'ES', 'isp', 0, 1, 'Inversión del sujeto pasivo, art. 84.Uno.2º LIVA', false, 43],
+      ['PPN 12 % (base 11/12)', 'ID', 'suma', 12, 0.916667, null, true, 10], ['PPh 23 2 %', 'ID', 'retiene', 2, 1, null, false, 30],
+      ['PPN dibebaskan', 'ID', 'exenta', 0, 1, 'PPN dibebaskan', false, 40], ['PPN tidak dipungut', 'ID', 'no_sujeta', 0, 1, 'PPN tidak dipungut', false, 41]
+    ];
+    var impuestos = IMP.map(function (x, i) {
+      return fila({ id: 'imp-' + (i + 1), numero_impuesto: 'IMP-' + ('0000' + (i + 1)).slice(-5), nombre: x[0], pais: x[1],
+        sociedad_clave: null, clase: x[2], porcentaje: x[3], coef_base: x[4], motivo_legal: x[5], recargo_de: null,
+        por_defecto: x[6], activo: true, orden: x[7], creado_en: ts(-60), creado_por: EQUIPO[0].email, actualizado_en: null, actualizado_por: null });
+    });
+    [['Recargo de equivalencia 5,2 %', 5.2, 'imp-1', 20], ['Recargo de equivalencia 1,4 %', 1.4, 'imp-2', 21], ['Recargo de equivalencia 0,5 %', 0.5, 'imp-3', 22]]
+      .forEach(function (r, i) {
+        impuestos.push(fila({ id: 'imp-' + (IMP.length + i + 1), numero_impuesto: 'IMP-' + ('0000' + (IMP.length + i + 1)).slice(-5), nombre: r[0], pais: 'ES',
+          sociedad_clave: null, clase: 'suma', porcentaje: r[1], coef_base: 1, motivo_legal: null, recargo_de: r[2],
+          por_defecto: false, activo: true, orden: r[3], creado_en: ts(-60), creado_por: EQUIPO[0].email, actualizado_en: null, actualizado_por: null }));
+      });
+    tabla('impuestos', impuestos);
+    var PRD = [
+      ['Gestión de alquiler vacacional', 'SRV-ALQ', 'mes', 350, 'EUR', 'imp-1', 'Publicación, reservas, check-in y limpieza de una villa.'],
+      ['Mantenimiento de piscina', 'SRV-PIS', 'mes', 1500000, 'IDR', 'imp-10', 'Dos visitas por semana, productos incluidos.'],
+      ['Hora de interiorismo', 'SRV-INT', 'hora', 45.5, 'EUR', 'imp-1', null],
+      ['Pack de mobiliario Canopy', 'MOB-CAN', 'ud', 18900, 'EUR', 'imp-1', 'Mobiliario completo para el modelo Canopy.'],
+      ['Informe de due diligence', 'SRV-DD', 'ud', 12500000, 'IDR', 'imp-10', 'Revisión de títulos y licencias de la parcela.'],
+      ['Visita guiada a obra', 'SRV-VIS', 'ud', 0, 'EUR', null, 'Sin coste para compradores con contrato firmado.']
+    ];
+    tabla('productos', PRD.map(function (p, i) {
+      return fila({ id: 'prd-' + (i + 1), numero_producto: 'PRD-' + ('0000' + (i + 1)).slice(-5), nombre: p[0], referencia: p[1], unidad: p[2],
+        precio: p[3], moneda: p[4], impuesto_id: p[5], descripcion: p[6], activo: i !== 5 ? true : false,
+        creado_en: ts(-40 + i), creado_por: EQUIPO[5].email, actualizado_en: null, actualizado_por: null });
+    }));
   };
 
   /* Escrituras en memoria: en la demo, «guardar» se ve (la fila aparece al
