@@ -183,7 +183,9 @@ def escribe_instancia(ficha):
     """ERP F3 (25-sep-2026): la ficha de la instancia (/contracts/assets/instancia.js) la escribe el build con los datos
     del destino, en vez de copiar la de Lawang y confiar en los reemplazos de texto. El núcleo (guard.js y la suite) lee
     host, clave y marca de aquí."""
-    campos = ('sb_url', 'sb_key', 'marca', 'cabecera', 'subcabecera', 'titulo', 'razon_social')
+    # firma_correo: con qué nombre firma el correo de facturas — la MARCA comercial, nunca la sociedad emisora (owner,
+    # 8-sep-2026; se llamaba razon_social hasta el 26-sep y eso invitaba a poner la sociedad: Legal, consulta de deploy).
+    campos = ('sb_url', 'sb_key', 'marca', 'cabecera', 'subcabecera', 'titulo', 'firma_correo')
     faltan = [k for k in campos if not ficha.get(k)]
     if faltan:
         aborta('ficha de instancia incompleta: ' + ', '.join(faltan))
@@ -771,7 +773,7 @@ def instancia(nombre):
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
     # ERP F3: su ficha, escrita desde el registro (después de los reemplazos, que ya no la tocan)
     escribe_instancia({'sb_url': url, 'sb_key': clave, 'marca': marca, 'cabecera': marca.upper(), 'subcabecera': 'ERP',
-                       'titulo': marca + ' ERP', 'razon_social': marca})
+                       'titulo': marca + ' ERP', 'firma_correo': marca})
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
     # F4: módulos apagados — el cliente no pide lo que la base ya no le da, y el menú no enseña sus pantallas.
     apag = apagados_de(nombre)
@@ -882,7 +884,7 @@ def main():
     open(g, 'w', encoding='utf-8', newline='').write(guard_demo())
     escribe_instancia({'sb_url': 'https://demo.invalid', 'sb_key': 'sb_publishable_demo', 'marca': 'AxisWorks Demo',
                        'cabecera': 'AXISWORKS', 'subcabecera': 'ERP DEMO', 'titulo': 'AxisWorks ERP',
-                       'razon_social': 'AxisWorks Demo'})
+                       'firma_correo': 'AxisWorks Demo'})
     paginas_propias()
     avisos_para_rotos()
     n = neutraliza()
