@@ -42,7 +42,13 @@ import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 AGENCIA = os.path.abspath(os.path.join(AQUI, '..', '..', '..', '..'))
-LAWANG = os.path.join(AGENCIA, 'proyectos', 'Lawang')
+# AXW_LAWANG_RAIZ: construir desde una copia de sesión (tools/sesion.py) en vez del clon principal, para probar un
+# cambio del núcleo ANTES de aterrizarlo (26-sep-2026, F3 lote 2b).
+LAWANG = os.path.abspath(os.environ.get('AXW_LAWANG_RAIZ') or os.path.join(AGENCIA, 'proyectos', 'Lawang'))
+# El doble de QA está gitignorado: no viaja a las copias de sesión. Se lee del clon principal (solo lectura).
+DOBLE_QA = next((d for d in (os.path.join(LAWANG, '_qa_double_guard.js'),
+                             os.path.join(AGENCIA, 'proyectos', 'Lawang', '_qa_double_guard.js')) if os.path.isfile(d)),
+                os.path.join(LAWANG, '_qa_double_guard.js'))
 DIST = os.path.join(AQUI, 'dist')
 
 SB_URL = 'https://vtulllundrfennhjddhc.supabase.co'
@@ -192,7 +198,7 @@ def escribe_instancia(ficha):
 
 
 def guard_demo():
-    doble = open(os.path.join(LAWANG, '_qa_double_guard.js'), encoding='utf-8').read()
+    doble = open(DOBLE_QA, encoding='utf-8').read()
     datos = open(os.path.join(AQUI, 'demo_datos.js'), encoding='utf-8').read()
     cambios = [
         # El rol de QA existía para no confundirse con el guard real; aquí no hay guard real.
@@ -853,7 +859,7 @@ def instancia(nombre):
 
 
 def main():
-    if not os.path.isfile(os.path.join(LAWANG, '_qa_double_guard.js')):
+    if not os.path.isfile(DOBLE_QA):
         aborta('falta proyectos/Lawang/_qa_double_guard.js (gitignored: vive solo en este equipo)')
     comprueba_salida()
     # Se vacía por dentro (no se borra la carpeta): presentar.cmd puede tenerla servida.
