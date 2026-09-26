@@ -189,6 +189,9 @@ def escribe_instancia(ficha):
     faltan = [k for k in campos if not ficha.get(k)]
     if faltan:
         aborta('ficha de instancia incompleta: ' + ', '.join(faltan))
+    # Opcionales: `inicio` = adónde lleva el acceso tras entrar (26-sep-2026: el estándar del producto es la Home de
+    # la v4; sin él, el panel clásico). Lawang no lo lleva y sigue con su portada de siempre.
+    campos = campos + tuple(k for k in ('inicio',) if ficha.get(k))
     cuerpo = ',\n'.join('    %s: %s' % (k, json.dumps(ficha[k], ensure_ascii=False)) for k in campos)
     ruta = os.path.join(DIST, 'contracts', 'assets', 'instancia.js')
     os.makedirs(os.path.dirname(ruta), exist_ok=True)
@@ -241,6 +244,11 @@ def guard_demo():
         # devuelven la misma promesa, que ya trae las filas.
         ("    rpc: function (nombre, args) {\n      console.warn('[qa-doble] rpc bloqueada (no real):', nombre, args);",
          "    rpc: function (nombre, args) {\n"
+         # Guardados atómicos (26-sep): en producción son RPC que escriben; aquí, en memoria (demo_datos.js).
+         "      if (window.LW_DEMO_RPC_GUARDA && window.LW_DEMO_RPC_GUARDA[nombre]) {\n"
+         "        window.LW_DEMO_RPC_GUARDA[nombre](FIXTURES, args || {});\n"
+         "        return Promise.resolve({ data: null, error: null });\n"
+         "      }\n"
          "      var r = this._rpc(nombre, args);\n"
          "      if (r && typeof r.then === 'function' && typeof r.select !== 'function') {\n"
          "        ['select', 'order', 'limit', 'eq', 'neq', 'gte', 'lte', 'in', 'is', 'range'].forEach(function (k) { r[k] = function () { return r; }; });\n"
@@ -773,7 +781,8 @@ def instancia(nombre):
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
     # ERP F3: su ficha, escrita desde el registro (después de los reemplazos, que ya no la tocan)
     escribe_instancia({'sb_url': url, 'sb_key': clave, 'marca': marca, 'cabecera': marca.upper(), 'subcabecera': 'ERP',
-                       'titulo': marca + ' ERP', 'firma_correo': marca})
+                       'titulo': marca + ' ERP', 'firma_correo': marca,
+                       'inicio': '/intranet/v4/home/'})
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
     # F4: módulos apagados — el cliente no pide lo que la base ya no le da, y el menú no enseña sus pantallas.
     apag = apagados_de(nombre)
