@@ -357,6 +357,64 @@
     return [];
   };
 
+  /* Guardados atómicos (26-sep-2026): en producción son RPC de la base
+     (`guarda_modelo`, `guarda_*_cuentas`, `guarda_prevision_deck`), una
+     transacción cada una. Aquí se aplican en memoria sobre las mismas tablas,
+     para que «guardar» se siga viendo en la demo. Lo llama el envoltorio de
+     `rpc` que pone build.py. */
+  window.LW_DEMO_RPC_GUARDA = (function () {
+    var E = function (F, t, op, val, filas) { return window.LW_DEMO_ESCRIBE(F, t, op, val, filas || []); };
+    function donde(F, t, fn) { return (F[t] && Array.isArray(F[t].data)) ? F[t].data.filter(fn) : []; }
+    function porId(id) { return function (r) { return r.id === id; }; }
+    function reparto(F, t, base, c) {
+      var es = function (r) { return Object.keys(base).every(function (k) { return r[k] === base[k]; }); };
+      (c.quitar || []).forEach(function (k) { E(F, t, 'delete', null, donde(F, t, function (r) { return es(r) && r.clave === k; })); });
+      (c.poner || []).forEach(function (k) { E(F, t, 'insert', Object.assign({ clave: k, es_default: false }, base)); });
+      if (c.def || c.quita_def) E(F, t, 'update', { es_default: false }, donde(F, t, es));
+      if (c.def) E(F, t, 'update', { es_default: true }, donde(F, t, function (r) { return es(r) && r.clave === c.def; }));
+    }
+    function upsert(F, t, fila, clave) {
+      var hay = donde(F, t, function (r) { return clave.every(function (k) { return r[k] === fila[k]; }); });
+      if (hay.length) E(F, t, 'update', fila, hay); else E(F, t, 'insert', fila);
+    }
+    return {
+      guarda_modelo: function (F, a) {
+        var f = a.p_ficha || {};
+        E(F, 'modelos', 'update', f, donde(F, 'modelos', porId(a.p_id)));
+        (a.p_techos || []).forEach(function (t) {
+          E(F, 'modelo_techos', 'update', { precio_ahora: t.precio_ahora, precio_2027: t.precio_2027 }, donde(F, 'modelo_techos', porId(t.id)));
+        });
+        (a.p_extras || []).forEach(function (e) {
+          if (e.id) E(F, 'modelo_extras', 'update', { precio: e.precio, disponible: e.disponible, moneda: f.moneda }, donde(F, 'modelo_extras', porId(e.id)));
+          else E(F, 'modelo_extras', 'insert', { modelo_id: a.p_id, extra_id: e.extra_id, precio: e.precio, disponible: e.disponible, moneda: f.moneda });
+        });
+        (a.p_precios || []).forEach(function (p) {
+          E(F, 'modelos_villa', 'update', { precio_construccion: p.precio, moneda: f.moneda }, donde(F, 'modelos_villa', porId(p.id)));
+        });
+        if (a.p_nuevo_proyecto) {
+          E(F, 'modelos_villa', 'insert', { proyecto: a.p_nuevo_proyecto.proyecto, proyecto_id: a.p_nuevo_proyecto.proyecto_id,
+            modelo_id: a.p_id, modelo: f.nombre, precio_construccion: null, moneda: f.moneda });
+        }
+        // la moneda va solo con el número que llega: un importe es el par (número, moneda)
+      },
+      guarda_plantilla_cuentas: function (F, a) {
+        if (a.p_archivada != null) E(F, 'plantillas_contrato', 'update', { archivada: a.p_archivada }, donde(F, 'plantillas_contrato', function (r) { return r.slug === a.p_slug; }));
+        if (a.p_reparto) reparto(F, 'plantilla_cuentas', { slug: a.p_slug }, a.p_reparto);
+      },
+      guarda_proyecto_cuentas: function (F, a) {
+        (a.p_repartos || []).forEach(function (c) { reparto(F, 'proyecto_cuentas', { proyecto_id: a.p_proyecto_id, slug: c.slug }, c); });
+      },
+      guarda_cuenta_bancaria: function (F, a) {
+        E(F, 'cuentas_bancarias', 'update', a.p_datos || {}, donde(F, 'cuentas_bancarias', function (r) { return r.clave === a.p_clave; }));
+        (a.p_repartos || []).forEach(function (c) { reparto(F, 'plantilla_cuentas', { slug: c.slug }, c); });
+      },
+      guarda_prevision_deck: function (F, a) {
+        upsert(F, 'deck_forecast', a.p_fila || {}, ['proyecto_id', 'modelo_id']);
+        upsert(F, 'deck_forecast_proyecto', a.p_proyecto || {}, ['proyecto_id']);
+      }
+    };
+  })();
+
   /* Limpieza final: lo que la demo no resiembra (tablas de QA menores) deja de
      llamarse «QA» y de apuntar a @axisworks.test. */
   window.LW_DEMO_LIMPIA = function (F) {
