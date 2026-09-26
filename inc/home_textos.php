@@ -53,6 +53,18 @@ $HOME = [
   'erp_proof_l'=>'IN PRODUCTION',
   'erp_proof'=>'A property developer with three projects in Bali runs sales, contracts, invoicing and construction in one system.',
 
+  /* Own product: BodaEnlace (owner, 26-sep-2026). */
+  'be_eyebrow'=>'SHEET PRD-02 // OWN PRODUCT',
+  'be_h2'=>'BodaEnlace: your wedding website, built and run by AI.',
+  'be_chip'=>'A product by AxisWorks. Pepito and his departments built it, and The Godfather runs it, with nobody at the wheel.',
+  'be_bar'=>'BODAENLACE // SELF-SERVICE WEDDING WEBSITES','be_pill'=>'LAUNCHING SOON',
+  'be_mods'=>[
+    ['BUILT BY AI', 'Design, code and copy by Pepito&rsquo;s departments', 'Reviewed by the Security and Legal agents before shipping', 'Payments, invoices and data deletion tested against real cases'],
+    ['RUN BY THE GODFATHER', 'Answers the inbox', 'Writes the guides and each week&rsquo;s plan', 'Only spends what it earns'],
+    ['FOR THE COUPLE', 'RSVP with menu and allergies', 'Music voted by the guests', 'Private dashboard and ZIP download'],
+  ],
+  'be_cta'=>'Visit bodaenlace.com',
+
   'cat_eyebrow'=>'SHEET CAT-01 // THE PARTS LIST',
   'cat_h2'=>'Eleven things we build.',
   'cat_note'=>'BUILD is software. GROW is audience. ADVISORY crosses both.',
@@ -97,13 +109,13 @@ $HOME = [
      Aquí solo queda la frase de cada sección, que es copy. */
   'org_secs'=>['BUILD'=>'The software', 'GROW'=>'Brand &amp; demand', 'CONTROL'=>'Rules, money &amp; paperwork'],
   /* Procesos autónomos: no son departamentos (no pasan por organigrama_web.py), trabajan solos
-     con su propio cron y avisan a Pepito. A mano aquí, en los dos idiomas. El producto no se
-     nombra hasta que esté lanzado (decisión del owner, 25-sep-2026). */
+     con su propio cron y avisan a Pepito. A mano aquí, en los dos idiomas. Desde el 26-sep-2026
+     el producto se nombra: BodaEnlace (decisión del owner; antes no se nombraba hasta el lanzamiento). */
   'auto_t'=>'AUTONOMOUS', 'auto_lema'=>'They run on their own, around the clock, and report to Pepito',
   'auto'=>[
     ['vigilante', 'The Watchman', 'guards ad spend &amp; leads', 'Live', ['Checks campaigns and conversations around the clock', 'Pauses what isn&rsquo;t bringing leads', 'Alerts the owner in real time']],
     ['investigador', 'The Investigator', 'finds sales partners', 'Pilot', ['Finds and ranks agencies that can resell a client&rsquo;s product', 'Prepares the outreach kit', 'A person makes the first contact']],
-    ['padrino', 'The Godfather', 'runs our own products', 'In build', ['Answers the inbox', 'Finds customers', 'Writes the business plan and puts it to work']],
+    ['padrino', 'The Godfather', 'runs our own products', 'In build', ['Answers the inbox', 'Finds customers', 'Writes the business plan and puts it to work', 'Runs <a href="https://bodaenlace.com">BodaEnlace</a>']],
   ],
 
   'ct_eyebrow'=>'// TERMINAL PROTOCOL 01-INTAKE','ct_h2'=>'Initiate project intake.',
@@ -157,6 +169,19 @@ $HOME = [
   'erp_proof_l'=>'EN PRODUCCIÓN',
   'erp_proof'=>'Una promotora con tres proyectos en Bali lleva ventas, contratos, facturación y obra en un solo sistema.',
 
+  /* Producto propio: BodaEnlace (owner, 26-sep-2026). «Un producto de AxisWorks», hecho por Pepito y
+     sus departamentos y dirigido por El Padrino. Sustituye a «no se nombra hasta el lanzamiento». */
+  'be_eyebrow'=>'HOJA PRD-02 // PRODUCTO PROPIO',
+  'be_h2'=>'BodaEnlace: la web de vuestra boda, creada y gestionada por IA.',
+  'be_chip'=>'Un producto de AxisWorks. Lo construyeron Pepito y sus departamentos, y lo dirige El Padrino, sin nadie al volante.',
+  'be_bar'=>'BODAENLACE // WEBS DE BODA EN AUTOSERVICIO','be_pill'=>'LANZAMIENTO PRÓXIMO',
+  'be_mods'=>[
+    ['LO HIZO LA IA', 'Diseño, código y textos, de los departamentos de Pepito', 'Revisado por los agentes de Seguridad y Legal antes de salir', 'Pagos, facturas y borrado de datos probados con casos reales'],
+    ['LO DIRIGE EL PADRINO', 'Contesta el correo', 'Escribe las guías y el plan de cada semana', 'Solo gasta lo que gana'],
+    ['PARA LA PAREJA', 'Confirmación de asistencia con menú y alergias', 'Música con votos de los invitados', 'Panel privado y descarga en ZIP'],
+  ],
+  'be_cta'=>'Ver bodaenlace.com',
+
   'cat_eyebrow'=>'HOJA CAT-01 // CUADRO DE PIEZAS',
   'cat_h2'=>'Once cosas que construimos.',
   'cat_note'=>'BUILD es el software. GROW es la audiencia. ADVISORY atraviesa a los dos.',
@@ -201,7 +226,7 @@ $HOME = [
   'auto'=>[
     ['vigilante', 'El Vigilante', 'vigila la inversión y los leads', 'En producción', ['Revisa campañas y conversaciones a todas horas', 'Pausa lo que no trae contactos', 'Avisa al dueño en tiempo real']],
     ['investigador', 'El Investigador', 'busca socios comerciales', 'Piloto', ['Encuentra y ordena agencias que pueden revender el producto de un cliente', 'Prepara el material de contacto', 'El primer contacto lo hace una persona']],
-    ['padrino', 'El Padrino', 'dirige los productos propios', 'En construcción', ['Atiende el correo', 'Busca clientes', 'Escribe el plan de negocio y lo aplica']],
+    ['padrino', 'El Padrino', 'dirige los productos propios', 'En construcción', ['Atiende el correo', 'Busca clientes', 'Escribe el plan de negocio y lo aplica', 'Dirige <a href="https://bodaenlace.com">BodaEnlace</a>']],
   ],
 
   'ct_eyebrow'=>'// PROTOCOLO 01-ALTA','ct_h2'=>'Iniciar alta de proyecto.',

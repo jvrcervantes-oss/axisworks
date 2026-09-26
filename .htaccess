@@ -74,6 +74,13 @@ DirectoryIndex index.php index.html
   # Secreto y estado del formulario de contacto: nunca por web (24-sep-2026).
   RewriteRule ^(private|api/_estado)/ - [F,L]
 
+  # Bodas se mudó a su dominio, bodaenlace.com (26-sep-2026). Destino FIJO y patrón cerrado
+  # (`/bodas.evil.com/` no casa): no es una redirección abierta. La API no se redirige: un 301
+  # convierte un POST en GET y arrastraría la cabecera Authorization (Seguridad, rev. #105).
+  # 302 hasta verificarlo; luego 301 (el CDN de Hostinger guarda las redirecciones).
+  RewriteRule ^bodas/api(/.*)?$ - [G,L]
+  RewriteRule ^bodas(/.*)?$ https://bodaenlace.com$1 [R=302,L]
+
   # El sitemap y el llms.txt se GENERAN del catálogo (ver sitemap.php), pero
   # robots.txt y Search Console esperan estas dos extensiones. El rewrite es
   # lo que deja tener las dos cosas: una sola fuente y la URL de siempre.

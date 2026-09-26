@@ -178,6 +178,34 @@ $jsonld = [
   </div>
 </section>
 
+<!-- 02b · PRODUCTO PROPIO — BodaEnlace, hecho y llevado por IA (owner, 26-sep-2026). Reutiliza
+     la maqueta del ERP (barra, módulos, pie) para no inventar otra pieza. -->
+<section class="band" id="bodaenlace">
+  <div class="shell">
+    <div class="shead">
+      <div><p class="eyebrow"><span><?= $hm['be_eyebrow'] ?></span></p><h2><?= $hm['be_h2'] ?></h2></div>
+      <p class="shead__aside mono"><?= $hm['be_chip'] ?></p>
+    </div>
+    <div class="erp">
+      <div class="erp__bar">
+        <span class="erp__name"><i></i><?= $hm['be_bar'] ?></span>
+        <span class="pill pill--ink"><?= $hm['be_pill'] ?></span>
+      </div>
+      <div class="erp__mods">
+        <?php foreach ($hm['be_mods'] as $g): ?>
+        <div class="erp__mod">
+          <p class="lbl lbl--ink"><?= array_shift($g) ?></p>
+          <ul><?php foreach ($g as $m): ?><li><?= $m ?></li><?php endforeach; ?></ul>
+        </div>
+        <?php endforeach; ?>
+      </div>
+      <div class="erp__foot">
+        <p class="erp__proof"><a href="https://bodaenlace.com"><b><?= $hm['be_cta'] ?> →</b></a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- 03 · EL CUADRO DE PIEZAS — los 11 de $PRODUCTOS. Los códigos son número de
      plano, no un orden de lectura. Fila sin página = plana, sin flecha ni hover. -->
 <section class="band" id="services">
