@@ -18,7 +18,7 @@
       ['Conversación desde el primer mensaje', 'Lead listo para el comercial'], '/intranet/leads/'],
     ['campanas', 'Piloto de campañas', 'Seguimiento', ['Meta Ads', 'Automático'], 'Vigila las campañas y mueve presupuesto dentro del tope de dirección.',
       ['Pausa lo que no trae leads', 'Registro de cada decisión con su motivo'], '/intranet/leads/'],
-    ['operaciones', 'Operaciones', 'Seguimiento', ['Cadena de venta'], 'Una fila por venta: reserva, bloqueo y construcción del mismo comprador, juntos.',
+    ['operaciones', 'Operaciones', 'Seguimiento', ['Cadena de venta'], 'Una fila por venta, con todos los contratos del mismo cliente juntos.',
       ['Precio pactado, cobrado y pendiente', 'Filtros por firma y por cobro', 'Ficha completa de la venta'], '/intranet/v4/operaciones/'],
     ['reservas', 'Reservas', 'Seguimiento', ['Plazos'], 'Reservas que vencen y el paso a bloqueo de parcela a tiempo.',
       ['Prórrogas registradas', 'Aviso antes de que caduquen'], '/intranet/v4/reservas/'],
