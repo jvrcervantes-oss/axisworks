@@ -741,33 +741,47 @@ NO_ESTA = ('<!doctype html><html lang="es"><meta charset="utf-8"><title>{t}</tit
            '<p>Este módulo no está instalado en esta instancia.</p><p><a href="/intranet/v4/home/">Volver</a></p>')
 
 
-def apagados_de(nombre):
-    """F4 (25-sep): {'t': {tabla: módulo}, 'f': {función: módulo}, 'b': {bucket: módulo}, 'p': [pantallas]} de los
-    módulos APAGADOS de la instancia, desde el registro generado (erp/modulos.json) y su modulos_activos. Sin
-    modulos_activos (todo activo) devuelve None y no se antepone nada."""
+def mapa_modulos(nombre):
+    """Panel de control (28-sep-2026, rev. previa #138): el mapa objeto → módulo de TODOS los módulos (salvo base), para
+    que el navegador decida al cargar con los activos que le da la base (apagados_instancia.js). Hasta el 27-sep esto
+    era la lista de lo APAGADO según erp/instancias.json, grabada en el build: con los módulos cambiando desde el panel,
+    un build no puede saber qué estará apagado mañana.
+      t/f/b/e: tabla o vista / función / bucket / edge → módulo   ·   p: {prefijo de pantalla: módulo}
+      x, xp:   apagados_extra (objetos y pantallas que esta base NO tiene porque no se portaron): siempre apagados.
+    `/panel/` no es de ningún módulo (Des #5)."""
     reg = json.load(open(os.path.join(AGENCIA, 'erp', 'instancias.json'), encoding='utf-8'))['instancias'][nombre]
-    act = (reg.get('config') or {}).get('modulos_activos')
-    if not isinstance(act, list):
-        return None
-    act = set(act) | {'base'}
     m = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))
-    out = {'t': {}, 'f': {}, 'b': {}, 'p': []}
+    sys.path.insert(0, os.path.join(AGENCIA, 'erp'))
+    from modulos import DESPLIEGUE_EDGES
+    out = {'t': {}, 'f': {}, 'b': {}, 'e': {}, 'p': {}, 'x': {'t': {}, 'f': {}, 'b': {}}, 'xp': []}
     for clase, k in (('tablas', 't'), ('vistas', 't'), ('funciones', 'f'), ('buckets', 'b')):
         for obj, d in m['objetos'].get(clase, {}).items():
-            if d['clase'] == 'modulo' and d['detalle'] and d['detalle'][0] not in act:
+            if d['clase'] == 'modulo' and d['detalle'] and d['detalle'][0] != 'base':
                 out[k][obj] = d['detalle'][0]
+    for n, e in DESPLIEGUE_EDGES.items():
+        if e['modulo'] != 'base' and not e.get('solo_lawang'):   # las solo_lawang no existen en una instancia
+            out['e'][n] = e['modulo']
     for mod, d in m['modulos'].items():
-        if mod not in act:
-            out['p'] += [u for u in d.get('pantallas', []) if u.startswith('/intranet/')]
-    # apagados_extra (27-sep-2026, B8 del encargo del canon): objetos de un módulo que la instancia NO tiene porque no
-    # se portaron a su base (el registro solo conoce lo que existe en la base del producto). Sin esto, el front
-    # compartido los pediría y fallaría por red en vez de responder «módulo no activo». Misma lista que lee
-    # erp/contrato_front.py.
+        if mod != 'base':
+            for u in d.get('pantallas') or []:
+                if u.startswith('/intranet/'):
+                    out['p'][u] = mod
+    if any(u.startswith('/panel') for u in out['p']):
+        aborta('/panel/ no puede ser pantalla de un módulo: el panel de control se quedaría oculto')
+    # apagados_extra (27-sep-2026, B8 del encargo del canon): lo que esta base NO tiene. Misma lista que lee
+    # erp/contrato_front.py y que el instalador marca como no instalable en la base.
     extra = reg.get('apagados_extra') or {}
     for k in ('t', 'f', 'b'):
         for obj, mod in (extra.get(k) or {}).items():
-            out[k][obj] = mod
-    out['p'] = sorted(set(out['p']) | set(extra.get('p') or []))
+            out['x'][k][obj] = mod
+    # y las pantallas de los módulos que esta instancia no puede encender nunca (misma regla que el instalador y que
+    # erp/contrato_front.py: nueva_instancia.no_instalables): se sirven como «Módulo no instalado»
+    from nueva_instancia import no_instalables
+    nunca = set(no_instalables(reg))
+    xp = set(extra.get('p') or [])
+    for mod in nunca:
+        xp |= {u for u in (m['modulos'].get(mod) or {}).get('pantallas') or [] if u.startswith('/intranet/')}
+    out['xp'] = sorted(xp)
     return out
 
 
@@ -806,12 +820,16 @@ def instancia(nombre):
                        'masterplans': _instancia_registro(nombre).get('masterplans') or {},
                        'proyectos_con_fases': _instancia_registro(nombre).get('proyectos_con_fases') or []})
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
-    # F4: módulos apagados — el cliente no pide lo que la base ya no le da, y el menú no enseña sus pantallas.
-    apag = apagados_de(nombre)
-    interruptores = ''
-    if apag:
-        plantilla = open(os.path.join(AQUI, 'apagados_instancia.js'), encoding='utf-8').read()
-        interruptores = plantilla.replace('__AXW_APAGADOS__', json.dumps(apag, ensure_ascii=False, sort_keys=True)) + '\n'
+    # Módulos: el navegador pregunta a la base cuáles están activos al cargar (panel de control, 28-sep-2026). Va en
+    # TODA instancia del ERP (antes solo si el registro traía modulos_activos, Des #4).
+    mapa = mapa_modulos(nombre)
+    plantilla = open(os.path.join(AQUI, 'apagados_instancia.js'), encoding='utf-8').read()
+    if '__AXW_MAPA__' not in plantilla:
+        aborta('apagados_instancia.js sin el hueco __AXW_MAPA__')
+    # sin sus comentarios: se antepone DESPUÉS de limpia_publico.js y son notas internas del estudio
+    plantilla = re.sub(r'/\*.*?\*/', '', plantilla, flags=re.S)
+    plantilla = re.sub(r'^\s*//[^\n]*\n', '', plantilla, flags=re.M)
+    interruptores = plantilla.replace('__AXW_MAPA__', json.dumps(mapa, ensure_ascii=False, sort_keys=True)) + '\n'
     t = open(g, encoding='utf-8').read()
     open(g, 'w', encoding='utf-8', newline='').write(
         '/* GENERADO por AxisWorks/comercial/demo-erp/build.py --instancia %s — no editar. */\n'
@@ -836,11 +854,17 @@ def instancia(nombre):
         d = os.path.join(DIST, sitio)
         os.makedirs(d, exist_ok=True)
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(redir)
-    # F4: las pantallas de módulos apagados no se sirven (se quedan en «no está instalado»)
-    for u in (apag or {}).get('p', []):
+    # Solo lo NO PORTADO se sustituye en el build (nunca estará en esta base). Lo apagado se decide en el navegador:
+    # se sirve la pantalla y apagados_instancia.js la cambia por «Módulo no instalado» si su módulo está apagado.
+    for u in mapa['xp']:
         f = os.path.join(DIST, *u.strip('/').split('/'), 'index.html')
         if os.path.isfile(f):
             open(f, 'w', encoding='utf-8').write(NO_ESTA.format(t='Módulo no instalado'))
+    # El panel de control: solo en la instancia que manda (panel_control en erp/instancias.json)
+    if _instancia_registro(nombre).get('panel_control'):
+        d = os.path.join(DIST, 'panel')
+        os.makedirs(d, exist_ok=True)
+        shutil.copy2(os.path.join(AQUI, 'panel_control.html'), os.path.join(d, 'index.html'))
     for ruta, t in (('intranet/v4/generador-contratos/index.html', 'Generador de contratos'),
                     ('intranet/v4/contratos-inversor/index.html', 'Portal del comprador'),
                     ('contracts/app.html', 'Generador de contratos'),

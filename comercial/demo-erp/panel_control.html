@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Panel de control · AxisWorks ERP</title>
+<!-- Panel de control de módulos por instancia (28-sep-2026, encargos/20260928_erp_panel_control_modulos.md).
+     build.py --instancia lo copia a /panel/ SOLO en la instancia con `panel_control` (la del estudio). Piel y
+     silueta de panel.html (Stitch «NexusERP», ya aprobada: mismo tailwind.config); el JS es nuevo (rev. previa #138
+     Des #5): nada de catalogo.js ni localStorage. Todo lo que enseña sale de la edge erp-control, que lo lee de la
+     BASE de cada instancia, y el «qué arrastra» lo calcula esa base (erp_control_simula): la pantalla no decide nada. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%234f46e5%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.min.js" integrity="sha384-XtYxyIfxexJVTROWK0+c5T8tJ2ItsVLcdgR5nJIoo6WzQqaBZoTPGgbS7XvkRNBZ" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="/contracts/assets/cierre.js"></script>
+<script src="/contracts/assets/instancia.js"></script>
+<script src="/contracts/assets/version.js"></script>
+<script src="/contracts/assets/guard.js" data-rol="super_admin"></script>
+<style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}}</style><script src="https://cdn.tailwindcss.com"></script>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"surface-container-lowest":"#ffffff","surface-variant":"#d3e4fe","on-secondary-container":"#006172","on-tertiary-fixed-variant":"#3f465c","on-background":"#0b1c30","primary-fixed":"#e2dfff","inverse-surface":"#213145","on-tertiary":"#ffffff","on-error":"#ffffff","surface-container-highest":"#d3e4fe","on-tertiary-fixed":"#131b2e","inverse-primary":"#c3c0ff","tertiary-fixed":"#dae2fd","secondary":"#00687a","on-error-container":"#93000a","inverse-on-surface":"#eaf1ff","surface-container-high":"#dce9ff","on-tertiary-container":"#d4dbf5","surface-tint":"#4d44e3","on-surface":"#0b1c30","tertiary":"#41485e","surface-bright":"#f8f9ff","background":"#f8f9ff","error":"#ba1a1a","surface-dim":"#cbdbf5","on-primary":"#ffffff","on-primary-container":"#dad7ff","surface-container-low":"#eff4ff","surface-container":"#e5eeff","on-secondary-fixed-variant":"#004e5c","secondary-fixed-dim":"#4cd7f6","tertiary-fixed-dim":"#bec6e0","primary":"#3525cd","surface":"#f8f9ff","secondary-container":"#57dffe","on-secondary-fixed":"#001f26","on-primary-fixed":"#0f0069","on-primary-fixed-variant":"#3323cc","tertiary-container":"#586076","primary-fixed-dim":"#c3c0ff","on-surface-variant":"#464555","secondary-fixed":"#acedff","primary-container":"#4f46e5","error-container":"#ffdad6","on-secondary":"#ffffff","outline-variant":"#c7c4d8","outline":"#777587"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"margin-md":"3rem","space-sm":"0.5rem","space-xl":"2.5rem","gutter":"1.5rem","margin":"1.25rem","margin-lg":"5rem","space-lg":"1.5rem","space-xs":"0.25rem","space-2xl":"4rem","space-md":"1rem","gutter-lg":"2rem"},"fontFamily":{"body-xl":["Inter"],"headline-lg":["Plus Jakarta Sans"],"label-md":["Inter"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"headline-xl":["Plus Jakarta Sans"],"body-md":["Inter"],"body-sm":["Inter"],"display-hero":["Plus Jakarta Sans"],"code-metric":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"body-xl":["18px",{"lineHeight":"28px","fontWeight":"400"}],"headline-lg":["32px",{"lineHeight":"40px","fontWeight":"700"}],"label-md":["14px",{"lineHeight":"20px","fontWeight":"600"}],"headline-md":["24px",{"lineHeight":"32px","fontWeight":"600"}],"label-sm":["12px",{"lineHeight":"16px","fontWeight":"600"}],"display-hero-mobile":["36px",{"lineHeight":"44px","fontWeight":"800"}],"headline-xl-mobile":["28px",{"lineHeight":"36px","fontWeight":"700"}],"headline-xl":["40px",{"lineHeight":"48px","fontWeight":"700"}],"body-md":["16px",{"lineHeight":"24px","fontWeight":"400"}],"body-sm":["14px",{"lineHeight":"20px","fontWeight":"400"}],"display-hero":["56px",{"lineHeight":"64px","fontWeight":"800"}],"code-metric":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["20px",{"lineHeight":"28px","fontWeight":"600"}]}}}}</script>
+<style>
+.tgl:focus-visible,.chip:focus-visible,button:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}
+.tgl>span{transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+@media (prefers-reduced-motion:reduce){.tgl>span{transition:none}}
+dialog::backdrop{background:rgba(11,28,48,.35)}
+</style>
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased">
+<aside class="hidden lg:flex fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex-col shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+<div class="h-16 flex items-center px-gutter gap-space-sm">
+<span class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-container to-secondary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]" aria-hidden="true">deployed_code</span></span>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface">AxisWorks <span class="text-primary-container">ERP</span></span>
+<span class="font-code-metric text-code-metric text-on-surface-variant leading-none">Panel de control</span>
+</div>
+</div>
+<nav class="flex-1 px-space-md py-space-sm space-y-1 overflow-y-auto" aria-label="Instancias">
+<div class="px-space-sm py-space-xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Instancias</span></div>
+<div id="lista-instancias" class="space-y-1"></div>
+<div class="pt-space-md px-space-sm py-space-xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Este ERP</span></div>
+<a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface" href="/intranet/v4/home/"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">login</span><span class="font-label-md text-label-md">Entrar al ERP</span></a>
+</nav>
+<div class="p-space-md bg-surface-container-low">
+<div class="p-space-sm bg-surface-container-lowest rounded-lg flex items-center gap-space-xs">
+<div class="h-2 w-2 rounded-full bg-secondary"></div>
+<span class="font-code-metric text-code-metric text-on-surface-variant truncate" id="operador">—</span>
+</div>
+</div>
+</aside>
+<div class="lg:pl-72">
+<header class="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/85 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] flex items-center justify-between gap-space-sm px-margin md:px-gutter-lg">
+<div class="min-w-0">
+<h1 class="font-headline-sm text-headline-sm font-bold text-on-surface truncate"><span class="sm:hidden">Módulos</span><span class="hidden sm:inline">Módulos por instancia</span></h1>
+</div>
+<label class="lg:hidden min-w-0"><span class="sr-only">Instancia</span>
+<select id="sel-instancia" class="rounded-lg border-0 bg-surface-container-low font-label-md text-label-md py-1 pl-2 pr-8 max-w-[55vw]"></select></label>
+</header>
+<main class="pt-20 pb-16 px-margin md:px-gutter-lg max-w-5xl">
+<div id="estado-carga" class="p-space-md rounded-xl bg-surface-container-lowest text-on-surface-variant">Cargando instancias…</div>
+<section id="vista" class="hidden space-y-space-lg">
+<div id="cabecera-instancia" class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm"></div>
+<div id="aviso-instancia" class="hidden p-space-md rounded-xl bg-surface-container-high text-on-surface"></div>
+<div id="modulos" class="space-y-space-lg"></div>
+<div>
+<h2 class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-sm">Historial de cambios</h2>
+<ol id="historial" class="space-y-1"></ol>
+</div>
+</section>
+</main>
+</div>
+
+<dialog id="dlg" class="rounded-xl p-0 w-[min(560px,calc(100vw-32px))] shadow-xl" aria-labelledby="dlg-titulo">
+<form method="dialog" class="p-space-lg space-y-space-md">
+<h2 id="dlg-titulo" class="font-headline-sm text-headline-sm font-bold text-on-surface">Confirmar cambio</h2>
+<div id="dlg-cuerpo" class="space-y-space-sm font-body-md text-body-md text-on-surface"></div>
+<div class="flex flex-wrap justify-end gap-space-sm pt-space-sm">
+<button value="no" class="px-space-md py-space-xs rounded-lg bg-surface-container text-on-surface font-label-md text-label-md" type="submit">Cancelar</button>
+<button id="dlg-alt" value="alt" class="hidden px-space-md py-space-xs rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md" type="submit"></button>
+<button id="dlg-ok" value="ok" class="px-space-md py-space-xs rounded-lg bg-primary-container text-on-primary font-label-md text-label-md" type="submit">Aplicar</button>
+</div>
+</form>
+</dialog>
+<div id="toast" role="status" aria-live="polite" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-space-md py-space-sm rounded-lg bg-inverse-surface text-inverse-on-surface font-label-md text-label-md shadow-lg max-w-[calc(100vw-32px)]"></div>
+
+<script>
+(function () {
+  /* Nombre, sección e icono de cada clave del registro (erp/modulos.json). Solo presentación: la lista de módulos,
+     sus dependencias y lo que está activo vienen de la base. Una clave nueva sin entrada sale con su clave. */
+  var ROTULO = {
+    base: ['Base', 'Base', 'home'],
+    operaciones: ['Operaciones', 'Seguimiento', 'swap_horiz'], reservas: ['Reservas', 'Seguimiento', 'event_available'],
+    leads: ['CRM de leads', 'Seguimiento', 'filter_alt'],
+    contratos: ['Contratos', 'Documentación', 'contract'], portal: ['Portal del comprador', 'Documentación', 'badge'],
+    deck: ['Deck de inversión', 'Documentación', 'slideshow'], asistente: ['Asistente de respuestas', 'Documentación', 'quick_phrases'],
+    creatividades: ['Creatividades y dossiers', 'Documentación', 'imagesmode'],
+    finanzas: ['Panel financiero', 'Finanzas', 'monitoring'], facturas: ['Facturación', 'Finanzas', 'receipt_long'],
+    recibos: ['Cobros y recibís', 'Finanzas', 'price_check'], vencimientos: ['Vencimientos', 'Finanzas', 'event_upcoming'],
+    productos: ['Productos', 'Finanzas', 'inventory_2'], comisiones: ['Comisiones', 'Finanzas', 'percent'],
+    'comision-admin': ['Comisión de administración', 'Finanzas', 'handshake'], gastos: ['Gastos y proveedores', 'Finanzas', 'shopping_bag'],
+    bancos: ['Bancos y conciliación', 'Finanzas', 'account_balance_wallet'], cuentas: ['Cuentas bancarias', 'Finanzas', 'account_balance'],
+    sociedades: ['Sociedades emisoras', 'Finanzas', 'corporate_fare'],
+    comunicacion: ['Comunicados', 'Comunicación', 'mail'], soporte: ['Soporte al cliente', 'Comunicación', 'support_agent'],
+    proyectos: ['Proyectos y parcelas', 'Base de datos', 'map'], modelos: ['Modelos de vivienda', 'Base de datos', 'house'],
+    obra: ['Obra', 'Base de datos', 'construction'], compradores: ['Clientes y compradores', 'Base de datos', 'person_search']
+  };
+  var SECCIONES = ['Seguimiento', 'Documentación', 'Finanzas', 'Comunicación', 'Base de datos', 'Otros'];
+  function rot(k) { return ROTULO[k] || [k, 'Otros', 'extension']; }
+  function nombre(k) { return rot(k)[0]; }
+  function lista(ks) { return ks.map(nombre).join(', '); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function ms(n, c) { return '<span class="material-symbols-outlined ' + (c || '') + '" aria-hidden="true">' + n + '</span>'; }
+  function $(id) { return document.getElementById(id); }
+  var tT;
+  function toast(t) { var b = $('toast'); b.textContent = t; b.classList.remove('hidden'); clearTimeout(tT); tT = setTimeout(function () { b.classList.add('hidden'); }, 4000); }
+
+  var sb = null, instancias = [], actual = null, ocupado = false;
+
+  function pide(cuerpo) {
+    return sb.auth.getSession().then(function (s) {
+      var t = s && s.data && s.data.session && s.data.session.access_token;
+      return fetch(window.lwEdge('erp-control'), { method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (t || '') }, body: JSON.stringify(cuerpo) });
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) { d.__estado = r.status; return d; });
+    });
+  }
+
+  function activosDe(inst) {
+    var e = inst.estado;
+    if (!e) return [];
+    if (e.activos === null) return e.modulos.map(function (m) { return m.modulo; });   // sin lista = todo encendido
+    return e.activos.slice();
+  }
+
+  // ── pintar ──────────────────────────────────────────────────────────────────────────────────
+  function pintaLista() {
+    $('lista-instancias').innerHTML = instancias.map(function (i) {
+      var sel = actual && i.nombre === actual.nombre;
+      return '<button type="button" data-inst="' + esc(i.nombre) + '" class="w-full text-left flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg ' +
+        (sel ? 'bg-primary-container text-on-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface') + '"' +
+        (sel ? ' aria-current="true"' : '') + '>' + ms(i.editable ? 'dns' : 'lock', 'text-[20px]') +
+        '<span class="min-w-0"><span class="block font-label-md text-label-md truncate">' + esc(i.marca) + '</span>' +
+        '<span class="block font-code-metric text-code-metric opacity-80 truncate">' + esc(i.dominio || i.nombre) + '</span></span></button>';
+    }).join('');
+    $('sel-instancia').innerHTML = instancias.map(function (i) {
+      return '<option value="' + esc(i.nombre) + '"' + (actual && i.nombre === actual.nombre ? ' selected' : '') + '>' + esc(i.marca) + '</option>';
+    }).join('');
+  }
+
+  function pintaInstancia() {
+    var i = actual, e = i.estado, aviso = $('aviso-instancia');
+    var act = activosDe(i);
+    $('cabecera-instancia').innerHTML =
+      '<div class="flex flex-wrap items-center justify-between gap-space-sm">' +
+      '<div class="min-w-0"><div class="font-headline-sm text-headline-sm font-bold text-on-surface">' + esc(i.marca) + '</div>' +
+      '<div class="font-code-metric text-code-metric text-on-surface-variant">' + esc(i.dominio || i.nombre) + '</div></div>' +
+      (e ? '<div class="flex flex-wrap gap-space-xs">' +
+        '<span class="px-space-sm py-[2px] rounded-full bg-secondary-container text-on-secondary-container font-code-metric text-code-metric font-semibold">' + act.length + ' módulos activos</span>' +
+        '<span class="px-space-sm py-[2px] rounded-full bg-surface-container text-on-surface-variant font-code-metric text-code-metric font-semibold">' + (e.apagados || 0) + ' objetos cerrados en la base</span>' +
+        '</div>' : '') + '</div>';
+    if (!i.editable) {
+      aviso.classList.remove('hidden');
+      aviso.innerHTML = ms('lock', 'align-middle text-[20px] mr-1') + '<strong>No se controla desde aquí.</strong> ' + esc(i.motivo || 'Esta instancia no tiene llave de control.');
+    } else if (!e) {
+      aviso.classList.remove('hidden');
+      aviso.innerHTML = ms('cloud_off', 'align-middle text-[20px] mr-1') + esc(i.error || 'La instancia no responde ahora mismo.') +
+        ' <button type="button" id="reintenta" class="underline font-label-md">Reintentar</button>';
+    } else aviso.classList.add('hidden');
+
+    var cont = $('modulos');
+    if (!e) { cont.innerHTML = ''; $('historial').innerHTML = ''; return; }
+    var desplegadas = e.edges_desplegadas || [];
+    var porSeccion = {};
+    e.modulos.forEach(function (m) {
+      if (m.modulo === 'base') return;
+      var s = rot(m.modulo)[1];
+      (porSeccion[s] = porSeccion[s] || []).push(m);
+    });
+    cont.innerHTML = SECCIONES.filter(function (s) { return porSeccion[s]; }).map(function (s) {
+      return '<div><h2 class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-sm">' + esc(s) + '</h2><div class="grid gap-space-sm sm:grid-cols-2">' +
+        porSeccion[s].sort(function (a, b) { return nombre(a.modulo).localeCompare(nombre(b.modulo), 'es'); }).map(function (m) {
+          var on = act.indexOf(m.modulo) !== -1;
+          var faltanEdges = (m.edges || []).filter(function (x) { return desplegadas.indexOf(x) === -1; });
+          var nota = !m.instalable ? 'No instalado en esta base' : (!on && faltanEdges.length ? 'Faltan funciones por desplegar' : (m.depende.length ? 'Necesita: ' + lista(m.depende) : 'Sin dependencias'));
+          var bloqueado = !i.editable || (!on && !m.instalable);
+          return '<div class="rounded-xl p-space-md bg-surface-container-lowest shadow-sm flex items-start justify-between gap-space-sm' + (on ? '' : ' opacity-80') + '">' +
+            '<div class="flex items-start gap-space-sm min-w-0"><div class="p-space-xs rounded-lg shrink-0 ' + (on ? 'bg-primary-container text-on-primary' : 'bg-surface-container-low text-on-surface-variant') + '">' + ms(rot(m.modulo)[2], 'text-[22px]') + '</div>' +
+            '<div class="min-w-0"><div class="font-label-md text-label-md text-on-surface">' + esc(nombre(m.modulo)) + '</div>' +
+            '<div class="font-code-metric text-code-metric text-on-surface-variant">' + esc(nota) + '</div></div></div>' +
+            '<button class="tgl shrink-0 w-12 h-6 rounded-full p-1 flex items-center ' + (on ? 'bg-primary-container' : 'bg-surface-container-highest') + (bloqueado ? ' cursor-not-allowed opacity-50' : '') +
+            '" type="button" role="switch" aria-checked="' + on + '" aria-label="' + (on ? 'Apagar ' : 'Encender ') + esc(nombre(m.modulo)) + '"' +
+            (bloqueado ? ' disabled' : '') + ' data-mod="' + esc(m.modulo) + '"><span class="w-4 h-4 bg-surface-container-lowest rounded-full shadow-sm" style="transform:translateX(' + (on ? '24px' : '0') + ')"></span></button></div>';
+        }).join('') + '</div></div>';
+    }).join('');
+    $('historial').innerHTML = (e.log || []).map(function (l) {
+      var d = new Date(l.cuando);
+      return '<li class="p-space-sm rounded-lg bg-surface-container-lowest font-body-sm text-body-sm"><span class="font-code-metric text-code-metric text-on-surface-variant">' +
+        esc(d.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })) + ' · ' + esc(l.quien) + '</span><div class="text-on-surface [overflow-wrap:anywhere]">' + esc(String(l.resumen || '').replace(/,/g, ', ')) + '</div></li>';
+    }).join('') || '<li class="font-body-sm text-body-sm text-on-surface-variant">Sin cambios registrados.</li>';
+  }
+
+  function elige(nombreInst) {
+    for (var k = 0; k < instancias.length; k++) if (instancias[k].nombre === nombreInst) actual = instancias[k];
+    pintaLista();
+    pintaInstancia();
+  }
+
+  function carga(mantener) {
+    return pide({ accion: 'estado' }).then(function (d) {
+      if (d.__estado === 403) throw new Error('Tu cuenta no es operadora del panel de control.');
+      if (d.__estado !== 200 || !Array.isArray(d.instancias)) throw new Error('El mando no responde (' + d.__estado + ').');
+      instancias = d.instancias;
+      var sigue = mantener && actual && actual.nombre;
+      actual = null;
+      $('estado-carga').classList.add('hidden');
+      $('vista').classList.remove('hidden');
+      elige(sigue || (instancias.filter(function (i) { return i.editable; })[0] || instancias[0] || {}).nombre);
+    });
+  }
+
+  // ── cambiar: simular en la base, confirmar, aplicar ───────────────────────────────────────────
+  function dialogo(html, ok, alt) {
+    $('dlg-cuerpo').innerHTML = html;
+    $('dlg-ok').textContent = ok || 'Aplicar';
+    $('dlg-ok').classList.toggle('hidden', !ok);
+    $('dlg-alt').textContent = alt || '';
+    $('dlg-alt').classList.toggle('hidden', !alt);
+    var dlg = $('dlg');
+    dlg.returnValue = '';
+    dlg.showModal();
+    return new Promise(function (r) { dlg.addEventListener('close', function f() { dlg.removeEventListener('close', f); r(dlg.returnValue); }); });
+  }
+
+  function propone(activos, mod, enciende) {
+    return pide({ accion: 'simula', instancia: actual.nombre, activos: activos }).then(function (d) {
+      if (d.__estado !== 200 || !d.simulacion) throw new Error(d.mensaje || 'No se pudo simular el cambio (' + d.__estado + ').');
+      var s = d.simulacion, bloqueos = [];
+      if ((s.no_instalables || []).length) bloqueos.push('No están instalados en esta base: ' + esc(lista(s.no_instalables)) + '.');
+      var ef = Object.keys(s.edges_faltan || {});
+      if (ef.length) bloqueos.push('A ' + esc(lista(ef)) + ' le faltan funciones por desplegar (' + esc([].concat.apply([], ef.map(function (k) { return s.edges_faltan[k]; })).join(', ')) +
+        '). Las despliega el estudio: <code>python erp/nueva_instancia.py ' + esc(actual.nombre) + ' --aplica --paso edges</code>.');
+      if ((s.desconocidos || []).length) bloqueos.push('Módulos que la base no conoce: ' + esc(s.desconocidos.join(', ')) + '.');
+      var cambios = '<p>' + (s.enciende.length ? '<strong>Se enciende:</strong> ' + esc(lista(s.enciende)) + '<br>' : '') +
+        (s.apaga.length ? '<strong>Se apaga:</strong> ' + esc(lista(s.apaga)) : '') + '</p>';
+      if (bloqueos.length) return dialogo(cambios + bloqueos.map(function (b) { return '<p class="text-error">' + b + '</p>'; }).join(''), null).then(function () { return null; });
+      var faltan = s.faltan_dependencias || {}, fk = Object.keys(faltan);
+      if (fk.length) {
+        var sugerido = enciende ? s.sugerido_con_dependencias : s.sugerido_sin_dependientes;
+        var texto = enciende
+          ? '<p>' + esc(nombre(mod)) + ' necesita otros módulos para funcionar:</p><ul class="list-disc pl-5">' + fk.map(function (k) { return '<li>' + esc(nombre(k)) + ' usa ' + esc(lista(faltan[k])) + '</li>'; }).join('') + '</ul>'
+          : '<p>Otros módulos encendidos usan ' + esc(nombre(mod)) + ':</p><ul class="list-disc pl-5">' + fk.map(function (k) { return '<li>' + esc(nombre(k)) + ' usa ' + esc(lista(faltan[k])) + '</li>'; }).join('') + '</ul>';
+        var extra = enciende
+          ? sugerido.filter(function (k) { return activos.indexOf(k) === -1; })
+          : activos.filter(function (k) { return sugerido.indexOf(k) === -1 && k !== mod; });
+        // sin nada más que añadir o quitar, no hay salida automática (p. ej. lo que arrastra no se puede encender)
+        if (!extra.length) return dialogo(texto + '<p>No hay una combinación que lo resuelva sola: cambia primero los módulos que lo usan.</p>', null).then(function () { return null; });
+        texto += '<p>' + (enciende ? 'Se puede encender junto con: ' : 'Se puede apagar junto con: ') + '<strong>' + esc(lista(extra)) + '</strong>.</p>';
+        return dialogo(texto, null, enciende ? 'Encender todo' : 'Apagar todo').then(function (v) {
+          return v === 'alt' ? propone(sugerido, mod, enciende) : null;
+        });
+      }
+      return dialogo(cambios + '<p class="font-body-sm text-body-sm text-on-surface-variant">Se aplica al momento en la base de ' + esc(actual.marca) +
+        ': lo apagado deja de responder y desaparece del menú al recargar.</p>', 'Aplicar').then(function (v) { return v === 'ok' ? activos : null; });
+    });
+  }
+
+  function alterna(mod) {
+    if (ocupado || !actual || !actual.editable || !actual.estado) return;
+    var act = activosDe(actual), on = act.indexOf(mod) !== -1;
+    var deseado = on ? act.filter(function (k) { return k !== mod; }) : act.concat([mod]);
+    ocupado = true;
+    propone(deseado, mod, !on).then(function (final) {
+      if (!final) return;
+      return pide({ accion: 'cambia', instancia: actual.nombre, activos: final }).then(function (d) {
+        if (d.__estado === 200 && d.aplicado) {
+          var a = d.aplicado;
+          toast('Aplicado' + (a.enciende.length ? ' · encendido: ' + lista(a.enciende) : '') + (a.apaga.length ? ' · apagado: ' + lista(a.apaga) : ''));
+          return carga(true);
+        }
+        if (d.error === 'ocupado') toast(d.mensaje);
+        else if (d.error === 'rechazado') toast('La base lo ha rechazado: vuelve a intentarlo, el estado ha cambiado.');
+        else toast(d.mensaje || 'No se aplicó (' + d.__estado + '). No ha cambiado nada.');
+        return carga(true);
+      });
+    }).catch(function (e) { toast(e.message); }).then(function () { ocupado = false; });
+  }
+
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest && ev.target.closest('[data-mod],[data-inst],#reintenta');
+    if (!t) return;
+    if (t.id === 'reintenta') carga(true).catch(function (e) { toast(e.message); });
+    else if (t.hasAttribute('data-inst')) elige(t.getAttribute('data-inst'));
+    else if (!t.disabled) alterna(t.getAttribute('data-mod'));
+  });
+  $('sel-instancia').addEventListener('change', function () { elige(this.value); });
+
+  window.LW_AUTH.then(function (a) {
+    sb = a.sb;
+    $('operador').textContent = (a.session && a.session.user && a.session.user.email) || '—';
+    return carga(false);
+  }).catch(function (e) {
+    $('estado-carga').textContent = e.message || 'No se pudo cargar el panel.';
+  });
+})();
+</script>
+</body>
+</html>
