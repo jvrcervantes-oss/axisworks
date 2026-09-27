@@ -8,7 +8,7 @@
 <!-- Panel de control de la instancia (build.py lo copia a dist/panel/index.html). Calco de composición y piel
      del Stitch «NexusERP Studio · arquitectura modular» (24-sep): mismo Tailwind config y clases. Su contenido
      NO: SLA, latencias, usuarios concurrentes, Kafka, Terraform y la consola de telemetría eran inventados. Aquí
-     los módulos y la cuota salen de /demo/catalogo.js (mismo estado que la landing y la demo) y los datos de
+     los módulos salen de /demo/catalogo.js (mismo estado que la landing y la demo) y los datos de
      la base, de /demo/instancia.js, que build.py genera desde erp/ (línea base sellada, migraciones, registro). -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%234f46e5%22/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -80,7 +80,7 @@
 <div class="p-space-xs rounded-lg bg-surface-container-low text-primary-container"><span class="material-symbols-outlined text-[24px]">developer_board</span></div>
 <div>
 <div class="flex items-center gap-space-xs flex-wrap"><span class="font-headline-sm text-headline-sm tracking-tight text-on-surface">Tu panel de administración</span><span class="px-space-xs py-[2px] bg-surface-container text-on-surface-variant font-code-metric text-code-metric rounded-full">tal como lo verás tras contratar</span></div>
-<p class="font-body-sm text-body-sm text-on-surface-variant">Así activas un módulo tú mismo: lo enciendes aquí y aparece al momento en el menú de tu equipo, con la cuota ya recalculada.</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Así activas un módulo tú mismo: lo enciendes aquí y aparece al momento en el menú de tu equipo.</p>
 </div>
 </div>
 <div class="flex flex-wrap items-center gap-space-xs">
@@ -102,18 +102,18 @@
 <div class="flex items-center justify-between font-code-metric text-code-metric text-on-surface-variant"><span id="k-base">Base incluida</span><span class="text-secondary" id="k-camino"></span></div>
 </div>
 <div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between">
-<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Cuota mensual</span><div class="p-space-xs bg-primary-container text-on-primary rounded-lg"><span class="material-symbols-outlined text-[20px]">payments</span></div></div>
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Packs activos</span><div class="p-space-xs bg-primary-container text-on-primary rounded-lg"><span class="material-symbols-outlined text-[20px]">widgets</span></div></div>
 <div class="my-space-sm">
-<div class="flex items-baseline gap-space-xs"><span class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight" id="k-cuota">0 €</span><span class="font-code-metric text-code-metric text-on-surface-variant">/ mes</span></div>
-<div class="mt-space-xs flex items-center gap-space-xs text-secondary font-label-sm text-label-sm"><span class="material-symbols-outlined text-[16px]">info</span><span id="k-desglose">Base + módulos</span></div>
+<div class="flex items-baseline gap-space-xs"><span class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight" id="k-packs">0</span><span class="font-code-metric text-code-metric text-on-surface-variant" id="k-packs-total"></span></div>
+<div class="mt-space-xs flex items-center gap-space-xs text-secondary font-label-sm text-label-sm"><span class="material-symbols-outlined text-[16px]">info</span><span id="k-desglose">Base + packs</span></div>
 </div>
-<div class="flex items-center justify-between font-code-metric text-code-metric text-on-surface-variant"><span>Precio de prueba, sin IVA</span><span class="text-on-surface font-semibold" id="k-impl"></span></div>
+<div class="flex items-center justify-between font-code-metric text-code-metric text-on-surface-variant"><span>Precio a medida, con el presupuesto</span></div>
 </div>
 <div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between">
 <div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Equipo</span><div class="p-space-xs bg-surface-container text-on-surface rounded-lg"><span class="material-symbols-outlined text-[20px]">groups</span></div></div>
 <div class="my-space-sm">
 <div class="flex items-baseline gap-space-xs"><span class="font-headline-xl text-headline-xl text-on-surface tracking-tight" id="k-equipo">0</span><span class="font-label-sm text-label-sm text-secondary font-semibold">personas</span></div>
-<p class="font-body-sm text-body-sm text-on-surface-variant mt-space-xs">Cada una con sus herramientas y sus proyectos. Sin coste por usuario.</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-space-xs">Cada una con sus herramientas y sus proyectos.</p>
 </div>
 <div class="flex items-center justify-between font-code-metric text-code-metric text-on-surface-variant"><span>Dirección · ventas · agentes</span><a class="text-primary font-semibold hover:underline" href="/intranet/v4/usuarios/">Ver equipo</a></div>
 </div>
@@ -184,7 +184,7 @@
 <script src="/demo/instancia.js"></script>
 <script>
 (function () {
-  var CAT = window.AXW_CATALOGO, INS = window.AXW_INSTANCIA || {}, MODULOS = CAT.MODULOS, CAMINO = CAT.CAMINO, eur = CAT.eur, P = CAT.PRECIO;
+  var CAT = window.AXW_CATALOGO, INS = window.AXW_INSTANCIA || {}, MODULOS = CAT.MODULOS, CAMINO = CAT.CAMINO;
   var AREAS = ['Base', 'Ventas', 'Documentos', 'Dinero', 'Producto y obra', 'En camino'];
   var ICONO = { home: 'today', usuarios: 'group', ajustes: 'tune', crm: 'filter_alt', setter: 'smart_toy', campanas: 'campaign',
     operaciones: 'swap_horiz', reservas: 'event_available', compradores: 'person_search', comisiones: 'percent',
@@ -238,9 +238,9 @@
     var on = !!estado[m.k], elegido = m.k === sel;
     var badge = m.base ? ['bg-primary-fixed text-on-primary-fixed', 'Incluido'] : m.camino ? ['bg-surface-container-high text-on-surface-variant', on ? 'Reservado' : 'En camino']
       : on ? ['bg-secondary-container text-on-secondary-container', 'Activo'] : ['bg-surface-container-high text-on-surface-variant', 'Disponible'];
-    var derecha = m.base ? '<span class="font-code-metric text-code-metric text-secondary font-semibold">EN LA BASE</span><span class="font-code-metric text-code-metric text-on-surface-variant">sin coste aparte</span>'
-      : m.camino ? '<span class="font-label-sm text-label-sm font-bold text-on-surface-variant">Próximamente</span><span class="font-code-metric text-code-metric text-on-surface-variant">no suma a la cuota</span>'
-      : '<span class="font-label-sm text-label-sm font-bold ' + (on ? 'text-on-surface' : 'text-primary') + '">' + (on ? '' : '+') + eur(CAT.precio(m.k)) + ' / mes</span><span class="font-code-metric text-code-metric text-on-surface-variant">' + (CAT.IA[m.k] ? 'con IA · WhatsApp a coste' : 'módulo estándar') + '</span>';
+    var derecha = m.base ? '<span class="font-code-metric text-code-metric text-secondary font-semibold">EN LA BASE</span><span class="font-code-metric text-code-metric text-on-surface-variant">siempre incluido</span>'
+      : m.camino ? '<span class="font-label-sm text-label-sm font-bold text-on-surface-variant">Próximamente</span><span class="font-code-metric text-code-metric text-on-surface-variant">en desarrollo</span>'
+      : '<span class="font-label-sm text-label-sm font-bold ' + (on ? 'text-on-surface' : 'text-primary') + '">' + (on ? 'Encendido' : 'Disponible') + '</span><span class="font-code-metric text-code-metric text-on-surface-variant">' + (CAT.IA[m.k] ? 'con IA' : 'módulo estándar') + '</span>';
     var pie = m.caps.slice(0, 2).map(function (c) { return '<span class="px-space-xs py-0.5 rounded bg-surface-container font-code-metric text-[11px] text-on-surface">' + esc(c) + '</span>'; }).join('');
     if (!pie) pie = '<span class="font-code-metric text-code-metric text-on-surface-variant">' + ms('schedule', 'text-[16px] text-outline align-middle') + ' En desarrollo en AxisWorks</span>';
     return '<div class="node-card rounded-xl p-space-md shadow-sm transition-all duration-200 cursor-pointer ' + (elegido ? 'bg-surface-container-low ring-2 ring-primary-container/40' : 'bg-surface-container-lowest') +
@@ -306,15 +306,16 @@
 
   /* ---- KPI ---- */
   function pintaKpi() {
-    var c = CAT.cuota(estado), camino = CAMINO.filter(function (m) { return estado[m[0]]; }).length;
+    var c = CAT.recuento(estado), camino = CAMINO.filter(function (m) { return estado[m[0]]; }).length;
     document.getElementById('k-activos').textContent = c.activos;
     document.getElementById('k-total').textContent = '/ ' + MODULOS.length;
     document.getElementById('k-barra').style.width = (c.activos * 100 / MODULOS.length).toFixed(1) + '%';
     document.getElementById('k-base').textContent = MODULOS.filter(function (m) { return m[7]; }).length + ' incluidos en la base';
     document.getElementById('k-camino').textContent = camino ? camino + ' en camino marcados' : CAMINO.length + ' en camino';
-    document.getElementById('k-cuota').textContent = eur(c.total);
-    document.getElementById('k-desglose').textContent = 'Base ' + eur(P.base) + ' + ' + (c.std + c.ia) + ' módulos (' + eur(c.modulos) + ')';
-    document.getElementById('k-impl').textContent = 'Implantación desde ' + eur(P.implantacion);
+    var packs = CAT.PACKS.filter(function (p) { return CAT.packActivo(estado, p[0]); }).length;
+    document.getElementById('k-packs').textContent = packs;
+    document.getElementById('k-packs-total').textContent = '/ ' + CAT.PACKS.length;
+    document.getElementById('k-desglose').textContent = 'Base + ' + (c.std + c.ia) + ' módulos';
   }
   function pintaTodo() { pintaKpi(); pintaNodos(); pintaInspector(); }
 
@@ -335,10 +336,10 @@
     if (pk) { on = !CAT.packActivo(estado, pk); movidos = CAT.ponPack(estado, pk, on); }
     else { on = !estado[k]; movidos = CAT.ponSuelto(estado, k, on); }
     CAT.guardaEstado(estado);
-    c = CAT.cuota(estado);
+    c = CAT.recuento(estado);
     var que = pk ? 'Pack ' + CAT.pack(pk)[1] : m.nombre;
     log(on ? 'OK' : 'OFF', pk ? pk : CAT.CODIGO[k], que + (on ? ' encendido' : ' apagado') + (movidos.length ? ' (y ' + movidos.join(', ') + ')' : '') +
-        ' · cuota ' + eur(c.total) + '/mes · ' + c.activos + ' módulos.');
+        ' · ' + c.activos + ' módulos.');
     aviso(que + (on ? ' encendido.' : ' apagado.') + (movidos.length ? (on ? ' También: ' : ' También se apaga: ') + movidos.join(', ') + '.' : '') + ' El menú de la demo ya lo refleja.');
     pintaTodo();
   }
@@ -389,8 +390,8 @@
   document.getElementById('k-equipo').textContent = INS.equipo || '—';
 
   pintaTabs(); pintaTodo();
-  var c0 = CAT.cuota(estado);
-  log('INFO', 'panel', 'Panel abierto con ' + c0.activos + ' de ' + MODULOS.length + ' módulos · cuota ' + eur(c0.total) + '/mes.');
+  var c0 = CAT.recuento(estado);
+  log('INFO', 'panel', 'Panel abierto con ' + c0.activos + ' de ' + MODULOS.length + ' módulos.');
   if (INS.version) log('INFO', 'base', 'Línea base ' + INS.version + ' · ' + INS.tablas + ' tablas · ' + (INS.migraciones || []).length + ' migraciones publicadas encima.');
   log('INFO', 'demo', 'Datos de demostración: nada de lo que hagas aquí sale de este navegador.');
 })();

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="v4 lw4-fijo" data-lw4-herramienta="leads">
 <head>
+<meta name="lw-version" content="d08182a93e9b">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
@@ -14,12 +15,19 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
 
 <script src="/contracts/assets/idioma.js?v=8202e247"></script>
-<script src="/contracts/assets/i18n.js?v=ced342eb"></script>
-<script src="/contracts/assets/herramientas.js?v=07ceb706"></script>
-<script src="/contracts/assets/avisos.js?v=e3daa7ed" defer="defer"></script><script src="/contracts/assets/topbar.js?v=b01c57f7" defer="defer"></script>
-<script src="/contracts/assets/cierre.js?v=568f1e77"></script><script src="/contracts/assets/guard.js?v=bec50860" data-herramienta="leads"></script>
+<script src="/contracts/assets/i18n.js?v=c4f9be0a"></script>
+<script src="/contracts/assets/herramientas.js?v=ffe4b812"></script>
+<script src="/contracts/assets/avisos.js?v=4786c68c" defer="defer"></script>
+
+<link rel="stylesheet" href="/intranet/v4/assets/fonts/fonts.css?v=b6de809c">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+<link rel="stylesheet" href="/intranet/v4/assets/nav-montaje.css?v=51e09075">
+<script src="/intranet/v4/assets/cabecera.js?v=66712da5" defer="defer"></script>
+<script src="/intranet/v4/assets/nav-montaje.js?v=630cabde" defer="defer"></script>
+<script src="/intranet/v4/assets/nav.js?v=fce27932" defer="defer"></script>
+<script src="/contracts/assets/cierre.js?v=a7ef5b94"></script><script src="/contracts/assets/instancia.js?v=0b9bcdcc"></script><script src="/contracts/assets/version.js?v=f321ade8"></script><script src="/contracts/assets/guard.js?v=3f44c1ae" data-herramienta="leads"></script>
 <script src="/contracts/assets/suite.js?v=4b716ae1"></script>
-<link rel="stylesheet" href="/intranet/leads/leads.css?v=7fc164b8">
+<link rel="stylesheet" href="/intranet/leads/leads.css?v=e4cba490">
 <style>
   *{ box-sizing:border-box; } html,body{ margin:0; }
   body{ font-family:'Inter',ui-sans-serif,system-ui,sans-serif; background:#F8FAFC; color:#0F172A; }
@@ -27,14 +35,12 @@
 </head>
 <body class="crm">
   
-  <header class="lw-topbar" data-titulo="CRM de leads">
-    <div class="lw-spacer"></div>
-    <button type="button" class="lw-btn" id="btnRefrescar"><i class="ph ph-arrows-clockwise"></i><span data-lwt>Refrescar</span></button>
-  </header>
 
   
   <div id="avisoAlcance" class="aviso" hidden style="margin:12px 16px 0"></div>
 
+  
+  <div class="crm-nav-fila">
   <nav class="crm-nav" id="nav" role="tablist">
     
     <button role="tab" data-v="hoy" aria-selected="true"><i class="ph ph-flag"></i><span data-lwt>Hoy</span> <span class="cuenta" id="c-hoy">—</span></button>
@@ -53,6 +59,8 @@
     
     <button role="tab" data-v="trazabilidad" aria-selected="false" id="tabTrazabilidad" hidden><i class="ph ph-git-merge"></i><span data-lwt>Trazabilidad</span></button>
   </nav>
+  <button type="button" class="lw-btn" id="btnRefrescar" aria-label="Refrescar" data-lwt-aria><i class="ph ph-arrows-clockwise"></i><span data-lwt>Refrescar</span></button>
+  </div>
 
   
   <section class="crm-vista" id="v-hoy">
@@ -76,7 +84,7 @@
     <div class="aviso rojo" id="avisoTipos" hidden></div>
     <div class="aviso oro" id="avisoEstados" hidden></div>
     <div class="filtros">
-      <input type="search" id="q" data-lwt-ph placeholder="Buscar por nombre, email o teléfono…" autocomplete="off">
+      <input type="search" id="q" name="buscar-lead" data-lwt-ph placeholder="Buscar por nombre…" autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other">
       
       <div class="seg" id="filtroDueno">
         <button data-d="todos" aria-pressed="true" data-lwt="Todos">Todos</button>
@@ -95,7 +103,7 @@
   
   <section class="crm-vista" id="v-bandeja" hidden>
     <div class="filtros">
-      <input type="search" id="qb" data-lwt-ph placeholder="Buscar en la bandeja…" autocomplete="off">
+      <input type="search" id="qb" name="buscar-bandeja" data-lwt-ph placeholder="Buscar en la bandeja…" autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other">
       <div class="seg" id="filtroBandeja">
         <button data-fb="todos" aria-pressed="true" data-lwt="Todos">Todos</button>
         <button data-fb="sintocar" aria-pressed="false" data-lwt="Sin tocar">Sin tocar</button>
@@ -133,7 +141,7 @@
   <section class="crm-vista" id="v-automatismos" hidden>
     <div class="kpis" id="kpis-auto"></div>
     <div class="aviso gris">
-      <span data-lwt>Estos automatismos los ejecuta AxisWorks sobre las campañas de la empresa, cada 4 horas.</span>
+      <span data-lwt>Estos automatismos los ejecuta AxisWorks sobre las campañas de %marca, cada 4 horas.</span>
       <span data-lwt>Aquí se ven</span> <b data-lwt="en solo lectura">en solo lectura</b><span data-lwt>: qué vigila cada regla y qué ha hecho de verdad.</span>
       <span data-lwt>Para cambiar un umbral o un tope de gasto, habla con el estudio.</span>
     </div>
@@ -159,7 +167,7 @@
       <header>
         <div>
           <h2 data-lwt="Conversaciones del bot">Conversaciones del bot</h2>
-          <p id="subSetter" data-lwt="El bot de WhatsApp de la empresa, en vivo. Pausar detiene la IA para ese lead: a partir de ahí responde una persona.">El bot de WhatsApp de la empresa, en vivo. Pausar detiene la IA para ese lead: a partir de ahí responde una persona.</p>
+          <p id="subSetter" data-lwt="El bot de WhatsApp de %marca, en vivo. Pausar detiene la IA para ese lead: a partir de ahí responde una persona.">El bot de WhatsApp de %marca, en vivo. Pausar detiene la IA para ese lead: a partir de ahí responde una persona.</p>
         </div>
         <button type="button" class="btn" id="btnRefrescarSetter"><i class="ph ph-arrows-clockwise"></i><span data-lwt>Refrescar</span></button>
       </header>
@@ -274,9 +282,9 @@
             
             <div class="campo"><label for="tzManager" data-lwt="Sales manager">Sales manager</label><select id="tzManager"><option value="" data-lwt="Elige uno…">Elige uno…</option></select></div>
             <div class="campo"><label for="tzLocation" data-lwt="Location ID">Location ID</label><input type="text" id="tzLocation" autocomplete="off"></div>
-            <div class="campo"><label for="tzEtiqueta" data-lwt="Etiqueta de contactos AxisWorks Demo">Etiqueta de contactos AxisWorks Demo</label><input type="text" id="tzEtiqueta" autocomplete="off"></div>
+            <div class="campo"><label for="tzEtiqueta" data-lwt="Etiqueta de contactos %marca">Etiqueta de contactos %marca</label><input type="text" id="tzEtiqueta" autocomplete="off"></div>
           </div>
-          <div class="campo"><label for="tzToken" data-lwt="Token (pit-…) con permiso solo de lectura de contactos">Token (pit-…) con permiso solo de lectura de contactos</label><input type="password" id="tzToken" autocomplete="off"></div>
+          <div class="campo"><label for="tzToken" data-lwt="Token (pit-…) con permiso solo de lectura de contactos">Token (pit-…) con permiso solo de lectura de contactos</label><input type="password" id="tzToken" autocomplete="new-password"></div>
           <button type="button" class="btn pri" id="btnTrazaAlta"><i class="ph ph-plug"></i><span data-lwt>Conectar cuenta</span></button>
         </div>
       </details>
@@ -286,7 +294,8 @@
   <div class="toast" id="toast"></div>
 
 <script src="/contracts/assets/dialogo.js?v=f0e9e206"></script>
-<script src="/contracts/assets/suite-comun.js?v=900b5f37"></script>
-<script src="/intranet/leads/leads.js?v=31121127"></script>
+<script src="/contracts/assets/suite-comun.js?v=03a7b82c"></script>
+<script src="/intranet/leads/buscador.js?v=bc4549a9"></script>
+<script src="/intranet/leads/leads.js?v=f7b43763"></script>
 </body>
 </html>

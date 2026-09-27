@@ -1,5 +1,5 @@
 /* Catálogo de módulos de AxisWorks ERP — FUENTE ÚNICA de la demo. 24-sep-2026.
-   Lo leen la landing (tarjetas y precios), cada pantalla de la demo (menú y aviso de módulo apagado,
+   Lo leen la landing (tarjetas y packs), cada pantalla de la demo (menú y aviso de módulo apagado,
    modulos_demo.js) y el tour (se salta los pasos de módulos apagados). Antes la landing tenía su lista y
    la demo habría necesitado otra: dos listas a mano se separan solas (Regla 0 de contexto/suite_lawang.md).
    Estado de lo marcado: localStorage (misma clave en las tres), con try/catch. Sin almacenamiento, todo
@@ -116,24 +116,19 @@
     for (var n = 0; n < todos.length; n++) if (todos[n][0] === k) return todos[n][1];
     return k;
   }
-  /* Precios de BORRADOR (owner, 24-sep: «estamos testing»). Viven aquí para que la landing y el panel de
-     control no den dos cuotas distintas para la misma selección. */
-  var PRECIO = { base: 190, modulo: 49, ia: 99, implantacion: 2500 };
+  /* Sin precios en la demo pública (owner, 27-sep: «quita todos los precios»): el precio es a medida y se da
+     en el presupuesto. Aquí solo se cuenta lo encendido. */
   var IA = { setter: 1, campanas: 1, asistente: 1 };
-  function precio(k) { return IA[k] ? PRECIO.ia : PRECIO.modulo; }
-  function cuota(e) {
-    var r = { activos: 0, std: 0, ia: 0, total: PRECIO.base };
+  function recuento(e) {
+    var r = { activos: 0, std: 0, ia: 0 };
     MODULOS.forEach(function (m) {
       if (!e[m[0]]) return;
       r.activos++;
       if (m[7]) return;
       if (IA[m[0]]) r.ia++; else r.std++;
     });
-    r.modulos = r.std * PRECIO.modulo + r.ia * PRECIO.ia;
-    r.total += r.modulos;
     return r;
   }
-  function eur(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' €'; }   // es-ES no agrupa 4 cifras
   /* Código corto por área (BAS-01, VEN-03…), el mismo en la landing y en el panel. */
   var PREF = { 'Base': 'BAS', 'Ventas': 'VEN', 'Documentos': 'DOC', 'Dinero': 'DIN', 'Producto y obra': 'OBR' };
   var CODIGO = {}, cuenta = {};
@@ -144,8 +139,6 @@
      el parcelario sin contratos no sabe qué está vendido. Se enciende o apaga ENTERO. Lo que es opcional de
      verdad va como módulo SUELTO, con lo que necesita debajo. Las dependencias salen de las auditorías de Datos
      y Desarrollo del 25-sep (qué tablas y pantallas lee cada módulo).
-     Precio: SIN tarifa nueva. Un pack cuesta la suma de sus módulos con los precios de borrador de arriba (el
-     precio de un pack como producto lo fija el owner: hard stop).
      [clave, nombre, descripción, módulos, packs que necesita] */
   var PACKS = [
     ['base', 'Base', 'Lo que tiene cualquier empresa: el día, el equipo y los ajustes.', ['home', 'usuarios', 'ajustes'], []],
@@ -165,7 +158,6 @@
   SUELTOS.forEach(function (s) { REQ_SUELTO[s[0]] = s[1]; });
   function pack(clave) { for (var i = 0; i < PACKS.length; i++) if (PACKS[i][0] === clave) return PACKS[i]; return null; }
   function packActivo(e, clave) { var p = pack(clave); return !!p && p[3].every(function (k) { return !!e[k]; }); }
-  function precioPack(clave) { var p = pack(clave); return p[0] === 'base' ? PRECIO.base : p[3].reduce(function (s, k) { return s + precio(k); }, 0); }
   /* Encender/apagar un pack o un suelto respetando los bloques. Devuelve la lista de nombres que se movieron de
      más (lo que necesitaba o lo que dependía), para poder decirlo en pantalla en vez de hacerlo en silencio. */
   function dependientesDe(clave) {   // packs y sueltos que necesitan este pack, directa o indirectamente
@@ -218,7 +210,7 @@
 
   window.AXW_CATALOGO = { MODULOS: MODULOS, CAMINO: CAMINO, RUTAS: RUTAS, PESTANAS: PESTANAS,
     leeEstado: function () { return normalizaPacks(leeEstado()); }, guardaEstado: guardaEstado, moduloDeRuta: moduloDeRuta, nombre: nombre,
-    PRECIO: PRECIO, IA: IA, precio: precio, cuota: cuota, eur: eur, CODIGO: CODIGO,
+    IA: IA, recuento: recuento, CODIGO: CODIGO,
     PACKS: PACKS, SUELTOS: SUELTOS, PACK_DE: PACK_DE, REQ_SUELTO: REQ_SUELTO, pack: pack, packActivo: packActivo,
-    precioPack: precioPack, ponPack: ponPack, ponSuelto: ponSuelto, dependientesDe: dependientesDe };
+    ponPack: ponPack, ponSuelto: ponSuelto, dependientesDe: dependientesDe };
 })();

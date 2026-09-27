@@ -85,7 +85,7 @@
       b: 'Dirección, administración, jefe de ventas y agente, con herramientas y proyectos por persona. La separación la hace la base de datos, no solo la pantalla.' },
     { p: '/panel/', cap: 'Tu panel', t: { css: '#kpis' },
       h: 'Así lo gestionas tú',
-      b: 'Tras contratar, tu panel de administración: módulos activos, cuota del mes, tu equipo y la versión de tu base de datos, que es la misma en todos los clientes.' },
+      b: 'Tras contratar, tu panel de administración: módulos y packs activos, tu equipo y la versión de tu base de datos, que es la misma en todos los clientes.' },
     { p: '/panel/', cap: 'Tu panel', t: { css: '#inspector' },
       h: 'Un módulo más, un clic',
       b: 'Cada módulo dice qué hace, qué tablas usa y qué pantallas abre. Lo enciendes tú desde aquí y aparece al momento en el menú de todo el equipo.' },

@@ -113,7 +113,7 @@ En producción en una promotora inmobiliaria de Bali
 <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary via-secondary to-primary-container"></div>
 <div class="flex items-center justify-between pb-space-sm gap-space-sm">
 <div>
-<span class="text-label-sm font-label-sm uppercase tracking-wider text-secondary font-bold">Cotizador en tiempo real</span>
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-secondary font-bold">Configurador en tiempo real</span>
 <h3 class="font-headline-md text-headline-md text-on-surface">Resumen de tu ERP</h3>
 </div>
 <span class="px-space-sm py-1 rounded-full bg-primary/10 text-primary font-label-md text-label-md font-bold text-center" id="selected-counter-badge">0 de 0 módulos</span>
@@ -127,13 +127,8 @@ En producción en una promotora inmobiliaria de Bali
 <p class="hidden mt-1.5 text-[12px] text-secondary" id="interes"></p>
 </div>
 <div class="bg-surface-container-low rounded-xl p-space-md my-space-md">
-<div class="flex justify-between items-center text-body-sm font-body-sm text-on-surface-variant mb-1"><span>Base: panel, equipo y ajustes</span><span class="font-semibold text-on-surface" id="summary-base">190 €/mes</span></div>
-<div class="flex justify-between items-center text-body-sm font-body-sm text-on-surface-variant mb-1"><span id="summary-mod-lbl">Módulos</span><span class="font-semibold text-on-surface" id="summary-subtotal">0 €/mes</span></div>
-<div class="flex justify-between items-center text-body-sm font-body-sm text-secondary mb-1"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">verified</span> Implantación (pago único)</span><span class="font-bold" id="summary-impl">desde 2.500 €</span></div>
-<div class="pt-space-xs mt-space-xs border-t border-surface-container flex justify-between items-baseline gap-space-sm">
-<div><span class="text-headline-sm font-headline-sm text-on-surface">Total estimado</span><span class="text-label-sm font-label-sm text-on-surface-variant block">Cuota mensual en EUR, impuestos no incluidos</span></div>
-<div class="text-right"><div class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight whitespace-nowrap" id="summary-total">0 €<span class="text-body-sm font-normal text-on-surface-variant">/mes</span></div></div>
-</div>
+<div class="flex justify-between items-center text-body-sm font-body-sm text-on-surface-variant mb-1"><span>Base: panel, equipo y ajustes</span><span class="font-semibold text-on-surface">Siempre incluida</span></div>
+<div class="flex justify-between items-center text-body-sm font-body-sm text-on-surface-variant"><span id="summary-mod-lbl">Packs: 0</span><span class="font-semibold text-on-surface" id="summary-subtotal">0 módulos</span></div>
 </div>
 <div class="space-y-1 mb-space-md text-body-sm font-body-sm text-on-surface-variant">
 <div class="flex items-center gap-2"><span class="material-symbols-outlined text-secondary text-[18px]">done_all</span><span>Permisos por persona: herramientas y proyectos</span></div>
@@ -143,7 +138,7 @@ En producción en una promotora inmobiliaria de Bali
 <div class="flex flex-col gap-space-xs">
 <a class="w-full mt-space-xs py-space-md rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shadow-lg shadow-primary-container/30 hover:bg-primary transition-all flex items-center justify-center gap-2" data-tour role="button" href="#"><span>Ver el tour con estos módulos</span><span class="material-symbols-outlined text-[18px]">play_arrow</span></a>
 <a class="w-full py-space-sm rounded-lg bg-surface-container text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-all flex items-center justify-center gap-2" href="/intranet/v4/home/"><span class="material-symbols-outlined text-[18px] text-primary">login</span><span>Entrar a la demo sin tour</span></a>
-<div class="flex items-center justify-center gap-space-xs text-label-sm font-label-sm text-on-surface-variant mt-1"><span class="material-symbols-outlined text-[14px] text-secondary">verified_user</span><span>Precios orientativos de prueba · WhatsApp e IA a coste</span></div>
+<div class="flex items-center justify-center gap-space-xs text-label-sm font-label-sm text-on-surface-variant mt-1"><span class="material-symbols-outlined text-[14px] text-secondary">verified_user</span><span>Precio a medida: te lo damos con el presupuesto</span></div>
 </div>
 </div>
 </div>
@@ -286,7 +281,6 @@ En producción en una promotora inmobiliaria de Bali
      lo que necesita cada uno y los sueltos viven en /demo/catalogo.js (fuente única con el panel y la demo); aquí
      solo se pintan. El estado sigue siendo por módulo, así que la demo, el tour y el panel no cambian. */
   var CAT = window.AXW_CATALOGO, MODULOS = CAT.MODULOS, CAMINO = CAT.CAMINO, PACKS = CAT.PACKS;
-  var precio = CAT.precio, eur = CAT.eur, P = CAT.PRECIO;
   var estado = CAT.leeEstado();
   function guarda() { CAT.guardaEstado(estado); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -307,12 +301,12 @@ En producción en una promotora inmobiliaria de Bali
     TODOS.push({ k: m[0], nombre: m[1], grupo: 'camino', tags: ['En desarrollo'], caps: [m[2]], url: null, suelto: false, camino: true, codigo: CAT.CODIGO[m[0]] }); });
   var GRUPOS = PACKS.map(function (p) { return { k: p[0], nombre: p[1], desc: p[2], req: p[4], pack: true }; })
     .concat([{ k: 'sueltos', nombre: 'Módulos sueltos', desc: 'Se añaden uno a uno, encima de los packs que necesitan.', req: [], pack: false },
-             { k: 'camino', nombre: 'En camino', desc: 'En desarrollo. Márcalo si te interesa: no suma a la cuota.', req: [], pack: false }]);
+             { k: 'camino', nombre: 'En camino', desc: 'En desarrollo. Márcalo si te interesa y te avisamos.', req: [], pack: false }]);
   function nombrePack(k) { var p = CAT.pack(k); return p ? p[1] : k; }
 
   function tarjeta(m) {
     var interactivo = m.suelto || m.camino;
-    var pr = m.camino ? 'Próximamente' : m.grupo === 'base' ? 'Incluido' : eur(precio(m.k)) + '/m';
+    var pr = m.camino ? 'Próximamente' : m.grupo === 'base' ? 'Incluido' : '';
     return '<div class="module-card relative p-3 rounded-xl border border-surface-container ' + (interactivo ? 'cursor-pointer' : 'cursor-default') + ' transition-all" data-k="' + m.k + '">' +
       '<div class="flex items-start justify-between gap-2"><div class="flex items-center gap-1.5 flex-wrap">' +
       '<span class="font-label-sm font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[11px]">' + m.codigo + '</span>' +
@@ -330,9 +324,8 @@ En producción en una promotora inmobiliaria de Bali
   document.getElementById('modules-container').innerHTML = GRUPOS.map(function (g) {
     var mods = TODOS.filter(function (m) { return m.grupo === g.k; });
     var cabeza = g.pack
-      ? (g.k === 'base' ? '<span class="font-bold text-primary text-sm">' + eur(P.base) + '/mes · siempre incluido</span>'
-                        : '<span class="font-bold text-primary text-sm">' + eur(CAT.precioPack(g.k)) + '/mes</span>' +
-                          '<button type="button" class="pack-sw w-11 h-6 rounded-full p-0.5 flex items-center transition-colors" role="switch" data-pack="' + g.k + '" aria-label="Pack ' + esc(g.nombre) + '"><span class="w-5 h-5 rounded-full bg-surface-container-lowest shadow-sm transition-transform"></span></button>')
+      ? (g.k === 'base' ? '<span class="font-bold text-primary text-sm">Siempre incluido</span>'
+                        : '<button type="button" class="pack-sw w-11 h-6 rounded-full p-0.5 flex items-center transition-colors" role="switch" data-pack="' + g.k + '" aria-label="Pack ' + esc(g.nombre) + '"><span class="w-5 h-5 rounded-full bg-surface-container-lowest shadow-sm transition-transform"></span></button>')
       : '<span class="text-label-sm font-label-sm text-on-surface-variant">' + mods.length + ' módulos</span>';
     return '<div class="cat-section bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container" data-grupo="' + g.k + '">' +
       '<div class="flex items-start justify-between gap-space-sm pb-space-sm mb-space-sm border-b border-surface-container"><div class="flex items-start gap-space-xs min-w-0">' +
@@ -367,7 +360,7 @@ En producción en una promotora inmobiliaria de Bali
 
   var ACTIVA = ['border-primary/40', 'bg-gradient-to-r', 'from-surface-container-lowest', 'via-primary-fixed/20', 'to-surface-container-lowest', 'shadow-sm'];
   function pinta() {
-    var pills = [], interes = [], nPacks = 0, cuotaPacks = 0, nSueltos = 0, cuotaSueltos = 0;
+    var pills = [], interes = [], nPacks = 0, nSueltos = 0;
     document.querySelectorAll('.pack-sw').forEach(function (b) {
       var on = CAT.packActivo(estado, b.getAttribute('data-pack'));
       b.setAttribute('aria-checked', String(on));
@@ -391,7 +384,7 @@ En producción en una promotora inmobiliaria de Bali
         chk.innerHTML = ms(on ? 'check' : (m.suelto ? 'add' : 'remove'), 'text-[14px]');
       }
       if (on && m.suelto) {
-        nSueltos++; cuotaSueltos += precio(k);
+        nSueltos++;
         pills.push('<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-container text-on-surface font-label-sm text-label-sm"><span>' + esc(m.nombre) + '</span>' +
           '<button type="button" class="inline-flex" data-quita="' + k + '" aria-label="Quitar ' + esc(m.nombre) + '">' + ms('close', 'text-[14px] text-outline hover:text-error') + '</button></div>');
       }
@@ -399,23 +392,20 @@ En producción en una promotora inmobiliaria de Bali
     var pillsPack = [];
     PACKS.forEach(function (p) {
       if (!CAT.packActivo(estado, p[0])) return;
-      if (p[0] !== 'base') { nPacks++; cuotaPacks += CAT.precioPack(p[0]); }
+      if (p[0] !== 'base') nPacks++;
       pillsPack.push('<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary font-label-sm text-label-sm"><span>Pack ' + esc(p[1]) + '</span>' +
         (p[0] === 'base' ? '' : '<button type="button" class="inline-flex" data-quita-pack="' + p[0] + '" aria-label="Quitar el pack ' + esc(p[1]) + '">' + ms('close', 'text-[14px] text-outline hover:text-error') + '</button>') + '</div>');
     });
     pills = pillsPack.concat(pills);
-    var c = CAT.cuota(estado);
+    var c = CAT.recuento(estado);
     document.getElementById('selected-counter-badge').textContent = (nPacks + 1) + (nPacks ? ' packs · ' : ' pack · ') + c.activos + ' módulos';
     document.getElementById('catalog-coverage-label').textContent = Math.round(c.activos * 100 / MODULOS.length) + '% del catálogo';
     document.getElementById('active-modules-list').innerHTML = pills.join('');
     var ni = document.getElementById('interes');
-    ni.textContent = interes.length ? 'Te avisaremos cuando salgan: ' + interes.join(', ') + '. No suman a la cuota.' : '';
+    ni.textContent = interes.length ? 'Te avisaremos cuando salgan: ' + interes.join(', ') + '.' : '';
     ni.classList.toggle('hidden', !interes.length);
-    document.getElementById('summary-mod-lbl').textContent = 'Packs: ' + nPacks + ' (' + eur(cuotaPacks) + ')' + (nSueltos ? ' · sueltos: ' + nSueltos + ' (' + eur(cuotaSueltos) + ')' : '');
-    document.getElementById('summary-base').textContent = eur(P.base) + '/mes';
-    document.getElementById('summary-impl').textContent = 'desde ' + eur(P.implantacion);
-    document.getElementById('summary-subtotal').textContent = eur(c.modulos) + '/mes';
-    document.getElementById('summary-total').innerHTML = eur(c.total) + '<span class="text-body-sm font-normal text-on-surface-variant">/mes</span>';
+    document.getElementById('summary-mod-lbl').textContent = 'Packs: ' + nPacks + (nSueltos ? ' · sueltos: ' + nSueltos : '');
+    document.getElementById('summary-subtotal').textContent = c.activos + ' módulos';
   }
   function dice(movidos, on) {
     if (movidos.length) avisa((on ? 'También se ha encendido: ' : 'También se ha apagado, porque lo necesitaba: ') + movidos.join(', ') + '.');
