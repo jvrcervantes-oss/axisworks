@@ -322,7 +322,7 @@ def neutraliza():
     return n
 
 
-def compila_portada():
+def compila_portada(solo=None):
     """Tailwind COMPILADO de la portada (ERP F3 lote 4a, 27-sep-2026): landing.html pintaba con el Play CDN, que la CSP
     de demo.axisworks.studio ya no admite. Su tema (el config que llevaba en línea) vive en tailwind.json, al lado; lo
     compila la misma herramienta que el de Lawang (tools/empaqueta_css.py de la agencia: binario v3.4.17 verificado
@@ -333,7 +333,11 @@ def compila_portada():
     if fuente.get('version') != empaqueta_css.TW_VERSION:
         aborta('tailwind.json pide Tailwind %s; el binario apuntado es %s' % (fuente.get('version'), empaqueta_css.TW_VERSION))
     binario = empaqueta_css.tw_binario(descargar=True)
+    # solo: la salida (su `css`) que toca en este build: la portada en la demo pública, panel/panel.css en la instancia
+    # con panel_control (panel de control de módulos, 28-sep-2026)
     for salida in fuente['salidas']:
+        if solo and salida['css'] != solo:
+            continue
         css = empaqueta_css.tw_compila(fuente, salida, binario, raiz=AQUI)
         destino = os.path.join(DIST, salida['css'].replace('/', os.sep))
         os.makedirs(os.path.dirname(destino), exist_ok=True)
@@ -348,7 +352,7 @@ def paginas_propias():
     # Portada: la landing de módulos (fuente: landing.html, al lado de este script).
     shutil.copy2(os.path.join(AQUI, 'landing.html'), os.path.join(DIST, 'index.html'))
     os.makedirs(os.path.join(DIST, 'demo'), exist_ok=True)
-    compila_portada()
+    compila_portada('demo/landing.css')
     shutil.copy2(os.path.join(AQUI, 'tour.js'), os.path.join(DIST, 'demo', 'tour.js'))
     shutil.copy2(os.path.join(AQUI, 'catalogo.js'), os.path.join(DIST, 'demo', 'catalogo.js'))
     shutil.copy2(os.path.join(AQUI, 'modulos_demo.js'), os.path.join(DIST, 'demo', 'modulos.js'))
@@ -865,6 +869,7 @@ def instancia(nombre):
         d = os.path.join(DIST, 'panel')
         os.makedirs(d, exist_ok=True)
         shutil.copy2(os.path.join(AQUI, 'panel_control.html'), os.path.join(d, 'index.html'))
+        compila_portada('panel/panel.css')   # su Tailwind compilado: la CSP de la instancia no admite el Play CDN
     for ruta, t in (('intranet/v4/generador-contratos/index.html', 'Generador de contratos'),
                     ('intranet/v4/contratos-inversor/index.html', 'Portal del comprador'),
                     ('contracts/app.html', 'Generador de contratos'),

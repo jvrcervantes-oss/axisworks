@@ -17,7 +17,8 @@
    "paginas": [
     "landing.html"
    ]
-  }
+  },
+    {"css": "panel/panel.css", "tema": "landing", "plugins": [], "paginas": ["panel_control.html"], "_por_que": "panel de control de módulos (28-sep-2026): misma piel Stitch que la portada; solo se compila en la instancia con panel_control"}
  ],
  "temas": {
   "landing": {
