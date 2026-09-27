@@ -110,9 +110,17 @@
     try { e = JSON.parse(localStorage.getItem(CLAVE) || '{}') || {}; } catch (x) { e = {}; }
     // Todo encendido de partida; y un módulo que no estaba en lo guardado (añadido al catálogo después, como
     // Finanzas, Bancos y Gastos el 25-sep) también: lo guardado siempre trae las claves apagadas en `false`.
-    MODULOS.forEach(function (m) { if (!(m[0] in e)) e[m[0]] = true; });
+    // Salvo para quien ya apagó su bloque: un módulo nuevo de un pack apagado nace apagado (si no, normalizaPacks
+    // le reencendería el pack entero), y un suelto nuevo solo nace encendido si sus packs lo están.
+    var guardado = Object.keys(e).length > 0;
+    MODULOS.forEach(function (m) { if (!(m[0] in e)) e[m[0]] = !guardado || nuevoEncendido(e, m[0]); });
     MODULOS.forEach(function (m) { if (m[7]) e[m[0]] = true; });                    // la base no se apaga
     return e;
+  }
+  function nuevoEncendido(e, k) {
+    var pk = PACK_DE[k];
+    if (pk) return pack(pk)[3].some(function (x) { return x !== k && e[x]; });
+    return (REQ_SUELTO[k] || []).every(function (c) { return pack(c)[3].every(function (x) { return !(x in e) || e[x]; }); });
   }
   function guardaEstado(e) { try { localStorage.setItem(CLAVE, JSON.stringify(e)); } catch (x) {} }
   function moduloDeRuta(ruta) {
