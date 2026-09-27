@@ -280,12 +280,12 @@ def guard_demo():
             aborta('el doble de QA ha cambiado y no encuentro (1 vez): ' + viejo[:70])
         doble = doble.replace(viejo, nuevo)
     doble = doble.replace("'qa-user-1'", "'d-u-1'").replace('qa@axisworks.test', 'direccion@demo.test')
-    # «← Módulos · Panel» en todas las pantallas: las dos salidas del recorrido (el guard es nuestro).
+    # «← Módulos» en todas las pantallas: la salida del recorrido (el guard es nuestro).
     volver = ("document.addEventListener('DOMContentLoaded',function(){var n=document.createElement('nav');"
               "n.setAttribute('aria-label','Salir de la demo');"
               "n.style.cssText='position:fixed;left:16px;bottom:16px;z-index:2147483000;display:flex;background:#485B37;"
               "border-radius:999px;font:500 13px/1.2 system-ui,sans-serif;overflow:hidden';"
-              "[['/#configurador','← Módulos'],['/panel/','Panel']].forEach(function(x,i){var a=document.createElement('a');"
+              "[['/#configurador','← Módulos']].forEach(function(x,i){var a=document.createElement('a');"
               "a.href=x[0];a.textContent=x[1];a.style.cssText='color:#fff;text-decoration:none;padding:8px 14px'"
               "+(i?';border-left:1px solid rgba(255,255,255,.3)':'');n.appendChild(a);});"
               "document.body.appendChild(n);});\n"
@@ -322,34 +322,6 @@ def neutraliza():
     return n
 
 
-def datos_instancia():
-    """Lo que el panel enseña de la base, sacado de erp/ (nunca inventado): la línea base sellada más reciente,
-    sus objetos, las migraciones publicadas y las tablas/funciones propias de cada módulo según erp/modulos.json.
-    Solo nombres de esquema, ningún dato. El tamaño del equipo sale de demo_datos.js (personas inventadas)."""
-    erp = os.path.join(AGENCIA, 'erp')
-    selladas = sorted(f for f in os.listdir(os.path.join(erp, 'linea_base')) if re.fullmatch(r'linea_base_\d{14}\.sql', f))
-    if not selladas:
-        aborta('no hay línea base sellada en erp/linea_base/')
-    sql = open(os.path.join(erp, 'linea_base', selladas[-1]), encoding='utf-8').read()
-    migs = sorted(f[:-4] for f in os.listdir(os.path.join(erp, 'migraciones')) if re.fullmatch(r'\d{14}_[a-z0-9_]+\.sql', f))
-    registro = json.load(open(os.path.join(erp, 'modulos.json'), encoding='utf-8'))['modulos']
-    # Claves del catálogo de la demo → claves del registro de la base (nombres distintos para lo mismo).
-    alias = {'crm': 'leads', 'comisionadmin': 'comision-admin', 'usuarios': 'base'}
-    catalogo = open(os.path.join(AQUI, 'catalogo.js'), encoding='utf-8').read()
-    modulos = {}
-    for k in re.findall(r"\[\s*'([a-z_]+)', '[^']*', '(?:Seguimiento|Documentación|Finanzas|Comunicación|Base de datos|Panel de control)'", catalogo):
-        r = registro.get(alias.get(k, k)) or {}
-        modulos[k] = {'tablas': sorted(r.get('tablas', [])), 'funciones': sorted(r.get('funciones', []))}
-    datos = open(os.path.join(AQUI, 'demo_datos.js'), encoding='utf-8').read()
-    equipo = re.search(r'var EQUIPO = \[(.*?)\];', datos, re.S)
-    return {'version': selladas[-1][11:25], 'migraciones': migs,
-            'tablas': len(re.findall(r'^CREATE TABLE (?:IF NOT EXISTS )?public\.', sql, re.M | re.I)),
-            'funciones': len(re.findall(r'^CREATE (?:OR REPLACE )?FUNCTION public\.', sql, re.M | re.I)),
-            'politicas': len(re.findall(r'^CREATE POLICY ', sql, re.M | re.I)),
-            'equipo': len(re.findall(r'\bemail\s*:', equipo.group(1))) if equipo else None,
-            'modulos': modulos}
-
-
 def paginas_propias():
     carpeta = os.path.join(DIST, 'intranet')
     redir = ('<!doctype html><meta charset="utf-8"><title>Demo</title>'
@@ -361,12 +333,9 @@ def paginas_propias():
     shutil.copy2(os.path.join(AQUI, 'tour.js'), os.path.join(DIST, 'demo', 'tour.js'))
     shutil.copy2(os.path.join(AQUI, 'catalogo.js'), os.path.join(DIST, 'demo', 'catalogo.js'))
     shutil.copy2(os.path.join(AQUI, 'modulos_demo.js'), os.path.join(DIST, 'demo', 'modulos.js'))
-    # Panel de control de la instancia (Stitch «Architecture Studio», 24-sep) + sus datos de la base.
-    os.makedirs(os.path.join(DIST, 'panel'), exist_ok=True)
-    shutil.copy2(os.path.join(AQUI, 'panel.html'), os.path.join(DIST, 'panel', 'index.html'))
-    open(os.path.join(DIST, 'demo', 'instancia.js'), 'w', encoding='utf-8').write(
-        '/* GENERADO por build.py desde erp/ — no editar. */\nwindow.AXW_INSTANCIA = '
-        + json.dumps(datos_instancia(), ensure_ascii=False) + ';\n')
+    # El panel de control (panel.html + /demo/instancia.js, que salían de datos_instancia(): ver git log) NO se publica desde el 27-sep
+    # (owner: «oculta el panel»): encendía módulos solo en el navegador y la demo prometía algo que no hacía.
+    # Vuelve cuando active módulos de verdad sobre la instancia (interruptores F4 del ERP maestro).
     aviso = AVISO
     for carpeta_v4, t, m in (
             ('generador-contratos', 'Generador de contratos',

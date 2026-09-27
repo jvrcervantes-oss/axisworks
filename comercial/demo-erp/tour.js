@@ -89,15 +89,9 @@
     { p: '/intranet/v4/usuarios/', cap: 'Equipo', t: { texto: 'USUARIOS ACTIVOS', fila: true },
       h: 'Quién entra y qué ve',
       b: 'Dirección, administración, jefe de ventas y agente, con herramientas y proyectos por persona. La separación la hace la base de datos, no solo la pantalla.' },
-    { p: '/panel/', cap: 'Tu panel', t: { css: '#kpis' },
-      h: 'Así lo gestionas tú',
-      b: 'Tras contratar, tu panel de administración: módulos y packs activos, tu equipo y la versión de tu base de datos, que es la misma en todos los clientes.' },
-    { p: '/panel/', cap: 'Tu panel', t: { css: '#inspector' },
-      h: 'Un módulo más, un clic',
-      b: 'Cada módulo dice qué hace, qué tablas usa y qué pantallas abre. Lo enciendes tú desde aquí y aparece al momento en el menú de todo el equipo.' },
-    { p: '/panel/', cap: 'Final', t: null, hero: true, fin: true,
+    { p: '/', cap: 'Final', t: null, hero: true, fin: true,
       h: 'Eso es AxisWorks ERP',
-      b: 'Módulos que se activan uno a uno sobre la misma base. Ahora entra libre a la demo, o cambia tu selección en el cotizador y repite el tour.' }
+      b: 'Módulos que se activan uno a uno sobre la misma base. Ahora entra libre a la demo, o cambia tu selección en el configurador y repite el tour.' }
   ];
 
   /* Solo los pasos de módulos encendidos en la landing (catalogo.js). El módulo de cada paso sale de su
@@ -457,8 +451,9 @@
     document.removeEventListener('keydown', tecla, true);
     setTimeout(function () { if (raiz) { raiz.remove(); raiz = null; } window.__axtTour = false; }, REDUCIDO ? 0 : 500);
     if (aModulos) {
-      // El tour acaba en el panel: se queda ahí, arriba, con «Entrar con estos módulos» a la vista.
-      window.scrollTo({ top: 0, behavior: REDUCIDO ? 'auto' : 'smooth' });
+      // El tour acaba en la portada: se queda en el catálogo, para cambiar la selección y repetirlo.
+      var c = document.getElementById('configurador');
+      if (c) c.scrollIntoView({ behavior: REDUCIDO ? 'auto' : 'smooth' }); else window.scrollTo({ top: 0, behavior: REDUCIDO ? 'auto' : 'smooth' });
     }
   }
 
