@@ -871,16 +871,39 @@ def instancia(nombre):
     print('OK instancia %s en %s: %d ficheros, guard real contra %s' % (nombre, os.path.relpath(destino, AGENCIA), total, host_sb))
 
 
-def packs_casan():
+# Lo que el registro dice que lee la BASE y se le perdona, uno a uno y con su porqué (revisor, 27-sep: nada de exención
+# en bloque). Si la base empieza a leer algo que no está aquí, el build para. En erp/modulos.json la base se lleva los
+# ficheros compartidos de la v4 (contracts/assets, intranet/v4/assets): panel-gastos.js, los subidores de fotos y
+# documentos, el paso de reservas… Esas llamadas solo corren desde la pantalla de su propio módulo, que con el módulo
+# apagado ni se sirve ni sale en el menú (apagados_instancia.js, F4). Lo que sí lee la Home (contadores de contratos,
+# reservas, facturas y comisiones) da cero con el módulo apagado: la RLS restrictiva de F4 devuelve vacío, no error.
+EXENTOS_BASE = {
+    'comisiones': 'Home cuenta comisiones pendientes; atribución de closer y referidos corren en la pantalla del CRM/comisiones',
+    'contratos': 'Home cuenta firmas pendientes; contratos-firmados es el bucket que abre la pantalla de contratos',
+    'facturas': 'Home cuenta facturas con saldo; justificantes lo sube la pantalla de recibos/facturas',
+    'gastos': 'panel-gastos.js y gasto_justificante_registra solo corren en /v4/gastos/',
+    'modelos': 'subidores de fotos y documentos del modelo y del deck: solo en /v4/modelos/',
+    'obra': 'obra_foto_registra: solo en /v4/obra/',
+    'operaciones': 'borrar_operacion: solo desde la ficha de operaciones',
+    'proyectos': 'documentación de proyecto y unidades: solo en /v4/proyectos/; Home cuenta unidades',
+    'recibos': 'recibi_aplicaciones: solo en /v4/recibos/',
+    'reservas': 'prórroga, liberación y vencimientos: pantalla de reservas; Home cuenta las que vencen',
+}
+
+
+def packs_casan(catalogo=None, modulos_json=None):
     """Los packs de catalogo.js tienen que casar con el registro del ERP (owner, 27-sep: «los módulos que dependen de
     otros van en pack sí o sí»). Para cada módulo, todo lo que su código lee (erp/modulos.json → depende, cerrado
     transitivamente) tiene que estar en su mismo pack o en los packs que ese pack necesita. Un suelto no puede leer
-    nada fuera de la base. La base se exime: sus lecturas son contadores que con un módulo apagado dan cero (F4)."""
-    registro = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))['modulos']
+    nada fuera de la base. Una pestaña de otra pantalla (PESTANAS) va donde esté esa pantalla. La base solo se exime de
+    lo que está en EXENTOS_BASE. Una clave que el registro no conoce para el build: no se da por buena sin mirarla.
+    Prueba: test_packs_casan.py."""
+    registro = json.load(open(modulos_json or os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))['modulos']
     r = subprocess.run(['node', '-e', "global.window={};global.localStorage={getItem:function(){return null},setItem:function(){}};"
                         "require(process.argv[1]);var C=window.AXW_CATALOGO;"
-                        "console.log(JSON.stringify({packs:C.PACKS,sueltos:C.SUELTOS,modulos:C.MODULOS.map(function(m){return m[0]})}))",
-                        os.path.join(AQUI, 'catalogo.js')], capture_output=True, text=True, encoding='utf-8')
+                        "console.log(JSON.stringify({packs:C.PACKS,sueltos:C.SUELTOS,modulos:C.MODULOS.map(function(m){return m[0]}),"
+                        "pestanas:Object.keys(C.PESTANAS),rutas:C.RUTAS}))",
+                        os.path.abspath(catalogo or os.path.join(AQUI, 'catalogo.js'))], capture_output=True, text=True, encoding='utf-8')
     if r.returncode:
         aborta('no puedo leer catalogo.js: ' + r.stderr[:300])
     cat = json.loads(r.stdout)
@@ -888,8 +911,16 @@ def packs_casan():
     alias = {'crm': 'leads', 'setter': 'leads', 'campanas': 'leads', 'comisionadmin': 'comision-admin',
              'home': 'base', 'usuarios': 'base', 'ajustes': 'base', 'peticiones': 'asistente'}
     reg = lambda k: alias.get(k, k)
+    desconocidas = sorted(k for k in cat['modulos'] if reg(k) not in registro)
+    if desconocidas:
+        aborta('módulos del catálogo que erp/modulos.json no conoce (añádelos al registro o al alias): ' + ', '.join(desconocidas))
+    nuevas_base = sorted(set(registro['base'].get('depende') or []) - set(EXENTOS_BASE))
+    if nuevas_base:
+        aborta('la base lee módulos que no están en EXENTOS_BASE (mira si de verdad corren sin ellos): ' + ', '.join(nuevas_base))
     def alcance(k, visto):
-        for d in registro.get(k, {}).get('depende') or []:
+        for d in registro[k].get('depende') or []:
+            if d not in registro:
+                aborta('%s depende de %s, que no está en erp/modulos.json' % (k, d))
             if d not in visto:
                 visto.add(d)
                 alcance(d, visto)
@@ -912,20 +943,22 @@ def packs_casan():
     sin_sitio = [k for k in cat['modulos'] if k not in donde]
     if sin_sitio:
         aborta('módulos del catálogo sin pack ni suelto: ' + ', '.join(sin_sitio))
-    disponible = {}   # clave del registro → claves del catálogo que la traen, por pack
-    for k, ps in donde.items():
+    disponible = {}   # clave del registro → claves del catálogo que la traen
+    for k in donde:
         disponible.setdefault(reg(k), []).append(k)
     fallos = []
     for k, ps in donde.items():
         if reg(k) == 'base':
             continue
         for d in sorted(alcance(reg(k), set()) - {'base', reg(k)}):
-            trae = [x for x in disponible.get(d, []) if donde[x] <= ps or x == k]
-            if d in registro and not trae:
+            if not [x for x in disponible.get(d, []) if donde[x] <= ps]:
                 fallos.append('%s lee %s, que no está en su pack ni en los que su pack necesita' % (k, d))
+    for k in cat['pestanas']:   # vive dentro de la pantalla de otro módulo: ese módulo tiene que venir con ella
+        duenos = [x for x in disponible.get(reg(k), []) if x != k and x in cat['rutas']]
+        if not [x for x in duenos if donde[x] <= donde[k]]:
+            fallos.append('%s es una pestaña de %s y puede quedar encendida sin su pantalla' % (k, ', '.join(duenos) or '?'))
     if fallos:
         aborta('los packs de catalogo.js no casan con erp/modulos.json:\n  ' + '\n  '.join(fallos))
-
 
 def main():
     packs_casan()
