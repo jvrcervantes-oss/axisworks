@@ -748,7 +748,15 @@ def apagados_de(nombre):
     for mod, d in m['modulos'].items():
         if mod not in act:
             out['p'] += [u for u in d.get('pantallas', []) if u.startswith('/intranet/')]
-    out['p'] = sorted(set(out['p']))
+    # apagados_extra (27-sep-2026, B8 del encargo del canon): objetos de un módulo que la instancia NO tiene porque no
+    # se portaron a su base (el registro solo conoce lo que existe en la base del producto). Sin esto, el front
+    # compartido los pediría y fallaría por red en vez de responder «módulo no activo». Misma lista que lee
+    # erp/contrato_front.py.
+    extra = reg.get('apagados_extra') or {}
+    for k in ('t', 'f', 'b'):
+        for obj, mod in (extra.get(k) or {}).items():
+            out[k][obj] = mod
+    out['p'] = sorted(set(out['p']) | set(extra.get('p') or []))
     return out
 
 
