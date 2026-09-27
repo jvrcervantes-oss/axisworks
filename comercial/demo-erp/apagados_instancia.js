@@ -199,10 +199,14 @@
     var sb = window.LW_SB;
     if (!sb || !sb.auth) return false;
     sb.auth.getSession().then(function (r) {
-      if (!(r && r.data && r.data.session)) return;                  // sin sesión: guard.js manda al acceso
+      // sin sesión: guard.js manda al acceso; si no lo hiciera (entrada sin recargar), se vuelve a mirar en 1 s en vez de
+      // dejar colgado todo lo de módulo (revisor)
+      if (!(r && r.data && r.data.session)) { setTimeout(pide, 1000); return; }
       return sb.rpc('modulos_activos_datos').then(function (x) {
+        // {activos: [...] | null} (forma declarada en FORMAS_DATOS de erp/modulos.py)
         if (x.error) decide(x.error);
-        else decide(null, x.data);
+        else if (!x.data || typeof x.data !== 'object' || Array.isArray(x.data) || !('activos' in x.data)) decide(new Error('forma de modulos_activos_datos'));
+        else decide(null, x.data.activos);
       });
     }).catch(function (e) { decide(e); });
     return true;

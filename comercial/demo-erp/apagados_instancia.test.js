@@ -44,7 +44,7 @@ function escenario({ activos, ruta = '/intranet/v4/home/', fallaActivos = false 
     red.push(url.replace(SB, ''));
     if (url.includes('/rpc/modulos_activos_datos')) {
       if (fallaActivos) return new Response(JSON.stringify({ message: 'caída' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
-      return new Response(JSON.stringify(activos), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ activos }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
     return new Response('[{"id":1}]', { status: 200, headers: { 'Content-Type': 'application/json', 'Content-Range': '0-0/1' } });
   };

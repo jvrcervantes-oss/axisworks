@@ -242,7 +242,7 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
       if ((s.no_instalables || []).length) bloqueos.push('No están instalados en esta base: ' + esc(lista(s.no_instalables)) + '.');
       var ef = Object.keys(s.edges_faltan || {});
       if (ef.length) bloqueos.push('A ' + esc(lista(ef)) + ' le faltan funciones por desplegar (' + esc([].concat.apply([], ef.map(function (k) { return s.edges_faltan[k]; })).join(', ')) +
-        '). Las despliega el estudio: <code>python erp/nueva_instancia.py ' + esc(actual.nombre) + ' --aplica --paso edges</code>.');
+        '). Las prepara el estudio (quedan cerradas hasta encenderlo): ' + ef.map(function (k) { return '<code>python erp/nueva_instancia.py ' + esc(actual.nombre) + ' --aplica --paso edges --modulo ' + esc(k) + '</code>'; }).join(' · ') + '.');
       if ((s.desconocidos || []).length) bloqueos.push('Módulos que la base no conoce: ' + esc(s.desconocidos.join(', ')) + '.');
       var cambios = '<p>' + (s.enciende.length ? '<strong>Se enciende:</strong> ' + esc(lista(s.enciende)) + '<br>' : '') +
         (s.apaga.length ? '<strong>Se apaga:</strong> ' + esc(lista(s.apaga)) : '') + '</p>';
@@ -283,7 +283,7 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
         }
         if (d.error === 'ocupado') toast(d.mensaje);
         else if (d.error === 'rechazado') toast('La base lo ha rechazado: vuelve a intentarlo, el estado ha cambiado.');
-        else toast(d.mensaje || 'No se aplicó (' + d.__estado + '). No ha cambiado nada.');
+        else toast(d.mensaje || 'Respuesta inesperada (' + d.__estado + '). Recargo el estado para ver qué quedó.');
         return carga(true);
       });
     }).catch(function (e) { toast(e.message); }).then(function () { ocupado = false; });
