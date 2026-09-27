@@ -360,6 +360,9 @@ Para empresas que venden, firman y cobran · <a class="text-primary hover:underl
     document.querySelectorAll('.module-card').forEach(function (el) {
       var k = el.getAttribute('data-k'), m = TODOS.filter(function (x) { return x.k === k; })[0], on = !!estado[k];
       ACTIVA.forEach(function (c) { el.classList.toggle(c, on); });
+      // El borde de base se QUITA al activar (27-sep-2026, Tailwind compilado): con el Play CDN, border-primary/40
+      // ganaba solo porque se generaba después; compilado, el orden es alfabético y border-surface-container le ganaba.
+      el.classList.toggle('border-surface-container', !on);
       el.classList.toggle('opacity-70', !on);
       var chk = el.querySelector('.chk');
       if (!m.base) {
