@@ -454,6 +454,16 @@ def comprueba_resultado(raiz_dir):
                     malos.append('sintaxis: %s — %s' % (os.path.relpath(os.path.join(raiz, f), raiz_dir),
                                                        (r.stderr.strip().splitlines() or [''])[-1][:120]))
     malos += ['enlace roto: ' + x for x in enlaces_rotos(raiz_dir)]
+    # El Play CDN de Tailwind no puede salir en ningún build (ERP F3 lote 4a, revisor 27-sep-2026): la CSP de la demo
+    # y de las instancias ya no lo admite, así que una página que aún lo cargue saldría SIN ESTILOS. Pasa si se
+    # construye desde un Lawang de antes del lote 4a o si una página propia nueva se olvida de compilar su CSS.
+    for raiz, _d, fichs in os.walk(raiz_dir):
+        for f in fichs:
+            if f.endswith(EXT_TEXTO) or f == '.htaccess':
+                p = os.path.join(raiz, f)
+                if 'cdn.tailwindcss.com' in open(p, encoding='utf-8', errors='replace').read():
+                    malos.append('Play CDN de Tailwind (la CSP no lo admite, saldría sin estilos): '
+                                 + os.path.relpath(p, raiz_dir))
     if malos:
         aborta('el resultado no se sostiene:\n  ' + '\n  '.join(malos[:30]))
 
