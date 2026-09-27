@@ -322,6 +322,24 @@ def neutraliza():
     return n
 
 
+def compila_portada():
+    """Tailwind COMPILADO de la portada (ERP F3 lote 4a, 27-sep-2026): landing.html pintaba con el Play CDN, que la CSP
+    de demo.axisworks.studio ya no admite. Su tema (el config que llevaba en línea) vive en tailwind.json, al lado; lo
+    compila la misma herramienta que el de Lawang (tools/empaqueta_css.py de la agencia: binario v3.4.17 verificado
+    por SHA256) a dist/demo/landing.css. Se compila en cada build: nunca se queda atrás de landing.html."""
+    sys.path.insert(0, os.path.join(AGENCIA, 'tools'))
+    import empaqueta_css
+    fuente = json.load(open(os.path.join(AQUI, 'tailwind.json'), encoding='utf-8'))
+    if fuente.get('version') != empaqueta_css.TW_VERSION:
+        aborta('tailwind.json pide Tailwind %s; el binario apuntado es %s' % (fuente.get('version'), empaqueta_css.TW_VERSION))
+    binario = empaqueta_css.tw_binario(descargar=True)
+    for salida in fuente['salidas']:
+        css = empaqueta_css.tw_compila(fuente, salida, binario, raiz=AQUI)
+        destino = os.path.join(DIST, salida['css'].replace('/', os.sep))
+        os.makedirs(os.path.dirname(destino), exist_ok=True)
+        open(destino, 'w', encoding='utf-8', newline='\n').write(css)
+
+
 def paginas_propias():
     carpeta = os.path.join(DIST, 'intranet')
     redir = ('<!doctype html><meta charset="utf-8"><title>Demo</title>'
@@ -330,6 +348,7 @@ def paginas_propias():
     # Portada: la landing de módulos (fuente: landing.html, al lado de este script).
     shutil.copy2(os.path.join(AQUI, 'landing.html'), os.path.join(DIST, 'index.html'))
     os.makedirs(os.path.join(DIST, 'demo'), exist_ok=True)
+    compila_portada()
     shutil.copy2(os.path.join(AQUI, 'tour.js'), os.path.join(DIST, 'demo', 'tour.js'))
     shutil.copy2(os.path.join(AQUI, 'catalogo.js'), os.path.join(DIST, 'demo', 'catalogo.js'))
     shutil.copy2(os.path.join(AQUI, 'modulos_demo.js'), os.path.join(DIST, 'demo', 'modulos.js'))
@@ -638,7 +657,8 @@ def publica():
         '  Header always set Referrer-Policy "strict-origin-when-cross-origin"\n'
         '  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"\n'
         '  Header always set Content-Security-Policy "default-src \'self\'; script-src \'self\' \'unsafe-inline\' '
-        'https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src \'self\' '
+        # Sin cdn.tailwindcss.com desde el 27-sep-2026 (ERP F3 lote 4a): la v4 y la portada van con Tailwind COMPILADO.
+        'https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src \'self\' '
         # jsdelivr en estilos y fuentes: los iconos Phosphor del CRM (visto en producción, 25-sep).
         '\'unsafe-inline\' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src \'self\' data: '
         'https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src '
@@ -707,7 +727,7 @@ HTACCESS_INSTANCIA = """# GENERADO por comercial/demo-erp/build.py --instancia {
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https://{sb}; connect-src 'self' https://{sb} wss://{sb}; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https://{sb}; connect-src 'self' https://{sb} wss://{sb}; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
 </IfModule>
 DirectoryIndex index.html
 """
