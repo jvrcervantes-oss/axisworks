@@ -5,8 +5,8 @@
  * cambia la ficha. La frase de cada sección (BUILD…) es copy y vive en home_textos.php. */
 
 $ORGANIGRAMA = [
-  'n' => 14,
-  'palabra' => ['en' => 'fourteen', 'es' => 'catorce'],
+  'n' => 15,
+  'palabra' => ['en' => 'fifteen', 'es' => 'quince'],
   'deps' => [
     ['seccion' => 'BUILD', 'cara' => 'dev', 'imagen' => true,
       'en' => ['Development', 'writes the code', ['B01', 'B02', 'B05', 'B07']],
@@ -31,6 +31,10 @@ $ORGANIGRAMA = [
     ['seccion' => 'BUILD', 'cara' => 'games', 'imagen' => true,
       'en' => ['Games', 'engine &amp; game', ['A game engine and the game built on it']],
       'es' => ['Videojuegos', 'motor y juego', ['Un motor de juego y el juego que corre sobre él']],
+    ],
+    ['seccion' => 'BUILD', 'cara' => 'pilots', 'imagen' => false,
+      'en' => ['Pilots', 'autonomous agents', ['Autonomous agents that run a business within limits we set']],
+      'es' => ['Pilotos', 'agentes autónomos', ['Agentes autónomos que llevan un negocio dentro de límites fijados']],
     ],
     ['seccion' => 'GROW', 'cara' => 'design', 'imagen' => true,
       'en' => ['Design', 'art direction', ['Brand identity', 'Interface design for every product']],
