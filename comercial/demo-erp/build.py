@@ -192,7 +192,25 @@ def escribe_instancia(ficha):
     # Opcionales: `inicio` = adónde lleva el acceso tras entrar (26-sep-2026: el estándar del producto es la Home de
     # la v4; sin él, el panel clásico). Lawang no lo lleva y sigue con su portada de siempre.
     campos = campos + tuple(k for k in ('inicio',) if ficha.get(k))
-    cuerpo = ',\n'.join('    %s: %s' % (k, json.dumps(ficha[k], ensure_ascii=False)) for k in campos)
+    # F3 lote 3 (27-sep-2026): lo que el código de Lawang decidía con NOMBRES de proyecto sale de la ficha. Van
+    # SIEMPRE (vacíos si la instancia no los declara): sin entrada no hay plano ni campos de fase, y el valor nunca
+    # puede caer en los proyectos de Lawang. `masterplans` = {proyectos.nombre: ruta del .json del masterplan};
+    # `proyectos_con_fases` = [proyectos.nombre] cuyas unidades llevan fase/zona de masterplan.
+    ficha = dict(ficha)
+    mp = ficha.get('masterplans') or {}
+    fases = ficha.get('proyectos_con_fases') or []
+    if not isinstance(mp, dict) or not all(isinstance(k, str) and k and isinstance(v, str) and v.startswith('/')
+                                           for k, v in mp.items()):
+        aborta('masterplans de la ficha: {nombre de proyecto: "/ruta/del/masterplan.json"}')
+    if not isinstance(fases, list) or not all(isinstance(x, str) and x for x in fases):
+        aborta('proyectos_con_fases de la ficha: lista de nombres de proyecto')
+    ficha['masterplans'], ficha['proyectos_con_fases'] = mp, fases
+    campos = campos + ('masterplans', 'proyectos_con_fases')
+
+    def valor(v):   # lo anidado también congelado: la ficha es de solo lectura entera, no solo su primer nivel
+        j = json.dumps(v, ensure_ascii=False)
+        return 'Object.freeze(%s)' % j if isinstance(v, (dict, list)) else j
+    cuerpo = ',\n'.join('    %s: %s' % (k, valor(ficha[k])) for k in campos)
     ruta = os.path.join(DIST, 'contracts', 'assets', 'instancia.js')
     os.makedirs(os.path.dirname(ruta), exist_ok=True)
     open(ruta, 'w', encoding='utf-8', newline='\n').write(
@@ -683,9 +701,13 @@ def publica():
 DESPLIEGUES = os.path.join(AGENCIA, 'erp', 'despliegues')
 
 
+def _instancia_registro(nombre):
+    return ((json.load(open(os.path.join(AGENCIA, 'erp', 'instancias.json'), encoding='utf-8')).get('instancias') or {})
+            .get(nombre) or {})
+
+
 def _instancia_conf(nombre):
-    reg = json.load(open(os.path.join(AGENCIA, 'erp', 'instancias.json'), encoding='utf-8'))
-    inst = (reg.get('instancias') or {}).get(nombre)
+    inst = _instancia_registro(nombre)
     if not inst:
         aborta('instancia desconocida en erp/instancias.json: ' + nombre)
     if nombre == 'lawang':
@@ -790,7 +812,10 @@ def instancia(nombre):
     # ERP F3: su ficha, escrita desde el registro (después de los reemplazos, que ya no la tocan)
     escribe_instancia({'sb_url': url, 'sb_key': clave, 'marca': marca, 'cabecera': marca.upper(), 'subcabecera': 'ERP',
                        'titulo': marca + ' ERP', 'firma_correo': marca,
-                       'inicio': '/intranet/v4/home/'})
+                       'inicio': '/intranet/v4/home/',
+                       # F3 lote 3: los de la instancia en erp/instancias.json (hoy ninguna los declara → vacíos)
+                       'masterplans': _instancia_registro(nombre).get('masterplans') or {},
+                       'proyectos_con_fases': _instancia_registro(nombre).get('proyectos_con_fases') or []})
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
     # F4: módulos apagados — el cliente no pide lo que la base ya no le da, y el menú no enseña sus pantallas.
     apag = apagados_de(nombre)
