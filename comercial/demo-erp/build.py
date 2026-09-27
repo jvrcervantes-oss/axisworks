@@ -889,6 +889,10 @@ def instancia(nombre):
         os.makedirs(os.path.dirname(d), exist_ok=True)
         open(d, 'w', encoding='utf-8').write(NO_ESTA.format(t=t))
     avisos_para_rotos()
+    # ?v= con la huella de lo que SALE de este build, como en la demo pública (28-sep-2026). Sin esto, la v4 llevaba el
+    # ?v= del fichero de Lawang (guard.js se reescribe entero aquí: mapa de módulos + ficha) y /panel/ iba sin versión:
+    # Hostinger cachea 7 días y el verificador vio el guard.js viejo en /panel/ tras publicar.
+    versiona(DIST)
     # 3. Comprobaciones: ni rastro de la base de Lawang ni de la demo, ni de ninguna clave que no sea publicable.
     restos = []
     for raiz, _d, fichs in os.walk(DIST):
