@@ -150,24 +150,23 @@
   var CODIGO = {}, cuenta = {};
   MODULOS.forEach(function (m) { cuenta[m[2]] = (cuenta[m[2]] || 0) + 1; CODIGO[m[0]] = PREF[m[2]] + '-' + ('0' + cuenta[m[2]]).slice(-2); });
   CAMINO.forEach(function (m, i) { CODIGO[m[0]] = 'NEW-' + ('0' + (i + 1)).slice(-2); });
-  /* ── PACKS (owner, 25-sep: «hay herramientas que deben ir en bloques») ─────────────────────────────────────
-     Un pack es un bloque de módulos que solo funcionan juntos: facturas sin recibís no saben qué está cobrado;
-     el parcelario sin contratos no sabe qué está vendido. Se enciende o apaga ENTERO. Lo que es opcional de
-     verdad va como módulo SUELTO, con lo que necesita debajo. Las dependencias salen de las auditorías de Datos
-     y Desarrollo del 25-sep (qué tablas y pantallas lee cada módulo).
+  /* ── PACKS (owner, 27-sep: «los módulos que dependen de otros van en pack sí o sí») ───────────────────────
+     Salen del registro del ERP (erp/modulos.json → «depende»: qué lee el código de cada módulo), no de la
+     intuición: los 13 que se necesitan entre sí son un solo bloque (Núcleo de venta); lo que depende de él va en
+     un pack que lo requiere; SUELTO solo lo que no depende de nada más que la base. build.py:packs_casan() para el
+     build si esto deja de casar con el registro. Se enciende o apaga cada pack ENTERO.
      [clave, nombre, descripción, módulos, packs que necesita] */
   var PACKS = [
     ['base', 'Base', 'Lo que tiene cualquier empresa: el día, el equipo y los ajustes.', ['home', 'usuarios', 'ajustes'], []],
-    ['ventas', 'Ventas y CRM', 'Del lead a la venta cerrada, con cada cliente y su operación.', ['crm', 'operaciones', 'compradores'], ['base']],
-    ['facturacion', 'Facturación y cobros', 'Facturas, recibís y calendario de cobros, por sociedad y cuenta.', ['facturas', 'recibos', 'productos', 'vencimientos', 'cuentas', 'sociedades'], ['ventas']],
-    ['finanzas', 'Finanzas', 'El dinero de la empresa: panel de dirección, bancos y gastos. La contabilidad, cuando llegue, entra en este pack.', ['finanzas', 'bancos', 'gastos'], ['facturacion']],
-    ['documentos', 'Contratos y documentos', 'Contratos con firma electrónica, soporte al cliente y comunicados.', ['contratos', 'soporte', 'comunicacion'], ['ventas']],
-    ['inmobiliaria', 'Inmobiliaria', 'Para promotoras: parcelario, reservas de parcela, modelos de vivienda y obra.', ['proyectos', 'reservas', 'modelos', 'obra'], ['documentos', 'facturacion']]
+    ['captacion', 'CRM y captación', 'Los leads entran solos y se trabajan desde el CRM, con el setter de WhatsApp y el piloto de campañas.', ['crm', 'setter', 'campanas'], ['base']],
+    ['nucleo', 'Núcleo de venta', 'Clientes, ventas, contratos, facturas y cobros, con el inventario que se vende: se leen unos a otros, así que van juntos.',
+      ['compradores', 'operaciones', 'reservas', 'contratos', 'facturas', 'recibos', 'cuentas', 'comisiones', 'proyectos', 'modelos', 'obra', 'portal', 'soporte'], ['base']],
+    ['finanzas', 'Finanzas', 'El dinero de la empresa: calendario de cobros, panel de dirección y gastos. La contabilidad, cuando llegue, entra aquí.', ['vencimientos', 'finanzas', 'gastos'], ['nucleo']],
+    ['extras', 'Extras', 'Asistentes con IA, piezas de marketing y la comisión de la gestora, sobre el núcleo de venta.', ['asistente', 'peticiones', 'creatividades', 'comisionadmin'], ['nucleo']]
   ];
-  // Sueltos: se añaden uno a uno. [módulo, packs que necesita]
+  // Sueltos: no dependen de ningún otro módulo (solo de la base). [módulo, packs que necesita]
   var SUELTOS = [
-    ['setter', ['ventas']], ['campanas', ['ventas']], ['asistente', ['documentos']], ['comisiones', ['ventas', 'facturacion']],
-    ['portal', ['documentos', 'facturacion']], ['peticiones', ['base']], ['creatividades', ['inmobiliaria']], ['comisionadmin', ['inmobiliaria', 'facturacion']]
+    ['comunicacion', ['base']], ['bancos', ['base']], ['productos', ['base']], ['sociedades', ['base']]
   ];
   var PACK_DE = {}, REQ_SUELTO = {};
   PACKS.forEach(function (p) { p[3].forEach(function (k) { PACK_DE[k] = p[0]; }); });

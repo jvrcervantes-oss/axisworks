@@ -871,7 +871,64 @@ def instancia(nombre):
     print('OK instancia %s en %s: %d ficheros, guard real contra %s' % (nombre, os.path.relpath(destino, AGENCIA), total, host_sb))
 
 
+def packs_casan():
+    """Los packs de catalogo.js tienen que casar con el registro del ERP (owner, 27-sep: «los módulos que dependen de
+    otros van en pack sí o sí»). Para cada módulo, todo lo que su código lee (erp/modulos.json → depende, cerrado
+    transitivamente) tiene que estar en su mismo pack o en los packs que ese pack necesita. Un suelto no puede leer
+    nada fuera de la base. La base se exime: sus lecturas son contadores que con un módulo apagado dan cero (F4)."""
+    registro = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))['modulos']
+    r = subprocess.run(['node', '-e', "global.window={};global.localStorage={getItem:function(){return null},setItem:function(){}};"
+                        "require(process.argv[1]);var C=window.AXW_CATALOGO;"
+                        "console.log(JSON.stringify({packs:C.PACKS,sueltos:C.SUELTOS,modulos:C.MODULOS.map(function(m){return m[0]})}))",
+                        os.path.join(AQUI, 'catalogo.js')], capture_output=True, text=True, encoding='utf-8')
+    if r.returncode:
+        aborta('no puedo leer catalogo.js: ' + r.stderr[:300])
+    cat = json.loads(r.stdout)
+    # Clave del catálogo → clave del registro (nombres distintos para lo mismo; pestañas y pantallas de un módulo).
+    alias = {'crm': 'leads', 'setter': 'leads', 'campanas': 'leads', 'comisionadmin': 'comision-admin',
+             'home': 'base', 'usuarios': 'base', 'ajustes': 'base', 'peticiones': 'asistente'}
+    reg = lambda k: alias.get(k, k)
+    def alcance(k, visto):
+        for d in registro.get(k, {}).get('depende') or []:
+            if d not in visto:
+                visto.add(d)
+                alcance(d, visto)
+        return visto
+    packs = {p[0]: p for p in cat['packs']}
+    def necesita(claves):
+        res, cola = set(), list(claves)
+        while cola:
+            c = cola.pop()
+            if c not in res:
+                res.add(c)
+                cola += packs[c][4]
+        return res
+    donde = {}
+    for p in cat['packs']:
+        for k in p[3]:
+            donde[k] = necesita([p[0]])
+    for k, req in cat['sueltos']:
+        donde[k] = necesita(req) | {'suelto:' + k}
+    sin_sitio = [k for k in cat['modulos'] if k not in donde]
+    if sin_sitio:
+        aborta('módulos del catálogo sin pack ni suelto: ' + ', '.join(sin_sitio))
+    disponible = {}   # clave del registro → claves del catálogo que la traen, por pack
+    for k, ps in donde.items():
+        disponible.setdefault(reg(k), []).append(k)
+    fallos = []
+    for k, ps in donde.items():
+        if reg(k) == 'base':
+            continue
+        for d in sorted(alcance(reg(k), set()) - {'base', reg(k)}):
+            trae = [x for x in disponible.get(d, []) if donde[x] <= ps or x == k]
+            if d in registro and not trae:
+                fallos.append('%s lee %s, que no está en su pack ni en los que su pack necesita' % (k, d))
+    if fallos:
+        aborta('los packs de catalogo.js no casan con erp/modulos.json:\n  ' + '\n  '.join(fallos))
+
+
 def main():
+    packs_casan()
     if not os.path.isfile(DOBLE_QA):
         aborta('falta proyectos/Lawang/_qa_double_guard.js (gitignored: vive solo en este equipo)')
     comprueba_salida()
