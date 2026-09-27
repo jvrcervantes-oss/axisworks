@@ -337,7 +337,7 @@ def datos_instancia():
     alias = {'crm': 'leads', 'comisionadmin': 'comision-admin', 'usuarios': 'base'}
     catalogo = open(os.path.join(AQUI, 'catalogo.js'), encoding='utf-8').read()
     modulos = {}
-    for k in re.findall(r"\[\s*'([a-z_]+)', '[^']*', '(?:Base|Ventas|Documentos|Dinero|Producto y obra)'", catalogo):
+    for k in re.findall(r"\[\s*'([a-z_]+)', '[^']*', '(?:Seguimiento|Documentación|Finanzas|Comunicación|Base de datos|Panel de control)'", catalogo):
         r = registro.get(alias.get(k, k)) or {}
         modulos[k] = {'tablas': sorted(r.get('tablas', [])), 'funciones': sorted(r.get('funciones', []))}
     datos = open(os.path.join(AQUI, 'demo_datos.js'), encoding='utf-8').read()

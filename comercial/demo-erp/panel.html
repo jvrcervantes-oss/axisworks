@@ -185,10 +185,10 @@
 <script>
 (function () {
   var CAT = window.AXW_CATALOGO, INS = window.AXW_INSTANCIA || {}, MODULOS = CAT.MODULOS, CAMINO = CAT.CAMINO;
-  var AREAS = ['Base', 'Ventas', 'Documentos', 'Dinero', 'Producto y obra', 'En camino'];
+  var AREAS = CAT.SECCIONES.concat(['En camino']);   // las secciones del menú del ERP (catalogo.js)
   var ICONO = { home: 'today', usuarios: 'group', ajustes: 'tune', crm: 'filter_alt', setter: 'smart_toy', campanas: 'campaign',
     operaciones: 'swap_horiz', reservas: 'event_available', compradores: 'person_search', comisiones: 'percent',
-    contratos: 'contract', asistente: 'quick_phrases', soporte: 'support_agent', comunicacion: 'mail', portal: 'badge',
+    contratos: 'contract', asistente: 'quick_phrases', productos: 'inventory_2', peticiones: 'approval', soporte: 'support_agent', comunicacion: 'mail', portal: 'badge',
     facturas: 'receipt_long', recibos: 'price_check', vencimientos: 'event_upcoming', cuentas: 'account_balance',
     sociedades: 'corporate_fare', comisionadmin: 'handshake', proyectos: 'map', modelos: 'house', obra: 'construction',
     creatividades: 'imagesmode', contabilidad: 'calculate', finanzas: 'monitoring', bancos: 'account_balance_wallet', gastos: 'shopping_bag', radar: 'radar', dataroom: 'folder_shared',
