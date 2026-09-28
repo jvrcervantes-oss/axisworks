@@ -33,15 +33,15 @@ cerca(r.puestos, 1, 'un puesto');
 cerca(r.valorAno, 24000, 'doce sueldos');
 
 // 0,276 puestos = 0,276·160/(52/12) = 10,19 h/semana → «unas 10 h»
-assert.strictEqual(R.frasePuestos(0.276), 'unas 10 h a la semana de una persona');
-assert.strictEqual(R.frasePuestos(0), 'nada todavía');
+assert.strictEqual(R.frasePuestos(0.276), 'about 10 h a week of one person');
+assert.strictEqual(R.frasePuestos(0), 'nothing yet');
 // El mailto cita lo recortado, no lo tecleado
 r = R.calcula({ leads: '-5', contratos: '1000' }, '-3', '150');
 assert.deepStrictEqual([r.entrada.horas.leads, r.entrada.horas.contratos, r.entrada.coste, r.entrada.pct], [0, 168, 0, 100]);
-assert.strictEqual(R.frasePuestos(0.46), 'media persona a jornada completa');
-assert.strictEqual(R.frasePuestos(0.8), 'casi una persona a jornada completa');
-assert.strictEqual(R.frasePuestos(1), 'una persona a jornada completa');
-assert.strictEqual(R.frasePuestos(2.3), 'unas 2,5 personas a jornada completa');
+assert.strictEqual(R.frasePuestos(0.46), 'half a full-time person');
+assert.strictEqual(R.frasePuestos(0.8), 'almost one full-time person');
+assert.strictEqual(R.frasePuestos(1), 'one full-time person');
+assert.strictEqual(R.frasePuestos(2.3), 'about 2.5 full-time people');
 
 // Cada tarea nombra algo que la portada ya afirma, y lleva su modo
 R.TAREAS.forEach((t) => assert.ok(['solo', 'prepara'].includes(t[3]) && t[2].length > 10, t[0]));

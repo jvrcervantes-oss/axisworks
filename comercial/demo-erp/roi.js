@@ -14,11 +14,11 @@
 
   // [clave, tarea, qué hace el ERP (lo que la portada ya afirma), 'solo' | 'prepara', horas/semana del equipo por defecto]
   var TAREAS = [
-    ['leads', 'Pasar leads al CRM y dar la primera respuesta', 'Los leads de Meta entran solos al CRM y el setter IA contesta en WhatsApp', 'solo', 10],
-    ['contratos', 'Preparar contratos y perseguir firmas', 'El contrato sale de la operación, en tres idiomas, y la firma se recuerda y caduca sola', 'prepara', 8],
-    ['facturas', 'Emitir facturas y recibís', 'Cada factura sale del contrato y del hito que toca', 'prepara', 6],
-    ['cobros', 'Llevar el calendario de cobros', 'Lo cobrado y lo pendiente se calculan con los recibís, no a mano', 'solo', 6],
-    ['comisiones', 'Calcular comisiones', 'La comisión se genera desde la venta', 'solo', 4]
+    ['leads', 'Log leads in the CRM and send the first reply', 'Meta leads land in the CRM on their own and the AI setter replies on WhatsApp', 'solo', 10],
+    ['contratos', 'Draft contracts and chase signatures', 'The contract is built from the deal in three languages, and signature reminders and expiry run on their own', 'prepara', 8],
+    ['facturas', 'Issue invoices and receipts', 'Each invoice comes from the contract and the milestone that is due', 'prepara', 6],
+    ['cobros', 'Keep the payment schedule', 'Paid and outstanding amounts are worked out from the receipts, not by hand', 'solo', 6],
+    ['comisiones', 'Calculate commissions', 'The commission is generated from the sale', 'solo', 4]
   ];
   var DEFECTO = { coste: 2500, pct: 50 };
 
@@ -51,12 +51,12 @@
     // Por debajo de ~0,4 puestos se dicen las horas a la semana reales: una frase fija se quedaba corta hasta 4 veces
     // al lado de la cifra de horas/mes (revisor de código, 28-sep).
     var horasSemana = p * HORAS_MES_JORNADA / SEMANAS_MES;
-    if (horasSemana < 0.5) return 'nada todavía';
-    if (p < 0.4) return 'unas ' + Math.round(horasSemana).toLocaleString('es-ES') + ' h a la semana de una persona';
-    if (p < 0.65) return 'media persona a jornada completa';
-    if (p < 0.9) return 'casi una persona a jornada completa';
-    if (p < 1.15) return 'una persona a jornada completa';
-    return 'unas ' + (Math.round(p * 2) / 2).toLocaleString('es-ES') + ' personas a jornada completa';
+    if (horasSemana < 0.5) return 'nothing yet';
+    if (p < 0.4) return 'about ' + Math.round(horasSemana).toLocaleString('en-GB') + ' h a week of one person';
+    if (p < 0.65) return 'half a full-time person';
+    if (p < 0.9) return 'almost one full-time person';
+    if (p < 1.15) return 'one full-time person';
+    return 'about ' + (Math.round(p * 2) / 2).toLocaleString('en-GB') + ' full-time people';
   }
 
   var api = { TAREAS: TAREAS, DEFECTO: DEFECTO, HORAS_MES_JORNADA: HORAS_MES_JORNADA, SEMANAS_MES: SEMANAS_MES,
