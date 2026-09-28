@@ -624,6 +624,12 @@ def comprueba_resultado(raiz_dir):
 
 
 def verifica():
+    # sel= es la única entrada que llega del navegador a la demo desde otro origen (AXW-70): su test corre en cada
+    # build, no solo cuando alguien se acuerda (revisor, 28-sep).
+    r = subprocess.run(['node', os.path.join(AQUI, 'sel.test.js')], cwd=AQUI, capture_output=True, text=True,
+                       encoding='utf-8', errors='replace')
+    if r.returncode:
+        aborta('sel.test.js falla:\n' + (r.stdout + r.stderr)[-1500:])
     neutraliza_ejemplos()
     print('lecturas *_datos de la v4 con doble en la demo: ' + ', '.join(contrato_guard_demo()))
     malos = []
@@ -815,7 +821,10 @@ def publica():
     # La portada NO va en la demo pública (owner, 28-sep, AXW-70): vive solo en erp. (dist/erp-web); en demo. la raíz
     # redirige a la Home. En local (presentar.cmd, sin --publico) dist/ la sigue llevando en la raíz.
     for f in PORTADA_SOLO:
-        os.remove(os.path.join(DESTINO_PUBLICO, f.replace('/', os.sep)))
+        p = os.path.join(DESTINO_PUBLICO, f.replace('/', os.sep))
+        if not os.path.isfile(p):
+            aborta('la portada no está donde se espera en la demo pública (%s): revisa paginas_propias()' % f)
+        os.remove(p)
     # Solo se sirve desde demo.axisworks.studio: por axisworks.studio/demo/ las rutas absolutas no casan.
     # La raíz ya no es la portada (vive en erp., AXW-70): 302 a la Home de la demo conservando la query (?tour=1&sel=).
     # 302 y no 301 mientras dura el cambio de dominios (Deploy, rev. #146: el navegador guarda un 301 sin caducidad).
