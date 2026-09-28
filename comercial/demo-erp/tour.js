@@ -111,9 +111,15 @@
 
   /* ── Estado ─────────────────────────────────────────────────────────── */
   function lee() { try { var v = JSON.parse(sessionStorage.getItem(CLAVE) || 'null'); return v && typeof v.i === 'number' ? v : null; } catch (e) { return null; } }
-  function guarda(i) { try { sessionStorage.setItem(CLAVE, JSON.stringify({ i: i })); } catch (e) {} }
+  // `en`: la página en la que se guardó. Un paso hero se reanuda solo ahí: si no, al salir del tour sin cerrarlo
+  // navegando por el menú, la tarjeta final reaparecería en cada pantalla.
+  function guarda(i) { try { sessionStorage.setItem(CLAVE, JSON.stringify({ i: i, en: aqui() })); } catch (e) {} }
   function borra() { try { sessionStorage.removeItem(CLAVE); } catch (e) {} }
   function ruta(p) { return p.replace(/\/+$/, '/') || '/'; }
+  /* Los pasos «hero» (apertura y cierre, sin foco) se enseñan en la página en la que se esté (AXW-70, 28-sep-2026):
+     la portada ya no está en el origen de la demo y la raíz de demo.axisworks.studio redirige a la Home, así que
+     navegar a '/' perdía el tour en el redirect. */
+  function enSuSitio(paso) { return !!paso.hero || ruta(paso.p) === aqui(); }
   function aqui() { var r = location.pathname; if (!/\/$/.test(r) && !/\.html$/.test(r)) r += '/'; return r.replace(/index\.html$/, ''); }
 
   /* ── Spring (critically damped por defecto) ─────────────────────────── */
@@ -408,7 +414,7 @@
     var paso = PASOS[n], mio = ++turno;
     deshaceClick();
     guarda(n);
-    if (ruta(paso.p) !== aqui()) {
+    if (!enSuSitio(paso)) {
       raiz.classList.remove('on');
       setTimeout(function () { location.href = paso.p; }, REDUCIDO ? 0 : 260);
       return;
@@ -460,8 +466,10 @@
     setTimeout(function () { if (raiz) { raiz.remove(); raiz = null; } window.__axtTour = false; }, REDUCIDO ? 0 : 500);
     if (aModulos) {
       // El tour acaba en la portada: se queda en el catálogo, para cambiar la selección y repetirlo.
+      // En la demo no hay configurador: se vuelve al de la portada (window.AXW_PORTADA, lo fija el guard de la demo).
       var c = document.getElementById('configurador');
-      if (c) c.scrollIntoView({ behavior: REDUCIDO ? 'auto' : 'smooth' }); else window.scrollTo({ top: 0, behavior: REDUCIDO ? 'auto' : 'smooth' });
+      var portada = typeof window.AXW_PORTADA === 'string' && /^(\/|https?:\/\/)/.test(window.AXW_PORTADA) ? window.AXW_PORTADA : '/';
+      if (c) c.scrollIntoView({ behavior: REDUCIDO ? 'auto' : 'smooth' }); else location.href = portada + '#configurador';
     }
   }
 
@@ -470,7 +478,7 @@
     abierto = true;
     i = n;
     var paso = PASOS[n];
-    if (ruta(paso.p) !== aqui()) { guarda(n); location.href = paso.p; return; }
+    if (!enSuSitio(paso)) { guarda(n); location.href = paso.p; return; }
     guarda(n);
     muestra(paso, ++turno, true);
   }
@@ -484,9 +492,16 @@
     if (!window.AXW_CATALOGO && intentos++ < 40) return setTimeout(alCargar, 50);
     filtraPasos();
     var q = new URLSearchParams(location.search);
-    if (q.get('tour') === '1') return arranca(0);
+    if (q.get('tour') === '1') {
+      // Se quita de la URL al arrancar: recargar a mitad no vuelve a empezar el tour.
+      q.delete('tour');
+      var resto = q.toString();
+      try { history.replaceState(history.state, '', location.pathname + (resto ? '?' + resto : '') + location.hash); }
+      catch (x) { /* MUDO A PROPOSITO: sin replaceState, recargar reinicia el tour; no rompe nada */ }
+      return arranca(0);
+    }
     var st = lee();
-    if (st && PASOS[st.i] && ruta(PASOS[st.i].p) === aqui()) arranca(st.i);
+    if (st && PASOS[st.i] && (PASOS[st.i].hero ? st.en === aqui() : enSuSitio(PASOS[st.i]))) arranca(st.i);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', alCargar);
   else alCargar();

@@ -225,9 +225,44 @@
     return e;
   }
 
+  /* ── La selección viaja en la URL (`sel=`) de la portada a la demo (AXW-70, 28-sep-2026) ─────────────────────
+     La portada vive en erp.axisworks.studio y la demo en demo.axisworks.studio: el localStorage es de cada origen,
+     así que lo marcado se pasa como lista de ids (packs encendidos, sueltos encendidos y «en camino» marcados).
+     leeSel() es la ÚNICA puerta de entrada y no se cree nada de la URL (revisión previa #146, Seguridad): tope de
+     longitud y de número, cada id tiene que existir en PACKS/MODULOS/CAMINO (búsqueda en las listas, nunca como
+     clave de objeto: `__proto__` o `constructor` son ids desconocidos) y lo desconocido se descarta. Sin ningún id
+     válido devuelve null y no se toca nada. Solo decide qué enseña la demo: nunca rol, guard ni módulo real. */
+  var SEL_MAX_LARGO = 2048;
+  function enLista(lista, id) { for (var i = 0; i < lista.length; i++) if (lista[i][0] === id) return true; return false; }
+  function codificaSel(e) {
+    var ids = [];
+    PACKS.forEach(function (p) { if (packActivo(e, p[0])) ids.push(p[0]); });
+    SUELTOS.forEach(function (s) { if (e[s[0]]) ids.push(s[0]); });
+    CAMINO.forEach(function (c) { if (e[c[0]]) ids.push(c[0]); });
+    return ids.join(',');
+  }
+  function leeSel(crudo) {
+    if (typeof crudo !== 'string' || !crudo || crudo.length > SEL_MAX_LARGO) return null;
+    var ids = crudo.split(',');
+    if (ids.length > MODULOS.length) return null;
+    var e = {}, alguno = false;
+    MODULOS.forEach(function (m) { e[m[0]] = false; });   // todas las claves: leeEstado() rellena las que faltan a su manera
+    CAMINO.forEach(function (c) { e[c[0]] = false; });
+    ids.forEach(function (id) {
+      if (!/^[a-z]{1,24}$/.test(id)) return;
+      if (enLista(PACKS, id)) { ponPack(e, id, true); alguno = true; }   // antes que MODULOS: `finanzas` es pack y módulo
+      else if (enLista(MODULOS, id)) { if (PACK_DE[id]) ponPack(e, PACK_DE[id], true); else ponSuelto(e, id, true); alguno = true; }
+      else if (enLista(CAMINO, id)) { e[id] = true; alguno = true; }
+    });
+    if (!alguno) return null;
+    MODULOS.forEach(function (m) { if (m[7]) e[m[0]] = true; });   // la base no se apaga
+    return e;
+  }
+
   window.AXW_CATALOGO = { SECCIONES: SECCIONES, MODULOS: MODULOS, CAMINO: CAMINO, RUTAS: RUTAS, PESTANAS: PESTANAS,
     leeEstado: function () { return normalizaPacks(leeEstado()); }, guardaEstado: guardaEstado, moduloDeRuta: moduloDeRuta, nombre: nombre,
     IA: IA, recuento: recuento, CODIGO: CODIGO,
     PACKS: PACKS, SUELTOS: SUELTOS, PACK_DE: PACK_DE, REQ_SUELTO: REQ_SUELTO, pack: pack, packActivo: packActivo,
-    ponPack: ponPack, ponSuelto: ponSuelto, dependientesDe: dependientesDe };
+    ponPack: ponPack, ponSuelto: ponSuelto, dependientesDe: dependientesDe,
+    codificaSel: codificaSel, leeSel: leeSel, SEL_MAX_LARGO: SEL_MAX_LARGO };
 })();

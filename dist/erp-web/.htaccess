@@ -1,0 +1,27 @@
+# GENERADO por comercial/demo-erp/build.py --publico — no editar.
+# erp.axisworks.studio: la web comercial del ERP (portada + configurador), lista cerrada de ficheros.
+# Todo lo demás es del ERP real (app.). 302 mientras dura el cambio de dominios (AXW-70): 301 al cerrarlo.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTP_HOST} !^erp\.axisworks\.studio$ [NC]
+  RewriteRule ^(.*)$ https://erp.axisworks.studio/$1 [R=302,L]
+  RewriteCond %{QUERY_STRING} (^|&)(code|token_hash|type)= [NC]
+  RewriteRule ^$ https://app.axisworks.studio/ [R=302,L]
+  RewriteCond %{REQUEST_URI} !^/(index\.html|demo/landing\.css|demo/catalogo\.js|demo/roi\.js|favicon\.png|favicon\.ico|robots\.txt)?$
+  RewriteRule ^ https://app.axisworks.studio%{REQUEST_URI} [R=302,L]
+</IfModule>
+<IfModule mod_headers.c>
+  Header always set X-Robots-Tag "noindex, nofollow"
+  Header always set Strict-Transport-Security "max-age=31536000"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+  <FilesMatch "\.(html|js|css|json)$">
+    Header unset Expires
+    Header unset Cache-Control
+    Header always set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
+DirectoryIndex index.html

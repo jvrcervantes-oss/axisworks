@@ -2,15 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<script id="axw-config">window.AXW_DEMO_URL = '';</script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script id="axw-config">(function(){try{[localStorage,sessionStorage].forEach(function(s){for(var i=s.length-1;i>=0;i--){var k=s.key(i);if(k&&k.indexOf('sb-')===0)s.removeItem(k);}});}catch(e){}})();
+(function(){var h=location.hash||'';if(/(^#|&)(access_token|refresh_token|token_hash|error_description)=/.test(h))location.replace("https://app.axisworks.studio"+location.pathname+location.search+h);})();
+window.AXW_DEMO_URL = "https://demo.axisworks.studio";</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>AxisWorks ERP · Demo</title>
-<!-- Portada de la demo (build.py la copia a dist/index.html). Calco de composición y piel del Stitch
-     «NexusERP · plataforma ERP modular» (ClaudeCode/ERP/stitch_modular_erp_landing_page, 24-sep): mismo
-     Tailwind config y clases. Su texto NO: logos de clientes, SLA, certificaciones, testimonios con
-     personas y formulario eran inventados; aquí solo hay capacidades que existen en la v4. El catálogo
-     sale de /demo/catalogo.js (fuente única con la demo y el tour). -->
+
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%234f46e5%22/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +17,7 @@
 <style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}</style>
 
 <style>html{scroll-behavior:smooth}.module-card:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}</style>
-<link href="/demo/landing.css?v=0" rel="stylesheet">
+<link href="/demo/landing.css?v=01dc6dab" rel="stylesheet">
 </head>
 <body class="bg-surface font-body-md text-on-surface antialiased">
 <header class="fixed top-0 left-0 right-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(11,28,48,0.04)]">
@@ -38,7 +36,7 @@
 </nav>
 <div class="flex items-center gap-space-sm shrink-0">
 <a class="hidden md:inline-flex items-center justify-center gap-1 px-space-md py-space-sm rounded-lg bg-surface-container-low text-on-surface font-label-md text-label-md hover:bg-surface-container hover:text-on-surface transition-all" data-tour role="button" href="#"><span class="material-symbols-outlined text-[18px] text-primary">play_circle</span>Take the tour</a>
-<a class="inline-flex items-center justify-center px-space-md py-space-sm rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shadow-[0_4px_16px_rgba(79,70,229,0.25)] hover:bg-primary transition-all" href="/intranet/v4/home/">Open the demo</a>
+<a class="inline-flex items-center justify-center px-space-md py-space-sm rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shadow-[0_4px_16px_rgba(79,70,229,0.25)] hover:bg-primary transition-all" href="https://demo.axisworks.studio/intranet/v4/home/">Open the demo</a>
 </div>
 </div>
 </header>
@@ -179,7 +177,7 @@ Switch on only the modules you use today. Sales, contracts, invoicing and collec
 </div>
 <div class="flex flex-col gap-space-xs">
 <a class="w-full mt-space-xs py-space-md rounded-lg bg-primary-container text-on-primary font-label-md text-label-md shadow-lg shadow-primary-container/30 hover:bg-primary transition-all flex items-center justify-center gap-2" data-tour role="button" href="#"><span>Take the tour with these modules</span><span class="material-symbols-outlined text-[18px]">play_arrow</span></a>
-<a class="w-full py-space-sm rounded-lg bg-surface-container text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-all flex items-center justify-center gap-2" href="/intranet/v4/home/"><span class="material-symbols-outlined text-[18px] text-primary">login</span><span>Open the demo without the tour</span></a>
+<a class="w-full py-space-sm rounded-lg bg-surface-container text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-all flex items-center justify-center gap-2" href="https://demo.axisworks.studio/intranet/v4/home/"><span class="material-symbols-outlined text-[18px] text-primary">login</span><span>Open the demo without the tour</span></a>
 <div class="flex items-center justify-center gap-space-xs text-label-sm font-label-sm text-on-surface-variant mt-1"><span class="material-symbols-outlined text-[14px] text-secondary">verified_user</span><span>Custom pricing: we quote it with your proposal</span></div>
 </div>
 </div>
@@ -335,7 +333,7 @@ Switch on only the modules you use today. Sales, contracts, invoicing and collec
 <p class="font-body-xl text-body-xl text-primary-fixed max-w-2xl mt-space-md mb-space-xl">Walk through the ERP with the modules you selected, using the developer case: from first contact with a client to handover.</p>
 <div class="flex flex-col sm:flex-row items-center gap-space-md w-full max-w-md justify-center">
 <button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-xl py-space-md rounded-lg bg-surface-container-lowest text-primary font-label-md text-label-md shadow-xl hover:bg-surface-bright transition-all" data-tour type="button"><span>Start the tour</span><span class="material-symbols-outlined text-[18px]">play_arrow</span></button>
-<a class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-lg py-space-md rounded-lg bg-surface-container-lowest/10 backdrop-blur-md text-on-primary font-label-md text-label-md hover:bg-surface-container-lowest/20 transition-all" href="/intranet/v4/home/"><span class="material-symbols-outlined text-[18px]">login</span><span>Open the demo</span></a>
+<a class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-lg py-space-md rounded-lg bg-surface-container-lowest/10 backdrop-blur-md text-on-primary font-label-md text-label-md hover:bg-surface-container-lowest/20 transition-all" href="https://demo.axisworks.studio/intranet/v4/home/"><span class="material-symbols-outlined text-[18px]">login</span><span>Open the demo</span></a>
 </div>
 <p class="font-body-sm text-body-sm text-primary-fixed/80 mt-space-lg">Sample data · Nothing leaves this browser</p>
 </div>
@@ -360,7 +358,7 @@ Switch on only the modules you use today. Sales, contracts, invoicing and collec
 <p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">The guided tour shows every module you selected, using sample data.</p>
 <div class="flex flex-col sm:flex-row gap-space-sm">
 <button class="px-space-lg py-space-sm rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container transition-all" data-tour type="button">Guided tour</button>
-<a class="px-space-lg py-space-sm rounded-lg bg-surface text-on-surface font-label-md text-label-md hover:bg-surface-container transition-all text-center" href="/intranet/v4/home/">Open the demo</a>
+<a class="px-space-lg py-space-sm rounded-lg bg-surface text-on-surface font-label-md text-label-md hover:bg-surface-container transition-all text-center" href="https://demo.axisworks.studio/intranet/v4/home/">Open the demo</a>
 </div>
 </div>
 </div>
@@ -369,256 +367,14 @@ Switch on only the modules you use today. Sales, contracts, invoicing and collec
 <div class="flex flex-col gap-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Modules</span><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#configurador">Sales pipeline</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#configurador">Documents</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#configurador">Finance</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#configurador">Communication</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#configurador">Database</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#configurador">Control panel</a></div>
 <div class="flex flex-col gap-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Platform</span><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#configurador">Configurator</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#roi">ROI calculator</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#capacidades">Capabilities</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#integraciones">Integrations</a></div>
 <div class="flex flex-col gap-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Resources</span><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#caso">Case study</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#faq">FAQ</a></div>
-<div class="flex flex-col gap-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Demo</span><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="/intranet/v4/home/">Open the demo</a><button class="text-left font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" data-tour type="button">Guided tour</button></div>
+<div class="flex flex-col gap-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Demo</span><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="https://demo.axisworks.studio/intranet/v4/home/">Open the demo</a><button class="text-left font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" data-tour type="button">Guided tour</button></div>
 </div>
 <div class="pt-space-md border-t border-surface-container flex flex-col md:flex-row justify-between gap-space-sm font-body-sm text-body-sm text-on-surface-variant"><span>© 2026 AxisWorks. Demo with sample data.</span><span>No action leaves this browser.</span></div>
 </div>
 </footer>
-<script src="/demo/catalogo.js"></script>
-<script>
-(function () {
-  /* Catálogo por SECCIONES del menú del ERP (owner, 27-sep: «agrupa por secciones»). Los packs siguen siendo
-     bloques de dependencia (owner, 25-sep: «hay herramientas que deben ir en bloques»): tocar un módulo de un pack
-     enciende o apaga el pack entero, como en el panel. Secciones, packs y sueltos viven en /demo/catalogo.js. */
-  var CAT = window.AXW_CATALOGO, MODULOS = CAT.MODULOS, CAMINO = CAT.CAMINO, PACKS = CAT.PACKS;
-  /* Origen de la demo (AXW-70, 28-sep-2026): '' = el mismo servidor (presentar.cmd, en local); en erp.axisworks.studio
-     build.py pone https://demo.axisworks.studio en la primera línea del <head>. */
-  var DEMO = typeof window.AXW_DEMO_URL === 'string' ? window.AXW_DEMO_URL : '';
-  var estado = CAT.leeEstado();
-  function guarda() { CAT.guardaEstado(estado); }
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function ms(n, c) { return '<span class="material-symbols-outlined ' + (c || '') + '" aria-hidden="true">' + n + '</span>'; }
-  var ICONO_SECCION = { 'Sales pipeline': 'trending_up', 'Documents': 'description', 'Finance': 'account_balance',
-    'Communication': 'forum', 'Database': 'apartment', 'Control panel': 'dashboard', camino: 'rocket_launch' };
-
-  /* Cada módulo con su sección (o «camino»), su pack si va en bloque, para pintar y para buscar */
-  var TODOS = [];
-  MODULOS.forEach(function (m) {
-    var pk = CAT.PACK_DE[m[0]];
-    TODOS.push({ k: m[0], nombre: m[1], grupo: m[2], tags: m[3], caps: m[5], url: m[6], base: pk === 'base', pack: pk && pk !== 'base' ? pk : null,
-      suelto: !pk, camino: false, codigo: CAT.CODIGO[m[0]], req: CAT.REQ_SUELTO[m[0]] || [] });
-  });
-  CAMINO.forEach(function (m) {
-    TODOS.push({ k: m[0], nombre: m[1], grupo: 'camino', tags: ['In development'], caps: [m[2]], url: null, suelto: false, camino: true, codigo: CAT.CODIGO[m[0]], req: [] }); });
-  var GRUPOS = CAT.SECCIONES.map(function (s) { return { k: s, nombre: s }; })
-    .concat([{ k: 'camino', nombre: 'On the way', desc: 'In development. Tick it if you are interested and we will let you know.' }]);
-  function nombrePack(k) { var p = CAT.pack(k); return p ? p[1] : k; }
-
-  function tarjeta(m) {
-    var interactivo = !m.base;
-    var pr = m.camino ? 'Coming soon' : m.base ? 'Included' : '';
-    return '<div class="module-card relative p-3 rounded-xl border border-surface-container ' + (interactivo ? 'cursor-pointer' : 'cursor-default') + ' transition-all" data-k="' + m.k + '">' +
-      '<div class="flex items-start justify-between gap-2"><div class="flex items-center gap-1.5 flex-wrap">' +
-      '<span class="font-label-sm font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[11px]">' + m.codigo + '</span>' +
-      '<span class="bg-surface-container text-on-surface-variant px-1.5 py-0.5 rounded text-[10px] font-semibold">' + esc(m.tags[0] || '') + '</span></div>' +
-      '<div class="flex items-center gap-1.5 shrink-0"><span class="font-bold text-primary text-sm">' + pr + '</span>' +
-      (interactivo ? '<button type="button" class="chk w-5 h-5 rounded-full flex items-center justify-center" role="switch"></button>'
-                   : '<span class="chk w-5 h-5 rounded-full flex items-center justify-center"></span>') + '</div></div>' +
-      '<h4 class="font-headline-sm text-[15px] text-on-surface font-semibold mt-1">' + esc(m.nombre) + '</h4>' +
-      '<ul class="text-[12px] text-on-surface-variant space-y-0.5 mt-1">' + m.caps.slice(0, 2).map(function (c) {
-        return '<li class="flex items-start gap-1">' + ms('check', 'text-secondary text-[14px] mt-[1px]') + '<span>' + esc(c) + '</span></li>'; }).join('') + '</ul>' +
-      (m.pack ? '<p class="text-[11px] text-outline mt-1">Comes as a block: ' + esc(nombrePack(m.pack)) + ' pack</p>'
-              : m.suelto && m.req.filter(function (r) { return r !== 'base'; }).length ? '<p class="text-[11px] text-outline mt-1">Requires: ' + esc(m.req.filter(function (r) { return r !== 'base'; }).map(nombrePack).join(' and ')) + '</p>' : '') +
-      (m.url ? '<a class="inline-flex items-center gap-0.5 mt-1.5 text-[11px] font-semibold text-primary hover:underline" href="' + DEMO + m.url + '">View in the demo' + ms('arrow_outward', 'text-[13px]') + '</a>' : '') +
-      '</div>';
-  }
-  document.getElementById('modules-container').innerHTML = GRUPOS.map(function (g) {
-    var mods = TODOS.filter(function (m) { return m.grupo === g.k; });
-    var cabeza = '<span class="text-label-sm font-label-sm text-on-surface-variant">' + mods.length + ' modules</span>';
-    return '<div class="cat-section bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container" data-grupo="' + g.k + '">' +
-      '<div class="flex items-start justify-between gap-space-sm pb-space-sm mb-space-sm border-b border-surface-container"><div class="flex items-start gap-space-xs min-w-0">' +
-      '<div class="w-8 h-8 shrink-0 rounded-lg bg-primary-fixed text-primary flex items-center justify-center">' + ms(ICONO_SECCION[g.k] || 'widgets', 'text-[18px]') + '</div>' +
-      '<div class="min-w-0"><h3 class="font-headline-sm text-headline-sm text-on-surface">' + esc(g.nombre) + '</h3>' +
-      (g.desc ? '<p class="text-[12px] text-on-surface-variant">' + esc(g.desc) + '</p>' : '') + '</div></div>' +
-      '<div class="flex items-center gap-2 shrink-0">' + cabeza + '</div></div>' +
-      '<div class="grid grid-cols-1 md:grid-cols-2 gap-3">' + mods.map(tarjeta).join('') + '</div></div>';
-  }).join('');
-  var BTN_ON = 'cat-btn px-3 py-1.5 rounded-full bg-primary text-on-primary shrink-0 transition-all';
-  var BTN_OFF = 'cat-btn px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface shrink-0 transition-all';
-  document.getElementById('category-filters').innerHTML = [{ k: 'Todos', nombre: 'All' }].concat(GRUPOS).map(function (g, i) {
-    var n = g.k === 'Todos' ? TODOS.length : TODOS.filter(function (m) { return m.grupo === g.k; }).length;
-    return '<button class="' + (i ? BTN_OFF : BTN_ON) + '" data-area="' + esc(g.k) + '" type="button">' + esc(g.nombre) + ' (' + n + ')</button>';
-  }).join('');
-  document.getElementById('n-cat').textContent = TODOS.length;
-  document.getElementById('m-mod').textContent = MODULOS.length;
-  document.getElementById('m-cam').textContent = CAMINO.length;
-
-  /* Aviso de lo que se movió de más al encender o apagar un bloque: se dice, no se hace en silencio. */
-  var avisoT;
-  function avisa(txt) {
-    var a = document.getElementById('cfg-aviso');
-    if (!a) {
-      a = document.createElement('div'); a.id = 'cfg-aviso'; a.setAttribute('role', 'status'); a.setAttribute('aria-live', 'polite');
-      a.className = 'fixed left-1/2 -translate-x-1/2 bottom-6 z-50 max-w-[92vw] px-4 py-2.5 rounded-xl bg-on-surface text-surface font-body-sm text-body-sm shadow-xl transition-opacity';
-      document.body.appendChild(a);
-    }
-    a.textContent = txt; a.style.opacity = '1';
-    clearTimeout(avisoT); avisoT = setTimeout(function () { a.style.opacity = '0'; }, 3600);
-  }
-
-  var ACTIVA = ['border-primary/40', 'bg-gradient-to-r', 'from-surface-container-lowest', 'via-primary-fixed/20', 'to-surface-container-lowest', 'shadow-sm'];
-  function pinta() {
-    var pills = [], interes = [], nPacks = 0, nSueltos = 0;
-    document.querySelectorAll('.module-card').forEach(function (el) {
-      var k = el.getAttribute('data-k'), m = TODOS.filter(function (x) { return x.k === k; })[0], on = !!estado[k];
-      ACTIVA.forEach(function (c) { el.classList.toggle(c, on); });
-      // El borde de base se QUITA al activar (27-sep-2026, Tailwind compilado): con el Play CDN, border-primary/40
-      // ganaba solo porque se generaba después; compilado, el orden es alfabético y border-surface-container le ganaba.
-      el.classList.toggle('border-surface-container', !on);
-      el.classList.toggle('opacity-70', !on);
-      var chk = el.querySelector('.chk');
-      if (!m.base) {
-        chk.setAttribute('aria-checked', String(on));
-        chk.setAttribute('aria-label', m.camino ? 'I am interested: ' + m.nombre : (on ? 'Switch off ' : 'Switch on ') + (m.pack ? 'the ' + nombrePack(m.pack) + ' pack' : m.nombre));
-      }
-      if (m.camino) {
-        chk.className = 'chk h-5 px-2 rounded-full flex items-center justify-center gap-0.5 text-[11px] font-semibold whitespace-nowrap ' + (on ? 'bg-secondary text-on-secondary' : 'bg-surface-container text-on-surface-variant');
-        chk.innerHTML = (on ? ms('check', 'text-[13px]') + 'We will let you know' : 'I am interested');
-        if (on) interes.push(m.nombre);
-      } else {
-        chk.className = 'chk w-5 h-5 rounded-full flex items-center justify-center ' + (on ? 'bg-primary text-on-primary' : 'bg-surface-container text-outline');
-        chk.innerHTML = ms(on ? 'check' : 'add', 'text-[14px]');
-      }
-      if (on && m.suelto) {
-        nSueltos++;
-        pills.push('<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-container text-on-surface font-label-sm text-label-sm"><span>' + esc(m.nombre) + '</span>' +
-          '<button type="button" class="inline-flex" data-quita="' + k + '" aria-label="Remove ' + esc(m.nombre) + '">' + ms('close', 'text-[14px] text-outline hover:text-error') + '</button></div>');
-      }
-    });
-    var pillsPack = [];
-    PACKS.forEach(function (p) {
-      if (!CAT.packActivo(estado, p[0])) return;
-      if (p[0] !== 'base') nPacks++;
-      pillsPack.push('<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary font-label-sm text-label-sm"><span>' + esc(p[1]) + ' pack</span>' +
-        (p[0] === 'base' ? '' : '<button type="button" class="inline-flex" data-quita-pack="' + p[0] + '" aria-label="Remove the ' + esc(p[1]) + ' pack' + '">' + ms('close', 'text-[14px] text-outline hover:text-error') + '</button>') + '</div>');
-    });
-    pills = pillsPack.concat(pills);
-    var c = CAT.recuento(estado);
-    document.getElementById('selected-counter-badge').textContent = (nPacks + 1) + (nPacks ? ' packs · ' : ' pack · ') + c.activos + ' modules';
-    document.getElementById('catalog-coverage-label').textContent = Math.round(c.activos * 100 / MODULOS.length) + '% of the catalogue';
-    document.getElementById('active-modules-list').innerHTML = pills.join('');
-    var ni = document.getElementById('interes');
-    ni.textContent = interes.length ? 'We will let you know when these are out: ' + interes.join(', ') + '.' : '';
-    ni.classList.toggle('hidden', !interes.length);
-    document.getElementById('summary-mod-lbl').textContent = 'Packs: ' + nPacks + (nSueltos ? ' · single modules: ' + nSueltos : '');
-    document.getElementById('summary-subtotal').textContent = c.activos + ' modules';
-    enlacesDemo();
-  }
-  /* La selección viaja en la URL (`sel=`): la demo está en otro origen y no ve este localStorage. Se reescriben los
-     enlaces a la demo cada vez que cambia la selección (así también vale copiar el enlace o abrirlo en otra pestaña).
-     El tour arranca en la demo (?tour=1): esta página ya no carga tour.js. */
-  function urlTour() { return DEMO + '/intranet/v4/home/?tour=1&sel=' + CAT.codificaSel(estado); }
-  function enlacesDemo() {
-    var sel = CAT.codificaSel(estado);
-    document.querySelectorAll('a[href^="' + DEMO + '/intranet/"]').forEach(function (a) {
-      var u = new URL(a.getAttribute('href'), location.href);
-      u.searchParams.set('sel', sel);
-      a.setAttribute('href', DEMO ? u.href : u.pathname + u.search + u.hash);
-    });
-    document.querySelectorAll('a[data-tour]').forEach(function (a) { a.setAttribute('href', urlTour()); });
-  }
-  document.addEventListener('click', function (e) {
-    var d = e.target.closest('[data-tour]');
-    if (!d) return;
-    e.preventDefault();
-    location.href = urlTour();
-  });
-  function dice(movidos, on) {
-    if (movidos.length) avisa((on ? 'Also switched on: ' : 'Also switched off, because it depended on it: ') + movidos.join(', ') + '.');
-  }
-  function alternaPack(k) {
-    var on = !CAT.packActivo(estado, k);
-    dice(CAT.ponPack(estado, k, on), on); guarda(); pinta();
-  }
-  function alternaSuelto(k) {
-    var m = TODOS.filter(function (x) { return x.k === k; })[0];
-    if (!m || m.base) return;
-    if (m.camino) { estado[k] = !estado[k]; guarda(); pinta(); return; }
-    if (m.pack) { alternaPack(m.pack); return; }
-    var on = !estado[k];
-    dice(CAT.ponSuelto(estado, k, on), on); guarda(); pinta();
-  }
-  var areaActual = 'Todos';
-  function filtra() {
-    var q = document.getElementById('module-search').value.trim().toLowerCase();
-    document.querySelectorAll('.cat-section').forEach(function (sec) {
-      var vis = 0;
-      sec.querySelectorAll('.module-card').forEach(function (el) {
-        var m = TODOS.filter(function (x) { return x.k === el.getAttribute('data-k'); })[0];
-        var texto = (m.nombre + ' ' + m.codigo + ' ' + m.tags.join(' ') + ' ' + m.caps.join(' ') + ' ' + m.grupo + ' ' + (m.pack ? nombrePack(m.pack) : '')).toLowerCase();
-        var ok = (areaActual === 'Todos' || m.grupo === areaActual) && (!q || texto.indexOf(q) !== -1);
-        el.classList.toggle('hidden', !ok); if (ok) vis++;
-      });
-      sec.classList.toggle('hidden', !vis);
-    });
-  }
-  document.addEventListener('click', function (ev) {
-    var q = ev.target.closest('[data-quita]');
-    if (q) { estado[q.getAttribute('data-quita')] = false; guarda(); pinta(); return; }
-    var qp = ev.target.closest('[data-quita-pack]');
-    if (qp) { dice(CAT.ponPack(estado, qp.getAttribute('data-quita-pack'), false), false); guarda(); pinta(); return; }
-    var s = ev.target.closest('[data-seleccion]');
-    if (s) {
-      var todo = s.getAttribute('data-seleccion') === 'todo';
-      PACKS.forEach(function (p) { CAT.ponPack(estado, p[0], todo); });
-      CAT.SUELTOS.forEach(function (x) { CAT.ponSuelto(estado, x[0], todo); });
-      guarda(); pinta(); return;
-    }
-    if (ev.target.closest('a')) return;
-    var card = ev.target.closest('.module-card');
-    if (card) { alternaSuelto(card.getAttribute('data-k')); return; }
-    var f = ev.target.closest('#category-filters button');
-    if (f) {
-      areaActual = f.getAttribute('data-area');
-      document.querySelectorAll('#category-filters button').forEach(function (b) { b.className = b === f ? BTN_ON : BTN_OFF; });
-      filtra();
-    }
-  });
-  document.getElementById('module-search').addEventListener('input', filtra);
-  pinta();
-})();
-</script>
-<script src="/demo/roi.js"></script>
-<script>
-(function () {
-  /* Calculadora de horas liberadas: el cálculo vive en /demo/roi.js (función pura con test); aquí solo se pinta.
-     Nada se guarda ni se envía: el mailto lleva solo las cifras que el visitante acaba de escribir. */
-  var R = window.AXW_ROI;
-  if (!R) return;
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  var caja = document.getElementById('roi-tareas');
-  caja.innerHTML = R.TAREAS.map(function (t) {
-    var solo = t[3] === 'solo';
-    return '<div class="flex items-center gap-3 p-3 rounded-xl border border-outline-variant bg-surface-container-lowest">' +
-      '<div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-1.5"><span class="text-[13px] font-semibold text-on-surface">' + esc(t[1]) + '</span>' +
-      '<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold ' + (solo ? 'bg-emerald-50 text-emerald-700' : 'bg-primary-fixed text-on-primary-fixed') + '">' + (solo ? 'Automatic' : 'Prepared for you') + '</span></div>' +
-      '<p class="text-[11px] text-on-surface-variant mt-0.5">' + esc(t[2]) + '</p></div>' +
-      '<label class="shrink-0 flex items-center gap-1 text-[11px] text-on-surface-variant"><input class="w-16 rounded-lg border border-outline-variant bg-surface-container-low px-2 py-1 text-right font-mono text-[13px] text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container" data-roi="' + t[0] + '" inputmode="decimal" min="0" max="168" type="number" value="' + t[4] + '" aria-label="Hours per week: ' + esc(t[1]) + '">h</label>' +
-      '</div>';
-  }).join('');
-  var $ = function (id) { return document.getElementById(id); };
-  function cifra(n, dec) { return n.toLocaleString('en-GB', { maximumFractionDigits: dec || 0, minimumFractionDigits: 0 }); }
-  function pinta() {
-    var horas = {};
-    document.querySelectorAll('[data-roi]').forEach(function (i) { horas[i.getAttribute('data-roi')] = i.value; });
-    var pct = $('roi-pct').value, mon = $('roi-moneda').value;
-    var r = R.calcula(horas, $('roi-coste').value, pct);
-    $('roi-pct-val').textContent = pct + '%';
-    $('roi-horas').textContent = cifra(r.horasMes) + ' h';
-    $('roi-puestos').textContent = R.frasePuestos(r.puestos);
-    $('roi-valor').textContent = cifra(r.valorAno) + ' ' + mon + ' / year';
-    $('roi-valor-mes').textContent = 'About ' + cifra(r.valorMes) + ' ' + mon + ' a month, based on ' + cifra(r.horasSemanaEquipo, 1) + ' h/week from your team.';
-    var cuerpo = 'Hi, I used the AxisWorks ERP calculator:\n\n' +
-      R.TAREAS.map(function (t) { return '- ' + t[1] + ': ' + cifra(r.entrada.horas[t[0]], 1) + ' h/week'; }).join('\n') +
-      '\n- Monthly cost per person: ' + cifra(r.entrada.coste) + ' ' + mon +
-      '\n- Share the ERP would take on (assumed): ' + r.entrada.pct + '%' +
-      '\n\nIndicative result: ' + cifra(r.horasMes) + ' h/month freed, ' + cifra(r.valorAno) + ' ' + mon + '/year.\n\nI would like a quote.';
-    $('roi-mail').href = 'mailto:hello@axisworks.studio?subject=' + encodeURIComponent('AxisWorks ERP quote') + '&body=' + encodeURIComponent(cuerpo);
-  }
-  document.getElementById('roi').addEventListener('input', pinta);
-  document.getElementById('roi').addEventListener('change', pinta);
-  pinta();
-})();
-</script>
-<script>document.querySelectorAll(".material-symbols-outlined").forEach(function (e) { e.setAttribute("aria-hidden", "true"); });</script>
+<script src="/demo/catalogo.js?v=a728ba6e"></script>
+<script>(function(){var CAT=window.AXW_CATALOGO,MODULOS=CAT.MODULOS,CAMINO=CAT.CAMINO,PACKS=CAT.PACKS;var DEMO=typeof window.AXW_DEMO_URL==="string"?window.AXW_DEMO_URL:"";var estado=CAT.leeEstado();function guarda(){CAT.guardaEstado(estado)}function esc(s){return String(s).replace(/[&<>"]/g,(function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]}))}function ms(n,c){return'<span class="material-symbols-outlined '+(c||"")+'" aria-hidden="true">'+n+"</span>"}var ICONO_SECCION={"Sales pipeline":"trending_up",Documents:"description",Finance:"account_balance",Communication:"forum",Database:"apartment","Control panel":"dashboard",camino:"rocket_launch"};var TODOS=[];MODULOS.forEach((function(m){var pk=CAT.PACK_DE[m[0]];TODOS.push({k:m[0],nombre:m[1],grupo:m[2],tags:m[3],caps:m[5],url:m[6],base:pk==="base",pack:pk&&pk!=="base"?pk:null,suelto:!pk,camino:false,codigo:CAT.CODIGO[m[0]],req:CAT.REQ_SUELTO[m[0]]||[]})}));CAMINO.forEach((function(m){TODOS.push({k:m[0],nombre:m[1],grupo:"camino",tags:["In development"],caps:[m[2]],url:null,suelto:false,camino:true,codigo:CAT.CODIGO[m[0]],req:[]})}));var GRUPOS=CAT.SECCIONES.map((function(s){return{k:s,nombre:s}})).concat([{k:"camino",nombre:"On the way",desc:"In development. Tick it if you are interested and we will let you know."}]);function nombrePack(k){var p=CAT.pack(k);return p?p[1]:k}function tarjeta(m){var interactivo=!m.base;var pr=m.camino?"Coming soon":m.base?"Included":"";return'<div class="module-card relative p-3 rounded-xl border border-surface-container '+(interactivo?"cursor-pointer":"cursor-default")+' transition-all" data-k="'+m.k+'">'+'<div class="flex items-start justify-between gap-2"><div class="flex items-center gap-1.5 flex-wrap">'+'<span class="font-label-sm font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[11px]">'+m.codigo+"</span>"+'<span class="bg-surface-container text-on-surface-variant px-1.5 py-0.5 rounded text-[10px] font-semibold">'+esc(m.tags[0]||"")+"</span></div>"+'<div class="flex items-center gap-1.5 shrink-0"><span class="font-bold text-primary text-sm">'+pr+"</span>"+(interactivo?'<button type="button" class="chk w-5 h-5 rounded-full flex items-center justify-center" role="switch"></button>':'<span class="chk w-5 h-5 rounded-full flex items-center justify-center"></span>')+"</div></div>"+'<h4 class="font-headline-sm text-[15px] text-on-surface font-semibold mt-1">'+esc(m.nombre)+"</h4>"+'<ul class="text-[12px] text-on-surface-variant space-y-0.5 mt-1">'+m.caps.slice(0,2).map((function(c){return'<li class="flex items-start gap-1">'+ms("check","text-secondary text-[14px] mt-[1px]")+"<span>"+esc(c)+"</span></li>"})).join("")+"</ul>"+(m.pack?'<p class="text-[11px] text-outline mt-1">Comes as a block: '+esc(nombrePack(m.pack))+" pack</p>":m.suelto&&m.req.filter((function(r){return r!=="base"})).length?'<p class="text-[11px] text-outline mt-1">Requires: '+esc(m.req.filter((function(r){return r!=="base"})).map(nombrePack).join(" and "))+"</p>":"")+(m.url?'<a class="inline-flex items-center gap-0.5 mt-1.5 text-[11px] font-semibold text-primary hover:underline" href="'+DEMO+m.url+'">View in the demo'+ms("arrow_outward","text-[13px]")+"</a>":"")+"</div>"}document.getElementById("modules-container").innerHTML=GRUPOS.map((function(g){var mods=TODOS.filter((function(m){return m.grupo===g.k}));var cabeza='<span class="text-label-sm font-label-sm text-on-surface-variant">'+mods.length+" modules</span>";return'<div class="cat-section bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container" data-grupo="'+g.k+'">'+'<div class="flex items-start justify-between gap-space-sm pb-space-sm mb-space-sm border-b border-surface-container"><div class="flex items-start gap-space-xs min-w-0">'+'<div class="w-8 h-8 shrink-0 rounded-lg bg-primary-fixed text-primary flex items-center justify-center">'+ms(ICONO_SECCION[g.k]||"widgets","text-[18px]")+"</div>"+'<div class="min-w-0"><h3 class="font-headline-sm text-headline-sm text-on-surface">'+esc(g.nombre)+"</h3>"+(g.desc?'<p class="text-[12px] text-on-surface-variant">'+esc(g.desc)+"</p>":"")+"</div></div>"+'<div class="flex items-center gap-2 shrink-0">'+cabeza+"</div></div>"+'<div class="grid grid-cols-1 md:grid-cols-2 gap-3">'+mods.map(tarjeta).join("")+"</div></div>"})).join("");var BTN_ON="cat-btn px-3 py-1.5 rounded-full bg-primary text-on-primary shrink-0 transition-all";var BTN_OFF="cat-btn px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface shrink-0 transition-all";document.getElementById("category-filters").innerHTML=[{k:"Todos",nombre:"All"}].concat(GRUPOS).map((function(g,i){var n=g.k==="Todos"?TODOS.length:TODOS.filter((function(m){return m.grupo===g.k})).length;return'<button class="'+(i?BTN_OFF:BTN_ON)+'" data-area="'+esc(g.k)+'" type="button">'+esc(g.nombre)+" ("+n+")</button>"})).join("");document.getElementById("n-cat").textContent=TODOS.length;document.getElementById("m-mod").textContent=MODULOS.length;document.getElementById("m-cam").textContent=CAMINO.length;var avisoT;function avisa(txt){var a=document.getElementById("cfg-aviso");if(!a){a=document.createElement("div");a.id="cfg-aviso";a.setAttribute("role","status");a.setAttribute("aria-live","polite");a.className="fixed left-1/2 -translate-x-1/2 bottom-6 z-50 max-w-[92vw] px-4 py-2.5 rounded-xl bg-on-surface text-surface font-body-sm text-body-sm shadow-xl transition-opacity";document.body.appendChild(a)}a.textContent=txt;a.style.opacity="1";clearTimeout(avisoT);avisoT=setTimeout((function(){a.style.opacity="0"}),3600)}var ACTIVA=["border-primary/40","bg-gradient-to-r","from-surface-container-lowest","via-primary-fixed/20","to-surface-container-lowest","shadow-sm"];function pinta(){var pills=[],interes=[],nPacks=0,nSueltos=0;document.querySelectorAll(".module-card").forEach((function(el){var k=el.getAttribute("data-k"),m=TODOS.filter((function(x){return x.k===k}))[0],on=!!estado[k];ACTIVA.forEach((function(c){el.classList.toggle(c,on)}));el.classList.toggle("border-surface-container",!on);el.classList.toggle("opacity-70",!on);var chk=el.querySelector(".chk");if(!m.base){chk.setAttribute("aria-checked",String(on));chk.setAttribute("aria-label",m.camino?"I am interested: "+m.nombre:(on?"Switch off ":"Switch on ")+(m.pack?"the "+nombrePack(m.pack)+" pack":m.nombre))}if(m.camino){chk.className="chk h-5 px-2 rounded-full flex items-center justify-center gap-0.5 text-[11px] font-semibold whitespace-nowrap "+(on?"bg-secondary text-on-secondary":"bg-surface-container text-on-surface-variant");chk.innerHTML=on?ms("check","text-[13px]")+"We will let you know":"I am interested";if(on)interes.push(m.nombre)}else{chk.className="chk w-5 h-5 rounded-full flex items-center justify-center "+(on?"bg-primary text-on-primary":"bg-surface-container text-outline");chk.innerHTML=ms(on?"check":"add","text-[14px]")}if(on&&m.suelto){nSueltos++;pills.push('<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-container text-on-surface font-label-sm text-label-sm"><span>'+esc(m.nombre)+"</span>"+'<button type="button" class="inline-flex" data-quita="'+k+'" aria-label="Remove '+esc(m.nombre)+'">'+ms("close","text-[14px] text-outline hover:text-error")+"</button></div>")}}));var pillsPack=[];PACKS.forEach((function(p){if(!CAT.packActivo(estado,p[0]))return;if(p[0]!=="base")nPacks++;pillsPack.push('<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary font-label-sm text-label-sm"><span>'+esc(p[1])+" pack</span>"+(p[0]==="base"?"":'<button type="button" class="inline-flex" data-quita-pack="'+p[0]+'" aria-label="Remove the '+esc(p[1])+" pack"+'">'+ms("close","text-[14px] text-outline hover:text-error")+"</button>")+"</div>")}));pills=pillsPack.concat(pills);var c=CAT.recuento(estado);document.getElementById("selected-counter-badge").textContent=nPacks+1+(nPacks?" packs · ":" pack · ")+c.activos+" modules";document.getElementById("catalog-coverage-label").textContent=Math.round(c.activos*100/MODULOS.length)+"% of the catalogue";document.getElementById("active-modules-list").innerHTML=pills.join("");var ni=document.getElementById("interes");ni.textContent=interes.length?"We will let you know when these are out: "+interes.join(", ")+".":"";ni.classList.toggle("hidden",!interes.length);document.getElementById("summary-mod-lbl").textContent="Packs: "+nPacks+(nSueltos?" · single modules: "+nSueltos:"");document.getElementById("summary-subtotal").textContent=c.activos+" modules";enlacesDemo()}function urlTour(){return DEMO+"/intranet/v4/home/?tour=1&sel="+CAT.codificaSel(estado)}function enlacesDemo(){var sel=CAT.codificaSel(estado);document.querySelectorAll('a[href^="'+DEMO+'/intranet/"]').forEach((function(a){var u=new URL(a.getAttribute("href"),location.href);u.searchParams.set("sel",sel);a.setAttribute("href",DEMO?u.href:u.pathname+u.search+u.hash)}));document.querySelectorAll("a[data-tour]").forEach((function(a){a.setAttribute("href",urlTour())}))}document.addEventListener("click",(function(e){var d=e.target.closest("[data-tour]");if(!d)return;e.preventDefault();location.href=urlTour()}));function dice(movidos,on){if(movidos.length)avisa((on?"Also switched on: ":"Also switched off, because it depended on it: ")+movidos.join(", ")+".")}function alternaPack(k){var on=!CAT.packActivo(estado,k);dice(CAT.ponPack(estado,k,on),on);guarda();pinta()}function alternaSuelto(k){var m=TODOS.filter((function(x){return x.k===k}))[0];if(!m||m.base)return;if(m.camino){estado[k]=!estado[k];guarda();pinta();return}if(m.pack){alternaPack(m.pack);return}var on=!estado[k];dice(CAT.ponSuelto(estado,k,on),on);guarda();pinta()}var areaActual="Todos";function filtra(){var q=document.getElementById("module-search").value.trim().toLowerCase();document.querySelectorAll(".cat-section").forEach((function(sec){var vis=0;sec.querySelectorAll(".module-card").forEach((function(el){var m=TODOS.filter((function(x){return x.k===el.getAttribute("data-k")}))[0];var texto=(m.nombre+" "+m.codigo+" "+m.tags.join(" ")+" "+m.caps.join(" ")+" "+m.grupo+" "+(m.pack?nombrePack(m.pack):"")).toLowerCase();var ok=(areaActual==="Todos"||m.grupo===areaActual)&&(!q||texto.indexOf(q)!==-1);el.classList.toggle("hidden",!ok);if(ok)vis++}));sec.classList.toggle("hidden",!vis)}))}document.addEventListener("click",(function(ev){var q=ev.target.closest("[data-quita]");if(q){estado[q.getAttribute("data-quita")]=false;guarda();pinta();return}var qp=ev.target.closest("[data-quita-pack]");if(qp){dice(CAT.ponPack(estado,qp.getAttribute("data-quita-pack"),false),false);guarda();pinta();return}var s=ev.target.closest("[data-seleccion]");if(s){var todo=s.getAttribute("data-seleccion")==="todo";PACKS.forEach((function(p){CAT.ponPack(estado,p[0],todo)}));CAT.SUELTOS.forEach((function(x){CAT.ponSuelto(estado,x[0],todo)}));guarda();pinta();return}if(ev.target.closest("a"))return;var card=ev.target.closest(".module-card");if(card){alternaSuelto(card.getAttribute("data-k"));return}var f=ev.target.closest("#category-filters button");if(f){areaActual=f.getAttribute("data-area");document.querySelectorAll("#category-filters button").forEach((function(b){b.className=b===f?BTN_ON:BTN_OFF}));filtra()}}));document.getElementById("module-search").addEventListener("input",filtra);pinta()})()</script>
+<script src="/demo/roi.js?v=932314a3"></script>
+<script>(function(){var R=window.AXW_ROI;if(!R)return;function esc(s){return String(s).replace(/[&<>"]/g,(function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]}))}var caja=document.getElementById("roi-tareas");caja.innerHTML=R.TAREAS.map((function(t){var solo=t[3]==="solo";return'<div class="flex items-center gap-3 p-3 rounded-xl border border-outline-variant bg-surface-container-lowest">'+'<div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-1.5"><span class="text-[13px] font-semibold text-on-surface">'+esc(t[1])+"</span>"+'<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold '+(solo?"bg-emerald-50 text-emerald-700":"bg-primary-fixed text-on-primary-fixed")+'">'+(solo?"Automatic":"Prepared for you")+"</span></div>"+'<p class="text-[11px] text-on-surface-variant mt-0.5">'+esc(t[2])+"</p></div>"+'<label class="shrink-0 flex items-center gap-1 text-[11px] text-on-surface-variant"><input class="w-16 rounded-lg border border-outline-variant bg-surface-container-low px-2 py-1 text-right font-mono text-[13px] text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container" data-roi="'+t[0]+'" inputmode="decimal" min="0" max="168" type="number" value="'+t[4]+'" aria-label="Hours per week: '+esc(t[1])+'">h</label>'+"</div>"})).join("");var $=function(id){return document.getElementById(id)};function cifra(n,dec){return n.toLocaleString("en-GB",{maximumFractionDigits:dec||0,minimumFractionDigits:0})}function pinta(){var horas={};document.querySelectorAll("[data-roi]").forEach((function(i){horas[i.getAttribute("data-roi")]=i.value}));var pct=$("roi-pct").value,mon=$("roi-moneda").value;var r=R.calcula(horas,$("roi-coste").value,pct);$("roi-pct-val").textContent=pct+"%";$("roi-horas").textContent=cifra(r.horasMes)+" h";$("roi-puestos").textContent=R.frasePuestos(r.puestos);$("roi-valor").textContent=cifra(r.valorAno)+" "+mon+" / year";$("roi-valor-mes").textContent="About "+cifra(r.valorMes)+" "+mon+" a month, based on "+cifra(r.horasSemanaEquipo,1)+" h/week from your team.";var cuerpo="Hi, I used the AxisWorks ERP calculator:\n\n"+R.TAREAS.map((function(t){return"- "+t[1]+": "+cifra(r.entrada.horas[t[0]],1)+" h/week"})).join("\n")+"\n- Monthly cost per person: "+cifra(r.entrada.coste)+" "+mon+"\n- Share the ERP would take on (assumed): "+r.entrada.pct+"%"+"\n\nIndicative result: "+cifra(r.horasMes)+" h/month freed, "+cifra(r.valorAno)+" "+mon+"/year.\n\nI would like a quote.";$("roi-mail").href="mailto:hello@axisworks.studio?subject="+encodeURIComponent("AxisWorks ERP quote")+"&body="+encodeURIComponent(cuerpo)}document.getElementById("roi").addEventListener("input",pinta);document.getElementById("roi").addEventListener("change",pinta);pinta()})()</script>
+<script>document.querySelectorAll(".material-symbols-outlined").forEach((function(e){e.setAttribute("aria-hidden","true")}))</script>
 </body></html>

@@ -73,6 +73,35 @@ PROHIBIDO = re.compile(r'(/contracts/app\.html$|apoderados|/firma-|firma_|/anexo
 # `dist/` en la ruta a propósito: los controles de push del estudio (unificar.py, fallos_mudos.py) ya saltan
 # las carpetas `dist` como código generado; este código se revisa en su origen, el repo de Lawang.
 DESTINO_PUBLICO = os.path.abspath(os.path.join(AQUI, '..', '..', 'dist', 'demo-erp'))   # raíz de demo.axisworks.studio
+# ── Tres hosts (AXW-70, 28-sep-2026): la web comercial (portada + configurador) en erp., la demo en demo. y el ERP
+# real en app. La portada sale ADEMÁS a dist/erp-web/ con una lista cerrada de ficheros (Seguridad, rev. #146: nunca
+# el bundle de la demo, con su guard falso de super_admin, en un origen que fue del ERP real).
+DESTINO_WEB = os.path.abspath(os.path.join(AQUI, '..', '..', 'dist', 'erp-web'))         # raíz de erp.axisworks.studio
+DEMO_URL = 'https://demo.axisworks.studio'
+WEB_URL = 'https://erp.axisworks.studio'
+APP_URL = 'https://app.axisworks.studio'
+# Prueba con dos orígenes locales (`--prueba-origenes`): las URLs de la demo y de la portada salen de
+# AXW_PRUEBA_DEMO / AXW_PRUEBA_WEB (solo http://127.0.0.1:N o http://localhost:N) y los dos bundles se escriben en
+# AXW_PRUEBA_SALIDA, FUERA de este repo: un build de prueba no puede acabar en dist/ con localhost dentro.
+PRUEBA_ORIGENES = '--prueba-origenes' in sys.argv
+if PRUEBA_ORIGENES:
+    _local = re.compile(r'^http://(127\.0\.0\.1|localhost):\d{2,5}$')
+    DEMO_URL, WEB_URL = os.environ.get('AXW_PRUEBA_DEMO', ''), os.environ.get('AXW_PRUEBA_WEB', '')
+    _salida = os.path.abspath(os.environ.get('AXW_PRUEBA_SALIDA', ''))
+    _repo = os.path.normcase(os.path.abspath(os.path.join(AQUI, '..', '..')))
+    if not (_local.match(DEMO_URL) and _local.match(WEB_URL)) or not os.environ.get('AXW_PRUEBA_SALIDA') \
+            or os.path.normcase(_salida).startswith(_repo):
+        print('ABORTA: --prueba-origenes pide AXW_PRUEBA_DEMO y AXW_PRUEBA_WEB (http://127.0.0.1:N o http://localhost:N) '
+              'y AXW_PRUEBA_SALIDA fuera del repo AxisWorks')
+        sys.exit(1)
+    DESTINO_PUBLICO, DESTINO_WEB = os.path.join(_salida, 'demo-erp'), os.path.join(_salida, 'erp-web')
+# Dónde vuelve la demo al configurador («← Modules», el aviso de módulo apagado, el final del tour): la portada, que en
+# la versión pública ya no está en el mismo origen. En local (presentar.cmd) es la raíz del mismo servidor.
+PORTADA_URL = (WEB_URL + '/') if '--publico' in sys.argv else '/'
+# Sesión real que hubiera en el origen (sb-*: refresh token de Supabase), fuera antes de nada: la demo (Seguridad #2,
+# 25-sep) y la portada de erp., que fue el origen del ERP real y comparte storage con el configurador (rev. #146).
+LIMPIA_SESION = ("(function(){try{[localStorage,sessionStorage].forEach(function(s){for(var i=s.length-1;i>=0;i--){"
+                 "var k=s.key(i);if(k&&k.indexOf('sb-')===0)s.removeItem(k);}});}catch(e){}})();\n")
 # Orden: de lo más largo y concreto a lo general. Se aplica al texto y a los nombres de fichero.
 # Las correspondencias nombre real → inventado y la lista de rastros NO viven aquí (este repo es público, y
 # decirlas es deshacer la anonimización — auditoría de Seguridad, 25-sep): private/demo_publico.json del repo
@@ -305,7 +334,7 @@ def guard_demo():
               "n.setAttribute('aria-label','Leave the demo');"
               "n.style.cssText='position:fixed;left:16px;bottom:16px;z-index:2147483000;display:flex;background:#485B37;"
               "border-radius:999px;font:500 13px/1.2 system-ui,sans-serif;overflow:hidden';"
-              "[['/#configurador','← Modules']].forEach(function(x,i){var a=document.createElement('a');"
+              "[[window.AXW_PORTADA+'#configurador','← Modules']].forEach(function(x,i){var a=document.createElement('a');"
               "a.href=x[0];a.textContent=x[1];a.style.cssText='color:#fff;text-decoration:none;padding:8px 14px'"
               "+(i?';border-left:1px solid rgba(255,255,255,.3)':'');n.appendChild(a);});"
               "document.body.appendChild(n);});\n"
@@ -314,8 +343,7 @@ def guard_demo():
               "['/demo/catalogo.js','/demo/modulos.js','/demo/tour.js'].forEach(function(u){var s=document.createElement('script');"
               "s.src=u;s.async=false;(document.head||document.documentElement).appendChild(s);});\n")
     # Sesión real que el presentador pudiera tener en este origen: fuera antes de nada (Seguridad #2).
-    limpia_sesion = ("(function(){try{[localStorage,sessionStorage].forEach(function(s){for(var i=s.length-1;i>=0;i--){"
-                     "var k=s.key(i);if(k&&k.indexOf('sb-')===0)s.removeItem(k);}});}catch(e){}})();\n")
+    limpia_sesion = LIMPIA_SESION + 'window.AXW_PORTADA = %s;\n' % json.dumps(PORTADA_URL)
     # Núcleo del ERP (25-sep): la demo ya enseña la OPERACIÓN. Bandera que Lawang no enciende nunca: su base aún no
     # tiene la tabla, y el código compartido (operaciones-cuentas.js, datos.js) solo la lee si está encendida.
     nucleo = 'window.AXW_NUCLEO_OPERACION = true;\n'
@@ -471,8 +499,10 @@ def paginas_propias():
     redir = ('<!doctype html><meta charset="utf-8"><title>Demo</title>'
              '<script>location.replace("/intranet/v4/home/")</script>')
     open(os.path.join(carpeta, 'index.html'), 'w', encoding='utf-8').write(redir)
-    # Portada: la landing de módulos (fuente: landing.html, al lado de este script).
-    shutil.copy2(os.path.join(AQUI, 'landing.html'), os.path.join(DIST, 'index.html'))
+    # Portada: la landing de módulos (fuente: landing.html, al lado de este script). Su primer <script> lo pone el
+    # build: barrido de sesión sb-* y el origen de la demo ('' = este mismo servidor).
+    open(os.path.join(DIST, 'index.html'), 'w', encoding='utf-8', newline='').write(
+        config_portada(open(os.path.join(AQUI, 'landing.html'), encoding='utf-8').read(), ''))
     os.makedirs(os.path.join(DIST, 'demo'), exist_ok=True)
     compila_portada('demo/landing.css')
     shutil.copy2(os.path.join(AQUI, 'tour.js'), os.path.join(DIST, 'demo', 'tour.js'))
@@ -773,7 +803,7 @@ def publica():
         aborta('quedan rastros de Lawang, no se publica:\n  ' + '\n  '.join(restos[:40]))
     versiona(DIST)
     # Copia a dist/demo-erp/: se vacía por dentro (la carpeta es del repo) y se rellena con lo comprobado.
-    if not DESTINO_PUBLICO.endswith(os.path.join('AxisWorks', 'dist', 'demo-erp')):
+    if not PRUEBA_ORIGENES and not DESTINO_PUBLICO.endswith(os.path.join('AxisWorks', 'dist', 'demo-erp')):
         aborta('destino público inesperado: ' + DESTINO_PUBLICO)
     os.makedirs(DESTINO_PUBLICO, exist_ok=True)
     for x in os.listdir(DESTINO_PUBLICO):
@@ -783,44 +813,138 @@ def publica():
         s = os.path.join(DIST, x)
         shutil.copytree(s, os.path.join(DESTINO_PUBLICO, x)) if os.path.isdir(s) else shutil.copy2(s, DESTINO_PUBLICO)
     # Solo se sirve desde demo.axisworks.studio: por axisworks.studio/demo/ las rutas absolutas no casan.
+    # La raíz ya no es la portada (vive en erp., AXW-70): 302 a la Home de la demo conservando la query (?tour=1&sel=).
+    # 302 y no 301 mientras dura el cambio de dominios (Deploy, rev. #146: el navegador guarda un 301 sin caducidad).
     open(os.path.join(DESTINO_PUBLICO, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(
         '# GENERADO por comercial/demo-erp/build.py --publico — no editar.\n'
         '# demo.axisworks.studio: la demo del ERP. Fuera de ese host, redirige a él.\n'
         '<IfModule mod_rewrite.c>\n  RewriteEngine On\n'
         '  RewriteCond %{HTTP_HOST} !^demo\\.axisworks\\.studio$ [NC]\n'
-        '  RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=301,L]\n</IfModule>\n'
-        # Cabeceras de seguridad (auditoría de Seguridad, 25-sep: el .htaccess del sitio principal no llega al
-        # subdominio). connect-src 'self' es además la barrera de red de verdad: el doble ya no llama fuera, y si
-        # un build se dejara algo, el navegador lo cortaría igual.
-        '<IfModule mod_headers.c>\n'
-        '  Header always set X-Robots-Tag "noindex, nofollow"\n'
-        '  Header always set Strict-Transport-Security "max-age=31536000"\n'
-        '  Header always set X-Content-Type-Options "nosniff"\n'
-        '  Header always set X-Frame-Options "SAMEORIGIN"\n'
-        '  Header always set Referrer-Policy "strict-origin-when-cross-origin"\n'
-        '  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"\n'
-        '  Header always set Content-Security-Policy "default-src \'self\'; script-src \'self\' \'unsafe-inline\' '
-        # Sin cdn.tailwindcss.com desde el 27-sep-2026 (ERP F3 lote 4a): la v4 y la portada van con Tailwind COMPILADO.
-        'https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src \'self\' '
-        # jsdelivr en estilos y fuentes: los iconos Phosphor del CRM (visto en producción, 25-sep).
-        '\'unsafe-inline\' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src \'self\' data: '
-        'https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src '
-        '\'self\' data: blob:; connect-src \'self\'; frame-ancestors \'self\'; base-uri \'self\'; form-action '
-        '\'self\'; object-src \'none\'"\n'
-        # Hostinger sirve .js/.css con max-age de 7 días y la demo los pide sin versión (/demo/catalogo.js): el
-        # 25-sep un catalogo.js viejo (sin PACKS) cacheado del 24 dejó la landing nueva sin módulos y sin forma de
-        # activarlos. no-cache = el navegador revalida con el ETag en cada visita (304 si no cambió).
-        '  <FilesMatch "\\.(html|js|css|json)$">\n'
-        '    Header unset Expires\n'
-        '    Header unset Cache-Control\n'
-        '    Header always set Cache-Control "no-cache"\n'
-        '  </FilesMatch>\n'
-        '</IfModule>\n'
-        'DirectoryIndex index.html\n')
+        '  RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=301,L]\n'
+        '  RewriteRule ^$ /intranet/v4/home/ [R=302,L]\n</IfModule>\n'
+        + cabeceras_seguridad(
+            # Sin cdn.tailwindcss.com desde el 27-sep-2026 (ERP F3 lote 4a): la v4 y la portada van con Tailwind
+            # COMPILADO. jsdelivr en estilos y fuentes: los iconos Phosphor del CRM (visto en producción, 25-sep).
+            'default-src \'self\'; script-src \'self\' \'unsafe-inline\' '
+            'https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src \'self\' '
+            '\'unsafe-inline\' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src \'self\' data: '
+            'https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src '
+            '\'self\' data: blob:; connect-src \'self\'; frame-ancestors \'self\'; base-uri \'self\'; form-action '
+            '\'self\'; object-src \'none\''))
     open(os.path.join(DESTINO_PUBLICO, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(DESTINO_PUBLICO)
     total = sum(len(f) for _r, _d, f in os.walk(DESTINO_PUBLICO))
     print('OK versión pública en %s: %d ficheros, sin rastros de Lawang' % (os.path.relpath(DESTINO_PUBLICO, AGENCIA), total))
+    publica_web()
+
+
+def cabeceras_seguridad(csp):
+    """Cabeceras de seguridad de los .htaccess públicos (auditoría de Seguridad, 25-sep: el .htaccess del sitio
+    principal no llega a los subdominios). connect-src 'self' es además la barrera de red de verdad: el doble ya no
+    llama fuera, y si un build se dejara algo, el navegador lo cortaría igual. Una sola fuente para demo. y erp."""
+    return ('<IfModule mod_headers.c>\n'
+            '  Header always set X-Robots-Tag "noindex, nofollow"\n'
+            '  Header always set Strict-Transport-Security "max-age=31536000"\n'
+            '  Header always set X-Content-Type-Options "nosniff"\n'
+            '  Header always set X-Frame-Options "SAMEORIGIN"\n'
+            '  Header always set Referrer-Policy "strict-origin-when-cross-origin"\n'
+            '  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"\n'
+            '  Header always set Content-Security-Policy "' + csp + '"\n'
+            # Hostinger sirve .js/.css con max-age de 7 días: el 25-sep un catalogo.js viejo (sin PACKS) cacheado del
+            # 24 dejó la landing nueva sin módulos. no-cache = el navegador revalida con el ETag (304 si no cambió).
+            '  <FilesMatch "\\.(html|js|css|json)$">\n'
+            '    Header unset Expires\n'
+            '    Header unset Cache-Control\n'
+            '    Header always set Cache-Control "no-cache"\n'
+            '  </FilesMatch>\n'
+            '</IfModule>\n'
+            'DirectoryIndex index.html\n')
+
+
+# ── Portada en erp.axisworks.studio (AXW-70, 28-sep-2026) ──────────────────────────────────────────────────────────
+# LISTA CERRADA de lo que se sirve en erp. (Seguridad, rev. #146). Todo lo demás —y en especial /intranet, /panel,
+# /contracts, /portal, /entrar y los callbacks de auth— lo manda el .htaccess al ERP real (app.). publica_web() aborta si
+# en la carpeta aparece algo fuera de esta lista.
+LISTA_WEB = ('index.html', 'demo/landing.css', 'demo/catalogo.js', 'demo/roi.js', 'favicon.png', 'favicon.ico',
+             'robots.txt', '.htaccess')
+CONFIG_PORTADA_RE = re.compile(r'<script id="?axw-config"?>[\s\S]*?</script>')
+# Tokens de Supabase en el #fragmento (flujo implícito): el servidor no los ve, así que el .htaccess no puede
+# mandarlos a app.; lo hace el primer script de la página, antes que nada.
+ADELANTA_TOKENS = ("(function(){var h=location.hash||'';if(/(^#|&)(access_token|refresh_token|token_hash|"
+                   "error_description)=/.test(h))location.replace(%s+location.pathname+location.search+h);})();\n")
+
+
+def config_portada(html_txt, demo_url, app_url=None):
+    """El primer <script> de la portada: barrido sb-*, (en erp.) tokens del #fragmento a app., y el origen de la demo."""
+    js = LIMPIA_SESION + (ADELANTA_TOKENS % json.dumps(app_url) if app_url else '') + \
+        'window.AXW_DEMO_URL = %s;' % json.dumps(demo_url)
+    nuevo, n = CONFIG_PORTADA_RE.subn(lambda _m: '<script id="axw-config">' + js + '</script>', html_txt)
+    if n != 1:
+        aborta('la portada no trae (1 vez) su <script id="axw-config">: encontrados %d' % n)
+    return nuevo
+
+
+def publica_web():
+    """dist/erp-web/: la portada sola, con los enlaces a la demo absolutos. Sale de lo ya comprobado en DIST."""
+    destino = DESTINO_WEB
+    if not PRUEBA_ORIGENES and not destino.endswith(os.path.join('AxisWorks', 'dist', 'erp-web')):
+        aborta('destino de la portada inesperado: ' + destino)
+    os.makedirs(destino, exist_ok=True)
+    for x in os.listdir(destino):
+        p = os.path.join(destino, x)
+        shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
+    for f in LISTA_WEB:
+        if f in ('index.html', 'robots.txt', '.htaccess'):
+            continue
+        s = os.path.join(DIST, f.replace('/', os.sep))
+        if not os.path.isfile(s):
+            aborta('falta en el build lo que la portada necesita: ' + f)
+        os.makedirs(os.path.dirname(os.path.join(destino, f.replace('/', os.sep))), exist_ok=True)
+        shutil.copy2(s, os.path.join(destino, f.replace('/', os.sep)))
+    t = config_portada(open(os.path.join(DIST, 'index.html'), encoding='utf-8').read(), DEMO_URL, APP_URL)
+    # Enlaces a la demo, ABSOLUTOS: en erp. una ruta /intranet/ la manda el .htaccess al ERP real, no a la demo.
+    t, n = re.subn(r'''(href=["']?)/intranet/''', lambda m: m.group(1) + DEMO_URL + '/intranet/', t)
+    if not n:
+        aborta('la portada no enlaza la demo (/intranet/): ¿ha cambiado landing.html?')
+    open(os.path.join(destino, 'index.html'), 'w', encoding='utf-8', newline='').write(t)
+    open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
+    permitidas = '|'.join(re.escape(f) for f in LISTA_WEB if f != '.htaccess' and f != 'index.html')
+    open(os.path.join(destino, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(
+        '# GENERADO por comercial/demo-erp/build.py --publico — no editar.\n'
+        '# erp.axisworks.studio: la web comercial del ERP (portada + configurador), lista cerrada de ficheros.\n'
+        '# Todo lo demás es del ERP real (app.). 302 mientras dura el cambio de dominios (AXW-70): 301 al cerrarlo.\n'
+        '<IfModule mod_rewrite.c>\n  RewriteEngine On\n'
+        '  RewriteCond %{HTTP_HOST} !^erp\\.axisworks\\.studio$ [NC]\n'
+        '  RewriteRule ^(.*)$ https://erp.axisworks.studio/$1 [R=302,L]\n'
+        # Un enlace de auth con la Site URL vieja cae en la raíz (Seguridad, rev. #146): al ERP real con su query.
+        '  RewriteCond %{QUERY_STRING} (^|&)(code|token_hash|type)= [NC]\n'
+        '  RewriteRule ^$ ' + APP_URL + '/ [R=302,L]\n'
+        '  RewriteCond %{REQUEST_URI} !^/(index\\.html|' + permitidas + ')?$\n'
+        '  RewriteRule ^ ' + APP_URL + '%{REQUEST_URI} [R=302,L]\n</IfModule>\n'
+        + cabeceras_seguridad(
+            'default-src \'self\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\' '
+            'https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data:; '
+            'connect-src \'self\'; frame-ancestors \'self\'; base-uri \'self\'; form-action \'self\'; object-src \'none\''))
+    versiona(destino)
+    # Lista cerrada: ni un fichero más ni uno menos.
+    hay = sorted(os.path.relpath(os.path.join(r, f), destino).replace(os.sep, '/') for r, _d, fs in os.walk(destino) for f in fs)
+    if hay != sorted(LISTA_WEB):
+        aborta('dist/erp-web no es la lista cerrada:\n  sobra: %s\n  falta: %s'
+               % (sorted(set(hay) - set(LISTA_WEB)), sorted(set(LISTA_WEB) - set(hay))))
+    t = open(os.path.join(destino, 'index.html'), encoding='utf-8').read()
+    malos = [x for x in ('href="/intranet', "href='/intranet", 'href=/intranet', '/contracts/', '/portal/', '/entrar/',
+                         'guard.js', '/demo/tour.js', '/demo/modulos.js') if x in t]
+    if DEMO_URL + '/intranet/' not in t or "window.AXW_DEMO_URL = %s;" % json.dumps(DEMO_URL) not in t:
+        malos.append('los enlaces o el origen de la demo no apuntan a ' + DEMO_URL)
+    if not PRUEBA_ORIGENES:
+        for r, _d, fs in os.walk(destino):
+            for f in fs:
+                if re.search(r'localhost|127\.0\.0\.1', open(os.path.join(r, f), encoding='utf-8', errors='replace').read()):
+                    malos.append('origen local en la versión pública: ' + f)
+    if malos:
+        aborta('la portada de erp. no se sostiene:\n  ' + '\n  '.join(malos))
+    comprueba_resultado(destino)
+    print('OK portada en %s: %s' % (destino if PRUEBA_ORIGENES else os.path.relpath(destino, AGENCIA), ', '.join(hay)))
 
 
 
