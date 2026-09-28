@@ -52,10 +52,10 @@
     var d = document.createElement('div');
     d.className = 'axw-aviso'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true');
     d.setAttribute('aria-labelledby', 'axw-aviso-tit');
-    d.innerHTML = '<div><small>Módulo apagado</small><h2 id="axw-aviso-tit">' + CAT.nombre(k) + ' no está en tu configuración</h2>' +
-      '<p>Lo apagaste en la página de módulos. Actívalo para verlo en la demo, o vuelve a elegir tus módulos.</p>' +
-      '<nav><button type="button" class="p" data-axw-activa>Activarlo y verlo</button><a class="s" href="/#configurador">Configurar módulos</a>' +
-      '<a class="s" href="/intranet/v4/home/">Ir al inicio</a></nav></div>';
+    d.innerHTML = '<div><small>Module switched off</small><h2 id="axw-aviso-tit">' + CAT.nombre(k) + ' is not in your setup</h2>' +
+      '<p>You switched it off on the modules page. Turn it on to see it in the demo, or choose your modules again.</p>' +
+      '<nav><button type="button" class="p" data-axw-activa>Turn it on and view</button><a class="s" href="/#configurador">Choose modules</a>' +
+      '<a class="s" href="/intranet/v4/home/">Go to home</a></nav></div>';
     document.body.appendChild(d);
     d.querySelector('[data-axw-activa]').addEventListener('click', function () { estado[k] = true; CAT.guardaEstado(estado); location.reload(); });
     d.querySelector('[data-axw-activa]').focus();

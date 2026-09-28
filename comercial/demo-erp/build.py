@@ -33,6 +33,7 @@ Revisión previa (24-sep, Seguridad + Legal), cada regla con su porqué:
 - Se niega a escribir fuera de su `dist/` o dentro de `proyectos/Lawang/`: un
   guard falso escrito ahí lo desplegaría el webhook de Lawang.
 """
+import html
 import json
 import os
 import re
@@ -268,7 +269,7 @@ def guard_demo():
         # Lo mismo para las fotos PÚBLICAS (getPublicUrl: fotos de modelo en /v4/modelos/ y lwFotoUrls): revisor, 28-sep.
         ("getPublicUrl: function (path) { return { data: { publicUrl: 'about:blank#qa-' + path } }; },",
          "getPublicUrl: function (path) { return { data: { publicUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E' } }; },"),
-        ("console.warn('[qa-doble] MODO QA activo", "console.info('[demo] ERP de demostración — datos inventados, sin red real'); void ('"),
+        ("console.warn('[qa-doble] MODO QA activo", "console.info('[demo] Demo ERP — made-up data, no real network'); void ('"),
         # Algunas RPC del doble devuelven una promesa pelada y el Panel financiero les encadena .select()
         # (24-sep: «sb.rpc(...).select is not a function»). Envoltorio: si no es encadenable, los filtros
         # devuelven la misma promesa, que ya trae las filas.
@@ -299,12 +300,12 @@ def guard_demo():
             aborta('el doble de QA ha cambiado y no encuentro (1 vez): ' + viejo[:70])
         doble = doble.replace(viejo, nuevo)
     doble = doble.replace("'qa-user-1'", "'d-u-1'").replace('qa@axisworks.test', 'direccion@demo.test')
-    # «← Módulos» en todas las pantallas: la salida del recorrido (el guard es nuestro).
+    # «← Modules» en todas las pantallas: la salida del recorrido (el guard es nuestro). En inglés: la demo pública lo es.
     volver = ("document.addEventListener('DOMContentLoaded',function(){var n=document.createElement('nav');"
-              "n.setAttribute('aria-label','Salir de la demo');"
+              "n.setAttribute('aria-label','Leave the demo');"
               "n.style.cssText='position:fixed;left:16px;bottom:16px;z-index:2147483000;display:flex;background:#485B37;"
               "border-radius:999px;font:500 13px/1.2 system-ui,sans-serif;overflow:hidden';"
-              "[['/#configurador','← Módulos']].forEach(function(x,i){var a=document.createElement('a');"
+              "[['/#configurador','← Modules']].forEach(function(x,i){var a=document.createElement('a');"
               "a.href=x[0];a.textContent=x[1];a.style.cssText='color:#fff;text-decoration:none;padding:8px 14px'"
               "+(i?';border-left:1px solid rgba(255,255,255,.3)':'');n.appendChild(a);});"
               "document.body.appendChild(n);});\n"
@@ -452,6 +453,19 @@ def compila_portada(solo=None):
         open(destino, 'w', encoding='utf-8', newline='\n').write(css)
 
 
+def idioma_ingles():
+    """La demo pública abre en INGLÉS (owner, 28-sep-2026: «hazla en inglés»). idioma.js de la v4 cae a español si no
+    hay elección guardada; en la copia de la demo cae a inglés salvo que el visitante haya elegido 'es' con el
+    interruptor (que sigue funcionando: lwSetIdioma no se toca). Solo en dist/ de la demo: Lawang y las instancias no
+    pasan por aquí (instancia() vuelve antes en main)."""
+    p = os.path.join(DIST, 'contracts', 'assets', 'idioma.js')
+    t = open(p, encoding='utf-8').read()
+    viejo = "window.LW_IDIOMA = (v === 'en') ? 'en' : 'es';"
+    if t.count(viejo) != 1:
+        aborta('idioma.js de Lawang ha cambiado y no encuentro (1 vez): ' + viejo)
+    open(p, 'w', encoding='utf-8', newline='').write(t.replace(viejo, "window.LW_IDIOMA = (v === 'es') ? 'es' : 'en';"))
+
+
 def paginas_propias():
     carpeta = os.path.join(DIST, 'intranet')
     redir = ('<!doctype html><meta charset="utf-8"><title>Demo</title>'
@@ -470,25 +484,24 @@ def paginas_propias():
     # Vuelve cuando active módulos de verdad sobre la instancia (interruptores F4 del ERP maestro).
     aviso = AVISO
     for carpeta_v4, t, m in (
-            ('generador-contratos', 'Generador de contratos',
-             'En la demo no se incluye: sus plantillas son documentos del cliente. Lo enseñamos en la llamada con un documento de ejemplo.'),
-            ('contratos-inversor', 'Portal del comprador',
-             'El portal del comprador se enseña aparte, en la llamada.')):
+            ('generador-contratos', 'Contract generator', AVISO_GENERADOR),
+            ('contratos-inversor', 'Buyer portal',
+             'We show the buyer portal separately, on the call.')):
         d = os.path.join(DIST, 'intranet', 'v4', carpeta_v4)
         os.makedirs(d, exist_ok=True)
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(aviso.format(t=t, m=m))
     # El generador clásico lleva el texto de las cláusulas inline (Legal): su ruta
     # enseña el mismo aviso, para que «Ver en el generador» no acabe en un 404.
     open(os.path.join(DIST, 'contracts', 'app.html'), 'w', encoding='utf-8').write(
-        aviso.format(t='Generador de contratos', m='En la demo no se incluye: sus plantillas son documentos del cliente. Lo enseñamos en la llamada con un documento de ejemplo.'))
+        aviso.format(t='Contract generator', m=AVISO_GENERADOR))
     d = os.path.join(carpeta, 'dossier')   # el menú enlaza el constructor de dossier: aviso, no 404
     os.makedirs(d, exist_ok=True)
     open(os.path.join(d, 'builder.html'), 'w', encoding='utf-8').write(aviso.format(
-        t='Dossier comercial', m='En la demo no se incluye: el dossier lleva el material de marca de cada cliente.'))
+        t='Sales brochure', m=AVISO_NO_INCLUIDO + ' the brochure carries each client\'s own brand material.'))
     d = os.path.join(carpeta, 'creatividades')   # está en el menú de la v4; sin esto, 404 en directo
     os.makedirs(d, exist_ok=True)
     open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(aviso.format(
-        t='Creatividades', m='La biblioteca de piezas de cada proyecto se enseña en la llamada: son anuncios reales del cliente.'))
+        t='Creatives', m='We show each project\'s asset library on the call: they are the client\'s real ads.'))
     for sitio in ('portal', 'entrar'):
         d = os.path.join(DIST, sitio)
         os.makedirs(d, exist_ok=True)
@@ -515,11 +528,14 @@ def neutraliza_ejemplos():
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
 
 
-AVISO = ('<!doctype html><html lang="es"><meta charset="utf-8"><title>{t} · Demo</title>'
+AVISO = ('<!doctype html><html lang="en"><meta charset="utf-8"><title>{t} · Demo</title>'
          '<body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;'
          'background:#fbf9f4;font:16px/1.6 system-ui,sans-serif;color:#2b2b25"><div style="max-width:30rem;padding:2rem">'
          '<h1 style="font-weight:500;color:#485B37">{t}</h1><p>{m}</p>'
-         '<p><a href="/intranet/v4/home/" style="color:#485B37">Volver al inicio</a></p></div></body></html>')
+         '<p><a href="/intranet/v4/home/" style="color:#485B37">Back to home</a></p></div></body></html>')
+# Pantallas que la demo no trae (texto de AVISO, en inglés). verifica() reconoce las propias por AVISO_NO_INCLUIDO.
+AVISO_NO_INCLUIDO = 'Not included in the demo:'
+AVISO_GENERADOR = AVISO_NO_INCLUIDO + ' its templates are the client\'s own documents. We show it on the call with a sample document.'
 ENLACE_LOCAL = re.compile(r'''(?:src|href)=["'](/[^"'#?]*)''')
 
 
@@ -586,7 +602,7 @@ def verifica():
             p = os.path.join(raiz, f)
             r = rel(p)
             aviso_propio = r in ('/contracts/app.html', '/intranet/dossier/builder.html') and os.path.getsize(p) < 5000 and \
-                'En la demo no se incluye' in open(p, encoding='utf-8').read()
+                AVISO_NO_INCLUIDO in open(p, encoding='utf-8').read()
             if PROHIBIDO.search(r) and not aviso_propio:
                 malos.append('prohibido: ' + r)
             if f.endswith(EXT_TEXTO):
@@ -863,9 +879,65 @@ DirectoryIndex index.html
 
 QA_DOBLE = re.compile(r'<script>\(function\(\)\{try\{(?:(?!</script>).)*?_qa_double_guard\.js.*?</script>', re.S)
 
-NO_ESTA = ('<!doctype html><html lang="es"><meta charset="utf-8"><title>{t}</title>'
-           '<body style="font:16px system-ui;padding:48px;max-width:560px"><h1 style="font-size:22px">{t}</h1>'
-           '<p>Este módulo no está instalado en esta instancia.</p><p><a href="/intranet/v4/home/">Volver</a></p>')
+# «Módulo no instalado» (28-sep-2026, owner: «poner info de AxisWorks ahí»): UNA plantilla, no_instalado.html, para las
+# dos vías — la pantalla no portada que el build sustituye (estática) y el módulo apagado desde el panel, que
+# apagados_instancia.js pinta al cargar. Antes eran dos textos sueltos en system-ui, sin marca ni salida.
+PLANTILLA_NO_INSTALADO = os.path.join(AQUI, 'no_instalado.html')
+SELLO_AXISWORKS = os.path.join(AQUI, '..', '..', 'assets', 'favicon.svg')   # la ✕ de la marca, fuente de la web
+CAMPOS_NO_INSTALADO = {'titulo', 'texto', 'que_hace', 'asunto', 'oculta_que_hace', 'oculta_contacto', 'oculta_reintenta'}
+HOJA_V4 = ('intranet', 'v4', 'assets', 'tw-base.css')
+
+
+def no_instalado_base(marca):
+    """La plantilla con la marca de la instancia y el sello de AxisWorks puestos, lista para rellenar por pantalla.
+    Aborta si usa una clase que la hoja de la v4 no trae (Tailwind purgado en el repo de Lawang: una clase puede
+    desaparecer en silencio y la pantalla saldría sin estilo) o si sus huecos no son los que rellenan las dos vías."""
+    t = re.sub(r'<!--.*?-->\s*', '', open(PLANTILLA_NO_INSTALADO, encoding='utf-8').read(), flags=re.S).strip()
+    sello = open(SELLO_AXISWORKS, encoding='utf-8').read().strip()
+    if not sello.startswith('<svg '):
+        aborta('el sello de AxisWorks (assets/favicon.svg) no es un <svg>')
+    sello = sello.replace('<svg ', '<svg width="32" height="32" aria-hidden="true" focusable="false" ', 1)
+    t = t.replace('{{marca}}', html.escape(marca + ' ERP')).replace('{{sello}}', sello)
+    huecos = set(re.findall(r'\{\{([a-z_]+)\}\}', t))
+    if huecos != CAMPOS_NO_INSTALADO:
+        aborta('no_instalado.html: huecos %s, se esperaban %s' % (sorted(huecos), sorted(CAMPOS_NO_INSTALADO)))
+    hoja = open(os.path.join(DIST, *HOJA_V4), encoding='utf-8').read()
+    faltan = sorted({c for grupo in re.findall(r'class="([^"]*)"', t) for c in grupo.split()
+                     if not re.search(r'\.' + re.escape(c) + r'\s*\{', hoja)})
+    if faltan:
+        aborta('no_instalado.html usa clases que %s no trae: %s' % ('/'.join(HOJA_V4), ', '.join(faltan)))
+    return t
+
+
+def rotulos():
+    """{clave del registro: [nombre, sección, icono, qué hace]} de modulos_rotulos.json, la fuente única del lado ERP
+    (panel de control y «Módulo no instalado»). Aborta si una clave de erp/modulos.json no tiene fila: un módulo nuevo
+    saldría en el panel con su clave y en la pantalla sin nombre."""
+    r = {k: v for k, v in json.load(open(os.path.join(AQUI, 'modulos_rotulos.json'), encoding='utf-8')).items()
+         if not k.startswith('_')}
+    mods = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))['modulos']
+    faltan = sorted(set(mods) - set(r))
+    malos = sorted(k for k, v in r.items() if not (isinstance(v, list) and len(v) == 4 and all(isinstance(x, str) and x for x in v)))
+    if faltan or malos:
+        aborta('modulos_rotulos.json: sin fila %s · filas mal formadas %s' % (faltan, malos))
+    return r
+
+
+def pagina_no_instalado(base, marca, ficha, ruta):
+    """La pantalla estática: mismos textos que pantalla() de apagados_instancia.js."""
+    from urllib.parse import quote
+    nombre, que_hace = ficha or (None, None)
+    v = {'titulo': 'Módulo no instalado',
+         'texto': ('«%s» no está activo en esta instancia.' % nombre) if nombre else 'Este módulo no está activo en esta instancia.',
+         'que_hace': que_hace or '', 'asunto': quote('Activar módulo: ' + (nombre or ruta), safe=''),
+         'oculta_que_hace': '' if que_hace else 'hidden', 'oculta_contacto': '', 'oculta_reintenta': 'hidden'}
+    cuerpo = re.sub(r'\{\{([a-z_]+)\}\}', lambda m: html.escape(v[m.group(1)]), base)
+    return ('<!doctype html>\n<html lang="es"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">'
+            '<title>Módulo no instalado · %s</title><link rel="icon" href="/favicon.png">'
+            '<link href="/intranet/v4/assets/fonts/fonts.css" rel="stylesheet">'
+            '<link href="/intranet/v4/assets/tw-base.css" rel="stylesheet"></head>\n<body>%s</body></html>\n'
+            % (html.escape(marca), cuerpo))
 
 
 def mapa_modulos(nombre):
@@ -909,6 +981,8 @@ def mapa_modulos(nombre):
     for mod in nunca:
         xp |= {u for u in (m['modulos'].get(mod) or {}).get('pantallas') or [] if u.startswith('/intranet/')}
     out['xp'] = sorted(xp)
+    # n: nombre y «qué hace» de cada módulo, para la pantalla «Módulo no instalado» (28-sep-2026)
+    out['n'] = {k: [v[0], v[3]] for k, v in rotulos().items() if k != 'base'}
     return out
 
 
@@ -956,7 +1030,12 @@ def instancia(nombre):
     # sin sus comentarios: se antepone DESPUÉS de limpia_publico.js y son notas internas del estudio
     plantilla = re.sub(r'/\*.*?\*/', '', plantilla, flags=re.S)
     plantilla = re.sub(r'^\s*//[^\n]*\n', '', plantilla, flags=re.M)
-    interruptores = plantilla.replace('__AXW_MAPA__', json.dumps(mapa, ensure_ascii=False, sort_keys=True)) + '\n'
+    if '__AXW_NO_INSTALADO__' not in plantilla:
+        aborta('apagados_instancia.js sin el hueco __AXW_NO_INSTALADO__')
+    # la pantalla se inyecta DESPUÉS de quitar comentarios (sus URL llevan «//») y como literal de cadena JS
+    no_instalado = no_instalado_base(marca)
+    interruptores = (plantilla.replace('__AXW_MAPA__', json.dumps(mapa, ensure_ascii=False, sort_keys=True))
+                     .replace('__AXW_NO_INSTALADO__', json.dumps(no_instalado, ensure_ascii=False)) + '\n')
     t = open(g, encoding='utf-8').read()
     open(g, 'w', encoding='utf-8', newline='').write(
         '/* GENERADO por AxisWorks/comercial/demo-erp/build.py --instancia %s — no editar. */\n'
@@ -986,21 +1065,25 @@ def instancia(nombre):
     for u in mapa['xp']:
         f = os.path.join(DIST, *u.strip('/').split('/'), 'index.html')
         if os.path.isfile(f):
-            open(f, 'w', encoding='utf-8').write(NO_ESTA.format(t='Módulo no instalado'))
+            open(f, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, mapa['n'].get(mapa['p'].get(u)), u))
     # El panel de control: solo en la instancia que manda (panel_control en erp/instancias.json)
     if _instancia_registro(nombre).get('panel_control'):
         d = os.path.join(DIST, 'panel')
         os.makedirs(d, exist_ok=True)
-        shutil.copy2(os.path.join(AQUI, 'panel_control.html'), os.path.join(d, 'index.html'))
+        panel = open(os.path.join(AQUI, 'panel_control.html'), encoding='utf-8').read()
+        if '__AXW_ROTULOS__' not in panel:
+            aborta('panel_control.html sin el hueco __AXW_ROTULOS__')
+        open(os.path.join(d, 'index.html'), 'w', encoding='utf-8', newline='').write(
+            panel.replace('__AXW_ROTULOS__', json.dumps(rotulos(), ensure_ascii=False, sort_keys=True)))
         compila_portada('panel/panel.css')   # su Tailwind compilado: la CSP de la instancia no admite el Play CDN
-    for ruta, t in (('intranet/v4/generador-contratos/index.html', 'Generador de contratos'),
-                    ('intranet/v4/contratos-inversor/index.html', 'Portal del comprador'),
-                    ('contracts/app.html', 'Generador de contratos'),
-                    ('intranet/dossier/builder.html', 'Dossier comercial'),
-                    ('intranet/creatividades/index.html', 'Creatividades')):
+    for ruta, mod in (('intranet/v4/generador-contratos/index.html', 'contratos'),
+                      ('intranet/v4/contratos-inversor/index.html', 'portal'),
+                      ('contracts/app.html', 'contratos'),
+                      ('intranet/dossier/builder.html', 'creatividades'),
+                      ('intranet/creatividades/index.html', 'creatividades')):
         d = os.path.join(DIST, *ruta.split('/'))
         os.makedirs(os.path.dirname(d), exist_ok=True)
-        open(d, 'w', encoding='utf-8').write(NO_ESTA.format(t=t))
+        open(d, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, mapa['n'].get(mod), '/' + ruta))
     avisos_para_rotos()
     # ?v= con la huella de lo que SALE de este build, como en la demo pública (28-sep-2026). Sin esto, la v4 llevaba el
     # ?v= del fichero de Lawang (guard.js se reescribe entero aquí: mapa de módulos + ficha) y /panel/ iba sin versión:
@@ -1164,6 +1247,7 @@ def main():
                        'cabecera': 'AXISWORKS', 'subcabecera': 'ERP DEMO', 'titulo': 'AxisWorks ERP',
                        'firma_correo': 'AxisWorks Demo'})
     paginas_propias()
+    idioma_ingles()
     avisos_para_rotos()
     n = neutraliza()
     verifica()

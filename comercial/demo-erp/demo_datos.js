@@ -41,11 +41,11 @@
   /* Compradores — combinaciones poco frecuentes a propósito, y aun así pasan el
      cruce por hash antes de salir (build.py). */
   var COMPRADORES = [
-    ['Henrik Aalvik', 'Noruega'], ['Mireille Castagnou', 'Francia'], ['Oskar Lindgrenius', 'Suecia'],
-    ['Tamsin Whitcroft', 'Reino Unido'], ['Dario Ventimigli', 'Italia'], ['Ingrid Solvang', 'Noruega'],
-    ['Lucas Ferreirinha', 'Portugal'], ['Beatriz Olazábarri', 'España'], ['Jasper van Duinhoven', 'Países Bajos'],
-    ['Callum Ashbrooke', 'Australia'], ['Yuki Harasawa', 'Japón'], ['Anneliese Brückmeyer', 'Alemania'],
-    ['Kestrel Horizon Pte. Ltd.', 'Singapur'], ['Sofía Marañuela', 'España'], ['Maël Kerbrioux', 'Francia']
+    ['Henrik Aalvik', 'Norway'], ['Mireille Castagnou', 'France'], ['Oskar Lindgrenius', 'Sweden'],
+    ['Tamsin Whitcroft', 'United Kingdom'], ['Dario Ventimigli', 'Italy'], ['Ingrid Solvang', 'Norway'],
+    ['Lucas Ferreirinha', 'Portugal'], ['Beatriz Olazábarri', 'Spain'], ['Jasper van Duinhoven', 'Netherlands'],
+    ['Callum Ashbrooke', 'Australia'], ['Yuki Harasawa', 'Japan'], ['Anneliese Brückmeyer', 'Germany'],
+    ['Kestrel Horizon Pte. Ltd.', 'Singapore'], ['Sofía Marañuela', 'Spain'], ['Maël Kerbrioux', 'France']
   ];
 
   var PROYECTOS = [
@@ -54,7 +54,7 @@
     { id: 'p-3', nombre: 'Batu Ridge', pref: 'BR', n: 16, suelo: [28000, 45000], obra: [44000, 90000], moneda: 'EUR', soc: 'tepi_sungai', modelos: ['Pool Suite', 'Dune'] }
   ];
 
-  var TIPO_NOMBRE = { reserva_parcela: 'Bloqueo de Parcela', carta_reserva: 'Carta de Reserva', construccion: 'Contrato de Construcción' };
+  var TIPO_NOMBRE = { reserva_parcela: 'Plot Hold', carta_reserva: 'Reservation Letter', construccion: 'Construction Contract' };
   var TIPO_PREF = { reserva_parcela: 'RP', carta_reserva: 'CR', construccion: 'CC' };
 
   window.LW_DEMO_SIEMBRA = function (F, ctx) {
@@ -72,8 +72,8 @@
     });
     tabla('usuarios', ctx.USUARIOS);
     tabla('equipos_venta', [
-      { id: 'eq-1', nombre: 'Equipo Bali', manager_email: EQUIPO[1].email, activo: true, created_at: ts(-150) },
-      { id: 'eq-2', nombre: 'Equipo Internacional', manager_email: EQUIPO[1].email, activo: true, created_at: ts(-120) }
+      { id: 'eq-1', nombre: 'Bali team', manager_email: EQUIPO[1].email, activo: true, created_at: ts(-150) },
+      { id: 'eq-2', nombre: 'International team', manager_email: EQUIPO[1].email, activo: true, created_at: ts(-120) }
     ]);
     tabla('equipo_miembros', [
       { id: 'em-1', equipo_id: 'eq-1', closer_email: EQUIPO[2].email, desde: dia(-150), hasta: null },
@@ -114,9 +114,9 @@
         phone: '+00 555 01' + (10 + i) + ' ' + (1000 + i * 37), nationality: c[1],
         passport_number: empresa ? 'REG-DEMO-' + (7700 + i) : 'X' + (4400000 + i * 7919),
         date_of_birth: empresa ? null : (1962 + (i * 3) % 30) + '-0' + (1 + i % 9) + '-1' + (i % 9),
-        address: empresa ? 'Marina Boulevard (demo), Singapur' : 'Dirección de demostración ' + (i + 1),
+        address: empresa ? 'Marina Boulevard (demo), Singapore' : 'Demo address ' + (i + 1),
         kyc_status: i % 5 === 3 ? 'pending' : 'verified', notes: null, tipo: empresa ? 'empresa' : 'persona',
-        forma_juridica: empresa ? 'Pte. Ltd.' : null, registro_num: null, rep_nombre: empresa ? 'Representante de demo' : null, rep_cargo: empresa ? 'Director' : null }));
+        forma_juridica: empresa ? 'Pte. Ltd.' : null, registro_num: null, rep_nombre: empresa ? 'Demo representative' : null, rep_cargo: empresa ? 'Director' : null }));
     });
     tabla('clients', clientes);
 
@@ -148,7 +148,7 @@
         moneda: c.moneda, fecha_emision: dia(dias), datos: { conceptos: [{ desc: concepto, importe: total }] }, anulada: false,
         created_at: ts(dias), creado_por: c.creado_por, tipo: tipo, contrato_id: c.id, enviada: tipo !== 'proforma',
         fecha_envio: tipo !== 'proforma' ? dia(dias) : null, justificante_path: tipo === 'recibi' ? 'demo/justificante.pdf' : null, client_id: cli.id,
-        proyecto_id: c.proyecto_id, justificantes: tipo === 'recibi' ? [{ path: 'demo/justificante.pdf', nombre: 'transferencia.pdf' }] : [], venc: null }, extra || {}));
+        proyecto_id: c.proyecto_id, justificantes: tipo === 'recibi' ? [{ path: 'demo/justificante.pdf', nombre: 'bank-transfer.pdf' }] : [], venc: null }, extra || {}));
       facturas.push(f);
       return f;
     }
@@ -173,10 +173,10 @@
       var cobrado = 0;
       /* Bloqueo: señal del 10 % del suelo — proforma y, si está firmado, cobrada. */
       var senal = redondea(u.precio_suelo * 0.1, 100);
-      factura('proforma', rp, cli, senal, d0, 'Señal de bloqueo ' + u.codigo);
+      factura('proforma', rp, cli, senal, d0, 'Plot hold deposit ' + u.codigo);
       if (firmadoRP) {
-        var fs = factura('factura', rp, cli, senal, d0 + 1, 'Señal de bloqueo ' + u.codigo);
-        var rs = factura('recibi', rp, cli, senal, d0 + 3, 'Cobro señal ' + u.codigo);
+        var fs = factura('factura', rp, cli, senal, d0 + 1, 'Plot hold deposit ' + u.codigo);
+        var rs = factura('recibi', rp, cli, senal, d0 + 3, 'Deposit payment ' + u.codigo);
         aplic.push({ id: 'ra-' + rs.id, recibi_id: rs.id, factura_id: fs.id, importe_aplicado: senal });
         cobrado += senal;
       }
@@ -185,9 +185,9 @@
         var cr = contrato('carta_reserva', u, cli, ag, u.precio_suelo, true, d0 + 4, rp);
         /* Resto del suelo: se cobra a la firma de la Carta. */
         var resto = u.precio_suelo - senal;
-        var fr = factura('factura', cr, cli, resto, d0 + 5, 'Resto del suelo ' + u.codigo);
+        var fr = factura('factura', cr, cli, resto, d0 + 5, 'Land balance ' + u.codigo);
         if (etapa !== 'carta' || i % 2) {
-          var rr = factura('recibi', cr, cli, resto, d0 + 12, 'Cobro resto del suelo ' + u.codigo);
+          var rr = factura('recibi', cr, cli, resto, d0 + 12, 'Land balance payment ' + u.codigo);
           aplic.push({ id: 'ra-' + rr.id, recibi_id: rr.id, factura_id: fr.id, importe_aplicado: resto });
           cobrado += resto;
         }
@@ -205,7 +205,7 @@
         if (firmadoCC) { u.estado = 'vendida'; u.obra_fase = d0 < -150 ? 'estructura' : 'cimentacion';
           u.obra_fecha_entrega = dia(d0 + 330); u.obra_actualizado = ts(-(i % 9) - 1); }
         /* Calendario por hitos de obra: 30 / 30 / 30 / 10. */
-        [['Firma del contrato', 30, 0], ['Estructura terminada', 30, 90], ['Cubierta y cerramientos', 30, 180], ['Entrega de llaves', 10, 300]]
+        [['Contract signing', 30, 0], ['Structure complete', 30, 90], ['Roof and enclosure', 30, 180], ['Key handover', 10, 300]]
           .forEach(function (h, j) {
             var fecha = d0 + 20 + h[2], monto = redondea(u.precio_construccion * h[1] / 100, 100);
             var vc = fila({ id: 'cv-' + k.id + '-' + j, contrato_id: k.id, orden: j + 1, descripcion: h[0], pct: String(h[1]),
@@ -216,7 +216,7 @@
               var fh = factura('factura', k, cli, monto, fecha, h[0] + ' — ' + u.codigo, { venc: dia(fecha + 15) });
               vc.factura_id = fh.id;
               if (fecha < -20) {
-                var rh = factura('recibi', k, cli, monto, fecha + 9, 'Cobro ' + h[0].toLowerCase() + ' ' + u.codigo);
+                var rh = factura('recibi', k, cli, monto, fecha + 9, 'Payment: ' + h[0].toLowerCase() + ' ' + u.codigo);
                 aplic.push({ id: 'ra-' + rh.id, recibi_id: rh.id, factura_id: fh.id, importe_aplicado: monto });
                 cobrado += monto;
               }
@@ -285,9 +285,9 @@
     ventas.filter(function (v) { return v.cobrado > 0; }).forEach(function (v, i) {
       var imp = redondea(v.precio_total * 0.05 * 0.3, 10);
       var estado = ['pagada', 'aprobada', 'pendiente'][i % 3];
-      sps.push(fila({ id: 'sp-' + (i + 1), numero: 201 + i, contrato_id: v.contrato_id, concepto: 'Comisión venta ' + v.numero + ' — tramo firma',
+      sps.push(fila({ id: 'sp-' + (i + 1), numero: 201 + i, contrato_id: v.contrato_id, concepto: 'Sales commission ' + v.numero + ' — signing tier',
         importe: imp, moneda: v.moneda, vence_el: null, nota: null, estado: estado, motivo_rechazo: null,
-        pago_referencia: estado === 'pagada' ? 'Transferencia ' + dia(-10 - i) : null, creado_por: 'd-u-1', creado_en: ts(-30 + i),
+        pago_referencia: estado === 'pagada' ? 'Bank transfer ' + dia(-10 - i) : null, creado_por: 'd-u-1', creado_en: ts(-30 + i),
         resuelto_por: estado !== 'pendiente' ? 'd-u-1' : null, resuelto_en: estado !== 'pendiente' ? ts(-20 + i) : null,
         pagado_por: estado === 'pagada' ? 'd-u-6' : null, pagado_en: estado === 'pagada' ? ts(-10 + i) : null,
         beneficiario_email: v.closer_email, origen: 'comision_automatica' }));
@@ -318,24 +318,24 @@
     /* ── Avisos de la campana ───────────────────────────────────────────── */
     var ult = contratos.slice(-6).reverse();
     tabla('notificaciones', [
-      fila({ id: 'ntf-1', tipo: 'contrato_firmado', titulo: 'Contrato firmado: ' + ult[1].numero, detalle: ult[1].comprador_nombre, destinatario: null, contrato_id: ult[1].id, enlace: null, creado_en: ts(0, 2) }),
-      fila({ id: 'ntf-2', tipo: 'recibi_registrado', titulo: 'Cobro registrado · ' + facturas.filter(function (f) { return f.tipo === 'recibi'; }).slice(-1)[0].numero, detalle: null, destinatario: null, contrato_id: null, enlace: null, creado_en: ts(0, 1) }),
-      fila({ id: 'ntf-3', tipo: 'unidad_reservada', titulo: 'Parcela ' + ult[0].parcela_codigo + ' reservada', detalle: ult[0].comprador_nombre, destinatario: null, contrato_id: null, enlace: null, creado_en: ts(-1, 7) }),
-      fila({ id: 'ntf-4', tipo: 'factura_emitida', titulo: 'Factura emitida', detalle: ult[2].numero, destinatario: null, contrato_id: null, enlace: null, creado_en: ts(-1, 3) }),
-      fila({ id: 'ntf-5', tipo: 'solicitud_pago', titulo: 'Nueva solicitud de comisión', detalle: EQUIPO[2].nombre, destinatario: null, contrato_id: null, enlace: null, creado_en: ts(-2, 5) })
+      fila({ id: 'ntf-1', tipo: 'contrato_firmado', titulo: 'Contract signed: ' + ult[1].numero, detalle: ult[1].comprador_nombre, destinatario: null, contrato_id: ult[1].id, enlace: null, creado_en: ts(0, 2) }),
+      fila({ id: 'ntf-2', tipo: 'recibi_registrado', titulo: 'Payment recorded · ' + facturas.filter(function (f) { return f.tipo === 'recibi'; }).slice(-1)[0].numero, detalle: null, destinatario: null, contrato_id: null, enlace: null, creado_en: ts(0, 1) }),
+      fila({ id: 'ntf-3', tipo: 'unidad_reservada', titulo: 'Plot ' + ult[0].parcela_codigo + ' reserved', detalle: ult[0].comprador_nombre, destinatario: null, contrato_id: null, enlace: null, creado_en: ts(-1, 7) }),
+      fila({ id: 'ntf-4', tipo: 'factura_emitida', titulo: 'Invoice issued', detalle: ult[2].numero, destinatario: null, contrato_id: null, enlace: null, creado_en: ts(-1, 3) }),
+      fila({ id: 'ntf-5', tipo: 'solicitud_pago', titulo: 'New commission request', detalle: EQUIPO[2].nombre, destinatario: null, contrato_id: null, enlace: null, creado_en: ts(-2, 5) })
     ]);
 
     /* ── Soporte: hilos de compradores ───────────────────────────────────── */
     tabla('hilo_soporte', [
-      fila({ id: 'h-1', client_id: 'cl-1', categoria: 'Pagos', estado: 'abierto', actualizado_en: ts(-1) }),
-      fila({ id: 'h-2', client_id: 'cl-6', categoria: 'Obra', estado: 'resuelto', actualizado_en: ts(-3) }),
-      fila({ id: 'h-3', client_id: 'cl-9', categoria: 'Documentación', estado: 'abierto', actualizado_en: ts(-2) })
+      fila({ id: 'h-1', client_id: 'cl-1', categoria: 'Payments', estado: 'abierto', actualizado_en: ts(-1) }),
+      fila({ id: 'h-2', client_id: 'cl-6', categoria: 'Construction', estado: 'resuelto', actualizado_en: ts(-3) }),
+      fila({ id: 'h-3', client_id: 'cl-9', categoria: 'Documents', estado: 'abierto', actualizado_en: ts(-2) })
     ]);
     tabla('mensajes_comprador', [
-      fila({ id: 'mc-1', hilo_id: 'h-1', client_id: 'cl-1', de: 'comprador', autor: null, texto: 'Hola, ¿me confirmáis que ha llegado la transferencia del segundo hito?', creado_en: ts(-1, 8) }),
-      fila({ id: 'mc-2', hilo_id: 'h-2', client_id: 'cl-6', de: 'comprador', autor: null, texto: '¿Hay fotos nuevas de la obra?', creado_en: ts(-4, 9) }),
-      fila({ id: 'mc-3', hilo_id: 'h-2', client_id: 'cl-6', de: 'equipo', autor: EQUIPO[5].nombre, texto: 'Subidas esta mañana a su portal, en la pestaña Obra.', creado_en: ts(-3, 9) }),
-      fila({ id: 'mc-4', hilo_id: 'h-3', client_id: 'cl-9', de: 'comprador', autor: null, texto: 'Necesito una copia firmada de la Carta de Reserva.', creado_en: ts(-2, 10) })
+      fila({ id: 'mc-1', hilo_id: 'h-1', client_id: 'cl-1', de: 'comprador', autor: null, texto: 'Hi, can you confirm the transfer for the second milestone has arrived?', creado_en: ts(-1, 8) }),
+      fila({ id: 'mc-2', hilo_id: 'h-2', client_id: 'cl-6', de: 'comprador', autor: null, texto: 'Are there any new construction photos?', creado_en: ts(-4, 9) }),
+      fila({ id: 'mc-3', hilo_id: 'h-2', client_id: 'cl-6', de: 'equipo', autor: EQUIPO[5].nombre, texto: 'Uploaded to your portal this morning, under the Construction tab.', creado_en: ts(-3, 9) }),
+      fila({ id: 'mc-4', hilo_id: 'h-3', client_id: 'cl-9', de: 'comprador', autor: null, texto: 'I need a signed copy of the Reservation Letter.', creado_en: ts(-2, 10) })
     ]);
 
     /* ── Impuestos y productos (núcleo del ERP, 26-sep-2026) ──────────────────
@@ -345,11 +345,11 @@
     var IMP = [
       ['IVA 21 %', 'ES', 'suma', 21, 1, null, true, 10], ['IVA 10 %', 'ES', 'suma', 10, 1, null, false, 11],
       ['IVA 4 %', 'ES', 'suma', 4, 1, null, false, 12], ['IRPF 15 %', 'ES', 'retiene', 15, 1, null, false, 30],
-      ['IRPF 7 % (inicio de actividad)', 'ES', 'retiene', 7, 1, null, false, 31],
-      ['Exenta de IVA', 'ES', 'exenta', 0, 1, 'Operación exenta de IVA, art. 20.Uno LIVA', false, 40],
-      ['Entrega intracomunitaria exenta', 'ES', 'exenta', 0, 1, 'Entrega intracomunitaria exenta, art. 25 LIVA', false, 41],
-      ['No sujeta (servicio a empresa fuera de la UE)', 'ES', 'no_sujeta', 0, 1, 'Operación no sujeta a IVA por reglas de localización, art. 69.Uno.1º LIVA', false, 42],
-      ['Inversión del sujeto pasivo', 'ES', 'isp', 0, 1, 'Inversión del sujeto pasivo, art. 84.Uno.2º LIVA', false, 43],
+      ['IRPF 7 % (new business)', 'ES', 'retiene', 7, 1, null, false, 31],
+      ['VAT exempt', 'ES', 'exenta', 0, 1, 'Operación exenta de IVA, art. 20.Uno LIVA', false, 40],
+      ['Exempt intra-EU supply', 'ES', 'exenta', 0, 1, 'Entrega intracomunitaria exenta, art. 25 LIVA', false, 41],
+      ['Out of scope (service to a non-EU business)', 'ES', 'no_sujeta', 0, 1, 'Operación no sujeta a IVA por reglas de localización, art. 69.Uno.1º LIVA', false, 42],
+      ['Reverse charge', 'ES', 'isp', 0, 1, 'Inversión del sujeto pasivo, art. 84.Uno.2º LIVA', false, 43],
       ['PPN 12 % (base 11/12)', 'ID', 'suma', 12, 0.916667, null, true, 10], ['PPh 23 2 %', 'ID', 'retiene', 2, 1, null, false, 30],
       ['PPN dibebaskan', 'ID', 'exenta', 0, 1, 'PPN dibebaskan', false, 40], ['PPN tidak dipungut', 'ID', 'no_sujeta', 0, 1, 'PPN tidak dipungut', false, 41]
     ];
@@ -358,7 +358,7 @@
         sociedad_clave: null, clase: x[2], porcentaje: x[3], coef_base: x[4], motivo_legal: x[5], recargo_de: null,
         por_defecto: x[6], activo: true, orden: x[7], creado_en: ts(-60), creado_por: EQUIPO[0].email, actualizado_en: null, actualizado_por: null });
     });
-    [['Recargo de equivalencia 5,2 %', 5.2, 'imp-1', 20], ['Recargo de equivalencia 1,4 %', 1.4, 'imp-2', 21], ['Recargo de equivalencia 0,5 %', 0.5, 'imp-3', 22]]
+    [['Equivalence surcharge 5.2 %', 5.2, 'imp-1', 20], ['Equivalence surcharge 1.4 %', 1.4, 'imp-2', 21], ['Equivalence surcharge 0.5 %', 0.5, 'imp-3', 22]]
       .forEach(function (r, i) {
         impuestos.push(fila({ id: 'imp-' + (IMP.length + i + 1), numero_impuesto: 'IMP-' + ('0000' + (IMP.length + i + 1)).slice(-5), nombre: r[0], pais: 'ES',
           sociedad_clave: null, clase: 'suma', porcentaje: r[1], coef_base: 1, motivo_legal: null, recargo_de: r[2],
@@ -366,12 +366,12 @@
       });
     tabla('impuestos', impuestos);
     var PRD = [
-      ['Gestión de alquiler vacacional', 'SRV-ALQ', 'mes', 350, 'EUR', 'imp-1', 'Publicación, reservas, check-in y limpieza de una villa.'],
-      ['Mantenimiento de piscina', 'SRV-PIS', 'mes', 1500000, 'IDR', 'imp-10', 'Dos visitas por semana, productos incluidos.'],
-      ['Hora de interiorismo', 'SRV-INT', 'hora', 45.5, 'EUR', 'imp-1', null],
-      ['Pack de mobiliario Canopy', 'MOB-CAN', 'ud', 18900, 'EUR', 'imp-1', 'Mobiliario completo para el modelo Canopy.'],
-      ['Informe de due diligence', 'SRV-DD', 'ud', 12500000, 'IDR', 'imp-10', 'Revisión de títulos y licencias de la parcela.'],
-      ['Visita guiada a obra', 'SRV-VIS', 'ud', 0, 'EUR', null, 'Sin coste para compradores con contrato firmado.']
+      ['Holiday rental management', 'SRV-ALQ', 'month', 350, 'EUR', 'imp-1', 'Listing, bookings, check-in and cleaning for one villa.'],
+      ['Pool maintenance', 'SRV-PIS', 'month', 1500000, 'IDR', 'imp-10', 'Two visits a week, chemicals included.'],
+      ['Interior design hour', 'SRV-INT', 'hour', 45.5, 'EUR', 'imp-1', null],
+      ['Canopy furniture pack', 'MOB-CAN', 'unit', 18900, 'EUR', 'imp-1', 'Full furniture set for the Canopy model.'],
+      ['Due diligence report', 'SRV-DD', 'unit', 12500000, 'IDR', 'imp-10', 'Review of the plot\'s title and permits.'],
+      ['Guided site visit', 'SRV-VIS', 'unit', 0, 'EUR', null, 'Free for buyers with a signed contract.']
     ];
     tabla('productos', PRD.map(function (p, i) {
       return fila({ id: 'prd-' + (i + 1), numero_producto: 'PRD-' + ('0000' + (i + 1)).slice(-5), nombre: p[0], referencia: p[1], unidad: p[2],
@@ -387,9 +387,9 @@
     tabla('mantenimiento', [{ id: 1, envios_pausados: false, motivo: null, cambiado_en: null,
       intranet_cerrada: false, intranet_motivo: null, intranet_cambiado_en: null }]);
     var COM = [
-      ['com-1', 'Nuevo calendario de visitas a obra', 'Visitas a obra', 'A partir del lunes las visitas guiadas a Cemara Estate se reservan desde la ficha del comprador.', -9, -8],
-      ['com-2', 'Cierre de trimestre: facturas pendientes', 'Cierre de trimestre', 'Antes del viernes, revisad las proformas sin emitir de vuestras operaciones.', -3, -3],
-      ['com-3', 'Presentación de Batu Ridge (borrador)', 'Batu Ridge', 'Borrador de la presentación comercial de la segunda fase.', -1, null]
+      ['com-1', 'New schedule for site visits', 'Site visits', 'From Monday, guided visits to Cemara Estate are booked from the buyer\'s record.', -9, -8],
+      ['com-2', 'Quarter close: pending invoices', 'Quarter close', 'Before Friday, please check the pro formas not yet issued on your deals.', -3, -3],
+      ['com-3', 'Batu Ridge presentation (draft)', 'Batu Ridge', 'Draft of the sales presentation for phase two.', -1, null]
     ];
     tabla('comunicados', COM.map(function (c) {
       return fila({ id: c[0], asunto: c[1], encabezado: c[2], cuerpo: c[3], cta_url: null, cta_texto: null,
@@ -401,20 +401,20 @@
       EQUIPO.forEach(function (u, j) {
         var mal = c[0] === 'com-1' && j === 4;
         envios.push(fila({ id: 'ce-' + c[0] + '-' + j, comunicado_id: c[0], user_id: u.user_id, email: u.email, nombre: u.nombre,
-          es_prueba: false, estado: mal ? 'error' : 'ok', intentos: mal ? 3 : 1, error: mal ? 'Buzón lleno (demo)' : null,
+          es_prueba: false, estado: mal ? 'error' : 'ok', intentos: mal ? 3 : 1, error: mal ? 'Mailbox full (demo)' : null,
           encolado_en: ts(c[5], 8), enviado_en: mal ? null : ts(c[5], 8) }));
       });
     });
     tabla('comunicado_envios', envios);
     function correo(n) { var s = n.toLowerCase().normalize('NFD').replace(/[^a-z ]/g, '').trim().split(' '); return s[0] + '.' + s[s.length - 1] + DOMINIO; }
-    tabla('solicitudes_colaborador', [[20, 'España', 'pendiente', -1], [21, 'Portugal', 'pendiente', -2], [22, 'Países Bajos', 'activada', -9]]
+    tabla('solicitudes_colaborador', [[20, 'Spain', 'pendiente', -1], [21, 'Portugal', 'pendiente', -2], [22, 'Netherlands', 'activada', -9]]
       .map(function (s, i) {
         var n = NOMBRES_LEAD[s[0]];
         return fila({ id: 'sc-' + (i + 1), email: correo(n), nombre: n, telefono: '+00 555 02' + (10 + i) + ' 3' + (100 + i * 41),
-          pais: s[1], mensaje: 'Trabajo con compradores extranjeros y quiero vender vuestras promociones.', estado: s[2],
+          pais: s[1], mensaje: 'I work with overseas buyers and would like to sell your developments.', estado: s[2],
           revisado_por: s[2] === 'pendiente' ? null : EQUIPO[0].email, revisado_en: s[2] === 'pendiente' ? null : ts(s[3] + 1), creado_at: ts(s[3]) });
       }));
-    tabla('referidos_contactos', [[16, 17, 'Alemania', 'Villa de dos dormitorios en Tirta Village', 'nuevo', -2], [18, 19, 'India', null, 'en_crm', -6]]
+    tabla('referidos_contactos', [[16, 17, 'Germany', 'Two-bedroom villa in Tirta Village', 'nuevo', -2], [18, 19, 'India', null, 'en_crm', -6]]
       .map(function (r, i) {
         var ref = NOMBRES_LEAD[r[0]], cli = NOMBRES_LEAD[r[1]];
         return fila({ id: 'rc-' + (i + 1), referido_email: correo(ref), referido_nombre: ref, referido_telefono: null,

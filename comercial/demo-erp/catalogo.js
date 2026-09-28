@@ -8,79 +8,81 @@
   /* [clave, nombre, área, etiquetas, descripción, capacidades, url, base]. Solo capacidades vistas en la v4. */
   /* Secciones = las del menú de la intranet (MENU_V4 de nav.js): el catálogo se lee igual que el ERP por dentro
      (owner, 27-sep: «agrupa por secciones»). El orden de aquí es el de la landing y el de los códigos. */
-  var SECCIONES = ['Seguimiento', 'Documentación', 'Finanzas', 'Comunicación', 'Base de datos', 'Panel de control'];
+  var SECCIONES = ['Sales pipeline', 'Documents', 'Finance', 'Communication', 'Database', 'Control panel'];
+  /* Textos en inglés (owner, 28-sep: «hazla en inglés»): la demo pública es en inglés. Las claves (m[0]) no cambian;
+     SECCIONES sí es el valor que se enseña y la clave de PREF (aquí) y de ICONO_SECCION (landing.html): van juntas. */
   var MODULOS = [
-    ['home', 'Panel del día', 'Seguimiento', ['Incluido'], 'Lo que está esperando a alguien hoy, con enlace a la pantalla que lo resuelve.',
-      ['Reservas que vencen en uno o dos días', 'Facturas con saldo pendiente', 'Firmas pendientes y vencimientos críticos'], '/intranet/v4/home/', 1],
-    ['crm', 'CRM de leads', 'Seguimiento', ['Meta Ads', 'Embudo'], 'Los leads entran solos y cada uno tiene su próximo paso con fecha.',
-      ['Embudo por etapas configurable', 'Bandeja «para hoy» con los retrasos en rojo', 'Agenda de cierre, reparto de leads y ranking de closers'], '/intranet/leads/'],
-    ['setter', 'Setter IA en WhatsApp', 'Seguimiento', ['WhatsApp', 'IA'], 'Un asistente que atiende al lead por WhatsApp y lo cualifica.',
-      ['Conversación desde el primer mensaje', 'Lead listo para el comercial'], '/intranet/leads/'],
-    ['campanas', 'Piloto de campañas', 'Seguimiento', ['Meta Ads', 'Automático'], 'Vigila las campañas y mueve presupuesto dentro del tope de dirección.',
-      ['Pausa lo que no trae leads', 'Registro de cada decisión con su motivo'], '/intranet/leads/'],
-    ['operaciones', 'Operaciones', 'Seguimiento', ['Cadena de venta'], 'Una fila por venta, con todos sus contratos juntos.',
-      ['Precio pactado, cobrado y pendiente', 'Filtros por firma y por cobro', 'Ficha completa de la venta'], '/intranet/v4/operaciones/'],
-    ['reservas', 'Reservas', 'Seguimiento', ['Plazos'], 'Reservas que vencen y el paso a bloqueo de parcela a tiempo.',
-      ['Prórrogas registradas', 'Aviso antes de que caduquen'], '/intranet/v4/reservas/'],
+    ['home', 'Daily dashboard', 'Sales pipeline', ['Included'], 'Everything waiting on someone today, with a link to the screen that settles it.',
+      ['Reservations expiring in one or two days', 'Invoices with an outstanding balance', 'Pending signatures and critical due dates'], '/intranet/v4/home/', 1],
+    ['crm', 'Lead CRM', 'Sales pipeline', ['Meta Ads', 'Funnel'], 'Leads come in on their own, and each one has a dated next step.',
+      ['Configurable stage funnel', '"For today" inbox with overdue leads in red', 'Closing calendar, lead assignment and closer ranking'], '/intranet/leads/'],
+    ['setter', 'AI setter on WhatsApp', 'Sales pipeline', ['WhatsApp', 'AI'], 'An assistant that answers the lead on WhatsApp and qualifies them.',
+      ['Conversation from the first message', 'Lead handed over ready for the sales rep'], '/intranet/leads/'],
+    ['campanas', 'Campaign autopilot', 'Sales pipeline', ['Meta Ads', 'Automatic'], 'Watches the campaigns and moves budget within the cap set by management.',
+      ['Pauses what brings no leads', 'Every decision logged with its reason'], '/intranet/leads/'],
+    ['operaciones', 'Deals', 'Sales pipeline', ['Sales chain'], 'One row per sale, with all its contracts together.',
+      ['Agreed, collected and outstanding amounts', 'Filters by signature and by payment', 'Full deal record'], '/intranet/v4/operaciones/'],
+    ['reservas', 'Reservations', 'Sales pipeline', ['Deadlines'], 'Reservations about to expire, and the move to a plot hold in time.',
+      ['Extensions on record', 'Alert before they lapse'], '/intranet/v4/reservas/'],
 
-    ['contratos', 'Contratos', 'Documentación', ['3 idiomas', 'Firma electrónica'], 'Generador de contratos con registro de versiones.',
-      ['Español, inglés e indonesio', 'Firma electrónica con caducidad', 'Estado por firmante'], '/intranet/v4/contratos/'],
-    ['asistente', 'Asistente de respuestas', 'Documentación', ['IA'], 'Redacta la respuesta a un cliente citando solo su propio contrato.',
-      ['El equipo la revisa antes de enviarla', 'Lo que el contrato no dice lo marca como pendiente'], '/intranet/v4/asistente-correos/'],
-    ['creatividades', 'Creatividades y dossiers', 'Documentación', ['Marketing'], 'Piezas para redes y dossiers de venta de cada proyecto.',
-      ['Por proyecto', 'El equipo comercial descarga solo lo aprobado'], '/intranet/v4/creatividades/'],
-    ['portal', 'Portal del comprador', 'Documentación', ['Acceso propio'], 'Cada comprador ve sus contratos, pagos, facturas y obra.',
-      ['Acceso por enlace, sin contraseña que recordar'], null],
+    ['contratos', 'Contracts', 'Documents', ['3 languages', 'E-signature'], 'Contract generator with version history.',
+      ['Spanish, English and Indonesian', 'E-signature links that expire', 'Status per signer'], '/intranet/v4/contratos/'],
+    ['asistente', 'Reply assistant', 'Documents', ['AI'], 'Drafts the reply to a client, quoting only that client\'s own contract.',
+      ['The team reviews it before sending', 'Anything the contract does not cover is flagged as pending'], '/intranet/v4/asistente-correos/'],
+    ['creatividades', 'Creatives and brochures', 'Documents', ['Marketing'], 'Social media assets and sales brochures for each project.',
+      ['Per project', 'The sales team downloads only what is approved'], '/intranet/v4/creatividades/'],
+    ['portal', 'Buyer portal', 'Documents', ['Own login'], 'Each buyer sees their contracts, payments, invoices and construction progress.',
+      ['Access by link, no password to remember'], null],
 
-    ['finanzas', 'Panel financiero', 'Finanzas', ['Dirección'], 'El dinero de la empresa en una pantalla, para dirección.',
-      ['Lo cobrado, lo firmado pendiente y cuándo toca cobrarlo', 'Lo facturado sin cobrar y lo que queda por vender'], '/intranet/v4/finanzas/'],
-    ['vencimientos', 'Vencimientos', 'Finanzas', ['Hitos'], 'Calendario de pagos por hitos de cada contrato.',
-      ['Qué vence, qué está vencido y qué no tiene fecha', 'Filtro por sociedad y moneda'], '/intranet/v4/vencimientos/'],
-    ['facturas', 'Facturación', 'Finanzas', ['Multimoneda', 'Multi-sociedad'], 'Facturas y proformas enlazadas al contrato que las origina.',
-      ['Por sociedad emisora', 'Euros y rupias', 'Estado de cobro de cada factura'], '/intranet/v4/facturas/'],
-    ['recibos', 'Cobros y recibís', 'Finanzas', ['Justificantes'], 'Cada cobro con su justificante, aplicado a las facturas que salda.',
-      ['Un recibí puede saldar varias facturas', 'Aviso de recibís sin justificante'], '/intranet/v4/recibos/'],
-    ['productos', 'Productos', 'Finanzas', ['Nuevo', 'Impuestos'], 'El catálogo de productos y servicios que se facturan por líneas.',
-      ['Referencia, precio por unidad e impuesto por defecto', 'Un producto no se borra: se desactiva'], '/intranet/v4/productos/'],
-    ['comisiones', 'Comisiones', 'Finanzas', ['Equipos', 'Automático'], 'Lo que se debe a cada comercial, generado desde la venta.',
-      ['Condiciones por tramo y equipos', 'Aprobar y marcar como pagada', 'Reparto a closers'], '/intranet/v4/comisiones/'],
-    ['comisionadmin', 'Comisión de administración', 'Finanzas', ['Gestora'], 'Tarifas y liquidación de la comisión de la gestora por proyecto.',
-      ['Líneas por proyecto'], '/intranet/v4/comision-admin/'],
-    ['gastos', 'Gastos y proveedores', 'Finanzas', ['Proveedores'], 'Lo que paga la empresa, con su justificante.',
-      ['Factura de proveedor por sociedad, proyecto y categoría', 'Retenciones a proveedores pendientes de ingresar'], '/intranet/v4/gastos/'],
-    ['bancos', 'Bancos y conciliación', 'Finanzas', ['Extractos'], 'Cada movimiento del banco enlazado con lo que lo explica.',
-      ['Extractos de las cuentas de cada sociedad', 'Cada línea casada con un recibí, un gasto, una comisión o un traspaso'], '/intranet/v4/bancos/'],
-    ['cuentas', 'Cuentas bancarias', 'Finanzas', ['Bancos'], 'Qué cuenta aparece en cada contrato y factura.',
-      ['Por proyecto y por sociedad'], '/intranet/v4/cuentas/'],
-    ['sociedades', 'Sociedades emisoras', 'Finanzas', ['Multi-sociedad'], 'Varias empresas del grupo en el mismo ERP.',
-      ['Datos fiscales y logo por sociedad'], '/intranet/v4/sociedades/'],
+    ['finanzas', 'Finance dashboard', 'Finance', ['Management'], 'The company\'s money on one screen, for management.',
+      ['What has been collected, what is signed but unpaid, and when it falls due', 'What is invoiced but unpaid, and what is left to sell'], '/intranet/v4/finanzas/'],
+    ['vencimientos', 'Due dates', 'Finance', ['Milestones'], 'Payment schedule by milestone for each contract.',
+      ['What is due, what is overdue and what has no date', 'Filter by company and currency'], '/intranet/v4/vencimientos/'],
+    ['facturas', 'Invoicing', 'Finance', ['Multi-currency', 'Multi-company'], 'Invoices and pro formas linked to the contract they come from.',
+      ['By issuing company', 'Euros and rupiah', 'Payment status of every invoice'], '/intranet/v4/facturas/'],
+    ['recibos', 'Payments and receipts', 'Finance', ['Proof of payment'], 'Every payment with its proof, applied to the invoices it settles.',
+      ['One receipt can settle several invoices', 'Alert on receipts with no proof attached'], '/intranet/v4/recibos/'],
+    ['productos', 'Products', 'Finance', ['New', 'Taxes'], 'The catalogue of products and services invoiced by line.',
+      ['Reference, unit price and default tax', 'A product is never deleted: it is deactivated'], '/intranet/v4/productos/'],
+    ['comisiones', 'Commissions', 'Finance', ['Teams', 'Automatic'], 'What each sales rep is owed, generated from the sale.',
+      ['Tiered terms and teams', 'Approve and mark as paid', 'Split between closers'], '/intranet/v4/comisiones/'],
+    ['comisionadmin', 'Management fee', 'Finance', ['Manager'], 'Rates and settlement of the management company\'s fee per project.',
+      ['Lines per project'], '/intranet/v4/comision-admin/'],
+    ['gastos', 'Expenses and suppliers', 'Finance', ['Suppliers'], 'What the company pays, with its proof.',
+      ['Supplier invoices by company, project and category', 'Supplier withholdings still to be paid over'], '/intranet/v4/gastos/'],
+    ['bancos', 'Banking and reconciliation', 'Finance', ['Statements'], 'Every bank transaction linked to what explains it.',
+      ['Statements for each company\'s accounts', 'Each line matched to a receipt, an expense, a commission or a transfer'], '/intranet/v4/bancos/'],
+    ['cuentas', 'Bank accounts', 'Finance', ['Banks'], 'Which account appears on each contract and invoice.',
+      ['By project and by company'], '/intranet/v4/cuentas/'],
+    ['sociedades', 'Issuing companies', 'Finance', ['Multi-company'], 'Several group companies in the same ERP.',
+      ['Tax details and logo per company'], '/intranet/v4/sociedades/'],
 
-    ['comunicacion', 'Comunicados', 'Comunicación', ['Envíos'], 'Avisos a todos los compradores de un proyecto o solo a algunos.',
-      ['Registro de cada envío'], '/intranet/v4/comunicacion/'],
-    ['soporte', 'Soporte al cliente', 'Comunicación', ['Tickets'], 'Consultas de clientes por categoría, con su historial.',
-      ['Abierto o resuelto', 'Conversación dentro de la ficha'], '/intranet/v4/soporte/'],
-    ['peticiones', 'Peticiones a dirección', 'Comunicación', ['Nuevo', 'IA'], 'Lo que la intranet no deja hacer (cambiar un dato, anular una factura…) se pide aquí y dirección lo aprueba.',
-      ['El asistente entiende la petición y la deja lista para aprobar', 'Aviso en la campana al aprobarla o rechazarla'], '/intranet/v4/asistente/'],
+    ['comunicacion', 'Announcements', 'Communication', ['Mailings'], 'Notices to every buyer in a project, or only to some.',
+      ['Log of every mailing'], '/intranet/v4/comunicacion/'],
+    ['soporte', 'Customer support', 'Communication', ['Tickets'], 'Client questions by category, with their history.',
+      ['Open or resolved', 'Conversation inside the client record'], '/intranet/v4/soporte/'],
+    ['peticiones', 'Requests to management', 'Communication', ['New', 'AI'], 'Whatever the intranet does not allow (changing a record, voiding an invoice…) is requested here, and management approves it.',
+      ['The assistant understands the request and gets it ready to approve', 'Bell notification when it is approved or rejected'], '/intranet/v4/asistente/'],
 
-    ['proyectos', 'Proyectos y parcelario', 'Base de datos', ['Inventario', 'CSV'], 'Cada promoción con sus parcelas, precios y estado, y la documentación de la empresa.',
-      ['Libre, reservada, bloqueada o vendida', 'Importación desde CSV', 'Enlaces, preguntas frecuentes y ficheros de la empresa'], '/intranet/v4/proyectos/'],
-    ['modelos', 'Catálogo de modelos', 'Base de datos', ['Catálogo'], 'Modelos de vivienda con techos, extras y documentos.',
-      ['Precio de construcción por modelo', 'Planos y documentos adjuntos'], '/intranet/v4/modelos/'],
-    ['obra', 'Control de obra', 'Base de datos', ['Entregas'], 'Fase de cada unidad, fecha de entrega y fotos.',
-      ['Próximas entregas', 'Partes de trabajo'], '/intranet/v4/obra/'],
-    ['compradores', 'Clientes', 'Base de datos', ['KYC'], 'Directorio de compradores e inversores con sus documentos.',
-      ['Estado de KYC', 'Todas sus operaciones en su ficha'], '/intranet/v4/compradores/'],
+    ['proyectos', 'Projects and plots', 'Database', ['Inventory', 'CSV'], 'Each development with its plots, prices and status, plus the company\'s documents.',
+      ['Available, reserved, on hold or sold', 'CSV import', 'Links, FAQs and company files'], '/intranet/v4/proyectos/'],
+    ['modelos', 'Model catalogue', 'Database', ['Catalogue'], 'House models with roof options, extras and documents.',
+      ['Construction price per model', 'Floor plans and attached documents'], '/intranet/v4/modelos/'],
+    ['obra', 'Construction tracking', 'Database', ['Handovers'], 'Stage of each unit, handover date and photos.',
+      ['Upcoming handovers', 'Work reports'], '/intranet/v4/obra/'],
+    ['compradores', 'Clients', 'Database', ['KYC'], 'Directory of buyers and investors with their documents.',
+      ['KYC status', 'All their deals on their record'], '/intranet/v4/compradores/'],
 
-    ['usuarios', 'Equipo y permisos', 'Panel de control', ['Incluido', 'Roles'], 'Quién entra y qué ve cada persona.',
-      ['Roles de dirección, administración, jefe de ventas y agente', 'Herramientas y proyectos por persona'], '/intranet/v4/usuarios/', 1],
-    ['ajustes', 'Ajustes', 'Panel de control', ['Incluido'], 'Parámetros de la empresa y de la intranet.',
-      ['Impuestos por sociedad', 'Modo mantenimiento', 'Intranet en español o inglés'], '/intranet/v4/ajustes/', 1]
+    ['usuarios', 'Team and permissions', 'Control panel', ['Included', 'Roles'], 'Who logs in and what each person sees.',
+      ['Management, administration, sales manager and agent roles', 'Tools and projects per person'], '/intranet/v4/usuarios/', 1],
+    ['ajustes', 'Settings', 'Control panel', ['Included'], 'Company and intranet settings.',
+      ['Taxes per company', 'Maintenance mode', 'Intranet in English or Spanish'], '/intranet/v4/ajustes/', 1]
   ];
   var CAMINO = [
-    ['contabilidad', 'Contabilidad', 'Asientos generados desde las facturas y los cobros del ERP, plan de cuentas por sociedad y exportación para la gestoría. Llegará dentro del pack Finanzas.'],
-    ['radar', 'Radar de cobros', 'Aprende cómo paga cada comprador y avisa antes de que un hito se retrase, con el recordatorio ya redactado.'],
-    ['dataroom', 'Sala de datos del inversor', 'Documentación de cada proyecto para inversores, con marca de agua por persona y registro de quién abre qué.'],
-    ['postventa', 'Postventa y garantías', 'Incidencias después de la entrega: quién las abre, qué contratista las arregla y en qué garantía caen.']
+    ['contabilidad', 'Accounting', 'Journal entries generated from the ERP\'s invoices and payments, a chart of accounts per company and export for your accountant. It will ship inside the Finance pack.'],
+    ['radar', 'Collections radar', 'Learns how each buyer pays and warns before a milestone slips, with the reminder already drafted.'],
+    ['dataroom', 'Investor data room', 'Project documents for investors, watermarked per person, with a log of who opened what.'],
+    ['postventa', 'After-sales and warranties', 'Issues after handover: who reports them, which contractor fixes them and which warranty covers them.']
   ];
 
   /* Rutas de la demo que son de cada módulo (prefijo de ruta). Un módulo apagado oculta sus enlaces del menú
@@ -102,7 +104,7 @@
     finanzas: ['/intranet/v4/finanzas/'], bancos: ['/intranet/v4/bancos/'], gastos: ['/intranet/v4/gastos/']
   };
   /* Módulos que viven como pestaña dentro de otra pantalla (el CRM): se ocultan por el texto de la pestaña. */
-  var PESTANAS = { setter: ['Setter IA', 'WhatsApp bot'], campanas: ['Campañas', 'Automatismos'] };
+  var PESTANAS = { setter: ['Setter IA', 'AI Setter', 'WhatsApp bot'], campanas: ['Campañas', 'Campaigns', 'Automatismos', 'Automations'] };   // ES y EN: la v4 cambia de idioma
 
   var CLAVE = 'demo-erp-modulos-v3';
   function leeEstado() {
@@ -146,7 +148,7 @@
     return r;
   }
   /* Código corto por área (BAS-01, VEN-03…), el mismo en la landing y en el panel. */
-  var PREF = { 'Seguimiento': 'SEG', 'Documentación': 'DOC', 'Finanzas': 'FIN', 'Comunicación': 'COM', 'Base de datos': 'BDD', 'Panel de control': 'PAN' };
+  var PREF = { 'Sales pipeline': 'SEG', 'Documents': 'DOC', 'Finance': 'FIN', 'Communication': 'COM', 'Database': 'BDD', 'Control panel': 'PAN' };   // prefijos estables: no se traducen
   var CODIGO = {}, cuenta = {};
   MODULOS.forEach(function (m) { cuenta[m[2]] = (cuenta[m[2]] || 0) + 1; CODIGO[m[0]] = PREF[m[2]] + '-' + ('0' + cuenta[m[2]]).slice(-2); });
   CAMINO.forEach(function (m, i) { CODIGO[m[0]] = 'NEW-' + ('0' + (i + 1)).slice(-2); });
@@ -157,12 +159,12 @@
      build si esto deja de casar con el registro. Se enciende o apaga cada pack ENTERO.
      [clave, nombre, descripción, módulos, packs que necesita] */
   var PACKS = [
-    ['base', 'Base', 'Lo que tiene cualquier empresa: el día, el equipo y los ajustes.', ['home', 'usuarios', 'ajustes'], []],
-    ['captacion', 'CRM y captación', 'Los leads entran solos y se trabajan desde el CRM, con el setter de WhatsApp y el piloto de campañas.', ['crm', 'setter', 'campanas'], ['base']],
-    ['nucleo', 'Núcleo de venta', 'Clientes, ventas, contratos, facturas y cobros, con el inventario que se vende: se leen unos a otros, así que van juntos.',
+    ['base', 'Base', 'What every company has: the day, the team and the settings.', ['home', 'usuarios', 'ajustes'], []],
+    ['captacion', 'CRM and lead generation', 'Leads come in on their own and are worked from the CRM, with the WhatsApp setter and the campaign autopilot.', ['crm', 'setter', 'campanas'], ['base']],
+    ['nucleo', 'Sales core', 'Clients, deals, contracts, invoices and payments, with the inventory being sold. They read from each other, so they come together.',
       ['compradores', 'operaciones', 'reservas', 'contratos', 'facturas', 'recibos', 'cuentas', 'comisiones', 'proyectos', 'modelos', 'obra', 'portal', 'soporte'], ['base']],
-    ['finanzas', 'Finanzas', 'El dinero de la empresa: calendario de cobros, panel de dirección y gastos. La contabilidad, cuando llegue, entra aquí.', ['vencimientos', 'finanzas', 'gastos'], ['nucleo']],
-    ['extras', 'Extras', 'Asistentes con IA, piezas de marketing y la comisión de la gestora, sobre el núcleo de venta.', ['asistente', 'peticiones', 'creatividades', 'comisionadmin'], ['nucleo']]
+    ['finanzas', 'Finance', 'The company\'s money: collections calendar, management dashboard and expenses. Accounting will join this pack when it ships.', ['vencimientos', 'finanzas', 'gastos'], ['nucleo']],
+    ['extras', 'Extras', 'AI assistants, marketing assets and the management fee, on top of the sales core.', ['asistente', 'peticiones', 'creatividades', 'comisionadmin'], ['nucleo']]
   ];
   // Sueltos: no dependen de ningún otro módulo (solo de la base). [módulo, packs que necesita]
   var SUELTOS = [

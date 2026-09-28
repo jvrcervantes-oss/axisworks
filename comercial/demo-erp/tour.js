@@ -25,73 +25,76 @@
   /* ── Guion ─────────────────────────────────────────────────────────────
      t: dónde apuntar (css | texto | caja, fila de tarjetas | panel lateral); null = centrado.
      click: se pulsa antes de enfocar (abre una ficha); se cierra al salir del paso. */
+  /* Textos del tour en inglés (owner, 28-sep: la demo pública es en inglés). Los objetivos (texto/contiene) llevan
+     la etiqueta en los DOS idiomas de la v4, [español, inglés]: el visitante puede cambiar el idioma con el
+     interruptor y el foco tiene que seguir encontrando lo que explica. */
   var PASOS = [
-    { p: '/', cap: 'Tour guiado', t: null, hero: true,
-      h: 'AxisWorks ERP en tres minutos',
-      b: 'Un día de trabajo en una promotora: del lead que entra por Meta a la villa entregada. Los datos son inventados. Avanza con → o con los botones.' },
-    { p: '/intranet/v4/home/', cap: 'Inicio', t: { texto: 'CONTRATOS ACTIVOS', fila: true },
-      h: 'Cada mañana empieza aquí',
-      b: 'Contratos activos, cobrado este mes, vencimientos de los próximos treinta días y parcelas libres. Las cifras salen de los contratos y los cobros: nadie las rellena a mano.' },
-    { p: '/intranet/v4/home/', cap: 'Inicio', t: { texto: 'Hoy toca', caja: true },
-      h: 'Lo que está esperando a alguien',
-      b: 'Reservas a punto de caducar, facturas firmadas sin cobrar, firmas pendientes. Cada línea lleva a la pantalla donde se resuelve.' },
-    { p: '/intranet/v4/home/', cap: 'Inicio', t: { css: 'aside' },
-      h: 'Un menú, todos los módulos',
-      b: 'Cada persona ve solo las herramientas que tiene asignadas. Un agente no ve la tesorería; dirección lo ve todo.' },
-    { p: '/intranet/leads/', cap: 'Seguimiento', t: { texto: 'PARA HOY', contiene: 'CON RETRASO' },
-      h: 'Los leads entran solos',
-      b: 'Los formularios de Meta llegan al CRM sin copiar nada. Cada lead tiene su próximo paso con fecha, y los que llevan días sin tocarse salen en rojo.' },
-    { p: '/intranet/leads/', cap: 'Seguimiento', t: { texto: 'Pipeline', contiene: 'Trazabilidad' },
-      h: 'Embudo, campañas y automatismos',
-      b: 'El embudo por etapas, lo que cuesta cada lead por campaña y el piloto que pausa o sube presupuesto en Meta Ads, siempre dentro del tope que marca dirección.' },
-    { p: '/intranet/v4/operaciones/', cap: 'Seguimiento', t: { texto: 'PRECIO PACTADO', fila: true },
-      h: 'Una venta, una fila',
-      b: 'Bloqueo de parcela, carta de reserva y contrato de construcción del mismo comprador van juntos. Arriba, lo pactado, lo cobrado y lo pendiente de toda la cartera.' },
-    { p: '/intranet/v4/operaciones/', cap: 'Seguimiento', click: 'tbody tr[data-lw-id]', t: { panel: true },
-      h: 'Toda la venta en una ficha',
-      b: 'Situación, contratos de la cadena, comprador con su KYC y cada factura y recibí. Desde aquí se emite el siguiente documento.' },
-    { p: '/intranet/v4/contratos/', cap: 'Documentación', t: { texto: 'FIRMADOS', fila: true },
-      h: 'Contratos en tres idiomas',
-      b: 'Se generan en español, inglés e indonesio y se firman con un enlace electrónico que caduca. Aquí, lo firmado, los borradores y el volumen comprometido.' },
-    { p: '/intranet/v4/facturas/', cap: 'Finanzas', t: { texto: 'FACTURADO ESTE MES', fila: true },
-      h: 'Facturas que saben si están cobradas',
-      b: 'Cada factura cuelga de su contrato y de su sociedad emisora, en euros o en rupias. El estado de cobro se calcula con los recibís, no se marca a mano.' },
-    { p: '/intranet/v4/recibos/', cap: 'Finanzas', t: { texto: 'RECIBÍS EMITIDOS', fila: true },
-      h: 'Cada cobro, con su justificante',
-      b: 'Un recibí puede saldar varias facturas. Los que no llevan justificante adjunto salen señalados para que nadie los olvide.' },
-    { p: '/intranet/v4/productos/', cap: 'Finanzas', t: { texto: 'Lo que se vende', caja: true },
-      h: 'Productos que ya traen su impuesto',
-      b: 'El catálogo de lo que se factura por líneas: referencia, precio por unidad y el impuesto que la línea trae puesto. Un producto no se borra, se desactiva.' },
-    { p: '/intranet/v4/vencimientos/', cap: 'Finanzas', t: { texto: 'VENCIMIENTOS CRÍTICOS', fila: true },
-      h: 'Tesorería por hitos',
-      b: 'El calendario de pagos de cada contrato: qué vence en los próximos noventa días, qué está vencido y qué no tiene fecha todavía.' },
-    { p: '/intranet/v4/reservas/', cap: 'Seguimiento', t: { texto: 'VENCEN EN 2 DÍAS', fila: true },
-      h: 'Ninguna reserva caduca sin avisar',
-      b: 'Las reservas que vencen en dos días, esta semana o más adelante, con sus prórrogas. Cuando una vence, la parcela se libera sola.' },
-    { p: '/intranet/v4/comisiones/', cap: 'Finanzas', t: { texto: 'PENDIENTES DE RESOLVER', fila: true },
-      h: 'Comisiones que se generan solas',
-      b: 'Cada venta genera la comisión del comercial y la del jefe de equipo según sus condiciones. Dirección la aprueba y la marca como pagada.' },
-    { p: '/intranet/v4/proyectos/', cap: 'Base de datos', t: { texto: 'CARTERA CONSOLIDADA', fila: true },
-      h: 'El parcelario, vivo',
-      b: 'Cada promoción con sus parcelas y su estado: libre, reservada, bloqueada o vendida. El estado cambia solo cuando se firma o se libera un contrato.' },
-    { p: '/intranet/v4/obra/', cap: 'Base de datos', t: { texto: 'PRÓXIMA ENTREGA', caja: true },
-      h: 'Obra y entregas',
-      b: 'La fase de cada villa, la próxima entrega y los partes de trabajo. El comprador sigue el avance desde su portal.' },
-    { p: '/intranet/v4/compradores/', cap: 'Base de datos', t: { texto: 'INVERSORES REGISTRADOS', fila: true },
-      h: 'Compradores con su expediente',
-      b: 'El directorio de compradores e inversores, con su KYC, sus documentos y todas sus operaciones.' },
-    { p: '/intranet/v4/asistente-correos/', cap: 'IA', t: { texto: 'Borrador para revisar', caja: true },
-      h: 'Respuestas que citan el contrato',
-      b: 'El comprador pregunta y el asistente redacta la respuesta citando su propio contrato. El equipo la revisa antes de enviarla, y los temas que dirección no ha cerrado se frenan.' },
-    { p: '/intranet/v4/asistente/', cap: 'IA', t: { texto: '¿Qué necesitas?', caja: true },
-      h: 'Peticiones a dirección',
-      b: 'Lo que la intranet no deja hacer (cambiar un dato de un cliente, anular una factura) se pide aquí con tus palabras. El asistente lo deja listo y dirección lo aprueba o lo rechaza.' },
-    { p: '/intranet/v4/usuarios/', cap: 'Equipo', t: { texto: 'USUARIOS ACTIVOS', fila: true },
-      h: 'Quién entra y qué ve',
-      b: 'Dirección, administración, jefe de ventas y agente, con herramientas y proyectos por persona. La separación la hace la base de datos, no solo la pantalla.' },
-    { p: '/', cap: 'Final', t: null, hero: true, fin: true,
-      h: 'Eso es AxisWorks ERP',
-      b: 'Módulos que se activan uno a uno sobre la misma base. Ahora entra libre a la demo, o cambia tu selección en el configurador y repite el tour.' }
+    { p: '/', cap: 'Guided tour', t: null, hero: true,
+      h: 'AxisWorks ERP in three minutes',
+      b: 'A working day at a property developer, from the lead that comes in through Meta to the villa handed over. The data is made up. Move on with → or the buttons.' },
+    { p: '/intranet/v4/home/', cap: 'Home', t: { texto: ['CONTRATOS ACTIVOS', 'ACTIVE CONTRACTS'], fila: true },
+      h: 'Every morning starts here',
+      b: 'Active contracts, collected this month, due dates in the next thirty days and available plots. The figures come from the contracts and payments: nobody types them in.' },
+    { p: '/intranet/v4/home/', cap: 'Home', t: { texto: ['Hoy toca', 'Today'], caja: true },
+      h: 'What is waiting on someone',
+      b: 'Reservations about to lapse, signed invoices still unpaid, pending signatures. Each line takes you to the screen where it gets done.' },
+    { p: '/intranet/v4/home/', cap: 'Home', t: { css: 'aside' },
+      h: 'One menu, every module',
+      b: 'Each person sees only the tools assigned to them. An agent does not see the treasury; management sees everything.' },
+    { p: '/intranet/leads/', cap: 'Sales pipeline', t: { texto: ['PARA HOY', 'FOR TODAY'], contiene: ['CON RETRASO', 'OVERDUE'] },
+      h: 'Leads come in on their own',
+      b: 'Meta lead forms land in the CRM with no copying. Each lead has a dated next step, and the ones nobody has touched for days show up in red.' },
+    { p: '/intranet/leads/', cap: 'Sales pipeline', t: { texto: ['Pipeline'], contiene: ['Trazabilidad', 'Traceability'] },
+      h: 'Funnel, campaigns and automations',
+      b: 'The stage funnel, the cost of each lead per campaign, and the autopilot that pauses or raises Meta Ads budget, always within the cap set by management.' },
+    { p: '/intranet/v4/operaciones/', cap: 'Sales pipeline', t: { texto: ['PRECIO PACTADO', 'AGREED PRICE'], fila: true },
+      h: 'One sale, one row',
+      b: 'Plot hold, reservation letter and construction contract for the same buyer sit together. At the top: agreed, collected and outstanding across the whole portfolio.' },
+    { p: '/intranet/v4/operaciones/', cap: 'Sales pipeline', click: 'tbody tr[data-lw-id]', t: { panel: true },
+      h: 'The whole sale in one record',
+      b: 'Status, the contracts in the chain, the buyer with their KYC, and every invoice and receipt. The next document is issued from here.' },
+    { p: '/intranet/v4/contratos/', cap: 'Documents', t: { texto: ['FIRMADOS', 'SIGNED'], fila: true },
+      h: 'Contracts in three languages',
+      b: 'Generated in Spanish, English and Indonesian, and signed through an e-signature link that expires. Here: what is signed, the drafts and the committed volume.' },
+    { p: '/intranet/v4/facturas/', cap: 'Finance', t: { texto: ['FACTURADO ESTE MES', 'INVOICED THIS MONTH'], fila: true },
+      h: 'Invoices that know if they are paid',
+      b: 'Each invoice hangs from its contract and its issuing company, in euros or rupiah. Payment status is worked out from the receipts, not ticked by hand.' },
+    { p: '/intranet/v4/recibos/', cap: 'Finance', t: { texto: ['RECIBÍS EMITIDOS', 'RECEIPTS ISSUED'], fila: true },
+      h: 'Every payment, with its proof',
+      b: 'One receipt can settle several invoices. Receipts with no proof attached are flagged so nobody forgets them.' },
+    { p: '/intranet/v4/productos/', cap: 'Finance', t: { texto: ['Lo que se vende', 'What is sold'], caja: true },
+      h: 'Products that carry their tax',
+      b: 'The catalogue of what gets invoiced by line: reference, unit price and the tax the line comes with. A product is never deleted, it is deactivated.' },
+    { p: '/intranet/v4/vencimientos/', cap: 'Finance', t: { texto: ['VENCIMIENTOS CRÍTICOS', 'CRITICAL DUE DATES'], fila: true },
+      h: 'Treasury by milestone',
+      b: 'The payment schedule of each contract: what falls due in the next ninety days, what is overdue and what has no date yet.' },
+    { p: '/intranet/v4/reservas/', cap: 'Sales pipeline', t: { texto: ['VENCEN EN 2 DÍAS', 'EXPIRING IN 2 DAYS'], fila: true },
+      h: 'No reservation lapses without warning',
+      b: 'Reservations expiring in two days, this week or later, with their extensions. When one expires, the plot is released automatically.' },
+    { p: '/intranet/v4/comisiones/', cap: 'Finance', t: { texto: ['PENDIENTES DE RESOLVER', 'PENDING DECISION'], fila: true },
+      h: 'Commissions that calculate themselves',
+      b: 'Every sale generates the rep\'s commission and the team lead\'s, according to their terms. Management approves it and marks it as paid.' },
+    { p: '/intranet/v4/proyectos/', cap: 'Database', t: { texto: ['CARTERA CONSOLIDADA', 'CONSOLIDATED PORTFOLIO'], fila: true },
+      h: 'A live plot map',
+      b: 'Each development with its plots and their status: available, reserved, on hold or sold. The status changes by itself when a contract is signed or released.' },
+    { p: '/intranet/v4/obra/', cap: 'Database', t: { texto: ['PRÓXIMA ENTREGA', 'NEXT HANDOVER'], caja: true },
+      h: 'Construction and handovers',
+      b: 'The stage of each villa, the next handover and the work reports. The buyer follows progress from their portal.' },
+    { p: '/intranet/v4/compradores/', cap: 'Database', t: { texto: ['INVERSORES REGISTRADOS', 'REGISTERED INVESTORS'], fila: true },
+      h: 'Buyers with their file',
+      b: 'The directory of buyers and investors, with their KYC, their documents and all their deals.' },
+    { p: '/intranet/v4/asistente-correos/', cap: 'AI', t: { texto: ['Borrador para revisar', 'Draft to review'], caja: true },
+      h: 'Replies that quote the contract',
+      b: 'The buyer asks, and the assistant drafts the reply quoting that buyer\'s own contract. The team reviews it before sending, and topics management has not settled are held back.' },
+    { p: '/intranet/v4/asistente/', cap: 'AI', t: { texto: ['¿Qué necesitas?', 'What do you need?'], caja: true },
+      h: 'Requests to management',
+      b: 'Whatever the intranet does not allow (changing a client\'s details, voiding an invoice) is requested here in your own words. The assistant gets it ready and management approves or rejects it.' },
+    { p: '/intranet/v4/usuarios/', cap: 'Team', t: { texto: ['USUARIOS ACTIVOS', 'ACTIVE USERS'], fila: true },
+      h: 'Who logs in and what they see',
+      b: 'Management, administration, sales manager and agent, with tools and projects per person. The separation is enforced by the database, not just the screen.' },
+    { p: '/', cap: 'The end', t: null, hero: true, fin: true,
+      h: 'That is AxisWorks ERP',
+      b: 'Modules you switch on one by one, on the same foundation. Now explore the demo freely, or change your selection in the configurator and run the tour again.' }
   ];
 
   /* Solo los pasos de módulos encendidos en la landing (catalogo.js). El módulo de cada paso sale de su
@@ -193,7 +196,7 @@
       '.axt-carga{position:fixed;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;animation:axtgira .8s linear infinite;opacity:0;transition:opacity .3s}',
       '.axt.cargando .axt-carga{opacity:1}',
       '@keyframes axtgira{to{transform:rotate(360deg)}}',
-      'body.axt-activo a[aria-label="Volver a los módulos"]{opacity:0;pointer-events:none}',
+      'body.axt-activo nav[aria-label="Leave the demo"]{opacity:0;pointer-events:none}',
       '@media (max-width:560px){.axt-tarjeta,.axt-tarjeta.hero{width:calc(100vw - 32px);padding:20px}.hero .axt-h{font-size:30px}.axt-tecla{display:none}}',
       '@media (prefers-reduced-motion:reduce){.axt-capa,.axt.on .axt-capa{transform:none}.axt-tarjeta{filter:none!important}.axt-l{transform:none!important;filter:none!important}}',
       '@media (prefers-reduced-transparency:reduce){.axt-tarjeta{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}}'
@@ -204,14 +207,14 @@
   function monta() {
     if (raiz) return;
     css();
-    raiz = document.createElement('div'); raiz.className = 'axt'; raiz.setAttribute('role', 'dialog'); raiz.setAttribute('aria-modal', 'true'); raiz.setAttribute('aria-label', 'Tour guiado');
+    raiz = document.createElement('div'); raiz.className = 'axt'; raiz.setAttribute('role', 'dialog'); raiz.setAttribute('aria-modal', 'true'); raiz.setAttribute('aria-label', 'Guided tour');
     raiz.innerHTML = '<div class="axt-velo"></div><div class="axt-hueco"></div><div class="axt-carga" aria-hidden="true"></div>' +
       '<div class="axt-tarjeta"><div class="axt-capa">' +
-      '<button type="button" class="axt-x" aria-label="Salir del tour">&times;</button>' +
+      '<button type="button" class="axt-x" aria-label="Exit the tour">&times;</button>' +
       '<div class="axt-cuerpo" aria-live="polite"></div>' +
       '<div class="axt-barra"><i></i></div>' +
-      '<div class="axt-pie"><button type="button" class="axt-bt s" data-a="atras">Atrás</button><span class="esp"></span>' +
-      '<span class="axt-tecla">← →</span><button type="button" class="axt-bt p" data-a="sig">Siguiente</button></div>' +
+      '<div class="axt-pie"><button type="button" class="axt-bt s" data-a="atras">Back</button><span class="esp"></span>' +
+      '<span class="axt-tecla">← →</span><button type="button" class="axt-bt p" data-a="sig">Next</button></div>' +
       '</div></div>';
     document.body.appendChild(raiz);
     hueco = raiz.querySelector('.axt-hueco'); tarjeta = raiz.querySelector('.axt-tarjeta'); capa = raiz.querySelector('.axt-capa');
@@ -237,6 +240,7 @@
   /* ── Encontrar lo que se explica ────────────────────────────────────── */
   function visible(el) { if (!el || !el.getBoundingClientRect) return false; var r = el.getBoundingClientRect(); return r.width > 4 && r.height > 4 && getComputedStyle(el).visibility !== 'hidden'; }
   function porTexto(txt) {
+    if (Array.isArray(txt)) { for (var q = 0; q < txt.length; q++) { var hallado = porTexto(txt[q]); if (hallado) return hallado; } return null; }
     var buscado = txt.trim().toLowerCase(), mejor = null, area = Infinity;
     var todos = document.body.querySelectorAll('h1,h2,h3,h4,p,span,div,button,a,th,label,strong');
     for (var n = 0; n < todos.length; n++) {
@@ -294,7 +298,11 @@
     if (t.panel) return panelLateral();
     var el = t.css ? document.querySelector(t.css) : porTexto(t.texto);
     if (!el || !visible(el)) return null;
-    if (t.contiene) { var x = el; var busca = t.contiene.toLowerCase(); while (x && x !== document.body && (x.textContent || '').toLowerCase().indexOf(busca) === -1) x = x.parentElement; return x && x !== document.body ? x : el; }
+    if (t.contiene) {
+      var buscas = [].concat(t.contiene).map(function (s) { return s.toLowerCase(); });
+      var tiene = function (n) { var tx = (n.textContent || '').toLowerCase(); return buscas.some(function (b) { return tx.indexOf(b) !== -1; }); };
+      var x = el; while (x && x !== document.body && !tiene(x)) x = x.parentElement; return x && x !== document.body ? x : el;
+    }
     if (t.caja || t.fila) el = subeACaja(el);
     if (t.fila) {
       el = subeAFila(el);
@@ -353,7 +361,7 @@
   /* ── Texto con entrada escalonada ───────────────────────────────────── */
   function contenido(paso, n) {
     var lineas = [
-      '<div class="axt-cap axt-l"><span>' + paso.cap + '</span><span>' + (n + 1) + ' de ' + PASOS.length + '</span></div>',
+      '<div class="axt-cap axt-l"><span>' + paso.cap + '</span><span>' + (n + 1) + ' of ' + PASOS.length + '</span></div>',
       '<div class="axt-h axt-l">' + paso.h + '</div>',
       '<p class="axt-b axt-l">' + paso.b + '</p>'
     ];
@@ -371,7 +379,7 @@
         cuerpo.classList.add('in');
         barra.style.transform = 'scaleX(' + ((n + 1) / PASOS.length) + ')';
         bAtras.disabled = n === 0;
-        bSig.textContent = paso.fin ? 'Ver los módulos' : (n === 0 ? 'Empezar' : 'Siguiente');
+        bSig.textContent = paso.fin ? 'See the modules' : (n === 0 ? 'Start' : 'Next');
         ok();
       }
       if (salto || !cuerpo.innerHTML) return pon();
@@ -389,7 +397,7 @@
     var p = panelLateral();
     if (!p) return;
     var cerrar = [].slice.call(p.querySelectorAll('button')).filter(function (b) {
-      var t = (b.textContent || '').trim(); return t === 'Cerrar' || t === '×' || t === 'close' || /cerrar/i.test(b.getAttribute('aria-label') || '');
+      var t = (b.textContent || '').trim(); return t === 'Cerrar' || t === 'Close' || t === '×' || t === 'close' || /cerrar|close/i.test(b.getAttribute('aria-label') || '');
     })[0];
     if (cerrar) cerrar.click(); else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   }
