@@ -943,7 +943,9 @@ def publica_web():
         # respuesta le manda vaciar su caché de erp. (Clear-Site-Data "cache", solo caché: ni cookies ni storage) y la
         # próxima visita ya trae la portada. Visto por el owner el 28-sep: erp. le llevaba a app./intranet/v4/home/.
         '  RewriteRule ^ ' + APP_URL + '%{REQUEST_URI} [R=302,L,E=AXW_ERP_VIEJO:1]\n</IfModule>\n'
-        '<IfModule mod_headers.c>\n  Header always set Clear-Site-Data "\\"cache\\"" env=AXW_ERP_VIEJO\n</IfModule>\n'
+        # Comillas simples por fuera: LiteSpeed (Hostinger) NO quita las barras de "\"cache\"" y mandaba \"cache\",
+        # que el navegador ignora (visto con curl -I el 28-sep).
+        '<IfModule mod_headers.c>\n  Header always set Clear-Site-Data \'"cache"\' env=AXW_ERP_VIEJO\n</IfModule>\n'
         + cabeceras_seguridad(
             'default-src \'self\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\' '
             'https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data:; '
