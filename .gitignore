@@ -27,3 +27,4 @@ api/_estado/
 # Creador de webs de boda: otro repo (jvrcervantes-oss/bodas) desplegado por Hostinger en public_html/bodas
 /bodas/
 /bodas_datos/
+__pycache__/
