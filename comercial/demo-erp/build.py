@@ -906,6 +906,10 @@ def no_instalado_base(marca):
                      if not re.search(r'\.' + re.escape(c) + r'\s*\{', hoja)})
     if faltan:
         aborta('no_instalado.html usa clases que %s no trae: %s' % ('/'.join(HOJA_V4), ', '.join(faltan)))
+    js = open(os.path.join(AQUI, 'apagados_instancia.js'), encoding='utf-8').read()
+    distintos = [x for x in TEXTOS_NO_INSTALADO if x not in js]
+    if distintos:
+        aborta('pantalla() de apagados_instancia.js ya no dice lo mismo que pagina_no_instalado(): %s' % distintos)
     return t
 
 
@@ -923,21 +927,33 @@ def rotulos():
     return r
 
 
-def pagina_no_instalado(base, marca, ficha, ruta):
-    """La pantalla estática: mismos textos que pantalla() de apagados_instancia.js."""
+# Los textos de pantalla() en apagados_instancia.js: deben ser los mismos que aquí (no_instalado_base lo comprueba).
+TEXTOS_NO_INSTALADO = ('Módulo no instalado', ' no está activo en esta instancia.',
+                       'Este módulo no está activo en esta instancia.', 'Activar módulo: ')
+
+
+def pagina_no_instalado(base, marca, ficha, ruta, herramienta=None):
+    """La pantalla estática: mismos textos que pantalla() de apagados_instancia.js. `herramienta` (nombre): una pantalla
+    que esta instancia no trae aunque su módulo esté encendido (el generador de contratos, el portal clásico…): es
+    estática y no sabe qué está activo, así que no nombra el módulo ni invita a contratarlo (revisor, 28-sep)."""
     from urllib.parse import quote
-    nombre, que_hace = ficha or (None, None)
-    v = {'titulo': 'Módulo no instalado',
-         'texto': ('«%s» no está activo en esta instancia.' % nombre) if nombre else 'Este módulo no está activo en esta instancia.',
-         'que_hace': que_hace or '', 'asunto': quote('Activar módulo: ' + (nombre or ruta), safe=''),
-         'oculta_que_hace': '' if que_hace else 'hidden', 'oculta_contacto': '', 'oculta_reintenta': 'hidden'}
+    if herramienta:
+        v = {'titulo': 'Pantalla no incluida', 'texto': '«%s» no se incluye en esta instancia.' % herramienta,
+             'que_hace': '', 'asunto': '', 'oculta_que_hace': 'hidden', 'oculta_contacto': 'hidden',
+             'oculta_reintenta': 'hidden'}
+    else:
+        nombre, que_hace = ficha or (None, None)
+        v = {'titulo': TEXTOS_NO_INSTALADO[0],
+             'texto': ('«%s»%s' % (nombre, TEXTOS_NO_INSTALADO[1])) if nombre else TEXTOS_NO_INSTALADO[2],
+             'que_hace': que_hace or '', 'asunto': quote(TEXTOS_NO_INSTALADO[3] + (nombre or ruta), safe=''),
+             'oculta_que_hace': '' if que_hace else 'hidden', 'oculta_contacto': '', 'oculta_reintenta': 'hidden'}
     cuerpo = re.sub(r'\{\{([a-z_]+)\}\}', lambda m: html.escape(v[m.group(1)]), base)
     return ('<!doctype html>\n<html lang="es"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">'
-            '<title>Módulo no instalado · %s</title><link rel="icon" href="/favicon.png">'
+            '<title>%s · %s</title><link rel="icon" href="/favicon.png">'
             '<link href="/intranet/v4/assets/fonts/fonts.css" rel="stylesheet">'
             '<link href="/intranet/v4/assets/tw-base.css" rel="stylesheet"></head>\n<body>%s</body></html>\n'
-            % (html.escape(marca), cuerpo))
+            % (html.escape(v['titulo']), html.escape(marca), cuerpo))
 
 
 def mapa_modulos(nombre):
@@ -1076,14 +1092,14 @@ def instancia(nombre):
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8', newline='').write(
             panel.replace('__AXW_ROTULOS__', json.dumps(rotulos(), ensure_ascii=False, sort_keys=True)))
         compila_portada('panel/panel.css')   # su Tailwind compilado: la CSP de la instancia no admite el Play CDN
-    for ruta, mod in (('intranet/v4/generador-contratos/index.html', 'contratos'),
-                      ('intranet/v4/contratos-inversor/index.html', 'portal'),
-                      ('contracts/app.html', 'contratos'),
-                      ('intranet/dossier/builder.html', 'creatividades'),
-                      ('intranet/creatividades/index.html', 'creatividades')):
+    for ruta, herr in (('intranet/v4/generador-contratos/index.html', 'Generador de contratos'),
+                       ('intranet/v4/contratos-inversor/index.html', 'Portal del comprador'),
+                       ('contracts/app.html', 'Generador de contratos'),
+                       ('intranet/dossier/builder.html', 'Dossier comercial'),
+                       ('intranet/creatividades/index.html', 'Creatividades')):
         d = os.path.join(DIST, *ruta.split('/'))
         os.makedirs(os.path.dirname(d), exist_ok=True)
-        open(d, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, mapa['n'].get(mod), '/' + ruta))
+        open(d, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, None, '/' + ruta, herramienta=herr))
     avisos_para_rotos()
     # ?v= con la huella de lo que SALE de este build, como en la demo pública (28-sep-2026). Sin esto, la v4 llevaba el
     # ?v= del fichero de Lawang (guard.js se reescribe entero aquí: mapa de módulos + ficha) y /panel/ iba sin versión:
