@@ -413,7 +413,7 @@ Switch on only the modules you use today. Sales, contracts, invoicing and collec
       '<h4 class="font-headline-sm text-[15px] text-on-surface font-semibold mt-1">' + esc(m.nombre) + '</h4>' +
       '<ul class="text-[12px] text-on-surface-variant space-y-0.5 mt-1">' + m.caps.slice(0, 2).map(function (c) {
         return '<li class="flex items-start gap-1">' + ms('check', 'text-secondary text-[14px] mt-[1px]') + '<span>' + esc(c) + '</span></li>'; }).join('') + '</ul>' +
-      (m.pack ? '<p class="text-[11px] text-outline mt-1">Comes as a block: Pack ' + esc(nombrePack(m.pack)) + '</p>'
+      (m.pack ? '<p class="text-[11px] text-outline mt-1">Comes as a block: ' + esc(nombrePack(m.pack)) + ' pack</p>'
               : m.suelto && m.req.filter(function (r) { return r !== 'base'; }).length ? '<p class="text-[11px] text-outline mt-1">Requires: ' + esc(m.req.filter(function (r) { return r !== 'base'; }).map(nombrePack).join(' and ')) + '</p>' : '') +
       (m.url ? '<a class="inline-flex items-center gap-0.5 mt-1.5 text-[11px] font-semibold text-primary hover:underline" href="' + m.url + '">View in the demo' + ms('arrow_outward', 'text-[13px]') + '</a>' : '') +
       '</div>';
@@ -485,7 +485,7 @@ Switch on only the modules you use today. Sales, contracts, invoicing and collec
     PACKS.forEach(function (p) {
       if (!CAT.packActivo(estado, p[0])) return;
       if (p[0] !== 'base') nPacks++;
-      pillsPack.push('<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary font-label-sm text-label-sm"><span>Pack ' + esc(p[1]) + '</span>' +
+      pillsPack.push('<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary font-label-sm text-label-sm"><span>' + esc(p[1]) + ' pack</span>' +
         (p[0] === 'base' ? '' : '<button type="button" class="inline-flex" data-quita-pack="' + p[0] + '" aria-label="Remove the ' + esc(p[1]) + ' pack' + '">' + ms('close', 'text-[14px] text-outline hover:text-error') + '</button>') + '</div>');
     });
     pills = pillsPack.concat(pills);
