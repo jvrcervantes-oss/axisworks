@@ -226,9 +226,12 @@ def guard_demo():
     cambios = [
         # El rol de QA existía para no confundirse con el guard real; aquí no hay guard real.
         ("rol: 'qa_super_admin', activo: true, nombre: 'QA Tester'", "rol: 'super_admin', activo: true, nombre: 'Clara Montesinos'"),
-        ("function chainable(table) {", "function chainable(table) { if (!window.__LW_DEMO_SEMBRADO) { window.__LW_DEMO_SEMBRADO = true; "
+        # La siembra, en una función (se iza): la llaman `chainable` y también el envoltorio de `rpc`, porque la Home
+        # pide sus cifras por lwDatos ANTES de cualquier `.from()` (28-sep-2026, B10a).
+        ("function chainable(table) {", "function __lwDemoSiembra() { if (!window.__LW_DEMO_SEMBRADO) { window.__LW_DEMO_SEMBRADO = true; "
                                         "window.LW_DEMO_SIEMBRA(FIXTURES, { fila: fila, hoy: hoy, FICHA: FICHA_QA, USUARIOS: USUARIOS_QA, VENTAS: VENTAS_QA }); "
-                                        "window.LW_DEMO_LIMPIA(FIXTURES); }"),
+                                        "window.LW_DEMO_LIMPIA(FIXTURES); } }\n"
+                                        "  function chainable(table) { __lwDemoSiembra();"),
         # Escrituras: se quedan en memoria para que «guardar» se vea en la demo.
         ("if (obj._op === 'insert' || obj._op === 'update' || obj._op === 'upsert') {",
          "if (obj._op === 'insert' || obj._op === 'upsert') { var nv = window.LW_DEMO_ESCRIBE(FIXTURES, table, obj._op, obj._val, []); "
@@ -256,6 +259,10 @@ def guard_demo():
          "      var datos = Array.isArray(base.data) ? filtradas : base.data;\n"
          "      if (Array.isArray(datos) && obj._ord) { datos = datos.slice().sort(function (a, b) { for (var i = 0; i < obj._ord.length; i++) { var c = obj._ord[i][0], x = a[c], y = b[c]; if (x === y) continue; if (x == null) return 1; if (y == null) return -1; return (x < y ? -1 : 1) * (obj._ord[i][1] ? 1 : -1); } return 0; }); }\n"
          "      if (Array.isArray(datos) && obj._lim != null && !obj._count) datos = datos.slice(0, obj._lim);"),
+        # Portadas de la rejilla de Proyectos (createSignedUrls): «about:blank#qa-…» como <img> es un error de consola y
+        # un icono roto en directo; en la demo no hay fotos, así que va una tesela neutra (data:, la CSP la admite).
+        ("data: (paths || []).map(function (p) { return { path: p, signedUrl: 'about:blank#qa-' + p, error: null }; }),",
+         "data: (paths || []).map(function (p) { return { path: p, signedUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E', error: null }; }),"),
         ("console.warn('[qa-doble] MODO QA activo", "console.info('[demo] ERP de demostración — datos inventados, sin red real'); void ('"),
         # Algunas RPC del doble devuelven una promesa pelada y el Panel financiero les encadena .select()
         # (24-sep: «sb.rpc(...).select is not a function»). Envoltorio: si no es encadenable, los filtros
@@ -266,6 +273,13 @@ def guard_demo():
          "      if (window.LW_DEMO_RPC_GUARDA && window.LW_DEMO_RPC_GUARDA[nombre]) {\n"
          "        window.LW_DEMO_RPC_GUARDA[nombre](FIXTURES, args || {});\n"
          "        return Promise.resolve({ data: null, error: null });\n"
+         "      }\n"
+         # Lecturas *_datos (B10a, 28-sep): calculadas sobre FIXTURES con la forma de su SQL (demo_datos.js). Solo las
+         # que tienen implementación: el resto (p. ej. sb.rpc('panel_bancos_datos')) sigue por el camino de siempre.
+         "      if (window.LW_DEMO_DATOS && Object.prototype.hasOwnProperty.call(window.LW_DEMO_DATOS, nombre)) {\n"
+         "        __lwDemoSiembra();\n"
+         "        try { return Promise.resolve({ data: window.LW_DEMO_DATOS[nombre](FIXTURES, args || {}), error: null }); }\n"
+         "        catch (e) { return Promise.resolve({ data: null, error: { message: String((e && e.message) || e), code: (e && e.code) || 'P0001' } }); }\n"
          "      }\n"
          "      var r = this._rpc(nombre, args);\n"
          "      if (r && typeof r.then === 'function' && typeof r.select !== 'function') {\n"
@@ -300,7 +314,92 @@ def guard_demo():
     # tiene la tabla, y el código compartido (operaciones-cuentas.js, datos.js) solo la lee si está encendida.
     nucleo = 'window.AXW_NUCLEO_OPERACION = true;\n'
     return ('/* GENERADO por AxisWorks/comercial/demo-erp/build.py — no editar. Demo: datos inventados, sin red real. */\n'
-            + nucleo + limpia_sesion + volver + datos + '\n' + doble)
+            + nucleo + limpia_sesion + volver + PUERTAS_DEMO + datos + '\n' + doble)
+
+
+# Lo que el guard REAL de Lawang publica con fija() (window.lwDatos, lwEdge, lwFichero…) tiene que existir también en la
+# demo: el doble de QA no lo trae porque en Lawang se carga DESPUÉS del guard real, y aquí el guard real no se carga.
+# 28-sep-2026: B10a añadió lwDatos al real y la Home de demo.axisworks.studio se quedó sin cifras con un TypeError.
+# Mismo nombre de helper (`fija`) a propósito: verifica() comprueba que cada fija('X') del real tiene su fija('X') aquí.
+# Contratos: los del real. lwDatos → sb.rpc (el envoltorio de rpc lo resuelve con LW_DEMO_DATOS) y {data, error};
+# las edges y los ficheros no existen en la demo: rechazan con un Error que la pantalla enseña (como un fallo de red).
+PUERTAS_DEMO = r"""(function () {
+  function fija(k, v) { try { Object.defineProperty(window, k, { value: v, writable: false, configurable: false, enumerable: true }); } catch (e) { /* MUDO A PROPOSITO: el guard cargado dos veces; la primera ya fijó lo mismo */ } }
+  var FICHA = window.LW_INSTANCIA || {};
+  var URL_SB = FICHA.sb_url || 'https://demo.invalid';
+  function noDemo(que) { var e = new Error(que + ': no disponible en la demo'); e.clave = 'no_disponible_en_la_demo'; return Promise.reject(e); }
+  fija('LW_SB_URL', URL_SB);
+  fija('LW_SB_KEY', FICHA.sb_key || 'demo-publishable-key');
+  fija('lwEdge', function (nombre) {
+    if (!/^[a-z0-9-]+$/.test(String(nombre))) throw new Error('lwEdge: nombre de edge no válido');
+    return URL_SB + '/functions/v1/' + nombre;
+  });
+  fija('lwDatos', function (nombre, args) {
+    if (!/^[a-z][a-z0-9_]*_datos$/.test(String(nombre))) throw new Error('lwDatos: solo RPC *_datos (' + nombre + ')');
+    if (!(window.LW_DEMO_DATOS && Object.prototype.hasOwnProperty.call(window.LW_DEMO_DATOS, nombre))) {
+      return Promise.resolve({ data: null, error: { message: 'no disponible en la demo' } });
+    }
+    var cli = window.LW_SB ? Promise.resolve(window.LW_SB)
+      : window.LW_AUTH ? window.LW_AUTH.then(function (a) { return a.sb; })
+      : Promise.reject(new Error('lwDatos: sin cliente en esta página'));
+    return cli.then(function (sb) { return sb.rpc(nombre, args || {}); })
+      .then(function (r) { return { data: r.data, error: r.error }; },
+            function (e) { return { data: null, error: e }; });
+  });
+  fija('lwFicheros', function () { return noDemo('Ficheros de contratos'); });
+  fija('lwKyc', function () { return noDemo('Documentos KYC'); });
+  fija('lwKycSube', function () { return noDemo('Subir documentos KYC'); });
+  fija('lwFichero', function () { return noDemo('Ficheros'); });
+  fija('lwFicheroSube', function () { return noDemo('Subir ficheros'); });
+  fija('lwFotoUrls', function (sb, fotos) {
+    var urls = {};
+    (fotos || []).forEach(function (f) {
+      var id = typeof f === 'string' ? f : f && f.id;
+      if (!id || Object.prototype.hasOwnProperty.call(urls, id)) return;
+      urls[id] = f && f.ambito === 'modelo' && f.path ? sb.storage.from('deck').getPublicUrl(f.path).data.publicUrl : null;
+    });
+    return Promise.resolve({ urls: urls, caduca_seg: 3600 });
+  });
+})();
+"""
+FIJA_RE = re.compile(r"""\bfija\(\s*['"]([A-Za-z_$][\w$]*)['"]""")
+LWDATOS_LLAMADA = re.compile(r"""(?<![\w$])([\w$]+)\(\s*['"]([a-z][a-z0-9_]*_datos)['"]""")
+
+
+def contrato_guard_demo():
+    """Guardrail (28-sep-2026, tras la Home de la demo sin cifras por `window.lwDatos is not a function`): la demo no
+    puede quedarse atrás del guard real en silencio. Aborta si
+      · el guard real de Lawang publica con fija() un nombre que el guard de la demo no publica, o
+      · la v4 copiada a dist/ pide una lectura `x_datos` (lwDatos('x_datos'), cifras('x_datos')…; `sb.rpc(...)` no,
+        que sigue por el doble) que demo_datos.js no implementa en LW_DEMO_DATOS."""
+    real = set(FIJA_RE.findall(open(os.path.join(LAWANG, 'contracts', 'assets', 'guard.js'), encoding='utf-8').read()))
+    if 'lwDatos' not in real:
+        aborta('no encuentro fija(\'lwDatos\') en el guard real de Lawang: ¿ha cambiado su forma? revisa FIJA_RE')
+    demo = set(FIJA_RE.findall(open(os.path.join(DIST, 'contracts', 'assets', 'guard.js'), encoding='utf-8').read()))
+    faltan = sorted(real - demo)
+    r = subprocess.run(['node', '-e', "global.window={};require(process.argv[1]);"
+                        "console.log(JSON.stringify(Object.keys(window.LW_DEMO_DATOS||{})))",
+                        os.path.join(AQUI, 'demo_datos.js')], capture_output=True, text=True, encoding='utf-8')
+    if r.returncode:
+        aborta('no puedo leer LW_DEMO_DATOS de demo_datos.js: ' + r.stderr[:300])
+    hechas = set(json.loads(r.stdout))
+    pedidas = {}
+    for raiz, _d, fichs in os.walk(DIST):
+        for f in fichs:
+            if f.endswith(('.js', '.html')):
+                p = os.path.join(raiz, f)
+                for fn, nombre in LWDATOS_LLAMADA.findall(open(p, encoding='utf-8', errors='replace').read()):
+                    if fn != 'rpc':
+                        pedidas.setdefault(nombre, set()).add(rel(p))
+    if not pedidas:
+        aborta('no encuentro ninguna llamada lwDatos(\'x_datos\') en la v4: ¿ha cambiado su forma? revisa LWDATOS_LLAMADA')
+    sin = sorted(n for n in pedidas if n not in hechas)
+    malos = ['el guard real publica %s y el de la demo no (añádelo a PUERTAS_DEMO)' % n for n in faltan]
+    malos += ['la v4 pide %s (%s) y demo_datos.js no lo implementa en LW_DEMO_DATOS' % (n, ', '.join(sorted(pedidas[n])[:3]))
+              for n in sin]
+    if malos:
+        aborta('la demo se ha quedado atrás del guard real:\n  ' + '\n  '.join(malos))
+    return sorted(pedidas)
 
 
 def neutraliza():
@@ -471,6 +570,7 @@ def comprueba_resultado(raiz_dir):
 
 def verifica():
     neutraliza_ejemplos()
+    print('lecturas *_datos de la v4 con doble en la demo: ' + ', '.join(contrato_guard_demo()))
     malos = []
     for raiz, _d, fichs in os.walk(DIST):
         for f in fichs:
@@ -631,6 +731,9 @@ def publica():
             if t2 != t:
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
     logos_neutros()
+    # /favicon.ico: el navegador lo pide solo en las páginas sin <link rel=icon> (la Home de la v4) y daba un 404 en
+    # consola; un PNG servido como .ico lo aceptan todos los navegadores.
+    shutil.copy2(os.path.join(DIST, 'favicon.png'), os.path.join(DIST, 'favicon.ico'))
     tipografias_libres()
     restos = []
     for raiz, _d, fichs in os.walk(DIST):

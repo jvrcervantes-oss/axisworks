@@ -378,7 +378,182 @@
         precio: p[3], moneda: p[4], impuesto_id: p[5], descripcion: p[6], activo: i !== 5 ? true : false,
         creado_en: ts(-40 + i), creado_por: EQUIPO[5].email, actualizado_en: null, actualizado_por: null });
     }));
+
+    /* ── Lo que leen las RPC *_datos (28-sep-2026, LAW-338 L2 / B10a) ──────────
+       Tablas que el doble de QA no trae y que ahora pinta la pantalla por
+       window.lwDatos: comunicados, altas, referidos, partes de obra y la fila
+       de mantenimiento. Nombres: los de NOMBRES_LEAD y EQUIPO, ya cruzados por
+       hash en cada build (uno nuevo es un sitio más donde fallar pii_maqueta). */
+    tabla('mantenimiento', [{ id: 1, envios_pausados: false, motivo: null, cambiado_en: null,
+      intranet_cerrada: false, intranet_motivo: null, intranet_cambiado_en: null }]);
+    var COM = [
+      ['com-1', 'Nuevo calendario de visitas a obra', 'Visitas a obra', 'A partir del lunes las visitas guiadas a Cemara Estate se reservan desde la ficha del comprador.', -9, -8],
+      ['com-2', 'Cierre de trimestre: facturas pendientes', 'Cierre de trimestre', 'Antes del viernes, revisad las proformas sin emitir de vuestras operaciones.', -3, -3],
+      ['com-3', 'Presentación de Batu Ridge (borrador)', 'Batu Ridge', 'Borrador de la presentación comercial de la segunda fase.', -1, null]
+    ];
+    tabla('comunicados', COM.map(function (c) {
+      return fila({ id: c[0], asunto: c[1], encabezado: c[2], cuerpo: c[3], cta_url: null, cta_texto: null,
+        creado_en: ts(c[4] - 1), actualizado_en: ts(c[4]), enviado_en: c[5] == null ? null : ts(c[5]) });
+    }));
+    var envios = [];
+    COM.forEach(function (c) {
+      if (c[5] == null) return;
+      EQUIPO.forEach(function (u, j) {
+        var mal = c[0] === 'com-1' && j === 4;
+        envios.push(fila({ id: 'ce-' + c[0] + '-' + j, comunicado_id: c[0], user_id: u.user_id, email: u.email, nombre: u.nombre,
+          es_prueba: false, estado: mal ? 'error' : 'ok', intentos: mal ? 3 : 1, error: mal ? 'Buzón lleno (demo)' : null,
+          encolado_en: ts(c[5], 8), enviado_en: mal ? null : ts(c[5], 8) }));
+      });
+    });
+    tabla('comunicado_envios', envios);
+    function correo(n) { var s = n.toLowerCase().normalize('NFD').replace(/[^a-z ]/g, '').trim().split(' '); return s[0] + '.' + s[s.length - 1] + DOMINIO; }
+    tabla('solicitudes_colaborador', [[20, 'España', 'pendiente', -1], [21, 'Portugal', 'pendiente', -2], [22, 'Países Bajos', 'activada', -9]]
+      .map(function (s, i) {
+        var n = NOMBRES_LEAD[s[0]];
+        return fila({ id: 'sc-' + (i + 1), email: correo(n), nombre: n, telefono: '+00 555 02' + (10 + i) + ' 3' + (100 + i * 41),
+          pais: s[1], mensaje: 'Trabajo con compradores extranjeros y quiero vender vuestras promociones.', estado: s[2],
+          revisado_por: s[2] === 'pendiente' ? null : EQUIPO[0].email, revisado_en: s[2] === 'pendiente' ? null : ts(s[3] + 1), creado_at: ts(s[3]) });
+      }));
+    tabla('referidos_contactos', [[16, 17, 'Alemania', 'Villa de dos dormitorios en Tirta Village', 'nuevo', -2], [18, 19, 'India', null, 'en_crm', -6]]
+      .map(function (r, i) {
+        var ref = NOMBRES_LEAD[r[0]], cli = NOMBRES_LEAD[r[1]];
+        return fila({ id: 'rc-' + (i + 1), referido_email: correo(ref), referido_nombre: ref, referido_telefono: null,
+          cliente_nombre: cli, cliente_email: correo(cli), cliente_telefono: '+00 555 03' + (10 + i) + ' 4' + (200 + i * 53),
+          cliente_pais: r[2], interes: r[3], estado: r[4], creado_at: ts(r[5]) });
+      }));
+    tabla('obra_partes_trabajo', [['p-1', 'I', '2', 'cimentacion', 'estructura', -12, 30], ['p-3', 'I', '1', null, 'cimentacion', -20, null],
+      ['p-2', 'I', '3', 'cimentacion', 'estructura', -33, 45]].map(function (o, i) {
+      return fila({ id: 'opt-' + (i + 1), proyecto_id: o[0], fase_masterplan: o[1], zona_masterplan: o[2], fase_anterior: o[3],
+        fase_nueva: o[4], fecha: dia(o[5]), autor: EQUIPO[5].nombre, nota: null, dias_offset: o[6], creado_en: ts(o[5]) });
+    }));
+    F.correcciones_datos = { data: [], error: null };   // (sin tabla(): el guardrail de build.py lee «x('…_datos')» como una llamada lwDatos)
+    tabla('contratos_diseno', []);
   };
+
+  /* Lecturas del servidor (window.lwDatos → RPC *_datos, B10a / LAW-338 L2, 28-sep-2026).
+     En producción cada una es una función de la base (supabase/migrations/20260927163135_b10a_cifras_datos.sql,
+     20260927232020_law338_l2_pantallas.sql, 20260927235009_law338_l2_ajustes.sql de Lawang). Aquí se calculan
+     sobre las FIXTURES con la MISMA forma de respuesta (claves, orden, `siguiente`, `recortado`). Lo que no se
+     emula: los permisos (la demo entra siempre como super admin) — un 42501 no puede darse aquí.
+     Un argumento que la base rechaza (22023) se devuelve como error, igual que la base: `falla()`.
+     Firma: LW_DEMO_DATOS[nombre](FIXTURES, args) → data. Lo llama el envoltorio de `rpc` que pone build.py;
+     build.py ABORTA si la v4 pide un `*_datos` que no está en este mapa. */
+  window.LW_DEMO_DATOS = (function () {
+    function filas(F, t) { return (F[t] && Array.isArray(F[t].data)) ? F[t].data : []; }
+    function falla(msg, code) { var e = new Error(msg); e.code = code || '22023'; throw e; }
+    function hoyISO() { return dia(0); }
+    function suma(fecha, n) { var d = new Date(fecha + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+    function tope(v, def) { v = v == null ? def : Number(v); return Math.min(Math.max(v || def, 1), 500); }
+    function porDesc(ts) { return function (a, b) { return a[ts] === b[ts] ? (a.id < b.id ? 1 : a.id > b.id ? -1 : 0) : (a[ts] < b[ts] ? 1 : -1); }; }
+    /* Página por cursor (ts, id) descendente, pidiendo una fila de más: `siguiente` solo si hay otra página. */
+    function pagina(lista, ts, lim, despues) {
+      var orden = lista.slice().sort(porDesc(ts));
+      if (despues != null) {
+        var c = lista.filter(function (x) { return x.id === despues; })[0];
+        if (!c || c[ts] == null) falla('cursor desconocido');
+        orden = orden.filter(function (x) { return x[ts] < c[ts] || (x[ts] === c[ts] && x.id < c.id); });
+      }
+      var pag = orden.slice(0, lim);
+      return { filas: pag, siguiente: orden.length > lim ? pag[pag.length - 1].id : null };
+    }
+    function elige(o, campos) { var r = {}; campos.forEach(function (k) { r[k] = o[k] === undefined ? null : o[k]; }); return r; }
+    function delProyecto(F, t, nombre, id) {
+      return filas(F, t).filter(function (r) { return r.proyecto === nombre || (id != null && r.proyecto_id === id); }).length;
+    }
+    return {
+      inicio_cifras_datos: function (F, a) {
+        var hoy = hoyISO();
+        var h = a.p_hoy && a.p_hoy >= suma(hoy, -1) && a.p_hoy <= suma(hoy, 1) ? String(a.p_hoy).slice(0, 10) : hoy;
+        var firmado = {}; filas(F, 'contratos').forEach(function (k) { if (k.bloqueado === true) firmado[k.id] = true; });
+        var v = filas(F, 'contrato_vencimientos').filter(function (t) { return firmado[t.contrato_id] && t.fecha && t.fecha >= h && t.fecha <= suma(h, 30); });
+        var u = filas(F, 'unidades');
+        return { vencimientos_30: v.length, vencimientos_7: v.filter(function (t) { return t.fecha <= suma(h, 7); }).length,
+          unidades: u.length, unidades_libres: u.filter(function (x) { return x.estado === 'disponible'; }).length,
+          unidades_reservadas: u.filter(function (x) { return x.estado === 'reservada'; }).length };
+      },
+      obra_cifras_datos: function (F) {
+        return { entregas_con_fecha: filas(F, 'unidades_estado').filter(function (u) { return u.obra_fecha_entrega != null; }).length,
+          partes: filas(F, 'obra_partes_trabajo').length };
+      },
+      proyecto_vinculos_datos: function (F, a) {
+        if (a.p_nombre == null || !String(a.p_nombre).trim()) falla('proyecto_vinculos_datos: falta el proyecto');
+        var p = filas(F, 'proyectos').filter(function (x) { return x.nombre === a.p_nombre; })[0];
+        var id = p ? p.id : null;
+        return { unidades: delProyecto(F, 'unidades', a.p_nombre, id), modelos_villa: delProyecto(F, 'modelos_villa', a.p_nombre, id),
+          documentos: delProyecto(F, 'documentos_proyecto', a.p_nombre, id) };
+      },
+      mantenimiento_datos: function (F) {
+        var m = filas(F, 'mantenimiento').filter(function (x) { return x.id === 1; })[0] || {};
+        return { envios_pausados: !!m.envios_pausados, motivo: m.motivo || null, cambiado_en: m.cambiado_en || null,
+          intranet_cerrada: !!m.intranet_cerrada, intranet_motivo: m.intranet_motivo || null, intranet_cambiado_en: m.intranet_cambiado_en || null };
+      },
+      comunicacion_datos: function (F, a) {
+        var pg = pagina(filas(F, 'comunicados'), 'actualizado_en', tope(a.p_limit, 100), a.p_despues);
+        var env = filas(F, 'comunicado_envios');
+        var usu = filas(F, 'usuarios').filter(function (u) { return u.activo === true && u.email; })
+          .sort(function (x, y) { return x.nombre === y.nombre ? (x.user_id < y.user_id ? -1 : 1) : (x.nombre < y.nombre ? -1 : 1); }).slice(0, 1000);
+        return {
+          comunicados: pg.filas.map(function (c) {
+            var mios = env.filter(function (e) { return e.comunicado_id === c.id && e.es_prueba === false; });
+            return Object.assign(elige(c, ['id', 'asunto', 'encabezado', 'cuerpo', 'cta_url', 'cta_texto', 'creado_en', 'actualizado_en', 'enviado_en']),
+              { envios_ok: mios.filter(function (e) { return e.estado === 'ok'; }).length, envios_total: mios.length });
+          }),
+          siguiente: pg.siguiente,
+          usuarios: usu.map(function (u) { return elige(u, ['user_id', 'nombre', 'email', 'rol']); }),
+          recortado: usu.length === 1000 ? ['usuarios'] : []
+        };
+      },
+      comunicado_datos: function (F, a) {
+        if (a.p_id == null) falla('comunicado_datos: falta el comunicado');
+        var c = filas(F, 'comunicados').filter(function (x) { return x.id === a.p_id; })[0];
+        var env = filas(F, 'comunicado_envios').filter(function (e) { return e.comunicado_id === a.p_id; })
+          .sort(porDesc('encolado_en')).slice(0, 2000);
+        return {
+          comunicado: c ? elige(c, ['id', 'asunto', 'encabezado', 'cuerpo', 'cta_url', 'cta_texto', 'creado_en', 'actualizado_en', 'enviado_en']) : null,
+          envios: c ? env.map(function (e) { return elige(e, ['id', 'user_id', 'email', 'nombre', 'es_prueba', 'estado', 'intentos', 'error', 'encolado_en', 'enviado_en']); }) : [],
+          recortado: c && env.length === 2000 ? ['envios'] : []
+        };
+      },
+      solicitudes_alta_datos: function (F, a) {
+        var pg = pagina(filas(F, 'solicitudes_colaborador'), 'creado_at', tope(a.p_limit, 60), a.p_despues);
+        var pro = filas(F, 'proyectos').filter(function (p) { return p.activo === true; })
+          .sort(function (x, y) { return x.nombre === y.nombre ? (x.id < y.id ? -1 : 1) : (x.nombre < y.nombre ? -1 : 1); }).slice(0, 1000);
+        return {
+          solicitudes: pg.filas.map(function (s) { return elige(s, ['id', 'email', 'nombre', 'telefono', 'pais', 'mensaje', 'estado', 'revisado_por', 'revisado_en', 'creado_at']); }),
+          siguiente: pg.siguiente,
+          proyectos: pro.map(function (p) { return { id: p.id, nombre: p.nombre }; }),
+          recortado: pro.length === 1000 ? ['proyectos'] : []
+        };
+      },
+      referidos_datos: function (F, a) {
+        var pg = pagina(filas(F, 'referidos_contactos'), 'creado_at', tope(a.p_limit, 100), a.p_despues);
+        return {
+          referidos: pg.filas.map(function (r) { return elige(r, ['id', 'referido_email', 'referido_nombre', 'referido_telefono', 'cliente_nombre',
+            'cliente_email', 'cliente_telefono', 'cliente_pais', 'interes', 'estado', 'creado_at']); }),
+          siguiente: pg.siguiente
+        };
+      },
+      autoria_datos: function (F, a) {
+        if (a.p_tabla == null || (a.p_tabla !== 'contratos' && a.p_tabla !== 'facturas') || a.p_fila == null) {
+          falla('autoria_datos: solo contratos o facturas, con su fila');
+        }
+        var eq = filas(F, 'usuarios').filter(function (u) { return u.activo === true; })
+          .sort(function (x, y) { return x.email === y.email ? (x.user_id < y.user_id ? -1 : 1) : (x.email < y.email ? -1 : 1); }).slice(0, 1000);
+        var ult = filas(F, 'correcciones_datos').filter(function (c) { return c.tabla === a.p_tabla && c.fila_id === a.p_fila && c.campo === 'creado_por'; })
+          .sort(porDesc('corregido_en'))[0];
+        return {
+          equipo: eq.map(function (u) { return elige(u, ['email', 'nombre', 'activo']); }),
+          ultimo: ult ? elige(ult, ['valor_anterior', 'valor_nuevo', 'motivo', 'corregido_en', 'corregido_por']) : null,
+          recortado: eq.length === 1000 ? ['equipo'] : []
+        };
+      },
+      contrato_diseno_datos: function (F, a) {
+        if (a.p_slug == null || !String(a.p_slug).trim()) falla('contrato_diseno_datos: falta la plantilla');
+        var d = filas(F, 'contratos_diseno').filter(function (x) { return x.slug === a.p_slug; })[0];
+        return { design: d ? d.design : null };
+      }
+    };
+  })();
 
   /* Escrituras en memoria: en la demo, «guardar» se ve (la fila aparece al
      volver a la lista) y se pierde al recargar. Nunca sale nada de la pestaña. */
