@@ -263,6 +263,11 @@ def guard_demo():
         # un icono roto en directo; en la demo no hay fotos, así que va una tesela neutra (data:, la CSP la admite).
         ("data: (paths || []).map(function (p) { return { path: p, signedUrl: 'about:blank#qa-' + p, error: null }; }),",
          "data: (paths || []).map(function (p) { return { path: p, signedUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E', error: null }; }),"),
+        ("createSignedUrl: function (path) { return Promise.resolve({ data: { signedUrl: 'about:blank#qa-' + path }, error: null }); },",
+         "createSignedUrl: function (path) { return Promise.resolve({ data: { signedUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E' }, error: null }); },"),
+        # Lo mismo para las fotos PÚBLICAS (getPublicUrl: fotos de modelo en /v4/modelos/ y lwFotoUrls): revisor, 28-sep.
+        ("getPublicUrl: function (path) { return { data: { publicUrl: 'about:blank#qa-' + path } }; },",
+         "getPublicUrl: function (path) { return { data: { publicUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E' } }; },"),
         ("console.warn('[qa-doble] MODO QA activo", "console.info('[demo] ERP de demostración — datos inventados, sin red real'); void ('"),
         # Algunas RPC del doble devuelven una promesa pelada y el Panel financiero les encadena .select()
         # (24-sep: «sb.rpc(...).select is not a function»). Envoltorio: si no es encadenable, los filtros
@@ -363,7 +368,9 @@ PUERTAS_DEMO = r"""(function () {
 })();
 """
 FIJA_RE = re.compile(r"""\bfija\(\s*['"]([A-Za-z_$][\w$]*)['"]""")
-LWDATOS_LLAMADA = re.compile(r"""(?<![\w$])([\w$]+)\(\s*['"]([a-z][a-z0-9_]*_datos)['"]""")
+# Solo las funciones que llaman a lwDatos (revisor, 28-sep): con cualquier `x('algo_datos')` saltaba con una tabla
+# de demo_datos.js que se llama así.
+LWDATOS_LLAMADA = re.compile(r"""(?<![\w$])(lwDatos|cifras)\(\s*['"]([a-z][a-z0-9_]*_datos)['"]""")
 
 
 def contrato_guard_demo():
@@ -371,7 +378,9 @@ def contrato_guard_demo():
     puede quedarse atrás del guard real en silencio. Aborta si
       · el guard real de Lawang publica con fija() un nombre que el guard de la demo no publica, o
       · la v4 copiada a dist/ pide una lectura `x_datos` (lwDatos('x_datos'), cifras('x_datos')…; `sb.rpc(...)` no,
-        que sigue por el doble) que demo_datos.js no implementa en LW_DEMO_DATOS."""
+        que sigue por el doble) que demo_datos.js no implementa en LW_DEMO_DATOS.
+    Límite conocido: compara NOMBRES. PUERTAS_DEMO repite a mano lwDatos y lwFotoUrls del guard real; si el real
+    cambia cómo responde sin cambiar de nombre, esto no lo ve (aceptado para una demo, revisor 28-sep)."""
     real = set(FIJA_RE.findall(open(os.path.join(LAWANG, 'contracts', 'assets', 'guard.js'), encoding='utf-8').read()))
     if 'lwDatos' not in real:
         aborta('no encuentro fija(\'lwDatos\') en el guard real de Lawang: ¿ha cambiado su forma? revisa FIJA_RE')
