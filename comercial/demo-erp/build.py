@@ -355,6 +355,7 @@ def paginas_propias():
     compila_portada('demo/landing.css')
     shutil.copy2(os.path.join(AQUI, 'tour.js'), os.path.join(DIST, 'demo', 'tour.js'))
     shutil.copy2(os.path.join(AQUI, 'catalogo.js'), os.path.join(DIST, 'demo', 'catalogo.js'))
+    shutil.copy2(os.path.join(AQUI, 'roi.js'), os.path.join(DIST, 'demo', 'roi.js'))   # calculadora de la portada (28-sep)
     shutil.copy2(os.path.join(AQUI, 'modulos_demo.js'), os.path.join(DIST, 'demo', 'modulos.js'))
     # El panel de control (panel.html + /demo/instancia.js, que salían de datos_instancia(): ver git log) NO se publica desde el 27-sep
     # (owner: «oculta el panel»): encendía módulos solo en el navegador y la demo prometía algo que no hacía.
@@ -943,6 +944,7 @@ def instancia(nombre):
 EXENTOS_BASE = {
     'comisiones': 'Home cuenta comisiones pendientes; atribución de closer y referidos corren en la pantalla del CRM/comisiones',
     'contratos': 'Home cuenta firmas pendientes; contratos-firmados es el bucket que abre la pantalla de contratos',
+    'deck': 'edge ficheros (base): sus RPC deck_* solo corren en la clase deck_foto, la acción deck_activa y su reconciliador (AXW-66, 28-sep)',
     'facturas': 'Home cuenta facturas con saldo; justificantes lo sube la pantalla de recibos/facturas',
     'gastos': 'panel-gastos.js y gasto_justificante_registra solo corren en /v4/gastos/',
     'modelos': 'subidores de fotos y documentos del modelo y del deck: solo en /v4/modelos/',

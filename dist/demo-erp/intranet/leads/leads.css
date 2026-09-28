@@ -135,7 +135,14 @@
 
 @keyframes lw-autorrelleno { from {} to {} }
 .filtros input[type="search"]:-webkit-autofill { animation-name: lw-autorrelleno; animation-duration: 1ms; }
-.filtros .seg { display: flex; background: var(--line-soft); border-radius: 9999px; padding: 3px; gap: 2px; }
+
+.filtros .seg { display: flex; background: var(--line-soft); border-radius: 9999px; padding: 3px; gap: 2px;
+  max-width: 100%; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
+@media (max-width: 767px) {
+  .filtros .seg { scrollbar-width: none; }
+  .filtros .seg::-webkit-scrollbar { display: none; }
+  .filtros .seg button { flex: 0 0 auto; white-space: nowrap; }
+}
 .filtros .seg button { border: 0; background: none; border-radius: 9999px; cursor: pointer;
   font: 500 12px/1 var(--text); padding: 6px 11px; color: var(--mist); display: flex; align-items: center; gap: 6px; }
 .filtros .seg button[aria-pressed="true"] { background: var(--panel); color: var(--slate);
@@ -405,7 +412,9 @@
 
 @media (max-width: 760px) {
   
-  .wa { grid-template-columns: 1fr; height: calc(100vh - 15rem); }
+  
+  .wa { grid-template-columns: 1fr; height: calc(100vh - 64px); height: calc(100dvh - 64px);
+        scroll-margin-top: 64px; }
   .wa-lista { border-right: 0; }
   
   .wa:not([data-abierto="1"]) .wa-chat { display: none; }

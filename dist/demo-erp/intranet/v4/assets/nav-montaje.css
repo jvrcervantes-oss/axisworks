@@ -123,7 +123,11 @@ html.v4 .lw4-cab-ava .material-symbols-outlined{ font-size:18px; }
   }
   html.v4.lw4-fijo .lw4-velo{ display:none; }
   
-  html.v4.lw4-fijo .lw4-sb-cerrar{ display:none; }
+  html.v4.lw4-fijo .lw4-sb, html.v4.lw4-fijo body, html.v4.lw4-fijo .lw4-cab{ transition:transform .25s, padding-left .25s, left .25s; }
+  html.v4.lw4-fijo.lw4-sb-plegado .lw4-sb{ transform:translateX(-100%); visibility:hidden; transition:transform .25s, visibility 0s .25s; }
+  html.v4.lw4-fijo.lw4-sb-plegado body{ padding-left:0; }
+  html.v4.lw4-fijo.lw4-sb-plegado .lw4-cab{ left:0; }
+  html.v4.lw4-fijo.lw4-sb-plegado .lw4-cab-menu{ display:inline-flex; }
 }
 
 
