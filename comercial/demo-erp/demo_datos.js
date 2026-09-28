@@ -547,6 +547,41 @@
           recortado: eq.length === 1000 ? ['equipo'] : []
         };
       },
+      /* Panel de gastos (LAW-338 L2 tanda 2, 28-sep-2026; SQL: 20260928051352_law338_l2t2_ajustes.sql). Cursor
+         COMPUESTO (fecha, id) por valores, no por fila releída; los catálogos solo en la primera página. */
+      gastos_panel_datos: function (F, a) {
+        if ((a.p_despues == null) !== (a.p_despues_fecha == null)) falla('gastos_panel_datos: el cursor lleva fecha e id juntos');
+        var lim = Math.min(Math.max(a.p_limit == null ? 1000 : Number(a.p_limit) || 1000, 1), 5000);
+        var CAMPOS = ['id', 'sociedad', 'proyecto_id', 'proveedor_id', 'categoria', 'concepto', 'referencia', 'fecha', 'vence_el',
+          'base', 'impuesto', 'total', 'pph_retenido', 'pph_tipo', 'pph_ingresado_el', 'moneda', 'estado', 'pagado_el',
+          'cuenta_pago', 'justificantes', 'anulado_motivo', 'notas', 'creado_por', 'creado_en', 'actualizado_en'];
+        var orden = filas(F, 'gastos').slice().sort(porDesc('fecha'));
+        if (a.p_despues != null) {
+          orden = orden.filter(function (g) { return g.fecha < a.p_despues_fecha || (g.fecha === a.p_despues_fecha && g.id < a.p_despues); });
+        }
+        var pag = orden.slice(0, lim), ult = pag[pag.length - 1];
+        var r = { gastos: pag.map(function (g) { return elige(g, CAMPOS); }),
+          siguiente: orden.length > lim ? { fecha: ult.fecha, id: ult.id } : null };
+        if (a.p_despues != null) return r;
+        var rec = [];
+        function lista(nombre, t, k1, k2, tope, campos) {   // orden (k1, k2) ascendente, con tope y aviso de recorte
+          var o = filas(F, t).slice().sort(function (x, y) { return x[k1] === y[k1] ? (x[k2] < y[k2] ? -1 : x[k2] > y[k2] ? 1 : 0) : (x[k1] < y[k1] ? -1 : 1); });
+          if (o.length > tope) rec.push(nombre);
+          return o.slice(0, tope).map(function (x) { return elige(x, campos); });
+        }
+        r.proveedores = lista('proveedores', 'proveedores', 'nombre', 'id', 2000, ['id', 'nombre', 'tipo', 'npwp', 'contacto', 'email', 'telefono', 'notas', 'activo']);
+        r.categorias = lista('categorias', 'gasto_categorias', 'orden', 'clave', 500, ['clave', 'nombre', 'grupo', 'orden', 'activa']);
+        r.proyectos = lista('proyectos', 'proyectos', 'nombre', 'id', 1000, ['id', 'nombre', 'activo']);
+        r.cuentas = lista('cuentas', 'cuentas_bancarias', 'orden', 'clave', 200, ['clave', 'label', 'banco', 'titular', 'es_escrow', 'es_propia', 'activa']);
+        r.usuarios = lista('usuarios', 'usuarios', 'nombre', 'user_id', 2000, ['user_id', 'nombre', 'email']);
+        r.recortado = rec;
+        return r;
+      },
+      gasto_historial_datos: function (F, a) {
+        var lim = Math.min(Math.max(a.p_limit == null ? 8 : Number(a.p_limit) || 8, 1), 50);
+        return { historial: filas(F, 'gastos_log').filter(function (l) { return l.gasto_id === a.p_gasto; })
+          .sort(porDesc('cuando')).slice(0, lim).map(function (l) { return elige(l, ['accion', 'quien', 'cuando', 'antes', 'despues']); }) };
+      },
       contrato_diseno_datos: function (F, a) {
         if (a.p_slug == null || !String(a.p_slug).trim()) falla('contrato_diseno_datos: falta la plantilla');
         var d = filas(F, 'contratos_diseno').filter(function (x) { return x.slug === a.p_slug; })[0];
