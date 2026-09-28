@@ -1,0 +1,30 @@
+<!-- Pantalla «Módulo no instalado» de las instancias del ERP — 28-sep-2026 (owner, tras probar el panel de control).
+     FUENTE ÚNICA de las dos vías: build.py la rellena para las pantallas no portadas (HTML estático) y la inyecta en
+     apagados_instancia.js para los módulos apagados desde el panel (se pinta al cargar). Sin estilo propio: clases de
+     /intranet/v4/assets/tw-base.css, la piel de la v4; build.py aborta si una clase de aquí no existe en esa hoja
+     (es Tailwind purgado desde el repo de Lawang y puede perder una clase en silencio).
+     Huecos: {{marca}} y {{sello}} los pone el build una vez; {{titulo}} {{texto}} {{que_hace}} {{asunto}} y los
+     atributos {{oculta_*}} ('' o 'hidden', siempre en un elemento SIN clase de display: `inline-flex` le gana a [hidden]) se rellenan por pantalla, siempre escapados. Este comentario no sale. -->
+<main class="min-h-screen flex items-center justify-center px-4 py-10 bg-background text-on-surface font-body-md antialiased">
+  <div class="w-full max-w-xl">
+    <p class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant">{{marca}}</p>
+    <h1 class="font-headline-md text-headline-md mt-2">{{titulo}}</h1>
+    <p class="font-body-md text-body-md leading-relaxed mt-4">{{texto}}</p>
+    <p class="font-body-md text-body-md leading-relaxed text-on-surface-variant mt-2" {{oculta_que_hace}}>{{que_hace}}</p>
+    <section class="mt-4 pt-6 border-t border-outline-variant" aria-label="Cómo activarlo" {{oculta_contacto}}>
+      <div class="flex items-center gap-3">
+        <span class="w-8 h-8 shrink-0 block">{{sello}}</span>
+        <span class="font-label-md text-label-md uppercase tracking-widest">AxisWorks</span>
+      </div>
+      <p class="font-body-md text-body-md leading-relaxed mt-4">Este ERP lo construye y mantiene AxisWorks. Para activar este módulo en tu empresa, escríbenos y lo vemos contigo.</p>
+      <p class="flex flex-wrap gap-3 mt-4">
+        <a class="inline-flex items-center h-10 px-5 rounded-full bg-primary text-on-primary font-label-md text-label-md" href="mailto:hello@axisworks.studio?subject={{asunto}}">hello@axisworks.studio</a>
+        <a class="inline-flex items-center h-10 px-5 rounded-full border border-outline-variant font-label-md text-label-md" href="https://axisworks.studio" target="_blank" rel="noopener">axisworks.studio</a>
+      </p>
+    </section>
+    <p class="flex flex-wrap items-center gap-4 mt-4 pt-6">
+      <span {{oculta_reintenta}}><button type="button" id="axw-reintenta" class="inline-flex items-center h-10 px-5 rounded-full bg-primary text-on-primary font-label-md text-label-md">Reintentar</button></span>
+      <a class="font-body-md text-body-md text-primary underline" href="/intranet/v4/home/">Volver al inicio</a>
+    </p>
+  </div>
+</main>

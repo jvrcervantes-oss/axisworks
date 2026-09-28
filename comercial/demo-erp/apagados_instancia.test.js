@@ -17,7 +17,11 @@ const MAPA = {
   p: { '/intranet/v4/comisiones/': 'comisiones', '/intranet/v4/facturas/': 'facturas' },
   x: { t: { creatividades: 'creatividades' } },
   xp: ['/intranet/v4/creatividades/'],
+  n: { comisiones: ['Comisiones', 'Lo que se debe a cada comercial.'], facturas: ['Fact<b>"uras', ''] },
 };
+// La plantilla real (no_instalado.html) con sus huecos: la de verdad la pone build.py
+const PLANTILLA = fs.readFileSync(path.join(__dirname, 'no_instalado.html'), 'utf8')
+  .replace(/<!--[\s\S]*?-->\s*/g, '').replace('{{marca}}', 'Prueba ERP').replace('{{sello}}', '<svg></svg>');
 
 function escenario({ activos, ruta = '/intranet/v4/home/', fallaActivos = false }) {
   const red = [];
@@ -25,7 +29,8 @@ function escenario({ activos, ruta = '/intranet/v4/home/', fallaActivos = false 
   const doc = {
     readyState: 'complete',
     documentElement: { classList: { add: (c) => clases.add(c), remove: (c) => clases.delete(c) }, style: {}, appendChild() {} },
-    head: { appendChild(el) { doc._hoja = el; } },
+    head: { appendChild(el) { if (el.id === 'axw-modulos') doc._hoja = el; } },
+    title: '',
     body: { innerHTML: 'pantalla' },
     createElement: () => ({}),
     querySelectorAll: () => [],
@@ -48,7 +53,7 @@ function escenario({ activos, ruta = '/intranet/v4/home/', fallaActivos = false 
     }
     return new Response('[{"id":1}]', { status: 200, headers: { 'Content-Type': 'application/json', 'Content-Range': '0-0/1' } });
   };
-  new Function(plantilla.replace('__AXW_MAPA__', JSON.stringify(MAPA)))();
+  new Function(plantilla.replace('__AXW_MAPA__', JSON.stringify(MAPA)).replace('__AXW_NO_INSTALADO__', JSON.stringify(PLANTILLA)))();
   const sb = createClient(SB, 'sb_publishable_x', { auth: { persistSession: false, autoRefreshToken: false } });
   sb.auth.getSession = async () => ({ data: { session: { access_token: 't' } }, error: null });
   return { sb, red, clases, doc, publica: () => { globalThis.LW_SB = sb; } };
@@ -111,6 +116,11 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     await espera(50);
     ok(!arranco, 'LW_AUTH no se resuelve en una pantalla de módulo apagado');
     ok(/no instalado/i.test(E.doc.body.innerHTML) && !E.clases.has('axw-mod-pend'), 'la pantalla dice «Módulo no instalado»');
+    const b = E.doc.body.innerHTML;
+    ok(b.includes('«Comisiones» no está activo') && b.includes('Lo que se debe a cada comercial.'), 'dice qué módulo y qué hace');
+    ok(b.includes('mailto:hello@axisworks.studio?subject=Activar%20m%C3%B3dulo%3A%20Comisiones') && b.includes('https://axisworks.studio'),
+      'bloque de AxisWorks con correo (asunto por módulo) y web');
+    ok(!/\{\{/.test(b) && /<span\s+hidden><button type="button" id="axw-reintenta"/.test(b) && E.doc.title === 'Módulo no instalado', 'sin huecos sin rellenar; sin «Reintentar»');
   }
 
   // 4. pantalla de un módulo encendido: arranca después de saber
@@ -132,6 +142,18 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     const a = await E.sb.from('facturas').select('*');
     ok(a.data.length === 0, 'sin poder mirar: lo de módulo cerrado');
     ok(/Reintentar/.test(E.doc.body.innerHTML) && !/no instalado/i.test(E.doc.body.innerHTML), 'fallo ≠ no instalado: ofrece reintentar');
+    ok(/aria-label="Cómo activarlo"\s+hidden/.test(E.doc.body.innerHTML) && !/<span\s+hidden><button type="button" id="axw-reintenta"/.test(E.doc.body.innerHTML),
+      'fallo: sin bloque de contacto (no es que falte el módulo) y con el botón visible');
+  }
+
+  // 6. lo que se rellena va escapado (el nombre sale de un JSON, pero la plantilla va por innerHTML)
+  {
+    const E = escenario({ activos: [], ruta: '/intranet/v4/facturas/' });
+    E.publica();
+    await espera(50);
+    const b = E.doc.body.innerHTML;
+    ok(b.includes('«Fact&lt;b&gt;&quot;uras»') && !b.includes('<b>"'), 'nombre escapado');
+    ok(/<p [^>]*mt-2"\s+hidden>/.test(b), 'sin «qué hace»: su línea queda oculta');
   }
 
   console.log('OK apagados_instancia: ' + n + '/' + n);

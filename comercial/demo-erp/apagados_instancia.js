@@ -143,13 +143,41 @@
   }
 
   // ── pintar lo decidido ──────────────────────────────────────────────────────────────────────
-  function aviso(titulo, texto, reintentar) {
-    var html = '<main style="font:16px/1.5 system-ui,sans-serif;padding:48px 24px;max-width:560px;margin:0 auto">' +
-      '<h1 style="font-size:22px;margin:0 0 12px">' + titulo + '</h1><p>' + texto + '</p><p>' +
-      (reintentar ? '<button type="button" id="axw-reintenta" style="font:inherit;padding:8px 16px;cursor:pointer">Reintentar</button> ' : '') +
-      '<a href="/intranet/v4/home/">Volver al inicio</a></p></main>';
+  /* La pantalla la da no_instalado.html (28-sep-2026), la misma que build.py sirve en las pantallas no portadas: una
+     sola fuente con la piel de la v4 y el bloque de AxisWorks. La plantilla es estática (del build); lo que se rellena
+     va escapado. M.n = {módulo: [nombre, qué hace]}, de modulos_rotulos.json (el mismo rótulo que el panel). */
+  var PLANTILLA = __AXW_NO_INSTALADO__;
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function pantalla(error) {
+    var f = error ? null : (M.n || {})[moduloDeRuta(RUTA)];
+    var v = error ? {
+      titulo: 'No se pudo comprobar los módulos',
+      texto: 'No hemos podido preguntar a la base qué módulos tiene esta instancia. No es que falte: prueba otra vez.',
+      que_hace: '', asunto: '', oculta_que_hace: 'hidden', oculta_contacto: 'hidden', oculta_reintenta: ''
+    } : {
+      titulo: 'Módulo no instalado',
+      texto: f ? '«' + f[0] + '» no está activo en esta instancia.' : 'Este módulo no está activo en esta instancia.',
+      que_hace: f && f[1] ? f[1] : '', asunto: encodeURIComponent('Activar módulo: ' + (f ? f[0] : RUTA)),
+      oculta_que_hace: f && f[1] ? '' : 'hidden', oculta_contacto: '', oculta_reintenta: 'hidden'
+    };
+    return { titulo: v.titulo, html: PLANTILLA.replace(/\{\{([a-z_]+)\}\}/g, function (_, k) { return esc(v[k]); }) };
+  }
+  function aviso(error) {
+    var p = pantalla(error);
     function pon() {
-      document.body.innerHTML = html;
+      // la hoja de la v4 (y su tipografía): no todas las pantallas de módulo la cargan (/intranet/leads/ no es v4)
+      ['/intranet/v4/assets/fonts/fonts.css', '/intranet/v4/assets/tw-base.css'].forEach(function (href) {
+        var l = document.createElement('link');
+        l.rel = 'stylesheet';
+        l.href = href;
+        (document.head || raiz).appendChild(l);
+      });
+      document.title = p.titulo;
+      document.body.innerHTML = p.html;
       raiz.classList.remove('axw-mod-pend');
       raiz.style.visibility = 'visible';
       var b = document.getElementById('axw-reintenta');
@@ -171,8 +199,7 @@
     hoja.textContent = reglas(apagados);
     if (MOD_PAGINA) {
       if (activo(MOD_PAGINA)) raiz.classList.remove('axw-mod-pend');
-      else if (estado.error) aviso('No se pudo comprobar los módulos', 'No hemos podido preguntar a la base qué módulos tiene esta instancia. No es que falte: prueba otra vez.', true);
-      else aviso('Módulo no instalado', 'Este módulo no está activo en esta instancia.', false);
+      else aviso(!!estado.error);
     }
     function vigila() {
       filtraRelativos();

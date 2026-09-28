@@ -93,24 +93,9 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
 <script>
 (function () {
   /* Nombre, sección e icono de cada clave del registro (erp/modulos.json). Solo presentación: la lista de módulos,
-     sus dependencias y lo que está activo vienen de la base. Una clave nueva sin entrada sale con su clave. */
-  var ROTULO = {
-    base: ['Base', 'Base', 'home'],
-    operaciones: ['Operaciones', 'Seguimiento', 'swap_horiz'], reservas: ['Reservas', 'Seguimiento', 'event_available'],
-    leads: ['CRM de leads', 'Seguimiento', 'filter_alt'],
-    contratos: ['Contratos', 'Documentación', 'contract'], portal: ['Portal del comprador', 'Documentación', 'badge'],
-    deck: ['Deck de inversión', 'Documentación', 'slideshow'], asistente: ['Asistente de respuestas', 'Documentación', 'quick_phrases'],
-    creatividades: ['Creatividades y dossiers', 'Documentación', 'imagesmode'],
-    finanzas: ['Panel financiero', 'Finanzas', 'monitoring'], facturas: ['Facturación', 'Finanzas', 'receipt_long'],
-    recibos: ['Cobros y recibís', 'Finanzas', 'price_check'], vencimientos: ['Vencimientos', 'Finanzas', 'event_upcoming'],
-    productos: ['Productos', 'Finanzas', 'inventory_2'], comisiones: ['Comisiones', 'Finanzas', 'percent'],
-    'comision-admin': ['Comisión de administración', 'Finanzas', 'handshake'], gastos: ['Gastos y proveedores', 'Finanzas', 'shopping_bag'],
-    bancos: ['Bancos y conciliación', 'Finanzas', 'account_balance_wallet'], cuentas: ['Cuentas bancarias', 'Finanzas', 'account_balance'],
-    sociedades: ['Sociedades emisoras', 'Finanzas', 'corporate_fare'],
-    comunicacion: ['Comunicados', 'Comunicación', 'mail'], soporte: ['Soporte al cliente', 'Comunicación', 'support_agent'],
-    proyectos: ['Proyectos y parcelas', 'Base de datos', 'map'], modelos: ['Modelos de vivienda', 'Base de datos', 'house'],
-    obra: ['Obra', 'Base de datos', 'construction'], compradores: ['Clientes y compradores', 'Base de datos', 'person_search']
-  };
+     sus dependencias y lo que está activo vienen de la base. Una clave nueva sin entrada sale con su clave.
+     Lo pone build.py desde modulos_rotulos.json (28-sep-2026): la misma tabla que usa la pantalla «Módulo no instalado». */
+  var ROTULO = __AXW_ROTULOS__;
   var SECCIONES = ['Seguimiento', 'Documentación', 'Finanzas', 'Comunicación', 'Base de datos', 'Otros'];
   function rot(k) { return ROTULO[k] || [k, 'Otros', 'extension']; }
   function nombre(k) { return rot(k)[0]; }
