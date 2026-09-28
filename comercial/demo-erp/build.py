@@ -812,6 +812,10 @@ def publica():
     for x in os.listdir(DIST):
         s = os.path.join(DIST, x)
         shutil.copytree(s, os.path.join(DESTINO_PUBLICO, x)) if os.path.isdir(s) else shutil.copy2(s, DESTINO_PUBLICO)
+    # La portada NO va en la demo pública (owner, 28-sep, AXW-70): vive solo en erp. (dist/erp-web); en demo. la raíz
+    # redirige a la Home. En local (presentar.cmd, sin --publico) dist/ la sigue llevando en la raíz.
+    for f in PORTADA_SOLO:
+        os.remove(os.path.join(DESTINO_PUBLICO, f.replace('/', os.sep)))
     # Solo se sirve desde demo.axisworks.studio: por axisworks.studio/demo/ las rutas absolutas no casan.
     # La raíz ya no es la portada (vive en erp., AXW-70): 302 a la Home de la demo conservando la query (?tour=1&sel=).
     # 302 y no 301 mientras dura el cambio de dominios (Deploy, rev. #146: el navegador guarda un 301 sin caducidad).
@@ -820,7 +824,7 @@ def publica():
         '# demo.axisworks.studio: la demo del ERP. Fuera de ese host, redirige a él.\n'
         '<IfModule mod_rewrite.c>\n  RewriteEngine On\n'
         '  RewriteCond %{HTTP_HOST} !^demo\\.axisworks\\.studio$ [NC]\n'
-        '  RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=301,L]\n'
+        '  RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=302,L]\n'
         '  RewriteRule ^$ /intranet/v4/home/ [R=302,L]\n</IfModule>\n'
         + cabeceras_seguridad(
             # Sin cdn.tailwindcss.com desde el 27-sep-2026 (ERP F3 lote 4a): la v4 y la portada van con Tailwind
@@ -833,6 +837,9 @@ def publica():
             '\'self\'; object-src \'none\''))
     open(os.path.join(DESTINO_PUBLICO, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(DESTINO_PUBLICO)
+    vuelve = [f for f in PORTADA_SOLO if os.path.exists(os.path.join(DESTINO_PUBLICO, f.replace('/', os.sep)))]
+    if vuelve:
+        aborta('la portada ha reaparecido en la demo pública (vive solo en erp.): ' + ', '.join(vuelve))
     total = sum(len(f) for _r, _d, f in os.walk(DESTINO_PUBLICO))
     print('OK versión pública en %s: %d ficheros, sin rastros de Lawang' % (os.path.relpath(DESTINO_PUBLICO, AGENCIA), total))
     publica_web()
@@ -865,6 +872,8 @@ def cabeceras_seguridad(csp):
 # LISTA CERRADA de lo que se sirve en erp. (Seguridad, rev. #146). Todo lo demás —y en especial /intranet, /panel,
 # /contracts, /portal, /entrar y los callbacks de auth— lo manda el .htaccess al ERP real (app.). publica_web() aborta si
 # en la carpeta aparece algo fuera de esta lista.
+# Lo que es SOLO de la portada: sale de la demo pública (la demo sigue usando demo/catalogo.js).
+PORTADA_SOLO = ('index.html', 'demo/landing.css', 'demo/roi.js')
 LISTA_WEB = ('index.html', 'demo/landing.css', 'demo/catalogo.js', 'demo/roi.js', 'favicon.png', 'favicon.ico',
              'robots.txt', '.htaccess')
 CONFIG_PORTADA_RE = re.compile(r'<script id="?axw-config"?>[\s\S]*?</script>')
