@@ -33,7 +33,7 @@ casos = [
            .replace("['sociedades', ['base']]", "['sociedades', ['base']], ['soporte', ['base']]")), 'para'),
     ('módulo que el registro no conoce',
      corre(cambia("['sociedades', ['base']]", "['sociedades', ['base']], ['nuevomod', ['base']]")
-           .replace("  var CAMINO = [", "  MODULOS.push(['nuevomod', 'Nuevo', 'Finanzas', [], '', [], null]);\n  var CAMINO = [")), 'para'),
+           .replace("  var CAMINO = [", "  MODULOS.push(['nuevomod', 'New', 'Finance', [], '', [], null]);\n  var CAMINO = [")), 'para'),
     ('setter suelto sin el CRM',
      corre(cambia("['crm', 'setter', 'campanas']", "['crm', 'campanas']")
            .replace("['sociedades', ['base']]", "['sociedades', ['base']], ['setter', ['base']]")), 'para'),
