@@ -30,12 +30,14 @@
 
   /* horas: {clave: horas/semana}; coste: coste mensual de una persona con cargas; pct: % que el ERP asume (0-100) */
   function calcula(horas, coste, pct) {
-    var semana = 0;
-    TAREAS.forEach(function (t) { semana += num(horas && horas[t[0]], 0, 168); });
+    var semana = 0, usadas = {};
+    TAREAS.forEach(function (t) { usadas[t[0]] = num(horas && horas[t[0]], 0, 168); semana += usadas[t[0]]; });
     var c = num(coste, 0, 1e12), p = num(pct, 0, 100) / 100;
     var horasMes = semana * SEMANAS_MES * p;
     var puestos = horasMes / HORAS_MES_JORNADA;
     return {
+      // Lo que de verdad entró en la cuenta (recortado): el mailto cita esto, nunca lo tecleado (revisor, 28-sep)
+      entrada: { horas: usadas, coste: c, pct: p * 100 },
       horasSemanaEquipo: semana,
       horasMes: horasMes,
       puestos: puestos,
@@ -46,8 +48,11 @@
 
   /* Lectura humana del nº de puestos (Marketing: «0,8 puestos» se lee mal) */
   function frasePuestos(p) {
-    if (p < 0.1) return 'unas horas sueltas al mes';
-    if (p < 0.4) return 'una media jornada larga a la semana';
+    // Por debajo de ~0,4 puestos se dicen las horas a la semana reales: una frase fija se quedaba corta hasta 4 veces
+    // al lado de la cifra de horas/mes (revisor de código, 28-sep).
+    var horasSemana = p * HORAS_MES_JORNADA / SEMANAS_MES;
+    if (horasSemana < 0.5) return 'nada todavía';
+    if (p < 0.4) return 'unas ' + Math.round(horasSemana).toLocaleString('es-ES') + ' h a la semana de una persona';
     if (p < 0.65) return 'media persona a jornada completa';
     if (p < 0.9) return 'casi una persona a jornada completa';
     if (p < 1.15) return 'una persona a jornada completa';

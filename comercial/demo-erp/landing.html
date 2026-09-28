@@ -585,9 +585,9 @@ Activa solo los módulos que usas hoy. Ventas, contratos, facturación y cobros 
     $('roi-valor').textContent = cifra(r.valorAno) + ' ' + mon + ' / año';
     $('roi-valor-mes').textContent = 'Unos ' + cifra(r.valorMes) + ' ' + mon + ' al mes, calculado con ' + cifra(r.horasSemanaEquipo, 1) + ' h/semana de tu equipo.';
     var cuerpo = 'Hola, he usado la calculadora de AxisWorks ERP:\n\n' +
-      R.TAREAS.map(function (t) { return '- ' + t[1] + ': ' + cifra(parseFloat(horas[t[0]]) || 0, 1) + ' h/semana'; }).join('\n') +
-      '\n- Coste mensual por persona: ' + cifra(parseFloat($('roi-coste').value) || 0) + ' ' + mon +
-      '\n- Parte que asumiría el ERP (supuesto): ' + pct + ' %' +
+      R.TAREAS.map(function (t) { return '- ' + t[1] + ': ' + cifra(r.entrada.horas[t[0]], 1) + ' h/semana'; }).join('\n') +
+      '\n- Coste mensual por persona: ' + cifra(r.entrada.coste) + ' ' + mon +
+      '\n- Parte que asumiría el ERP (supuesto): ' + r.entrada.pct + ' %' +
       '\n\nResultado orientativo: ' + cifra(r.horasMes) + ' h/mes liberadas, ' + cifra(r.valorAno) + ' ' + mon + '/año.\n\nMe gustaría un presupuesto.';
     $('roi-mail').href = 'mailto:hello@axisworks.studio?subject=' + encodeURIComponent('Presupuesto AxisWorks ERP') + '&body=' + encodeURIComponent(cuerpo);
   }

@@ -32,6 +32,12 @@ r = R.calcula({ leads: 160 * 12 / 52 }, 2000, 100);
 cerca(r.puestos, 1, 'un puesto');
 cerca(r.valorAno, 24000, 'doce sueldos');
 
+// 0,276 puestos = 0,276·160/(52/12) = 10,19 h/semana → «unas 10 h»
+assert.strictEqual(R.frasePuestos(0.276), 'unas 10 h a la semana de una persona');
+assert.strictEqual(R.frasePuestos(0), 'nada todavía');
+// El mailto cita lo recortado, no lo tecleado
+r = R.calcula({ leads: '-5', contratos: '1000' }, '-3', '150');
+assert.deepStrictEqual([r.entrada.horas.leads, r.entrada.horas.contratos, r.entrada.coste, r.entrada.pct], [0, 168, 0, 100]);
 assert.strictEqual(R.frasePuestos(0.46), 'media persona a jornada completa');
 assert.strictEqual(R.frasePuestos(0.8), 'casi una persona a jornada completa');
 assert.strictEqual(R.frasePuestos(1), 'una persona a jornada completa');
