@@ -938,7 +938,12 @@ def publica_web():
         '  RewriteCond %{QUERY_STRING} (^|&)(code|token_hash|type)= [NC]\n'
         '  RewriteRule ^$ ' + APP_URL + '/ [R=302,L]\n'
         '  RewriteCond %{REQUEST_URI} !^/(index\\.html|' + permitidas + ')?$\n'
-        '  RewriteRule ^ ' + APP_URL + '%{REQUEST_URI} [R=302,L]\n</IfModule>\n'
+        # E=AXW_ERP_VIEJO: quien llega aquí es casi siempre un navegador con la raíz VIEJA de erp. (el ERP real, que
+        # hacía location.replace('/intranet/')) guardada en caché: nunca pide la portada nueva al servidor. Esta
+        # respuesta le manda vaciar su caché de erp. (Clear-Site-Data "cache", solo caché: ni cookies ni storage) y la
+        # próxima visita ya trae la portada. Visto por el owner el 28-sep: erp. le llevaba a app./intranet/v4/home/.
+        '  RewriteRule ^ ' + APP_URL + '%{REQUEST_URI} [R=302,L,E=AXW_ERP_VIEJO:1]\n</IfModule>\n'
+        '<IfModule mod_headers.c>\n  Header always set Clear-Site-Data "\\"cache\\"" env=AXW_ERP_VIEJO\n</IfModule>\n'
         + cabeceras_seguridad(
             'default-src \'self\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\' '
             'https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data:; '
