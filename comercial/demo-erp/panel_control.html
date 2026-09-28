@@ -323,7 +323,9 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
   /* Nuevo ERP: solo deja una SOLICITUD en la base del mando (la valida la edge y otra vez la base). El alta real la lanza
      el estudio: `python erp/nueva_instancia.py --desde-solicitud <n>`; crear el proyecto es gasto y sigue pidiendo tu OK. */
   function nuevoErp() {
-    var ref = instancias.filter(function (i) { return i.estado; })[0];
+    // los módulos del MANDO (la instancia que sirve este panel), que es contra lo que valida la base (revisor)
+    var ref = instancias.filter(function (i) { return i.estado && i.dominio === location.host; })[0] ||
+      instancias.filter(function (i) { return i.estado; })[0];
     var mods = ref ? ref.estado.modulos.filter(function (m) { return m.modulo !== 'base' && m.instalable; }) : [];
     var campo = function (id, et, ph, extra) {
       return '<label class="block"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">' + et + '</span>' +
