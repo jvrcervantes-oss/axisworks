@@ -42,6 +42,7 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
 <nav class="flex-1 px-space-md py-space-sm space-y-1 overflow-y-auto" aria-label="Instancias">
 <div class="px-space-sm py-space-xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Instancias</span></div>
 <div id="lista-instancias" class="space-y-1"></div>
+<button type="button" id="nuevo-erp" class="w-full flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-primary hover:bg-surface-container"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">add_circle</span><span class="font-label-md text-label-md">Nuevo ERP</span></button>
 <div class="pt-space-md px-space-sm py-space-xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Este ERP</span></div>
 <a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface" href="/intranet/v4/home/"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">login</span><span class="font-label-md text-label-md">Entrar al ERP</span></a>
 </nav>
@@ -59,12 +60,14 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
 </div>
 <label class="lg:hidden min-w-0"><span class="sr-only">Instancia</span>
 <select id="sel-instancia" class="rounded-lg border-0 bg-surface-container-low font-label-md text-label-md py-1 pl-2 pr-8 max-w-[55vw]"></select></label>
+<button type="button" id="nuevo-erp-m" class="lg:hidden shrink-0 w-9 h-9 rounded-lg bg-surface-container-low text-primary flex items-center justify-center" aria-label="Nuevo ERP"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">add</span></button>
 </header>
 <main class="pt-20 pb-16 px-margin md:px-gutter-lg max-w-5xl">
 <div id="estado-carga" class="p-space-md rounded-xl bg-surface-container-lowest text-on-surface-variant">Cargando instancias…</div>
 <section id="vista" class="hidden space-y-space-lg">
 <div id="cabecera-instancia" class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm"></div>
 <div id="aviso-instancia" class="hidden p-space-md rounded-xl bg-surface-container-high text-on-surface"></div>
+<div id="ficha" class="hidden p-space-md rounded-xl bg-surface-container-lowest shadow-sm"></div>
 <div id="modulos" class="space-y-space-lg"></div>
 <div>
 <h2 class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-sm">Historial de cambios</h2>
@@ -152,6 +155,32 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
     }).join('');
   }
 
+  /* Ficha (lectura): lo que la instancia USA hoy, leído de su base. El dueño de nombre y dominio es erp/instancias.json
+     (el instalador lo copia a la base) y el de los superadmins, Auth: por eso se cambian con el instalador, no aquí
+     (rev. previa #143, Datos #1/#2). Si la base y el registro del mando no dicen lo mismo, se avisa. */
+  function fila(et, val, nota) {
+    return '<div class="grid grid-cols-[120px_1fr] gap-space-sm py-1"><dt class="font-label-sm text-label-sm uppercase tracking-wider text-outline">' + et +
+      '</dt><dd class="min-w-0 font-body-sm text-body-sm text-on-surface [overflow-wrap:anywhere]">' + val + (nota ? '<div class="font-code-metric text-code-metric text-on-surface-variant">' + nota + '</div>' : '') + '</dd></div>';
+  }
+  function pintaFicha(i, e) {
+    var caja = $('ficha');
+    if (!e || !e.ficha) { caja.classList.add('hidden'); caja.innerHTML = ''; return; }
+    var f = e.ficha, avisos = [];
+    if (f.marca && i.marca && f.marca !== i.marca) avisos.push('El registro del mando dice «' + esc(i.marca) + '»: se igualan al relanzar el paso control.');
+    if (f.dominio_web && i.dominio && i.dominio !== f.dominio_web && i.dominio.indexOf(f.dominio_web) === -1) avisos.push('El dominio del ERP en el registro es ' + esc(i.dominio) + '.');
+    var admins = (f.super_admins || []).map(function (a) {
+      return esc(a.correo) + (a.confirmado ? '' : ' <span class="text-error">· sin confirmar</span>') +
+        (a.difiere ? ' <span class="text-error">· su ficha de usuario tiene otro correo</span>' : '');
+    }).join('<br>') || '<span class="text-error">Ninguno activo</span>';
+    caja.classList.remove('hidden');
+    caja.innerHTML = '<h2 class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs">Ficha</h2><dl>' +
+      fila('Nombre', esc(f.marca || '—'), 'Lo cambia el estudio en el registro y el instalador lo lleva a la base.') +
+      fila('Dominio', esc(f.dominio_web || '—'), 'Cambiarlo es DNS y republicar: lo hace el estudio.') +
+      fila('Intranet', esc(f.url_intranet || '—'), '') +
+      fila('Superadmin', admins, 'Alta: el estudio con el instalador (la cuenta tiene que existir antes).') +
+      '</dl>' + (avisos.length ? '<p class="mt-space-xs font-body-sm text-body-sm text-error">' + avisos.join(' ') + '</p>' : '');
+  }
+
   function pintaInstancia() {
     var i = actual, e = i.estado, aviso = $('aviso-instancia');
     var act = activosDe(i);
@@ -172,6 +201,7 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
         ' <button type="button" id="reintenta" class="underline font-label-md">Reintentar</button>';
     } else aviso.classList.add('hidden');
 
+    pintaFicha(i, e);
     var cont = $('modulos');
     if (!e) { cont.innerHTML = ''; $('historial').innerHTML = ''; return; }
     var desplegadas = e.edges_desplegadas || [];
@@ -289,6 +319,43 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
       });
     }).catch(function (e) { toast(e.message); }).then(function () { ocupado = false; });
   }
+
+  /* Nuevo ERP: solo deja una SOLICITUD en la base del mando (la valida la edge y otra vez la base). El alta real la lanza
+     el estudio: `python erp/nueva_instancia.py --desde-solicitud <n>`; crear el proyecto es gasto y sigue pidiendo tu OK. */
+  function nuevoErp() {
+    var ref = instancias.filter(function (i) { return i.estado; })[0];
+    var mods = ref ? ref.estado.modulos.filter(function (m) { return m.modulo !== 'base' && m.instalable; }) : [];
+    var campo = function (id, et, ph, extra) {
+      return '<label class="block"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">' + et + '</span>' +
+        '<input id="' + id + '" class="mt-1 w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 font-body-md text-body-md" ' +
+        'placeholder="' + esc(ph) + '" autocomplete="off" ' + (extra || '') + '></label>';
+    };
+    var html = '<div class="space-y-space-sm">' +
+      campo('al-instancia', 'Nombre interno', 'cliente-nuevo', 'maxlength="30"') +
+      campo('al-marca', 'Nombre del ERP (marca)', 'Cliente S.L.', 'maxlength="60"') +
+      campo('al-dominio', 'Dominio o subdominio', 'erp.cliente.com', 'maxlength="253"') +
+      campo('al-correo', 'Correo del superadmin', 'direccion@cliente.com', 'type="email" maxlength="254"') +
+      '<fieldset><legend class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Módulos iniciales</legend>' +
+      '<div class="grid grid-cols-2 gap-1 mt-1">' + mods.map(function (m) {
+        return '<label class="flex items-center gap-1 font-body-sm text-body-sm"><input type="checkbox" class="al-mod" value="' + esc(m.modulo) + '"> ' + esc(nombre(m.modulo)) + '</label>';
+      }).join('') + '</div></fieldset>' +
+      '<p class="font-body-sm text-body-sm text-on-surface-variant">Queda como solicitud. El estudio la lanza; crear el proyecto (unos 10 $/mes) te pedirá el OK.</p></div>';
+    $('dlg-titulo').textContent = 'Nuevo ERP';
+    dialogo(html, 'Pedir el alta').then(function (v) {
+      $('dlg-titulo').textContent = 'Confirmar cambio';
+      if (v !== 'ok') return;
+      var cuerpo = { accion: 'alta', instancia: $('al-instancia').value.trim(), marca: $('al-marca').value.trim(),
+        dominio: $('al-dominio').value.trim().toLowerCase(), correo_admin: $('al-correo').value.trim().toLowerCase(),
+        modulos: Array.prototype.map.call(document.querySelectorAll('.al-mod:checked'), function (c) { return c.value; }) };
+      return pide(cuerpo).then(function (d) {
+        if (d.__estado === 200) toast('Solicitud #' + d.solicitud + ' guardada. El estudio la lanza con --desde-solicitud ' + d.solicitud + '.');
+        else if (d.error === 'campos') toast('Revisa: ' + d.campos.join(', ') + '.');
+        else toast(d.mensaje || 'No se guardó la solicitud (' + d.__estado + ').');
+      });
+    }).catch(function (e) { toast(e.message); });
+  }
+  $('nuevo-erp').addEventListener('click', nuevoErp);
+  $('nuevo-erp-m').addEventListener('click', nuevoErp);
 
   document.addEventListener('click', function (ev) {
     var t = ev.target.closest && ev.target.closest('[data-mod],[data-inst],#reintenta');
