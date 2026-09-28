@@ -838,6 +838,16 @@ def _instancia_registro(nombre):
             .get(nombre) or {})
 
 
+def _instancia_alias(nombre):
+    """Otros hosts que sirven el MISMO ERP durante un cambio de dominio (AXW-70, 28-sep-2026: erp. → app.). El
+    .htaccess los acepta además de dominio_erp; un host que no esté en ninguno redirige (302) a dominio_erp."""
+    alias = _instancia_registro(nombre).get('dominios_alias') or []
+    for d in alias:
+        if not re.fullmatch(r'[a-z0-9.-]+\.[a-z]{2,}', d):
+            aborta('dominios_alias no válido en %s: %r' % (nombre, d))
+    return alias
+
+
 def _instancia_conf(nombre):
     inst = _instancia_registro(nombre)
     if not inst:
@@ -857,11 +867,12 @@ def _instancia_conf(nombre):
 
 
 HTACCESS_INSTANCIA = """# GENERADO por comercial/demo-erp/build.py --instancia {nombre} — no editar.
-# {dominio}: el ERP de la instancia. Fuera de ese host, redirige a él.
+# {dominio}: el ERP de la instancia (más sus dominios_alias). Fuera de esos hosts, redirige a él.
+# 302 y no 301 (AXW-70, Deploy): el navegador guarda un 301 para siempre y un cambio de dominio lo dejaría grabado.
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteCond %{{HTTP_HOST}} !^{dominio_re}$ [NC]
-  RewriteRule ^(.*)$ https://{dominio}/$1 [R=301,L]
+  RewriteRule ^(.*)$ https://{dominio}/$1 [R=302,L]
 </IfModule>
 <IfModule mod_headers.c>
   Header always set X-Robots-Tag "noindex, nofollow"
@@ -871,6 +882,13 @@ HTACCESS_INSTANCIA = """# GENERADO por comercial/demo-erp/build.py --instancia {
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
   Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https://{sb}; connect-src 'self' https://{sb} wss://{sb}; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+  # Hostinger cachea .js/.css 7 días: sin esto, tras publicar el navegador sigue con el guard viejo (AXW-70, Deploy;
+  # el mismo bloque que la demo pública).
+  <FilesMatch "\\.(html|js|css|json)$">
+    Header unset Expires
+    Header unset Cache-Control
+    Header always set Cache-Control "no-cache"
+  </FilesMatch>
 </IfModule>
 DirectoryIndex index.html
 """
@@ -1139,7 +1157,8 @@ def instancia(nombre):
         s_ = os.path.join(DIST, x)
         shutil.copytree(s_, os.path.join(destino, x)) if os.path.isdir(s_) else shutil.copy2(s_, destino)
     open(os.path.join(destino, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(HTACCESS_INSTANCIA.format(
-        nombre=nombre, dominio=dominio, dominio_re=re.escape(dominio), sb=host_sb))
+        nombre=nombre, dominio=dominio, sb=host_sb,
+        dominio_re='(' + '|'.join(re.escape(d) for d in [dominio] + _instancia_alias(nombre)) + ')'))
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(destino)
     total = sum(len(f) for r_, _d, f in os.walk(destino) if '.git' not in r_.split(os.sep))
