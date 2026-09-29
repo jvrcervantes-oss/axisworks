@@ -3,6 +3,7 @@
  "base": ["Base", "Base", "home", "El panel del día, el equipo con sus permisos y los ajustes de la empresa."],
  "operaciones": ["Operaciones", "Seguimiento", "swap_horiz", "Una fila por venta, con todos sus contratos juntos."],
  "reservas": ["Reservas", "Seguimiento", "event_available", "Reservas que vencen y el paso a bloqueo de parcela a tiempo."],
+ "reservas-producto": ["Reservas de producto", "Seguimiento", "calendar_month", "Reservas de un producto por fechas (motos, coches…), con tarifas, disponibilidad y cobro."],
  "leads": ["CRM de leads", "Seguimiento", "filter_alt", "Los leads entran solos y cada uno tiene su próximo paso con fecha."],
  "contratos": ["Contratos", "Documentación", "contract", "Generador de contratos con registro de versiones y firma electrónica."],
  "portal": ["Portal del comprador", "Documentación", "badge", "Cada comprador ve sus contratos, pagos, facturas y obra."],
