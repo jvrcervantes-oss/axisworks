@@ -691,14 +691,14 @@ def neutraliza():
 
 
 def panel_nav(pagina, actual):
-    """Pone en `pagina` la barra de secciones del panel (panel_nav.html, la misma para todas) y marca la actual. Una sola
+    """Pone en `pagina` la barra de secciones del panel (_compartido/panel_nav.html, la misma para todas) y marca la actual. Una sola
     barra para las dos páginas: copiada a mano en cada una, el menú ya divergió en B2K (6 versiones) y en Lawang (9)."""
     if '__AXW_PANEL_NAV__' not in pagina:
         aborta('una página del panel sin el hueco __AXW_PANEL_NAV__')
-    nav = open(os.path.join(AQUI, 'panel_nav.html'), encoding='utf-8').read().strip()
+    nav = open(os.path.join(AQUI, '_compartido', 'panel_nav.html'), encoding='utf-8').read().strip()
     marca = 'data-nav="%s"' % actual
     if marca not in nav:
-        aborta('panel_nav.html no tiene la sección %r' % actual)
+        aborta('_compartido/panel_nav.html no tiene la sección %r' % actual)
     return pagina.replace('__AXW_PANEL_NAV__', nav.replace(marca, marca + ' aria-current="page"'))
 
 
