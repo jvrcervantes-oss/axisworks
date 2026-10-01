@@ -41,6 +41,11 @@ casos = [
 reg2 = json.loads(json.dumps(REG))
 reg2['modulos']['base']['depende'] = reg2['modulos']['base']['depende'] + ['leads']
 casos.append(('la base empieza a leer un módulo no exento', corre(registro=reg2), 'para'))
+# AXW-139 (1-oct-2026): lo que lee la base (exento uno a uno) no se arrastra a quien depende de ella. Con la base leyendo deck y
+# gastos, que no están en ningún pack del núcleo, el núcleo y los sueltos tienen que seguir casando.
+reg3 = json.loads(json.dumps(REG))
+reg3['modulos']['base']['depende'] = sorted(set(reg3['modulos']['base']['depende']) | {'deck', 'gastos'})
+casos.append(('lo que lee la base no se hereda por depender de ella', corre(registro=reg3), 'pasa'))
 
 mal = [(n, r, e) for n, r, e in casos if r != e]
 for n, r, e in casos:

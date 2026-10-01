@@ -43,7 +43,8 @@ import subprocess
 import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
-# AXW_AGENCIA_RAIZ: construir desde una copia de sesión de AxisWorks (vive en _sesiones/<id>/AxisWorks, un nivel más hondo que el clon).
+# AXW_AGENCIA_RAIZ: raíz de la AGENCIA (donde viven erp/, tools/, private/ y proyectos/Lawang) cuando se construye desde una copia de
+# sesión de AxisWorks, que vive en _sesiones/<id>/AxisWorks y no cuatro niveles bajo la agencia: apunta a la copia de sesión de la agencia.
 AGENCIA = os.path.abspath(os.environ.get('AXW_AGENCIA_RAIZ') or os.path.join(AQUI, '..', '..', '..', '..'))
 # AXW_LAWANG_RAIZ: construir desde una copia de sesión (tools/sesion.py) en vez del clon principal, para probar un
 # cambio del núcleo ANTES de aterrizarlo (26-sep-2026, F3 lote 2b).
