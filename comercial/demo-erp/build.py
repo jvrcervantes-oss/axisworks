@@ -43,7 +43,8 @@ import subprocess
 import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
-AGENCIA = os.path.abspath(os.path.join(AQUI, '..', '..', '..', '..'))
+# AXW_AGENCIA_RAIZ: construir desde una copia de sesión de AxisWorks (vive en _sesiones/<id>/AxisWorks, un nivel más hondo que el clon).
+AGENCIA = os.path.abspath(os.environ.get('AXW_AGENCIA_RAIZ') or os.path.join(AQUI, '..', '..', '..', '..'))
 # AXW_LAWANG_RAIZ: construir desde una copia de sesión (tools/sesion.py) en vez del clon principal, para probar un
 # cambio del núcleo ANTES de aterrizarlo (26-sep-2026, F3 lote 2b).
 LAWANG = os.path.abspath(os.environ.get('AXW_LAWANG_RAIZ') or os.path.join(AGENCIA, 'proyectos', 'Lawang'))
@@ -1634,7 +1635,11 @@ def packs_casan(catalogo=None, modulos_json=None):
                 aborta('%s depende de %s, que no está en erp/modulos.json' % (k, d))
             if d not in visto:
                 visto.add(d)
-                alcance(d, visto)
+                # La base va siempre en la instalación: lo que ella lee ya lo vigila `nuevas_base` contra EXENTOS_BASE y no
+                # se arrastra a quien depende de ella (AXW-130 metió deck y gastos en su «depende» y cada módulo del núcleo
+                # los heredó por contratos→base, 1-oct-2026).
+                if d != 'base':
+                    alcance(d, visto)
         return visto
     packs = {p[0]: p for p in cat['packs']}
     def necesita(claves):

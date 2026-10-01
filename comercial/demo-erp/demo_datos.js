@@ -487,6 +487,17 @@
         return { envios_pausados: !!m.envios_pausados, motivo: m.motivo || null, cambiado_en: m.cambiado_en || null,
           intranet_cerrada: !!m.intranet_cerrada, intranet_motivo: m.intranet_motivo || null, intranet_cambiado_en: m.intranet_cambiado_en || null };
       },
+      /* Ajustes de empresa, plantillas de contrato y sociedades (AXW-139, 1-oct-2026; Legal): la demo NO trae ninguno de los tres.
+         Se devuelve VACÍO ESTRUCTURAL con la misma forma que la base (claves de `valores`/`actualizado`/`tipos`/`plantillas`/
+         `sociedades` vacías), nunca un texto de cláusula, una sociedad ni un valor de ajuste inventados: lo de una empresa
+         real (y el texto de sus contratos) no sale en una demo, y un contrato o una sociedad «de mentira» parecería de verdad.
+         Solo lectura (`puede_escribir`/`puede_editar` false) porque la demo no guarda nada. */
+      ajustes_config_datos: function () { return { valores: {}, actualizado: {}, puede_escribir: false }; },
+      ajustes_log_datos: function () { return { filas: [], hay_mas: false }; },
+      sociedades_ajustes_datos: function () { return { sociedades: [], puede_escribir: false }; },
+      plantillas_contrato_datos: function () { return { tipos: [], plantillas: [], puede_editar: false }; },
+      plantilla_version_datos: function () { return null; },
+      contrato_plantilla_texto_datos: function () { return { numero: null, texto: null, texto_sha256: null }; },
       comunicacion_datos: function (F, a) {
         var pg = pagina(filas(F, 'comunicados'), 'actualizado_en', tope(a.p_limit, 100), a.p_despues);
         var env = filas(F, 'comunicado_envios');
