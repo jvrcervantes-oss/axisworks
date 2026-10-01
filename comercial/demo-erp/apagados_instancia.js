@@ -169,8 +169,8 @@
   function aviso(error) {
     var p = pantalla(error);
     function pon() {
-      // la hoja de la v4 (y su tipografía): no todas las pantallas de módulo la cargan (/intranet/leads/ no es v4)
-      ['/intranet/v4/assets/fonts/fonts.css', '/intranet/v4/assets/tw-base.css'].forEach(function (href) {
+      // la hoja de la v4 (y su tipografía): no todas las pantallas de módulo la cargan (/clasico/leads/ no es v4)
+      ['/assets/fonts/fonts.css', '/assets/tw-base.css'].forEach(function (href) {
         var l = document.createElement('link');
         l.rel = 'stylesheet';
         l.href = href;

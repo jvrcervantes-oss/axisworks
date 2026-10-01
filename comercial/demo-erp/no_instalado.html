@@ -1,7 +1,7 @@
 <!-- Pantalla «Módulo no instalado» de las instancias del ERP — 28-sep-2026 (owner, tras probar el panel de control).
      FUENTE ÚNICA de las dos vías: build.py la rellena para las pantallas no portadas (HTML estático) y la inyecta en
      apagados_instancia.js para los módulos apagados desde el panel (se pinta al cargar). Sin estilo propio: clases de
-     /intranet/v4/assets/tw-base.css, la piel de la v4; build.py aborta si una clase de aquí no existe en esa hoja
+     /assets/tw-base.css, la piel de la v4; build.py aborta si una clase de aquí no existe en esa hoja
      (es Tailwind purgado desde el repo de Lawang y puede perder una clase en silencio).
      Huecos: {{marca}} y {{sello}} los pone el build una vez; {{titulo}} {{texto}} {{que_hace}} {{asunto}} y los
      atributos {{oculta_*}} ('' o 'hidden', siempre en un elemento SIN clase de display: `inline-flex` le gana a [hidden]) se rellenan por pantalla, siempre escapados. Este comentario no sale. -->
@@ -24,7 +24,7 @@
     </section>
     <p class="flex flex-wrap items-center gap-4 mt-4 pt-6">
       <span {{oculta_reintenta}}><button type="button" id="axw-reintenta" class="inline-flex items-center h-10 px-5 rounded-full bg-primary text-on-primary font-label-md text-label-md">Reintentar</button></span>
-      <a class="font-body-md text-body-md text-primary underline" href="/intranet/v4/home/">Volver al inicio</a>
+      <a class="font-body-md text-body-md text-primary underline" href="/home/">Volver al inicio</a>
     </p>
   </div>
 </main>

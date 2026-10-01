@@ -71,13 +71,13 @@
     d.innerHTML = '<div><small>Module switched off</small><h2 id="axw-aviso-tit">' + CAT.nombre(k) + ' is not in your setup</h2>' +
       '<p>You switched it off on the modules page. Turn it on to see it in the demo, or choose your modules again.</p>' +
       '<nav><button type="button" class="p" data-axw-activa>Turn it on and view</button><a class="s" data-axw-portada>Choose modules</a>' +
-      '<a class="s" href="/intranet/v4/home/">Go to home</a></nav></div>';
+      '<a class="s" href="/home/">Go to home</a></nav></div>';
     document.body.appendChild(d);
     d.querySelector('[data-axw-portada]').setAttribute('href', PORTADA + '#configurador');
     d.querySelector('[data-axw-activa]').addEventListener('click', function () { estado[k] = true; CAT.guardaEstado(estado); location.reload(); });
     d.querySelector('[data-axw-activa]').focus();
     // Escape: la pantalla detrás es de un módulo apagado, así que cerrar es salir al inicio.
-    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') location.href = '/intranet/v4/home/'; });
+    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') location.href = '/home/'; });
   }
 
   function arranca() {

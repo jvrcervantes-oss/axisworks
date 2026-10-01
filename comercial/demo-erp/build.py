@@ -36,6 +36,7 @@ Revisión previa (24-sep, Seguridad + Legal), cada regla con su porqué:
 import html
 import json
 import os
+import posixpath
 import re
 import shutil
 import subprocess
@@ -64,6 +65,12 @@ FUERA_V4 = {'_plan', 'generador-contratos', 'contratos-inversor', 'movil'}
 PROHIBIDO = re.compile(r'(/contracts/app\.html$|apoderados|/firma-|firma_|/anexos/|/folletos/|/templates/|/_plan/|\.sql$|\.test\.js$|/_[^/]*$|'
                        r'Backups|/private/|credentials|token\.json|\.md$|\.py$|\.zip$|'
                        r'/intranet/v4/index\.html$|/intranet/v4/movil/|/intranet/v4/assets/img/|/intranet/dossier/)', re.I)
+# El mismo veto sobre las rutas del BUNDLE, que tras reraiz() ya no cuelgan de /intranet/: los tres patrones de arriba
+# cambian de sitio y, sin su ruta nueva, dejarían de casar sin un solo error. (`/intranet/v4/index.html` era el hub de
+# maqueta: no se copia, y una /index.html en la raíz del bundle ahora es la puerta o la landing.)
+_VIEJOS = r'/intranet/v4/index\.html$|/intranet/v4/movil/|/intranet/v4/assets/img/|/intranet/dossier/'
+assert _VIEJOS in PROHIBIDO.pattern
+PROHIBIDO_DIST = re.compile(PROHIBIDO.pattern.replace(_VIEJOS, r'^/movil/|^/assets/img/|^/clasico/dossier/'), re.I)
 
 # ── Versión PÚBLICA (demo.axisworks.studio, owner 24-sep: «marca neutra, dispara») ──────────────────────────
 # `python build.py --publico` construye lo mismo y además: quita los comentarios (limpia_publico.js), cambia marca,
@@ -207,6 +214,228 @@ def cierra_referencias():
         if not nuevos:
             break
     return faltan
+
+
+# ── Raíz limpia: sin /intranet/ ni v4 en la barra (encargos/20260930_erp_urls_limpias.md, 1-oct-2026) ──────────────
+# Porqué: el ERP de una instancia (y la demo) se abría en /intranet/v4/home/, nombres de Lawang que el cliente no
+# eligió. El front se COPIA de Lawang con esa estructura y Lawang no se toca (independiente, en producción): este paso
+# del build lo reubica en el bundle, UNA vez y para los dos caminos (demo e instancia), de modo que lo que se prueba en
+# demo. es lo mismo que luego se publica en bbm. y app.
+#     /intranet/ (puerta + panel clásico) → /          /intranet/v4/<x>/ → /<x>/         /intranet/v4/assets/ → /assets/
+#     /intranet/{leads,obra,…}/ (v3 con llamador) → /clasico/<x>/          /intranet/v4/entrar/ (stub) → se elimina
+#     /contracts/, /portal/ y /entrar/ no se mueven.
+# Reglas de método, cada una con su porqué:
+#   · Las rutas viejas se reescriben por TOKEN (cada /intranet/… con su camino, en sus tres escrituras: `/`, `\/` de una
+#     regex de JS y `%2F` de un `?next=`), nunca con un replace global: `/intranet/v4/` suelto significa «¿estoy en la v4?»
+#     en nav.js y con un replace pasaría a ser `/`, siempre cierto (el menú aparecería en la puerta y el login).
+#   · Los sitios donde el código DECIDE por la ruta (nav.js, mascota.js) se sustituyen a mano, con el número exacto de
+#     veces esperado: si Lawang cambia su forma, el build para en vez de dejar la pantalla sin menú sin un solo error.
+#   · Las relativas (`../assets/…`) se resuelven contra la ubicación VIEJA y se comprueba que siguen apuntando a lo mismo
+#     desde la NUEVA; si no, se pasan a absolutas. Un grep «intranet = 0» da verde con el CSS caído (lo que paró esto en
+#     Lawang), así que enlaces_rotos() también resuelve desde la ubicación nueva.
+#   · Al final, lo que quede con `intranet/` o `/v4/` aborta el build.
+CLASICAS = ('leads', 'obra', 'creatividades', 'dossier', 'facturas', 'vencimientos')
+# Carpetas de la raíz que una pantalla v4 no puede ocupar (ni la v4 de mañana: un choque aborta el build).
+RAIZ_RESERVADA = frozenset(('contracts', 'portal', 'entrar', 'assets', 'clasico', 'panel', 'demo', 'media', 'fonts'))
+_SEP = r'(?:\\/|/|%2[Ff])'
+# `pre` (la barra de delante, en cualquiera de sus tres escrituras) o, sin barra, que no haya una letra/punto/guion pegado
+# delante («myintranet», «x.intranet»); con `%2F` delante la letra pegada es la F de la propia barra.
+RUTA_INTRANET = re.compile(r'(?:(?P<pre>' + _SEP + r')|(?<![\w.\-]))intranet(?![\w.\-])(?P<cola>(?:' + _SEP + r'[A-Za-z0-9_.\-]*)*)')
+_PARTE = re.compile(_SEP)
+RESTO_RAIZ = re.compile(r'(?<![\w.\-])intranet' + _SEP + r'|' + _SEP + r'v4' + _SEP)
+# «¿esta página NO es de la v4?»: lo que nav.js y mascota.js preguntaban con indexOf('/intranet/v4/') === -1. Ahora la v4
+# es toda la raíz salvo la puerta (/), la parte clásica, el login, el portal, el panel y los assets compartidos.
+NO_ES_V4 = r"/^(?:\/|\/index\.html|\/(?:clasico|entrar|portal|panel|contracts)\/.*)$/.test(location.pathname)"
+_IDX_V4 = r"""location\.pathname\.indexOf\(\s*(['"])/intranet/v4/\1\s*\)\s*%s\s*-1"""
+A_MANO = (
+    # (fichero en su sitio NUEVO, regex, reemplazo, mínimo de veces). Mínimo y no exacto: nav.js ganó una comparación
+    # (`!== -1`, la mascota y las novedades) entre dos versiones de Lawang; lo que cuenta es que el hueco siga existiendo.
+    # Una comparación NUEVA que no case aquí la caza TRAMPA_RUTA, no el número.
+    ('/assets/nav.js', re.compile(_IDX_V4 % '==='), NO_ES_V4, 3),
+    ('/assets/nav.js', re.compile(_IDX_V4 % '!=='), '!' + NO_ES_V4, 1),
+    ('/assets/mascota.js', re.compile(_IDX_V4 % '==='), NO_ES_V4, 1),
+    ('/assets/novedades.js', re.compile(_IDX_V4 % '==='), NO_ES_V4, 1),   # el fichero es de 30-sep: puede no estar (Lawang fijado a un commit viejo)
+)
+A_MANO_OPCIONALES = ('/assets/novedades.js',)
+# Cualquier otra pregunta de código por la RAÍZ vieja (indexOf/startsWith/includes('/intranet/') o ('/intranet/v4/')) que
+# sobreviva a A_MANO se traduciría con el replace de tokens a `indexOf('/')` y diría siempre que sí: aborta y se decide a
+# mano. (Preguntar por una pantalla concreta, `indexOf('/intranet/v4/reservas')`, sí se traduce bien: `/reservas`.)
+TRAMPA_RUTA = re.compile(r'''(?:indexOf|lastIndexOf|startsWith|includes)\(\s*(["'`])[^"'`]*intranet(?:/v4)?/?\1''')
+
+
+def _segs_nuevos(s):
+    """Segmentos que siguen a `intranet` → segmentos que siguen a la raíz. [''] = la propia raíz (o una carpeta con barra
+    final)."""
+    if not s or s == ['']:
+        return ['']
+    if s[0] == 'v4':
+        r = s[1:]
+        return [''] if (not r or r in ([''], ['index.html'])) else r
+    if s == ['index.html']:
+        return ['']
+    if s[0] in CLASICAS:
+        return ['clasico'] + s
+    return s   # una herramienta v3 que ya vive en la v4 (/intranet/operaciones/ → /operaciones/)
+
+
+def mapea_url(url):
+    """Ruta absoluta del bundle viejo → la nueva. Lo que no es /intranet no cambia."""
+    if not (url == '/intranet' or url.startswith('/intranet/')):
+        return url
+    cuerpo, resto = re.match(r'([^?#]*)(.*)', url, re.S).groups()
+    partes = cuerpo[len('/intranet'):].split('/')[1:]
+    return '/' + '/'.join(_segs_nuevos(partes)) + resto
+
+
+def _reescribe(m, pelados):
+    pre, cola = m.group('pre'), m.group('cola') or ''
+    if pre is None and not cola:
+        return m.group(0)                                      # la palabra «intranet» en un texto
+    if pre is not None and not cola:
+        pelados.append(m.group(0))                             # `/intranet` a pelo: podría ser un startsWith; a mano
+        return m.group(0)
+    partes = _PARTE.split(cola)[1:]
+    estilo = pre or _PARTE.match(cola).group(0)
+    nuevo = '/'.join(_segs_nuevos(partes)).replace('/', estilo)
+    return (pre + nuevo) if pre is not None else nuevo        # sin barra delante: mensajes («falta intranet/v4/assets/…»)
+
+
+def _resuelve(base, ref):
+    """Ruta absoluta a la que apunta `ref` (relativa) desde `base`; None si no es una ruta de este sitio."""
+    if re.match(r'^(?:[a-zA-Z][a-zA-Z0-9+.\-]*:|//|#|\?|$)', ref):
+        return None
+    ruta = re.match(r'[^?#]*', ref).group(0)
+    if not ruta:
+        return None
+    if not ruta.startswith('/'):
+        ruta = posixpath.join(posixpath.dirname(base), ruta)
+    res = posixpath.normpath(ruta)
+    return res + '/' if ruta.endswith('/') and not res.endswith('/') else res
+
+
+def _relativas(t, url_vieja, url_nueva):
+    """Cada ruta RELATIVA de un .html/.css (src, href, action, url()) debe seguir apuntando a lo mismo desde la ubicación
+    nueva; si no, se escribe absoluta. Las absolutas ya las cambió el paso de tokens."""
+    def corrige(m):
+        v = m.group('v')
+        if v.startswith('/') or '${' in v or not v.strip():
+            return m.group(0)
+        viejo = _resuelve(url_vieja, v)
+        if viejo is None:
+            return m.group(0)
+        destino = mapea_url(viejo)
+        if _resuelve(url_nueva, v) == destino:
+            return m.group(0)
+        suf = re.search(r'[?#].*', v)
+        return m.group(0).replace(v, destino + (suf.group(0) if suf else ''), 1)
+    t = re.sub(r'''(?P<a>\b(?:src|href|action|poster)\s*=\s*)(?P<q>["'])(?P<v>[^"']*)(?P=q)''', corrige, t, flags=re.I)
+    return re.sub(r'''(?P<a>url\(\s*)(?P<q>["']?)(?P<v>[^)"']+)(?P=q)(?P<c>\s*\))''', corrige, t, flags=re.I)
+
+
+def reraiz(dist):
+    """Reubica el front copiado de Lawang en `dist` al mapa de URLs limpio y reescribe todo lo que lo nombra. Lo llaman la
+    demo (main) y la instancia (instancia()): UN solo paso. Devuelve los nombres de pantalla v4 (carpetas de la raíz)."""
+    intranet, v4 = os.path.join(dist, 'intranet'), os.path.join(dist, 'intranet', 'v4')
+    if not os.path.isdir(v4):
+        aborta('reraiz: no hay intranet/v4 en el bundle (¿se llamó dos veces?)')
+    pantallas = sorted(d for d in os.listdir(v4) if os.path.isdir(os.path.join(v4, d)) and d not in ('assets', 'entrar'))
+    for d in os.listdir(intranet):
+        p = os.path.join(intranet, d)
+        if d != 'v4' and not ((os.path.isdir(p) and d in CLASICAS) or (os.path.isfile(p) and d == 'index.html')):
+            aborta('reraiz: intranet/%s no está en el mapa (carpeta clásica nueva: decidir su sitio en CLASICAS)' % d)
+    choques = sorted({n for n in pantallas if n in RAIZ_RESERVADA}
+                     | {n for n in pantallas + ['assets', 'clasico'] if os.path.exists(os.path.join(dist, n))})
+    if choques or (os.path.isfile(os.path.join(intranet, 'index.html')) and os.path.exists(os.path.join(dist, 'index.html'))):
+        aborta('reraiz: la raíz ya tiene %s (una pantalla v4 choca con la raíz del bundle)' % (', '.join(choques) or 'index.html'))
+    movidos = {}                                              # url nueva → url vieja
+    for raiz, _d, fichs in os.walk(intranet):
+        for f in fichs:
+            vieja = '/' + os.path.relpath(os.path.join(raiz, f), dist).replace(os.sep, '/')
+            if vieja.startswith('/intranet/v4/entrar/'):
+                continue                                      # el stub que redirigía al login: ahora /entrar/ (legado en .htaccess)
+            nueva = mapea_url(vieja)
+            movidos[nueva + 'index.html' if nueva.endswith('/') else nueva] = vieja
+    for nueva, vieja in movidos.items():
+        destino = os.path.join(dist, *nueva.strip('/').split('/'))
+        os.makedirs(os.path.dirname(destino), exist_ok=True)
+        os.replace(os.path.join(dist, *vieja.strip('/').split('/')), destino)
+    shutil.rmtree(intranet)
+    v4_suelto = re.compile(r'(?P<pre>\\/|/)v4(?:\\/|/)(?=(?:assets|' + '|'.join(re.escape(n) for n in pantallas)
+                           + r')(?:\\/|/|["\'`?#\s)<]|$))')
+    veces, pelados, trampas, vistos, cambiados = {}, [], [], set(), 0
+    for raiz, _d, fichs in os.walk(dist):
+        for f in fichs:
+            if not f.endswith(EXT_TEXTO):
+                continue
+            p = os.path.join(raiz, f)
+            url_n = '/' + os.path.relpath(p, dist).replace(os.sep, '/')
+            url_v = movidos.get(url_n, url_n)
+            vistos.add(url_n)
+            t = open(p, encoding='utf-8', errors='replace').read()
+            t2 = t
+            for i, (fichero, rx, nuevo, _n) in enumerate(A_MANO):
+                if url_n == fichero:
+                    t2, n = rx.subn(lambda _m, nuevo=nuevo: nuevo, t2)
+                    veces[i] = veces.get(i, 0) + n
+            for m in TRAMPA_RUTA.finditer(t2):
+                trampas.append('%s: %s' % (url_n, m.group(0)[:100]))
+            t2 = RUTA_INTRANET.sub(lambda m: _reescribe(m, pelados), t2)
+            t2 = v4_suelto.sub(lambda m: m.group('pre'), t2)
+            if f.endswith(('.html', '.css')):
+                t2 = _relativas(t2, url_v, url_n)
+            if t2 != t:
+                open(p, 'w', encoding='utf-8', newline='').write(t2)
+                cambiados += 1
+    malos = ['%s: se esperaban al menos %d y hay %d (¿ha cambiado el código de Lawang? revisa A_MANO)' % (f, n, veces.get(i, 0))
+             for i, (f, _rx, _nu, n) in enumerate(A_MANO)
+             if veces.get(i, 0) < n and (f in vistos or f not in A_MANO_OPCIONALES)]
+    malos += ['el código decide por una ruta con «intranet» y no está en A_MANO: ' + x for x in trampas[:8]]
+    malos += ['`/intranet` a pelo (¿un startsWith?): ' + x for x in pelados[:5]]
+    for raiz, _d, fichs in os.walk(dist):
+        for f in fichs:
+            if f.endswith(EXT_TEXTO):
+                p = os.path.join(raiz, f)
+                for m in RESTO_RAIZ.finditer(open(p, encoding='utf-8', errors='replace').read()):
+                    malos.append('resto en %s: %s' % (rel(p), m.group(0)))
+    if malos:
+        aborta('reraiz no ha dejado el bundle limpio:\n  ' + '\n  '.join(malos[:30]))
+    print('reraiz: %d pantallas v4 a la raíz, %d clásicas a /clasico/, %d ficheros reescritos' % (len(pantallas), sum(
+        1 for n in CLASICAS if os.path.isdir(os.path.join(dist, 'clasico', n))), cambiados))
+    return pantallas
+
+
+def legado_htaccess(dist):
+    """Bloque de .htaccess con el legado: lo de antes no muere (enlaces guardados, correos ya enviados, `?next=`).
+    302 y no 301 mientras el mapa no esté verificado en producción (un 301 se guarda para siempre en el navegador);
+    pasarán a 301 cuando lo esté. Solo GET/HEAD. Patrones CERRADOS: el primer segmento del destino sale de una lista
+    blanca (las carpetas que el bundle sirve) y el resto va detrás de él, así que ninguna ruta de entrada puede producir
+    un destino fuera de este dominio (`/intranet//evil.com`, `/%2f%2fevil.com` o `/%5cevil.com` no casan o acaban
+    bajo `/<pantalla>/`)."""
+    pantallas = sorted(d for d in os.listdir(dist) if os.path.isdir(os.path.join(dist, d)) and d not in RAIZ_RESERVADA)
+    if not pantallas:
+        aborta('legado_htaccess: no hay pantallas en ' + dist)
+    lista = '|'.join(re.escape(n) for n in pantallas + ['assets'])
+    lista_v3 = '|'.join(re.escape(n) for n in pantallas if n not in CLASICAS)
+    # una clásica que en este bundle solo trae assets (facturas, vencimientos) no tiene pantalla: su carpeta a pelo va a la v4
+    sin_pagina = [c for c in CLASICAS if c in pantallas and not os.path.isfile(os.path.join(dist, 'clasico', c, 'index.html'))]
+    get = '  RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$\n'
+    reglas = [
+        (r'^intranet(?:/index\.html)?/?$', '/'),
+        (r'^intranet/v4(?:/index\.html)?/?$', '/'),
+        (r'^intranet/v4/entrar(?:/.*)?$', '/entrar/'),
+        ('^intranet/v4/(' + lista + ')(?:/(.*))?$', '/$1/$2'),
+    ]
+    if sin_pagina:
+        reglas.append(('^intranet/(' + '|'.join(sin_pagina) + r')/?(?:index\.html)?$', '/$1/'))
+    reglas += [
+        ('^intranet/(' + '|'.join(CLASICAS) + ')(?:/(.*))?$', '/clasico/$1/$2'),
+        # herramientas v3 que hoy son pantallas v4 con el mismo nombre (/intranet/operaciones/ → /operaciones/): la base guarda
+        # enlaces así (avisos) y cabecera.js ya los traducía al pintar. Detrás de las clásicas, que comparten algún nombre.
+        ('^intranet/(' + lista_v3 + ')(?:/(.*))?$', '/$1/$2'),
+    ]
+    return ('# Legado: lo de antes no muere. 302 hasta verificar el mapa en producción; luego 301.\n'
+            '<IfModule mod_rewrite.c>\n  RewriteEngine On\n'
+            + ''.join(get + '  RewriteRule %s %s [R=302,L,QSA]\n' % (p, d) for p, d in reglas) + '</IfModule>\n')
 
 
 def escribe_instancia(ficha):
@@ -495,10 +724,11 @@ def idioma_ingles():
 
 
 def paginas_propias():
-    carpeta = os.path.join(DIST, 'intranet')
+    """Las páginas que la demo escribe ella misma. Se llama DESPUÉS de reraiz(): ya con las rutas nuevas (/home/, /clasico/…).
+    La puerta de Lawang (intranet/index.html) no se copia a la demo: aquí `/` es la landing en local y un 302 a /home/ en
+    la pública."""
     redir = ('<!doctype html><meta charset="utf-8"><title>Demo</title>'
-             '<script>location.replace("/intranet/v4/home/")</script>')
-    open(os.path.join(carpeta, 'index.html'), 'w', encoding='utf-8').write(redir)
+             '<script>location.replace("/home/")</script>')
     # Portada: la landing de módulos (fuente: landing.html, al lado de este script). Su primer <script> lo pone el
     # build: barrido de sesión sb-* y el origen de la demo ('' = este mismo servidor).
     open(os.path.join(DIST, 'index.html'), 'w', encoding='utf-8', newline='').write(
@@ -517,18 +747,18 @@ def paginas_propias():
             ('generador-contratos', 'Contract generator', AVISO_GENERADOR),
             ('contratos-inversor', 'Buyer portal',
              'We show the buyer portal separately, on the call.')):
-        d = os.path.join(DIST, 'intranet', 'v4', carpeta_v4)
+        d = os.path.join(DIST, carpeta_v4)
         os.makedirs(d, exist_ok=True)
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(aviso.format(t=t, m=m))
     # El generador clásico lleva el texto de las cláusulas inline (Legal): su ruta
     # enseña el mismo aviso, para que «Ver en el generador» no acabe en un 404.
     open(os.path.join(DIST, 'contracts', 'app.html'), 'w', encoding='utf-8').write(
         aviso.format(t='Contract generator', m=AVISO_GENERADOR))
-    d = os.path.join(carpeta, 'dossier')   # el menú enlaza el constructor de dossier: aviso, no 404
+    d = os.path.join(DIST, 'clasico', 'dossier')   # el menú enlaza el constructor de dossier: aviso, no 404
     os.makedirs(d, exist_ok=True)
     open(os.path.join(d, 'builder.html'), 'w', encoding='utf-8').write(aviso.format(
         t='Sales brochure', m=AVISO_NO_INCLUIDO + ' the brochure carries each client\'s own brand material.'))
-    d = os.path.join(carpeta, 'creatividades')   # está en el menú de la v4; sin esto, 404 en directo
+    d = os.path.join(DIST, 'clasico', 'creatividades')   # está en el menú de la v4; sin esto, 404 en directo
     os.makedirs(d, exist_ok=True)
     open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(aviso.format(
         t='Creatives', m='We show each project\'s asset library on the call: they are the client\'s real ads.'))
@@ -562,26 +792,34 @@ AVISO = ('<!doctype html><html lang="en"><meta charset="utf-8"><title>{t} · Dem
          '<body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;'
          'background:#fbf9f4;font:16px/1.6 system-ui,sans-serif;color:#2b2b25"><div style="max-width:30rem;padding:2rem">'
          '<h1 style="font-weight:500;color:#485B37">{t}</h1><p>{m}</p>'
-         '<p><a href="/intranet/v4/home/" style="color:#485B37">Back to home</a></p></div></body></html>')
+         '<p><a href="/home/" style="color:#485B37">Back to home</a></p></div></body></html>')
 # Pantallas que la demo no trae (texto de AVISO, en inglés). verifica() reconoce las propias por AVISO_NO_INCLUIDO.
 AVISO_NO_INCLUIDO = 'Not included in the demo:'
 AVISO_GENERADOR = AVISO_NO_INCLUIDO + ' its templates are the client\'s own documents. We show it on the call with a sample document.'
-ENLACE_LOCAL = re.compile(r'''(?:src|href)=["'](/[^"'#?]*)''')
+ENLACE_LOCAL = re.compile(r'''(?:src|href|action)=["']([^"'#?]*)''')
 
 
 def enlaces_rotos(raiz_dir):
-    """Rutas locales enlazadas desde el HTML que no existen en la carpeta (ni como fichero ni como carpeta con
-    index.html). Auditoría de Desarrollo (25-sep): la demo tenía 3 enlaces del menú a herramientas clásicas que no
-    se copian → 404 en directo."""
+    """Rutas locales enlazadas desde el HTML (absolutas Y relativas) que no existen en la carpeta (ni como fichero ni como
+    carpeta con index.html). Auditoría de Desarrollo (25-sep): la demo tenía 3 enlaces del menú a herramientas clásicas
+    que no se copian → 404 en directo. Las relativas se resuelven DESDE LA UBICACIÓN DEL HTML en el bundle (1-oct-2026,
+    URLs limpias): al subir las pantallas de /intranet/v4/<x>/ a /<x>/, un `../assets/shell.css` que apuntara a otro
+    sitio saldría con la página sin estilos y sin un solo error, y mirar solo las absolutas daba verde."""
     rotos = set()
     for raiz, _d, fichs in os.walk(raiz_dir):
         for f in fichs:
             if not f.endswith('.html'):
                 continue
+            url = '/' + os.path.relpath(os.path.join(raiz, f), raiz_dir).replace(os.sep, '/')
             for ruta in ENLACE_LOCAL.findall(open(os.path.join(raiz, f), encoding='utf-8', errors='replace').read()):
-                p = os.path.join(raiz_dir, ruta.lstrip('/').replace('/', os.sep))
+                if re.search(r'[{}$]', ruta):
+                    continue                                   # una plantilla de JS, no una ruta
+                destino = _resuelve(url, ruta)
+                if destino is None:
+                    continue
+                p = os.path.join(raiz_dir, *destino.strip('/').split('/'))
                 if not (os.path.isfile(p) or os.path.isfile(os.path.join(p, 'index.html'))):
-                    rotos.add(ruta)
+                    rotos.add(destino)
     return sorted(rotos)
 
 
@@ -637,9 +875,9 @@ def verifica():
         for f in fichs:
             p = os.path.join(raiz, f)
             r = rel(p)
-            aviso_propio = r in ('/contracts/app.html', '/intranet/dossier/builder.html') and os.path.getsize(p) < 5000 and \
+            aviso_propio = r in ('/contracts/app.html', '/clasico/dossier/builder.html') and os.path.getsize(p) < 5000 and \
                 AVISO_NO_INCLUIDO in open(p, encoding='utf-8').read()
-            if PROHIBIDO.search(r) and not aviso_propio:
+            if PROHIBIDO_DIST.search(r) and not aviso_propio:
                 malos.append('prohibido: ' + r)
             if f.endswith(EXT_TEXTO):
                 t = open(p, encoding='utf-8', errors='replace').read()
@@ -690,7 +928,7 @@ def tipografias_libres():
     """La demo pública no lleva las tipografías de marca de Lawang (owner, 25-sep, AXW-19): Neue Kabel y The Seasons
     son identidad del cliente y los .otf venían de fonnts.com, sin licencia web nuestra. Se sustituyen por dos parecidas
     de Google Fonts (licencia OFL): Jost (geométrica, como Kabel) y Cormorant Garamond (serif de display)."""
-    fuentes = os.path.join(DIST, 'intranet', 'v4', 'assets', 'fonts')
+    fuentes = os.path.join(DIST, 'assets', 'fonts')
     if os.path.isdir(fuentes):
         for f in os.listdir(fuentes):
             if f.lower().endswith(('.otf', '.ttf', '.woff', '.woff2')):
@@ -834,7 +1072,8 @@ def publica():
         '<IfModule mod_rewrite.c>\n  RewriteEngine On\n'
         '  RewriteCond %{HTTP_HOST} !^demo\\.axisworks\\.studio$ [NC]\n'
         '  RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=302,L]\n'
-        '  RewriteRule ^$ /intranet/v4/home/ [R=302,L]\n</IfModule>\n'
+        '  RewriteRule ^$ /home/ [R=302,L]\n</IfModule>\n'
+        + legado_htaccess(DESTINO_PUBLICO)
         + cabeceras_seguridad(
             # Sin cdn.tailwindcss.com desde el 27-sep-2026 (ERP F3 lote 4a): la v4 y la portada van con Tailwind
             # COMPILADO. jsdelivr en estilos y fuentes: los iconos Phosphor del CRM (visto en producción, 25-sep).
@@ -920,10 +1159,10 @@ def publica_web():
         os.makedirs(os.path.dirname(os.path.join(destino, f.replace('/', os.sep))), exist_ok=True)
         shutil.copy2(s, os.path.join(destino, f.replace('/', os.sep)))
     t = config_portada(open(os.path.join(DIST, 'index.html'), encoding='utf-8').read(), DEMO_URL, APP_URL)
-    # Enlaces a la demo, ABSOLUTOS: en erp. una ruta /intranet/ la manda el .htaccess al ERP real, no a la demo.
-    t, n = re.subn(r'''(href=["']?)/intranet/''', lambda m: m.group(1) + DEMO_URL + '/intranet/', t)
+    # Enlaces a la demo, ABSOLUTOS: en erp. una ruta /home/ la manda el .htaccess al ERP real, no a la demo.
+    t, n = re.subn(r'''(href=["']?)/home/''', lambda m: m.group(1) + DEMO_URL + '/home/', t)
     if not n:
-        aborta('la portada no enlaza la demo (/intranet/): ¿ha cambiado landing.html?')
+        aborta('la portada no enlaza la demo (/home/): ¿ha cambiado landing.html?')
     open(os.path.join(destino, 'index.html'), 'w', encoding='utf-8', newline='').write(t)
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     permitidas = '|'.join(re.escape(f) for f in LISTA_WEB if f != '.htaccess' and f != 'index.html')
@@ -957,9 +1196,9 @@ def publica_web():
         aborta('dist/erp-web no es la lista cerrada:\n  sobra: %s\n  falta: %s'
                % (sorted(set(hay) - set(LISTA_WEB)), sorted(set(LISTA_WEB) - set(hay))))
     t = open(os.path.join(destino, 'index.html'), encoding='utf-8').read()
-    malos = [x for x in ('href="/intranet', "href='/intranet", 'href=/intranet', '/contracts/', '/portal/', '/entrar/',
+    malos = [x for x in ('href="/home', "href='/home", 'href=/home', '/contracts/', '/portal/', '/entrar/',
                          'guard.js', '/demo/tour.js', '/demo/modulos.js') if x in t]
-    if DEMO_URL + '/intranet/' not in t or "window.AXW_DEMO_URL = %s;" % json.dumps(DEMO_URL) not in t:
+    if DEMO_URL + '/home/' not in t or "window.AXW_DEMO_URL = %s;" % json.dumps(DEMO_URL) not in t:
         malos.append('los enlaces o el origen de la demo no apuntan a ' + DEMO_URL)
     if not PRUEBA_ORIGENES:
         for r, _d, fs in os.walk(destino):
@@ -1023,6 +1262,13 @@ HTACCESS_INSTANCIA = """# GENERADO por comercial/demo-erp/build.py --instancia {
   RewriteCond %{{HTTP_HOST}} !^{dominio_re}$ [NC]
   RewriteRule ^(.*)$ https://{dominio}/$1 [R=302,L]
 </IfModule>
+{legado}# Lo que nunca debe servirse (estaba solo en el .htaccess de Lawang; aqui lo pedia la revision previa #180): ficheros de
+# codigo y de trabajo, y las carpetas de estado. Por extension ademas de por carpeta: lo proximo nace cubierto.
+<IfModule mod_alias.c>
+  RedirectMatch 404 (?i)\\.(sql|py|ts|mjs|toml|md|bak|log)$
+  RedirectMatch 404 (?i)/(private|supabase)/
+  RedirectMatch 404 (?i)/_
+</IfModule>
 <IfModule mod_headers.c>
   Header always set X-Robots-Tag "noindex, nofollow"
   Header always set Strict-Transport-Security "max-age=31536000"
@@ -1052,7 +1298,7 @@ QA_DOBLE = re.compile(r'<script>\(function\(\)\{try\{(?:(?!</script>).)*?_qa_dou
 PLANTILLA_NO_INSTALADO = os.path.join(AQUI, 'no_instalado.html')
 SELLO_AXISWORKS = os.path.join(AQUI, '..', '..', 'assets', 'favicon.svg')   # la ✕ de la marca, fuente de la web
 CAMPOS_NO_INSTALADO = {'titulo', 'texto', 'que_hace', 'asunto', 'oculta_que_hace', 'oculta_contacto', 'oculta_reintenta'}
-HOJA_V4 = ('intranet', 'v4', 'assets', 'tw-base.css')
+HOJA_V4 = ('assets', 'tw-base.css')   # tras reraiz(): antes colgaba de intranet/v4/
 
 
 def no_instalado_base(marca):
@@ -1118,9 +1364,19 @@ def pagina_no_instalado(base, marca, ficha, ruta, herramienta=None):
     return ('<!doctype html>\n<html lang="es"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">'
             '<title>%s · %s</title><link rel="icon" href="/favicon.png">'
-            '<link href="/intranet/v4/assets/fonts/fonts.css" rel="stylesheet">'
-            '<link href="/intranet/v4/assets/tw-base.css" rel="stylesheet"></head>\n<body>%s</body></html>\n'
+            '<link href="/assets/fonts/fonts.css" rel="stylesheet">'
+            '<link href="/assets/tw-base.css" rel="stylesheet"></head>\n<body>%s</body></html>\n'
             % (html.escape(v['titulo']), html.escape(marca), cuerpo))
+
+
+def ruta_limpia(u):
+    """Una pantalla de erp/modulos.json (/intranet/v4/x/) con la ruta que tiene en el bundle (/x/). Esas claves se comparan
+    con location.pathname en el navegador (apagados_instancia.js): sin traducirlas, el apagado de módulos moriría sin
+    error. Una ruta que quedara en `/` ocultaría TODOS los enlaces absolutos (a[href^="/"]): se rechaza."""
+    n = mapea_url(u)
+    if not re.fullmatch(r'/[a-z0-9-]+/(?:[a-z0-9-]+/)?', n):
+        aborta('pantalla de módulo sin ruta limpia válida: %s → %s' % (u, n))
+    return n
 
 
 def mapa_modulos(nombre):
@@ -1147,7 +1403,7 @@ def mapa_modulos(nombre):
         if mod != 'base':
             for u in d.get('pantallas') or []:
                 if u.startswith('/intranet/'):
-                    out['p'][u] = mod
+                    out['p'][ruta_limpia(u)] = mod
     if any(u.startswith('/panel') for u in out['p']):
         aborta('/panel/ no puede ser pantalla de un módulo: el panel de control se quedaría oculto')
     # apagados_extra (27-sep-2026, B8 del encargo del canon): lo que esta base NO tiene. Misma lista que lee
@@ -1160,9 +1416,9 @@ def mapa_modulos(nombre):
     # erp/contrato_front.py: nueva_instancia.no_instalables): se sirven como «Módulo no instalado»
     from nueva_instancia import no_instalables
     nunca = set(no_instalables(reg))
-    xp = set(extra.get('p') or [])
+    xp = {ruta_limpia(u) for u in extra.get('p') or []}
     for mod in nunca:
-        xp |= {u for u in (m['modulos'].get(mod) or {}).get('pantallas') or [] if u.startswith('/intranet/')}
+        xp |= {ruta_limpia(u) for u in (m['modulos'].get(mod) or {}).get('pantallas') or [] if u.startswith('/intranet/')}
     out['xp'] = sorted(xp)
     # n: nombre y «qué hace» de cada módulo, para la pantalla «Módulo no instalado» (28-sep-2026)
     out['n'] = {k: [v[0], v[3]] for k, v in rotulos().items() if k != 'base'}
@@ -1196,10 +1452,13 @@ def instancia(nombre):
             t2 = cambia_lawang(t2).replace('AxisWorks Demo', marca)
             if t2 != t:
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
+    # URLs limpias (1-oct-2026): TODO lo copiado de Lawang pasa a la raíz del bundle (/home/, /assets/, /clasico/…) antes de
+    # escribir nada propio: lo que sigue (ficha, mapa de módulos, pantallas «no instalado») ya habla con las rutas nuevas.
+    reraiz(DIST)
     # ERP F3: su ficha, escrita desde el registro (después de los reemplazos, que ya no la tocan)
     escribe_instancia({'sb_url': url, 'sb_key': clave, 'marca': marca, 'cabecera': marca.upper(), 'subcabecera': 'ERP',
                        'titulo': marca + ' ERP', 'firma_correo': marca,
-                       'inicio': '/intranet/v4/home/',
+                       'inicio': '/home/',
                        # F3 lote 3: los de la instancia en erp/instancias.json (hoy ninguna los declara → vacíos)
                        'masterplans': _instancia_registro(nombre).get('masterplans') or {},
                        'proyectos_con_fases': _instancia_registro(nombre).get('proyectos_con_fases') or []})
@@ -1234,12 +1493,13 @@ def instancia(nombre):
     logos_neutros(marca)
     tipografias_libres()
     neutraliza_ejemplos()   # ejemplos de persona que casan con gente real (pii_maqueta)
-    # 2. Portada = la intranet. Lo que en la demo es un aviso, aquí dice que no está en esta instancia.
+    # 2. Portada = la puerta de acceso, que reraiz() ha subido a la raíz (antes /intranet/). Lo que en la demo es un aviso,
+    # aquí dice que no está en esta instancia. /entrar/ y /portal/ no tienen pantalla propia: mandan a la puerta.
     redir = ('<!doctype html><meta charset="utf-8"><title>%s</title>'
-             '<script>location.replace("/intranet/")</script>' % marca)
-    if not os.path.isfile(os.path.join(DIST, 'intranet', 'index.html')):
-        aborta('falta la pantalla de acceso /intranet/: el guard real mandaría a un 404')
-    for sitio in ('', 'entrar', 'portal'):
+             '<script>location.replace("/")</script>' % marca)
+    if not os.path.isfile(os.path.join(DIST, 'index.html')):
+        aborta('falta la pantalla de acceso (la raíz /): el guard real mandaría a un 404')
+    for sitio in ('entrar', 'portal'):
         d = os.path.join(DIST, sitio)
         os.makedirs(d, exist_ok=True)
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(redir)
@@ -1259,11 +1519,11 @@ def instancia(nombre):
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8', newline='').write(
             panel.replace('__AXW_ROTULOS__', json.dumps(rotulos(), ensure_ascii=False, sort_keys=True)))
         compila_portada('panel/panel.css')   # su Tailwind compilado: la CSP de la instancia no admite el Play CDN
-    for ruta, herr in (('intranet/v4/generador-contratos/index.html', 'Generador de contratos'),
-                       ('intranet/v4/contratos-inversor/index.html', 'Portal del comprador'),
+    for ruta, herr in (('generador-contratos/index.html', 'Generador de contratos'),
+                       ('contratos-inversor/index.html', 'Portal del comprador'),
                        ('contracts/app.html', 'Generador de contratos'),
-                       ('intranet/dossier/builder.html', 'Dossier comercial'),
-                       ('intranet/creatividades/index.html', 'Creatividades')):
+                       ('clasico/dossier/builder.html', 'Dossier comercial'),
+                       ('clasico/creatividades/index.html', 'Creatividades')):
         d = os.path.join(DIST, *ruta.split('/'))
         os.makedirs(os.path.dirname(d), exist_ok=True)
         open(d, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, None, '/' + ruta, herramienta=herr))
@@ -1293,9 +1553,16 @@ def instancia(nombre):
     comprueba_resultado(DIST)
     # 4. Copia al clon del repo privado de la instancia (gitignored en la agencia).
     destino = os.path.join(DESPLIEGUES, nombre)
-    r = subprocess.run(['git', 'check-ignore', '-q', os.path.join(destino, 'x.html')], cwd=AGENCIA)
-    if r.returncode != 0:
-        aborta('erp/despliegues/ no está en .gitignore de la agencia: el build real acabaría en su repo')
+    if os.environ.get('AXW_PRUEBA_DESPLIEGUE'):
+        # Prueba local (1-oct-2026): el paquete sale a otra carpeta, FUERA de la agencia, y no toca erp/despliegues/<nombre>/
+        # (el clon que se publica). Sin esto, probar el build de una instancia vaciaba el paquete de producción.
+        destino = os.path.abspath(os.environ['AXW_PRUEBA_DESPLIEGUE'])
+        if os.path.normcase(destino).startswith(os.path.normcase(AGENCIA) + os.sep):
+            aborta('AXW_PRUEBA_DESPLIEGUE tiene que estar fuera de la agencia: ' + destino)
+    else:
+        r = subprocess.run(['git', 'check-ignore', '-q', os.path.join(destino, 'x.html')], cwd=AGENCIA)
+        if r.returncode != 0:
+            aborta('erp/despliegues/ no está en .gitignore de la agencia: el build real acabaría en su repo')
     os.makedirs(destino, exist_ok=True)
     for x in os.listdir(destino):
         if x == '.git':
@@ -1306,7 +1573,7 @@ def instancia(nombre):
         s_ = os.path.join(DIST, x)
         shutil.copytree(s_, os.path.join(destino, x)) if os.path.isdir(s_) else shutil.copy2(s_, destino)
     open(os.path.join(destino, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(HTACCESS_INSTANCIA.format(
-        nombre=nombre, dominio=dominio, sb=host_sb,
+        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino),
         dominio_re='(' + '|'.join(re.escape(d) for d in [dominio] + _instancia_alias(nombre)) + ')'))
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(destino)
@@ -1416,7 +1683,7 @@ def main():
         shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
     copia_v4()
     if '--instancia' in sys.argv:
-        # El guard real manda a /intranet/ para entrar: es la pantalla de acceso de verdad, no un aviso.
+        # El guard real manda a la puerta (antes /intranet/, ahora la raíz tras reraiz): es la pantalla de acceso de verdad.
         copia(os.path.join(LAWANG, 'intranet', 'index.html'), os.path.join(DIST, 'intranet', 'index.html'))
     faltan = cierra_referencias()
     if '--instancia' in sys.argv:
@@ -1430,6 +1697,9 @@ def main():
     escribe_instancia({'sb_url': 'https://demo.invalid', 'sb_key': 'sb_publishable_demo', 'marca': 'AxisWorks Demo',
                        'cabecera': 'AXISWORKS', 'subcabecera': 'ERP DEMO', 'titulo': 'AxisWorks ERP',
                        'firma_correo': 'AxisWorks Demo'})
+    # URLs limpias (1-oct-2026): lo copiado de Lawang (incluido el guard falso de arriba) pasa a la raíz; paginas_propias()
+    # y lo que sigue escriben ya con las rutas nuevas.
+    reraiz(DIST)
     paginas_propias()
     idioma_ingles()
     avisos_para_rotos()

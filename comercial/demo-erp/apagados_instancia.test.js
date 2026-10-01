@@ -14,16 +14,16 @@ const MAPA = {
   f: { reserva_vence_el: 'reservas' },
   b: { obra: 'obra' },
   e: { 'avisos-manager': 'contratos' },
-  p: { '/intranet/v4/comisiones/': 'comisiones', '/intranet/v4/facturas/': 'facturas' },
+  p: { '/comisiones/': 'comisiones', '/facturas/': 'facturas' },
   x: { t: { creatividades: 'creatividades' } },
-  xp: ['/intranet/v4/creatividades/'],
+  xp: ['/creatividades/'],
   n: { comisiones: ['Comisiones', 'Lo que se debe a cada comercial.'], facturas: ['Fact<b>"uras', ''] },
 };
 // La plantilla real (no_instalado.html) con sus huecos: la de verdad la pone build.py
 const PLANTILLA = fs.readFileSync(path.join(__dirname, 'no_instalado.html'), 'utf8')
   .replace(/<!--[\s\S]*?-->\s*/g, '').replace('{{marca}}', 'Prueba ERP').replace('{{sello}}', '<svg></svg>');
 
-function escenario({ activos, ruta = '/intranet/v4/home/', fallaActivos = false }) {
+function escenario({ activos, ruta = '/home/', fallaActivos = false }) {
   const red = [];
   const clases = new Set();
   const doc = {
@@ -90,7 +90,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     const h = await E.sb.from('facturas').select('id');
     ok(h.data && h.data.length === 1 && E.red.some((u) => u.startsWith('/rest/v1/facturas')), 'tabla encendida sale a la red');
     const hoja = E.doc._hoja.textContent;
-    ok(hoja.includes('/intranet/v4/comisiones/') && !hoja.includes('/intranet/v4/facturas/') && hoja.includes('/intranet/v4/creatividades/'),
+    ok(hoja.includes('/comisiones/') && !hoja.includes('/facturas/') && hoja.includes('/creatividades/'),
       'menú: se destapa lo encendido, lo apagado y lo no portado siguen ocultos');
     ok(E.red.filter((u) => u.includes('modulos_activos_datos')).length === 1, 'una sola petición de módulos por página');
   }
@@ -107,7 +107,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // 3. pantalla de un módulo apagado: no arranca y dice «no instalado»
   {
-    const E = escenario({ activos: ['facturas'], ruta: '/intranet/v4/comisiones/' });
+    const E = escenario({ activos: ['facturas'], ruta: '/comisiones/' });
     ok(E.clases.has('axw-mod-pend'), 'pantalla de módulo tapada desde el primer momento');
     let arranco = false;
     globalThis.LW_AUTH = Promise.resolve({ sb: E.sb });    // lo que hace guard.js
@@ -125,7 +125,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // 4. pantalla de un módulo encendido: arranca después de saber
   {
-    const E = escenario({ activos: ['facturas'], ruta: '/intranet/v4/facturas/' });
+    const E = escenario({ activos: ['facturas'], ruta: '/facturas/' });
     let arranco = false;
     globalThis.LW_AUTH = Promise.resolve({ sb: E.sb });
     globalThis.LW_AUTH.then(() => { arranco = true; });
@@ -136,7 +136,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // 5. la base no contesta: cerrado, y con «Reintentar» (no «no instalado»)
   {
-    const E = escenario({ fallaActivos: true, ruta: '/intranet/v4/facturas/' });
+    const E = escenario({ fallaActivos: true, ruta: '/facturas/' });
     E.publica();
     await espera(50);
     const a = await E.sb.from('facturas').select('*');
@@ -148,7 +148,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // 6. lo que se rellena va escapado (el nombre sale de un JSON, pero la plantilla va por innerHTML)
   {
-    const E = escenario({ activos: [], ruta: '/intranet/v4/facturas/' });
+    const E = escenario({ activos: [], ruta: '/facturas/' });
     E.publica();
     await espera(50);
     const b = E.doc.body.innerHTML;
