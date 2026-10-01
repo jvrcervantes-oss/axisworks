@@ -689,6 +689,18 @@ def neutraliza():
     return n
 
 
+def panel_nav(pagina, actual):
+    """Pone en `pagina` la barra de secciones del panel (panel_nav.html, la misma para todas) y marca la actual. Una sola
+    barra para las dos páginas: copiada a mano en cada una, el menú ya divergió en B2K (6 versiones) y en Lawang (9)."""
+    if '__AXW_PANEL_NAV__' not in pagina:
+        aborta('una página del panel sin el hueco __AXW_PANEL_NAV__')
+    nav = open(os.path.join(AQUI, 'panel_nav.html'), encoding='utf-8').read().strip()
+    marca = 'data-nav="%s"' % actual
+    if marca not in nav:
+        aborta('panel_nav.html no tiene la sección %r' % actual)
+    return pagina.replace('__AXW_PANEL_NAV__', nav.replace(marca, marca + ' aria-current="page"'))
+
+
 def compila_portada(solo=None):
     """Tailwind COMPILADO de la portada (ERP F3 lote 4a, 27-sep-2026): landing.html pintaba con el Play CDN, que la CSP
     de demo.axisworks.studio ya no admite. Su tema (el config que llevaba en línea) vive en tailwind.json, al lado; lo
@@ -1518,7 +1530,13 @@ def instancia(nombre):
         if '__AXW_ROTULOS__' not in panel:
             aborta('panel_control.html sin el hueco __AXW_ROTULOS__')
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8', newline='').write(
-            panel.replace('__AXW_ROTULOS__', json.dumps(rotulos(), ensure_ascii=False, sort_keys=True)))
+            panel_nav(panel, 'modulos').replace('__AXW_ROTULOS__', json.dumps(rotulos(), ensure_ascii=False, sort_keys=True)))
+        # La vista «Pilotos» (1-oct-2026, encargos/20261001_panel_pilotos_vista.md): /panel/pilotos/, mismo CSS. Esta página
+        # NO lleva su contenido (/panel/ es público): lo pide a la edge erp-control (acción `pilotos`, solo operador).
+        d_pil = os.path.join(d, 'pilotos')
+        os.makedirs(d_pil, exist_ok=True)
+        pilotos = open(os.path.join(AQUI, 'panel_pilotos.html'), encoding='utf-8').read()
+        open(os.path.join(d_pil, 'index.html'), 'w', encoding='utf-8', newline='').write(panel_nav(pilotos, 'pilotos'))
         compila_portada('panel/panel.css')   # su Tailwind compilado: la CSP de la instancia no admite el Play CDN
     for ruta, herr in (('generador-contratos/index.html', 'Generador de contratos'),
                        ('contratos-inversor/index.html', 'Portal del comprador'),

@@ -23,6 +23,8 @@
 <style>html,body{margin:0;padding:0;}body{overscroll-behavior:none;}</style>
 <style>
 .tgl:focus-visible,.chip:focus-visible,button:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}
+.nav-pill[aria-current=page]{background:#4f46e5;color:#fff}
+.nav-pill:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}
 .tgl>span{transition:transform .25s cubic-bezier(.2,.8,.2,1)}
 @media (prefers-reduced-motion:reduce){.tgl>span{transition:none}}
 dialog::backdrop{background:rgba(11,28,48,.35)}
@@ -63,6 +65,7 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
 <button type="button" id="nuevo-erp-m" class="lg:hidden shrink-0 w-9 h-9 rounded-lg bg-surface-container-low text-primary flex items-center justify-center" aria-label="Nuevo ERP"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">add</span></button>
 </header>
 <main class="pt-20 pb-16 px-margin md:px-gutter-lg max-w-5xl">
+__AXW_PANEL_NAV__
 <div id="estado-carga" class="p-space-md rounded-xl bg-surface-container-lowest text-on-surface-variant">Cargando instancias…</div>
 <section id="vista" class="hidden space-y-space-lg">
 <div id="cabecera-instancia" class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm"></div>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Pilotos · AxisWorks ERP</title>
+<!-- Vista «Pilotos» del panel del owner (1-oct-2026, encargos/20261001_panel_pilotos_vista.md). Solo lectura.
+     build.py --instancia la copia a /panel/pilotos/ SOLO en la instancia con `panel_control`, con la misma piel que
+     /panel/ (panel_control.html: mismo tailwind.json, misma CSP, mismo guard de super_admin).
+
+     ESTE HTML NO LLEVA EL CONTENIDO. /panel/ es un fichero estático público (curl sin sesión = 200) y esta vista cuenta
+     cosas que no son para cualquiera (la política de privacidad que choca con el piloto, el tope de gasto, el reparto de
+     llaves). Todo texto sale de la edge erp-control (acción `pilotos`), que exige operador verificado en servidor:
+     fuente erp/pilotos_vista.json, generada por erp/pilotos_vista.py. Aquí solo hay maquetación y rótulos de interfaz.
+     La pantalla no escribe en ninguna base ni en la ficha del piloto: no hay ningún botón que escriba.
+     Los enganches son `data-accion` / `data-lw`, nunca el rótulo. Sin modo oscuro: /panel/ tampoco lo tiene. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%234f46e5%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.min.js" integrity="sha384-XtYxyIfxexJVTROWK0+c5T8tJ2ItsVLcdgR5nJIoo6WzQqaBZoTPGgbS7XvkRNBZ" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="/contracts/assets/cierre.js"></script>
+<script src="/contracts/assets/instancia.js"></script>
+<script src="/contracts/assets/version.js"></script>
+<script src="/contracts/assets/guard.js" data-rol="super_admin"></script>
+<style>html,body{margin:0;padding:0;}body{overscroll-behavior:none;}html{scroll-behavior:smooth;scroll-padding-top:80px}</style>
+<style>
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.nav-pill[aria-current=page]{background:#4f46e5;color:#fff}
+/* estados: una palabra, un color Y una forma (el color solo no se lee para todos) */
+.est{display:inline-flex;align-items:center;gap:4px;padding:1px 9px;border-radius:9999px;font:600 12px/18px Inter,sans-serif;white-space:nowrap;border:1px solid transparent}
+.est-hecho{background:#d5f1df;color:#0b5a31}
+.est-construido{background:#ffedbd;color:#6a4700}
+.est-previsto{background:#eef0f7;color:#464555;border:1px dashed #9a98ab}
+.est-por_confirmar{background:#f3f3f3;color:#55535f;border:1px dashed #b3b1bf}
+.est-propuesta{background:#fff7e0;color:#6a4700;border:1px dashed #d9a400}
+.viejo{font:400 12px/16px Inter,sans-serif;color:#777587}
+.svg-t{font-family:Inter,sans-serif;fill:#0b1c30}
+.svg-n{font-family:'Plus Jakarta Sans',Inter,sans-serif;font-weight:700;fill:#0b1c30}
+.svg-b{fill:#464555;font-family:Inter,sans-serif}
+.svg-w{fill:#fff;font-family:Inter,sans-serif}
+.cod{font:500 12px/16px Inter,sans-serif;color:#777587;letter-spacing:.01em}
+.semaforo{width:14px;height:14px;border-radius:50%;flex:none;margin-top:3px}
+.sem-rojo{background:#ba1a1a}.sem-amarillo{background:#e0a100}.sem-verde{background:#1f8f4f}
+.actor{display:inline-block;max-width:100%;padding:1px 9px;border-radius:12px;font:700 12px/18px Inter,sans-serif;white-space:normal}
+.act-tu{background:#4f46e5;color:#fff}.act-equipo{background:#e5eeff;color:#0b1c30}.act-codigo{background:#213145;color:#fff}.act-externo{background:#fff;color:#464555;border:1px solid #9a98ab}
+details>summary{cursor:pointer;list-style:none}details>summary::-webkit-details-marker{display:none}
+details[open] .chev{transform:rotate(180deg)}
+.paso-prev{border:1px dashed #9a98ab;background:#f8f9ff}
+</style>
+<link rel="stylesheet" href="/panel/panel.css">
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased">
+<aside class="hidden lg:flex fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex-col shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+<div class="h-16 flex items-center px-gutter gap-space-sm">
+<span class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-container to-secondary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]" aria-hidden="true">deployed_code</span></span>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface">AxisWorks <span class="text-primary-container">ERP</span></span>
+<span class="font-code-metric text-code-metric text-on-surface-variant leading-none">Panel de control</span>
+</div>
+</div>
+<nav class="flex-1 px-space-md py-space-sm space-y-1 overflow-y-auto" aria-label="En esta vista">
+<div class="px-space-sm py-space-xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">En esta vista</span></div>
+<a data-accion="ir-seccion" data-seccion="necesitan" href="#necesitan" class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">flag</span><span class="font-label-md text-label-md">Lo que necesitan de ti</span></a>
+<a data-accion="ir-seccion" data-seccion="mapa" href="#mapa" class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">account_tree</span><span class="font-label-md text-label-md">El mapa</span></a>
+<a data-accion="ir-seccion" data-seccion="equipo" href="#equipo" class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">groups</span><span class="font-label-md text-label-md">El equipo del Padrino</span></a>
+<a data-accion="ir-seccion" data-seccion="flujos" href="#flujos" class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">route</span><span class="font-label-md text-label-md">Cómo funciona</span></a>
+<div class="pt-space-md px-space-sm py-space-xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Este ERP</span></div>
+<a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface" href="/home/"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">login</span><span class="font-label-md text-label-md">Entrar al ERP</span></a>
+</nav>
+<div class="p-space-md bg-surface-container-low">
+<div class="p-space-sm bg-surface-container-lowest rounded-lg flex items-center gap-space-xs">
+<div class="h-2 w-2 rounded-full bg-secondary"></div>
+<span class="font-code-metric text-code-metric text-on-surface-variant truncate" id="operador">—</span>
+</div>
+</div>
+</aside>
+<div class="lg:pl-72">
+<header class="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/85 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] flex items-center justify-between gap-space-sm px-margin md:px-gutter-lg">
+<h1 class="font-headline-sm text-headline-sm font-bold text-on-surface truncate">Pilotos</h1>
+<span id="sello" data-lw="pilotos-sello" class="font-code-metric text-code-metric text-on-surface-variant text-right"></span>
+</header>
+<main class="pt-20 pb-16 px-margin md:px-gutter-lg max-w-5xl">
+__AXW_PANEL_NAV__
+<div id="estado-carga" data-lw="pilotos-estado" role="status" class="p-space-md rounded-xl bg-surface-container-lowest text-on-surface-variant">Cargando…</div>
+<div id="vista" data-lw="pilotos-vista" class="hidden space-y-space-xl"></div>
+</main>
+</div>
+<script>
+(function () {
+  'use strict';
+  /* Solo presentación: ningún texto del contenido vive aquí. `D` es lo que devuelve la edge (acción `pilotos`). */
+  var D = null, sb = null;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function $(id) { return document.getElementById(id); }
+  var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  function fechaLarga(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[3]) + ' de ' + MESES[+m[2] - 1] + ' de ' + m[1] : String(iso || ''); }
+  function fechaCorta(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[3]) + ' ' + MESES[+m[2] - 1].slice(0, 3) : String(iso || ''); }
+  function dias(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return null; return Math.floor((Date.now() - Date.UTC(+m[1], +m[2] - 1, +m[3])) / 86400000); }
+  var ICONO = { hecho: '✓', construido: '◐', previsto: '○', por_confirmar: '?', propuesta: '◇' };
+
+  /* Estado = una palabra y un color (y una forma). Pasados 14 días sin comprobar, se dice en gris. */
+  function chip(est, comprobado) {
+    var d = dias(comprobado), viejo = d != null && d > 14;
+    return '<span class="est est-' + esc(est) + '"><span aria-hidden="true">' + (ICONO[est] || '') + '</span>' + esc(D.estados[est] || est) + '</span>' +
+      (viejo ? ' <span class="viejo">Sin comprobar desde ' + esc(fechaCorta(comprobado)) + '</span>' : '');
+  }
+
+  // ── SVG: ayudas ───────────────────────────────────────────────────────────────────────────────
+  var MARC = 0;
+  function wrap(t, px, fs) {
+    var max = Math.max(6, Math.floor(px / (fs * 0.55))), pal = String(t).split(/\s+/), lin = [], cur = '';
+    pal.forEach(function (p) {
+      if ((cur + ' ' + p).trim().length > max && cur) { lin.push(cur); cur = p; } else cur = (cur + ' ' + p).trim();
+    });
+    if (cur) lin.push(cur);
+    return lin;
+  }
+  function tx(x, y, lin, fs, cls, anchor, lh, extra) {
+    lh = lh || fs * 1.28;
+    return '<text x="' + x + '" y="' + y + '" font-size="' + fs + '" class="' + cls + '" text-anchor="' + (anchor || 'start') + '"' + (extra || '') + '>' +
+      lin.map(function (l, i) { return '<tspan x="' + x + '" dy="' + (i ? lh : 0) + '">' + esc(l) + '</tspan>'; }).join('') + '</text>';
+  }
+  var DOT = { hecho: '#1f8f4f', construido: '#e0a100', previsto: '#9a98ab', por_confirmar: '#b3b1bf', propuesta: '#d9a400' };
+  function caja(x, y, w, h, o) {
+    o = o || {};
+    return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + (o.r == null ? 12 : o.r) + '" fill="' + (o.fill || '#fff') + '" stroke="' + (o.stroke || '#c7c4d8') + '" stroke-width="' + (o.sw || 1.2) + '"' + (o.dash ? ' stroke-dasharray="5 4"' : '') + '/>';
+  }
+  function marcas(id) {
+    return '<defs><marker id="' + id + '" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9z" fill="#4f46e5"/></marker></defs>';
+  }
+  function svg(vw, vh, cuerpo, etiqueta, clase) {
+    return '<svg viewBox="0 0 ' + vw + ' ' + vh + '" class="w-full h-auto ' + clase + '" role="img" aria-label="' + esc(etiqueta) + '" xmlns="http://www.w3.org/2000/svg">' + cuerpo + '</svg>';
+  }
+  function linea(pts, id, ambos, dash) {
+    return '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linejoin="round"' + (dash ? ' stroke-dasharray="6 4"' : '') +
+      ' marker-end="url(#' + id + ')"' + (ambos ? ' marker-start="url(#' + id + ')"' : '') + '/>';
+  }
+  function estadoPunto(x, y, est) {
+    return '<circle cx="' + x + '" cy="' + y + '" r="5" fill="' + (DOT[est] || '#9a98ab') + '"' + (est === 'previsto' || est === 'por_confirmar' ? ' fill-opacity=".35" stroke="#9a98ab"' : '') + '/>';
+  }
+
+  // ── el mapa: Tú → negocios → pilotos ──────────────────────────────────────────────────────────
+  function mapaSvg(ancho) {
+    var M = D.mapa, id = 'fl' + (++MARC), n = M.negocios, o = '';
+    if (ancho) {   // escritorio: tres columnas
+      o += marcas(id) + caja(360, 14, 200, 66, { fill: '#4f46e5', stroke: '#4f46e5' }) +
+        tx(460, 40, [M.tu.nombre], 18, 'svg-n svg-w', 'middle') + tx(460, 58, wrap(M.tu.linea, 180, 11.5), 11.5, 'svg-w', 'middle', 14);
+      o += tx(444, 106, [M.flecha], 12, 'svg-b', 'end', null, ' font-style="italic"');
+      n.forEach(function (b, i) {
+        var x0 = 30 + i * 300, bx = x0 + 34, bw = 226, mid = 352;
+        o += linea([460, 80, 460, 120, x0 + 12, 120, x0 + 12, mid, bx - 2, mid], id, true);
+        o += caja(bx, 170, bw, 100, { stroke: b.estado === 'previsto' ? '#9a98ab' : '#4f46e5', dash: b.estado === 'previsto' }) +
+          tx(bx + 14, 196, [b.nombre], 17, 'svg-n') + tx(bx + 14, 214, [b.rubro], 12, 'svg-b') +
+          tx(bx + 14, 240, wrap(b.estado_txt, bw - 28, 11.5), 11.5, 'svg-t', 'start', 14.5) + estadoPunto(bx + bw - 18, 192, b.estado);
+        o += '<line x1="' + (bx + bw / 2) + '" y1="270" x2="' + (bx + bw / 2) + '" y2="308" stroke="#9a98ab" stroke-width="1.6" stroke-dasharray="3 3"/>' +
+          tx(bx + bw / 2 + 8, 294, ['lo lleva'], 10.5, 'svg-b', 'start', null, ' font-style="italic"');
+        o += caja(bx, 308, bw, 88, { fill: '#eff4ff', stroke: b.piloto.estado === 'hecho' ? '#1f8f4f' : '#9a98ab', dash: b.piloto.estado !== 'hecho' }) +
+          tx(bx + 14, 334, [b.piloto.nombre], 15.5, 'svg-n') + estadoPunto(bx + bw - 18, 330, b.piloto.estado) +
+          tx(bx + 14, 354, wrap(b.piloto.linea, bw - 28, 11.5), 11.5, 'svg-t', 'start', 14.5);
+      });
+      return svg(920, 410, o, 'Mapa: tú arriba; debajo, tres negocios (' + n.map(function (b) { return b.nombre; }).join(', ') + ') y, bajo cada uno, su piloto. Entre tú y cada piloto hay una flecha en los dos sentidos.', 'hidden md:block');
+    }
+    // móvil: una columna, riel a la izquierda
+    o += marcas(id) + caja(70, 8, 220, 58, { fill: '#4f46e5', stroke: '#4f46e5' }) +
+      tx(180, 31, [M.tu.nombre], 16, 'svg-n svg-w', 'middle') + tx(180, 48, wrap(M.tu.linea, 200, 11), 11, 'svg-w', 'middle', 13);
+    o += tx(98, 90, wrap(M.flecha, 255, 11), 11, 'svg-b', 'start', 13, ' font-style="italic"');
+    var y = 120, mids = [];
+    n.forEach(function (b, i) {
+      var lp = wrap(b.piloto.linea, 270, 11.5), hp = 40 + lp.length * 15;
+      o += caja(44, y, 308, 82, { stroke: b.estado === 'previsto' ? '#9a98ab' : '#4f46e5', dash: b.estado === 'previsto' }) +
+        tx(58, y + 26, [b.nombre], 16, 'svg-n') + tx(58, y + 44, [b.rubro], 12, 'svg-b') +
+        tx(58, y + 66, wrap(b.estado_txt, 280, 11.5), 11.5, 'svg-t', 'start', 14.5) + estadoPunto(332, y + 22, b.estado);
+      o += '<line x1="198" y1="' + (y + 82) + '" x2="198" y2="' + (y + 104) + '" stroke="#9a98ab" stroke-width="1.6" stroke-dasharray="3 3"/>';
+      o += caja(44, y + 104, 308, hp, { fill: '#eff4ff', stroke: b.piloto.estado === 'hecho' ? '#1f8f4f' : '#9a98ab', dash: b.piloto.estado !== 'hecho' }) +
+        tx(58, y + 128, [b.piloto.nombre], 15, 'svg-n') + estadoPunto(332, y + 124, b.piloto.estado) +
+        tx(58, y + 146, lp, 11.5, 'svg-t', 'start', 14.5);
+      mids.push(y + 104 + hp / 2);
+      y += 104 + hp + 26;
+    });
+    var ult = mids[mids.length - 1];
+    o += linea([80, 66, 80, 104, 20, 104, 20, ult], id, true);
+    mids.forEach(function (m) { o += linea([20, m, 42, m], id, false); });
+    return svg(360, y, o, 'Mapa: tú arriba; debajo, tres negocios y, bajo cada uno, su piloto. Entre tú y cada piloto hay una flecha en los dos sentidos.', 'md:hidden');
+  }
+
+  // ── el equipo: El Padrino al centro, ocho figuras ─────────────────────────────────────────────
+  function equipoSvg(ancho) {
+    var E = D.equipo, roles = {}, id = 'fe' + (++MARC), o = '';
+    E.roles.forEach(function (r) { roles[r.id] = r; });
+    function ficha(x, y, w, r) {
+      return '<a href="#rol-' + esc(r.id) + '" data-accion="ir-rol" data-rol="' + esc(r.id) + '"><title>' + esc(r.nombre + ' — ' + (D.estados[r.estado] || r.estado)) + '</title>' +
+        caja(x, y, w, 44, { r: 10, fill: '#fff', stroke: DOT[r.estado] || '#9a98ab', dash: r.estado === 'previsto', sw: 1.6 }) +
+        estadoPunto(x + 16, y + 22, r.estado) + tx(x + 30, y + 20, [r.nombre], 14.5, 'svg-n') +
+        tx(x + 30, y + 36, [D.estados[r.estado] || r.estado], 10.5, 'svg-b', 'start') + '</a>';
+    }
+    var p = roles[E.puerta.rol];
+    if (ancho) {
+      o += marcas(id);
+      var mids = [];
+      E.bloques.forEach(function (b, i) {
+        var h = 38 + b.roles.length * 50 + 6, y = [8, 160, 312][i];
+        o += caja(640, y, 262, h, { fill: '#f8f9ff', stroke: '#c7c4d8', r: 14 }) + tx(656, y + 24, [b.titulo.toUpperCase()], 11, 'svg-b', 'start', null, ' letter-spacing=".08em" font-weight="700"');
+        b.roles.forEach(function (r, k) { o += ficha(654, y + 36 + k * 50, 234, roles[r]); });
+        mids.push(y + h / 2);
+      });
+      var cy = (mids[0] + mids[2]) / 2;
+      o += caja(430, cy - 54, 150, 108, { fill: '#213145', stroke: '#213145', r: 16 }) + tx(505, cy + 6, [E.centro], 18, 'svg-n svg-w', 'middle');
+      mids.forEach(function (m) { o += linea([580, cy, 612, cy, 612, m, 638, m], id, false); });
+      o += caja(20, cy - 36, 110, 72, { fill: '#4f46e5', stroke: '#4f46e5' }) + tx(75, cy + 6, [D.mapa.tu.nombre], 18, 'svg-n svg-w', 'middle');
+      o += tx(285, cy - 52, [E.puerta.etiqueta], 12.5, 'svg-n', 'middle');
+      o += caja(190, cy - 38, 190, 76, { fill: '#fff', stroke: '#9a98ab', dash: true, sw: 1.6 }) + tx(285, cy - 12, [p.nombre], 15, 'svg-n', 'middle') +
+        tx(285, cy + 6, wrap(p.subtitulo, 170, 11), 11, 'svg-b', 'middle', 13) + estadoPunto(206, cy - 24, p.estado);
+      o += linea([130, cy, 188, cy], id, true) + linea([380, cy, 428, cy], id, false);
+      return svg(920, 520, o, 'El equipo del Padrino: en el centro El Padrino; a su derecha tres bloques: Habla (' + E.bloques[0].roles.map(function (r) { return roles[r].nombre; }).join(', ') + '), Decide y cuenta (' + E.bloques[1].roles.map(function (r) { return roles[r].nombre; }).join(', ') + ') y Cambia la web (' + E.bloques[2].roles.map(function (r) { return roles[r].nombre; }).join(', ') + '); a su izquierda, tú y el Portero, tu puerta de aprobación.', 'hidden md:block');
+    }
+    o += marcas(id) + tx(245, 18, [E.puerta.etiqueta], 11.5, 'svg-n', 'middle');
+    o += caja(14, 40, 90, 56, { fill: '#4f46e5', stroke: '#4f46e5' }) + tx(59, 74, [D.mapa.tu.nombre], 16, 'svg-n svg-w', 'middle');
+    o += caja(140, 26, 206, 84, { fill: '#fff', stroke: '#9a98ab', dash: true, sw: 1.6 }) + tx(243, 52, [p.nombre], 15, 'svg-n', 'middle') +
+      tx(243, 70, wrap(p.subtitulo, 188, 11), 11, 'svg-b', 'middle', 13) + estadoPunto(158, 42, p.estado);
+    o += linea([104, 68, 138, 68], id, true) + linea([243, 110, 243, 128, 180, 128, 180, 144], id, false);
+    o += caja(100, 144, 160, 50, { fill: '#213145', stroke: '#213145', r: 14 }) + tx(180, 176, [E.centro], 17, 'svg-n svg-w', 'middle');
+    var y = 226, mids = [];
+    E.bloques.forEach(function (b) {
+      var h = 34 + b.roles.length * 50 + 4;
+      o += caja(30, y, 320, h, { fill: '#f8f9ff', stroke: '#c7c4d8', r: 14 }) + tx(46, y + 22, [b.titulo.toUpperCase()], 11, 'svg-b', 'start', null, ' letter-spacing=".08em" font-weight="700"');
+      b.roles.forEach(function (r, k) { o += ficha(44, y + 32 + k * 50, 292, roles[r]); });
+      mids.push(y + h / 2);
+      y += h + 14;
+    });
+    o += linea([180, 194, 180, 208, 14, 208, 14, mids[mids.length - 1]], id, false);
+    mids.forEach(function (m) { o += linea([14, m, 28, m], id, false); });
+    return svg(360, y, o, 'El equipo del Padrino: tú y el Portero arriba; luego El Padrino y tres bloques: Habla, Decide y cuenta, Cambia la web.', 'md:hidden');
+  }
+
+  // ── flechas entre pasos y los pequeños dibujos de los flujos ──────────────────────────────────
+  var FLECHA_H = '<svg class="hidden md:block absolute top-1/2 -right-[14px] -translate-y-1/2 z-10" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="11" fill="#f8f9ff"/><path d="M6 11h9M12 7l4 4-4 4" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var FLECHA_V = '<svg class="md:hidden absolute left-1/2 -bottom-[15px] -translate-x-1/2 z-10" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="11" fill="#f8f9ff"/><path d="M11 6v9M7 12l4 4 4-4" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function pasos(f) {
+    var n = f.pasos.length, cols = n >= 5 ? 'md:grid-cols-5' : (n === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3');
+    return '<ol class="grid gap-[22px] md:gap-[26px] grid-cols-1 ' + cols + ' mt-space-md">' + f.pasos.map(function (p, i) {
+      var prev = p.estado === 'previsto';
+      return '<li class="relative rounded-xl p-space-sm bg-surface-container-lowest shadow-sm' + (prev ? ' paso-prev' : '') + '" data-lw="paso-' + esc(f.id) + '-' + (i + 1) + '">' +
+        '<div class="flex items-center gap-space-xs mb-1"><span class="w-6 h-6 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm flex items-center justify-center flex-none">' + (i + 1) + '</span>' +
+        '<span class="actor act-' + esc(p.actor) + '">' + esc(p.quien) + '</span></div>' +
+        '<p class="font-body-sm text-body-sm text-on-surface [overflow-wrap:anywhere]">' + esc(p.texto) + '</p>' +
+        (prev ? '<div class="mt-1">' + chip('previsto', f.comprobado) + '</div>' : '') +
+        (i < n - 1 ? FLECHA_H + FLECHA_V : '') + '</li>';
+    }).join('') + '</ol>';
+  }
+  function barra(b) {
+    var id = 'fb' + (++MARC), o = marcas(id);
+    o += '<rect x="10" y="38" width="580" height="22" rx="11" fill="#d5f1df"/><rect x="416" y="38" width="174" height="22" rx="0" fill="#ffedbd"/><rect x="578" y="38" width="12" height="22" rx="6" fill="#ffedbd"/>';
+    o += '<line x1="416" y1="30" x2="416" y2="68" stroke="#d9a400" stroke-width="2" stroke-dasharray="4 3"/><line x1="590" y1="30" x2="590" y2="68" stroke="#ba1a1a" stroke-width="2.4"/>';
+    var t70 = b.tramos[0], t100 = b.tramos[1];
+    o += tx(416, 22, [t70.etiqueta + ' · ' + (D.estados[t70.estado] || '')], 11.5, 'svg-b', 'middle');
+    o += tx(590, 22, [t100.etiqueta], 12, 'svg-n', 'end');
+    o += tx(10, 22, ['0 €'], 11.5, 'svg-b');
+    return svg(600, 76, o, b.titulo + ': a ' + t70.etiqueta + ' un aviso propuesto (no decidido); a ' + t100.etiqueta + ' el Tesorero recorta.', '');
+  }
+  function linea90(f) {
+    var id = 'ft' + (++MARC), o = marcas(id), neg = f.pasos[2], pos = f.pasos[3];
+    o += '<line x1="30" y1="70" x2="300" y2="70" stroke="#4f46e5" stroke-width="2"/>';
+    for (var k = 1; k < 9; k++) o += '<line x1="' + (30 + k * 30) + '" y1="65" x2="' + (30 + k * 30) + '" y2="75" stroke="#9a98ab"/>';
+    o += '<circle cx="30" cy="70" r="8" fill="#4f46e5"/><circle cx="300" cy="70" r="8" fill="#fff" stroke="#4f46e5" stroke-width="3"/>';
+    o += tx(30, 100, [f.pasos[0].quien], 12, 'svg-n', 'middle') + tx(300, 100, ['Día 90'], 12, 'svg-n', 'middle') + tx(165, 54, [f.pasos[1].quien.toLowerCase() + ': ganado − gastado'], 11, 'svg-b', 'middle');
+    o += linea([308, 66, 350, 66, 350, 28, 380, 28], id, false) + linea([308, 74, 350, 74, 350, 112, 380, 112], id, false);
+    o += caja(382, 8, 208, 40, { fill: '#d5f1df', stroke: '#1f8f4f', r: 10 }) + tx(486, 33, ['Positivo: gana más autonomía'], 11.5, 'svg-t', 'middle');
+    o += caja(382, 92, 208, 40, { fill: '#ffdad6', stroke: '#ba1a1a', r: 10 }) + tx(486, 117, ['Cero o negativo: se apaga'], 11.5, 'svg-t', 'middle');
+    return svg(600, 140, o, 'Línea de tiempo: día 0 primera venta real; cada día el Tesorero mide; en el día 90, si el resultado es positivo el piloto gana autonomía y si es cero o negativo se apaga.', '');
+  }
+
+  // ── secciones ─────────────────────────────────────────────────────────────────────────────────
+  function titulo(t, sub) {
+    return '<div><h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">' + esc(t) + '</h2>' +
+      (sub ? '<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">' + esc(sub) + '</p>' : '') + '</div>';
+  }
+  function filaNecesita(it, nivel) {
+    var N = D.necesitan, E = N.etiquetas;
+    var cod = it.codigos + (it.abiertos && it.abiertos.length && it.desde ? ' · abierta desde ' + fechaCorta(it.desde) : '') + (it.sin_fila ? ' · ' + N.sin_fila : '');
+    return '<li data-lw="necesita-' + it.n + '" class="rounded-xl p-space-md bg-surface-container-lowest shadow-sm flex gap-space-sm">' +
+      '<span class="semaforo sem-' + esc(nivel) + '" aria-hidden="true"></span><div class="min-w-0 flex-1">' +
+      '<h3 class="font-label-md text-label-md font-bold text-on-surface text-[15px] leading-snug">' + esc(it.que) + '</h3>' +
+      '<dl class="mt-1 space-y-1 font-body-sm text-body-sm">' +
+      [['por_que', it.por_que], ['cuesta', it.cuesta], ['desbloquea', it.desbloquea]].map(function (par) {
+        return '<div class="grid grid-cols-1 sm:grid-cols-[104px_1fr] sm:gap-space-sm"><dt class="font-label-sm text-label-sm text-outline uppercase tracking-wide">' + esc(E[par[0]]) + '</dt><dd class="text-on-surface [overflow-wrap:anywhere]">' + esc(par[1]) + '</dd></div>';
+      }).join('') + '</dl>' +
+      (it.nota ? '<p class="mt-1 font-body-sm text-body-sm text-on-surface-variant [overflow-wrap:anywhere]">' + esc(it.nota) + '</p>' : '') +
+      '<p class="cod mt-1">' + esc(cod) + '</p></div></li>';
+  }
+  function secNecesitan() {
+    var N = D.necesitan, ROT = { rojo: '🔴', amarillo: '🟡', verde: '🟢' };
+    var cuerpo = N.niveles.filter(function (v) { return v.items.length; }).map(function (v) {
+      return '<section data-lw="nivel-' + esc(v.id) + '"><h3 class="font-label-md text-label-md font-bold text-on-surface mb-space-sm flex items-center gap-space-xs"><span aria-hidden="true">' + (ROT[v.id] || '') + '</span>' + esc(v.titulo) + '</h3>' +
+        '<ul class="space-y-space-sm">' + v.items.map(function (it) { return filaNecesita(it, v.id); }).join('') + '</ul></section>';
+    }).join('');
+    return '<section id="necesitan" data-lw="seccion-necesitan" class="space-y-space-md">' + titulo(N.titulo, N.subtitulo) +
+      '<p class="font-label-md text-label-md text-on-surface-variant">' + esc(N.leyenda) + '</p>' + (cuerpo || '<p class="p-space-md rounded-xl bg-surface-container-lowest text-on-surface-variant">Nada pendiente de ti en la lista.</p>') +
+      (N.otras_del_libro ? '<p class="viejo">Hay ' + N.otras_del_libro + (N.otras_del_libro === 1 ? ' fila más tuya' : ' filas más tuyas') + ' de BodaEnlace en el libro del estudio que no se explican aquí.</p>' : '') +
+      '<p class="font-body-sm text-body-sm text-on-surface-variant">' + esc(N.pie) + '</p></section>';
+  }
+  function secMapa() {
+    var M = D.mapa, A = D.ayudantes;
+    return '<section id="mapa" data-lw="seccion-mapa" class="space-y-space-md">' + titulo(M.titulo) +
+      '<div class="rounded-xl bg-surface-container-lowest shadow-sm p-space-sm">' + mapaSvg(true) + mapaSvg(false) + '</div>' +
+      '<div class="grid gap-space-sm md:grid-cols-3">' + M.negocios.map(function (b) {
+        return '<div class="rounded-xl p-space-md bg-surface-container-lowest shadow-sm" data-lw="negocio-' + esc(b.id) + '"><div class="flex items-start justify-between gap-space-xs"><h3 class="font-label-md text-label-md font-bold">' + esc(b.nombre) + '</h3>' + chip(b.estado, b.comprobado) + '</div>' +
+          '<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">' + esc(b.texto) + '</p></div>';
+      }).join('') + '</div>' +
+      '<p class="font-body-sm text-body-sm text-on-surface-variant">' + esc(M.nota) + '</p>' +
+      '<div data-lw="ayudantes" class="rounded-xl p-space-md" style="background:#d6f6fc"><h3 class="font-label-md text-label-md font-bold" style="color:#003a46">' + esc(A.titulo) + '</h3>' +
+      '<p class="font-body-sm text-body-sm" style="color:#003a46">' + esc(A.linea) + '</p>' +
+      '<p class="viejo" style="color:#3d5560">' + esc(A.aviso) + '</p>' +
+      '<div class="grid gap-space-sm sm:grid-cols-2 lg:grid-cols-3 mt-space-sm">' + A.items.map(function (a) {
+        return '<div class="rounded-lg p-space-sm bg-surface-container-lowest" data-lw="ayudante-' + esc(a.id) + '"><div class="font-label-md text-label-md font-bold">' + esc(a.nombre) + '</div>' +
+          '<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">' + esc(a.hace) + '</p><div class="mt-1">' + chip(a.estado, a.comprobado) + '</div></div>';
+      }).join('') + '</div></div></section>';
+  }
+  function secEquipo() {
+    var E = D.equipo, L = E.etiquetas;
+    return '<section id="equipo" data-lw="seccion-equipo" class="space-y-space-md">' + titulo(E.titulo, E.intro) +
+      '<div class="rounded-xl bg-surface-container-lowest shadow-sm p-space-sm">' + equipoSvg(true) + equipoSvg(false) + '</div>' +
+      '<div class="grid gap-space-sm md:grid-cols-2">' + E.roles.map(function (r) {
+        return '<article id="rol-' + esc(r.id) + '" data-lw="rol-' + esc(r.id) + '" class="rounded-xl p-space-md bg-surface-container-lowest shadow-sm">' +
+          '<div class="flex flex-wrap items-center justify-between gap-space-xs"><h3 class="font-headline-sm text-[18px] font-bold">' + esc(r.nombre) + (r.subtitulo ? '<span class="block font-label-sm text-label-sm text-on-surface-variant">' + esc(r.subtitulo) + '</span>' : '') + '</h3><div>' + chip(r.estado, r.comprobado) + '</div></div>' +
+          (r.nota_estado ? '<p class="viejo mt-1">' + esc(r.nota_estado) + '</p>' : '') +
+          '<p class="font-label-sm text-label-sm text-outline uppercase tracking-wide mt-space-sm">' + esc(L.hace) + '</p><p class="font-body-sm text-body-sm [overflow-wrap:anywhere]">' + esc(r.hace) + '</p>' +
+          '<details class="mt-space-sm"><summary class="flex items-center gap-1 font-label-md text-label-md text-primary-container"><span class="material-symbols-outlined text-[18px] chev" aria-hidden="true">expand_more</span>' + esc(L.no_puede) + ' · ' + esc(L.llaves) + '</summary>' +
+          '<p class="font-label-sm text-label-sm text-outline uppercase tracking-wide mt-space-xs">' + esc(L.no_puede) + '</p><p class="font-body-sm text-body-sm [overflow-wrap:anywhere]">' + esc(r.no_puede) + '</p>' +
+          '<p class="font-label-sm text-label-sm text-outline uppercase tracking-wide mt-space-xs">' + esc(L.llaves) + '</p><p class="font-body-sm text-body-sm [overflow-wrap:anywhere]">' + esc(r.llaves) + '</p></details></article>';
+      }).join('') + '</div></section>';
+  }
+  function secFlujos() {
+    var F = D.flujos;
+    return '<section id="flujos" data-lw="seccion-flujos" class="space-y-space-lg">' + titulo(F.titulo) +
+      '<p class="font-body-sm text-body-sm text-on-surface-variant flex flex-wrap items-center gap-x-space-sm gap-y-1">' + Object.keys(F.actores).map(function (k) { return '<span class="actor act-' + esc(k) + '">' + esc(F.actores[k]) + '</span>'; }).join('') + '</p>' +
+      F.items.map(function (f) {
+        return '<article id="flujo-' + esc(f.id) + '" data-lw="flujo-' + esc(f.id) + '" class="rounded-xl p-space-md bg-surface-container-low">' +
+          '<div class="flex items-start gap-space-sm"><span class="w-9 h-9 rounded-full bg-primary-container text-on-primary font-headline-sm text-[16px] font-bold flex items-center justify-center flex-none" aria-hidden="true">' + esc(f.id) + '</span>' +
+          '<div class="min-w-0"><h3 class="font-headline-sm text-[18px] font-bold leading-snug">' + esc(f.titulo) + '</h3><p class="font-body-sm text-body-sm text-on-surface-variant mt-1">' + esc(f.linea) + '</p></div></div>' +
+          pasos(f) +
+          (f.id === 'E' ? '<div class="mt-space-md rounded-xl bg-surface-container-lowest p-space-sm max-w-[640px]">' + linea90(f) + '</div>' : '') +
+          (f.cajas ? '<div class="grid gap-space-sm md:grid-cols-2 mt-space-md">' + f.cajas.map(function (c) {
+            return '<div class="rounded-xl p-space-sm bg-surface-container-lowest"><div class="font-label-md text-label-md font-bold">' + esc(c.titulo) + '</div><p class="font-body-sm text-body-sm mt-1 [overflow-wrap:anywhere]">' + esc(c.texto) + '</p></div>';
+          }).join('') + '</div>' : '') +
+          (f.barra ? '<div class="mt-space-md rounded-xl bg-surface-container-lowest p-space-sm"><div class="font-label-md text-label-md font-bold mb-1">' + esc(f.barra.titulo) + '</div><div class="max-w-[640px]">' + barra(f.barra) + '</div>' +
+            '<ul class="mt-space-sm space-y-1 font-body-sm text-body-sm">' + f.barra.tramos.map(function (t) {
+              return '<li class="flex flex-wrap items-baseline gap-x-space-xs"><strong>' + esc(t.etiqueta) + '</strong>' + (t.estado === 'propuesta' ? chip('propuesta', f.comprobado) : '') + '<span class="[overflow-wrap:anywhere]">' + esc(t.texto) + '</span></li>';
+            }).join('') + '<li class="text-on-surface-variant [overflow-wrap:anywhere]">' + esc(f.barra.extra) + '</li></ul></div>' : '') +
+          (f.porque ? '<p class="mt-space-md font-label-md text-label-md font-bold text-on-surface">' + esc(f.porque) + '</p>' : '') +
+          '<div class="mt-space-sm space-y-1">' + (f.estados || [{ estado: f.estado, texto: f.estado_txt }]).map(function (e) {
+            return '<div class="flex flex-wrap items-baseline gap-space-xs">' + chip(e.estado, f.comprobado) + '<span class="font-body-sm text-body-sm text-on-surface-variant [overflow-wrap:anywhere]">' + esc(e.texto) + '</span></div>';
+          }).join('') + '</div></article>';
+      }).join('') + '</section>';
+  }
+  function secPie() {
+    var P = D.pie;
+    return '<section data-lw="seccion-pie" class="space-y-space-sm">' + titulo(P.titulo) +
+      '<dl class="rounded-xl bg-surface-container-lowest shadow-sm divide-y divide-outline-variant/50">' + P.filas.map(function (f) {
+        return '<div class="p-space-sm grid sm:grid-cols-[220px_1fr] gap-x-space-sm"><dt class="font-label-md text-label-md font-bold">' + esc(f.parte) + '</dt><dd class="font-body-sm text-body-sm text-on-surface-variant">' + esc(f.como) + '</dd></div>';
+      }).join('') + '</dl><p class="font-body-sm text-body-sm text-on-surface-variant">' + esc(P.nota) + '</p></section>';
+  }
+
+  function pinta() {
+    var C = D.cabecera, gen = D.generado, d = dias(gen), viejo = d != null && d > 14;
+    $('sello').innerHTML = esc(C.sello + ' ' + fechaLarga(gen)) + (viejo ? '<span class="block text-error">Sin actualizar desde hace ' + d + ' días</span>' : '');
+    $('estado-carga').classList.add('hidden');
+    var v = $('vista');
+    v.classList.remove('hidden');
+    v.innerHTML =
+      '<section data-lw="cabecera" class="space-y-space-sm"><p class="font-body-md text-body-md text-on-surface-variant">' + esc(C.subtitulo) + '</p>' +
+      '<div class="rounded-xl p-space-md bg-primary-container text-on-primary [overflow-wrap:anywhere]" style="font-size:17px;line-height:26px">' + esc(C.caja) + '</div></section>' +
+      secNecesitan() + secMapa() + secEquipo() + secFlujos() + secPie();
+    if (location.hash.length > 1) { var t = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (t) t.scrollIntoView(); }
+  }
+
+  function pide() {
+    return sb.auth.getSession().then(function (s) {
+      var t = s && s.data && s.data.session && s.data.session.access_token;
+      return fetch(window.lwEdge('erp-control'), { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (t || '') }, body: JSON.stringify({ accion: 'pilotos' }) });
+    }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { d.__estado = r.status; return d; }); });
+  }
+  function carga() {
+    var c = $('estado-carga');
+    c.classList.remove('hidden'); c.textContent = 'Cargando…';
+    return pide().then(function (d) {
+      if (d.__estado === 403) throw new Error('Tu cuenta no es operadora del panel de control.');
+      if (d.__estado !== 200 || !d.pilotos || typeof d.pilotos !== 'object') throw new Error('No se ha podido leer esta vista (' + d.__estado + '). No es que no haya nada: no he podido mirar.');
+      D = d.pilotos;
+      pinta();
+    }).catch(function (e) {
+      $('vista').classList.add('hidden');
+      c.classList.remove('hidden');
+      c.innerHTML = esc(e.message || 'No se pudo cargar.') + ' <button type="button" data-accion="reintenta" class="underline font-label-md">Reintentar</button>';
+    });
+  }
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest && ev.target.closest('[data-accion]');
+    if (!t) return;
+    var a = t.getAttribute('data-accion');
+    if (a === 'reintenta') carga();
+    else if (a === 'ir-rol') { var r = document.getElementById('rol-' + t.getAttribute('data-rol')); if (r) { ev.preventDefault(); r.scrollIntoView({ behavior: 'smooth', block: 'center' }); var dt = r.querySelector('details'); if (dt) dt.open = true; } }
+  });
+  window.LW_AUTH.then(function (a) {
+    sb = a.sb;
+    $('operador').textContent = (a.session && a.session.user && a.session.user.email) || '—';
+    return carga();
+  }).catch(function (e) {
+    $('estado-carga').textContent = (e && e.message) || 'No se pudo cargar.';
+  });
+})();
+</script>
+</body>
+</html>
