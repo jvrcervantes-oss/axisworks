@@ -259,5 +259,21 @@ if __name__ == '__main__':
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
+    # AXW-141: las tres imagenes de marca de Lawang que ningun bundle lleva pasan a `none`; otra url() no se toca
+    tmp = tempfile.mkdtemp()
+    try:
+        css = os.path.join(tmp, 'contracts', 'assets')
+        os.makedirs(css)
+        origen = ("--brand-mark: url(brand/tiki-totem.png); --brand-logo: url(brand/lawang-logo-v3.png);"
+                  " --brand-logo-dark: url( brand/lawang-logo-v3-dark.png ); --otra: url(brand/otra.png);")
+        open(os.path.join(css, 'lawang.css'), 'w', encoding='utf-8').write(origen)
+        n = build.sin_marca_lawang(tmp)
+        t = open(os.path.join(css, 'lawang.css'), encoding='utf-8').read()
+        ok(n == 3 and t.count('none') == 3 and 'url(brand/otra.png)' in t and 'tiki-totem' not in t,
+           'sin_marca_lawang: 3 imagenes de marca de Lawang a none, la ajena intacta (%s)' % t)
+        ok(build.sin_marca_lawang(os.path.join(tmp, 'no_existe')) == 0, 'sin_marca_lawang: sin css no falla')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
     print('\n%s' % ('TODO EN VERDE' if not FALLOS else '%d FALLO(S)' % len(FALLOS)))
     sys.exit(1 if FALLOS else 0)

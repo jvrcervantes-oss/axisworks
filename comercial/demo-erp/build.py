@@ -334,6 +334,27 @@ def _relativas(t, url_vieja, url_nueva):
     return re.sub(r'''(?P<a>url\(\s*)(?P<q>["']?)(?P<v>[^)"']+)(?P=q)(?P<c>\s*\))''', corrige, t, flags=re.I)
 
 
+BRAND_LAWANG = re.compile(r'url\(\s*brand/(?:tiki-totem|lawang-logo-v3|lawang-logo-v3-dark)\.png\s*\)')
+
+
+def sin_marca_lawang(dist):
+    """AXW-141 (1-oct-2026): `lawang.css` y `brand.css` declaran tres imágenes de marca de Lawang (`brand/tiki-totem.png`,
+    `lawang-logo-v3.png`, `lawang-logo-v3-dark.png`) que ningún bundle del ERP lleva (no son del cliente): cada página daba
+    3 × 404 en la red. Se dejan en `none`: la variable sigue existiendo y la imagen ya no se pedía con éxito antes, así que
+    no cambia nada visible. Solo estas tres: cualquier otra `url()` rota la caza `enlaces_rotos()`."""
+    tocados = 0
+    for nombre in ('lawang.css', 'brand.css'):
+        p = os.path.join(dist, 'contracts', 'assets', nombre)
+        if not os.path.isfile(p):
+            continue
+        t = open(p, encoding='utf-8', newline='').read()
+        t2, n = BRAND_LAWANG.subn('none', t)
+        if n:
+            open(p, 'w', encoding='utf-8', newline='').write(t2)
+            tocados += n
+    return tocados
+
+
 def reraiz(dist):
     """Reubica el front copiado de Lawang en `dist` al mapa de URLs limpio y reescribe todo lo que lo nombra. Lo llaman la
     demo (main) y la instancia (instancia()): UN solo paso. Devuelve los nombres de pantalla v4 (carpetas de la raíz)."""
@@ -1469,6 +1490,7 @@ def instancia(nombre):
     # URLs limpias (1-oct-2026): TODO lo copiado de Lawang pasa a la raíz del bundle (/home/, /assets/, /clasico/…) antes de
     # escribir nada propio: lo que sigue (ficha, mapa de módulos, pantallas «no instalado») ya habla con las rutas nuevas.
     reraiz(DIST)
+    sin_marca_lawang(DIST)
     # ERP F3: su ficha, escrita desde el registro (después de los reemplazos, que ya no la tocan)
     escribe_instancia({'sb_url': url, 'sb_key': clave, 'marca': marca, 'cabecera': marca.upper(), 'subcabecera': 'ERP',
                        'titulo': marca + ' ERP', 'firma_correo': marca,
@@ -1724,6 +1746,7 @@ def main():
     # URLs limpias (1-oct-2026): lo copiado de Lawang (incluido el guard falso de arriba) pasa a la raíz; paginas_propias()
     # y lo que sigue escriben ya con las rutas nuevas.
     reraiz(DIST)
+    sin_marca_lawang(DIST)
     paginas_propias()
     idioma_ingles()
     avisos_para_rotos()
