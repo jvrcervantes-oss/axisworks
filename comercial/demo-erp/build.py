@@ -1460,6 +1460,12 @@ def mapa_modulos(nombre):
     return out
 
 
+# Textos del editor de ficha (editores.js, copia de Lawang): van en español a secas, como el resto de ese formulario (la copia no
+# traduce sus avisos y el diccionario i18n.js es de Lawang).
+MSG_CAMPO_NO_PEDIBLE = 'Ese dato (nacionalidad, pasaporte / NPWP o estado KYC) no se puede pedir por aquí. Envía una petición libre desde Asistente y la resuelve un administrador.'
+NOTA_EDITOR = 'Nacionalidad, pasaporte / NPWP y estado KYC no se piden por aquí: envía una petición libre desde Asistente.'
+
+
 def _una_vez(texto, viejo, nuevo, donde):
     """Reemplazo LITERAL de algo que tiene que aparecer exactamente una vez: si Lawang cambia ese trozo, el build para (nunca
     un reemplazo que no encuentra nada y deja el permiso o el menú a medias, sin un solo error)."""
@@ -1503,11 +1509,42 @@ def asistente_maestro():
     n = open(nav, encoding='utf-8').read()
     n = _una_vez(n, "{ path: 'asistente', texto: 'Asistente', clave: 'asistente' }", "{ path: 'asistente', texto: 'Asistente', clave: 'asistente_peticiones' }", 'nav.js MENU_V4')
     n = _una_vez(n, "contratos: 'contratos', asistente: 'asistente', 'asistente-correos': 'asistente',", "contratos: 'contratos', asistente: 'asistente_peticiones', 'asistente-correos': 'asistente',", 'nav.js CLAVE_MENU')
+    # Un admin pasa SIN la casilla (decisión del CEO, 2-oct-2026): la base lo deja (`es_admin() or puede('asistente_peticiones')` dentro
+    # de las RPC de listar y resolver); el agente sigue necesitándola. Menú, tarjeta del hub y puerta (guard.js, abajo) dicen lo mismo.
+    n = _una_vez(n, "if (!k || !ficha || ficha.rol === 'super_admin') return true;",
+                 "if (!k || !ficha || ficha.rol === 'super_admin' || (path === 'asistente' && ficha.rol === 'admin')) return true;", 'nav.js puedeVer')
     open(nav, 'w', encoding='utf-8', newline='').write(n)
     her = os.path.join(DIST, 'contracts', 'assets', 'herramientas.js')
     h = open(her, encoding='utf-8').read()
     h = _una_vez(h, "href:'/intranet/v4/asistente/', herr:'asistente',", "href:'/intranet/v4/asistente/', herr:'asistente_peticiones',", 'herramientas.js tarjeta Asistente')
+    h = _una_vez(h, "(!ficha || lwEsSuper(ficha) || !t.herr ||",
+                 "(!ficha || lwEsSuper(ficha) || !t.herr || (t.herr === 'asistente_peticiones' && ficha.rol === 'admin') ||", 'herramientas.js lwPermitida')
     open(her, 'w', encoding='utf-8', newline='').write(h)
+    # 3. El editor de ficha (editores.js, copia de Lawang): en el maestro la lista blanca de `solicitud_cambio_pide` es más corta
+    # (sin nacionalidad, pasaporte/NPWP ni estado KYC: la base rechaza esos campos con 22023 «el campo X no se puede pedir por aquí»).
+    # Se avisa en el propio formulario de «Pedir cambio» y el rechazo se explica con palabras; el contrato de la RPC no cambia.
+    ed = os.path.join(v4, 'assets', 'editores.js')
+    e = open(ed, encoding='utf-8').read()
+    e = _una_vez(e, "Cambia lo que haga falta y se enviará al administrador para que lo apruebe; te llegará la respuesta a la campana.' },",
+                 "Cambia lo que haga falta y se enviará al administrador para que lo apruebe; te llegará la respuesta a la campana. %s' }," % NOTA_EDITOR,
+                 'editores.js nota de pedir cambio')
+    viejo_rechazo = "          if (r.error) return { error: { message: r.error.message } };\n          var n = r.data;\n          toast('Enviado para aprobar'"
+    nuevo_rechazo = ("          if (r.error) return { error: { message: /no se puede pedir por aquí/.test(String(r.error.message || '')) ? " +
+                     json.dumps(MSG_CAMPO_NO_PEDIBLE, ensure_ascii=False) +
+                     " : r.error.message } };\n          var n = r.data;\n          toast('Enviado para aprobar'")
+    e = _una_vez(e, viejo_rechazo, nuevo_rechazo, 'editores.js rechazo de campo')
+    open(ed, 'w', encoding='utf-8', newline='').write(e)
+
+
+def guard_asistente_admin():
+    """guard.js del maestro: la puerta de /asistente/ deja pasar al admin sin la casilla `asistente_peticiones` (la base lo permite).
+    Va aparte de asistente_maestro() porque instancia() vuelve a copiar el guard.js de Lawang DESPUÉS de esa función; se llama justo
+    tras esa copia. Reemplazo literal con ancla que aborta si Lawang cambia la línea."""
+    g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
+    t = open(g, encoding='utf-8').read()
+    t = _una_vez(t, "var sinLimite = ficha && ficha.rol === 'super_admin';",
+                 "var sinLimite = ficha && (ficha.rol === 'super_admin' || (ficha.rol === 'admin' && HERRAMIENTA === 'asistente_peticiones'));", 'guard.js sinLimite')
+    open(g, 'w', encoding='utf-8', newline='').write(t)
 
 
 def instancia(nombre):
@@ -1518,6 +1555,7 @@ def instancia(nombre):
     host_sb = url[len('https://'):]
     # 0. Sin comentarios, como la pública: los de Lawang cuentan sociedades, personas e incidentes.
     shutil.copy2(os.path.join(LAWANG, 'contracts', 'assets', 'guard.js'), os.path.join(DIST, 'contracts', 'assets', 'guard.js'))
+    guard_asistente_admin()   # AXW-136: el admin entra a /asistente/ sin la casilla (como la base)
     r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), DIST], cwd=AQUI)
     if r.returncode != 0:
         aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
