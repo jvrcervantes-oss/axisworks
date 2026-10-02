@@ -506,7 +506,7 @@
       var id = fila.getAttribute('data-id');
       var motivo = campo(fila, 'motivo').value.trim();
       if (decision === 'rechazar' && !motivo) { mal('Di por qué la rechazas.'); campo(fila, 'motivo').focus(); return; }
-      var botones = fila.querySelectorAll('[data-accion="aprobar"],[data-accion="rechazar"]');
+      var botones = Array.prototype.filter.call(fila.querySelectorAll('[data-accion="aprobar"],[data-accion="rechazar"]'), function (b) { return !b.disabled; });   // solo los que estaban activos
       botones.forEach(function (b) { b.disabled = true; });
       sb.rpc('solicitud_cambio_resuelve', { p_id: id, p_decision: decision, p_motivo: motivo || null }).then(function (r) {
         if (r.error) {
@@ -519,7 +519,9 @@
         if (d.ya_resuelta) mal('Esa petición ya estaba resuelta (' + (d.estado || '') + ').');
         else if (d.estado === 'fallida') mal('No se pudo hacer' + (d.error ? ': ' + d.error : '') + '. Queda como «No se pudo hacer».');
         else if (d.estado === 'anulada') mal('Petición retirada: ' + (d.motivo || 'ya no procede') + '.');
-        else ok(d.estado === 'rechazada' ? 'Petición rechazada.' : 'Petición aprobada y hecha.');
+        else if (d.estado === 'rechazada') ok('Petición rechazada.');
+        else if (d.manual) ok('Marcada como hecha a mano: la base solo lo registra, no ha ejecutado nada.');
+        else ok('Petición aprobada y hecha.');
         carga(true);
       }, function (e) {
         mal('Sin conexión: ' + ((e && e.message) || e));
@@ -558,6 +560,7 @@
       else if (accion === 'aprobar' && fila) {
         var borra = /^borrar_/.test(fila.getAttribute('data-accion-peticion') || '');
         if (borra && CONFIRMA !== fila) {
+          if (CONFIRMA) { var ant = CONFIRMA.querySelector('[data-accion="aprobar"]'); if (ant) ant.textContent = 'Aprobar'; }
           CONFIRMA = fila; el.textContent = 'Pulsa otra vez para confirmar el borrado';
           setTimeout(function () { if (CONFIRMA === fila) { CONFIRMA = null; el.textContent = 'Aprobar'; } }, 5000);
           return;
