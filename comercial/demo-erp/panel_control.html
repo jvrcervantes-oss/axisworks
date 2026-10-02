@@ -44,7 +44,7 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
 <nav class="flex-1 px-space-md py-space-sm space-y-1 overflow-y-auto" aria-label="Instancias">
 <div class="px-space-sm py-space-xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Instancias</span></div>
 <div id="lista-instancias" class="space-y-1"></div>
-<button type="button" id="nuevo-erp" class="w-full flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-primary hover:bg-surface-container"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">add_circle</span><span class="font-label-md text-label-md">Nuevo ERP</span></button>
+<button type="button" id="nuevo-erp" data-accion="abre-asistente" class="w-full flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-primary hover:bg-surface-container"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">add_circle</span><span class="font-label-md text-label-md">Nuevo ERP</span></button>
 <div class="pt-space-md px-space-sm py-space-xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Este ERP</span></div>
 <a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface" href="/home/"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">login</span><span class="font-label-md text-label-md">Entrar al ERP</span></a>
 </nav>
@@ -62,7 +62,7 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
 </div>
 <label class="lg:hidden min-w-0"><span class="sr-only">Instancia</span>
 <select id="sel-instancia" class="rounded-lg border-0 bg-surface-container-low font-label-md text-label-md py-1 pl-2 pr-8 max-w-[55vw]"></select></label>
-<button type="button" id="nuevo-erp-m" class="lg:hidden shrink-0 w-9 h-9 rounded-lg bg-surface-container-low text-primary flex items-center justify-center" aria-label="Nuevo ERP"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">add</span></button>
+<button type="button" id="nuevo-erp-m" data-accion="abre-asistente" class="lg:hidden shrink-0 w-9 h-9 rounded-lg bg-surface-container-low text-primary flex items-center justify-center" aria-label="Nuevo ERP"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">add</span></button>
 </header>
 <main class="pt-20 pb-16 px-margin md:px-gutter-lg max-w-5xl">
 __AXW_PANEL_NAV__
@@ -91,8 +91,565 @@ __AXW_PANEL_NAV__
 </div>
 </form>
 </dialog>
+<dialog id="asis" class="rounded-xl p-0 w-[min(720px,calc(100vw-24px))] max-h-[92vh] overflow-hidden shadow-xl" aria-labelledby="asis-titulo">
+<form id="asis-form" novalidate class="flex max-h-[92vh] flex-col"><div id="asis-raiz" class="flex min-h-0 flex-1 flex-col"></div></form>
+</dialog>
 <div id="toast" role="status" aria-live="polite" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-space-md py-space-sm rounded-lg bg-inverse-surface text-inverse-on-surface font-label-md text-label-md shadow-lg max-w-[calc(100vw-32px)]"></div>
 
+<script>
+/*AXW_ASIS_INI*/
+/* Asistente «Nuevo ERP» (2-oct-2026, encargos/20261002_erp_asistente_instalacion.md, subtarea 5). TODO lo que decide el
+   asistente está en este bloque y no toca el navegador (ni DOM, ni fetch, ni almacenamiento): un estado, un reductor puro,
+   las vistas como texto HTML y un almacén que recibe `pide` desde fuera. Por eso lo ejecuta tal cual la prueba
+   asistente_instalacion.test.js (extrae lo que hay entre los marcadores AXW_ASIS_INI y AXW_ASIS_FIN).
+   Fuente de las listas: `estado.perfiles` de la edge erp-control (que sale de erp/perfiles.json). Ningún módulo, país,
+   zona horaria, tope ni regla de impuestos está escrito aquí: se pinta lo que llega. Lo único propio son los rótulos
+   (cómo se llama cada clave en pantalla) y los textos de ayuda.
+   Lo que valida este bloque es AYUDA para no mandar un formulario roto: el servidor (edge y RPC) lo vuelve a validar
+   todo y manda. «No te creas nada del front-end»: la pantalla no calcula dependencias ni claves derivadas. */
+window.AXW_ASIS = (function () {
+  'use strict';
+  var PASOS = 4;
+  var TITULOS = ['Tipo de ERP', 'Módulos', 'Ajustes', 'Resumen y envío'];
+  var CORTO = ['Tipo', 'Módulos', 'Ajustes', 'Resumen'];
+  // qué paso muestra cada campo que la edge/RPC puede señalar en su 400 (`campos`)
+  var PASO_DE = { instancia: 1, instancia_existe: 1, marca: 1, dominio: 1, correo_admin: 1, tipo: 1, perfil_bloqueado: 1, modulos: 2, ajustes: 3 };
+  var BASE = [
+    { k: 'instancia', et: 'Nombre interno', ph: 'cliente-nuevo', max: 30, ayuda: 'Minúsculas, números y guiones. Identifica la instancia; no lo ve el cliente.' },
+    { k: 'marca', et: 'Nombre del ERP (marca)', ph: 'Cliente S.L.', max: 60 },
+    { k: 'dominio', et: 'Dominio o subdominio', ph: 'erp.cliente.com', max: 253 },
+    { k: 'correo_admin', et: 'Correo del superadmin', ph: 'direccion@cliente.com', max: 254, tipo: 'email', ayuda: 'La cuenta tiene que existir antes de lanzar el alta.' }
+  ];
+  // Rótulos de las claves de ajustes (presentación). Una clave nueva sin entrada sale con su nombre y un campo de texto.
+  var ETIQ = {
+    zona_horaria: ['Zona horaria', 'Opcional. La hora que usa el ERP para fechas y vencimientos.'],
+    impuestos_aplica: ['¿El ERP saca impuestos?', 'Obligatorio. Si sí, se crea UN impuesto por defecto con el nombre y el porcentaje que pongas; se cambia después en Ajustes → Impuestos.'],
+    impuesto_nombre: ['Nombre del impuesto', ''],
+    impuesto_pct: ['Porcentaje (%)', ''],
+    sociedad_nombre: ['Nombre de la sociedad emisora', ''],
+    sociedad_pais: ['País de la sociedad', ''],
+    sociedad_prefijo_serie: ['Prefijo de la serie de facturas', '']
+  };
+  // El nombre de un país sale del propio código (ICU del navegador), no de una lista escrita aquí: los códigos que se ofrecen los manda el servidor.
+  // Un valor de dos letras mayúsculas se lee como código de país.
+  function pais(c) {
+    try { return new Intl.DisplayNames(['es'], { type: 'region' }).of(c) || c; } catch (x) { /* MUDO A PROPOSITO: sin Intl se enseña el código tal cual; el valor que se manda es el código, no el nombre */ return c; }
+  }
+  var SECC = { zona_horaria: 'general', impuestos_aplica: 'impuestos', impuesto_nombre: 'impuestos', impuesto_pct: 'impuestos' };
+  var SECC_TIT = { general: 'Región', impuestos: 'Impuestos', sociedad: 'Sociedad emisora', otros: 'Otros ajustes' };
+  var SECC_ORDEN = ['general', 'impuestos', 'sociedad', 'otros'];
+  var CONTROL = /[\u0000-\u001f\u007f]/;
+  var DOMINIO = /^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/;
+  var CORREO = /^[^@\s'"\\\u0000-\u001f]+@[^@\s'"\\\u0000-\u001f]+\.[a-z]{2,}$/;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function tiene(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  function str(x) { return typeof x === 'string' ? x : ''; }
+  function catalogoValido(c) {
+    return !!c && Array.isArray(c.tipos) && c.tipos.length > 0 && !!c.ajustes && typeof c.ajustes === 'object' &&
+      !!c.ajustes_reglas && Array.isArray(c.ajustes_reglas.obligatorios) && Array.isArray(c.ajustes_reglas.cruzadas);
+  }
+  function perfilDe(cat, tipo) {
+    var l = (cat && cat.tipos || []).filter(function (t) { return t.tipo === tipo; });
+    return l.length ? l[0] : null;
+  }
+  function etiq(k) { return (ETIQ[k] || [k, ''])[0]; }
+
+  // ── estado ──────────────────────────────────────────────────────────────────────────────────────
+  function nuevo(cat, existentes) {
+    var e = { cat: cat, existentes: existentes || [], paso: 1, errores: {}, servidor: null, enviando: false, seq: null, hecho: null,
+      sinCatalogo: !catalogoValido(cat), v: { instancia: '', marca: '', dominio: '', correo_admin: '', tipo: '', opc: {}, aj: {} } };
+    if (!e.sinCatalogo) Object.keys(cat.ajustes).forEach(function (k) { e.v.aj[k] = cat.ajustes[k].tipo === 'booleano' ? null : ''; });
+    return e;
+  }
+  function clona(e) {
+    var n = {};
+    Object.keys(e).forEach(function (k) { n[k] = e[k]; });
+    n.v = {}; Object.keys(e.v).forEach(function (k) { n.v[k] = e.v[k]; });
+    n.v.opc = {}; Object.keys(e.v.opc).forEach(function (k) { n.v.opc[k] = e.v.opc[k]; });
+    n.v.aj = {}; Object.keys(e.v.aj).forEach(function (k) { n.v.aj[k] = e.v.aj[k]; });
+    n.errores = {}; Object.keys(e.errores).forEach(function (k) { n.errores[k] = e.errores[k]; });
+    return n;
+  }
+
+  // ── reglas entre ajustes (ajustes_reglas, del servidor) ────────────────────────────────────────────
+  function activa(e, r) { return tiene(e.v.aj, r.si) && e.v.aj[r.si] === r.es; }
+  function vacio(x) { return x === null || x === undefined || x === ''; }
+  // visible: no prohibida por una regla activa; y si es condicional (alguna regla la prohíbe), solo mientras otra regla la exija
+  function visible(e, k) {
+    var prohibida = false, condicional = false, exigida = false;
+    e.cat.ajustes_reglas.cruzadas.forEach(function (r) {
+      var on = activa(e, r);
+      if ((r.prohibe || []).indexOf(k) !== -1) { condicional = true; if (on) prohibida = true; }
+      if ((r.exige || []).indexOf(k) !== -1 && on) exigida = true;
+    });
+    return !prohibida && (!condicional || exigida);
+  }
+  // requerido: obligatorio, exigido por una regla activa, o miembro de un grupo (sociedad) del que ya hay algún dato / alguna clave exigida
+  function requeridos(e) {
+    var req = {}, aj = e.cat.ajustes;
+    e.cat.ajustes_reglas.obligatorios.forEach(function (k) { req[k] = true; });
+    e.cat.ajustes_reglas.cruzadas.forEach(function (r) { if (activa(e, r)) (r.exige || []).forEach(function (k) { req[k] = true; }); });
+    var grupos = {};
+    Object.keys(aj).forEach(function (k) { if (aj[k].grupo) (grupos[aj[k].grupo] = grupos[aj[k].grupo] || []).push(k); });
+    Object.keys(grupos).forEach(function (g) {
+      var pide = grupos[g].some(function (k) { return visible(e, k) && (req[k] || !vacio(e.v.aj[k])); });
+      if (pide) grupos[g].forEach(function (k) { req[k] = true; });
+    });
+    Object.keys(req).forEach(function (k) { if (!tiene(aj, k) || !visible(e, k)) delete req[k]; });
+    return req;
+  }
+  function limpio(rule, x) {
+    if (typeof x !== 'string') return x;
+    var t = x.trim();
+    return rule.tipo === 'decimal' ? t.replace(',', '.') : t;
+  }
+  function validaValor(k, rule, x) {
+    if (rule.tipo === 'booleano') return typeof x === 'boolean' ? null : 'Elige sí o no.';
+    if (typeof x !== 'string' || CONTROL.test(x)) return 'Valor no válido.';
+    if (rule.tipo === 'enum') return (rule.valores || []).indexOf(x) !== -1 ? null : 'Elige una opción de la lista.';
+    if (rule.tipo === 'regex') {
+      if (new RegExp(rule.patron || '$^').test(x) && /^[\u0001-\u007f]*$/.test(x)) return null;
+      var m = /\{(\d+),(\d+)\}/.exec(rule.patron || '');
+      return 'Formato no válido: mayúsculas y números' + (m ? ', de ' + m[1] + ' a ' + m[2] + ' caracteres' : '') + '.';
+    }
+    if (rule.tipo === 'decimal') {
+      var ok = new RegExp(rule.patron || '$^').test(x) && Number(x) > Number(rule.mayor_que) && Number(x) <= Number(rule.hasta);
+      return ok ? null : 'Un número mayor que ' + rule.mayor_que + ' y como mucho ' + rule.hasta + ', con hasta 2 decimales (con punto o coma).';
+    }
+    if (rule.tipo === 'texto') {
+      var n = x.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '_').length;   // caracteres, no unidades UTF-16: como length() de Postgres
+      if (n < (rule.min || 0) || n > (rule.max || 0)) return 'Entre ' + rule.min + ' y ' + rule.max + ' caracteres.';
+      if (/[<>]/.test(x) || (rule.patron !== undefined && !new RegExp(rule.patron).test(x))) return 'Contiene caracteres no permitidos.';
+      return null;
+    }
+    return 'Ajuste desconocido.';
+  }
+
+  // ── validación por paso (AYUDA: el servidor decide) ───────────────────────────────────────────────
+  function valida(e, paso) {
+    var errs = {}, v = e.v, p = perfilDe(e.cat, v.tipo);
+    if (paso === 1) {
+      var i = v.instancia.trim(), m = v.marca.trim(), d = v.dominio.trim().toLowerCase(), c = v.correo_admin.trim().toLowerCase();
+      if (!/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/.test(i) || i.length < 3 || i.length > 30) errs.instancia = 'Entre 3 y 30 caracteres: minúsculas, números y guiones, empezando por letra.';
+      else if (e.existentes.indexOf(i) !== -1) errs.instancia = 'Ya existe una instancia con ese nombre.';
+      if (m.length < 2 || m.length > 60 || CONTROL.test(m)) errs.marca = 'Entre 2 y 60 caracteres.';
+      if (d.length > 253 || !DOMINIO.test(d)) errs.dominio = 'Escribe un dominio válido.';
+      if (c.length > 254 || !CORREO.test(c)) errs.correo_admin = 'Escribe un correo válido.';
+      if (!p) errs.tipo = 'Elige un tipo de ERP.';
+      else if (!p.comprobado) errs.tipo = 'Este tipo de ERP aún no se puede pedir.';
+    }
+    if (paso === 2) {
+      if (!p) errs.tipo = 'Elige primero el tipo de ERP.';
+      else {
+        var total = p.modulos.length + p.modulos_opcionales.filter(function (k) { return v.opc[k]; }).length;
+        if (e.cat.tope_modulos && total > e.cat.tope_modulos) errs.modulos = 'Demasiados módulos: como mucho ' + e.cat.tope_modulos + '.';
+      }
+    }
+    if (paso === 3) {
+      var req = requeridos(e);
+      Object.keys(e.cat.ajustes).forEach(function (k) {
+        if (!visible(e, k)) return;
+        var rule = e.cat.ajustes[k], x = v.aj[k];
+        if (vacio(x)) { if (req[k]) errs['aj:' + k] = rule.tipo === 'booleano' ? 'Elige sí o no.' : 'Obligatorio.'; return; }
+        var msg = validaValor(k, rule, limpio(rule, x));
+        if (msg) errs['aj:' + k] = msg;
+      });
+    }
+    return errs;
+  }
+  function primerFallo(e) {
+    for (var p = 1; p <= 3; p++) { var er = valida(e, p); if (Object.keys(er).length) return { paso: p, errores: er }; }
+    return null;
+  }
+
+  // ── lo que se manda ─────────────────────────────────────────────────────────────────────────────
+  function modulosElegidos(e) {
+    var p = perfilDe(e.cat, e.v.tipo);
+    if (!p) return [];
+    return p.modulos.concat(p.modulos_opcionales.filter(function (k) { return e.v.opc[k]; }));
+  }
+  function ajustesAMandar(e) {
+    var out = {};
+    Object.keys(e.cat.ajustes).forEach(function (k) {
+      if (!visible(e, k)) return;
+      var x = e.v.aj[k];
+      if (vacio(x)) return;
+      out[k] = limpio(e.cat.ajustes[k], x);
+    });
+    return out;
+  }
+  function cuerpo(e) {
+    var v = e.v;
+    return { accion: 'alta', instancia: v.instancia.trim(), marca: v.marca.trim(), dominio: v.dominio.trim().toLowerCase(),
+      correo_admin: v.correo_admin.trim().toLowerCase(), tipo: v.tipo, modulos: modulosElegidos(e), ajustes: ajustesAMandar(e) };
+  }
+
+  // ── la respuesta de la edge ─────────────────────────────────────────────────────────────────────
+  var CAMPO_MSG = {
+    instancia: 'El servidor no acepta este nombre interno.', instancia_existe: 'Ya existe una instancia con ese nombre.', marca: 'El servidor no acepta este nombre.',
+    dominio: 'El servidor no acepta este dominio.', correo_admin: 'El servidor no acepta este correo.'
+  };
+  function interpreta(estado, d) {
+    d = d && typeof d === 'object' ? d : {};
+    if (estado === 200 && d.solicitud !== undefined && d.solicitud !== null) return { ok: true, solicitud: d.solicitud };
+    var r = { ok: false, mensajes: [], campos: [], errores: {}, paso: null };
+    var campos = Array.isArray(d.campos) ? d.campos.filter(function (c) { return typeof c === 'string'; }) : [];
+    var detalle = Array.isArray(d.detalle) ? d.detalle.filter(function (c) { return typeof c === 'string'; }).slice(0, 6) : [];
+    var m = typeof d.mensaje === 'string' ? d.mensaje : '';
+    if (estado === 0) { r.mensajes.push('No se pudo contactar con el mando. Comprueba la conexión y vuelve a intentarlo.'); return r; }
+    if (estado === 401 || estado === 403) {
+      r.mensajes.push('Tu sesión ha caducado o tu cuenta no es operadora del panel. Recarga la página y vuelve a entrar. Lo escrito aquí no se guarda al recargar: anota los datos antes.');
+      return r;
+    }
+    if (estado === 413) { r.mensajes.push('La solicitud es demasiado grande. Acorta los textos y vuelve a intentarlo.'); return r; }
+    if (estado === 409 && d.error === 'tope') { r.mensajes.push(m || 'Hay demasiadas altas pendientes: que el estudio las atienda antes.'); return r; }
+    if (estado === 409 && d.error === 'repetida') {
+      r.mensajes.push(m || 'Ya hay una solicitud pendiente con ese nombre.'); r.campos = ['instancia']; r.errores.instancia = 'Ya hay una solicitud pendiente con ese nombre.'; r.paso = 1; return r;
+    }
+    if (estado === 400 && (d.error === 'campos' || d.error === 'perfil_bloqueado')) {
+      var pasos = [];
+      campos.forEach(function (c) {
+        r.campos.push(c);
+        if (tiene(PASO_DE, c)) pasos.push(PASO_DE[c]);
+        if (tiene(CAMPO_MSG, c)) r.errores[c === 'instancia_existe' ? 'instancia' : c] = CAMPO_MSG[c];
+      });
+      if (campos.indexOf('modulos') !== -1) r.mensajes.push('Los módulos elegidos no son válidos o no cierran sus dependencias: lo comprueba el servidor. Revisa los módulos opcionales del paso 2.');
+      if (campos.indexOf('tipo') !== -1 || d.error === 'perfil_bloqueado') r.mensajes.push(m || 'Este tipo de ERP aún no se puede pedir.');
+      if (campos.indexOf('ajustes') !== -1) r.mensajes.push('Algún ajuste no es válido. Revisa el paso 3.');
+      if (campos.indexOf('derivada') !== -1) r.mensajes.push('La solicitud lleva un dato que fija el servidor: es un fallo de la pantalla, avisa al estudio.');
+      if (!r.mensajes.length && m) r.mensajes.push(m);
+      detalle.forEach(function (x) { r.mensajes.push(x); });
+      if (!r.mensajes.length) r.mensajes.push(Object.keys(r.errores).length ? 'El servidor no acepta algún dato: revisa los campos marcados.' : 'El servidor ha rechazado algún campo: ' + (campos.join(', ') || 'revisa los datos') + '.');
+      r.paso = pasos.length ? Math.min.apply(null, pasos) : null;
+      return r;
+    }
+    if (estado === 502) { r.mensajes.push((m || 'No se pudo guardar la solicitud. Prueba otra vez.') + ' Si vuelve a fallar con «ya hay una solicitud pendiente con ese nombre», es que la primera sí entró.'); return r; }
+    r.mensajes.push(m || (estado === 400 ? 'La solicitud no se ha podido aceptar: revisa los datos.' : 'Respuesta inesperada del mando (' + estado + ').'));
+    return r;
+  }
+
+  // ── reductor puro ─────────────────────────────────────────────────────────────────────────────────
+  function reduce(e, a) {
+    var n, p;
+    if (a.t === 'catalogo') {   // el catálogo se refresca al reabrir: lo elegido que ya no se ofrece se descarta
+      if (e.enviando) return e;
+      n = nuevo(a.cat, a.existentes);
+      if (n.sinCatalogo) return n;
+      if (e.hecho || e.sinCatalogo) return n;
+      n.v.instancia = e.v.instancia; n.v.marca = e.v.marca; n.v.dominio = e.v.dominio; n.v.correo_admin = e.v.correo_admin;
+      Object.keys(n.v.aj).forEach(function (k) {   // se conserva lo escrito mientras siga siendo del mismo tipo de dato
+        var antes = e.v.aj[k], eraBool = antes === null || typeof antes === 'boolean';
+        if (tiene(e.v.aj, k) && eraBool === (n.cat.ajustes[k].tipo === 'booleano')) n.v.aj[k] = antes;
+      });
+      p = perfilDe(n.cat, e.v.tipo);
+      if (p && p.comprobado) {
+        n.v.tipo = e.v.tipo;
+        p.modulos_opcionales.forEach(function (k) { if (e.v.opc[k]) n.v.opc[k] = true; });
+        n.paso = e.paso;
+      }
+      return n;
+    }
+    if (e.sinCatalogo || e.hecho) return a.t === 'reinicia' ? nuevo(e.cat, e.existentes) : e;
+    if (a.t === 'respuesta') {
+      if (!e.enviando || a.seq !== e.seq) return e;   // una respuesta vieja (o ya contestada) no pisa nada
+      n = clona(e); n.enviando = false; n.seq = null;
+      var r = interpreta(a.estado, a.cuerpo);
+      if (r.ok) { n.hecho = { solicitud: r.solicitud }; n.servidor = null; n.errores = {}; return n; }
+      n.servidor = { mensajes: r.mensajes, campos: r.campos, estado: a.estado };
+      n.errores = r.errores;
+      if (r.paso) n.paso = r.paso;
+      return n;
+    }
+    if (e.enviando) return e;   // mientras se envía no se toca nada
+    n = clona(e);
+    if (a.t === 'campo') {
+      var c = a.campo;
+      if (c.indexOf('aj:') === 0) {
+        var k = c.slice(3);
+        if (!tiene(n.v.aj, k)) return e;
+        n.v.aj[k] = n.cat.ajustes[k].tipo === 'booleano' ? (a.valor === 'si' || a.valor === true ? true : (a.valor === 'no' || a.valor === false ? false : null)) : str(a.valor);
+      } else if (BASE.some(function (b) { return b.k === c; })) n.v[c] = str(a.valor);
+      else return e;
+      delete n.errores[c]; n.servidor = null;
+      return n;
+    }
+    if (a.t === 'tipo') {
+      p = perfilDe(n.cat, a.tipo);
+      if (!p || !p.comprobado) return e;
+      var viejo = n.v.tipo;
+      n.v.tipo = a.tipo;
+      var opc = {};
+      p.modulos_opcionales.forEach(function (k) { if (n.v.opc[k]) opc[k] = true; });
+      n.v.opc = opc;
+      delete n.errores.tipo; n.servidor = null;
+      return viejo === a.tipo ? e : n;
+    }
+    if (a.t === 'opc') {
+      p = perfilDe(n.cat, n.v.tipo);
+      if (!p || p.modulos_opcionales.indexOf(a.modulo) === -1) return e;
+      if (a.on) n.v.opc[a.modulo] = true; else delete n.v.opc[a.modulo];
+      delete n.errores.modulos; n.servidor = null;
+      return n;
+    }
+    if (a.t === 'avanza') {
+      if (n.paso >= PASOS) return e;
+      var er = valida(n, n.paso);
+      n.servidor = null;
+      if (Object.keys(er).length) { n.errores = er; return n; }
+      n.errores = {}; n.paso += 1;
+      return n;
+    }
+    if (a.t === 'atras') { if (n.paso <= 1) return e; n.paso -= 1; n.errores = {}; n.servidor = null; return n; }
+    if (a.t === 'ir') {
+      var q = Number(a.paso);
+      if (!(q >= 1 && q < n.paso)) return e;   // solo hacia atrás: avanzar pasa por la validación
+      n.paso = q; n.errores = {}; n.servidor = null;
+      return n;
+    }
+    if (a.t === 'envia') {
+      if (n.paso !== PASOS) return e;
+      var f = primerFallo(n);
+      n.servidor = null;
+      if (f) { n.paso = f.paso; n.errores = f.errores; return n; }
+      n.errores = {}; n.enviando = true; n.seq = a.seq;
+      return n;
+    }
+    if (a.t === 'reinicia') return nuevo(e.cat, e.existentes);
+    return e;
+  }
+
+  // ── almacén: el único sitio con efectos, y recibe `pide` (la llamada a la edge) y `alCambiar` desde fuera ─────────
+  function crea(cat, existentes, pide, alCambiar) {
+    var e = nuevo(cat, existentes), contador = 0;
+    function cambia(n) { var antes = e; e = n; if (n !== antes && alCambiar) alCambiar(antes, n); }
+    function despacha(a) {
+      if (a.t === 'envia') {
+        var s = contador + 1, n = reduce(e, { t: 'envia', seq: s });
+        if (n.enviando && !e.enviando) {   // un solo POST por envío: con uno en vuelo, el reductor ya rechaza el segundo
+          contador = s; cambia(n);
+          var c = cuerpo(n);
+          var fin = function (estado, cuerpoResp) { despacha({ t: 'respuesta', seq: s, estado: estado, cuerpo: cuerpoResp }); };
+          var prom;
+          try { prom = pide(c); } catch (x) { fin(0, {}); return; }
+          Promise.resolve(prom).then(function (r) { fin(r && typeof r.__estado === 'number' ? r.__estado : 0, r || {}); }, function () { fin(0, {}); });
+          return;
+        }
+        cambia(n); return;
+      }
+      cambia(reduce(e, a));
+    }
+    return { estado: function () { return e; }, despacha: despacha };
+  }
+
+  // ── vistas (texto HTML; todo dato que viene del servidor o del usuario pasa por esc) ─────────────────────
+  var CLS_INPUT = 'mt-1 w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 font-body-md text-body-md';
+  var CLS_ET = 'font-label-sm text-label-sm uppercase tracking-wider text-outline';
+  var CLS_BTN = 'px-space-md py-space-xs rounded-lg font-label-md text-label-md';
+  function idDe(c) { return 'f-' + c.replace(':', '-'); }
+  function errHtml(e, c) {
+    var m = e.errores[c];
+    return '<p id="err-' + esc(idDe(c)) + '" class="mt-1 font-body-sm text-body-sm text-error' + (m ? '' : ' hidden') + '">' + esc(m || '') + '</p>';
+  }
+  function atrCampo(e, c, ayudaId) {
+    return 'id="' + esc(idDe(c)) + '" data-campo="' + esc(c) + '"' + (e.errores[c] ? ' aria-invalid="true"' : '') +
+      ' aria-describedby="err-' + esc(idDe(c)) + (ayudaId ? ' ' + esc(ayudaId) : '') + '"';
+  }
+  function campoTexto(e, c, et, o) {
+    o = o || {};
+    var valor = c.indexOf('aj:') === 0 ? e.v.aj[c.slice(3)] : e.v[c];
+    return '<div><label class="' + CLS_ET + '" for="' + esc(idDe(c)) + '">' + esc(et) + '</label>' +
+      '<input ' + atrCampo(e, c, o.ayuda ? 'ay-' + idDe(c) : '') + ' class="' + CLS_INPUT + '" type="' + esc(o.tipo || 'text') + '"' +
+      (o.inputmode ? ' inputmode="' + esc(o.inputmode) + '"' : '') + ' value="' + esc(valor) + '" placeholder="' + esc(o.ph || '') + '" autocomplete="off"' +
+      (o.max ? ' maxlength="' + esc(o.max) + '"' : '') + (e.enviando ? ' disabled' : '') + '>' +
+      (o.ayuda ? '<p id="ay-' + esc(idDe(c)) + '" class="mt-1 font-body-sm text-body-sm text-on-surface-variant">' + esc(o.ayuda) + '</p>' : '') + errHtml(e, c) + '</div>';
+  }
+  function chip(txt) {
+    return '<li class="inline-flex items-center gap-1 rounded-full bg-surface-container px-space-sm py-[2px] font-code-metric text-code-metric text-on-surface">' +
+      '<span class="material-symbols-outlined text-[16px]" aria-hidden="true">check</span>' + esc(txt) + '</li>';
+  }
+
+  function vistaTipo(e) {
+    var tarjetas = e.cat.tipos.map(function (t) {
+      var bloq = !t.comprobado, sel = e.v.tipo === t.tipo, id = 'tipo-' + t.tipo;
+      return '<li><label for="' + esc(id) + '" class="block rounded-xl p-space-md bg-surface-container-lowest ' + (sel ? 'ring-2 ring-primary-container shadow-sm' : 'ring-1 ring-outline-variant') +
+        (bloq ? ' opacity-70 cursor-not-allowed' : ' cursor-pointer') + '">' +
+        '<span class="flex items-start gap-space-sm"><input id="' + esc(id) + '" type="radio" name="tipo" value="' + esc(t.tipo) + '" data-campo="tipo" class="mt-1"' +
+        (sel ? ' checked' : '') + (bloq || e.enviando ? ' disabled' : '') + ' aria-describedby="ay-' + esc(id) + '">' +
+        '<span class="min-w-0"><span class="flex flex-wrap items-center gap-space-xs"><span class="font-label-md text-label-md text-on-surface">' + esc(t.nombre) + '</span>' +
+        (bloq ? '<span class="rounded-full bg-error-container px-space-sm py-[2px] font-code-metric text-code-metric text-on-error-container">Bloqueado</span>' : '') + '</span>' +
+        '<span id="ay-' + esc(id) + '" class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">' + esc(t.descripcion) + '</span>' +
+        (bloq ? '<span class="mt-1 block font-body-sm text-body-sm text-error">Aún no se puede pedir.</span>' : '') +
+        '</span></span></label>' +
+        (bloq ? '<details class="mt-1 px-space-md font-body-sm text-body-sm text-error"><summary class="cursor-pointer">Por qué</summary><p class="mt-1 [overflow-wrap:anywhere]">' + esc(t.motivo_bloqueo || 'Sin comprobar.') + '</p></details>' : '') + '</li>';
+    }).join('');
+    return '<fieldset aria-describedby="err-f-tipo"><legend class="' + CLS_ET + ' mb-space-xs">Tipo de ERP</legend><ul class="grid gap-space-sm sm:grid-cols-2">' + tarjetas + '</ul>' + errHtml(e, 'tipo') + '</fieldset>' +
+      '<div class="space-y-space-sm pt-space-sm"><h3 class="' + CLS_ET + '">Datos del ERP</h3>' +
+      BASE.map(function (b) { return campoTexto(e, b.k, b.et, b); }).join('') + '</div>';
+  }
+
+  function vistaModulos(e, nombre) {
+    var p = perfilDe(e.cat, e.v.tipo);
+    if (!p) return '<p class="text-error">Elige primero el tipo de ERP.</p>';
+    var total = modulosElegidos(e).length;
+    var opc = p.modulos_opcionales.map(function (k) {
+      var id = 'opc-' + k;
+      return '<li><label for="' + esc(id) + '" class="flex items-center gap-space-sm rounded-lg bg-surface-container-lowest px-space-sm py-space-sm ring-1 ring-outline-variant cursor-pointer">' +
+        '<input id="' + esc(id) + '" type="checkbox" data-opc="' + esc(k) + '"' + (e.v.opc[k] ? ' checked' : '') + (e.enviando ? ' disabled' : '') + '>' +
+        '<span class="font-body-md text-body-md text-on-surface">' + esc(nombre(k)) + '</span></label></li>';
+    }).join('');
+    return '<p class="font-body-md text-body-md text-on-surface-variant">Tipo elegido: <strong class="text-on-surface">' + esc(p.nombre) + '</strong>. ' +
+      '<span aria-live="polite">' + total + ' módulos en total' + (e.cat.tope_modulos ? ' (máximo ' + esc(e.cat.tope_modulos) + ')' : '') + '.</span></p>' +
+      '<div><h3 class="' + CLS_ET + ' mb-space-xs">Incluidos en este tipo</h3><ul class="flex flex-wrap gap-space-xs">' + p.modulos.map(function (k) { return chip(nombre(k)); }).join('') + '</ul></div>' +
+      (p.modulos_opcionales.length ? '<fieldset><legend class="' + CLS_ET + ' mb-space-xs">Opcionales</legend><ul class="grid gap-space-xs sm:grid-cols-2">' + opc + '</ul></fieldset>' : '') +
+      errHtml(e, 'modulos') +
+      '<p class="font-body-sm text-body-sm text-on-surface-variant">Si un módulo necesita otro que no está incluido, lo dirá el servidor al enviar: aquí no se calculan dependencias.</p>';
+  }
+
+  function controlAjuste(e, k) {
+    var rule = e.cat.ajustes[k], c = 'aj:' + k, et = ETIQ[k] || [k, ''], x = e.v.aj[k], id = idDe(c);
+    var ayuda = et[1] ? '<p id="ay-' + esc(id) + '" class="mt-1 font-body-sm text-body-sm text-on-surface-variant">' + esc(et[1]) + '</p>' : '';
+    var ad = et[1] ? 'ay-' + id : '';
+    var dis = e.enviando ? ' disabled' : '';
+    if (rule.tipo === 'booleano') {
+      var op = function (val, txt) {
+        return '<label class="inline-flex items-center gap-space-xs rounded-lg bg-surface-container-lowest px-space-sm py-space-xs ring-1 ring-outline-variant cursor-pointer"><input type="radio" name="' + esc(id) + '" value="' + val + '" data-campo="' + esc(c) + '"' +
+          (x === (val === 'si') ? ' checked' : '') + dis + (e.errores[c] ? ' aria-invalid="true"' : '') + ' aria-describedby="err-' + esc(id) + (ad ? ' ' + esc(ad) : '') + '">' +
+          '<span class="font-body-md text-body-md text-on-surface">' + txt + '</span></label>';
+      };
+      return '<fieldset><legend class="' + CLS_ET + '">' + esc(et[0]) + '</legend><div class="mt-1 flex gap-space-sm">' + op('si', 'Sí') + op('no', 'No') + '</div>' + ayuda + errHtml(e, c) + '</fieldset>';
+    }
+    if (rule.tipo === 'enum') {
+      var opts = '<option value="">' + (k === 'zona_horaria' ? 'Sin indicar (la que traiga la instalación)' : 'Elige…') + '</option>' + (rule.valores || []).map(function (v) {
+        return '<option value="' + esc(v) + '"' + (x === v ? ' selected' : '') + '>' + esc(/^[A-Z]{2}$/.test(v) ? pais(v) : v) + '</option>';
+      }).join('');
+      return '<div><label class="' + CLS_ET + '" for="' + esc(id) + '">' + esc(et[0]) + '</label><select ' + atrCampo(e, c, ad) + ' class="' + CLS_INPUT + '"' + dis + '>' + opts + '</select>' + ayuda + errHtml(e, c) + '</div>';
+    }
+    var o = { ayuda: et[1], ph: '', max: rule.max };
+    if (rule.tipo === 'decimal') { o.inputmode = 'decimal'; o.ph = 'Ej.: 21'; }
+    if (k === 'impuesto_nombre') o.ph = 'Ej.: IVA';
+    if (rule.tipo === 'regex') {
+      var m = /\{(\d+),(\d+)\}/.exec(rule.patron || '');
+      if (m) { o.max = Number(m[2]); o.ayuda = 'Mayúsculas y números, de ' + m[1] + ' a ' + m[2] + ' caracteres. Es el comienzo del número de cada factura.'; }
+      o.ph = 'Ej.: ABC';
+    }
+    return campoTexto(e, c, et[0], o);
+  }
+  function vistaAjustes(e) {
+    var por = {};
+    Object.keys(e.cat.ajustes).forEach(function (k) {
+      if (!visible(e, k)) return;
+      var s = SECC[k] || e.cat.ajustes[k].grupo || 'otros';
+      (por[s] = por[s] || []).push(k);
+    });
+    var req = requeridos(e);
+    var orden = SECC_ORDEN.concat(Object.keys(por).filter(function (s) { return SECC_ORDEN.indexOf(s) === -1; }));
+    var html = orden.filter(function (s) { return por[s]; }).map(function (s) {
+      var nota = s === 'sociedad' ? '<p class="font-body-sm text-body-sm text-on-surface-variant">' +
+        (Object.keys(req).some(function (k) { return e.cat.ajustes[k] && e.cat.ajustes[k].grupo === 'sociedad'; })
+          ? 'Obligatoria: van los tres datos juntos.' : 'Opcional: o van los tres datos, o ninguno.') +
+        ' El domicilio y el NIF/NPWP no se piden aquí: se completan después en Ajustes → Sociedades, antes de emitir facturas.</p>' : '';
+      return '<section class="space-y-space-sm"><h3 class="' + CLS_ET + '">' + esc(SECC_TIT[s] || s) + '</h3>' + nota +
+        por[s].map(function (k) { return controlAjuste(e, k); }).join('') + '</section>';
+    }).join('');
+    return html + avisoExencion(e);
+  }
+  // Aviso (no bloquea): con sociedad española y sin impuestos el instalador PARA hasta decidir con Legal el motivo de exención (AXW-192)
+  function avisoExencion(e) {
+    if (e.v.aj.impuestos_aplica === false && e.v.aj.sociedad_pais === 'ES') {
+      return '<p class="rounded-lg bg-surface-container-high p-space-sm font-body-sm text-body-sm text-on-surface">Ojo: con una sociedad española que no saca impuestos, el instalador se detendrá hasta decidir con Legal qué motivo de exención lleva la factura (AXW-192). La solicitud se guarda igual.</p>';
+    }
+    return '';
+  }
+
+  function fila(et, val) {
+    return '<div class="grid grid-cols-[130px_1fr] gap-space-sm py-1"><dt class="' + CLS_ET + '">' + esc(et) + '</dt><dd class="min-w-0 font-body-md text-body-md text-on-surface [overflow-wrap:anywhere]">' + val + '</dd></div>';
+  }
+  // Una fila por ajuste visible, en el orden del catálogo: lo dado, o «Sin indicar». Nada de claves escritas aquí salvo la unidad del %.
+  function resumenAjustes(e) {
+    var aj = ajustesAMandar(e);
+    return Object.keys(e.cat.ajustes).filter(function (k) { return visible(e, k); }).map(function (k) {
+      var x = aj[k], val;
+      if (x === undefined) val = '<span class="text-on-surface-variant">Sin indicar</span>';
+      else if (typeof x === 'boolean') val = x ? 'Sí' : 'No';
+      else val = esc(/^[A-Z]{2}$/.test(x) ? pais(x) : x) + (k === 'impuesto_pct' ? ' %' : '');
+      return fila(etiq(k), val);
+    }).join('');
+  }
+  function haySociedad(e) {
+    var aj = ajustesAMandar(e);
+    return Object.keys(e.cat.ajustes).some(function (k) { return e.cat.ajustes[k].grupo === 'sociedad' && aj[k] !== undefined; });
+  }
+  function textoRecordatorio(e) {
+    return haySociedad(e)
+      ? 'El domicilio y el NIF/NPWP de la sociedad hay que completarlos después en Ajustes → Sociedades, antes de emitir facturas.'
+      : 'Sin sociedad emisora no se puede facturar: añádela después en Ajustes → Sociedades, con su domicilio y NIF/NPWP.';
+  }
+  function vistaResumen(e, nombre) {
+    var p = perfilDe(e.cat, e.v.tipo), c = cuerpo(e);
+    if (!p) return '<p class="text-error">Falta el tipo de ERP: vuelve al paso 1.</p>';
+    return '<dl class="rounded-xl bg-surface-container-lowest p-space-md shadow-sm">' +
+      fila('Tipo', esc(p.nombre)) + fila('Nombre interno', esc(c.instancia)) + fila('Nombre del ERP', esc(c.marca)) + fila('Dominio', esc(c.dominio)) + fila('Superadmin', esc(c.correo_admin)) +
+      fila('Módulos (' + c.modulos.length + ')', c.modulos.map(function (k) { return esc(nombre(k)); }).join(', ')) + resumenAjustes(e) + '</dl>' +
+      avisoExencion(e) +
+      '<div class="rounded-lg bg-surface-container-high p-space-sm font-body-sm text-body-sm text-on-surface space-y-1">' +
+      '<p><strong>Esto queda como solicitud, no crea nada todavía.</strong> El estudio la lanza; crear el proyecto (unos 10 $/mes) te pedirá el OK.</p>' +
+      '<p>' + esc(textoRecordatorio(e)) + '</p></div>';
+  }
+
+  function banner(e) {
+    if (!e.servidor) return '';
+    return '<div id="asis-aviso" role="alert" tabindex="-1" class="rounded-lg bg-error-container p-space-sm font-body-sm text-body-sm text-on-error-container space-y-1">' +
+      e.servidor.mensajes.map(function (m) { return '<p>' + esc(m) + '</p>'; }).join('') + '</div>';
+  }
+  function vistaHecho(e) {
+    return '<div id="asis-aviso" role="status" tabindex="-1" class="rounded-lg bg-secondary-container p-space-md text-on-secondary-container space-y-1">' +
+      '<p class="font-label-md text-label-md">Solicitud #' + esc(e.hecho.solicitud) + ' guardada.</p>' +
+      '<p class="font-body-sm text-body-sm">Queda como solicitud, no se ha creado nada. El estudio la lanza con <code>--desde-solicitud ' + esc(e.hecho.solicitud) + '</code>; crear el proyecto (unos 10 $/mes) te pedirá el OK.</p>' +
+      '<p class="font-body-sm text-body-sm">' + esc(textoRecordatorio(e)) + '</p></div>';
+  }
+
+  function stepper(e) {
+    return '<ol class="flex items-center gap-space-xs" aria-label="Pasos del asistente">' + CORTO.map(function (t, i) {
+      var n = i + 1, ya = n < e.paso, ahora = n === e.paso && !e.hecho;
+      var cuerpoPaso = '<span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-code-metric text-code-metric ' + (ahora ? 'bg-primary-container text-on-primary' : (ya || e.hecho ? 'bg-secondary-container text-on-secondary-container' : 'bg-surface-container text-on-surface-variant')) + '">' + n + '</span>' +
+        '<span class="' + (ahora ? '' : 'hidden sm:inline ') + 'font-label-md text-label-md ' + (ahora ? 'text-on-surface' : 'text-on-surface-variant') + '">' + esc(t) + '</span>';
+      var item = ya && !e.enviando && !e.hecho
+        ? '<button type="button" data-accion="ir" data-paso="' + n + '" class="inline-flex items-center gap-space-xs rounded-lg px-1" aria-label="Volver al paso ' + n + ': ' + esc(TITULOS[i]) + '">' + cuerpoPaso + '</button>'
+        : '<span class="inline-flex items-center gap-space-xs px-1"' + (ahora ? ' aria-current="step"' : '') + '>' + cuerpoPaso + '</span>';
+      return '<li class="flex items-center gap-space-xs">' + item + (n < PASOS ? '<span class="h-px w-4 bg-outline-variant" aria-hidden="true"></span>' : '') + '</li>';
+    }).join('') + '</ol>';
+  }
+  function pie(e) {
+    if (e.hecho) {
+      return '<button type="button" data-accion="reinicia" class="' + CLS_BTN + ' bg-surface-container text-on-surface">Pedir otro ERP</button>' +
+        '<button type="button" data-accion="cierra" class="' + CLS_BTN + ' bg-primary-container text-on-primary">Cerrar</button>';
+    }
+    var ult = e.paso === PASOS;
+    return '<button type="button" data-accion="cierra" class="' + CLS_BTN + ' bg-surface-container text-on-surface mr-auto">Cerrar</button>' +
+      (e.paso > 1 ? '<button type="button" data-accion="atras" class="' + CLS_BTN + ' bg-surface-container-high text-on-surface"' + (e.enviando ? ' disabled' : '') + '>Atrás</button>' : '') +
+      '<button type="submit" data-accion="' + (ult ? 'envia' : 'avanza') + '" class="' + CLS_BTN + ' bg-primary-container text-on-primary' + (e.enviando ? ' opacity-60 cursor-wait' : '') + '"' + (e.enviando ? ' disabled aria-busy="true"' : '') + '>' +
+      (ult ? (e.enviando ? 'Enviando…' : 'Pedir el alta') : 'Siguiente') + '</button>';
+  }
+  function vista(e, nombre) {
+    nombre = nombre || function (k) { return k; };
+    var cabeza = '<div class="shrink-0 space-y-space-sm border-b border-outline-variant/40 p-space-md">' + (e.sinCatalogo ? '' : stepper(e)) +
+      '<h2 id="asis-titulo" tabindex="-1" class="font-headline-sm text-headline-sm font-bold text-on-surface">Nuevo ERP' + (e.sinCatalogo || e.hecho ? '' : ' · ' + esc(TITULOS[e.paso - 1])) + '</h2></div>';
+    if (e.sinCatalogo) {
+      return cabeza + '<div class="min-h-0 flex-1 overflow-y-auto p-space-md font-body-md text-body-md text-on-surface">El mando todavía no publica los tipos de ERP (la función erp-control del estudio no está actualizada), así que no se puede pedir un alta desde aquí.</div>' +
+        '<div class="shrink-0 flex justify-end gap-space-sm border-t border-outline-variant/40 p-space-md"><button type="button" data-accion="cierra" class="' + CLS_BTN + ' bg-primary-container text-on-primary">Cerrar</button></div>';
+    }
+    var cuerpoHtml = e.hecho ? vistaHecho(e) : banner(e) + [vistaTipo, vistaModulos, vistaAjustes, vistaResumen][e.paso - 1](e, nombre);
+    return cabeza + '<div class="min-h-0 flex-1 overflow-y-auto p-space-md space-y-space-md">' + cuerpoHtml + '</div>' +
+      '<div class="shrink-0 flex flex-wrap items-center justify-end gap-space-sm border-t border-outline-variant/40 p-space-md">' + pie(e) + '</div>';
+  }
+
+  function errId(c) { return 'err-' + idDe(c); }
+  return { PASOS: PASOS, errId: errId, nuevo: nuevo, reduce: reduce, crea: crea, valida: valida, cuerpo: cuerpo, interpreta: interpreta, vista: vista, esc: esc,
+    requeridos: requeridos, visible: visible, modulosElegidos: modulosElegidos, catalogoValido: catalogoValido };
+})();
+/*AXW_ASIS_FIN*/
+</script>
 <script>
 (function () {
   /* Nombre, sección e icono de cada clave del registro (erp/modulos.json). Solo presentación: la lista de módulos,
@@ -109,7 +666,7 @@ __AXW_PANEL_NAV__
   var tT;
   function toast(t) { var b = $('toast'); b.textContent = t; b.classList.remove('hidden'); clearTimeout(tT); tT = setTimeout(function () { b.classList.add('hidden'); }, 4000); }
 
-  var sb = null, instancias = [], actual = null, ocupado = false;
+  var sb = null, instancias = [], actual = null, ocupado = false, perfiles = null, cargaSeq = 0;
 
   function pide(cuerpo) {
     return sb.auth.getSession().then(function (s) {
@@ -229,10 +786,13 @@ __AXW_PANEL_NAV__
   }
 
   function carga(mantener) {
+    var mi = ++cargaSeq;   // una respuesta vieja no pisa a la nueva (dos cargas seguidas: la última manda)
     return pide({ accion: 'estado' }).then(function (d) {
+      if (mi !== cargaSeq) return;
       if (d.__estado === 403) throw new Error('Tu cuenta no es operadora del panel de control.');
       if (d.__estado !== 200 || !Array.isArray(d.instancias)) throw new Error('El mando no responde (' + d.__estado + ').');
       instancias = d.instancias;
+      perfiles = d.perfiles || null;
       var sigue = mantener && actual && actual.nombre;
       actual = null;
       $('estado-carga').classList.add('hidden');
@@ -308,53 +868,85 @@ __AXW_PANEL_NAV__
     }).catch(function (e) { toast(e.message); }).then(function () { ocupado = false; });
   }
 
-  /* Nuevo ERP: solo deja una SOLICITUD en la base del mando (la valida la edge y otra vez la base). El alta real la lanza
-     el estudio: `python erp/nueva_instancia.py --desde-solicitud <n>`; crear el proyecto es gasto y sigue pidiendo tu OK. */
-  function nuevoErp() {
-    // los módulos del MANDO (la instancia que sirve este panel), que es contra lo que valida la base (revisor)
-    var ref = instancias.filter(function (i) { return i.estado && i.dominio === location.host; })[0] ||
-      instancias.filter(function (i) { return i.estado; })[0];
-    var mods = ref ? ref.estado.modulos.filter(function (m) { return m.modulo !== 'base' && m.instalable; }) : [];
-    var campo = function (id, et, ph, extra) {
-      return '<label class="block"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">' + et + '</span>' +
-        '<input id="' + id + '" class="mt-1 w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 font-body-md text-body-md" ' +
-        'placeholder="' + esc(ph) + '" autocomplete="off" ' + (extra || '') + '></label>';
-    };
-    var html = '<div class="space-y-space-sm">' +
-      campo('al-instancia', 'Nombre interno', 'cliente-nuevo', 'maxlength="30"') +
-      campo('al-marca', 'Nombre del ERP (marca)', 'Cliente S.L.', 'maxlength="60"') +
-      campo('al-dominio', 'Dominio o subdominio', 'erp.cliente.com', 'maxlength="253"') +
-      campo('al-correo', 'Correo del superadmin', 'direccion@cliente.com', 'type="email" maxlength="254"') +
-      '<fieldset><legend class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Módulos iniciales</legend>' +
-      '<div class="grid grid-cols-2 gap-1 mt-1">' + mods.map(function (m) {
-        return '<label class="flex items-center gap-1 font-body-sm text-body-sm"><input type="checkbox" class="al-mod" value="' + esc(m.modulo) + '"> ' + esc(nombre(m.modulo)) + '</label>';
-      }).join('') + '</div></fieldset>' +
-      '<p class="font-body-sm text-body-sm text-on-surface-variant">Queda como solicitud. El estudio la lanza; crear el proyecto (unos 10 $/mes) te pedirá el OK.</p></div>';
-    $('dlg-titulo').textContent = 'Nuevo ERP';
-    dialogo(html, 'Pedir el alta').then(function (v) {
-      $('dlg-titulo').textContent = 'Confirmar cambio';
-      if (v !== 'ok') return;
-      var cuerpo = { accion: 'alta', instancia: $('al-instancia').value.trim(), marca: $('al-marca').value.trim(),
-        dominio: $('al-dominio').value.trim().toLowerCase(), correo_admin: $('al-correo').value.trim().toLowerCase(),
-        modulos: Array.prototype.map.call(document.querySelectorAll('.al-mod:checked'), function (c) { return c.value; }) };
-      return pide(cuerpo).then(function (d) {
-        if (d.__estado === 200) toast('Solicitud #' + d.solicitud + ' guardada. El estudio la lanza con --desde-solicitud ' + d.solicitud + '.');
-        else if (d.error === 'campos') toast('Revisa: ' + d.campos.join(', ') + '.');
-        else toast(d.mensaje || 'No se guardó la solicitud (' + d.__estado + ').');
-      });
-    }).catch(function (e) { toast(e.message); });
+  /* Nuevo ERP (asistente de 4 pasos, 2-oct-2026, encargos/20261002_erp_asistente_instalacion.md): solo deja una SOLICITUD en
+     la base del mando (la valida la edge y otra vez la base). El alta real la lanza el estudio:
+     `python erp/nueva_instancia.py --desde-solicitud <n>`; crear el proyecto es gasto y sigue pidiendo tu OK.
+     Toda la lógica vive en AXW_ASIS (bloque de arriba, sin DOM); aquí solo se conecta con la pantalla: el estado es SUYO y
+     lo de aquí es cola. La lista de tipos, módulos, zonas y reglas es `estado.perfiles` (la edge), nunca texto de esta página. */
+  var asis = null, asisPaso = 0, asisSilencio = false;
+  function asisPinta() {
+    var e = asis.estado(), raiz = $('asis-raiz'), act = document.activeElement, idAct = act && act.id && raiz.contains(act) ? act.id : '';
+    raiz.innerHTML = window.AXW_ASIS.vista(e, nombre);
+    var cambioPaso = asisPaso !== e.paso;
+    asisPaso = e.paso;
+    if (cambioPaso || e.hecho) { var t = $('asis-titulo'); if (t) t.focus(); }
+    else if (idAct && $(idAct)) $(idAct).focus();   // el repintado no le quita el foco a quien está tocando un radio o una casilla
   }
-  $('nuevo-erp').addEventListener('click', nuevoErp);
-  $('nuevo-erp-m').addEventListener('click', nuevoErp);
+  function asisFirma(e) {
+    return JSON.stringify([e.paso, e.errores, e.servidor, e.enviando, e.hecho, e.v.tipo, e.v.aj.impuestos_aplica, Object.keys(e.v.opc).length, e.sinCatalogo]);
+  }
+  function asisEfecto(antes, ahora) {
+    if (asisSilencio) return;   // escribir en un campo de texto no repinta (perdería el cursor); el oyente de entrada limpia lo suyo
+    if (antes.cat !== ahora.cat || asisFirma(antes) !== asisFirma(ahora)) {
+      asisPinta();
+      // un error nuevo, un aviso del servidor o el «guardada» llevan el foco a lo que hay que mirar
+      var nuevoAviso = JSON.stringify([antes.errores, antes.servidor]) !== JSON.stringify([ahora.errores, ahora.servidor]);
+      if ((nuevoAviso && (Object.keys(ahora.errores).length || ahora.servidor)) || (ahora.hecho && !antes.hecho)) {
+        var malo = $('asis-raiz').querySelector('[aria-invalid="true"]') || $('asis-aviso');
+        if (malo) malo.focus();
+      }
+    }
+    if (!antes.hecho && ahora.hecho) {
+      toast('Solicitud #' + ahora.hecho.solicitud + ' guardada. Queda como solicitud: el estudio la lanza con --desde-solicitud ' + ahora.hecho.solicitud + ' y crear el proyecto te pedirá el OK.');
+    }
+  }
+  function asisAbre() {
+    var ref = instancias.map(function (i) { return i.nombre; });
+    if (asis) asis.despacha({ t: 'catalogo', cat: perfiles, existentes: ref });
+    else asis = window.AXW_ASIS.crea(perfiles, ref, pide, asisEfecto);
+    if (asis.estado().hecho) asis.despacha({ t: 'reinicia' });
+    asisPaso = 0;
+    asisPinta();
+    var d = $('asis');
+    if (!d.open) d.showModal();
+  }
+  function asisAccion(t) {
+    var a = t.getAttribute('data-accion');
+    if (a === 'abre-asistente') return asisAbre();
+    if (a === 'cierra') { $('asis').close(); return; }   // el borrador se queda en memoria; el POST en vuelo, si lo hay, sigue y avisa por toast
+    if (!asis) return;
+    if (a === 'ir') asis.despacha({ t: 'ir', paso: t.getAttribute('data-paso') });
+    else asis.despacha({ t: a });
+  }
 
   document.addEventListener('click', function (ev) {
-    var t = ev.target.closest && ev.target.closest('[data-mod],[data-inst],#reintenta');
+    var t = ev.target.closest && ev.target.closest('[data-accion],[data-mod],[data-inst],#reintenta');
     if (!t) return;
-    if (t.id === 'reintenta') carga(true).catch(function (e) { toast(e.message); });
+    if (t.hasAttribute('data-accion')) { ev.preventDefault(); if (!t.disabled) asisAccion(t); }
+    else if (t.id === 'reintenta') carga(true).catch(function (e) { toast(e.message); });
     else if (t.hasAttribute('data-inst')) elige(t.getAttribute('data-inst'));
     else if (!t.disabled) alterna(t.getAttribute('data-mod'));
   });
   $('sel-instancia').addEventListener('change', function () { elige(this.value); });
+  $('asis-form').addEventListener('submit', function (ev) { ev.preventDefault(); });   // Enter dispara el clic del botón de enviar (data-accion), no el submit
+  // un solo oyente de entrada para todo el asistente: texto, selects, radios y casillas; el campo lo dice data-campo / data-opc
+  document.addEventListener('input', function (ev) {
+    var c = ev.target.closest && ev.target.closest('#asis [data-campo],#asis [data-opc]');
+    if (!c || !asis) return;
+    if (c.hasAttribute('data-opc')) asis.despacha({ t: 'opc', modulo: c.getAttribute('data-opc'), on: c.checked });
+    else if (c.getAttribute('data-campo') === 'tipo') asis.despacha({ t: 'tipo', tipo: c.value });
+    else {
+      asisSilencio = c.type !== 'radio';   // un radio (¿saca impuestos?) cambia lo que se ve: repinta; el texto y las listas no
+      asis.despacha({ t: 'campo', campo: c.getAttribute('data-campo'), valor: c.value });
+      asisSilencio = false;
+      if (c.type !== 'radio') {   // al escribir se quita el aviso de ese campo y el del servidor sin repintar
+        var m = $(window.AXW_ASIS.errId(c.getAttribute('data-campo'))), av = $('asis-aviso');
+        if (m) m.classList.add('hidden');
+        c.removeAttribute('aria-invalid');
+        if (av && !asis.estado().servidor) av.remove();
+      }
+    }
+  });
 
   window.LW_AUTH.then(function (a) {
     sb = a.sb;
