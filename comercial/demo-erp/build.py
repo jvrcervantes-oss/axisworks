@@ -1695,6 +1695,19 @@ EXENTOS_BASE = {
 }
 
 
+# Lecturas entre módulos del núcleo y uno de fuera del núcleo que se perdonan, UNA a UNA y con su porqué (AXW-136, 2-oct-2026,
+# decisión del owner/CEO). Clave: (módulo que lee, módulo leído) en claves del REGISTRO. `rpc`: qué funciones del leído se perdonan
+# (la exención no se extiende a nada más: si el módulo empieza a leer otra cosa, el build para). packs_casan ya no arrastra esa
+# lectura al calcular lo que cada pack necesita.
+EXENTOS_LECTURA = {
+    ('compradores', 'asistente'): {
+        'rpc': lambda n: n.startswith('solicitud_cambio_') or n == 'anular_solicitud_cambio',
+        'porque': 'la ficha del comprador (núcleo) tiene el botón «pedir un cambio al asistente», que llama a solicitud_cambio_pide. '
+                  'El asistente de peticiones es un extra de pago (pack `extras`, que NECESITA el núcleo): meterlo en el núcleo para que '
+                  'case la regla o hacer que el núcleo necesite un extra sería un ciclo. Con el módulo apagado la base responde 42501 '
+                  '(modulo_activo) y apagados_instancia.js lo intercepta con un aviso; la ficha sigue funcionando. Solo las RPC de peticiones.'}}
+
+
 def packs_casan(catalogo=None, modulos_json=None):
     """Los packs de catalogo.js tienen que casar con el registro del ERP (owner, 27-sep: «los módulos que dependen de
     otros van en pack sí o sí»). Para cada módulo, todo lo que su código lee (erp/modulos.json → depende, cerrado
@@ -1713,7 +1726,8 @@ def packs_casan(catalogo=None, modulos_json=None):
     cat = json.loads(r.stdout)
     # Clave del catálogo → clave del registro (nombres distintos para lo mismo; pestañas y pantallas de un módulo).
     alias = {'crm': 'leads', 'setter': 'leads', 'campanas': 'leads', 'comisionadmin': 'comision-admin',
-             'home': 'base', 'usuarios': 'base', 'ajustes': 'base', 'peticiones': 'asistente'}
+             'home': 'base', 'usuarios': 'base', 'ajustes': 'base', 'peticiones': 'asistente',
+             'asistente': 'asistente-correos'}   # AXW-136 (2-oct): en el catálogo `asistente` son las respuestas de correo (módulo `asistente-correos`) y `peticiones` el de las peticiones (módulo `asistente`)
     reg = lambda k: alias.get(k, k)
     desconocidas = sorted(k for k in cat['modulos'] if reg(k) not in registro)
     if desconocidas:
@@ -1721,10 +1735,16 @@ def packs_casan(catalogo=None, modulos_json=None):
     nuevas_base = sorted(set(registro['base'].get('depende') or []) - set(EXENTOS_BASE))
     if nuevas_base:
         aborta('la base lee módulos que no están en EXENTOS_BASE (mira si de verdad corren sin ellos): ' + ', '.join(nuevas_base))
+    for (k, d), ex in EXENTOS_LECTURA.items():
+        if d not in (registro.get(k, {}).get('depende') or []):
+            aborta('EXENTOS_LECTURA: %s ya no lee %s, quita la exención (%s)' % (k, d, ex['porque'][:60]))
     def alcance(k, visto):
         for d in registro[k].get('depende') or []:
             if d not in registro:
                 aborta('%s depende de %s, que no está en erp/modulos.json' % (k, d))
+            ex = EXENTOS_LECTURA.get((k, d))
+            if ex and all(ex['rpc'](o) for o in (registro[k].get('depende_por') or {}).get(d) or ['?']):
+                continue   # perdonada una a una (EXENTOS_LECTURA): solo lo que ella nombra
             if d not in visto:
                 visto.add(d)
                 # La base va siempre en la instalación: lo que ella lee ya lo vigila `nuevas_base` contra EXENTOS_BASE y no

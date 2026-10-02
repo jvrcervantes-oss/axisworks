@@ -47,6 +47,21 @@ reg3 = json.loads(json.dumps(REG))
 reg3['modulos']['base']['depende'] = sorted(set(reg3['modulos']['base']['depende']) | {'deck', 'gastos'})
 casos.append(('lo que lee la base no se hereda por depender de ella', corre(registro=reg3), 'pasa'))
 
+# AXW-136 (2-oct-2026): compradores (núcleo) llama a solicitud_cambio_pide, del asistente de peticiones (pack extras, que necesita el núcleo).
+# La exención de EXENTOS_LECTURA es lo que lo deja casar, y solo vale para las RPC de peticiones.
+ex_guardada = build.EXENTOS_LECTURA
+build.EXENTOS_LECTURA = {}
+casos.append(('sin la exención, el núcleo leería un extra', corre(), 'para'))
+build.EXENTOS_LECTURA = ex_guardada
+reg4 = json.loads(json.dumps(REG))
+reg4['modulos']['compradores']['depende_por']['asistente'] = ['solicitud_cambio_pide', 'solicitudes_cambio']
+casos.append(('la exención no cubre una tabla del asistente', corre(registro=reg4), 'para'))
+reg5 = json.loads(json.dumps(REG))
+reg5['modulos']['compradores']['depende'].remove('asistente'); del reg5['modulos']['compradores']['depende_por']['asistente']
+casos.append(('exención que ya no se usa: el build lo dice', corre(registro=reg5), 'para'))
+# y las dos mitades del asistente no se confunden: el de respuestas (catálogo `asistente`) es el módulo `asistente-correos`
+casos.append(('el catálogo real conoce asistente-correos y asistente', 'pasa' if {'asistente', 'asistente-correos'} <= set(REG['modulos']) else 'para', 'pasa'))
+
 mal = [(n, r, e) for n, r, e in casos if r != e]
 for n, r, e in casos:
     print(('ok   ' if r == e else 'MAL  ') + n + ': ' + r)
