@@ -1695,25 +1695,12 @@ EXENTOS_BASE = {
 }
 
 
-# Lecturas entre módulos del núcleo y uno de fuera del núcleo que se perdonan, UNA a UNA y con su porqué (AXW-136, 2-oct-2026,
-# decisión del owner/CEO). Clave: (módulo que lee, módulo leído) en claves del REGISTRO. `rpc`: qué funciones del leído se perdonan
-# (la exención no se extiende a nada más: si el módulo empieza a leer otra cosa, el build para). packs_casan ya no arrastra esa
-# lectura al calcular lo que cada pack necesita.
-EXENTOS_LECTURA = {
-    ('compradores', 'asistente'): {
-        'rpc': lambda n: n.startswith('solicitud_cambio_') or n == 'anular_solicitud_cambio',
-        'porque': 'la ficha del comprador (núcleo) tiene el botón «pedir un cambio al asistente», que llama a solicitud_cambio_pide. '
-                  'El asistente de peticiones es un extra de pago (pack `extras`, que NECESITA el núcleo): meterlo en el núcleo para que '
-                  'case la regla o hacer que el núcleo necesite un extra sería un ciclo. Con el módulo apagado la base responde 42501 '
-                  '(modulo_activo) y apagados_instancia.js lo intercepta con un aviso; la ficha sigue funcionando. Solo las RPC de peticiones.'}}
-
-
 def packs_casan(catalogo=None, modulos_json=None):
     """Los packs de catalogo.js tienen que casar con el registro del ERP (owner, 27-sep: «los módulos que dependen de
     otros van en pack sí o sí»). Para cada módulo, todo lo que su código lee (erp/modulos.json → depende, cerrado
     transitivamente) tiene que estar en su mismo pack o en los packs que ese pack necesita. Un suelto no puede leer
     nada fuera de la base. Una pestaña de otra pantalla (PESTANAS) va donde esté esa pantalla. La base solo se exime de
-    lo que está en EXENTOS_BASE. Una clave que el registro no conoce para el build: no se da por buena sin mirarla.
+    lo que está en EXENTOS_BASE y las lecturas exentas salen del registro (depende_blanda). Una clave que el registro no conoce para el build: no se da por buena sin mirarla.
     Prueba: test_packs_casan.py."""
     registro = json.load(open(modulos_json or os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))['modulos']
     r = subprocess.run(['node', '-e', "global.window={};global.localStorage={getItem:function(){return null},setItem:function(){}};"
@@ -1735,16 +1722,27 @@ def packs_casan(catalogo=None, modulos_json=None):
     nuevas_base = sorted(set(registro['base'].get('depende') or []) - set(EXENTOS_BASE))
     if nuevas_base:
         aborta('la base lee módulos que no están en EXENTOS_BASE (mira si de verdad corren sin ellos): ' + ', '.join(nuevas_base))
-    for (k, d), ex in EXENTOS_LECTURA.items():
-        if d not in (registro.get(k, {}).get('depende') or []):
-            aborta('EXENTOS_LECTURA: %s ya no lee %s, quita la exención (%s)' % (k, d, ex['porque'][:60]))
+    # Exenciones de lectura (AXW-136/AXW-213, 2-oct-2026): UNA sola fuente, el registro (`depende_blanda` de erp/modulos.json,
+    # que erp/modulos.py calcula por OBJETO y con su porqué). Una dependencia blanda no se arrastra al pack (alcance() solo
+    # sigue `depende`). Aquí se comprueba que la exención declarada tenga sentido: si el módulo leído no existe, no trae
+    # porqué, no nombra objetos o nombra uno que ese módulo no tiene, está huérfana; y si además sigue en `depende` el
+    # registro se contradice (otra lectura del mismo módulo la volvió dura y entonces manda la dura).
+    for k, m in registro.items():
+        for d, ex in (m.get('depende_blanda') or {}).items():
+            if d not in registro:
+                aborta('depende_blanda: %s exime de %s, que no está en erp/modulos.json' % (k, d))
+            if d in (m.get('depende') or []):
+                aborta('depende_blanda: %s exime de %s pero también lo lee de forma dura (depende): una lectura no exenta manda' % (k, d))
+            if not ex.get('objetos') or not (ex.get('porque') or '').strip():
+                aborta('depende_blanda: %s -> %s sin objetos o sin porqué' % (k, d))
+            propios = set(registro[d].get('tablas') or []) | set(registro[d].get('funciones') or []) | set(registro[d].get('edges') or [])
+            ajenos = sorted(set(ex['objetos']) - propios)
+            if ajenos:
+                aborta('depende_blanda: exención huérfana %s -> %s, %s no es un objeto de %s' % (k, d, ', '.join(ajenos), d))
     def alcance(k, visto):
         for d in registro[k].get('depende') or []:
             if d not in registro:
                 aborta('%s depende de %s, que no está en erp/modulos.json' % (k, d))
-            ex = EXENTOS_LECTURA.get((k, d))
-            if ex and all(ex['rpc'](o) for o in (registro[k].get('depende_por') or {}).get(d) or ['?']):
-                continue   # perdonada una a una (EXENTOS_LECTURA): solo lo que ella nombra
             if d not in visto:
                 visto.add(d)
                 # La base va siempre en la instalación: lo que ella lee ya lo vigila `nuevas_base` contra EXENTOS_BASE y no

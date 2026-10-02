@@ -47,18 +47,44 @@ reg3 = json.loads(json.dumps(REG))
 reg3['modulos']['base']['depende'] = sorted(set(reg3['modulos']['base']['depende']) | {'deck', 'gastos'})
 casos.append(('lo que lee la base no se hereda por depender de ella', corre(registro=reg3), 'pasa'))
 
-# AXW-136 (2-oct-2026): compradores (núcleo) llama a solicitud_cambio_pide, del asistente de peticiones (pack extras, que necesita el núcleo).
-# La exención de EXENTOS_LECTURA es lo que lo deja casar, y solo vale para las RPC de peticiones.
-ex_guardada = build.EXENTOS_LECTURA
-build.EXENTOS_LECTURA = {}
-casos.append(('sin la exención, el núcleo leería un extra', corre(), 'para'))
-build.EXENTOS_LECTURA = ex_guardada
-reg4 = json.loads(json.dumps(REG))
-reg4['modulos']['compradores']['depende_por']['asistente'] = ['solicitud_cambio_pide', 'solicitudes_cambio']
-casos.append(('la exención no cubre una tabla del asistente', corre(registro=reg4), 'para'))
-reg5 = json.loads(json.dumps(REG))
-reg5['modulos']['compradores']['depende'].remove('asistente'); del reg5['modulos']['compradores']['depende_por']['asistente']
-casos.append(('exención que ya no se usa: el build lo dice', corre(registro=reg5), 'para'))
+# AXW-136/AXW-213 (2-oct-2026): compradores (núcleo) llama a solicitud_cambio_pide, del asistente de peticiones (pack extras, que necesita
+# el núcleo). La exención vive SOLO en el registro (`depende_blanda`, por objeto); build.py ya no tiene copia propia.
+def sin_exencion():
+    r = json.loads(json.dumps(REG))
+    ex = r['modulos']['compradores']['depende_blanda'].pop('asistente')
+    if not r['modulos']['compradores']['depende_blanda']:
+        del r['modulos']['compradores']['depende_blanda']
+    return r, ex
+assert 'asistente' in REG['modulos']['compradores'].get('depende_blanda', {}), 'el registro real ya no declara la exención compradores→asistente'
+# Sin la exención, compradores LEE el asistente de forma dura (como lo declara el registro cuando no hay exención): el núcleo leería un extra.
+reg4, _ex = sin_exencion()
+reg4['modulos']['compradores']['depende'] = sorted(reg4['modulos']['compradores']['depende'] + ['asistente'])
+reg4['modulos']['compradores']['depende_por']['asistente'] = ['solicitud_cambio_pide']
+casos.append(('sin la exención en el registro, el núcleo leería un extra', corre(registro=reg4), 'para'))
+# Un objeto del asistente que NO está exento (el registro lo deja duro y la exención por objeto ya no basta): aborta, con o sin la blanda.
+reg5, _ex = sin_exencion()
+reg5['modulos']['compradores']['depende'] = sorted(reg5['modulos']['compradores']['depende'] + ['asistente'])
+reg5['modulos']['compradores']['depende_por']['asistente'] = ['solicitud_cambio_pide', 'solicitudes_cambio']
+casos.append(('compradores lee una tabla del asistente no exenta (sin blanda)', corre(registro=reg5), 'para'))
+reg6 = json.loads(json.dumps(REG))
+reg6['modulos']['compradores']['depende'] = sorted(reg6['modulos']['compradores']['depende'] + ['asistente'])
+reg6['modulos']['compradores']['depende_por']['asistente'] = ['solicitudes_cambio']
+casos.append(('lectura dura y exención a la vez: manda la dura', corre(registro=reg6), 'para'))
+# Exención huérfana: nombra un objeto que el módulo leído no tiene (la RPC se renombró o se quitó).
+reg7 = json.loads(json.dumps(REG))
+reg7['modulos']['compradores']['depende_blanda']['asistente']['objetos'] = ['solicitud_cambio_que_ya_no_existe']
+casos.append(('exención huérfana: el objeto ya no es del asistente', corre(registro=reg7), 'para'))
+reg8 = json.loads(json.dumps(REG))
+reg8['modulos']['compradores']['depende_blanda']['asistente']['objetos'] = []
+casos.append(('exención sin objetos', corre(registro=reg8), 'para'))
+reg9 = json.loads(json.dumps(REG))
+reg9['modulos']['compradores']['depende_blanda']['asistente']['porque'] = ' '
+casos.append(('exención sin porqué', corre(registro=reg9), 'para'))
+reg10 = json.loads(json.dumps(REG))
+reg10['modulos']['compradores']['depende_blanda']['fantasma'] = {'objetos': ['x'], 'porque': 'y'}
+casos.append(('exención de un módulo que el registro no conoce', corre(registro=reg10), 'para'))
+# Con la exención declarada y compradores sin lectura dura, el catálogo real casa (el asistente sigue en extras, fuera del núcleo).
+casos.append(('con la exención en el registro, pasa', corre(), 'pasa'))
 # y las dos mitades del asistente no se confunden: el de respuestas (catálogo `asistente`) es el módulo `asistente-correos`
 casos.append(('el catálogo real conoce asistente-correos y asistente', 'pasa' if {'asistente', 'asistente-correos'} <= set(REG['modulos']) else 'para', 'pasa'))
 
