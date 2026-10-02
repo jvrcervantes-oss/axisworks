@@ -33,7 +33,9 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #4f
 /* estados: una palabra, un color Y una forma (el color solo no se lee para todos) */
 .est{display:inline-flex;align-items:center;gap:4px;padding:1px 9px;border-radius:9999px;font:600 12px/18px Inter,sans-serif;white-space:nowrap;border:1px solid transparent}
 .est-hecho{background:#d5f1df;color:#0b5a31}
+.est-parcial{background:#e4f1c8;color:#3d5a0b}
 .est-construido{background:#ffedbd;color:#6a4700}
+.est-en_construccion{background:#e1ecfb;color:#1b4a85;border:1px solid #9db9e0}
 .est-previsto{background:#eef0f7;color:#464555;border:1px dashed #9a98ab}
 .est-por_confirmar{background:#f3f3f3;color:#55535f;border:1px dashed #b3b1bf}
 .est-propuesta{background:#fff7e0;color:#6a4700;border:1px dashed #d9a400}
@@ -50,6 +52,8 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #4f
 details>summary{cursor:pointer;list-style:none}details>summary::-webkit-details-marker{display:none}
 details[open] .chev{transform:rotate(180deg)}
 .paso-prev{border:1px dashed #9a98ab;background:#f8f9ff}
+.esq-d{display:none}.esq-m{display:block;max-width:440px;margin:0 auto}/* aqui la columna es mas estrecha que en el panel de la agencia (barra lateral de 288 px): el esquema ancho solo cabe con texto >= 12 px desde 1280 */@media (min-width:1280px){.esq-d{display:block}.esq-m{display:none}}svg.esq-d,svg.esq-m{width:100%;height:auto}
+@media (max-width:1279px){.esq-art{padding-left:8px;padding-right:8px}.esq-wrap{padding-left:4px;padding-right:4px}}
 </style>
 <link rel="stylesheet" href="/panel/panel.css">
 </head>
@@ -100,7 +104,7 @@ __AXW_PANEL_NAV__
   function fechaLarga(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[3]) + ' de ' + MESES[+m[2] - 1] + ' de ' + m[1] : String(iso || ''); }
   function fechaCorta(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[3]) + ' ' + MESES[+m[2] - 1].slice(0, 3) : String(iso || ''); }
   function dias(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return null; return Math.floor((Date.now() - Date.UTC(+m[1], +m[2] - 1, +m[3])) / 86400000); }
-  var ICONO = { hecho: '✓', construido: '◐', previsto: '○', por_confirmar: '?', propuesta: '◇' };
+  var ICONO = { hecho: '✓', parcial: '◑', construido: '◐', en_construccion: '◔', previsto: '○', por_confirmar: '?', propuesta: '◇' };
 
   /* Estado = una palabra y un color (y una forma). Pasados 14 días sin comprobar, se dice en gris. */
   function chip(est, comprobado) {
@@ -124,7 +128,7 @@ __AXW_PANEL_NAV__
     return '<text x="' + x + '" y="' + y + '" font-size="' + fs + '" class="' + cls + '" text-anchor="' + (anchor || 'start') + '"' + (extra || '') + '>' +
       lin.map(function (l, i) { return '<tspan x="' + x + '" dy="' + (i ? lh : 0) + '">' + esc(l) + '</tspan>'; }).join('') + '</text>';
   }
-  var DOT = { hecho: '#1f8f4f', construido: '#e0a100', previsto: '#9a98ab', por_confirmar: '#b3b1bf', propuesta: '#d9a400' };
+  var DOT = { hecho: '#1f8f4f', parcial: '#7ca82b', construido: '#e0a100', en_construccion: '#2f6fb5', previsto: '#9a98ab', por_confirmar: '#b3b1bf', propuesta: '#d9a400' };
   function caja(x, y, w, h, o) {
     o = o || {};
     return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + (o.r == null ? 12 : o.r) + '" fill="' + (o.fill || '#fff') + '" stroke="' + (o.stroke || '#c7c4d8') + '" stroke-width="' + (o.sw || 1.2) + '"' + (o.dash ? ' stroke-dasharray="5 4"' : '') + '/>';
@@ -142,6 +146,300 @@ __AXW_PANEL_NAV__
   function estadoPunto(x, y, est) {
     return '<circle cx="' + x + '" cy="' + y + '" r="5" fill="' + (DOT[est] || '#9a98ab') + '"' + (est === 'previsto' || est === 'por_confirmar' ? ' fill-opacity=".35" stroke="#9a98ab"' : '') + '/>';
   }
+
+/*==ESQUEMAS==*/
+  // El texto del flujo de una apuesta es de Pilotos: viene de D.flujos.apuesta (erp/pilotos_vista.json).
+  // Misma regla para «lo que toca» de cada grupo: D.equipo.bloques[*].toca.
+  // Rótulo corto de cada una de las tres manos del flujo C (confirmado por Pilotos, 2-oct).
+  var MANOS = ['Escribe', 'Mira', 'Comprueba'];
+  var ACT = { tu: ['#4f46e5', '#fff', '#4f46e5'], equipo: ['#e5eeff', '#0b1c30', '#e5eeff'], codigo: ['#213145', '#fff', '#213145'], externo: ['#fff', '#464555', '#9a98ab'] };
+
+  function wrapx(t, px, fs, bold) {   // reparto en líneas, deliberadamente holgado: el SVG nunca recorta
+    var max = Math.max(4, Math.floor(px / (fs * (bold ? 0.58 : 0.52)))), pal = String(t).split(/\s+/), lin = [], cur = '';
+    pal.forEach(function (p) { if ((cur + ' ' + p).trim().length > max && cur) { lin.push(cur); cur = p; } else cur = (cur + ' ' + p).trim(); });
+    if (cur) lin.push(cur);
+    return lin;
+  }
+  function anchoTxt(t, fs, bold) { return Math.ceil(String(t).length * fs * (bold ? 0.54 : 0.5)); }
+  function cap1(s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function frases(s) { return String(s || '').match(/[^.]+\.?/g) || [String(s || '')]; }
+  function hitoCorto(entra) {   // «1.ª venta · cuando llegue…» → «1.ª venta»; «Fase 0 (…) y una vez al mes» → «Fase 0»
+    var p = String(entra || '').split(' · '), h = p.length > 2 ? p[0] + ' · ' + p[1] : p[0];
+    return h.replace(/\s+y\s+una vez.*$/, '').replace(/\s*\([^)]*\)/, '');
+  }
+  function estTxt(r) { return D.estados[r.estado] || r.estado; }
+  function pastilla(x, y, txt, fill, color, stroke) {   // devuelve [svg, ancho]
+    var w = Math.ceil(String(txt).length * 12 * 0.52) + 18;   // medido: Inter 700 a 12 px rinde ~0,49 em por letra
+    return ['<rect x="' + x + '" y="' + y + '" width="' + w + '" height="22" rx="11" fill="' + fill + '" stroke="' + (stroke || fill) + '"/>' +
+      '<text x="' + (x + 9) + '" y="' + (y + 15.5) + '" font-size="12" font-weight="700" fill="' + color + '" font-family="Inter,sans-serif">' + esc(txt) + '</text>', w];
+  }
+  function actorPastilla(x, y, actor, txt) { var c = ACT[actor] || ACT.equipo; return pastilla(x, y, txt, c[0], c[1], c[2]); }
+  function enlaceRol(r, cuerpo) {
+    return '<a href="#rol-' + esc(r.id) + '" data-accion="ir-rol" data-rol="' + esc(r.id) + '"><title>' + esc(r.nombre + (r.subtitulo ? ' (' + r.subtitulo + ')' : '') + ' — ' + estTxt(r) + (r.entra ? ' — entra: ' + r.entra : '')) + '</title>' + cuerpo + '</a>';
+  }
+  function bloquesSinCapitan() {
+    return D.equipo.bloques.map(function (b) {
+      var rs = b.roles.filter(function (r) { return r !== 'capitan'; });
+      return { titulo: b.titulo, toca: b.toca || '', roles: rs };
+    }).filter(function (b) { return b.roles.length; });
+  }
+
+  // ── (a) el equipo: Tú → Aprobaciones → Capitán → especialistas por lo que pueden tocar ────────
+  function medFicha(r, w, ancha) {
+    var st = wrapx(estTxt(r), ancha ? w - 40 : w - 40, 12);
+    return ancha ? { st: st, h: 76 } : { st: st, h: 14 + 17 + 17 + 14 + (st.length - 1) * 15 + 18 + 22 + 12 };
+  }
+  function fichaRol(x, y, w, h, r, ancha) {
+    var hito = 'Entra: ' + hitoCorto(r.entra), st = wrapx(estTxt(r), w - 40, 12), o = '';
+    o += caja(x, y, w, h, { r: 10, fill: '#fff', stroke: DOT[r.estado] || '#9a98ab', dash: r.estado === 'previsto', sw: 1.6 });
+    if (ancha) {   // fila ancha (móvil): nombre y subtítulo a la izquierda, hito a la derecha, estado debajo
+      var pw = anchoTxt(hito, 12, true) + 18;
+      o += tx(x + 14, y + 25, [r.nombre], 15, 'svg-n') + tx(x + 14, y + 42, [r.subtitulo || ''], 12, 'svg-b') +
+        pastilla(x + w - pw - 10, y + 10, hito, '#e5eeff', '#0b1c30')[0] +
+        estadoPunto(x + 20, y + 61, r.estado) + tx(x + 34, y + 65, [estTxt(r)], 12, 'svg-t');
+    } else {       // columna estrecha (escritorio): todo apilado
+      o += tx(x + 14, y + 25, [r.nombre], 14.5, 'svg-n') + tx(x + 14, y + 42, [r.subtitulo || ''], 12, 'svg-b') +
+        estadoPunto(x + 20, y + 61, r.estado) + tx(x + 34, y + 65, st, 12, 'svg-t', 'start', 15) +
+        pastilla(x + 14, y + 65 + (st.length - 1) * 15 + 10, hito, '#e5eeff', '#0b1c30')[0];
+    }
+    return enlaceRol(r, o);
+  }
+  function leyendaEstados(y, ancho) {
+    var ks = ['hecho', 'parcial', 'construido', 'en_construccion', 'previsto'], o = '', x = 10, yy = y;
+    ks.forEach(function (k) {
+      var w = anchoTxt(D.estados[k], 12) + 30;
+      if (x + w > (ancho ? 800 : 312)) { x = 10; yy += 22; }
+      o += estadoPunto(x + 6, yy - 4, k) + tx(x + 18, yy, [D.estados[k]], 12, 'svg-b');
+      x += w + 8;
+    });
+    return [o, yy];
+  }
+  function equipoSvg(ancho) {
+    var E = D.equipo, roles = {}, id = 'fe' + (++MARC), o = marcas(id), bl = bloquesSinCapitan(), nombres;
+    E.roles.concat((D.maquinaria && D.maquinaria.items) || []).forEach(function (r) { roles[r.id] = r; });
+    var cap = roles.capitan, p = roles[E.puerta.rol], tu = D.mapa.tu.nombre, hace = wrapx(cap.hace, ancho ? 306 : 262, 12.5);
+    nombres = bl.map(function (b) { return b.titulo + ' (' + b.roles.map(function (r) { return roles[r].nombre; }).join(', ') + ')'; }).join('; ');
+    var etq = 'Equipo del Padrino: tú arriba; por debajo tu puerta de aprobación (' + p.nombre + '); luego el ' + cap.nombre + ', que manda; y de él cuelgan los especialistas, agrupados por lo que pueden tocar: ' + nombres + '.';
+    var cx = ancho ? 400 : 160, cw = ancho ? 340 : 296, yy = 8;
+    // Tú → Aprobaciones → Capitán (vertical, en el centro)
+    o += caja(cx - 50, yy, 100, 40, { fill: '#4f46e5', stroke: '#4f46e5', r: 10 }) + tx(cx, yy + 27, [tu], 17, 'svg-n svg-w', 'middle');
+    yy += 40;
+    o += linea([cx, yy, cx, yy + 32], id, true);
+    yy += 32;
+    var pw = ancho ? 300 : 250, ph = 54;
+    o += caja(cx - pw / 2, yy, pw, ph, { fill: '#fff', stroke: '#9a98ab', dash: p.estado === 'previsto', sw: 1.6, r: 10 }) +
+      estadoPunto(cx - pw / 2 + 18, yy + 20, p.estado) + tx(cx - pw / 2 + 32, yy + 25, [p.nombre], 15, 'svg-n') +
+      tx(cx - pw / 2 + 32, yy + 43, [p.subtitulo || ''], 12, 'svg-b');
+    yy += ph;
+    o += linea([cx, yy, cx, yy + 32], id, true);
+    yy += 32;
+    // Capitán
+    var cn = 'Entra: ' + hitoCorto(cap.entra), ch = 52 + hace.length * 16 + 14 + 22 + 14;
+    o += caja(cx - cw / 2, yy, cw, ch, { fill: '#213145', stroke: '#213145', r: 14 });
+    var yc = yy;
+    o += enlaceRol(cap, tx(cx - cw / 2 + 18, yc + 30, [cap.nombre], 19, 'svg-n svg-w') + tx(cx - cw / 2 + 18 + anchoTxt(cap.nombre, 19, true) + 10, yc + 30, [cap.subtitulo], 12.5, 'svg-w') +
+      tx(cx - cw / 2 + 18, yc + 52, hace, 12.5, 'svg-w', 'start', 16) +
+      '<circle cx="' + (cx - cw / 2 + 24) + '" cy="' + (yc + ch - 24) + '" r="5" fill="' + (DOT[cap.estado]) + '" stroke="#fff" stroke-width="1.5"/>' +
+      tx(cx - cw / 2 + 36, yc + ch - 20, [estTxt(cap)], 12, 'svg-w') +
+      pastilla(cx + cw / 2 - anchoTxt(cn, 12, true) - 30, yc + ch - 36, cn, '#e5eeff', '#0b1c30')[0]);
+    yy += ch;
+    var ytop = yy + 46, i, k;
+    if (ancho) {
+      var gw = 190, gg = 9, gx0 = 6, th = 0, med = [];
+      bl.forEach(function (b) {
+        var tl = wrapx(b.toca, gw - 28, 12), cards = b.roles.map(function (r) { return medFicha(roles[r], gw - 16, false); });
+        th = Math.max(th, tl.length);
+        med.push({ b: b, tl: tl, cards: cards });
+      });
+      var head = 30 + th * 15 + 6, gh = 0;
+      med.forEach(function (m) { var s = head + 8; m.cards.forEach(function (c) { s += c.h + 8; }); m.h = s; gh = Math.max(gh, s); });
+      var ybus = yy + 24, cents = [];
+      med.forEach(function (m, n) {
+        var x = gx0 + n * (gw + gg), y = ytop;
+        cents.push(x + gw / 2);
+        o += caja(x, y, gw, m.h, { fill: '#f8f9ff', stroke: '#c7c4d8', r: 14 }) +
+          tx(x + 14, y + 22, [m.b.titulo], 12.5, 'svg-b', 'start', null, ' font-weight="700"') +
+          tx(x + 14, y + 40, m.tl, 12, 'svg-t', 'start', 15, ' font-style="italic"');
+        var yk = y + head + 8;
+        m.b.roles.forEach(function (rid, j) { o += fichaRol(x + 8, yk, gw - 16, m.cards[j].h, roles[rid], false); yk += m.cards[j].h + 8; });
+      });
+      o += '<line x1="' + cents[0] + '" y1="' + ybus + '" x2="' + cents[cents.length - 1] + '" y2="' + ybus + '" stroke="#4f46e5" stroke-width="2"/>' + linea([cx, yy, cx, ybus], id, false);
+      cents.forEach(function (c) { o += linea([c, ybus, c, ytop - 2], id, false); });
+      o += tx(cx - 12, ybus - 8, ['solo trabajan cuando él los llama'], 12, 'svg-b', 'end', null, ' font-style="italic"');
+      var le = leyendaEstados(ytop + gh + 26, true);
+      o += le[0];
+      return svg(800, le[1] + 10, o, etq, 'esq-d');
+    }
+    // móvil: una columna; los grupos se apilan, un carril a la izquierda los cuelga del Capitán
+    var ym = ytop - 14, mids = [], rail = 4, gx = 12, gw2 = 304;
+    bl.forEach(function (b) {
+      var tl = wrapx(b.toca, gw2 - 28, 12), cards = b.roles.map(function (r) { return medFicha(roles[r], gw2 - 16, true); }), h = 30 + tl.length * 15 + 8, j;
+      for (j = 0; j < cards.length; j++) h += cards[j].h + 8;
+      h += 0;
+      o += caja(gx, ym, gw2, h, { fill: '#f8f9ff', stroke: '#c7c4d8', r: 14 }) +
+        tx(gx + 14, ym + 22, [b.titulo], 12.5, 'svg-b', 'start', null, ' font-weight="700"') +
+        tx(gx + 14, ym + 40, tl, 12, 'svg-t', 'start', 15, ' font-style="italic"');
+      var yk = ym + 30 + tl.length * 15 + 8;
+      b.roles.forEach(function (rid, q) { o += fichaRol(gx + 8, yk, gw2 - 16, cards[q].h, roles[rid], true); yk += cards[q].h + 8; });
+      mids.push(ym + 20);
+      ym += h + 14;
+    });
+    o += linea([cx - cw / 2 + 24, yy, cx - cw / 2 + 24, yy + 16, rail, yy + 16, rail, mids[mids.length - 1]], id, false);
+    mids.forEach(function (m) { o += linea([rail, m, gx - 2, m], id, false); });
+    o += tx(rail + 8, yy + 33, ['solo trabajan cuando él los llama'], 12, 'svg-b', 'start', null, ' font-style="italic"');
+    var lm = leyendaEstados(ym + 14, false);
+    o += lm[0];
+    return svg(320, lm[1] + 10, o, etq, 'esq-m');
+  }
+
+  // ── (b) una apuesta: objetivo → embudo → cuello de botella → apuesta → medir → máquina o lección ─
+  function cajaPaso(x, y, w, h, s, n, o2) {   // número o nada, actor, título, texto
+    o2 = o2 || {};
+    var c = '', col = o2.ok ? '#d5f1df' : (o2.leccion ? '#f3f3f3' : '#fff'), st = o2.ok ? '#1f8f4f' : '#9a98ab';
+    c += caja(x, y, w, h, { r: 12, fill: col, stroke: o2.ok ? st : (o2.punteado ? '#9a98ab' : '#4f46e5'), dash: !!o2.punteado || !!o2.leccion, sw: 1.6 });
+    var tl = wrapx(s.titulo, w - 28, 14.5, true), tb = wrapx(s.texto, w - 28, 12), yy = y + 14, ap;
+    if (n) c += '<circle cx="' + (x + 26) + '" cy="' + (yy + 11) + '" r="12" fill="#213145"/><text x="' + (x + 26) + '" y="' + (yy + 16) + '" font-size="14" font-weight="700" fill="#fff" text-anchor="middle" font-family="Plus Jakarta Sans,Inter,sans-serif">' + n + '</text>';
+    var abajo = pastillaAbajo(s, w, n);   // «Tesorero y Cifras» no cabe al lado del número en una caja de 138: va en su propia línea
+    ap = actorPastilla(abajo ? x + 14 : x + (n ? 46 : 14), abajo ? yy + 30 : yy, s.actor, s.quien);
+    c += ap[0];
+    yy += 22 + 20 + (abajo ? 30 : 0);
+    c += tx(x + 14, yy, tl, 14.5, 'svg-n', 'start', 17);
+    yy += (tl.length - 1) * 17 + 20;
+    c += tx(x + 14, yy, tb, 12, 'svg-t', 'start', 15);
+    return c;
+  }
+  function pastillaAbajo(s, w, n) { return !!n && 46 + Math.ceil(String(s.quien).length * 12 * 0.52) + 18 > w - 8; }
+  function altoPaso(s, w, n) { return (pastillaAbajo(s, w, n) ? 30 : 0) + 14 + 22 + 20 + wrapx(s.titulo, w - 28, 14.5, true).length * 17 + 3 + wrapx(s.texto, w - 28, 12).length * 15 + 14; }
+  function apuestaSvg(ancho) {
+    var A = D.flujos && D.flujos.apuesta; if (!A) return '';
+    var  id = 'fa' + (++MARC), o = marcas(id), P = A.pasos, S = A.salidas, F = A.frenos, i, h;
+    var etq = 'Flujo de una apuesta: ' + P.map(function (s) { return s.titulo; }).join(', luego ') + '. Después, ' + S.map(function (s) { return s.titulo.toLowerCase() + ': ' + s.texto.toLowerCase(); }).join('; ') + '. Hay dos frenos siempre puestos: ' + F.map(function (s) { return s.titulo.toLowerCase(); }).join(' y ') + '.';
+    var pun = A.estado === 'previsto';
+    if (ancho) {
+      var w = 144, g = 19, x0 = 2, y0 = 4;
+      h = 0; P.forEach(function (s) { h = Math.max(h, altoPaso(s, w, 1)); });
+      P.forEach(function (s, k) {
+        o += cajaPaso(x0 + k * (w + g), y0, w, h, s, k + 1, { punteado: pun });
+        if (k < P.length - 1) o += linea([x0 + k * (w + g) + w + 1, y0 + h / 2, x0 + (k + 1) * (w + g) - 2, y0 + h / 2], id, false);
+      });
+      var yb = y0 + h, sw = 190, sx = [406, 606], sh = 0, ys = yb + 62;
+      S.forEach(function (s) { sh = Math.max(sh, altoPaso(s, sw)); });
+      var cm = x0 + 4 * (w + g) + w / 2, ybus = yb + 30;
+      o += '<polyline points="' + [cm, yb + 1, cm, ybus, sx[0] + sw / 2, ybus].join(' ') + '" fill="none" stroke="#4f46e5" stroke-width="2"/>' +
+        '<polyline points="' + [sx[1] + sw / 2, ybus, cm, ybus].join(' ') + '" fill="none" stroke="#4f46e5" stroke-width="2"/>' +
+        linea([sx[0] + sw / 2, ybus, sx[0] + sw / 2, ys - 2], id, false) + linea([sx[1] + sw / 2, ybus, sx[1] + sw / 2, ys - 2], id, false);
+      S.forEach(function (s, k) { o += cajaPaso(sx[k], ys, sw, sh, s, 0, { ok: !!s.ok, leccion: !s.ok }); });
+      var yl = ys + sh + 26, ex = x0 + 1 * (w + g) + w / 2;   // el aprendizaje vuelve al embudo (caja 2)
+      o += linea([sx[1] + sw / 2, ys + sh + 1, sx[1] + sw / 2, yl, ex, yl, ex, yb + 3], id, false, true);
+      o += tx((ex + sx[1] + sw / 2) / 2 + 40, yl - 7, [A.vuelve], 12, 'svg-b', 'middle', null, ' font-style="italic"');
+      // leyenda de actores en el hueco de la izquierda
+      var ly = ys + 4, ks = D.flujos && D.flujos.actores ? D.flujos.actores : { tu: 'Tú', equipo: 'Equipo', codigo: 'Código' };
+      ['tu', 'equipo', 'codigo'].forEach(function (k, n) { if (ks[k]) o += actorPastilla(8, ly + n * 30, k, ks[k])[0]; });
+      o += tx(8, ly + 104, ['Quién hace cada paso'], 12, 'svg-b') + tx(8, ly + 124, ['Borde discontinuo: previsto'], 12, 'svg-b');
+      // frenos (ancho completo)
+      var yf = Math.max(yl + 28, ys + sh + 62), fw = 392, fh = 0;
+      F.forEach(function (s) { fh = Math.max(fh, altoPaso(s, fw)); });
+      o += tx(2, yf - 8, [A.frenos_titulo], 14, 'svg-n');
+      F.forEach(function (s, k) { o += cajaPaso(2 + k * (fw + 12), yf, fw, fh, s, 0, { punteado: false }); });
+      return svg(800, yf + fh + 8, o, etq, 'esq-d');
+    }
+    var w2 = 308, x = 6, y = 4;
+    P.forEach(function (s, k) {
+      var hh = altoPaso(s, w2, k + 1);
+      o += cajaPaso(x, y, w2, hh, s, k + 1, { punteado: pun });
+      y += hh;
+      o += linea([x + w2 / 2, y + 1, x + w2 / 2, y + 22], id, false);
+      y += 24;
+    });
+    var sw2 = 149, sh2 = 0;
+    S.forEach(function (s) { sh2 = Math.max(sh2, altoPaso(s, sw2)); });
+    o += '<polyline points="' + [x + w2 / 2, y - 24, x + w2 / 2, y - 14].join(' ') + '" fill="none" stroke="#4f46e5" stroke-width="2"/>';
+    o += '<polyline points="' + [x + sw2 / 2, y - 6, x + sw2 / 2, y - 14, x + w2 - sw2 / 2, y - 14, x + w2 - sw2 / 2, y - 6].join(' ') + '" fill="none" stroke="#4f46e5" stroke-width="2"/>';
+    o += linea([x + sw2 / 2, y - 10, x + sw2 / 2, y + 6], id, false) + linea([x + w2 - sw2 / 2, y - 10, x + w2 - sw2 / 2, y + 6], id, false);
+    y += 8;
+    S.forEach(function (s, k) { o += cajaPaso(x + k * (sw2 + 10), y, sw2, sh2, s, 0, { ok: !!s.ok, leccion: !s.ok }); });
+    y += sh2 + 8;
+    o += tx(x + w2 - sw2 / 2, y + 14, wrapx('↺ ' + A.vuelve, sw2 - 6, 12), 12, 'svg-b', 'middle', 15, ' font-style="italic"');
+    y += 38;
+    o += tx(x + 2, y + 10, [A.frenos_titulo], 14, 'svg-n');
+    y += 22;
+    F.forEach(function (s) { var hh = altoPaso(s, w2); o += cajaPaso(x, y, w2, hh, s, 0, {}); y += hh + 12; });
+    return svg(320, y, o, etq, 'esq-m');
+  }
+
+  // ── (c) tres manos: Constructor → pruebas → Revisor → se publica → Verificador ────────────────
+  function paso3(f, k) {   // texto de la caja a partir de D.flujos C: título = quien, cuerpo = 1.ª frase capitalizada, extra = el resto
+    var p = f.pasos[k], fr = frases(p.texto);
+    return { actor: p.actor, quien: p.quien, titulo: cap1(String(p.quien).replace(/^(El|La|Las|Los)\s+/i, '')), texto: cap1(fr[0].trim()), extra: fr.slice(1).join(' ').trim() };
+  }
+  function cajaMano(x, y, w, h, s, mano, punteado) {
+    var esMano = mano > 0, c = '', strip = esMano ? ['#e5eeff', '#0b1c30'] : ['#213145', '#fff'], rr = 11;
+    c += caja(x, y, w, h, { r: 12, fill: '#fff', stroke: 'none', sw: 0 });
+    c += '<path d="M' + (x + 1) + ',' + (y + 30) + ' V' + (y + 1 + rr) + ' a' + rr + ',' + rr + ' 0 0 1 ' + rr + ',-' + rr + ' H' + (x + w - 1 - rr) + ' a' + rr + ',' + rr + ' 0 0 1 ' + rr + ',' + rr + ' V' + (y + 30) + ' z" fill="' + strip[0] + '"/>';
+    c += '<text x="' + (x + 14) + '" y="' + (y + 20) + '" font-size="12" font-weight="700" fill="' + strip[1] + '" font-family="Inter,sans-serif">' + esc(esMano ? 'Mano ' + mano : 'Código') + '</text>';
+    if (esMano) c += '<text x="' + (x + w - 14) + '" y="' + (y + 20) + '" font-size="12" fill="' + strip[1] + '" text-anchor="end" font-family="Inter,sans-serif">' + esc(MANOS[mano - 1]) + '</text>';
+    c += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="12" fill="none" stroke="' + (esMano ? '#4f46e5' : '#213145') + '" stroke-width="1.6"' + (punteado ? ' stroke-dasharray="5 4"' : '') + '/>';
+    var tl = wrapx(s.titulo, w - 28, 14.5, true), tb = wrapx(s.texto, w - 28, 12), yy = y + 54;
+    c += tx(x + 14, yy, tl, 14.5, 'svg-n', 'start', 17);
+    yy += (tl.length - 1) * 17 + 20;
+    c += tx(x + 14, yy, tb, 12, 'svg-t', 'start', 15);
+    return c;
+  }
+  function altoMano(s, w) { return 54 + wrapx(s.titulo, w - 28, 14.5, true).length * 17 + 3 + wrapx(s.texto, w - 28, 12).length * 15 + 14; }
+  function cajaSalida(x, y, w, h, quien, actor, titulo, texto) {
+    var c = caja(x, y, w, h, { r: 12, fill: actor === 'tu' ? '#eef0ff' : '#fff', stroke: actor === 'tu' ? '#4f46e5' : '#9a98ab', dash: actor !== 'tu', sw: 1.6 });
+    c += actorPastilla(x + 14, y + 12, actor, quien)[0] + tx(x + 14, y + 56, wrapx(titulo, w - 28, 14.5, true), 14.5, 'svg-n', 'start', 17);
+    var nl = wrapx(titulo, w - 28, 14.5, true).length;
+    c += tx(x + 14, y + 56 + (nl - 1) * 17 + 20, wrapx(texto, w - 28, 12), 12, 'svg-t', 'start', 15);
+    return c;
+  }
+  function altoSalida(titulo, texto, w) { return 56 + (wrapx(titulo, w - 28, 14.5, true).length - 1) * 17 + 20 + wrapx(texto, w - 28, 12).length * 15 + 14; }
+  function cambioSvg(ancho) {
+    var f = null;
+    D.flujos.items.forEach(function (it) { if (it.id === 'C') f = it; });
+    if (!f || !f.pasos || f.pasos.length < 5) return '';
+    var id = 'fc' + (++MARC), o = marcas(id), S = [0, 1, 2, 3, 4].map(function (k) { return paso3(f, k); }), mano = [1, 0, 2, 0, 3];
+    var pun = f.estado === 'previsto', protegido = S[3].extra, fallo = S[4].extra;
+    var etq = 'Tres manos distintas para que un cambio llegue a la web: ' + S.map(function (s) { return s.titulo; }).join(', luego ') + '. ' + (protegido ? 'Lo protegido llega a ti. ' : '') + (fallo ? fallo : '');
+    var h, i;
+    if (ancho) {
+      var w = 142, g = 21, x0 = 2, y0 = 4;
+      h = 0; S.forEach(function (s) { h = Math.max(h, altoMano(s, w)); });
+      S.forEach(function (s, k) {
+        o += cajaMano(x0 + k * (w + g), y0, w, h, s, mano[k], pun);
+        if (k < 4) o += linea([x0 + k * (w + g) + w + 1, y0 + h / 2, x0 + (k + 1) * (w + g) - 2, y0 + h / 2], id, false);
+      });
+      var yb = y0 + h, ys = yb + 46, c3 = x0 + 3 * (w + g) + w / 2, c4 = x0 + 4 * (w + g) + w / 2, sh = 0, tw = 240, fw = 200, tx3 = 330;
+      if (protegido) sh = Math.max(sh, altoSalida('Llega a ti', protegido, tw));
+      if (fallo) sh = Math.max(sh, altoSalida('Se deshace', fallo, fw));
+      if (protegido) {
+        o += linea([c3, yb + 1, c3, ys - 2], id, false);
+        o += cajaSalida(tx3, ys, tw, sh, ((D.flujos.actores && D.flujos.actores.tu) || 'Tú'), 'tu', 'Llega a ti', protegido);
+      }
+      if (fallo) {
+        o += linea([c4, yb + 1, c4, ys - 2], id, false);
+        o += cajaSalida(596, ys, fw, sh, 'Verificador', 'equipo', 'Se deshace', fallo);
+      }
+      var ql = frases(f.linea).slice(0, 2).join(' ').trim();
+      o += tx(8, ys + 24, wrapx(ql, 300, 14.5, true), 14.5, 'svg-n', 'start', 20);
+      return svg(800, ys + sh + 8, o, etq, 'esq-d');
+    }
+    var w2 = 308, x = 6, y = 4;
+    S.forEach(function (s, k) {
+      var hh = altoMano(s, w2);
+      o += cajaMano(x, y, w2, hh, s, mano[k], pun);
+      y += hh;
+      if (k < 4) { o += linea([x + w2 / 2, y + 1, x + w2 / 2, y + 22], id, false); y += 24; }
+    });
+    y += 22;
+    var sw2 = 149, sh2 = 0;
+    if (protegido) sh2 = Math.max(sh2, altoSalida('Llega a ti', protegido, sw2));
+    if (fallo) sh2 = Math.max(sh2, altoSalida('Se deshace', fallo, sw2));
+    if (protegido) o += cajaSalida(x, y, sw2, sh2, ((D.flujos.actores && D.flujos.actores.tu) || 'Tú'), 'tu', 'Llega a ti', protegido);
+    if (fallo) o += cajaSalida(x + sw2 + 10, y, sw2, sh2, 'Verificador', 'equipo', 'Se deshace', fallo);
+    return svg(320, y + sh2 + 8, o, etq, 'esq-m');
+  }
+/*==FIN-ESQUEMAS==*/
 
   // ── el mapa: Tú → negocios → pilotos ──────────────────────────────────────────────────────────
   function mapaSvg(ancho) {
@@ -185,55 +483,6 @@ __AXW_PANEL_NAV__
     o += linea([80, 66, 80, 104, 20, 104, 20, ult], id, true);
     mids.forEach(function (m) { o += linea([20, m, 42, m], id, false); });
     return svg(360, y, o, 'Mapa: tú arriba; debajo, tres negocios y, bajo cada uno, su piloto. Entre tú y cada piloto hay una flecha en los dos sentidos.', 'md:hidden');
-  }
-
-  // ── el equipo: El Padrino al centro, ocho figuras ─────────────────────────────────────────────
-  function equipoSvg(ancho) {
-    var E = D.equipo, roles = {}, id = 'fe' + (++MARC), o = '';
-    E.roles.forEach(function (r) { roles[r.id] = r; });
-    function ficha(x, y, w, r) {
-      return '<a href="#rol-' + esc(r.id) + '" data-accion="ir-rol" data-rol="' + esc(r.id) + '"><title>' + esc(r.nombre + ' — ' + (D.estados[r.estado] || r.estado)) + '</title>' +
-        caja(x, y, w, 44, { r: 10, fill: '#fff', stroke: DOT[r.estado] || '#9a98ab', dash: r.estado === 'previsto', sw: 1.6 }) +
-        estadoPunto(x + 16, y + 22, r.estado) + tx(x + 30, y + 20, [r.nombre], 14.5, 'svg-n') +
-        tx(x + 30, y + 36, [D.estados[r.estado] || r.estado], 10.5, 'svg-b', 'start') + '</a>';
-    }
-    var p = roles[E.puerta.rol];
-    if (ancho) {
-      o += marcas(id);
-      var mids = [];
-      E.bloques.forEach(function (b, i) {
-        var h = 38 + b.roles.length * 50 + 6, y = [8, 160, 312][i];
-        o += caja(640, y, 262, h, { fill: '#f8f9ff', stroke: '#c7c4d8', r: 14 }) + tx(656, y + 24, [b.titulo.toUpperCase()], 11, 'svg-b', 'start', null, ' letter-spacing=".08em" font-weight="700"');
-        b.roles.forEach(function (r, k) { o += ficha(654, y + 36 + k * 50, 234, roles[r]); });
-        mids.push(y + h / 2);
-      });
-      var cy = (mids[0] + mids[2]) / 2;
-      o += caja(430, cy - 54, 150, 108, { fill: '#213145', stroke: '#213145', r: 16 }) + tx(505, cy + 6, [E.centro], 18, 'svg-n svg-w', 'middle');
-      mids.forEach(function (m) { o += linea([580, cy, 612, cy, 612, m, 638, m], id, false); });
-      o += caja(20, cy - 36, 110, 72, { fill: '#4f46e5', stroke: '#4f46e5' }) + tx(75, cy + 6, [D.mapa.tu.nombre], 18, 'svg-n svg-w', 'middle');
-      o += tx(285, cy - 52, [E.puerta.etiqueta], 12.5, 'svg-n', 'middle');
-      o += caja(190, cy - 38, 190, 76, { fill: '#fff', stroke: '#9a98ab', dash: true, sw: 1.6 }) + tx(285, cy - 12, [p.nombre], 15, 'svg-n', 'middle') +
-        tx(285, cy + 6, wrap(p.subtitulo, 170, 11), 11, 'svg-b', 'middle', 13) + estadoPunto(206, cy - 24, p.estado);
-      o += linea([130, cy, 188, cy], id, true) + linea([380, cy, 428, cy], id, false);
-      return svg(920, 520, o, 'El equipo del Padrino: en el centro El Padrino; a su derecha tres bloques: Habla (' + E.bloques[0].roles.map(function (r) { return roles[r].nombre; }).join(', ') + '), Decide y cuenta (' + E.bloques[1].roles.map(function (r) { return roles[r].nombre; }).join(', ') + ') y Cambia la web (' + E.bloques[2].roles.map(function (r) { return roles[r].nombre; }).join(', ') + '); a su izquierda, tú y el Portero, tu puerta de aprobación.', 'hidden md:block');
-    }
-    o += marcas(id) + tx(245, 18, [E.puerta.etiqueta], 11.5, 'svg-n', 'middle');
-    o += caja(14, 40, 90, 56, { fill: '#4f46e5', stroke: '#4f46e5' }) + tx(59, 74, [D.mapa.tu.nombre], 16, 'svg-n svg-w', 'middle');
-    o += caja(140, 26, 206, 84, { fill: '#fff', stroke: '#9a98ab', dash: true, sw: 1.6 }) + tx(243, 52, [p.nombre], 15, 'svg-n', 'middle') +
-      tx(243, 70, wrap(p.subtitulo, 188, 11), 11, 'svg-b', 'middle', 13) + estadoPunto(158, 42, p.estado);
-    o += linea([104, 68, 138, 68], id, true) + linea([243, 110, 243, 128, 180, 128, 180, 144], id, false);
-    o += caja(100, 144, 160, 50, { fill: '#213145', stroke: '#213145', r: 14 }) + tx(180, 176, [E.centro], 17, 'svg-n svg-w', 'middle');
-    var y = 226, mids = [];
-    E.bloques.forEach(function (b) {
-      var h = 34 + b.roles.length * 50 + 4;
-      o += caja(30, y, 320, h, { fill: '#f8f9ff', stroke: '#c7c4d8', r: 14 }) + tx(46, y + 22, [b.titulo.toUpperCase()], 11, 'svg-b', 'start', null, ' letter-spacing=".08em" font-weight="700"');
-      b.roles.forEach(function (r, k) { o += ficha(44, y + 32 + k * 50, 292, roles[r]); });
-      mids.push(y + h / 2);
-      y += h + 14;
-    });
-    o += linea([180, 194, 180, 208, 14, 208, 14, mids[mids.length - 1]], id, false);
-    mids.forEach(function (m) { o += linea([14, m, 28, m], id, false); });
-    return svg(360, y, o, 'El equipo del Padrino: tú y el Portero arriba; luego El Padrino y tres bloques: Habla, Decide y cuenta, Cambia la web.', 'md:hidden');
   }
 
   // ── flechas entre pasos y los pequeños dibujos de los flujos ──────────────────────────────────
@@ -320,29 +569,45 @@ __AXW_PANEL_NAV__
           '<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">' + esc(a.hace) + '</p><div class="mt-1">' + chip(a.estado, a.comprobado) + '</div></div>';
       }).join('') + '</div></div></section>';
   }
+  function tarjetaRol(r, L) {
+    return '<article id="rol-' + esc(r.id) + '" data-lw="rol-' + esc(r.id) + '" class="rounded-xl p-space-md bg-surface-container-lowest shadow-sm">' +
+      '<div class="flex flex-wrap items-center justify-between gap-space-xs"><h3 class="font-headline-sm text-[18px] font-bold">' + esc(r.nombre) + (r.subtitulo ? '<span class="block font-label-sm text-label-sm text-on-surface-variant">' + esc(r.subtitulo) + '</span>' : '') + '</h3><div>' + chip(r.estado, r.comprobado) + '</div></div>' +
+      (r.nota_estado ? '<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 [overflow-wrap:anywhere]">' + esc(r.nota_estado) + '</p>' : '') +
+      '<p class="font-label-sm text-label-sm text-outline uppercase tracking-wide mt-space-sm">' + esc(L.hace) + '</p><p class="font-body-sm text-body-sm [overflow-wrap:anywhere]">' + esc(r.hace) + '</p>' +
+      '<p class="font-label-sm text-label-sm text-outline uppercase tracking-wide mt-space-xs">' + esc(L.llaves) + '</p><p class="font-body-sm text-body-sm [overflow-wrap:anywhere]">' + esc(r.llaves) + '</p>' +
+      (r.entra ? '<p class="font-label-sm text-label-sm text-outline uppercase tracking-wide mt-space-xs">' + esc(L.entra) + '</p><p class="font-body-sm text-body-sm [overflow-wrap:anywhere]">' + esc(r.entra) + '</p>' : '') +
+      '<details class="mt-space-sm"><summary class="flex items-center gap-1 font-label-md text-label-md text-primary-container"><span class="material-symbols-outlined text-[18px] chev" aria-hidden="true">expand_more</span>' + esc(L.no_puede) + '</summary>' +
+      '<p class="font-body-sm text-body-sm mt-space-xs [overflow-wrap:anywhere]">' + esc(r.no_puede) + '</p></details></article>';
+  }
   function secEquipo() {
     var E = D.equipo, L = E.etiquetas;
     return '<section id="equipo" data-lw="seccion-equipo" class="space-y-space-md">' + titulo(E.titulo, E.intro) +
       '<div class="rounded-xl bg-surface-container-lowest shadow-sm p-space-sm">' + equipoSvg(true) + equipoSvg(false) + '</div>' +
-      '<div class="grid gap-space-sm md:grid-cols-2">' + E.roles.map(function (r) {
-        return '<article id="rol-' + esc(r.id) + '" data-lw="rol-' + esc(r.id) + '" class="rounded-xl p-space-md bg-surface-container-lowest shadow-sm">' +
-          '<div class="flex flex-wrap items-center justify-between gap-space-xs"><h3 class="font-headline-sm text-[18px] font-bold">' + esc(r.nombre) + (r.subtitulo ? '<span class="block font-label-sm text-label-sm text-on-surface-variant">' + esc(r.subtitulo) + '</span>' : '') + '</h3><div>' + chip(r.estado, r.comprobado) + '</div></div>' +
-          (r.nota_estado ? '<p class="viejo mt-1">' + esc(r.nota_estado) + '</p>' : '') +
-          '<p class="font-label-sm text-label-sm text-outline uppercase tracking-wide mt-space-sm">' + esc(L.hace) + '</p><p class="font-body-sm text-body-sm [overflow-wrap:anywhere]">' + esc(r.hace) + '</p>' +
-          '<details class="mt-space-sm"><summary class="flex items-center gap-1 font-label-md text-label-md text-primary-container"><span class="material-symbols-outlined text-[18px] chev" aria-hidden="true">expand_more</span>' + esc(L.no_puede) + ' · ' + esc(L.llaves) + '</summary>' +
-          '<p class="font-label-sm text-label-sm text-outline uppercase tracking-wide mt-space-xs">' + esc(L.no_puede) + '</p><p class="font-body-sm text-body-sm [overflow-wrap:anywhere]">' + esc(r.no_puede) + '</p>' +
-          '<p class="font-label-sm text-label-sm text-outline uppercase tracking-wide mt-space-xs">' + esc(L.llaves) + '</p><p class="font-body-sm text-body-sm [overflow-wrap:anywhere]">' + esc(r.llaves) + '</p></details></article>';
-      }).join('') + '</div></section>';
+      '<div class="grid gap-space-sm md:grid-cols-2">' + E.roles.map(function (r) { return tarjetaRol(r, L); }).join('') + '</div></section>';
+  }
+  function secMaquinaria() {
+    var M = D.maquinaria, L = D.equipo.etiquetas;
+    return '<section id="maquinaria" data-lw="seccion-maquinaria" class="space-y-space-md rounded-xl p-space-md" style="background:#e9ecf5">' + titulo(M.titulo, M.linea) +
+      '<div class="grid gap-space-sm md:grid-cols-2">' + M.items.map(function (r) { return tarjetaRol(r, L); }).join('') + '</div></section>';
+  }
+  function articuloApuesta(A) {
+    var s = apuestaSvg(true);
+    if (!A || !s) return '';
+    return '<article id="flujo-apuesta" data-lw="flujo-apuesta" class="esq-art rounded-xl p-space-md bg-surface-container-low">' +
+      '<div class="min-w-0"><h3 class="font-headline-sm text-[18px] font-bold leading-snug">' + esc(A.titulo) + '</h3><p class="font-body-sm text-body-sm text-on-surface-variant mt-1">' + esc(A.linea) + '</p></div>' +
+      '<div class="esq-wrap mt-space-md rounded-xl bg-surface-container-lowest shadow-sm p-space-sm">' + s + apuestaSvg(false) + '</div>' +
+      '<div class="mt-space-sm flex flex-wrap items-baseline gap-space-xs">' + chip(A.estado, A.comprobado) + '<span class="font-body-sm text-body-sm text-on-surface-variant [overflow-wrap:anywhere]">' + esc(A.estado_txt) + '</span></div></article>';
   }
   function secFlujos() {
     var F = D.flujos;
     return '<section id="flujos" data-lw="seccion-flujos" class="space-y-space-lg">' + titulo(F.titulo) +
       '<p class="font-body-sm text-body-sm text-on-surface-variant flex flex-wrap items-center gap-x-space-sm gap-y-1">' + Object.keys(F.actores).map(function (k) { return '<span class="actor act-' + esc(k) + '">' + esc(F.actores[k]) + '</span>'; }).join('') + '</p>' +
+      articuloApuesta(F.apuesta) +
       F.items.map(function (f) {
-        return '<article id="flujo-' + esc(f.id) + '" data-lw="flujo-' + esc(f.id) + '" class="rounded-xl p-space-md bg-surface-container-low">' +
+        return '<article id="flujo-' + esc(f.id) + '" data-lw="flujo-' + esc(f.id) + '" class="' + (f.id === 'C' ? 'esq-art ' : '') + 'rounded-xl p-space-md bg-surface-container-low">' +
           '<div class="flex items-start gap-space-sm"><span class="w-9 h-9 rounded-full bg-primary-container text-on-primary font-headline-sm text-[16px] font-bold flex items-center justify-center flex-none" aria-hidden="true">' + esc(f.id) + '</span>' +
           '<div class="min-w-0"><h3 class="font-headline-sm text-[18px] font-bold leading-snug">' + esc(f.titulo) + '</h3><p class="font-body-sm text-body-sm text-on-surface-variant mt-1">' + esc(f.linea) + '</p></div></div>' +
-          pasos(f) +
+          (f.id === 'C' && cambioSvg(true) ? '<div class="esq-wrap mt-space-md rounded-xl bg-surface-container-lowest shadow-sm p-space-sm">' + cambioSvg(true) + cambioSvg(false) + '</div>' : pasos(f)) +
           (f.id === 'E' ? '<div class="mt-space-md rounded-xl bg-surface-container-lowest p-space-sm max-w-[640px]">' + linea90(f) + '</div>' : '') +
           (f.cajas ? '<div class="grid gap-space-sm md:grid-cols-2 mt-space-md">' + f.cajas.map(function (c) {
             return '<div class="rounded-xl p-space-sm bg-surface-container-lowest"><div class="font-label-md text-label-md font-bold">' + esc(c.titulo) + '</div><p class="font-body-sm text-body-sm mt-1 [overflow-wrap:anywhere]">' + esc(c.texto) + '</p></div>';
@@ -374,7 +639,7 @@ __AXW_PANEL_NAV__
     v.innerHTML =
       '<section data-lw="cabecera" class="space-y-space-sm"><p class="font-body-md text-body-md text-on-surface-variant">' + esc(C.subtitulo) + '</p>' +
       '<div class="rounded-xl p-space-md bg-primary-container text-on-primary [overflow-wrap:anywhere]" style="font-size:17px;line-height:26px">' + esc(C.caja) + '</div></section>' +
-      secNecesitan() + secMapa() + secEquipo() + secFlujos() + secPie();
+      secNecesitan() + secMapa() + secEquipo() + secMaquinaria() + secFlujos() + secPie();
     if (location.hash.length > 1) { var t = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (t) t.scrollIntoView(); }
   }
 
