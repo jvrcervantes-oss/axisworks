@@ -1,0 +1,582 @@
+<!-- Pantalla /asistente/ del ERP MAESTRO (AXW-136, subtarea 3, 2-oct-2026; encargos/20261002_erp_asistente_maestro.md).
+     NO es una página entera: build.py (asistente_maestro) la inyecta en la página de Lawang que copia copia_v4(), sustituyendo
+     su contenedor de contenido (el primero de la página, hasta el cierre de la zona principal) y su script. Así el
+     `<head>` (cáscara, nav, guard, i18n, tw.css) sigue siendo UNA sola fuente: la de Lawang. Dos partes, separadas por la línea
+     «AXW_SCRIPT»: arriba el marcado, abajo el script.
+     Qué hace: el equipo escribe lo que necesita; la edge `asistente-peticiones` solo INTERPRETA (una acción de un catálogo
+     cerrado); la persona confirma; `solicitud_cambio_pide` crea la petición (la base vuelve a validar todo). La resuelve OTRO
+     administrador desde esta misma pantalla (`solicitud_cambio_resuelve`). El navegador no escribe en ninguna tabla: solo RPC;
+     las peticiones se leen por `solicitudes_cambio_datos` (lwDatos) y el detalle de un borrado por `solicitud_cambio_detalle`.
+     Todo texto que viene de la base, de la persona o de la edge se pinta con textContent; los botones se enganchan por
+     data-accion, nunca por su rótulo. Sin Telegram: aquí no hay más aviso que la campana de la intranet. -->
+<div class="flex flex-col w-full gap-8" data-ap="raiz">
+
+<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<div class="flex flex-col gap-2 max-w-3xl">
+<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight">Asistente</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Pide aquí lo que la intranet no te deja hacer: cambiar un dato de un cliente, anular o borrar una factura o un recibí, borrar una operación… El asistente solo prepara la petición; la revisa y la aprueba un administrador, nunca se ejecuta sola.</p>
+</div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-6" id="sc-tarjeta" style="scroll-margin-top:88px">
+<style>
+@keyframes sc-punto{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-4px)}}
+@keyframes sc-barrido{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes sc-entra{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@keyframes sc-vuelve{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+.sc-puntos span{display:inline-block;width:7px;height:7px;margin:0 2px;border-radius:999px;background:#104C4F;animation:sc-punto 1.2s ease-in-out infinite}
+.sc-puntos span:nth-child(2){animation-delay:.15s}.sc-puntos span:nth-child(3){animation-delay:.3s}
+.sc-barra{height:12px;border-radius:6px;background:linear-gradient(90deg,#e4e2dd 25%,#f5f4ee 50%,#e4e2dd 75%);background-size:200% 100%;animation:sc-barrido 1.4s ease-in-out infinite}
+.sc-entra{animation:sc-entra .28s ease-out both}.sc-vuelve{animation:sc-vuelve .28s ease-out both}
+.sc-paso-n{width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#e4e2dd;color:#75786e;transition:background .2s,color .2s}
+.sc-paso[data-estado="activo"] .sc-paso-n{background:#104C4F;color:#fff}
+.sc-paso[data-estado="hecho"] .sc-paso-n{background:#485B37;color:#fff}
+.sc-paso[data-estado="pendiente"] .sc-paso-t{color:#75786e}
+.ap-oculto{display:none !important}
+.ap-linea{white-space:pre-line;word-break:break-word}
+.ap-revision{margin-top:8px;padding:12px 14px;border-radius:10px;background:#f5f4ee;display:flex;flex-direction:column;gap:10px}
+.ap-revision dl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;font-size:13px}
+.ap-revision dt{color:#75786e}.ap-revision dd{margin:0;word-break:break-word}
+.ap-aviso{padding:8px 10px;border-radius:8px;background:#fff3e0;color:#8a4b00;font-size:13px}
+.ap-filtro{padding:6px 14px;border-radius:999px;font-size:13px;background:#e4e2dd;color:#1b1c19;border:0;cursor:pointer}
+.ap-filtro[aria-pressed="true"]{background:#104C4F;color:#fff}
+.ap-motivo{width:100%;border:1px solid #c5c8bc;border-radius:8px;padding:8px 10px;font-size:14px;background:#fff}
+@media (prefers-reduced-motion:reduce){.sc-puntos span,.sc-barra,.sc-entra,.sc-vuelve{animation:none}}
+</style>
+
+<ol class="flex items-center gap-2 font-label-md text-label-md" aria-label="Pasos">
+<li class="sc-paso flex items-center gap-2" data-paso="1" data-estado="activo"><span class="sc-paso-n">1</span><span class="sc-paso-t">Escribe</span></li>
+<li class="flex-1 h-px bg-outline-variant" aria-hidden="true"></li>
+<li class="sc-paso flex items-center gap-2" data-paso="2" data-estado="pendiente"><span class="sc-paso-n">2</span><span class="sc-paso-t">Comprueba</span></li>
+<li class="flex-1 h-px bg-outline-variant" aria-hidden="true"></li>
+<li class="sc-paso flex items-center gap-2" data-paso="3" data-estado="pendiente"><span class="sc-paso-n">3</span><span class="sc-paso-t">Enviado</span></li>
+</ol>
+
+<div class="flex flex-col gap-5" id="sc-paso1">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight">¿Qué necesitas?</h2>
+<textarea class="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-deep-lagoon" id="sc-texto" maxlength="500" rows="5" placeholder="Por ejemplo: «Cambia el teléfono del cliente de ejemplo a +34 600 000 000», «Anula la factura FAC-0001, el importe está mal», «Borra la operación CON-0001, el cliente se echó atrás»."></textarea>
+<p class="font-body-sm text-body-sm text-outline">Di siempre de qué se trata (el nombre del cliente, el número de factura o de contrato) y por qué. Máximo 500 caracteres. Lo que escribes lo lee el administrador tal cual.</p>
+<div class="flex justify-end">
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-container text-on-primary hover:bg-primary disabled:opacity-60 disabled:cursor-wait font-label-md text-label-md transition-colors shadow-sm" data-accion="interpretar" type="button"><span class="material-symbols-outlined text-[18px]">auto_awesome</span><span>Comprobar mi petición</span></button>
+</div>
+</div>
+
+<div class="flex flex-col gap-5 hidden" hidden id="sc-paso2">
+<div class="flex flex-col gap-2 rounded-lg bg-surface-container-low px-4 py-3">
+<div class="flex items-center justify-between gap-3">
+<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold">Tu petición</span>
+<button class="flex items-center gap-1 font-body-sm text-body-sm text-deep-lagoon hover:underline" data-accion="cambiar-texto" type="button"><span class="material-symbols-outlined text-[16px]">edit</span><span>Cambiar el texto</span></button>
+</div>
+<p class="font-body-md text-body-md text-on-surface ap-linea" id="sc-cita"></p>
+</div>
+
+<div class="flex flex-col gap-3" id="sc-pensando" role="status" aria-live="polite">
+<div class="flex items-center gap-3"><span class="sc-puntos" aria-hidden="true"><span></span><span></span><span></span></span>
+<span class="font-body-md text-body-md text-on-surface" id="sc-pensando-texto">Leyendo tu petición…</span></div>
+<div class="sc-barra" style="width:92%"></div><div class="sc-barra" style="width:64%"></div>
+</div>
+
+<div class="flex flex-col gap-4 hidden" hidden id="sc-propuesta">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" id="sc-propuesta-titulo">Esto es lo que se va a pedir</h2>
+<div class="flex flex-col gap-2" id="sc-opciones"></div>
+<p class="font-body-sm text-body-sm text-on-surface-variant ap-linea" id="sc-propuesta-ayuda"></p>
+<p class="font-body-sm text-body-sm text-burnt-earth hidden" hidden id="sc-aviso" role="alert"></p>
+<div class="flex flex-wrap gap-3 justify-between items-center">
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-high text-on-surface hover:bg-surface-variant disabled:opacity-60 font-label-md text-label-md transition-colors" data-accion="enviar-manual" type="button"><span class="material-symbols-outlined text-[18px]">forum</span><span>No es esto: enviar mi texto tal cual</span></button>
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-container text-on-primary hover:bg-primary disabled:opacity-60 font-label-md text-label-md transition-colors shadow-sm" data-accion="enviar-peticion" type="button"><span class="material-symbols-outlined text-[18px]">send</span><span>Sí, enviar para aprobar</span></button>
+</div>
+</div>
+</div>
+
+<div class="flex flex-col gap-5 items-start hidden" hidden id="sc-paso3">
+<div class="flex items-center gap-3">
+<span class="w-11 h-11 rounded-full bg-primary-container text-on-primary flex items-center justify-center"><span class="material-symbols-outlined">check</span></span>
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" id="sc-enviado-titulo">Enviado para aprobar</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Un administrador la revisará. Cuando la apruebe o la rechace te llegará el aviso a la campana, y aquí al lado verás cómo va.</p>
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md transition-colors shadow-sm" data-accion="otra" type="button"><span class="material-symbols-outlined text-[18px]">add</span><span>Hacer otra petición</span></button>
+</div>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-5">
+<div class="flex items-end justify-between gap-4 pb-4 border-b border-outline-variant/40">
+<div class="flex flex-col gap-1">
+<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" id="sc-lista-etiqueta">Mis peticiones</span>
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight">Cómo van</h2>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 rounded-full bg-surface-container-high text-on-surface hover:bg-surface-variant font-label-md text-label-md transition-colors" data-accion="actualizar" type="button"><span class="material-symbols-outlined text-[18px]">refresh</span><span>Actualizar</span></button>
+</div>
+<div class="flex flex-wrap gap-2 ap-oculto" id="ap-filtros" role="group" aria-label="Qué peticiones ver">
+<button class="ap-filtro" data-accion="filtro" data-valor="pendiente" aria-pressed="true" type="button">Por resolver</button>
+<button class="ap-filtro" data-accion="filtro" data-valor="todas" aria-pressed="false" type="button">Todas</button>
+</div>
+<p class="font-body-sm text-body-sm text-outline" id="sc-lista-estado" role="status">Cargando…</p>
+<div class="flex flex-col divide-y divide-outline-variant/40" id="sc-lista"></div>
+<div class="flex justify-center ap-oculto" id="ap-mas-caja">
+<button class="flex items-center gap-2 px-4 py-2 rounded-full bg-surface-container-high text-on-surface hover:bg-surface-variant disabled:opacity-60 font-label-md text-label-md transition-colors" data-accion="cargar-mas" type="button"><span>Cargar más</span></button>
+</div>
+</section>
+</div>
+
+<template id="ap-t-opcion">
+<label class="flex items-start gap-3 rounded-lg border-2 border-deep-lagoon/30 bg-surface-container-lowest px-4 py-3 cursor-pointer hover:border-deep-lagoon">
+<input type="radio" name="sc-op" class="mt-1" data-campo="radio">
+<span class="font-body-md text-body-md text-on-surface" data-campo="titulo"></span>
+</label>
+</template>
+
+<template id="ap-t-fila">
+<div class="py-3 flex flex-col gap-1" data-campo="fila">
+<div class="flex items-center justify-between gap-3">
+<span class="font-label-md text-label-md text-on-surface" data-campo="cabecera"></span>
+<span class="px-3 py-0.5 rounded-full font-body-sm text-[12px] whitespace-nowrap" data-campo="estado"></span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant ap-linea" data-campo="texto"></p>
+<p class="font-body-sm text-body-sm text-error ap-linea ap-oculto" data-campo="error"></p>
+<p class="font-body-sm text-body-sm text-on-surface-variant ap-linea ap-oculto" data-campo="resolucion"></p>
+<div class="flex items-center justify-between gap-3">
+<span class="font-body-sm text-[12px] text-outline" data-campo="fecha"></span>
+<span class="flex items-center gap-3">
+<button type="button" class="font-body-sm text-body-sm text-deep-lagoon underline ap-oculto" data-accion="revisar">Revisar</button>
+<button type="button" class="font-body-sm text-body-sm text-outline underline ap-oculto" data-accion="retirar">Retirar</button>
+</span>
+</div>
+<div class="ap-revision ap-oculto" data-campo="revision">
+<p class="font-body-sm text-body-sm text-on-surface-variant" data-campo="revision-estado" role="status"></p>
+<dl data-campo="revision-datos"></dl>
+<p class="ap-aviso ap-oculto" data-campo="revision-aviso"></p>
+<input class="ap-motivo ap-oculto" type="text" maxlength="500" data-campo="motivo" aria-label="Motivo del rechazo" placeholder="Si la rechazas, di por qué (obligatorio)">
+<div class="flex flex-wrap gap-3 justify-end">
+<button type="button" class="flex items-center gap-2 px-4 py-2 rounded-full bg-surface-container-high text-on-surface hover:bg-surface-variant disabled:opacity-60 font-label-md text-label-md transition-colors" data-accion="rechazar">Rechazar</button>
+<button type="button" class="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-container text-on-primary hover:bg-primary disabled:opacity-60 font-label-md text-label-md transition-colors shadow-sm" data-accion="aprobar">Aprobar</button>
+</div>
+</div>
+</div>
+</template>
+</div>
+<!--AXW_SCRIPT-->
+<script>
+(function () {
+  'use strict';
+  var KEY_SB = window.LW_SB_KEY;
+  var TOPE_TEXTO = 500;
+  var $ = function (id) { return document.getElementById(id); };
+  var ok = function (m) { if (typeof toast === 'function') toast(m); };
+  var mal = function (m) { if (typeof toastMal === 'function') toastMal(m); else alert(m); };
+  var muestra = function (el, si) { el.hidden = !si; el.classList.toggle('hidden', !si); };
+  var oculta = function (el, si) { el.classList.toggle('ap-oculto', !!si); };
+  var campo = function (raiz, nombre) { return raiz.querySelector('[data-campo="' + nombre + '"]'); };
+
+  // Mensajes por código de la edge (la edge manda también su `mensaje`: es el que se enseña; esto es el respaldo).
+  var ERRORES = {
+    sin_sesion: 'Tu sesión ha caducado: vuelve a entrar.',
+    sin_permiso: 'No tienes el asistente de peticiones en tus herramientas: pídeselo a un administrador.',
+    modulo_apagado: 'El asistente no está activo en esta instancia.',
+    origen_no_permitido: 'Esta dirección no está autorizada para usar el asistente.',
+    datos: 'Escribe qué necesitas (hasta ' + TOPE_TEXTO + ' caracteres).',
+    limite_dia: 'Has llegado al límite de consultas de hoy.',
+    limite_global: 'El asistente ha llegado a su límite de hoy.',
+    modelo_error: 'El asistente no ha respondido: prueba otra vez en un rato.',
+    config: 'El asistente no está configurado todavía: avisa a un administrador.',
+    base: 'La base no ha respondido: prueba otra vez en un rato.'
+  };
+  // Con estos fallos la petición no se pierde: se puede mandar tal cual (no cuesta nada de IA). Con los demás (sesión,
+  // permiso, módulo apagado, texto vacío) se vuelve a escribir.
+  var OFRECE_MANUAL = { limite_dia: 1, limite_global: 1, modelo_error: 1, config: 1, base: 1 };
+  var ESTADO = {
+    pendiente: ['Esperando aprobación', 'bg-surface-container-high text-on-surface'],
+    ejecutada: ['Hecha', 'bg-primary-container text-on-primary'],
+    rechazada: ['Rechazada', 'bg-error-container text-on-error-container'],
+    fallida: ['No se pudo hacer', 'bg-error-container text-on-error-container'],
+    anulada: ['Retirada', 'bg-surface-container text-outline']
+  };
+  var ACCION = {
+    editar_comprador: 'Cambiar datos de un cliente', borrar_comprador: 'Borrar la ficha de un cliente',
+    anular_documento: 'Anular un documento', borrar_documento: 'Borrar un documento',
+    borrar_operacion: 'Borrar una operación', manual: 'Petición libre'
+  };
+  var CON_DETALLE = { anular_documento: 1, borrar_documento: 1, borrar_operacion: 1, borrar_comprador: 1 };
+  var SOLO_SUPER = { borrar_comprador: 1, borrar_operacion: 1 };   // lo exige la base; aquí solo se avisa antes de pulsar
+  var CAMPO = { tipo: 'Tipo de cliente', full_name: 'Nombre', email: 'Email', phone: 'Teléfono', idioma_comunicacion: 'Idioma',
+    forma_juridica: 'Forma jurídica', registro_num: 'Nº de registro', rep_nombre: 'Representante legal',
+    rep_cargo: 'Cargo del representante', notes: 'Notas' };
+  var ETIQ = { numero: 'Número', tipo: 'Tipo', total: 'Total', moneda: 'Moneda', fecha: 'Fecha', sociedad: 'Sociedad',
+    contrato: 'Contrato', anulada: 'Anulada', emitida: 'Emitida', rectificativa: 'Es rectificativa', enviado: 'Enviada al cliente',
+    aplicaciones: 'Cobros aplicados', raiz: 'Contrato raíz', contratos: 'Contratos', firmados: 'Contratos firmados',
+    recibis_vivos: 'Recibís vivos', emitidas: 'Facturas emitidas', sueltas: 'Facturas sueltas', comision_blindada: 'Comisión ya pagada o en disputa',
+    documentos: 'Documentos que se anulan', referencias: 'Datos enlazados a la ficha' };
+
+  var PROP = null;       // última interpretación de la edge
+  var ELEGIDA = null;    // fila_id marcada
+  var TURNO = 0;
+  var PASO = 1;
+
+  // Un valor de la base a texto plano: nunca HTML (todo va por textContent).
+  function texto(v) {
+    if (v === null || v === undefined || v === '') return '—';
+    if (v === true) return 'sí';
+    if (v === false) return 'no';
+    if (Array.isArray(v)) {
+      return v.map(function (x) {
+        return x && typeof x === 'object' ? (x.numero != null ? String(x.numero) + (x.tipo ? ' (' + x.tipo + ')' : '') + (x.firmado ? ' · firmado' : '') + (x.total != null ? ' · ' + x.total + ' ' + (x.moneda || '') : '') : JSON.stringify(x)) : String(x);
+      }).join('\n') || '—';
+    }
+    if (typeof v === 'object') return Object.keys(v).map(function (k) { return k + ': ' + texto(v[k]); }).join('\n');
+    return String(v);
+  }
+  function fechaCorta(s) { return String(s || '').slice(0, 16).replace('T', ' '); }
+
+  function init(aut) {
+    var sb = aut.sb;
+    var ficha = aut.ficha || {};
+    var esSuper = ficha.rol === 'super_admin';
+    var ADMIN = ficha.rol === 'admin' || esSuper;     // la lectura lo confirma con `soy_admin`; la base manda
+    var FILTRO = ADMIN ? 'pendiente' : null;
+    var CURSOR = null;
+    var FILAS = [];
+
+    if (ADMIN) {
+      $('sc-lista-etiqueta').textContent = 'Peticiones del equipo';
+      oculta($('ap-filtros'), false);
+    }
+
+    function llamaEdge(body) {
+      return sb.auth.getSession().then(function (r) {
+        var token = r && r.data && r.data.session && r.data.session.access_token;
+        if (!token) return { status: 401, cuerpo: { ok: false, codigo: 'sin_sesion' } };
+        var status = 0;
+        return fetch(window.lwEdge('asistente-peticiones'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': KEY_SB },
+          body: JSON.stringify(body)
+        }).then(function (res) { status = res.status; return res.json().catch(function () { return {}; }); })
+          .then(function (c) { return { status: status, cuerpo: c || {} }; });
+      });
+    }
+
+    /* ── Una tarjeta que avanza: 1 Escribe → 2 Comprueba → 3 Enviado ── */
+    function irA(n) {
+      var atras = n < PASO;
+      PASO = n;
+      [1, 2, 3].forEach(function (k) {
+        var el = $('sc-paso' + k);
+        muestra(el, k === n);
+        if (k === n) { el.classList.remove('sc-entra', 'sc-vuelve'); void el.offsetWidth; el.classList.add(atras ? 'sc-vuelve' : 'sc-entra'); }
+      });
+      document.querySelectorAll('.sc-paso').forEach(function (li) {
+        var k = +li.getAttribute('data-paso');
+        li.setAttribute('data-estado', k < n || (n === 3 && k === 3) ? 'hecho' : k === n ? 'activo' : 'pendiente');
+      });
+      $('sc-tarjeta').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      if (n === 1) $('sc-texto').focus();
+    }
+    var botonInterpretar = function () { return document.querySelector('[data-accion="interpretar"]'); };
+    var botonEnviar = function () { return document.querySelector('[data-accion="enviar-peticion"]'); };
+    var botonManual = function () { return document.querySelector('[data-accion="enviar-manual"]'); };
+
+    var FRASES = ['Leyendo tu petición…', 'Buscando la ficha o el documento…', 'Comprobando qué se puede hacer…', 'Casi está…'];
+    var relojFrases = null;
+    function pensando(si) {
+      botonInterpretar().disabled = si;
+      clearInterval(relojFrases);
+      muestra($('sc-pensando'), si);
+      if (si) {
+        var i = 0;
+        $('sc-pensando-texto').textContent = FRASES[0];
+        muestra($('sc-propuesta'), false);
+        relojFrases = setInterval(function () {
+          i = Math.min(i + 1, FRASES.length - 1);
+          $('sc-pensando-texto').textContent = FRASES[i];
+        }, 1800);
+      }
+    }
+
+    // `texto` ya es el mensaje para la persona. Con ofreceManual = true se puede mandar el texto tal cual.
+    function pintaPropuesta(p) {
+      pensando(false);
+      PROP = p; ELEGIDA = null;
+      var cont = $('sc-opciones'); cont.textContent = '';
+      muestra($('sc-aviso'), false);
+      botonEnviar().disabled = false; botonManual().disabled = false;
+      muestra(botonEnviar(), true);
+      var titulo = $('sc-propuesta-titulo'), ayuda = $('sc-propuesta-ayuda');
+      var opciones = Array.isArray(p.opciones) ? p.opciones : [];
+      var tipo = p.tipo;
+      if ((tipo === 'propuesta' || tipo === 'elegir') && !opciones.length) tipo = 'no_encontrado';   // una propuesta sin nada que marcar no se puede enviar
+      if (tipo === 'manual') {
+        titulo.textContent = 'Esto lo resuelve un administrador a mano';
+        ayuda.textContent = (p.resumen ? 'Entendido como: ' + p.resumen + '\n' : '') +
+          'No es una de las cosas que se hacen solas, así que se enviará tu texto tal cual. Si te parece bien, pulsa «Sí, enviar para aprobar».';
+        muestra(botonManual(), false);
+      } else if (tipo === 'no_encontrado' || tipo === 'no_aplicable') {
+        titulo.textContent = tipo === 'no_aplicable' ? 'Eso no se puede pedir así' : 'No encuentro a qué te refieres';
+        ayuda.textContent = (p.mensaje ? p.mensaje + '\n' : '') + 'Pulsa «Cambiar el texto» y corrígelo (nombre, número de factura o de contrato). O envía tu texto tal cual para que lo lea un administrador.';
+        muestra(botonEnviar(), false);
+        muestra(botonManual(), true);
+      } else if (tipo === 'propuesta' || tipo === 'elegir') {
+        titulo.textContent = tipo === 'elegir' ? 'He encontrado varias: marca la correcta' : 'Esto es lo que se va a pedir';
+        ayuda.textContent = 'Si es correcto, pulsa «Sí, enviar para aprobar». Si no, pulsa «Cambiar el texto» o envía tu texto tal cual para que lo lea un administrador.';
+        muestra(botonManual(), true);
+        var plantilla = $('ap-t-opcion');
+        opciones.forEach(function (o) {
+          var nodo = plantilla.content.firstElementChild.cloneNode(true);
+          campo(nodo, 'titulo').textContent = String(o.titulo || '');
+          var radio = campo(nodo, 'radio');
+          if (opciones.length === 1) radio.checked = true;
+          radio.addEventListener('change', function () { ELEGIDA = o.fila_id; });
+          cont.appendChild(nodo);
+        });
+        if (opciones.length === 1) ELEGIDA = opciones[0].fila_id;
+        PROP = { tipo: tipo, accion: p.accion, nuevos: p.nuevos || null, opciones: opciones };
+      } else {
+        // una forma que esta pantalla no conoce: no se inventa nada, se ofrece mandar el texto
+        PROP = { tipo: 'manual' };
+        titulo.textContent = 'No he podido interpretarlo';
+        ayuda.textContent = 'Puedes enviar tu texto tal cual para que lo lea un administrador.';
+        muestra(botonEnviar(), true);
+        muestra(botonManual(), false);
+      }
+      muestra($('sc-propuesta'), true);
+      $('sc-propuesta').classList.remove('sc-entra'); void $('sc-propuesta').offsetWidth; $('sc-propuesta').classList.add('sc-entra');
+    }
+
+    // La petición la crea la base por RPC (quién pide y sobre qué se ve lo decide ella). Sin `.select()` ni encadenados.
+    function inserta(fila) {
+      botonEnviar().disabled = true; botonManual().disabled = true;
+      return sb.rpc('solicitud_cambio_pide', { p_accion: fila.accion, p_fila_id: fila.fila_id || null,
+        p_nuevos: fila.nuevos || null, p_motivo: fila.motivo || null, p_texto: fila.texto || null }).then(function (r) {
+        botonEnviar().disabled = false; botonManual().disabled = false;
+        if (r.error) {
+          // La base explica por qué no (ya enviada, firmada, cobros…): se dice y se ofrece mandarlo tal cual.
+          var a = $('sc-aviso');
+          a.textContent = 'Así no se puede pedir: ' + (r.error.message || 'la base no lo admite') + '. Puedes enviar tu texto tal cual para que lo resuelva un administrador.';
+          muestra(a, true);
+          muestra(botonManual(), true);
+          return;
+        }
+        var n = r.data;
+        $('sc-enviado-titulo').textContent = 'Enviado para aprobar' + (n ? ' · SC-' + n : '');
+        $('sc-texto').value = ''; PROP = null;
+        irA(3);
+        carga(true);
+      }, function (e) {
+        botonEnviar().disabled = false; botonManual().disabled = false;
+        mal('No se ha enviado: ' + ((e && e.message) || e));
+      });
+    }
+
+    function interpretar() {
+      var mio = ++TURNO;
+      var t = $('sc-texto').value.trim().slice(0, TOPE_TEXTO);
+      if (!t) { mal('Escribe qué necesitas.'); $('sc-texto').focus(); return; }
+      $('sc-cita').textContent = t;
+      irA(2);
+      pensando(true);
+      llamaEdge({ texto: t }).then(function (r) {
+        if (mio !== TURNO || PASO !== 2) return;   // ya volvió a escribir: esta respuesta no vale
+        var c = r.cuerpo || {};
+        if (r.status !== 200 || c.ok !== true) {
+          pensando(false);
+          var cod = String(c.codigo || '');
+          mal(String(c.mensaje || ERRORES[cod] || ('No se pudo leer la petición (' + (cod || r.status) + ')')));
+          // El fallo del intérprete no pierde la petición: se ofrece mandarla tal cual. Sesión, permiso, módulo, texto: se vuelve a escribir.
+          if (OFRECE_MANUAL[cod] || (!cod && r.status >= 500)) pintaPropuesta({ tipo: 'manual' });
+          else irA(1);
+          return;
+        }
+        pintaPropuesta(c);
+      }, function () {
+        if (mio !== TURNO || PASO !== 2) return;
+        mal('Sin conexión con el asistente: puedes enviar tu texto tal cual.');
+        pintaPropuesta({ tipo: 'manual' });
+      });
+    }
+
+    function enviarPeticion() {
+      var t = $('sc-cita').textContent.trim();
+      if (!PROP || !t) return;
+      if (PROP.tipo === 'manual') return inserta({ accion: 'manual', texto: t });
+      if (!ELEGIDA) { mal('Marca una de las opciones.'); return; }
+      var fila = { accion: PROP.accion, fila_id: ELEGIDA, texto: t, motivo: t };
+      if (PROP.accion === 'editar_comprador') fila.nuevos = PROP.nuevos;
+      inserta(fila);
+    }
+
+    /* ── Lista: mis peticiones; el administrador ve las del equipo y las resuelve ── */
+    function pintaFila(s) {
+      var nodo = $('ap-t-fila').content.firstElementChild.cloneNode(true);
+      nodo.setAttribute('data-id', s.id);
+      nodo.setAttribute('data-estado-peticion', s.estado);
+      nodo.setAttribute('data-accion-peticion', s.accion);
+      var e = ESTADO[s.estado] || [s.estado, 'bg-surface-container text-outline'];
+      var quien = ADMIN && s.pedido_por_nombre ? ' · ' + (s.mia ? 'tú' : s.pedido_por_nombre) : '';
+      campo(nodo, 'cabecera').textContent = 'SC-' + s.numero + ' · ' + (ACCION[s.accion] || s.accion) +
+        (s.ficha_nombre ? ' · ' + s.ficha_nombre : '') + quien;
+      var b = campo(nodo, 'estado');
+      b.textContent = e[0];
+      e[1].split(' ').forEach(function (c) { b.classList.add(c); });
+      campo(nodo, 'texto').textContent = s.texto || s.motivo || '';
+      if (s.error) { var er = campo(nodo, 'error'); er.textContent = s.error; oculta(er, false); }
+      var res = [];
+      if (s.resuelto_por_nombre) res.push('Resuelta por ' + s.resuelto_por_nombre);
+      if (s.resolucion_motivo) res.push(s.resolucion_motivo);
+      if (res.length) { var rs = campo(nodo, 'resolucion'); rs.textContent = res.join(' · '); oculta(rs, false); }
+      campo(nodo, 'fecha').textContent = fechaCorta(s.pedido_en) + (s.resuelto_en ? ' → ' + fechaCorta(s.resuelto_en) : '');
+      if (s.estado === 'pendiente' && s.mia) oculta(nodo.querySelector('[data-accion="retirar"]'), false);
+      if (s.estado === 'pendiente' && ADMIN && !s.mia) oculta(nodo.querySelector('[data-accion="revisar"]'), false);
+      else if (s.estado === 'pendiente' && ADMIN && s.mia) {
+        var av = campo(nodo, 'resolucion'); av.textContent = 'Es tuya: la resuelve otro administrador (o la retiras tú).'; oculta(av, false);
+      }
+      return nodo;
+    }
+
+    var CARGA = 0;   // la última carga manda: una respuesta vieja (otro filtro, doble pulsación) no pinta
+    function carga(reinicia) {
+      var mia = ++CARGA;
+      if (reinicia) { CURSOR = null; FILAS = []; $('sc-lista').textContent = ''; }
+      var est = $('sc-lista-estado');
+      est.textContent = 'Cargando…';
+      oculta($('ap-mas-caja'), true);
+      return window.lwDatos('solicitudes_cambio_datos', { p_estado: FILTRO, p_limit: 50, p_despues: CURSOR }).then(function (r) {
+        if (mia !== CARGA) return;
+        if (r.error || !r.data) {
+          // «No he podido mirar» no es «no hay nada»: se dice distinto y no se deja la lista como si estuviera vacía.
+          est.textContent = 'No se pudieron cargar las peticiones: ' + ((r.error && r.error.message) || 'sin respuesta') + '. Pulsa «Actualizar» para reintentar.';
+          return;
+        }
+        var lista = Array.isArray(r.data.peticiones) ? r.data.peticiones : [];
+        lista.forEach(function (s) { FILAS.push(s); $('sc-lista').appendChild(pintaFila(s)); });
+        CURSOR = r.data.siguiente || null;
+        oculta($('ap-mas-caja'), !CURSOR);
+        est.textContent = FILAS.length ? '' : (FILTRO === 'pendiente' ? 'No hay peticiones por resolver.' : 'Todavía no hay peticiones.');
+      });
+    }
+
+    /* ── Revisar y resolver (administrador): la base vuelve a comprobar todo al aprobar ── */
+    function dato(dl, etiqueta, valor) {
+      var dt = document.createElement('dt'); dt.textContent = etiqueta;
+      var dd = document.createElement('dd'); dd.textContent = texto(valor); dd.className = 'ap-linea';
+      dl.appendChild(dt); dl.appendChild(dd);
+    }
+    function pintaDetalle(fila, s, huella) {
+      var dl = campo(fila, 'revision-datos');
+      dl.textContent = '';
+      if (s.accion === 'editar_comprador' && s.nuevos) {
+        Object.keys(s.nuevos).forEach(function (k) {
+          dato(dl, CAMPO[k] || k, (s.antes && s.antes[k] !== undefined ? texto(s.antes[k]) : '—') + '  →  ' + texto(s.nuevos[k]));
+        });
+      } else if (huella && typeof huella === 'object') {
+        Object.keys(huella).forEach(function (k) { dato(dl, ETIQ[k] || k, huella[k]); });
+      } else if (s.accion === 'manual') {
+        dato(dl, 'Qué pide', s.texto || s.motivo);
+      }
+      var avisos = [];
+      if (huella && huella.emitida && (s.accion === 'anular_documento')) avisos.push('Documento emitido: al aprobar se anula con una factura rectificativa.');
+      if (huella && huella.enviado) avisos.push('El documento ya se envió al cliente.');
+      if (huella && Number(huella.aplicaciones) > 0) avisos.push('Tiene cobros aplicados.');
+      if (SOLO_SUPER[s.accion] && !esSuper) avisos.push('Borrar fichas de cliente y operaciones solo lo aprueba un super administrador: tú no puedes aprobarlo.');
+      var av = campo(fila, 'revision-aviso');
+      av.textContent = avisos.join('\n'); av.classList.add('ap-linea');
+      oculta(av, !avisos.length);
+      fila.querySelector('[data-accion="aprobar"]').disabled = !!(SOLO_SUPER[s.accion] && !esSuper);
+    }
+    function revisar(fila) {
+      var s = FILAS.filter(function (x) { return x.id === fila.getAttribute('data-id'); })[0];
+      if (!s) return;
+      var panel = campo(fila, 'revision');
+      if (!panel.classList.contains('ap-oculto')) { oculta(panel, true); return; }   // segunda pulsación: se cierra
+      oculta(panel, false);
+      var estado = campo(fila, 'revision-estado');
+      campo(fila, 'motivo').classList.remove('ap-oculto');
+      if (!CON_DETALLE[s.accion]) { estado.textContent = ''; pintaDetalle(fila, s, null); return; }
+      estado.textContent = 'Cargando el detalle…';
+      // El detalle en vivo de un borrado o anulación solo lo da la base, y solo a un administrador.
+      sb.rpc('solicitud_cambio_detalle', { p_id: s.id }).then(function (r) {
+        if (r.error) { estado.textContent = 'No se pudo cargar el detalle (' + (r.error.message || 'error') + '): no apruebes sin verlo.'; fila.querySelector('[data-accion="aprobar"]').disabled = true; return; }
+        estado.textContent = r.data ? '' : 'Esta petición ya no está pendiente: pulsa «Actualizar».';
+        pintaDetalle(fila, s, r.data);
+        if (!r.data) fila.querySelector('[data-accion="aprobar"]').disabled = true;
+      }, function (e) {
+        estado.textContent = 'Sin conexión: ' + ((e && e.message) || e);
+        fila.querySelector('[data-accion="aprobar"]').disabled = true;
+      });
+    }
+    function resuelve(fila, decision, boton) {
+      var id = fila.getAttribute('data-id');
+      var motivo = campo(fila, 'motivo').value.trim();
+      if (decision === 'rechazar' && !motivo) { mal('Di por qué la rechazas.'); campo(fila, 'motivo').focus(); return; }
+      var botones = fila.querySelectorAll('[data-accion="aprobar"],[data-accion="rechazar"]');
+      botones.forEach(function (b) { b.disabled = true; });
+      sb.rpc('solicitud_cambio_resuelve', { p_id: id, p_decision: decision, p_motivo: motivo || null }).then(function (r) {
+        if (r.error) {
+          // 42501 y demás: la petición sigue pendiente. Se enseña lo que dice la base y se deja volver a intentar.
+          mal('No se pudo ' + (decision === 'aprobar' ? 'aprobar' : 'rechazar') + ': ' + (r.error.message || 'error'));
+          botones.forEach(function (b) { b.disabled = false; });
+          return;
+        }
+        var d = r.data || {};
+        if (d.ya_resuelta) mal('Esa petición ya estaba resuelta (' + (d.estado || '') + ').');
+        else if (d.estado === 'fallida') mal('No se pudo hacer' + (d.error ? ': ' + d.error : '') + '. Queda como «No se pudo hacer».');
+        else if (d.estado === 'anulada') mal('Petición retirada: ' + (d.motivo || 'ya no procede') + '.');
+        else ok(d.estado === 'rechazada' ? 'Petición rechazada.' : 'Petición aprobada y hecha.');
+        carga(true);
+      }, function (e) {
+        mal('Sin conexión: ' + ((e && e.message) || e));
+        botones.forEach(function (b) { b.disabled = false; });
+      });
+    }
+
+    var CONFIRMA = null;   // doble pulsación para aprobar un borrado
+    document.addEventListener('click', function (ev) {
+      var el = ev.target.closest && ev.target.closest('[data-accion]');
+      if (!el || !$('sc-tarjeta') || !$('sc-tarjeta').closest('[data-ap="raiz"]').contains(el)) return;
+      var accion = el.getAttribute('data-accion');
+      var fila = el.closest('[data-campo="fila"]');
+      if (accion === 'interpretar') interpretar();
+      else if (accion === 'cambiar-texto') { TURNO++; pensando(false); irA(1); }
+      else if (accion === 'otra') irA(1);
+      else if (accion === 'enviar-peticion') enviarPeticion();
+      else if (accion === 'enviar-manual') {
+        var t = $('sc-cita').textContent.trim();
+        if (t) inserta({ accion: 'manual', texto: t });
+      }
+      else if (accion === 'actualizar') carga(true);
+      else if (accion === 'cargar-mas') carga(false);
+      else if (accion === 'filtro') {
+        FILTRO = el.getAttribute('data-valor') === 'todas' ? null : 'pendiente';
+        document.querySelectorAll('[data-accion="filtro"]').forEach(function (b) { b.setAttribute('aria-pressed', b === el ? 'true' : 'false'); });
+        carga(true);
+      }
+      else if (accion === 'retirar' && fila) {
+        sb.rpc('anular_solicitud_cambio', { p_id: fila.getAttribute('data-id') }).then(function (r) {
+          if (r.error) mal('No se pudo retirar: ' + (r.error.message || 'error')); else { ok('Petición retirada.'); carga(true); }
+        });
+      }
+      else if (accion === 'revisar' && fila) revisar(fila);
+      else if (accion === 'rechazar' && fila) resuelve(fila, 'rechazar', el);
+      else if (accion === 'aprobar' && fila) {
+        var borra = /^borrar_/.test(fila.getAttribute('data-accion-peticion') || '');
+        if (borra && CONFIRMA !== fila) {
+          CONFIRMA = fila; el.textContent = 'Pulsa otra vez para confirmar el borrado';
+          setTimeout(function () { if (CONFIRMA === fila) { CONFIRMA = null; el.textContent = 'Aprobar'; } }, 5000);
+          return;
+        }
+        CONFIRMA = null;
+        resuelve(fila, 'aprobar', el);
+      }
+    });
+    carga(true);
+  }
+
+  function arranca() {
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') {
+      $('sc-lista-estado').textContent = 'Sin sesión: recarga la página o vuelve a entrar.';
+      return;
+    }
+    window.LW_AUTH.then(init);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca);
+  else arranca();
+})();
+</script>

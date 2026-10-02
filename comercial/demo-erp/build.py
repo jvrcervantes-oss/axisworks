@@ -1460,8 +1460,59 @@ def mapa_modulos(nombre):
     return out
 
 
+def _una_vez(texto, viejo, nuevo, donde):
+    """Reemplazo LITERAL de algo que tiene que aparecer exactamente una vez: si Lawang cambia ese trozo, el build para (nunca
+    un reemplazo que no encuentra nada y deja el permiso o el menú a medias, sin un solo error)."""
+    if texto.count(viejo) != 1:
+        aborta('asistente_maestro: %s: esperaba exactamente 1 vez %r y hay %d (¿cambió el fichero de Lawang?)' % (donde, viejo[:90], texto.count(viejo)))
+    return texto.replace(viejo, nuevo)
+
+
+def asistente_maestro():
+    """Pantalla /asistente/ del ERP maestro (AXW-136 subtarea 3, 2-oct-2026; encargos/20261002_erp_asistente_maestro.md).
+    La v4 que copia copia_v4() trae la página de Lawang (peticiones por Telegram, tablas leídas con sb.from, permiso `asistente`
+    que en el maestro es el del bot). En el maestro la sustituye `asistente_peticiones.html` (lee por solicitudes_cambio_datos,
+    resuelve con un panel y NO lleva Telegram), y el permiso pasa a ser `asistente_peticiones`, el que comprueba la base. Se hace
+    AL PRINCIPIO de instancia(), con las rutas de Lawang: lo que viene después (limpia comentarios, reraiz, marca, ?v=) la trata
+    como a cualquier otra pantalla. Lo apagado se decide en el navegador (apagados_instancia.js): con el módulo `asistente` apagado
+    esta página se cambia por «Módulo no instalado». La demo pública (sin --instancia) conserva la de Lawang: su doble no sirve estas RPC.
+    Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    # 1. La página: el <head> y la cáscara siguen siendo los de Lawang (una sola fuente); se cambia el contenido y su script.
+    pag = os.path.join(v4, 'asistente', 'index.html')
+    t = open(pag, encoding='utf-8').read()
+    frag = open(os.path.join(AQUI, 'asistente_peticiones.html'), encoding='utf-8').read().split('<!--AXW_SCRIPT-->')
+    if len(frag) != 2:
+        aborta('asistente_peticiones.html: tiene que llevar UNA línea <!--AXW_SCRIPT--> entre el marcado y el script')
+    marcado, script = frag[0].strip(), frag[1].strip()
+    ancla = '<div class="flex flex-col w-full gap-8">'
+    cierre = '</div>\n</main></div>\n<script>'
+    fin = '</script>\n</body></html>'
+    if t.count(ancla) != 1 or t.count(cierre) != 1 or not t.rstrip().endswith(fin):
+        aborta('asistente_maestro: la página de Lawang ya no tiene la forma esperada (contenedor, cierre de <main>, script final)')
+    i0, i1 = t.index(ancla), t.index(cierre)
+    if i1 < i0:
+        aborta('asistente_maestro: el cierre de <main> está antes del contenedor')
+    t = t[:i0] + marcado + '\n</main></div>\n' + script + '\n</body></html>\n'   # el </div> final de `marcado` cierra el contenedor
+    t = _una_vez(t, 'data-herramienta="asistente"', 'data-herramienta="asistente_peticiones"', 'asistente/index.html')
+    open(pag, 'w', encoding='utf-8', newline='').write(t)
+    # 2. El permiso: menú, casilla de Usuarios, mascota y hub miran `asistente_peticiones` (lo que exige la base en
+    # solicitud_cambio_pide). `asistente-correos` sigue con `asistente` (el bot). NO se tocan los presets por rol de
+    # herramientas.js: admin-usuarios (código de Lawang) rechaza con 400 una herramienta que no conoce al dar de alta.
+    nav = os.path.join(v4, 'assets', 'nav.js')
+    n = open(nav, encoding='utf-8').read()
+    n = _una_vez(n, "{ path: 'asistente', texto: 'Asistente', clave: 'asistente' }", "{ path: 'asistente', texto: 'Asistente', clave: 'asistente_peticiones' }", 'nav.js MENU_V4')
+    n = _una_vez(n, "contratos: 'contratos', asistente: 'asistente', 'asistente-correos': 'asistente',", "contratos: 'contratos', asistente: 'asistente_peticiones', 'asistente-correos': 'asistente',", 'nav.js CLAVE_MENU')
+    open(nav, 'w', encoding='utf-8', newline='').write(n)
+    her = os.path.join(DIST, 'contracts', 'assets', 'herramientas.js')
+    h = open(her, encoding='utf-8').read()
+    h = _una_vez(h, "href:'/intranet/v4/asistente/', herr:'asistente',", "href:'/intranet/v4/asistente/', herr:'asistente_peticiones',", 'herramientas.js tarjeta Asistente')
+    open(her, 'w', encoding='utf-8', newline='').write(h)
+
+
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
+    asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]
