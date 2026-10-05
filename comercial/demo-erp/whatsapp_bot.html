@@ -153,7 +153,14 @@
     'Pregunta': 'Question', 'Respuesta': 'Answer', 'Quitar': 'Remove', 'Volver a esta versión': 'Go back to this version', 'Versión actual': 'Current version',
     'Sin conectar': 'Not connected', 'Conectado': 'Connected', 'Conexión pendiente': 'Connection pending', 'Con un error de conexión': 'Connection error',
     'Todavía no hay ningún número de WhatsApp conectado.': 'No WhatsApp number is connected yet.',
-    'Guardada': 'Saved', 'Todavía no has guardado la ficha.': 'You have not saved the sheet yet.', 'Todavía no hay versiones.': 'There are no versions yet.'
+    'Guardada': 'Saved', 'Todavía no has guardado la ficha.': 'You have not saved the sheet yet.', 'Todavía no hay versiones.': 'There are no versions yet.',
+    'servicios': 'services', 'preguntas': 'questions', 'Ficha entera': 'Whole sheet', 'caracteres': 'characters', 'Versión': 'Version',
+    'Versión restaurada.': 'Version restored.', 'Ficha guardada.': 'Sheet saved.', 'No había nada que cambiar.': 'There was nothing to change.',
+    'Cuenta en una frase qué has cambiado: queda en el historial.': 'Say in one sentence what you changed: it is kept in the history.',
+    'Pulsa otra vez para confirmar': 'Press again to confirm', 'Vuelvo a la versión': 'Back to version',
+    'No tienes permiso para editar el bot, o el módulo está apagado.': 'You do not have permission to edit the bot, or the module is off.',
+    'La base no ha respondido: prueba otra vez en un rato.': 'The database did not answer: try again in a while.',
+    'Sin sesión: recarga la página o vuelve a entrar.': 'No session: reload the page or sign in again.'
   };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
     Object.keys(EN_WB).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_WB[k]; });
@@ -355,6 +362,7 @@
       else if (a === 'recargar') carga();
       else if (a === 'restaurar') restaura(el);
       else if (a === 'anadir-servicio' || a === 'anadir-pregunta') {
+        if (!TOPES) return;   // la ficha aún no ha cargado: sin topes no hay filas que pintar
         var tipo = a === 'anadir-servicio' ? 'servicios' : 'preguntas';
         var cont = raiz.querySelector('[data-lista="' + tipo + '"]');
         var fila = nuevaFila(tipo, tipo === 'servicios' ? SERV : PREG, null);
