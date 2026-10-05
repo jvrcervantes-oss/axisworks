@@ -1,5 +1,6 @@
 {
  "_que_es": "Cómo se llama y qué hace cada módulo del ERP, por la clave del registro (erp/modulos.json) — 28-sep-2026. FUENTE ÚNICA del lado ERP: la leen el panel de control (/panel/) y la pantalla «Módulo no instalado» (no_instalado.html, las dos vías); build.py la inyecta y aborta si una clave del registro no tiene fila. [nombre, sección, icono Material Symbols, qué hace en una línea]. Solo presentación y en español, como la intranet. No es catalogo.js: ese es el catálogo comercial de la landing (otras claves: crm/setter/campanas son un solo módulo aquí, «leads»).",
+ "whatsapp-bot": ["Bot de WhatsApp", "Comunicación", "chat", "Un asistente que contesta por WhatsApp con los datos de tu negocio: horario, servicios, precios y preguntas frecuentes. Tú editas la ficha; si lo apagas, solo contestan personas."],
  "agente": ["Agente autónomo", "Otros", "smart_toy", "El piloto que lleva el negocio dentro de los límites que fija el dueño: gasto con tope mensual, propuestas y rastro de lo que hizo."],
  "base": ["Base", "Base", "home", "El panel del día, el equipo con sus permisos y los ajustes de la empresa."],
  "operaciones": ["Operaciones", "Seguimiento", "swap_horiz", "Una fila por venta, con todos sus contratos juntos."],

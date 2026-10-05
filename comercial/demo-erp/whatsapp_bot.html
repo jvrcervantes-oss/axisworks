@@ -1,0 +1,375 @@
+<!-- Pantalla /whatsapp-bot/ del ERP MAESTRO (módulo «Bot de WhatsApp», S1 de encargos/20261005_estudio_bots_modulo_erp.md, 5-oct-2026).
+     NO es una página entera: build.py (whatsapp_bot_pantalla) la inyecta en la cáscara de la página /asistente/ de Lawang (la misma que
+     usa asistente_maestro), sustituyendo su contenedor de contenido y su script. Así el `<head>` (cáscara, nav, guard, i18n, tw.css) sigue
+     siendo UNA sola fuente: la de Lawang. Dos partes, separadas por la línea «AXW_SCRIPT»: arriba el marcado, abajo el script.
+     Qué hace: el cliente (un admin de su instancia) edita la FICHA de su negocio —lo único que el bot de WhatsApp puede decir— y ve el
+     estado de la conexión y el historial de versiones. Todo por RPC (el navegador no toca ninguna tabla): `wab_ficha_datos` (lectura, por
+     lwDatos), `wab_ficha_guarda`, `wab_ficha_historial` y `wab_ficha_restaura`. Los límites que pinta salen de `topes` (los manda la
+     base); la base valida de todos modos y su mensaje es el que se enseña. Todo texto de la base o del usuario se pinta con textContent;
+     los botones y campos se enganchan por data-accion / data-campo, nunca por su rótulo. Idioma: ES/EN con el mini-diccionario EN_WB
+     de abajo (se añade a window.LW_EN solo si la clave no existe; el i18n.js es de Lawang y no se toca). -->
+<div class="flex flex-col w-full gap-8" data-wb="raiz">
+
+<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<div class="flex flex-col gap-2 max-w-3xl">
+<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Bot de WhatsApp</h1>
+<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Aquí escribes lo que tu bot puede contar a tus clientes: qué haces, cuándo, dónde y a qué precio. El bot no se inventa nada fuera de esta ficha: si no está aquí, pasa la conversación a una persona.</p>
+</div>
+<div class="wb-estado" data-wb="estado" role="status" aria-live="polite"></div>
+</div>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-6" data-wb="seccion-ficha">
+<style>
+.wb-oculto{display:none !important}
+.wb-estado{padding:10px 16px;border-radius:999px;background:#e4e2dd;color:#1b1c19;font-size:13px;white-space:nowrap}
+.wb-estado[data-conexion="conectado"]{background:#485B37;color:#fff}
+.wb-estado[data-conexion="error"]{background:#fde2e0;color:#7a1a14}
+.wb-nota{padding:12px 16px;border-radius:10px;background:#f5f4ee;font-size:14px;line-height:1.5}
+.wb-aviso{padding:10px 14px;border-radius:8px;background:#fff3e0;color:#8a4b00;font-size:14px;white-space:pre-line;word-break:break-word}
+.wb-error{padding:10px 14px;border-radius:8px;background:#fde2e0;color:#7a1a14;font-size:14px;white-space:pre-line;word-break:break-word}
+.wb-grid{display:grid;grid-template-columns:1fr;gap:20px}
+@media (min-width:900px){.wb-grid{grid-template-columns:1fr 1fr}.wb-ancho{grid-column:1 / -1}}
+.wb-campo{display:flex;flex-direction:column;gap:6px}
+.wb-campo>label,.wb-campo>.wb-etq{font-size:13px;font-weight:600;color:#1b1c19}
+.wb-campo input[type=text],.wb-campo textarea,.wb-campo select,.wb-fila input,.wb-fila textarea{width:100%;border:1px solid #c5c8bc;border-radius:8px;padding:8px 10px;font-size:14px;background:#fff;font-family:inherit}
+.wb-campo textarea,.wb-fila textarea{resize:vertical;min-height:72px}
+.wb-pie{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#75786e}
+.wb-pie [data-excede="1"]{color:#7a1a14;font-weight:700}
+.wb-idiomas{display:flex;flex-wrap:wrap;gap:8px 16px}
+.wb-idiomas label{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:400}
+.wb-lista{display:flex;flex-direction:column;gap:12px}
+.wb-fila{display:grid;grid-template-columns:1fr;gap:8px;padding:12px;border:1px solid #e4e2dd;border-radius:10px;background:#faf9f5}
+@media (min-width:900px){.wb-fila.wb-serv{grid-template-columns:1.2fr 2fr 1.2fr auto}.wb-fila.wb-preg{grid-template-columns:1fr 2fr auto}}
+.wb-boton{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border-radius:999px;border:0;cursor:pointer;font-size:14px;background:#e4e2dd;color:#1b1c19}
+.wb-boton[data-primario="1"]{background:#104C4F;color:#fff}
+.wb-boton:disabled{opacity:.6;cursor:wait}
+.wb-hist{display:flex;flex-direction:column;gap:8px}
+.wb-hist-fila{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 16px;padding:10px 14px;border:1px solid #e4e2dd;border-radius:10px;font-size:14px}
+.wb-hist-fila span{word-break:break-word}
+.wb-vacio{color:#75786e;font-size:14px}
+</style>
+
+<div class="wb-nota" data-lwt>Aquí solo van datos de tu negocio. Lo que escribas lo puede decir el bot a tus clientes, y respondes tú de ello. No escribas instrucciones para el bot («responde siempre…», «ignora…»): la ficha las rechaza, y las reglas del bot no se cambian desde aquí.</div>
+<p class="wb-aviso wb-oculto" data-wb="aviso" role="status"></p>
+<p class="wb-error wb-oculto" data-wb="error" role="alert"></p>
+
+<div class="wb-grid" data-wb="formulario">
+<div class="wb-campo">
+<label for="wb-nombre_negocio" data-lwt>Nombre del negocio</label>
+<input type="text" id="wb-nombre_negocio" data-campo="nombre_negocio" autocomplete="off">
+<div class="wb-pie"><span data-lwt>Obligatorio</span><span data-cuenta="nombre_negocio"></span></div>
+</div>
+<div class="wb-campo">
+<label for="wb-tono" data-lwt>Tono con tus clientes</label>
+<select id="wb-tono" data-campo="tono"></select>
+</div>
+<div class="wb-campo wb-ancho">
+<label for="wb-descripcion" data-lwt>Qué haces</label>
+<textarea id="wb-descripcion" data-campo="descripcion"></textarea>
+<div class="wb-pie"><span></span><span data-cuenta="descripcion"></span></div>
+</div>
+<div class="wb-campo">
+<span class="wb-etq" data-lwt>Idiomas en que contesta</span>
+<div class="wb-idiomas" data-campo="idiomas" role="group" aria-label="Idiomas"></div>
+<div class="wb-pie"><span></span><span data-cuenta="idiomas"></span></div>
+</div>
+<div class="wb-campo">
+<label for="wb-horario" data-lwt>Horario</label>
+<textarea id="wb-horario" data-campo="horario"></textarea>
+<div class="wb-pie"><span></span><span data-cuenta="horario"></span></div>
+</div>
+<div class="wb-campo">
+<label for="wb-ubicacion" data-lwt>Dónde estás</label>
+<textarea id="wb-ubicacion" data-campo="ubicacion"></textarea>
+<div class="wb-pie"><span></span><span data-cuenta="ubicacion"></span></div>
+</div>
+<div class="wb-campo">
+<label for="wb-contacto_persona" data-lwt>Cómo hablar con una persona</label>
+<textarea id="wb-contacto_persona" data-campo="contacto_persona"></textarea>
+<div class="wb-pie"><span></span><span data-cuenta="contacto_persona"></span></div>
+</div>
+<div class="wb-campo wb-ancho">
+<span class="wb-etq" data-lwt>Servicios y precios</span>
+<div class="wb-lista" data-lista="servicios"></div>
+<div class="wb-pie"><span data-lwt>El precio es un texto que escribes tú (por ejemplo «Rp 350.000 por día»): el bot lo repite tal cual, no lo calcula.</span><span data-cuenta="servicios"></span></div>
+<div><button class="wb-boton" type="button" data-accion="anadir-servicio"><span data-lwt>Añadir un servicio</span></button></div>
+</div>
+<div class="wb-campo wb-ancho">
+<span class="wb-etq" data-lwt>Preguntas frecuentes</span>
+<div class="wb-lista" data-lista="preguntas"></div>
+<div class="wb-pie"><span></span><span data-cuenta="preguntas"></span></div>
+<div><button class="wb-boton" type="button" data-accion="anadir-pregunta"><span data-lwt>Añadir una pregunta</span></button></div>
+</div>
+<div class="wb-campo">
+<label for="wb-politicas" data-lwt>Políticas (pagos, cancelaciones, depósitos)</label>
+<textarea id="wb-politicas" data-campo="politicas"></textarea>
+<div class="wb-pie"><span></span><span data-cuenta="politicas"></span></div>
+</div>
+<div class="wb-campo">
+<label for="wb-derivar_a_persona" data-lwt>Cuándo pasar a una persona</label>
+<textarea id="wb-derivar_a_persona" data-campo="derivar_a_persona"></textarea>
+<div class="wb-pie"><span></span><span data-cuenta="derivar_a_persona"></span></div>
+</div>
+</div>
+
+<div class="wb-campo">
+<label for="wb-motivo" data-lwt>¿Qué has cambiado? (queda en el historial)</label>
+<input type="text" id="wb-motivo" data-campo="motivo" autocomplete="off">
+</div>
+<div class="flex flex-wrap items-center justify-between gap-4">
+<span class="wb-vacio" data-wb="total"></span>
+<div class="flex items-center gap-3">
+<button class="wb-boton" type="button" data-accion="recargar"><span data-lwt>Descartar los cambios</span></button>
+<button class="wb-boton" type="button" data-accion="guardar" data-primario="1"><span data-lwt>Guardar la ficha</span></button>
+</div>
+</div>
+<p class="wb-vacio" data-wb="version"></p>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Historial de versiones</h2>
+<p class="wb-vacio" data-lwt>Cada vez que guardas queda una versión. Si algo sale mal, vuelve a la anterior: la volverás a guardar como una versión nueva.</p>
+<div class="wb-hist" data-wb="historial"></div>
+</section>
+
+</div>
+<!--AXW_SCRIPT-->
+<script>
+(function () {
+  'use strict';
+  var EN_WB = {
+    'Bot de WhatsApp': 'WhatsApp bot',
+    'Aquí escribes lo que tu bot puede contar a tus clientes: qué haces, cuándo, dónde y a qué precio. El bot no se inventa nada fuera de esta ficha: si no está aquí, pasa la conversación a una persona.': 'Write here what your bot can tell your customers: what you do, when, where and at what price. The bot does not make anything up outside this sheet: if it is not here, it hands the conversation to a person.',
+    'Aquí solo van datos de tu negocio. Lo que escribas lo puede decir el bot a tus clientes, y respondes tú de ello. No escribas instrucciones para el bot («responde siempre…», «ignora…»): la ficha las rechaza, y las reglas del bot no se cambian desde aquí.': 'Only business facts go here. The bot may say whatever you write to your customers, and you are responsible for it. Do not write instructions for the bot (“always answer…”, “ignore…”): the sheet rejects them, and the bot’s rules cannot be changed from here.',
+    'Nombre del negocio': 'Business name', 'Obligatorio': 'Required', 'Tono con tus clientes': 'Tone with your customers',
+    'Qué haces': 'What you do', 'Idiomas en que contesta': 'Languages it answers in', 'Horario': 'Opening hours', 'Dónde estás': 'Where you are',
+    'Cómo hablar con una persona': 'How to reach a person', 'Servicios y precios': 'Services and prices',
+    'El precio es un texto que escribes tú (por ejemplo «Rp 350.000 por día»): el bot lo repite tal cual, no lo calcula.': 'The price is text you write (for example “Rp 350,000 per day”): the bot repeats it as is and does not calculate it.',
+    'Añadir un servicio': 'Add a service', 'Preguntas frecuentes': 'Frequently asked questions', 'Añadir una pregunta': 'Add a question',
+    'Políticas (pagos, cancelaciones, depósitos)': 'Policies (payments, cancellations, deposits)', 'Cuándo pasar a una persona': 'When to hand over to a person',
+    '¿Qué has cambiado? (queda en el historial)': 'What did you change? (kept in the history)', 'Descartar los cambios': 'Discard changes', 'Guardar la ficha': 'Save the sheet',
+    'Historial de versiones': 'Version history', 'Cada vez que guardas queda una versión. Si algo sale mal, vuelve a la anterior: la volverás a guardar como una versión nueva.': 'Every time you save, a version is kept. If something goes wrong, go back to the previous one: it will be saved again as a new version.',
+    'Cercano': 'Friendly', 'Formal': 'Formal', 'Neutro': 'Neutral', 'Servicio': 'Service', 'Descripción': 'Description', 'Precio': 'Price',
+    'Pregunta': 'Question', 'Respuesta': 'Answer', 'Quitar': 'Remove', 'Volver a esta versión': 'Go back to this version', 'Versión actual': 'Current version',
+    'Sin conectar': 'Not connected', 'Conectado': 'Connected', 'Conexión pendiente': 'Connection pending', 'Con un error de conexión': 'Connection error',
+    'Todavía no hay ningún número de WhatsApp conectado.': 'No WhatsApp number is connected yet.',
+    'Guardada': 'Saved', 'Todavía no has guardado la ficha.': 'You have not saved the sheet yet.', 'Todavía no hay versiones.': 'There are no versions yet.'
+  };
+  if (window.LW_EN && typeof window.LW_EN === 'object') {
+    Object.keys(EN_WB).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_WB[k]; });
+  }
+  var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
+  var traduce = function (raiz) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(raiz); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
+  var raiz = document.querySelector('[data-wb="raiz"]');
+  traduce(raiz);
+  var $w = function (n) { return raiz.querySelector('[data-wb="' + n + '"]'); };
+  var $c = function (n) { return raiz.querySelector('[data-campo="' + n + '"]'); };
+  var oculta = function (el, si) { el.classList.toggle('wb-oculto', !!si); };
+  var ok = function (m) { if (typeof toast === 'function') toast(m); };
+
+  var IDIOMAS = { es: 'Español', en: 'English', id: 'Bahasa Indonesia', fr: 'Français', de: 'Deutsch', nl: 'Nederlands', it: 'Italiano', pt: 'Português', ru: 'Русский', zh: '中文', ja: '日本語', ko: '한국어', ar: 'العربية' };
+  var TONOS = { cercano: 'Cercano', formal: 'Formal', neutro: 'Neutro' };
+  var CONEXION = { sin_conectar: 'Sin conectar', pendiente: 'Conexión pendiente', conectado: 'Conectado', error: 'Con un error de conexión' };
+  var TEXTOS = ['nombre_negocio', 'descripcion', 'horario', 'ubicacion', 'contacto_persona', 'politicas', 'derivar_a_persona'];
+  var SERV = [['nombre', 'Servicio', 'servicio_nombre'], ['descripcion', 'Descripción', 'servicio_descripcion'], ['precio', 'Precio', 'servicio_precio']];
+  var PREG = [['pregunta', 'Pregunta', 'pregunta'], ['respuesta', 'Respuesta', 'respuesta']];
+  var SB = null, TOPES = null, VERSION = null, ACTUAL = null, CONFIRMA = null;
+
+  function limpia(el) { while (el.firstChild) el.removeChild(el.firstChild); }
+  function texto(el, s) { el.textContent = s; }
+  function error(m) { var e = $w('error'); texto(e, m || ''); oculta(e, !m); }
+  function aviso(m) { var e = $w('aviso'); texto(e, m || ''); oculta(e, !m); }
+  function fecha(s) { try { return new Date(s).toLocaleString(); } catch (e) { return String(s || ''); } }
+
+  /* ── cuenta de caracteres: la cifra de la pantalla es de cortesía; la que manda es la de la base ── */
+  function lenJson(lista) { var n = 0; (lista || []).forEach(function (o) { Object.keys(o).forEach(function (k) { n += String(o[k]).length; }); }); return n; }
+  function pintaCuenta(nombre, n, tope, texto0) {
+    var el = raiz.querySelector('[data-cuenta="' + nombre + '"]');
+    if (!el) return;
+    el.textContent = texto0 || (n + ' / ' + tope);
+    el.setAttribute('data-excede', n > tope ? '1' : '0');
+  }
+  function recuenta() {
+    if (!TOPES) return;
+    var total = 0;
+    TEXTOS.forEach(function (c) { var n = $c(c).value.length; total += n; pintaCuenta(c, n, TOPES[c]); });
+    var serv = leeLista('servicios'), preg = leeLista('preguntas');
+    total += lenJson(serv) + lenJson(preg);
+    pintaCuenta('servicios', serv.length, TOPES.servicios_max, serv.length + ' / ' + TOPES.servicios_max + ' ' + T('servicios'));
+    pintaCuenta('preguntas', preg.length, TOPES.preguntas_max, preg.length + ' / ' + TOPES.preguntas_max + ' ' + T('preguntas'));
+    var idi = leeIdiomas().length;
+    pintaCuenta('idiomas', idi, TOPES.idiomas_max, idi + ' / ' + TOPES.idiomas_max);
+    var t = $w('total'); texto(t, T('Ficha entera') + ': ' + total + ' / ' + TOPES.total + ' ' + T('caracteres'));
+    t.setAttribute('data-excede', total > TOPES.total ? '1' : '0');
+  }
+
+  /* ── filas de servicios y preguntas ── */
+  function nuevaFila(tipo, spec, valores) {
+    var f = document.createElement('div');
+    f.className = 'wb-fila ' + (tipo === 'servicios' ? 'wb-serv' : 'wb-preg');
+    f.setAttribute('data-fila', tipo);
+    spec.forEach(function (s) {
+      var ent = s[0] === 'nombre' || s[0] === 'precio' || s[0] === 'pregunta' ? document.createElement('input') : document.createElement('textarea');
+      if (ent.tagName === 'INPUT') ent.type = 'text';
+      ent.setAttribute('data-subcampo', s[0]);
+      ent.setAttribute('aria-label', T(s[1]));
+      ent.placeholder = T(s[1]);
+      ent.maxLength = TOPES[s[2]] + 200;   // holgura para poder pegar y ver el aviso; la base rechaza lo que pase del tope
+      ent.value = (valores && valores[s[0]]) || '';
+      ent.addEventListener('input', recuenta);
+      f.appendChild(ent);
+    });
+    var q = document.createElement('button');
+    q.type = 'button'; q.className = 'wb-boton'; q.setAttribute('data-accion', 'quitar-fila');
+    q.textContent = T('Quitar');
+    f.appendChild(q);
+    return f;
+  }
+  function pintaLista(tipo, items) {
+    var cont = raiz.querySelector('[data-lista="' + tipo + '"]');
+    limpia(cont);
+    (items || []).forEach(function (it) { cont.appendChild(nuevaFila(tipo, tipo === 'servicios' ? SERV : PREG, it)); });
+  }
+  function leeLista(tipo) {
+    var salida = [];
+    raiz.querySelectorAll('[data-fila="' + tipo + '"]').forEach(function (f) {
+      var o = {}, vacio = true;
+      f.querySelectorAll('[data-subcampo]').forEach(function (e) { o[e.getAttribute('data-subcampo')] = e.value; if (e.value.trim() !== '') vacio = false; });
+      if (!vacio) salida.push(o);   // una fila sin nada escrito no cuenta (comodidad; la base valida el resto)
+    });
+    return salida;
+  }
+  function leeIdiomas() {
+    var r = [];
+    raiz.querySelectorAll('[data-idioma]').forEach(function (c) { if (c.checked) r.push(c.getAttribute('data-idioma')); });
+    return r;
+  }
+
+  /* ── pintar lo que manda la base ── */
+  function pintaEstado(e) {
+    var el = $w('estado'), c = (e && e.conexion) || 'sin_conectar';
+    el.setAttribute('data-conexion', c);
+    texto(el, T(CONEXION[c] || CONEXION.sin_conectar) + (e && e.numero_visible ? ' · ' + e.numero_visible : ''));
+    if (c === 'sin_conectar') aviso(T('Todavía no hay ningún número de WhatsApp conectado.'));
+    else if (c === 'error' && e.ultimo_error) aviso(e.ultimo_error);
+    else aviso('');
+  }
+  function pinta(d) {
+    TOPES = d.topes; VERSION = d.version; ACTUAL = d.version;
+    var f = d.ficha || {};
+    TEXTOS.forEach(function (c) { $c(c).value = f[c] || ''; });
+    var sel = $c('tono'); limpia(sel);
+    (TOPES.tonos || []).forEach(function (t) { var o = document.createElement('option'); o.value = t; o.textContent = T(TONOS[t] || t); sel.appendChild(o); });
+    sel.value = f.tono || 'cercano';
+    var cont = $c('idiomas'); limpia(cont);
+    var marcados = f.idiomas || ['es'];
+    (TOPES.idiomas_validos || []).forEach(function (i) {
+      var l = document.createElement('label'), c = document.createElement('input');
+      c.type = 'checkbox'; c.setAttribute('data-idioma', i); c.checked = marcados.indexOf(i) !== -1;
+      c.addEventListener('change', recuenta);
+      l.appendChild(c); l.appendChild(document.createTextNode(IDIOMAS[i] || i)); cont.appendChild(l);
+    });
+    pintaLista('servicios', f.servicios || []);
+    pintaLista('preguntas', f.preguntas || []);
+    $c('motivo').value = '';
+    pintaEstado(d.estado);
+    texto($w('version'), d.version ? T('Versión') + ' ' + d.version + ' · ' + T('Guardada') + ' ' + fecha(d.actualizado_en) + (d.actualizado_por ? ' · ' + d.actualizado_por : '') : T('Todavía no has guardado la ficha.'));
+    recuenta();
+    error('');
+  }
+  function pintaHistorial(r) {
+    var cont = $w('historial'); limpia(cont);
+    var lista = (r && r.versiones) || [];
+    if (!lista.length) { var v = document.createElement('p'); v.className = 'wb-vacio'; texto(v, T('Todavía no hay versiones.')); cont.appendChild(v); return; }
+    lista.forEach(function (it) {
+      var fila = document.createElement('div'); fila.className = 'wb-hist-fila'; fila.setAttribute('data-version', it.version);
+      var s = document.createElement('span');
+      s.textContent = T('Versión') + ' ' + it.version + ' · ' + fecha(it.cuando) + ' · ' + (it.quien || '') + (it.motivo ? ' · ' + it.motivo : '');
+      fila.appendChild(s);
+      if (it.version === ACTUAL) { var a = document.createElement('span'); a.className = 'wb-vacio'; a.textContent = T('Versión actual'); fila.appendChild(a); }
+      else {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'wb-boton'; b.setAttribute('data-accion', 'restaurar'); b.setAttribute('data-version', it.version);
+        b.textContent = T('Volver a esta versión'); fila.appendChild(b);
+      }
+      cont.appendChild(fila);
+    });
+  }
+
+  /* ── hablar con la base ── */
+  function mensaje(e) {
+    var m = (e && e.message) || '';
+    if (e && e.code === '42501') return T('No tienes permiso para editar el bot, o el módulo está apagado.');
+    if (e && e.code === '40001') return m;
+    return m || T('La base no ha respondido: prueba otra vez en un rato.');
+  }
+  function carga() {
+    error('');
+    return window.lwDatos('wab_ficha_datos', {}).then(function (r) {
+      if (r.error || !r.data) { error(mensaje(r.error)); return; }
+      pinta(r.data);
+      return SB.rpc('wab_ficha_historial').then(function (h) { if (h.error) { error(mensaje(h.error)); return; } pintaHistorial(h.data); });
+    });
+  }
+  function recoge() {
+    var f = {};
+    TEXTOS.forEach(function (c) { f[c] = $c(c).value; });
+    f.tono = $c('tono').value; f.idiomas = leeIdiomas(); f.servicios = leeLista('servicios'); f.preguntas = leeLista('preguntas');
+    return f;
+  }
+  function guarda(btn) {
+    var motivo = $c('motivo').value;
+    if (!motivo.trim()) { error(T('Cuenta en una frase qué has cambiado: queda en el historial.')); $c('motivo').focus(); return; }
+    btn.disabled = true; error('');
+    SB.rpc('wab_ficha_guarda', { p_ficha: recoge(), p_motivo: motivo, p_version_base: VERSION }).then(function (r) {
+      btn.disabled = false;
+      if (r.error) { error(mensaje(r.error)); return; }
+      ok(r.data && r.data.cambiado === false ? T('No había nada que cambiar.') : T('Ficha guardada.'));
+      carga();
+    });
+  }
+  function restaura(btn) {
+    var v = parseInt(btn.getAttribute('data-version'), 10);
+    if (CONFIRMA !== btn) {
+      if (CONFIRMA) CONFIRMA.textContent = T('Volver a esta versión');
+      CONFIRMA = btn; btn.textContent = T('Pulsa otra vez para confirmar');
+      setTimeout(function () { if (CONFIRMA === btn) { CONFIRMA = null; btn.textContent = T('Volver a esta versión'); } }, 5000);
+      return;
+    }
+    CONFIRMA = null; btn.disabled = true; error('');
+    SB.rpc('wab_ficha_restaura', { p_version: v, p_motivo: $c('motivo').value.trim() || (T('Vuelvo a la versión') + ' ' + v) }).then(function (r) {
+      btn.disabled = false;
+      if (r.error) { error(mensaje(r.error)); return; }
+      ok(T('Versión restaurada.'));
+      carga();
+    });
+  }
+
+  function init(aut) {
+    SB = aut.sb;
+    raiz.addEventListener('input', function (ev) { if (ev.target && ev.target.hasAttribute && ev.target.hasAttribute('data-campo')) recuenta(); });
+    raiz.addEventListener('click', function (ev) {
+      var el = ev.target.closest ? ev.target.closest('[data-accion]') : null;
+      if (!el || !raiz.contains(el)) return;
+      var a = el.getAttribute('data-accion');
+      if (a === 'guardar') guarda(el);
+      else if (a === 'recargar') carga();
+      else if (a === 'restaurar') restaura(el);
+      else if (a === 'anadir-servicio' || a === 'anadir-pregunta') {
+        var tipo = a === 'anadir-servicio' ? 'servicios' : 'preguntas';
+        var cont = raiz.querySelector('[data-lista="' + tipo + '"]');
+        var fila = nuevaFila(tipo, tipo === 'servicios' ? SERV : PREG, null);
+        cont.appendChild(fila); var p = fila.querySelector('[data-subcampo]'); if (p) p.focus(); recuenta();
+      }
+      else if (a === 'quitar-fila') { var f = el.closest('[data-fila]'); if (f && f.parentNode) f.parentNode.removeChild(f); recuenta(); }
+    });
+    carga();
+  }
+
+  function arranca() {
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { error(T('Sin sesión: recarga la página o vuelve a entrar.')); return; }
+    window.LW_AUTH.then(init);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca);
+  else arranca();
+})();
+</script>

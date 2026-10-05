@@ -1536,6 +1536,39 @@ def asistente_maestro():
     open(ed, 'w', encoding='utf-8', newline='').write(e)
 
 
+def whatsapp_bot_pantalla():
+    """Pantalla /whatsapp-bot/ del ERP maestro (módulo «Bot de WhatsApp», S1 de encargos/20261005_estudio_bots_modulo_erp.md, 5-oct-2026).
+    No existe en Lawang (su base no tiene el módulo): la crea el build clonando la CÁSCARA de la página /asistente/ de Lawang (head, nav, guard,
+    i18n, tw.css: una sola fuente) con el contenido de `whatsapp_bot.html`, igual que asistente_maestro() hace con las peticiones. La puerta
+    es `data-rol="admin"` (como Resumen o Ajustes): el que edita es el administrador de la instancia, sin casilla propia en Usuarios; la
+    base lo vuelve a exigir (es_admin() dentro de cada RPC). Con el módulo apagado esta página se cambia por «Módulo no instalado»
+    (apagados_instancia.js, por el registro). El menú gana su entrada en Comunicación. Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    t = open(os.path.join(LAWANG, 'intranet', 'v4', 'asistente', 'index.html'), encoding='utf-8').read()
+    frag = open(os.path.join(AQUI, 'whatsapp_bot.html'), encoding='utf-8').read().split('<!--AXW_SCRIPT-->')
+    if len(frag) != 2:
+        aborta('whatsapp_bot.html: tiene que llevar UNA línea <!--AXW_SCRIPT--> entre el marcado y el script')
+    marcado, script = frag[0].strip(), frag[1].strip()
+    ancla = '<div class="flex flex-col w-full gap-8">'
+    cierre = '</div>\n</main></div>\n<script>'
+    fin = '</script>\n</body></html>'
+    if t.count(ancla) != 1 or t.count(cierre) != 1 or not t.rstrip().endswith(fin):
+        aborta('whatsapp_bot_pantalla: la página de Lawang ya no tiene la forma esperada (contenedor, cierre de <main>, script final)')
+    i0, i1 = t.index(ancla), t.index(cierre)
+    if i1 < i0:
+        aborta('whatsapp_bot_pantalla: el cierre de <main> está antes del contenedor')
+    t = t[:i0] + marcado + '\n</main></div>\n' + script + '\n</body></html>\n'
+    t = _una_vez(t, 'data-herramienta="asistente"', 'data-rol="admin"', 'whatsapp-bot/index.html puerta')
+    t = _una_vez(t, '<title data-lw-titulo>Asistente</title>', '<title data-lw-titulo>Bot de WhatsApp</title>', 'whatsapp-bot/index.html título')
+    os.makedirs(os.path.join(v4, 'whatsapp-bot'), exist_ok=True)
+    open(os.path.join(v4, 'whatsapp-bot', 'index.html'), 'w', encoding='utf-8', newline='').write(t)
+    nav = os.path.join(v4, 'assets', 'nav.js')
+    n = open(nav, encoding='utf-8').read()
+    n = _una_vez(n, "{ path: 'soporte', texto: 'Soporte', clave: 'soporte' }] },",
+                 "{ path: 'soporte', texto: 'Soporte', clave: 'soporte' },\n      { path: 'whatsapp-bot', texto: 'Bot de WhatsApp', rol: 'admin' }] },", 'nav.js MENU_V4 Comunicación')
+    open(nav, 'w', encoding='utf-8', newline='').write(n)
+
+
 def guard_asistente_admin():
     """guard.js del maestro: la puerta de /asistente/ deja pasar al admin sin la casilla `asistente_peticiones` (la base lo permite).
     Va aparte de asistente_maestro() porque instancia() vuelve a copiar el guard.js de Lawang DESPUÉS de esa función; se llama justo
@@ -1636,6 +1669,7 @@ def publicado_de_clon(nombre, despliegues=None):
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
+    whatsapp_bot_pantalla()   # módulo Bot de WhatsApp (5-oct-2026): su pantalla, clonando la cáscara de Lawang
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]
