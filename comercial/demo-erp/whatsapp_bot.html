@@ -388,10 +388,10 @@
     no_configurada: 'La conexión todavía no está configurada en esta instancia: avisa al estudio.', sin_app_meta: 'La conexión todavía no está configurada en esta instancia: avisa al estudio.',
     sin_destino_webhook: 'La conexión todavía no está configurada en esta instancia: avisa al estudio.'
   };
-  var CX = { conexion: null, code: null, sesion: null, ocupado: false };
+  var CX = { conexion: null, code: null, sesion: null, ocupado: false, plazo: null };
   function cxError(m) { var e = $w('conexion-error'); texto(e, m || ''); oculta(e, !m); }
   function cxPaso(m) { texto($w('conexion-paso'), m || ''); }
-  function cxLibre() { CX.code = null; CX.sesion = null; CX.ocupado = false; var b = raiz.querySelector('[data-accion="conectar"]'); if (b) b.disabled = false; }
+  function cxLibre() { if (CX.plazo) { clearTimeout(CX.plazo); CX.plazo = null; } CX.conexion = null; CX.code = null; CX.sesion = null; CX.ocupado = false; var b = raiz.querySelector('[data-accion="conectar"]'); if (b) b.disabled = false; }
   function mensajeEdge(codigo) {
     if (ERRORES_CONEXION[codigo]) return T(ERRORES_CONEXION[codigo]);
     return T('No se ha podido conectar. Vuelve a intentarlo; si se repite, avisa al estudio con este código:') + ' ' + String(codigo || 'desconocido').replace(/[^a-z0-9_]/g, '').slice(0, 40);
@@ -447,7 +447,8 @@
           var code = resp && resp.authResponse && resp.authResponse.code;
           if (code) {
             CX.code = String(code); CX.ocupado = false; terminaSiCompleto();
-            setTimeout(function () { if (CX.code && !CX.sesion) { cxPaso(''); cxError(T('Meta no ha devuelto lo necesario. Vuelve a empezar.')); cxLibre(); } }, 20000);
+            if (CX.plazo) clearTimeout(CX.plazo);
+            CX.plazo = setTimeout(function () { CX.plazo = null; if (CX.code && !CX.sesion) { cxPaso(''); cxError(T('Meta no ha devuelto lo necesario. Vuelve a empezar.')); cxLibre(); } }, 20000);
           }
           else { cxPaso(''); cxError(T('Has cerrado la ventana de Meta antes de terminar. Puedes volver a empezar.')); cxLibre(); }
         }, { config_id: cfg.config_id, response_type: 'code', override_default_response_type: true, extras: { setup: {}, sessionInfoVersion: '3' } });
