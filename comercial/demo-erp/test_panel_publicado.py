@@ -110,6 +110,38 @@ def main():
         usados = set(re.findall(r'\bwindow\.(LW_[A-Z_]+|lw[A-Z][A-Za-z]*)\b', lee(os.path.join(AQUI, f))))
         ok('%s solo usa del guard lo que ya tenía el publicado: %s' % (f, sorted(usados)), usados <= PERMITIDO)
 
+    # 6) publicado_de_clon con repos git de verdad: una origin/main local VIEJA no engaña (hace fetch); un HEAD adelantado para
+    import subprocess
+
+    def g(cwd, *a):
+        subprocess.run(['git', '-c', 'user.email=t@t', '-c', 'user.name=t'] + list(a), cwd=cwd, check=True, capture_output=True)
+    tmp = tempfile.mkdtemp()
+    try:
+        origen = os.path.join(tmp, 'origen')
+        os.makedirs(origen)
+        g(origen, 'init', '-q', '-b', 'main')
+        escribe(os.path.join(origen, 'a.txt'), 'v1')
+        g(origen, 'add', '.')
+        g(origen, 'commit', '-qm', 'v1')
+        desp = os.path.join(tmp, 'desp')
+        os.makedirs(desp)
+        clon = os.path.join(desp, 'inst')
+        subprocess.run(['git', 'clone', '-q', origen, clon], check=True, capture_output=True)
+        g(clon, 'checkout', '-q', '-b', 'limpio')
+        ok('clon al día: lee el blob publicado', build.publicado_de_clon('inst', desp)('a.txt') == b'v1')
+        escribe(os.path.join(origen, 'a.txt'), 'v2')   # origin avanza; la ref local del clon sigue en v1
+        g(origen, 'commit', '-qam', 'v2')
+        m = aborta_con(lambda: build.publicado_de_clon('inst', desp))
+        ok('origin/main local vieja: el fetch lo detecta y PARA (no da v1 por publicado)', m is not None and 'origin/main' in m)
+        g(clon, 'reset', '-q', '--hard', 'origin/main')
+        ok('tras ponerse al día vuelve a valer', build.publicado_de_clon('inst', desp)('a.txt') == b'v2')
+        escribe(os.path.join(clon, 'a.txt'), 'local')
+        g(clon, 'commit', '-qam', 'local sin subir')
+        m = aborta_con(lambda: build.publicado_de_clon('inst', desp))
+        ok('commit local sin subir: PARA', m is not None and 'origin/main' in m)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
     if FALLOS:
         print('\nFALLA test_panel_publicado: %d' % len(FALLOS))
         sys.exit(1)

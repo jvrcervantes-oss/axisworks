@@ -1606,10 +1606,10 @@ def panel_contra_publicado(panel_dir, leer_publicado):
     return cambios
 
 
-def publicado_de_clon(nombre):
+def publicado_de_clon(nombre, despliegues=None):
     """`leer_publicado` real: blobs del HEAD de la rama `limpio` del clon de despliegue de la instancia, que debe ser lo que
     hay en origin/main (un commit local sin subir no es «lo publicado»). Aborta si no se puede confirmar."""
-    clon = os.path.join(DESPLIEGUES, nombre)
+    clon = os.path.join(despliegues or DESPLIEGUES, nombre)
 
     def git(*a):
         r = subprocess.run(['git'] + list(a), cwd=clon, capture_output=True)
@@ -1619,6 +1619,9 @@ def publicado_de_clon(nombre):
     rc, rama = git('branch', '--show-current')
     if rc or rama.decode().strip() != 'limpio':
         aborta('--panel-contra-publicado: el clon de %s no está en la rama `limpio`' % nombre)
+    rc, _ = git('fetch', '-q', 'origin')   # sin fetch, origin/main local puede estar vieja y «lo publicado» sería obsoleto
+    if rc:
+        aborta('--panel-contra-publicado: no puedo consultar origin en el clon de %s (git fetch falla): no se confirma «lo publicado»' % nombre)
     rc, a = git('rev-parse', 'HEAD')
     rc2, b = git('rev-parse', 'origin/main')
     if rc or rc2 or a != b:
