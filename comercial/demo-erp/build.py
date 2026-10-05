@@ -1566,6 +1566,14 @@ def whatsapp_bot_pantalla():
     n = open(nav, encoding='utf-8').read()
     n = _una_vez(n, "{ path: 'soporte', texto: 'Soporte', clave: 'soporte' }] },",
                  "{ path: 'soporte', texto: 'Soporte', clave: 'soporte' },\n      { path: 'whatsapp-bot', texto: 'Bot de WhatsApp', rol: 'admin' }] },", 'nav.js MENU_V4 Comunicación')
+    # La barra lateral NO sale de MENU_V4 (son las páginas de Lawang con su <aside> escrito a mano): una entrada solo aparece si nav.js
+    # la injerta (INJERTOS) y solo se poda por rol si puedeVer() lo sabe. Sin esto el enlace no existía y la pantalla solo se abría
+    # tecleando la URL; y como CLAVE_MENU no tiene casilla para ella, puedeVer() la habría dejado ver a cualquier rol.
+    n = _una_vez(n, 'var INJERTOS = [',
+                 "var INJERTOS = [\n    { path: 'whatsapp-bot', tras: 'soporte', icono: 'chat', texto: 'Bot de WhatsApp' },", 'nav.js INJERTOS whatsapp-bot')
+    n = _una_vez(n, 'var k = CLAVE_MENU[path];',
+                 "if (path === 'whatsapp-bot') return !ficha || ficha.rol === 'admin' || ficha.rol === 'super_admin';\n    var k = CLAVE_MENU[path];",
+                 'nav.js puedeVer whatsapp-bot (solo admin)')
     open(nav, 'w', encoding='utf-8', newline='').write(n)
 
 
