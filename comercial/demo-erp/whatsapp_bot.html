@@ -18,6 +18,17 @@
 <div class="wb-estado" data-wb="estado" role="status" aria-live="polite"></div>
 </div>
 
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4" data-wb="seccion-conexion">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Tu número de WhatsApp</h2>
+<p class="wb-vacio" data-lwt>Conecta un número NUEVO de tu negocio, con tu propia cuenta de WhatsApp Business: Meta te guía y te manda el código por SMS. No uses un número que ya tengas en la app de WhatsApp: ese no se puede conectar al bot.</p>
+<p class="wb-aviso wb-oculto" data-wb="conexion-aviso" role="status"></p>
+<p class="wb-error wb-oculto" data-wb="conexion-error" role="alert"></p>
+<div class="flex flex-wrap items-center gap-4">
+<button class="wb-boton" type="button" data-accion="conectar" data-primario="1"><span data-lwt>Conectar mi número</span></button>
+<span class="wb-vacio" data-wb="conexion-paso"></span>
+</div>
+</section>
+
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-6" data-wb="seccion-ficha">
 <style>
 .wb-oculto{display:none !important}
@@ -153,6 +164,22 @@
     'Pregunta': 'Question', 'Respuesta': 'Answer', 'Quitar': 'Remove', 'Volver a esta versión': 'Go back to this version', 'Versión actual': 'Current version',
     'Sin conectar': 'Not connected', 'Conectado': 'Connected', 'Conexión pendiente': 'Connection pending', 'Con un error de conexión': 'Connection error',
     'Todavía no hay ningún número de WhatsApp conectado.': 'No WhatsApp number is connected yet.',
+    'Tu número de WhatsApp': 'Your WhatsApp number',
+    'Conecta un número NUEVO de tu negocio, con tu propia cuenta de WhatsApp Business: Meta te guía y te manda el código por SMS. No uses un número que ya tengas en la app de WhatsApp: ese no se puede conectar al bot.': 'Connect a NEW number for your business, with your own WhatsApp Business account: Meta guides you and sends the code by SMS. Do not use a number that is already in the WhatsApp app: that one cannot be connected to the bot.',
+    'Conectar mi número': 'Connect my number', 'Conectando…': 'Connecting…',
+    'Se abre una ventana de Meta: síguela hasta el final.': 'A Meta window opens: follow it to the end.',
+    'Comprobando el número con Meta…': 'Checking the number with Meta…',
+    'Has cerrado la ventana de Meta antes de terminar. Puedes volver a empezar.': 'You closed the Meta window before finishing. You can start again.',
+    'Meta no ha devuelto lo necesario. Vuelve a empezar.': 'Meta did not return what is needed. Start again.',
+    'Número conectado.': 'Number connected.',
+    'El número ya está conectado.': 'The number is already connected.',
+    'Espera unos segundos antes de volver a intentarlo.': 'Wait a few seconds before trying again.',
+    'La conexión caducó o ya no está abierta. Pulsa Conectar para empezar de nuevo.': 'The connection expired or is no longer open. Press Connect to start again.',
+    'Demasiados intentos. Pulsa Conectar para empezar de nuevo.': 'Too many attempts. Press Connect to start again.',
+    'Solo un administrador puede conectar el número, y el módulo tiene que estar encendido.': 'Only an administrator can connect the number, and the module must be switched on.',
+    'La conexión todavía no está configurada en esta instancia: avisa al estudio.': 'Connection is not configured on this instance yet: tell the studio.',
+    'No se ha podido conectar. Vuelve a intentarlo; si se repite, avisa al estudio con este código:': 'Could not connect. Try again; if it repeats, tell the studio with this code:',
+    'No se pudo cargar el SDK de Meta. Revisa tu conexión o el bloqueador de contenido.': 'The Meta SDK could not be loaded. Check your connection or content blocker.',
     'Guardada': 'Saved', 'Todavía no has guardado la ficha.': 'You have not saved the sheet yet.', 'Todavía no hay versiones.': 'There are no versions yet.',
     'servicios': 'services', 'preguntas': 'questions', 'Ficha entera': 'Whole sheet', 'caracteres': 'characters', 'Versión': 'Version',
     'Versión restaurada.': 'Version restored.', 'Ficha guardada.': 'Sheet saved.', 'No había nada que cambiar.': 'There was nothing to change.',
@@ -351,6 +378,83 @@
     });
   }
 
+  /* ── conectar el número (S4): Embedded Signup de Meta. Del navegador sale SOLO el código de un solo uso y los dos ids que Meta da al popup, hacia la edge
+     wab-conecta; el token y los secretos viven en el servidor y NUNCA llegan aquí. El «Conectado» que se pinta es el que lee la base (carga()), no lo que
+     conteste la edge. La edge vuelve a comprobar todo contra Meta: estos ids son una pista, no una prueba. ── */
+  var ERRORES_CONEXION = {
+    ya_conectado: 'El número ya está conectado.', demasiado_pronto: 'Espera unos segundos antes de volver a intentarlo.',
+    sin_sesion: 'La conexión caducó o ya no está abierta. Pulsa Conectar para empezar de nuevo.', caducada: 'La conexión caducó o ya no está abierta. Pulsa Conectar para empezar de nuevo.',
+    demasiados_intentos: 'Demasiados intentos. Pulsa Conectar para empezar de nuevo.', no_admin: 'Solo un administrador puede conectar el número, y el módulo tiene que estar encendido.',
+    no_configurada: 'La conexión todavía no está configurada en esta instancia: avisa al estudio.', sin_app_meta: 'La conexión todavía no está configurada en esta instancia: avisa al estudio.',
+    sin_destino_webhook: 'La conexión todavía no está configurada en esta instancia: avisa al estudio.'
+  };
+  var CX = { conexion: null, code: null, sesion: null, ocupado: false };
+  function cxError(m) { var e = $w('conexion-error'); texto(e, m || ''); oculta(e, !m); }
+  function cxPaso(m) { texto($w('conexion-paso'), m || ''); }
+  function cxLibre() { CX.code = null; CX.sesion = null; CX.ocupado = false; var b = raiz.querySelector('[data-accion="conectar"]'); if (b) b.disabled = false; }
+  function mensajeEdge(codigo) {
+    if (ERRORES_CONEXION[codigo]) return T(ERRORES_CONEXION[codigo]);
+    return T('No se ha podido conectar. Vuelve a intentarlo; si se repite, avisa al estudio con este código:') + ' ' + String(codigo || 'desconocido').replace(/[^a-z0-9_]/g, '').slice(0, 40);
+  }
+  function llamaEdge(cuerpo) {
+    return SB.auth.getSession().then(function (s) {
+      var tok = s && s.data && s.data.session && s.data.session.access_token;
+      if (!tok) return { ok: false, error: 'sin_sesion' };
+      return fetch(window.lwEdge('wab-conecta'), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok, 'apikey': window.LW_SB_KEY }, body: JSON.stringify(cuerpo) })
+        .then(function (r) { return r.json().catch(function () { return {}; }); })
+        .then(function (j) { return j && typeof j === 'object' ? j : { ok: false, error: 'instancia' }; });
+    }).catch(function () { return { ok: false, error: 'instancia' }; });
+  }
+  function cargaSdk(cfg) {
+    return new Promise(function (res, rej) {
+      var arranca2 = function () { try { window.FB.init({ appId: cfg.app_id, autoLogAppEvents: true, xfbml: false, version: cfg.graph_version }); res(); } catch (e) { rej(e); } };
+      if (window.FB) return arranca2();
+      var sc = document.createElement('script'); sc.async = true; sc.defer = true; sc.crossOrigin = 'anonymous';
+      sc.src = 'https://connect.facebook.net/en_US/sdk.js';
+      sc.onload = arranca2; sc.onerror = function () { rej(new Error('sdk')); };
+      document.head.appendChild(sc);
+    });
+  }
+  function terminaSiCompleto() {
+    if (!CX.code || !CX.sesion || CX.ocupado === 'canjeando') return;
+    var code = CX.code, ses = CX.sesion;
+    CX.ocupado = 'canjeando'; cxPaso(T('Comprobando el número con Meta…'));
+    llamaEdge({ accion: 'canjea', code: code, waba_id: ses.waba_id, phone_number_id: ses.phone_number_id }).then(function (j) {
+      CX.code = null; CX.sesion = null;
+      if (j && j.ok) { ok(T('Número conectado.')); cxError(''); cxPaso(''); cxLibre(); return carga(); }
+      cxPaso(''); cxError(mensajeEdge(j && j.error)); cxLibre(); return carga();
+    });
+  }
+  /* el mensaje del popup solo se acepta de Meta; solo se guardan los dos ids de la sesión terminada */
+  window.addEventListener('message', function (ev) {
+    if (!CX.conexion || (ev.origin !== 'https://www.facebook.com' && ev.origin !== 'https://web.facebook.com')) return;
+    var d; try { d = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data; } catch (e) { return; }
+    if (!d || d.type !== 'WA_EMBEDDED_SIGNUP') return;
+    if (d.event === 'FINISH' && d.data && /^[0-9]{5,40}$/.test(String(d.data.waba_id)) && /^[0-9]{5,40}$/.test(String(d.data.phone_number_id))) {
+      CX.sesion = { waba_id: String(d.data.waba_id), phone_number_id: String(d.data.phone_number_id) };
+      terminaSiCompleto();
+    } else if (d.event === 'CANCEL' || d.event === 'ERROR') { cxPaso(''); cxError(T('Has cerrado la ventana de Meta antes de terminar. Puedes volver a empezar.')); cxLibre(); }
+  });
+  function conecta(btn) {
+    if (CX.ocupado) return;
+    CX.ocupado = true; btn.disabled = true; cxError(''); cxPaso(T('Conectando…'));
+    llamaEdge({ accion: 'inicia' }).then(function (cfg) {
+      if (!cfg || !cfg.ok) { cxPaso(''); cxError(mensajeEdge(cfg && cfg.error)); cxLibre(); return carga(); }
+      CX.conexion = cfg;
+      return cargaSdk(cfg).then(function () {
+        cxPaso(T('Se abre una ventana de Meta: síguela hasta el final.'));
+        window.FB.login(function (resp) {
+          var code = resp && resp.authResponse && resp.authResponse.code;
+          if (code) {
+            CX.code = String(code); CX.ocupado = false; terminaSiCompleto();
+            setTimeout(function () { if (CX.code && !CX.sesion) { cxPaso(''); cxError(T('Meta no ha devuelto lo necesario. Vuelve a empezar.')); cxLibre(); } }, 20000);
+          }
+          else { cxPaso(''); cxError(T('Has cerrado la ventana de Meta antes de terminar. Puedes volver a empezar.')); cxLibre(); }
+        }, { config_id: cfg.config_id, response_type: 'code', override_default_response_type: true, extras: { setup: {}, sessionInfoVersion: '3' } });
+      }, function () { cxPaso(''); cxError(T('No se pudo cargar el SDK de Meta. Revisa tu conexión o el bloqueador de contenido.')); cxLibre(); });
+    });
+  }
+
   function init(aut) {
     SB = aut.sb;
     raiz.addEventListener('input', function (ev) { if (ev.target && ev.target.hasAttribute && ev.target.hasAttribute('data-campo')) recuenta(); });
@@ -361,6 +465,7 @@
       if (a === 'guardar') guarda(el);
       else if (a === 'recargar') carga();
       else if (a === 'restaurar') restaura(el);
+      else if (a === 'conectar') conecta(el);
       else if (a === 'anadir-servicio' || a === 'anadir-pregunta') {
         if (!TOPES) return;   // la ficha aún no ha cargado: sin topes no hay filas que pintar
         var tipo = a === 'anadir-servicio' ? 'servicios' : 'preguntas';
