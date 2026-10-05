@@ -42,6 +42,18 @@
     return estado.activos === 'todos' || !!estado.activos[mod];
   }
 
+  /* Para las GUARDAS de pantalla de otros ficheros (desacople del núcleo comercial, 5-oct-2026). Distinto de activo(): activo()
+     falla cerrado (lo usa el fetch para no pedir a una base que ya no da), esto falla ABIERTO. Mientras no se sabe (carga
+     asíncrona) o si no se pudo comprobar, devuelve true = el comportamiento de siempre, nunca esconde. Solo dice false
+     cuando la base ha contestado y el módulo no está. Lawang no lleva este fichero: allí `window.axwModuloActivo` no
+     existe y la guarda cae a true (idioma: `!(window.axwModuloActivo ? window.axwModuloActivo(m) : true)`). Quien necesite
+     esperar al dato: `window.AXW_MODULOS_LISTOS` (promesa; resuelve true si se supo, false si falló la comprobación). */
+  window.axwModuloActivo = function (mod) {
+    if (!estado.listo || estado.error) return true;
+    return activo(mod);
+  };
+  window.AXW_MODULOS_LISTOS = pListo.then(function () { return !estado.error; });
+
   // ── la pantalla actual ──────────────────────────────────────────────────────────────────────
   function moduloDeRuta(ruta) {
     var mejor = null, largo = 0;

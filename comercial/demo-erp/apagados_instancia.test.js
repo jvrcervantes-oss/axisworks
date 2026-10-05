@@ -156,5 +156,36 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(/<p [^>]*mt-2"\s+hidden>/.test(b), 'sin «qué hace»: su línea queda oculta');
   }
 
+  // 7. helper de guardas (desacople núcleo comercial, subtarea 2.0): (a) Lawang, (b) maestro, (c) carga y fallo
+  {
+    // (a) Lawang no lleva el fichero: no hay helper, y el idioma de la guarda cae a true para cualquier módulo
+    delete globalThis.axwModuloActivo; delete globalThis.AXW_MODULOS_LISTOS;
+    const guarda = (m) => (globalThis.axwModuloActivo ? globalThis.axwModuloActivo(m) : true);
+    ok(guarda('contratos') === true && guarda('lo_que_sea') === true, '(a) sin el fichero (Lawang): siempre true');
+
+    // (c) antes de saber: true (no esconde), aunque luego resulte apagado
+    const E = escenario({ activos: ['facturas'] });
+    ok(typeof globalThis.axwModuloActivo === 'function' && globalThis.AXW_MODULOS_LISTOS && typeof globalThis.AXW_MODULOS_LISTOS.then === 'function', 'el fichero exporta helper y promesa');
+    ok(globalThis.axwModuloActivo('comisiones') === true, '(c) cargando: true, no lee «todo apagado»');
+    ok(globalThis.axwModuloActivo('base') === true, 'base siempre true');
+    E.publica();
+    ok(await globalThis.AXW_MODULOS_LISTOS === true, '(c) la promesa de listo resuelve true al saberse');
+    // (b) ya sabido: refleja lo realmente activo
+    ok(globalThis.axwModuloActivo('facturas') === true && globalThis.axwModuloActivo('comisiones') === false, '(b) activo true / apagado false');
+    ok(globalThis.axwModuloActivo('base') === true, '(b) base true');
+
+    // (b) sin modulos_activos = todo encendido
+    const T = escenario({ activos: null });
+    T.publica();
+    await globalThis.AXW_MODULOS_LISTOS;
+    ok(globalThis.axwModuloActivo('comisiones') === true, '(b) todos encendidos: true');
+
+    // (c) si la comprobación falla: la promesa resuelve false y la guarda sigue abierta (no esconde por un fallo de red)
+    const F = escenario({ fallaActivos: true });
+    F.publica();
+    ok(await globalThis.AXW_MODULOS_LISTOS === false, '(c) fallo: la promesa resuelve false, no se queda colgada');
+    ok(globalThis.axwModuloActivo('comisiones') === true, '(c) fallo: la guarda no esconde');
+  }
+
   console.log('OK apagados_instancia: ' + n + '/' + n);
 })().catch((e) => { console.error('FALLA', e.message); process.exit(1); });
