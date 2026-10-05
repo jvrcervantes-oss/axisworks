@@ -1858,13 +1858,12 @@ def instancia(nombre):
 # reservas, facturas y comisiones) da cero con el módulo apagado: la RLS restrictiva de F4 devuelve vacío, no error.
 EXENTOS_BASE = {
     'comisiones': 'Home cuenta comisiones pendientes; atribución de closer y referidos corren en la pantalla del CRM/comisiones',
-    'contratos': 'Home cuenta firmas pendientes; contratos-firmados es el bucket que abre la pantalla de contratos',
+    'contratos': 'Home cuenta firmas pendientes; contratos-firmados es el bucket que abre la pantalla de contratos; borrar_operacion (dueño contratos desde el 5-oct-2026) solo corre desde la ficha de operaciones',
     'deck': 'edge ficheros (base): sus RPC deck_* solo corren en la clase deck_foto, la acción deck_activa y su reconciliador (AXW-66, 28-sep)',
     'facturas': 'Home cuenta facturas con saldo; justificantes lo sube la pantalla de recibos/facturas',
     'gastos': 'panel-gastos.js y gasto_justificante_registra solo corren en /v4/gastos/',
     'modelos': 'subidores de fotos y documentos del modelo y del deck: solo en /v4/modelos/',
     'obra': 'obra_foto_registra: solo en /v4/obra/',
-    'operaciones': 'borrar_operacion: solo desde la ficha de operaciones',
     'proyectos': 'documentación de proyecto y unidades: solo en /v4/proyectos/; Home cuenta unidades',
     'recibos': 'recibi_aplicaciones: solo en /v4/recibos/',
     'reservas': 'prórroga, liberación y vencimientos: pantalla de reservas; Home cuenta las que vencen',
