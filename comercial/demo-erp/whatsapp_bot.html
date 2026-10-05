@@ -176,6 +176,7 @@
     'Espera unos segundos antes de volver a intentarlo.': 'Wait a few seconds before trying again.',
     'La conexión caducó o ya no está abierta. Pulsa Conectar para empezar de nuevo.': 'The connection expired or is no longer open. Press Connect to start again.',
     'Demasiados intentos. Pulsa Conectar para empezar de nuevo.': 'Too many attempts. Press Connect to start again.',
+    'Ya hay una comprobación en marcha. Espera unos segundos y mira el estado.': 'A check is already running. Wait a few seconds and look at the status.',
     'Solo un administrador puede conectar el número, y el módulo tiene que estar encendido.': 'Only an administrator can connect the number, and the module must be switched on.',
     'La conexión todavía no está configurada en esta instancia: avisa al estudio.': 'Connection is not configured on this instance yet: tell the studio.',
     'No se ha podido conectar. Vuelve a intentarlo; si se repite, avisa al estudio con este código:': 'Could not connect. Try again; if it repeats, tell the studio with this code:',
@@ -386,6 +387,7 @@
     sin_sesion: 'La conexión caducó o ya no está abierta. Pulsa Conectar para empezar de nuevo.', caducada: 'La conexión caducó o ya no está abierta. Pulsa Conectar para empezar de nuevo.',
     demasiados_intentos: 'Demasiados intentos. Pulsa Conectar para empezar de nuevo.', no_admin: 'Solo un administrador puede conectar el número, y el módulo tiene que estar encendido.',
     no_configurada: 'La conexión todavía no está configurada en esta instancia: avisa al estudio.', sin_app_meta: 'La conexión todavía no está configurada en esta instancia: avisa al estudio.',
+    canje_en_curso: 'Ya hay una comprobación en marcha. Espera unos segundos y mira el estado.',
     sin_destino_webhook: 'La conexión todavía no está configurada en esta instancia: avisa al estudio.'
   };
   var CX = { conexion: null, code: null, sesion: null, ocupado: false, plazo: null };
@@ -407,7 +409,7 @@
   }
   function cargaSdk(cfg) {
     return new Promise(function (res, rej) {
-      var arranca2 = function () { try { window.FB.init({ appId: cfg.app_id, autoLogAppEvents: true, xfbml: false, version: cfg.graph_version }); res(); } catch (e) { rej(e); } };
+      var arranca2 = function () { try { window.FB.init({ appId: cfg.app_id, autoLogAppEvents: false, xfbml: false, version: cfg.graph_version }); res(); } catch (e) { rej(e); } };
       if (window.FB) return arranca2();
       var sc = document.createElement('script'); sc.async = true; sc.defer = true; sc.crossOrigin = 'anonymous';
       sc.src = 'https://connect.facebook.net/en_US/sdk.js';
