@@ -1,0 +1,343 @@
+<!-- Pantalla /whatsapp-bot-alta/ del ERP MAESTRO: el ALTA del bot de WhatsApp (S8 de encargos/20261005_estudio_bots_modulo_erp.md, 5-oct-2026).
+     NO es una página entera: build.py (bot_alta_pantalla) la inyecta en la cáscara de /asistente/ de Lawang, igual que whatsapp_bot.html.
+     Por qué es OTRA pantalla y no una sección de /whatsapp-bot/: hay que aceptar las Condiciones ANTES de que el módulo se pueda encender, y con el
+     módulo apagado el interruptor oculta /whatsapp-bot/ y cierra sus funciones. Esta pantalla (y sus tres funciones, wab_alta_datos, wab_cliente_guarda y
+     wab_terminos_acepta) son de `base`: se pueden usar con el módulo apagado, y cada función exige dentro sesión verificada + admin.
+     Qué hace: (1) el cliente (admin de su instancia) escribe los datos del alta; (2) lee el texto EXACTO de las Condiciones, ya completado por el sistema
+     con sus datos y su nombre, con su huella; (3) lo acepta con una casilla propia, sin marcar; (4) ve qué más falta (el contrato marco lo marca el estudio)
+     y si el bot ya puede encenderse. El navegador no decide nada: pide el texto y la huella a la base, comprueba que el texto que pinta casa con esa huella
+     y devuelve a la base la versión y la huella que mostró; la base vuelve a renderizar, compara y pone la IP, el rol y la fecha. Todo texto de la base se
+     pinta con textContent; los botones y campos se enganchan por data-accion / data-campo, nunca por su rótulo. -->
+<div class="flex flex-col w-full gap-8" data-ba="raiz">
+
+<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<div class="flex flex-col gap-2 max-w-3xl">
+<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Bot de WhatsApp · alta y condiciones</h1>
+<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Antes de encender tu bot hace falta que completes los datos de tu negocio, aceptes las condiciones del servicio y que el estudio confirme el contrato marco firmado. Aquí ves qué falta y lo haces.</p>
+</div>
+<div class="ba-estado" data-ba="estado" role="status" aria-live="polite"></div>
+</div>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4">
+<style>
+.ba-oculto{display:none !important}
+.ba-estado{padding:10px 16px;border-radius:999px;background:#e4e2dd;color:#1b1c19;font-size:13px}
+.ba-estado[data-listo="1"]{background:#485B37;color:#fff}
+.ba-aviso{padding:10px 14px;border-radius:8px;background:#fff3e0;color:#8a4b00;font-size:14px;white-space:pre-line;word-break:break-word}
+.ba-error{padding:10px 14px;border-radius:8px;background:#fde2e0;color:#7a1a14;font-size:14px;white-space:pre-line;word-break:break-word}
+.ba-nota{padding:12px 16px;border-radius:10px;background:#f5f4ee;font-size:14px;line-height:1.5}
+.ba-lista{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.ba-lista li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4}
+.ba-marca{flex:none;width:22px;height:22px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:#fde2e0;color:#7a1a14}
+.ba-lista li[data-hecho="1"] .ba-marca{background:#485B37;color:#fff}
+.ba-grid{display:grid;grid-template-columns:1fr;gap:20px}
+@media (min-width:900px){.ba-grid{grid-template-columns:1fr 1fr}.ba-ancho{grid-column:1 / -1}}
+.ba-campo{display:flex;flex-direction:column;gap:6px}
+.ba-campo>label{font-size:13px;font-weight:600;color:#1b1c19}
+.ba-campo input[type=text]{width:100%;border:1px solid #c5c8bc;border-radius:8px;padding:8px 10px;font-size:14px;background:#fff;font-family:inherit}
+.ba-pie{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#75786e}
+.ba-pie [data-excede="1"]{color:#7a1a14;font-weight:700}
+.ba-boton{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border-radius:999px;border:0;cursor:pointer;font-size:14px;background:#e4e2dd;color:#1b1c19}
+.ba-boton[data-primario="1"]{background:#104C4F;color:#fff}
+.ba-boton:disabled{opacity:.5;cursor:not-allowed}
+.ba-texto{max-height:420px;overflow:auto;padding:16px 18px;border:1px solid #c5c8bc;border-radius:10px;background:#faf9f5;font-size:14px;line-height:1.55}
+.ba-texto p{margin:0 0 10px}
+.ba-huella{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#75786e;word-break:break-all}
+.ba-casilla{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45}
+.ba-casilla input{margin-top:3px;width:18px;height:18px;flex:none}
+.ba-hist{display:flex;flex-direction:column;gap:8px}
+.ba-hist-fila{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;padding:10px 14px;border:1px solid #e4e2dd;border-radius:10px;font-size:14px;word-break:break-word}
+.ba-vacio{color:#75786e;font-size:14px}
+</style>
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Qué falta para encender el bot</h2>
+<p class="ba-error ba-oculto" data-ba="error" role="alert"></p>
+<p class="ba-aviso ba-oculto" data-ba="aviso" role="status"></p>
+<ul class="ba-lista" data-ba="faltan"></ul>
+<p class="ba-vacio" data-ba="nota-estudio"></p>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-6" data-ba="seccion-alta">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>1 · Datos de tu negocio para las condiciones</h2>
+<div class="ba-nota" data-lwt>Estos datos aparecen en las condiciones y en el aviso de privacidad que ven las personas que escriben a tu bot. Escríbelos tal cual los quieres ahí: tú respondes de que sean ciertos.</div>
+<div class="ba-grid" data-ba="formulario">
+<div class="ba-campo">
+<label for="ba-razon_social" data-lwt>Razón social (nombre legal de la empresa)</label>
+<input type="text" id="ba-razon_social" data-campo="razon_social" autocomplete="off">
+<div class="ba-pie"><span></span><span data-cuenta="razon_social"></span></div>
+</div>
+<div class="ba-campo">
+<label for="ba-nombre_negocio" data-lwt>Nombre del negocio (cómo te conocen)</label>
+<input type="text" id="ba-nombre_negocio" data-campo="nombre_negocio" autocomplete="off">
+<div class="ba-pie"><span></span><span data-cuenta="nombre_negocio"></span></div>
+</div>
+<div class="ba-campo ba-ancho">
+<label for="ba-domicilio" data-lwt>Domicilio de la empresa</label>
+<input type="text" id="ba-domicilio" data-campo="domicilio" autocomplete="off">
+<div class="ba-pie"><span></span><span data-cuenta="domicilio"></span></div>
+</div>
+<div class="ba-campo">
+<label for="ba-contacto_privacidad" data-lwt>Contacto de privacidad (un correo o un teléfono)</label>
+<input type="text" id="ba-contacto_privacidad" data-campo="contacto_privacidad" autocomplete="off">
+<div class="ba-pie"><span></span><span data-cuenta="contacto_privacidad"></span></div>
+</div>
+<div class="ba-campo">
+<label for="ba-plazo_conservacion" data-lwt>Cuánto tiempo guardas las conversaciones</label>
+<input type="text" id="ba-plazo_conservacion" data-campo="plazo_conservacion" autocomplete="off">
+<div class="ba-pie"><span data-lwt>Por ejemplo: «24 meses desde el último mensaje»</span><span data-cuenta="plazo_conservacion"></span></div>
+</div>
+</div>
+<div class="ba-campo">
+<label for="ba-motivo" data-lwt>¿Qué has cambiado? (queda en el registro)</label>
+<input type="text" id="ba-motivo" data-campo="motivo" autocomplete="off">
+</div>
+<p class="ba-aviso ba-oculto" data-ba="aviso-razon" role="status"></p>
+<div class="flex flex-wrap items-center justify-end gap-3">
+<button class="ba-boton" type="button" data-accion="recargar"><span data-lwt>Descartar los cambios</span></button>
+<button class="ba-boton" type="button" data-accion="guardar-alta" data-primario="1"><span data-lwt>Guardar los datos</span></button>
+</div>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4" data-ba="seccion-terminos">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>2 · Condiciones del servicio</h2>
+<p class="ba-vacio ba-oculto" data-ba="terminos-bloqueado"></p>
+<div class="ba-texto" data-ba="texto" tabindex="0" role="document" aria-label="Condiciones del servicio" lang="es"></div>
+<p class="ba-huella" data-ba="huella"></p>
+<label class="ba-casilla"><input type="checkbox" data-campo="acepto"><span data-ba="rotulo-acepto"></span></label>
+<div class="flex flex-wrap items-center justify-between gap-3">
+<span class="ba-vacio" data-ba="aceptada"></span>
+<button class="ba-boton" type="button" data-accion="aceptar" data-primario="1" disabled><span data-lwt>Aceptar las condiciones</span></button>
+</div>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>3 · Contrato marco</h2>
+<p class="ba-vacio" data-ba="marco"></p>
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Aceptaciones registradas</h2>
+<div class="ba-hist" data-ba="historial"></div>
+</section>
+
+</div>
+<!--AXW_SCRIPT-->
+<script>
+(function () {
+  'use strict';
+  var EN_BA = {
+    'Bot de WhatsApp · alta y condiciones': 'WhatsApp bot · sign-up and terms',
+    'Antes de encender tu bot hace falta que completes los datos de tu negocio, aceptes las condiciones del servicio y que el estudio confirme el contrato marco firmado. Aquí ves qué falta y lo haces.': 'Before your bot can be switched on you need to complete your business details, accept the service terms and the studio has to confirm the signed framework agreement. Here you see what is missing and do it.',
+    'Qué falta para encender el bot': 'What is missing to switch the bot on',
+    '1 · Datos de tu negocio para las condiciones': '1 · Your business details for the terms',
+    'Estos datos aparecen en las condiciones y en el aviso de privacidad que ven las personas que escriben a tu bot. Escríbelos tal cual los quieres ahí: tú respondes de que sean ciertos.': 'These details appear in the terms and in the privacy notice that people writing to your bot see. Write them as you want them to read: you are responsible for their accuracy.',
+    'Razón social (nombre legal de la empresa)': 'Company name (legal name)', 'Nombre del negocio (cómo te conocen)': 'Business name (how people know you)',
+    'Domicilio de la empresa': 'Company address', 'Contacto de privacidad (un correo o un teléfono)': 'Privacy contact (an email or a phone number)',
+    'Cuánto tiempo guardas las conversaciones': 'How long you keep conversations', 'Por ejemplo: «24 meses desde el último mensaje»': 'For example: “24 months after the last message”',
+    '¿Qué has cambiado? (queda en el registro)': 'What did you change? (kept in the log)', 'Descartar los cambios': 'Discard changes', 'Guardar los datos': 'Save the details',
+    '2 · Condiciones del servicio': '2 · Service terms', 'Aceptar las condiciones': 'Accept the terms', '3 · Contrato marco': '3 · Framework agreement',
+    'Aceptaciones registradas': 'Recorded acceptances',
+    'Los datos del negocio': 'Your business details', 'Aceptar las condiciones (versión vigente)': 'Accept the terms (current version)', 'Contrato marco firmado (lo confirma el estudio)': 'Signed framework agreement (confirmed by the studio)',
+    'Todo listo: el estudio ya puede encender tu bot.': 'All set: the studio can now switch your bot on.', 'Falta algo': 'Something is missing',
+    'El texto legal se muestra en español, que es la versión que aceptas.': 'The legal text is shown in Spanish, which is the version you accept.',
+    'Todavía no hay aceptaciones.': 'There are no acceptances yet.', 'Datos guardados.': 'Details saved.', 'Condiciones aceptadas.': 'Terms accepted.',
+    'Huella del texto que se te muestra (SHA-256):': 'Fingerprint of the text shown to you (SHA-256):'
+  };
+  if (window.LW_EN && typeof window.LW_EN === 'object') {
+    Object.keys(EN_BA).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_BA[k]; });
+  }
+  var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
+  var traduce = function (raiz) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(raiz); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
+  var raiz = document.querySelector('[data-ba="raiz"]');
+  traduce(raiz);
+  var $b = function (n) { return raiz.querySelector('[data-ba="' + n + '"]'); };
+  var $c = function (n) { return raiz.querySelector('[data-campo="' + n + '"]'); };
+  var oculta = function (el, si) { el.classList.toggle('ba-oculto', !!si); };
+  var ok = function (m) { if (typeof toast === 'function') toast(m); };
+  var CAMPOS = ['razon_social', 'nombre_negocio', 'domicilio', 'contacto_privacidad', 'plazo_conservacion'];
+  /* qué es cada cosa que puede faltar, en lenguaje llano: las claves las manda la base (_wab_condiciones_faltan) */
+  var DATOS_ALTA = ['razon_social', 'domicilio', 'contacto_privacidad', 'plazo_conservacion', 'nombre_negocio'];
+  var SB = null, D = null, HUELLA_OK = false;
+
+  function limpia(el) { while (el.firstChild) el.removeChild(el.firstChild); }
+  function texto(el, s) { el.textContent = s; }
+  function error(m) { var e = $b('error'); texto(e, m || ''); oculta(e, !m); }
+  function aviso(m) { var e = $b('aviso'); texto(e, m || ''); oculta(e, !m); }
+  function fecha(s) { try { return new Date(s).toLocaleString(); } catch (e) { return String(s || ''); } }
+
+  function recuenta() {
+    if (!D) return;
+    CAMPOS.forEach(function (c) {
+      var el = raiz.querySelector('[data-cuenta="' + c + '"]');
+      if (!el) return;
+      var n = $c(c).value.length, tope = D.topes[c];
+      el.textContent = n + ' / ' + tope; el.setAttribute('data-excede', n > tope ? '1' : '0');
+    });
+  }
+
+  /* El texto legal lleva **negrita** de markdown y párrafos separados por línea en blanco: se pinta con nodos de texto (nada de HTML). */
+  function pintaTexto(cont, t) {
+    limpia(cont);
+    String(t).split(/\n{2,}/).forEach(function (par) {
+      var p = document.createElement('p');
+      par.split('**').forEach(function (trozo, i) {
+        if (!trozo) return;
+        if (i % 2 === 1) { var b = document.createElement('strong'); b.textContent = trozo; p.appendChild(b); }
+        else p.appendChild(document.createTextNode(trozo));
+      });
+      cont.appendChild(p);
+    });
+  }
+
+  /* El navegador comprueba que el texto que enseña es el de la huella que le dio la base (si el navegador sabe calcular SHA-256). */
+  function verificaHuella(t, huella) {
+    if (!(window.crypto && window.crypto.subtle && window.TextEncoder)) return Promise.resolve(null);
+    return window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)).then(function (buf) {
+      var hex = Array.prototype.map.call(new Uint8Array(buf), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+      return hex === huella;
+    });
+  }
+
+  var ROTULO_FALTA = {
+    datos: 'Los datos del negocio', aceptacion: 'Aceptar las condiciones (versión vigente)', marco: 'Contrato marco firmado (lo confirma el estudio)'
+  };
+  function pintaFaltan() {
+    var ul = $b('faltan'); limpia(ul);
+    var f = D.faltan || [];
+    var sinDatos = DATOS_ALTA.some(function (k) { return f.indexOf(k) !== -1; });
+    var items = [['datos', !sinDatos], ['aceptacion', f.indexOf('aceptacion') === -1], ['marco', f.indexOf('marco') === -1]];
+    items.forEach(function (it) {
+      var li = document.createElement('li'); li.setAttribute('data-hecho', it[1] ? '1' : '0'); li.setAttribute('data-falta', it[0]);
+      var m = document.createElement('span'); m.className = 'ba-marca'; m.textContent = it[1] ? '✓' : '·';
+      var s = document.createElement('span'); s.textContent = T(ROTULO_FALTA[it[0]]);
+      li.appendChild(m); li.appendChild(s); ul.appendChild(li);
+    });
+    if (f.indexOf('terminos_sin_publicar') !== -1) {
+      var li2 = document.createElement('li'); li2.setAttribute('data-falta', 'terminos_sin_publicar');
+      li2.textContent = T('Falta publicar las condiciones: avisa al estudio.'); ul.appendChild(li2);
+    }
+    var listo = !!D.puede_encender, e = $b('estado');
+    e.setAttribute('data-listo', listo ? '1' : '0');
+    texto(e, listo ? T('Todo listo: el estudio ya puede encender tu bot.') : T('Falta algo'));
+    var n = $b('nota-estudio');
+    texto(n, D.modulo_activo ? '' : (listo ? '' : T('Cuando todo esté completo, el estudio enciende el bot desde su panel.')));
+  }
+
+  function pintaMarco() {
+    var m = D.marco || {};
+    texto($b('marco'), m.firmado
+      ? T('Firmado') + ' · ' + (m.version_marco || '') + ' · ' + (m.referencia || '') + ' · ' + T('confirmado por') + ' ' + (m.marcado_por || '') + ' · ' + fecha(m.marcado_en)
+      : T('Pendiente: lo firma el cliente con el estudio y el estudio lo marca aquí cuando lo recibe. Sin él el bot no se enciende.'));
+  }
+
+  function pintaHistorial() {
+    var cont = $b('historial'); limpia(cont);
+    var lista = D.aceptaciones || [];
+    if (!lista.length) { var p = document.createElement('p'); p.className = 'ba-vacio'; texto(p, T('Todavía no hay aceptaciones.')); cont.appendChild(p); return; }
+    lista.forEach(function (a) {
+      var f = document.createElement('div'); f.className = 'ba-hist-fila'; f.setAttribute('data-version', a.version);
+      var s = document.createElement('span'); s.textContent = a.version + ' · ' + (a.usuario_email || '') + ' (' + (a.rol || '') + ')';
+      var w = document.createElement('span'); w.textContent = fecha(a.aceptada_en);
+      f.appendChild(s); f.appendChild(w); cont.appendChild(f);
+    });
+  }
+
+  function pintaTerminos() {
+    var t = D.terminos, cont = $b('texto'), h = $b('huella'), caja = $c('acepto'), btn = raiz.querySelector('[data-accion="aceptar"]');
+    var bloq = $b('terminos-bloqueado');
+    caja.checked = false; btn.disabled = true; HUELLA_OK = false;
+    var vig = D.aceptacion_vigente;
+    texto($b('aceptada'), vig ? T('Aceptadas por') + ' ' + vig.usuario_email + ' · ' + fecha(vig.aceptada_en) : '');
+    if (!t) { limpia(cont); texto(h, ''); texto(bloq, T('Todavía no hay condiciones publicadas: avisa al estudio.')); oculta(bloq, false); caja.disabled = true; return; }
+    if (!t.texto) {
+      limpia(cont); texto(h, '');
+      texto(bloq, T('Completa y guarda los datos del negocio (arriba): las condiciones llevan tu razón social y tu nombre y hasta entonces no se pueden mostrar.'));
+      oculta(bloq, false); caja.disabled = true; texto($b('rotulo-acepto'), ''); return;
+    }
+    oculta(bloq, true); caja.disabled = false;
+    pintaTexto(cont, t.texto);
+    texto($b('rotulo-acepto'), T('He leído y acepto las condiciones del servicio de bots de WhatsApp, versión') + ' ' + t.version);
+    texto(h, T('Huella del texto que se te muestra (SHA-256):') + ' ' + t.huella_mostrada);
+    verificaHuella(t.texto, t.huella_mostrada).then(function (r) {
+      HUELLA_OK = r !== false;   // null = este navegador no sabe calcularla: la base la vuelve a comprobar de todos modos
+      if (r === false) { error(T('El texto que se muestra no coincide con su huella: recarga la página. No se puede aceptar.')); }
+      btn.disabled = !(caja.checked && HUELLA_OK);
+    });
+  }
+
+  function pinta() {
+    var c = D.cliente || {};
+    CAMPOS.forEach(function (k) { $c(k).value = c[k] || ''; });
+    $c('motivo').value = '';
+    oculta($b('aviso-razon'), true);
+    pintaFaltan(); pintaTerminos(); pintaMarco(); pintaHistorial(); recuenta();
+  }
+
+  function mensaje(e) {
+    var m = (e && e.message) || '';
+    if (e && e.code === '42501') return T('No tienes permiso: esta pantalla es solo para el administrador de tu instancia.');
+    return m || T('La base no ha respondido: prueba otra vez en un rato.');
+  }
+  function carga() {
+    error('');
+    return window.lwDatos('wab_alta_datos', {}).then(function (r) {
+      if (r.error || !r.data) { error(mensaje(r.error)); return; }
+      D = r.data; pinta();
+    });
+  }
+  function recoge() { var o = {}; CAMPOS.forEach(function (k) { o[k] = $c(k).value; }); return o; }
+
+  function guardaAlta(btn) {
+    var motivo = $c('motivo').value;
+    if (!motivo.trim()) { error(T('Cuenta en una frase qué has cambiado: queda en el registro.')); $c('motivo').focus(); return; }
+    btn.disabled = true; error('');
+    SB.rpc('wab_cliente_guarda', { p_datos: recoge(), p_motivo: motivo }).then(function (r) {
+      btn.disabled = false;
+      if (r.error) { error(mensaje(r.error)); return; }
+      ok(T('Datos guardados.'));
+      var cambia = r.data && r.data.razon_social_cambia;
+      carga().then(function () {
+        if (cambia) { var a = $b('aviso-razon'); texto(a, T('Has cambiado la razón social: las condiciones que ya habías aceptado dejan de valer y hay que aceptarlas otra vez antes de volver a encender el bot.')); oculta(a, false); }
+      });
+    });
+  }
+
+  function acepta(btn) {
+    var t = D && D.terminos;
+    if (!t || !t.texto || !HUELLA_OK) return;
+    btn.disabled = true; error('');
+    SB.rpc('wab_terminos_acepta', { p_version: t.version, p_huella: t.huella_mostrada }).then(function (r) {
+      if (r.error) {
+        btn.disabled = false;
+        var h = (r.error.hint || '');
+        if (h === 'texto_cambio' || h === 'terminos_version') { error(mensaje(r.error)); carga(); return; }
+        error(mensaje(r.error)); return;
+      }
+      ok(T('Condiciones aceptadas.'));
+      carga();
+    });
+  }
+
+  function init(aut) {
+    SB = aut.sb;
+    raiz.addEventListener('input', function (ev) { if (ev.target && ev.target.hasAttribute && ev.target.hasAttribute('data-campo')) recuenta(); });
+    raiz.addEventListener('change', function (ev) {
+      if (ev.target && ev.target.getAttribute && ev.target.getAttribute('data-campo') === 'acepto') {
+        raiz.querySelector('[data-accion="aceptar"]').disabled = !(ev.target.checked && HUELLA_OK);
+      }
+    });
+    raiz.addEventListener('click', function (ev) {
+      var el = ev.target.closest ? ev.target.closest('[data-accion]') : null;
+      if (!el || !raiz.contains(el)) return;
+      var a = el.getAttribute('data-accion');
+      if (a === 'guardar-alta') guardaAlta(el);
+      else if (a === 'recargar') carga();
+      else if (a === 'aceptar') acepta(el);
+    });
+    carga();
+  }
+
+  function arranca() {
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { error(T('Sin sesión: recarga la página o vuelve a entrar.')); return; }
+    window.LW_AUTH.then(init);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca);
+  else arranca();
+})();
+</script>

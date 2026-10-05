@@ -1544,10 +1544,33 @@ def whatsapp_bot_pantalla():
     base lo vuelve a exigir (es_admin() dentro de cada RPC). Con el módulo apagado esta página se cambia por «Módulo no instalado»
     (apagados_instancia.js, por el registro). El menú gana su entrada en Comunicación. Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
     v4 = os.path.join(DIST, 'intranet', 'v4')
+    # S8 (5-oct-2026): segunda pantalla, la del ALTA y la aceptación de las Condiciones (bot_alta.html → /whatsapp-bot-alta/). Es de `base` (erp/modulos.py,
+    # PANTALLAS_MAESTRO): se usa ANTES de encender el módulo, y con él apagado /whatsapp-bot/ queda oculta. Misma cáscara, mismo reemplazo literal.
+    for archivo, carpeta, titulo in (('whatsapp_bot.html', 'whatsapp-bot', 'Bot de WhatsApp'), ('bot_alta.html', 'whatsapp-bot-alta', 'Bot de WhatsApp · alta')):
+        _pantalla_bot(v4, archivo, carpeta, titulo)
+    nav = os.path.join(v4, 'assets', 'nav.js')
+    n = open(nav, encoding='utf-8').read()
+    n = _una_vez(n, "{ path: 'soporte', texto: 'Soporte', clave: 'soporte' }] },",
+                 "{ path: 'soporte', texto: 'Soporte', clave: 'soporte' },\n      { path: 'whatsapp-bot', texto: 'Bot de WhatsApp', rol: 'admin' },\n"
+                 "      { path: 'whatsapp-bot-alta', texto: 'Bot de WhatsApp · alta', rol: 'admin' }] },", 'nav.js MENU_V4 Comunicación')
+    # La barra lateral NO sale de MENU_V4 (son las páginas de Lawang con su <aside> escrito a mano): una entrada solo aparece si nav.js
+    # la injerta (INJERTOS) y solo se poda por rol si puedeVer() lo sabe. Sin esto el enlace no existía y la pantalla solo se abría
+    # tecleando la URL; y como CLAVE_MENU no tiene casilla para ella, puedeVer() la habría dejado ver a cualquier rol.
+    # Solo se injerta /whatsapp-bot/ (la del alta se abre desde el flujo de instalación), pero la regla de rol vale para las dos.
+    n = _una_vez(n, 'var INJERTOS = [',
+                 "var INJERTOS = [\n    { path: 'whatsapp-bot', tras: 'soporte', icono: 'chat', texto: 'Bot de WhatsApp' },", 'nav.js INJERTOS whatsapp-bot')
+    n = _una_vez(n, 'var k = CLAVE_MENU[path];',
+                 "if (path === 'whatsapp-bot' || path === 'whatsapp-bot-alta') return !ficha || ficha.rol === 'admin' || ficha.rol === 'super_admin';\n    var k = CLAVE_MENU[path];",
+                 'nav.js puedeVer whatsapp-bot (solo admin)')
+    open(nav, 'w', encoding='utf-8', newline='').write(n)
+
+
+def _pantalla_bot(v4, archivo, carpeta, titulo):
+    """Una pantalla del bot de WhatsApp sobre la cáscara de /asistente/ de Lawang (ver whatsapp_bot_pantalla)."""
     t = open(os.path.join(LAWANG, 'intranet', 'v4', 'asistente', 'index.html'), encoding='utf-8').read()
-    frag = open(os.path.join(AQUI, 'whatsapp_bot.html'), encoding='utf-8').read().split('<!--AXW_SCRIPT-->')
+    frag = open(os.path.join(AQUI, archivo), encoding='utf-8').read().split('<!--AXW_SCRIPT-->')
     if len(frag) != 2:
-        aborta('whatsapp_bot.html: tiene que llevar UNA línea <!--AXW_SCRIPT--> entre el marcado y el script')
+        aborta('%s: tiene que llevar UNA línea <!--AXW_SCRIPT--> entre el marcado y el script' % archivo)
     marcado, script = frag[0].strip(), frag[1].strip()
     ancla = '<div class="flex flex-col w-full gap-8">'
     cierre = '</div>\n</main></div>\n<script>'
@@ -1558,23 +1581,10 @@ def whatsapp_bot_pantalla():
     if i1 < i0:
         aborta('whatsapp_bot_pantalla: el cierre de <main> está antes del contenedor')
     t = t[:i0] + marcado + '\n</main></div>\n' + script + '\n</body></html>\n'
-    t = _una_vez(t, 'data-herramienta="asistente"', 'data-rol="admin"', 'whatsapp-bot/index.html puerta')
-    t = _una_vez(t, '<title data-lw-titulo>Asistente</title>', '<title data-lw-titulo>Bot de WhatsApp</title>', 'whatsapp-bot/index.html título')
-    os.makedirs(os.path.join(v4, 'whatsapp-bot'), exist_ok=True)
-    open(os.path.join(v4, 'whatsapp-bot', 'index.html'), 'w', encoding='utf-8', newline='').write(t)
-    nav = os.path.join(v4, 'assets', 'nav.js')
-    n = open(nav, encoding='utf-8').read()
-    n = _una_vez(n, "{ path: 'soporte', texto: 'Soporte', clave: 'soporte' }] },",
-                 "{ path: 'soporte', texto: 'Soporte', clave: 'soporte' },\n      { path: 'whatsapp-bot', texto: 'Bot de WhatsApp', rol: 'admin' }] },", 'nav.js MENU_V4 Comunicación')
-    # La barra lateral NO sale de MENU_V4 (son las páginas de Lawang con su <aside> escrito a mano): una entrada solo aparece si nav.js
-    # la injerta (INJERTOS) y solo se poda por rol si puedeVer() lo sabe. Sin esto el enlace no existía y la pantalla solo se abría
-    # tecleando la URL; y como CLAVE_MENU no tiene casilla para ella, puedeVer() la habría dejado ver a cualquier rol.
-    n = _una_vez(n, 'var INJERTOS = [',
-                 "var INJERTOS = [\n    { path: 'whatsapp-bot', tras: 'soporte', icono: 'chat', texto: 'Bot de WhatsApp' },", 'nav.js INJERTOS whatsapp-bot')
-    n = _una_vez(n, 'var k = CLAVE_MENU[path];',
-                 "if (path === 'whatsapp-bot') return !ficha || ficha.rol === 'admin' || ficha.rol === 'super_admin';\n    var k = CLAVE_MENU[path];",
-                 'nav.js puedeVer whatsapp-bot (solo admin)')
-    open(nav, 'w', encoding='utf-8', newline='').write(n)
+    t = _una_vez(t, 'data-herramienta="asistente"', 'data-rol="admin"', carpeta + '/index.html puerta')
+    t = _una_vez(t, '<title data-lw-titulo>Asistente</title>', '<title data-lw-titulo>%s</title>' % titulo, carpeta + '/index.html título')
+    os.makedirs(os.path.join(v4, carpeta), exist_ok=True)
+    open(os.path.join(v4, carpeta, 'index.html'), 'w', encoding='utf-8', newline='').write(t)
 
 
 def guard_asistente_admin():
