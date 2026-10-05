@@ -12,9 +12,9 @@ const modulosDe = (...packs) => packs.flatMap((p) => CAT.pack(p)[3]);
 let e = CAT.leeSel('base');
 assert.deepStrictEqual(encendidos(e), modulosDe('base').sort(), 'solo la base');
 e = CAT.leeSel('captacion,finanzas,bancos,radar');
-const esperado = modulosDe('base', 'captacion', 'nucleo', 'finanzas').concat(['bancos', 'radar']).sort();
+const esperado = modulosDe('base', 'captacion', 'facturacion', 'nucleo', 'finanzas').concat(['bancos', 'radar']).sort();
 assert.deepStrictEqual(encendidos(e), esperado, 'finanzas trae el núcleo que necesita; suelto y camino');
-assert.strictEqual(CAT.codificaSel(e), 'base,captacion,nucleo,finanzas,bancos,radar', 'codifica lo mismo que leyó');
+assert.strictEqual(CAT.codificaSel(e), 'base,captacion,facturacion,nucleo,finanzas,bancos,radar', 'codifica lo mismo que leyó');
 assert.deepStrictEqual(encendidos(CAT.leeSel(CAT.codificaSel(e))), esperado, 'ida y vuelta estable');
 // `finanzas` es pack y módulo a la vez: cuenta como pack (entero)
 assert.ok(modulosDe('finanzas').every((k) => CAT.leeSel('finanzas')[k]), 'finanzas = el pack entero');

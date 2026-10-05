@@ -21,6 +21,12 @@ def corre(catalogo=REAL, registro=REG):
         return 'para'
 
 
+def _reg_con(a, b):
+    r = json.loads(json.dumps(REG))
+    r['modulos'][a]['depende'] = sorted(set(r['modulos'][a]['depende']) | {b})
+    return r
+
+
 def cambia(a, b):
     assert REAL.count(a) == 1, a
     return REAL.replace(a, b)
@@ -28,8 +34,14 @@ def cambia(a, b):
 
 casos = [
     ('catálogo real', corre(), 'pasa'),
+    # corte A (5-oct-2026): facturas y recibos son su propio pack; si vuelven al núcleo o dejan de requerir la base, el guard lo ve
+    ('facturas vuelve a depender de contratos (el puente se rompió): facturas no puede ir fuera del núcleo',
+     corre(registro=_reg_con('facturas', 'contratos')), 'para'),
+    ('facturas y recibos dentro del pack del núcleo (sin pack propio) también casa',
+     corre(cambia("['facturas', 'recibos'], ['base']],", "[], ['base']],").replace("'cuentas', 'comisiones'", "'facturas', 'recibos', 'cuentas', 'comisiones'")
+           .replace("['base', 'facturacion']]", "['base']]")), 'pasa'),
     ('soporte fuera del núcleo, como suelto',
-     corre(cambia("'obra', 'portal', 'soporte'], ['base']]", "'obra', 'portal'], ['base']]")
+     corre(cambia("'obra', 'portal', 'soporte'], ['base', 'facturacion']]", "'obra', 'portal'], ['base', 'facturacion']]")
            .replace("['sociedades', ['base']]", "['sociedades', ['base']], ['soporte', ['base']]")), 'para'),
     ('módulo que el registro no conoce',
      corre(cambia("['sociedades', ['base']]", "['sociedades', ['base']], ['nuevomod', ['base']]")

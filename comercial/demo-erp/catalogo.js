@@ -154,15 +154,16 @@
   CAMINO.forEach(function (m, i) { CODIGO[m[0]] = 'NEW-' + ('0' + (i + 1)).slice(-2); });
   /* ── PACKS (owner, 27-sep: «los módulos que dependen de otros van en pack sí o sí») ───────────────────────
      Salen del registro del ERP (erp/modulos.json → «depende»: qué lee el código de cada módulo), no de la
-     intuición: los 13 que se necesitan entre sí son un solo bloque (Núcleo de venta); lo que depende de él va en
+     intuición: los 11 que se necesitan entre sí son un solo bloque (Núcleo de venta) y facturas+recibos se separaron (5-oct, desacople: facturas ya no lee contratos); lo que depende de él va en
      un pack que lo requiere; SUELTO solo lo que no depende de nada más que la base. build.py:packs_casan() para el
      build si esto deja de casar con el registro. Se enciende o apaga cada pack ENTERO.
      [clave, nombre, descripción, módulos, packs que necesita] */
   var PACKS = [
     ['base', 'Base', 'What every company has: the day, the team and the settings.', ['home', 'usuarios', 'ajustes'], []],
     ['captacion', 'CRM and lead generation', 'Leads come in on their own and are worked from the CRM, with the WhatsApp setter and the campaign autopilot.', ['crm', 'setter', 'campanas'], ['base']],
-    ['nucleo', 'Sales core', 'Clients, deals, contracts, invoices and payments, with the inventory being sold. They read from each other, so they come together.',
-      ['compradores', 'operaciones', 'reservas', 'contratos', 'facturas', 'recibos', 'cuentas', 'comisiones', 'proyectos', 'modelos', 'obra', 'portal', 'soporte'], ['base']],
+    ['facturacion', 'Invoicing', 'Invoices and payment receipts. Independent of contracts, commissions and projects: a company that does not sell property can run on this alone.', ['facturas', 'recibos'], ['base']],
+    ['nucleo', 'Sales core', 'Clients, deals, contracts and payments, with the inventory being sold. They read from each other, so they come together; invoicing comes with them.',
+      ['compradores', 'operaciones', 'reservas', 'contratos', 'cuentas', 'comisiones', 'proyectos', 'modelos', 'obra', 'portal', 'soporte'], ['base', 'facturacion']],
     ['finanzas', 'Finance', 'The company\'s money: collections calendar, management dashboard and expenses. Accounting will join this pack when it ships.', ['vencimientos', 'finanzas', 'gastos'], ['nucleo']],
     ['extras', 'Extras', 'AI assistants, marketing assets and the management fee, on top of the sales core.', ['asistente', 'peticiones', 'creatividades', 'comisionadmin'], ['nucleo']]
   ];
