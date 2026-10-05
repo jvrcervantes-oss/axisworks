@@ -1547,6 +1547,89 @@ def guard_asistente_admin():
     open(g, 'w', encoding='utf-8', newline='').write(t)
 
 
+# ── --panel-contra-publicado (5-oct-2026, owner: «panel contra lo ya publicado») ───────────────────────────────────────
+# QUÉ: el panel de control (panel/index.html y panel/pilotos/index.html) sale apuntando a lo que PRODUCCIÓN sirve HOY, no a lo que
+# este build habría publicado entero. QUÉ SE ADAPTA, solo en el panel y solo los enlaces/`src` locales que salen de panel/:
+#   · la ruta: si lo publicado no tiene `/home/` pero sí `/intranet/v4/home/` (la estructura vieja), el enlace pasa a esa;
+#   · el `?v=`: la huella (sha1[:8]) del fichero PUBLICADO, no la del build. Hostinger cachea cada URL hasta 7 días: con la
+#     huella nueva y el fichero viejo, la CDN guardaría el viejo bajo la URL nueva y la publicación completa de después
+#     (misma huella) serviría el guard.js viejo durante días.
+# POR QUÉ ASÍ Y NO REESCRIBIENDO A MANO EL panel/ YA CONSTRUIDO: lo que se sube sigue saliendo del build (probado, con su comprobación
+# de resultado), y el panel solo habla con la edge `erp-control` y le pide a guard.js lo mismo que el panel viejo (LW_AUTH, lwEdge:
+# se comprueba en test_panel_publicado.py). Los ficheros publicados no se tocan: `--solo-panel` de erp/publica_instancia.py
+# sube solo panel/. Si algo que el panel pide NO existe en lo publicado, el build PARA (nunca se inventa).
+# DE DÓNDE SALE «LO PUBLICADO»: el HEAD de la rama `limpio` del clon erp/despliegues/<instancia> (blobs de git: el disco de
+# Windows puede traer CRLF), exigiendo que sea lo que está en origin/main. Nunca el clon con el build recién copiado encima.
+REF_PANEL = re.compile(r"""(?P<pre>(?:src|href)=)(?P<q>["'])(?P<ruta>/[^"'#?<>\s]*)(?:\?v=(?P<v>[0-9A-Za-z_-]+))?(?P=q)""")
+
+
+def panel_contra_publicado(panel_dir, leer_publicado):
+    """Reescribe en `panel_dir` los enlaces locales que salen de panel/ para que existan en lo publicado (`leer_publicado(rel)` ->
+    bytes del fichero publicado o None) y lleven la huella de allí. Devuelve la lista de cambios (ruta, nueva, huella).
+    Aborta si algo no existe en lo publicado ni con la raíz vieja (/intranet/v4)."""
+    import hashlib
+    faltan, cambios = [], []
+
+    def blob(ruta):
+        rel = ruta.lstrip('/')
+        if ruta.endswith('/') or '.' not in ruta.rsplit('/', 1)[-1]:
+            rel = rel.rstrip('/') + '/index.html' if rel.rstrip('/') else 'index.html'
+        return leer_publicado(rel)
+
+    for raiz, _d, fichs in os.walk(panel_dir):
+        for f in sorted(fichs):
+            if not f.endswith('.html'):
+                continue
+            p = os.path.join(raiz, f)
+            t = open(p, encoding='utf-8', errors='replace').read()
+
+            def uno(m):
+                ruta, v = m.group('ruta'), m.group('v')
+                if ruta.startswith('//') or ruta.startswith('/panel/') or ruta == '/panel':
+                    return m.group(0)
+                for cand in (ruta, '/intranet/v4' + ruta):
+                    b = blob(cand)
+                    if b is not None:
+                        break
+                else:
+                    faltan.append('%s (en %s) no existe en lo publicado, ni como /intranet/v4%s' % (ruta, os.path.relpath(p, panel_dir), ruta))
+                    return m.group(0)
+                h = hashlib.sha1(b).hexdigest()[:8]
+                if cand != ruta or (v and v != h):
+                    cambios.append((ruta, cand, h if v else None))
+                return m.group('pre') + m.group('q') + cand + (('?v=' + h) if v else '') + m.group('q')
+            t2 = REF_PANEL.sub(uno, t)
+            if t2 != t:
+                open(p, 'w', encoding='utf-8', newline='').write(t2)
+    if faltan:
+        aborta('--panel-contra-publicado: el panel pide algo que producción aún no sirve:\n  ' + '\n  '.join(sorted(set(faltan))[:15]))
+    return cambios
+
+
+def publicado_de_clon(nombre):
+    """`leer_publicado` real: blobs del HEAD de la rama `limpio` del clon de despliegue de la instancia, que debe ser lo que
+    hay en origin/main (un commit local sin subir no es «lo publicado»). Aborta si no se puede confirmar."""
+    clon = os.path.join(DESPLIEGUES, nombre)
+
+    def git(*a):
+        r = subprocess.run(['git'] + list(a), cwd=clon, capture_output=True)
+        return r.returncode, r.stdout
+    if not os.path.isdir(os.path.join(clon, '.git')):
+        aborta('--panel-contra-publicado: %s no es el clon de lo publicado (sin .git)' % clon)
+    rc, rama = git('branch', '--show-current')
+    if rc or rama.decode().strip() != 'limpio':
+        aborta('--panel-contra-publicado: el clon de %s no está en la rama `limpio`' % nombre)
+    rc, a = git('rev-parse', 'HEAD')
+    rc2, b = git('rev-parse', 'origin/main')
+    if rc or rc2 or a != b:
+        aborta('--panel-contra-publicado: el HEAD del clon de %s no es lo que hay en origin/main: no es «lo publicado»' % nombre)
+
+    def leer(rel):
+        rc, out = git('cat-file', 'blob', 'HEAD:' + rel)
+        return out if rc == 0 else None
+    return leer
+
+
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
@@ -1708,6 +1791,16 @@ def instancia(nombre):
         dominio_re='(' + '|'.join(re.escape(d) for d in [dominio] + _instancia_alias(nombre)) + ')'))
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(destino)
+    if '--panel-contra-publicado' in sys.argv:
+        # Después de TODAS las comprobaciones del build (que miden el panel tal como lo escribe el build, con sus enlaces de la raíz
+        # limpia): esta adaptación apunta a la estructura vieja de producción, que comprueba_resultado daría por «enlace roto».
+        if not _instancia_registro(nombre).get('panel_control'):
+            aborta('--panel-contra-publicado solo vale para una instancia con panel_control: true; %s no lo tiene' % nombre)
+        cambios = panel_contra_publicado(os.path.join(destino, 'panel'), publicado_de_clon(nombre))
+        for ruta, nueva, huella in cambios:
+            print('panel contra lo publicado: %s -> %s%s' % (ruta, nueva, (' ?v=' + huella) if huella else ''))
+        if not cambios:
+            print('panel contra lo publicado: ya coincidía, sin cambios')
     total = sum(len(f) for r_, _d, f in os.walk(destino) if '.git' not in r_.split(os.sep))
     print('OK instancia %s en %s: %d ficheros, guard real contra %s' % (nombre, os.path.relpath(destino, AGENCIA), total, host_sb))
 
