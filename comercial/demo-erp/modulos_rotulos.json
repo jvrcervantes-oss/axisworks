@@ -7,6 +7,7 @@
  "reservas": ["Reservas", "Seguimiento", "event_available", "Reservas que vencen y el paso a bloqueo de parcela a tiempo."],
  "reservas-producto": ["Reservas de producto", "Seguimiento", "calendar_month", "Reservas de un producto por fechas (motos, coches…), con tarifas, disponibilidad y cobro."],
  "leads": ["CRM de leads", "Seguimiento", "filter_alt", "Los leads entran solos y cada uno tiene su próximo paso con fecha."],
+ "textos-contrato": ["Textos de contrato", "Documentación", "edit_note", "El texto con el que cada empresa hace sus contratos: cambia las palabras, se guarda como borrador y solo se usa al activarlo."],
  "contratos": ["Contratos", "Documentación", "contract", "Generador de contratos con registro de versiones y firma electrónica."],
  "portal": ["Portal del comprador", "Documentación", "badge", "Cada comprador ve sus contratos, pagos, facturas y obra."],
  "deck": ["Deck de inversión", "Documentación", "slideshow", "La presentación de cada proyecto para inversores, con sus fotos."],

@@ -1632,6 +1632,43 @@ def ventas_pantalla():
     open(nav, 'w', encoding='utf-8', newline='').write(n)
 
 
+def reservas_producto_pantalla():
+    """Pantalla /reservas-producto/ del ERP maestro (F8 pieza 1, 8-oct-2026; encargos/20261008_erp_f8_bbm_inventario_reservas_plan.md §3 y §7.1, BBM-20).
+    No existe en Lawang (su /reservas/ es la carta de reserva de parcela, otra cosa): la crea el build clonando la CÁSCARA de /asistente/ con el contenido de
+    `reservas_producto.html`, igual que ventas_pantalla. La puerta es la herramienta `reservas-producto` (la base la vuelve a exigir en cada RPC). Lleva
+    además, todo con reemplazo literal que aborta si Lawang (o una pantalla anterior de la cadena) cambia el trozo:
+      · nav.js: entrada de menú en Seguimiento (tras Ventas), injerto de sidebar y casilla en CLAVE_MENU (sin esa línea puedeVer() la enseñaría a todos);
+      · herramientas.js: la tarjeta `reservas-producto` bajo AXW_NUCLEO_OPERACION. Sin ella no existiría la casilla en Usuarios y solo el super admin
+        podría abrir la pantalla (BBM-20 punto 2). Va en Seguimiento, tras Operaciones.
+    Va DESPUÉS de ventas_pantalla() porque sus anclas de nav.js son las líneas que esa deja. Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    _pantalla_bot(v4, 'reservas_producto.html', 'reservas-producto', 'Reservas de producto', puerta='data-herramienta="reservas-producto"')
+    nav = os.path.join(v4, 'assets', 'nav.js')
+    n = open(nav, encoding='utf-8').read()
+    n = _una_vez(n, "      { path: 'ventas', texto: 'Ventas', clave: 'facturas', nucleo: true, mismaCasilla: true }] },",
+                 "      { path: 'ventas', texto: 'Ventas', clave: 'facturas', nucleo: true, mismaCasilla: true }," + '\n' +
+                 "      { path: 'reservas-producto', texto: 'Reservas de producto', clave: 'reservas-producto', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (reservas-producto)')
+    n = _una_vez(n, "    { path: 'ventas',     tras: 'reservas',     icono: 'receipt_long',   texto: 'Ventas', nucleo: true },",
+                 "    { path: 'ventas',     tras: 'reservas',     icono: 'receipt_long',   texto: 'Ventas', nucleo: true }," + '\n' +
+                 "    { path: 'reservas-producto', tras: 'ventas', icono: 'calendar_month', texto: 'Reservas de producto', nucleo: true },", 'nav.js INJERTOS reservas-producto')
+    n = _una_vez(n, "    ventas: ['facturas', 'operaciones', 'reservas-producto'],",
+                 "    ventas: ['facturas', 'operaciones', 'reservas-producto']," + '\n' + "    'reservas-producto': 'reservas-producto',", 'nav.js CLAVE_MENU reservas-producto')
+    open(nav, 'w', encoding='utf-8', newline='').write(n)
+    her = os.path.join(DIST, 'contracts', 'assets', 'herramientas.js')
+    h = open(her, encoding='utf-8').read()
+    ancla = "claves:'plantillas plantilla modelos contrato tipos de contrato prefijo numeracion campos borrador activar templates template contract types prefix fields draft activate' });" + '\n' + "}"
+    h = _una_vez(h, ancla,
+                 "claves:'plantillas plantilla modelos contrato tipos de contrato prefijo numeracion campos borrador activar templates template contract types prefix fields draft activate' });" + '\n' +
+                 "  /* RESERVAS DE PRODUCTO (F8, 8-oct-2026): la pantalla de reservas por fechas (motos, coches) del maestro. Permiso propio `reservas-producto`: es el que ya exigen" + '\n' +
+                 "     las RPC de la base (puede('reservas-producto')); sin esta tarjeta la casilla no existiría en Usuarios. Misma bandera y por lo mismo que Productos. */" + '\n' +
+                 "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'operaciones') + 1, 0," + '\n' +
+                 "    { grupo:'Seguimiento', nombre:'Reservas de producto', icon:'ph-calendar-check', href:'/intranet/v4/reservas-producto/', herr:'reservas-producto'," + '\n' +
+                 "      para:'Las reservas de tus productos por fechas (motos, coches): calendario por unidad, flota y tarifas, y el paso de cada reserva.'," + '\n' +
+                 "      claves:'reservas producto alquiler motos coches flota unidad calendario tarifa bloqueo entrega devolucion bookings rental fleet unit calendar rate hold return' });" + '\n' + "}",
+                 'herramientas.js tarjeta Reservas de producto')
+    open(her, 'w', encoding='utf-8', newline='').write(h)
+
+
 def guard_asistente_admin():
     """guard.js del maestro: la puerta de /asistente/ deja pasar al admin sin la casilla `asistente_peticiones` (la base lo permite).
     Va aparte de asistente_maestro() porque instancia() vuelve a copiar el guard.js de Lawang DESPUÉS de esa función; se llama justo
@@ -1735,6 +1772,7 @@ def instancia(nombre):
     whatsapp_bot_pantalla()   # módulo Bot de WhatsApp (5-oct-2026): su pantalla, clonando la cáscara de Lawang
     ajustes_correo_maestro()   # F3.1 (7-oct-2026): Ajustes › Correo con el servidor de salida (llama a la edge ajustes-correo)
     ventas_pantalla()   # F4 (8-oct-2026): Ventas — reserva → borrador → emitir → rectificar y la cola «cobrado sin facturar»
+    reservas_producto_pantalla()   # F8 (8-oct-2026): Reservas de producto — lista, calendario, flota y pagos por revisar (tras ventas: sus anclas de nav.js)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]

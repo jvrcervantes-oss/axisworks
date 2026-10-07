@@ -1,0 +1,815 @@
+<!-- Pantalla /reservas-producto/ del ERP MAESTRO (F8 pieza 1, 8-oct-2026; encargos/20261008_erp_f8_bbm_inventario_reservas_plan.md §3 y §7.1, BBM-20).
+     NO es una página entera: build.py (reservas_producto_pantalla) la inyecta en la cáscara de /asistente/ de Lawang (la misma que usan ventas_pantalla y
+     whatsapp_bot_pantalla), sustituyendo su contenedor y su script. Dos partes separadas por la línea «AXW_SCRIPT».
+     Qué hace: ver las reservas de un producto por fechas (motos), su calendario por unidad, la flota con sus tarifas y los pagos por revisar; crear una
+     reserva (confirmada o bloqueo con caducidad), confirmar, cancelar (con devolución si está cobrada), marcar en curso / devuelta y cambiar de moto.
+     El navegador SOLO pide: todas las llamadas son RPC (lecturas *_datos por lwDatos, el resto por sb.rpc). No manda un precio, un total ni un estado de
+     pago: la base calcula el precio al crear (tarifa de ESE producto) y lo congela; la pantalla lo lee de vuelta. No escribe una tabla y no se cree su propio
+     estado: tras cada acción vuelve a leer. Todo texto que viene de la base (nombre de contacto, direcciones, notas, producto, matrícula) se pinta con
+     textContent; NUNCA con innerHTML ni con el esc() de Lawang (no escapa la comilla simple). Se engancha por data-accion / data-tab / data-rp, nunca por un
+     rótulo. Idioma: ES/EN con el diccionario EN_RP de abajo (se añade a window.LW_EN solo si la clave no existe; el i18n.js es de Lawang y no se toca). -->
+<div class="flex flex-col w-full gap-8" data-rp="raiz">
+<style>
+.rp-oculto{display:none !important}
+.rp-aviso{padding:10px 14px;border-radius:8px;background:#fff3e0;color:#8a4b00;font-size:14px;white-space:pre-line;word-break:break-word}
+.rp-error{padding:10px 14px;border-radius:8px;background:#fde2e0;color:#7a1a14;font-size:14px;white-space:pre-line;word-break:break-word}
+.rp-ok{padding:10px 14px;border-radius:8px;background:#e6efdd;color:#2c3d1f;font-size:14px;white-space:pre-line;word-break:break-word}
+.rp-nota{padding:12px 16px;border-radius:10px;background:#f5f4ee;font-size:14px;line-height:1.5;word-break:break-word}
+.rp-tabs{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.rp-tab{padding:8px 18px;border-radius:999px;border:0;cursor:pointer;font-size:14px;background:#e4e2dd;color:#1b1c19}
+.rp-tab[aria-selected="true"]{background:#104C4F;color:#fff}
+.rp-barra{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:12px 0}
+.rp-barra label{font-size:13px;display:flex;align-items:center;gap:6px}
+.rp-barra select,.rp-barra input,.rp-campo input,.rp-campo select,.rp-campo textarea{border:1px solid #c5c8bc;border-radius:8px;padding:7px 10px;font-size:14px;background:#fff;font-family:inherit}
+.rp-tabla-caja{overflow-x:auto}
+.rp-tabla{width:100%;border-collapse:collapse;font-size:14px}
+.rp-tabla th{text-align:left;font-size:12px;color:#75786e;font-weight:600;padding:8px 10px;border-bottom:1px solid #e4e2dd;white-space:nowrap}
+.rp-tabla td{padding:9px 10px;border-bottom:1px solid #f0eee8;vertical-align:top;word-break:break-word}
+.rp-tabla td.rp-num,.rp-tabla th.rp-num{text-align:right;white-space:nowrap}
+.rp-boton{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;border-radius:999px;border:0;cursor:pointer;font-size:13px;background:#e4e2dd;color:#1b1c19}
+.rp-boton[data-primario="1"]{background:#104C4F;color:#fff}
+.rp-boton[data-peligro="1"]{background:#fde2e0;color:#7a1a14}
+.rp-boton:disabled{opacity:.55;cursor:not-allowed}
+.rp-acciones{display:flex;flex-wrap:wrap;gap:6px}
+.rp-chip{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;background:#e4e2dd;color:#1b1c19;white-space:nowrap}
+.rp-chip[data-tono="ok"]{background:#485B37;color:#fff}
+.rp-chip[data-tono="espera"]{background:#fff3e0;color:#8a4b00}
+.rp-chip[data-tono="mal"]{background:#fde2e0;color:#7a1a14}
+.rp-vacio{color:#75786e;font-size:14px}
+.rp-campo{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.rp-campo>label{font-size:13px;font-weight:600}
+.rp-dos{display:grid;grid-template-columns:1fr;gap:0 14px}
+@media (min-width:700px){.rp-dos{grid-template-columns:1fr 1fr}}
+.rp-fondo{position:fixed;inset:0;background:rgba(27,28,25,.55);z-index:2147482000;display:flex;align-items:center;justify-content:center;padding:16px}
+.rp-modal{background:#fff;border-radius:14px;max-width:620px;width:100%;max-height:90vh;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:12px}
+.rp-modal h3{font-size:18px;margin:0}
+.rp-resumen{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.rp-resumen dt{color:#75786e}
+.rp-resumen dd{margin:0;word-break:break-word}
+.rp-cal{border-collapse:collapse;font-size:12px;min-width:760px}
+.rp-cal th,.rp-cal td{border:1px solid #ecebe5;padding:4px 6px;text-align:center;white-space:nowrap}
+.rp-cal th.rp-ini,.rp-cal td.rp-ini{text-align:left;position:sticky;left:0;background:#faf9f5;min-width:120px;z-index:1}
+.rp-cal td[data-estado="bloqueo"]{background:#fff3e0;color:#8a4b00}
+.rp-cal td[data-estado="confirmada"]{background:#104C4F;color:#fff}
+.rp-cal td[data-estado="en_curso"]{background:#485B37;color:#fff}
+.rp-cal td[data-fuera="1"]{background:repeating-linear-gradient(45deg,#f0eee8,#f0eee8 4px,#e4e2dd 4px,#e4e2dd 8px);color:#75786e}
+.rp-cal th[data-hoy="1"]{background:#e6efdd}
+</style>
+
+<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<div class="flex flex-col gap-2 max-w-3xl">
+<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Reservas de producto</h1>
+<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Las reservas de tus productos por fechas (motos, coches…): calendario por unidad, flota y tarifas, y el paso de cada reserva. Los precios los calcula siempre la base; aquí solo se piden.</p>
+</div>
+<div class="rp-acciones"><button class="rp-boton" type="button" data-accion="rp-nueva" data-primario="1"><span data-lwt>Nueva reserva</span></button></div>
+</div>
+
+<p class="rp-ok rp-oculto" data-rp="exito" role="status"></p>
+<p class="rp-aviso rp-oculto" data-rp="aviso" role="status"></p>
+<p class="rp-error rp-oculto" data-rp="error" role="alert"></p>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4">
+<div class="rp-tabs" role="tablist">
+<button class="rp-tab" type="button" role="tab" data-accion="rp-tab" data-tab="reservas" aria-selected="true"><span data-lwt>Reservas</span></button>
+<button class="rp-tab" type="button" role="tab" data-accion="rp-tab" data-tab="calendario" aria-selected="false"><span data-lwt>Calendario</span></button>
+<button class="rp-tab" type="button" role="tab" data-accion="rp-tab" data-tab="flota" aria-selected="false"><span data-lwt>Flota y tarifas</span></button>
+<button class="rp-tab" type="button" role="tab" data-accion="rp-tab" data-tab="pagos" aria-selected="false"><span data-lwt>Pagos por revisar</span></button>
+</div>
+
+<div data-rp="panel" data-tab="reservas" role="tabpanel">
+<div class="rp-barra">
+<label><span data-lwt>Estado</span>
+<select data-rp="f-estado"><option value="" data-lwt>Todos</option><option value="bloqueo" data-lwt>Bloqueo</option><option value="confirmada" data-lwt>Confirmada</option><option value="en_curso" data-lwt>En curso</option><option value="devuelta" data-lwt>Devuelta</option><option value="cancelada" data-lwt>Cancelada</option><option value="caducada" data-lwt>Caducada</option></select></label>
+<label><span data-lwt>Desde</span><input type="date" data-rp="f-desde"></label>
+<label><span data-lwt>Hasta</span><input type="date" data-rp="f-hasta"></label>
+<button class="rp-boton" type="button" data-accion="rp-res-actualizar"><span data-lwt>Actualizar</span></button>
+</div>
+<div data-rp="res-estado" class="rp-vacio"></div>
+<div class="rp-tabla-caja"><table class="rp-tabla" data-rp="res-tabla"></table></div>
+<div class="rp-barra"><button class="rp-boton rp-oculto" type="button" data-accion="rp-res-mas"><span data-lwt>Cargar más</span></button></div>
+</div>
+
+<div data-rp="panel" data-tab="calendario" role="tabpanel" class="rp-oculto">
+<div class="rp-barra">
+<button class="rp-boton" type="button" data-accion="rp-cal-ant"><span data-lwt>Semana anterior</span></button>
+<button class="rp-boton" type="button" data-accion="rp-cal-hoy"><span data-lwt>Hoy</span></button>
+<button class="rp-boton" type="button" data-accion="rp-cal-sig"><span data-lwt>Semana siguiente</span></button>
+<button class="rp-boton" type="button" data-accion="rp-cal-actualizar"><span data-lwt>Actualizar</span></button>
+</div>
+<div class="rp-nota" data-lwt>Cada fila es una unidad. Un día cuenta como ocupado desde la recogida hasta el día anterior a la devolución. Las unidades en taller o de baja salen rayadas: no se pueden reservar.</div>
+<div data-rp="cal-estado" class="rp-vacio"></div>
+<div class="rp-tabla-caja"><table class="rp-cal" data-rp="cal-tabla"></table></div>
+</div>
+
+<div data-rp="panel" data-tab="flota" role="tabpanel" class="rp-oculto">
+<div class="rp-barra"><button class="rp-boton" type="button" data-accion="rp-flota-actualizar"><span data-lwt>Actualizar</span></button></div>
+<div data-rp="flota-estado" class="rp-vacio"></div>
+<div data-rp="flota-lista"></div>
+</div>
+
+<div data-rp="panel" data-tab="pagos" role="tabpanel" class="rp-oculto">
+<div class="rp-nota" data-lwt>Pagos de la pasarela que no pudieron confirmar su reserva (llegaron tarde, la moto ya no estaba libre, el importe no cuadraba…). Solo los ve la administración.</div>
+<div class="rp-barra">
+<label><input type="checkbox" data-rp="f-pagos-todos"> <span data-lwt>Incluir los ya resueltos</span></label>
+<button class="rp-boton" type="button" data-accion="rp-pagos-actualizar"><span data-lwt>Actualizar</span></button>
+</div>
+<div data-rp="pagos-estado" class="rp-vacio"></div>
+<div class="rp-tabla-caja"><table class="rp-tabla" data-rp="pagos-tabla"></table></div>
+<div class="rp-barra"><button class="rp-boton rp-oculto" type="button" data-accion="rp-pagos-mas"><span data-lwt>Cargar más</span></button></div>
+</div>
+</section>
+
+</div>
+<!--AXW_SCRIPT-->
+<script>
+(function () {
+  'use strict';
+  var EN_RP = {
+    'Reservas de producto': 'Product bookings',
+    'Las reservas de tus productos por fechas (motos, coches…): calendario por unidad, flota y tarifas, y el paso de cada reserva. Los precios los calcula siempre la base; aquí solo se piden.': 'Bookings of your products by date (motorbikes, cars…): calendar per unit, fleet and rates, and each booking’s status. Prices are always worked out by the database; here they are only requested.',
+    'Nueva reserva': 'New booking', 'Reservas': 'Bookings', 'Calendario': 'Calendar', 'Flota y tarifas': 'Fleet and rates', 'Pagos por revisar': 'Payments to review',
+    'Estado': 'Status', 'Todos': 'All', 'Bloqueo': 'Hold', 'Confirmada': 'Confirmed', 'En curso': 'In progress', 'Devuelta': 'Returned', 'Cancelada': 'Cancelled', 'Caducada': 'Expired',
+    'Desde': 'From', 'Hasta': 'To', 'Actualizar': 'Refresh', 'Cargar más': 'Load more', 'Hoy': 'Today',
+    'Semana anterior': 'Previous week', 'Semana siguiente': 'Next week',
+    'Cada fila es una unidad. Un día cuenta como ocupado desde la recogida hasta el día anterior a la devolución. Las unidades en taller o de baja salen rayadas: no se pueden reservar.': 'Each row is a unit. A day counts as busy from pick-up to the day before return. Units in the workshop or retired are striped: they cannot be booked.',
+    'Pagos de la pasarela que no pudieron confirmar su reserva (llegaron tarde, la moto ya no estaba libre, el importe no cuadraba…). Solo los ve la administración.': 'Gateway payments that could not confirm their booking (they arrived late, the bike was no longer free, the amount did not match…). Only administration sees them.',
+    'Incluir los ya resueltos': 'Include the ones already resolved',
+    'Reserva nº': 'Booking no.', 'Producto': 'Product', 'Unidad': 'Unit', 'Fechas': 'Dates', 'Cliente': 'Customer', 'Precio': 'Price', 'Pago': 'Payment', 'Origen': 'Source', 'Acciones': 'Actions',
+    'Referencia': 'Reference', 'Importe': 'Amount', 'Motivo': 'Reason', 'Recibido': 'Received', 'Resuelto': 'Resolved', 'Resolución': 'Resolution', 'Reserva': 'Booking',
+    'Equipo': 'Team', 'Bot': 'Bot', 'Sin pago': 'No payment', 'Por reclamar': 'To claim', 'Cliente sin permiso para verlo': 'Customer you cannot see', 'Sin cliente': 'No customer',
+    'Caduca': 'Expires', 'Detalles': 'Details', 'Confirmar': 'Confirm', 'Cancelar': 'Cancel', 'Cambiar de unidad': 'Change unit', 'Entregar (en curso)': 'Hand over (in progress)', 'Marcar devuelta': 'Mark as returned',
+    'Cancelar con devolución': 'Cancel with refund', 'Cerrar': 'Close', 'Volver': 'Back', 'Trabajando…': 'Working…', 'Cargando…': 'Loading…',
+    'Nueva reserva de producto': 'New product booking', 'Producto (obligatorio)': 'Product (required)', 'Elige un producto': 'Choose a product',
+    'Cualquiera libre (la base elige)': 'Any free one (the database picks)', 'Recogida (obligatoria)': 'Pick-up (required)', 'Devolución (obligatoria)': 'Return (required)',
+    'Cliente registrado': 'Registered customer', 'Sin cliente registrado (solo contacto)': 'No registered customer (contact only)',
+    'Nombre de contacto': 'Contact name', 'Teléfono de contacto': 'Contact phone', 'Dirección de entrega': 'Delivery address', 'Dirección de recogida': 'Collection address', 'Notas': 'Notes',
+    'Dejar la reserva solo bloqueada (caduca si no se confirma)': 'Only hold the booking (it expires if not confirmed)', 'Minutos de bloqueo (de 5 a 10080)': 'Hold minutes (5 to 10080)',
+    'Crear la reserva': 'Create the booking',
+    'Tarifas del producto (orientativas: el precio de verdad lo calcula la base al crear)': 'Product rates (indicative: the real price is worked out by the database on creation)',
+    'día': 'day', 'días': 'days', 'Este producto no tiene tarifas: la base no dejará reservarlo.': 'This product has no rates: the database will not allow booking it.',
+    'Elige un producto, la recogida y la devolución.': 'Choose a product, the pick-up and the return.',
+    'La devolución tiene que ser posterior a la recogida.': 'The return must be after the pick-up.',
+    'Indica un cliente registrado o, al menos, un nombre o un teléfono de contacto.': 'Give a registered customer or, at least, a contact name or phone.',
+    'Los minutos de bloqueo van de 5 a 10080.': 'Hold minutes run from 5 to 10080.',
+    'Reserva creada': 'Booking created', 'con precio': 'with price', 'La base no devolvió la reserva creada: recarga y comprueba antes de volver a crearla.': 'The database did not return the created booking: reload and check before creating it again.',
+    'No se pudo cargar la lista de clientes: la reserva se puede crear solo con nombre o teléfono de contacto.': 'The customer list could not be loaded: the booking can be created with just a contact name or phone.',
+    'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.': 'The customer list is cut to the first 500: if you cannot see the one you need, ask the administrator.',
+    'No hay productos con unidades en la flota: añade la flota antes de reservar.': 'No product has units in the fleet: add the fleet before booking.',
+    'Confirmar la reserva': 'Confirm the booking', 'Entregar la unidad': 'Hand over the unit', 'Marcar como devuelta': 'Mark as returned', 'Cancelar la reserva': 'Cancel the booking',
+    'Nota (opcional, hasta 300 caracteres)': 'Note (optional, up to 300 characters)', 'Sí, confirmar': 'Yes, confirm', 'Sí, entregar': 'Yes, hand over', 'Sí, devuelta': 'Yes, returned', 'Sí, cancelar': 'Yes, cancel',
+    'La nota es demasiado larga.': 'The note is too long.',
+    'Una reserva cobrada se cancela con devolución: así queda anotado lo devuelto y lo retenido.': 'A paid booking is cancelled with a refund: that way what was refunded and what was kept is recorded.',
+    'Reserva confirmada.': 'Booking confirmed.', 'Reserva entregada: ahora está en curso.': 'Booking handed over: it is now in progress.', 'Reserva devuelta.': 'Booking returned.', 'Reserva cancelada.': 'Booking cancelled.',
+    'La base no confirmó el cambio de estado: recarga y comprueba.': 'The database did not confirm the status change: reload and check.',
+    'Cancelar con devolución: rectifica las facturas emitidas de la reserva, anota lo devuelto al cliente y la cancela. Si no se devuelve nada, pon 0.': 'Cancel with refund: it corrects the issued invoices of the booking, records what is returned to the customer and cancels it. If nothing is returned, enter 0.',
+    'Importe devuelto al cliente (0 si no se devuelve nada)': 'Amount refunded to the customer (0 if nothing is refunded)', 'Referencia de la devolución (la transferencia o el reembolso)': 'Refund reference (the transfer or the reimbursement)',
+    'Motivo de la cancelación (obligatorio, hasta 300 caracteres)': 'Reason for cancelling (required, up to 300 characters)', 'Sí, cancelar con devolución': 'Yes, cancel with refund',
+    'Escribe el motivo.': 'Write the reason.', 'El motivo es demasiado largo.': 'The reason is too long.', 'El importe devuelto es un número de 0 en adelante.': 'The refunded amount is a number from 0 up.',
+    'Si devuelves algo, falta la referencia de la devolución.': 'If you refund something, the refund reference is missing.',
+    'Reserva cancelada con devolución.': 'Booking cancelled with refund.', 'Devuelto': 'Refunded', 'Retenido': 'Kept', 'La base no confirmó la cancelación: recarga y comprueba.': 'The database did not confirm the cancellation: reload and check.',
+    'Cambiar la unidad de la reserva': 'Change the booking’s unit', 'Unidad nueva (solo las disponibles del mismo producto)': 'New unit (only the available ones of the same product)', 'Unidad actual': 'Current unit',
+    'No hay otra unidad disponible de este producto.': 'There is no other available unit of this product.', 'Elige la unidad nueva.': 'Choose the new unit.', 'Cambiar': 'Change',
+    'Unidad cambiada.': 'Unit changed.', 'La base no confirmó el cambio de unidad: recarga y comprueba.': 'The database did not confirm the unit change: reload and check.',
+    'Detalle de la reserva': 'Booking details', 'Contacto': 'Contact', 'Teléfono': 'Phone', 'Entrega': 'Delivery', 'Recogida': 'Collection', 'Desglose del precio': 'Price breakdown',
+    'Número de reserva': 'Booking number', 'Precio congelado': 'Frozen price', 'Creada': 'Created', 'por': 'by',
+    'Unidades': 'Units', 'Matrícula o identificador': 'Plate or identifier', 'Tarifas': 'Rates', 'Disponible': 'Available', 'Taller': 'Workshop', 'Baja': 'Retired',
+    'Esta unidad no se puede reservar mientras esté así.': 'This unit cannot be booked while it is like this.', 'Este producto no tiene unidades.': 'This product has no units.',
+    'No hay productos en la flota.': 'There are no products in the fleet.',
+    'La flota está recortada a los primeros 500 productos.': 'The fleet is cut to the first 500 products.',
+    'No hay reservas con ese filtro.': 'No bookings match that filter.', 'No hay pagos por revisar.': 'There are no payments to review.',
+    'No hay unidades que mostrar en el calendario.': 'There are no units to show in the calendar.',
+    'El calendario está recortado: hay más reservas en estas fechas de las que caben. Acorta el rango o mira la lista.': 'The calendar is cut short: there are more bookings on these dates than fit. Shorten the range or use the list.',
+    'La lista está recortada: pulsa «Cargar más».': 'The list is cut short: press “Load more”.',
+    'No se ha podido mirar': 'Could not be checked',
+    'Esta función todavía no está disponible en esta base. No es que esté vacía: no se ha podido mirar.': 'This function is not available on this database yet. It is not empty: it could not be checked.',
+    'Esta función todavía no está disponible en esta base.': 'This function is not available on this database yet.',
+    'No tienes permiso para ver esta lista. No es que esté vacía: no se ha podido mirar.': 'You are not allowed to see this list. It is not empty: it could not be checked.',
+    'Solo la administración puede ver los pagos por revisar. No es que no haya: no se ha podido mirar.': 'Only administration can see the payments to review. It is not that there are none: it could not be checked.',
+    'El módulo de reservas de producto está apagado en esta instancia: no hay reservas que mirar. Esto NO quiere decir que no haya nada.': 'The product bookings module is switched off on this instance: there are no bookings to look at. This does NOT mean there is nothing.',
+    'La base no ha respondido: prueba otra vez en un rato.': 'The database did not answer: try again in a while.',
+    'Sin sesión: recarga la página o vuelve a entrar.': 'No session: reload the page or sign in again.',
+    'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'The database returned something unexpected. It is not empty: it could not be checked.',
+    'Reintentar': 'Retry'
+  };
+  if (window.LW_EN && typeof window.LW_EN === 'object') {
+    Object.keys(EN_RP).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_RP[k]; });
+  }
+  var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
+  var traduce = function (raiz) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(raiz); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
+  var raiz = document.querySelector('[data-rp="raiz"]');
+  traduce(raiz);
+  var $v = function (n) { return raiz.querySelector('[data-rp="' + n + '"]'); };
+
+  /* ── helpers de DOM: solo createElement/textContent (nada de innerHTML) ── */
+  function h(tag, attrs, hijos) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      var v = attrs[k];
+      if (v == null || v === false) return;
+      if (k === 'class') e.className = v;
+      else if (k === 'text') e.textContent = v;
+      else e.setAttribute(k, v === true ? '' : String(v));
+    });
+    (hijos || []).forEach(function (c) { if (c == null || c === false) return; e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function vacia(el) { while (el.firstChild) el.removeChild(el.firstChild); return el; }
+  function oculta(el, si) { el.classList.toggle('rp-oculto', !!si); }
+  function boton(texto, accion, extra) {
+    var a = { type: 'button', class: 'rp-boton', 'data-accion': accion, text: texto };
+    if (extra) Object.keys(extra).forEach(function (k) { a[k] = extra[k]; });
+    return h('button', a);
+  }
+  function chip(texto, tono) { return h('span', { class: 'rp-chip', 'data-tono': tono || 'neutro', text: texto }); }
+  function msg(clase, m) { var e = $v(clase); e.textContent = m || ''; oculta(e, !m); }
+  var exito = function (m) { msg('exito', m); }, aviso = function (m) { msg('aviso', m); }, error = function (m) { msg('error', m); };
+  function celda(contenido, clase) {
+    var td = h('td', clase ? { class: clase } : null);
+    if (contenido != null) td.appendChild(typeof contenido === 'string' || typeof contenido === 'number' ? document.createTextNode(String(contenido)) : contenido);
+    return td;
+  }
+  function tabla(el, cabeceras, filas) {
+    vacia(el);
+    var tr = h('tr');
+    cabeceras.forEach(function (c) { tr.appendChild(h('th', { class: c[1] || null, text: T(c[0]) })); });
+    el.appendChild(h('thead', null, [tr]));
+    var tb = h('tbody');
+    filas.forEach(function (f) { tb.appendChild(f); });
+    el.appendChild(tb);
+  }
+  function locale() { try { return (typeof window.lwLocale === 'function' && window.lwLocale()) || 'es-ES'; } catch (e) { return 'es-ES'; } }
+  function dinero(n, m) {
+    if (n == null || n === '' || isNaN(Number(n))) return '—';
+    var dec = (m === 'IDR' || m === 'JPY') ? 0 : 2;
+    var s;
+    try { s = new Intl.NumberFormat(locale(), { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(Number(n)); } catch (e) { s = String(n); }
+    return s + (m ? ' ' + m : '');
+  }
+  /* Fechas «de calendario» (date, sin hora): se parten a mano. `new Date('2026-10-08')` es medianoche UTC y en una zona al oeste enseñaría el día anterior. */
+  function diaDe(s) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || '')); return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null; }
+  function fechaDia(s) {
+    var d = diaDe(s);
+    return d ? d.toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  }
+  function fechaHora(x) {
+    if (!x) return '—';
+    var d = new Date(x);
+    return isNaN(d) ? '—' : d.toLocaleString(locale(), { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  function iso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function sumaDias(s, n) { var d = diaDe(s); d.setDate(d.getDate() + n); return iso(d); }
+  function hoy() { return iso(new Date()); }
+  function esFecha(s) { return /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) && diaDe(s) !== null && iso(diaDe(s)) === s; }
+
+  var SB = null;
+  var E = { tab: 'reservas', res: [], resSig: null, resCargado: false, flota: null, flotaRecortada: false, flotaCargada: false, clientes: null,
+            clientesTruncado: false, pagos: [], pagosSig: null, pagosCargado: false, cal: { ini: null }, ocupado: false };
+  var ESTADO = { bloqueo: ['Bloqueo', 'espera'], confirmada: ['Confirmada', 'ok'], en_curso: ['En curso', 'ok'], devuelta: ['Devuelta', 'neutro'], cancelada: ['Cancelada', 'mal'], caducada: ['Caducada', 'mal'] };
+  var UNIDAD = { disponible: ['Disponible', 'ok'], taller: ['Taller', 'espera'], baja: ['Baja', 'mal'] };
+
+  /* ── hablar con la base ──
+     Una entrada por RPC, con el nombre LITERAL: así erp/contrato_front.py ve cada llamada (extrae `.rpc('x')` y `lwDatos('x')`) y comprueba contra la base
+     que existe y que authenticated la ejecuta. Las lecturas *_datos van por lwDatos (único transporte de lecturas); las que escriben, por sb.rpc. */
+  var RPC = {
+    reservas_producto_datos: function (a) { return window.lwDatos('reservas_producto_datos', a); },
+    producto_flota_datos: function (a) { return window.lwDatos('producto_flota_datos', a); },
+    reserva_producto_pagos_datos: function (a) { return window.lwDatos('reserva_producto_pagos_datos', a); },
+    clientes_datos: function (a) { return window.lwDatos('clientes_datos', a); },
+    reserva_producto_crea: function (a) { return SB.rpc('reserva_producto_crea', a); },
+    reserva_producto_estado: function (a) { return SB.rpc('reserva_producto_estado', a); },
+    reserva_cancela_con_devolucion: function (a) { return SB.rpc('reserva_cancela_con_devolucion', a); },
+    reserva_producto_cambia_unidad: function (a) { return SB.rpc('reserva_producto_cambia_unidad', a); }
+  };
+  function llama(nombre, args) {
+    var p;
+    try {
+      if (RPC[nombre]) p = RPC[nombre](args || {});
+      else p = Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function ' + nombre } });
+    } catch (e) { return Promise.resolve({ data: null, error: e }); }
+    return Promise.resolve(p).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; },
+                                   function (e) { return { data: null, error: e }; });
+  }
+  /* Clasifica un error de la base: lo que se dice depende de QUÉ pasó (no disponible ≠ sin permiso ≠ la base no responde ≠ regla de negocio). */
+  function clasifica(err) {
+    var e = err || {}, m = String(e.message || ''), hint = e.hint ? String(e.hint) : '';
+    if (e.code === 'PGRST202' || e.status === 404 || /Could not find the function|schema cache/i.test(m)) return { tipo: 'no_disponible', hint: hint, m: m };
+    if (e.code === '42501') {
+      if (/sin sesi[oó]n/i.test(m)) return { tipo: 'sin_sesion', hint: hint, m: m };
+      if (/solo administraci[oó]n/i.test(m)) return { tipo: 'solo_admin', hint: hint, m: m };
+      if (/m[oó]dulo no activo/i.test(m) || hint === 'modulo_apagado') return { tipo: 'modulo_apagado', hint: hint, m: m };
+      return { tipo: 'sin_permiso', hint: hint, m: m };
+    }
+    if (!e.code && !hint && (!m || /failed to fetch|network|load failed|timeout|sin respuesta/i.test(m))) return { tipo: 'red', hint: hint, m: m };
+    return { tipo: 'regla', hint: hint, m: m };
+  }
+  /* Mensaje para la persona. Las reglas de negocio de la base vienen en español y con sus números: se enseñan tal cual (textContent). */
+  function mensaje(err, lectura) {
+    var c = clasifica(err);
+    if (c.tipo === 'no_disponible') return lectura ? T('Esta función todavía no está disponible en esta base. No es que esté vacía: no se ha podido mirar.') : T('Esta función todavía no está disponible en esta base.');
+    if (c.tipo === 'sin_sesion') return T('Sin sesión: recarga la página o vuelve a entrar.');
+    if (c.tipo === 'red') return T('La base no ha respondido: prueba otra vez en un rato.');
+    if (c.tipo === 'solo_admin' && lectura) return T('Solo la administración puede ver los pagos por revisar. No es que no haya: no se ha podido mirar.');
+    if (c.tipo === 'modulo_apagado' && lectura) return T('El módulo de reservas de producto está apagado en esta instancia: no hay reservas que mirar. Esto NO quiere decir que no haya nada.');
+    if (c.tipo === 'sin_permiso' && lectura) return T('No tienes permiso para ver esta lista. No es que esté vacía: no se ha podido mirar.');
+    return c.m || T('La base no ha respondido: prueba otra vez en un rato.');
+  }
+  function vaListaDe(r, clave) { return r && !r.error && r.data && Array.isArray(r.data[clave]); }
+
+  /* ── ocupado: un solo envío a la vez (doble clic, reintento) ── */
+  function ocupa(btn, texto) {
+    if (E.ocupado) return false;
+    E.ocupado = true;
+    if (btn) { btn.disabled = true; btn.setAttribute('data-texto-antes', btn.textContent); btn.textContent = texto || T('Trabajando…'); }
+    return true;
+  }
+  function libera(btn) {
+    E.ocupado = false;
+    if (btn && btn.hasAttribute('data-texto-antes')) { btn.textContent = btn.getAttribute('data-texto-antes'); btn.removeAttribute('data-texto-antes'); btn.disabled = false; }
+  }
+
+  /* ── ventana de diálogo (sin innerHTML; ESC y Cancelar cierran; el foco entra y vuelve) ── */
+  function dialogo(titulo, nodos, botones) {
+    var previo = document.activeElement;
+    var cuerpo = h('div', { class: 'rp-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': titulo }, [h('h3', { text: titulo })].concat(nodos));
+    var err = h('p', { class: 'rp-error rp-oculto', role: 'alert' });
+    cuerpo.appendChild(err);
+    var fila = h('div', { class: 'rp-acciones' });
+    var fondo = h('div', { class: 'rp-fondo', 'data-rp': 'dialogo' }, [cuerpo]);
+    var d = { fondo: fondo, cuerpo: cuerpo, botones: {}, error: function (m) { err.textContent = m || ''; oculta(err, !m); },
+              cierra: function () { if (fondo.parentNode) fondo.parentNode.removeChild(fondo); if (previo && previo.focus) { try { previo.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } } } };
+    botones.forEach(function (b) {
+      var bt = boton(b.texto, b.accion, b.primario ? { 'data-primario': '1' } : (b.peligro ? { 'data-peligro': '1' } : null));
+      bt.addEventListener('click', function () { if (b.cierra) d.cierra(); else if (b.alclic) b.alclic(bt, d); });
+      d.botones[b.accion] = bt; fila.appendChild(bt);
+    });
+    cuerpo.appendChild(fila);
+    fondo.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') d.cierra(); });
+    raiz.appendChild(fondo);
+    var primero = cuerpo.querySelector('input,select,textarea,button');
+    if (primero) primero.focus();
+    return d;
+  }
+  function resumen(pares) {
+    var dl = h('dl', { class: 'rp-resumen' });
+    pares.forEach(function (p) { dl.appendChild(h('dt', { text: T(p[0]) })); dl.appendChild(h('dd', { text: p[1] == null || p[1] === '' ? '—' : String(p[1]) })); });
+    return dl;
+  }
+  function campo(etiqueta, control, extra) {
+    return h('div', { class: 'rp-campo' }, [h('label', { text: T(etiqueta) }), control].concat(extra || []));
+  }
+
+  /* ── la flota (productos con sus unidades y tarifas): alimenta el formulario, el calendario y el cambio de unidad ── */
+  function cargaFlota() {
+    return llama('producto_flota_datos', {}).then(function (r) {
+      if (!vaListaDe(r, 'productos')) { E.flota = null; E.flotaCargada = false; return { error: r.error || { message: 'forma' } }; }
+      E.flota = r.data.productos; E.flotaRecortada = r.data.recortado === true; E.flotaCargada = true;
+      return { ok: true };
+    });
+  }
+  function producto(id) { return (E.flota || []).filter(function (p) { return p.id === id; })[0]; }
+  function textoError(r, lectura) { return r.error ? mensaje(r.error, lectura) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'); }
+
+  /* ───────────────────────────── Reservas (lista) ───────────────────────────── */
+  function cargaReservas(mas) {
+    var est = $v('res-estado');
+    est.textContent = T('Cargando…');
+    var args = { p_limit: 200 };
+    var fe = $v('f-estado').value, fd = $v('f-desde').value, fh = $v('f-hasta').value;
+    if (fe) args.p_estado = fe;
+    if (esFecha(fd)) args.p_desde = fd;
+    if (esFecha(fh)) args.p_hasta = fh;
+    if (args.p_desde && args.p_hasta && args.p_desde > args.p_hasta) { est.textContent = ''; error(T('La devolución tiene que ser posterior a la recogida.')); return Promise.resolve(); }
+    if (mas && E.resSig) args.p_despues = E.resSig;
+    return llama('reservas_producto_datos', args).then(function (r) {
+      if (!vaListaDe(r, 'reservas')) {
+        if (!mas) E.res = [];
+        vacia($v('res-tabla')); E.resCargado = false;
+        est.textContent = T('No se ha podido mirar') + ': ' + textoError(r, true);
+        oculta(raiz.querySelector('[data-accion="rp-res-mas"]'), true);
+        return;
+      }
+      E.res = mas ? E.res.concat(r.data.reservas) : r.data.reservas;
+      E.resSig = r.data.siguiente || null; E.resCargado = true;
+      pintaReservas();
+    });
+  }
+  function quienEs(x) {
+    if (x.client_id) return x.cliente_oculto ? T('Cliente sin permiso para verlo') : (x.contacto_nombre || '—');
+    return x.contacto_nombre || x.contacto_telefono || T('Sin cliente');
+  }
+  function chipEstado(e) { var t = ESTADO[e]; return t ? chip(T(t[0]), t[1]) : chip(String(e || '—')); }
+  function pintaReservas() {
+    $v('res-estado').textContent = E.res.length ? '' : T('No hay reservas con ese filtro.');
+    var filas = E.res.map(function (x) {
+      var tr = h('tr', { 'data-reserva-id': x.id });
+      tr.appendChild(celda(x.numero || '—'));
+      tr.appendChild(celda(h('div', null, [h('span', { text: x.producto || '—' }), h('div', { class: 'rp-vacio', text: x.unidad || '' })])));
+      tr.appendChild(celda(fechaDia(x.desde) + ' → ' + fechaDia(x.hasta)));
+      var c = h('div', null, [h('span', { text: quienEs(x) })]);
+      if (x.sin_reclamar === true) c.appendChild(h('div', null, [chip(T('Por reclamar'), 'espera')]));
+      tr.appendChild(celda(c));
+      tr.appendChild(celda(dinero(x.precio_total, x.moneda), 'rp-num'));
+      var e = h('div', null, [chipEstado(x.estado)]);
+      if (x.estado === 'bloqueo' && x.caduca_en) e.appendChild(h('div', { class: 'rp-vacio', text: T('Caduca') + ': ' + fechaHora(x.caduca_en) }));
+      tr.appendChild(celda(e));
+      tr.appendChild(celda(x.pago_referencia ? x.pago_referencia : T('Sin pago')));
+      tr.appendChild(celda(x.origen === 'bot' ? T('Bot') : T('Equipo')));
+      tr.appendChild(celda(accionesDe(x)));
+      return tr;
+    });
+    tabla($v('res-tabla'), [['Reserva nº'], ['Producto'], ['Fechas'], ['Cliente'], ['Precio', 'rp-num'], ['Estado'], ['Pago'], ['Origen'], ['Acciones']], filas);
+    oculta(raiz.querySelector('[data-accion="rp-res-mas"]'), !E.resSig);
+    // el aviso de «lista recortada» lo pone y lo quita esta función; los avisos de otras acciones no se pisan (se sabe por la bandera, no por el texto)
+    if (E.resSig) { aviso(T('La lista está recortada: pulsa «Cargar más».')); E.avisoRecorte = true; }
+    else if (E.avisoRecorte) { aviso(''); E.avisoRecorte = false; }
+  }
+  /* Qué botones ofrece cada estado. Es COMODIDAD: la base vuelve a comprobar el estado, el permiso y las fechas en cada llamada. */
+  function accionesDe(x) {
+    var ac = h('div', { class: 'rp-acciones' });
+    var id = { 'data-reserva-id': x.id };
+    ac.appendChild(boton(T('Detalles'), 'rp-detalle', id));
+    if (x.estado === 'bloqueo') {
+      ac.appendChild(boton(T('Confirmar'), 'rp-confirmar', Object.assign({ 'data-primario': '1' }, id)));
+      ac.appendChild(boton(T('Cancelar'), 'rp-cancelar-simple', Object.assign({ 'data-peligro': '1' }, id)));
+    }
+    if (x.estado === 'confirmada') {
+      ac.appendChild(boton(T('Entregar (en curso)'), 'rp-entregar', Object.assign({ 'data-primario': '1' }, id)));
+      if (!x.pago_referencia) ac.appendChild(boton(T('Cancelar'), 'rp-cancelar-simple', Object.assign({ 'data-peligro': '1' }, id)));
+      ac.appendChild(boton(T('Cancelar con devolución'), 'rp-cancelar-devolucion', Object.assign({ 'data-peligro': '1' }, id)));
+    }
+    if (x.estado === 'en_curso') ac.appendChild(boton(T('Marcar devuelta'), 'rp-devuelta', Object.assign({ 'data-primario': '1' }, id)));
+    if (x.estado === 'bloqueo' || x.estado === 'confirmada' || x.estado === 'en_curso') ac.appendChild(boton(T('Cambiar de unidad'), 'rp-cambia-unidad', id));
+    return ac;
+  }
+  function reserva(id) { return E.res.filter(function (x) { return x.id === id; })[0]; }
+  function detalle(x) {
+    var lineas = Array.isArray(x.desglose) ? x.desglose.map(function (l) {
+      return (l.veces != null ? l.veces + ' × ' : '') + (l.etiqueta ? l.etiqueta + ' ' : '') + '(' + l.dias + ' ' + T(Number(l.dias) === 1 ? 'día' : 'días') + ') · ' + dinero(l.precio, x.moneda);
+    }).join('\n') : '';
+    var d = dialogo(T('Detalle de la reserva'), [resumen([
+      ['Número de reserva', x.numero], ['Producto', x.producto], ['Unidad', x.unidad], ['Fechas', fechaDia(x.desde) + ' → ' + fechaDia(x.hasta) + ' (' + x.dias + ')'],
+      ['Estado', T((ESTADO[x.estado] || [x.estado])[0])], ['Cliente', quienEs(x)], ['Teléfono', x.contacto_telefono], ['Precio congelado', dinero(x.precio_total, x.moneda)],
+      ['Desglose del precio', lineas], ['Pago', x.pago_referencia || T('Sin pago')], ['Entrega', x.entrega_direccion], ['Recogida', x.recogida_direccion],
+      ['Notas', x.notas], ['Creada', fechaHora(x.creado_en) + (x.creado_por ? ' · ' + T('por') + ' ' + x.creado_por : '')]])],
+      [{ texto: T('Cerrar'), accion: 'rp-modal-cerrar', cierra: true }]);
+    d.cuerpo.querySelector('.rp-resumen').style.whiteSpace = 'pre-line';
+    return d;
+  }
+
+  /* ── cambiar de estado: confirmar · entregar · devuelta · cancelar (sin cobro) ── */
+  var PASOS = {
+    confirmada: { titulo: 'Confirmar la reserva', si: 'Sí, confirmar', hecho: 'Reserva confirmada.', primario: true },
+    en_curso: { titulo: 'Entregar la unidad', si: 'Sí, entregar', hecho: 'Reserva entregada: ahora está en curso.', primario: true },
+    devuelta: { titulo: 'Marcar como devuelta', si: 'Sí, devuelta', hecho: 'Reserva devuelta.', primario: true },
+    cancelada: { titulo: 'Cancelar la reserva', si: 'Sí, cancelar', hecho: 'Reserva cancelada.', peligro: true }
+  };
+  function cambiaEstado(x, nuevo) {
+    var p = PASOS[nuevo];
+    var nota = h('textarea', { rows: '2', maxlength: '300', 'aria-label': T('Nota (opcional, hasta 300 caracteres)'), 'data-campo': 'nota' });
+    var nodos = [resumen([['Reserva', x.numero], ['Producto', x.producto], ['Fechas', fechaDia(x.desde) + ' → ' + fechaDia(x.hasta)]]),
+                 campo('Nota (opcional, hasta 300 caracteres)', nota)];
+    if (nuevo === 'cancelada' && x.estado === 'confirmada') nodos.splice(1, 0, h('p', { class: 'rp-nota', text: T('Una reserva cobrada se cancela con devolución: así queda anotado lo devuelto y lo retenido.') }));
+    var b = { texto: T(p.si), accion: 'rp-modal-estado', primario: !!p.primario, peligro: !!p.peligro, alclic: function (bt, dd) {
+      var n = nota.value.trim();
+      if (n.length > 300) { dd.error(T('La nota es demasiado larga.')); return; }
+      if (!ocupa(bt)) return;
+      var args = { p_id: x.id, p_estado: nuevo };
+      if (n) args.p_nota = n;
+      llama('reserva_producto_estado', args).then(function (r) {
+        libera(bt);
+        if (r.error) { dd.error(mensaje(r.error)); return; }
+        // nunca se da por hecho un cambio que la base no devuelve: devuelve el estado nuevo
+        if (r.data !== nuevo) { dd.error(T('La base no confirmó el cambio de estado: recarga y comprueba.')); return; }
+        dd.cierra(); error(''); exito(T(p.hecho));
+        return refresca();
+      });
+    } };
+    return dialogo(T(p.titulo), nodos, [{ texto: T('Volver'), accion: 'rp-modal-volver', cierra: true }, b]);
+  }
+
+  /* ── cancelar con devolución (la base rectifica las facturas emitidas y anota lo devuelto) ── */
+  function cancelaConDevolucion(x) {
+    var importe = h('input', { type: 'text', inputmode: 'decimal', value: '0', 'data-campo': 'importe-devuelto', 'aria-label': T('Importe devuelto al cliente (0 si no se devuelve nada)') });
+    var ref = h('input', { type: 'text', maxlength: '100', 'data-campo': 'referencia-devolucion', 'aria-label': T('Referencia de la devolución (la transferencia o el reembolso)') });
+    var motivo = h('textarea', { rows: '3', maxlength: '300', 'data-campo': 'motivo', 'aria-label': T('Motivo de la cancelación (obligatorio, hasta 300 caracteres)') });
+    return dialogo(T('Cancelar con devolución'), [
+      resumen([['Reserva', x.numero], ['Cliente', quienEs(x)], ['Precio congelado', dinero(x.precio_total, x.moneda)], ['Pago', x.pago_referencia || T('Sin pago')]]),
+      h('p', { class: 'rp-nota', text: T('Cancelar con devolución: rectifica las facturas emitidas de la reserva, anota lo devuelto al cliente y la cancela. Si no se devuelve nada, pon 0.') }),
+      campo('Importe devuelto al cliente (0 si no se devuelve nada)', importe),
+      campo('Referencia de la devolución (la transferencia o el reembolso)', ref),
+      campo('Motivo de la cancelación (obligatorio, hasta 300 caracteres)', motivo)
+    ], [{ texto: T('Volver'), accion: 'rp-modal-volver', cierra: true },
+        { texto: T('Sí, cancelar con devolución'), accion: 'rp-modal-cancela-dev', peligro: true, alclic: function (bt, dd) {
+          var texto = importe.value.trim().replace(',', '.');
+          // solo se comprueba la forma; la base redondea, compara con lo cobrado y decide (el navegador no calcula dinero)
+          if (!/^\d+(\.\d+)?$/.test(texto)) { dd.error(T('El importe devuelto es un número de 0 en adelante.')); return; }
+          var m = motivo.value.trim(), rf = ref.value.trim();
+          if (!m) { dd.error(T('Escribe el motivo.')); return; }
+          if (m.length > 300) { dd.error(T('El motivo es demasiado largo.')); return; }
+          if (Number(texto) > 0 && !rf) { dd.error(T('Si devuelves algo, falta la referencia de la devolución.')); return; }
+          if (!ocupa(bt)) return;
+          llama('reserva_cancela_con_devolucion', { p_reserva: x.id, p_importe_devuelto: Number(texto), p_referencia_devolucion: rf || null, p_motivo: m }).then(function (r) {
+            libera(bt);
+            if (r.error) { dd.error(mensaje(r.error)); return; }
+            var d = r.data || {};
+            if (d.estado !== 'cancelada' || d.reserva_id !== x.id) { dd.error(T('La base no confirmó la cancelación: recarga y comprueba.')); return; }
+            dd.cierra(); error('');
+            exito(T('Reserva cancelada con devolución.') + ' ' + T('Devuelto') + ': ' + dinero(d.devuelto, d.moneda) + ' · ' + T('Retenido') + ': ' + dinero(d.retenido, d.moneda));
+            if (d.aviso) aviso(String(d.aviso)); else aviso('');
+            return refresca();
+          });
+        } }]);
+  }
+
+  /* ── cambiar la unidad (solo las disponibles del mismo producto) ── */
+  function cambiaUnidad(x) {
+    var sel = h('select', { 'data-campo': 'unidad-nueva', 'aria-label': T('Unidad nueva (solo las disponibles del mismo producto)') });
+    var p = producto(x.producto_id);
+    var libres = p ? p.unidades.filter(function (u) { return u.estado === 'disponible' && u.id !== x.unidad_id; }) : [];
+    sel.appendChild(h('option', { value: '', text: T('Elige la unidad nueva.') }));
+    libres.forEach(function (u) { sel.appendChild(h('option', { value: u.id, text: u.identificador })); });
+    var nodos = [resumen([['Reserva', x.numero], ['Producto', x.producto], ['Unidad actual', x.unidad], ['Fechas', fechaDia(x.desde) + ' → ' + fechaDia(x.hasta)]])];
+    if (!p) nodos.push(h('p', { class: 'rp-aviso', text: T('No se ha podido mirar') + ': ' + T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.') }));
+    else if (!libres.length) nodos.push(h('p', { class: 'rp-aviso', text: T('No hay otra unidad disponible de este producto.') }));
+    nodos.push(campo('Unidad nueva (solo las disponibles del mismo producto)', sel));
+    return dialogo(T('Cambiar la unidad de la reserva'), nodos, [{ texto: T('Volver'), accion: 'rp-modal-volver', cierra: true },
+      { texto: T('Cambiar'), accion: 'rp-modal-cambia', primario: true, alclic: function (bt, dd) {
+        if (!sel.value) { dd.error(T('Elige la unidad nueva.')); return; }
+        if (!ocupa(bt)) return;
+        llama('reserva_producto_cambia_unidad', { p_id: x.id, p_unidad_id: sel.value }).then(function (r) {
+          libera(bt);
+          if (r.error) { dd.error(mensaje(r.error)); return; }
+          if (r.data !== sel.value) { dd.error(T('La base no confirmó el cambio de unidad: recarga y comprueba.')); return; }
+          dd.cierra(); error(''); exito(T('Unidad cambiada.'));
+          return refresca();
+        });
+      } }]);
+  }
+
+  /* ── crear una reserva: el navegador manda producto, unidad (opcional), cliente o contacto, fechas y direcciones. NUNCA un precio. ── */
+  function nuevaReserva() {
+    error(''); exito('');
+    var pasos = [E.flotaCargada ? Promise.resolve({ ok: true }) : cargaFlota(),
+                 E.clientes ? Promise.resolve({ ok: true }) : llama('clientes_datos', {}).then(function (r) {
+                   if (!vaListaDe(r, 'clientes')) return { error: r.error || { message: 'forma' } };
+                   E.clientes = r.data.clientes; E.clientesTruncado = r.data.truncado === true; return { ok: true };
+                 })];
+    return Promise.all(pasos).then(function (rs) {
+      if (rs[0].error) { error(T('No se ha podido mirar') + ': ' + mensaje(rs[0].error, true)); return; }
+      var prods = (E.flota || []).filter(function (p) { return p.activo && p.unidades.some(function (u) { return u.estado === 'disponible'; }); });
+      if (!prods.length) { aviso(T('No hay productos con unidades en la flota: añade la flota antes de reservar.')); return; }
+      var avisos = [];
+      if (rs[1].error) avisos.push(T('No se pudo cargar la lista de clientes: la reserva se puede crear solo con nombre o teléfono de contacto.'));
+      else if (E.clientesTruncado) avisos.push(T('La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.'));
+      var selP = h('select', { 'data-campo': 'producto', 'aria-label': T('Producto (obligatorio)') });
+      selP.appendChild(h('option', { value: '', text: T('Elige un producto') }));
+      prods.forEach(function (p) { selP.appendChild(h('option', { value: p.id, text: p.nombre })); });
+      var selU = h('select', { 'data-campo': 'unidad', 'aria-label': T('Unidad') });
+      var tar = h('div', { class: 'rp-vacio' });
+      var desde = h('input', { type: 'date', 'data-campo': 'desde', min: hoy(), 'aria-label': T('Recogida (obligatoria)') });
+      var hasta = h('input', { type: 'date', 'data-campo': 'hasta', min: hoy(), 'aria-label': T('Devolución (obligatoria)') });
+      var selC = h('select', { 'data-campo': 'cliente', 'aria-label': T('Cliente registrado') });
+      selC.appendChild(h('option', { value: '', text: T('Sin cliente registrado (solo contacto)') }));
+      (E.clientes || []).forEach(function (c) { selC.appendChild(h('option', { value: c.id, text: c.nombre || '—' })); });
+      var nombre = h('input', { type: 'text', maxlength: '120', 'data-campo': 'contacto-nombre', 'aria-label': T('Nombre de contacto') });
+      var tel = h('input', { type: 'text', maxlength: '40', inputmode: 'tel', 'data-campo': 'contacto-telefono', 'aria-label': T('Teléfono de contacto') });
+      var ent = h('input', { type: 'text', maxlength: '300', 'data-campo': 'entrega', 'aria-label': T('Dirección de entrega') });
+      var rec = h('input', { type: 'text', maxlength: '300', 'data-campo': 'recogida', 'aria-label': T('Dirección de recogida') });
+      var notas = h('textarea', { rows: '2', maxlength: '500', 'data-campo': 'notas', 'aria-label': T('Notas') });
+      var bloq = h('input', { type: 'checkbox', 'data-campo': 'bloqueo' });
+      var mins = h('input', { type: 'number', min: '5', max: '10080', step: '1', value: '60', 'data-campo': 'bloqueo-minutos', 'aria-label': T('Minutos de bloqueo (de 5 a 10080)') });
+      var cajaMin = h('div', { class: 'rp-oculto' }, [campo('Minutos de bloqueo (de 5 a 10080)', mins)]);
+      bloq.addEventListener('change', function () { oculta(cajaMin, !bloq.checked); });
+      function pintaProducto() {
+        var p = producto(selP.value);
+        vacia(selU); vacia(tar);
+        selU.appendChild(h('option', { value: '', text: T('Cualquiera libre (la base elige)') }));
+        if (!p) return;
+        p.unidades.filter(function (u) { return u.estado === 'disponible'; }).forEach(function (u) { selU.appendChild(h('option', { value: u.id, text: u.identificador })); });
+        tar.appendChild(h('div', { class: 'rp-nota', text: T('Tarifas del producto (orientativas: el precio de verdad lo calcula la base al crear)') + ': ' +
+          (p.tarifas.length ? p.tarifas.map(function (t) { return t.dias + ' ' + T(Number(t.dias) === 1 ? 'día' : 'días') + ' · ' + dinero(t.precio, t.moneda); }).join(' · ') : T('Este producto no tiene tarifas: la base no dejará reservarlo.')) }));
+      }
+      selP.addEventListener('change', pintaProducto);
+      pintaProducto();
+      var nodos = avisos.map(function (a) { return h('p', { class: 'rp-aviso', text: a }); });
+      nodos.push(campo('Producto (obligatorio)', selP), campo('Unidad', selU), tar,
+        h('div', { class: 'rp-dos' }, [campo('Recogida (obligatoria)', desde), campo('Devolución (obligatoria)', hasta)]),
+        campo('Cliente registrado', selC),
+        h('div', { class: 'rp-dos' }, [campo('Nombre de contacto', nombre), campo('Teléfono de contacto', tel)]),
+        h('div', { class: 'rp-dos' }, [campo('Dirección de entrega', ent), campo('Dirección de recogida', rec)]),
+        campo('Notas', notas),
+        h('label', null, [bloq, ' ' + T('Dejar la reserva solo bloqueada (caduca si no se confirma)')]), cajaMin);
+      dialogo(T('Nueva reserva de producto'), nodos, [{ texto: T('Cancelar'), accion: 'rp-modal-volver', cierra: true },
+        { texto: T('Crear la reserva'), accion: 'rp-modal-crear', primario: true, alclic: function (bt, dd) {
+          if (!selP.value || !esFecha(desde.value) || !esFecha(hasta.value)) { dd.error(T('Elige un producto, la recogida y la devolución.')); return; }
+          if (hasta.value <= desde.value) { dd.error(T('La devolución tiene que ser posterior a la recogida.')); return; }
+          var nm = nombre.value.trim(), tl = tel.value.trim();
+          if (!selC.value && !nm && !tl) { dd.error(T('Indica un cliente registrado o, al menos, un nombre o un teléfono de contacto.')); return; }
+          var minutos = null;
+          if (bloq.checked) {
+            minutos = Number(mins.value);
+            if (!/^\d+$/.test(String(mins.value).trim()) || minutos < 5 || minutos > 10080) { dd.error(T('Los minutos de bloqueo van de 5 a 10080.')); return; }
+          }
+          var datos = { producto_id: selP.value, desde: desde.value, hasta: hasta.value };
+          if (selU.value) datos.unidad_id = selU.value;
+          if (selC.value) datos.client_id = selC.value;
+          else { if (nm) datos.contacto_nombre = nm; if (tl) datos.contacto_telefono = tl; }
+          if (ent.value.trim()) datos.entrega_direccion = ent.value.trim();
+          if (rec.value.trim()) datos.recogida_direccion = rec.value.trim();
+          if (notas.value.trim()) datos.notas = notas.value.trim();
+          if (!ocupa(bt)) return;
+          llama('reserva_producto_crea', { p_datos: datos, p_bloqueo_minutos: minutos }).then(function (r) {
+            libera(bt);
+            if (r.error) { dd.error(mensaje(r.error)); return; }
+            var d = r.data || {};
+            if (!d.id || !d.numero_reserva) { dd.error(T('La base no devolvió la reserva creada: recarga y comprueba antes de volver a crearla.')); return; }
+            dd.cierra(); error('');
+            // el precio que se enseña es el que la base calculó y congeló, leído de la respuesta (nunca uno calculado aquí)
+            exito(T('Reserva creada') + ' ' + d.numero_reserva + ' · ' + T('con precio') + ' ' + dinero(d.precio_total, d.moneda));
+            return refresca();
+          });
+        } }]);
+    });
+  }
+
+  /* ───────────────────────────── Calendario ───────────────────────────── */
+  var DIAS_CAL = 14;
+  function inicioCal() { if (!E.cal.ini) E.cal.ini = hoy(); return E.cal.ini; }
+  function cargaCalendario() {
+    var est = $v('cal-estado');
+    est.textContent = T('Cargando…');
+    var ini = inicioCal(), fin = sumaDias(ini, DIAS_CAL);
+    return Promise.all([cargaFlota(), llama('reservas_producto_datos', { p_desde: ini, p_hasta: fin, p_limit: 500 })]).then(function (rs) {
+      var f = rs[0], r = rs[1];
+      if (f.error || !vaListaDe(r, 'reservas')) {
+        vacia($v('cal-tabla'));
+        est.textContent = T('No se ha podido mirar') + ': ' + (f.error ? mensaje(f.error, true) : textoError(r, true));
+        return;
+      }
+      est.textContent = '';
+      pintaCalendario(r.data.reservas, ini, !!r.data.siguiente);
+    });
+  }
+  function pintaCalendario(reservas, ini, recortado) {
+    var unidades = [];
+    (E.flota || []).forEach(function (p) { p.unidades.forEach(function (u) { unidades.push({ p: p, u: u }); }); });
+    var vivas = reservas.filter(function (x) { return x.estado === 'bloqueo' || x.estado === 'confirmada' || x.estado === 'en_curso'; });
+    if (!unidades.length) { $v('cal-estado').textContent = T('No hay unidades que mostrar en el calendario.'); vacia($v('cal-tabla')); return; }
+    var dias = [];
+    for (var i = 0; i < DIAS_CAL; i++) dias.push(sumaDias(ini, i));
+    var t = vacia($v('cal-tabla'));
+    var cab = h('tr', null, [h('th', { class: 'rp-ini', text: T('Unidad') })]);
+    dias.forEach(function (d) { cab.appendChild(h('th', { 'data-hoy': d === hoy() ? '1' : null, text: diaDe(d).toLocaleDateString(locale(), { day: '2-digit', month: 'short' }) })); });
+    t.appendChild(h('thead', null, [cab]));
+    var tb = h('tbody');
+    unidades.forEach(function (it) {
+      var tr = h('tr', { 'data-unidad-id': it.u.id });
+      tr.appendChild(h('td', { class: 'rp-ini' }, [h('div', { text: it.u.identificador }), h('div', { class: 'rp-vacio', text: it.p.nombre })]));
+      dias.forEach(function (d) {
+        var ocupada = vivas.filter(function (x) { return x.unidad_id === it.u.id && x.desde <= d && d < x.hasta; })[0];
+        var td = h('td');
+        if (ocupada) {
+          td.setAttribute('data-estado', ocupada.estado);
+          td.setAttribute('title', (ocupada.numero || '') + ' · ' + quienEs(ocupada));
+          if (ocupada.desde === d || d === ini) td.textContent = ocupada.numero || '';
+        } else if (it.u.estado !== 'disponible') {
+          td.setAttribute('data-fuera', '1');
+          td.setAttribute('title', T((UNIDAD[it.u.estado] || [it.u.estado])[0]));
+        }
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+    if (recortado) aviso(T('El calendario está recortado: hay más reservas en estas fechas de las que caben. Acorta el rango o mira la lista.'));
+  }
+
+  /* ───────────────────────────── Flota y tarifas (solo lectura) ───────────────────────────── */
+  function pintaFlota() {
+    var cont = vacia($v('flota-lista'));
+    var est = $v('flota-estado');
+    if (!E.flotaCargada) return;
+    est.textContent = E.flota.length ? (E.flotaRecortada ? T('La flota está recortada a los primeros 500 productos.') : '') : T('No hay productos en la flota.');
+    E.flota.forEach(function (p) {
+      var filasU = p.unidades.map(function (u) {
+        var e = UNIDAD[u.estado] || [u.estado, 'neutro'];
+        return h('tr', { 'data-unidad-id': u.id }, [celda(u.identificador), celda(chip(T(e[0]), e[1])), celda(u.notas || '')]);
+      });
+      var cajaU = h('div', { class: 'rp-tabla-caja' });
+      var tU = h('table', { class: 'rp-tabla' });
+      cajaU.appendChild(tU);
+      tabla(tU, [['Matrícula o identificador'], ['Estado'], ['Notas']], filasU);
+      var tarifas = p.tarifas.length ? p.tarifas.map(function (x) { return x.dias + ' ' + T(Number(x.dias) === 1 ? 'día' : 'días') + (x.etiqueta ? ' (' + x.etiqueta + ')' : '') + ' · ' + dinero(x.precio, x.moneda); }).join(' · ')
+                                     : T('Este producto no tiene tarifas: la base no dejará reservarlo.');
+      cont.appendChild(h('div', { class: 'rp-nota', 'data-producto-id': p.id }, [
+        h('h4', { text: p.nombre + (p.numero ? ' · ' + p.numero : '') }),
+        h('p', { text: T('Tarifas') + ': ' + tarifas }),
+        p.unidades.length ? cajaU : h('p', { class: 'rp-vacio', text: T('Este producto no tiene unidades.') })]));
+    });
+  }
+  function cargaFlotaPestana() {
+    $v('flota-estado').textContent = T('Cargando…');
+    return cargaFlota().then(function (r) {
+      if (r.error) { vacia($v('flota-lista')); $v('flota-estado').textContent = T('No se ha podido mirar') + ': ' + mensaje(r.error, true); return; }
+      pintaFlota();
+    });
+  }
+
+  /* ───────────────────────────── Pagos por revisar (solo lectura, administración) ───────────────────────────── */
+  function cargaPagos(mas) {
+    var est = $v('pagos-estado');
+    est.textContent = T('Cargando…');
+    var args = { p_pendientes: !$v('f-pagos-todos').checked, p_limit: 100 };
+    if (mas && E.pagosSig) args.p_despues = E.pagosSig;
+    return llama('reserva_producto_pagos_datos', args).then(function (r) {
+      if (!vaListaDe(r, 'pagos')) {
+        if (!mas) E.pagos = [];
+        vacia($v('pagos-tabla')); E.pagosCargado = false;
+        est.textContent = T('No se ha podido mirar') + ': ' + textoError(r, true);
+        oculta(raiz.querySelector('[data-accion="rp-pagos-mas"]'), true);
+        return;
+      }
+      E.pagos = mas ? E.pagos.concat(r.data.pagos) : r.data.pagos;
+      E.pagosSig = r.data.siguiente || null; E.pagosCargado = true;
+      est.textContent = E.pagos.length ? '' : T('No hay pagos por revisar.');
+      var filas = E.pagos.map(function (p) {
+        return h('tr', { 'data-pago-id': p.id }, [celda(p.reserva || '—'), celda(p.referencia || '—'), celda(dinero(p.importe, p.moneda), 'rp-num'), celda(p.motivo || '—'),
+          celda(fechaHora(p.recibido_en)), celda(p.resuelto_en ? fechaHora(p.resuelto_en) + (p.resuelto_por ? ' · ' + p.resuelto_por : '') : '—'), celda(p.resolucion || '—')]);
+      });
+      tabla($v('pagos-tabla'), [['Reserva'], ['Referencia'], ['Importe', 'rp-num'], ['Motivo'], ['Recibido'], ['Resuelto'], ['Resolución']], filas);
+      oculta(raiz.querySelector('[data-accion="rp-pagos-mas"]'), !E.pagosSig);
+    });
+  }
+
+  /* ───────────────────────────── pestañas y arranque ───────────────────────────── */
+  // tras cualquier acción: se vuelve a LEER lo que cambió (la pantalla no se cree su propio estado)
+  function refresca() {
+    E.flotaCargada = false;
+    var p = [cargaReservas(false)];
+    if (E.tab === 'calendario') p.push(cargaCalendario());
+    if (E.tab === 'flota') p.push(cargaFlotaPestana());
+    if (E.tab === 'pagos') p.push(cargaPagos(false));
+    return Promise.all(p);
+  }
+  function pestana(nombre) {
+    E.tab = nombre;
+    Array.prototype.forEach.call(raiz.querySelectorAll('[data-accion="rp-tab"]'), function (b) { b.setAttribute('aria-selected', b.getAttribute('data-tab') === nombre ? 'true' : 'false'); });
+    Array.prototype.forEach.call(raiz.querySelectorAll('[data-rp="panel"]'), function (p) { oculta(p, p.getAttribute('data-tab') !== nombre); });
+    if (nombre === 'reservas' && !E.resCargado) cargaReservas(false);
+    if (nombre === 'calendario') cargaCalendario();
+    if (nombre === 'flota') cargaFlotaPestana();
+    if (nombre === 'pagos' && !E.pagosCargado) cargaPagos(false);
+  }
+
+  function alClic(ev) {
+    var el = ev.target.closest ? ev.target.closest('[data-accion]') : null;
+    if (!el || !raiz.contains(el)) return;
+    var a = el.getAttribute('data-accion');
+    if (a.indexOf('rp-modal') === 0) return;   // los botones del diálogo llevan su propio manejador
+    var x = el.hasAttribute('data-reserva-id') ? reserva(el.getAttribute('data-reserva-id')) : null;
+    if (a === 'rp-tab') pestana(el.getAttribute('data-tab'));
+    else if (a === 'rp-nueva') nuevaReserva();
+    else if (a === 'rp-res-actualizar') { E.resSig = null; aviso(''); cargaReservas(false); }
+    else if (a === 'rp-res-mas') cargaReservas(true);
+    else if (a === 'rp-cal-ant') { E.cal.ini = sumaDias(inicioCal(), -7); aviso(''); cargaCalendario(); }
+    else if (a === 'rp-cal-sig') { E.cal.ini = sumaDias(inicioCal(), 7); aviso(''); cargaCalendario(); }
+    else if (a === 'rp-cal-hoy') { E.cal.ini = hoy(); aviso(''); cargaCalendario(); }
+    else if (a === 'rp-cal-actualizar') { aviso(''); E.flotaCargada = false; cargaCalendario(); }
+    else if (a === 'rp-flota-actualizar') cargaFlotaPestana();
+    else if (a === 'rp-pagos-actualizar') { E.pagosSig = null; cargaPagos(false); }
+    else if (a === 'rp-pagos-mas') cargaPagos(true);
+    else if (x) {
+      error(''); exito('');
+      if (a === 'rp-detalle') detalle(x);
+      else if (a === 'rp-confirmar') cambiaEstado(x, 'confirmada');
+      else if (a === 'rp-entregar') cambiaEstado(x, 'en_curso');
+      else if (a === 'rp-devuelta') cambiaEstado(x, 'devuelta');
+      else if (a === 'rp-cancelar-simple') cambiaEstado(x, 'cancelada');
+      else if (a === 'rp-cancelar-devolucion') cancelaConDevolucion(x);
+      else if (a === 'rp-cambia-unidad') {
+        // la flota se lee fresca: una unidad que pasó a taller no se ofrece
+        E.flotaCargada = false;
+        cargaFlota().then(function (r) { if (r.error) { error(T('No se ha podido mirar') + ': ' + mensaje(r.error, true)); return; } cambiaUnidad(x); });
+      }
+    }
+  }
+
+  function init(aut) {
+    SB = aut.sb;
+    raiz.addEventListener('click', alClic);
+    raiz.addEventListener('change', function (ev) {
+      var t = ev.target;
+      if (t === $v('f-estado') || t === $v('f-desde') || t === $v('f-hasta')) { error(''); E.resSig = null; cargaReservas(false); }
+      else if (t === $v('f-pagos-todos')) { E.pagosSig = null; cargaPagos(false); }
+    });
+    pestana('reservas');
+  }
+
+  function arranca() {
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { error(T('Sin sesión: recarga la página o vuelve a entrar.')); return; }
+    window.LW_AUTH.then(init);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca);
+  else arranca();
+})();
+</script>
