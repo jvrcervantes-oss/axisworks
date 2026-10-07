@@ -7,7 +7,18 @@
  * cada cosa que estuviera mal en él. */
 $url    = $url    ?? '/';
 $lang   = $lang   ?? 'en';
-$og_img = $og_img ?? '/assets/og.jpg';
+/* og:image: la imagen de la página la genera `tools/og_imagen.py` desde su <title> y deja el nombre
+ * (con hash: WhatsApp/Meta cachean por URL) en assets/og/manifest.json. Sin entrada, la de siempre.
+ * El nombre se valida con lista blanca: el manifest es un fichero del repo, pero nada de lo que sale a
+ * un <meta> se da por bueno solo porque venga de un fichero. */
+if (!isset($og_img)) {
+    $og_img = '/assets/og.jpg';
+    $og_man = json_decode((string) @file_get_contents(__DIR__ . '/../assets/og/manifest.json'), true);
+    $og_f   = is_array($og_man) ? ($og_man[$url]['fichero'] ?? '') : '';
+    if (is_string($og_f) && preg_match('/^[a-z0-9-]+\.[0-9a-f]{8}\.jpg$/', $og_f)) {
+        $og_img = '/assets/og/' . $og_f;
+    }
+}
 $alt    = par($url);
 $abs    = SITE . $url;
 ?>
@@ -35,7 +46,7 @@ $abs    = SITE . $url;
 <meta property="og:image" content="<?= e(SITE . $og_img) ?>">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="AxisWorks — development ✕ design.">
+<meta property="og:image:alt" content="<?= e(strip_tags(html_entity_decode($title, ENT_QUOTES, 'UTF-8'))) ?>">
 <meta property="og:locale" content="<?= $lang === 'es' ? 'es_ES' : 'en_US' ?>">
 <?php if ($alt): ?><meta property="og:locale:alternate" content="<?= $lang === 'es' ? 'en_US' : 'es_ES' ?>"><?php endif; ?>
 
