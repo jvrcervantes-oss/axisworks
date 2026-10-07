@@ -6,7 +6,7 @@
 <!--
   AMAH — landing BORRADOR (7-oct-2026). Vive provisionalmente dentro de AxisWorks; se migrará.
   Autocontenida: un HTML, sin build ni dependencias salvo Google Fonts.
-  PENDIENTE antes de publicar (owner): confirmar precios (son propuesta, ver contexto/proyecto_amah.md),
+  PENDIENTE antes de publicar (owner): confirmar precios y los textos de 'How it starts' y de cada plan (propuesta, ver contexto/proyecto_amah.md),
   nombre/marca (búsqueda DJKI), sociedad titular, contacto real y conexión del formulario.
 -->
 <title>AMAH — Villa care in Bali &amp; Sumba</title>
@@ -82,13 +82,15 @@ h1.name{font-family:var(--serif);font-weight:300;font-size:clamp(3.4rem,13vw,5.5
 @keyframes lp{0%,100%{opacity:.65;r:7px}50%{opacity:.95;r:10px}}
 @keyframes rp{to{stroke-dashoffset:-24}}
 @keyframes fl{0%,100%{transform:translate(0,0)}50%{transform:translate(18px,-6px)}}
-.dayctl{display:flex;align-items:center;gap:1rem;margin-top:1rem;padding:0 .25rem}
+.dayctl{display:none}
+.js .dayctl{display:flex;align-items:center;gap:1rem;margin-top:1rem;padding:0 .25rem}
 .dayctl input{flex:1;min-width:0;accent-color:var(--clay);padding:0;background:none;border:0;box-shadow:none}
 .play{font-family:var(--label);font-size:.6875rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:none;border:1px solid var(--line);border-radius:.125rem;padding:.5rem .9rem;cursor:pointer;white-space:nowrap;transition:border-color .3s,color .3s}
 .play:hover{border-color:var(--clay);color:var(--clay)}
 .play:focus-visible,.dayctl input:focus-visible{outline:2px solid var(--clay);outline-offset:3px}
 #dTime{font-family:var(--label);font-size:.8125rem;letter-spacing:.1em;color:var(--ink-2);min-width:3.2rem;text-align:right;font-variant-numeric:tabular-nums}
-.dcap{margin-top:.75rem;min-height:2.6rem;font-family:var(--serif);font-style:italic;font-weight:300;font-size:1.0625rem;color:var(--ink-2);text-align:center}
+.dcap{display:none}
+.js .dcap{display:block;margin-top:.75rem;min-height:2.6rem;font-family:var(--serif);font-style:italic;font-weight:300;font-size:1.0625rem;color:var(--ink-2);text-align:center}
 
 /* microanimaciones */
 h1.name span{display:inline-block}
@@ -211,6 +213,8 @@ input:focus,select:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--clay) 18%,
 .sample .note{font-size:.75rem;color:var(--mute);margin-top:1rem}
 .sample .end{margin-top:1.25rem;padding-top:.75rem;border-top:1px solid color-mix(in srgb,var(--line) 30%,transparent);text-align:center}
 @media(max-width:520px){.rjob{grid-template-columns:44px minmax(0,1fr)}.rstamp{grid-column:2}}
+.btn.pri.mg{transition:background .3s,transform .25s cubic-bezier(.16,1,.3,1)}
+.inquire.mg{transition:color .3s,background-size .35s,transform .25s cubic-bezier(.16,1,.3,1)}
 /* como empieza */
 .path{position:relative;max-width:40rem;margin:0 auto}
 .rail{position:absolute;left:13px;top:6px;bottom:6px;width:2px;background:var(--line);border-radius:2px}
@@ -219,9 +223,11 @@ input:focus,select:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--clay) 18%,
 .path li{position:relative;padding-left:3.25rem}
 .path .dot{position:absolute;left:0;top:2px;width:28px;height:28px;border-radius:50%;background:var(--bg);border:2px solid var(--line);transition:background .5s,border-color .5s,transform .5s cubic-bezier(.16,1,.3,1)}
 .path li.on .dot{background:var(--clay);border-color:var(--clay);transform:scale(1.12)}
-.path li h3{font-family:var(--serif);font-weight:400;font-size:1.5rem;line-height:1.25;margin-bottom:.35rem;opacity:.45;transition:opacity .5s}
-.path li p{color:var(--ink-2);font-size:.9375rem;max-width:34rem;opacity:.45;transition:opacity .5s}
-.path li.on h3,.path li.on p{opacity:1}
+.path li h3{font-family:var(--serif);font-weight:400;font-size:1.5rem;line-height:1.25;margin-bottom:.35rem}
+.js .path li h3{opacity:.45;transition:opacity .5s}
+.path li p{color:var(--ink-2);font-size:.9375rem;max-width:34rem}
+.js .path li p{opacity:.45;transition:opacity .5s}
+.js .path li.on h3,.js .path li.on p{opacity:1}
 
 /* form */
 .form{max-width:36rem;margin:0 auto;text-align:center;padding:2rem}
@@ -261,7 +267,7 @@ footer .legal span{font-family:var(--label);font-size:11px;letter-spacing:.1em;t
   .card,.btn{transition:none}.plan:hover,.pillar:hover{transform:none}
   .js .reveal{opacity:1;transform:none;transition:none}
   .js .sample:not(.go) .rstats,.js .sample:not(.go) .rjob{opacity:1}
-  .path li h3,.path li p{opacity:1;transition:none}
+  .js .path li h3,.js .path li p{opacity:1;transition:none}
   html{scroll-behavior:auto}
 }
 </style>
@@ -303,7 +309,7 @@ footer .legal span{font-family:var(--label);font-size:11px;letter-spacing:.1em;t
     <svg id="house" viewBox="0 0 760 440" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="A Balinese joglo villa drawn stroke by stroke while a day passes from dawn to dusk">
       <rect id="sky" width="760" height="440" rx="6" fill="#cfe3ea" stroke="none"/>
       <g id="stars" stroke="none"></g>
-      <circle id="sun" r="22" fill="#f0b46c" stroke="none"/>
+      <circle id="sun" cx="380" cy="120" r="22" fill="#f0b46c" stroke="none"/>
       <circle id="moon" r="14" fill="#efe9d8" opacity="0" stroke="none"/>
       <!-- horizonte lejano: colinas -->
       <path class="d soft" d="M 20,300 C 90,250 150,270 210,290 M 540,296 C 610,236 690,250 740,290" stroke-width="1"/>
@@ -630,8 +636,8 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 // Escena: la casa se dibuja mientras avanza el dia
 (function(){
   var svg=document.getElementById('house'); if(!svg)return;
-  var shapes=[].slice.call(svg.querySelectorAll('.d path,.d line,.d rect,.d circle,.d ellipse')), n=shapes.length;
-  shapes.forEach(function(x){x.setAttribute('pathLength','1');x.style.strokeDasharray='1'});
+  var shapes=[].slice.call(svg.querySelectorAll('.d path,.d line,.d rect,.d circle,.d ellipse,path.d,line.d,rect.d,circle.d,ellipse.d')), n=shapes.length;
+  shapes.forEach(function(x){x.setAttribute('pathLength','1');x.style.strokeDasharray='1 1'});
   var sky=svg.querySelector('#sky'),sun=svg.querySelector('#sun'),moon=svg.querySelector('#moon'),stars=svg.querySelector('#stars'),
       lamp=svg.querySelector('#lampG'),birds=svg.querySelector('#birds'),ripple=svg.querySelector('#ripple'),cota=svg.querySelector('#cota'),
       poolI=shapes.indexOf(svg.querySelector('#pool path')),lampI=shapes.indexOf(svg.querySelector('#lampBody line')),
@@ -643,7 +649,7 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
   function prog(i,dp){return clamp((dp-i/n*.74)/.26,0,1)}
   function set(h){
     var dp=clamp((h-5.6)/(19-5.6),0,1);
-    shapes.forEach(function(x,i){x.style.strokeDashoffset=String(1-prog(i,dp))});
+    shapes.forEach(function(x,i){x.style.strokeDashoffset=String((1-prog(i,dp))*1.01)});
     var c=skyAt(h);sky.setAttribute('fill','rgb('+c.join(',')+')');
     var dark=clamp(1-(c[0]+c[1]+c[2])/3/150,0,1),d=clamp((h-6)/12,0,1);
     sun.setAttribute('cx',60+d*640);sun.setAttribute('cy',300-Math.sin(Math.PI*d)*230);sun.setAttribute('opacity',h>=5.8&&h<=18.2?1:0);
@@ -657,7 +663,7 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
     svg.style.color=dark>.5?'#e9e2d4':'#24221F';
     svg.style.setProperty('--moss-c',dark>.5?'#b8ccb1':'#2D3B2A');
     var hh=Math.floor(h),mi=Math.floor((h-hh)*60);tm.textContent=(hh<10?'0':'')+hh+':'+(mi<10?'0':'')+mi;
-    var tx=T[0][1];T.forEach(function(t){if(h>=t[0])tx=t[1]});cap.textContent=tx;rng.value=h;
+    var tx=T[0][1];T.forEach(function(t){if(h>=t[0])tx=t[1]});cap.textContent=tx;rng.value=h;rng.setAttribute('aria-valuetext',tm.textContent);
   }
   var stop=null;
   function play(){
@@ -679,14 +685,19 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
   var winds=[].slice.call(svg.querySelectorAll('.wind')).map(function(g,i){return{g:g,x:+g.dataset.x,a:0,ph:i*1.7}}),px=-999;
   svg.addEventListener('pointermove',function(e){var r=svg.getBoundingClientRect();px=(e.clientX-r.left)/r.width*760});
   svg.addEventListener('pointerleave',function(){px=-999});
-  (function loop(t){
+  var vis=true,running=false;
+  function loop(t){
+    if(!vis){running=false;return}
     var tw=t/1000;
     winds.forEach(function(w){
       var dx=w.x-px,push=Math.abs(dx)<240?clamp(dx/130,-1,1)*10*(1-Math.abs(dx)/240):0,amb=Math.sin(tw*.8+w.ph)*2;
       w.a+=((push+amb)-w.a)*.08;w.g.setAttribute('transform','rotate('+w.a.toFixed(2)+' '+w.x+' 340)');
     });
     requestAnimationFrame(loop);
-  })(0);
+  }
+  function wake(){if(!running){running=true;requestAnimationFrame(loop)}}
+  if('IntersectionObserver' in window){new IntersectionObserver(function(es){vis=es[0].isIntersecting;if(vis)wake()}).observe(svg)}
+  wake();
 })();
 // Informe de muestra: contadores y sellos al aparecer
 (function(){
@@ -718,7 +729,7 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 (function(){
   if(RM||!matchMedia('(hover:hover) and (pointer:fine)').matches)return;
   var mags=[].slice.call(document.querySelectorAll('.btn.pri,.inquire'));
-  mags.forEach(function(m){m.style.transition='transform .25s '+EASE});
+  mags.forEach(function(m){m.classList.add('mg')});
   document.addEventListener('pointermove',function(e){
     mags.forEach(function(m){var r=m.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
       m.style.transform=Math.hypot(dx,dy)<100?'translate('+dx*.22+'px,'+dy*.22+'px)':'';});
