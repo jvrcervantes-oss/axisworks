@@ -58,48 +58,43 @@ main{padding-top:5rem;position:relative;overflow:hidden}
 section{position:relative;z-index:1}
 
 /* hero */
-.hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:2.5rem;padding-bottom:4rem}
-.mark{width:3.5rem;height:3.5rem;color:var(--ink);opacity:.8;margin-bottom:1.25rem;transition:transform .7s}
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:1.5rem;padding-bottom:4rem}
+.mark{width:3.5rem;height:3.5rem;color:var(--ink);opacity:.8;margin-bottom:.75rem;transition:transform .7s}
 .mark:hover{transform:scale(1.05)}
 .tag{display:flex;align-items:center;gap:.5rem;margin-bottom:1rem}
 .tag i{width:1.5rem;height:1px;background:var(--line)}
 .tag span{font-family:var(--label);font-size:11px;text-transform:uppercase;letter-spacing:.28em;color:var(--mute)}
-h1.name{font-family:var(--serif);font-weight:300;font-size:clamp(3.4rem,13vw,5.5rem);letter-spacing:.34em;margin-right:-.34em;text-transform:uppercase;line-height:1;margin-bottom:1.5rem}
-.lede{font-family:var(--serif);font-weight:300;font-style:italic;font-size:clamp(1.25rem,3.4vw,1.5rem);color:var(--ink-2);max-width:42rem;line-height:1.65;margin-bottom:1.5rem}
+h1.name{font-family:var(--serif);font-weight:300;font-size:clamp(3.4rem,13vw,5.5rem);letter-spacing:.34em;margin-right:-.34em;text-transform:uppercase;line-height:1;margin-bottom:1rem}
+.lede{font-family:var(--serif);font-weight:300;font-style:italic;font-size:clamp(1.25rem,3.4vw,1.5rem);color:var(--ink-2);max-width:42rem;line-height:1.65;margin-bottom:1rem}
 .pill{display:inline-flex;flex-wrap:wrap;justify-content:center;gap:.5rem;background:color-mix(in srgb,var(--card) 75%,transparent);padding:.5rem 1.5rem;border-radius:.75rem;border:1px solid color-mix(in srgb,var(--line) 60%,transparent);margin-bottom:1rem;font-family:var(--label);font-size:.75rem;text-transform:uppercase;letter-spacing:.14em;font-weight:500}
 .pill em{font-style:normal;color:var(--clay);font-weight:600;border-bottom:1px solid var(--clay)}
 .drawing{position:relative;width:100%;max-width:58rem;margin-top:.5rem}
-.drawing .glow{position:absolute;top:3rem;left:16%;width:68%;height:7rem;background:color-mix(in srgb,var(--amber) 35%,transparent);border-radius:50%;filter:blur(40px);pointer-events:none}
 .drawing svg{position:relative;width:100%;height:auto;color:var(--ink);display:block}
-.cap{margin-top:1rem;display:flex;align-items:center;justify-content:center;gap:.5rem}
-.cap i{width:6px;height:6px;border-radius:50%;background:var(--clay)}
-.cap p{font-family:var(--label);font-size:11px;text-transform:uppercase;letter-spacing:.2em;color:var(--mute)}
-
-/* drawing animation: cada trazo se dibuja en cadena (JS fija pathLength y el retardo) */
-.js #house:not(.go) *{animation-play-state:paused!important}
-.js .dr{stroke-dasharray:1;stroke-dashoffset:1;animation:dr 1.7s cubic-bezier(.65,0,.35,1) forwards;animation-delay:var(--d,0s)}
-.dr.soft{opacity:.55}
-.fade{opacity:0;animation:fi 1.6s ease-out 3.4s forwards}
-.sway{transform-origin:bottom center;animation:sw 6.5s ease-in-out infinite}
-.sway.b{animation-duration:7.8s;animation-delay:1.2s}
+.d{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+.d.soft{opacity:.55}
+.zone{transition:stroke .35s}
+.zone:hover{stroke:var(--clay)}
 .pulse{animation:lp 4s ease-in-out infinite}
 .ripple path{stroke-dasharray:6 6;animation:rp 3s linear infinite;opacity:.7}
-.fly{animation:fl 9s ease-in-out infinite}
-@keyframes dr{to{stroke-dashoffset:0}}
+.fly{animation:fl 9s ease-in-out infinite;transition:opacity .8s}
+.fade{opacity:0;animation:fi 1.6s ease-out 3.4s forwards}
 @keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-@keyframes sw{0%,100%{transform:rotate(0)}50%{transform:rotate(2.4deg) skewX(1deg)}}
 @keyframes lp{0%,100%{opacity:.65;r:7px}50%{opacity:.95;r:10px}}
 @keyframes rp{to{stroke-dashoffset:-24}}
 @keyframes fl{0%,100%{transform:translate(0,0)}50%{transform:translate(18px,-6px)}}
-.zone{transition:stroke .35s}
-.zone:hover{stroke:var(--clay)}
+.dayctl{display:flex;align-items:center;gap:1rem;margin-top:1rem;padding:0 .25rem}
+.dayctl input{flex:1;min-width:0;accent-color:var(--clay);padding:0;background:none;border:0;box-shadow:none}
+.play{font-family:var(--label);font-size:.6875rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:none;border:1px solid var(--line);border-radius:.125rem;padding:.5rem .9rem;cursor:pointer;white-space:nowrap;transition:border-color .3s,color .3s}
+.play:hover{border-color:var(--clay);color:var(--clay)}
+.play:focus-visible,.dayctl input:focus-visible{outline:2px solid var(--clay);outline-offset:3px}
+#dTime{font-family:var(--label);font-size:.8125rem;letter-spacing:.1em;color:var(--ink-2);min-width:3.2rem;text-align:right;font-variant-numeric:tabular-nums}
+.dcap{margin-top:.75rem;min-height:2.6rem;font-family:var(--serif);font-style:italic;font-weight:300;font-size:1.0625rem;color:var(--ink-2);text-align:center}
 
 /* microanimaciones */
-.js h1.name{animation:track 1.6s cubic-bezier(.16,1,.3,1) both}
+h1.name span{display:inline-block}
 .js .lede{animation:rise 1.2s ease-out .5s both}
 .js .pill,.js .tag,.js .mark{animation:rise 1s ease-out backwards}
 .js .tag{animation-delay:.15s}.js .pill{animation-delay:.9s}
-@keyframes track{from{letter-spacing:.9em;opacity:0}to{letter-spacing:.34em;opacity:1}}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .progress{position:fixed;top:0;left:0;height:2px;width:100%;background:var(--clay);transform-origin:left;transform:scaleX(0);z-index:60}
 nav.main a,.inquire{background:linear-gradient(var(--clay),var(--clay)) 0 100%/0 1px no-repeat;transition:color .3s,background-size .35s}
@@ -196,6 +191,38 @@ input:focus,select:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--clay) 18%,
 .sheet .end{margin-top:1.25rem;padding-top:.75rem;border-top:1px solid color-mix(in srgb,var(--line) 30%,transparent);text-align:center}
 @media(min-width:768px){.sheet{padding:2.25rem}}
 
+
+/* informe de muestra */
+.sample{max-width:36rem;margin:0 auto;padding:1.75rem}
+.rphead{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;flex-wrap:wrap;padding-bottom:1rem;margin-bottom:1rem;border-bottom:1px solid color-mix(in srgb,var(--line) 40%,transparent)}
+.rphead b{font-family:var(--serif);font-weight:400;font-size:1.25rem}
+.etag{font-family:var(--label);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--clay);border:1px solid var(--clay);border-radius:2px;padding:1px 6px}
+.rstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem;margin-bottom:.75rem}
+.rstat{background:var(--card);border:1px solid var(--line);border-radius:3px;padding:.6rem .25rem;text-align:center}
+.rstat b{display:block;font-family:var(--serif);font-weight:400;font-size:1.5rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.rstat span{font-family:var(--label);font-size:9.5px;color:var(--mute);letter-spacing:.1em;text-transform:uppercase}
+.rjobs{display:grid;gap:.5rem;margin-bottom:1.25rem}
+.rjob{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:.75rem;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:3px;padding:.5rem .65rem;font-size:.8125rem;color:var(--ink-2)}
+.rthumb{width:44px;height:34px;border-radius:2px;background:color-mix(in srgb,var(--moss) 14%,var(--card));position:relative;overflow:hidden}
+.rthumb i{position:absolute;left:0;right:0;bottom:0;height:42%;background:var(--moss);opacity:.3}
+.rthumb u{position:absolute;right:4px;top:4px;width:9px;height:9px;border-radius:50%;background:var(--clay);opacity:.8}
+.rstamp{font-family:var(--label);font-size:10.5px;color:var(--clay);border:1px solid var(--clay);border-radius:2px;padding:1px 5px;white-space:nowrap;letter-spacing:.04em}
+.js .sample:not(.go) .rstats,.js .sample:not(.go) .rjob{opacity:0}
+.sample .note{font-size:.75rem;color:var(--mute);margin-top:1rem}
+.sample .end{margin-top:1.25rem;padding-top:.75rem;border-top:1px solid color-mix(in srgb,var(--line) 30%,transparent);text-align:center}
+@media(max-width:520px){.rjob{grid-template-columns:44px minmax(0,1fr)}.rstamp{grid-column:2}}
+/* como empieza */
+.path{position:relative;max-width:40rem;margin:0 auto}
+.rail{position:absolute;left:13px;top:6px;bottom:6px;width:2px;background:var(--line);border-radius:2px}
+.rail i{position:absolute;inset:0;background:var(--clay);transform-origin:top;transform:scaleY(0);border-radius:2px}
+.path ol{list-style:none;display:grid;gap:3.5rem}
+.path li{position:relative;padding-left:3.25rem}
+.path .dot{position:absolute;left:0;top:2px;width:28px;height:28px;border-radius:50%;background:var(--bg);border:2px solid var(--line);transition:background .5s,border-color .5s,transform .5s cubic-bezier(.16,1,.3,1)}
+.path li.on .dot{background:var(--clay);border-color:var(--clay);transform:scale(1.12)}
+.path li h3{font-family:var(--serif);font-weight:400;font-size:1.5rem;line-height:1.25;margin-bottom:.35rem;opacity:.45;transition:opacity .5s}
+.path li p{color:var(--ink-2);font-size:.9375rem;max-width:34rem;opacity:.45;transition:opacity .5s}
+.path li.on h3,.path li.on p{opacity:1}
+
 /* form */
 .form{max-width:36rem;margin:0 auto;text-align:center;padding:2rem}
 @media(min-width:768px){.form{padding:3rem}}
@@ -229,11 +256,12 @@ footer .legal span{font-family:var(--label);font-size:11px;letter-spacing:.1em;t
 .js .reveal.in{opacity:1;transform:none}
 
 @media(prefers-reduced-motion:reduce){
-  .js .dr{stroke-dasharray:none!important;stroke-dashoffset:0!important;animation:none!important}
   .fade{opacity:1!important;animation:none!important}
-  .sway,.pulse,.ripple path,.fly,.js h1.name,.js .lede,.js .pill,.js .tag,.js .mark,.step .ico{animation:none!important}
+  .pulse,.ripple path,.fly,.js .lede,.js .pill,.js .tag,.js .mark,.step .ico{animation:none!important}
   .card,.btn{transition:none}.plan:hover,.pillar:hover{transform:none}
   .js .reveal{opacity:1;transform:none;transition:none}
+  .js .sample:not(.go) .rstats,.js .sample:not(.go) .rjob{opacity:1}
+  .path li h3,.path li p{opacity:1;transition:none}
   html{scroll-behavior:auto}
 }
 </style>
@@ -248,6 +276,7 @@ footer .legal span{font-family:var(--label);font-size:11px;letter-spacing:.1em;t
       <a href="#care">What we look after</a>
       <a href="#day">A typical day</a>
       <a href="#pricing">Pricing</a>
+      <a href="#start">How it starts</a>
       <a href="#contact">Contact</a>
     </nav>
     <a class="inquire" href="#contact">Inquire</a>
@@ -266,68 +295,75 @@ footer .legal span{font-family:var(--label);font-size:11px;letter-spacing:.1em;t
     <path d="M26 54 V42 H38 V54"/>
   </svg>
   <div class="tag"><i></i><span>Villa care — Bali &amp; Sumba</span><i></i></div>
-  <h1 class="name">A M A H</h1>
+  <h1 class="name" aria-label="AMAH"><span>A</span> <span>M</span> <span>A</span> <span>H</span></h1>
   <p class="lede">“Like a mother by your bedside when fever strikes. We tend to what you hold dear.”</p>
   <div class="pill"><span>Resident care for your villa in</span><em>Bali &amp; Sumba</em></div>
 
-  <div class="drawing">
-    <div class="glow"></div>
-    <svg id="house" viewBox="0 0 760 440" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Line drawing of a Balinese joglo villa with garden, pool and bamboo, drawn stroke by stroke">
-      <!-- sol -->
-      <g class="dr" style="color:var(--clay)" stroke-width="1.2"><circle cx="620" cy="70" r="26"/><circle cx="620" cy="70" r="36" stroke-dasharray="2 5" opacity=".6"/></g>
+  <div class="drawing scene">
+    <svg id="house" viewBox="0 0 760 440" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="A Balinese joglo villa drawn stroke by stroke while a day passes from dawn to dusk">
+      <rect id="sky" width="760" height="440" rx="6" fill="#cfe3ea" stroke="none"/>
+      <g id="stars" stroke="none"></g>
+      <circle id="sun" r="22" fill="#f0b46c" stroke="none"/>
+      <circle id="moon" r="14" fill="#efe9d8" opacity="0" stroke="none"/>
       <!-- horizonte lejano: colinas -->
-      <path class="dr soft" d="M 20,300 C 90,250 150,270 210,290 M 540,296 C 610,236 690,250 740,290" stroke-width="1"/>
+      <path class="d soft" d="M 20,300 C 90,250 150,270 210,290 M 540,296 C 610,236 690,250 740,290" stroke-width="1"/>
       <!-- suelo -->
-      <line class="dr" stroke-width="1.8" x1="30" x2="730" y1="340" y2="340"/>
-      <line class="dr soft" stroke-width="1" x1="60" x2="700" y1="348" y2="348"/>
-      <g class="dr soft" stroke-width=".8"><path d="M 70,356 l-8,8 M 100,356 l-8,8 M 130,356 l-8,8 M 600,356 l-8,8 M 630,356 l-8,8 M 660,356 l-8,8 M 690,356 l-8,8"/></g>
+      <line class="d" stroke-width="1.8" x1="30" x2="730" y1="340" y2="340"/>
+      <line class="d soft" stroke-width="1" x1="60" x2="700" y1="348" y2="348"/>
+      <g class="d soft" stroke-width=".8"><path d="M 70,356 l-8,8 M 100,356 l-8,8 M 130,356 l-8,8 M 600,356 l-8,8 M 630,356 l-8,8 M 660,356 l-8,8 M 690,356 l-8,8"/></g>
       <!-- bambú izquierda -->
-      <g class="sway" style="color:var(--moss)">
-        <g class="dr soft"><path d="M 60,340 C 62,280 56,210 64,140 C 68,100 72,66 74,34" stroke-width="1.4"/><path d="M 64,210 C 78,198 92,204 102,196"/><path d="M 62,250 C 46,240 34,246 26,238"/><path d="M 68,160 C 84,150 100,156 112,146"/><path d="M 72,100 C 58,92 46,96 38,88"/></g>
+      <g class="wind" data-x="72" style="color:var(--moss-c,#2D3B2A)">
+        <g class="d soft"><path d="M 60,340 C 62,280 56,210 64,140 C 68,100 72,66 74,34" stroke-width="1.4"/><path d="M 64,210 C 78,198 92,204 102,196"/><path d="M 62,250 C 46,240 34,246 26,238"/><path d="M 68,160 C 84,150 100,156 112,146"/><path d="M 72,100 C 58,92 46,96 38,88"/></g>
       </g>
-      <g class="sway b" style="color:var(--moss)">
-        <g class="dr soft"><path d="M 84,340 C 82,270 90,200 84,126 C 81,90 78,58 76,26" stroke-width="1.1"/><path d="M 84,180 C 100,170 114,176 126,168"/><path d="M 83,270 C 98,262 110,266 120,258"/></g>
+      <g class="wind" data-x="84" style="color:var(--moss-c,#2D3B2A)">
+        <g class="d soft"><path d="M 84,340 C 82,270 90,200 84,126 C 81,90 78,58 76,26" stroke-width="1.1"/><path d="M 84,180 C 100,170 114,176 126,168"/><path d="M 83,270 C 98,262 110,266 120,258"/></g>
       </g>
       <!-- frangipani derecha -->
-      <g class="sway b" style="color:var(--moss)">
-        <g class="dr soft"><path d="M 690,340 C 692,310 686,290 692,262 C 696,246 704,236 712,228" stroke-width="1.4"/><path d="M 692,270 C 676,262 664,266 656,258 M 700,244 C 716,240 730,244 738,236 M 690,296 C 704,290 716,292 724,284"/></g>
-        <g class="dr" stroke-width="1"><circle cx="714" cy="224" r="5"/><circle cx="738" cy="232" r="4"/><circle cx="654" cy="254" r="4"/></g>
+      <g class="wind" data-x="690" style="color:var(--moss-c,#2D3B2A)">
+        <g class="d soft"><path d="M 690,340 C 692,310 686,290 692,262 C 696,246 704,236 712,228" stroke-width="1.4"/><path d="M 692,270 C 676,262 664,266 656,258 M 700,244 C 716,240 730,244 738,236 M 690,296 C 704,290 716,292 724,284"/></g>
+        <g class="d" stroke-width="1"><circle cx="714" cy="224" r="5"/><circle cx="738" cy="232" r="4"/><circle cx="654" cy="254" r="4"/></g>
       </g>
       <!-- cimentación de piedra -->
-      <g class="dr" stroke-width="1.3"><rect x="150" y="312" width="50" height="28"/><rect x="520" y="312" width="50" height="28"/><rect x="288" y="322" width="38" height="18"/><rect x="434" y="322" width="38" height="18"/></g>
-      <g class="dr soft" stroke-width=".7"><path d="M 150,326 H 200 M 175,312 V 326 M 520,326 H 570 M 545,312 V 326"/></g>
+      <g class="d" stroke-width="1.3"><rect x="150" y="312" width="50" height="28"/><rect x="520" y="312" width="50" height="28"/><rect x="288" y="322" width="38" height="18"/><rect x="434" y="322" width="38" height="18"/></g>
+      <g class="d soft" stroke-width=".7"><path d="M 150,326 H 200 M 175,312 V 326 M 520,326 H 570 M 545,312 V 326"/></g>
       <!-- postes (saka) -->
-      <g class="dr zone" stroke-width="2"><line x1="175" x2="175" y1="150" y2="312"/><line x1="295" x2="295" y1="125" y2="322"/><line x1="465" x2="465" y1="125" y2="322"/><line x1="545" x2="545" y1="150" y2="312"/></g>
-      <g class="dr soft" stroke-width=".8"><line x1="179" x2="179" y1="152" y2="312"/><line x1="299" x2="299" y1="128" y2="322"/><line x1="461" x2="461" y1="128" y2="322"/><line x1="541" x2="541" y1="152" y2="312"/></g>
+      <g class="d zone" stroke-width="2"><line x1="175" x2="175" y1="150" y2="312"/><line x1="295" x2="295" y1="125" y2="322"/><line x1="465" x2="465" y1="125" y2="322"/><line x1="545" x2="545" y1="150" y2="312"/></g>
+      <g class="d soft" stroke-width=".8"><line x1="179" x2="179" y1="152" y2="312"/><line x1="299" x2="299" y1="128" y2="322"/><line x1="461" x2="461" y1="128" y2="322"/><line x1="541" x2="541" y1="152" y2="312"/></g>
       <!-- vigas -->
-      <g class="dr" stroke-width="1.4"><line x1="165" x2="555" y1="158" y2="158"/><line x1="285" x2="475" y1="132" y2="132"/><line x1="165" x2="555" y1="168" y2="168" opacity=".6"/></g>
+      <g class="d" stroke-width="1.4"><line x1="165" x2="555" y1="158" y2="158"/><line x1="285" x2="475" y1="132" y2="132"/><line x1="165" x2="555" y1="168" y2="168" opacity=".6"/></g>
       <!-- tejado inferior -->
-      <path class="dr zone" d="M 90,162 C 180,98 300,86 380,96 C 460,86 580,98 670,162" stroke-width="2.4"/>
-      <path class="dr soft" d="M 78,170 C 176,106 298,94 380,106 C 462,94 584,106 682,170" stroke-width="1.2"/>
+      <path class="d zone" d="M 90,162 C 180,98 300,86 380,96 C 460,86 580,98 670,162" stroke-width="2.4"/>
+      <path class="d soft" d="M 78,170 C 176,106 298,94 380,106 C 462,94 584,106 682,170" stroke-width="1.2"/>
       <!-- tejas -->
-      <g class="dr soft" stroke-width=".8"><path d="M 130,150 C 190,116 260,106 320,106 M 160,160 C 215,132 270,122 330,122 M 630,150 C 570,116 500,106 440,106 M 600,160 C 545,132 490,122 430,122"/></g>
+      <g class="d soft" stroke-width=".8"><path d="M 130,150 C 190,116 260,106 320,106 M 160,160 C 215,132 270,122 330,122 M 630,150 C 570,116 500,106 440,106 M 600,160 C 545,132 490,122 430,122"/></g>
       <!-- corona -->
-      <g class="dr" stroke-width="1.5"><path d="M 290,112 C 330,60 380,58 380,58 C 380,58 430,60 470,112"/><line x1="282" x2="478" y1="112" y2="112"/><line x1="298" x2="462" y1="98" y2="98"/><line x1="314" x2="446" y1="84" y2="84"/><line x1="380" x2="380" y1="58" y2="34" stroke-width="1.6"/><circle cx="380" cy="30" r="4"/></g>
+      <g class="d" stroke-width="1.5"><path d="M 290,112 C 330,60 380,58 380,58 C 380,58 430,60 470,112"/><line x1="282" x2="478" y1="112" y2="112"/><line x1="298" x2="462" y1="98" y2="98"/><line x1="314" x2="446" y1="84" y2="84"/><line x1="380" x2="380" y1="58" y2="34" stroke-width="1.6"/><circle cx="380" cy="30" r="4"/></g>
       <!-- cabios -->
-      <g class="dr soft" stroke-width=".9"><line x1="150" x2="164" y1="136" y2="165"/><line x1="185" x2="196" y1="122" y2="165"/><line x1="220" x2="228" y1="112" y2="165"/><line x1="255" x2="260" y1="106" y2="165"/><line x1="505" x2="500" y1="106" y2="165"/><line x1="540" x2="532" y1="112" y2="165"/><line x1="575" x2="564" y1="122" y2="165"/><line x1="610" x2="596" y1="136" y2="165"/></g>
+      <g class="d soft" stroke-width=".9"><line x1="150" x2="164" y1="136" y2="165"/><line x1="185" x2="196" y1="122" y2="165"/><line x1="220" x2="228" y1="112" y2="165"/><line x1="255" x2="260" y1="106" y2="165"/><line x1="505" x2="500" y1="106" y2="165"/><line x1="540" x2="532" y1="112" y2="165"/><line x1="575" x2="564" y1="122" y2="165"/><line x1="610" x2="596" y1="136" y2="165"/></g>
       <!-- cámara interior: listones y puerta -->
-      <g class="dr zone" stroke-width="1.4"><rect x="205" y="190" width="350" height="122"/><line x1="380" x2="380" y1="190" y2="312"/><rect x="395" y="222" width="46" height="90" rx="1"/><rect x="225" y="214" width="62" height="46"/></g>
-      <g class="dr soft" stroke-width=".7"><path d="M 225,190 V 312 M 250,190 V 312 M 275,190 V 312 M 300,190 V 312 M 325,190 V 312 M 350,190 V 312 M 456,190 V 312 M 480,190 V 312 M 504,190 V 312 M 528,190 V 312 M 256,214 V 260 M 225,237 H 287"/></g>
+      <g class="d zone" stroke-width="1.4"><rect x="205" y="190" width="350" height="122"/><line x1="380" x2="380" y1="190" y2="312"/><rect x="395" y="222" width="46" height="90" rx="1"/><rect x="225" y="214" width="62" height="46"/></g>
+      <g class="d soft" stroke-width=".7"><path d="M 225,190 V 312 M 250,190 V 312 M 275,190 V 312 M 300,190 V 312 M 325,190 V 312 M 350,190 V 312 M 456,190 V 312 M 480,190 V 312 M 504,190 V 312 M 528,190 V 312 M 256,214 V 260 M 225,237 H 287"/></g>
       <!-- bale / banco -->
-      <g class="dr" stroke-width="1.3"><rect x="305" y="286" width="62" height="12"/><line x1="311" x2="311" y1="298" y2="312"/><line x1="361" x2="361" y1="298" y2="312"/></g>
+      <g class="d" stroke-width="1.3"><rect x="305" y="286" width="62" height="12"/><line x1="311" x2="311" y1="298" y2="312"/><line x1="361" x2="361" y1="298" y2="312"/></g>
       <!-- farol -->
-      <g class="fade"><line stroke-dasharray="1 2" stroke-width="1" x1="506" x2="506" y1="168" y2="206"/><rect x="498" y="206" width="16" height="24" rx="2" stroke-width="1.2"/><circle class="pulse" cx="506" cy="218" fill="#ffa185" fill-opacity=".3" r="8" stroke="#934a33" stroke-width=".8"/></g>
+      <g class="d" id="lampBody" stroke-width="1.2"><line x1="506" x2="506" y1="168" y2="206"/><rect x="498" y="206" width="16" height="24" rx="2"/></g>
+      <g id="lampG" opacity="0"><circle class="pulse" cx="506" cy="218" fill="#ffa185" fill-opacity=".35" r="8" stroke="#934a33" stroke-width=".8"/></g>
       <!-- escalones -->
-      <g class="dr" stroke-width="1.2"><line x1="312" x2="448" y1="346" y2="346"/><line x1="322" x2="438" y1="354" y2="354"/><line x1="332" x2="428" y1="362" y2="362"/></g>
+      <g class="d" stroke-width="1.2"><line x1="312" x2="448" y1="346" y2="346"/><line x1="322" x2="438" y1="354" y2="354"/><line x1="332" x2="428" y1="362" y2="362"/></g>
       <!-- piscina -->
-      <g class="dr" stroke-width="1.3"><path d="M 90,384 H 330 L 346,404 H 74 Z"/></g>
-      <g class="ripple" style="color:var(--clay)" stroke-width="1"><path d="M 100,394 q 10,-4 20,0 t 20,0 t 20,0 t 20,0 t 20,0 t 20,0 t 20,0 t 20,0"/></g>
+      <g class="d" id="pool" stroke-width="1.3"><path d="M 90,384 H 330 L 346,404 H 74 Z"/></g>
+      <g class="ripple" id="ripple" opacity="0" style="color:var(--clay)" stroke-width="1"><path d="M 100,394 q 10,-4 20,0 t 20,0 t 20,0 t 20,0 t 20,0 t 20,0 t 20,0 t 20,0"/></g>
       <!-- pájaros -->
-      <g class="fly" stroke-width="1.2"><path d="M 250,56 q 8,-8 16,0 q 8,-8 16,0"/><path d="M 300,40 q 6,-6 12,0 q 6,-6 12,0"/></g>
+      <g class="fly" id="birds" stroke-width="1.2"><path d="M 250,56 q 8,-8 16,0 q 8,-8 16,0"/><path d="M 300,40 q 6,-6 12,0 q 6,-6 12,0"/></g>
       <!-- cota -->
-      <g class="fade" style="opacity:.45" stroke-width=".6"><line stroke-dasharray="2 3" x1="175" x2="545" y1="424" y2="424"/><line x1="175" x2="175" y1="419" y2="429"/><line x1="545" x2="545" y1="419" y2="429"/><text fill="currentColor" font-family="Space Grotesk" font-size="9" letter-spacing="1.8" stroke="none" text-anchor="middle" x="360" y="438">JOGLO ELEVATION // 1:50 REF</text></g>
+      <g id="cota" style="opacity:0;transition:opacity 1s" stroke-width=".6"><line stroke-dasharray="2 3" x1="175" x2="545" y1="424" y2="424"/><line x1="175" x2="175" y1="419" y2="429"/><line x1="545" x2="545" y1="419" y2="429"/><text fill="currentColor" font-family="Space Grotesk" font-size="9" letter-spacing="1.8" stroke="none" text-anchor="middle" x="360" y="438">JOGLO ELEVATION // 1:50 REF</text></g>
     </svg>
-    <div class="cap"><i></i><p>Architectural section — a villa, looked after</p></div>
+    <div class="dayctl">
+      <button class="play" id="dPlay" type="button">&#8635; Replay the day</button>
+      <input id="dRange" type="range" min="5" max="22" step="0.02" value="20" aria-label="Time of day">
+      <output id="dTime" for="dRange">20:00</output>
+    </div>
+    <p class="dcap" id="dTask">Drag the time to watch a day on the property.</p>
   </div>
 </section>
 
@@ -486,16 +522,46 @@ footer .legal span{font-family:var(--label);font-size:11px;letter-spacing:.1em;t
     </article>
   </div>
 
-  <div class="card sheet reveal">
-    <div class="row1"><span class="label">What you receive each month</span><em>Always with dates</em></div>
+  <div class="card sample reveal" id="rep">
+    <div class="rphead"><b>Monthly report</b><span class="etag">Sample</span></div>
+    <div class="rstats">
+      <div class="rstat"><b data-n="24">24</b><span>Jobs</span></div>
+      <div class="rstat"><b data-n="62">62</b><span>Photos</span></div>
+      <div class="rstat"><b data-n="3">3</b><span>Issues</span></div>
+      <div class="rstat"><b data-n="9">9</b><span>Rounds</span></div>
+    </div>
+    <div class="rjobs">
+      <div class="rjob"><div class="rthumb"><i></i><u></u></div><span>Pool: filter cleaned</span><span class="rstamp">03 Oct &middot; 07:42</span></div>
+      <div class="rjob"><div class="rthumb"><i></i><u></u></div><span>Garden: hedges trimmed</span><span class="rstamp">11 Oct &middot; 08:15</span></div>
+      <div class="rjob"><div class="rthumb"><i></i><u></u></div><span>Repair: terrace leak sealed</span><span class="rstamp">19 Oct &middot; 10:03</span></div>
+    </div>
     <ul class="ticks">
-      <li>A report of every job done, with dated photos</li>
+      <li>Every job done, with dated photos</li>
       <li>The cost of every repair, with receipts</li>
       <li>No interest in your rental: we only look after the house</li>
     </ul>
-    <div class="end"><span class="label mute">Your home, cared for — with proof</span></div>
+    <p class="note">Sample with illustrative figures. Yours arrives every month with your villa&rsquo;s own photos and costs.</p>
+    <div class="end"><span class="label mute">Your home, cared for &mdash; with proof</span></div>
   </div>
 </section>
+
+<!-- HOW IT STARTS -->
+<section class="wrap sec" id="start">
+  <div class="head reveal">
+    <span class="label clay">How it starts</span>
+    <h2>Four steps, no surprises</h2>
+  </div>
+  <div class="path" id="path">
+    <div class="rail" aria-hidden="true"><i id="railFill"></i></div>
+    <ol>
+      <li><span class="dot"></span><h3>The visit</h3><p>We walk the villa with you and note what needs care.</p></li>
+      <li><span class="dot"></span><h3>The quote</h3><p>A fixed monthly fee, in writing. Repairs are quoted before work starts.</p></li>
+      <li><span class="dot"></span><h3>The first round</h3><p>The team begins, and every job is photographed and dated.</p></li>
+      <li><span class="dot"></span><h3>The monthly report</h3><p>You receive what was done, what it cost and what comes next.</p></li>
+    </ol>
+  </div>
+</section>
+
 
 <!-- CONTACT -->
 <section class="wrap sec" id="contact" style="padding-bottom:6rem">
@@ -532,6 +598,7 @@ footer .legal span{font-family:var(--label);font-size:11px;letter-spacing:.1em;t
           <li><a href="#care">What we look after</a></li>
           <li><a href="#day">A typical day</a></li>
           <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#start">How it starts</a></li>
           <li><a href="#contact">Contact</a></li>
         </ul>
       </div>
@@ -550,14 +617,117 @@ document.getElementById('f').addEventListener('submit',function(e){
   e.preventDefault();
   document.getElementById('m').textContent='The form is not connected yet. Please check back soon.';
 });
-// Trazado de la casa: pathLength=1 en cada forma y retardo encadenado
+var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+var EASE='cubic-bezier(.16,1,.3,1)';
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+// Titulo: letras que se posan
+(function(){
+  if(RM)return;
+  [].forEach.call(document.querySelectorAll('h1.name span'),function(l,i){
+    l.animate([{opacity:0,transform:'translateY(18px)',filter:'blur(8px)'},{opacity:1,transform:'none',filter:'blur(0)'}],{duration:900,delay:200+i*110,easing:EASE,fill:'backwards'});
+  });
+})();
+// Escena: la casa se dibuja mientras avanza el dia
 (function(){
   var svg=document.getElementById('house'); if(!svg)return;
-  svg.querySelectorAll('.dr').forEach(function(g,i){
-    g.style.setProperty('--d',(i*0.11)+'s');
-    (g.matches('path,line,rect,circle,ellipse')?[g]:g.querySelectorAll('path,line,rect,circle,ellipse')).forEach(function(n){n.setAttribute('pathLength','1')});
+  var shapes=[].slice.call(svg.querySelectorAll('.d path,.d line,.d rect,.d circle,.d ellipse')), n=shapes.length;
+  shapes.forEach(function(x){x.setAttribute('pathLength','1');x.style.strokeDasharray='1'});
+  var sky=svg.querySelector('#sky'),sun=svg.querySelector('#sun'),moon=svg.querySelector('#moon'),stars=svg.querySelector('#stars'),
+      lamp=svg.querySelector('#lampG'),birds=svg.querySelector('#birds'),ripple=svg.querySelector('#ripple'),cota=svg.querySelector('#cota'),
+      poolI=shapes.indexOf(svg.querySelector('#pool path')),lampI=shapes.indexOf(svg.querySelector('#lampBody line')),
+      rng=document.getElementById('dRange'),tm=document.getElementById('dTime'),cap=document.getElementById('dTask'),NS='http://www.w3.org/2000/svg';
+  for(var i=0;i<30;i++){var c=document.createElementNS(NS,'circle');c.setAttribute('cx',(i*131%740)+10);c.setAttribute('cy',(i*53%190)+10);c.setAttribute('r',i%3?1:1.7);c.setAttribute('fill','#efe9d8');stars.appendChild(c)}
+  var K=[[5,[40,38,64]],[6.5,[246,214,176]],[12,[207,227,234]],[17,[242,201,160]],[19,[90,74,99]],[21,[26,30,46]],[22,[20,23,36]]];
+  function skyAt(h){for(var k=0;k<K.length-1;k++){var a=K[k],b=K[k+1];if(h>=a[0]&&h<=b[0]){var t=(h-a[0])/(b[0]-a[0]);return a[1].map(function(v,j){return Math.round(v+(b[1][j]-v)*t)})}}return K[K.length-1][1]}
+  var T=[[5,'Before sunrise: the house is quiet and the lantern is still lit.'],[6,'06:00 · Garden and pool round: fallen leaves, filter and irrigation.'],[12,'12:00 · Small repairs the same day; larger ones are quoted to you with photos.'],[16,'16:00 · Interior cleaning, linen and supplies; every room photographed.'],[20,'20:00 · Evening round: gate, locks, lights and water pressure.']];
+  function prog(i,dp){return clamp((dp-i/n*.74)/.26,0,1)}
+  function set(h){
+    var dp=clamp((h-5.6)/(19-5.6),0,1);
+    shapes.forEach(function(x,i){x.style.strokeDashoffset=String(1-prog(i,dp))});
+    var c=skyAt(h);sky.setAttribute('fill','rgb('+c.join(',')+')');
+    var dark=clamp(1-(c[0]+c[1]+c[2])/3/150,0,1),d=clamp((h-6)/12,0,1);
+    sun.setAttribute('cx',60+d*640);sun.setAttribute('cy',300-Math.sin(Math.PI*d)*230);sun.setAttribute('opacity',h>=5.8&&h<=18.2?1:0);
+    var m=h>=18?(h-18)/12:h<=6?(h+6)/12:-1,mm=clamp(m,0,1);
+    moon.setAttribute('cx',60+mm*640);moon.setAttribute('cy',300-Math.sin(Math.PI*mm)*230);moon.setAttribute('opacity',m>=0&&m<=1&&dark>.35?1:0);
+    stars.setAttribute('opacity',clamp((dark-.35)*1.6,0,1));
+    lamp.setAttribute('opacity',clamp(dark*.9,0,.85)*prog(lampI,dp));
+    ripple.setAttribute('opacity',prog(poolI,dp));
+    cota.style.opacity=dp>=1?.45:0;
+    birds.style.opacity=(h>7&&h<17)?1:0;
+    svg.style.color=dark>.5?'#e9e2d4':'#24221F';
+    svg.style.setProperty('--moss-c',dark>.5?'#b8ccb1':'#2D3B2A');
+    var hh=Math.floor(h),mi=Math.floor((h-hh)*60);tm.textContent=(hh<10?'0':'')+hh+':'+(mi<10?'0':'')+mi;
+    var tx=T[0][1];T.forEach(function(t){if(h>=t[0])tx=t[1]});cap.textContent=tx;rng.value=h;
+  }
+  var stop=null;
+  function play(){
+    if(stop){stop();stop=null}
+    if(RM){set(20);return}
+    var t0=null,id,ms=15000;
+    function step(t){if(t0===null)t0=t;var p=clamp((t-t0)/ms,0,1);set(5.5+p*15);if(p<1)id=requestAnimationFrame(step);else stop=null}
+    set(5.5);id=requestAnimationFrame(step);stop=function(){cancelAnimationFrame(id)};
+  }
+  rng.addEventListener('input',function(){if(stop){stop();stop=null}set(parseFloat(rng.value))});
+  document.getElementById('dPlay').addEventListener('click',play);
+  set(20);
+  if(RM)return;
+  set(5.5);
+  var started=false;
+  function go(){if(started)return;started=true;play()}
+  if('IntersectionObserver' in window){var o=new IntersectionObserver(function(es){if(es[0].isIntersecting){o.disconnect();go()}},{threshold:.3});o.observe(svg)}else go();
+  // Viento: bambu y frangipani se apartan del cursor
+  var winds=[].slice.call(svg.querySelectorAll('.wind')).map(function(g,i){return{g:g,x:+g.dataset.x,a:0,ph:i*1.7}}),px=-999;
+  svg.addEventListener('pointermove',function(e){var r=svg.getBoundingClientRect();px=(e.clientX-r.left)/r.width*760});
+  svg.addEventListener('pointerleave',function(){px=-999});
+  (function loop(t){
+    var tw=t/1000;
+    winds.forEach(function(w){
+      var dx=w.x-px,push=Math.abs(dx)<240?clamp(dx/130,-1,1)*10*(1-Math.abs(dx)/240):0,amb=Math.sin(tw*.8+w.ph)*2;
+      w.a+=((push+amb)-w.a)*.08;w.g.setAttribute('transform','rotate('+w.a.toFixed(2)+' '+w.x+' 340)');
+    });
+    requestAnimationFrame(loop);
+  })(0);
+})();
+// Informe de muestra: contadores y sellos al aparecer
+(function(){
+  var rep=document.getElementById('rep');if(!rep)return;
+  var nums=[].slice.call(rep.querySelectorAll('[data-n]')),jobs=[].slice.call(rep.querySelectorAll('.rjob'));
+  if(RM||!('IntersectionObserver' in window)){rep.classList.add('go');return}
+  nums.forEach(function(e){e.textContent='0'});
+  var o=new IntersectionObserver(function(es){if(!es[0].isIntersecting)return;o.disconnect();rep.classList.add('go');
+    nums.forEach(function(e){var t=+e.dataset.n,t0=null;requestAnimationFrame(function f(ts){if(t0===null)t0=ts;var p=clamp((ts-t0)/1400,0,1);e.textContent=Math.round(t*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(f)})});
+    rep.querySelector('.rstats').animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:600,easing:EASE,fill:'backwards'});
+    jobs.forEach(function(j,i){
+      j.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],{duration:700,delay:300+i*260,easing:EASE,fill:'backwards'});
+      j.querySelector('.rstamp').animate([{opacity:0,transform:'scale(1.9) rotate(-6deg)'},{opacity:1,transform:'none'}],{duration:480,delay:700+i*260,easing:EASE,fill:'backwards'});
+    });
+  },{threshold:.35});o.observe(rep);
+})();
+// Como empieza: la linea se dibuja con el scroll
+(function(){
+  var path=document.getElementById('path'),fill=document.getElementById('railFill');if(!path)return;
+  var items=[].slice.call(path.querySelectorAll('li'));
+  function on(){
+    var r=path.getBoundingClientRect(),p=clamp((innerHeight*.6-r.top)/r.height,0,1);
+    fill.style.transform='scaleY('+p+')';
+    items.forEach(function(li){var lr=li.getBoundingClientRect();li.classList.toggle('on',lr.top<innerHeight*.6)});
+  }
+  addEventListener('scroll',on,{passive:true});addEventListener('resize',on);on();
+})();
+// Botones magneticos y tarjetas con peso (solo con raton)
+(function(){
+  if(RM||!matchMedia('(hover:hover) and (pointer:fine)').matches)return;
+  var mags=[].slice.call(document.querySelectorAll('.btn.pri,.inquire'));
+  mags.forEach(function(m){m.style.transition='transform .25s '+EASE});
+  document.addEventListener('pointermove',function(e){
+    mags.forEach(function(m){var r=m.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+      m.style.transform=Math.hypot(dx,dy)<100?'translate('+dx*.22+'px,'+dy*.22+'px)':'';});
   });
-  if('IntersectionObserver' in window){var o=new IntersectionObserver(function(es){if(es[0].isIntersecting){svg.classList.add('go');o.disconnect()}},{threshold:.3});o.observe(svg)}else svg.classList.add('go');
+  [].forEach.call(document.querySelectorAll('.plan'),function(c){
+    c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+      c.style.transition='transform .12s ease-out';c.style.transform='perspective(700px) rotateX('+(-y*8)+'deg) rotateY('+(x*8)+'deg) translateY(-4px)'});
+    c.addEventListener('pointerleave',function(){c.style.transition='';c.style.transform=''});
+  });
 })();
 // Barra de progreso y enlace activo del menú
 (function(){
