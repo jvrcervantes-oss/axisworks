@@ -1511,14 +1511,16 @@ def asistente_maestro():
     n = _una_vez(n, "contratos: 'contratos', asistente: 'asistente', 'asistente-correos': 'asistente',", "contratos: 'contratos', asistente: 'asistente_peticiones', 'asistente-correos': 'asistente',", 'nav.js CLAVE_MENU')
     # Un admin pasa SIN la casilla (decisión del CEO, 2-oct-2026): la base lo deja (`es_admin() or puede('asistente_peticiones')` dentro
     # de las RPC de listar y resolver); el agente sigue necesitándola. Menú, tarjeta del hub y puerta (guard.js, abajo) dicen lo mismo.
-    n = _una_vez(n, "if (!k || !ficha || ficha.rol === 'super_admin') return true;",
-                 "if (!k || !ficha || ficha.rol === 'super_admin' || (path === 'asistente' && ficha.rol === 'admin')) return true;", 'nav.js puedeVer')
+    # (7-oct-2026, reforma «dos empresas» de Lawang: puedeVer/lwPermitida/guard pasaron a LW_ROL.esSuperGlobal.) El super global pasa como
+    # antes; el admin SOLO con rol === 'admin' exacto (un admin_empresa NO: no se amplía a nadie), y fallo cerrado si no hay ficha clara.
+    n = _una_vez(n, "if (!k || !ficha || LW_ROL.esSuperGlobal(ficha)) return true;",
+                 "if (!k || !ficha || LW_ROL.esSuperGlobal(ficha) || (path === 'asistente' && ficha.rol === 'admin')) return true;", 'nav.js puedeVer')
     open(nav, 'w', encoding='utf-8', newline='').write(n)
     her = os.path.join(DIST, 'contracts', 'assets', 'herramientas.js')
     h = open(her, encoding='utf-8').read()
     h = _una_vez(h, "href:'/intranet/v4/asistente/', herr:'asistente',", "href:'/intranet/v4/asistente/', herr:'asistente_peticiones',", 'herramientas.js tarjeta Asistente')
-    h = _una_vez(h, "(!ficha || lwEsSuper(ficha) || !t.herr ||",
-                 "(!ficha || lwEsSuper(ficha) || !t.herr || (t.herr === 'asistente_peticiones' && ficha.rol === 'admin') ||", 'herramientas.js lwPermitida')
+    h = _una_vez(h, "(!ficha || window.LW_ROL.esSuperGlobal(ficha) || !t.herr ||",
+                 "(!ficha || window.LW_ROL.esSuperGlobal(ficha) || !t.herr || (t.herr === 'asistente_peticiones' && ficha.rol === 'admin') ||", 'herramientas.js lwPermitida')
     open(her, 'w', encoding='utf-8', newline='').write(h)
     # 3. El editor de ficha (editores.js, copia de Lawang): en el maestro la lista blanca de `solicitud_cambio_pide` es más corta
     # (sin nacionalidad, pasaporte/NPWP ni estado KYC: la base rechaza esos campos con 22023 «el campo X no se puede pedir por aquí»).
@@ -1613,8 +1615,8 @@ def guard_asistente_admin():
     tras esa copia. Reemplazo literal con ancla que aborta si Lawang cambia la línea."""
     g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
     t = open(g, encoding='utf-8').read()
-    t = _una_vez(t, "var sinLimite = ficha && ficha.rol === 'super_admin';",
-                 "var sinLimite = ficha && (ficha.rol === 'super_admin' || (ficha.rol === 'admin' && HERRAMIENTA === 'asistente_peticiones'));", 'guard.js sinLimite')
+    t = _una_vez(t, "var sinLimite = LW_ROL.esSuperGlobal(ficha);",
+                 "var sinLimite = LW_ROL.esSuperGlobal(ficha) || (ficha && ficha.rol === 'admin' && HERRAMIENTA === 'asistente_peticiones');", 'guard.js sinLimite')
     open(g, 'w', encoding='utf-8', newline='').write(t)
 
 

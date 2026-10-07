@@ -12,13 +12,13 @@ import build
 PAG = ('<html><head><script data-herramienta="asistente"></script></head><body><main>\n'
        '<div class="flex flex-col w-full gap-8">VIEJO</div>\n</main></div>\n<script>\nviejo()\n</script>\n</body></html>\n')
 NAV = ("x { path: 'asistente', texto: 'Asistente', clave: 'asistente' } y contratos: 'contratos', asistente: 'asistente', 'asistente-correos': 'asistente', z\n"
-       "    if (!k || !ficha || ficha.rol === 'super_admin') return true;\n")
+       "    if (!k || !ficha || LW_ROL.esSuperGlobal(ficha)) return true;\n")
 HER = ("{ href:'/intranet/v4/asistente/', herr:'asistente', }\n"
-       "const lwPermitida = (t, ficha) =>\n  (!ficha || lwEsSuper(ficha) || !t.herr ||\n   [].concat(t.herr).some(h => 1));\n")
+       "const lwPermitida = (t, ficha) =>\n  (!ficha || window.LW_ROL.esSuperGlobal(ficha) || !t.herr ||\n   [].concat(t.herr).some(h => 1));\n")
 ED = ("Cambia lo que haga falta y se enviará al administrador para que lo apruebe; te llegará la respuesta a la campana.' },\n"
       "      var pideCambio = function (c, accion, nuevos, motivo) {\n        return sb.rpc('solicitud_cambio_pide', {}).then(function (r) {\n"
       "          if (r.error) return { error: { message: r.error.message } };\n          var n = r.data;\n          toast('Enviado para aprobar'\n")
-GUARD = "x\n            var sinLimite = ficha && ficha.rol === 'super_admin';\n y"
+GUARD = "x\n            var sinLimite = LW_ROL.esSuperGlobal(ficha);   // x\n y"
 
 
 def _corre(funcion, ficheros):
@@ -67,7 +67,7 @@ for nombre, ok in (('pasa con la forma de Lawang', r == 'pasa'), ('entra la pant
                    ('el menú y el mapa cambian, el de correos NO', "clave: 'asistente_peticiones'" in n and "asistente: 'asistente_peticiones', 'asistente-correos': 'asistente'," in n),
                    ('el hub cambia', "herr:'asistente_peticiones'" in h),
                    # (1) un admin pasa sin casilla en las tres puertas, y solo en la del asistente de peticiones (el agente sigue necesitándola)
-                   ('la puerta (guard) deja pasar al admin SOLO con asistente_peticiones', rg == 'pasa' and "ficha.rol === 'super_admin' || (ficha.rol === 'admin' && HERRAMIENTA === 'asistente_peticiones')" in g),
+                   ('la puerta (guard) deja pasar al admin SOLO con asistente_peticiones', rg == 'pasa' and "LW_ROL.esSuperGlobal(ficha) || (ficha && ficha.rol === 'admin' && HERRAMIENTA === 'asistente_peticiones')" in g),
                    ('el menú deja pasar al admin solo en la entrada asistente', "(path === 'asistente' && ficha.rol === 'admin')" in n),
                    ('la tarjeta del hub deja pasar al admin solo en asistente_peticiones', "(t.herr === 'asistente_peticiones' && ficha.rol === 'admin')" in h),
                    # (4) el editor explica los campos que ya no se piden
@@ -88,8 +88,8 @@ for nombre, kw in (('para si Lawang cambia el contenedor', {'pag': PAG.replace('
                    ('para si el menú ya no es el esperado', {'nav': NAV.replace("clave: 'asistente' }", "clave: 'otra' }")}),
                    ('para si el mapa ya no es el esperado', {'nav': NAV.replace("asistente: 'asistente', 'asistente-correos'", "asistente: 'x', 'asistente-correos'")}),
                    ('para si el hub ya no es el esperado', {'her': HER.replace("herr:'asistente'", "herr:'otra'")}),
-                   ('para si el menú ya no trae puedeVer', {'nav': NAV.replace("ficha.rol === 'super_admin') return true;", "ficha.rol === 'otro') return true;")}),
-                   ('para si el hub ya no trae lwPermitida', {'her': HER.replace('lwEsSuper(ficha) || !t.herr ||', 'lwEsSuper(ficha) ||')}),
+                   ('para si el menú ya no trae puedeVer', {'nav': NAV.replace("LW_ROL.esSuperGlobal(ficha)) return true;", "LW_ROL.otro(ficha)) return true;")}),
+                   ('para si el hub ya no trae lwPermitida', {'her': HER.replace('esSuperGlobal(ficha) || !t.herr ||', 'esSuperGlobal(ficha) ||')}),
                    ('para si el editor cambia la nota de pedir cambio', {'ed': ED.replace('la respuesta a la campana.', 'la respuesta.')}),
                    ('para si el editor cambia el rechazo de la base', {'ed': ED.replace('if (r.error) return { error: { message: r.error.message } };', 'if (r.error) return r;')})):
     casos += 1

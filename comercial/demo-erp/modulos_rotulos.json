@@ -11,6 +11,7 @@
  "portal": ["Portal del comprador", "Documentación", "badge", "Cada comprador ve sus contratos, pagos, facturas y obra."],
  "deck": ["Deck de inversión", "Documentación", "slideshow", "La presentación de cada proyecto para inversores, con sus fotos."],
  "asistente": ["Peticiones a dirección", "Comunicación", "forum", "Lo que la intranet no deja hacer (cambiar una ficha, anular o borrar un documento) se pide aquí en lenguaje llano y otro administrador lo aprueba."],
+ "copias-firmadas": ["Copia firmada por correo", "Documentación", "mark_email_read", "Cuando el contrato queda firmado, el cliente recibe por correo su copia en PDF como adjunto."],
  "asistente-correos": ["Asistente de respuestas", "Documentación", "quick_phrases", "Redacta la respuesta a un cliente citando solo su propio contrato."],
  "creatividades": ["Creatividades y dossiers", "Documentación", "imagesmode", "Piezas para redes y dossiers de venta de cada proyecto."],
  "finanzas": ["Panel financiero", "Finanzas", "monitoring", "El dinero de la empresa en una pantalla, para dirección."],
