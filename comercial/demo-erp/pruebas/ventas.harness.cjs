@@ -79,9 +79,10 @@ async function servidor(b, nombre, a) {
       b.facturas.push(f);
       return { data: { id: f.id, creada: true, total: f.total, moneda: 'IDR', operacion_id: a.p_operacion }, error: null };
     }
-    case 'facturas_equipo': {
-      const fil = (a._filtros || {}).operacion_id;
-      return { data: b.facturas.filter(f => !fil || f.operacion_id === fil).map(f => Object.assign({}, f)), error: o.facturasFalla ? { message: 'boom', code: 'XX000' } : null };
+    case 'operacion_facturas_datos': {
+      if (o.facturasFalla) return { data: null, error: { message: 'boom', code: 'XX000' } };
+      if (o.facturasForma) return { data: b.facturas.filter(f => f.operacion_id === a.p_operacion), error: null };   // la forma vieja (array): no es la de la migración
+      return { data: { facturas: b.facturas.filter(f => f.operacion_id === a.p_operacion).map(f => Object.assign({}, f)) }, error: null };
     }
     case 'factura_lineas_datos': {
       const f = b.facturas.find(x => x.id === a.p_factura);
@@ -125,9 +126,9 @@ async function servidor(b, nombre, a) {
       b.ventas[a.p_clave] = resp;
       return { data: resp, error: null };
     }
-    case 'lector_clientes_datos': return { data: { clientes: b.clientes }, error: null };
-    case 'lector_productos_datos': return { data: { productos: b.productos }, error: null };
-    case 'lector_emisor_datos': return { data: { sociedades: [{ clave: 'bbm', emisor_completo: !o.emisorFalta, impuesto_configurado: !o.impuestoFalta }] }, error: null };
+    case 'clientes_datos': return { data: { clientes: b.clientes, truncado: !!o.truncado }, error: null };
+    case 'productos_datos': return { data: { productos: b.productos }, error: null };
+    case 'sociedades_emisor_datos': return { data: { sociedades: [{ clave: 'bbm', emisor_completo: !o.emisorFalta, impuesto_configurado: !o.impuestoFalta }] }, error: null };
   }
   return err('42883', 'función desconocida ' + nombre);
 }
@@ -157,10 +158,11 @@ window.lwIdiomaAplicar = function (raiz) { Array.prototype.forEach.call(raiz.que
 window.toast = function () {};
 window.onerror = function (m) { window.__errores.push(String(m)); };
 </script>
-<script>${SCRIPT.replace(/<\/?script>/g, '').replace("var LECT = { clientes: null, productos: null, emisor: null };", lectores)}</script></body></html>`;
+<script>${SCRIPT.replace(/<\/?script>/g, '').replace("var LECT = { clientes: 'clientes_datos', productos: 'productos_datos', emisor: 'sociedades_emisor_datos' };", lectores)}</script></body></html>`;
 
-const SIN_LECTORES = "var LECT = { clientes: null, productos: null, emisor: null };";
-const CON_LECTORES = "var LECT = { clientes: 'lector_clientes_datos', productos: 'lector_productos_datos', emisor: 'lector_emisor_datos' };";
+const LECT_REAL = "var LECT = { clientes: 'clientes_datos', productos: 'productos_datos', emisor: 'sociedades_emisor_datos' };";
+const SIN_LECTORES = "var LECT = { clientes: null, productos: null, emisor: null };";   // simula una página sin lectores cableados (el bloqueo con motivo sigue ahí)
+const CON_LECTORES = LECT_REAL;
 
 (async () => {
   const exe = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
@@ -303,13 +305,81 @@ const CON_LECTORES = "var LECT = { clientes: 'lector_clientes_datos', productos:
     ok('un botón deshabilitado no abre diálogo ni llama', !(await dialogoVisible(p)) && llamadas(base, 'factura_emite').length === 0);
     await ctx.close();
   }
+  // La venta de catálogo: la ficha se abre sobre una operación origen 'venta' (factura_producto_crea), no sobre la reserva.
+  const conVenta = async (baseOpts) => {
+    const r = await abre({ base: baseOpts });
+    r.base.ops.push({ id: 'opv9', referencia: 'V-0009', tipo: 'venta', origen: 'venta', estado: 'abierta', client_id: 'c2', moneda: 'IDR', creado_en: '2026-10-08T09:00:00Z', contratado: 150000 });
+    r.base.facturas.push({ id: 'fv', operacion_id: 'opv9', tipo: 'factura', total: 150000, moneda: 'IDR', numero: null, anulada: false, emitida_en: null, created_at: 'a', rectifica_id: null, sociedad: 'bbm' });
+    await recarga(r.p);
+    await r.p.click('[data-accion="vt-abrir-op"][data-op-id="opv9"]');
+    return r;
+  };
+  {
+    const { base, p, ctx } = await conVenta({ emisorFalta: true });
+    await espera(p, () => !!document.querySelector('[data-accion="vt-emitir"]:disabled'));
+    ok('emisor incompleto bloquea también la venta de catálogo', (await txt(p, '[data-vt="ficha-facturas"]')).includes('NPWP'));
+    await ctx.close();
+  }
+  {
+    const { base, p, ctx } = await conVenta({ impuestoFalta: true });
+    await espera(p, () => !!document.querySelector('[data-accion="vt-emitir"]:disabled'));
+    ok('sin impuesto configurado «Emitir» queda deshabilitado en una venta de catálogo y lo dice', (await txt(p, '[data-vt="ficha-facturas"]')).includes('impuesto'));
+    await ctx.close();
+  }
   {
     const { base, p, ctx } = await abre({ base: { impuestoFalta: true } });
     base.reservas[0].client_id = 'c2'; base.ops[0].client_id = 'c2'; base.ops[0].estado = 'abierta'; await recarga(p);
     base.facturas.push({ id: 'fb', operacion_id: 'op1', tipo: 'factura', total: 700000, moneda: 'IDR', numero: null, anulada: false, emitida_en: null, created_at: 'a', rectifica_id: null, sociedad: 'bbm' });
     await p.click('[data-accion="vt-abrir-op"]');
-    await espera(p, () => !!document.querySelector('[data-accion="vt-emitir"]:disabled'));
-    ok('sin impuesto configurado (lector) «Emitir» está deshabilitado y lo dice', (await txt(p, '[data-vt="ficha-facturas"]')).includes('impuesto'));
+    await espera(p, () => !!document.querySelector('[data-accion="vt-emitir"]'));
+    await espera(p, () => document.querySelectorAll('[data-accion="vt-emitir"]').length === 1);
+    await new Promise(r => setTimeout(r, 300));   // deja que llegue el emisor (que ya cargó): si fuera a bloquear, ya lo habría hecho
+    ok('el emisor se leyó (sociedades_emisor_datos)', llamadas(base, 'sociedades_emisor_datos').length === 1);
+    ok('sin impuesto configurado «Emitir» NO se bloquea en un borrador de reserva (lo decide la base)', !(await p.$('[data-accion="vt-emitir"]:disabled')) && !(await txt(p, '[data-vt="ficha-facturas"]')).includes('Emitir no está disponible'));
+    await ctx.close();
+  }
+  {
+    const { base, p, ctx } = await abre({ base: { facturasForma: true } });
+    await p.click('[data-accion="vt-abrir-op"]');
+    await espera(p, () => document.querySelector('[data-vt="ficha-facturas"]').textContent.includes('No es que no tenga'));
+    ok('si la lectura de facturas no trae {facturas:[…]} se dice que no se ha podido mirar (no «sin facturas»)', !(await txt(p, '[data-vt="ficha-facturas"]')).includes('aún no tiene facturas'));
+    await ctx.close();
+  }
+  {
+    const { base, p, ctx } = await abre();
+    await p.click('[data-accion="vt-abrir-op"]');
+    await espera(p, () => !!document.querySelector('[data-vt="ficha"]:not(.vt-oculto)'));
+    const c = llamadas(base, 'operacion_facturas_datos');
+    ok('la ficha lee las facturas por operacion_facturas_datos con solo p_operacion', c.length >= 1 && JSON.stringify(c[0][1]) === JSON.stringify({ p_operacion: 'op1' }), JSON.stringify(c[0]));
+    await ctx.close();
+  }
+  {
+    const { base, p, ctx } = await abre({ base: { noDisponible: ['clientes_datos', 'productos_datos', 'sociedades_emisor_datos'] } });
+    await tab(p, 'nueva');
+    await espera(p, () => (document.querySelector('[data-vt="nueva-estado"]').textContent || '').includes('F4'));
+    ok('sin RPC de clientes/productos «Nueva venta» dice que no está disponible y no ofrece crear', !(await p.$('[data-accion="vt-venta-crear"]')) && !(await txt(p, '[data-vt="nueva-estado"]')).includes('Falta el lector'));
+    await tab(p, 'reservas'); await espera(p, () => document.querySelectorAll('[data-vt="res-tabla"] tbody tr').length === 1);
+    await p.click('[data-accion="vt-reclamar"]');
+    await espera(p, () => document.querySelector('[data-vt="dialogo"] .vt-error:not(.vt-oculto)'));
+    ok('sin RPC de clientes reclamar dice que no está disponible (no deja elegir)', (await txt(p, '[data-vt="dialogo"]')).includes('F4') && llamadas(base, 'reserva_asigna_cliente').length === 0);
+    await p.click('[data-accion="vt-modal-cancelar"]');
+    base.reservas[0].client_id = 'c2'; base.ops[0].client_id = 'c2'; base.ops[0].estado = 'abierta'; await tab(p, 'operaciones'); await recarga(p);
+    base.facturas.push({ id: 'fb', operacion_id: 'op1', tipo: 'factura', total: 700000, moneda: 'IDR', numero: null, anulada: false, emitida_en: null, created_at: 'a', rectifica_id: null, sociedad: 'bbm' });
+    await p.click('[data-accion="vt-abrir-op"]');
+    await espera(p, () => !!document.querySelector('[data-accion="vt-emitir"]'));
+    await espera(p, () => !document.querySelector('[data-vt="aviso"]').classList.contains('vt-oculto'));
+    ok('sin RPC del emisor «Emitir» sigue activo (decide la base) y se avisa de que no se pudo mirar', !(await p.$('[data-accion="vt-emitir"]:disabled')) && (await txt(p, '[data-vt="aviso"]')).includes('No se ha podido mirar'));
+    await ctx.close();
+  }
+  {
+    const { base, p, ctx } = await abre({ base: { truncado: true } });
+    await tab(p, 'nueva');
+    await espera(p, () => !!document.querySelector('[data-accion="vt-venta-crear"]'));
+    ok('lectura de clientes truncada: «Nueva venta» lo avisa', (await txt(p, '[data-vt="nueva-estado"]')).includes('recortada'));
+    await tab(p, 'reservas'); await espera(p, () => document.querySelectorAll('[data-vt="res-tabla"] tbody tr').length === 1);
+    await p.click('[data-accion="vt-reclamar"]');
+    await espera(p, () => document.querySelectorAll('[data-vt="dialogo"] select option').length > 1);
+    ok('lectura de clientes truncada: reclamar lo avisa', (await txt(p, '[data-vt="dialogo"]')).includes('recortada'));
     await ctx.close();
   }
   for (const [flag, hint, texto] of [['emisorIncompleto', 'emisor_incompleto', 'NPWP'], ['clienteIncompleto', 'cliente_incompleto', 'cliente']]) {

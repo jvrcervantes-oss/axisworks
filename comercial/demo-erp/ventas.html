@@ -2,7 +2,7 @@
      NO es una página entera: build.py (ventas_pantalla) la inyecta en la cáscara de la página /asistente/ de Lawang (la misma que usan
      asistente_maestro y whatsapp_bot_pantalla), sustituyendo su contenedor y su script. Dos partes separadas por la línea «AXW_SCRIPT».
      Recorrido: reserva → operación → borrador → emitir → rectificar, y la cola «cobrado sin facturar». El navegador SOLO pide:
-     todas las llamadas son RPC de la migración F4 (20261008120000) o lecturas que la pantalla de operaciones ya tenía (facturas_equipo);
+     todas las llamadas son RPC de la migración F4 (20261008120000), lecturas incluidas (§5b: clientes_datos, productos_datos, sociedades_emisor_datos, operacion_facturas_datos);
      no calcula un importe, no escribe una tabla y no se cree su propio estado (tras cada acción vuelve a leer). Las líneas de un borrador NO
      se editan (descartar con motivo y rehacer, o rectificar). Todo texto que viene de la base o de la reserva pública (nombre de contacto,
      notas, producto, descripciones de línea) se pinta con textContent; NUNCA con innerHTML ni con el esc() de Lawang (no escapa la comilla simple).
@@ -134,6 +134,7 @@
     'Reclamar': 'Claim', 'Abrir': 'Open', 'Ver operación': 'View operation', 'Abrir operación': 'Open operation', 'Crear borrador': 'Create draft',
     'Cerrar': 'Close', 'Cancelar': 'Cancel', 'Continuar': 'Continue', 'Volver': 'Back',
     'Días sin facturar': 'Days not invoiced', 'Con borrador': 'Has draft', 'Sí': 'Yes', 'No': 'No', 'Sin pago': 'No payment',
+    'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.': 'The customer list is cut to the first 500: if you cannot see the one you need, ask the administrator.',
     'Cargando…': 'Loading…', 'No hay operaciones con ese filtro.': 'No operations match that filter.',
     'No hay reservas con ese filtro.': 'No bookings match that filter.',
     'No hay reservas cobradas sin facturar.': 'There are no paid bookings waiting to be invoiced.',
@@ -228,13 +229,11 @@
   traduce(raiz);
   var $v = function (n) { return raiz.querySelector('[data-vt="' + n + '"]'); };
 
-  /* ── Lectores que la base de hoy NO tiene (PREGUNTA 1 del informe) ─────────────────────────────────────────────────────
-     Elegir un cliente (reclamar, nueva venta), un producto (nueva venta) y saber si el emisor está completo necesitan una lectura
-     que ninguna RPC de F4 da. NO se lee con .from(): el navegador no toca tablas. Cuando la migración traiga los lectores, se
-     escribe aquí su nombre (acaban en _datos). Mientras valgan null, esas tres acciones se muestran BLOQUEADAS con su motivo.
-       clientes: { clientes: [{ id, nombre }] }                        · productos: { productos: [{ id, nombre, precio, moneda }] }
+  /* ── Lectores de la migración F4 (§5b), llamados por el nombre de LECT (todos acaban en _datos y tienen su entrada literal en RPC).
+     NO se lee con .from(): el navegador no toca tablas. Si la RPC no existe o falla, cada pantalla lo dice con su motivo (no es «vacío»).
+       clientes: { clientes: [{ id, nombre }], truncado }              · productos: { productos: [{ id, nombre, precio, moneda }] }
        emisor:   { sociedades: [{ clave, emisor_completo, impuesto_configurado }] } */
-  var LECT = { clientes: null, productos: null, emisor: null };
+  var LECT = { clientes: 'clientes_datos', productos: 'productos_datos', emisor: 'sociedades_emisor_datos' };
 
   /* ── helpers de DOM: solo createElement/textContent (nada de innerHTML) ── */
   function h(tag, attrs, hijos) {
@@ -287,6 +286,7 @@
     return isNaN(d) ? '—' : d.toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
+  var AVISO_TRUNCADO = 'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.';
   var SB = null;
   var E = { tab: 'operaciones', ops: [], opsSig: null, opsCargado: false, res: [], resSig: null, resCargado: false, cola: [], colaSig: null,
             ficha: null, bloqueos: {}, ocupado: false, venta: { clave: null }, clientes: null, productos: null, emisor: null };
@@ -304,6 +304,10 @@
     operaciones_cola_datos: function (a) { return window.lwDatos('operaciones_cola_datos', a); },
     reservas_producto_datos: function (a) { return window.lwDatos('reservas_producto_datos', a); },
     factura_lineas_datos: function (a) { return window.lwDatos('factura_lineas_datos', a); },
+    operacion_facturas_datos: function (a) { return window.lwDatos('operacion_facturas_datos', a); },
+    clientes_datos: function (a) { return window.lwDatos('clientes_datos', a); },
+    productos_datos: function (a) { return window.lwDatos('productos_datos', a); },
+    sociedades_emisor_datos: function (a) { return window.lwDatos('sociedades_emisor_datos', a); },
     reservas_cobradas_sin_facturar: function (a) { return SB.rpc('reservas_cobradas_sin_facturar', a); },
     reserva_asigna_cliente: function (a) { return SB.rpc('reserva_asigna_cliente', a); },
     factura_desde_operacion: function (a) { return SB.rpc('factura_desde_operacion', a); },
@@ -316,7 +320,7 @@
     var p;
     try {
       if (RPC[nombre]) p = RPC[nombre](args || {});
-      else if (/_datos$/.test(nombre) && typeof window.lwDatos === 'function') p = window.lwDatos(nombre, args || {});   // los lectores de LECT (hoy ninguno)
+      else if (/_datos$/.test(nombre) && typeof window.lwDatos === 'function') p = window.lwDatos(nombre, args || {});   // por si algún día LECT apunta a un lector sin entrada propia
       else p = Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function ' + nombre } });
     } catch (e) { return Promise.resolve({ data: null, error: e }); }
     return Promise.resolve(p).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; },
@@ -497,23 +501,19 @@
   }
   function cargaFacturas() {
     var o = E.ficha.op;
-    // facturas_equipo: la lectura que ya tenía la pantalla de operaciones (INVOKER: la RLS decide qué ve cada uno); se piden solo estas columnas
-    var p;
-    try {
-      p = Promise.resolve(SB.rpc('facturas_equipo').select('id,numero,tipo,total,moneda,anulada,emitida_en,fecha_emision,created_at,rectifica_id,sociedad').eq('operacion_id', o.id).order('created_at'));
-    } catch (e) { p = Promise.resolve({ data: null, error: e }); }
-    return p.then(function (r) { return r; }, function (e) { return { data: null, error: e }; }).then(function (r) {
+    // operacion_facturas_datos (F4 §5b): la puerta y la visibilidad de la operación las comprueba la base; devuelve { facturas: [...] }
+    return llama('operacion_facturas_datos', { p_operacion: o.id }).then(function (r) {
       if (!E.ficha || E.ficha.op.id !== o.id) return;
       var cont = $v('ficha-facturas');
       if (!cont) return;
       vacia(cont);
-      if (r.error || !Array.isArray(r.data)) {
+      if (!vaListaDe(r, 'facturas')) {
         cont.appendChild(h('p', { class: 'vt-error', text: T('No se han podido leer las facturas de esta operación. No es que no tenga: no se ha podido mirar.') + (r.error ? ' ' + mensaje(r.error, true) : '') }));
         E.ficha.facturas = null;
         pintaAccionesFicha();
         return;
       }
-      E.ficha.facturas = r.data;
+      E.ficha.facturas = r.data.facturas;
       pintaFacturas();
       pintaAccionesFicha();
       return cargaEmisor();
@@ -533,7 +533,11 @@
     if (f.rectifica_id) return null;
     var s = E.emisor && E.emisor[f.sociedad];
     if (s && s.emisor_completo === false) return T(TEXTO_HINT.emisor_incompleto);
-    if (s && s.impuesto_configurado === false) return T('Falta la configuración del impuesto de la sociedad emisora: pide los datos fiscales al gestor y configúralo antes de emitir.');
+    /* El impuesto sin configurar bloquea SOLO las facturas de venta de catálogo (factura_producto_crea elige el impuesto de cada línea).
+       Los borradores de reserva (factura_desde_operacion) NO: esa RPC ya se niega con requiere_3b si la sociedad tiene un impuesto por defecto
+       de clase suma, y si no tiene ninguno factura sin impuesto; bloquearlos aquí impediría emitir lo que la base sí deja emitir.
+       El emisor incompleto (NPWP/razón social) sí bloquea en ambos. (Decisión del CEO, 8-oct-2026.) */
+    if (s && s.impuesto_configurado === false && E.ficha && E.ficha.op && E.ficha.op.origen === 'venta') return T('Falta la configuración del impuesto de la sociedad emisora: pide los datos fiscales al gestor y configúralo antes de emitir.');
     return null;
   }
   function pintaFacturas() {
@@ -867,6 +871,7 @@
         } }]);
     llama(LECT.clientes, {}).then(function (r) {
       if (!vaListaDe(r, 'clientes')) { d.error(T('No se ha podido mirar') + ': ' + mensaje(r.error, true)); return; }
+      if (r.data.truncado) d.cuerpo.insertBefore(h('p', { class: 'vt-aviso', text: T(AVISO_TRUNCADO) }), sel.parentNode.nextSibling);
       sel.appendChild(h('option', { value: '', text: '—' }));
       r.data.clientes.forEach(function (c) { sel.appendChild(h('option', { value: c.id, text: c.nombre || '—' })); });
     });
@@ -903,6 +908,7 @@
       if (!vaListaDe(rs[0], 'clientes') || !vaListaDe(rs[1], 'productos')) { est.textContent = T('No se ha podido mirar') + ': ' + mensaje(rs[0].error || rs[1].error, true); return; }
       est.textContent = '';
       E.clientes = rs[0].data.clientes; E.productos = rs[1].data.productos;
+      if (rs[0].data.truncado) est.textContent = T(AVISO_TRUNCADO);
       var cli = h('select', { 'data-campo': 'venta-cliente', 'aria-label': T('Cliente de la venta') }, [h('option', { value: '', text: '—' })]);
       E.clientes.forEach(function (c) { cli.appendChild(h('option', { value: c.id, text: c.nombre || '—' })); });
       var lineas = h('div', { 'data-vt': 'venta-lineas' });
