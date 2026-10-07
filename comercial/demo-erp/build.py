@@ -1587,8 +1587,9 @@ def ajustes_correo_maestro():
     open(ruta, 'w', encoding='utf-8', newline='').write(t)
 
 
-def _pantalla_bot(v4, archivo, carpeta, titulo):
-    """Una pantalla del bot de WhatsApp sobre la cáscara de /asistente/ de Lawang (ver whatsapp_bot_pantalla)."""
+def _pantalla_bot(v4, archivo, carpeta, titulo, puerta='data-rol="admin"'):
+    """Una pantalla del maestro sobre la cáscara de /asistente/ de Lawang (ver whatsapp_bot_pantalla y ventas_pantalla). `puerta` es lo que
+    sustituye a `data-herramienta="asistente"`: por defecto solo el administrador; /ventas/ pide una herramienta (varias, con coma = cualquiera)."""
     t = open(os.path.join(LAWANG, 'intranet', 'v4', 'asistente', 'index.html'), encoding='utf-8').read()
     frag = open(os.path.join(AQUI, archivo), encoding='utf-8').read().split('<!--AXW_SCRIPT-->')
     if len(frag) != 2:
@@ -1603,10 +1604,32 @@ def _pantalla_bot(v4, archivo, carpeta, titulo):
     if i1 < i0:
         aborta('whatsapp_bot_pantalla: el cierre de <main> está antes del contenedor')
     t = t[:i0] + marcado + '\n</main></div>\n' + script + '\n</body></html>\n'
-    t = _una_vez(t, 'data-herramienta="asistente"', 'data-rol="admin"', carpeta + '/index.html puerta')
+    t = _una_vez(t, 'data-herramienta="asistente"', puerta, carpeta + '/index.html puerta')
     t = _una_vez(t, '<title data-lw-titulo>Asistente</title>', '<title data-lw-titulo>%s</title>' % titulo, carpeta + '/index.html título')
     os.makedirs(os.path.join(v4, carpeta), exist_ok=True)
     open(os.path.join(v4, carpeta, 'index.html'), 'w', encoding='utf-8', newline='').write(t)
+
+
+def ventas_pantalla():
+    """Pantalla /ventas/ del ERP maestro (F4 «Pantalla de factura», 8-oct-2026; encargos/20261008_erp_f4_pantalla_factura_plan.md v2).
+    No existe en Lawang: la crea el build clonando la CÁSCARA de /asistente/ con el contenido de `ventas.html`, igual que whatsapp_bot_pantalla.
+    La puerta es una herramienta (`facturas`, `operaciones` o `reservas-producto`: cualquiera de las tres, guard.js acepta una lista con coma);
+    la base vuelve a comprobar el permiso en cada RPC. El menú gana su entrada en Seguimiento, tras Reservas, y SOLO con el núcleo de
+    operaciones (`nucleo`: la base de Lawang no tiene estas RPC). CLAVE_MENU es lo que hace que puedeVer() no la deje ver a cualquier rol
+    (sin esa línea la barra la enseñaría a todos: lo midió la pantalla del bot). Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    _pantalla_bot(v4, 'ventas.html', 'ventas', 'Ventas', puerta='data-herramienta="facturas,operaciones,reservas-producto"')
+    nav = os.path.join(v4, 'assets', 'nav.js')
+    n = open(nav, encoding='utf-8').read()
+    n = _una_vez(n, "      { path: 'reservas', texto: 'Reservas', clave: 'reservas' }] },",
+                 "      { path: 'reservas', texto: 'Reservas', clave: 'reservas' }," + '\n' +
+                 "      { path: 'ventas', texto: 'Ventas', clave: 'facturas', nucleo: true, mismaCasilla: true }] },", 'nav.js MENU_V4 Seguimiento')
+    n = _una_vez(n, "    { path: 'reservas',   tras: 'vencimientos', icono: 'event_upcoming', texto: 'Reservas' },",
+                 "    { path: 'reservas',   tras: 'vencimientos', icono: 'event_upcoming', texto: 'Reservas' }," + '\n' +
+                 "    { path: 'ventas',     tras: 'reservas',     icono: 'receipt_long',   texto: 'Ventas', nucleo: true },", 'nav.js INJERTOS ventas')
+    n = _una_vez(n, "    facturas: 'facturas', recibos: 'recibos', comisiones:",
+                 "    ventas: ['facturas', 'operaciones', 'reservas-producto']," + '\n' + "    facturas: 'facturas', recibos: 'recibos', comisiones:", 'nav.js CLAVE_MENU ventas')
+    open(nav, 'w', encoding='utf-8', newline='').write(n)
 
 
 def guard_asistente_admin():
@@ -1711,6 +1734,7 @@ def instancia(nombre):
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
     whatsapp_bot_pantalla()   # módulo Bot de WhatsApp (5-oct-2026): su pantalla, clonando la cáscara de Lawang
     ajustes_correo_maestro()   # F3.1 (7-oct-2026): Ajustes › Correo con el servidor de salida (llama a la edge ajustes-correo)
+    ventas_pantalla()   # F4 (8-oct-2026): Ventas — reserva → borrador → emitir → rectificar y la cola «cobrado sin facturar»
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]

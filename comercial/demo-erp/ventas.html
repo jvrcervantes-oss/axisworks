@@ -1,0 +1,1016 @@
+<!-- Pantalla /ventas/ del ERP MAESTRO (F4 «Pantalla de factura», 8-oct-2026; encargos/20261008_erp_f4_pantalla_factura_plan.md, v2).
+     NO es una página entera: build.py (ventas_pantalla) la inyecta en la cáscara de la página /asistente/ de Lawang (la misma que usan
+     asistente_maestro y whatsapp_bot_pantalla), sustituyendo su contenedor y su script. Dos partes separadas por la línea «AXW_SCRIPT».
+     Recorrido: reserva → operación → borrador → emitir → rectificar, y la cola «cobrado sin facturar». El navegador SOLO pide:
+     todas las llamadas son RPC de la migración F4 (20261008120000) o lecturas que la pantalla de operaciones ya tenía (facturas_equipo);
+     no calcula un importe, no escribe una tabla y no se cree su propio estado (tras cada acción vuelve a leer). Las líneas de un borrador NO
+     se editan (descartar con motivo y rehacer, o rectificar). Todo texto que viene de la base o de la reserva pública (nombre de contacto,
+     notas, producto, descripciones de línea) se pinta con textContent; NUNCA con innerHTML ni con el esc() de Lawang (no escapa la comilla simple).
+     Se engancha por data-accion / data-tab, nunca por un rótulo. Idioma: ES/EN con el diccionario EN_VT de abajo (se añade a window.LW_EN
+     solo si la clave no existe; el i18n.js es de Lawang y no se toca). -->
+<div class="flex flex-col w-full gap-8" data-vt="raiz">
+<style>
+.vt-oculto{display:none !important}
+.vt-aviso{padding:10px 14px;border-radius:8px;background:#fff3e0;color:#8a4b00;font-size:14px;white-space:pre-line;word-break:break-word}
+.vt-error{padding:10px 14px;border-radius:8px;background:#fde2e0;color:#7a1a14;font-size:14px;white-space:pre-line;word-break:break-word}
+.vt-ok{padding:10px 14px;border-radius:8px;background:#e6efdd;color:#2c3d1f;font-size:14px;white-space:pre-line;word-break:break-word}
+.vt-nota{padding:12px 16px;border-radius:10px;background:#f5f4ee;font-size:14px;line-height:1.5;word-break:break-word}
+.vt-tabs{display:flex;flex-wrap:wrap;gap:8px}
+.vt-tab{padding:8px 18px;border-radius:999px;border:0;cursor:pointer;font-size:14px;background:#e4e2dd;color:#1b1c19}
+.vt-tab[aria-selected="true"]{background:#104C4F;color:#fff}
+.vt-barra{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:12px 0}
+.vt-barra label{font-size:13px;display:flex;align-items:center;gap:6px}
+.vt-barra select,.vt-campo input,.vt-campo select,.vt-campo textarea{border:1px solid #c5c8bc;border-radius:8px;padding:7px 10px;font-size:14px;background:#fff;font-family:inherit}
+.vt-tabla-caja{overflow-x:auto}
+.vt-tabla{width:100%;border-collapse:collapse;font-size:14px}
+.vt-tabla th{text-align:left;font-size:12px;color:#75786e;font-weight:600;padding:8px 10px;border-bottom:1px solid #e4e2dd;white-space:nowrap}
+.vt-tabla td{padding:9px 10px;border-bottom:1px solid #f0eee8;vertical-align:top;word-break:break-word}
+.vt-tabla td.vt-num,.vt-tabla th.vt-num{text-align:right;white-space:nowrap}
+.vt-fila-click{cursor:pointer}
+.vt-fila-click:hover{background:#faf9f5}
+.vt-boton{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;border-radius:999px;border:0;cursor:pointer;font-size:13px;background:#e4e2dd;color:#1b1c19}
+.vt-boton[data-primario="1"]{background:#104C4F;color:#fff}
+.vt-boton[data-peligro="1"]{background:#fde2e0;color:#7a1a14}
+.vt-boton:disabled{opacity:.55;cursor:not-allowed}
+.vt-acciones{display:flex;flex-wrap:wrap;gap:6px}
+.vt-chip{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;background:#e4e2dd;color:#1b1c19;white-space:nowrap}
+.vt-chip[data-tono="ok"]{background:#485B37;color:#fff}
+.vt-chip[data-tono="espera"]{background:#fff3e0;color:#8a4b00}
+.vt-chip[data-tono="mal"]{background:#fde2e0;color:#7a1a14}
+.vt-cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.vt-cifra{padding:10px 12px;border:1px solid #e4e2dd;border-radius:10px;background:#faf9f5}
+.vt-cifra b{display:block;font-size:12px;font-weight:600;color:#75786e}
+.vt-cifra span{font-size:16px;word-break:break-word}
+.vt-vacio{color:#75786e;font-size:14px}
+.vt-campo{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.vt-campo>label{font-size:13px;font-weight:600}
+.vt-linea{display:grid;grid-template-columns:1fr;gap:8px;padding:10px;border:1px solid #e4e2dd;border-radius:10px;background:#faf9f5;margin:8px 0}
+@media (min-width:700px){.vt-linea{grid-template-columns:2fr 1fr auto}}
+.vt-fondo{position:fixed;inset:0;background:rgba(27,28,25,.55);z-index:2147482000;display:flex;align-items:center;justify-content:center;padding:16px}
+.vt-modal{background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:12px}
+.vt-modal h3{font-size:18px;margin:0}
+.vt-resumen{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.vt-resumen dt{color:#75786e}
+.vt-resumen dd{margin:0;word-break:break-word}
+</style>
+
+<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<div class="flex flex-col gap-2 max-w-3xl">
+<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Ventas</h1>
+<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>De la reserva a la factura: reclama las reservas que entran sin cliente, crea el borrador, emítelo y corrígelo con una rectificativa si hace falta. Los importes los calcula siempre la base; aquí solo se piden.</p>
+</div>
+</div>
+
+<p class="vt-ok vt-oculto" data-vt="exito" role="status"></p>
+<p class="vt-aviso vt-oculto" data-vt="aviso" role="status"></p>
+<p class="vt-error vt-oculto" data-vt="error" role="alert"></p>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 vt-oculto" data-vt="ficha" aria-live="polite"></section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4">
+<div class="vt-tabs" role="tablist">
+<button class="vt-tab" type="button" role="tab" data-accion="vt-tab" data-tab="operaciones" aria-selected="true"><span data-lwt>Operaciones</span></button>
+<button class="vt-tab" type="button" role="tab" data-accion="vt-tab" data-tab="reservas" aria-selected="false"><span data-lwt>Reservas</span></button>
+<button class="vt-tab" type="button" role="tab" data-accion="vt-tab" data-tab="cola" aria-selected="false"><span data-lwt>Cobrado sin facturar</span></button>
+<button class="vt-tab" type="button" role="tab" data-accion="vt-tab" data-tab="nueva" aria-selected="false"><span data-lwt>Nueva venta</span></button>
+</div>
+
+<div data-vt="panel" data-tab="operaciones" role="tabpanel">
+<div class="vt-barra">
+<label><span data-lwt>Origen</span>
+<select data-vt="f-origen"><option value="" data-lwt>Todos</option><option value="reserva" data-lwt>Reserva</option><option value="venta" data-lwt>Venta</option><option value="contrato" data-lwt>Contrato</option></select></label>
+<label><span data-lwt>Estado</span>
+<select data-vt="f-estado"><option value="" data-lwt>Todos</option><option value="borrador" data-lwt>Borrador</option><option value="abierta" data-lwt>Abierta</option><option value="cerrada" data-lwt>Cerrada</option><option value="cancelada" data-lwt>Cancelada</option></select></label>
+<button class="vt-boton" type="button" data-accion="vt-ops-actualizar"><span data-lwt>Actualizar</span></button>
+</div>
+<div data-vt="ops-estado" class="vt-vacio"></div>
+<div class="vt-tabla-caja"><table class="vt-tabla" data-vt="ops-tabla"></table></div>
+<div class="vt-barra"><button class="vt-boton vt-oculto" type="button" data-accion="vt-ops-mas"><span data-lwt>Cargar más</span></button></div>
+</div>
+
+<div data-vt="panel" data-tab="reservas" role="tabpanel" class="vt-oculto">
+<div class="vt-barra">
+<label><input type="checkbox" data-vt="f-por-reclamar"> <span data-lwt>Solo las que faltan por reclamar</span></label>
+<button class="vt-boton" type="button" data-accion="vt-res-actualizar"><span data-lwt>Actualizar</span></button>
+</div>
+<div data-vt="res-estado" class="vt-vacio"></div>
+<div class="vt-tabla-caja"><table class="vt-tabla" data-vt="res-tabla"></table></div>
+<div class="vt-barra"><button class="vt-boton vt-oculto" type="button" data-accion="vt-res-mas"><span data-lwt>Cargar más</span></button></div>
+</div>
+
+<div data-vt="panel" data-tab="cola" role="tabpanel" class="vt-oculto">
+<div class="vt-nota" data-lwt>Reservas con el pago registrado y sin factura emitida, de la más antigua a la más reciente. Si una reserva llegó por el bot, primero hay que reclamarla.</div>
+<div class="vt-barra"><button class="vt-boton" type="button" data-accion="vt-cola-actualizar"><span data-lwt>Actualizar</span></button></div>
+<div data-vt="cola-estado" class="vt-vacio"></div>
+<div class="vt-tabla-caja"><table class="vt-tabla" data-vt="cola-tabla"></table></div>
+<div class="vt-barra"><button class="vt-boton vt-oculto" type="button" data-accion="vt-cola-mas"><span data-lwt>Cargar más</span></button></div>
+</div>
+
+<div data-vt="panel" data-tab="nueva" role="tabpanel" class="vt-oculto">
+<div class="vt-nota" data-lwt>Venta a mano de productos del catálogo: el precio sale siempre del catálogo, nunca de esta pantalla. Se crea la operación y su borrador de factura; después se emite desde su ficha.</div>
+<div data-vt="nueva-estado" class="vt-vacio"></div>
+<div data-vt="nueva-form"></div>
+</div>
+</section>
+
+</div>
+<!--AXW_SCRIPT-->
+<script>
+(function () {
+  'use strict';
+  var EN_VT = {
+    'Ventas': 'Sales',
+    'De la reserva a la factura: reclama las reservas que entran sin cliente, crea el borrador, emítelo y corrígelo con una rectificativa si hace falta. Los importes los calcula siempre la base; aquí solo se piden.': 'From booking to invoice: claim the bookings that arrive without a customer, create the draft, issue it and correct it with a credit note if needed. Amounts are always calculated by the database; here they are only requested.',
+    'Operaciones': 'Operations', 'Reservas': 'Bookings', 'Cobrado sin facturar': 'Paid, not invoiced', 'Nueva venta': 'New sale',
+    'Origen': 'Source', 'Estado': 'Status', 'Todos': 'All', 'Reserva': 'Booking', 'Venta': 'Sale', 'Contrato': 'Contract',
+    'Borrador': 'Draft', 'Abierta': 'Open', 'Cerrada': 'Closed', 'Cancelada': 'Cancelled', 'Actualizar': 'Refresh', 'Cargar más': 'Load more',
+    'Solo las que faltan por reclamar': 'Only those still to claim',
+    'Reservas con el pago registrado y sin factura emitida, de la más antigua a la más reciente. Si una reserva llegó por el bot, primero hay que reclamarla.': 'Bookings with the payment recorded and no invoice issued, oldest first. If a booking came through the bot, it has to be claimed first.',
+    'Venta a mano de productos del catálogo: el precio sale siempre del catálogo, nunca de esta pantalla. Se crea la operación y su borrador de factura; después se emite desde su ficha.': 'Manual sale of catalogue products: the price always comes from the catalogue, never from this screen. The operation and its draft invoice are created; it is then issued from its sheet.',
+    'Referencia': 'Reference', 'Cliente': 'Customer', 'Contratado': 'Contracted', 'Facturado': 'Invoiced', 'Cobrado': 'Collected',
+    'Pendiente de facturar': 'Left to invoice', 'Pendiente de cobro': 'Left to collect', 'A cuenta del cliente': 'On account', 'Creada': 'Created',
+    'Reserva nº': 'Booking no.', 'Producto': 'Product', 'Fechas': 'Dates', 'Precio': 'Price', 'Pago': 'Payment', 'Acciones': 'Actions',
+    'Por reclamar': 'To claim', 'Sin cliente': 'No customer', 'Cliente sin permiso para verlo': 'Customer you cannot see',
+    'Reclamar': 'Claim', 'Abrir': 'Open', 'Ver operación': 'View operation', 'Abrir operación': 'Open operation', 'Crear borrador': 'Create draft',
+    'Cerrar': 'Close', 'Cancelar': 'Cancel', 'Continuar': 'Continue', 'Volver': 'Back',
+    'Días sin facturar': 'Days not invoiced', 'Con borrador': 'Has draft', 'Sí': 'Yes', 'No': 'No', 'Sin pago': 'No payment',
+    'Cargando…': 'Loading…', 'No hay operaciones con ese filtro.': 'No operations match that filter.',
+    'No hay reservas con ese filtro.': 'No bookings match that filter.',
+    'No hay reservas cobradas sin facturar.': 'There are no paid bookings waiting to be invoiced.',
+    'El módulo Reservas está apagado en esta instancia: no hay reservas que mirar. Esto NO quiere decir que no haya nada cobrado sin facturar.': 'The Bookings module is switched off on this instance: there are no bookings to look at. This does NOT mean nothing has been collected without an invoice.',
+    'No tienes permiso para ver esta lista (hace falta la herramienta Facturas). No es que esté vacía: no se ha podido mirar.': 'You are not allowed to see this list (the Invoices tool is needed). It is not empty: it could not be checked.',
+    'No tienes permiso para ver esta lista. No es que esté vacía: no se ha podido mirar.': 'You are not allowed to see this list. It is not empty: it could not be checked.',
+    'Esta función todavía no está disponible en esta base: la actualización F4 no está aplicada. No es que esté vacía: no se ha podido mirar.': 'This function is not available on this database yet: the F4 update has not been applied. It is not empty: it could not be checked.',
+    'La base no ha respondido: prueba otra vez en un rato.': 'The database did not answer: try again in a while.',
+    'Sin sesión: recarga la página o vuelve a entrar.': 'No session: reload the page or sign in again.',
+    'Esta función todavía no está disponible en esta base: la actualización F4 no está aplicada.': 'This function is not available on this database yet: the F4 update has not been applied.',
+    'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'The database returned something unexpected. It is not empty: it could not be checked.',
+    'No se ha podido mirar': 'Could not be checked',
+    'La lista está recortada: pulsa «Cargar más».': 'The list is cut short: press “Load more”.',
+    'Ficha de la operación': 'Operation sheet', 'Situación': 'Status', 'Facturas de esta operación': 'Invoices of this operation',
+    'Esta operación aún no tiene facturas.': 'This operation has no invoices yet.',
+    'No se han podido leer las facturas de esta operación. No es que no tenga: no se ha podido mirar.': 'The invoices of this operation could not be read. It is not that it has none: it could not be checked.',
+    'Número': 'Number', 'Tipo': 'Type', 'Total': 'Total', 'Fecha': 'Date', 'Factura': 'Invoice', 'Rectificativa': 'Credit note',
+    'Borrador de factura': 'Draft invoice', 'Rectificativa sin emitir': 'Credit note not issued', 'Emitida': 'Issued', 'Descartado': 'Discarded', 'Anulada': 'Voided', 'Rectificada': 'Corrected',
+    'Rectificativa sin emitir: revísala y emítela, o la factura sigue sin corregirse.': 'Credit note not issued: check it and issue it, otherwise the invoice stays uncorrected.',
+    'Ver líneas': 'View lines', 'Ocultar líneas': 'Hide lines', 'Emitir': 'Issue', 'Descartar': 'Discard', 'Rectificar': 'Correct',
+    'Líneas': 'Lines', 'Descripción': 'Description', 'Cantidad': 'Quantity', 'Precio unitario': 'Unit price', 'Dto. %': 'Disc. %', 'Importe': 'Amount', 'Impuestos': 'Taxes',
+    'Base': 'Base', 'Total con impuestos': 'Total with taxes', 'Las líneas de un borrador no se editan: si algo está mal, descártalo con un motivo y vuelve a crearlo, o rectifica la factura.': 'The lines of a draft are not edited: if something is wrong, discard it with a reason and create it again, or correct the invoice.',
+    'No se han podido leer las líneas. No es que no tenga: no se ha podido mirar.': 'The lines could not be read. It is not that it has none: it could not be checked.',
+    'Esta reserva no tiene cliente: reclámala primero para poder facturarla.': 'This booking has no customer: claim it first so it can be invoiced.',
+    'Sin cliente identificado': 'No customer identified',
+    'Emitir no está disponible': 'Issuing is not available',
+    'La base rechazó emitir esta factura:': 'The database refused to issue this invoice:',
+    'Reclamar la reserva': 'Claim the booking', 'Elige el cliente al que se asigna esta reserva.': 'Choose the customer this booking is assigned to.',
+    'Falta el lector de clientes en la base: sin él no se puede elegir un cliente, y no se puede reclamar desde aquí.': 'The customer reader is missing on the database: without it a customer cannot be chosen, and nothing can be claimed from here.',
+    'Falta el lector de productos en la base: sin él no se pueden elegir productos, y no se puede crear una venta desde aquí.': 'The product reader is missing on the database: without it products cannot be chosen, and no sale can be created from here.',
+    'Elige un cliente': 'Choose a customer', 'Revisa antes de reclamar': 'Check before claiming',
+    'Contacto de la reserva': 'Booking contact', 'Importe': 'Amount', 'Referencia de pago': 'Payment reference',
+    'Reclamar es irreversible: la reserva queda asignada a ese cliente y su operación a tu nombre, y no se puede cambiar por la vía normal. Si el cliente no es el correcto, no sigas.': 'Claiming cannot be undone: the booking is assigned to that customer and its operation to you, and it cannot be changed the normal way. If the customer is not the right one, do not go on.',
+    'Sí, reclamar': 'Yes, claim', 'Trabajando…': 'Working…',
+    'Reserva reclamada. Ya puedes crear su borrador de factura.': 'Booking claimed. You can now create its draft invoice.',
+    'La base no devolvió la operación de la reserva reclamada: recarga y comprueba.': 'The database did not return the claimed booking’s operation: reload and check.',
+    'Crear el borrador de factura': 'Create the draft invoice',
+    'Borrador creado.': 'Draft created.', 'El borrador ya existía: se enseña el que había.': 'The draft already existed: the existing one is shown.',
+    'La base no devolvió el borrador: recarga y comprueba.': 'The database did not return the draft: reload and check.',
+    'Emitir la factura': 'Issue the invoice',
+    'Al emitir se gasta un número correlativo y la factura no se puede editar ni borrar: solo se corrige con una rectificativa.': 'Issuing uses up a consecutive number and the invoice can no longer be edited or deleted: it can only be corrected with a credit note.',
+    'Sí, emitir': 'Yes, issue',
+    'Factura emitida con el número': 'Invoice issued with number', 'Ya estaba emitida con el número': 'It was already issued with number',
+    'La base no devolvió el número de la factura. No se da por emitida: recarga y comprueba.': 'The database did not return the invoice number. It is not assumed to be issued: reload and check.',
+    'Revisa el cobro: el pago de la pasarela no quedó registrado como recibí (queda en «pagos por revisar»).': 'Check the payment: the gateway payment was not recorded as a receipt (it stays in “payments to review”).',
+    'Descartar el borrador': 'Discard the draft', 'Motivo (obligatorio, hasta 500 caracteres)': 'Reason (required, up to 500 characters)',
+    'Descartar anula el borrador (no se borra) y deja el motivo anotado. Después puedes volver a crearlo.': 'Discarding voids the draft (it is not deleted) and records the reason. You can create it again afterwards.',
+    'Sí, descartar': 'Yes, discard', 'Borrador descartado.': 'Draft discarded.', 'La base no confirmó el descarte: recarga y comprueba.': 'The database did not confirm the discard: reload and check.',
+    'Escribe el motivo.': 'Write the reason.', 'El motivo es demasiado largo.': 'The reason is too long.',
+    'Rectificar la factura': 'Correct the invoice',
+    'Sustitución: anula la factura entera (si corriges un NPWP o un dato del cliente, es esta). Diferencias: abona solo las líneas y cantidades que indiques.': 'Replacement: voids the whole invoice (if you correct an NPWP or a customer detail, this is the one). Differences: credits only the lines and quantities you enter.',
+    'Sustitución (anula la factura entera)': 'Replacement (voids the whole invoice)', 'Diferencias (abona solo parte)': 'Differences (credits only part)',
+    'Motivo (obligatorio, hasta 300 caracteres)': 'Reason (required, up to 300 characters)',
+    'Cantidad a abonar por línea (déjalo en 0 si no se abona)': 'Quantity to credit per line (leave 0 if not credited)',
+    'Indica la cantidad a abonar de al menos una línea.': 'Enter the quantity to credit on at least one line.',
+    'La cantidad no puede pasar de la facturada.': 'The quantity cannot exceed the invoiced one.',
+    'Crear la rectificativa': 'Create the credit note',
+    'Rectificativa creada en borrador: revísala y emítela desde la ficha.': 'Credit note created as a draft: check it and issue it from the sheet.',
+    'La base no devolvió la rectificativa: recarga y comprueba.': 'The database did not return the credit note: reload and check.',
+    'Nombre': 'Name', 'Cantidad.': 'Quantity.', 'Añadir otra línea': 'Add another line', 'Quitar': 'Remove',
+    'Cliente de la venta': 'Sale customer', 'Moneda': 'Currency', 'Productos': 'Products',
+    'Crear la venta': 'Create the sale', 'Elige un cliente y al menos un producto, con cantidad mayor que 0.': 'Choose a customer and at least one product, with a quantity above 0.',
+    'Todas las líneas tienen que ser de la misma moneda.': 'All lines must be in the same currency.',
+    'Venta creada con su borrador de factura.': 'Sale created with its draft invoice.', 'La venta ya estaba creada: se enseña la que había.': 'The sale was already created: the existing one is shown.',
+    'La base no devolvió la venta: recarga y comprueba.': 'The database did not return the sale: reload and check.',
+    'sin permiso': 'no permission',
+    'El emisor de la factura no está completo (faltan el NPWP o la razón social de la sociedad). Complétalo en Ajustes antes de emitir.': 'The issuer is not complete (the company NPWP or legal name is missing). Complete it in Settings before issuing.',
+    'El cliente de la factura no está completo (nombre, dirección o, si es empresa, su NPWP o registro). Complétalo en su ficha antes de emitir.': 'The customer is not complete (name, address or, for a company, its NPWP or registration). Complete its record before issuing.',
+    'Falta la configuración del impuesto de la sociedad emisora: pide los datos fiscales al gestor y configúralo antes de emitir.': 'The issuing company’s tax is not configured: ask the accountant for the tax details and configure it before issuing.',
+    'Hay varias sociedades activas y hay que elegir cuál emite; esta pantalla todavía no sabe listarlas.': 'Several companies are active and one must be chosen to issue; this screen cannot list them yet.',
+    'La sociedad emite con un impuesto por defecto que la base todavía no sabe incluir en la tarifa: no se puede crear el borrador.': 'The company issues with a default tax that the database cannot yet include in the rate: the draft cannot be created.',
+    'La reserva no tiene un cliente identificado: reclámala primero.': 'The booking has no customer identified: claim it first.',
+    'La operación está cancelada: no se factura.': 'The operation is cancelled: it is not invoiced.',
+    'La reserva ya tiene una factura emitida: se corrige con una rectificativa, no con otra factura.': 'The booking already has an issued invoice: it is corrected with a credit note, not with another invoice.',
+    'El módulo necesario está apagado en esta instancia.': 'A module needed for this is switched off on this instance.',
+    'Emitir exige una persona identificada (con correo).': 'Issuing requires an identified person (with an email).',
+    'Este borrador viene de una reserva o de una venta: no se edita, se descarta y se rehace.': 'This draft comes from a booking or a sale: it is not edited, it is discarded and rebuilt.',
+    'Hay un cobro aplicado a este borrador: desaplícalo antes de descartarlo.': 'A payment is applied to this draft: unapply it before discarding.',
+    'Esta factura ya está emitida: se corrige con una rectificativa.': 'This invoice is already issued: it is corrected with a credit note.',
+    'Ya está anulada por su rectificativa.': 'It is already voided by its credit note.',
+    'Ya se abonó en parte: corrige el resto por diferencias.': 'It was already partly credited: correct the rest by differences.',
+    'Se abonaría más de lo facturado.': 'More than the invoiced amount would be credited.',
+    'El pago de la reserva está cobrado y no se pudo registrar ni dejar en «pagos por revisar»: no se emitió y el número no se gastó. Avisa al estudio.': 'The booking payment is collected and could neither be recorded nor left in “payments to review”: nothing was issued and the number was not used. Tell the studio.',
+    'Reintentar': 'Retry'
+  };
+  if (window.LW_EN && typeof window.LW_EN === 'object') {
+    Object.keys(EN_VT).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_VT[k]; });
+  }
+  var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
+  var traduce = function (raiz) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(raiz); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
+  var raiz = document.querySelector('[data-vt="raiz"]');
+  traduce(raiz);
+  var $v = function (n) { return raiz.querySelector('[data-vt="' + n + '"]'); };
+
+  /* ── Lectores que la base de hoy NO tiene (PREGUNTA 1 del informe) ─────────────────────────────────────────────────────
+     Elegir un cliente (reclamar, nueva venta), un producto (nueva venta) y saber si el emisor está completo necesitan una lectura
+     que ninguna RPC de F4 da. NO se lee con .from(): el navegador no toca tablas. Cuando la migración traiga los lectores, se
+     escribe aquí su nombre (acaban en _datos). Mientras valgan null, esas tres acciones se muestran BLOQUEADAS con su motivo.
+       clientes: { clientes: [{ id, nombre }] }                        · productos: { productos: [{ id, nombre, precio, moneda }] }
+       emisor:   { sociedades: [{ clave, emisor_completo, impuesto_configurado }] } */
+  var LECT = { clientes: null, productos: null, emisor: null };
+
+  /* ── helpers de DOM: solo createElement/textContent (nada de innerHTML) ── */
+  function h(tag, attrs, hijos) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      var v = attrs[k];
+      if (v == null || v === false) return;
+      if (k === 'class') e.className = v;
+      else if (k === 'text') e.textContent = v;
+      else e.setAttribute(k, v === true ? '' : String(v));
+    });
+    (hijos || []).forEach(function (c) { if (c == null || c === false) return; e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function vacia(el) { while (el.firstChild) el.removeChild(el.firstChild); return el; }
+  function oculta(el, si) { el.classList.toggle('vt-oculto', !!si); }
+  function boton(texto, accion, extra) {
+    var a = { type: 'button', class: 'vt-boton', 'data-accion': accion, text: texto };
+    if (extra) Object.keys(extra).forEach(function (k) { a[k] = extra[k]; });
+    return h('button', a);
+  }
+  function chip(texto, tono) { return h('span', { class: 'vt-chip', 'data-tono': tono || 'neutro', text: texto }); }
+  function msg(clase, m) { var e = $v(clase); e.textContent = m || ''; oculta(e, !m); }
+  var exito = function (m) { msg('exito', m); }, aviso = function (m) { msg('aviso', m); }, error = function (m) { msg('error', m); };
+  function celda(contenido, clase) {
+    var td = h('td', clase ? { class: clase } : null);
+    if (contenido != null) td.appendChild(typeof contenido === 'string' || typeof contenido === 'number' ? document.createTextNode(String(contenido)) : contenido);
+    return td;
+  }
+  function tabla(el, cabeceras, filas) {
+    vacia(el);
+    var tr = h('tr');
+    cabeceras.forEach(function (c) { tr.appendChild(h('th', { class: c[1] || null, text: T(c[0]) })); });
+    el.appendChild(h('thead', null, [tr]));
+    var tb = h('tbody');
+    filas.forEach(function (f) { tb.appendChild(f); });
+    el.appendChild(tb);
+  }
+  function locale() { try { return (typeof window.lwLocale === 'function' && window.lwLocale()) || 'es-ES'; } catch (e) { return 'es-ES'; } }
+  function dinero(n, m) {
+    if (n == null || n === '' || isNaN(Number(n))) return '—';
+    var dec = (m === 'IDR' || m === 'JPY') ? 0 : 2;
+    var s;
+    try { s = new Intl.NumberFormat(locale(), { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(Number(n)); } catch (e) { s = String(n); }
+    return s + (m ? ' ' + m : '');
+  }
+  function fecha(x) {
+    if (!x) return '—';
+    var d = new Date(x);
+    return isNaN(d) ? '—' : d.toLocaleDateString(locale(), { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  var SB = null;
+  var E = { tab: 'operaciones', ops: [], opsSig: null, opsCargado: false, res: [], resSig: null, resCargado: false, cola: [], colaSig: null,
+            ficha: null, bloqueos: {}, ocupado: false, venta: { clave: null }, clientes: null, productos: null, emisor: null };
+
+  /* ── hablar con la base ── */
+  function clave24() {
+    var b = new Uint8Array(16); (window.crypto || {}).getRandomValues ? window.crypto.getRandomValues(b) : b.forEach(function (_, i) { b[i] = Math.floor(Math.random() * 256); });
+    var s = 'vt-'; for (var i = 0; i < b.length; i++) s += ('0' + b[i].toString(16)).slice(-2);
+    return s;   // ^[A-Za-z0-9_-]{8,80}$ : lo exige factura_producto_crea
+  }
+  /* Una entrada por RPC, con el nombre LITERAL: así erp/contrato_front.py ve cada llamada (extrae `.rpc('x')` y `lwDatos('x')`) y comprueba
+     contra la base que existe y que authenticated la ejecuta. Un nombre que solo viaja en una variable (`SB.rpc(nombre, …)`) pasaría sin que
+     nadie lo mirara. Las lecturas *_datos van por lwDatos (único transporte de lecturas); las demás, por sb.rpc. */
+  var RPC = {
+    operaciones_cola_datos: function (a) { return window.lwDatos('operaciones_cola_datos', a); },
+    reservas_producto_datos: function (a) { return window.lwDatos('reservas_producto_datos', a); },
+    factura_lineas_datos: function (a) { return window.lwDatos('factura_lineas_datos', a); },
+    reservas_cobradas_sin_facturar: function (a) { return SB.rpc('reservas_cobradas_sin_facturar', a); },
+    reserva_asigna_cliente: function (a) { return SB.rpc('reserva_asigna_cliente', a); },
+    factura_desde_operacion: function (a) { return SB.rpc('factura_desde_operacion', a); },
+    factura_producto_crea: function (a) { return SB.rpc('factura_producto_crea', a); },
+    factura_emite: function (a) { return SB.rpc('factura_emite', a); },
+    factura_rectifica: function (a) { return SB.rpc('factura_rectifica', a); },
+    factura_borrador_descarta: function (a) { return SB.rpc('factura_borrador_descarta', a); }
+  };
+  function llama(nombre, args) {
+    var p;
+    try {
+      if (RPC[nombre]) p = RPC[nombre](args || {});
+      else if (/_datos$/.test(nombre) && typeof window.lwDatos === 'function') p = window.lwDatos(nombre, args || {});   // los lectores de LECT (hoy ninguno)
+      else p = Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function ' + nombre } });
+    } catch (e) { return Promise.resolve({ data: null, error: e }); }
+    return Promise.resolve(p).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; },
+                                   function (e) { return { data: null, error: e }; });
+  }
+  /* Clasifica un error de la base: lo que se dice depende de QUÉ pasó (no disponible ≠ sin permiso ≠ la base no responde ≠ regla de negocio). */
+  function clasifica(err) {
+    var e = err || {}, m = String(e.message || ''), hint = e.hint ? String(e.hint) : '';
+    if (e.code === 'PGRST202' || e.status === 404 || /Could not find the function|schema cache/i.test(m)) return { tipo: 'no_disponible', hint: hint, m: m };
+    if (e.code === '42501') {
+      if (hint === 'modulo_apagado') return { tipo: 'regla', hint: hint, m: m };
+      if (hint === 'sin_persona') return { tipo: 'regla', hint: hint, m: m };
+      if (/sin sesi[oó]n/i.test(m)) return { tipo: 'sin_sesion', hint: hint, m: m };
+      if (hint) return { tipo: 'regla', hint: hint, m: m };
+      return { tipo: 'sin_permiso', hint: hint, m: m };
+    }
+    if (!e.code && !hint && (!m || /failed to fetch|network|load failed|timeout|sin respuesta/i.test(m))) return { tipo: 'red', hint: hint, m: m };
+    return { tipo: 'regla', hint: hint, m: m };
+  }
+  var TEXTO_HINT = {
+    emisor_incompleto: 'El emisor de la factura no está completo (faltan el NPWP o la razón social de la sociedad). Complétalo en Ajustes antes de emitir.',
+    cliente_incompleto: 'El cliente de la factura no está completo (nombre, dirección o, si es empresa, su NPWP o registro). Complétalo en su ficha antes de emitir.',
+    sociedad: 'Hay varias sociedades activas y hay que elegir cuál emite; esta pantalla todavía no sabe listarlas.',
+    requiere_3b: 'La sociedad emite con un impuesto por defecto que la base todavía no sabe incluir en la tarifa: no se puede crear el borrador.',
+    sin_cliente: 'La reserva no tiene un cliente identificado: reclámala primero.',
+    operacion_cancelada: 'La operación está cancelada: no se factura.',
+    ya_facturada: 'La reserva ya tiene una factura emitida: se corrige con una rectificativa, no con otra factura.',
+    modulo_apagado: 'El módulo necesario está apagado en esta instancia.',
+    sin_persona: 'Emitir exige una persona identificada (con correo).',
+    factura_con_operacion: 'Este borrador viene de una reserva o de una venta: no se edita, se descarta y se rehace.',
+    cobros_aplicados: 'Hay un cobro aplicado a este borrador: desaplícalo antes de descartarlo.',
+    ya_emitida: 'Esta factura ya está emitida: se corrige con una rectificativa.',
+    ya_anulada: 'Ya está anulada por su rectificativa.',
+    ya_abonada_en_parte: 'Ya se abonó en parte: corrige el resto por diferencias.',
+    abono_excede: 'Se abonaría más de lo facturado.',
+    cobro_invisible: 'El pago de la reserva está cobrado y no se pudo registrar ni dejar en «pagos por revisar»: no se emitió y el número no se gastó. Avisa al estudio.'
+  };
+  /* Mensaje para la persona. Las reglas de negocio de la base vienen en español y con sus números: se enseñan tal cual (textContent). */
+  function mensaje(err, lectura) {
+    var c = clasifica(err);
+    if (c.tipo === 'no_disponible') return lectura ? T('Esta función todavía no está disponible en esta base: la actualización F4 no está aplicada. No es que esté vacía: no se ha podido mirar.')
+      : T('Esta función todavía no está disponible en esta base: la actualización F4 no está aplicada.');
+    if (c.tipo === 'sin_sesion') return T('Sin sesión: recarga la página o vuelve a entrar.');
+    if (c.tipo === 'red') return T('La base no ha respondido: prueba otra vez en un rato.');
+    if (c.tipo === 'sin_permiso' && lectura) return T('No tienes permiso para ver esta lista. No es que esté vacía: no se ha podido mirar.');
+    if (c.hint && TEXTO_HINT[c.hint]) return T(TEXTO_HINT[c.hint]);
+    return c.m || T('La base no ha respondido: prueba otra vez en un rato.');
+  }
+  function vaListaDe(r, clave) { return r && !r.error && r.data && Array.isArray(r.data[clave]); }
+
+  /* ── ocupado: un solo envío a la vez (doble clic, reintento) ── */
+  function ocupa(btn, texto) {
+    if (E.ocupado) return false;
+    E.ocupado = true;
+    if (btn) { btn.disabled = true; btn.setAttribute('data-texto-antes', btn.textContent); btn.textContent = texto || T('Trabajando…'); }
+    return true;
+  }
+  function libera(btn) {
+    E.ocupado = false;
+    if (btn && btn.hasAttribute('data-texto-antes')) { btn.textContent = btn.getAttribute('data-texto-antes'); btn.removeAttribute('data-texto-antes'); btn.disabled = false; }
+  }
+
+  /* ── ventana de diálogo (sin innerHTML; ESC y Cancelar cierran; el foco entra y vuelve) ── */
+  function dialogo(titulo, nodos, botones) {
+    var previo = document.activeElement;
+    var cuerpo = h('div', { class: 'vt-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': titulo }, [h('h3', { text: titulo })].concat(nodos));
+    var err = h('p', { class: 'vt-error vt-oculto', role: 'alert' });
+    cuerpo.appendChild(err);
+    var fila = h('div', { class: 'vt-acciones' });
+    var fondo = h('div', { class: 'vt-fondo', 'data-vt': 'dialogo' }, [cuerpo]);
+    var d = { fondo: fondo, cuerpo: cuerpo, botones: {}, error: function (m) { err.textContent = m || ''; oculta(err, !m); },
+              cierra: function () { if (fondo.parentNode) fondo.parentNode.removeChild(fondo); if (previo && previo.focus) { try { previo.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } } } };
+    botones.forEach(function (b) {
+      var bt = boton(b.texto, b.accion, b.primario ? { 'data-primario': '1' } : (b.peligro ? { 'data-peligro': '1' } : null));
+      bt.addEventListener('click', function () { if (b.cierra) d.cierra(); else if (b.alclic) b.alclic(bt, d); });
+      d.botones[b.accion] = bt; fila.appendChild(bt);
+    });
+    cuerpo.appendChild(fila);
+    fondo.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') d.cierra(); });
+    raiz.appendChild(fondo);
+    var primero = cuerpo.querySelector('input,select,textarea,button');
+    if (primero) primero.focus();
+    return d;
+  }
+  function resumen(pares) {
+    var dl = h('dl', { class: 'vt-resumen' });
+    pares.forEach(function (p) { dl.appendChild(h('dt', { text: T(p[0]) })); dl.appendChild(h('dd', { text: p[1] == null || p[1] === '' ? '—' : String(p[1]) })); });
+    return dl;
+  }
+
+  /* ───────────────────────────── Operaciones ───────────────────────────── */
+  var ESTADO_OP = { borrador: ['Borrador', 'espera'], abierta: ['Abierta', 'neutro'], cerrada: ['Cerrada', 'ok'], cancelada: ['Cancelada', 'mal'] };
+  var ORIGEN = { reserva: 'Reserva', venta: 'Venta', contrato: 'Contrato' };
+  function nombreCliente(o) { return o.cliente_oculto ? T('Cliente sin permiso para verlo') : (o.cliente || (o.client_id ? '—' : T('Sin cliente'))); }
+
+  function cargaOps(mas) {
+    var est = $v('ops-estado');
+    est.textContent = T('Cargando…');
+    var args = { p_limit: 500 };
+    var fo = $v('f-origen').value, fe = $v('f-estado').value;
+    if (fo) args.p_origen = fo;
+    if (fe) args.p_estado = fe;
+    if (mas && E.opsSig) args.p_despues = E.opsSig;
+    return llama('operaciones_cola_datos', args).then(function (r) {
+      if (!vaListaDe(r, 'operaciones')) {
+        if (!mas) { E.ops = []; E.opsCargado = false; }
+        vacia($v('ops-tabla'));
+        est.textContent = r.error ? T('No se ha podido mirar') + ': ' + mensaje(r.error, true) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
+        oculta(raiz.querySelector('[data-accion="vt-ops-mas"]'), true);
+        return false;
+      }
+      E.ops = mas ? E.ops.concat(r.data.operaciones) : r.data.operaciones;
+      E.opsSig = r.data.siguiente || null; E.opsCargado = true;
+      pintaOps();
+      return true;
+    });
+  }
+  function pintaOps() {
+    var est = $v('ops-estado');
+    est.textContent = E.ops.length ? '' : T('No hay operaciones con ese filtro.');
+    var filas = E.ops.map(function (o) {
+      var e = ESTADO_OP[o.estado] || [o.estado, 'neutro'];
+      var tr = h('tr', { class: 'vt-fila-click', 'data-accion': 'vt-abrir-op', 'data-op-id': o.id, tabindex: '0' });
+      tr.appendChild(celda(o.referencia || '—'));
+      tr.appendChild(celda(T(ORIGEN[o.origen] || o.origen || '—')));
+      tr.appendChild(celda(nombreCliente(o)));
+      tr.appendChild(celda(chip(T(e[0]), e[1])));
+      tr.appendChild(celda(dinero(o.contratado, o.moneda), 'vt-num'));
+      tr.appendChild(celda(dinero(o.facturado, o.moneda), 'vt-num'));
+      tr.appendChild(celda(dinero(o.cobrado, o.moneda), 'vt-num'));
+      tr.appendChild(celda(dinero(o.pendiente_facturar, o.moneda), 'vt-num'));
+      tr.appendChild(celda(fecha(o.creado_en)));
+      return tr;
+    });
+    tabla($v('ops-tabla'), [['Referencia'], ['Origen'], ['Cliente'], ['Estado'], ['Contratado', 'vt-num'], ['Facturado', 'vt-num'], ['Cobrado', 'vt-num'], ['Pendiente de facturar', 'vt-num'], ['Creada']], filas);
+    var mas = raiz.querySelector('[data-accion="vt-ops-mas"]');
+    oculta(mas, !E.opsSig);
+    if (E.opsSig) aviso(T('La lista está recortada: pulsa «Cargar más».'));
+  }
+  /* Busca una operación entre las cargadas; si no está, sigue paginando (sin filtro de pantalla) hasta dar con ella. */
+  function buscaOp(id, intentos) {
+    var o = E.ops.filter(function (x) { return x.id === id; })[0];
+    if (o) return Promise.resolve(o);
+    if (!E.opsCargado || !E.opsSig || (intentos || 0) >= 10) return Promise.resolve(null);
+    return cargaOps(true).then(function (ok) { return ok ? buscaOp(id, (intentos || 0) + 1) : null; });
+  }
+
+  /* ───────────────────────────── Ficha de operación ───────────────────────────── */
+  function estadoFactura(f) {
+    if (f.rectifica_id) return f.emitida_en ? [T('Rectificativa'), 'ok'] : f.anulada ? [T('Descartado'), 'mal'] : [T('Rectificativa sin emitir'), 'espera'];
+    if (!f.emitida_en) return f.anulada ? [T('Descartado'), 'mal'] : [T('Borrador de factura'), 'espera'];
+    return f.anulada ? [T('Rectificada'), 'mal'] : [T('Emitida'), 'ok'];
+  }
+  function abreFicha(id, ctx) {
+    return buscaOp(id).then(function (o) {
+      var f = $v('ficha');
+      if (!o) { error(T('No encuentro esa operación entre las que puedes ver.')); return; }
+      E.ficha = { op: o, ctx: ctx || (E.ficha && E.ficha.op && E.ficha.op.id === id ? E.ficha.ctx : null) || {}, facturas: null, lineas: {} };
+      oculta(f, false);
+      pintaFichaCabeza();
+      return cargaFacturas();
+    });
+  }
+  function pintaFichaCabeza() {
+    var o = E.ficha.op, f = vacia($v('ficha'));
+    var e = ESTADO_OP[o.estado] || [o.estado, 'neutro'];
+    f.appendChild(h('div', { class: 'flex flex-wrap items-center justify-between gap-4' }, [
+      h('h2', { class: 'font-headline-sm text-headline-sm text-deep-lagoon tracking-tight', text: T('Ficha de la operación') + ' · ' + (o.referencia || '—') }),
+      boton(T('Cerrar'), 'vt-ficha-cerrar')]));
+    f.appendChild(resumen([['Origen', T(ORIGEN[o.origen] || o.origen || '—')], ['Situación', T(e[0])], ['Cliente', nombreCliente(o)], ['Creada', fecha(o.creado_en)]]));
+    var cifras = h('div', { class: 'vt-cifras' });
+    [['Contratado', o.contratado], ['Facturado', o.facturado], ['Cobrado', o.cobrado], ['Pendiente de facturar', o.pendiente_facturar], ['Pendiente de cobro', o.pendiente_cobro], ['A cuenta del cliente', o.a_cuenta_cliente]].forEach(function (c) {
+      cifras.appendChild(h('div', { class: 'vt-cifra' }, [h('b', { text: T(c[0]) }), h('span', { text: dinero(c[1], o.moneda) })]));
+    });
+    f.appendChild(cifras);
+    f.appendChild(h('div', { 'data-vt': 'ficha-acciones', class: 'vt-acciones' }));
+    f.appendChild(h('div', { 'data-vt': 'ficha-facturas' }, [h('p', { class: 'vt-vacio', text: T('Cargando…') })]));
+  }
+  function cargaFacturas() {
+    var o = E.ficha.op;
+    // facturas_equipo: la lectura que ya tenía la pantalla de operaciones (INVOKER: la RLS decide qué ve cada uno); se piden solo estas columnas
+    var p;
+    try {
+      p = Promise.resolve(SB.rpc('facturas_equipo').select('id,numero,tipo,total,moneda,anulada,emitida_en,fecha_emision,created_at,rectifica_id,sociedad').eq('operacion_id', o.id).order('created_at'));
+    } catch (e) { p = Promise.resolve({ data: null, error: e }); }
+    return p.then(function (r) { return r; }, function (e) { return { data: null, error: e }; }).then(function (r) {
+      if (!E.ficha || E.ficha.op.id !== o.id) return;
+      var cont = $v('ficha-facturas');
+      if (!cont) return;
+      vacia(cont);
+      if (r.error || !Array.isArray(r.data)) {
+        cont.appendChild(h('p', { class: 'vt-error', text: T('No se han podido leer las facturas de esta operación. No es que no tenga: no se ha podido mirar.') + (r.error ? ' ' + mensaje(r.error, true) : '') }));
+        E.ficha.facturas = null;
+        pintaAccionesFicha();
+        return;
+      }
+      E.ficha.facturas = r.data;
+      pintaFacturas();
+      pintaAccionesFicha();
+      return cargaEmisor();
+    });
+  }
+  function cargaEmisor() {
+    if (!LECT.emisor || E.emisor) return Promise.resolve();
+    return llama(LECT.emisor, {}).then(function (r) {
+      if (vaListaDe(r, 'sociedades')) { E.emisor = {}; r.data.sociedades.forEach(function (s) { E.emisor[s.clave] = s; }); if (E.ficha) pintaFacturas(); }
+      else aviso(T('No se ha podido mirar') + ': ' + mensaje(r.error, true));
+    });
+  }
+  /* ¿Se puede emitir este borrador? Solo se bloquea con motivo cuando se SABE que falta algo (lector del emisor, o un rechazo previo de la base);
+     si no se ha podido mirar, el botón queda activo y decide la base. */
+  function motivoSinEmitir(f) {
+    if (E.bloqueos[f.id]) return E.bloqueos[f.id];
+    if (f.rectifica_id) return null;
+    var s = E.emisor && E.emisor[f.sociedad];
+    if (s && s.emisor_completo === false) return T(TEXTO_HINT.emisor_incompleto);
+    if (s && s.impuesto_configurado === false) return T('Falta la configuración del impuesto de la sociedad emisora: pide los datos fiscales al gestor y configúralo antes de emitir.');
+    return null;
+  }
+  function pintaFacturas() {
+    var cont = vacia($v('ficha-facturas'));
+    var fs = E.ficha.facturas || [];
+    cont.appendChild(h('h3', { class: 'font-headline-sm text-headline-sm text-deep-lagoon tracking-tight', text: T('Facturas de esta operación') + ' (' + fs.length + ')' }));
+    if (!fs.length) { cont.appendChild(h('p', { class: 'vt-vacio', text: T('Esta operación aún no tiene facturas.') })); return; }
+    var filas = [];
+    fs.forEach(function (f) {
+      var st = estadoFactura(f);
+      var tr = h('tr', { 'data-factura-id': f.id });
+      tr.appendChild(celda(f.numero || '—'));
+      tr.appendChild(celda(T(f.rectifica_id ? 'Rectificativa' : 'Factura')));
+      tr.appendChild(celda(chip(st[0], st[1])));
+      tr.appendChild(celda(dinero(f.total, f.moneda), 'vt-num'));
+      tr.appendChild(celda(fecha(f.fecha_emision)));
+      var ac = h('div', { class: 'vt-acciones' });
+      var abierta = !!E.ficha.lineas[f.id];
+      ac.appendChild(boton(T(abierta ? 'Ocultar líneas' : 'Ver líneas'), 'vt-lineas', { 'data-factura-id': f.id }));
+      var borrador = !f.emitida_en && !f.anulada && f.tipo === 'factura';
+      if (borrador) {
+        var motivo = motivoSinEmitir(f);
+        var bE = boton(T('Emitir'), 'vt-emitir', { 'data-factura-id': f.id, 'data-primario': '1' });
+        if (motivo) { bE.disabled = true; bE.setAttribute('title', motivo); bE.setAttribute('aria-describedby', 'vt-motivo-' + f.id); }
+        ac.appendChild(bE);
+        if (!f.rectifica_id) ac.appendChild(boton(T('Descartar'), 'vt-descartar', { 'data-factura-id': f.id, 'data-peligro': '1' }));
+      }
+      if (f.emitida_en && !f.rectifica_id && !f.anulada && f.tipo === 'factura') ac.appendChild(boton(T('Rectificar'), 'vt-rectificar', { 'data-factura-id': f.id }));
+      tr.appendChild(celda(ac));
+      filas.push(tr);
+      if (borrador) {
+        var m2 = motivoSinEmitir(f);
+        if (m2) filas.push(h('tr', null, [h('td', { colspan: '6' }, [h('p', { class: 'vt-aviso', id: 'vt-motivo-' + f.id, text: T('Emitir no está disponible') + ': ' + m2 })])]));
+        if (f.rectifica_id) filas.push(h('tr', null, [h('td', { colspan: '6' }, [h('p', { class: 'vt-aviso', text: T('Rectificativa sin emitir: revísala y emítela, o la factura sigue sin corregirse.') })])]));
+      }
+      var ls = E.ficha.lineas[f.id];
+      if (ls) filas.push(h('tr', null, [h('td', { colspan: '6' }, [ls])]));
+    });
+    var caja = h('div', { class: 'vt-tabla-caja' });
+    var t = h('table', { class: 'vt-tabla' });
+    cont.appendChild(caja); caja.appendChild(t);
+    tabla(t, [['Número'], ['Tipo'], ['Estado'], ['Total', 'vt-num'], ['Fecha'], ['Acciones']], filas);
+  }
+  function pintaAccionesFicha() {
+    var ac = $v('ficha-acciones');
+    if (!ac) return;
+    vacia(ac);
+    var o = E.ficha.op, fs = E.ficha.facturas;
+    if (o.origen !== 'reserva' || o.estado === 'cancelada') return;
+    if (!o.client_id) { ac.appendChild(h('p', { class: 'vt-aviso', text: T('Esta reserva no tiene cliente: reclámala primero para poder facturarla.') })); return; }
+    if (!fs) return;
+    var vivo = fs.some(function (f) { return f.tipo === 'factura' && !f.rectifica_id && !f.anulada; });
+    if (!vivo) ac.appendChild(boton(T('Crear borrador'), 'vt-crear-borrador', { 'data-primario': '1' }));
+  }
+
+  /* ── acciones de la ficha ── */
+  function refrescaTrasAccion(opId) {
+    return cargaOps(false).then(function (ok) { return ok ? abreFicha(opId) : cargaFacturas(); });
+  }
+  function creaBorrador(btn) {
+    var o = E.ficha.op;
+    if (!ocupa(btn)) return;
+    error(''); exito('');
+    llama('factura_desde_operacion', { p_operacion: o.id, p_sociedad: null }).then(function (r) {
+      libera(btn);
+      if (r.error) { error(mensaje(r.error)); return; }
+      var d = r.data || {};
+      if (!d.id || d.operacion_id !== o.id) { error(T('La base no devolvió el borrador: recarga y comprueba.')); return; }
+      exito(d.creada === false ? T('El borrador ya existía: se enseña el que había.') : T('Borrador creado.'));
+      return refrescaTrasAccion(o.id);
+    });
+  }
+  function emite(factura) {
+    var o = E.ficha.op;
+    var d = dialogo(T('Emitir la factura'), [
+      resumen([['Total', dinero(factura.total, factura.moneda)], ['Cliente', nombreCliente(o)], ['Referencia', o.referencia]]),
+      h('p', { class: 'vt-nota', text: T('Al emitir se gasta un número correlativo y la factura no se puede editar ni borrar: solo se corrige con una rectificativa.') })
+    ], [{ texto: T('Cancelar'), accion: 'vt-modal-cancelar', cierra: true },
+        { texto: T('Sí, emitir'), accion: 'vt-modal-emitir', primario: true, alclic: function (bt, dd) {
+          if (!ocupa(bt)) return;
+          llama('factura_emite', { p_id: factura.id }).then(function (r) {
+            libera(bt);
+            if (r.error) {
+              var c = clasifica(r.error);
+              dd.error(mensaje(r.error));
+              if (c.hint === 'emisor_incompleto' || c.hint === 'cliente_incompleto' || c.hint === 'requiere_3b' || c.hint === 'sociedad') { E.bloqueos[factura.id] = mensaje(r.error); pintaFacturas(); }
+              return;
+            }
+            var x = r.data || {};
+            // nunca se da por emitida una factura sin leer su número de vuelta
+            if (x.estado !== 'emitida' || !x.numero) { dd.error(T('La base no devolvió el número de la factura. No se da por emitida: recarga y comprueba.')); return; }
+            dd.cierra();
+            var alertas = alertaRecibis(x.recibis);
+            if (alertas) aviso(alertas);
+            exito((x.repetido ? T('Ya estaba emitida con el número') : T('Factura emitida con el número')) + ' ' + x.numero);
+            return refrescaTrasAccion(o.id);
+          });
+        } }]);
+    return d;
+  }
+  /* El recibí de un pago de pasarela que falla NO deshace la emisión (queda en «pagos por revisar»): se enseña como alerta, nunca como éxito. */
+  function alertaRecibis(recibis) {
+    var lista = Array.isArray(recibis) ? recibis : [];
+    var falla = lista.some(function (x) { return !x || x.recibi == null; });
+    var hayPago = E.ficha && E.ficha.ctx && E.ficha.ctx.pago;
+    if (falla || (hayPago && !lista.some(function (x) { return x && x.recibi != null; }))) return T('Revisa el cobro: el pago de la pasarela no quedó registrado como recibí (queda en «pagos por revisar»).');
+    return '';
+  }
+  function descarta(factura) {
+    var o = E.ficha.op;
+    var motivo = h('textarea', { rows: '3', maxlength: '500', 'aria-label': T('Motivo (obligatorio, hasta 500 caracteres)'), 'data-campo': 'motivo' });
+    var d = dialogo(T('Descartar el borrador'), [
+      h('p', { class: 'vt-nota', text: T('Descartar anula el borrador (no se borra) y deja el motivo anotado. Después puedes volver a crearlo.') }),
+      h('div', { class: 'vt-campo' }, [h('label', { text: T('Motivo (obligatorio, hasta 500 caracteres)') }), motivo])
+    ], [{ texto: T('Cancelar'), accion: 'vt-modal-cancelar', cierra: true },
+        { texto: T('Sí, descartar'), accion: 'vt-modal-descartar', peligro: true, alclic: function (bt, dd) {
+          var m = motivo.value.trim();
+          if (!m) { dd.error(T('Escribe el motivo.')); return; }
+          if (m.length > 500) { dd.error(T('El motivo es demasiado largo.')); return; }
+          if (!ocupa(bt)) return;
+          llama('factura_borrador_descarta', { p_id: factura.id, p_motivo: m }).then(function (r) {
+            libera(bt);
+            if (r.error) { dd.error(mensaje(r.error)); return; }
+            if (!r.data || r.data.estado !== 'descartada') { dd.error(T('La base no confirmó el descarte: recarga y comprueba.')); return; }
+            dd.cierra(); exito(T('Borrador descartado.'));
+            return refrescaTrasAccion(o.id);
+          });
+        } }]);
+    return d;
+  }
+  function rectifica(factura) {
+    var o = E.ficha.op;
+    var tipo = 'sustitucion', cantidades = {}, lineas = null;
+    var rS = h('input', { type: 'radio', name: 'vt-tipo', value: 'sustitucion', checked: true, 'data-campo': 'tipo' });
+    var rD = h('input', { type: 'radio', name: 'vt-tipo', value: 'diferencias', 'data-campo': 'tipo' });
+    var motivo = h('textarea', { rows: '3', maxlength: '300', 'aria-label': T('Motivo (obligatorio, hasta 300 caracteres)'), 'data-campo': 'motivo' });
+    var caja = h('div');
+    var d = dialogo(T('Rectificar la factura'), [
+      resumen([['Factura', factura.numero], ['Total', dinero(factura.total, factura.moneda)]]),
+      h('p', { class: 'vt-nota', text: T('Sustitución: anula la factura entera (si corriges un NPWP o un dato del cliente, es esta). Diferencias: abona solo las líneas y cantidades que indiques.') }),
+      h('label', null, [rS, ' ' + T('Sustitución (anula la factura entera)')]),
+      h('label', null, [rD, ' ' + T('Diferencias (abona solo parte)')]),
+      caja,
+      h('div', { class: 'vt-campo' }, [h('label', { text: T('Motivo (obligatorio, hasta 300 caracteres)') }), motivo])
+    ], [{ texto: T('Cancelar'), accion: 'vt-modal-cancelar', cierra: true },
+        { texto: T('Crear la rectificativa'), accion: 'vt-modal-rectificar', primario: true, alclic: function (bt, dd) {
+          var m = motivo.value.trim();
+          if (!m) { dd.error(T('Escribe el motivo.')); return; }
+          if (m.length > 300) { dd.error(T('El motivo es demasiado largo.')); return; }
+          var args = { p_origen: factura.id, p_tipo: tipo, p_motivo: m };
+          if (tipo === 'diferencias') {
+            var sel = [];
+            for (var i = 0; lineas && i < lineas.length; i++) {
+              var q = Number(cantidades[lineas[i].orden].value);
+              if (q > Number(lineas[i].cantidad)) { dd.error(T('La cantidad no puede pasar de la facturada.')); return; }
+              if (q > 0) sel.push({ linea: lineas[i].orden, cantidad: q });
+            }
+            if (!sel.length) { dd.error(T('Indica la cantidad a abonar de al menos una línea.')); return; }
+            args.p_lineas = sel;
+          }
+          if (!ocupa(bt)) return;
+          llama('factura_rectifica', args).then(function (r) {
+            libera(bt);
+            if (r.error) { dd.error(mensaje(r.error)); return; }
+            if (!r.data || !r.data.id || r.data.estado !== 'borrador') { dd.error(T('La base no devolvió la rectificativa: recarga y comprueba.')); return; }
+            dd.cierra(); exito(T('Rectificativa creada en borrador: revísala y emítela desde la ficha.'));
+            return refrescaTrasAccion(o.id);
+          });
+        } }]);
+    function cambia() {
+      tipo = rD.checked ? 'diferencias' : 'sustitucion';
+      vacia(caja);
+      if (tipo !== 'diferencias') return;
+      caja.appendChild(h('p', { class: 'vt-vacio', text: T('Cargando…') }));
+      llama('factura_lineas_datos', { p_factura: factura.id }).then(function (r) {
+        vacia(caja);
+        if (r.error || !r.data || !Array.isArray(r.data.lineas)) { caja.appendChild(h('p', { class: 'vt-error', text: T('No se han podido leer las líneas. No es que no tenga: no se ha podido mirar.') })); return; }
+        lineas = r.data.lineas; cantidades = {};
+        caja.appendChild(h('p', { class: 'vt-vacio', text: T('Cantidad a abonar por línea (déjalo en 0 si no se abona)') }));
+        lineas.forEach(function (l) {
+          var inp = h('input', { type: 'number', min: '0', max: String(l.cantidad), step: 'any', value: '0', 'data-campo': 'cantidad-linea', 'data-orden': l.orden, 'aria-label': T('Cantidad') + ' ' + l.orden });
+          cantidades[l.orden] = inp;
+          caja.appendChild(h('div', { class: 'vt-linea' }, [h('span', { text: l.descripcion || '—' }), h('span', { text: String(l.cantidad) + ' × ' + dinero(l.precio_unitario, r.data.moneda) }), inp]));
+        });
+      });
+    }
+    rS.addEventListener('change', cambia); rD.addEventListener('change', cambia);
+    return d;
+  }
+  function verLineas(facturaId) {
+    if (E.ficha.lineas[facturaId]) { delete E.ficha.lineas[facturaId]; pintaFacturas(); return; }
+    llama('factura_lineas_datos', { p_factura: facturaId }).then(function (r) {
+      if (!E.ficha) return;
+      var caja;
+      if (r.error || !r.data || !Array.isArray(r.data.lineas)) {
+        caja = h('p', { class: 'vt-error', text: T('No se han podido leer las líneas. No es que no tenga: no se ha podido mirar.') + (r.error ? ' ' + mensaje(r.error, true) : '') });
+      } else {
+        var d = r.data;
+        var filas = d.lineas.map(function (l) {
+          return h('tr', null, [celda(l.descripcion || '—'), celda(String(l.cantidad), 'vt-num'), celda(dinero(l.precio_unitario, d.moneda), 'vt-num'), celda(String(l.descuento_pct || 0), 'vt-num'),
+            celda((l.impuestos || []).map(function (i) { return i.nombre + (i.porcentaje != null ? ' ' + i.porcentaje + '%' : ''); }).join(', ') || '—'), celda(dinero(l.importe, d.moneda), 'vt-num')]);
+        });
+        caja = h('div', null, [h('p', { class: 'vt-nota', text: T('Las líneas de un borrador no se editan: si algo está mal, descártalo con un motivo y vuelve a crearlo, o rectifica la factura.') })]);
+        var tt = h('table', { class: 'vt-tabla' });
+        caja.appendChild(h('div', { class: 'vt-tabla-caja' }, [tt]));
+        tabla(tt, [['Descripción'], ['Cantidad', 'vt-num'], ['Precio unitario', 'vt-num'], ['Dto. %', 'vt-num'], ['Impuestos'], ['Importe', 'vt-num']], filas);
+        caja.appendChild(resumen([['Base', dinero(d.base, d.moneda)], ['Impuestos', dinero(d.impuestos, d.moneda)], ['Total con impuestos', dinero(d.total, d.moneda)]]));
+      }
+      E.ficha.lineas[facturaId] = caja;
+      pintaFacturas();
+    });
+  }
+
+  /* ───────────────────────────── Reservas (bandeja) ───────────────────────────── */
+  function cargaReservas(mas) {
+    var est = $v('res-estado');
+    est.textContent = T('Cargando…');
+    var args = { p_limit: 200 };
+    if (mas && E.resSig) args.p_despues = E.resSig;
+    return llama('reservas_producto_datos', args).then(function (r) {
+      if (!vaListaDe(r, 'reservas')) {
+        if (!mas) E.res = [];
+        vacia($v('res-tabla')); E.resCargado = false;
+        est.textContent = T('No se ha podido mirar') + ': ' + (r.error ? mensaje(r.error, true) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'));
+        oculta(raiz.querySelector('[data-accion="vt-res-mas"]'), true);
+        return;
+      }
+      E.res = mas ? E.res.concat(r.data.reservas) : r.data.reservas;
+      E.resSig = r.data.siguiente || null; E.resCargado = true;
+      pintaReservas();
+    });
+  }
+  function pintaReservas() {
+    var solo = $v('f-por-reclamar').checked;
+    var lista = E.res.filter(function (x) { return !solo || x.sin_reclamar; });
+    $v('res-estado').textContent = lista.length ? '' : T('No hay reservas con ese filtro.');
+    var filas = lista.map(function (x) {
+      var tr = h('tr', { 'data-reserva-id': x.id });
+      tr.appendChild(celda(x.numero || '—'));
+      tr.appendChild(celda(x.producto || '—'));
+      tr.appendChild(celda(fecha(x.desde) + ' → ' + fecha(x.hasta)));
+      var quien = x.client_id ? (x.cliente_oculto ? T('Cliente sin permiso para verlo') : (x.contacto_nombre || '—')) : (x.contacto_nombre || T('Sin cliente'));
+      var c = h('div', null, [h('span', { text: quien })]);
+      if (x.sin_reclamar) c.appendChild(h('div', null, [chip(T('Por reclamar'), 'espera')]));
+      tr.appendChild(celda(c));
+      tr.appendChild(celda(dinero(x.precio_total, x.moneda), 'vt-num'));
+      tr.appendChild(celda(x.estado || '—'));
+      tr.appendChild(celda(x.pago_referencia ? x.pago_referencia : T('Sin pago')));
+      var ac = h('div', { class: 'vt-acciones' });
+      if (!x.client_id && x.estado !== 'cancelada' && x.estado !== 'caducada') ac.appendChild(boton(T('Reclamar'), 'vt-reclamar', { 'data-reserva-id': x.id, 'data-origen': 'reservas' }));
+      if (x.operacion_id) ac.appendChild(boton(T('Ver operación'), 'vt-abrir-op', { 'data-op-id': x.operacion_id, 'data-pago': x.pago_referencia ? '1' : null }));
+      tr.appendChild(celda(ac));
+      return tr;
+    });
+    tabla($v('res-tabla'), [['Reserva nº'], ['Producto'], ['Fechas'], ['Cliente'], ['Precio', 'vt-num'], ['Estado'], ['Pago'], ['Acciones']], filas);
+    oculta(raiz.querySelector('[data-accion="vt-res-mas"]'), !E.resSig);
+  }
+
+  /* ───────────────────────────── Cola «cobrado sin facturar» ───────────────────────────── */
+  function cargaCola(mas) {
+    var est = $v('cola-estado');
+    est.textContent = T('Cargando…');
+    var args = { p_limit: 200 };
+    if (mas && E.colaSig) args.p_despues = E.colaSig;
+    return llama('reservas_cobradas_sin_facturar', args).then(function (r) {
+      var mas_ = raiz.querySelector('[data-accion="vt-cola-mas"]');
+      // tres cosas distintas que NO son lo mismo: «no hay nada», «no he podido mirar» y «Reservas está apagado»
+      if (r.error) {
+        var c = clasifica(r.error);
+        if (!mas) E.cola = [];
+        vacia($v('cola-tabla')); oculta(mas_, true);
+        est.textContent = c.tipo === 'sin_permiso' ? T('No tienes permiso para ver esta lista (hace falta la herramienta Facturas). No es que esté vacía: no se ha podido mirar.')
+          : T('No se ha podido mirar') + ': ' + mensaje(r.error, true);
+        return;
+      }
+      if (!r.data || !Array.isArray(r.data.reservas)) {
+        vacia($v('cola-tabla')); oculta(mas_, true);
+        est.textContent = T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
+        return;
+      }
+      if (r.data.motivo === 'reservas_apagado') {
+        E.cola = []; vacia($v('cola-tabla')); oculta(mas_, true);
+        est.textContent = T('El módulo Reservas está apagado en esta instancia: no hay reservas que mirar. Esto NO quiere decir que no haya nada cobrado sin facturar.');
+        return;
+      }
+      E.cola = mas ? E.cola.concat(r.data.reservas) : r.data.reservas;
+      E.colaSig = r.data.siguiente || null;
+      est.textContent = E.cola.length ? '' : T('No hay reservas cobradas sin facturar.');
+      var filas = E.cola.map(function (x) {
+        var tr = h('tr', { 'data-reserva-id': x.id });
+        tr.appendChild(celda(x.numero || '—'));
+        tr.appendChild(celda(x.producto || '—'));
+        tr.appendChild(celda(x.sin_cliente ? T('Sin cliente') : (x.cliente_oculto ? T('Cliente sin permiso para verlo') : (x.cliente || '—'))));
+        tr.appendChild(celda(dinero(x.precio_total, x.moneda), 'vt-num'));
+        tr.appendChild(celda(x.pago_referencia || '—'));
+        tr.appendChild(celda(fecha(x.pago_registrado_en) + ' · ' + String(x.dias_sin_facturar == null ? '—' : x.dias_sin_facturar) + ' ' + T('Días sin facturar').toLowerCase(), 'vt-num'));
+        tr.appendChild(celda(T(x.tiene_borrador ? 'Sí' : 'No')));
+        var ac = h('div', { class: 'vt-acciones' });
+        if (x.sin_cliente) ac.appendChild(boton(T('Reclamar'), 'vt-reclamar', { 'data-reserva-id': x.id, 'data-origen': 'cola' }));
+        else if (x.operacion_id) ac.appendChild(boton(T('Abrir operación'), 'vt-abrir-op', { 'data-op-id': x.operacion_id, 'data-pago': x.pago_referencia ? '1' : null }));
+        tr.appendChild(celda(ac));
+        return tr;
+      });
+      tabla($v('cola-tabla'), [['Reserva nº'], ['Producto'], ['Cliente'], ['Importe', 'vt-num'], ['Referencia de pago'], ['Días sin facturar', 'vt-num'], ['Con borrador'], ['Acciones']], filas);
+      oculta(mas_, !E.colaSig);
+    });
+  }
+
+  /* ───────────────────────────── Reclamar ───────────────────────────── */
+  function reclamar(btn) { return reclamarDe(btn.getAttribute('data-reserva-id'), btn.getAttribute('data-origen')); }
+  function reclamarDe(id, de) {
+    var lista = de === 'cola' ? E.cola : E.res;
+    var res = lista.filter(function (x) { return x.id === id; })[0];
+    if (!res) { error(T('No se ha podido mirar')); return; }
+    if (!LECT.clientes) {
+      dialogo(T('Reclamar la reserva'), [h('p', { class: 'vt-aviso', text: T('Falta el lector de clientes en la base: sin él no se puede elegir un cliente, y no se puede reclamar desde aquí.') })],
+        [{ texto: T('Cerrar'), accion: 'vt-modal-cancelar', cierra: true }]);
+      return;
+    }
+    var sel = h('select', { 'data-campo': 'cliente', 'aria-label': T('Elige un cliente') });
+    var d = dialogo(T('Reclamar la reserva'), [
+      h('p', { class: 'vt-nota', text: T('Elige el cliente al que se asigna esta reserva.') }),
+      resumen([['Reserva nº', res.numero], ['Producto', res.producto], ['Contacto de la reserva', res.contacto_nombre], ['Importe', dinero(res.precio_total, res.moneda)], ['Referencia de pago', res.pago_referencia]]),
+      h('div', { class: 'vt-campo' }, [h('label', { text: T('Elige un cliente') }), sel])
+    ], [{ texto: T('Cancelar'), accion: 'vt-modal-cancelar', cierra: true },
+        { texto: T('Continuar'), accion: 'vt-modal-continuar', primario: true, alclic: function (bt, dd) {
+          if (!sel.value) { dd.error(T('Elige un cliente')); return; }
+          var cl = sel.options[sel.selectedIndex].textContent;
+          dd.cierra();
+          confirmaReclamo(res, sel.value, cl, de);
+        } }]);
+    llama(LECT.clientes, {}).then(function (r) {
+      if (!vaListaDe(r, 'clientes')) { d.error(T('No se ha podido mirar') + ': ' + mensaje(r.error, true)); return; }
+      sel.appendChild(h('option', { value: '', text: '—' }));
+      r.data.clientes.forEach(function (c) { sel.appendChild(h('option', { value: c.id, text: c.nombre || '—' })); });
+    });
+  }
+  function confirmaReclamo(res, clienteId, clienteNombre, de) {
+    dialogo(T('Revisa antes de reclamar'), [
+      resumen([['Cliente', clienteNombre], ['Importe', dinero(res.precio_total, res.moneda)], ['Referencia de pago', res.pago_referencia], ['Producto', res.producto], ['Reserva nº', res.numero]]),
+      h('p', { class: 'vt-error', text: T('Reclamar es irreversible: la reserva queda asignada a ese cliente y su operación a tu nombre, y no se puede cambiar por la vía normal. Si el cliente no es el correcto, no sigas.') })
+    ], [{ texto: T('Volver'), accion: 'vt-modal-volver', alclic: function (bt, dd) { dd.cierra(); reclamarDe(res.id, de); } },
+        { texto: T('Sí, reclamar'), accion: 'vt-modal-reclamar', peligro: true, alclic: function (bt, dd) {
+          if (!ocupa(bt)) return;
+          llama('reserva_asigna_cliente', { p_reserva: res.id, p_cliente: clienteId }).then(function (r) {
+            libera(bt);
+            if (r.error) { dd.error(mensaje(r.error)); return; }
+            var x = r.data || {};
+            dd.cierra();
+            if (!x.operacion_id) { aviso(T('La base no devolvió la operación de la reserva reclamada: recarga y comprueba.')); return Promise.all([cargaReservas(false), cargaCola(false)]); }
+            exito(T('Reserva reclamada. Ya puedes crear su borrador de factura.'));
+            return Promise.all([cargaReservas(false), cargaCola(false), cargaOps(false)]).then(function () { return abreFicha(x.operacion_id, { pago: !!res.pago_referencia }); });
+          });
+        } }]);
+  }
+
+  /* ───────────────────────────── Nueva venta ───────────────────────────── */
+  function pintaNueva() {
+    var est = $v('nueva-estado'), form = vacia($v('nueva-form'));
+    est.textContent = '';
+    if (!LECT.clientes || !LECT.productos) {
+      form.appendChild(h('p', { class: 'vt-aviso', text: T(!LECT.clientes ? 'Falta el lector de clientes en la base: sin él no se puede elegir un cliente, y no se puede reclamar desde aquí.' : 'Falta el lector de productos en la base: sin él no se pueden elegir productos, y no se puede crear una venta desde aquí.') }));
+      return;
+    }
+    est.textContent = T('Cargando…');
+    Promise.all([llama(LECT.clientes, {}), llama(LECT.productos, {})]).then(function (rs) {
+      if (!vaListaDe(rs[0], 'clientes') || !vaListaDe(rs[1], 'productos')) { est.textContent = T('No se ha podido mirar') + ': ' + mensaje(rs[0].error || rs[1].error, true); return; }
+      est.textContent = '';
+      E.clientes = rs[0].data.clientes; E.productos = rs[1].data.productos;
+      var cli = h('select', { 'data-campo': 'venta-cliente', 'aria-label': T('Cliente de la venta') }, [h('option', { value: '', text: '—' })]);
+      E.clientes.forEach(function (c) { cli.appendChild(h('option', { value: c.id, text: c.nombre || '—' })); });
+      var lineas = h('div', { 'data-vt': 'venta-lineas' });
+      function linea() {
+        var p = h('select', { 'data-campo': 'venta-producto', 'aria-label': T('Producto') }, [h('option', { value: '', text: '—' })]);
+        E.productos.forEach(function (x) { p.appendChild(h('option', { value: x.id, text: (x.nombre || '—') + ' · ' + dinero(x.precio, x.moneda) })); });
+        var q = h('input', { type: 'number', min: '0', step: 'any', value: '1', 'data-campo': 'venta-cantidad', 'aria-label': T('Cantidad') });
+        var k = boton(T('Quitar'), 'vt-venta-quitar');
+        lineas.appendChild(h('div', { class: 'vt-linea', 'data-fila': 'venta' }, [p, q, k]));
+      }
+      linea();
+      form.appendChild(h('div', { class: 'vt-campo' }, [h('label', { text: T('Cliente de la venta') }), cli]));
+      form.appendChild(h('div', { class: 'vt-campo' }, [h('label', { text: T('Productos') }), lineas, boton(T('Añadir otra línea'), 'vt-venta-linea')]));
+      form.appendChild(h('div', { class: 'vt-acciones' }, [boton(T('Crear la venta'), 'vt-venta-crear', { 'data-primario': '1' })]));
+      form._linea = linea;
+      E.venta.cli = cli; E.venta.lineas = lineas;
+    });
+  }
+  function creaVenta(btn) {
+    error(''); exito('');
+    var prods = [], monedas = {}, vistos = {};
+    var filas = E.venta.lineas ? E.venta.lineas.querySelectorAll('[data-fila="venta"]') : [];
+    for (var i = 0; i < filas.length; i++) {
+      var pid = filas[i].querySelector('[data-campo="venta-producto"]').value, cant = Number(filas[i].querySelector('[data-campo="venta-cantidad"]').value);
+      if (!pid || !(cant > 0)) continue;
+      var prod = E.productos.filter(function (x) { return x.id === pid; })[0];
+      if (!prod) continue;
+      monedas[prod.moneda] = true;
+      prods.push({ producto_id: pid, cantidad: cant });
+    }
+    if (!E.venta.cli || !E.venta.cli.value || !prods.length) { error(T('Elige un cliente y al menos un producto, con cantidad mayor que 0.')); return; }
+    var ms = Object.keys(monedas);
+    if (ms.length !== 1) { error(T('Todas las líneas tienen que ser de la misma moneda.')); return; }
+    if (!E.venta.clave) E.venta.clave = clave24();
+    if (!ocupa(btn)) return;
+    // solo el producto y la cantidad viajan: el precio, el texto y el impuesto los pone la base desde el catálogo
+    llama('factura_producto_crea', { p_cliente: E.venta.cli.value, p_sociedad: null, p_moneda: ms[0], p_lineas: prods, p_clave: E.venta.clave }).then(function (r) {
+      libera(btn);
+      if (r.error) { error(mensaje(r.error)); return; }
+      var d = r.data || {};
+      if (!d.operacion_id || !d.factura_id) { error(T('La base no devolvió la venta: recarga y comprueba.')); return; }
+      exito(d.creada === false ? T('La venta ya estaba creada: se enseña la que había.') : T('Venta creada con su borrador de factura.'));
+      E.venta.clave = null;
+      pintaNueva();   // formulario limpio: un segundo clic no puede crear la misma venta otra vez
+      return cargaOps(false).then(function () { return abreFicha(d.operacion_id); });
+    });
+  }
+
+  /* ───────────────────────────── pestañas y arranque ───────────────────────────── */
+  function pestana(nombre) {
+    E.tab = nombre;
+    Array.prototype.forEach.call(raiz.querySelectorAll('[data-accion="vt-tab"]'), function (b) { b.setAttribute('aria-selected', b.getAttribute('data-tab') === nombre ? 'true' : 'false'); });
+    Array.prototype.forEach.call(raiz.querySelectorAll('[data-vt="panel"]'), function (p) { oculta(p, p.getAttribute('data-tab') !== nombre); });
+    if (nombre === 'operaciones' && !E.opsCargado) cargaOps(false);
+    if (nombre === 'reservas' && !E.resCargado) cargaReservas(false);
+    if (nombre === 'cola') cargaCola(false);
+    if (nombre === 'nueva') pintaNueva();
+  }
+  function factura(id) { return (E.ficha && E.ficha.facturas || []).filter(function (f) { return f.id === id; })[0]; }
+
+  function alClic(ev) {
+    var el = ev.target.closest ? ev.target.closest('[data-accion]') : null;
+    if (!el || !raiz.contains(el)) return;
+    var a = el.getAttribute('data-accion');
+    if (a.indexOf('vt-modal') === 0) return;   // los botones del diálogo llevan su propio manejador
+    if (a === 'vt-tab') pestana(el.getAttribute('data-tab'));
+    else if (a === 'vt-ops-actualizar') { E.opsSig = null; cargaOps(false); }
+    else if (a === 'vt-ops-mas') cargaOps(true);
+    else if (a === 'vt-res-actualizar') cargaReservas(false);
+    else if (a === 'vt-res-mas') cargaReservas(true);
+    else if (a === 'vt-cola-actualizar') cargaCola(false);
+    else if (a === 'vt-cola-mas') cargaCola(true);
+    else if (a === 'vt-abrir-op') { ev.stopPropagation(); error(''); exito(''); aviso(''); abreFicha(el.getAttribute('data-op-id'), { pago: el.getAttribute('data-pago') === '1' }); }
+    else if (a === 'vt-ficha-cerrar') { E.ficha = null; oculta($v('ficha'), true); }
+    else if (a === 'vt-crear-borrador') creaBorrador(el);
+    else if (a === 'vt-emitir') { var fe = factura(el.getAttribute('data-factura-id')); if (fe && !el.disabled) emite(fe); }
+    else if (a === 'vt-descartar') { var fd = factura(el.getAttribute('data-factura-id')); if (fd) descarta(fd); }
+    else if (a === 'vt-rectificar') { var fr = factura(el.getAttribute('data-factura-id')); if (fr) rectifica(fr); }
+    else if (a === 'vt-lineas') verLineas(el.getAttribute('data-factura-id'));
+    else if (a === 'vt-reclamar') reclamar(el);
+    else if (a === 'vt-venta-linea') { var f = $v('nueva-form'); if (f._linea) f._linea(); E.venta.clave = null; }
+    else if (a === 'vt-venta-quitar') { var fila = el.closest('[data-fila]'); if (fila && fila.parentNode && fila.parentNode.children.length > 1) fila.parentNode.removeChild(fila); E.venta.clave = null; }
+    else if (a === 'vt-venta-crear') creaVenta(el);
+  }
+
+  function init(aut) {
+    SB = aut.sb;
+    raiz.addEventListener('click', alClic);
+    raiz.addEventListener('keydown', function (ev) {
+      if ((ev.key === 'Enter' || ev.key === ' ') && ev.target && ev.target.getAttribute && ev.target.getAttribute('data-accion') === 'vt-abrir-op' && ev.target.tagName === 'TR') {
+        ev.preventDefault(); abreFicha(ev.target.getAttribute('data-op-id'));
+      }
+    });
+    raiz.addEventListener('change', function (ev) {
+      var t = ev.target;
+      if (t === $v('f-origen') || t === $v('f-estado')) { E.opsSig = null; cargaOps(false); }
+      else if (t === $v('f-por-reclamar')) pintaReservas();
+      else if (t && t.hasAttribute && t.hasAttribute('data-campo') && E.venta) E.venta.clave = null;   // la clave de idempotencia es de UN contenido: otro contenido, otra clave
+    });
+    raiz.addEventListener('input', function (ev) { var t = ev.target; if (t && t.hasAttribute && t.getAttribute('data-campo') === 'venta-cantidad') E.venta.clave = null; });
+    pestana('operaciones');
+  }
+
+  function arranca() {
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { error(T('Sin sesión: recarga la página o vuelve a entrar.')); return; }
+    window.LW_AUTH.then(init);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca);
+  else arranca();
+})();
+</script>
