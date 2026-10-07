@@ -1565,6 +1565,26 @@ def whatsapp_bot_pantalla():
     open(nav, 'w', encoding='utf-8', newline='').write(n)
 
 
+def ajustes_correo_maestro():
+    """Ajustes › Correo del ERP maestro (F3.1 del plan único, 7-oct-2026): «Servidor de salida» + tres casillas (email_avisos_soporte,
+    email_avisos_sistema, asunto_por_defecto). La pantalla de Lawang (`ajustes.js`) NO se toca: el build inyecta `ajustes_correo.js` DENTRO de su
+    IIFE (necesita `sb`, `datos`, `CAMPOS`…) con reemplazos LITERALES que abortan si Lawang cambia el trozo (patrón de asistente_maestro). Es el
+    ÚNICO llamador de la edge `ajustes-correo`: el navegador no escribe en la base ni guarda secretos, la edge prueba con un envío real y promueve.
+    Va en el MISMO ajustes.js que sirve Lawang, así que todo lo nuevo cuelga de `datos.editables` y de `datos.puede_escribir` (sin migración o sin
+    super admin, no sale nada). Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
+    ruta = os.path.join(DIST, 'intranet', 'v4', 'assets', 'ajustes.js')
+    t = open(ruta, encoding='utf-8').read()
+    nuevo = open(os.path.join(AQUI, 'ajustes_correo.js'), encoding='utf-8').read()
+    if nuevo.count('function pintaServidorCorreo') != 1:
+        aborta('ajustes_correo_maestro: ajustes_correo.js cambió de forma (esperaba UNA función pintaServidorCorreo)')
+    t = _una_vez(t, '\n  function arranca() {', '\n' + nuevo.rstrip('\n') + '\n\n  function arranca() {', 'ajustes.js inserción antes de arranca()')
+    t = _una_vez(t, "    if (ES_MAESTRO) return LO_LEE_EL_MAESTRO[clave] ? T(TEXTO_LEE) : T(TEXTO_NO_LEE);",
+                 "    if (ES_MAESTRO && LEE_CORREO[clave]) return T(TEXTO_LEE_CORREO);\n    if (ES_MAESTRO) return LO_LEE_EL_MAESTRO[clave] ? T(TEXTO_LEE) : T(TEXTO_NO_LEE);", 'ajustes.js lee()')
+    t = _una_vez(t, "      pintaFormulario('correo', 'lw-aj-correo', ant, guardada);",
+                 "      ajustaCamposCorreo();\n      pintaFormulario('correo', 'lw-aj-correo', ant, guardada);\n      pintaServidorCorreo(guardada);", 'ajustes.js carga()')
+    open(ruta, 'w', encoding='utf-8', newline='').write(t)
+
+
 def _pantalla_bot(v4, archivo, carpeta, titulo):
     """Una pantalla del bot de WhatsApp sobre la cáscara de /asistente/ de Lawang (ver whatsapp_bot_pantalla)."""
     t = open(os.path.join(LAWANG, 'intranet', 'v4', 'asistente', 'index.html'), encoding='utf-8').read()
@@ -1688,6 +1708,7 @@ def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
     whatsapp_bot_pantalla()   # módulo Bot de WhatsApp (5-oct-2026): su pantalla, clonando la cáscara de Lawang
+    ajustes_correo_maestro()   # F3.1 (7-oct-2026): Ajustes › Correo con el servidor de salida (llama a la edge ajustes-correo)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]
