@@ -350,7 +350,7 @@
     } else if (srv.fase === 'error') {
       estado.setAttribute('role', 'alert');
       estado.appendChild(nodo('span', 'font-body-md text-body-md text-error', T('No se ha podido leer el estado del servidor') + ': ' + mensajeCorreo(srv.codigo)));
-      estado.appendChild(boton('Reintentar', 'correo-estado-reintentar', { 'class': 'self-start px-4 py-2 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md' }));
+      estado.appendChild(boton('Reintentar', 'correo-estado-reintentar', { 'class': 'self-start px-4 py-2 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md' })); // predeploy-ok: boton() fija data-accion=correo-estado-reintentar; 'Reintentar' es solo el rotulo
     } else {
       var e = srv.estado || {};
       if (e.configurado && typeof e.host === 'string') {
