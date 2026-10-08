@@ -59,13 +59,37 @@ mira('ningún innerHTML ni insertAdjacentHTML ni document.write', not re.search(
 mira('ningún console.log', 'console.log' not in CODIGO)
 mira('la contraseña del buzón es type=password con autocomplete=new-password', "inputServidor('password', 'pass', 200, { autocomplete: 'new-password' })" in CODIGO)
 mira('la contraseña de la cuenta es current-password', "inputServidor('password', 'reauth', 200, { autocomplete: 'current-password' })" in CODIGO)
-mira('la contraseña nunca se asigna desde el estado ni desde lo tecleado antes', not re.search(r'\bpass\.value\s*=|\breauth\.value\s*=|previo\.pass|previo\.reauth|e2?\.pass\b', CODIGO))
-mira('las dos contraseñas se vacían en cuanto se leen', "vacia('pass'); vacia('reauth');" in CODIGO and CODIGO.index("vacia('pass')") < CODIGO.index('llamaCorreo(cuerpo).then'))
+mira('la contraseña del buzón nunca se asigna desde el estado; solo se conserva (bloqueada) con un código pedido para esos datos',
+     not re.search(r'\be2?\.pass\b|\bestado\.pass\b', CODIGO) and len(re.findall(r'\bpass\.value\s*=', CODIGO)) == 1 and 'if (lock && previo.pass != null) pass.value = previo.pass;' in CODIGO)
+mira('la contraseña de la cuenta no se conserva nunca: ni al repintar ni tras leerla', not re.search(r'previo\.reauth|\breauth\.value\s*=|\bre\.value\s*=', CODIGO) and "c !== 'reauth'" in CODIGO and "vacia('reauth');" in CODIGO
+     and CODIGO.index("vacia('reauth')") < CODIGO.index('llamaCorreo(cuerpo).then', CODIGO.index('function probarCorreo')))
+mira('la contraseña del buzón se vacía al guardar, cancelar, cambiar los datos y tras un fallo al pedir', CODIGO.count("vacia('pass')") >= 5 and "cuerpo.pass = '';" in CODIGO)
 mira('el puerto viaja fijo 465 y no sale del campo', "port: 465" in CODIGO and "v('port')" not in CODIGO)
 mira('la única edge que llama es ajustes-correo', re.findall(r"lwEdge\('([a-z0-9-]+)'\)", CODIGO) == ['ajustes-correo'])
 mira('no escribe en la base: ni .from( ni .insert/.update/.upsert/.delete ni rpc en el overlay', not re.search(r'\.from\(|\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.rpc\(|supabase', CODIGO))
 mira('solo se enseñan códigos traducidos: no se lee .error ni .mensaje del servidor', not re.search(r'\bd\.error\b|\.error\)|\.mensaje|\.message\b', CODIGO))
-mira('enganche por data-accion / data-correo, no por rótulo', "'data-accion': 'correo-servidor-probar'" in CODIGO and 'textContent ===' not in CODIGO and 'innerText' not in CODIGO)
+mira('enganche por data-accion / data-correo-*, no por rótulo', all(("'" + a + "'") in CODIGO for a in ('correo-servidor-pedir', 'correo-servidor-probar', 'correo-ajuste-pedir', 'correo-ajuste-guardar', 'correo-estado-reintentar'))
+     and 'textContent ===' not in CODIGO and 'innerText' not in CODIGO and "closest('[data-accion]')" in CODIGO)
+# el flujo del código (diseño final del 8-oct): pedir antes de guardar, el código viaja SOLO en las dos acciones que lo consumen, y nunca un modo «sin código»
+mira('las 4 acciones de la edge que usa la pantalla', sorted(set(re.findall(r"accion: '([a-z_]+)'", CODIGO))) == ['estado', 'guardar_ajuste', 'pedir_codigo', 'probar_y_guardar'])
+mira('el código viaja en guardar_ajuste y probar_y_guardar, nunca en pedir_codigo', CODIGO.count('codigo: codigo') == 2 and "accion: 'pedir_codigo', alcance: 'servidor', host" in CODIGO and "alcance: 'ajuste'" in CODIGO)
+mira('el código se valida (6 cifras) y su caducidad se mira antes de gastar la llamada', CODIGO.count("/^[0-9]{6}$/.test(codigo)") == 2 and CODIGO.count('Date.now() > u.caduca') == 2)
+mira('las 4 direcciones salen del formulario base y se leen del estado de la edge, no de ajustes_config_datos',
+     "CLAVES_CODIGO = ['email_from', 'email_reply_to', 'email_avisos_soporte', 'email_avisos_sistema']" in CODIGO and 'CLAVES_CODIGO.indexOf(c.clave) < 0' in CODIGO
+     and 'a.soporte' in CODIGO and 'r.reply_to' in CODIGO and 'datos.valores' not in CODIGO)
+mira('cambiar host/usuario enseña la contraseña de la cuenta (current-password) y la manda como contrasena_actual', 'srv.reauth || cambia' in CODIGO and 'cuerpo.contrasena_actual = re' in CODIGO)
+mira('la contraseña del buzón no viaja en las acciones de dirección', "pass" not in re.findall(r"accion: 'guardar_ajuste'[^}]*\}", CODIGO)[0] and "pass" not in re.findall(r"alcance: 'ajuste'[^}]*\}", CODIGO)[0])
+# todo código que puede devolver la edge (index.ts de ajustes-correo, 8-oct-2026) más los de la propia pantalla tiene su texto en llano y sin jerga
+CODIGOS_EDGE = ['accion_no_valida', 'alcance_no_valido', 'base_no_responde', 'buzon_ajeno', 'clave_actual_incorrecta', 'clave_no_editable', 'clave_no_valida', 'codigo_no_disponible',
+                'codigo_no_enviado', 'codigo_no_valido', 'cuerpo_grande', 'demasiados_intentos', 'envios_pausados', 'from_ajeno', 'host_no_resuelve', 'host_no_valido', 'host_privado',
+                'json_no_valido', 'metodo', 'no_super_admin', 'nombre_no_valido', 'origen', 'prueba_caducada', 'prueba_fallida', 'puerto_no_valido', 'reautenticar', 'sin_cambios',
+                'sin_correo_usuario', 'sin_dominio_web', 'sin_remitente', 'sin_sesion', 'usuario_no_valido', 'valor_no_valido', 'edge_no_disponible', 'sin_red', 'respuesta_ilegible',
+                'codigo_caducado', 'codigo_mal_formado', 'faltan_datos', 'direccion_mal_formada']
+bloque_cod = FUENTE[FUENTE.index('var CORREO_MSG = {'):FUENTE.index('// Tras estos fallos')]
+sin_texto = [c for c in CODIGOS_EDGE if not re.search(r'\b' + c + r": '", bloque_cod)]
+mira('todos los códigos de error de la edge tienen su texto en llano' + (' (faltan: ' + ', '.join(sin_texto) + ')' if sin_texto else ''), not sin_texto)
+jerga = [w for w in ('RPC', 'HMAC', 'canon', 'JWT', 'Vault', 'SMTP_', 'service_role', 'pepper') if w in bloque_cod]
+mira('los textos de error no llevan jerga' + (' (' + ', '.join(jerga) + ')' if jerga else ''), not jerga)
 mira('las casillas nuevas salen solo si la base las declara editables', 'ed.indexOf(c.clave) >= 0' in CODIGO and 'Array.isArray(ed)' in CODIGO)
 mira('edge no disponible (404/5xx sin código, sin red) tiene mensaje propio', 'edge_no_disponible' in CODIGO and 'sin_red' in CODIGO and 'resp.status === 404 || resp.status >= 500' in CODIGO)
 
@@ -90,6 +114,9 @@ for m in re.finditer(r":\s*'((?:[^'\\]|\\.)*)'[,\n]", bloque_msg):
 for m in re.finditer(r"\bclave: '[a-z_]+', etiqueta: '((?:[^'\\]|\\.)*)'|\bayuda: '((?:[^'\\]|\\.)*)'|campoServidor\('[^']+', '((?:[^'\\]|\\.)*)', (?:'((?:[^'\\]|\\.)*)'|null)", FUENTE):
     for g in m.groups():
         if g: exige(g.replace("\\'", "'"), 'etiqueta/ayuda')
+for m in re.finditer(r"\b(?:boton|botonSecundario)\((?:[^'(),]*\? )?'((?:[^'\\]|\\.)*)'(?: : '((?:[^'\\]|\\.)*)')?,|\bcabecera\('((?:[^'\\]|\\.)*)', '((?:[^'\\]|\\.)*)'\)", FUENTE):
+    for g in m.groups():
+        if g: exige(g.replace("\\'", "'"), 'boton/cabecera')
 mira('todo texto pintable está en el diccionario ES/EN' + (' (faltan: ' + '; '.join(sin[:6]) + ')' if sin else ''), not sin)
 claves_lista = re.findall(r"'((?:[^'\\]|\\.)*)'\s*:\s*'", bloque_en)
 mira('ninguna clave repetida en EN_CORREO', len(claves_lista) == len(set(claves_lista)))
