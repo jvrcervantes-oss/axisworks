@@ -64,6 +64,8 @@
     'Coste (opcional)': 'Cost (optional)', 'Moneda': 'Currency', 'Nota (opcional, hasta 1000 caracteres)': 'Note (optional, up to 1000 characters)',
     'El coste es un número positivo. Usa solo cifras y un punto o una coma para los decimales.': 'The cost is a positive number. Use digits and one dot or comma for decimals only.',
     'Con coste hace falta la moneda en tres letras (IDR, EUR…)': 'A cost needs the currency in three letters (IDR, EUR…)',
+    'En esta moneda el coste va sin puntos ni comas (por ejemplo 150000).': 'In this currency the cost has no dots or commas (for example 150000).',
+    'Ese coste es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 1500 o 15.50.': 'That cost is ambiguous (thousands or decimals?): write it without a thousands separator, for example 1500 or 15.50.',
     'La nota admite hasta 1000 caracteres.': 'The note allows up to 1000 characters.',
     'Cerrar la orden': 'Close the order', 'Volver': 'Back', 'Abrir': 'Open',
     'El módulo de reservas de producto está apagado en esta instancia: no hay órdenes que mirar. Esto NO quiere decir que no haya nada.': 'The product bookings module is off in this instance: there are no orders to check. This does NOT mean there is nothing.',
@@ -87,6 +89,7 @@
   var SB = null;
   var AUT = null;
   var E = { ordenes: [], siguiente: null, unidades: [], cargado: false, puedeReservas: false, recortadas: false };
+  var SIN_DECIMALES = ['IDR', 'JPY', 'KRW', 'VND', 'CLP'];   // las mismas que moneda_decimales() de la base
   var ESTADO_ORDEN = { abierta: ['Abierta', 'espera'], cerrada: ['Cerrada', 'neutro'] };
   var PROPIOS = {
     modulo_apagado: T('El módulo de reservas de producto está apagado en esta instancia: no hay órdenes que mirar. Esto NO quiere decir que no haya nada.'),
@@ -113,12 +116,15 @@
 
   /* ── lectura ── */
   function estadoFiltro() { var v = $v('f-estado').value; return v === 'abierta' || v === 'cerrada' ? v : null; }
+  var PETICION = 0;
   function carga(mas) {
+    var yo = ++PETICION;
     var est = $v('estado');
     est.className = 'axw-vacio';
     if (!mas) { E.siguiente = null; est.textContent = T('Cargando…'); }
     var args = { p_estado: estadoFiltro(), p_limit: 50, p_despues: mas ? E.siguiente : null };
     return llama('orden_trabajo_datos', args).then(function (r) {
+      if (yo !== PETICION) return r;   // llegó tarde: ya se pidió otra lectura (otro filtro) y esa manda
       if (!vaListaDe(r, 'ordenes') || !Array.isArray(r.data.unidades)) {
         // «no se ha podido mirar» NO es «no hay órdenes»: se dice, y la tabla no se vacía en silencio
         var t = r.error ? C.mensaje(r.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
@@ -246,11 +252,15 @@
     ], [
       { texto: T('Cerrar la orden'), accion: 'tl-modal-cierra', primario: true, alclic: function (bt, dlg) {
         dlg.error('');
-        var c = coste.value.replace(/\s+/g, '').replace(',', '.');
+        var c0 = coste.value.replace(/\s+/g, '');
+        var c = c0.replace(',', '.');
         var mo = moneda.value.replace(/\s+/g, '').toUpperCase();
         var n = nota.value.replace(/^\s+|\s+$/g, '');
         if (c !== '' && !/^\d+(\.\d{1,4})?$/.test(c)) { dlg.error(T('El coste es un número positivo. Usa solo cifras y un punto o una coma para los decimales.')); return; }
         if (c !== '' && !/^[A-Z]{3}$/.test(mo)) { dlg.error(T('Con coste hace falta la moneda en tres letras (IDR, EUR…)')); return; }
+        // «150.000» en IDR es ciento cincuenta mil, no ciento cincuenta: en monedas sin decimales NO se admite ni punto ni coma, y en las demás un grupo de tres cifras tras el separador es ambiguo
+        if (c !== '' && SIN_DECIMALES.indexOf(mo) !== -1 && /[.,]/.test(c0)) { dlg.error(T('En esta moneda el coste va sin puntos ni comas (por ejemplo 150000).')); return; }
+        if (c !== '' && /^\d{1,3}([.,]\d{3})+$/.test(c0)) { dlg.error(T('Ese coste es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 1500 o 15.50.')); return; }
         if (n.length > 1000) { dlg.error(T('La nota admite hasta 1000 caracteres.')); return; }
         if (!C.ocupa(bt)) return;
         // el coste viaja como TEXTO numérico: la base lo valida contra los decimales de la moneda; aquí no se redondea nada
