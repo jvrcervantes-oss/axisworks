@@ -1587,6 +1587,24 @@ def ajustes_correo_maestro():
     open(ruta, 'w', encoding='utf-8', newline='').write(t)
 
 
+# Ayudas comunes de las pantallas del maestro (taller, 8-oct-2026): una pantalla escribe la marca donde las quiere y el build pega el fichero de _compartido/.
+# La marca va dentro de un comentario (CSS o JS) para que el fichero fuente siga siendo válido tal cual. Una marca repetida o un fichero que falta PARA.
+COMUN_MARCAS = {'/*AXW_COMUN_CSS*/': 'pantalla_comun.css', '/*AXW_COMUN_JS*/': 'pantalla_comun.js'}
+
+
+def _inyecta_comun(texto, archivo):
+    for marca, fichero in COMUN_MARCAS.items():
+        n = texto.count(marca)
+        if n > 1:
+            aborta('%s: la marca %s aparece %d veces (una sola)' % (archivo, marca, n))
+        if n == 1:
+            ruta = os.path.join(AQUI, '_compartido', fichero)
+            if not os.path.isfile(ruta):
+                aborta('%s usa %s pero falta _compartido/%s' % (archivo, marca, fichero))
+            texto = texto.replace(marca, open(ruta, encoding='utf-8').read().strip())
+    return texto
+
+
 def _pantalla_bot(v4, archivo, carpeta, titulo, puerta='data-rol="admin"'):
     """Una pantalla del maestro sobre la cáscara de /asistente/ de Lawang (ver whatsapp_bot_pantalla y ventas_pantalla). `puerta` es lo que
     sustituye a `data-herramienta="asistente"`: por defecto solo el administrador; /ventas/ pide una herramienta (varias, con coma = cualquiera)."""
@@ -1594,7 +1612,7 @@ def _pantalla_bot(v4, archivo, carpeta, titulo, puerta='data-rol="admin"'):
     frag = open(os.path.join(AQUI, archivo), encoding='utf-8').read().split('<!--AXW_SCRIPT-->')
     if len(frag) != 2:
         aborta('%s: tiene que llevar UNA línea <!--AXW_SCRIPT--> entre el marcado y el script' % archivo)
-    marcado, script = frag[0].strip(), frag[1].strip()
+    marcado, script = _inyecta_comun(frag[0].strip(), archivo), _inyecta_comun(frag[1].strip(), archivo)
     ancla = '<div class="flex flex-col w-full gap-8">'
     cierre = '</div>\n</main></div>\n<script>'
     fin = '</script>\n</body></html>'
@@ -1666,6 +1684,41 @@ def reservas_producto_pantalla():
                  "      para:'Las reservas de tus productos por fechas (motos, coches): calendario por unidad, flota y tarifas, y el paso de cada reserva.'," + '\n' +
                  "      claves:'reservas producto alquiler motos coches flota unidad calendario tarifa bloqueo entrega devolucion bookings rental fleet unit calendar rate hold return' });" + '\n' + "}",
                  'herramientas.js tarjeta Reservas de producto')
+    open(her, 'w', encoding='utf-8', newline='').write(h)
+
+
+def taller_pantalla():
+    """Pantalla /taller/ del ERP maestro (F8 pieza 2, 8-oct-2026; encargos/20261008_erp_f8_bbm_inventario_reservas_plan.md §2, §3 y §7.2; decisión 1 del owner: orden ligera ahora, el resto de
+    F7 después). Es del módulo `reservas-producto` pero con permiso PROPIO: la herramienta `taller` (la base la exige en cada RPC: sin ella ni el administrador entra). La crea el build
+    clonando la CÁSCARA de /asistente/ con el contenido de `taller.html`, y esa página NO pega las ayudas de las otras: las trae de _compartido/ por las marcas AXW_COMUN_CSS/JS.
+    Lleva además, todo con reemplazo literal que aborta si una pantalla anterior de la cadena cambia el trozo:
+      · nav.js: entrada de menú en Seguimiento (tras Reservas de producto), injerto de sidebar y casilla en CLAVE_MENU (sin esa línea puedeVer() la enseñaría a todos);
+      · herramientas.js: la tarjeta `taller` tras la de Reservas de producto. Sin ella no existiría la casilla en Usuarios y solo el super admin podría abrir la pantalla.
+    Va DESPUÉS de reservas_producto_pantalla() porque sus anclas de nav.js son las líneas que esa deja. Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    _pantalla_bot(v4, 'taller.html', 'taller', 'Taller', puerta='data-herramienta="taller"')
+    nav = os.path.join(v4, 'assets', 'nav.js')
+    n = open(nav, encoding='utf-8').read()
+    n = _una_vez(n, "      { path: 'reservas-producto', texto: 'Reservas de producto', clave: 'reservas-producto', nucleo: true }] },",
+                 "      { path: 'reservas-producto', texto: 'Reservas de producto', clave: 'reservas-producto', nucleo: true }," + '\n' +
+                 "      { path: 'taller', texto: 'Taller', clave: 'taller', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (taller)')
+    n = _una_vez(n, "    { path: 'reservas-producto', tras: 'ventas', icono: 'calendar_month', texto: 'Reservas de producto', nucleo: true },",
+                 "    { path: 'reservas-producto', tras: 'ventas', icono: 'calendar_month', texto: 'Reservas de producto', nucleo: true }," + '\n' +
+                 "    { path: 'taller', tras: 'reservas-producto', icono: 'build', texto: 'Taller', nucleo: true },", 'nav.js INJERTOS taller')
+    n = _una_vez(n, "    'reservas-producto': 'reservas-producto',",
+                 "    'reservas-producto': 'reservas-producto'," + '\n' + "    taller: 'taller',", 'nav.js CLAVE_MENU taller')
+    open(nav, 'w', encoding='utf-8', newline='').write(n)
+    her = os.path.join(DIST, 'contracts', 'assets', 'herramientas.js')
+    h = open(her, encoding='utf-8').read()
+    ancla = "bookings rental fleet unit calendar rate hold return' });" + '\n' + "}"
+    h = _una_vez(h, ancla,
+                 "bookings rental fleet unit calendar rate hold return' });" + '\n' +
+                 "  /* TALLER (F8 pieza 2, 8-oct-2026): órdenes de trabajo del taller. Permiso propio `taller` (es el que exigen las RPC orden_trabajo_*); sin esta tarjeta la casilla no existiría en Usuarios. */" + '\n' +
+                 "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'reservas-producto') + 1, 0," + '\n' +
+                 "    { grupo:'Seguimiento', nombre:'Taller', icon:'ph-wrench', href:'/intranet/v4/taller/', herr:'taller'," + '\n' +
+                 "      para:'Las motos que entran al taller y por qué: mientras una orden que bloquea esté abierta, la moto no se puede reservar.'," + '\n' +
+                 "      claves:'taller orden de trabajo moto reparacion mecanico mantenimiento bloquear reservas workshop repair mechanic maintenance work order' });" + '\n' + "}",
+                 'herramientas.js tarjeta Taller')
     open(her, 'w', encoding='utf-8', newline='').write(h)
 
 
@@ -1773,6 +1826,7 @@ def instancia(nombre):
     ajustes_correo_maestro()   # F3.1 (7-oct-2026): Ajustes › Correo con el servidor de salida (llama a la edge ajustes-correo)
     ventas_pantalla()   # F4 (8-oct-2026): Ventas — reserva → borrador → emitir → rectificar y la cola «cobrado sin facturar»
     reservas_producto_pantalla()   # F8 (8-oct-2026): Reservas de producto — lista, calendario, flota y pagos por revisar (tras ventas: sus anclas de nav.js)
+    taller_pantalla()   # F8 pieza 2 (8-oct-2026): Taller — órdenes de trabajo ligeras (tras reservas de producto: sus anclas de nav.js)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]

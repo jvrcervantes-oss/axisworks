@@ -1,0 +1,302 @@
+<!-- Pantalla /taller/ del ERP MAESTRO (F8 pieza 2, 8-oct-2026; encargos/20261008_erp_f8_bbm_inventario_reservas_plan.md §2, §3 y §7.2, decisión 1 del owner: orden ligera ahora, guion/parte/recambios/proveedor en F7).
+     NO es una página entera: build.py (taller_pantalla) la inyecta en la cáscara de /asistente/ de Lawang (la misma que usan ventas y reservas_producto), sustituyendo su contenedor y su script.
+     Dos partes separadas por la línea «AXW_SCRIPT». Las ayudas comunes (DOM sin innerHTML, errores clasificados, diálogo, un envío a la vez) y su CSS NO se pegan aquí: build.py las inyecta
+     desde _compartido/pantalla_comun.{js,css} donde esta página escribe las marcas AXW_COMUN_JS y AXW_COMUN_CSS.
+     Qué hace: abrir una orden de trabajo sobre una moto (y, si bloquea, la moto pasa a «taller» y no se reserva ni la ofrece el bot), ver las órdenes y cerrarlas con coste y nota.
+     El navegador SOLO pide: moto, motivo y si bloquea; número, autor, fechas y el estado de la moto los pone la base y la pantalla los lee de vuelta. No se cree su propio estado: tras cada
+     acción vuelve a leer. Todo texto que viene de la base (matrícula, motivo, nota, correo) se pinta con textContent. Se engancha por data-accion / data-tl / data-campo, nunca por un rótulo.
+     Idioma: ES/EN con el diccionario EN_TL de abajo más el de las ayudas comunes (se añaden a window.LW_EN solo si la clave no existe; el i18n.js es de Lawang y no se toca). -->
+<div class="flex flex-col w-full gap-8" data-tl="raiz">
+<style>
+/*AXW_COMUN_CSS*/
+</style>
+
+<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<div class="flex flex-col gap-2 max-w-3xl">
+<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Taller</h1>
+<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Las motos que entran al taller y por qué. Mientras una orden que bloquea esté abierta, esa moto no se puede reservar ni la ofrece el bot.</p>
+</div>
+<div class="axw-acciones"><button class="axw-boton" type="button" data-accion="tl-abrir" data-primario="1"><span data-lwt>Abrir orden</span></button></div>
+</div>
+
+<p class="axw-ok axw-oculto" data-tl="exito" role="status"></p>
+<p class="axw-aviso axw-oculto" data-tl="aviso" role="status"></p>
+<p class="axw-error axw-oculto" data-tl="error" role="alert"></p>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4">
+<div class="axw-nota" data-lwt>Cerrar la orden devuelve la moto a disponible, salvo que quede otra orden abierta que también la bloquee. El mecánico ve y cierra las órdenes que ha abierto él; la administración ve todas.</div>
+<div class="axw-barra">
+<label><span data-lwt>Órdenes</span>
+<select data-tl="f-estado"><option value="abierta" data-lwt>Abiertas</option><option value="cerrada" data-lwt>Cerradas</option><option value="" data-lwt>Todas</option></select></label>
+<button class="axw-boton" type="button" data-accion="tl-actualizar"><span data-lwt>Actualizar</span></button>
+</div>
+<div data-tl="estado" class="axw-vacio"></div>
+<div class="axw-tabla-caja"><table class="axw-tabla" data-tl="tabla"></table></div>
+<div class="axw-barra"><button class="axw-boton axw-oculto" type="button" data-accion="tl-mas"><span data-lwt>Cargar más</span></button></div>
+</section>
+
+</div>
+<!--AXW_SCRIPT-->
+<script>
+(function () {
+  'use strict';
+  var EN_TL = {
+    'Taller': 'Workshop',
+    'Las motos que entran al taller y por qué. Mientras una orden que bloquea esté abierta, esa moto no se puede reservar ni la ofrece el bot.': 'The bikes that go into the workshop and why. While an order that blocks is open, that bike cannot be booked and the bot will not offer it.',
+    'Abrir orden': 'Open order',
+    'Cerrar la orden devuelve la moto a disponible, salvo que quede otra orden abierta que también la bloquee. El mecánico ve y cierra las órdenes que ha abierto él; la administración ve todas.': 'Closing the order puts the bike back to available, unless another open order also blocks it. The mechanic sees and closes the orders they opened; the administration sees all of them.',
+    'Órdenes': 'Orders', 'Abiertas': 'Open', 'Cerradas': 'Closed', 'Todas': 'All', 'Cargar más': 'Load more',
+    'Orden': 'Order', 'Moto': 'Bike', 'Motivo': 'Reason', 'Bloquea': 'Blocks', 'Estado': 'Status', 'Abierta': 'Opened', 'Coste': 'Cost', 'Acciones': 'Actions',
+    'Abierta por': 'Opened by', 'Cerrada': 'Closed', 'Cerrada por': 'Closed by', 'Nota de cierre': 'Closing note', 'Detalle': 'Details', 'Cerrar orden': 'Close order',
+    'Bloquea las reservas': 'Blocks bookings', 'La moto no se podrá reservar hasta cerrar la orden': 'The bike cannot be booked until the order is closed',
+    'No hay órdenes abiertas.': 'There are no open orders.', 'No hay órdenes cerradas.': 'There are no closed orders.', 'No hay órdenes.': 'There are no orders.',
+    'Elige una moto': 'Choose a bike', 'En taller': 'In workshop', 'Disponible': 'Available', 'Baja': 'Retired', 'Orden abierta': 'Order opened', 'Orden cerrada': 'Order closed',
+    'Qué se le hace a la moto (3 a 500 caracteres, una línea)': 'What is being done to the bike (3 to 500 characters, one line)',
+    'Bloquea las reservas: la moto pasa a taller y no se puede reservar hasta que cierres la orden': 'Blocks bookings: the bike goes to the workshop and cannot be booked until you close the order',
+    'Si no marcas esto, la orden queda anotada pero la moto sigue disponible.': 'If you do not tick this, the order is recorded but the bike stays available.',
+    'Solo se ofrecen las primeras 500 motos; si falta una, pídelo a la administración.': 'Only the first 500 bikes are offered; if one is missing, ask the administration.',
+    'Elige la moto': 'Choose the bike', 'Escribe el motivo (3 a 500 caracteres, en una sola línea)': 'Write the reason (3 to 500 characters, on a single line)',
+    'Esa moto tiene reservas pendientes. Cámbialas de moto antes de pasarla a taller:': 'That bike has pending bookings. Change them to another bike before sending it to the workshop:',
+    'Se cambian desde Reservas de producto (botón «Cambiar de unidad»).': 'They are changed from Product bookings (the “Change unit” button).',
+    'Ir a Reservas de producto': 'Go to Product bookings',
+    'Pídelo a quien lleve las reservas.': 'Ask whoever handles the bookings.',
+    'La base no confirmó la orden: recarga la lista antes de repetir.': 'The database did not confirm the order: reload the list before repeating.',
+    'Coste (opcional)': 'Cost (optional)', 'Moneda': 'Currency', 'Nota (opcional, hasta 1000 caracteres)': 'Note (optional, up to 1000 characters)',
+    'El coste es un número positivo. Usa solo cifras y un punto o una coma para los decimales.': 'The cost is a positive number. Use digits and one dot or comma for decimals only.',
+    'Con coste hace falta la moneda en tres letras (IDR, EUR…)': 'A cost needs the currency in three letters (IDR, EUR…)',
+    'La nota admite hasta 1000 caracteres.': 'The note allows up to 1000 characters.',
+    'Cerrar la orden': 'Close the order', 'Volver': 'Back', 'Abrir': 'Open',
+    'El módulo de reservas de producto está apagado en esta instancia: no hay órdenes que mirar. Esto NO quiere decir que no haya nada.': 'The product bookings module is off in this instance: there are no orders to check. This does NOT mean there is nothing.',
+    'No tienes permiso para ver el taller. No es que esté vacío: no se ha podido mirar.': 'You do not have permission to see the workshop. It is not empty: it could not be checked.',
+    'No se ha podido mirar': 'It could not be checked'
+  };
+  var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
+  var traduce = function (r) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(r); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
+  var raiz = document.querySelector('[data-tl="raiz"]');
+  /*AXW_COMUN_JS*/
+  var C = axwComun(raiz, T);
+  if (window.LW_EN && typeof window.LW_EN === 'object') {
+    [EN_TL, C.EN].forEach(function (d) { Object.keys(d).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = d[k]; }); });
+  }
+  traduce(raiz);
+  var $v = function (n) { return raiz.querySelector('[data-tl="' + n + '"]'); };
+  var h = C.h, vacia = C.vacia, oculta = C.oculta, boton = C.boton, chip = C.chip, celda = C.celda, campo = C.campo;
+  function msg(clase, m) { var e = $v(clase); e.textContent = m || ''; oculta(e, !m); }
+  var exito = function (m) { msg('exito', m); }, aviso = function (m) { msg('aviso', m); }, error = function (m) { msg('error', m); };
+
+  var SB = null;
+  var AUT = null;
+  var E = { ordenes: [], siguiente: null, unidades: [], cargado: false, puedeReservas: false, recortadas: false };
+  var ESTADO_ORDEN = { abierta: ['Abierta', 'espera'], cerrada: ['Cerrada', 'neutro'] };
+  var PROPIOS = {
+    modulo_apagado: T('El módulo de reservas de producto está apagado en esta instancia: no hay órdenes que mirar. Esto NO quiere decir que no haya nada.'),
+    sin_permiso: T('No tienes permiso para ver el taller. No es que esté vacío: no se ha podido mirar.'), soloLectura: true
+  };
+
+  /* Una entrada por RPC, con el nombre LITERAL: así erp/contrato_front.py ve cada llamada (extrae `.rpc('x')` y `lwDatos('x')`) y comprueba contra la base que existe y que
+     authenticated la ejecuta. La lectura va por lwDatos (único transporte de lecturas); las que escriben, por sb.rpc. */
+  var RPC = {
+    orden_trabajo_datos: function (a) { return window.lwDatos('orden_trabajo_datos', a); },
+    orden_trabajo_abre: function (a) { return SB.rpc('orden_trabajo_abre', a); },
+    orden_trabajo_cierra: function (a) { return SB.rpc('orden_trabajo_cierra', a); }
+  };
+  function llama(nombre, args) {
+    var p;
+    try {
+      if (RPC[nombre]) p = RPC[nombre](args || {});
+      else p = Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function ' + nombre } });
+    } catch (e) { return Promise.resolve({ data: null, error: e }); }
+    return Promise.resolve(p).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; },
+                                   function (e) { return { data: null, error: e }; });
+  }
+  function vaListaDe(r, clave) { return r && !r.error && r.data && Array.isArray(r.data[clave]); }
+
+  /* ── lectura ── */
+  function estadoFiltro() { var v = $v('f-estado').value; return v === 'abierta' || v === 'cerrada' ? v : null; }
+  function carga(mas) {
+    var est = $v('estado');
+    est.className = 'axw-vacio';
+    if (!mas) { E.siguiente = null; est.textContent = T('Cargando…'); }
+    var args = { p_estado: estadoFiltro(), p_limit: 50, p_despues: mas ? E.siguiente : null };
+    return llama('orden_trabajo_datos', args).then(function (r) {
+      if (!vaListaDe(r, 'ordenes') || !Array.isArray(r.data.unidades)) {
+        // «no se ha podido mirar» NO es «no hay órdenes»: se dice, y la tabla no se vacía en silencio
+        var t = r.error ? C.mensaje(r.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
+        est.className = 'axw-error'; est.textContent = T('No se ha podido mirar') + ': ' + t;
+        oculta(raiz.querySelector('[data-accion="tl-mas"]'), true);
+        if (!mas) { E.ordenes = []; vacia($v('tabla')); }
+        return r;
+      }
+      E.unidades = r.data.unidades; E.recortadas = r.data.unidades_recortadas === true;
+      E.ordenes = mas ? E.ordenes.concat(r.data.ordenes) : r.data.ordenes;
+      E.siguiente = typeof r.data.siguiente === 'string' ? r.data.siguiente : null;
+      E.cargado = true;
+      pinta();
+      return r;
+    });
+  }
+  function orden(id) { return E.ordenes.filter(function (o) { return o.id === id; })[0]; }
+  function unidad(id) { return E.unidades.filter(function (u) { return u.id === id; })[0]; }
+  function nombreMoto(o) { return (o.unidad || '—') + (o.producto ? ' · ' + o.producto : ''); }
+  function chipEstado(e) { var t = ESTADO_ORDEN[e]; return t ? chip(T(t[0]), t[1]) : chip(String(e || '—')); }
+
+  function pinta() {
+    var est = $v('estado');
+    if (!E.ordenes.length) {
+      est.className = 'axw-vacio';
+      est.textContent = estadoFiltro() === 'abierta' ? T('No hay órdenes abiertas.') : (estadoFiltro() === 'cerrada' ? T('No hay órdenes cerradas.') : T('No hay órdenes.'));
+      vacia($v('tabla'));
+    } else {
+      est.className = 'axw-vacio'; est.textContent = '';
+      var filas = E.ordenes.map(function (o) {
+        var acc = h('div', { class: 'axw-acciones' }, [boton(T('Detalle'), 'tl-detalle', { 'data-orden-id': o.id })]);
+        if (o.estado === 'abierta') acc.appendChild(boton(T('Cerrar orden'), 'tl-cerrar', { 'data-orden-id': o.id, 'data-primario': '1' }));
+        var tr = h('tr', { 'data-orden-id': o.id });
+        [celda(o.numero, 'axw-nw'), celda(nombreMoto(o)), celda(o.motivo), celda(chip(o.bloquea_reservas ? T('Sí') : T('No'), o.bloquea_reservas ? 'espera' : 'neutro')),
+         celda(chipEstado(o.estado)), celda(C.fechaHora(o.abierta_en), 'axw-nw'), celda(o.coste == null ? '—' : C.dinero(o.coste, o.moneda), 'axw-num'), celda(acc)]
+          .forEach(function (td) { tr.appendChild(td); });
+        return tr;
+      });
+      C.tabla($v('tabla'), [['Orden'], ['Moto'], ['Motivo'], ['Bloquea'], ['Estado'], ['Abierta'], ['Coste', 'axw-num'], ['Acciones']], filas);
+    }
+    oculta(raiz.querySelector('[data-accion="tl-mas"]'), !E.siguiente);
+  }
+
+  function detalle(o) {
+    C.dialogo(T('Orden') + ' ' + o.numero, [C.resumen([
+      ['Moto', nombreMoto(o)], ['Motivo', o.motivo], ['Bloquea', o.bloquea_reservas ? T('Sí') : T('No')], ['Estado', T((ESTADO_ORDEN[o.estado] || [o.estado])[0])],
+      ['Abierta', C.fechaHora(o.abierta_en)], ['Abierta por', o.abierta_por_email],
+      ['Cerrada', o.cerrada_en ? C.fechaHora(o.cerrada_en) : null], ['Cerrada por', o.cerrada_por_email],
+      ['Coste', o.coste == null ? null : C.dinero(o.coste, o.moneda)], ['Nota de cierre', o.nota_cierre]])],
+      [{ texto: T('Cerrar'), accion: 'tl-modal-cerrar', cierra: true }]);
+  }
+
+  /* ── abrir ── */
+  function listaReservasVivas(c) {
+    var v = null;
+    try { v = typeof c.detail === 'string' ? JSON.parse(c.detail) : c.detail; } catch (e) { /* MUDO A PROPOSITO: si el detalle no se puede leer se enseña solo el mensaje de la base, que ya dice cuántas son */ v = null; }
+    if (!Array.isArray(v) || !v.length) return null;
+    var ul = h('ul', { class: 'axw-nota' }, v.map(function (r) {
+      return h('li', { text: String(r.numero || '—') + ' · ' + String(r.estado || '') + ' · ' + C.fechaDia(r.desde) + ' → ' + C.fechaDia(r.hasta) });
+    }));
+    var salida = [h('p', { text: T('Esa moto tiene reservas pendientes. Cámbialas de moto antes de pasarla a taller:') }), ul];
+    if (E.puedeReservas) {
+      salida.push(h('p', { text: T('Se cambian desde Reservas de producto (botón «Cambiar de unidad»).') }));
+      salida.push(h('a', { href: '/intranet/v4/reservas-producto/', text: T('Ir a Reservas de producto') }));
+    } else {
+      salida.push(h('p', { text: T('Pídelo a quien lleve las reservas.') }));
+    }
+    return salida;
+  }
+  function abrirOrden() {
+    error(''); exito(''); aviso('');
+    var sel = h('select', { 'data-campo': 'unidad' }, [h('option', { value: '', text: T('Elige una moto') })]);
+    E.unidades.forEach(function (u) {
+      sel.appendChild(h('option', { value: u.id, text: String(u.identificador) + (u.producto ? ' · ' + u.producto : '') + (u.estado === 'taller' ? ' — ' + T('En taller') : '') }));
+    });
+    var motivo = h('input', { type: 'text', 'data-campo': 'motivo', maxlength: '500', autocomplete: 'off' });
+    var bloquea = h('input', { type: 'checkbox', 'data-campo': 'bloquea', checked: true });
+    var avisoReservas = h('div', { class: 'axw-oculto', 'data-campo': 'reservas' });
+    var d = C.dialogo(T('Abrir orden'), [
+      campo('Moto', sel), campo('Qué se le hace a la moto (3 a 500 caracteres, una línea)', motivo),
+      h('div', { class: 'axw-campo' }, [h('label', null, [bloquea, document.createTextNode(' ' + T('Bloquea las reservas: la moto pasa a taller y no se puede reservar hasta que cierres la orden'))]),
+                                         h('p', { class: 'axw-vacio', text: T('Si no marcas esto, la orden queda anotada pero la moto sigue disponible.') })]),
+      avisoReservas
+    ].concat(E.recortadas ? [h('p', { class: 'axw-aviso', text: T('Solo se ofrecen las primeras 500 motos; si falta una, pídelo a la administración.') })] : []), [
+      { texto: T('Abrir'), accion: 'tl-modal-abrir', primario: true, alclic: function (bt, dlg) {
+        dlg.error(''); vacia(avisoReservas); C.oculta(avisoReservas, true);
+        var m = motivo.value.replace(/^\s+|\s+$/g, '');
+        if (!sel.value) { dlg.error(T('Elige la moto')); return; }
+        if (m.length < 3 || m.length > 500 || /[\u0000-\u001f\u007f]/.test(m)) { dlg.error(T('Escribe el motivo (3 a 500 caracteres, en una sola línea)')); return; }
+        if (!C.ocupa(bt)) return;
+        llama('orden_trabajo_abre', { p_unidad: sel.value, p_motivo: m, p_bloquea: !!bloquea.checked }).then(function (r) {
+          C.libera(bt);
+          if (r.error) {
+            var c = C.clasifica(r.error);
+            var lista = c.hint === 'reservas_vivas' ? listaReservasVivas(c) : null;
+            dlg.error(C.mensaje(r.error, false));
+            if (lista) { lista.forEach(function (n) { avisoReservas.appendChild(n); }); C.oculta(avisoReservas, false); }
+            return;
+          }
+          var x = r.data;
+          // no se da por abierta lo que la base no confirma con un número de orden
+          if (!x || typeof x.id !== 'string' || typeof x.numero !== 'string') { dlg.error(T('La base no confirmó la orden: recarga la lista antes de repetir.')); return; }
+          dlg.cierra();
+          exito(T('Orden abierta') + ' ' + x.numero + '. ' + T('Moto') + ': ' + T(x.unidad_estado === 'taller' ? 'En taller' : 'Disponible'));
+          carga(false);
+        });
+      } },
+      { texto: T('Cancelar'), accion: 'tl-modal-cerrar', cierra: true }
+    ]);
+    return d;
+  }
+
+  /* ── cerrar ── */
+  function cerrarOrden(o) {
+    error(''); exito(''); aviso('');
+    var u = unidad(o.unidad_id);
+    var coste = h('input', { type: 'text', inputmode: 'decimal', 'data-campo': 'coste', autocomplete: 'off' });
+    var moneda = h('input', { type: 'text', 'data-campo': 'moneda', maxlength: '3', autocomplete: 'off', value: u && u.moneda ? u.moneda : '' });
+    var nota = h('textarea', { 'data-campo': 'nota', rows: '3', maxlength: '1000' });
+    C.dialogo(T('Cerrar la orden') + ' ' + o.numero, [
+      C.resumen([['Moto', nombreMoto(o)], ['Motivo', o.motivo]]),
+      h('div', { class: 'axw-campo' }, [h('label', { text: T('Coste (opcional)') }), coste]),
+      h('div', { class: 'axw-campo' }, [h('label', { text: T('Moneda') }), moneda]),
+      campo('Nota (opcional, hasta 1000 caracteres)', nota)
+    ], [
+      { texto: T('Cerrar la orden'), accion: 'tl-modal-cierra', primario: true, alclic: function (bt, dlg) {
+        dlg.error('');
+        var c = coste.value.replace(/\s+/g, '').replace(',', '.');
+        var mo = moneda.value.replace(/\s+/g, '').toUpperCase();
+        var n = nota.value.replace(/^\s+|\s+$/g, '');
+        if (c !== '' && !/^\d+(\.\d{1,4})?$/.test(c)) { dlg.error(T('El coste es un número positivo. Usa solo cifras y un punto o una coma para los decimales.')); return; }
+        if (c !== '' && !/^[A-Z]{3}$/.test(mo)) { dlg.error(T('Con coste hace falta la moneda en tres letras (IDR, EUR…)')); return; }
+        if (n.length > 1000) { dlg.error(T('La nota admite hasta 1000 caracteres.')); return; }
+        if (!C.ocupa(bt)) return;
+        // el coste viaja como TEXTO numérico: la base lo valida contra los decimales de la moneda; aquí no se redondea nada
+        llama('orden_trabajo_cierra', { p_id: o.id, p_coste: c === '' ? null : c, p_moneda: c === '' ? null : mo, p_nota: n === '' ? null : n }).then(function (r) {
+          C.libera(bt);
+          if (r.error) { dlg.error(C.mensaje(r.error, false)); return; }
+          var x = r.data;
+          if (!x || x.estado !== 'cerrada') { dlg.error(T('La base no confirmó la orden: recarga la lista antes de repetir.')); return; }
+          dlg.cierra();
+          exito(T('Orden cerrada') + ' ' + x.numero + '. ' + T('Moto') + ': ' + T(x.unidad_estado === 'taller' ? 'En taller' : (x.unidad_estado === 'disponible' ? 'Disponible' : 'Baja')));
+          carga(false);
+        });
+      } },
+      { texto: T('Volver'), accion: 'tl-modal-cerrar', cierra: true }
+    ]);
+  }
+
+  function alClic(ev) {
+    var el = ev.target.closest ? ev.target.closest('[data-accion]') : null;
+    if (!el || !raiz.contains(el)) return;
+    var a = el.getAttribute('data-accion');
+    if (a.indexOf('tl-modal') === 0) return;   // los botones del diálogo llevan su propio manejador
+    var o = el.hasAttribute('data-orden-id') ? orden(el.getAttribute('data-orden-id')) : null;
+    if (a === 'tl-abrir') abrirOrden();
+    else if (a === 'tl-actualizar') { aviso(''); error(''); exito(''); carga(false); }
+    else if (a === 'tl-mas') carga(true);
+    else if (o) { error(''); exito(''); if (a === 'tl-detalle') detalle(o); else if (a === 'tl-cerrar') cerrarOrden(o); }
+  }
+
+  function tieneReservas(f) {
+    if (!f) return false;
+    if (f.rol === 'super_admin') return true;
+    return Array.isArray(f.herramientas) && f.herramientas.indexOf('reservas-producto') !== -1;
+  }
+  function init(aut) {
+    AUT = aut; SB = aut.sb;
+    E.puedeReservas = tieneReservas(aut.ficha);
+    raiz.addEventListener('click', alClic);
+    raiz.addEventListener('change', function (ev) { if (ev.target === $v('f-estado')) { error(''); carga(false); } });
+    carga(false);
+  }
+  function arranca() {
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { error(T('Sin sesión: recarga la página o vuelve a entrar.')); return; }
+    window.LW_AUTH.then(init);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca);
+  else arranca();
+})();
+</script>
