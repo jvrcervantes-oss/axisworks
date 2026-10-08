@@ -166,6 +166,8 @@
     'Motivo de la cancelación (obligatorio, hasta 300 caracteres)': 'Reason for cancelling (required, up to 300 characters)', 'Sí, cancelar con devolución': 'Yes, cancel with refund',
     'Escribe el motivo.': 'Write the reason.', 'El motivo es demasiado largo.': 'The reason is too long.', 'El importe devuelto es un número de 0 en adelante.': 'The refunded amount is a number from 0 up.',
     'Si devuelves algo, falta la referencia de la devolución.': 'If you refund something, the refund reference is missing.',
+    'El importe lleva más decimales de los que admite la moneda (IDR no tiene decimales: escribe 1500000, sin puntos ni comas).': 'The amount has more decimals than the currency allows (IDR has none: write 1500000, no dots or commas).',
+    'No se recibió respuesta: la cancelación puede haberse aplicado. Se ha recargado la lista: míralo antes de volver a intentarlo.': 'No answer was received: the cancellation may have been applied. The list has been reloaded: check it before trying again.',
     'Reserva cancelada con devolución.': 'Booking cancelled with refund.', 'Devuelto': 'Refunded', 'Retenido': 'Kept', 'La base no confirmó la cancelación: recarga y comprueba.': 'The database did not confirm the cancellation: reload and check.',
     'Cambiar la unidad de la reserva': 'Change the booking’s unit', 'Unidad nueva (solo las disponibles del mismo producto)': 'New unit (only the available ones of the same product)', 'Unidad actual': 'Current unit',
     'No hay otra unidad disponible de este producto.': 'There is no other available unit of this product.', 'Elige la unidad nueva.': 'Choose the new unit.', 'Cambiar': 'Change',
@@ -503,6 +505,8 @@
           var texto = importe.value.trim().replace(',', '.');
           // solo se comprueba la forma; la base redondea, compara con lo cobrado y decide (el navegador no calcula dinero)
           if (!/^\d+(\.\d+)?$/.test(texto)) { dd.error(T('El importe devuelto es un número de 0 en adelante.')); return; }
+          var decMax = (x.moneda === 'IDR' || x.moneda === 'JPY') ? 0 : 2;
+          if ((texto.split('.')[1] || '').length > decMax) { dd.error(T('El importe lleva más decimales de los que admite la moneda (IDR no tiene decimales: escribe 1500000, sin puntos ni comas).')); return; }
           var m = motivo.value.trim(), rf = ref.value.trim();
           if (!m) { dd.error(T('Escribe el motivo.')); return; }
           if (m.length > 300) { dd.error(T('El motivo es demasiado largo.')); return; }
@@ -510,7 +514,11 @@
           if (!ocupa(bt)) return;
           llama('reserva_cancela_con_devolucion', { p_reserva: x.id, p_importe_devuelto: Number(texto), p_referencia_devolucion: rf || null, p_motivo: m }).then(function (r) {
             libera(bt);
-            if (r.error) { dd.error(mensaje(r.error)); return; }
+            if (r.error) {
+              // sin respuesta no se sabe si la base ya rectificó y anotó la devolución: se dice y se relee la lista antes de dejar reintentar
+              if (clasifica(r.error).tipo === 'red') { dd.error(T('No se recibió respuesta: la cancelación puede haberse aplicado. Se ha recargado la lista: míralo antes de volver a intentarlo.')); cargaReservas(false); return; }
+              dd.error(mensaje(r.error)); return;
+            }
             var d = r.data || {};
             if (d.estado !== 'cancelada' || d.reserva_id !== x.id) { dd.error(T('La base no confirmó la cancelación: recarga y comprueba.')); return; }
             dd.cierra(); error('');
