@@ -33,11 +33,13 @@ var sb = {
     if (n === 'wab_ficha_historial') return Promise.resolve({ data: { versiones: [] }, error: null });
     if (n === 'wab_seguimiento_datos') {
       if (window.__modo === 'sin_permiso') return error('42501', 'whatsapp-bot: solo un administrador de la instancia');
+      if (window.__modo === 'sin_rpc') return error('PGRST202', 'Could not find the function public.wab_seguimiento_datos without parameters in the schema cache');
       return Promise.resolve({ data: datosSeg(), error: null });
     }
     if (n === 'wab_seguimiento_guarda') {
       var d = a.p_datos, b = window.__bd;
       if (window.__modo === 'sin_permiso') return error('42501', 'whatsapp-bot: solo un administrador de la instancia');
+      if (window.__modo === 'red_cae') return Promise.reject(new Error('Failed to fetch'));
       if (a.p_version !== b.version) return error('40001', 'Otra persona guardó el seguimiento mientras lo editabas (versión ' + b.version + '). Recarga y vuelve a aplicar tu cambio.');
       if (!Number.isInteger(d.horas) || d.horas < 24 || d.horas > 720) return error('22023', '«Cada cuántas horas» tiene que estar entre 24 y 720');
       if (!Number.isInteger(d.max_mensajes) || d.max_mensajes < 1 || d.max_mensajes > 5) return error('22023', '«Máximo de mensajes por cliente» tiene que estar entre 1 y 5');
@@ -143,6 +145,27 @@ window.toast = function (m) { window.__toast = m; };
   await p.click('[data-accion="seguimiento-recargar"]');
   await p.waitForFunction(() => document.querySelectorAll('[data-seg-version]').length >= 4);
   ok('7.1 un valor o un motivo con HTML se pinta como texto: no se ejecuta nada ni aparece un <img>', await p.evaluate(() => !window.__pwned && !document.querySelector('[data-wb="seg-historial"] img') && !document.querySelector('[data-wb="seg-historial"] b')));
+
+  // 7b. la base nueva no está aplicada (RPC ausente): texto propio, sin formulario, la ficha sigue
+  await p.evaluate(() => { window.__modo = 'sin_rpc'; window.__llamadas.length = 0; });
+  await p.click('[data-accion="seguimiento-recargar"]');
+  await p.waitForFunction(() => document.querySelector('[data-wb="seg-error"]').textContent.length > 0);
+  const eseg = await p.textContent('[data-wb="seg-error"]');
+  ok('7b.1 RPC ausente: mensaje propio en llano, no el PGRST202 en inglés', eseg === 'El seguimiento todavía no está disponible en esta instalación.' && !/PGRST|schema cache/.test(eseg));
+  ok('7b.2 formulario y botón de guardar ocultos', !(await p.locator('[data-wb="seg-formulario"]').isVisible()) && !(await p.locator('[data-accion="seguimiento-guardar"]').isVisible()));
+  ok('7b.3 la ficha sigue: su botón de guardar visible y nunca se llamó a wab_seguimiento_guarda', (await p.locator('[data-accion="guardar"]').count()) === 1 && (await guardaLlamadas()).length === 0);
+  await p.evaluate(() => { window.__modo = 'bien'; });
+  await p.click('[data-accion="seguimiento-recargar"]');
+  await p.waitForFunction(() => document.querySelector('[data-wb="seg-error"]').textContent === '');
+  ok('7b.4 al volver la base, el formulario reaparece', await p.locator('[data-wb="seg-formulario"]').isVisible() && await p.locator('[data-accion="seguimiento-guardar"]').isVisible());
+
+  // 7c. la red se cae al guardar: mensaje en llano y el botón vuelve a estar activo
+  await p.evaluate(() => { window.__modo = 'red_cae'; });
+  await motivo('probando red'); await seg('horas').fill('72');
+  await p.click('[data-accion="seguimiento-guardar"]');
+  await p.waitForFunction(() => document.querySelector('[data-wb="seg-error"]').textContent.includes('No se ha podido guardar'));
+  ok('7c.1 red caída al guardar: mensaje en llano y botón de nuevo habilitado', await p.locator('[data-accion="seguimiento-guardar"]').isEnabled());
+  await p.evaluate(() => { window.__modo = 'bien'; });
 
   // 8. no rompe la ficha de arriba ni escribe en tablas
   ok('8.1 la pantalla solo llama a RPC (lectura de la ficha, historial y las dos del seguimiento)', (await p.evaluate(() => window.__llamadas.map((x) => x.n))).every((x) => /^wab_(ficha_(datos|historial)|seguimiento_(datos|guarda))$/.test(x)));

@@ -146,7 +146,7 @@
 <p class="wb-vacio" data-lwt>Si un cliente deja de contestar, el bot le puede escribir otra vez pasado un tiempo con un mensaje de plantilla. La plantilla tiene que estar APROBADA por Meta en tu cuenta de WhatsApp Business, con el mismo nombre e idioma que pongas aquí: si no lo está, Meta rechaza el mensaje y no sale ninguno. Empieza apagado.</p>
 <p class="wb-aviso wb-oculto" data-wb="seg-aviso" role="status"></p>
 <p class="wb-error wb-oculto" data-wb="seg-error" role="alert"></p>
-<div class="wb-grid" data-wb="seg-formulario">
+<div class="wb-grid wb-oculto" data-wb="seg-formulario">
 <div class="wb-campo wb-ancho">
 <label class="wb-check" for="wb-seg-activo"><input type="checkbox" id="wb-seg-activo" data-seg="activo"><span data-lwt>Activar el seguimiento</span></label>
 <div class="wb-pie"><span data-lwt>Para activarlo hace falta el nombre de la plantilla.</span><span></span></div>
@@ -181,11 +181,11 @@
 <input type="text" id="wb-seg-motivo" data-seg="motivo" autocomplete="off">
 </div>
 </div>
-<div class="flex flex-wrap items-center justify-between gap-4">
+<div class="flex flex-wrap items-center justify-between gap-4" data-wb="seg-pie">
 <p class="wb-vacio" data-wb="seg-version"></p>
 <div class="flex items-center gap-3">
 <button class="wb-boton" type="button" data-accion="seguimiento-recargar"><span data-lwt>Descartar los cambios</span></button>
-<button class="wb-boton" type="button" data-accion="seguimiento-guardar" data-primario="1"><span data-lwt>Guardar el seguimiento</span></button>
+<button class="wb-boton wb-oculto" type="button" data-accion="seguimiento-guardar" data-wb="seg-guardar" data-primario="1"><span data-lwt>Guardar el seguimiento</span></button>
 </div>
 </div>
 <div class="wb-hist" data-wb="seg-historial"></div>
@@ -255,7 +255,9 @@
     'Seguimiento guardado.': 'Follow-up saved.', 'Seguimiento sin cambios.': 'Nothing changed in the follow-up.',
     'El seguimiento está activado: escribirá a quien deje de contestar.': 'The follow-up is on: it will write to people who stop replying.',
     'El seguimiento está apagado: no escribe a nadie.': 'The follow-up is off: it writes to nobody.',
-    'Todavía no hay versiones del seguimiento.': 'There are no follow-up versions yet.'
+    'Todavía no hay versiones del seguimiento.': 'There are no follow-up versions yet.',
+    'El seguimiento todavía no está disponible en esta instalación.': 'The follow-up is not available in this installation yet.',
+    'No se ha podido guardar el seguimiento: revisa la conexión y prueba otra vez.': 'The follow-up could not be saved: check your connection and try again.'
   };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
     Object.keys(EN_WB).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_WB[k]; });
@@ -485,13 +487,21 @@
       fila.appendChild(sp); h.appendChild(fila);
     });
     sError('');
+    segMuestra(true);
   }
+  /* el formulario y el botón de guardar solo existen mientras haya una carga válida (con su versión): sin ella no hay nada que guardar */
+  function segMuestra(si) { oculta($w('seg-formulario'), !si); oculta($w('seg-guardar'), !si); if (!si) texto($w('seg-version'), ''); }
   function segCarga() {
     sError('');
     return window.lwDatos('wab_seguimiento_datos', {}).then(function (r) {
-      if (r.error || !r.data) { sError(mensaje(r.error)); return; }
+      if (r.error || !r.data) {
+        SEG.version = null; segMuestra(false); sAviso('');
+        var c = r.error && r.error.code;
+        sError(c === 'PGRST202' || c === '42883' ? T('El seguimiento todavía no está disponible en esta instalación.') : mensaje(r.error));
+        return;
+      }
       segPinta(r.data);
-    });
+    }, function () { SEG.version = null; segMuestra(false); sError(T('La base no ha respondido: prueba otra vez en un rato.')); });
   }
   function segNumero(n) { var x = sEl(n).value.trim(); return x === '' ? null : Number(x); }
   function segGuarda(btn) {
@@ -502,11 +512,11 @@
     var datos = { activo: sEl('activo').checked, horas: segNumero('horas'), max_mensajes: segNumero('max_mensajes'), plantilla: sEl('plantilla').value, idioma: sEl('idioma').value, vars: vars };
     btn.disabled = true; sError('');
     SB.rpc('wab_seguimiento_guarda', { p_datos: datos, p_motivo: motivo, p_version: SEG.version }).then(function (r) {
-      btn.disabled = false;
       if (r.error) { sError(mensaje(r.error)); return; }
       ok(r.data && r.data.cambiado === false ? T('Seguimiento sin cambios.') : T('Seguimiento guardado.'));
       segCarga();
-    });
+    }).catch(function () { sError(T('No se ha podido guardar el seguimiento: revisa la conexión y prueba otra vez.')); })
+      .finally(function () { btn.disabled = false; });
   }
 
   /* ── conectar el número (S4): Embedded Signup de Meta. Del navegador sale SOLO el código de un solo uso y los dos ids que Meta da al popup, hacia la edge
