@@ -15,6 +15,17 @@
   var EN_CORREO = {
     'Servidor de salida': 'Outgoing mail server',
     'El servidor SMTP desde el que salen todos los correos de este ERP. Se prueba con un envío real a tu correo y solo si llega se guarda; si falla, sigue el anterior.': 'The SMTP server every email of this ERP goes out through. It is tested with a real email to your address and only saved if it arrives; if it fails, the previous one stays.',
+    'Pasos para cambiar el servidor': 'Steps to change the server',
+    'paso actual': 'current step',
+    'Datos del buzón': 'Mailbox details',
+    'Terminar': 'Finish',
+    'Continuar: enviarme el código': 'Continue: email me the code',
+    'Volver a los datos (pedirá un código nuevo)': 'Back to the details (a new code will be requested)',
+    'Comprueba tu bandeja de entrada y la de spam. Si quieres cambiar algo, vuelve a los datos: se pedirá un código nuevo.': 'Check your inbox and your spam folder. If you want to change something, go back to the details: a new code will be requested.',
+    'Para empezar necesitas: el servidor, el usuario y la contraseña del buzón desde el que envía este ERP (no es la contraseña con la que entras al ERP), y acceso a tu correo, donde te llegará un código de confirmación.': 'To start you need: the server, the user and the password of the mailbox this ERP sends from (it is not the password you use to log in to the ERP), and access to your email, where a confirmation code will arrive.',
+    'Como ya hay un servidor guardado, si cambias de servidor o de usuario te pediremos también, en el paso 2, la contraseña de tu cuenta del ERP.': 'Since a server is already saved, if you change the server or the user we will also ask, in step 2, for your ERP account password.',
+    'Si tu correo es de Hostinger, suele ser smtp.hostinger.com.': 'If your email is with Hostinger, it is usually smtp.hostinger.com.',
+    'Conexión cifrada por el puerto 465, siempre.': 'Encrypted connection on port 465, always.',
     'Servidor': 'Server', 'Puerto': 'Port', 'Usuario del buzón': 'Mailbox user', 'Contraseña del buzón': 'Mailbox password',
     'Nombre del remitente': 'Sender name', 'opcional': 'optional',
     'Siempre 465 (conexión cifrada). No se puede cambiar.': 'Always 465 (encrypted connection). It cannot be changed.',
@@ -389,21 +400,49 @@
     pintaDirecciones(cont, previo);
   }
 
+  // Indicador de pasos del asistente. No es clicable (para volver están los botones, que tiran el código); el paso actual lleva
+  // aria-current="step" y una marca de texto, no solo color.
+  function indicadorPasos(actual) {
+    var ol = nodo('ol', 'list-none m-0 px-8 pt-5 flex flex-wrap items-center gap-x-6 gap-y-1 font-label-md text-label-md', null, { 'data-correo': 'pasos', 'aria-label': T('Pasos para cambiar el servidor') });
+    ol.style.listStyle = 'none'; ol.style.marginTop = '0';
+    [['Datos del buzón', 1], ['Código', 2], ['Listo', 3]].forEach(function (p) {
+      var hecho = p[1] < actual, es = p[1] === actual;
+      var li = nodo('li', es ? 'text-on-surface' : 'text-outline', (hecho ? '✓ ' : '') + p[1] + '. ' + T(p[0]) + (es ? ' (' + T('paso actual') + ')' : ''), { 'data-paso': String(p[1]) });
+      if (es) li.setAttribute('aria-current', 'step');
+      ol.appendChild(li);
+    });
+    return ol;
+  }
+  function tituloPaso(n, titulo, ayuda) {
+    var c = nodo('div', 'px-8 pt-5 pb-1 flex flex-col gap-1');
+    c.appendChild(nodo('h3', 'font-label-md text-label-md text-on-surface', T('Paso') + ' ' + n + ' ' + T('de') + ' 3 · ' + T(titulo)));
+    if (ayuda) c.appendChild(nodo('p', 'font-body-sm text-body-sm text-outline', ayuda, { 'data-correo': 'ayuda-paso' }));
+    return c;
+  }
+
   function pintaFormularioServidor(cont, previo) {
     var e2 = srv.estado || {};
     var u = un('servidor');
     var configurado = !!(e2.configurado && typeof e2.host === 'string');
     if (!configurado) srv.editando = true;
     if (!srv.editando) {   // plegado: el resultado del último guardado (o su fallo) se sigue viendo
-      if (u.ok || u.codigo) { var pl = nodo('div', 'px-8 py-4 border-b border-outline-variant/30'); pl.appendChild(mensajeResultado(u, 'resultado')); cont.appendChild(pl); }
+      if (u.ok || u.codigo) {
+        var pl = nodo('div', 'border-b border-outline-variant/30');
+        if (u.ok) { pl.appendChild(indicadorPasos(3)); pl.appendChild(tituloPaso(3, 'Listo')); }
+        var cuerpoPl = nodo('div', 'px-8 py-4 flex flex-wrap items-center gap-3');
+        cuerpoPl.appendChild(mensajeResultado(u, 'resultado'));
+        if (u.ok) cuerpoPl.appendChild(botonSecundario('Terminar', 'correo-servidor-terminar'));
+        pl.appendChild(cuerpoPl);
+        cont.appendChild(pl);
+      }
       return;
     }
     var lock = u.fase !== 'idle';
+    var paso2 = u.fase === 'esperando' || u.fase === 'guardando';   // el paso sale de la fase, nunca de lo que se viera antes
     var host = inputServidor('text', 'host', 253, { placeholder: 'smtp.tuproveedor.com', inputmode: 'url' });
-    var port = inputServidor('text', 'port', 3, { value: '465', readonly: '', disabled: '', 'aria-readonly': 'true' });
     var user = inputServidor('text', 'user', 254, { inputmode: 'email' });
     // La contraseña del buzón: nunca prefijada ni del estado; new-password para que el navegador no la rellene con la de otra cuenta.
-    // Con un código pedido se queda en la casilla (bloqueada) porque el código está atado a ella; al guardar, cancelar o cambiar de idea se vacía.
+    // Con un código pedido se queda en la casilla (bloqueada y oculta en el paso 2) porque el código está atado a ella; al guardar, cancelar o cambiar de idea se vacía.
     var pass = inputServidor('password', 'pass', 200, { autocomplete: 'new-password' });
     var nombre = inputServidor('text', 'nombre', 60);
     host.value = previo.host != null ? previo.host : (typeof e2.host === 'string' ? e2.host : '');
@@ -411,29 +450,40 @@
     nombre.value = previo.nombre != null ? previo.nombre : (typeof e2.nombre === 'string' ? e2.nombre : '');
     if (lock && previo.pass != null) pass.value = previo.pass;
     if (lock) [host, user, pass, nombre].forEach(function (i) { i.setAttribute('readonly', ''); });
-    cont.appendChild(campoServidor('lw-aj-srv-host', 'Servidor', null, host).fila);
-    cont.appendChild(campoServidor('lw-aj-srv-port', 'Puerto', 'Siempre 465 (conexión cifrada). No se puede cambiar.', port).fila);
-    cont.appendChild(campoServidor('lw-aj-srv-user', 'Usuario del buzón', null, user).fila);
-    cont.appendChild(campoServidor('lw-aj-srv-pass', 'Contraseña del buzón', 'Solo se escribe, nunca se enseña. Hay que escribirla otra vez cada vez que se cambie el servidor.', pass).fila);
-    cont.appendChild(campoServidor('lw-aj-srv-nombre', 'Nombre del remitente', null, nombre, true).fila);
+    cont.appendChild(indicadorPasos(paso2 ? 2 : 1));
+    if (paso2) {
+      cont.appendChild(tituloPaso(2, 'Código', T('Comprueba tu bandeja de entrada y la de spam. Si quieres cambiar algo, vuelve a los datos: se pedirá un código nuevo.')));
+      // Resumen de lo que se va a guardar. NUNCA la contraseña, ni enmascarada: ni su longitud.
+      var resumen = T('Servidor') + ': ' + host.value.trim() + ' · ' + T('Usuario del buzón') + ': ' + user.value.trim() + (nombre.value.trim() ? ' · ' + T('Nombre del remitente') + ': ' + nombre.value.trim() : '');
+      cont.appendChild(nodo('p', 'px-8 py-2 font-body-md text-body-md text-on-surface', resumen, { 'data-correo': 'resumen' }));
+    } else {
+      cont.appendChild(tituloPaso(1, 'Datos del buzón', T('Para empezar necesitas: el servidor, el usuario y la contraseña del buzón desde el que envía este ERP (no es la contraseña con la que entras al ERP), y acceso a tu correo, donde te llegará un código de confirmación.')
+        + (configurado ? ' ' + T('Como ya hay un servidor guardado, si cambias de servidor o de usuario te pediremos también, en el paso 2, la contraseña de tu cuenta del ERP.') : '')));
+    }
+    // En el paso 2 las casillas siguen en la página (la contraseña se lee de su casilla, no se guarda en otro sitio) pero ocultas.
+    function oculta(fila) { if (paso2) { fila.hidden = true; fila.style.display = 'none'; } return fila; }
+    cont.appendChild(oculta(campoServidor('lw-aj-srv-host', 'Servidor', 'Si tu correo es de Hostinger, suele ser smtp.hostinger.com.', host).fila));
+    cont.appendChild(oculta(campoServidor('lw-aj-srv-user', 'Usuario del buzón', null, user).fila));
+    cont.appendChild(oculta(campoServidor('lw-aj-srv-pass', 'Contraseña del buzón', 'Solo se escribe, nunca se enseña. Hay que escribirla otra vez cada vez que se cambie el servidor.', pass).fila));
+    cont.appendChild(oculta(campoServidor('lw-aj-srv-nombre', 'Nombre del remitente', null, nombre, true).fila));
+    if (!paso2) cont.appendChild(nodo('p', 'px-8 py-3 font-body-sm text-body-sm text-outline', T('Conexión cifrada por el puerto 465, siempre.'), { 'data-correo': 'puerto-fijo' }));
     // ¿cambia host o usuario? Entonces además de la contraseña del buzón y el código, la de la CUENTA (siempre, decisión del owner 8-oct)
     var cambia = !configurado || String(previo.host != null ? previo.host : '').trim() !== e2.host || String(previo.user != null ? previo.user : '').trim() !== e2.usuario;
-    if (bloqueado(u) && (srv.reauth || cambia)) {
+    if (paso2 && (srv.reauth || cambia)) {
       var re = inputServidor('password', 'reauth', 200, { autocomplete: 'current-password' });
       var fila = campoServidor('lw-aj-srv-reauth', 'Tu contraseña de la cuenta', 'Para cambiar de servidor o de usuario confirma tu contraseña de acceso al ERP (o vuelve a entrar y repite).', re).fila;
       fila.setAttribute('data-correo', 'reauth');
       cont.appendChild(fila);
     }
     var pie = nodo('div', 'px-8 py-5 flex flex-col gap-3 border-b border-outline-variant/40');
-    if (u.fase === 'esperando' || u.fase === 'guardando') {
+    if (paso2) {
       var bc = bloqueCodigo(u, 'codigo');
       if (previo.codigo != null) bc.cod.value = previo.codigo;
       pie.appendChild(bc.caja);
-      pie.appendChild(nodo('span', 'font-body-sm text-body-sm text-outline', T('Los datos están bloqueados para que el código siga valiendo. Si quieres cambiar algo, pulsa «Cambiar los datos» y pide otro código.')));
     }
     var fila2 = nodo('div', 'flex flex-wrap items-center gap-3');
-    if (u.fase === 'idle' || u.fase === 'pidiendo') {
-      var bp = botonCorreo(u.fase === 'pidiendo' ? 'Pidiendo el código…' : 'Pedir código', 'correo-servidor-pedir');
+    if (!paso2) {
+      var bp = botonCorreo(u.fase === 'pidiendo' ? 'Pidiendo el código…' : 'Continuar: enviarme el código', 'correo-servidor-pedir');
       if (u.fase === 'pidiendo' || srv.pausados || !srv.pideCodigo) bp.disabled = true;
       fila2.appendChild(bp);
       if (configurado && u.fase === 'idle') fila2.appendChild(botonSecundario('Cancelar', 'correo-servidor-cancelar'));
@@ -441,7 +491,7 @@
       var bg = botonCorreo(u.fase === 'guardando' ? 'Probando…' : 'Probar y guardar', 'correo-servidor-probar');
       if (u.fase === 'guardando' || srv.pausados) bg.disabled = true;
       fila2.appendChild(bg);
-      if (u.fase === 'esperando') fila2.appendChild(botonSecundario('Cambiar los datos', 'correo-servidor-reabrir'));
+      if (u.fase === 'esperando') fila2.appendChild(botonSecundario('Volver a los datos (pedirá un código nuevo)', 'correo-servidor-reabrir'));
     }
     pie.appendChild(fila2);
     pie.appendChild(mensajeResultado(u, 'resultado'));
@@ -650,6 +700,7 @@
     var clave = b.getAttribute('data-correo-clave') || '';
     if (a === 'correo-servidor-pedir') pedirServidor();
     else if (a === 'correo-servidor-probar') probarCorreo();
+    else if (a === 'correo-servidor-terminar') { var ut = un('servidor'); ut.ok = ''; ut.codigo = ''; pintaServidorCorreo(); }
     else if (a === 'correo-servidor-editar') { srv.editando = true; un('servidor').ok = ''; pintaServidorCorreo(); }
     else if (a === 'correo-servidor-cancelar') { var us = un('servidor'); sueltaCodigo(us); us.codigo = ''; us.ok = ''; srv.editando = false; srv.reauth = false; vacia('pass'); pintaServidorCorreo(); }
     else if (a === 'correo-servidor-reabrir') { var ur = un('servidor'); sueltaCodigo(ur); ur.codigo = ''; ur.ok = ''; srv.reauth = false; vacia('pass'); vacia('codigo'); pintaServidorCorreo(); }

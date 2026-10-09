@@ -118,7 +118,7 @@ const err = (status, codigo, extra = {}) => ({ status, body: Object.assign({ ok:
     ok('Cambiar abre el formulario con host, usuario y nombre del estado y la contraseña VACÍA', await valor(p, 'host') === 'smtp.viejo.com' && await valor(p, 'user') === 'hola@negocio.com' && await valor(p, 'nombre') === 'Mi Negocio' && await valor(p, 'pass') === '');
     const pw = await p.$eval(cam('pass'), (e) => ({ t: e.type, a: e.autocomplete }));
     ok('contraseña: type=password y autocomplete=new-password', pw.t === 'password' && pw.a === 'new-password');
-    ok('puerto 465 fijo e inerte', await p.$eval(cam('port'), (e) => e.value === '465' && e.disabled));
+    ok("puerto 465 fijo: línea de texto, sin casilla", !(await hay(p, cam("port"))) && /465/.test(await txt(p, "[data-correo=\"puerto-fijo\"]")));
     await p.fill(cam('host'), '  smtp.nuevo.com ');
     await p.fill(cam('user'), 'envios@negocio.com');
     await p.fill(cam('pass'), SECRETO);
@@ -131,6 +131,10 @@ const err = (status, codigo, extra = {}) => ({ status, body: Object.assign({ ok:
     ok('enseña el correo ENMASCARADO al que se mandó, la caducidad (10 minutos) y que sirve una vez', /j\*\*\*@negocio\.com/.test(info) && /10 minutos/.test(info) && /una sola vez/.test(info), info);
     ok('con un código pedido los datos quedan bloqueados (readonly) y la contraseña SIGUE en la casilla (el código está atado a ella)',
       await p.$eval(cam('host'), (e) => e.readOnly) && await p.$eval(cam('user'), (e) => e.readOnly) && await p.$eval(cam('pass'), (e) => e.readOnly && e.value) === SECRETO);
+    ok('asistente: paso 2 marcado con aria-current y los pasos no son clicables', /^2\. Código/.test(await p.$eval('[data-correo="pasos"] [aria-current="step"]', (e) => e.textContent)) && (await p.$$('[data-correo="pasos"] button, [data-correo="pasos"] a')).length === 0);
+    ok('asistente: el resumen del paso 2 enseña servidor y usuario y NUNCA la contraseña', await (async () => { const t = await txt(p, '[data-correo="resumen"]'); return /smtp\.nuevo\.com/.test(t) && /envios@negocio\.com/.test(t) && !t.includes(SECRETO); })());
+    ok('asistente: en el paso 2 las casillas de datos están ocultas pero la contraseña sigue en SU casilla (no en otra variable)', await p.$eval(cam('pass'), (e) => !!e.closest('[hidden]') && e.value) === SECRETO);
+    ok('asistente: «Volver a los datos» avisa de que pedirá un código nuevo', /código nuevo/.test(await txt(p, '[data-accion="correo-servidor-reabrir"]')));
     ok('host distinto del actual → pide ya la contraseña de la cuenta (current-password)', await p.$eval(cam('reauth'), (e) => e.type + '/' + e.autocomplete) === 'password/current-password');
     ok('el código NO viaja en el navegador de vuelta: no hay 6 cifras en la página', !/\b\d{6}\b/.test(await p.evaluate(() => document.body.innerText)));
     await foto(p, '2_pidiendo_codigo');
@@ -147,8 +151,11 @@ const err = (status, codigo, extra = {}) => ({ status, body: Object.assign({ ok:
     const r = await txt(p, '[data-correo="resultado"]');
     ok('resultado: guardado + a quién llegó la prueba + aviso previo enviado', /yo@negocio\.com/.test(r) && /servidor anterior/.test(r), r);
     ok('el estado pintado pasa al servidor nuevo y el formulario se pliega', /smtp\.nuevo\.com/.test(await txt(p, '[data-correo="servidor-actual"]')) && !(await hay(p, cam('host'))));
+    ok('asistente: paso 3 marcado y botón Terminar', /^3\. Listo/.test(await p.$eval('[data-correo="pasos"] [aria-current="step"]', (e) => e.textContent)) && await hay(p, '[data-accion="correo-servidor-terminar"]'));
     ok('NINGUNA contraseña (ni la del buzón ni la de la cuenta) queda en la página', await sinSecretos(p));
     await foto(p, '3_guardado');
+    await p.click('[data-accion="correo-servidor-terminar"]');
+    ok('Terminar quita el aviso del paso 3', !(await hay(p, '[data-correo="pasos"]')) && !(await hay(p, '[data-correo="resultado"]')));
     await ctx.close();
   }
 
