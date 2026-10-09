@@ -1722,6 +1722,37 @@ def taller_pantalla():
     open(her, 'w', encoding='utf-8', newline='').write(h)
 
 
+def crea_contrasena_pantalla(marca):
+    """Pantalla /crea-contrasena/ del ERP maestro (pieza C de I6, 9-oct-2026): donde aterriza el primer administrador desde la invitación de Auth que
+    manda nueva_instancia.py (paso `admin`) para poner su contraseña. Es una página PROPIA (crea_contrasena.html), no un overlay de la de Lawang
+    (intranet/contrasena/index.html: solo canjea ?th= de recuperación y sigue con cualquier sesión existente; ver el comentario de la fuente). Lo que
+    reutiliza de Lawang es su estilo: se lee su <style> y, si Lawang cambia de forma (no hay UN bloque style), el build PARA en vez de sacar una
+    página sin estilos. No lleva guard.js a propósito: es una página de ANTES de entrar. Se escribe DESPUÉS de logos_neutros() (usa el logo de la
+    instancia) y antes de versiona() (que le pone el ?v= a sus scripts). Solo se toca DIST, nunca el repo de Lawang."""
+    origen = open(os.path.join(LAWANG, 'intranet', 'contrasena', 'index.html'), encoding='utf-8').read().replace('\r\n', '\n')
+    if origen.count('<style>') != 1 or origen.count('</style>') != 1:
+        aborta('crea_contrasena_pantalla: la página de contraseña de Lawang ya no tiene UN bloque <style> (¿cambió de forma?)')
+    estilo = origen.split('<style>')[1].split('</style>')[0].strip()
+    if ':root{' not in estilo or '.card{' not in estilo:
+        aborta('crea_contrasena_pantalla: el <style> de Lawang ya no trae :root ni .card (¿cambió de forma?)')
+    pag = open(os.path.join(AQUI, 'crea_contrasena.html'), encoding='utf-8').read()
+    if pag.count('/*AXW_ESTILO_LAWANG*/') != 1 or pag.count('__AXW_MARCA__') != 2:
+        aborta('crea_contrasena.html: tiene que llevar UNA marca /*AXW_ESTILO_LAWANG*/ y DOS __AXW_MARCA__ (título y alt del logo)')
+    # El supabase-js (con su SRI) es el MISMO que carga la suite: si Lawang lo sube de versión, esta página no se queda atrás en silencio.
+    m = re.search(r'<script src="https://cdn\.jsdelivr\.net/npm/@supabase/supabase-js@[^"]+"[^>]*></script>', origen)
+    mia = re.search(r'<script src="https://cdn\.jsdelivr\.net/npm/@supabase/supabase-js@[^"]+"[^>]*></script>', pag)
+    if not m or not mia:
+        aborta('crea_contrasena_pantalla: no encuentro la etiqueta de supabase-js (con SRI) en alguna de las dos páginas')
+    pag = pag.replace(mia.group(0), m.group(0))
+    pag = pag.replace('/*AXW_ESTILO_LAWANG*/', estilo).replace('__AXW_MARCA__', html.escape(marca, quote=True))
+    # Sin comentarios, como el resto de lo que sale (limpia_publico.js ya pasó): los de esta página cuentan decisiones internas del estudio.
+    pag = re.sub(r'<!--.*?-->', '', pag, flags=re.S)
+    pag = re.sub(r'/\*.*?\*/', '', pag, flags=re.S)
+    d = os.path.join(DIST, 'crea-contrasena')
+    os.makedirs(d, exist_ok=True)
+    open(os.path.join(d, 'index.html'), 'w', encoding='utf-8', newline='').write(pag)
+
+
 def guard_asistente_admin():
     """guard.js del maestro: la puerta de /asistente/ deja pasar al admin sin la casilla `asistente_peticiones` (la base lo permite).
     Va aparte de asistente_maestro() porque instancia() vuelve a copiar el guard.js de Lawang DESPUÉS de esa función; se llama justo
@@ -1945,6 +1976,7 @@ def instancia(nombre):
             if nuevo != f:
                 os.replace(os.path.join(raiz, f), os.path.join(raiz, nuevo))
     logos_neutros(marca)
+    crea_contrasena_pantalla(marca)   # pieza C de I6 (9-oct-2026): «Crea tu contraseña» para el primer administrador invitado
     tipografias_libres()
     neutraliza_ejemplos()   # ejemplos de persona que casan con gente real (pii_maqueta)
     # 2. Portada = la puerta de acceso, que reraiz() ha subido a la raíz (antes /intranet/). Lo que en la demo es un aviso,

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>__AXW_MARCA__ · Crea tu contraseña</title>
+<link rel="icon" href="/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Pantalla «Crea tu contraseña» del ERP MAESTRO (pieza C de I6, 9-oct-2026; decisión del owner por AskUserQuestion).
+     NO es una página de Lawang ni un overlay sobre la suya: build.py (crea_contrasena_pantalla) pega este fichero en /crea-contrasena/ de la
+     instancia. Por qué propia y no un overlay de intranet/contrasena/index.html: esa página SOLO canjea ?th= con type 'recovery' (lo usa la
+     edge admin-usuarios) y, si no hay token, sigue con CUALQUIER sesión que encuentre; aquí lo segundo es justo lo que se prohíbe (un usuario
+     ya dentro no puede llegar a «cambiar contraseña» sin canje). Cambiar su script a ese nivel era reescribirla entera, y tocar un flujo vivo de
+     Lawang por dentro. Lo que SÍ se reutiliza, sin copiar: su <style> (el build lo lee de Lawang y aborta si cambia de forma), el supabase-js
+     con su SRI (el mismo de la suite, ninguna dependencia nueva) y el diccionario i18n.js (ES/EN: la suite no tiene ID).
+     Entra desde la invitación de Auth que manda el instalador (nueva_instancia.py, paso `admin`). Dos formas del enlace:
+       · #access_token=…&refresh_token=…&type=invite   (flujo implícito: lo que GoTrue manda por defecto)
+       · ?token_hash=…&type=invite  (o ?th=…)          (plantilla de correo con TokenHash)
+     Reglas (por qué): el token se lee y se borra de la URL en la primera línea (historial, referrer, capturas); no se escribe en el DOM, ni en consola;
+     el cliente de Auth NO persiste sesión (no pisa la de otra pestaña ni deja una sesión de invitación abierta si el usuario cierra sin poner contraseña);
+     sin token válido no hay formulario (jamás se reutiliza una sesión que ya existiera); un enlace malo no ofrece reintento automático.
+     El navegador no escribe en ninguna tabla: solo Auth (verifyOtp/setSession/updateUser/signOut). Todo texto dinámico va con textContent. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.min.js" integrity="sha384-XtYxyIfxexJVTROWK0+c5T8tJ2ItsVLcdgR5nJIoo6WzQqaBZoTPGgbS7XvkRNBZ" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="/contracts/assets/instancia.js"></script>
+<script src="/contracts/assets/idioma.js"></script>
+<script src="/contracts/assets/i18n.js"></script>
+<style>
+/*AXW_ESTILO_LAWANG*/
+.cp-oculto{display:none !important}
+.cp-usuario{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.cp-entrar{display:block;margin-top:16px;padding:13px;border-radius:999px;background:var(--dl);color:var(--linen);font:600 15px 'Jost',sans-serif;text-align:center;text-decoration:none}
+.cp-idioma{margin-top:18px;text-align:right;font-size:13px}
+.cp-idioma button{width:auto;margin:0;padding:4px 2px;background:none;color:var(--dl);border:0;font:600 13px 'Jost',sans-serif;text-decoration:underline;cursor:pointer}
+</style>
+</head>
+<body>
+<main class="card" data-cp="raiz">
+  <img src="/contracts/assets/brand/axw-logo-v3-dark.png" alt="__AXW_MARCA__">
+  <h1 data-cp-t="Crea tu contraseña">Crea tu contraseña</h1>
+  <p data-cp="intro" role="status">Comprobando tu enlace…</p>
+  <form data-cp="form" class="cp-oculto" method="post" action="#" novalidate>
+    <input data-cp="usuario" type="text" name="username" autocomplete="username" readonly tabindex="-1" aria-hidden="true" class="cp-usuario">
+    <label for="cp-p1" data-cp-t="Contraseña nueva (mínimo 10 caracteres)">Contraseña nueva (mínimo 10 caracteres)</label>
+    <input id="cp-p1" data-cp="p1" type="password" autocomplete="new-password" required>
+    <label for="cp-p2" data-cp-t="Repítela">Repítela</label>
+    <input id="cp-p2" data-cp="p2" type="password" autocomplete="new-password" required>
+    <button type="submit" data-accion="guardar" data-cp-t="Guardar y entrar">Guardar y entrar</button>
+  </form>
+  <div class="msg" data-cp="msg" role="alert"></div>
+  <div class="cp-idioma"><button type="button" data-accion="idioma">English</button></div>
+</main>
+<script>
+(function () {
+  'use strict';
+  /* ── 1. El enlace: se lee UNA vez y se borra de la URL antes de hacer nada más ── */
+  var hp = new URLSearchParams(location.hash.replace(/^#/, ''));
+  var qp = new URLSearchParams(location.search);
+  var enlace = {
+    tipo: hp.get('type') || qp.get('type') || '',
+    acceso: hp.get('access_token') || '',
+    refresco: hp.get('refresh_token') || '',
+    th: qp.get('token_hash') || qp.get('th') || '',
+    errorAuth: hp.get('error') || hp.get('error_code') || qp.get('error') || qp.get('error_code') || ''
+  };
+  try { history.replaceState(null, '', location.pathname); } catch (e) { /* MUDO A PROPOSITO: sin replaceState el token sigue en la barra, pero seguir es mejor que dejar al usuario sin poder poner la contraseña; no hay nada que avisar */ }
+  hp = qp = null;
+
+  /* ── 2. Textos: ES de base, EN con el diccionario de la suite (se añade solo si la clave no existe) ── */
+  var EN_CP = {
+    'Crea tu contraseña': 'Create your password',
+    'Comprobando tu enlace…': 'Checking your link…',
+    'Contraseña nueva (mínimo 10 caracteres)': 'New password (at least 10 characters)',
+    'Repítela': 'Repeat it',
+    'Guardar y entrar': 'Save and sign in',
+    'Elige la contraseña con la que entrarás en el ERP:': 'Choose the password you will sign in with:',
+    'El enlace ha caducado, ya se ha usado o no es válido. Pide al administrador que te reenvíe la invitación.': 'The link has expired, was already used or is not valid. Ask the administrator to resend your invitation.',
+    'Necesita al menos 10 caracteres.': 'It needs at least 10 characters.',
+    'Las dos contraseñas no coinciden.': 'The two passwords do not match.',
+    'Guardando…': 'Saving…',
+    'Contraseña guardada. Ya puedes entrar con tu correo y tu contraseña.': 'Password saved. You can now sign in with your email and password.',
+    'Entrar': 'Sign in',
+    'Esa contraseña es demasiado débil. Prueba con otra más larga o menos habitual.': 'That password is too weak. Try a longer or less common one.',
+    'Elige una contraseña distinta de la que ya tienes.': 'Choose a password different from the one you already have.',
+    'No se ha podido guardar la contraseña. Inténtalo de nuevo.': 'The password could not be saved. Try again.',
+    'No se ha podido comprobar el enlace. Comprueba tu conexión y vuelve a abrirlo desde el correo.': 'The link could not be checked. Check your connection and open it again from the email.'
+  };
+  if (window.LW_EN && typeof window.LW_EN === 'object') {
+    Object.keys(EN_CP).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_CP[k]; });
+  }
+  var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
+  var q = function (n) { return document.querySelector('[data-cp="' + n + '"]'); };
+  var raiz = q('raiz'), intro = q('intro'), form = q('form'), msg = q('msg'), p1 = q('p1'), p2 = q('p2');
+  var botonIdioma = document.querySelector('[data-accion="idioma"]'), botonGuardar = document.querySelector('[data-accion="guardar"]');
+  /* Estado de lo que se ve, para repintarlo al cambiar de idioma SIN recargar (recargar perdería el token, que ya no está en la URL). */
+  var estado = { intro: 'Comprobando tu enlace…', email: '', msg: '', ok: false, enlaceMalo: false, listo: false };
+
+  function pinta() {
+    document.documentElement.lang = window.LW_IDIOMA === 'en' ? 'en' : 'es';
+    raiz.querySelectorAll('[data-cp-t]').forEach(function (el) { el.textContent = T(el.getAttribute('data-cp-t')); });
+    intro.textContent = T(estado.intro) + (estado.email ? ' ' + estado.email : '');
+    msg.textContent = estado.msg ? T(estado.msg) : '';
+    msg.className = 'msg ' + (estado.ok ? 'ok' : 'err');
+    botonIdioma.textContent = window.LW_IDIOMA === 'en' ? 'Español' : 'English';
+    var t = document.title.split(' · ');
+    document.title = t[0] + ' · ' + T('Crea tu contraseña');
+  }
+  function di(texto, ok) { estado.msg = texto; estado.ok = !!ok; pinta(); }
+  function enlaceMalo(texto) {
+    estado.enlaceMalo = true; estado.listo = false; estado.email = '';
+    estado.intro = texto || 'El enlace ha caducado, ya se ha usado o no es válido. Pide al administrador que te reenvíe la invitación.';
+    estado.msg = '';
+    form.classList.add('cp-oculto');
+    pinta();
+  }
+  botonIdioma.addEventListener('click', function () {
+    if (typeof window.lwSetIdioma === 'function') window.lwSetIdioma(window.LW_IDIOMA === 'en' ? 'es' : 'en');
+    pinta();
+  });
+  pinta();
+
+  /* ── 3. Cliente de Auth SIN persistencia: la sesión de invitación vive solo en esta pestaña y solo mientras se pone la contraseña ── */
+  var sb = window.supabase.createClient(window.LW_INSTANCIA.sb_url, window.LW_INSTANCIA.sb_key,
+    { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+
+  function sesionLista(user) {
+    /* Solo se entra aquí con una sesión canjeada AHORA por un enlace de invitación. */
+    estado.enlaceMalo = false; estado.listo = true;
+    estado.intro = 'Elige la contraseña con la que entrarás en el ERP:';
+    estado.email = (user && typeof user.email === 'string') ? user.email : '';
+    q('usuario').value = estado.email;   /* para que el gestor de contraseñas guarde la contraseña DEL correo correcto; es una propiedad, no marcado */
+    form.classList.remove('cp-oculto');
+    pinta();
+    p1.focus();
+  }
+
+  /* El enlace se canjea una sola vez. Cualquier cosa que no sea una invitación completa se rechaza SIN mirar si ya había sesión. */
+  var canje;
+  if (enlace.errorAuth) {
+    canje = Promise.resolve({ malo: true });
+  } else if (enlace.tipo !== 'invite') {
+    canje = Promise.resolve({ malo: true });
+  } else if (enlace.acceso && enlace.refresco) {
+    canje = sb.auth.setSession({ access_token: enlace.acceso, refresh_token: enlace.refresco });
+  } else if (enlace.th) {
+    canje = sb.auth.verifyOtp({ token_hash: enlace.th, type: 'invite' });
+  } else {
+    canje = Promise.resolve({ malo: true });
+  }
+  enlace.acceso = enlace.refresco = enlace.th = '';   /* ya no hace falta en memoria */
+  canje.then(function (r) {
+    if (!r || r.malo || r.error || !r.data || !r.data.session) return enlaceMalo();
+    sesionLista(r.data.user || r.data.session.user);
+  }, function () { enlaceMalo('No se ha podido comprobar el enlace. Comprueba tu conexión y vuelve a abrirlo desde el correo.'); });
+
+  /* ── 4. Guardar la contraseña (Auth, nada más) ── */
+  var guardando = false;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (guardando || !estado.listo) return;
+    var a = p1.value, b = p2.value;
+    if (a.length < 10) return di('Necesita al menos 10 caracteres.');
+    if (a !== b) return di('Las dos contraseñas no coinciden.');
+    guardando = true; botonGuardar.disabled = true; di('Guardando…', true);
+    sb.auth.updateUser({ password: a }).then(function (r) {
+      if (r && r.error) {
+        guardando = false; botonGuardar.disabled = false;
+        var c = String(r.error.code || '');
+        if (c === 'session_not_found' || c === 'bad_jwt' || r.error.status === 401) return enlaceMalo();
+        if (c === 'weak_password') return di('Esa contraseña es demasiado débil. Prueba con otra más larga o menos habitual.');
+        if (c === 'same_password') return di('Elige una contraseña distinta de la que ya tienes.');
+        return di('No se ha podido guardar la contraseña. Inténtalo de nuevo.');
+      }
+      /* Hecho: se cierra la sesión de invitación (global: la revoca en Auth) y se manda al acceso normal. No se entra solo:
+         la contraseña recién puesta se estrena entrando. */
+      p1.value = p2.value = '';
+      estado.listo = false; form.classList.add('cp-oculto');
+      estado.intro = 'Contraseña guardada. Ya puedes entrar con tu correo y tu contraseña.'; estado.email = '';
+      estado.msg = ''; pinta();
+      var salir = sb.auth.signOut({ scope: 'global' });
+      var ir = function () {
+        var a1 = document.createElement('a');
+        a1.href = '/'; a1.className = 'cp-entrar'; a1.setAttribute('data-accion', 'entrar'); a1.setAttribute('data-cp-t', 'Entrar'); a1.textContent = T('Entrar');
+        raiz.insertBefore(a1, msg);
+        a1.focus();
+      };
+      Promise.resolve(salir).then(ir, ir);
+    }, function () {
+      guardando = false; botonGuardar.disabled = false;
+      di('No se ha podido guardar la contraseña. Inténtalo de nuevo.');
+    });
+  });
+})();
+</script>
+</body>
+</html>
