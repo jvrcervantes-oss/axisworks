@@ -2,6 +2,8 @@
      NO es una página entera: build.py (whatsapp_bot_pantalla) la inyecta en la cáscara de la página /asistente/ de Lawang (la misma que
      usa asistente_maestro), sustituyendo su contenedor de contenido y su script. Así el `<head>` (cáscara, nav, guard, i18n, tw.css) sigue
      siendo UNA sola fuente: la de Lawang. Dos partes, separadas por la línea «AXW_SCRIPT»: arriba el marcado, abajo el script.
+     F8 pieza 6 (9-oct-2026): sección «Seguimiento» (cuándo y cuánto escribe el bot a quien dejó de contestar, con qué plantilla de Meta): `wab_seguimiento_datos`
+     (lectura, por lwDatos) y `wab_seguimiento_guarda`; engancha por data-seg / data-accion, nace apagado y la base valida todo (rangos, plantilla, variables).
      Qué hace: el cliente (un admin de su instancia) edita la FICHA de su negocio —lo único que el bot de WhatsApp puede decir— y ve el
      estado de la conexión y el historial de versiones. Todo por RPC (el navegador no toca ninguna tabla): `wab_ficha_datos` (lectura, por
      lwDatos), `wab_ficha_guarda`, `wab_ficha_historial` y `wab_ficha_restaura`. Los límites que pinta salen de `topes` (los manda la
@@ -58,6 +60,8 @@
 .wb-hist-fila{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 16px;padding:10px 14px;border:1px solid #e4e2dd;border-radius:10px;font-size:14px}
 .wb-hist-fila span{word-break:break-word}
 .wb-vacio{color:#75786e;font-size:14px}
+.wb-check{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.wb-campo input[type=number]{width:100%;border:1px solid #c5c8bc;border-radius:8px;padding:8px 10px;font-size:14px;background:#fff;font-family:inherit}
 </style>
 
 <div class="wb-nota" data-lwt>Aquí solo van datos de tu negocio. Lo que escribas lo puede decir el bot a tus clientes, y respondes tú de ello. No escribas instrucciones para el bot («responde siempre…», «ignora…»): la ficha las rechaza, y las reglas del bot no se cambian desde aquí.</div>
@@ -137,6 +141,56 @@
 <p class="wb-vacio" data-wb="version"></p>
 </section>
 
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-6" data-wb="seccion-seguimiento">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Seguimiento a quien deja de contestar</h2>
+<p class="wb-vacio" data-lwt>Si un cliente deja de contestar, el bot le puede escribir otra vez pasado un tiempo con un mensaje de plantilla. La plantilla tiene que estar APROBADA por Meta en tu cuenta de WhatsApp Business, con el mismo nombre e idioma que pongas aquí: si no lo está, Meta rechaza el mensaje y no sale ninguno. Empieza apagado.</p>
+<p class="wb-aviso wb-oculto" data-wb="seg-aviso" role="status"></p>
+<p class="wb-error wb-oculto" data-wb="seg-error" role="alert"></p>
+<div class="wb-grid" data-wb="seg-formulario">
+<div class="wb-campo wb-ancho">
+<label class="wb-check" for="wb-seg-activo"><input type="checkbox" id="wb-seg-activo" data-seg="activo"><span data-lwt>Activar el seguimiento</span></label>
+<div class="wb-pie"><span data-lwt>Para activarlo hace falta el nombre de la plantilla.</span><span></span></div>
+</div>
+<div class="wb-campo">
+<label for="wb-seg-horas" data-lwt>Cada cuántas horas sin respuesta</label>
+<input type="number" inputmode="numeric" step="1" id="wb-seg-horas" data-seg="horas" autocomplete="off">
+<div class="wb-pie"><span data-seg-rango="horas"></span><span></span></div>
+</div>
+<div class="wb-campo">
+<label for="wb-seg-max" data-lwt>Máximo de mensajes por cliente</label>
+<input type="number" inputmode="numeric" step="1" id="wb-seg-max" data-seg="max_mensajes" autocomplete="off">
+<div class="wb-pie"><span data-seg-rango="max_mensajes"></span><span></span></div>
+</div>
+<div class="wb-campo">
+<label for="wb-seg-plantilla" data-lwt>Nombre de la plantilla en Meta</label>
+<input type="text" id="wb-seg-plantilla" data-seg="plantilla" autocomplete="off" autocapitalize="none" spellcheck="false">
+<div class="wb-pie"><span data-lwt>Tal como aparece en Meta: minúsculas, números y guion bajo.</span><span></span></div>
+</div>
+<div class="wb-campo">
+<label for="wb-seg-idioma" data-lwt>Idioma de la plantilla</label>
+<input type="text" id="wb-seg-idioma" data-seg="idioma" autocomplete="off" autocapitalize="none" spellcheck="false">
+<div class="wb-pie"><span data-lwt>El código que le diste en Meta, por ejemplo es o en_US.</span><span></span></div>
+</div>
+<div class="wb-campo wb-ancho">
+<span class="wb-etq" data-lwt>Datos que lleva la plantilla, en orden</span>
+<div class="wb-idiomas" data-seg="vars" role="group" aria-label="Datos de la plantilla"></div>
+<div class="wb-pie"><span data-lwt>El primero va en {{1}}, el segundo en {{2}}… Si tu plantilla no lleva huecos, deja todo sin marcar.</span><span></span></div>
+</div>
+<div class="wb-campo wb-ancho">
+<label for="wb-seg-motivo" data-lwt>¿Qué has cambiado? (queda en el historial)</label>
+<input type="text" id="wb-seg-motivo" data-seg="motivo" autocomplete="off">
+</div>
+</div>
+<div class="flex flex-wrap items-center justify-between gap-4">
+<p class="wb-vacio" data-wb="seg-version"></p>
+<div class="flex items-center gap-3">
+<button class="wb-boton" type="button" data-accion="seguimiento-recargar"><span data-lwt>Descartar los cambios</span></button>
+<button class="wb-boton" type="button" data-accion="seguimiento-guardar" data-primario="1"><span data-lwt>Guardar el seguimiento</span></button>
+</div>
+</div>
+<div class="wb-hist" data-wb="seg-historial"></div>
+</section>
+
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Historial de versiones</h2>
 <p class="wb-vacio" data-lwt>Cada vez que guardas queda una versión. Si algo sale mal, vuelve a la anterior: la volverás a guardar como una versión nueva.</p>
@@ -188,7 +242,20 @@
     'Pulsa otra vez para confirmar': 'Press again to confirm', 'Vuelvo a la versión': 'Back to version',
     'No tienes permiso para editar el bot, o el módulo está apagado.': 'You do not have permission to edit the bot, or the module is off.',
     'La base no ha respondido: prueba otra vez en un rato.': 'The database did not answer: try again in a while.',
-    'Sin sesión: recarga la página o vuelve a entrar.': 'No session: reload the page or sign in again.'
+    'Sin sesión: recarga la página o vuelve a entrar.': 'No session: reload the page or sign in again.',
+    'Seguimiento a quien deja de contestar': 'Follow-up for people who stop replying',
+    'Si un cliente deja de contestar, el bot le puede escribir otra vez pasado un tiempo con un mensaje de plantilla. La plantilla tiene que estar APROBADA por Meta en tu cuenta de WhatsApp Business, con el mismo nombre e idioma que pongas aquí: si no lo está, Meta rechaza el mensaje y no sale ninguno. Empieza apagado.': 'If a customer stops replying, the bot can write to them again after a while with a template message. The template has to be APPROVED by Meta in your WhatsApp Business account, with the same name and language you enter here: if it is not, Meta rejects the message and none goes out. It starts switched off.',
+    'Activar el seguimiento': 'Switch the follow-up on', 'Para activarlo hace falta el nombre de la plantilla.': 'The template name is needed to switch it on.',
+    'Cada cuántas horas sin respuesta': 'Hours without a reply before each follow-up', 'Máximo de mensajes por cliente': 'Maximum messages per customer',
+    'Nombre de la plantilla en Meta': 'Template name in Meta', 'Tal como aparece en Meta: minúsculas, números y guion bajo.': 'Exactly as it appears in Meta: lowercase letters, numbers and underscore.',
+    'Idioma de la plantilla': 'Template language', 'El código que le diste en Meta, por ejemplo es o en_US.': 'The code you gave it in Meta, for example es or en_US.',
+    'Datos que lleva la plantilla, en orden': 'Data the template carries, in order',
+    'El primero va en {{1}}, el segundo en {{2}}… Si tu plantilla no lleva huecos, deja todo sin marcar.': 'The first goes in {{1}}, the second in {{2}}… If your template has no blanks, leave everything unticked.',
+    'Guardar el seguimiento': 'Save the follow-up', 'Nombre del cliente': 'Customer name', 'Entre': 'Between', 'y': 'and',
+    'Seguimiento guardado.': 'Follow-up saved.', 'Seguimiento sin cambios.': 'Nothing changed in the follow-up.',
+    'El seguimiento está activado: escribirá a quien deje de contestar.': 'The follow-up is on: it will write to people who stop replying.',
+    'El seguimiento está apagado: no escribe a nadie.': 'The follow-up is off: it writes to nobody.',
+    'Todavía no hay versiones del seguimiento.': 'There are no follow-up versions yet.'
   };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
     Object.keys(EN_WB).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_WB[k]; });
@@ -209,6 +276,8 @@
   var SERV = [['nombre', 'Servicio', 'servicio_nombre'], ['descripcion', 'Descripción', 'servicio_descripcion'], ['precio', 'Precio', 'servicio_precio']];
   var PREG = [['pregunta', 'Pregunta', 'pregunta'], ['respuesta', 'Respuesta', 'respuesta']];
   var SB = null, TOPES = null, VERSION = null, ACTUAL = null, CONFIRMA = null;
+  var SEG = { topes: null, version: null };
+  var VARS_SEG = { nombre: 'Nombre del cliente' };
 
   function limpia(el) { while (el.firstChild) el.removeChild(el.firstChild); }
   function texto(el, s) { el.textContent = s; }
@@ -379,6 +448,67 @@
     });
   }
 
+  /* ── seguimiento (F8 pieza 6): lo que lee y guarda la base; la pantalla pinta, no decide ── */
+  function sEl(n) { return raiz.querySelector('[data-seg="' + n + '"]'); }
+  function sError(m) { var e = $w('seg-error'); texto(e, m || ''); oculta(e, !m); }
+  function sAviso(m) { var e = $w('seg-aviso'); texto(e, m || ''); oculta(e, !m); }
+  function segPinta(d) {
+    var t = d.topes || {}, v = d.seguimiento || {};
+    SEG.topes = t; SEG.version = d.version;
+    sEl('activo').checked = v.activo === true;
+    sEl('horas').value = v.horas == null ? '' : String(v.horas);
+    sEl('horas').min = t.horas_min; sEl('horas').max = t.horas_max;
+    sEl('max_mensajes').value = v.max_mensajes == null ? '' : String(v.max_mensajes);
+    sEl('max_mensajes').min = t.max_min; sEl('max_mensajes').max = t.max_max;
+    sEl('plantilla').value = v.plantilla || '';
+    sEl('plantilla').maxLength = t.plantilla_max || 512;
+    sEl('idioma').value = v.idioma || '';
+    var rango = function (n, a, b) { var el = raiz.querySelector('[data-seg-rango="' + n + '"]'); if (el) texto(el, T('Entre') + ' ' + a + ' ' + T('y') + ' ' + b); };
+    rango('horas', t.horas_min, t.horas_max); rango('max_mensajes', t.max_min, t.max_max);
+    var cont = sEl('vars'); limpia(cont);
+    var marcadas = v.vars || [];
+    (t.vars_validas || []).forEach(function (n) {
+      var l = document.createElement('label'), c = document.createElement('input');
+      c.type = 'checkbox'; c.setAttribute('data-seg-var', n); c.checked = marcadas.indexOf(n) !== -1;
+      l.appendChild(c); l.appendChild(document.createTextNode(T(VARS_SEG[n] || n))); cont.appendChild(l);
+    });
+    sEl('motivo').value = '';
+    sAviso(v.activo === true ? T('El seguimiento está activado: escribirá a quien deje de contestar.') : T('El seguimiento está apagado: no escribe a nadie.'));
+    texto($w('seg-version'), d.version ? T('Versión') + ' ' + d.version + ' · ' + T('Guardada') + ' ' + fecha(d.actualizado_en) + (d.actualizado_por ? ' · ' + d.actualizado_por : '') : '');
+    var h = $w('seg-historial'); limpia(h);
+    var lista = d.versiones || [];
+    if (!lista.length) { var vacio = document.createElement('p'); vacio.className = 'wb-vacio'; texto(vacio, T('Todavía no hay versiones del seguimiento.')); h.appendChild(vacio); }
+    lista.forEach(function (it) {
+      var fila = document.createElement('div'); fila.className = 'wb-hist-fila'; fila.setAttribute('data-seg-version', it.version);
+      var sp = document.createElement('span');
+      sp.textContent = T('Versión') + ' ' + it.version + ' · ' + fecha(it.cuando) + ' · ' + (it.quien || '') + (it.motivo ? ' · ' + it.motivo : '');
+      fila.appendChild(sp); h.appendChild(fila);
+    });
+    sError('');
+  }
+  function segCarga() {
+    sError('');
+    return window.lwDatos('wab_seguimiento_datos', {}).then(function (r) {
+      if (r.error || !r.data) { sError(mensaje(r.error)); return; }
+      segPinta(r.data);
+    });
+  }
+  function segNumero(n) { var x = sEl(n).value.trim(); return x === '' ? null : Number(x); }
+  function segGuarda(btn) {
+    var motivo = sEl('motivo').value;
+    if (!motivo.trim()) { sError(T('Cuenta en una frase qué has cambiado: queda en el historial.')); sEl('motivo').focus(); return; }
+    var vars = [];
+    raiz.querySelectorAll('[data-seg-var]').forEach(function (c) { if (c.checked) vars.push(c.getAttribute('data-seg-var')); });
+    var datos = { activo: sEl('activo').checked, horas: segNumero('horas'), max_mensajes: segNumero('max_mensajes'), plantilla: sEl('plantilla').value, idioma: sEl('idioma').value, vars: vars };
+    btn.disabled = true; sError('');
+    SB.rpc('wab_seguimiento_guarda', { p_datos: datos, p_motivo: motivo, p_version: SEG.version }).then(function (r) {
+      btn.disabled = false;
+      if (r.error) { sError(mensaje(r.error)); return; }
+      ok(r.data && r.data.cambiado === false ? T('Seguimiento sin cambios.') : T('Seguimiento guardado.'));
+      segCarga();
+    });
+  }
+
   /* ── conectar el número (S4): Embedded Signup de Meta. Del navegador sale SOLO el código de un solo uso y los dos ids que Meta da al popup, hacia la edge
      wab-conecta; el token y los secretos viven en el servidor y NUNCA llegan aquí. El «Conectado» que se pinta es el que lee la base (carga()), no lo que
      conteste la edge. La edge vuelve a comprobar todo contra Meta: estos ids son una pista, no una prueba. ── */
@@ -469,6 +599,8 @@
       else if (a === 'recargar') carga();
       else if (a === 'restaurar') restaura(el);
       else if (a === 'conectar') conecta(el);
+      else if (a === 'seguimiento-guardar') segGuarda(el);
+      else if (a === 'seguimiento-recargar') segCarga();
       else if (a === 'anadir-servicio' || a === 'anadir-pregunta') {
         if (!TOPES) return;   // la ficha aún no ha cargado: sin topes no hay filas que pintar
         var tipo = a === 'anadir-servicio' ? 'servicios' : 'preguntas';
@@ -479,6 +611,7 @@
       else if (a === 'quitar-fila') { var f = el.closest('[data-fila]'); if (f && f.parentNode) f.parentNode.removeChild(f); recuenta(); }
     });
     carga();
+    segCarga();
   }
 
   function arranca() {

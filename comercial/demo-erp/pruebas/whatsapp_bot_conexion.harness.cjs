@@ -82,7 +82,7 @@ window.toast = function (m) { window.__toast = m; };
   ok('1.6 el canje manda EXACTAMENTE código + los dos ids (y la sesión como Bearer): nada más', JSON.stringify(Object.keys(canje.c).sort()) === JSON.stringify(['accion', 'code', 'phone_number_id', 'waba_id']) && canje.c.accion === 'canjea' && canje.auth === 'Bearer JWT-DEL-ADMIN');
   const volcado = await p.evaluate(() => document.documentElement.outerHTML + JSON.stringify(Object.assign({}, localStorage)) + JSON.stringify(Object.assign({}, sessionStorage)) + document.cookie);
   ok('1.7 el navegador nunca ve ninguna clave (ni en el DOM, ni en storage, ni en cookies)', !volcado.includes(TOKEN_FALSO) && !/EAA[A-Za-z0-9]{20,}/.test(volcado));
-  ok('1.8 la pantalla no escribe en ninguna tabla: solo RPC de lectura/ficha y la edge', (await p.evaluate(() => window.__llamadas)).every((x) => /^rpc:wab_ficha_(datos|historial)$/.test(x)));
+  ok('1.8 la pantalla no escribe en ninguna tabla: solo RPC de lectura/ficha y la edge', (await p.evaluate(() => window.__llamadas)).every((x) => /^rpc:wab_(ficha_(datos|historial)|seguimiento_datos)$/.test(x)));
   ok('1.9 con el número conectado se avisa con un toast', await p.evaluate(() => window.__toast) === 'Número conectado.');
   await p.screenshot({ path: SHOT.replace('.png', '_1440.png') });
 
