@@ -80,15 +80,19 @@ mira('Lawang sin la etiqueta de supabase-js → el build para', r2 == 'para')
 r2, ruta2, _ = construye(lawang=lawang_con(lambda t: t.replace('supabase-js@2.110.9', 'supabase-js@2.999.0').replace('XtYxyIfxexJVTROWK0', 'OTROSRIOTROSRIOTROS')))
 p2 = open(ruta2, encoding='utf-8').read() if r2 == 'pasa' else ''
 mira('si Lawang sube de versión de supabase-js, la página la sigue (versión y SRI de Lawang)', r2 == 'pasa' and 'supabase-js@2.999.0' in p2 and 'OTROSRIOTROSRIOTROS' in p2 and 'supabase-js@2.110.9' not in p2)
-bk = FUENTE
-for nombre, roto in (('sin la marca de estilo', FUENTE.replace('/*AXW_ESTILO_LAWANG*/', '', 1)), ('con la marca de marca de menos', FUENTE.replace('alt="__AXW_MARCA__"', 'alt=""'))):
-    open(os.path.join(AQUI, 'crea_contrasena.html'), 'w', encoding='utf-8', newline='').write(roto)
+def fuente_rota(roto):
+    """La fuente rota va a una carpeta temporal y build.AQUI apunta allí: la fuente versionada NUNCA se reescribe (otra sesión podría commitearla rota)."""
+    tmpa = tempfile.mkdtemp()
+    open(os.path.join(tmpa, 'crea_contrasena.html'), 'w', encoding='utf-8', newline='').write(roto)
+    viejo, build.AQUI = build.AQUI, tmpa
     try:
-        rr, _, _ = construye()
+        return construye()[0]
     finally:
-        open(os.path.join(AQUI, 'crea_contrasena.html'), 'w', encoding='utf-8', newline='').write(bk)
-    mira('la fuente ' + nombre + ' → el build para', rr == 'para')
-mira('la fuente quedó intacta tras las pruebas de rotura', open(os.path.join(AQUI, 'crea_contrasena.html'), encoding='utf-8').read() == bk)
+        build.AQUI = viejo
+antes = open(os.path.join(AQUI, 'crea_contrasena.html'), encoding='utf-8').read()
+mira('la fuente sin la marca de estilo → el build para', fuente_rota(FUENTE.replace('/*AXW_ESTILO_LAWANG*/', '', 1)) == 'para')
+mira('la fuente con una marca de marca de menos → el build para', fuente_rota(FUENTE.replace('alt="__AXW_MARCA__"', 'alt=""')) == 'para')
+mira('la fuente de verdad no se tocó durante las pruebas de rotura', open(os.path.join(AQUI, 'crea_contrasena.html'), encoding='utf-8').read() == antes)
 
 # ── (3) reglas del front sobre el código (los comentarios nombran lo prohibido: se miran sin ellos)
 JS = FUENTE.split('<script>\n', 1)[1].rsplit('</script>', 1)[0]

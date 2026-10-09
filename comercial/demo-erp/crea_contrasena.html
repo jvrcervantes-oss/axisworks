@@ -185,6 +185,7 @@
         raiz.insertBefore(a1, msg);
         a1.focus();
       };
+      /* MUDO A PROPOSITO: si el signOut falla, la sesión de invitación solo vivía en memoria de esta pestaña (sin persistencia) y la contraseña ya está guardada; el usuario no puede hacer nada con ese fallo, así que se le lleva igual al acceso normal. */
       Promise.resolve(salir).then(ir, ir);
     }, function () {
       guardando = false; botonGuardar.disabled = false;
