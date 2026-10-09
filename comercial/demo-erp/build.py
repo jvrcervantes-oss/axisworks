@@ -64,7 +64,7 @@ SB_KEY_RE = re.compile(r'sb_publishable_[A-Za-z0-9_\-]+')
 FUERA_V4 = {'_plan', 'generador-contratos', 'contratos-inversor', 'movil'}
 # Nada que case con esto puede acabar en dist/ (Seguridad). El hub de maqueta de la v4 y el constructor de
 # dossier son material de marketing del cliente, no del ERP.
-PROHIBIDO = re.compile(r'(/contracts/app\.html$|apoderados|/firma-|firma_|/anexos/|/folletos/|/templates/|/_plan/|\.sql$|\.test\.js$|/_[^/]*$|'
+PROHIBIDO = re.compile(r'(/contracts/app\.html$|apoderados|/firma-|firma_|/anexos/|/folletos/|/templates/|/_plan/|\.sql$|\.test\.js$|/_[^/]*$|/arnes_[^/]*$|'
                        r'Backups|/private/|credentials|token\.json|\.md$|\.py$|\.zip$|'
                        r'/intranet/v4/index\.html$|/intranet/v4/movil/|/intranet/v4/assets/img/|/intranet/dossier/)', re.I)
 # El mismo veto sobre las rutas del BUNDLE, que tras reraiz() ya no cuelgan de /intranet/: los tres patrones de arriba
@@ -216,6 +216,29 @@ def cierra_referencias():
         if not nuevos:
             break
     return faltan
+
+
+def tokens_solo_etiquetas():
+    """`/contracts/tokens.json` de Lawang trae, además de las etiquetas de los marcadores, lo que es DE LAWANG: los nombres de sus
+    proyectos y sociedades (parcelaPorProyecto, resortPorProyecto, projectDefaults, las listas de opciones de cada campo). Lo único
+    que una instancia lee de él es `sections[].fields[]` → clave + etiqueta es/en (textos-contrato.js, TC.etiquetasDeTokens). Por eso
+    lo que se publica es ESE extracto y nada más: ni defaults, ni opciones, ni el idioma `id` (no se lee, y una palabra corriente
+    del indonesio, «pengembalian», casa con un nombre del filtro de rastro). El filtro de rastro no se toca ni se le añade excepción:
+    lo que queda en el fichero tiene que pasarlo (9-oct-2026, bloqueaba la publicación completa de las instancias)."""
+    dst = os.path.join(DIST, 'contracts', 'tokens.json')
+    if not os.path.isfile(dst):
+        return
+    fuente = json.load(open(os.path.join(LAWANG, 'contracts', 'tokens.json'), encoding='utf-8'))
+    secciones = []
+    for s in fuente.get('sections') or []:
+        campos = []
+        for f in s.get('fields') or []:
+            etq = f[1] if len(f) > 1 and isinstance(f[1], dict) else {}
+            campos.append([f[0], {k: etq[k] for k in ('es', 'en') if k in etq}])
+        secciones.append({'id': s.get('id'), 'fields': campos})
+    if not secciones:
+        aborta('contracts/tokens.json de Lawang ya no trae sections[].fields[]: ¿cambió de forma? textos-contrato.js se quedaría sin etiquetas')
+    open(dst, 'w', encoding='utf-8', newline='\n').write(json.dumps({'sections': secciones}, ensure_ascii=False, separators=(',', ':')))
 
 
 # ── Raíz limpia: sin /intranet/ ni v4 en la barra (encargos/20260930_erp_urls_limpias.md, 1-oct-2026) ──────────────
@@ -2199,6 +2222,7 @@ def main():
         # El guard real manda a la puerta (antes /intranet/, ahora la raíz tras reraiz): es la pantalla de acceso de verdad.
         copia(os.path.join(LAWANG, 'intranet', 'index.html'), os.path.join(DIST, 'intranet', 'index.html'))
     faltan = cierra_referencias()
+    tokens_solo_etiquetas()   # antes de cualquier filtro de rastro: se publica el extracto, no el fichero de Lawang
     if '--instancia' in sys.argv:
         i = sys.argv.index('--instancia')
         if i + 1 >= len(sys.argv):
