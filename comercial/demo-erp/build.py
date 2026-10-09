@@ -881,6 +881,53 @@ def enlaces_rotos(raiz_dir):
     return sorted(rotos)
 
 
+def ficheros_cargados(pagina, dist):
+    """Ficheros .js/.css de `dist` que una página carga por <script src> / <link href> (rutas del sitio, ya sin ?v=)."""
+    url = '/' + os.path.relpath(pagina, dist).replace(os.sep, '/')
+    out = set()
+    texto = open(pagina, encoding='utf-8', errors='replace').read()
+    for ref in re.findall(r'(?:\bsrc|\bhref)\s*=\s*["\']([^"\']+)["\']', texto, flags=re.I):
+        destino = _resuelve(url, ref)
+        if destino and destino.endswith(('.js', '.css')) and os.path.isfile(os.path.join(dist, *destino.strip('/').split('/'))):
+            out.add(destino.strip('/'))
+    return out
+
+
+def poda_ficheros_sin_pantalla(dist, candidatos):
+    """Quita de `dist` los `candidatos` (ruta relativa) que ya no carga NADIE: ni una página, ni otro script, ni una hoja, por nombre.
+    Porqué: una pantalla que sale del paquete deja sus ficheros en /assets/, y erp/contrato_front.py lee TODO lo servido: lo que
+    ya no se usa seguía llamando a RPC que la base no tiene y mantenía el contrato en rojo (textos-contrato-config.js: plantilla_*).
+    Además, publicar código sin llamador es exposición sin motivo («lo que no se publica no llama»). Solo se quita lo que NINGÚN
+    fichero restante nombra: uno compartido (i18n.js, guard.js…) siempre lo nombra otro y se queda. Se repite hasta que no cae
+    nada más, porque un fichero quitado puede ser el único que cargaba a otro. Devuelve las rutas quitadas."""
+    def nombra(nombre):
+        return re.compile(r'(?<![\w.-])' + re.escape(nombre) + r'(?![\w-])')
+    textos = {}
+    for raiz, _d, fichs in os.walk(dist):
+        for f in fichs:
+            if f.endswith(EXT_TEXTO):
+                p = os.path.join(raiz, f)
+                textos[os.path.relpath(p, dist).replace(os.sep, '/')] = open(p, encoding='utf-8', errors='replace').read()
+    quitados, pendientes, cambio = [], set(candidatos), True
+    while cambio:
+        cambio = False
+        for ruta in sorted(pendientes):
+            if ruta not in textos:
+                continue
+            usado = nombra(posixpath.basename(ruta))
+            if any(usado.search(t) for k, t in textos.items() if k != ruta):
+                continue
+            os.remove(os.path.join(dist, *ruta.split('/')))
+            propio = textos.pop(ruta)
+            quitados.append(ruta)
+            cambio = True
+            for otro in textos:   # lo que ese fichero nombraba (otro script que cargaba él) pasa a ser candidato
+                if otro.endswith(('.js', '.css')) and nombra(posixpath.basename(otro)).search(propio):
+                    pendientes.add(otro)
+        pendientes -= set(quitados)
+    return sorted(quitados)
+
+
 def avisos_para_rotos():
     """Cada herramienta enlazada que la demo no trae enseña el aviso, no un 404."""
     for ruta in enlaces_rotos(DIST):
@@ -2014,10 +2061,24 @@ def instancia(nombre):
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(redir)
     # Solo lo NO PORTADO se sustituye en el build (nunca estará en esta base). Lo apagado se decide en el navegador:
     # se sirve la pantalla y apagados_instancia.js la cambia por «Módulo no instalado» si su módulo está apagado.
+    extra_p = _instancia_registro(nombre).get('apagados_extra') or {}
+    fuera = {ruta_limpia(u) for u in extra_p.get('p') or []}
+    rotulos_fuera = {ruta_limpia(u): r for u, r in (extra_p.get('p_rotulos') or {}).items()}
+    cargaban = set()   # ficheros que cargaban las pantallas que salen del paquete: candidatos a salir con ellas
     for u in mapa['xp']:
         f = os.path.join(DIST, *u.strip('/').split('/'), 'index.html')
         if os.path.isfile(f):
-            open(f, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, mapa['n'].get(mapa['p'].get(u)), u))
+            if u in fuera:
+                # Declarada en apagados_extra.p («pantalla no incluida en esta instancia»): no nombra un módulo (taller cuelga de
+                # reservas-producto, que SÍ se enciende: decir «Reservas de producto no está activo» sería mentir) y sus ficheros salen con ella.
+                cargaban |= ficheros_cargados(f, DIST)
+                open(f, 'w', encoding='utf-8').write(pagina_no_instalado(
+                    no_instalado, marca, None, u, herramienta=rotulos_fuera.get(u) or mapa['n'].get(mapa['p'].get(u), [u])[0]))
+            else:
+                open(f, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, mapa['n'].get(mapa['p'].get(u)), u))
+    quitados = poda_ficheros_sin_pantalla(DIST, cargaban)
+    if quitados:
+        print('pantallas fuera del paquete: %d fichero(s) que solo ellas cargaban, fuera: %s' % (len(quitados), ', '.join(quitados)))
     # El panel de control: solo en la instancia que manda (panel_control en erp/instancias.json)
     if _instancia_registro(nombre).get('panel_control'):
         d = os.path.join(DIST, 'panel')
