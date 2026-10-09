@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Aprobaciones · AxisWorks ERP</title>
+<!-- Vista «Aprobaciones» del panel del owner (2-oct-2026, subtarea 9 del trabajador autónomo; revisión previa #194).
+     Cableada el 9-oct-2026 (AXW-178): build.py --instancia la copia a /panel/aprobaciones/ SOLO en la instancia con `panel_control`,
+     con el mismo guard de super_admin y la misma CSP que /panel/pilotos/ y la barra de secciones compartida del panel (el hueco de abajo). COPIA de
+     erp/funciones/agente-aprobaciones/panel_aprobaciones.html de la agencia (fuente de su panel.test.js): el bloque RENDER-INICIO..FIN
+     tiene que ser byte a byte el mismo (lo comprueba test_panel_publicado.py); solo cambia la piel (panel.css y la barra).
+
+     ESTE HTML NO LLEVA CONTENIDO NI DECIDE NADA. Pide a la edge `agente-aprobaciones` (POST con Bearer; es lo ÚNICO que hace: el
+     navegador no escribe en ninguna tabla ni llama a la base). Lo que enseña sale de la fila de la base: acción, parámetros ENTEROS
+     y hash. El motivo lo escribió el piloto: sale aparte y rotulado como no verificado. Todo dato entra por textContent o
+     setAttribute (nunca innerHTML): textContent no escapa la comilla doble y un atributo sí la necesita escapada.
+     Enganches: data-accion / data-lw, nunca el rótulo. «Aprobar» se desactiva cuando la base dice aprobable = false. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%234f46e5%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/panel/panel.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.min.js" integrity="sha384-XtYxyIfxexJVTROWK0+c5T8tJ2ItsVLcdgR5nJIoo6WzQqaBZoTPGgbS7XvkRNBZ" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="/contracts/assets/cierre.js"></script>
+<script src="/contracts/assets/instancia.js"></script>
+<script src="/contracts/assets/version.js"></script>
+<script src="/contracts/assets/guard.js" data-rol="super_admin"></script>
+<style>
+html,body{margin:0;padding:0}body{overscroll-behavior:none;background:#f8f9ff;color:#0b1c30;font:400 14px/20px Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button:focus-visible,a:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}
+.nav-pill[aria-current=page]{background:#4f46e5;color:#fff}
+.ap-wrap{max-width:880px;margin:0 auto;padding:88px 20px 64px}
+.ap-lista{display:flex;flex-direction:column;gap:16px;margin:0;padding:0;list-style:none}
+.ap-lista[hidden]{display:none}
+.ap-tarjeta{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.ap-cab{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
+.ap-num{font:700 16px/24px 'Plus Jakarta Sans',Inter,sans-serif}
+.ap-cad{font:500 12px/16px Inter,sans-serif;color:#464555}
+.ap-et{font:600 12px/16px Inter,sans-serif;color:#464555;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.03em}
+.ap-mono{font:500 13px/18px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-wrap:anywhere;margin:0}
+pre.ap-mono{white-space:pre-wrap;background:#eff4ff;border-radius:8px;padding:10px 12px}
+.ap-piloto{margin-top:12px;padding:8px 12px;border-left:3px solid #9a98ab;background:#f3f3f8;color:#55535f}
+.ap-aviso{margin-top:12px;padding:8px 12px;border-radius:8px;background:#ffedbd;color:#6a4700;font-weight:600}
+.ap-acc{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.ap-btn{font:600 14px/20px Inter,sans-serif;border:0;border-radius:9999px;padding:8px 18px;cursor:pointer}
+.ap-btn[disabled]{opacity:.45;cursor:not-allowed}
+.ap-si{background:#4f46e5;color:#fff}.ap-no{background:#e5eeff;color:#0b1c30}
+.ap-pausa{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;background:#fff;border-radius:12px;padding:16px;margin:0 0 16px;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.ap-pausa[hidden]{display:none}
+.ap-pausa-t{margin:0;font:600 14px/20px Inter,sans-serif}
+.ap-pausa.ap-parado{background:#ffedbd;color:#6a4700}
+.ap-pausa.ap-mal{background:#ffdad6;color:#93000a}
+.ap-plazos{background:#fff;border-radius:12px;padding:16px;margin:0 0 16px;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.ap-plazos[hidden]{display:none}
+.ap-plazos.ap-mal{background:#ffdad6;color:#93000a}
+.ap-plazos-h{margin:0 0 8px;font:700 16px/24px 'Plus Jakarta Sans',Inter,sans-serif}
+.ap-plazos p{margin:8px 0}
+.ap-plazos label{display:block;margin:12px 0 4px;font:600 12px/16px Inter,sans-serif;color:#464555}
+.ap-plazos input{box-sizing:border-box;width:100%;max-width:420px;padding:8px 10px;border:1px solid #c7c4d8;border-radius:8px;font:400 14px/20px Inter,sans-serif}
+.ap-plazos input:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}
+.ap-pend{margin:12px 0;padding:8px 12px;border-radius:8px;background:#ffedbd;color:#6a4700}
+.ap-pasadas{margin:8px 0 0;padding-left:18px;color:#464555}
+.ap-estado{padding:16px;border-radius:12px;background:#fff;color:#464555}
+.ap-estado.ap-mal{background:#ffdad6;color:#93000a}
+.ap-res{margin:0 0 16px;padding:10px 14px;border-radius:8px;background:#d5f1df;color:#0b5a31;font-weight:600}
+.ap-res.ap-mal{background:#ffdad6;color:#93000a}
+</style>
+</head>
+<body>
+<header style="position:fixed;top:0;left:0;right:0;height:64px;background:rgba(248,249,255,.9);backdrop-filter:blur(12px);z-index:40;display:flex;align-items:center;padding:0 20px;box-shadow:0 1px 8px rgba(0,0,0,.04)">
+<h1 style="margin:0;font:700 20px/28px 'Plus Jakarta Sans',Inter,sans-serif">Aprobaciones del piloto</h1>
+</header>
+<main class="ap-wrap">
+__AXW_PANEL_NAV__
+<section id="pausa" data-lw="pausa" class="ap-pausa" aria-live="polite" hidden></section>
+<section id="plazos" data-lw="plazos" class="ap-plazos" aria-live="polite" hidden></section>
+<div id="resultado" data-lw="aprobaciones-resultado" class="ap-res" role="status" aria-live="polite" hidden></div>
+<div id="estado" data-lw="aprobaciones-estado" class="ap-estado" role="status">Cargando…</div>
+<ul id="lista" data-lw="aprobaciones-lista" class="ap-lista" hidden></ul>
+</main>
+<script>
+(function () {
+  'use strict';
+  var sb = null, ocupado = false;
+
+  /*RENDER-INICIO*/
+  /* Dibujo puro: recibe el documento (para poder probarlo sin navegador) y los datos que devolvió la edge. Ningún dato va a
+     innerHTML: textContent para texto, setAttribute para atributos (que escapa la comilla doble). */
+  function el(doc, tag, clase, texto) {
+    var e = doc.createElement(tag);
+    if (clase) e.setAttribute('class', clase);
+    if (texto != null) e.textContent = String(texto);
+    return e;
+  }
+  function cuandoCaduca(iso, ahora) {
+    var t = Date.parse(iso);
+    if (isNaN(t)) return 'Caducidad desconocida';
+    var min = Math.round((t - ahora) / 60000);
+    return min <= 0 ? 'Caducada' : 'Caduca en ' + min + ' min';
+  }
+  function tarjeta(doc, a, ahora) {
+    var li = doc.createElement('li');
+    li.setAttribute('class', 'ap-tarjeta');
+    li.setAttribute('data-lw', 'aprobacion');
+    li.setAttribute('data-numero', String(a.numero));
+    var cab = el(doc, 'div', 'ap-cab');
+    cab.appendChild(el(doc, 'span', 'ap-num', a.numero));
+    cab.appendChild(el(doc, 'span', 'ap-cad', cuandoCaduca(a.caduca_en, ahora)));
+    li.appendChild(cab);
+    li.appendChild(el(doc, 'div', 'ap-et', 'Acción'));
+    li.appendChild(el(doc, 'p', 'ap-mono', a.accion));
+    if (a.aprobable === true && typeof a.parametros_texto === 'string') {
+      li.appendChild(el(doc, 'div', 'ap-et', 'Parámetros (exactos, los que cubre el hash)'));
+      li.appendChild(el(doc, 'pre', 'ap-mono', a.parametros_texto));
+    } else {
+      li.appendChild(el(doc, 'div', 'ap-aviso', 'Lo pedido es demasiado largo para leerlo entero. No se puede aprobar a ciegas: solo rechazar.'));
+    }
+    li.appendChild(el(doc, 'div', 'ap-et', 'Hash (identifica exactamente esto)'));
+    li.appendChild(el(doc, 'p', 'ap-mono', a.hash));
+    if (a.aprobable === true && typeof a.motivo_piloto === 'string' && a.motivo_piloto !== '') {
+      var p = el(doc, 'div', 'ap-piloto');
+      p.appendChild(el(doc, 'div', 'ap-et', 'Lo que dice el piloto (sin verificar: no es lo que se aprueba)'));
+      p.appendChild(el(doc, 'span', '', a.motivo_piloto));
+      li.appendChild(p);
+    }
+    var acc = el(doc, 'div', 'ap-acc');
+    var si = el(doc, 'button', 'ap-btn ap-si', 'Aprobar');
+    si.setAttribute('type', 'button'); si.setAttribute('data-accion', 'aprueba');
+    si.setAttribute('data-numero', String(a.numero)); si.setAttribute('data-hash', String(a.hash));
+    if (a.aprobable !== true) si.setAttribute('disabled', 'disabled');
+    var no = el(doc, 'button', 'ap-btn ap-no', 'Rechazar');
+    no.setAttribute('type', 'button'); no.setAttribute('data-accion', 'rechaza');
+    no.setAttribute('data-numero', String(a.numero)); no.setAttribute('data-hash', String(a.hash));
+    acc.appendChild(si); acc.appendChild(no);
+    li.appendChild(acc);
+    return li;
+  }
+  /* «No hay nada» y «no he podido mirar» se ven distintos. */
+  function pintaLista(doc, lista, estado, filas, ahora) {
+    while (lista.firstChild) lista.removeChild(lista.firstChild);
+    if (!Array.isArray(filas)) { return pintaError(estado, lista, 'No he podido leer las aprobaciones. No es que no haya ninguna: no he podido mirar.'); }
+    estado.setAttribute('class', 'ap-estado'); estado.removeAttribute('data-error');
+    if (filas.length === 0) {
+      estado.textContent = 'No hay aprobaciones pendientes.'; estado.hidden = false; lista.hidden = true; return;
+    }
+    estado.hidden = true; lista.hidden = false;
+    filas.forEach(function (a) { lista.appendChild(tarjeta(doc, a, ahora)); });
+  }
+  function pintaError(estado, lista, texto) {
+    lista.hidden = true; estado.hidden = false;
+    estado.setAttribute('class', 'ap-estado ap-mal'); estado.setAttribute('data-error', '1');
+    estado.textContent = texto;
+  }
+  /* Pausa del Padrino (F6): un solo botón, el que toca. Parado → Arrancar; en marcha → Parar. Lo que se pinta es lo que la base
+     afirmó (parado: booleano); si no pudimos mirarlo no se inventa un estado ni se ofrece ningún botón. */
+  function pintaPausa(doc, caja, d) {
+    while (caja.firstChild) caja.removeChild(caja.firstChild);
+    caja.hidden = false;
+    if (!d || typeof d.parado !== 'boolean') {
+      caja.setAttribute('class', 'ap-pausa ap-mal');
+      caja.appendChild(el(doc, 'p', 'ap-pausa-t', 'No he podido leer si el Padrino está en marcha o parado. No toques nada hasta poder verlo.'));
+      return;
+    }
+    caja.setAttribute('class', d.parado ? 'ap-pausa ap-parado' : 'ap-pausa');
+    caja.appendChild(el(doc, 'p', 'ap-pausa-t', d.parado ? 'El Padrino está PARADO.' : 'El Padrino está en marcha.'));
+    var b = el(doc, 'button', 'ap-btn ' + (d.parado ? 'ap-si' : 'ap-no'), d.parado ? 'Arrancar' : 'Parar');
+    b.setAttribute('type', 'button'); b.setAttribute('data-accion', d.parado ? 'arranca' : 'para');
+    caja.appendChild(b);
+  }
+  function textoPausa(estadoHttp, d, accion) {
+    if (estadoHttp === 200 && d && d.ok === true && typeof d.parado === 'boolean') {
+      if (accion === 'para') return [true, d.ya_estaba ? 'El Padrino ya estaba parado.' : 'El Padrino queda parado.'];
+      return [true, d.ya_estaba ? 'El Padrino ya estaba en marcha.' : 'El Padrino arranca.'];
+    }
+    if (estadoHttp === 403) return [false, 'Esta cuenta no es la del owner del piloto.'];
+    return [false, 'No se pudo completar (' + estadoHttp + '). Mira el estado de arriba antes de repetir.'];
+  }
+  /* Plazos de datos (F6): lo que se pinta es lo que la base afirmó (límites incluidos: la pantalla no conoce el 30 ni el 365).
+     Sin lectura fiable no hay formulario ni botones. Todo dato entra por textContent/setAttribute. */
+  function fechaTxt(iso) {
+    var t = Date.parse(iso);
+    return isNaN(t) ? 'fecha desconocida' : new Date(t).toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+  }
+  function entero(v) { return typeof v === 'number' && isFinite(v) && Math.floor(v) === v; }
+  function campo(doc, caja, etiqueta, id, tipo, attrs) {
+    var l = el(doc, 'label', '', etiqueta); l.setAttribute('for', id); caja.appendChild(l);
+    var i = doc.createElement('input'); i.setAttribute('id', id); i.setAttribute('type', tipo);
+    Object.keys(attrs).forEach(function (k) { i.setAttribute(k, String(attrs[k])); });
+    caja.appendChild(i);
+  }
+  function pintaPlazos(doc, caja, d) {
+    while (caja.firstChild) caja.removeChild(caja.firstChild);
+    caja.hidden = false;
+    caja.appendChild(el(doc, 'h2', 'ap-plazos-h', 'Plazos de datos'));
+    if (!d || d.ok !== true || !entero(d.correos_dias) || !entero(d.efectivo_dias) || !entero(d.minimo_dias) || !entero(d.maximo_dias)) {
+      caja.setAttribute('class', 'ap-plazos ap-mal'); caja.removeAttribute('data-efectivo');
+      caja.appendChild(el(doc, 'p', '', 'No he podido leer los plazos de datos. No toques nada hasta poder verlos.'));
+      return;
+    }
+    caja.setAttribute('class', 'ap-plazos'); caja.setAttribute('data-efectivo', String(d.efectivo_dias));
+    caja.appendChild(el(doc, 'p', '', 'Correos del Padrino (solo huella cifrada y estado, sin el texto): se conservan ' + d.efectivo_dias + ' días.'));
+    if (d.purga_programada === false) caja.appendChild(el(doc, 'p', 'ap-aviso', 'La purga diaria no está programada: hoy no se borra ningún correo, sea cual sea el plazo.'));
+    else if (d.purga_programada !== true) caja.appendChild(el(doc, 'p', 'ap-aviso', 'No he podido ver si la purga diaria está programada.'));
+    if (entero(d.propuesto_dias) && d.borra_desde) {   /* borra_desde solo existe mientras faltan las 24 h: una propuesta madura ya rige y no se pinta como cancelable */
+      var pend = el(doc, 'div', 'ap-pend');
+      pend.setAttribute('data-lw', 'plazo-pendiente');
+      pend.appendChild(el(doc, 'p', '', 'Pendiente: bajar a ' + d.propuesto_dias + ' días, propuesto el ' + fechaTxt(d.propuesto_desde) + '. Borra desde entre 24 y 48 h tras aceptar (primera purga después de las 24 h' + (d.borra_desde ? ': ' + fechaTxt(d.borra_desde) : '') + '). Hasta entonces se puede cancelar.'));
+      var c = el(doc, 'button', 'ap-btn ap-no', 'Cancelar el acortamiento');
+      c.setAttribute('type', 'button'); c.setAttribute('data-accion', 'plazo-correos-cancela');
+      pend.appendChild(c); caja.appendChild(pend);
+    }
+    campo(doc, caja, 'Días de conservación de los correos (de ' + d.minimo_dias + ' a ' + d.maximo_dias + ')', 'plazo-dias', 'number',
+      { min: d.minimo_dias, max: d.maximo_dias, step: 1, value: d.efectivo_dias, inputmode: 'numeric' });
+    campo(doc, caja, 'Motivo (obligatorio; queda en el registro)', 'plazo-motivo', 'text', { maxlength: 300, autocomplete: 'off' });
+    if (d.acortar_desde) caja.appendChild(el(doc, 'p', 'ap-cad', 'No se puede acortar de nuevo hasta el ' + fechaTxt(d.acortar_desde) + ' (ampliar sí).'));
+    var g = el(doc, 'button', 'ap-btn ap-si', 'Guardar plazo');
+    g.setAttribute('type', 'button'); g.setAttribute('data-accion', 'plazo-correos');
+    var acc = el(doc, 'div', 'ap-acc'); acc.appendChild(g); caja.appendChild(acc);
+    caja.appendChild(el(doc, 'div', 'ap-et', 'Últimas pasadas de la purga'));
+    var ul = el(doc, 'ul', 'ap-pasadas');
+    var ps = Array.isArray(d.pasadas) ? d.pasadas : [];
+    if (!ps.length) ul.appendChild(el(doc, 'li', '', 'Todavía no hay pasadas registradas.'));
+    ps.forEach(function (p) {
+      var t = fechaTxt(p && p.cuando) + ' — ' + (p && entero(p.borradas) ? 'borró ' + p.borradas + ' correos' : 'no borró nada') + (p && entero(p.plazo_dias) ? ' (plazo ' + p.plazo_dias + ' días)' : '')
+        + (p && p.accion === 'purga_truncada' ? ' · quedaron más por borrar para la siguiente pasada' : '') + (p && p.motivo ? ' · no pudo leer el plazo' : '');
+      ul.appendChild(el(doc, 'li', '', t));
+    });
+    caja.appendChild(ul);
+  }
+  var RESULTADO_PLAZO = {
+    propone: 'Acortamiento aceptado: rige a las 24 h y borra desde entre 24 y 48 h tras aceptar. Puedes cancelarlo hasta entonces.',
+    amplia: 'Plazo ampliado: ya rige.',
+    mantiene: 'Plazo mantenido. Si había un acortamiento pendiente, queda anulado.',
+    ya_propuesto: 'Ese acortamiento ya estaba propuesto: no se reinicia la espera de 24 h.',
+    sin_cambio: 'Sin cambios: ese ya era el plazo.'
+  };
+  function textoPlazo(estadoHttp, d, accion) {
+    if (estadoHttp === 200 && d && d.ok === true) {
+      if (accion === 'plazo-correos-cancela' && typeof d.cancelado === 'boolean') return [true, d.cancelado ? 'Acortamiento cancelado.' : 'No había ningún acortamiento pendiente que cancelar.'];
+      if (accion === 'plazo-correos' && Object.prototype.hasOwnProperty.call(RESULTADO_PLAZO, d.resultado)) return [true, RESULTADO_PLAZO[d.resultado]];
+    }
+    if (estadoHttp === 401 && d && d.error === 'reautenticar') return [false, 'Para acortar hace falta haber iniciado sesión hace menos de 10 minutos: vuelve a iniciar sesión y repite.'];
+    if (estadoHttp === 401) return [false, 'La sesión ha caducado: vuelve a iniciar sesión.'];
+    if (estadoHttp === 429) return [false, 'Ya se acortó el plazo hace menos de 7 días: mira la fecha desde la que se puede volver a acortar.'];
+    if (estadoHttp === 400) return [false, 'Días o motivo no válidos (el motivo es obligatorio, hasta 300 caracteres).'];
+    if (estadoHttp === 403) return [false, 'Esta cuenta no es la del owner del piloto.'];
+    return [false, 'No se pudo completar (' + estadoHttp + '). Mira los plazos de arriba antes de repetir.'];
+  }
+  var MOTIVOS = {
+    no_pendiente: 'Esa aprobación ya no está pendiente: caducó, la resolvió otro o el hash no coincide. Recarga la lista.',
+    no_legible: 'No se puede aprobar: lo pedido no cabe entero en pantalla. Solo rechazar.'
+  };
+  function textoResultado(estadoHttp, d) {
+    if (estadoHttp === 200 && d && d.ok === true) return [true, d.estado === 'aprobada' ? 'Aprobada.' : 'Rechazada.'];
+    if (estadoHttp === 409 && d && MOTIVOS[d.motivo]) return [false, MOTIVOS[d.motivo]];
+    if (estadoHttp === 429) return [false, 'Demasiados intentos fallidos seguidos. Espera unos minutos.'];
+    if (estadoHttp === 403) return [false, 'Esta cuenta no es la del owner del piloto.'];
+    return [false, 'No se pudo completar (' + estadoHttp + '). No se ha cambiado nada que yo sepa: recarga la lista antes de repetir.'];
+  }
+  /*RENDER-FIN*/
+
+  function $(id) { return document.getElementById(id); }
+  function pide(cuerpo) {
+    return sb.auth.getSession().then(function (s) {
+      var t = s && s.data && s.data.session && s.data.session.access_token;
+      return fetch(window.lwEdge('agente-aprobaciones'), { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (t || '') }, body: JSON.stringify(cuerpo) });
+    }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { d.__estado = r.status; return d; }); });
+  }
+  function cargaPausa() {
+    return pide({ accion: 'estado' }).then(function (d) {
+      pintaPausa(document, $('pausa'), d.__estado === 200 && d.ok === true ? d : null);
+    }).catch(function () { pintaPausa(document, $('pausa'), null); });
+  }
+  function cambiaPausa(accion) {
+    if (ocupado) return;
+    if (accion === 'arranca' && typeof window.confirm === 'function' && !window.confirm('¿Arrancar el Padrino? Volverá a actuar según su ficha.')) return;
+    ocupado = true;
+    var bs = document.querySelectorAll('[data-accion="arranca"],[data-accion="para"]');
+    Array.prototype.forEach.call(bs, function (b) { b.setAttribute('disabled', 'disabled'); });
+    pide({ accion: accion }).then(function (d) {
+      var r = textoPausa(d.__estado, d, accion), box = $('resultado');
+      box.hidden = false; box.textContent = r[1]; box.setAttribute('class', r[0] ? 'ap-res' : 'ap-res ap-mal');
+    }).catch(function () {
+      var box = $('resultado'); box.hidden = false; box.setAttribute('class', 'ap-res ap-mal');
+      box.textContent = 'No se pudo completar. Mira el estado de arriba antes de repetir.';
+    }).then(function () { ocupado = false; return cargaPausa(); });
+  }
+  function cargaPlazos() {
+    return pide({ accion: 'plazos' }).then(function (d) {
+      pintaPlazos(document, $('plazos'), d.__estado === 200 && d.ok === true ? d : null);
+    }).catch(function () { pintaPlazos(document, $('plazos'), null); });
+  }
+  function cambiaPlazo(accion) {
+    if (ocupado) return;
+    var motivo = (($('plazo-motivo') && $('plazo-motivo').value) || '').trim();
+    var box = $('resultado');
+    function aviso(ok, t) { box.hidden = false; box.textContent = t; box.setAttribute('class', ok ? 'ap-res' : 'ap-res ap-mal'); }
+    if (!motivo || motivo.length > 300) return aviso(false, 'Escribe el motivo (obligatorio, hasta 300 caracteres).');
+    var cuerpo = { accion: accion === 'plazo-correos' ? 'plazo_correos' : 'plazo_correos_cancela', motivo: motivo };
+    if (accion === 'plazo-correos') {
+      var dias = Number($('plazo-dias') && $('plazo-dias').value);
+      var efectivo = Number($('plazos').getAttribute('data-efectivo'));
+      if (!isFinite(dias) || Math.floor(dias) !== dias) return aviso(false, 'Los días tienen que ser un número entero.');
+      if (isFinite(efectivo) && dias < efectivo && typeof window.confirm === 'function'
+          && !window.confirm('Vas a ACORTAR el plazo de los correos del Padrino a ' + dias + ' días. Esto borra correos de forma irreversible: los más viejos se borrarán en la primera purga posterior a 24 h (entre 24 y 48 h tras aceptar). Puedes cancelarlo antes. ¿Continuar?')) return;
+      cuerpo.dias = dias;
+    }
+    ocupado = true;
+    var bs = document.querySelectorAll('[data-accion="plazo-correos"],[data-accion="plazo-correos-cancela"]');
+    Array.prototype.forEach.call(bs, function (b) { b.setAttribute('disabled', 'disabled'); });
+    pide(cuerpo).then(function (d) { var r = textoPlazo(d.__estado, d, accion); aviso(r[0], r[1]); })
+      .catch(function () { aviso(false, 'No se pudo completar. Mira los plazos de arriba antes de repetir.'); })
+      .then(function () { ocupado = false; return cargaPlazos(); });
+  }
+  function carga() {
+    cargaPausa();
+    cargaPlazos();
+    var est = $('estado');
+    est.hidden = false; est.setAttribute('class', 'ap-estado'); est.textContent = 'Cargando…'; $('lista').hidden = true;
+    return pide({ accion: 'lista' }).then(function (d) {
+      if (d.__estado === 403) return pintaError(est, $('lista'), 'Esta cuenta no es la del owner del piloto.');
+      if (d.__estado !== 200 || d.ok !== true) return pintaError(est, $('lista'), 'No he podido leer las aprobaciones (' + d.__estado + '). No es que no haya ninguna: no he podido mirar.');
+      pintaLista(document, $('lista'), est, d.aprobaciones, Date.now());
+    }).catch(function () { pintaError(est, $('lista'), 'No he podido leer las aprobaciones. No es que no haya ninguna: no he podido mirar.'); });
+  }
+  function resuelve(boton, decision) {
+    if (ocupado) return;
+    ocupado = true;
+    var botones = document.querySelectorAll('[data-accion="aprueba"],[data-accion="rechaza"]');
+    Array.prototype.forEach.call(botones, function (b) { b.setAttribute('disabled', 'disabled'); });
+    pide({ accion: 'resuelve', numero: boton.getAttribute('data-numero'), hash: boton.getAttribute('data-hash'), decision: decision }).then(function (d) {
+      var r = textoResultado(d.__estado, d), box = $('resultado');
+      box.hidden = false; box.textContent = r[1]; box.setAttribute('class', r[0] ? 'ap-res' : 'ap-res ap-mal');
+    }).catch(function () {
+      var box = $('resultado'); box.hidden = false; box.setAttribute('class', 'ap-res ap-mal');
+      box.textContent = 'No se pudo completar. No se ha cambiado nada que yo sepa: recarga la lista antes de repetir.';
+    }).then(function () { ocupado = false; return carga(); });
+  }
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest && ev.target.closest('[data-accion]');
+    if (!t || t.hasAttribute('disabled')) return;
+    var a = t.getAttribute('data-accion');
+    if (a === 'aprueba') resuelve(t, 'aprobada');
+    else if (a === 'rechaza') resuelve(t, 'rechazada');
+    else if (a === 'para' || a === 'arranca') cambiaPausa(a);
+    else if (a === 'plazo-correos' || a === 'plazo-correos-cancela') cambiaPlazo(a);
+    else if (a === 'recarga') carga();
+  });
+  if (typeof window !== 'undefined' && window.LW_AUTH) {
+    window.LW_AUTH.then(function (a) { sb = a.sb; return carga(); }).catch(function (e) {
+      pintaError($('estado'), $('lista'), (e && e.message) || 'No se pudo cargar.');
+    });
+  }
+})();
+</script>
+</body>
+</html>

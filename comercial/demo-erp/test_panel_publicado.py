@@ -106,9 +106,35 @@ def main():
 
     # 5) lo que el panel le pide a guard.js: el conjunto que el panel VIEJO (producción) ya usaba
     PERMITIDO = {'LW_AUTH', 'lwEdge'}
-    for f in ('panel_control.html', 'panel_pilotos.html'):
+    for f in ('panel_control.html', 'panel_pilotos.html', 'panel_aprobaciones.html'):
         usados = set(re.findall(r'\bwindow\.(LW_[A-Z_]+|lw[A-Z][A-Za-z]*)\b', lee(os.path.join(AQUI, f))))
         ok('%s solo usa del guard lo que ya tenía el publicado: %s' % (f, sorted(usados)), usados <= PERMITIDO)
+
+    # 5b) Aprobaciones (AXW-178, 9-oct-2026): la vista es COPIA de la fuente de la agencia (la que prueba su panel.test.js). Tiene que ser la
+    # misma pagina entera menos su comentario de cabecera y las tres lineas de piel que la copia anade (iconos, panel.css, pildora de la barra
+    # activa): lo que decide QUE se le manda a la edge (pide, carga, resuelve, plazos, pausa) tambien cuenta, no solo el dibujo. Si divergen,
+    # o se prueba una cosa y se publica otra, o al reves. Sin la fuente a mano (otra maquina) se dice, no se da por bueno.
+    PIEL = ('<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">\n',
+            '<link rel="stylesheet" href="/panel/panel.css">\n',
+            '.nav-pill[aria-current=page]{background:#4f46e5;color:#fff}\n')
+
+    def cuerpo(txt, quita_piel):
+        for l in (PIEL if quita_piel else ()):
+            if txt.count(l) != 1:
+                return None
+            txt = txt.replace(l, '')
+        return re.sub(r'<!--.*?-->', '', txt, count=1, flags=re.S)
+    copia = lee(os.path.join(AQUI, 'panel_aprobaciones.html'))
+    ok('panel_aprobaciones.html lleva su bloque RENDER y las tres lineas de piel', '/*RENDER-INICIO*/' in copia and cuerpo(copia, True) is not None)
+    fuente = os.path.join(build.AGENCIA, 'erp', 'funciones', 'agente-aprobaciones', 'panel_aprobaciones.html')
+    if os.path.isfile(fuente):
+        ok('la copia es la fuente de la agencia (la que prueba panel.test.js) salvo cabecera y piel', cuerpo(copia, True) == cuerpo(lee(fuente), False))
+    else:
+        print('aviso: no hay fuente de la agencia en %s: no se compara' % fuente)
+    vista = re.sub(r'<!--.*?-->|/\*.*?\*/', '', lee(os.path.join(AQUI, 'panel_aprobaciones.html')), flags=re.S)   # sin comentarios, que nombran lo prohibido
+    ok('aprobaciones: noindex, guard de super_admin y hueco de la barra', 'name="robots" content="noindex"' in vista and 'data-rol="super_admin"' in vista and vista.count('__AXW_PANEL_NAV__') == 1)
+    ok('aprobaciones: solo habla con la edge agente-aprobaciones y no toca la base', "lwEdge('agente-aprobaciones')" in vista and '.from(' not in vista and '.rpc(' not in vista and 'innerHTML' not in vista)
+    ok('la barra compartida tiene la sección aprobaciones y build la monta', 'data-nav="aprobaciones"' in lee(os.path.join(AQUI, '_compartido', 'panel_nav.html')) and "panel_nav(aprob, 'aprobaciones')" in lee(os.path.join(AQUI, 'build.py')))
 
     # 6) publicado_de_clon con repos git de verdad: una origin/main local VIEJA no engaña (hace fetch); un HEAD adelantado para
     import subprocess

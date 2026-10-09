@@ -2033,6 +2033,12 @@ def instancia(nombre):
         os.makedirs(d_pil, exist_ok=True)
         pilotos = open(os.path.join(AQUI, 'panel_pilotos.html'), encoding='utf-8').read()
         open(os.path.join(d_pil, 'index.html'), 'w', encoding='utf-8', newline='').write(panel_nav(pilotos, 'pilotos'))
+        # La vista «Aprobaciones» (9-oct-2026, AXW-178, owner: «Sí, cólgala»): /panel/aprobaciones/. Mismo patrón que Pilotos: ni lleva
+        # contenido ni escribe en la base; pide a la edge `agente-aprobaciones` (aprobar/rechazar, Arrancar/Parar, plazos de datos).
+        d_apr = os.path.join(d, 'aprobaciones')
+        os.makedirs(d_apr, exist_ok=True)
+        aprob = open(os.path.join(AQUI, 'panel_aprobaciones.html'), encoding='utf-8').read()
+        open(os.path.join(d_apr, 'index.html'), 'w', encoding='utf-8', newline='').write(panel_nav(aprob, 'aprobaciones'))
         compila_portada('panel/panel.css')   # su Tailwind compilado: la CSP de la instancia no admite el Play CDN
     for ruta, herr in (('generador-contratos/index.html', 'Generador de contratos'),
                        ('contratos-inversor/index.html', 'Portal del comprador'),
