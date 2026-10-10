@@ -127,7 +127,7 @@ mira('para si la cascara de /asistente/ ya no tiene la forma esperada',
 
 def con_fuente_alterada(alterar=None, quitar_comun=None):
     alt = tempfile.mkdtemp()
-    for otro in ('asistente_peticiones.html', 'whatsapp_bot.html', 'bot_alta.html', 'ajustes_correo.js', 'ventas.html', 'reservas_producto.html', 'taller.html'):
+    for otro in ('asistente_peticiones.html', 'whatsapp_bot.html', 'bot_alta.html', 'ventas.html', 'reservas_producto.html', 'taller.html'):
         shutil.copy(os.path.join(AQUI, otro), os.path.join(alt, otro))
     open(os.path.join(alt, 'entrega.html'), 'w', encoding='utf-8').write(alterar(FUENTE) if alterar else FUENTE)
     os.makedirs(os.path.join(alt, '_compartido'))

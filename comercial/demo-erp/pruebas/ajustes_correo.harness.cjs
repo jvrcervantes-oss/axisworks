@@ -1,6 +1,8 @@
-// node comercial/demo-erp/pruebas/ajustes_correo.harness.cjs <ajustes.js generado por build.py> [captura.png] [prefijo-capturas]
-// Harness de «Ajustes › Correo» del maestro (F3.1 + código de confirmación F3.1b, 8-oct-2026): el ajustes.js REAL ya con el overlay (ajustes_correo.js),
-// en Chromium, con la base, la sesión y la edge `ajustes-correo` SIMULADAS (page.route). Mide el comportamiento, no el código: qué pide a la edge y con
+// node comercial/demo-erp/pruebas/ajustes_correo.harness.cjs <paquete>/assets/ajustes.js [captura.png] [prefijo-capturas]
+// Harness de «Ajustes › Correo» del maestro (F3.1 + código de confirmación F3.1b, 8-oct-2026): el ajustes.js REAL que sale de build.py (la pantalla de
+// Lawang con la línea del instalador; desde el 10-oct-2026 ya no hay overlay) y el i18n.js REAL del MISMO paquete (<paquete>/contracts/assets/i18n.js,
+// o HARNESS_I18N=<ruta>): lo traducido y los huecos (%cuando, %quien) se miden contra lo que se publica, no contra un doble de lwT.
+// En Chromium, con la base, la sesión y la edge `ajustes-correo` SIMULADAS (page.route). Mide el comportamiento, no el código: qué pide a la edge y con
 // qué cabeceras y en qué orden (pedir código → guardar), qué pinta con cada respuesta (incluida la edge sin desplegar y cada código de error) y que
 // ninguna contraseña queda en la página cuando ya no hace falta.
 // En esta PC: PLAYWRIGHT_CORE=C:/Users/jvrce/AppData/Roaming/npm/node_modules/@playwright/mcp/node_modules/playwright-core
@@ -10,6 +12,10 @@ const RUTA = process.argv[2];
 const SHOT = process.argv[3];
 const PREF = process.argv[4];
 const js = fs.readFileSync(RUTA, 'utf8');
+const path = require('path');
+const RUTA_I18N = process.env.HARNESS_I18N || path.resolve(path.dirname(RUTA), '..', 'contracts', 'assets', 'i18n.js');
+if (!fs.existsSync(RUTA_I18N)) { console.error('NO SE HA PODIDO MIRAR: falta el i18n.js del paquete (' + RUTA_I18N + '). Pasa el ajustes.js de un paquete construido o HARNESS_I18N=<ruta>.'); process.exit(2); }
+const I18N = fs.readFileSync(RUTA_I18N, 'utf8').replace(/<\/script>/g, '<\\/script>');
 let fallos = 0;
 const ok = (nombre, c, extra = '') => { if (!c) { fallos++; console.log('FALLA  ' + nombre + (extra ? ' → ' + extra : '')); } else console.log('ok     ' + nombre); };
 const SECRETO = 'S3cr3t0-del-buz0n!';
@@ -36,12 +42,11 @@ window.lwDatos = function (n, a) { return Promise.resolve(sb.rpc(n, a)).then(fun
 window.lwEdge = function (n) { return 'https://inst.test/functions/v1/' + n; };
 window.LW_SB_KEY = 'anon-key';
 window.LW_IDIOMA = '${cfg.idioma || 'es'}';
-window.LW_EN = { 'Correo': 'Email', 'Reintentar': 'Retry', 'opcional': 'optional' };
-window.lwLocale = function () { return window.LW_IDIOMA === 'en' ? 'en-GB' : 'es-ES'; };
-window.lwT = function (s) { if (window.LW_IDIOMA === 'en' && Object.prototype.hasOwnProperty.call(window.LW_EN, s)) return window.LW_EN[s]; return s; };
+window.LW_T_MISSES = new Set();
 window.toast = function (m) { window.__toast = m; };
 window.onerror = function (m) { (window.__errores = window.__errores || []).push(String(m)); };
 </script>
+<script>${I18N}</script>
 <script>${js.replace(/<\/script>/g, '<\\/script>')}</script></body></html>`;
 
 // Las 4 direcciones YA NO salen por ajustes_config_datos (ni en `editables` ni en `valores`): solo por `estado`.
@@ -91,6 +96,8 @@ const err = (status, codigo, extra = {}) => ({ status, body: Object.assign({ ok:
     ok('muestra servidor, usuario y puerto', /smtp\.viejo\.com/.test(await txt(p, '[data-correo="servidor-actual"]')) && /465/.test(await txt(p, '[data-correo="servidor-actual"]')));
     const cp = await txt(p, '[data-correo="contrasena-puesta"]');
     ok('contraseña write-only: «puesta el … por …» y ni rastro de la clave', /puesta el/.test(cp) && /jefe@negocio\.com/.test(cp) && /••••/.test(cp), cp);
+    ok('«puesta el <fecha> por <quién>»: los huecos %cuando y %quien se rellenan (la fecha y el correo, ningún % a la vista)', /puesta el \d{1,2}\/\d{1,2}\/2026.* por jefe@negocio\.com$/.test(cp) && !/%/.test(cp), cp);
+    ok('UNA sola copia de la pantalla: un bloque del servidor, un juego de 4 direcciones', (await p.$$('[data-correo-servidor]')).length === 1 && (await p.$$('[data-correo-fila]')).length === 4);
     ok('el formulario del servidor está plegado hasta pulsar Cambiar', !(await hay(p, cam('host'))) && await hay(p, '[data-accion="correo-servidor-editar"]'));
     for (const [k, v] of [['email_from', 'hola@negocio.com'], ['email_reply_to', 'resp@negocio.com'], ['email_avisos_soporte', 'soporte@negocio.com'], ['email_avisos_sistema', 'sistema@negocio.com']])
       ok('dirección ' + k + ' sale del estado de la edge', await valor(p, 'dir-' + k) === v, String(await valor(p, 'dir-' + k)));
@@ -227,6 +234,7 @@ const err = (status, codigo, extra = {}) => ({ status, body: Object.assign({ ok:
   // 4. Fallos al PEDIR el código: cada uno en llano y sin dejar nada pedido ni contraseñas en pantalla
   for (const [codigo, status, esperado] of [['codigo_no_enviado', 502, /No se ha podido mandar el código/], ['demasiados_intentos', 429, /Demasiados intentos o códigos/], ['codigo_no_disponible', 503, /confirmación por código no está disponible/],
                                             ['sin_dominio_web', 400, /no tiene dominio configurado/], ['host_no_resuelve', 400, /no existe/], ['host_privado', 400, /red interna/], ['envios_pausados', 503, /pausa/],
+                                            ['host_no_comprobable', 503, /No se ha podido comprobar a dónde apunta ese servidor ahora mismo: no se ha enviado ni guardado nada/],
                                             ['sin_correo_usuario', 400, /no tiene un correo válido/], ['sin_sesion', 401, /sesión ha caducado/], ['no_super_admin', 403, /super admin/], ['origen', 403, /no está autorizada/]]) {
     const { p, ctx } = await abre({ datos: DATOS() }, (c) => c.accion === 'estado' ? { status: 200, body: ESTADO() } : err(status, codigo));
     await espera(p, '[data-accion="correo-servidor-editar"]');
@@ -236,7 +244,7 @@ const err = (status, codigo, extra = {}) => ({ status, body: Object.assign({ ok:
     await p.click('[data-accion="correo-servidor-pedir"]');
     await p.waitForFunction(() => /No se pidió el código/.test((document.querySelector('[data-correo="resultado"]') || {}).textContent || ''));
     const r = await txt(p, '[data-correo="resultado"]');
-    ok('pedir → ' + codigo + ': mensaje en llano', esperado.test(r) && !/TEXTO-LIBRE|<b>/.test(r), r);
+    ok('pedir → ' + codigo + ': mensaje en llano', esperado.test(r) && !/TEXTO-LIBRE|<b>|no reconocida/.test(r), r);
     ok('pedir → ' + codigo + ': nada queda pedido (sigue «Pedir código»), contraseña vaciada', await hay(p, '[data-accion="correo-servidor-pedir"]') && !(await hay(p, cam('codigo'))) && await sinSecretos(p));
     await ctx.close();
   }
@@ -322,11 +330,16 @@ const err = (status, codigo, extra = {}) => ({ status, body: Object.assign({ ok:
   for (const [nombre, resp, esperado] of [['404', () => ({ status: 404, body: { code: 'NOT_FOUND', message: 'Requested function was not found' } }), /todavía no está disponible/],
                                           ['502 HTML', () => ({ status: 502, html: '<html>Bad gateway SECRETO-INTERNO</html>' }), /todavía no está disponible/],
                                           ['sin red / CORS', () => 'abort', /No se ha podido contactar/]]) {
-    const { p, ctx } = await abre({ datos: DATOS() }, resp);
+    const { p, ctx, llamadas } = await abre({ datos: DATOS() }, resp);
     await p.waitForSelector('[data-correo="estado"] [data-accion="correo-estado-reintentar"]');
     const t = await txt(p, '[data-correo="estado"]');
     ok('edge ' + nombre + ': mensaje claro y botón Reintentar', esperado.test(t) && !/SECRETO-INTERNO|NOT_FOUND|Requested function/.test(t), t);
     ok('edge ' + nombre + ': el resto del formulario de Correo sigue funcionando', (await p.$$('[data-ajuste="email_avisos_reservas"]')).length === 1);
+    // Un clic = una llamada: con dos copias del bloque en el mismo fichero había dos oyentes y «Reintentar» pedía el estado DOS veces (revisor, 10-oct-2026).
+    const antes = llamadas.length;
+    await p.click('[data-accion="correo-estado-reintentar"]');
+    await p.waitForTimeout(500);
+    ok('edge ' + nombre + ': «Reintentar» pide el estado UNA vez por clic', llamadas.length === antes + 1 && llamadas[antes].cuerpo.accion === 'estado', (llamadas.length - antes) + ' llamada(s)');
     await foto(p, '5_edge_caida_' + nombre.replace(/\W/g, ''));
     await ctx.close();
   }
@@ -359,6 +372,29 @@ const err = (status, codigo, extra = {}) => ({ status, body: Object.assign({ ok:
     ok('desajuste de dominio visible (y apunta a «Addresses»)', /envios@otro\.com/.test(await txt(p, '[data-correo="desajuste-dominio"]')) && /Addresses/.test(await txt(p, '[data-correo="desajuste-dominio"]')));
     ok('intentos recientes visibles', /2 of 5/.test(await txt(p, '[data-correo="estado"]')));
     ok('en inglés: cabeceras, botones y ayudas traducidas', /Outgoing mail server/.test(await txt(p, '#lw-aj-correo-servidor')) && /Request code/.test(await txt(p, '[data-correo-fila="email_from"]')) && /Email addresses/.test(await txt(p, '#lw-aj-correo-servidor')) && /Reply to/.test(await txt(p, '#lw-aj-correo-servidor')));
+    const cpEn = await txt(p, '[data-correo="contrasena-puesta"]');
+    ok('en inglés: «Mailbox password set on <date> by <who>» con los huecos rellenos', /Mailbox password set on \d{1,2}\/\d{1,2}\/2026.* by jefe@negocio\.com$/.test(cpEn) && !/%/.test(cpEn), cpEn);
+    // host_no_comprobable en inglés, por el camino real (pedir el código del servidor)
+    await p.unroute('https://inst.test/functions/v1/ajustes-correo');
+    await p.route('https://inst.test/functions/v1/ajustes-correo', (r) => r.fulfill({ status: 503, contentType: 'application/json', headers: { 'access-control-allow-origin': 'https://inst.test' }, body: JSON.stringify(err(503, 'host_no_comprobable').body) }));
+    await p.click('[data-accion="correo-servidor-editar"]');
+    await p.fill(cam('host'), 'smtp.otro.com');
+    await p.fill(cam('pass'), SECRETO);
+    await p.click('[data-accion="correo-servidor-pedir"]');
+    await p.waitForFunction(() => ((document.querySelector('[data-correo="resultado"]') || {}).textContent || '').length > 0);
+    const hnc = await txt(p, '[data-correo="resultado"]');
+    ok('en inglés: host_no_comprobable en llano, no «Unrecognised answer»', /could not check where that server points right now: nothing was sent or saved/i.test(hnc) && !/Unrecognised|no reconocida|TEXTO-LIBRE/.test(hnc), hnc);
+    // Nada de la pestaña Correo se queda en español con la interfaz en inglés (LW_T_MISSES lo anota el propio lwT del diccionario del paquete)
+    const faltan = await p.evaluate(() => [...window.LW_T_MISSES].filter((s) => /[A-Za-z]{3}/.test(s) && !/^[\s—·:.,()0-9]*$/.test(s)));
+    ok('en inglés: ninguna frase de Ajustes › Correo sin traducir', faltan.length === 0, JSON.stringify(faltan.slice(0, 8)));
+    await ctx.close();
+  }
+  // 8b. Maestro: el primer servidor lo deja el instalador y se dice con palabras, en los dos idiomas
+  for (const [idioma, esperado] of [['es', /Contraseña del buzón puesta el \d{1,2}\/\d{1,2}\/2026.* por el instalador$/], ['en', /Mailbox password set on \d{1,2}\/\d{1,2}\/2026.* by the installer$/]]) {
+    const { p, ctx } = await abre({ datos: DATOS(), idioma }, () => ({ status: 200, body: ESTADO({ estado: { puesto_por: 'instalador' } }) }));
+    await espera(p, '[data-correo="contrasena-puesta"]');
+    const t = await txt(p, '[data-correo="contrasena-puesta"]');
+    ok('puesta por el instalador (' + idioma + '): con palabras y con la fecha, sin huecos a la vista', esperado.test(t) && !/%|instalador@/.test(t), t);
     await ctx.close();
   }
   {

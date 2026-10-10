@@ -1637,23 +1637,59 @@ def whatsapp_bot_pantalla():
     open(nav, 'w', encoding='utf-8', newline='').write(n)
 
 
+# Lo que «Ajustes › Correo» trae UNA sola vez en ajustes.js, ni cero ni dos: sus funciones, su tabla de mensajes, su estado, sus dos oyentes y sus
+# tres enganches en el código de la pantalla. Son expresiones y no texto literal porque se miden dos veces: sobre el fichero de Lawang tal cual
+# y sobre el que SALE del build, ya sin comentarios y reescrito por limpia_publico.js (comillas dobles, sin espacios).
+AJUSTES_CORREO_UNA_VEZ = (
+    ('la función pintaServidorCorreo', r'\bfunction\s+pintaServidorCorreo\s*\('),
+    ('la función ajustaCamposCorreo', r'\bfunction\s+ajustaCamposCorreo\s*\('),
+    ('la función llamaCorreo (la única puerta a la edge)', r'\bfunction\s+llamaCorreo\s*\('),
+    ('la tabla de mensajes CORREO_MSG', r'\bvar\s+CORREO_MSG\s*='),
+    ('el estado `srv`', r'\bvar\s+srv\s*='),
+    ('el oyente de clics de las acciones correo-*', r'''\.indexOf\(\s*['"]correo-['"]\s*\)\s*!==\s*0'''),
+    ('el oyente de hashchange de la pestaña Correo', r'''desdeHash\(\)\s*===\s*['"]correo['"]\s*&&\s*srv\.fase\s*===\s*['"]inicial['"]\s*\)\s*pintaServidorCorreo\(\)'''),
+    ('el enganche de carga(): ajustaCamposCorreo()', r'\bajustaCamposCorreo\(\)\s*;'),
+    ('el enganche de carga(): pintaServidorCorreo(guardada)', r'(?<!function\s)\bpintaServidorCorreo\(guardada\)'),
+    ('el enganche de lee(): LEE_CORREO[clave]', r'\bLEE_CORREO\[clave\]'),
+    ('function arranca', r'\bfunction\s+arranca\s*\('),
+)
+
+
+def ajustes_correo_una_copia(js, donde):
+    """PARA si «Ajustes › Correo» no está exactamente UNA vez en `js`. Porqué (revisor, 10-oct-2026): del 8 al 10-oct el build insertaba
+    su propia copia del bloque encima de la que Lawang ya traía desde su porte (e0e88e58). Dos copias en el mismo IIFE no dan error: gana
+    la segunda, lo que Lawang endurezca queda tapado, cada clic se oye dos veces («Reintentar» pedía el estado dos veces) y un código que
+    la edge sí devuelve (`host_no_comprobable`) se pintaba como «Respuesta no reconocida»."""
+    malos = ['%s: %d (se espera 1)' % (que, len(re.findall(rx, js))) for que, rx in AJUSTES_CORREO_UNA_VEZ if len(re.findall(rx, js)) != 1]
+    # Y, mientras el fichero conserve la forma de Lawang (dos espacios dentro del IIFE), ninguna función ni variable de la pantalla declarada
+    # dos veces: es la forma general del mismo fallo, también para lo que no está en la lista de arriba.
+    for rx, que in ((r'(?m)^  function (\w+)\(', 'function'), (r'(?m)^  var (\w+)\b', 'var')):
+        nombres = re.findall(rx, js)
+        malos += ['%s %s declarada %d veces' % (que, n, nombres.count(n)) for n in sorted(set(nombres)) if nombres.count(n) > 1]
+    if malos:
+        aborta('ajustes_correo: %s no trae UNA sola copia de Ajustes › Correo:\n  %s' % (donde, '\n  '.join(malos)))
+
+
+# La ÚNICA diferencia del maestro con la pantalla de Lawang: quién puso la contraseña del buzón. En el maestro el primer servidor lo deja el
+# instalador (`puesto_por = 'instalador'`, migración 20261007210000) y se dice con palabras; Lawang no tiene instalador.
+AJUSTES_CORREO_INSTALADOR = ("        var porQuien = textoSimple(e.puesto_por, 120);",
+                             "        var porQuien = e.puesto_por === 'instalador' ? T('el instalador') : textoSimple(e.puesto_por, 120);")
+
+
 def ajustes_correo_maestro():
-    """Ajustes › Correo del ERP maestro (F3.1 del plan único, 7-oct-2026): «Servidor de salida» + tres casillas (email_avisos_soporte,
-    email_avisos_sistema, asunto_por_defecto). La pantalla de Lawang (`ajustes.js`) NO se toca: el build inyecta `ajustes_correo.js` DENTRO de su
-    IIFE (necesita `sb`, `datos`, `CAMPOS`…) con reemplazos LITERALES que abortan si Lawang cambia el trozo (patrón de asistente_maestro). Es el
-    ÚNICO llamador de la edge `ajustes-correo`: el navegador no escribe en la base ni guarda secretos, la edge prueba con un envío real y promueve.
-    Va en el MISMO ajustes.js que sirve Lawang, así que todo lo nuevo cuelga de `datos.editables` y de `datos.puede_escribir` (sin migración o sin
-    super admin, no sale nada). Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
+    """Ajustes › Correo del ERP maestro (F3.1 del plan único, 7-oct-2026): «Servidor de salida», «Direcciones» y la casilla del asunto por
+    defecto. FUENTE ÚNICA: el bloque que el `ajustes.js` de Lawang trae desde su porte del 8-oct-2026 (es el mismo código, y Lawang lo sigue
+    endureciendo). Hasta el 10-oct el build pegaba encima su propia copia (`ajustes_correo.js`, ya retirado): ver ajustes_correo_una_copia().
+    Aquí solo se COMPRUEBA que el bloque viene entero y una vez, y se aplica la única diferencia real del maestro (el instalador) con un
+    reemplazo LITERAL que aborta si Lawang cambia esa línea (patrón de asistente_maestro). Los textos en inglés salen del i18n.js de Lawang,
+    que el build copia tal cual. Es el ÚNICO llamador de la edge `ajustes-correo`: el navegador no escribe en la base ni guarda secretos.
+    Todo cuelga de `datos.editables` y de `datos.puede_escribir` (sin migración o sin super admin, no sale nada). Solo se toca lo copiado
+    en DIST, nunca el repo de Lawang."""
     ruta = os.path.join(DIST, 'intranet', 'v4', 'assets', 'ajustes.js')
     t = open(ruta, encoding='utf-8').read()
-    nuevo = open(os.path.join(AQUI, 'ajustes_correo.js'), encoding='utf-8').read()
-    if nuevo.count('function pintaServidorCorreo') != 1:
-        aborta('ajustes_correo_maestro: ajustes_correo.js cambió de forma (esperaba UNA función pintaServidorCorreo)')
-    t = _una_vez(t, '\n  function arranca() {', '\n' + nuevo.rstrip('\n') + '\n\n  function arranca() {', 'ajustes.js inserción antes de arranca()')
-    t = _una_vez(t, "    if (ES_MAESTRO) return LO_LEE_EL_MAESTRO[clave] ? T(TEXTO_LEE) : T(TEXTO_NO_LEE);",
-                 "    if (ES_MAESTRO && LEE_CORREO[clave]) return T(TEXTO_LEE_CORREO);\n    if (ES_MAESTRO) return LO_LEE_EL_MAESTRO[clave] ? T(TEXTO_LEE) : T(TEXTO_NO_LEE);", 'ajustes.js lee()')
-    t = _una_vez(t, "      pintaFormulario('correo', 'lw-aj-correo', ant, guardada);",
-                 "      ajustaCamposCorreo();\n      pintaFormulario('correo', 'lw-aj-correo', ant, guardada);\n      pintaServidorCorreo(guardada);", 'ajustes.js carga()')
+    ajustes_correo_una_copia(t, 'el ajustes.js de Lawang')
+    t = _una_vez(t, AJUSTES_CORREO_INSTALADOR[0], AJUSTES_CORREO_INSTALADOR[1], 'ajustes.js «puesta por el instalador»')
+    ajustes_correo_una_copia(t, 'el ajustes.js del maestro')
     open(ruta, 'w', encoding='utf-8', newline='').write(t)
 
 
@@ -2018,9 +2054,9 @@ SOLO_AJUSTES_CORREO = ('ajustes/index.html', 'assets/ajustes.js')
 
 
 def solo_ajustes_correo(nombre):
-    """Deja en `--salida <carpeta>` SOLO ajustes/index.html y assets/ajustes.js (construidos con el overlay ajustes_correo.js y todos los
-    reemplazos de marca/base del build). erp/publica_instancia.py --solo-ajustes-correo los monta sobre lo YA publicado. La carpeta tiene que
-    estar fuera de la agencia: no toca erp/despliegues/<instancia>/."""
+    """Deja en `--salida <carpeta>` SOLO ajustes/index.html y assets/ajustes.js (la pantalla de Lawang con la diferencia del maestro de
+    ajustes_correo_maestro() y todos los reemplazos de marca/base del build). erp/publica_instancia.py --solo-ajustes-correo los monta sobre
+    lo YA publicado. La carpeta tiene que estar fuera de la agencia: no toca erp/despliegues/<instancia>/."""
     if '--salida' not in sys.argv or sys.argv.index('--salida') + 1 >= len(sys.argv):
         aborta('--solo-ajustes-correo exige --salida <carpeta fuera de la agencia>')
     salida = os.path.abspath(sys.argv[sys.argv.index('--salida') + 1])
@@ -2187,6 +2223,12 @@ def instancia(nombre):
     # ?v= del fichero de Lawang (guard.js se reescribe entero aquí: mapa de módulos + ficha) y /panel/ iba sin versión:
     # Hostinger cachea 7 días y el verificador vio el guard.js viejo en /panel/ tras publicar.
     versiona(DIST)
+    # Lo que SALE lleva UNA copia de Ajustes › Correo (10-oct-2026): se mide aquí, sobre el fichero ya reescrito por limpia_publico.js, y no
+    # solo al entrar. Vale para el paquete entero y para --solo-ajustes-correo.
+    aj = os.path.join(DIST, 'assets', 'ajustes.js')
+    if not os.path.isfile(aj):
+        aborta('el paquete de la instancia no trae assets/ajustes.js (la pantalla Ajustes es de la base)')
+    ajustes_correo_una_copia(open(aj, encoding='utf-8').read(), 'assets/ajustes.js del paquete de ' + nombre)
     # --solo-ajustes-correo (8-oct-2026): el paquete son DOS ficheros y el filtro de abajo se aplica solo a ellos. El build entero lo para un
     # fichero de Lawang que NO se publica (contracts/tokens.json con nombres de sociedades); filtrar solo lo que sale no relaja nada de lo que sale.
     if '--solo-ajustes-correo' in sys.argv:

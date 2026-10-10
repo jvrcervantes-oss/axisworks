@@ -129,7 +129,7 @@ mira('para si ese trozo de herramientas.js aparece dos veces',
 
 def con_fuente_alterada(alterar_taller=None, quitar_comun=None):
     alt = tempfile.mkdtemp()
-    for otro in ('asistente_peticiones.html', 'whatsapp_bot.html', 'bot_alta.html', 'ajustes_correo.js', 'ventas.html', 'reservas_producto.html'):
+    for otro in ('asistente_peticiones.html', 'whatsapp_bot.html', 'bot_alta.html', 'ventas.html', 'reservas_producto.html'):
         shutil.copy(os.path.join(AQUI, otro), os.path.join(alt, otro))
     open(os.path.join(alt, 'taller.html'), 'w', encoding='utf-8').write(alterar_taller(FUENTE) if alterar_taller else FUENTE)
     os.makedirs(os.path.join(alt, '_compartido'))

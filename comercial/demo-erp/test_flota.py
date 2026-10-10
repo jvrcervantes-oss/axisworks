@@ -132,7 +132,7 @@ mira('instancia() llama a flota_pantalla() justo despues de entrega_pantalla()',
 
 def con_fuente_alterada(alterar=None, quitar_comun=None):
     alt = tempfile.mkdtemp()
-    for otro in ('asistente_peticiones.html', 'whatsapp_bot.html', 'bot_alta.html', 'ajustes_correo.js', 'ventas.html', 'reservas_producto.html', 'taller.html', 'entrega.html'):
+    for otro in ('asistente_peticiones.html', 'whatsapp_bot.html', 'bot_alta.html', 'ventas.html', 'reservas_producto.html', 'taller.html', 'entrega.html'):
         shutil.copy(os.path.join(AQUI, otro), os.path.join(alt, otro))
     open(os.path.join(alt, 'flota.html'), 'w', encoding='utf-8').write(alterar(FUENTE) if alterar else FUENTE)
     os.makedirs(os.path.join(alt, '_compartido'))

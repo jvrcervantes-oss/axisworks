@@ -118,7 +118,7 @@ mira('para si la cascara de /asistente/ ya no tiene la forma esperada',
      corre({'intranet/v4/asistente/index.html': lambda t: t.replace('<div class="flex flex-col w-full gap-8">', '<div class="otra">', 1)})[0] == 'para')
 def sin_marcador():
     alt = tempfile.mkdtemp()
-    for otro in ('asistente_peticiones.html', 'whatsapp_bot.html', 'bot_alta.html', 'ajustes_correo.js', 'ventas.html'):
+    for otro in ('asistente_peticiones.html', 'whatsapp_bot.html', 'bot_alta.html', 'ventas.html'):
         shutil.copy(os.path.join(AQUI, otro), os.path.join(alt, otro))
     open(os.path.join(alt, 'reservas_producto.html'), 'w', encoding='utf-8').write(FUENTE.replace('<!--AXW_SCRIPT-->', ''))
     viejo, build.AQUI = build.AQUI, alt        # la fuente alterada vive en otra carpeta: reservas_producto.html no se toca
