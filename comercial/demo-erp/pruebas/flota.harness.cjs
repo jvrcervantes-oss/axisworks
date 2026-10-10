@@ -566,7 +566,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   // 10. idiomas
   {
     const { p, ctx } = await abre({ idioma: 'en', base: { sinTarifas: true, mezcla: true, recortado: true, unaTarifa: true } });
-    ok('en ingles titulo y botones traducidos', (await txt(p, 'h1')) === 'Fleet and rates' && (await txt(p, accion('fl-actualizar'))) === 'Refresh' && (await txt(p, '[data-fl="bot"]')).includes('The bot uses it'));
+    ok('en ingles titulo y botones traducidos', (await txt(p, 'h1')) === 'Fleet and rates' && (await txt(p, accion('fl-actualizar'))) === 'Refresh' && (await txt(p, '[data-fl="bot"]')).includes('a change reaches it within 5 minutes'));
     await p.click(accion('fl-lote-abrir', prod('p1'))); await p.fill(campo('lista'), 'ab\ndk 1234 ab\nN1 111\nN1 111\n' + 'x'.repeat(30)); await motivo(p, 'ab'); await confirmar(p); await p.click(accion('fl-modal-dedup')); await p.fill(campo('lista'), nLineas(101)); await confirmar(p); await p.fill(campo('lista'), ''); await confirmar(p); await p.click(accion('fl-modal-cerrar'));
     await p.click(accion('fl-moto-editar', '[data-unidad-id="u3"]')); await p.fill(campo('identificador'), ''); await confirmar(p); await p.fill(campo('identificador'), 'ab'); await confirmar(p); await p.selectOption(campo('estado'), 'baja'); await confirmar(p); await p.click(accion('fl-modal-cerrar'));
     await p.click(accion('fl-tarifa-abrir', prod('p4')));
