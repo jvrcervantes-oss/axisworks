@@ -1792,6 +1792,42 @@ def taller_pantalla():
     open(her, 'w', encoding='utf-8', newline='').write(h)
 
 
+def entrega_pantalla():
+    """Pantalla /entrega/ del ERP maestro (F8 pieza 8, 10-oct-2026; encargos/20261008_erp_f8_bbm_inventario_reservas_plan.md §3): la configuración de la entrega por km (sede, tarifa, límites y el
+    interruptor Activar) en UN formulario. Pantalla PROPIA como Taller, no una pestaña de Reservas de producto (decisión de la revisión previa de Desarrollo). La herramienta `entrega` es la puerta de
+    la cáscara (guard.js: un admin normal también pasa por su lista de herramientas); la base exige además administración en cada RPC y la pantalla no lo adivina: lo dice tras la respuesta.
+    La crea el build clonando la CÁSCARA de /asistente/ con `entrega.html` y las ayudas comunes de _compartido/. Lleva además, todo con reemplazo literal que aborta si una pantalla anterior de la cadena
+    cambia el trozo:
+      · nav.js: entrada de menú en Seguimiento (tras Taller), injerto de sidebar y casilla en CLAVE_MENU (sin esa línea puedeVer() la enseñaría a todos);
+      · herramientas.js: la tarjeta `entrega` tras la de Taller. Sin ella no existiría la casilla en Usuarios.
+    Va DESPUÉS de taller_pantalla() porque sus anclas de nav.js y herramientas.js son las líneas que esa deja. Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    _pantalla_bot(v4, 'entrega.html', 'entrega', 'Entrega', puerta='data-herramienta="entrega"')
+    nav = os.path.join(v4, 'assets', 'nav.js')
+    n = open(nav, encoding='utf-8').read()
+    n = _una_vez(n, "      { path: 'taller', texto: 'Taller', clave: 'taller', nucleo: true }] },",
+                 "      { path: 'taller', texto: 'Taller', clave: 'taller', nucleo: true }," + '\n' +
+                 "      { path: 'entrega', texto: 'Entrega', clave: 'entrega', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (entrega)')
+    n = _una_vez(n, "    { path: 'taller', tras: 'reservas-producto', icono: 'build', texto: 'Taller', nucleo: true },",
+                 "    { path: 'taller', tras: 'reservas-producto', icono: 'build', texto: 'Taller', nucleo: true }," + '\n' +
+                 "    { path: 'entrega', tras: 'taller', icono: 'local_shipping', texto: 'Entrega', nucleo: true },", 'nav.js INJERTOS entrega')
+    n = _una_vez(n, "    taller: 'taller',",
+                 "    taller: 'taller'," + '\n' + "    entrega: 'entrega',", 'nav.js CLAVE_MENU entrega')
+    open(nav, 'w', encoding='utf-8', newline='').write(n)
+    her = os.path.join(DIST, 'contracts', 'assets', 'herramientas.js')
+    h = open(her, encoding='utf-8').read()
+    ancla = "maintenance work order' });" + '\n' + "}"
+    h = _una_vez(h, ancla,
+                 "maintenance work order' });" + '\n' +
+                 "  /* ENTREGA (F8 pieza 8, 10-oct-2026): la sede, la tarifa por km y los límites de la entrega a domicilio. Permiso propio `entrega`; sin esta tarjeta la casilla no existiría en Usuarios. La base exige además administración. */" + '\n' +
+                 "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'taller') + 1, 0," + '\n' +
+                 "    { grupo:'Seguimiento', nombre:'Entrega', icon:'ph-truck', href:'/intranet/v4/entrega/', herr:'entrega'," + '\n' +
+                 "      para:'Cuánto cuesta llevar la moto al cliente: la oficina, el precio por kilómetro, los límites y el interruptor que activa el cobro de la entrega.'," + '\n' +
+                 "      claves:'entrega domicilio km kilometro tarifa sede oficina recogida precio delivery pickup distance office rate' });" + '\n' + "}",
+                 'herramientas.js tarjeta Entrega')
+    open(her, 'w', encoding='utf-8', newline='').write(h)
+
+
 def crea_contrasena_pantalla(marca):
     """Pantalla /crea-contrasena/ del ERP maestro (pieza C de I6, 9-oct-2026): donde aterriza el primer administrador desde la invitación de Auth que
     manda nueva_instancia.py (paso `admin`) para poner su contraseña. Es una página PROPIA (crea_contrasena.html), no un overlay de la de Lawang
@@ -1980,6 +2016,7 @@ def instancia(nombre):
     ventas_pantalla()   # F4 (8-oct-2026): Ventas — reserva → borrador → emitir → rectificar y la cola «cobrado sin facturar»
     reservas_producto_pantalla()   # F8 (8-oct-2026): Reservas de producto — lista, calendario, flota y pagos por revisar (tras ventas: sus anclas de nav.js)
     taller_pantalla()   # F8 pieza 2 (8-oct-2026): Taller — órdenes de trabajo ligeras (tras reservas de producto: sus anclas de nav.js)
+    entrega_pantalla()   # F8 pieza 8 (10-oct-2026): Entrega — sede, tarifa por km y límites (tras taller: sus anclas de nav.js y herramientas.js)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]
