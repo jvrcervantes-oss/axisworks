@@ -51,9 +51,18 @@ for fuera in ('/taller/', '/whatsapp-bot/', '/textos-contrato/', '/reservas-prod
 for dentro in ('/ventas/', '/crea-contrasena/', '/facturas/', '/home/'):
     if dentro in xp:
         fallos.append('axisworks-demo: %s NO debe salir del paquete: %s' % (dentro, sorted(xp)))
+# bbm, paquete del «mínimo útil» (erp/instancias.json → bbm.apagados_extra.p; agencia 8492d7f5, 10-oct-2026): taller y reservas-producto son
+# SUYOS y se quedan; whatsapp-bot, textos-contrato y asistente salen del paquete, como en axisworks-demo. Hasta ese commit esta prueba exigía
+# las cuatro dentro y se quedó en rojo sin que nadie lo viera (ningún gate la corre).
 xp_bbm = set(build.mapa_modulos('bbm')['xp'])
-if {'/taller/', '/whatsapp-bot/', '/textos-contrato/', '/reservas-producto/'} & xp_bbm:
+if {'/taller/', '/reservas-producto/'} & xp_bbm:
     fallos.append('bbm lleva sus pantallas (taller y reservas-producto son suyos): %s' % sorted(xp_bbm))
+for fuera in ('/whatsapp-bot/', '/textos-contrato/', '/asistente/'):
+    if fuera not in xp_bbm:
+        fallos.append('bbm: %s debería salir del paquete (mínimo útil, apagados_extra.p): %s' % (fuera, sorted(xp_bbm)))
+for dentro in ('/ventas/', '/facturas/', '/home/', '/ajustes/'):
+    if dentro in xp_bbm:
+        fallos.append('bbm: %s NO debe salir del paquete: %s' % (dentro, sorted(xp_bbm)))
 
 # el texto de la pantalla de taller no miente: no dice que «Reservas de producto» no esté activo
 marca = 'AxisWorks'
