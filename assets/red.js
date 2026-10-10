@@ -55,7 +55,7 @@
     pLog:'Tráfico de nodos',pLogE:'ejemplo',pLay:'Actividad por capa',pLayE:'ejemplo',pSub:'Subagentes lanzados',pSubE:'ejemplo',
     G:{Build:'Construyen',Create:'Crean',Review:'Opinan',Gates:'Puertas'},
     SA:['Revisión previa','Exploración','Planificación','Subtarea','Revisor de código','Verificador','Consulta deploy'],
-    lead:function(n){return 'En esta ilustración hay '+n+' de '+NDEP+' departamentos activos a la vez. Equipos de IA bajo supervisión humana.'},
+    lead:function(n){return 'En esta ilustración, '+n+' de '+NDEP+' departamentos aparecen resaltados. Equipos de IA bajo supervisión humana.'},
     log:[['09:15','revisión previa','seguridad + backend','sobre un plan'],['09:14','revisor de código','sello aprobado','código revisado'],['09:12','seguridad','backend','revisión de un plan'],['09:08','calidad','verificando en producción'],['09:01','diseño','frontend','revisión de un diseño'],['08:55','legal','revisando un texto'],['08:47','deploy','publicando un cambio'],['08:40','documentación','preparando un documento'],['08:31','bots','afinando un asistente']]
   }:{
     R:{hover:['Hover over a node','The diagram is the path work takes through the studio. States come from the published record; the rest is structure.'],
@@ -91,7 +91,7 @@
     pLog:'Node traffic',pLogE:'sample',pLay:'Activity by layer',pLayE:'sample',pSub:'Subagents launched',pSubE:'sample',
     G:{Build:'Build',Create:'Create',Review:'Review',Gates:'Gates'},
     SA:['Pre-review','Exploration','Planning','Subtask','Code reviewer','Verifier','Deploy consult'],
-    lead:function(n){return 'In this illustration, '+n+' of '+NDEP+' departments are active at once. AI teams under human oversight.'},
+    lead:function(n){return 'In this illustration, '+n+' of '+NDEP+' departments are highlighted. AI teams under human oversight.'},
     log:[['09:15','pre-review','security + backend','on a plan'],['09:14','code reviewer','seal approved','code reviewed'],['09:12','security','backend','plan review'],['09:08','quality','verifying in production'],['09:01','design','frontend','design review'],['08:55','legal','reviewing a text'],['08:47','deploy','publishing a change'],['08:40','documentation','preparing a document'],['08:31','bots','tuning an assistant']]
   };
 
