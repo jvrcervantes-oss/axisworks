@@ -115,7 +115,7 @@ $HOME = [
   'auto'=>[
     ['vigilante', 'The Watchman', 'guards ad spend &amp; leads', 'Live', ['Checks campaigns and conversations around the clock', 'Pauses what isn&rsquo;t bringing leads', 'Alerts the owner in real time']],
     ['investigador', 'The Investigator', 'finds sales partners', 'Pilot', ['Finds and ranks agencies that can resell a client&rsquo;s product', 'Prepares the outreach kit', 'A person makes the first contact']],
-    ['padrino', 'The Godfather', 'runs our own products', 'In build', ['Answers the inbox', 'Finds customers', 'Writes the business plan and puts it to work', 'Runs <a href="https://bodaenlace.com">BodaEnlace</a>']],
+    ['padrino', 'The Godfather', 'runs our own products, in test mode', 'Shadow mode', ['Answers the inbox', 'Finds customers', 'Writes the business plan and puts it to work', 'Runs <a href="https://bodaenlace.com">BodaEnlace</a>']],
   ],
 
   'ct_eyebrow'=>'// TERMINAL PROTOCOL 01-INTAKE','ct_h2'=>'Initiate project intake.',
@@ -226,7 +226,7 @@ $HOME = [
   'auto'=>[
     ['vigilante', 'El Vigilante', 'vigila la inversión y los leads', 'En producción', ['Revisa campañas y conversaciones a todas horas', 'Pausa lo que no trae contactos', 'Avisa al dueño en tiempo real']],
     ['investigador', 'El Investigador', 'busca socios comerciales', 'Piloto', ['Encuentra y ordena agencias que pueden revender el producto de un cliente', 'Prepara el material de contacto', 'El primer contacto lo hace una persona']],
-    ['padrino', 'El Padrino', 'dirige los productos propios', 'En construcción', ['Atiende el correo', 'Busca clientes', 'Escribe el plan de negocio y lo aplica', 'Dirige <a href="https://bodaenlace.com">BodaEnlace</a>']],
+    ['padrino', 'El Padrino', 'lleva nuestros productos propios, en modo de prueba', 'Modo sombra', ['Atiende el correo', 'Busca clientes', 'Escribe el plan de negocio y lo aplica', 'Dirige <a href="https://bodaenlace.com">BodaEnlace</a>']],
   ],
 
   'ct_eyebrow'=>'// PROTOCOLO 01-ALTA','ct_h2'=>'Iniciar alta de proyecto.',

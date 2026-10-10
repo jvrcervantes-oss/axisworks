@@ -20,7 +20,7 @@ const EMAIL = 'hello@axisworks.studio';
  * del que dependen 16 páginas, cacheado 12 meses sin sello, es el fallo que
  * la suite de Lawang ya resolvió sellando `brand.css`. Se sube a mano al
  * tocar site.css — vive AQUÍ y en ningún otro sitio. */
-const VER = '20260925d';
+const VER = '20261010a';
 
 /* ── El mapa de rutas: un solo dueño ──────────────────────────────────
  * Lo consumen tres cosas — el hreflang, el conmutador de idioma y los
@@ -45,6 +45,8 @@ $PARES = [
   '/legal-notice'                            => '/es/aviso-legal',
   '/privacy'                                 => '/es/privacidad',
   '/cookies'                                 => '/es/cookies',
+  /* Landing de Agents as a Service (10-oct-2026). */
+  '/agents-as-a-service'                     => '/es/agentes-como-servicio',
   /* Sin par a propósito (Marketing, SERP medida 2-sep-2026): el EN va
    * vertical —donde están nuestras cinco pruebas y la SERP está casi
    * vacía— y el ES va a pyme española. No son traducciones, así que
