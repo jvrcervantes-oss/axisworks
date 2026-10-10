@@ -161,7 +161,6 @@
     if(e.estado==='en_reposo'?own(e,'volumen'):(!str(e.volumen)||!own(VOLS,e.volumen)))return 'coord';
     return now>=ms.valido_hasta?'caducado':null;
   }
-  if(typeof window!=='undefined'&&window.__REDTEST)window.__REDTEST.validar=validar;  /* solo para assets/red.test.js; en producción no existe __REDTEST */
   function aplica(j,now){
     var r=validar(j,now);
     RS.lvl={};RS.vol={};RS.cat={};RS.j=null;

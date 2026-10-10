@@ -1,14 +1,22 @@
 /* Prueba de validar() de red.js: la barrera de privacidad y caducidad de «Actividad del estudio».
- * Uso: node assets/red.test.js  (falla con código 1 si algún caso no da lo esperado).
- * red.js toca el DOM al cargar; aquí se carga con un DOM mínimo y se ignora el error posterior a
- * validar(), que ya quedó expuesta en window.__REDTEST. */
+ * Uso: node tests/red.test.js  (falla con código 1 si algún caso no da lo esperado).
+ * Vive en tests/ y no junto a red.js: assets/ se sirve y un test no tiene llamador en la web
+ * (10-oct-2026, «reducir la exposición»; tests/ responde 403 por el .htaccess de la raíz).
+ * red.js no expone nada: es esta prueba la que, sobre SU copia del texto, inserta una línea que
+ * saca validar() justo antes de aplica(). Si el ancla cambia o deja de ser única, falla aquí en
+ * voz alta en vez de probar otra cosa. red.js toca el DOM al cargar; se carga con un DOM mínimo
+ * y se ignora el error posterior a validar(). */
 var fs = require('fs'), vm = require('vm'), path = require('path');
+var ANCLA = '  function aplica(j,now){';
+var src = fs.readFileSync(path.join(__dirname, '..', 'assets', 'red.js'), 'utf8');
+if (src.split(ANCLA).length !== 2) { console.error('red.test.js: el ancla de aplica() no aparece exactamente una vez en red.js'); process.exit(1); }
+src = src.replace(ANCLA, '  __T.validar=validar;\n' + ANCLA);
 var el = { getAttribute: function () { return null; }, clientWidth: 1000, style: {}, addEventListener: function () {}, getContext: function () { return null; } };
-var win = { __REDTEST: {}, matchMedia: null, addEventListener: function () {}, devicePixelRatio: 1, innerHeight: 900 };
+var win = { __T: {}, matchMedia: null, addEventListener: function () {}, devicePixelRatio: 1, innerHeight: 900 };
 var doc = { getElementById: function () { return el; }, documentElement: { lang: 'en' }, addEventListener: function () {}, hidden: false, querySelector: function () { return null; }, createElement: function () { return { getContext: function () { return null; } }; } };
 win.window = win; win.document = doc;
-try { vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'red.js'), 'utf8'), win); } catch (e) { if (process.env.DEBUG) console.error(String(e.stack).split(String.fromCharCode(10)).slice(0, 3).join(' | ')); }
-var validar = win.__REDTEST.validar;
+try { vm.runInNewContext(src, win); } catch (e) { if (process.env.DEBUG) console.error(String(e.stack).split(String.fromCharCode(10)).slice(0, 3).join(' | ')); }
+var validar = win.__T.validar;
 if (typeof validar !== 'function') { console.error('validar no quedó expuesta'); process.exit(1); }
 
 var IDS = ['dev','data','bots','arch','deploy','games','models','pilots','design','marketing','comms','security','quality','legal','admin','docs','org'];
