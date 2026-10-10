@@ -530,7 +530,7 @@
       { texto: T('Confirmar y guardar'), accion: 'en-modal-confirmar', primario: true, alclic: function (bt, dlg) { guarda(plan, motivo, bt, dlg).then(function () { E.dialogo = false; }, function () { E.dialogo = false; }); } },
       { texto: T('Cancelar'), accion: 'en-modal-cerrar', cierra: true }
     ]);
-    d.fondo.addEventListener('click', function (ev) { var b = ev.target.closest ? ev.target.closest('[data-accion="en-modal-cerrar"]') : null; if (b) E.dialogo = false; });
+    d.fondo.addEventListener('click', function (ev) { var b = ev.target.closest ? ev.target.closest('[data-accion]') : null; if (b && b.getAttribute('data-accion') === 'en-modal-cerrar') E.dialogo = false; });
     d.fondo.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') E.dialogo = false; });
   }
 
