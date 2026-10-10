@@ -43,17 +43,17 @@ with tempfile.TemporaryDirectory() as d:
     if hay(d, 'assets/solo_taller.js') or hay(d, 'assets/extra_de_taller.js'):
         fallos.append('poda: lo que solo cargaba la pantalla (y lo que cargaba él) debe salir')
 
-# la instancia real: las tres fuera, reservas-producto NO (se enciende después), bbm intacta
+# la instancia real: las cuatro fuera (reservas-producto apagado a propósito, 10-oct-2026), ventas y el resto dentro, bbm intacta
 xp = set(build.mapa_modulos('axisworks-demo')['xp'])
-for fuera in ('/taller/', '/whatsapp-bot/', '/textos-contrato/'):
+for fuera in ('/taller/', '/whatsapp-bot/', '/textos-contrato/', '/reservas-producto/'):
     if fuera not in xp:
         fallos.append('axisworks-demo: %s debería salir del paquete (apagados_extra.p): %s' % (fuera, sorted(xp)))
-for dentro in ('/reservas-producto/', '/ventas/', '/crea-contrasena/', '/facturas/', '/home/'):
+for dentro in ('/ventas/', '/crea-contrasena/', '/facturas/', '/home/'):
     if dentro in xp:
         fallos.append('axisworks-demo: %s NO debe salir del paquete: %s' % (dentro, sorted(xp)))
 xp_bbm = set(build.mapa_modulos('bbm')['xp'])
-if {'/taller/', '/whatsapp-bot/', '/textos-contrato/'} & xp_bbm:
-    fallos.append('bbm lleva sus pantallas (taller es suyo): %s' % sorted(xp_bbm))
+if {'/taller/', '/whatsapp-bot/', '/textos-contrato/', '/reservas-producto/'} & xp_bbm:
+    fallos.append('bbm lleva sus pantallas (taller y reservas-producto son suyos): %s' % sorted(xp_bbm))
 
 # el texto de la pantalla de taller no miente: no dice que «Reservas de producto» no esté activo
 marca = 'AxisWorks'
