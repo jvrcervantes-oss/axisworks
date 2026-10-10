@@ -24,7 +24,7 @@ const XSS_QUIEN = `a"<svg onload="window.__xss=2">@x.com`;
 const XSS_MOTIVO = `"><img src=x onerror="window.__xss=3"> O'Brien <script>window.__xss=4</script>`;
 const iso = (dias = 0) => new Date(Date.now() - dias * 86400000).toISOString();
 const TOPES = { km_max: { min: 0.1, max: 200 }, tope_dia: { min: 1, max: 5000 }, tope_mes: { min: 1, max: 100000 }, cache_dias: { min: 1, max: 365 },
-  precio_km: { min: 0.0001, max: null }, km_gratis: { min: 0, max: 500 }, minimo: { min: 0, max: null } };
+  precio_km: { min: 0.0001, max: null }, km_gratis: { min: 0, max: 500 }, minimo: { min: 0, max: null }, sede_nombre: { min: 1, max: 80 }, motivo: { min: 3, max: 200 } };
 
 function nuevaBase(o = {}) {
   const configurada = !!o.configurada;
@@ -32,12 +32,13 @@ function nuevaBase(o = {}) {
     a: { activa: !!o.activa, sede_nombre: configurada ? (o.xss ? XSS_NOMBRE : 'Oficina Canggu') : 'Oficina', sede_lat: configurada ? -8.65 : null, sede_lng: configurada ? 115.216667 : null,
          proveedor: 'osm', km_max: 60, tope_dia: 50, tope_mes: 500, cache_dias: 60, cobra_recogida: o.recogida === undefined ? (configurada ? false : null) : o.recogida,
          actualizado_en: configurada ? iso(1) : null, actualizado_por: configurada ? (o.xss ? XSS_QUIEN : 'admin@x.com') : null },
-    tarifa: configurada ? { id: 't1', moneda: 'IDR', precio_km: 2500, km_gratis: 5, minimo: 15000, creado_en: iso(2), creado_por: o.xss ? XSS_QUIEN : 'admin@x.com' } : null,
+    tarifa: configurada ? { id: 't1', moneda: 'IDR', precio_km: 2500, km_gratis: o.kmGratis === undefined ? 5 : o.kmGratis, minimo: 15000, creado_en: iso(2), creado_por: o.xss ? XSS_QUIEN : 'admin@x.com' } : null,
     versiones: configurada ? [{ version: 4, cuando: iso(1), quien: o.xss ? XSS_QUIEN : 'admin@x.com', motivo: o.xss ? XSS_MOTIVO : 'Subo el tope' }, { version: 3, cuando: iso(3), quien: 'admin@x.com', motivo: 'Alta' }] : [] };
   return s;
 }
 const err = (code, message, hint, details) => ({ data: null, error: { code, message, hint: hint || null, details: details || null } });
 function datos(s) {
+  if (s.o.noPreparada) return { ajustes: null, version: null, tarifa: null, uso: { hoy: 0, mes: 0, tope_dia: null, tope_mes: null }, interruptor: { fallos: 0, abierto_hasta: null }, topes: s.o.topes || TOPES, faltan: ['sede', 'tarifa', 'servicio'], avisos: [], versiones: [] };
   const faltan = [];
   if (s.a.sede_lat == null || s.a.sede_lng == null) faltan.push('sede');
   if (!s.tarifa) faltan.push('tarifa');
@@ -63,6 +64,7 @@ async function servidor(s, nombre, a) {
       if (o.tarifaFalla) return err('22023', 'Datos de la tarifa no válidos: moneda de tres letras', 'datos');
       if ((s.tarifa ? s.tarifa.id : null) !== a.p_tarifa_id) return err('40001', 'La tarifa cambió mientras la editabas', 'entrega_cambio');
       if (!a.p_motivo) return err('22023', 'Falta el motivo', 'datos');
+      if (o.validaKm && (a.p_datos.km_gratis || 0) > s.a.km_max) return err('22023', 'Datos de la tarifa no válidos: los km gratis superan el km máximo vigente', 'datos');
       const extra = Object.keys(a.p_datos).filter(k => !['moneda', 'precio_km', 'km_gratis', 'minimo'].includes(k));
       if (extra.length) return err('22023', 'Campo no admitido: ' + extra.join(', '), 'campo_no_admitido');
       s.n++; s.tarifa = { id: 't' + (s.n + 1), moneda: a.p_datos.moneda, precio_km: a.p_datos.precio_km, km_gratis: a.p_datos.km_gratis || 0, minimo: a.p_datos.minimo || 0, creado_en: iso(0), creado_por: 'yo@x.com' };
@@ -77,6 +79,7 @@ async function servidor(s, nombre, a) {
       if (extra.length) return err('22023', 'Campo no admitido: ' + extra.join(', '), 'campo_no_admitido');
       if (s.a.activa && ('sede_lat' in a.p_datos || 'sede_lng' in a.p_datos || 'sede_nombre' in a.p_datos) && a.p_datos.activa !== false) return err('22023', 'La entrega está activa: apágala para cambiar la sede', 'entrega_apaga_primero');
       if (o.apagaPrimero) return err('22023', 'La entrega está activa: apágala para cambiar la sede', 'entrega_apaga_primero');
+      if (o.validaKm && a.p_datos.km_max !== undefined && s.tarifa && s.tarifa.km_gratis > a.p_datos.km_max) return err('22023', 'Datos de la entrega no válidos: el km máximo no puede quedar por debajo de los km gratis vigentes', 'datos');
       if (o.ajustesFalla) return err('22023', 'Datos de la entrega no válidos: la sede, los km y los topes tienen que estar en rango', 'datos');
       Object.assign(s.a, a.p_datos); s.a.actualizado_en = iso(0); s.a.actualizado_por = 'yo@x.com'; s.version++;
       s.versiones.unshift({ version: s.version, cuando: iso(0), quien: 'yo@x.com', motivo: a.p_motivo });
@@ -425,6 +428,72 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const { p, ctx } = await abre({ base: { configurada: true, conServicio: true } });
     await p.fill(campo('tope_dia'), '77'); await p.fill(campo('motivo'), 'x'); await p.click('[data-accion="en-descartar"]');
     ok('descartar devuelve el formulario a lo que dice la base', (await p.$eval(campo('tope_dia'), e => e.value)) === '50' && (await p.$eval(campo('motivo'), e => e.value)) === '');
+    await ctx.close();
+  }
+
+  // 9b. hallazgos del revisor (10-oct-2026): topes de texto de la base · «no preparada» · orden de guardado segun km_max
+  {
+    const { p, ctx } = await abre({ base: { configurada: true, conServicio: true, topes: Object.assign({}, TOPES, { sede_nombre: { min: 2, max: 40 }, motivo: { min: 5, max: 50 } }) } });
+    ok('sede_nombre y motivo: maxlength/minlength salen de `topes` de la base (40/2 y 50/5), no del HTML',
+       (await p.$eval(campo('sede_nombre'), e => e.getAttribute('maxlength') + '|' + e.getAttribute('minlength'))) === '40|2' && (await p.$eval(campo('motivo'), e => e.getAttribute('maxlength') + '|' + e.getAttribute('minlength'))) === '50|5');
+    await p.fill(campo('tope_dia'), '80'); await p.fill(campo('motivo'), 'abcd'); await guardar(p);
+    ok('un motivo por debajo del minimo de la base (5) no llama y dice el rango leido de la base', (await errorTxt(p)).includes('Entre 5 y 50'), (await errorTxt(p)).slice(0, 120));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { configurada: true, conServicio: true, topes: { km_max: { min: 0.1, max: 200 } } } });
+    ok('si la base no da tope de texto, la pantalla no inventa ninguno (sin maxlength ni minlength)',
+       (await p.$eval(campo('sede_nombre'), e => e.hasAttribute('maxlength') || e.hasAttribute('minlength'))) === false && (await p.$eval(campo('motivo'), e => e.hasAttribute('maxlength') || e.hasAttribute('minlength'))) === false);
+    await ctx.close();
+  }
+  for (const idioma of ['es', 'en']) {
+    const { base, p, ctx } = await abre({ idioma, base: { noPreparada: true } });
+    const t = await txt(p, '[data-en="estado"]');
+    ok(idioma + ' · ajustes y version null: estado propio «no preparada» (tipo no_preparada), ni «inesperado» ni «solo administracion», y sin formulario',
+       (await tipo(p)) === 'no_preparada' && t.includes(idioma === 'es' ? 'La entrega no está preparada en esta instancia' : 'Delivery is not set up in this instance') && !t.includes('inesperado') && !t.includes('unexpected') && !t.includes('Solo la administración') && !(await visible(p, '[data-en="form"]')), t);
+    ok(idioma + ' · «no preparada» no escribe nada y no hay cadenas sin traducir ni errores de JS', escritas(base).length === 0 && (await p.evaluate(() => window.__sinEn)).length === 0 && await sinErrores(p));
+    await ctx.close();
+  }
+  for (const ancho of [1440, 390]) {
+    const { p, ctx } = await abre({ ancho, base: { noPreparada: true } });
+    const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
+    ok(ancho + ' px · el estado «no preparada» no desborda', m.sw <= m.cw, J(m));
+    if (SHOT) await p.screenshot({ path: SHOT + '_' + ancho + '_no_preparada.png', fullPage: true });
+    await ctx.close();
+  }
+  {
+    // km_max SUBE junto con km_gratis: la base valida la tarifa contra el km_max vigente, asi que primero los ajustes y luego la tarifa
+    const { base, p, ctx } = await abre({ base: { configurada: true, conServicio: true, validaKm: true } });
+    await p.fill(campo('km_gratis'), '80'); await p.fill(campo('km_max'), '100'); await p.fill(campo('motivo'), 'Subo los km'); await guardar(p);
+    await espera(p, () => document.querySelector('[data-en="exito"]:not(.axw-oculto)'));
+    const w = escritas(base);
+    ok('km_max sube con km_gratis: primero ajustes (km_max) y luego tarifa, y la base lo da por bueno',
+       w.length === 2 && w[0][0] === 'entrega_ajustes_guarda' && J(w[0][1]) === J({ p_datos: { km_max: 100 }, p_motivo: 'Subo los km', p_version: 4 })
+       && w[1][0] === 'entrega_tarifa_guarda' && w[1][1].p_datos.km_gratis === 80 && base.a.km_max === 100 && base.tarifa.km_gratis === 80, J(w));
+    await ctx.close();
+  }
+  {
+    // km_max BAJA junto con km_gratis: primero la tarifa (valida contra el km_max mayor) y luego los ajustes; al reves la base rechazaria el km_max
+    const { base, p, ctx } = await abre({ base: { configurada: true, conServicio: true, validaKm: true, kmGratis: 40 } });
+    await p.fill(campo('km_gratis'), '10'); await p.fill(campo('km_max'), '30'); await p.fill(campo('motivo'), 'Bajo los km'); await guardar(p);
+    await espera(p, () => document.querySelector('[data-en="exito"]:not(.axw-oculto)'));
+    const w = escritas(base);
+    ok('km_max baja con km_gratis: primero tarifa y luego ajustes, y la base lo da por bueno',
+       w.length === 2 && w[0][0] === 'entrega_tarifa_guarda' && w[0][1].p_datos.km_gratis === 10 && w[1][0] === 'entrega_ajustes_guarda' && J(w[1][1].p_datos) === J({ km_max: 30 })
+       && base.a.km_max === 30 && base.tarifa.km_gratis === 10, J(w));
+    await ctx.close();
+  }
+  {
+    // km_max sube y la tarifa falla despues: se dice que los ajustes SI se guardaron, se relee y se conserva lo tecleado
+    const { base, p, ctx } = await abre({ base: { configurada: true, conServicio: true, validaKm: true, tarifaFalla: true } });
+    await p.fill(campo('km_gratis'), '80'); await p.fill(campo('km_max'), '100'); await p.fill(campo('motivo'), 'Parcial inverso'); await guardar(p);
+    await espera(p, () => document.querySelector('[data-en="error"]:not(.axw-oculto)'));
+    await hasta(() => llamadas(base, 'entrega_datos').length >= 2);
+    await espera(p, () => document.querySelector('[data-campo="km_max"]').value === '100');
+    const e = await errorTxt(p);
+    ok('ajustes guardados y tarifa rechazada: dice que los ajustes si se guardaron y el mensaje de la base', e.includes('Los ajustes sí se guardaron') && e.includes('Datos de la tarifa no válidos'), e.slice(0, 200));
+    ok('se relee y lo tecleado (km_gratis 80, motivo) se conserva; el km_max ya es el nuevo (100) de la base',
+       llamadas(base, 'entrega_datos').length === 2 && (await p.$eval(campo('km_gratis'), x => x.value)) === '80' && (await p.$eval(campo('motivo'), x => x.value)) === 'Parcial inverso' && base.a.km_max === 100);
     await ctx.close();
   }
 

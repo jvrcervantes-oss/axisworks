@@ -44,7 +44,7 @@
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>1 · Sede</h2>
 <p class="axw-nota axw-oculto" data-en="sede-bloqueo" data-lwt>La entrega está activa: la sede no se puede cambiar. Apaga la entrega, guarda, y entonces cambia la sede.</p>
 <div class="en-rejilla">
-<div class="axw-campo"><label for="en-f-sede_nombre" data-lwt>Nombre de la sede</label><input id="en-f-sede_nombre" type="text" data-campo="sede_nombre" maxlength="120" autocomplete="off"></div>
+<div class="axw-campo"><label for="en-f-sede_nombre" data-lwt>Nombre de la sede</label><input id="en-f-sede_nombre" type="text" data-campo="sede_nombre" autocomplete="off"></div>
 <div class="axw-campo"><label for="en-f-sede_coord" data-lwt>Coordenadas (lat, lng)</label><input id="en-f-sede_coord" type="text" data-campo="sede_coord" inputmode="decimal" autocomplete="off" placeholder="-8.650000, 115.216667"></div>
 </div>
 <p class="en-ayuda" data-lwt>Cómo copiarlas: en un mapa, pulsa con el botón derecho sobre la oficina y haz clic en los números que salen arriba del menú (latitud y longitud). Se pegan tal cual, por ejemplo «-8.650000, 115.216667».</p>
@@ -86,7 +86,7 @@
 </section>
 
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4" data-en="bloque-guardar">
-<div class="axw-campo"><label for="en-f-motivo" data-lwt>Motivo del cambio (obligatorio)</label><input id="en-f-motivo" type="text" data-campo="motivo" maxlength="200" autocomplete="off"></div>
+<div class="axw-campo"><label for="en-f-motivo" data-lwt>Motivo del cambio (obligatorio)</label><input id="en-f-motivo" type="text" data-campo="motivo" autocomplete="off"></div>
 <div class="axw-acciones">
 <button class="axw-boton" type="button" data-accion="en-guardar" data-primario="1"><span data-lwt>Guardar</span></button>
 <button class="axw-boton" type="button" data-accion="en-descartar"><span data-lwt>Descartar los cambios</span></button>
@@ -150,7 +150,11 @@
     'Escribe la moneda en tres letras (IDR, EUR…).': 'Write the currency in three letters (IDR, EUR…).',
     'Para guardar la tarifa hacen falta la moneda y el precio por km.': 'To save the price the currency and the price per km are needed.',
     'Este campo es obligatorio.': 'This field is required.',
-    'El motivo es obligatorio (3 a 200 caracteres, en una sola línea).': 'The reason is required (3 to 200 characters, on a single line).',
+    'El motivo es obligatorio': 'The reason is required', 'en una sola línea': 'on a single line', 'caracteres': 'characters',
+    'El nombre de la sede es demasiado largo o corto': 'The office name is too short or too long',
+    'La entrega no está preparada en esta instancia': 'Delivery is not set up in this instance',
+    'Todavía no se ha creado su configuración en la base. Esto NO quiere decir que esté vacía ni que esté mal: hay que prepararla antes de poder editarla.': 'Its configuration has not been created in the database yet. This does NOT mean it is empty or wrong: it has to be set up before it can be edited.',
+    'Los ajustes sí se guardaron, pero la tarifa no: ': 'The settings were saved, but the price was not: ',
     'No hay cambios que guardar.': 'There are no changes to save.',
     'Revisa estos campos:': 'Check these fields:',
     'Esto cambia el precio al bot desde ya': 'This changes the price for the bot right away',
@@ -210,6 +214,8 @@
     return esObj(d) && esObj(d.ajustes) && typeof d.version === 'number' && Array.isArray(d.faltan) && esObj(d.uso) && Array.isArray(d.versiones)
       && (d.tarifa == null || esObj(d.tarifa)) && (d.topes == null || esObj(d.topes)) && (d.avisos == null || Array.isArray(d.avisos));
   }
+  /* La fila de ajustes aun no existe: la base contesta ajustes y version a null. Es un estado propio, ni «sin configurar» ni «algo inesperado». */
+  function noPreparada(d) { return esObj(d) && d.ajustes == null && d.version == null && Array.isArray(d.faltan) && esObj(d.uso) && Array.isArray(d.versiones); }
   function num(x) { return x == null || x === '' || isNaN(Number(x)) ? null : Number(x); }
   /* La versión «canónica» de lo que hay guardado (lo que la base dio), con la que se compara lo escrito. */
   function canon(d) {
@@ -249,6 +255,11 @@
       if (r && r.min != null) el.setAttribute('min', String(r.min)); else el.removeAttribute('min');
       if (r && r.max != null) el.setAttribute('max', String(r.max)); else el.removeAttribute('max');
       ay.textContent = textoRango(r); oculta(ay, !ay.textContent);
+    });
+    ['sede_nombre', 'motivo'].forEach(function (n) {
+      var r = topeDe(n), el = F(n);
+      if (r && r.max != null) el.setAttribute('maxlength', String(r.max)); else el.removeAttribute('maxlength');
+      if (r && r.min != null) el.setAttribute('minlength', String(r.min)); else el.removeAttribute('minlength');
     });
     var bloq = sedeBloqueada();
     ['sede_nombre', 'sede_coord'].forEach(function (n) { F(n).readOnly = bloq; });
@@ -314,6 +325,13 @@
     if (!E.d) { est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'cargando'); est.textContent = T('Cargando…'); }
     return llama('entrega_datos', {}).then(function (r) {
       if (yo !== PETICION) return r;   // llegó tarde: ya se pidió otra lectura y esa manda
+      if (!r.error && noPreparada(r.data)) {
+        if (E.d) { error(T('La entrega no está preparada en esta instancia')); return r; }
+        est.className = 'axw-aviso'; est.setAttribute('data-tipo', 'no_preparada');
+        est.textContent = T('La entrega no está preparada en esta instancia') + '. ' + T('Todavía no se ha creado su configuración en la base. Esto NO quiere decir que esté vacía ni que esté mal: hay que prepararla antes de poder editarla.');
+        E.d = null; oculta($v('form'), true);
+        return r;
+      }
       if (r.error || !formaOk(r.data)) {
         // «no se ha podido mirar» NO es «sin configurar»: se dice, y el formulario no se enseña con valores que no son los de la base
         var c = r.error ? C.clasifica(r.error) : null;
@@ -372,7 +390,9 @@
     if (sedeBloqueada()) { v.sede_nombre = s.sede_nombre; v.sede_lat = s.sede_lat; v.sede_lng = s.sede_lng; }
     else {
       v.sede_nombre = F('sede_nombre').value.replace(/^\s+|\s+$/g, '');
+      var tn = topeDe('sede_nombre');
       if (!v.sede_nombre) err('sede_nombre', T('Escribe el nombre de la sede.'));
+      else if (tn && ((tn.min != null && v.sede_nombre.length < tn.min) || (tn.max != null && v.sede_nombre.length > tn.max))) err('sede_nombre', T('El nombre de la sede es demasiado largo o corto') + ': ' + textoRango(tn) + ' ' + T('caracteres'));
       var c = parseCoord(F('sede_coord').value);
       if (c.vacio) {
         if (s.sede_lat != null) err('sede_coord', T('La sede no se puede dejar sin coordenadas.'));
@@ -438,8 +458,9 @@
     o.__motivo = F('motivo').value;
     return o;
   }
-  function falla(r, hechaTarifa) {
-    var c = C.clasifica(r.error), previo = hechaTarifa ? T('La tarifa sí se guardó, pero lo demás no: ') : '';
+  function falla(r, hecho) {
+    var c = C.clasifica(r.error);
+    var previo = hecho.tarifa ? T('La tarifa sí se guardó, pero lo demás no: ') : (hecho.ajustes ? T('Los ajustes sí se guardaron, pero la tarifa no: ') : '');
     if (c.hint === 'entrega_cambio' || r.error.code === '40001') {
       E.conflicto = true; oculta($v('conflicto'), false);
       error(previo + (c.m || ''));
@@ -447,32 +468,44 @@
     }
     error(previo + C.mensaje(r.error, false, PROPIOS));
   }
+  /* El orden importa: la base valida la tarifa (km_gratis) contra el km_max VIGENTE. Si km_max sube, primero los ajustes (así la tarifa nueva ya cabe); si baja o no cambia,
+     primero la tarifa (valida contra el km_max anterior, que es mayor) y luego los ajustes. Cada paso es válido contra el estado que hay en ese momento. */
+  function subeKmMax(plan) {
+    if (!plan.ajustes || !plan.tarifa || plan.ajustes.km_max === undefined) return false;
+    var antes = canon(E.d).km_max;
+    return antes == null || plan.ajustes.km_max > antes;
+  }
   function guarda(plan, motivo, btn, dlg) {
     if (!C.ocupa(btn)) return Promise.resolve();
-    var hechaTarifa = false;
+    var hecho = { tarifa: false, ajustes: false }, version = null;
     var final = function () { C.libera(btn); if (E.conflicto) raiz.querySelector('[data-accion="en-guardar"]').disabled = true; if (dlg) dlg.cierra(); };
-    var pT = plan.tarifa ? llama('entrega_tarifa_guarda', { p_datos: plan.tarifa, p_motivo: motivo, p_tarifa_id: E.d.tarifa ? E.d.tarifa.id : null }) : Promise.resolve(null);
-    return pT.then(function (r) {
-      if (r && r.error) { falla(r, false); return { parar: true }; }
-      if (r) {
+    var noConfirma = function () { error(T('La base no confirmó el guardado: recarga antes de repetir.')); return false; };
+    var pasoTarifa = function () {
+      if (!plan.tarifa) return Promise.resolve(true);
+      return llama('entrega_tarifa_guarda', { p_datos: plan.tarifa, p_motivo: motivo, p_tarifa_id: E.d.tarifa ? E.d.tarifa.id : null }).then(function (r) {
+        if (r.error) { falla(r, hecho); return false; }
         // no se da por guardada una tarifa que la base no confirma con su id
-        if (typeof r.data !== 'string' || !r.data) { error(T('La base no confirmó el guardado: recarga antes de repetir.')); return { parar: true }; }
-        hechaTarifa = true;
-      }
-      if (!plan.ajustes) return { version: null };
-      return llama('entrega_ajustes_guarda', { p_datos: plan.ajustes, p_motivo: motivo, p_version: E.d.version }).then(function (r2) {
-        if (r2.error) { falla(r2, hechaTarifa); return { parar: true }; }
-        if (!esObj(r2.data) || typeof r2.data.version !== 'number') { error(T('La base no confirmó el guardado: recarga antes de repetir.')); return { parar: true }; }
-        return { version: r2.data.version };
+        if (typeof r.data !== 'string' || !r.data) return noConfirma();
+        hecho.tarifa = true; return true;
       });
-    }).then(function (x) {
-      if (x.parar) {
-        // una tarifa ya guardada cambia el id vigente: se relee (conservando lo que falta por guardar) salvo que haya conflicto, que pide recarga explícita
-        if (hechaTarifa && !E.conflicto) return carga(sucios()).then(final, final);
+    };
+    var pasoAjustes = function () {
+      if (!plan.ajustes) return Promise.resolve(true);
+      return llama('entrega_ajustes_guarda', { p_datos: plan.ajustes, p_motivo: motivo, p_version: E.d.version }).then(function (r2) {
+        if (r2.error) { falla(r2, hecho); return false; }
+        if (!esObj(r2.data) || typeof r2.data.version !== 'number') return noConfirma();
+        hecho.ajustes = true; version = r2.data.version; return true;
+      });
+    };
+    var orden = subeKmMax(plan) ? [pasoAjustes, pasoTarifa] : [pasoTarifa, pasoAjustes];
+    return orden[0]().then(function (ok) { return ok ? orden[1]() : false; }).then(function (ok) {
+      if (!ok) {
+        // lo ya guardado cambia el id/la versión vigente: se relee (conservando lo que falta por guardar) salvo que haya conflicto, que pide recarga explícita
+        if ((hecho.tarifa || hecho.ajustes) && !E.conflicto) return carga(sucios()).then(final, final);
         final(); return null;
       }
       return carga(null, function () {
-        exito(x.version != null ? T('Guardado.') + ' ' + T('Versión de los ajustes:') + ' ' + x.version : T('Tarifa guardada.'));
+        exito(version != null ? T('Guardado.') + ' ' + T('Versión de los ajustes:') + ' ' + version : T('Tarifa guardada.'));
       }).then(function (r) { if (r.error || !formaOk(r.data)) { error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); } final(); }, final);
     }, function () { final(); });
   }
@@ -482,7 +515,10 @@
     var r = leeForm(), plan = planDe(r);
     var motivo = F('motivo').value.replace(/^\s+|\s+$/g, '');
     if (plan.ajustes || plan.tarifa || Object.keys(r.er).length) {
-      if (motivo.length < 3 || motivo.length > 200 || /[\u0000-\u001f\u007f]/.test(motivo)) r.er.motivo = T('El motivo es obligatorio (3 a 200 caracteres, en una sola línea).');
+      var tm = topeDe('motivo');
+      if (!motivo || (tm && ((tm.min != null && motivo.length < tm.min) || (tm.max != null && motivo.length > tm.max))) || /[\u0000-\u001f\u007f]/.test(motivo)) {
+        r.er.motivo = T('El motivo es obligatorio') + ' (' + (tm && textoRango(tm) ? textoRango(tm) + ' ' + T('caracteres') + ', ' : '') + T('en una sola línea') + ').';
+      }
     }
     if (Object.keys(r.er).length) { marcaErrores(r.er); return; }
     if (!plan.ajustes && !plan.tarifa) { aviso(T('No hay cambios que guardar.')); return; }

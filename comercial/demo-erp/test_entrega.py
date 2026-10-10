@@ -171,6 +171,13 @@ mira('guardar los ajustes manda SOLO lo cambiado, el motivo y la version que la 
 mira('nada de autor, correo, fechas ni producto viaja a la base', not re.search(r'p_(autor|por|email|creado|actualizado|producto|user|fecha)|producto_id', CODIGO))
 mira('los rangos duros salen de `topes` (nada de 500, 365 ni 90 cableados como limite de un campo de la base)',
      'E.d.topes' in CODIGO and not re.search(r'\b(500|365)\b', CODIGO) and "setAttribute('min'" in CODIGO and "setAttribute('max'" in CODIGO)
+mira('el nombre de la sede y el motivo no llevan maxlength/minlength escritos a mano: salen de `topes.sede_nombre` y `topes.motivo` (ni 120, ni 200, ni «3 a 200»)',
+     not re.search(r'maxlength="(?:120|200)"', MARCADO) and "topeDe('sede_nombre')" in CODIGO and "topeDe('motivo')" in CODIGO and "setAttribute('maxlength'" in CODIGO and "setAttribute('minlength'" in CODIGO
+     and not re.search(r'motivo\.length\s*[<>]\s*\d', CODIGO))
+mira('ajustes null + version null = estado propio «no preparada» (data-tipo no_preparada), distinto del error generico y del 42501',
+     'function noPreparada' in CODIGO and "'no_preparada'" in CODIGO and 'La entrega no está preparada en esta instancia' in CODIGO)
+mira('el orden de guardado sigue al km_max: si sube, ajustes y luego tarifa; si no, tarifa y luego ajustes',
+     'function subeKmMax' in CODIGO and 'subeKmMax(plan) ? [pasoAjustes, pasoTarifa] : [pasoTarifa, pasoAjustes]' in CODIGO)
 mira('guardar no se da por hecho: exige version numerica en la respuesta de los ajustes y un id de texto en la tarifa',
      "typeof r2.data.version !== 'number'" in CODIGO and "typeof r.data !== 'string'" in CODIGO)
 mira('el conflicto de version (hint entrega_cambio / 40001) tiene su caja con boton de recargar', "'entrega_cambio'" in CODIGO and "'40001'" in CODIGO and 'data-accion="en-recargar"' in MARCADO)
