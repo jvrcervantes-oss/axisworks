@@ -401,3 +401,6 @@ main{display:block;overflow-x:clip}
 .l-actnotes b{color:var(--ink)}
 .l-actnotes a{color:var(--pri)}
 @media (max-width:719px){.ar{grid-template-columns:96px 1fr}}
+.l-bar .l-more{font-weight:600;color:var(--pri);text-decoration:none;display:inline-flex;gap:6px;align-items:center;font-size:14px}
+.l-bar .l-more:hover{text-decoration:underline}
+.l-bar .l-more .ms{font-size:18px}
