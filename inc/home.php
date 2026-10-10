@@ -1,25 +1,19 @@
 <?php
 /* home.php — la portada, la MISMA para `/` y para `/es/`.
  *
- * Rediseño del 24-sep-2026 sobre el mockup de Stitch («Technical Blueprint
- * Workshop»): secciones a sangre separadas por filete, paneles bordeados que
- * comparten borde, tablas mono y telemetría de esquina. Qué se tomó y qué no:
- *   · SE TOMA la composición: hero 7/5 con barra de datos, hoja del ERP con su
- *     panel, cuadro de piezas en tabla, proceso en 4 columnas, estudio con
- *     departamentos, alta de proyecto en Ink, pie a tres columnas.
- *   · NO se toman sus tokens (el Tailwind era Material autogenerado: blanco
- *     azulado y naranja quemado que contradicen su propio DESIGN.md) ni su
- *     texto (métricas, ciudades y un ledger con compradores inventados).
- *   · El instrumento del hero sigue siendo la ✕ que converge con el cursor
- *     (v9): Stitch pintó un anillo giratorio genérico; el anillo queda como
- *     retícula estática y la ✕ dentro es la pieza.
- *   · Work (capturas de proyectos) retirado por el owner el 24-sep-2026.
- * Los IDs de ancla (#services #process #studio #contact) no cambian:
- * los usan `nav.php`, `catalogo.php` y las 12 hojas. `#erp` es nuevo.
+ * Nueva landing (10-oct-2026, owner): diagrama animado (assets/red.js; datos de ejemplo y
+ * dicho como tal) · Productos (ERP / Agents as a Service / Webs) · carrusel de herramientas
+ * (inc/herramientas.php, el de siempre) · estudio (organigrama GENERADO, inc/organigrama.php)
+ * · cierre con el formulario REAL (#contact -> contacto.js -> api/contacto).
+ * Estilo: assets/landing.css (Plus Jakarta Sans + Inter, indigo). Textos: landing_textos.php
+ * (portada) y home_textos.php (estudio y autonomos). Anclas que usan otras paginas:
+ * #erp #products #tools #studio #contact. La version anterior (Signal/Bone, hero CAD, ERP de
+ * muestra, cuadro de piezas) esta en Backups/20261010_1030_landing_nueva/ y en git.
  */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/catalogo.php';
 require_once __DIR__ . '/home_textos.php';
+require_once __DIR__ . '/landing_textos.php';
 require_once __DIR__ . '/organigrama.php';   /* GENERADO desde las fichas de los departamentos */
 
 $lang = $LANG;
@@ -36,6 +30,9 @@ foreach ($hm['org_secs'] as $eje => $lema) {
   if ($deps) $hm['org'][] = [$eje, $lema, $deps];
 }
 $t    = $T[$lang];
+$L    = $LAND[$lang];
+$landing = true;
+$sub_n = str_replace('{PALABRA_CAP}', mb_strtoupper(mb_substr($org_pal, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($org_pal, 1, null, 'UTF-8'), $L['h_sub']);
 $url  = $lang === 'es' ? '/es/' : '/';
 $hub  = $lang === 'es' ? '/es/servicios/' : '/services/';
 $col  = $lang === 'es' ? 5 : 4;
@@ -69,293 +66,133 @@ $jsonld = [
 <html lang="<?= $lang ?>">
 <head>
 <?php require __DIR__ . '/head.php'; ?>
-<link rel="stylesheet" href="/assets/home.css?v=<?= VER ?>">
 </head>
-<body class="home">
-
-<?php require __DIR__ . '/nav.php'; ?>
-
+<body class="land">
+<?php require __DIR__ . '/l_nav.php'; ?>
 <main id="top">
 
-<!-- 01 · HERO — calco del mockup de Stitch (2.ª pasada, 24-sep, a petición del
-     owner: «alta fidelidad, sobre todo el hero»). La ✕ convergente se retira; el
-     instrumento es la retícula CAD giratoria del mockup. -->
-<section class="band hero" id="hero">
-  <span class="tele tele--tl" aria-hidden="true">COORD: [X <b id="cx">000</b> ✕ Y <b id="cy">000</b>] // GRID: REF-00</span>
-  <span class="tele tele--tr" aria-hidden="true">DATUM: AW-01 // TOL: ±0.0001MM</span>
-  <div class="shell hero__grid">
-    <div class="hero__col">
-      <div class="hero__top">
-        <p class="chip"><i></i><?= $hm['hero_chip'] ?></p>
-        <h1><?= $hm['hero_h1'] ?></h1>
-        <p class="hero__lead"><?= $hm['hero_lead'] ?></p>
-      </div>
-      <div class="hero__bottom">
-        <div class="hero__data">
-          <div><span><?= $hm['m1_k'] ?></span><b><?= $hm['m1_v'] ?></b></div>
-          <div><span><?= $hm['m2_k'] ?></span><b class="acc"><?= $hm['m2_v'] ?></b></div>
-          <div><span><?= $hm['m3_k'] ?></span><b><?= $hm['m3_v'] ?></b></div>
-        </div>
-        <div class="hero__acts">
-          <a href="#contact" class="btn btn--signal btn--sm"><span><?= $hm['hero_cta'] ?></span> <span class="ar" aria-hidden="true">→</span></a>
-          <a href="#erp" class="btn btn--term btn--sm">[ <?= $hm['hero_cta2'] ?> ]</a>
-          <span class="hero__sheet">SHEET ID: AW-01-HERO</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="instr" aria-hidden="true">
-      <div class="instr__bar"><span><?= $hm['instr'] ?></span><span class="instr__st"><?= $hm['instr_al'] ?></span></div>
-      <div class="instr__field">
-        <svg class="instr__ring" viewBox="0 0 200 200" fill="none">
-          <circle cx="100" cy="100" r="90" stroke-dasharray="2 4" stroke-width="1"/>
-          <circle cx="100" cy="100" r="70" stroke-width=".75"/>
-          <circle cx="100" cy="100" r="50" stroke-dasharray="8 4" stroke-width=".5"/>
-          <line x1="100" y1="0" x2="100" y2="200" stroke-width=".75"/>
-          <line x1="0" y1="100" x2="200" y2="100" stroke-width=".75"/>
-          <path d="M100 15 L105 25 L95 25 Z"/><path d="M185 100 L175 105 L175 95 Z"/>
-          <path d="M100 185 L95 175 L105 175 Z"/><path d="M15 100 L25 95 L25 105 Z"/>
-        </svg>
-        <div class="instr__core"><span class="instr__plus">+</span><span class="instr__fix">0,0 // FIXED</span></div>
-        <span class="card card--n">000° N</span><span class="card card--e">090° E</span>
-        <span class="card card--s">180° S</span><span class="card card--w">270° W</span>
-      </div>
-      <div class="instr__foot"><span><?= $hm['instr_mode'] ?></span><span class="pill pill--acc"><?= $hm['instr_status'] ?></span></div>
-    </div>
+<section class="l-hero" id="hero"><div class="l-wrap">
+  <p class="l-eyebrow"><span class="ms" aria-hidden="true" style="font-size:16px">deployed_code</span><?= $L['h_eyebrow'] ?></p>
+  <h1><?= $L['h_h1'] ?></h1>
+  <p class="l-sub"><?= $sub_n ?></p>
+  <div class="l-cta">
+    <a class="l-btn p" href="#products"><?= $L['h_cta1'] ?><span class="ms" aria-hidden="true">arrow_downward</span></a>
+    <a class="l-btn s" href="<?= ERP_URL ?>" rel="noopener"><span class="ms" aria-hidden="true">play_circle</span><?= $L['h_cta2'] ?></a>
   </div>
-</section>
 
-<?php require __DIR__ . '/herramientas.php'; ?>
-
-<!-- 02 · ERP — el producto principal, con su panel de ejemplo -->
-<section class="band" id="erp">
-  <div class="shell">
-    <div class="shead">
-      <div><p class="eyebrow"><span><?= $hm['erp_eyebrow'] ?></span></p><h2><?= $hm['erp_h2'] ?></h2></div>
-      <p class="shead__aside mono"><?= $hm['erp_chip'] ?></p>
-    </div>
-
-    <div class="erp">
-      <div class="erp__bar">
-        <span class="erp__name"><i></i><?= $hm['erp_bar'] ?></span>
-        <span class="pill pill--ink"><?= $hm['erp_sample'] ?></span>
-      </div>
-      <div class="erp__alert"><span aria-hidden="true">!</span> <?= $hm['erp_alert'] ?></div>
-      <div class="erp__main">
-        <div class="erp__today">
-          <p class="lbl"><?= $hm['erp_today'] ?></p>
-          <div class="tbl-wrap">
-            <table class="tbl">
-              <thead><tr><?php foreach ($hm['erp_th'] as $i => $th): ?><th<?= $i === 4 ? ' class="r"' : '' ?>><?= $th ?></th><?php endforeach; ?></tr></thead>
-              <tbody>
-              <?php foreach ($hm['erp_rows'] as $r): ?>
-                <tr><td class="dim"><?= $r[0] ?></td><td><b><?= $r[1] ?></b></td><td class="dim"><?= $r[2] ?></td><td><span class="tag"><?= $r[3] ?></span></td><td class="r<?= $r[5] ? ' due' : '' ?>"><?= $r[4] ?></td></tr>
-              <?php endforeach; ?>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="erp__bot">
-          <p class="lbl"><?= $hm['erp_bot_t'] ?></p>
-          <p class="erp__bot-h"><?= $hm['erp_bot_h'] ?></p>
-          <p class="erp__bot-p"><?= $hm['erp_bot_p'] ?></p>
-          <p class="erp__bot-f"><?= $hm['erp_bot_f'] ?></p>
-        </div>
-      </div>
-      <div class="erp__mods">
-        <?php foreach ($hm['erp_mods'] as $g): ?>
-        <div class="erp__mod">
-          <p class="lbl lbl--ink"><?= array_shift($g) ?></p>
-          <ul><?php foreach ($g as $m): ?><li><?= $m ?></li><?php endforeach; ?></ul>
-        </div>
-        <?php endforeach; ?>
-      </div>
-      <div class="erp__foot">
-        <p class="erp__vert"><b><?= $hm['erp_vert_l'] ?>:</b> <span class="tag"><?= $hm['erp_vert_1'] ?></span> <span class="x-s">✕</span> <span class="tag"><?= $hm['erp_vert_2'] ?></span></p>
-        <p class="erp__proof"><b><?= $hm['erp_proof_l'] ?> —</b> <?= $hm['erp_proof'] ?></p>
-      </div>
-    </div>
+  <div class="l-bar"><span class="l-tag"><?= $L['h_tag'] ?></span></div>
+  <div class="kpis" style="justify-content:flex-start">
+    <div class="kpi"><small><?= $L['k_dep'] ?></small><b><?= (int) $ORGANIGRAMA['n'] ?></b></div>
+    <div class="kpi"><small><?= $L['k_act'] ?></small><b id="c-a">—</b></div>
+    <div class="kpi"><small><?= $L['k_coord'] ?></small><b id="c-c">—</b></div>
+    <div class="kpi"><small><?= $L['k_st'] ?></small><b class="live smp"><i></i><span><?= $L['k_st_v'] ?></span></b></div>
   </div>
-</section>
-
-<!-- 02b · PRODUCTO PROPIO — BodaEnlace, hecho y llevado por IA (owner, 26-sep-2026). Reutiliza
-     la maqueta del ERP (barra, módulos, pie) para no inventar otra pieza. -->
-<section class="band" id="bodaenlace">
-  <div class="shell">
-    <div class="shead">
-      <div><p class="eyebrow"><span><?= $hm['be_eyebrow'] ?></span></p><h2><?= $hm['be_h2'] ?></h2></div>
-      <p class="shead__aside mono"><?= $hm['be_chip'] ?></p>
-    </div>
-    <div class="erp">
-      <div class="erp__bar">
-        <span class="erp__name"><i></i><?= $hm['be_bar'] ?></span>
-        <span class="pill pill--ink"><?= $hm['be_pill'] ?></span>
-      </div>
-      <div class="erp__mods">
-        <?php foreach ($hm['be_mods'] as $g): ?>
-        <div class="erp__mod">
-          <p class="lbl lbl--ink"><?= array_shift($g) ?></p>
-          <ul><?php foreach ($g as $m): ?><li><?= $m ?></li><?php endforeach; ?></ul>
-        </div>
-        <?php endforeach; ?>
-      </div>
-      <div class="erp__foot">
-        <p class="erp__proof"><a href="https://bodaenlace.com"><b><?= $hm['be_cta'] ?> →</b></a></p>
-      </div>
-    </div>
+  <p id="lead" style="font-size:15px;color:var(--mu);margin:4px 0 8px"></p>
+  <div class="leg" aria-hidden="true">
+    <?php foreach ([['#FF2D55',0],['#0A84FF',1],['#32ADE6',2],['#AF52DE',3],['#30B650',4],['#FF9F0A',5],['#8E8E93',6],['#5856D6',7]] as [$c,$i]): ?>
+    <span><i style="background:<?= $c ?>"></i><?= e($L['leg'][$i]) ?></span>
+    <?php endforeach; ?>
   </div>
-</section>
-
-<!-- 03 · EL CUADRO DE PIEZAS — los 11 de $PRODUCTOS. Los códigos son número de
-     plano, no un orden de lectura. Fila sin página = plana, sin flecha ni hover. -->
-<section class="band" id="services">
-  <div class="shell">
-    <div class="shead">
-      <div><p class="eyebrow"><span><?= $hm['cat_eyebrow'] ?></span></p><h2><?= $hm['cat_h2'] ?></h2></div>
-      <p class="shead__aside mono"><?= $hm['cat_note'] ?></p>
-    </div>
-    <div class="tbl-wrap tbl-wrap--box">
-      <table class="tbl tbl--cat">
-        <thead><tr><th><?= $hm['cat_th'][0] ?></th><th><?= $hm['cat_th'][1] ?></th><th class="hide-s"><?= $hm['cat_th'][2] ?></th><th class="r"><?= $hm['cat_th'][3] ?></th></tr></thead>
-        <tbody>
-        <?php foreach ($PRODUCTOS as $p):
-          $nombre = $lang === 'es' ? $p[3] : $p[2];
-          $destino = $p[$col]; ?>
-          <tr class="<?= $destino ? 'is-link' : 'is-flat' ?>">
-            <td class="cod"><?= $p[0] ?></td>
-            <td class="nom"><?php if ($destino): ?><a href="<?= e($destino) ?>"><?= $nombre ?> <span class="ar" aria-hidden="true">→</span></a><?php else: ?><?= $nombre ?><?php endif; ?></td>
-            <td class="dim hide-s"><?= $hm['alcance'][$p[0]] ?></td>
-            <td class="r"><span class="tag<?= $p[1] === 'ADVISORY' ? ' tag--ink' : '' ?>"><?= $p[1] ?></span></td>
-          </tr>
-        <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-    <div class="cat__foot">
-      <span class="mono dim"><?= $hm['cat_ask'] ?></span>
-      <a href="<?= $hub ?>" class="btn btn--term">[ <?= $t['index'] ?> ]</a>
-    </div>
+  <div class="info glass" id="info" aria-live="polite"></div>
+  <div class="stage">
+    <div class="netw" id="netw" data-deps="<?= (int) $ORGANIGRAMA['n'] ?>"><div class="net" id="net"><canvas id="cv" width="1250" height="1080" aria-hidden="true"></canvas></div></div>
+    <aside class="rail" id="rail" aria-hidden="true"></aside>
   </div>
-</section>
+  <div class="mlist" id="mlist"></div>
+</div></section>
 
-<!-- 05 · PROCESO — cuatro fases. Las ✕ de los nodos van en Steel: la única ✕
-     Signal de la página es la del instrumento. -->
-<section class="band" id="process">
-  <div class="shell">
-    <div class="shead"><div><p class="eyebrow"><span><?= $hm['proc_eyebrow'] ?></span></p><h2><?= $hm['proc_h2'] ?></h2></div></div>
-    <ol class="proc">
-      <?php foreach ($hm['proc'] as $i => $f): ?>
-      <li class="proc__step">
-        <div class="proc__top"><span><?= $hm['proc_phase'] ?>_0<?= $i+1 ?></span><span class="x-acc" aria-hidden="true">✕</span></div>
-        <h3>0<?= $i+1 ?> <?= $f[0] ?></h3>
-        <p><?= $f[1] ?></p>
-        <p class="proc__out"><?= $hm['proc_out'] ?>: <?= $f[2] ?></p>
-      </li>
-      <?php endforeach; ?>
-    </ol>
+<section class="l-sec" id="products"><div class="l-wrap">
+  <p class="l-eyebrow"><?= $L['p_eyebrow'] ?></p>
+  <h2><?= $L['p_h2'] ?></h2>
+  <p class="l-lead"><?= $L['p_lead'] ?></p>
+  <div class="l-rule"></div>
+  <div class="l-prods">
+    <article class="l-card" id="erp">
+      <header><div class="l-ico"><span class="ms" aria-hidden="true">space_dashboard</span></div><span class="l-chip ok"><?= $L['erp_chip'] ?></span></header>
+      <h3><a href="<?= ERP_URL ?>" rel="noopener"><?= $L['erp_h3'] ?></a></h3>
+      <p><?= $L['erp_p'] ?></p>
+      <div class="l-types"><?php foreach ($L['erp_types'] as $x): ?><span><?= $x ?></span><?php endforeach; ?></div>
+      <ul>
+        <?php foreach ($L['erp_b'] as $x): ?><li><span class="ms" aria-hidden="true">check_circle</span><?= $x ?></li><?php endforeach; ?>
+        <li class="pl"><span class="ms" aria-hidden="true">schedule</span><?= $L['erp_pl'] ?></li>
+      </ul>
+      <a class="l-more" href="<?= ERP_URL ?>" rel="noopener"><?= $L['erp_more'] ?> <span class="ms" aria-hidden="true">arrow_forward</span></a>
+    </article>
+    <article class="l-card" id="agents">
+      <header><div class="l-ico"><span class="ms" aria-hidden="true">smart_toy</span></div><span class="l-chip test"><?= $L['ag_chip'] ?></span></header>
+      <h3><a href="<?= $lang === 'es' ? AAAS_ES : AAAS_EN ?>"><?= $L['ag_h3'] ?></a></h3>
+      <p><?= $L['ag_p'] ?></p>
+      <div class="l-ppl" role="img" aria-label="<?= e($L['ag_nine']) ?>"><?php for ($i = 0; $i < 9; $i++): ?><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"/></svg></span><?php endfor; ?></div>
+      <ul>
+        <?php foreach ($L['ag_b'] as $x): ?><li><span class="ms" aria-hidden="true">check_circle</span><?= $x ?></li><?php endforeach; ?>
+        <li class="pl"><span class="ms" aria-hidden="true">schedule</span><?= $L['ag_pl'] ?></li>
+      </ul>
+      <a class="l-more" href="<?= $lang === 'es' ? AAAS_ES : AAAS_EN ?>"><?= $L['ag_more'] ?> <span class="ms" aria-hidden="true">arrow_forward</span></a>
+    </article>
+    <article class="l-card" id="webs">
+      <header><div class="l-ico"><span class="ms" aria-hidden="true">web</span></div><span class="l-chip ok"><?= $L['wb_chip'] ?></span></header>
+      <h3><?= $L['wb_h3'] ?></h3>
+      <p><?= $L['wb_p'] ?></p>
+      <div class="l-web" aria-hidden="true"><i></i><div><b></b><b></b><b></b></div></div>
+      <ul>
+        <?php foreach ($L['wb_b'] as $x): ?><li><span class="ms" aria-hidden="true">check_circle</span><?= $x ?></li><?php endforeach; ?>
+        <li class="pl"><span class="ms" aria-hidden="true">schedule</span><?= $L['wb_pl'] ?></li>
+      </ul>
+      <a class="l-more" href="#contact"><?= $L['wb_more'] ?> <span class="ms" aria-hidden="true">arrow_forward</span></a>
+    </article>
   </div>
-</section>
+  <div class="l-flow"><b><?= $L['flow'][0] ?></b><span><span class="ms" aria-hidden="true">arrow_right_alt</span><?= $L['flow'][1] ?></span><b><?= $L['flow'][2] ?></b><span><span class="ms" aria-hidden="true">arrow_right_alt</span><?= $L['flow'][3] ?></span><b><?= $L['flow'][4] ?></b></div>
+</div></section>
 
-<!-- 06 · ESTUDIO — organigrama: Javier · Pepito (CEO, una IA) · Andrea al mismo nivel;
-     debajo, los departamentos por sección (BUILD/GROW/CONTROL) y lo que produce cada uno.
-     Salen de inc/organigrama.php (generado): sin imagen dep-<cara>.webp, recuadro con la inicial -->
-<section class="band" id="studio">
-  <div class="shell">
-    <div class="shead"><div><p class="eyebrow"><span><?= $hm['who_eyebrow'] ?></span></p><h2><?= $hm['who_h2'] ?></h2></div></div>
-    <div class="org">
-    <div class="dirs">
-      <?php foreach ([
-        ['01','BUILD','Javier','javier','who_1role','who_1p'],
-        ['03','CEO','Pepito','pepito','who_3role','who_3p'],
-        ['02','DESIGN','Andrea','andrea','who_2role','who_2p'],
-      ] as [$n,$eje,$nom,$img,$rol,$txt]): ?>
-      <div class="dir">
-        <img class="dir__img" src="/assets/images/team-<?= $img ?>.webp" alt="<?= e($nom . ' — ' . strip_tags(html_entity_decode($hm[$rol]))) ?>" width="640" height="640" loading="lazy" decoding="async">
-        <p class="dir__top"><span>DIR_NODE_<?= $n ?></span><span><?= $eje ?></span></p>
-        <h3><?= $nom ?></h3>
-        <p class="dir__role"><?= $hm[$rol] ?></p>
-        <p class="dir__p"><?= $hm[$txt] ?></p>
-      </div>
-      <?php endforeach; ?>
+<div class="l-toolswrap" id="tools"><?php require __DIR__ . '/herramientas.php'; ?></div>
+
+<section class="l-sec" id="studio"><div class="l-wrap">
+  <p class="l-eyebrow"><?= $t['nav_studio'] ?></p>
+  <h2><?= $hm['who_h2'] ?></h2>
+  <div class="l-dirs">
+    <?php foreach ([['01','BUILD','Javier','javier','who_1role','who_1p',''],['03','CEO','Pepito','pepito','who_3role','who_3p',' ai'],['02','DESIGN','Andrea','andrea','who_2role','who_2p','']] as [$n,$eje,$nom,$img,$rol,$txt,$cl]): ?>
+    <div class="l-dir<?= $cl ?>">
+      <div class="l-av"><img src="/assets/images/team-<?= $img ?>.webp" alt="<?= e($nom) ?>" width="52" height="52" loading="lazy" decoding="async"></div>
+      <small>DIR_NODE_<?= $n ?> · <?= $eje ?></small>
+      <h3><?= $nom ?></h3>
+      <p class="role"><?= $hm[$rol] ?></p>
+      <p class="t"><?= $hm[$txt] ?></p>
     </div>
-    <?php
-    /* Un producto con código sale de $PRODUCTOS (nombre + enlace del idioma);
-       el resto es texto plano. Mismo criterio que el cuadro de piezas: sin
-       hoja propia, sin flecha. */
-    $porCodigo = [];
-    foreach ($PRODUCTOS as $p) $porCodigo[$p[0]] = $p;
-    $producto = function ($x) use ($porCodigo, $lang, $col) {
-      if (!isset($porCodigo[$x])) return '<span class="org__p">' . $x . '</span>';
-      $p = $porCodigo[$x]; $nom = $lang === 'es' ? $p[3] : $p[2];
-      $cod = '<code>' . $p[0] . '</code> ';
-      return $p[$col]
-        ? '<a class="org__p" href="' . e($p[$col]) . '">' . $cod . $nom . ' <span class="ar" aria-hidden="true">→</span></a>'
-        : '<span class="org__p">' . $cod . $nom . '</span>';
-    }; ?>
-    <p class="org__lead"><span class="dim"><?= $hm['org_lead'] ?> //</span> <?= $producto($hm['org_top']) ?></p>
-    <p class="org__bus"><span><?= $hm['deps_t'] ?></span></p>
-    <div class="org__secs">
-      <?php $n = 0; foreach ($hm['org'] as [$eje, $lema, $deps]): ?>
-      <section class="org__sec" aria-label="<?= $eje ?>">
-        <p class="org__head"><b><?= $eje ?></b> <span><?= $lema ?></span></p>
-        <ul class="org__deps">
-          <?php foreach ($deps as [$cara, $nom, $hace, $prods, $img]): $n++; ?>
-          <li class="org__dep">
-            <div class="org__node">
-              <?php if ($img): ?><img src="/assets/images/dep-<?= $cara ?>.webp" alt="" width="360" height="360" loading="lazy" decoding="async">
-              <?php else: ?><span class="org__ini" aria-hidden="true"><?= mb_substr(html_entity_decode(strip_tags($nom), ENT_QUOTES, 'UTF-8'), 0, 1, 'UTF-8') ?></span><?php endif; ?>
-              <div><span class="dim"><?= sprintf('DEP.%02d', $n) ?></span><b><?= $nom ?></b><span class="org__hace"><?= $hace ?></span></div>
-            </div>
-            <ul class="org__prods">
-              <?php foreach ($prods as $x): ?><li><?= $producto($x) ?></li><?php endforeach; ?>
-            </ul>
-          </li>
-          <?php endforeach; ?>
-        </ul>
-      </section>
-      <?php endforeach; ?>
-    </div>
-    <?php if (!empty($hm['auto'])): ?>
-    <section class="org__sec org__auto" aria-label="<?= $hm['auto_t'] ?>">
-      <p class="org__head"><b><?= $hm['auto_t'] ?></b> <span><?= $hm['auto_lema'] ?></span></p>
-      <ul class="org__deps">
-        <?php foreach ($hm['auto'] as $i => [$cara, $nom, $hace, $estado, $prods]): ?>
-        <li class="org__dep">
-          <div class="org__node">
-            <span class="org__ini" aria-hidden="true"><?= mb_substr(html_entity_decode(strip_tags($nom), ENT_QUOTES, 'UTF-8'), $lang === 'es' ? 3 : 4, 1, 'UTF-8') ?></span>
-            <div><span class="dim"><?= sprintf('AUT.%02d', $i + 1) ?> · <?= $estado ?></span><b><?= $nom ?></b><span class="org__hace"><?= $hace ?></span></div>
-          </div>
-          <ul class="org__prods">
-            <?php foreach ($prods as $x): ?><li><span class="org__p"><?= $x ?></span></li><?php endforeach; ?>
-          </ul>
-        </li>
+    <?php endforeach; ?>
+  </div>
+  <p class="l-bus"><?= $hm['deps_t'] ?></p>
+  <div class="l-orgrid">
+    <?php $n = 0; foreach ($hm['org'] as [$eje, $lema, $deps]): ?>
+    <section class="l-osec" aria-label="<?= $eje ?>">
+      <p class="l-ohead"><b><?= $eje ?></b><span><?= $lema ?></span></p>
+      <ul class="l-odeps">
+        <?php foreach ($deps as [$cara, $nom, $hace, $prods, $img]): $n++; ?>
+        <li class="l-dep"><span class="l-ini" aria-hidden="true"><?= mb_substr(html_entity_decode(strip_tags($nom), ENT_QUOTES, 'UTF-8'), 0, 1, 'UTF-8') ?></span><div><small><?= sprintf('DEP.%02d', $n) ?></small><b><?= $nom ?></b><em><?= $hace ?></em></div></li>
         <?php endforeach; ?>
       </ul>
     </section>
-    <?php endif; ?>
-    </div>
-    <p class="deps__note"><?= $hm['deps_note'] ?></p>
+    <?php endforeach; ?>
   </div>
-</section>
+  <?php if (!empty($hm['auto'])): ?>
+  <p class="l-autoh"><?= $hm['auto_t'] ?><span><?= $hm['auto_lema'] ?></span></p>
+  <ul class="l-auts">
+    <?php foreach ($hm['auto'] as $i => [$cara, $nom, $hace, $estado, $prods]): $cl = $cara === 'vigilante' ? 'live' : ($cara === 'investigador' ? 'pilot' : 'build'); ?>
+    <li class="l-aut"><span class="l-st <?= $cl ?>"><?= $estado ?></span><b><?= $nom ?></b><em><?= $hace ?></em></li>
+    <?php endforeach; ?>
+  </ul>
+  <?php endif; ?>
+  <p class="l-lead" style="font-size:14px"><?= $hm['deps_note'] ?></p>
+</div></section>
+
+<section class="l-close" id="contact"><div class="l-wrap">
+  <h2><?= $L['c_h2'] ?></h2>
+  <p><?= $L['c_p'] ?></p>
+  <div class="l-formwrap l-form"><?php $fc_pagina = $url; require __DIR__ . '/form_contacto.php'; ?></div>
+  <div class="l-cta"><a class="l-btn s" href="<?= ERP_URL ?>" rel="noopener"><span class="ms" aria-hidden="true">play_circle</span><?= $L['c_erp'] ?></a></div>
+</div></section>
 
 </main>
-
-<!-- 07 · ALTA DE PROYECTO — Ink invertido. Sin backend a propósito: el buzón
-     aún no está confirmado como receptor (AXW-2) y un endpoint de correo pasa
-     por Seguridad. El formulario compone un mailto con el asunto de la página
-     (la bandeja es el informe de atribución mientras no haya analítica). -->
-<section class="contact" id="contact">
-  <div class="contact__in">
-    <div class="shead shead--inv">
-      <div><p class="eyebrow"><span><?= $hm['ct_eyebrow'] ?></span></p><h2><?= $hm['ct_h2'] ?></h2></div>
-      <p class="contact__tag">DIRECT DISPATCH // EN · ES</p>
-    </div>
-    <?php $fc_pagina = $url; require __DIR__ . '/form_contacto.php'; ?>
-  </div>
-</section>
-
-<?php require __DIR__ . '/footer.php'; ?>
-
-<script src="/assets/home.js?v=<?= VER ?>" defer></script>
+<?php require __DIR__ . '/l_footer.php'; ?>
+<script src="/assets/red.js?v=<?= VER ?>" defer></script>
 </body>
 </html>

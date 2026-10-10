@@ -41,6 +41,8 @@ $d = fn($s) => html_entity_decode($s, ENT_QUOTES, 'UTF-8');
 - [<?= strtoupper($lg) ?>] <?= $d($h['h1']) ?> — <?= SITE . $h['url'] ?>
 
 <?php endforeach; endforeach; ?>
+- [EN] Agents as a Service — AI agents that run a business within hard limits (in testing, shadow mode; not yet a running service) — <?= SITE ?>/agents-as-a-service
+- [ES] Agentes como servicio — <?= SITE ?>/es/agentes-como-servicio
 
 ## Selected work
 Live and in production:

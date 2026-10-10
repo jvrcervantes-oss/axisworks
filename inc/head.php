@@ -26,7 +26,7 @@ $abs    = SITE . $url;
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= $title ?></title>
 <meta name="description" content="<?= e($desc) ?>">
-<meta name="theme-color" content="#15181C">
+<meta name="theme-color" content="<?= !empty($landing) ? '#F8F9FF' : '#15181C' ?>">
 <link rel="canonical" href="<?= e($abs) ?>">
 
 <?php /* hreflang recíproco solo donde la intención es la misma. Un par
@@ -57,13 +57,22 @@ $abs    = SITE . $url;
 
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
 <?php /* Fuentes autoalojadas: ninguna petición a Google (Legal, 24-sep-2026). */ ?>
+<?php if (!empty($landing)): /* portada nueva y AaaS: Plus Jakarta Sans + Inter, sin site.css */ ?>
+<link rel="preload" href="/assets/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/inter-400-latin.woff2" as="font" type="font/woff2" crossorigin>
+<?php else: ?>
 <link rel="preload" href="/assets/fonts/space-grotesk-600-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/inter-400-latin.woff2" as="font" type="font/woff2" crossorigin>
+<?php endif; ?>
 <link rel="stylesheet" href="/assets/fonts/fonts.css?v=<?= VER ?>">
 <?php /* El sello de versión vive en config.php y en ningún otro sitio: el
        * .htaccess cachea CSS un año, y sin sello una corrección de estilo
        * tardaría doce meses en verse. */ ?>
+<?php if (!empty($landing)): ?>
+<link rel="stylesheet" href="/assets/landing.css?v=<?= VER ?>">
+<?php else: ?>
 <link rel="stylesheet" href="/assets/site.css?v=<?= VER ?>">
+<?php endif; ?>
 
 <?php if (!empty($jsonld)): ?>
 <script type="application/ld+json">
