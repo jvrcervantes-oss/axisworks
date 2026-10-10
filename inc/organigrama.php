@@ -56,7 +56,7 @@ $ORGANIGRAMA = [
       'en' => ['Security', 'audits &amp; secrets', ['Security audits', 'Secrets and incident response']],
       'es' => ['Seguridad', 'auditorías y secretos', ['Auditorías de seguridad', 'Secretos y respuesta a incidentes']],
     ],
-    ['seccion' => 'CONTROL', 'cara' => 'quality', 'imagen' => false,
+    ['seccion' => 'CONTROL', 'cara' => 'quality', 'imagen' => true,
       'en' => ['Quality', 'proves it works', ['Independent testing in production']],
       'es' => ['Calidad', 'comprueba que funciona', ['Pruebas independientes en producción']],
     ],
