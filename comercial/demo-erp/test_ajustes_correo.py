@@ -10,7 +10,7 @@
 # (4) todo código de error que la edge del MAESTRO puede devolver (leído de su index.ts) tiene texto en llano, y todo texto que se pinta está
 #     en el diccionario ES/EN de Lawang, que es el que se publica.
 # El comportamiento en un navegador lo mide pruebas/ajustes_correo.harness.cjs (necesita Chromium y un paquete construido).
-# Lo corre el gate del repo por ajustes_correo.test.js (tools/test.py solo descubre *.test.js en un proyecto).
+# Lo corre el gate del repo directamente (tools/test.py → PY_DE_PROYECTO, AXW-255, 10-oct-2026); antes lo envolvía ajustes_correo.test.js, retirado por duplicado.
 import os, re, shutil, subprocess, sys, tempfile
 AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AQUI)
