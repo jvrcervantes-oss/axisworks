@@ -23,15 +23,15 @@
 
   var X=ES?{
     R:{hover:['Pasa el cursor por un nodo','El diagrama es el camino del trabajo en el estudio. Los estados salen del registro publicado; el resto es estructura.'],
-      st:{3:'última hora',2:'últimas 24 h',1:'sin registro'},
+      st:{3:'hora previa al corte',2:'24 h previas al corte',1:'sin registro'},
       stLong:{3:'Registrado en la hora hasta {t}',2:'Registrado en las últimas 24 h hasta {t}',1:'Sin registro suficiente'},
       vol:{bajo:'Volumen bajo',medio:'Volumen medio',alto:'Volumen alto'},
       strInfo:'Paso del camino del trabajo; no tiene estado propio.',
       cats:{construccion:'Construcción',diseno:'Diseño',captacion:'Captación',documentacion:'Documentación',gestion:'Gestión',verificacion:'Verificación',operacion:'Operación'},
-      coordName:'Revisión previa',coordDesc:'Revisiones previas de planes entre agentes de IA: antes de construir, subagentes de varios departamentos opinan sobre el plan.',
+      coordName:'Revisión previa de planes',aaasNote:'no en servicio',coordDesc:'Revisiones previas de planes entre agentes de IA: antes de construir, subagentes de varios departamentos opinan sobre el plan.',
       pRec:'Registro',pRecRows:['Publicado','Datos hasta','Válido hasta','Retraso'],pArea:'Por área',pAreaE:'registrado · sin registro',pCoord:'Revisiones previas de planes entre agentes de IA',
       tag:{ok:'Registro vigente · con retraso',expired:'Registro caducado',nodata:'Ilustración · estructura, sin datos de actividad',load:'Cargando el registro…'},
-      kst:{ok:'Vigente',expired:'Caducado',nodata:'No disponible',load:'…'},
+      kst:{ok:'Dentro de plazo',expired:'Caducado',nodata:'No disponible',load:'…'},
       lead:{ok:'Registro de agentes de IA lanzados por departamento, publicado con unas {d} h de retraso. Datos hasta {t}.',
         expired:'El registro caducó: su último dato llega hasta {t}. No se muestra ningún estado hasta que se publique uno nuevo.',
         nodata:'El registro no está disponible. Se muestra solo la estructura del estudio, sin datos de actividad.',load:'Cargando el registro…'},
@@ -59,15 +59,15 @@
     log:[['09:15','revisión previa','seguridad + backend','sobre un plan'],['09:14','revisor de código','sello aprobado','código revisado'],['09:12','seguridad','backend','revisión de un plan'],['09:08','calidad','verificando en producción'],['09:01','diseño','frontend','revisión de un diseño'],['08:55','legal','revisando un texto'],['08:47','deploy','publicando un cambio'],['08:40','documentación','preparando un documento'],['08:31','bots','afinando un asistente']]
   }:{
     R:{hover:['Hover over a node','The diagram is the path work takes through the studio. States come from the published record; the rest is structure.'],
-      st:{3:'last hour',2:'last 24 h',1:'no record'},
+      st:{3:'hour before cut-off',2:'24 h before cut-off',1:'no record'},
       stLong:{3:'Recorded in the hour up to {t}',2:'Recorded in the last 24 h up to {t}',1:'Not enough record'},
       vol:{bajo:'Low volume',medio:'Medium volume',alto:'High volume'},
       strInfo:'A step on the path work takes; it has no state of its own.',
       cats:{construccion:'Build',diseno:'Design',captacion:'Outreach',documentacion:'Documentation',gestion:'Management',verificacion:'Verification',operacion:'Operations'},
-      coordName:'Pre-review',coordDesc:'Plan reviews between AI agents: before building, subagents from several departments weigh in on the plan.',
+      coordName:'Plan pre-review',aaasNote:'not in service',coordDesc:'Plan reviews between AI agents: before building, subagents from several departments weigh in on the plan.',
       pRec:'Record',pRecRows:['Published','Data up to','Valid until','Delay'],pArea:'By area',pAreaE:'recorded · no record',pCoord:'Plan reviews between AI agents',
       tag:{ok:'Current record · delayed',expired:'Record expired',nodata:'Illustration · structure, no activity data',load:'Loading the record…'},
-      kst:{ok:'Current',expired:'Expired',nodata:'Unavailable',load:'…'},
+      kst:{ok:'Within validity',expired:'Expired',nodata:'Unavailable',load:'…'},
       lead:{ok:'Record of AI agents launched per department, published about {d} h late. Data up to {t}.',
         expired:'The record has expired: its last data runs up to {t}. No state is shown until a new one is published.',
         nodata:'The record is unavailable. Only the studio’s structure is shown, with no activity data.',load:'Loading the record…'},
@@ -138,9 +138,9 @@
     if(!exacto(j,['version','generado','datos_hasta','valido_hasta','retraso_horas','n_departamentos','departamentos','coordinacion'],[]))return 'forma';
     if(j.version!==1)return 'version';
     var T=['generado','datos_hasta','valido_hasta'],ms={},i,d,e;
-    for(i=0;i<3;i++){if(!str(j[T[i]])||!HORA.test(j[T[i]]))return 'hora';ms[T[i]]=Date.parse(j[T[i]]);if(isNaN(ms[T[i]]))return 'hora'}
+    for(i=0;i<3;i++){if(!str(j[T[i]])||!HORA.test(j[T[i]]))return 'hora';ms[T[i]]=Date.parse(j[T[i]]);if(isNaN(ms[T[i]])||new Date(ms[T[i]]).toISOString().slice(0,19)+'Z'!==j[T[i]])return 'hora'}  /* 30-feb y las 24:00 se normalizan solas: se exige que la hora exista tal cual */
     if(typeof j.retraso_horas!=='number'||j.retraso_horas!==Math.floor(j.retraso_horas)||j.retraso_horas<1||j.retraso_horas>24)return 'retraso';
-    if(!(ms.datos_hasta<ms.generado&&ms.generado<ms.valido_hasta)||ms.generado-ms.datos_hasta!==j.retraso_horas*3600000)return 'orden';
+    if(!(ms.datos_hasta<ms.generado&&ms.generado<ms.valido_hasta)||ms.generado-ms.datos_hasta!==j.retraso_horas*3600000||ms.valido_hasta-ms.generado!==4*3600000)return 'orden';  /* validez fija de 4 h (contrato §3): un valido_hasta lejano no puede hacer eterno un registro */
     if(ms.generado>now+3600000)return 'futuro';
     if(j.n_departamentos!==NDEP||!Array.isArray(j.departamentos)||j.departamentos.length!==NDEP)return 'n';
     var visto={},n=0;
@@ -171,7 +171,8 @@
     RS.lvl.revprev=ESTADOS[j.coordinacion.estado];RS.vol.revprev=j.coordinacion.volumen||null;
     RS.st='ok';
   }
-  function ahora(){return Date.now()+RS.skew}
+  /* Para CADUCAR vale el reloj más adelantado (servidor+Age o visitante): ni un reloj atrasado ni una caché vieja resucitan un dato; el único coste es caducar antes de tiempo, que falla cerrado. */
+  function ahora(){return Date.now()+Math.max(0,RS.skew)}
   /* Hora absoluta en UTC (sin ubicación ni minutos que no sean los de la hora en punto del JSON). */
   function fmt(iso){
     try{return new Intl.DateTimeFormat(ES?'es':'en',{timeZone:'UTC',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(iso))+' UTC'}
@@ -180,7 +181,7 @@
   function isStr(n){return REAL&&(RS.st!=='ok'||(n.proc&&n.id!=='revprev'))}
   function stText(id){var l=lvl(id),t=X.R.stLong[l]||'';return t.replace('{t}',RS.j?fmt(RS.j.datos):'')}
   function volText(id){var v=RS.vol[id];return v?X.R.vol[v]:''}
-  if(REAL){X.names.revprev=X.R.coordName;X.desc.revprev=X.R.coordDesc}
+  if(REAL){X.names.revprev=X.R.coordName;X.desc.revprev=X.R.coordDesc;X.notes.aaas=X.R.aaasNote}
 
   function nm(id){return X.names[id]}
   function lvlDept(id){return LVL[id]||1}
@@ -358,12 +359,12 @@
       fetch(SRC,{cache:'no-store',credentials:'omit',signal:ac?ac.signal:undefined})
         .then(function(r){
           if(!r.ok)throw new Error('http');
-          var d=Date.parse(r.headers.get('Date')||'');RS.skew=isNaN(d)?0:d-Date.now();
+          var d=Date.parse(r.headers.get('Date')||''),ag=parseInt(r.headers.get('Age')||'0',10);RS.skew=isNaN(d)?0:d+(ag>0?ag*1000:0)-Date.now();
           return r.text();
         })
         .then(function(t){if(t.length>20000)throw new Error('size');return JSON.parse(t)})
         .then(function(j){RS.fetched=Date.now();aplica(j,ahora())})
-        .catch(function(){RS.st='nodata';RS.j=null;RS.lvl={}})
+        .catch(function(){RS.fetched=Date.now();RS.st='nodata';RS.j=null;RS.lvl={}})
         .then(function(){clearTimeout(to);all();if(cur_sel)info(cur_sel)});
     };
     carga();
