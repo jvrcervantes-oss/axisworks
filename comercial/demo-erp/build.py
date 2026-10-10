@@ -2358,7 +2358,23 @@ def packs_casan(catalogo=None, modulos_json=None):
     if fallos:
         aborta('los packs de catalogo.js no casan con erp/modulos.json:\n  ' + '\n  '.join(fallos))
 
+# Opciones retiradas: se RECHAZAN, no se ignoran. Ignorada, una orden vieja
+# (`--instancia X --solo-ajustes-correo`) haría el build completo y reescribiría
+# erp/despliegues/<instancia>, el clon que se publica (revisor, 11-oct-2026).
+OPCIONES_RETIRADAS = {
+    '--solo-ajustes-correo': 'se retiró el 11-oct-2026 junto con la vía de erp/publica_instancia.py; '
+                             'el bloque de Correo va en el build normal',
+}
+
+
+def rechaza_retiradas(argv):
+    for op, porque in OPCIONES_RETIRADAS.items():
+        if op in argv:
+            aborta('%s %s. No se ha construido nada.' % (op, porque))
+
+
 def main():
+    rechaza_retiradas(sys.argv)   # antes de vaciar dist/ ni tocar nada
     packs_casan()
     if not os.path.isfile(DOBLE_QA):
         aborta('falta proyectos/Lawang/_qa_double_guard.js (gitignored: vive solo en este equipo)')
