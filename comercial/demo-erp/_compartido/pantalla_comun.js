@@ -106,6 +106,17 @@ function axwComun(raiz, T) {
     return c.m || T('La base no ha respondido: prueba otra vez en un rato.');
   }
 
+  /* Un importe tecleado → número, SIN adivinar el separador (el fallo de lw_importe('120.000') = 120000 pero ::numeric = 120). Acepta «2500», «2500.5», «2500,5»;
+     «2.500» / «2,500» / «1.500.000» (grupos de tres cifras) son ambiguos (¿miles o decimales?) y se rechazan; «1.500,50» tampoco entra. Devuelve {vacio} | {v} | {e:'formato'|'ambiguo'}.
+     `dec` = máximo de decimales admitido por la pantalla; el límite de verdad (moneda, rango) lo pone la base. */
+  function importe(raw, dec) {
+    var s = String(raw == null ? '' : raw).replace(/\s+/g, '');
+    if (s === '') return { vacio: true };
+    if (/^\d{1,3}([.,]\d{3})+$/.test(s)) return { e: 'ambiguo' };
+    if (!new RegExp('^\\d+(?:[.,]\\d{1,' + (dec || 4) + '})?$').test(s)) return { e: 'formato' };
+    return { v: Number(s.replace(',', '.')) };
+  }
+
   function ocupa(btn, texto) {
     if (ocupado) return false;
     ocupado = true;
@@ -142,5 +153,5 @@ function axwComun(raiz, T) {
   }
 
   return { EN: EN, h: h, vacia: vacia, oculta: oculta, boton: boton, chip: chip, celda: celda, tabla: tabla, campo: campo, resumen: resumen, locale: locale, dinero: dinero,
-           fechaDia: fechaDia, fechaHora: fechaHora, clasifica: clasifica, mensaje: mensaje, ocupa: ocupa, libera: libera, dialogo: dialogo };
+           fechaDia: fechaDia, fechaHora: fechaHora, clasifica: clasifica, mensaje: mensaje, importe: importe, ocupa: ocupa, libera: libera, dialogo: dialogo };
 }

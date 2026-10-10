@@ -106,7 +106,7 @@ async function servidor(b, nombre, a) {
   return err('42883', 'funcion desconocida ' + nombre);
 }
 
-const pagina = idioma => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
+const pagina = (idioma, FICHA = 'undefined') => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
 ${MARCADO}
 <script>
 window.__xss = undefined; window.__fromLlamado = 0; window.__fetchLlamado = 0; window.__sinEn = []; window.__errores = [];
@@ -116,7 +116,7 @@ var sb = {
   from: function () { window.__fromLlamado++; throw new Error('el navegador no toca la base'); },
   auth: { getSession: function () { return Promise.resolve({ data: { session: { access_token: 'JWT' } } }); } }
 };
-window.LW_AUTH = Promise.resolve({ sb: sb });
+window.LW_AUTH = Promise.resolve({ sb: sb, ficha: ${FICHA} });
 window.lwDatos = function (n, a) { return Promise.resolve(sb.rpc(n, a)).then(function (r) { return { data: r.data, error: r.error }; }); };
 window.LW_IDIOMA = '${idioma}';
 window.LW_EN = {};
@@ -135,7 +135,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const ctx = await nav.newContext({ viewport: { width: opts.ancho || 1440, height: 1000 } });
     const p = await ctx.newPage();
     await p.exposeFunction('__srv', (n, a) => servidor(base, n, a));
-    await p.setContent(pagina(opts.idioma || 'es'), { waitUntil: 'load' });
+    await p.setContent(pagina(opts.idioma || 'es', opts.ficha), { waitUntil: 'load' });
     await p.waitForFunction(() => { const t = document.querySelector('[data-rp="res-estado"]').textContent; return !t.includes('Cargando') && !t.includes('Loading'); }, null, { timeout: 5000 });
     return { base, p, ctx };
   }
@@ -334,6 +334,23 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await espera(p, () => document.querySelectorAll('[data-producto-id]').length === 1);
     const f = await txt(p, '[data-rp="flota-lista"]');
     ok('la flota enseña tarifas, unidades y estado (taller) con la matricula como texto', f.includes('Honda Beat') && f.includes('Taller') && f.includes(XSS_MATRICULA) && /600\.000/.test(f) && await sinInyeccion(p));
+    await ctx.close();
+  }
+
+  // 6b. enlace «Editar flota» (10-oct-2026): solo para quien tiene la casilla `flota`; sin ficha o sin casilla no sale
+  for (const [nombre, ficha, sale] of [['sin ficha', undefined, false], ['ficha sin la casilla flota', JSON.stringify({ rol: 'agente', herramientas: ['reservas-producto'] }), false],
+      ['con la casilla flota', JSON.stringify({ rol: 'agente', herramientas: ['reservas-producto', 'flota'] }), true]]) {
+    const { p, ctx } = await abre({ ficha });
+    await tab(p, 'flota');
+    const v = await p.$eval('[data-rp="flota-editar"]', e => ({ oculto: e.classList.contains('rp-oculto'), href: e.getAttribute('href'), txt: e.textContent, vis: e.offsetParent !== null }));
+    ok('«Editar flota» ' + nombre + ': ' + (sale ? 'sale y apunta a /intranet/v4/flota/' : 'no sale'), sale ? (!v.oculto && v.vis && v.href === '/intranet/v4/flota/' && v.txt === 'Editar flota') : (v.oculto && !v.vis));
+    ok('la pestaña de flota sigue de LECTURA: ningun boton de escribir (' + nombre + ')', (await p.$$eval('[data-rp="panel"][data-tab="flota"] [data-accion]', bs => bs.map(b => b.getAttribute('data-accion')))).join() === 'rp-flota-actualizar');
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ idioma: 'en', ficha: JSON.stringify({ rol: 'agente', herramientas: ['flota'] }) });
+    await tab(p, 'flota');
+    ok('en ingles el enlace dice «Edit fleet»', (await txt(p, '[data-rp="flota-editar"]')) === 'Edit fleet' && (await p.evaluate(() => window.__sinEn)).length === 0);
     await ctx.close();
   }
 

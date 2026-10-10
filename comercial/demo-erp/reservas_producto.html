@@ -27,6 +27,7 @@
 .rp-tabla td{padding:9px 10px;border-bottom:1px solid #f0eee8;vertical-align:top;word-break:break-word}
 .rp-tabla td.rp-num,.rp-tabla th.rp-num{text-align:right;white-space:nowrap}
 .rp-boton{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;border-radius:999px;border:0;cursor:pointer;font-size:13px;background:#e4e2dd;color:#1b1c19}
+a.rp-boton{text-decoration:none}
 .rp-boton[data-primario="1"]{background:#104C4F;color:#fff}
 .rp-boton[data-peligro="1"]{background:#fde2e0;color:#7a1a14}
 .rp-boton:disabled{opacity:.55;cursor:not-allowed}
@@ -102,7 +103,8 @@
 </div>
 
 <div data-rp="panel" data-tab="flota" role="tabpanel" class="rp-oculto">
-<div class="rp-barra"><button class="rp-boton" type="button" data-accion="rp-flota-actualizar"><span data-lwt>Actualizar</span></button></div>
+<div class="rp-barra"><button class="rp-boton" type="button" data-accion="rp-flota-actualizar"><span data-lwt>Actualizar</span></button>
+<a class="rp-boton rp-oculto" data-rp="flota-editar" href="/intranet/v4/flota/" data-lwt>Editar flota</a></div>
 <div data-rp="flota-estado" class="rp-vacio"></div>
 <div data-rp="flota-lista"></div>
 </div>
@@ -127,7 +129,7 @@
   var EN_RP = {
     'Reservas de producto': 'Product bookings',
     'Las reservas de tus productos por fechas (motos, coches…): calendario por unidad, flota y tarifas, y el paso de cada reserva. Los precios los calcula siempre la base; aquí solo se piden.': 'Bookings of your products by date (motorbikes, cars…): calendar per unit, fleet and rates, and each booking’s status. Prices are always worked out by the database; here they are only requested.',
-    'Nueva reserva': 'New booking', 'Reservas': 'Bookings', 'Calendario': 'Calendar', 'Flota y tarifas': 'Fleet and rates', 'Pagos por revisar': 'Payments to review',
+    'Nueva reserva': 'New booking', 'Reservas': 'Bookings', 'Calendario': 'Calendar', 'Flota y tarifas': 'Fleet and rates', 'Editar flota': 'Edit fleet', 'Pagos por revisar': 'Payments to review',
     'Estado': 'Status', 'Todos': 'All', 'Bloqueo': 'Hold', 'Confirmada': 'Confirmed', 'En curso': 'In progress', 'Devuelta': 'Returned', 'Cancelada': 'Cancelled', 'Caducada': 'Expired',
     'Desde': 'From', 'Hasta': 'To', 'Actualizar': 'Refresh', 'Cargar más': 'Load more', 'Hoy': 'Today',
     'Semana anterior': 'Previous week', 'Semana siguiente': 'Next week',
@@ -802,8 +804,16 @@
     }
   }
 
+  /* El enlace «Editar flota» solo sale a quien tiene la casilla `flota` (o es super admin global): es la misma regla que usa el menú, no una decisión de seguridad; la pantalla /flota/ y la base la vuelven a comprobar. */
+  function puedeEditarFlota(ficha) {
+    if (!ficha) return false;
+    try { if (window.LW_ROL && typeof window.LW_ROL.esSuperGlobal === 'function' && window.LW_ROL.esSuperGlobal(ficha)) return true; }
+    catch (e) { /* MUDO A PROPOSITO: sin poder mirar el rol no se enseña el enlace; la pantalla de destino comprueba el permiso por su cuenta */ }
+    return Array.isArray(ficha.herramientas) && ficha.herramientas.indexOf('flota') !== -1;
+  }
   function init(aut) {
     SB = aut.sb;
+    oculta($v('flota-editar'), !puedeEditarFlota(aut.ficha));
     raiz.addEventListener('click', alClic);
     raiz.addEventListener('change', function (ev) {
       var t = ev.target;

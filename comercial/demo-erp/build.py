@@ -1828,6 +1828,41 @@ def entrega_pantalla():
     open(her, 'w', encoding='utf-8', newline='').write(h)
 
 
+def flota_pantalla():
+    """Pantalla /flota/ del ERP maestro (F8, 10-oct-2026; revisión previa #256 Frontend+Backend+Seguridad): el editor de la flota (motos) y de las tarifas por tramo de días. Pantalla PROPIA como Taller y Entrega, no un
+    editor dentro de la pestaña «Flota y tarifas» de Reservas de producto (esa se queda de lectura y enlaza aquí). La herramienta `flota` es la puerta de la cáscara (guard.js: un admin normal también pasa por su
+    lista de herramientas); la base exige además administración en cada RPC y la pantalla no lo adivina: lo dice tras la respuesta.
+    La crea el build clonando la CÁSCARA de /asistente/ con `flota.html` y las ayudas comunes de _compartido/. Lleva además, todo con reemplazo literal que aborta si una pantalla anterior de la cadena cambia el trozo:
+      · nav.js: entrada de menú en Seguimiento (tras Entrega), injerto de sidebar y casilla en CLAVE_MENU (sin esa línea puedeVer() la enseñaría a todos);
+      · herramientas.js: la tarjeta `flota` tras la de Entrega. Sin ella no existiría la casilla en Usuarios.
+    Va DESPUÉS de entrega_pantalla() porque sus anclas de nav.js y herramientas.js son las líneas que esa deja. Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    _pantalla_bot(v4, 'flota.html', 'flota', 'Flota y tarifas', puerta='data-herramienta="flota"')
+    nav = os.path.join(v4, 'assets', 'nav.js')
+    n = open(nav, encoding='utf-8').read()
+    n = _una_vez(n, "      { path: 'entrega', texto: 'Entrega', clave: 'entrega', nucleo: true }] },",
+                 "      { path: 'entrega', texto: 'Entrega', clave: 'entrega', nucleo: true }," + '\n' +
+                 "      { path: 'flota', texto: 'Flota y tarifas', clave: 'flota', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (flota)')
+    n = _una_vez(n, "    { path: 'entrega', tras: 'taller', icono: 'local_shipping', texto: 'Entrega', nucleo: true },",
+                 "    { path: 'entrega', tras: 'taller', icono: 'local_shipping', texto: 'Entrega', nucleo: true }," + '\n' +
+                 "    { path: 'flota', tras: 'entrega', icono: 'two_wheeler', texto: 'Flota y tarifas', nucleo: true },", 'nav.js INJERTOS flota')
+    n = _una_vez(n, "    entrega: 'entrega',",
+                 "    entrega: 'entrega'," + '\n' + "    flota: 'flota',", 'nav.js CLAVE_MENU flota')
+    open(nav, 'w', encoding='utf-8', newline='').write(n)
+    her = os.path.join(DIST, 'contracts', 'assets', 'herramientas.js')
+    h = open(her, encoding='utf-8').read()
+    ancla = "distance office rate' });" + '\n' + "}"
+    h = _una_vez(h, ancla,
+                 "distance office rate' });" + '\n' +
+                 "  /* FLOTA Y TARIFAS (F8, 10-oct-2026): las motos de cada producto y sus tarifas por días. Permiso propio `flota`; sin esta tarjeta la casilla no existiría en Usuarios. La base exige además administración. */" + '\n' +
+                 "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'entrega') + 1, 0," + '\n' +
+                 "    { grupo:'Seguimiento', nombre:'Flota y tarifas', icon:'ph-motorcycle', href:'/intranet/v4/flota/', herr:'flota'," + '\n' +
+                 "      para:'Las motos de cada producto y lo que cuesta alquilarlas según los días: lo que cambies es lo que el bot cotiza y cobra.'," + '\n' +
+                 "      claves:'flota motos moto matricula unidades tarifa tarifas precio dias tramo alquiler fleet bikes bike plate units rate rates price days tier rental' });" + '\n' + "}",
+                 'herramientas.js tarjeta Flota')
+    open(her, 'w', encoding='utf-8', newline='').write(h)
+
+
 def crea_contrasena_pantalla(marca):
     """Pantalla /crea-contrasena/ del ERP maestro (pieza C de I6, 9-oct-2026): donde aterriza el primer administrador desde la invitación de Auth que
     manda nueva_instancia.py (paso `admin`) para poner su contraseña. Es una página PROPIA (crea_contrasena.html), no un overlay de la de Lawang
@@ -2017,6 +2052,7 @@ def instancia(nombre):
     reservas_producto_pantalla()   # F8 (8-oct-2026): Reservas de producto — lista, calendario, flota y pagos por revisar (tras ventas: sus anclas de nav.js)
     taller_pantalla()   # F8 pieza 2 (8-oct-2026): Taller — órdenes de trabajo ligeras (tras reservas de producto: sus anclas de nav.js)
     entrega_pantalla()   # F8 pieza 8 (10-oct-2026): Entrega — sede, tarifa por km y límites (tras taller: sus anclas de nav.js y herramientas.js)
+    flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]
