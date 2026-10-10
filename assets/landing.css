@@ -404,3 +404,15 @@ main{display:block;overflow-x:clip}
 .l-bar .l-more{font-weight:600;color:var(--pri);text-decoration:none;display:inline-flex;gap:6px;align-items:center;font-size:14px}
 .l-bar .l-more:hover{text-decoration:underline}
 .l-bar .l-more .ms{font-size:18px}
+
+/* Area tactil >=48px a <=720px (Calidad midio 42-46 px en produccion, 10-oct-2026). Solo movil: a escritorio no cambia nada. */
+@media (max-width:720px){
+  .l-burger{width:48px;height:48px}
+  .l-btn,.l-links .l-btn{min-height:48px;height:auto}
+  .l-form button[type=submit]{min-height:48px;height:auto}
+  .l-form .field input[type=text],.l-form .field input[type=email]{min-height:48px}
+  .l-more{min-height:48px}
+  .l-brand{min-height:48px}
+  .l-links a:not(.l-btn){min-height:48px;display:flex;align-items:center}
+  .l-links .l-lang a,.l-links .l-lang span{display:inline-flex;align-items:center;justify-content:center;min-width:48px;min-height:48px;padding-top:0;padding-bottom:0}
+}
