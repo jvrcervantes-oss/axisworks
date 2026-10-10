@@ -110,7 +110,8 @@ if ($H['codigo'] !== 'DOC') {
           </aside>
           <?php endif; ?>
           <div class="ws__main">
-            <?php if (!empty($P['pie'])): ?><p class="ws__alert"><span><?= $t['hj_live'] ?></span><?= $P['pie'] ?></p><?php endif; ?>
+            <?php /* `estado` en el panel del caso (campo_*.php) pisa «EN PRODUCCIÓN» cuando el caso no lo está (10-oct-2026: el bot de Lawang va en pruebas). */ ?>
+            <?php if (!empty($P['pie'])): ?><p class="ws__alert"><span><?= $P['estado'] ?? $t['hj_live'] ?></span><?= $P['pie'] ?></p><?php endif; ?>
             <div class="ws__tbl">
               <table>
                 <thead><tr><?php foreach ($P['th'] as $i => $th): ?><th<?= $i === count($P['th'])-1 ? ' class="r"' : '' ?>><?= $th ?></th><?php endforeach; ?></tr></thead>

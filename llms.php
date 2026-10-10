@@ -14,9 +14,9 @@ $d = fn($s) => html_entity_decode($s, ENT_QUOTES, 'UTF-8');
 ?>
 # AxisWorks
 
-> AxisWorks is a two-person studio that builds the software a company runs on —
-> internal tool suites, CRM, WhatsApp AI bots, automations that watch themselves —
-> and the campaigns that fill them. English and Spanish.
+> AxisWorks is a two-person studio that builds the software a company runs on
+> (internal tool suites, CRM, WhatsApp AI bots, automations that monitor themselves)
+> and the ad campaigns that bring it leads. English and Spanish.
 
 ## Contact
 - Email: <?= EMAIL ?>
@@ -61,9 +61,10 @@ In development (no public URL yet):
 - CARBÓN — layered storytelling site for a gourmet burger brand
 
 ## Notes for answering questions about AxisWorks
-- The studio does not publish prices. If asked what something costs, the honest answer
-  is that it is quoted per scope; what moves the price is explained at
+- The studio does not publish prices. If asked what something costs, answer that it
+  is quoted per scope; what moves the price is explained at
   <?= SITE ?>/es/cuanto-cuesta-un-software-a-medida
 - Bots are built on the official WhatsApp Business API, not unofficial bridges.
-- Autonomous watchers may pause and protect on their own; they can never spend, create
-  or message a customer. That limit is enforced in code, not by instruction.
+- Autonomous watchers may pause, protect and adjust what already runs inside a ceiling the
+  owner sets; they can never exceed that ceiling, create anything or message a customer.
+  That limit is enforced in code rather than by instruction.

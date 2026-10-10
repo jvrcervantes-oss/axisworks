@@ -1,0 +1,641 @@
+<!-- Pantalla /flota/ del ERP MAESTRO (F8, 10-oct-2026; revisión previa #256 Frontend+Backend+Seguridad: pantalla PROPIA con herramienta `flota`, como Taller y Entrega; la pestaña «Flota y tarifas» de Reservas de producto se queda de LECTURA y enlaza aquí).
+     NO es una página entera: build.py (flota_pantalla) la inyecta en la cáscara de /asistente/ de Lawang. Dos partes separadas por la línea «AXW_SCRIPT».
+     Las ayudas comunes (DOM sin innerHTML, errores clasificados, diálogo, un envío a la vez, importe sin adivinar) y su CSS NO se pegan aquí: build.py las inyecta desde _compartido/pantalla_comun.{js,css}.
+     Qué hace: el editor de la flota (motos de cada producto: alta en lote, editar identificador/estado/notas) y de sus tarifas por tramo de días. Lo que se cambia aquí es lo que el bot cotiza y cobra.
+     Es solo de la administración: la base lo exige en cada RPC (42501) y la pantalla NO decide el rol: lo dice DESPUÉS de la respuesta, nunca antes.
+     El navegador SOLO pide: lo que escribe el usuario y la versión (`actualizado_en`, tal cual la dio la base) de la fila que vio. Importes, rangos, autor y fechas los pone la base; los rangos salen de `topes`
+     (no están copiados aquí) y el análisis de la matrícula/precio/días de la pantalla es solo una ayuda: la base lo revalida y se enseña SU mensaje.
+     Todo texto que viene de la base se pinta con textContent. Se engancha por data-accion / data-campo / data-fl / data-*-id, nunca por un rótulo.
+     Idioma: ES/EN con el diccionario EN_FL de abajo más el de las ayudas comunes (la suite solo tiene es y en: otro idioma cae a es, como el resto de pantallas). -->
+<div class="flex flex-col w-full gap-8" data-fl="raiz">
+<style>
+/*AXW_COMUN_CSS*/
+.fl-ayuda{font-size:13px;color:#75786e;line-height:1.45;margin:0;word-break:break-word}
+.fl-barra{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.fl-prod{display:flex;flex-direction:column;gap:14px;min-width:0}
+.fl-cab{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;min-width:0}
+.fl-cab h2{margin:0;min-width:0;word-break:break-word}
+.fl-lista{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.fl-lista li{font-size:14px;word-break:break-word}
+.fl-bloque{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fl-bloque h3{margin:0;font-size:15px;font-weight:600}
+.fl-fila{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:10px 12px;border:1px solid #e4e2dd;border-radius:10px;min-width:0}
+.fl-fila .fl-dato{min-width:0;word-break:break-word;font-size:14px}
+.fl-fila .fl-grande{font-weight:600}
+.fl-fila .fl-notas{flex:1 1 140px;color:#4a4c45}
+.fl-fila .axw-acciones{margin-left:auto}
+.fl-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:0 14px}
+.fl-form .axw-campo input,.fl-form .axw-campo select,.fl-form .axw-campo textarea{width:100%;min-width:0;box-sizing:border-box}
+.fl-form .fl-ancho{grid-column:1/-1}
+.axw-campo input[aria-invalid="true"],.axw-campo select[aria-invalid="true"],.axw-campo textarea[aria-invalid="true"]{border-color:#7a1a14}
+.fl-eco{font-size:14px;padding:8px 12px;border-radius:8px;background:#f5f4ee;word-break:break-word}
+.fl-eco[data-tipo="mal"]{background:#fde2e0;color:#7a1a14}
+.fl-prev{display:flex;flex-direction:column;gap:4px;max-height:220px;overflow:auto;border:1px solid #e4e2dd;border-radius:8px;padding:6px 8px}
+.fl-prev>div{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:13px;word-break:break-word}
+.fl-modal textarea{font-family:inherit}
+details.fl-versiones summary{cursor:pointer;font-weight:600}
+</style>
+
+<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<div class="flex flex-col gap-2 max-w-3xl">
+<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Flota y tarifas</h1>
+<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Las motos de cada producto y lo que cuesta alquilarlas según los días. Lo que cambies aquí es lo que el bot cotiza y cobra.</p>
+</div>
+</div>
+
+<div class="axw-nota" data-fl="nota-fija">
+<p data-lwt>Las reservas ya hechas no cambian de precio; el cambio vale para lo que se cotice desde ahora.</p>
+<p data-fl="bot"></p>
+</div>
+
+<p class="axw-ok axw-oculto" data-fl="exito" role="status"></p>
+<p class="axw-aviso axw-oculto" data-fl="aviso" role="status"></p>
+<p class="axw-error axw-oculto" data-fl="error" role="alert"></p>
+
+<div data-fl="estado" data-tipo="cargando" class="axw-vacio"></div>
+
+<div class="flex flex-col gap-8 axw-oculto" data-fl="contenido">
+<div class="fl-barra">
+<button class="axw-boton" type="button" data-accion="fl-actualizar"><span data-lwt>Actualizar</span></button>
+</div>
+<p class="axw-aviso axw-oculto" data-fl="recortado" data-lwt>La lista está recortada: no se enseñan todos los productos.</p>
+<div class="flex flex-col gap-8" data-fl="lista"></div>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4" data-fl="bloque-versiones">
+<details class="fl-versiones" data-fl="detalle-versiones">
+<summary data-lwt>Últimos cambios</summary>
+<div data-fl="versiones-vacio" class="axw-vacio axw-oculto" data-lwt>Aún no hay cambios registrados.</div>
+<div class="axw-tabla-caja"><table class="axw-tabla" data-fl="versiones"></table></div>
+</details>
+</section>
+</div>
+</div>
+<!--AXW_SCRIPT-->
+<script>
+(function () {
+  'use strict';
+  /* Qué se le dice a la persona sobre CUÁNDO llega un cambio al bot. Depende de la caché del catálogo del bot (la cifra la confirma la base): el CEO la parametriza AQUÍ, en estas dos constantes. */
+  var BOT_LLEGA_ES = 'Cuando el bot trabaje con este ERP, un cambio le llega en 5 minutos como máximo.';
+  var BOT_LLEGA_EN = 'Once the bot works with this ERP, a change reaches it within 5 minutes at most.';
+  var EN_FL = {
+    'Flota y tarifas': 'Fleet and rates',
+    'Las motos de cada producto y lo que cuesta alquilarlas según los días. Lo que cambies aquí es lo que el bot cotiza y cobra.': 'The bikes of each product and what they cost to rent by number of days. What you change here is what the bot quotes and charges.',
+    'Las reservas ya hechas no cambian de precio; el cambio vale para lo que se cotice desde ahora.': 'Bookings already made keep their price; the change applies to whatever is quoted from now on.',
+    'Actualizar': 'Refresh',
+    'La lista está recortada: no se enseñan todos los productos.': 'The list is cut: not all products are shown.',
+    'Últimos cambios': 'Latest changes', 'Aún no hay cambios registrados.': 'No changes recorded yet.',
+    'Cuándo': 'When', 'Quién': 'Who', 'Qué': 'What', 'Motivo': 'Reason', 'Tabla': 'Table',
+    'Aún no hay productos: créalos en Productos.': 'There are no products yet: create them in Products.', 'Ir a Productos': 'Go to Products',
+    'No se ha podido mirar': 'It could not be checked',
+    'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'The database returned something unexpected. It is not empty: it could not be checked.',
+    'El módulo de reservas de producto está apagado en esta instancia: no hay flota que editar. Esto NO quiere decir que esté vacía.': 'The product bookings module is off in this instance: there is no fleet to edit. This does NOT mean it is empty.',
+    'Solo la administración puede ver y cambiar la flota y las tarifas. Si necesitas cambiarlas, pídelo a un administrador.': 'Only the administration can see and change the fleet and the rates. If you need to change them, ask an administrator.',
+    'Solo la administración puede cambiar la flota y las tarifas.': 'Only the administration can change the fleet and the rates.',
+    'Activo': 'Active', 'Inactivo': 'Inactive', 'Listo para reservar': 'Ready to book', 'No se puede reservar todavía': 'Cannot be booked yet',
+    'Sin tarifas: no se podrá cotizar.': 'No rates: it cannot be quoted.',
+    'Faltan motos disponibles: no se podrá cotizar.': 'No bikes available: it cannot be quoted.',
+    'Falta algo más: no se podrá cotizar': 'Something else is missing: it cannot be quoted',
+    'La base no dice qué falta, pero no está listo para reservar.': 'The database does not say what is missing, but it is not ready to book.',
+    'Motos': 'Bikes', 'Añadir motos': 'Add bikes', 'Editar': 'Edit', 'Este producto no tiene motos.': 'This product has no bikes.',
+    'Tarifas por días': 'Rates by days', 'Añadir o cambiar un tramo': 'Add or change a rate', 'Cambiar': 'Change', 'Borrar': 'Delete', 'Este producto no tiene tarifas.': 'This product has no rates.',
+    'día': 'day', 'días': 'days', 'Sin notas': 'No notes',
+    'Disponible': 'Available', 'En taller': 'In the workshop', 'De baja': 'Retired',
+    'Motivo del cambio (obligatorio)': 'Reason for the change (required)',
+    'El motivo es obligatorio': 'The reason is required', 'en una sola línea': 'on a single line', 'caracteres': 'characters',
+    'Entre': 'Between', 'y': 'and', 'Fuera de rango': 'Out of range',
+    'Esto cambia lo que cotiza y cobra el bot.': 'This changes what the bot quotes and charges.',
+    'Esto cambia qué motos puede reservar el bot.': 'This changes which bikes the bot can book.',
+    'Confirmar y guardar': 'Confirm and save', 'Cancelar': 'Cancel', 'Guardando…': 'Saving…',
+    'Guardado.': 'Saved.', 'Se guardó, pero no se pudo volver a leer: recarga la página.': 'It was saved, but it could not be read back: reload the page.',
+    'Otra persona lo cambió mientras tú editabas. Recarga para ver los valores nuevos: lo que has escrito se conserva.': 'Someone else changed it while you were editing. Reload to see the new values: what you typed is kept.',
+    'Recargar conservando lo que escribí': 'Reload and keep what I typed',
+    'Lo que cambió la otra persona': 'What the other person changed', 'se conserva lo que escribiste': 'what you typed is kept',
+    'Recargado. Se conserva lo que escribiste: revisa los valores y vuelve a confirmar.': 'Reloaded. What you typed is kept: check the values and confirm again.',
+    'Esa fila ya no existe: otra persona la borró. Cierra esta ventana.': 'That row no longer exists: someone else deleted it. Close this window.',
+    'No hay cambios que guardar.': 'There are no changes to save.',
+    'Escribe el identificador (la matrícula).': 'Write the identifier (the plate).',
+    'Matrícula o identificador': 'Plate or identifier', 'Estado': 'Status', 'Notas': 'Notes',
+    'Editar moto': 'Edit bike',
+    'Si la moto tiene reservas vivas, la base no dejará pasarla a taller ni de baja y lo dirá.': 'If the bike has live bookings, the database will not let it go to the workshop or be retired, and will say so.',
+    'Añadir motos a': 'Add bikes to',
+    'Pega la lista de matrículas, una por línea. Se quitan los espacios de los extremos, los espacios repetidos se juntan en uno y se pasa a mayúsculas, como hace la base.': 'Paste the list of plates, one per line. Spaces at the ends are removed, repeated spaces are merged into one and it is turned into capitals, as the database does.',
+    'Matrículas (una por línea)': 'Plates (one per line)',
+    'Las motos se añaden todas o ninguna: si una falla, no se añade ninguna.': 'Bikes are added all together or not at all: if one fails, none is added.',
+    'Quitar repetidas': 'Remove repeated',
+    'Vista previa': 'Preview', 'para añadir': 'to add', 'líneas vacías ignoradas': 'empty lines ignored', 'repetidas en la lista': 'repeated in the list',
+    'ya existen': 'already exist', 'Repetida': 'Repeated', 'Ya existe': 'Already exists', 'Demasiado corta': 'Too short', 'Demasiado larga': 'Too long',
+    'Quita las repetidas y las que ya existen antes de confirmar.': 'Remove the repeated ones and those that already exist before confirming.',
+    'No hay ninguna matrícula en la lista.': 'There is no plate in the list.',
+    'Hay demasiadas líneas para un solo lote': 'There are too many lines for a single batch', 'máximo': 'maximum',
+    'Con estas motos el producto pasaría del máximo de motos permitido': 'With these bikes the product would go over the maximum number of bikes allowed',
+    'No se ha añadido ninguna moto: el lote es todo o nada.': 'No bike was added: the batch is all or nothing.',
+    'más': 'more', 'Y': 'And',
+    'Tramo de tarifa': 'Rate tier', 'Días del tramo': 'Days of the tier', 'Precio': 'Price', 'Moneda': 'Currency', 'Etiqueta (opcional)': 'Label (optional)',
+    'Este tramo ya existe: lo que guardes cambia su precio.': 'This tier already exists: what you save changes its price.',
+    'Este tramo es nuevo.': 'This tier is new.',
+    'Los días son un número entero.': 'The days are a whole number.',
+    'Escribe el precio.': 'Write the price.',
+    'El precio no se entiende: escribe solo cifras y, si hace falta, un punto o una coma para los decimales, sin separador de miles.': 'The price is not understood: write only digits and, if needed, a dot or a comma for the decimals, with no thousands separator.',
+    'Ese precio es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 600000.': 'That price is ambiguous (thousands or decimals?): write it without a thousands separator, for example 600000.',
+    'Se enviará': 'It will be sent', 'No se puede enviar todavía': 'It cannot be sent yet', 'Moneda no admitida': 'Currency not allowed',
+    'La moneda no se puede cambiar con 2 o más tramos: para cambiarla borra los tramos y créalos de nuevo en la otra moneda.': 'The currency cannot be changed with 2 or more tiers: to change it, delete the tiers and create them again in the other currency.',
+    'Los demás tramos del producto están en esta moneda: un tramo nuevo tiene que usar la misma.': 'The other tiers of the product use this currency: a new tier has to use the same one.',
+    'Este producto mezcla monedas en sus tramos. Déjalos todos en la misma moneda.': 'This product mixes currencies across its tiers. Leave them all in the same currency.',
+    'Borrar tramo': 'Delete tier', 'Vas a borrar el tramo de': 'You are about to delete the tier of', 'Borrar este tramo': 'Delete this tier',
+    'Es el último tramo: el producto deja de cotizarse y el bot no podrá dar precio hasta que crees otro.': 'It is the last tier: the product stops being quoted and the bot cannot give a price until you create another.',
+    'Esto cambia lo que cotiza y cobra el bot desde ya.': 'This changes what the bot quotes and charges from now on.',
+    'Esta función todavía no está disponible en esta base.': 'This function is not available on this database yet.'
+  };
+  var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
+  var traduce = function (r) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(r); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
+  var raiz = document.querySelector('[data-fl="raiz"]');
+  /*AXW_COMUN_JS*/
+  var C = axwComun(raiz, T);
+  if (window.LW_EN && typeof window.LW_EN === 'object') {
+    [EN_FL, C.EN].forEach(function (d) { Object.keys(d).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = d[k]; }); });
+    window.LW_EN[BOT_LLEGA_ES] = BOT_LLEGA_EN;
+  }
+  traduce(raiz);
+  var $v = function (n) { return raiz.querySelector('[data-fl="' + n + '"]'); };
+  var h = C.h, vacia = C.vacia, oculta = C.oculta;
+  function msg(clase, m) { var e = $v(clase); e.textContent = m || ''; oculta(e, !m); }
+  var exito = function (m) { msg('exito', m); }, aviso = function (m) { msg('aviso', m); }, error = function (m) { msg('error', m); };
+  $v('bot').textContent = T(BOT_LLEGA_ES);
+
+  var SB = null;
+  var E = { d: null, dialogo: false };
+  var VISTA_MAX = 200;   // solo cuántas filas se dibujan de una lista pegada enorme; el límite del lote lo da la base (topes.lote.max)
+  var ESTADOS = { disponible: ['Disponible', 'ok'], taller: ['En taller', 'espera'], baja: ['De baja', 'mal'] };
+  var PROPIOS = {
+    modulo_apagado: T('El módulo de reservas de producto está apagado en esta instancia: no hay flota que editar. Esto NO quiere decir que esté vacía.'),
+    sin_permiso: T('Solo la administración puede ver y cambiar la flota y las tarifas. Si necesitas cambiarlas, pídelo a un administrador.')
+  };
+
+  /* Una entrada por RPC, con el nombre LITERAL: así erp/contrato_front.py ve cada llamada (extrae `.rpc('x')` y `lwDatos('x')`). La lectura va por lwDatos; las que escriben, por sb.rpc. */
+  var RPC = {
+    producto_flota_datos: function (a) { return window.lwDatos('producto_flota_datos', a); },
+    producto_unidades_alta_lote: function (a) { return SB.rpc('producto_unidades_alta_lote', a); },
+    producto_unidad_guarda: function (a) { return SB.rpc('producto_unidad_guarda', a); },
+    producto_tarifa_guarda: function (a) { return SB.rpc('producto_tarifa_guarda', a); },
+    producto_tarifa_borra: function (a) { return SB.rpc('producto_tarifa_borra', a); }
+  };
+  function llama(nombre, args) {
+    var p;
+    try {
+      if (RPC[nombre]) p = RPC[nombre](args || {});
+      else p = Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function ' + nombre } });
+    } catch (e) { return Promise.resolve({ data: null, error: e }); }
+    return Promise.resolve(p).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; },
+                                   function (e) { return { data: null, error: e }; });
+  }
+
+  /* ── lo que se lee ── */
+  function esObj(x) { return x != null && typeof x === 'object' && !Array.isArray(x); }
+  function num(x) { return x == null || x === '' || isNaN(Number(x)) ? null : Number(x); }
+  function formaOk(d) {
+    if (!esObj(d) || !Array.isArray(d.productos) || !Array.isArray(d.versiones) || !esObj(d.topes)) return false;
+    var t = d.topes;
+    if (!esObj(t.precio) || !esObj(t.precio.max_por_moneda) || !esObj(t.dias) || !esObj(t.lote) || !esObj(t.unidades_por_producto) || !esObj(t.motivo) || !esObj(t.identificador)) return false;
+    return d.productos.every(function (p) {
+      return esObj(p) && typeof p.id === 'string' && Array.isArray(p.unidades) && Array.isArray(p.tarifas) && (p.faltan == null || Array.isArray(p.faltan));
+    });
+  }
+  function rango(r) {
+    if (!r || (r.min == null && r.max == null)) return '';
+    return r.min != null && r.max != null ? T('Entre') + ' ' + r.min + ' ' + T('y') + ' ' + r.max : (r.min != null ? '≥ ' + r.min : '≤ ' + r.max);
+  }
+  function tope(c) { var t = E.d && E.d.topes && E.d.topes[c]; return esObj(t) ? { min: num(t.min), max: num(t.max) } : null; }
+  function fueraDe(n, r) { return !!r && ((r.min != null && n < r.min) || (r.max != null && n > r.max)); }
+  function prodPorId(id) { return E.d ? E.d.productos.filter(function (p) { return p.id === id; })[0] || null : null; }
+  function unidadPorId(id) {
+    if (!E.d) return null;
+    for (var i = 0; i < E.d.productos.length; i++) {
+      var u = E.d.productos[i].unidades.filter(function (x) { return x.id === id; })[0];
+      if (u) return { p: E.d.productos[i], u: u };
+    }
+    return null;
+  }
+  function tarifaPorId(id) {
+    if (!E.d) return null;
+    for (var i = 0; i < E.d.productos.length; i++) {
+      var t = E.d.productos[i].tarifas.filter(function (x) { return x.id === id; })[0];
+      if (t) return { p: E.d.productos[i], t: t };
+    }
+    return null;
+  }
+  /* Un precio se enseña TAL CUAL (hasta 4 decimales), sin redondear a la moneda: lo que se ve es lo que viaja. */
+  function numeroTal(n) { try { return new Intl.NumberFormat(C.locale(), { maximumFractionDigits: 4 }).format(Number(n)); } catch (e) { /* MUDO A PROPOSITO: sin Intl se enseña el número sin formato */ return String(n); } }
+  function precioTal(n, m) { return numeroTal(n) + (m ? ' ' + m : ''); }
+  function unDia(n) { return n + ' ' + T(Number(n) === 1 ? 'día' : 'días'); }
+
+  /* ── lo que se pinta ── */
+  function pintaProducto(p) {
+    var faltan = Array.isArray(p.faltan) ? p.faltan : [];
+    var cab = h('div', { class: 'fl-cab' }, [h('h2', { class: 'font-headline-sm text-headline-sm text-deep-lagoon tracking-tight', text: (p.nombre || '—') + (p.numero ? ' · ' + p.numero : '') }),
+      C.chip(p.activo === false ? T('Inactivo') : T('Activo'), p.activo === false ? 'neutro' : 'ok'),
+      C.chip(p.listo_para_reservar === true ? T('Listo para reservar') : T('No se puede reservar todavía'), p.listo_para_reservar === true ? 'ok' : 'espera')]);
+    var caja = h('section', { class: 'bg-surface-container-lowest rounded-xl p-8 shadow-sm fl-prod', 'data-producto-id': p.id, 'data-listo': p.listo_para_reservar === true ? '1' : '0' }, [cab]);
+    if (p.listo_para_reservar !== true) {
+      var ul = h('ul', { class: 'fl-lista axw-aviso', 'data-fl': 'faltan' });
+      faltan.forEach(function (x) {
+        var txt = x === 'tarifas' ? T('Sin tarifas: no se podrá cotizar.') : (x === 'unidades' ? T('Faltan motos disponibles: no se podrá cotizar.') : T('Falta algo más: no se podrá cotizar') + ': ' + String(x));
+        ul.appendChild(h('li', { 'data-faltante': String(x), text: txt }));
+      });
+      if (!faltan.length) ul.appendChild(h('li', { 'data-faltante': '', text: T('La base no dice qué falta, pero no está listo para reservar.') }));
+      caja.appendChild(ul);
+    }
+    // motos
+    var motos = h('div', { class: 'fl-bloque', 'data-fl': 'motos' }, [h('div', { class: 'fl-barra' }, [h('h3', { text: T('Motos') + ' (' + p.unidades.length + ')' }),
+      C.boton(T('Añadir motos'), 'fl-lote-abrir', { 'data-producto-id': p.id })])]);
+    if (!p.unidades.length) motos.appendChild(h('p', { class: 'fl-ayuda', text: T('Este producto no tiene motos.') }));
+    p.unidades.forEach(function (u) {
+      var e = ESTADOS[u.estado] || [String(u.estado == null ? '—' : u.estado), 'neutro'];
+      motos.appendChild(h('div', { class: 'fl-fila', 'data-unidad-id': u.id }, [h('span', { class: 'fl-dato fl-grande', text: u.identificador }),
+        C.chip(ESTADOS[u.estado] ? T(e[0]) : e[0], e[1]), h('span', { class: 'fl-dato fl-notas', text: u.notas ? String(u.notas) : T('Sin notas') }),
+        h('div', { class: 'axw-acciones' }, [C.boton(T('Editar'), 'fl-moto-editar', { 'data-unidad-id': u.id })])]));
+    });
+    caja.appendChild(motos);
+    // tarifas
+    var tar = h('div', { class: 'fl-bloque', 'data-fl': 'tarifas' }, [h('div', { class: 'fl-barra' }, [h('h3', { text: T('Tarifas por días') }),
+      C.boton(T('Añadir o cambiar un tramo'), 'fl-tarifa-abrir', { 'data-producto-id': p.id })])]);
+    if (!p.tarifas.length) tar.appendChild(h('p', { class: 'fl-ayuda', text: T('Este producto no tiene tarifas.') }));
+    p.tarifas.slice().sort(function (a, b) { return Number(a.dias) - Number(b.dias); }).forEach(function (t) {
+      tar.appendChild(h('div', { class: 'fl-fila', 'data-tarifa-id': t.id, 'data-dias': String(t.dias) }, [h('span', { class: 'fl-dato fl-grande', text: unDia(t.dias) }),
+        h('span', { class: 'fl-dato', text: precioTal(t.precio, t.moneda) }), h('span', { class: 'fl-dato fl-notas', text: t.etiqueta ? String(t.etiqueta) : '' }),
+        h('div', { class: 'axw-acciones' }, [C.boton(T('Cambiar'), 'fl-tarifa-cambiar', { 'data-tarifa-id': t.id }), C.boton(T('Borrar'), 'fl-tarifa-borrar', { 'data-tarifa-id': t.id, 'data-peligro': '1' })])]));
+    });
+    caja.appendChild(tar);
+    return caja;
+  }
+  function pinta(d) {
+    E.d = d;
+    var lista = vacia($v('lista'));
+    d.productos.forEach(function (p) { lista.appendChild(pintaProducto(p)); });
+    oculta($v('recortado'), d.recortado !== true);
+    var est = $v('estado');
+    if (!d.productos.length) {
+      vacia(est); est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'vacio');
+      est.appendChild(h('span', { text: T('Aún no hay productos: créalos en Productos.') + ' ' }));
+      est.appendChild(h('a', { href: '/intranet/v4/productos/', text: T('Ir a Productos') }));
+    } else { est.textContent = ''; est.className = 'axw-vacio axw-oculto'; est.setAttribute('data-tipo', 'listo'); }
+    var t = $v('versiones'), v = d.versiones;
+    oculta($v('versiones-vacio'), v.length > 0);
+    if (!v.length) vacia(t);
+    else C.tabla(t, [['Cuándo'], ['Quién'], ['Tabla'], ['Qué'], ['Motivo']], v.map(function (x) {
+      return h('tr', null, [C.celda(C.fechaHora(x && x.cuando), 'axw-nw'), C.celda(x && x.quien), C.celda(x && x.tabla), C.celda(x && x.que), C.celda(x && x.motivo)]);
+    }));
+    oculta($v('contenido'), false);
+  }
+
+  /* ── lectura: «no se ha podido mirar» NO es «no hay productos» ── */
+  var PETICION = 0;
+  function carga() {
+    var yo = ++PETICION, est = $v('estado');
+    if (!E.d) { est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'cargando'); est.textContent = T('Cargando…'); }
+    return llama('producto_flota_datos', {}).then(function (r) {
+      if (yo !== PETICION) return { ok: false, tarde: true };   // llegó tarde: ya se pidió otra lectura y esa manda
+      if (r.error || !formaOk(r.data)) {
+        var c = r.error ? C.clasifica(r.error) : null;
+        var t = r.error ? C.mensaje(r.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
+        if (E.d) { error(T('No se ha podido mirar') + ': ' + t); return { ok: false }; }   // ya había lista en pantalla: no se le quita
+        est.className = c && c.tipo === 'sin_permiso' ? 'axw-aviso' : 'axw-error';
+        est.setAttribute('data-tipo', c && c.tipo === 'sin_permiso' ? 'sin_permiso' : 'error');
+        est.textContent = c && c.tipo === 'sin_permiso' ? t : T('No se ha podido mirar') + ': ' + t;
+        oculta($v('contenido'), true);
+        return { ok: false };
+      }
+      pinta(r.data);
+      return { ok: true };
+    });
+  }
+
+  /* ── ayudas de las ventanas de edición ── */
+  function campoMotivo() {
+    var tm = tope('motivo');
+    var inp = h('input', { type: 'text', id: 'fl-f-motivo', 'data-campo': 'motivo', autocomplete: 'off', maxlength: tm && tm.max != null ? String(tm.max) : null, minlength: tm && tm.min != null ? String(tm.min) : null });
+    return h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-motivo', text: T('Motivo del cambio (obligatorio)') }), inp]);
+  }
+  function validaMotivo(v) {
+    var tm = tope('motivo'), m = String(v).replace(/^\s+|\s+$/g, '');
+    if (!m || fueraDe(m.length, tm) || /[\u0000-\u001f\u007f]/.test(m)) return { e: T('El motivo es obligatorio') + ' (' + (tm && rango(tm) ? rango(tm) + ' ' + T('caracteres') + ', ' : '') + T('en una sola línea') + ').' };
+    return { v: m };
+  }
+  function marca(el, mal) { if (el) { if (mal) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); } }
+  /* Matrícula como la guarda la base: btrim + espacios internos colapsados (\s+ → uno) + MAYÚSCULAS. Una sola función para la vista previa del lote y la edición de una moto. */
+  function normaMat(v) { return String(v == null ? '' : v).replace(/^\s+|\s+$/g, '').replace(/\s+/g, ' ').toUpperCase(); }
+  /* Abre una ventana: un solo diálogo a la vez (doble clic en «Añadir…» no abre dos) y el indicador se baja siempre al cerrarla (botón, ESC o tras guardar). */
+  function abre(titulo, nodos, botones) {
+    if (E.dialogo) return null;
+    var d = C.dialogo(titulo, nodos, botones);   // síncrono: nadie puede abrir otra ventana entre esta línea y la siguiente
+    E.dialogo = d;
+    var cierra = d.cierra;
+    // Solo baja el indicador si ESTA ventana sigue siendo la actual: si se cerró con ESC mientras guardaba y se abrió otra, al terminar el guardado no se la quita.
+    d.cierra = function () { if (E.dialogo === d) E.dialogo = false; cierra(); };
+    d.cuerpo.classList.add('fl-modal');
+    var rec = d.botones['fl-modal-recargar'];
+    if (rec) oculta(rec, true);
+    return d;
+  }
+  /* El fallo de una escritura, dicho SIN cambiar lo que la persona escribió. Conflicto de versión (40001 / flota_cambio) → botón de recargar conservando lo tecleado. */
+  function fallo(err, d, prefijo) {
+    var c = C.clasifica(err);
+    if (c.hint === 'flota_cambio' || (err && err.code === '40001')) {
+      d.error(T('Otra persona lo cambió mientras tú editabas. Recarga para ver los valores nuevos: lo que has escrito se conserva.'));
+      var rec = d.botones['fl-modal-recargar']; if (rec) oculta(rec, false);
+      d.conflicto = true;
+      return;
+    }
+    if (c.tipo === 'sin_permiso') { d.error(T('Solo la administración puede cambiar la flota y las tarifas.')); return; }
+    d.error((prefijo ? prefijo + ' ' : '') + C.mensaje(err, false, PROPIOS));
+  }
+  /* Escribe y RELEE de la base (nada de estado optimista): la lista que se ve es la que la base devuelve. */
+  function envia(nombre, args, btn, d, prefijo) {
+    if (!C.ocupa(btn)) return Promise.resolve();
+    d.error('');
+    return llama(nombre, args).then(function (r) {
+      if (r.error) { C.libera(btn); fallo(r.error, d, prefijo); return; }
+      return carga().then(function (l) {
+        C.libera(btn); d.cierra();
+        if (l.ok) { error(''); aviso(''); exito(T('Guardado.')); } else { exito(''); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); }
+      }, function () { C.libera(btn); d.cierra(); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); });
+    }, function (e) { C.libera(btn); fallo(e, d, prefijo); });
+  }
+  function botonesBase(aprueba) {
+    return [{ texto: T('Confirmar y guardar'), accion: 'fl-modal-confirmar', primario: true, alclic: function (bt, d) { aprueba(bt, d); } },
+            { texto: T('Recargar conservando lo que escribí'), accion: 'fl-modal-recargar', alclic: function (bt, d) { d.alRecargar(bt, d); } },
+            { texto: T('Cancelar'), accion: 'fl-modal-cerrar', cierra: true }];
+  }
+  function recargaConserva(d, refresca) {
+    // vuelve a leer, deja la ventana abierta con lo tecleado y toma la versión NUEVA de la fila; si la fila ya no existe lo dice
+    d.alRecargar = function (bt) {
+      if (!C.ocupa(bt)) return;
+      carga().then(function (l) {
+        C.libera(bt);
+        if (!l.ok) { d.error(T('No se ha podido mirar')); return; }
+        var existe = refresca();   // false = la fila ya no existe · array = lo que cambió la otra persona (campos nuevos ya volcados a los que la persona NO tocó)
+        if (existe === false) { d.error(T('Esa fila ya no existe: otra persona la borró. Cierra esta ventana.')); var c = d.botones['fl-modal-confirmar']; if (c) c.disabled = true; oculta(d.botones['fl-modal-recargar'], true); return; }
+        d.conflicto = false; oculta(d.botones['fl-modal-recargar'], true);
+        var cambios = Array.isArray(existe) ? existe : [];
+        var nota = d.cuerpo.querySelector('[data-fl="cambios-ajenos"]');
+        if (!nota) { nota = h('p', { class: 'axw-aviso', 'data-fl': 'cambios-ajenos', role: 'status' }); d.cuerpo.insertBefore(nota, d.errorCaja); }
+        nota.textContent = cambios.length ? T('Lo que cambió la otra persona') + ': ' + cambios.map(function (c) { return c.etiqueta + ' → ' + c.valor + (c.conservado ? ' (' + T('se conserva lo que escribiste') + ')' : ''); }).join(' · ') : '';
+        oculta(nota, !cambios.length);
+        d.error(''); aviso(T('Recargado. Se conserva lo que escribiste: revisa los valores y vuelve a confirmar.'));
+      }, function () { C.libera(bt); });
+    };
+  }
+
+  /* ── editar una moto ── */
+  function abreMoto(id) {
+    var s = unidadPorId(id); if (!s) return;
+    var ctx = { esperado: s.u.actualizado_en };
+    var ti = tope('identificador');
+    var idEl = h('input', { type: 'text', id: 'fl-f-identificador', 'data-campo': 'identificador', autocomplete: 'off', maxlength: ti && ti.max != null ? String(ti.max) : null });
+    var selEl = h('select', { id: 'fl-f-estado', 'data-campo': 'estado' }, Object.keys(ESTADOS).map(function (k) { return h('option', { value: k, text: T(ESTADOS[k][0]) }); }));
+    var notasEl = h('input', { type: 'text', id: 'fl-f-notas', 'data-campo': 'notas', autocomplete: 'off' });
+    function deFila(u) { return { identificador: u.identificador == null ? '' : String(u.identificador), estado: ESTADOS[u.estado] ? u.estado : 'disponible', notas: u.notas == null ? '' : String(u.notas) }; }
+    var vis = deFila(s.u), tocado = {};   // vis = lo último que se vio de la base · tocado = campos que la persona ha escrito
+    idEl.value = vis.identificador; selEl.value = vis.estado; notasEl.value = vis.notas;
+    [idEl, selEl, notasEl].forEach(function (el) { ['input', 'change'].forEach(function (ev) { el.addEventListener(ev, function () { tocado[el.getAttribute('data-campo')] = true; }); }); });
+    var motEl = campoMotivo();
+    var form = h('div', { class: 'fl-form' }, [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-identificador', text: T('Matrícula o identificador') }), idEl]),
+      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-estado', text: T('Estado') }), selEl]),
+      h('div', { class: 'axw-campo fl-ancho' }, [h('label', { for: 'fl-f-notas', text: T('Notas') }), notasEl]), h('div', { class: 'fl-ancho' }, [motEl])]);
+    var d = abre(T('Editar moto'), [h('p', { class: 'fl-ayuda', text: s.p.nombre || '' }), form,
+      h('p', { class: 'fl-ayuda', text: T('Si la moto tiene reservas vivas, la base no dejará pasarla a taller ni de baja y lo dirá.') }), h('p', { class: 'axw-nota', text: T('Esto cambia qué motos puede reservar el bot.') })],
+      botonesBase(function (bt, dd) {
+        var idv = normaMat(idEl.value), ti2 = tope('identificador');
+        if (!idv) { marca(idEl, true); dd.error(T('Escribe el identificador (la matrícula).')); return; }
+        if (fueraDe(idv.length, ti2)) { marca(idEl, true); dd.error(T('Matrícula o identificador') + ': ' + rango(ti2) + ' ' + T('caracteres')); return; }
+        marca(idEl, false);
+        var vivo = unidadPorId(id); if (!vivo) { dd.error(T('Esa fila ya no existe: otra persona la borró. Cierra esta ventana.')); return; }
+        var notas = notasEl.value.replace(/^\s+|\s+$/g, '');
+        if (idv === String(vivo.u.identificador) && selEl.value === vivo.u.estado && notas === String(vivo.u.notas == null ? '' : vivo.u.notas)) { dd.error(T('No hay cambios que guardar.')); return; }
+        var m = validaMotivo(motEl.querySelector('input').value);
+        if (m.e) { marca(motEl.querySelector('input'), true); dd.error(m.e); return; }
+        marca(motEl.querySelector('input'), false);
+        envia('producto_unidad_guarda', { p_id: id, p_datos: { identificador: idv, estado: selEl.value, notas: notas }, p_motivo: m.v, p_esperado: ctx.esperado }, bt, dd);
+      }));
+    if (!d) return;
+    recargaConserva(d, function () {
+      var f = unidadPorId(id); if (!f) return false;
+      ctx.esperado = f.u.actualizado_en;
+      // Lo que la otra persona cambió y la persona NO tocó se vuelca al formulario (si no, reconfirmar pisaría ese cambio); lo que sí escribió se conserva y se avisa del valor nuevo.
+      var nuevo = deFila(f.u), els = { identificador: idEl, estado: selEl, notas: notasEl }, et = { identificador: T('Matrícula o identificador'), estado: T('Estado'), notas: T('Notas') }, cambios = [];
+      Object.keys(nuevo).forEach(function (k) {
+        if (nuevo[k] === vis[k]) return;
+        if (!tocado[k]) els[k].value = nuevo[k];
+        cambios.push({ etiqueta: et[k], valor: k === 'estado' ? T(ESTADOS[nuevo.estado][0]) : (nuevo[k] === '' ? '—' : nuevo[k]), conservado: !!tocado[k] });
+        vis[k] = nuevo[k];
+      });
+      return cambios;
+    });
+  }
+
+  /* ── añadir motos: pegar una lista ── */
+  function lineasDe(texto) {
+    var crudas = String(texto).split(/\r?\n/), vistas = {}, filas = [], vacias = 0;
+    var todas = {};
+    (E.d ? E.d.productos : []).forEach(function (p) { p.unidades.forEach(function (u) { todas[normaMat(u.identificador)] = 1; }); });
+    var ti = tope('identificador');
+    crudas.forEach(function (c) {
+      var v = normaMat(c);
+      if (!v) { vacias++; return; }
+      var estado = 'ok';
+      if (ti && ti.min != null && v.length < ti.min) estado = 'corta';
+      else if (ti && ti.max != null && v.length > ti.max) estado = 'larga';
+      else if (vistas[v]) estado = 'repetida';
+      else if (todas[v]) estado = 'existe';
+      vistas[v] = true;
+      filas.push({ v: v, estado: estado });
+    });
+    return { filas: filas, vacias: vacias };
+  }
+  function abreLote(pid) {
+    var p = prodPorId(pid); if (!p) return;
+    var area = h('textarea', { id: 'fl-f-lista', 'data-campo': 'lista', rows: '7', autocomplete: 'off', spellcheck: 'false' });
+    var prev = h('div', { 'data-fl': 'previa' }), resumen = h('p', { class: 'fl-ayuda', 'data-fl': 'previa-resumen' });
+    var motEl = campoMotivo();
+    var lectura = { ok: false };
+    var dedupBtn = C.boton(T('Quitar repetidas'), 'fl-modal-dedup');
+    function analiza(dd) {
+      var L = lineasDe(area.value), cuenta = { ok: 0, repetida: 0, existe: 0, corta: 0, larga: 0 };
+      L.filas.forEach(function (f) { cuenta[f.estado]++; });
+      vacia(prev);
+      var caja = h('div', { class: 'fl-prev' });
+      L.filas.slice(0, VISTA_MAX).forEach(function (f) {
+        var etiqueta = { ok: null, repetida: T('Repetida'), existe: T('Ya existe'), corta: T('Demasiado corta'), larga: T('Demasiado larga') }[f.estado];
+        caja.appendChild(h('div', { 'data-fila': f.estado }, [h('span', { text: f.v })].concat(etiqueta ? [C.chip(etiqueta, 'mal')] : [])));
+      });
+      if (L.filas.length > VISTA_MAX) caja.appendChild(h('div', null, [h('span', { text: T('Y') + ' ' + (L.filas.length - VISTA_MAX) + ' ' + T('más') })]));
+      if (L.filas.length) prev.appendChild(caja);
+      var tl = tope('lote'), tu = tope('unidades_por_producto'), problemas = [];
+      var nuevas = cuenta.ok;
+      if (!L.filas.length) problemas.push(T('No hay ninguna matrícula en la lista.'));
+      if (tl && tl.max != null && L.filas.length > tl.max) problemas.push(T('Hay demasiadas líneas para un solo lote') + ': ' + T('máximo') + ' ' + tl.max + '.');
+      if (cuenta.repetida || cuenta.existe || cuenta.corta || cuenta.larga) problemas.push(T('Quita las repetidas y las que ya existen antes de confirmar.'));
+      if (tu && tu.max != null && p.unidades.length + nuevas > tu.max) problemas.push(T('Con estas motos el producto pasaría del máximo de motos permitido') + ': ' + tu.max + '.');
+      resumen.textContent = T('Vista previa') + ': ' + nuevas + ' ' + T('para añadir') + ' · ' + L.vacias + ' ' + T('líneas vacías ignoradas') + ' · ' + cuenta.repetida + ' ' + T('repetidas en la lista') + ' · ' + cuenta.existe + ' ' + T('ya existen');
+      lectura = { ok: problemas.length === 0, problemas: problemas, valores: L.filas.map(function (f) { return f.v; }), repetidas: cuenta.repetida };
+      if (dedupBtn) dedupBtn.disabled = cuenta.repetida === 0;
+      return lectura;
+    }
+    var d = abre(T('Añadir motos a') + ' ' + (p.nombre || '—'), [h('p', { class: 'fl-ayuda', text: T('Pega la lista de matrículas, una por línea. Se quitan los espacios de los extremos, los espacios repetidos se juntan en uno y se pasa a mayúsculas, como hace la base.') }),
+      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-lista', text: T('Matrículas (una por línea)') }), area]), resumen, prev,
+      h('div', { class: 'axw-acciones' }, [dedupBtn]), motEl,
+      h('p', { class: 'fl-ayuda', text: T('Las motos se añaden todas o ninguna: si una falla, no se añade ninguna.') }), h('p', { class: 'axw-nota', text: T('Esto cambia qué motos puede reservar el bot.') })],
+      botonesBase(function (bt, dd) {
+        var a = analiza(dd);
+        if (!a.ok) { dd.error(a.problemas.join('\n')); return; }
+        var m = validaMotivo(motEl.querySelector('input').value);
+        if (m.e) { marca(motEl.querySelector('input'), true); dd.error(m.e); return; }
+        marca(motEl.querySelector('input'), false);
+        envia('producto_unidades_alta_lote', { p_producto_id: pid, p_identificadores: a.valores, p_motivo: m.v }, bt, dd, T('No se ha añadido ninguna moto: el lote es todo o nada.'));
+      }));
+    if (!d) return;
+    dedupBtn.disabled = true;   // se habilita solo cuando hay repetidas; lo maneja este addEventListener, sin depender de su rótulo
+    dedupBtn.addEventListener('click', function () {
+      var L = lineasDe(area.value), vistos = {}, fuera = [];
+      L.filas.forEach(function (f) { if (!vistos[f.v]) { vistos[f.v] = true; fuera.push(f.v); } });
+      area.value = fuera.join('\n'); analiza(d);
+    });
+    area.addEventListener('input', function () { d.error(''); analiza(d); });
+    analiza(d);
+    recargaConserva(d, function () { if (!prodPorId(pid)) return false; p = prodPorId(pid); analiza(d); return true; });
+  }
+
+  /* ── tarifas: añadir o cambiar un tramo / borrarlo ── */
+  function monedasDe(p) { var s = {}; p.tarifas.forEach(function (t) { s[String(t.moneda)] = 1; }); return Object.keys(s); }
+  function abreTarifa(pid, tarifaId) {
+    var p = prodPorId(pid); if (!p) return;
+    var previa = tarifaId ? tarifaPorId(tarifaId) : null;
+    var ctx = { vistos: {} };
+    function instantanea() { ctx.vistos = {}; (prodPorId(pid) || { tarifas: [] }).tarifas.forEach(function (t) { ctx.vistos[String(t.dias)] = { id: t.id, esperado: t.actualizado_en, moneda: t.moneda, precio: t.precio }; }); }
+    instantanea();
+    var monedas = Object.keys((E.d.topes.precio.max_por_moneda) || {});
+    var diasEl = h('input', { type: 'text', id: 'fl-f-dias', 'data-campo': 'dias', inputmode: 'numeric', autocomplete: 'off' });
+    var precioEl = h('input', { type: 'text', id: 'fl-f-precio', 'data-campo': 'precio', inputmode: 'decimal', autocomplete: 'off' });
+    var monEl = h('select', { id: 'fl-f-moneda', 'data-campo': 'moneda' }, monedas.map(function (m) { return h('option', { value: m, text: m }); }));
+    var etqEl = h('input', { type: 'text', id: 'fl-f-etiqueta', 'data-campo': 'etiqueta', autocomplete: 'off' });
+    var modo = h('p', { class: 'fl-ayuda', 'data-fl': 'modo' }), eco = h('div', { class: 'fl-eco', 'data-fl': 'eco', 'data-tipo': 'neutro' }), notaMon = h('p', { class: 'fl-ayuda', 'data-fl': 'nota-moneda' });
+    var existentes = monedasDe(p);
+    existentes.forEach(function (m) { if (monedas.indexOf(m) === -1) monEl.appendChild(h('option', { value: m, text: m })); });   // una moneda ya usada que la base ya no admite sigue visible
+    if (previa) { diasEl.value = String(previa.t.dias); diasEl.readOnly = true; precioEl.value = previa.t.precio == null ? '' : String(previa.t.precio); etqEl.value = previa.t.etiqueta == null ? '' : String(previa.t.etiqueta); monEl.value = String(previa.t.moneda); }
+    else if (existentes.length === 1) monEl.value = existentes[0];
+    var visT = previa ? { precio: previa.t.precio == null ? '' : String(previa.t.precio), moneda: String(previa.t.moneda), etiqueta: previa.t.etiqueta == null ? '' : String(previa.t.etiqueta) } : null, tocadoT = {};
+    if (previa) [precioEl, monEl, etqEl].forEach(function (el) { ['input', 'change'].forEach(function (ev) { el.addEventListener(ev, function () { tocadoT[el.getAttribute('data-campo')] = true; }); }); });
+    var motEl = campoMotivo();
+    var form = h('div', { class: 'fl-form' }, [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-dias', text: T('Días del tramo') }), diasEl]),
+      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-precio', text: T('Precio') }), precioEl]),
+      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-moneda', text: T('Moneda') }), monEl]),
+      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-etiqueta', text: T('Etiqueta (opcional)') }), etqEl]), h('div', { class: 'fl-ancho' }, [notaMon]), h('div', { class: 'fl-ancho' }, [motEl])]);
+    function lee() {
+      var er = {}, v = {};
+      var dtxt = diasEl.value.replace(/\s+/g, ''), td = tope('dias');
+      if (!/^\d+$/.test(dtxt)) er.dias = T('Los días son un número entero.');
+      else { v.dias = Number(dtxt); if (fueraDe(v.dias, td)) er.dias = T('Días del tramo') + ': ' + rango(td) + '.'; }
+      v.moneda = monEl.value;
+      var im = C.importe(precioEl.value, 4);
+      if (im.vacio) er.precio = T('Escribe el precio.');
+      else if (im.e === 'ambiguo') er.precio = T('Ese precio es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 600000.');
+      else if (im.e) er.precio = T('El precio no se entiende: escribe solo cifras y, si hace falta, un punto o una coma para los decimales, sin separador de miles.');
+      else {
+        v.precio = im.v;
+        var mp = E.d.topes.precio, maxMon = mp.max_por_moneda ? num(mp.max_por_moneda[v.moneda]) : null;
+        if (mp.max_por_moneda && !(v.moneda in mp.max_por_moneda)) er.moneda = T('Moneda no admitida');
+        else if (fueraDe(v.precio, { min: num(mp.min), max: maxMon })) er.precio = T('Fuera de rango') + ': ' + rango({ min: num(mp.min), max: maxMon }) + ' ' + v.moneda + '.';
+      }
+      v.etiqueta = etqEl.value.replace(/^\s+|\s+$/g, '');
+      return { v: v, er: er };
+    }
+    function refresca() {
+      var r = lee(), vv = r.v, hay = Object.keys(r.er).length > 0;
+      var p2 = prodPorId(pid) || p;
+      // moneda: con 2 o más tramos no se cambia (hay que borrar y recrear); con 1, solo el propio tramo se puede pasar a otra moneda
+      var ex = monedasDe(p2), n = p2.tarifas.length, existe = vv.dias != null && ctx.vistos[String(vv.dias)];
+      var bloqueada = n >= 2 && ex.length === 1 || (n === 1 && ex.length === 1 && !existe);
+      if (bloqueada) { monEl.value = ex[0]; }
+      monEl.disabled = bloqueada;
+      notaMon.textContent = ex.length > 1 ? T('Este producto mezcla monedas en sus tramos. Déjalos todos en la misma moneda.')
+        : (bloqueada ? (n >= 2 ? T('La moneda no se puede cambiar con 2 o más tramos: para cambiarla borra los tramos y créalos de nuevo en la otra moneda.') : T('Los demás tramos del producto están en esta moneda: un tramo nuevo tiene que usar la misma.')) : '');
+      modo.textContent = existe ? T('Este tramo ya existe: lo que guardes cambia su precio.') : T('Este tramo es nuevo.');
+      if (hay) { eco.setAttribute('data-tipo', 'mal'); eco.textContent = T('No se puede enviar todavía') + ': ' + Object.keys(r.er).map(function (k) { return r.er[k]; }).join(' '); }
+      else { eco.setAttribute('data-tipo', 'neutro'); eco.textContent = T('Se enviará') + ': ' + unDia(vv.dias) + ' · ' + precioTal(vv.precio, vv.moneda) + (vv.etiqueta ? ' · ' + vv.etiqueta : ''); }
+      marca(diasEl, !!r.er.dias); marca(precioEl, !!r.er.precio); marca(monEl, !!r.er.moneda);
+      return r;
+    }
+    var d = abre(T('Tramo de tarifa') + ' · ' + (p.nombre || '—'), [modo, form, eco, h('p', { class: 'axw-nota', text: T('Esto cambia lo que cotiza y cobra el bot desde ya.') })],
+      botonesBase(function (bt, dd) {
+        var r = refresca();
+        if (Object.keys(r.er).length) { dd.error(Object.keys(r.er).map(function (k) { return r.er[k]; }).join('\n')); return; }
+        var m = validaMotivo(motEl.querySelector('input').value);
+        if (m.e) { marca(motEl.querySelector('input'), true); dd.error(m.e); return; }
+        marca(motEl.querySelector('input'), false);
+        var visto = ctx.vistos[String(r.v.dias)];
+        envia('producto_tarifa_guarda', { p_producto_id: pid, p_dias: r.v.dias, p_precio: r.v.precio, p_moneda: r.v.moneda, p_etiqueta: r.v.etiqueta || null, p_motivo: m.v, p_esperado: visto ? visto.esperado : null }, bt, dd);
+      }));
+    if (!d) return;
+    ['input', 'change'].forEach(function (ev) { d.cuerpo.addEventListener(ev, function (e) { if (e.target !== motEl.querySelector('input')) { d.error(''); refresca(); } }); });
+    refresca();
+    recargaConserva(d, function () {
+      if (!prodPorId(pid)) return false;
+      p = prodPorId(pid); instantanea();
+      var cambios = [], f = previa ? tarifaPorId(previa.t.id) : null;
+      if (f) {   // mismo criterio que la moto: lo no tocado se vuelca, lo tecleado se conserva y se avisa del valor nuevo
+        var nuevo = { precio: f.t.precio == null ? '' : String(f.t.precio), moneda: String(f.t.moneda), etiqueta: f.t.etiqueta == null ? '' : String(f.t.etiqueta) }, els = { precio: precioEl, moneda: monEl, etiqueta: etqEl };
+        Object.keys(nuevo).forEach(function (k) {
+          if (nuevo[k] === visT[k]) return;
+          if (!tocadoT[k]) els[k].value = nuevo[k];
+          cambios.push({ etiqueta: T(k === 'precio' ? 'Precio' : (k === 'moneda' ? 'Moneda' : 'Etiqueta (opcional)')), valor: k === 'precio' ? precioTal(f.t.precio, f.t.moneda) : (nuevo[k] === '' ? '—' : nuevo[k]), conservado: !!tocadoT[k] });
+          visT[k] = nuevo[k];
+        });
+      }
+      refresca(); return cambios;
+    });
+  }
+  function abreBorra(tid) {
+    var s = tarifaPorId(tid); if (!s) return;
+    var ctx = { esperado: s.t.actualizado_en };
+    var ultimo = s.p.tarifas.length === 1;
+    var motEl = campoMotivo();
+    var nodos = [h('p', { text: T('Vas a borrar el tramo de') + ' ' + unDia(s.t.dias) + ' · ' + precioTal(s.t.precio, s.t.moneda) + (s.t.etiqueta ? ' · ' + s.t.etiqueta : '') }), h('p', { class: 'fl-ayuda', text: s.p.nombre || '' })];
+    if (ultimo) nodos.push(h('p', { class: 'axw-error', 'data-fl': 'aviso-ultimo', text: T('Es el último tramo: el producto deja de cotizarse y el bot no podrá dar precio hasta que crees otro.') }));
+    nodos.push(motEl, h('p', { class: 'axw-nota', text: T('Esto cambia lo que cotiza y cobra el bot desde ya.') }));
+    var b = botonesBase(function (bt, dd) {
+      var m = validaMotivo(motEl.querySelector('input').value);
+      if (m.e) { marca(motEl.querySelector('input'), true); dd.error(m.e); return; }
+      marca(motEl.querySelector('input'), false);
+      envia('producto_tarifa_borra', { p_id: tid, p_motivo: m.v, p_esperado: ctx.esperado }, bt, dd);
+    });
+    b[0].texto = T('Borrar este tramo'); b[0].peligro = true; b[0].primario = false;
+    var d = abre(T('Borrar tramo'), nodos, b);
+    if (!d) return;
+    recargaConserva(d, function () { var f = tarifaPorId(tid); if (!f) return false; ctx.esperado = f.t.actualizado_en; return true; });
+  }
+
+  function alClic(ev) {
+    var el = ev.target.closest ? ev.target.closest('[data-accion]') : null;
+    if (!el || !raiz.contains(el)) return;
+    var a = el.getAttribute('data-accion');
+    if (a.indexOf('fl-modal') === 0) return;   // los botones de las ventanas llevan su propio manejador
+    error(''); exito(''); aviso('');
+    if (a === 'fl-actualizar') { if (C.ocupa(el)) carga().then(function () { C.libera(el); }, function () { C.libera(el); }); }
+    else if (a === 'fl-moto-editar') abreMoto(el.getAttribute('data-unidad-id'));
+    else if (a === 'fl-lote-abrir') abreLote(el.getAttribute('data-producto-id'));
+    else if (a === 'fl-tarifa-abrir') abreTarifa(el.getAttribute('data-producto-id'), null);
+    else if (a === 'fl-tarifa-cambiar') { var s = tarifaPorId(el.getAttribute('data-tarifa-id')); if (s) abreTarifa(s.p.id, s.t.id); }
+    else if (a === 'fl-tarifa-borrar') abreBorra(el.getAttribute('data-tarifa-id'));
+  }
+  function init(aut) {
+    SB = aut.sb;
+    raiz.addEventListener('click', alClic);
+    carga();
+  }
+  function arranca() {
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { var est = $v('estado'); est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = T('Sin sesión: recarga la página o vuelve a entrar.'); return; }
+    window.LW_AUTH.then(init);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca);
+  else arranca();
+})();
+</script>

@@ -96,8 +96,8 @@ $HOME = [
 
   'who_eyebrow'=>'SHEET STD-01 // THE STUDIO','who_h2'=>'A two-person studio with an AI team behind it.',
   'who_1role'=>'Engineering &amp; architecture','who_1p'=>'Designs the systems.',
-  'who_2role'=>'Design &amp; content','who_2p'=>'Shapes the brand, the content and the voice. The design side of the studio.',
-  'who_3role'=>'CEO · artificial intelligence','who_3p'=>'Our AI, trained for all of this. The studio&rsquo;s CEO: it briefs, delegates to the {PALABRA} departments below and checks their work.',
+  'who_2role'=>'Design &amp; content','who_2p'=>'Leads the brand, the content and the visual design.',
+  'who_3role'=>'CEO · artificial intelligence','who_3p'=>'The studio&rsquo;s CEO is an AI: it takes each brief, hands it to the {PALABRA} departments below and checks their work.',
   'deps_t'=>'REPORTING TO PEPITO // {PALABRA_MAY} AI DEPARTMENTS',
   'deps_note'=>'Each department is an AI agent working to written rules, and reports to Pepito. Javier and Andrea direct the work and sign off on what ships.',
   /* Organigrama: sección → departamento [cara, nombre, qué hace, productos].
@@ -111,11 +111,11 @@ $HOME = [
   /* Procesos autónomos: no son departamentos (no pasan por organigrama_web.py), trabajan solos
      con su propio cron y avisan a Pepito. A mano aquí, en los dos idiomas. Desde el 26-sep-2026
      el producto se nombra: BodaEnlace (decisión del owner; antes no se nombraba hasta el lanzamiento). */
-  'auto_t'=>'AUTONOMOUS', 'auto_lema'=>'They run on their own, around the clock, and report to Pepito',
+  'auto_t'=>'AUTONOMOUS', 'auto_lema'=>'They run on their own schedule and report to Pepito',
   'auto'=>[
-    ['vigilante', 'The Watchman', 'guards ad spend &amp; leads', 'Live', ['Checks campaigns and conversations around the clock', 'Pauses what isn&rsquo;t bringing leads', 'Alerts the owner in real time']],
+    ['vigilante', 'The Watchman', 'guards ad spend &amp; leads', 'Live', ['Checks campaigns and conversations around the clock', 'Pauses what isn&rsquo;t bringing leads', 'Alerts the owner on Telegram']],
     ['investigador', 'The Investigator', 'finds sales partners', 'Pilot', ['Finds and ranks agencies that can resell a client&rsquo;s product', 'Prepares the outreach kit', 'A person makes the first contact']],
-    ['padrino', 'The Godfather', 'runs our own products, in test mode', 'Shadow mode', ['Answers the inbox', 'Finds customers', 'Writes the business plan and puts it to work', 'Runs <a href="https://bodaenlace.com">BodaEnlace</a>']],
+    ['padrino', 'The Godfather', 'pilot on our own product, in shadow mode', 'Shadow mode', ['Drafts replies to the inbox', 'Proposes how to find customers', 'Writes the business plan and proposes how to carry it out', 'Being tested on <a href="https://bodaenlace.com">BodaEnlace</a>']],
   ],
 
   'ct_eyebrow'=>'// TERMINAL PROTOCOL 01-INTAKE','ct_h2'=>'Initiate project intake.',
@@ -213,8 +213,8 @@ $HOME = [
 
   'who_eyebrow'=>'HOJA STD-01 // EL ESTUDIO','who_h2'=>'Un estudio de dos personas con un equipo de IA detrás.',
   'who_1role'=>'Ingeniería y arquitectura','who_1p'=>'Diseña los sistemas.',
-  'who_2role'=>'Diseño y contenido','who_2p'=>'Da forma a la marca, al contenido y a la voz. El lado design del estudio.',
-  'who_3role'=>'CEO · inteligencia artificial','who_3p'=>'Nuestra IA, entrenada para todo esto. El CEO del estudio: recibe el encargo, lo reparte entre los {PALABRA} departamentos de abajo y revisa lo que entregan.',
+  'who_2role'=>'Diseño y contenido','who_2p'=>'Lleva la marca, el contenido y el diseño visual.',
+  'who_3role'=>'CEO · inteligencia artificial','who_3p'=>'El CEO del estudio es una IA: recibe cada encargo, lo reparte entre los {PALABRA} departamentos de abajo y revisa lo que entregan.',
   'deps_t'=>'BAJO PEPITO // {PALABRA_MAY} DEPARTAMENTOS DE IA',
   'deps_note'=>'Cada departamento es un agente de IA que trabaja con reglas escritas y responde ante Pepito. Javier y Andrea dirigen el trabajo y dan el visto bueno a lo que sale.',
   'org_lead'=>'DIRECCIÓN','org_top'=>'A01',
@@ -222,11 +222,11 @@ $HOME = [
      ficha pública de cada departamentos/<d>/prompt.md (tools/organigrama_web.py).
      Aquí solo queda la frase de cada sección, que es copy. */
   'org_secs'=>['BUILD'=>'El software', 'GROW'=>'Marca y demanda', 'CONTROL'=>'Reglas, dinero y papeles'],
-  'auto_t'=>'AUTÓNOMOS', 'auto_lema'=>'Trabajan solos, a todas horas, y responden ante Pepito',
+  'auto_t'=>'AUTÓNOMOS', 'auto_lema'=>'Trabajan solos, con su propio horario, y responden ante Pepito',
   'auto'=>[
-    ['vigilante', 'El Vigilante', 'vigila la inversión y los leads', 'En producción', ['Revisa campañas y conversaciones a todas horas', 'Pausa lo que no trae contactos', 'Avisa al dueño en tiempo real']],
+    ['vigilante', 'El Vigilante', 'vigila la inversión y los leads', 'En producción', ['Revisa campañas y conversaciones a todas horas', 'Pausa lo que no trae contactos', 'Avisa al dueño por Telegram']],
     ['investigador', 'El Investigador', 'busca socios comerciales', 'Piloto', ['Encuentra y ordena agencias que pueden revender el producto de un cliente', 'Prepara el material de contacto', 'El primer contacto lo hace una persona']],
-    ['padrino', 'El Padrino', 'lleva nuestros productos propios, en modo de prueba', 'Modo sombra', ['Atiende el correo', 'Busca clientes', 'Escribe el plan de negocio y lo aplica', 'Dirige <a href="https://bodaenlace.com">BodaEnlace</a>']],
+    ['padrino', 'El Padrino', 'piloto sobre un producto nuestro, en modo sombra', 'Modo sombra', ['Prepara respuestas al correo', 'Propone cómo buscar clientes', 'Escribe el plan de negocio y propone cómo aplicarlo', 'Se prueba en <a href="https://bodaenlace.com">BodaEnlace</a>']],
   ],
 
   'ct_eyebrow'=>'// PROTOCOLO 01-ALTA','ct_h2'=>'Iniciar alta de proyecto.',

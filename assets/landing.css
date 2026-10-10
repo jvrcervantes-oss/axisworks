@@ -99,18 +99,22 @@
 .hist i.hot{background:var(--blue)}
 @keyframes hg{from{height:3px!important}}
 .veil{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.8);color:var(--mu);font-size:13px;text-align:center;padding:14px}
-.mlist{display:none}
 @media (max-width:1000px){.pans{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:719px){
-  .netw{display:none}.pans{grid-template-columns:minmax(0,1fr)}.tele{display:none}
-  .mlist{display:block;background:var(--solid);border-radius:20px;border:1px solid rgba(0,0,0,.05);overflow:hidden}
-  .mlist h4{margin:0;padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--mu);text-transform:uppercase;background:#FAFAFC;border-top:1px solid rgba(0,0,0,.05)}
-  .mlist h4:first-child{border-top:0}
-  .mlist button{width:100%;display:flex;align-items:center;gap:12px;background:none;border:0;border-top:1px solid rgba(0,0,0,.05);padding:14px 16px;text-align:left;font-size:16px;min-height:52px}
-  .mlist button i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--c);flex:none}
-  .mlist button i.on{background:var(--c)}
-  .mlist button s{margin-left:auto;text-decoration:none;color:var(--mu);font-size:12px}
-}
+@media (max-width:719px){.pans{grid-template-columns:minmax(0,1fr)}.tele{display:none}}
+/* Diagrama en maqueta COMPACTA (red.js, contenedor <720 px, 10-oct-2026): mismo diagrama, nodos más
+   pequeños y filas partidas; el tamaño de cada nodo lo pone red.js en línea. Antes, en móvil, el diagrama
+   se ocultaba y salía una lista. Tras tocar un nodo (.fijo, lo pone red.js), la ficha de información se
+   queda pegada bajo la cabecera para que se lea aunque el nodo esté abajo. */
+.netw.cmp{border-radius:20px}
+.netw.cmp .lay{left:12px;font-size:10px}
+.netw.cmp .nd{border-radius:12px;padding:8px 8px 0}
+.netw.cmp .nd b{font-size:11.5px;padding-right:7px}
+.netw.cmp .nd span{font-size:10.5px;margin-top:2px}
+.netw.cmp .nd .dt{right:8px;top:10px;width:7px;height:7px}
+.netw.cmp .nd .bar{display:none}
+.netw.cmp .grp{border-radius:16px}
+.netw.cmp .etypes span{font-size:11px;padding:2px 9px}
+#info.fijo{position:sticky;top:72px;z-index:5}
 @media (prefers-reduced-transparency:reduce){.glass,.nd{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}}
 @media (prefers-reduced-motion:reduce){*,*::before{animation:none!important;transition:none!important}button:active{transform:none}}
 
@@ -375,7 +379,6 @@ main{display:block;overflow-x:clip}
 /* ── «Actividad del estudio» (10-oct-2026): modo datos de red.js ─────────────────────────────
  * Estado por FORMA y por texto, no solo por color: punto lleno = registrado, aro vacío = sin registro,
  * caja discontinua = estructura (paso del camino, sin estado propio). Sin pulso: el dato lleva ≥2 h. */
-.netw.real .net,.netw.real .net canvas{width:1040px}
 .netw.real .nd.on3 .dt{animation:none}
 .netw.real .nd.off .dt{background:transparent;box-shadow:inset 0 0 0 1.5px var(--c)}
 .nd.str{background:rgba(255,255,255,.5);border-style:dashed;box-shadow:none;opacity:1}
@@ -394,7 +397,6 @@ main{display:block;overflow-x:clip}
 .ar .ds{display:flex;gap:6px;flex-wrap:wrap}
 .ar i.d{width:12px;height:12px;border-radius:50%;background:var(--pric);display:inline-block}
 .ar i.d.o{background:transparent;box-shadow:inset 0 0 0 1.5px var(--pric)}
-.mlist button i.str{border-style:dashed;opacity:.7}
 .l-act .kpi b.kt{font-size:18px;line-height:1.5}
 .l-actnotes{list-style:none;margin:20px 0 0;padding:0;display:grid;gap:12px;max-width:74ch}
 .l-actnotes li{font-size:15px;line-height:1.6;color:var(--mu);padding-left:16px;border-left:2px solid var(--hair)}
@@ -404,3 +406,15 @@ main{display:block;overflow-x:clip}
 .l-bar .l-more{font-weight:600;color:var(--pri);text-decoration:none;display:inline-flex;gap:6px;align-items:center;font-size:14px}
 .l-bar .l-more:hover{text-decoration:underline}
 .l-bar .l-more .ms{font-size:18px}
+
+/* Area tactil >=48px a <=720px (Calidad midio 42-46 px en produccion, 10-oct-2026). Solo movil: a escritorio no cambia nada. */
+@media (max-width:720px){
+  .l-burger{width:48px;height:48px}
+  .l-btn,.l-links .l-btn{min-height:48px;height:auto}
+  .l-form button[type=submit]{min-height:48px;height:auto}
+  .l-form .field input[type=text],.l-form .field input[type=email]{min-height:48px}
+  .l-more{min-height:48px}
+  .l-brand{min-height:48px}
+  .l-links a:not(.l-btn){min-height:48px;display:flex;align-items:center}
+  .l-links .l-lang a,.l-links .l-lang span{display:inline-flex;align-items:center;justify-content:center;min-width:48px;min-height:48px;padding-top:0;padding-bottom:0}
+}
