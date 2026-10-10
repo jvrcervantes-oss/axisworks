@@ -5,16 +5,16 @@
  * cambia la ficha. La frase de cada sección (BUILD…) es copy y vive en home_textos.php. */
 
 $ORGANIGRAMA = [
-  'n' => 16,
-  'palabra' => ['en' => 'sixteen', 'es' => 'dieciséis'],
+  'n' => 17,
+  'palabra' => ['en' => 'seventeen', 'es' => 'diecisiete'],
   'deps' => [
     ['seccion' => 'BUILD', 'cara' => 'dev', 'imagen' => true,
-      'en' => ['Development', 'writes the code', ['B01', 'B02', 'B05', 'B07']],
-      'es' => ['Desarrollo', 'escribe el código', ['B01', 'B02', 'B05', 'B07']],
+      'en' => ['Frontend', 'builds what visitors see', ['B01', 'B02', 'B05', 'B07']],
+      'es' => ['Frontend', 'construye lo que ve el visitante', ['B01', 'B02', 'B05', 'B07']],
     ],
     ['seccion' => 'BUILD', 'cara' => 'data', 'imagen' => true,
-      'en' => ['Data', 'integrations &amp; APIs', ['B06']],
-      'es' => ['Datos', 'integraciones y APIs', ['B06']],
+      'en' => ['Backend', 'servers, data &amp; integrations', ['B06']],
+      'es' => ['Backend', 'servidores, datos e integraciones', ['B06']],
     ],
     ['seccion' => 'BUILD', 'cara' => 'bots', 'imagen' => true,
       'en' => ['Bots', 'WhatsApp engine', ['B03', 'B04']],
@@ -55,6 +55,10 @@ $ORGANIGRAMA = [
     ['seccion' => 'CONTROL', 'cara' => 'security', 'imagen' => true,
       'en' => ['Security', 'audits &amp; secrets', ['Security audits', 'Secrets and incident response']],
       'es' => ['Seguridad', 'auditorías y secretos', ['Auditorías de seguridad', 'Secretos y respuesta a incidentes']],
+    ],
+    ['seccion' => 'CONTROL', 'cara' => 'quality', 'imagen' => false,
+      'en' => ['Quality', 'proves it works', ['Independent testing in production']],
+      'es' => ['Calidad', 'comprueba que funciona', ['Pruebas independientes en producción']],
     ],
     ['seccion' => 'CONTROL', 'cara' => 'legal', 'imagen' => true,
       'en' => ['Legal', 'contracts &amp; policies', ['Client contracts', 'Privacy, terms and cookies']],
