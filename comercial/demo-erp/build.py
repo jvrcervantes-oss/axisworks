@@ -2032,14 +2032,12 @@ def publicado_de_clon(nombre, despliegues=None):
     return leer
 
 
-def rastros_en(raiz, solo=None):
-    """Rastro de Lawang, de la demo o de una clave que no es publicable en `raiz` (o solo en las rutas relativas de `solo`)."""
+def rastros_en(raiz):
+    """Rastro de Lawang, de la demo o de una clave que no es publicable en `raiz`."""
     restos = []
     for dirpath, _d, fichs in os.walk(raiz):
         for f in fichs:
             p = os.path.join(dirpath, f)
-            if solo is not None and os.path.relpath(p, raiz).replace(os.sep, '/') not in solo:
-                continue
             if RASTRO.search(f):
                 restos.append('nombre de fichero: ' + rel(p))
             if not f.endswith(EXT_TEXTO):
@@ -2052,36 +2050,6 @@ def rastros_en(raiz, solo=None):
             for m in RASTRO.finditer(t):
                 restos.append('%s: …%s…' % (rel(p), m.group(0)))
     return restos
-
-
-# Lo que sale de --solo-ajustes-correo: la pantalla Ajustes construida (su cuerpo y su script), en la raíz limpia del build.
-SOLO_AJUSTES_CORREO = ('ajustes/index.html', 'assets/ajustes.js')
-
-
-def solo_ajustes_correo(nombre):
-    """Deja en `--salida <carpeta>` SOLO ajustes/index.html y assets/ajustes.js (la pantalla de Lawang con la diferencia del maestro de
-    ajustes_correo_maestro() y todos los reemplazos de marca/base del build). erp/publica_instancia.py --solo-ajustes-correo los monta sobre
-    lo YA publicado. La carpeta tiene que estar fuera de la agencia: no toca erp/despliegues/<instancia>/."""
-    if '--salida' not in sys.argv or sys.argv.index('--salida') + 1 >= len(sys.argv):
-        aborta('--solo-ajustes-correo exige --salida <carpeta fuera de la agencia>')
-    salida = os.path.abspath(sys.argv[sys.argv.index('--salida') + 1])
-    if os.path.normcase(salida).startswith(os.path.normcase(AGENCIA) + os.sep):
-        aborta('--salida tiene que estar fuera de la agencia: ' + salida)
-    restos = rastros_en(DIST, set(SOLO_AJUSTES_CORREO))
-    if restos:
-        aborta('la pantalla Ajustes de la instancia no está limpia:\n  ' + '\n  '.join(restos[:40]))
-    js = open(os.path.join(DIST, 'assets', 'ajustes.js'), encoding='utf-8').read()
-    html = open(os.path.join(DIST, 'ajustes', 'index.html'), encoding='utf-8').read()
-    if 'data-correo' not in js or 'ajustes-correo' not in js:
-        aborta('assets/ajustes.js no lleva la pantalla de Correo (data-correo / edge ajustes-correo): ¿falló ajustes_correo_maestro?')
-    if html.count('<main') != 1 or html.count('</main>') != 1:
-        aborta('ajustes/index.html no tiene un único <main>')
-    os.makedirs(salida, exist_ok=True)
-    for r in SOLO_AJUSTES_CORREO:
-        d = os.path.join(salida, *r.split('/'))
-        os.makedirs(os.path.dirname(d), exist_ok=True)
-        shutil.copy2(os.path.join(DIST, *r.split('/')), d)
-    print('OK solo-ajustes-correo %s: %d ficheros en %s' % (nombre, len(SOLO_AJUSTES_CORREO), salida))
 
 
 def instancia(nombre):
@@ -2229,15 +2197,11 @@ def instancia(nombre):
     # Hostinger cachea 7 días y el verificador vio el guard.js viejo en /panel/ tras publicar.
     versiona(DIST)
     # Lo que SALE lleva UNA copia de Ajustes › Correo (10-oct-2026): se mide aquí, sobre el fichero ya reescrito por limpia_publico.js, y no
-    # solo al entrar. Vale para el paquete entero y para --solo-ajustes-correo.
+    # solo al entrar. Vale para el paquete entero.
     aj = os.path.join(DIST, 'assets', 'ajustes.js')
     if not os.path.isfile(aj):
         aborta('el paquete de la instancia no trae assets/ajustes.js (la pantalla Ajustes es de la base)')
     ajustes_correo_una_copia(open(aj, encoding='utf-8').read(), 'assets/ajustes.js del paquete de ' + nombre)
-    # --solo-ajustes-correo (8-oct-2026): el paquete son DOS ficheros y el filtro de abajo se aplica solo a ellos. El build entero lo para un
-    # fichero de Lawang que NO se publica (contracts/tokens.json con nombres de sociedades); filtrar solo lo que sale no relaja nada de lo que sale.
-    if '--solo-ajustes-correo' in sys.argv:
-        return solo_ajustes_correo(nombre)
     # 3. Comprobaciones: ni rastro de la base de Lawang ni de la demo, ni de ninguna clave que no sea publicable.
     restos = rastros_en(DIST)
     if restos:
