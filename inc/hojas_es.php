@@ -15,7 +15,7 @@ $HOJAS_ES = [
   'desc'=>'Herramientas internas escritas para cómo trabaja tu empresa: contratos, facturas, inventario, permisos y portal de cliente, todo leyendo de una sola fuente. Estudio de dos personas.',
   'eyebrow'=>'HOJA B01 — BUILD',
   'h1'=>'Software de gestión a medida para empresas',
-  'lead'=>'En casi todas las empresas, las veinte cosas que el equipo hace cada día están en hojas de cálculo, hilos de WhatsApp y la memoria de una persona. Otra plataforma a la que adaptarse no lo arregla.',
+  'lead'=>'En casi todas las empresas, la docena de cosas que el equipo hace cada día están en hojas de cálculo, hilos de WhatsApp y la memoria de una persona. Otra plataforma a la que adaptarse no lo arregla.',
   'spec'=>[
     'Una suite interna está escrita en tu vocabulario, imprime tus documentos y aplica tus permisos, que son justo las tres cosas que el software enlatado te obliga a sortear.',
     'Diseñamos contra un fallo concreto: <b>el mismo dato guardado en dos sitios</b>. Es el error más caro que conocemos y nunca parece un error. Un precio que está en el contrato y otra vez en la pantalla de operaciones acaba por no coincidir, y un día algo se factura al doble. Nos ha pasado, y por eso cada herramienta que construimos lee una sola fuente por dato, y añadir una herramienta nueva nunca significa copiar una lista.',
@@ -173,7 +173,7 @@ $HOJAS_ES = [
   'h1'=>'Cuánto cuesta un software a medida (y qué mueve el precio)',
   'lead'=>'Nadie puede darte una cifra sin saber qué vas a construir, y quien te la da en la primera llamada te la va a corregir en la tercera. Lo que sí se puede explicar es qué sube el precio y qué lo baja.',
   'spec'=>[
-    'No publicamos tarifa porque el mismo encargo («un CRM») puede llevar dos semanas o seis meses según cinco cosas que casi nunca están en la petición inicial. Publicar un «desde X€» solo sirve para que el número se quede corto y el proyecto empiece con una conversación incómoda.',
+    'No publicamos tarifa porque el mismo encargo («un CRM») puede llevar dos semanas o seis meses según seis cosas que casi nunca están en la petición inicial. Publicar un «desde X€» solo sirve para que el número se quede corto y el proyecto empiece con una conversación incómoda.',
     'Abajo están los factores que mueven el precio, de más a menos peso. Si reconoces tu caso, ya sabes por qué el presupuesto que te den va a salir alto o bajo, y qué puedes cambiar tú para bajarlo.',
     'Antes de todo eso hay que decidir <b>si de verdad hay que construirlo</b>. Si una herramienta enlatada cubre lo tuyo, cómprala; sale más barata que cualquier cosa que construyamos y lo decimos aunque nos deje sin proyecto. Construir se justifica cuando el estándar se pelea en vez de usarse: cuando hay una hoja de cálculo paralela, cuando la mitad de los campos no aplican, o cuando el coste por usuario ya supera al de tener el tuyo.',
   ],
@@ -189,10 +189,10 @@ $HOJAS_ES = [
   'caso'=>[
     'titulo'=>'Dos proyectos, la misma frase de partida',
     'texto'=>'«Queremos un portal para nuestros clientes.» Uno acabó siendo login, roles, comunidades y documentos por categorías: acotado y previsible. El otro, la misma frase, arrastraba contratos, firmas, cobros y obra, y era diez veces más trabajo. La diferencia estaba en cuántos documentos tenía que emitir y cuántos sistemas ajenos tenía que leer, no en el número de pantallas.',
-    'cifras'=>[['5','factores que mueven el precio'],['1','que casi nadie cuenta: las integraciones'],['0','tarifas publicadas']],
+    'cifras'=>[['6','factores que mueven el precio'],['1','que casi nadie cuenta: las integraciones'],['0','tarifas publicadas']],
   ],
   'faq'=>[
-    ['¿Por qué no publicáis precios?','Porque el mismo encargo puede costar diez veces más según las cinco cosas de arriba, y un «desde X€» que luego no se cumple es peor que no decir nada. Cuéntanos el alcance y te devolvemos alcance y precio, por escrito.'],
+    ['¿Por qué no publicáis precios?','Porque el mismo encargo puede costar diez veces más según las seis cosas de arriba, y un «desde X€» que luego no se cumple es peor que no decir nada. Cuéntanos el alcance y te devolvemos alcance y precio, por escrito.'],
     ['¿Cómo puedo abaratar mi proyecto?','Hay tres cosas que lo bajan: reducir integraciones a las imprescindibles de la primera versión, limpiar tus datos antes de empezar, y poner a una sola persona con capacidad de decidir.'],
     ['¿Sale más barato una plantilla o un no-code?','Al principio, casi siempre sí, y es una respuesta legítima. Deja de serlo cuando el negocio depende de algo que la plantilla no hace, o cuando la cuota mensual por usuario ya pesa más que el desarrollo.'],
     ['¿Se paga todo de golpe?','No. Un proyecto se trocea en entregas verificables y cada una se cierra antes de empezar la siguiente, para que en cualquier punto tengas algo que funciona.'],
@@ -221,6 +221,7 @@ $HOJAS_ES = [
     ['Documentos','PDF firmados y recibos descargables en cuanto existen.'],
     ['Pagos','Qué debe, qué ha pagado y cuándo, del mismo registro con el que factura la oficina.'],
     ['Categorías','Documentos ordenados por categorías que editáis vosotros.'],
+    ['Idiomas','El portal en el idioma del cliente, sea cual sea el de tu equipo.'],
     ['Registro','Quién entró y qué abrió, guardado en tu lado.'],
   ],
   'faq'=>[

@@ -214,6 +214,7 @@ $HOJAS_EN = [
     ['Isolation','Row-level rules in the database: a client can only ever read their own rows.'],
     ['Documents','Signed PDFs and receipts downloadable the moment they exist.'],
     ['Payments','What is due, what is paid and when, from the same record the office invoices from.'],
+    ['Categories','Documents sorted into categories your team edits.'],
     ['Languages','The portal in the client&rsquo;s language, independent of the team&rsquo;s.'],
     ['Audit','Who entered and what they opened, kept on your side.'],
   ],
