@@ -114,8 +114,7 @@
 .netw.cmp .nd .bar{display:none}
 .netw.cmp .grp{border-radius:16px}
 .netw.cmp .etypes span{font-size:11px;padding:2px 9px}
-@media (max-width:719px){#info.fijo{position:sticky;top:72px;z-index:5}}
-}
+#info.fijo{position:sticky;top:72px;z-index:5}
 @media (prefers-reduced-transparency:reduce){.glass,.nd{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}}
 @media (prefers-reduced-motion:reduce){*,*::before{animation:none!important;transition:none!important}button:active{transform:none}}
 

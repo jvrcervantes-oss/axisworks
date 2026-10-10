@@ -105,13 +105,13 @@ $HOJAS_ES = [
 'automatizacion-de-procesos' => [
   'lang'=>'es','url'=>'/es/servicios/automatizacion-de-procesos','codigo'=>'B04','eje'=>'BUILD',
   'title'=>'Automatización de procesos con IA y agentes — AxisWorks',
-  'desc'=>'Automatizaciones y vigilantes autónomos que revisan tu negocio a todas horas, te avisan directamente y tienen permiso para frenar, nunca para gastar. En producción hoy.',
+  'desc'=>'Automatizaciones y vigilantes autónomos que revisan tu negocio a todas horas, te avisan directamente y solo actúan por su cuenta dentro de un tope que pones tú. En producción hoy.',
   'eyebrow'=>'HOJA B04 — BUILD',
   'h1'=>'Automatización de procesos con IA y agentes',
   'lead'=>'Una automatización que ahorra diez minutos está bien. La que merece la pena es la que se da cuenta, a las tres de la mañana, de que llevas tres días gastando sin recibir nada.',
   'spec'=>[
     'En esta hoja hay dos cosas. Las <b>automatizaciones</b> quitan un paso que una persona repite: un documento que se genera solo, un registro que se actualiza solo, un informe que llega sin pedirlo. Los <b>vigilantes</b> son otra cosa: un proceso que vive dentro de algo que ya corre 24/7, revisa el estado del negocio cada cierto tiempo y te escribe directamente cuando algo va mal.',
-    'Un vigilante es fiable porque su autonomía <b>solo va en un sentido</b>, y eso lo impone la forma del código, no una instrucción. Puede pausar, frenar y proteger por su cuenta. Nunca puede gastar, ni crear, ni escribir a un cliente real.',
+    'Un vigilante es fiable porque su autonomía <b>tiene un borde fijo</b>, y eso lo impone la forma del código, no una instrucción. Por su cuenta puede pausar, frenar y proteger, y ajustar lo que ya existe (un presupuesto diario, por ejemplo) dentro del tope que pones tú. Nunca puede pasarse de ese tope, ni crear nada nuevo, ni escribir a un cliente real.',
     'No construimos un vigilante para un problema que nadie ha sufrido todavía. Los dos que corren hoy salieron de un incidente: un negocio estuvo tres días gastando en anuncios con cero leads sin que nadie se enterara; otro venía de un cobro duplicado y de un rediseño que pasó un QA automático estando mal.',
   ],
   'scope'=>[
@@ -125,7 +125,7 @@ $HOJAS_ES = [
   ],
   'faq'=>[
     ['¿Esto es n8n o Zapier?','Esos son buenos uniendo dos servicios que ya tienen botones el uno para el otro. Nosotros escribimos los que necesitan criterio, los que no pueden romperse en silencio y los que tienen que recordar su estado tras un redespliegue.'],
-    ['¿Actuaría sin preguntarnos?','Solo en el sentido de frenar algo, y solo dentro de los límites que pongas tú. No puede gastar, ni crear, ni contactar con nadie. Es una propiedad del código, no un ajuste.'],
+    ['¿Actuaría sin preguntarnos?','Solo dentro de los límites que pongas tú: pausar, frenar o ajustar lo que ya está en marcha, sin pasarse del tope. No puede superar el tope, ni crear nada, ni contactar con nadie. Es una propiedad del código, no un ajuste.'],
     ['¿Dónde se ejecuta?','Dentro de un servicio que ya esté corriendo para tu negocio a todas horas. Si no hay ninguno, lo primero es construirlo: una automatización que depende de que alguien abra el portátil no vigila nada.'],
     ['¿Y si se equivoca?','Cada acción queda registrada y es reversible, y el aviso te llega antes de que te hubieras dado cuenta tú. El fallo de tener un vigilante es una falsa alarma; el de no tenerlo son tres días de gasto.'],
     ['¿Usa IA para decidir?','Donde hace falta criterio, sí: por ejemplo, para leer si una conversación se ha torcido. El resto es código determinista, porque la mayoría de lo que vigila no necesita un modelo y es más fiable sin él.'],

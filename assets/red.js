@@ -211,7 +211,7 @@
       /* Compacta: filas de 4 en 2×2, de 5-6 en líneas de 3. Los cables salen del borde inferior de la
          fila entera y entran por el superior de la siguiente (out/inn): no cruzan sus propias líneas. */
       /* Ancho por fila: las de 1-2 por línea usan nodos anchos para que no se corten los nombres. */
-      W=Math.max(300,cw);NH=48;
+      W=Math.max(240,cw);NH=48;  /* 240: plegables de 280 px sin recortar nodos */
       var y=30,w3=Math.min(124,Math.floor((W-28)/3)),w2=Math.min(150,Math.floor((W-28)/2));NW=w3;
       ROWS.forEach(function(r,ri){
         /* En Build, bots y pilotos van en la 2.ª línea con el recuadro AaaS: hace falta más aire entre líneas. */
@@ -371,6 +371,7 @@
     cv.width=W*dpr;cv.height=H*dpr;
     net.style.width=cv.style.width=W+'px';net.style.height=cv.style.height=H+'px';
     $('netw').classList.toggle('cmp',CMP);
+    if(!CMP)$('info').classList.remove('fijo');  /* la ficha solo se pega en la compacta: el umbral lo decide el contenedor, no la ventana */
   }
   function fit(){
     if(CMP){$('net').style.transform='none';$('netw').style.height=H+'px';return}
@@ -378,14 +379,14 @@
   }
   function all(){size();buildNodes();drawWires();seedParticles();if(REAL)railReal();else rail();fit();setLift();dirty=true}
   document.addEventListener('click',function(e){
-    var n=e.target.closest('[data-nodo]');if(n){cur_sel=n.getAttribute('data-nodo');info(cur_sel);$('info').classList.add('fijo');buildNodes();setLift()}
+    var n=e.target.closest('[data-nodo]');if(n){cur_sel=n.getAttribute('data-nodo');info(cur_sel);$('info').classList.toggle('fijo',CMP);buildNodes();setLift()}
   });
   $('netw').addEventListener('mouseover',function(e){var n=e.target.closest&&e.target.closest('.nd');var id=n?n.getAttribute('data-nodo'):null;if(id!==hov){hov=id;if(id)info(id);setLift()}});
   /* En móvil el resize salta al esconderse la barra del navegador (solo cambia el alto): se rehace la
      maqueta solo si cambia el modo o, en la compacta, el ancho. */
   window.addEventListener('resize',function(){
     var cw=$('netw').clientWidth,c=cw>0&&cw<CMPMAX;
-    if(c!==CMP||(c&&Math.max(300,cw)!==W)){layout();all();if(cur_sel)info(cur_sel)}else fit();
+    if(c!==CMP||(c&&Math.max(240,cw)!==W)){layout();all();if(cur_sel)info(cur_sel)}else fit();
   });
   layout();all();
   /* Sin ratón no hay «pasar el cursor»: en táctil el aviso dice «toca». */

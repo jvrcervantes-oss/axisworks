@@ -68,7 +68,7 @@ $CAMPO_EN = [
 ],
 
 'business-process-automation' => [
-  'regla'=>'A watcher may pause, stop and protect on its own. It may never spend, create or message a customer.',
+  'regla'=>'A watcher may pause, stop, protect and adjust inside the ceiling on its own. It may never go over the ceiling, create anything or message a customer.',
   'panel'=>['pie'=>'The last round of the watchers: what each rule checked, what it found and what it did on its own.','tool'=>'WATCHERS // LAST RUN','th'=>['Rule','Check','Result','Action','Next'],'rows'=>[
     ['R3','Ad sets spending, no leads','1 starving','Paused','4h',true],
     ['R7','Daily budget vs ceiling','Inside ceiling','None','4h',false],

@@ -55,7 +55,7 @@ $HUBS = [
     'desc'=>'What AxisWorks builds: custom business software, CRM, WhatsApp AI chatbots, process automation, software for property developers, and Meta Ads funnels.',
     'eyebrow'=>'INDEX — WHAT WE BUILD',
     'h1'=>'Eleven things we build, on two axes',
-    'lead'=>'BUILD is the software and GROW is what brings people to it; ADVISORY crosses both. Every sheet below is something running in production for somebody today.',
+    'lead'=>'BUILD is the software and GROW is what brings people to it; ADVISORY crosses both. Each sheet below shows a real case and says what state it is in.',
     /* Índice v3 (24-sep-2026, composición de Stitch «Services // 11 Products on Two Axes»). */
     'axes_h'=>'The software a company runs on, and the audience that finds it.',
     'axes_p'=>'Seven products build the system, three bring people to it, and one decides what to build first.',
@@ -71,7 +71,7 @@ $HUBS = [
     'desc'=>'Qué construye AxisWorks: software de gestión a medida, CRM, chatbots de WhatsApp con IA, automatización de procesos y embudos de venta en Meta Ads.',
     'eyebrow'=>'ÍNDICE — QUÉ CONSTRUIMOS',
     'h1'=>'Once cosas que construimos, sobre dos ejes',
-    'lead'=>'BUILD es el software y GROW lo que trae gente hasta él; ADVISORY atraviesa a los dos. Cada hoja de abajo es algo que hoy funciona en producción para alguien.',
+    'lead'=>'BUILD es el software y GROW lo que trae gente hasta él; ADVISORY atraviesa a los dos. Cada hoja de abajo enseña un caso real y dice en qué estado está.',
     'axes_h'=>'El software con el que funciona una empresa, y el público que la encuentra.',
     'axes_p'=>'Siete productos construyen el sistema, tres traen gente hasta él y uno decide qué construir primero.',
     'quad'=>['B01–B04 // SISTEMAS','B05–B07 // DE CARA AL CLIENTE','G01–G02 // DEMANDA','G03 // CONTENIDO'],

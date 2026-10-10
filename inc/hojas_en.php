@@ -105,13 +105,13 @@ $HOJAS_EN = [
 'business-process-automation' => [
   'lang'=>'en','url'=>'/services/business-process-automation','codigo'=>'B04','eje'=>'BUILD',
   'title'=>'Business process automation and AI agents — AxisWorks',
-  'desc'=>'Automations and autonomous watchers that check your business around the clock, alert you directly, and are allowed to stop things but never to spend. Running in production today.',
+  'desc'=>'Automations and autonomous watchers that check your business around the clock, alert you directly, and act on their own only inside a ceiling you set. Running in production today.',
   'eyebrow'=>'SHEET B04 — BUILD',
   'h1'=>'Business process automation and AI agents',
   'lead'=>'An automation that saves ten minutes is nice to have. The one worth building notices, at three in the morning, that you have been spending for three days and getting nothing.',
   'spec'=>[
     'We build two things on this sheet. <b>Automations</b> remove a step a person repeats: a document that generates itself, a record that updates itself, a report that arrives without being asked for. <b>Watchers</b> are processes that live inside something already running 24/7, check the state of the business on an interval and message you directly when something is wrong.',
-    'A watcher is safe to trust because its autonomy <b>only runs one way</b>, and the shape of the code enforces that rather than an instruction. It may pause, stop and protect on its own. It may never spend, never create, and never send a message to a real customer.',
+    'A watcher is safe to trust because its autonomy <b>has a fixed edge</b>, enforced by the shape of the code rather than by an instruction. On its own it may pause, stop and protect, and adjust what already exists (a daily budget, for example) inside the ceiling you set. It may never go over that ceiling, never create anything new and never send a message to a real customer.',
     'We do not build a watcher for a problem nobody has felt yet. Both of the ones running today came out of an incident: one business spent three days on ads with zero leads before anyone noticed; another had a payment bug and a redesign that passed an automated QA while being wrong.',
   ],
   'scope'=>[
@@ -125,7 +125,7 @@ $HOJAS_EN = [
   ],
   'faq'=>[
     ['Is this n8n or Zapier?','Those are good at joining two services that already have buttons for each other. We write the ones that need judgement, that must not break silently, and that have to keep state across a redeploy.'],
-    ['Would it act without asking us?','Only in the direction of stopping something, and only inside limits you set. It cannot spend, create or contact anyone. That is a property of the code, not a setting.'],
+    ['Would it act without asking us?','Only inside limits you set: pausing, stopping or adjusting what already runs, within your ceiling. It cannot go over the ceiling, create anything or contact anyone. That is a property of the code, not a setting.'],
     ['Where does it run?','Inside a service that is already running for your business around the clock. If there is not one yet, building that comes first: an automation that depends on somebody opening a laptop does not watch anything.'],
     ['What if it makes a mistake?','Every action is logged and reversible, and the alert reaches you before you would have noticed on your own. The failure mode of a watcher is a false alarm; the failure mode of not having one is three days of spend.'],
     ['Can it use AI to judge?','Where it needs judgement, yes: reading whether a conversation went wrong, for instance. The rest is deterministic code, because most of what a watcher checks does not need a model and is more reliable without one.'],

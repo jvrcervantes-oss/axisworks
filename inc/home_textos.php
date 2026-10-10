@@ -115,7 +115,7 @@ $HOME = [
   'auto'=>[
     ['vigilante', 'The Watchman', 'guards ad spend &amp; leads', 'Live', ['Checks campaigns and conversations around the clock', 'Pauses what isn&rsquo;t bringing leads', 'Alerts the owner on Telegram']],
     ['investigador', 'The Investigator', 'finds sales partners', 'Pilot', ['Finds and ranks agencies that can resell a client&rsquo;s product', 'Prepares the outreach kit', 'A person makes the first contact']],
-    ['padrino', 'The Godfather', 'runs our own products, in test mode', 'Shadow mode', ['Answers the inbox', 'Finds customers', 'Writes the business plan and proposes how to carry it out', 'Being tested on <a href="https://bodaenlace.com">BodaEnlace</a>']],
+    ['padrino', 'The Godfather', 'pilot on our own product, in shadow mode', 'Shadow mode', ['Drafts replies to the inbox', 'Proposes how to find customers', 'Writes the business plan and proposes how to carry it out', 'Being tested on <a href="https://bodaenlace.com">BodaEnlace</a>']],
   ],
 
   'ct_eyebrow'=>'// TERMINAL PROTOCOL 01-INTAKE','ct_h2'=>'Initiate project intake.',
@@ -226,7 +226,7 @@ $HOME = [
   'auto'=>[
     ['vigilante', 'El Vigilante', 'vigila la inversión y los leads', 'En producción', ['Revisa campañas y conversaciones a todas horas', 'Pausa lo que no trae contactos', 'Avisa al dueño por Telegram']],
     ['investigador', 'El Investigador', 'busca socios comerciales', 'Piloto', ['Encuentra y ordena agencias que pueden revender el producto de un cliente', 'Prepara el material de contacto', 'El primer contacto lo hace una persona']],
-    ['padrino', 'El Padrino', 'lleva nuestros productos propios, en modo de prueba', 'Modo sombra', ['Atiende el correo', 'Busca clientes', 'Escribe el plan de negocio y propone cómo aplicarlo', 'Se prueba en <a href="https://bodaenlace.com">BodaEnlace</a>']],
+    ['padrino', 'El Padrino', 'piloto sobre un producto nuestro, en modo sombra', 'Modo sombra', ['Prepara respuestas al correo', 'Propone cómo buscar clientes', 'Escribe el plan de negocio y propone cómo aplicarlo', 'Se prueba en <a href="https://bodaenlace.com">BodaEnlace</a>']],
   ],
 
   'ct_eyebrow'=>'// PROTOCOLO 01-ALTA','ct_h2'=>'Iniciar alta de proyecto.',

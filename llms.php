@@ -65,5 +65,6 @@ In development (no public URL yet):
   is quoted per scope; what moves the price is explained at
   <?= SITE ?>/es/cuanto-cuesta-un-software-a-medida
 - Bots are built on the official WhatsApp Business API, not unofficial bridges.
-- Autonomous watchers may pause and protect on their own; they can never spend, create
-  or message a customer. That limit is enforced in code rather than by instruction.
+- Autonomous watchers may pause, protect and adjust what already runs inside a ceiling the
+  owner sets; they can never exceed that ceiling, create anything or message a customer.
+  That limit is enforced in code rather than by instruction.

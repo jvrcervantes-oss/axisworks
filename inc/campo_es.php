@@ -62,7 +62,7 @@ $CAMPO_ES = [
 ],
 
 'automatizacion-de-procesos' => [
-  'regla'=>'Un vigilante puede pausar, parar y proteger por su cuenta. Nunca puede gastar, crear ni escribir a un cliente.',
+  'regla'=>'Un vigilante puede pausar, parar, proteger y ajustar dentro del tope por su cuenta. Nunca puede pasarse del tope, crear nada ni escribir a un cliente.',
   'panel'=>['pie'=>'La última pasada de los vigilantes: qué comprobó cada regla, qué encontró y qué hizo por su cuenta.','tool'=>'VIGILANTES // ÚLTIMA PASADA','th'=>['Regla','Comprueba','Resultado','Acción','Próxima'],'rows'=>[
     ['R3','Conjuntos que gastan sin leads','1 en sequía','Pausado','4h',true],
     ['R7','Presupuesto diario contra el tope','Dentro del tope','Ninguna','4h',false],
