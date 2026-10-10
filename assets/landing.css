@@ -371,3 +371,33 @@ main{display:block;overflow-x:clip}
 .l-dep{min-width:0}
 .info{text-align:left}
 @media (max-width:1100px){.l-links .l-lang a{padding:3px 10px;font-size:12.5px}.l-links .l-lang span{padding:3px 10px;font-size:12.5px}}
+
+/* ── «Actividad del estudio» (10-oct-2026): modo datos de red.js ─────────────────────────────
+ * Estado por FORMA y por texto, no solo por color: punto lleno = registrado, aro vacío = sin registro,
+ * caja discontinua = estructura (paso del camino, sin estado propio). Sin pulso: el dato lleva ≥2 h. */
+.netw.real .net,.netw.real .net canvas{width:1040px}
+.netw.real .nd.on3 .dt{animation:none}
+.netw.real .nd.off .dt{background:transparent;box-shadow:inset 0 0 0 1.5px var(--c)}
+.nd.str{background:rgba(255,255,255,.5);border-style:dashed;box-shadow:none;opacity:1}
+.nd.str .dt,.nd.str .bar{display:none}
+.nd.str b{padding-right:0}
+.legst{padding-top:0}
+.legst i.sw{border-radius:50%}
+.legst i.sw.rec3{background:var(--pric);box-shadow:0 0 0 3px rgba(79,70,229,.25)}
+.legst i.sw.rec2{background:var(--pric)}
+.legst i.sw.rec1{background:transparent;box-shadow:inset 0 0 0 1.5px var(--pric)}
+.legst i.sw.strc{background:#fff;border:1.5px dashed #6B6A7B;border-radius:3px}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;margin:9px 0;color:var(--mu)}
+.kv b{font-weight:600;color:var(--ink);text-align:right}
+.pnote{margin:8px 0 0;font-size:13px;line-height:1.5;color:var(--mu)}
+.ar{display:grid;grid-template-columns:112px 1fr;align-items:center;gap:10px;margin:10px 0;font-size:12.5px;color:var(--mu)}
+.ar .ds{display:flex;gap:6px;flex-wrap:wrap}
+.ar i.d{width:12px;height:12px;border-radius:50%;background:var(--pric);display:inline-block}
+.ar i.d.o{background:transparent;box-shadow:inset 0 0 0 1.5px var(--pric)}
+.mlist button i.str{border-style:dashed;opacity:.7}
+.l-act .kpi b.kt{font-size:18px;line-height:1.5}
+.l-actnotes{list-style:none;margin:20px 0 0;padding:0;display:grid;gap:12px;max-width:74ch}
+.l-actnotes li{font-size:15px;line-height:1.6;color:var(--mu);padding-left:16px;border-left:2px solid var(--hair)}
+.l-actnotes b{color:var(--ink)}
+.l-actnotes a{color:var(--pri)}
+@media (max-width:719px){.ar{grid-template-columns:96px 1fr}}

@@ -7,6 +7,8 @@
 define('ERP_URL', 'https://erp.axisworks.studio/');
 define('AAAS_EN', '/agents-as-a-service');
 define('AAAS_ES', '/es/agentes-como-servicio');
+define('ACT_EN', '/studio-activity');
+define('ACT_ES', '/es/actividad-del-estudio');
 
 $LAND = [
 'en' => [
@@ -17,6 +19,7 @@ $LAND = [
   'h_sub'=>'{PALABRA_CAP} AI departments build and run software for businesses. A person signs off on every decision that matters.',
   'h_cta1'=>'See what we sell','h_cta2'=>'Open the ERP demo',
   'h_tag'=>'Illustration · sample data, not live activity',
+  'h_act'=>'See the real record, delayed',
   'k_dep'=>'Departments','k_act'=>'Active at once','k_coord'=>'Coordinations','k_st'=>'Data','k_st_v'=>'Sample',
   'leg'=>['Decides · gate','Review the plan','Spawned subagents','Products','Build and create','Publish','Input · output','Human oversight'],
   'p_eyebrow'=>'What we sell','p_h2'=>'Three products, one studio behind them.',
@@ -51,6 +54,7 @@ $LAND = [
   'h_sub'=>'{PALABRA_CAP} departamentos de IA construyen y llevan software para empresas. Una persona da el visto bueno a cada decisión que importa.',
   'h_cta1'=>'Ver lo que vendemos','h_cta2'=>'Abrir la demo del ERP',
   'h_tag'=>'Ilustración · datos de ejemplo, no actividad en vivo',
+  'h_act'=>'Ver el registro real, con retraso',
   'k_dep'=>'Departamentos','k_act'=>'Activos a la vez','k_coord'=>'Coordinaciones','k_st'=>'Datos','k_st_v'=>'Ejemplo',
   'leg'=>['Decide · puerta','Opinan sobre el plan','Subagentes que se levantan','Productos','Construyen y crean','Publican','Entrada · salida','Supervisión humana'],
   'p_eyebrow'=>'Lo que vendemos','p_h2'=>'Tres productos, un estudio detrás.',

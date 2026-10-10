@@ -28,3 +28,7 @@ api/_estado/
 /bodas/
 /bodas_datos/
 __pycache__/
+
+# «Actividad del estudio» (10-oct-2026): el JSON público se genera en la agencia cada hora y NO entra en git —
+# un commit por hora dejaría en `git log` la serie temporal que el retraso de 2 h y el redondeo existen para evitar.
+/estudio-en-vivo.json

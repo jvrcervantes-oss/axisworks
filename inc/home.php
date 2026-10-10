@@ -80,7 +80,7 @@ $jsonld = [
     <a class="l-btn s" href="<?= ERP_URL ?>" rel="noopener"><span class="ms" aria-hidden="true">play_circle</span><?= $L['h_cta2'] ?></a>
   </div>
 
-  <div class="l-bar"><span class="l-tag"><?= $L['h_tag'] ?></span></div>
+  <div class="l-bar"><span class="l-tag"><?= $L['h_tag'] ?></span><a class="l-more" href="<?= $lang === 'es' ? ACT_ES : ACT_EN ?>"><?= $L['h_act'] ?> <span class="ms" aria-hidden="true">arrow_forward</span></a></div>
   <div class="kpis" style="justify-content:flex-start">
     <div class="kpi"><small><?= $L['k_dep'] ?></small><b><?= (int) $ORGANIGRAMA['n'] ?></b></div>
     <div class="kpi"><small><?= $L['k_act'] ?></small><b id="c-a">—</b></div>

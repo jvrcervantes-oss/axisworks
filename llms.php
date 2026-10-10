@@ -43,6 +43,8 @@ $d = fn($s) => html_entity_decode($s, ENT_QUOTES, 'UTF-8');
 <?php endforeach; endforeach; ?>
 - [EN] Agents as a Service — AI agents that run a business within hard limits (in testing, shadow mode; not yet a running service) — <?= SITE ?>/agents-as-a-service
 - [ES] Agentes como servicio — <?= SITE ?>/es/agentes-como-servicio
+- [EN] Studio activity — a delayed, aggregated record of which AI departments of the studio were launched, no client or project data — <?= SITE ?>/studio-activity
+- [ES] Actividad del estudio — <?= SITE ?>/es/actividad-del-estudio
 
 ## Selected work
 Live and in production:

@@ -1,5 +1,12 @@
-/* red.js — el diagrama animado de la portada (10-oct-2026).
- * Es una ILUSTRACIÓN con datos de ejemplo, no actividad en vivo: la página lo dice en tres sitios.
+/* red.js — el diagrama animado de la portada y de «Actividad del estudio» (10-oct-2026).
+ * PORTADA: es una ILUSTRACIÓN con datos de ejemplo, no actividad registrada: la página lo dice en tres sitios.
+ * MODO DATOS (solo si #netw lleva data-src): pinta el registro REAL que publica tools/estudio_publico.py
+ * (contrato: contexto/estudio_en_vivo_contrato.md). Reglas que este fichero cumple:
+ *   · el JSON se valida entero (claves exactas, enums, ids conocidos, fechas, caducidad); si algo no
+ *     cuadra se cae a la ESTRUCTURA sin estados y se dice, nunca se pinta a medias;
+ *   · ninguna cadena del JSON llega al HTML: los rótulos se buscan por id/enum en este fichero;
+ *   · los nodos que no son departamentos (CEO, revisor, productos…) no tienen estado: son estructura;
+ *   · sin cifras de agentes ni tareas, sin minutos exactos, y las horas se dan en UTC absoluto.
  * Un solo estado («actividad»). Textos EN/ES en el diccionario X, elegido por <html lang>.
  * Sin dependencias, sin red, sin almacenamiento. El número de departamentos llega en
  * #netw[data-deps] (sale de inc/organigrama.php, generado), no se escribe aquí. */
@@ -10,9 +17,25 @@
   var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   var ES=document.documentElement.lang==='es';
   var NDEP=parseInt(($('netw').getAttribute('data-deps')||'17'),10)||17;
+  var SRC=$('netw').getAttribute('data-src')||'';
+  var REAL=!!SRC;
   var COL={pink:[255,45,85],blue:[10,132,255],green:[48,182,80],yellow:[255,159,10],gray:[142,142,147],white:[88,86,214],teal:[50,173,230],violet:[175,82,222]};
 
   var X=ES?{
+    R:{hover:['Pasa el cursor por un nodo','El diagrama es el camino del trabajo en el estudio. Los estados salen del registro publicado; el resto es estructura.'],
+      st:{3:'última hora',2:'últimas 24 h',1:'sin registro'},
+      stLong:{3:'Registrado en la hora hasta {t}',2:'Registrado en las últimas 24 h hasta {t}',1:'Sin registro suficiente'},
+      vol:{bajo:'Volumen bajo',medio:'Volumen medio',alto:'Volumen alto'},
+      strInfo:'Paso del camino del trabajo; no tiene estado propio.',
+      cats:{construccion:'Construcción',diseno:'Diseño',captacion:'Captación',documentacion:'Documentación',gestion:'Gestión',verificacion:'Verificación',operacion:'Operación'},
+      coordName:'Revisión previa',coordDesc:'Revisiones previas de planes entre agentes de IA: antes de construir, subagentes de varios departamentos opinan sobre el plan.',
+      pRec:'Registro',pRecRows:['Publicado','Datos hasta','Válido hasta','Retraso'],pArea:'Por área',pAreaE:'registrado · sin registro',pCoord:'Revisiones previas de planes entre agentes de IA',
+      tag:{ok:'Registro vigente · con retraso',expired:'Registro caducado',nodata:'Ilustración · estructura, sin datos de actividad',load:'Cargando el registro…'},
+      kst:{ok:'Vigente',expired:'Caducado',nodata:'No disponible',load:'…'},
+      lead:{ok:'Registro de agentes de IA lanzados por departamento, publicado con unas {d} h de retraso. Datos hasta {t}.',
+        expired:'El registro caducó: su último dato llega hasta {t}. No se muestra ningún estado hasta que se publique uno nuevo.',
+        nodata:'El registro no está disponible. Se muestra solo la estructura del estudio, sin datos de actividad.',load:'Cargando el registro…'},
+      none:'—'},
     desc:{frontend:'Lo que ve y toca el visitante: páginas, móvil y accesibilidad.',backend:'Bases de datos, funciones e integraciones: lo que no se ve.',bots:'Asistentes de WhatsApp que atienden a los clientes.',pilotos:'Agentes autónomos que llevan un negocio dentro de límites duros. En pruebas, modo sombra.',
       seguridad:'Revisa que todo sea seguro antes y después de publicar.',legal:'Contratos, textos legales y normativa.',administracion:'Facturación y fiscalidad del estudio.',organizacion:'Cuida la estructura del estudio y retira lo que sobra.',
       diseno:'Dirección de arte, identidad y piezas gráficas.',arquitectura:'Viviendas en 3D y parcelarios a partir de planos y fotos.',modelado:'Personajes, props y escenarios para videojuegos.',videojuegos:'Motor y juego propio del estudio.',marketing:'Anuncios, SEO y captación de contactos.',comunicacion:'Notas de prensa y relación con medios.',
@@ -35,6 +58,20 @@
     lead:function(n){return 'En esta ilustración hay '+n+' de '+NDEP+' departamentos activos a la vez. Equipos de IA bajo supervisión humana.'},
     log:[['09:15','revisión previa','seguridad + backend','sobre un plan'],['09:14','revisor de código','sello aprobado','código revisado'],['09:12','seguridad','backend','revisión de un plan'],['09:08','calidad','verificando en producción'],['09:01','diseño','frontend','revisión de un diseño'],['08:55','legal','revisando un texto'],['08:47','deploy','publicando un cambio'],['08:40','documentación','preparando un documento'],['08:31','bots','afinando un asistente']]
   }:{
+    R:{hover:['Hover over a node','The diagram is the path work takes through the studio. States come from the published record; the rest is structure.'],
+      st:{3:'last hour',2:'last 24 h',1:'no record'},
+      stLong:{3:'Recorded in the hour up to {t}',2:'Recorded in the last 24 h up to {t}',1:'Not enough record'},
+      vol:{bajo:'Low volume',medio:'Medium volume',alto:'High volume'},
+      strInfo:'A step on the path work takes; it has no state of its own.',
+      cats:{construccion:'Build',diseno:'Design',captacion:'Outreach',documentacion:'Documentation',gestion:'Management',verificacion:'Verification',operacion:'Operations'},
+      coordName:'Pre-review',coordDesc:'Plan reviews between AI agents: before building, subagents from several departments weigh in on the plan.',
+      pRec:'Record',pRecRows:['Published','Data up to','Valid until','Delay'],pArea:'By area',pAreaE:'recorded · no record',pCoord:'Plan reviews between AI agents',
+      tag:{ok:'Current record · delayed',expired:'Record expired',nodata:'Illustration · structure, no activity data',load:'Loading the record…'},
+      kst:{ok:'Current',expired:'Expired',nodata:'Unavailable',load:'…'},
+      lead:{ok:'Record of AI agents launched per department, published about {d} h late. Data up to {t}.',
+        expired:'The record has expired: its last data runs up to {t}. No state is shown until a new one is published.',
+        nodata:'The record is unavailable. Only the studio’s structure is shown, with no activity data.',load:'Loading the record…'},
+      none:'—'},
     desc:{frontend:'What the visitor sees and touches: pages, mobile and accessibility.',backend:'Databases, functions and integrations: what you do not see.',bots:'WhatsApp assistants that serve customers.',pilotos:'Autonomous agents that run a business within hard limits. In testing, shadow mode.',
       seguridad:'Checks that everything is secure before and after publishing.',legal:'Contracts, legal texts and regulation.',administracion:'The studio’s invoicing and tax.',organizacion:'Looks after the studio’s structure and retires what is not needed.',
       diseno:'Art direction, identity and graphic pieces.',arquitectura:'3D homes and plot maps from plans and photos.',modelado:'Characters, props and environments for games.',videojuegos:'The studio’s own engine and game.',marketing:'Ads, SEO and lead generation.',comunicacion:'Press releases and media relations.',
@@ -74,12 +111,81 @@
   ];
   var LVL={backend:3,seguridad:3,calidad:3,frontend:3,diseno:3,deploy:3,bots:3,legal:2,marketing:2,documentacion:2,organizacion:2,pilotos:2,revprev:3,explore:3,plan:2,encargo:3,consulta:2,verificador:3,trampas:2};
   var MEETS=3;
-  var cur_sel=null,hov=null,W=1250,H=1080,NW=132,NH=58,ROWH=90,TOP=64;
+  var cur_sel=null,hov=null,W=REAL?1040:1250,H=1080,NW=132,NH=58,ROWH=90,TOP=64;
   var N=[],E=[],P=[],off=null,cx=cv.getContext('2d'),dirty=true,last=0,LIFT={};
+
+  /* ══ MODO DATOS (solo con data-src) ═════════════════════════════════════════════════════════
+   * Ids del JSON = `cara` de cada ficha pública (organigrama); ids del diagrama = los de arriba.
+   * El mapa es explícito: un id nuevo en el JSON que no esté aquí hace caer a la estructura. */
+  var MAPA={frontend:'dev',backend:'data',bots:'bots',arquitectura:'arch',deploy:'deploy',videojuegos:'games',modelado:'models',pilotos:'pilots',diseno:'design',marketing:'marketing',comunicacion:'comms',seguridad:'security',calidad:'quality',legal:'legal',administracion:'admin',documentacion:'docs',organizacion:'org'};
+  var MAPAINV={},SENS={security:1,deploy:1,quality:1};
+  Object.keys(MAPA).forEach(function(k){MAPAINV[MAPA[k]]=k});
+  var CATS=['construccion','diseno','captacion','documentacion','gestion','verificacion','operacion'];
+  var ESTADOS={ultima_hora:3,hoy:2,en_reposo:1},VOLS={bajo:30,medio:60,alto:90};
+  var HORA=/^\d{4}-\d{2}-\d{2}T\d{2}:00:00Z$/;
+  var RS={st:'load',j:null,lvl:{},vol:{},cat:{},skew:0,fetched:0};
+  function own(o,k){return Object.prototype.hasOwnProperty.call(o,k)}
+  function str(v){return typeof v==='string'}
+  function exacto(o,oblig,opc){
+    if(!o||typeof o!=='object'||Array.isArray(o))return false;
+    var k=Object.keys(o),i;
+    for(i=0;i<oblig.length;i++)if(!own(o,oblig[i]))return false;
+    for(i=0;i<k.length;i++)if(oblig.indexOf(k[i])<0&&opc.indexOf(k[i])<0)return false;
+    return true;
+  }
+  /* null si vale; 'caducado' si vale pero ya pasó valido_hasta; otra cadena = no vale (cae a la estructura). */
+  function validar(j,now){
+    if(!exacto(j,['version','generado','datos_hasta','valido_hasta','retraso_horas','n_departamentos','departamentos','coordinacion'],[]))return 'forma';
+    if(j.version!==1)return 'version';
+    var T=['generado','datos_hasta','valido_hasta'],ms={},i,d,e;
+    for(i=0;i<3;i++){if(!str(j[T[i]])||!HORA.test(j[T[i]]))return 'hora';ms[T[i]]=Date.parse(j[T[i]]);if(isNaN(ms[T[i]]))return 'hora'}
+    if(typeof j.retraso_horas!=='number'||j.retraso_horas!==Math.floor(j.retraso_horas)||j.retraso_horas<1||j.retraso_horas>24)return 'retraso';
+    if(!(ms.datos_hasta<ms.generado&&ms.generado<ms.valido_hasta)||ms.generado-ms.datos_hasta!==j.retraso_horas*3600000)return 'orden';
+    if(ms.generado>now+3600000)return 'futuro';
+    if(j.n_departamentos!==NDEP||!Array.isArray(j.departamentos)||j.departamentos.length!==NDEP)return 'n';
+    var visto={},n=0;
+    for(i=0;i<j.departamentos.length;i++){
+      d=j.departamentos[i];
+      if(!exacto(d,['id','categoria','estado'],['volumen']))return 'dep';
+      if(!str(d.id)||!own(MAPAINV,d.id)||own(visto,d.id))return 'id';
+      visto[d.id]=1;n++;
+      if(!str(d.categoria)||CATS.indexOf(d.categoria)<0)return 'cat';
+      if(!str(d.estado)||!own(ESTADOS,d.estado))return 'estado';
+      if(d.estado==='en_reposo'){if(own(d,'volumen'))return 'vol'}
+      else if(SENS[d.id]){if(d.estado==='ultima_hora'||own(d,'volumen'))return 'sensible'}
+      else if(!str(d.volumen)||!own(VOLS,d.volumen))return 'vol';
+    }
+    if(n!==Object.keys(MAPA).length)return 'n';
+    e=j.coordinacion;
+    if(!exacto(e,['estado'],['volumen'])||!str(e.estado)||!own(ESTADOS,e.estado))return 'coord';
+    if(e.estado==='en_reposo'?own(e,'volumen'):(!str(e.volumen)||!own(VOLS,e.volumen)))return 'coord';
+    return now>=ms.valido_hasta?'caducado':null;
+  }
+  function aplica(j,now){
+    var r=validar(j,now);
+    RS.lvl={};RS.vol={};RS.cat={};RS.j=null;
+    if(r&&r!=='caducado'){RS.st='nodata';return}
+    RS.j={gen:j.generado,datos:j.datos_hasta,valido:j.valido_hasta,delay:j.retraso_horas};
+    if(r==='caducado'){RS.st='expired';return}
+    j.departamentos.forEach(function(d){var id=MAPAINV[d.id];RS.lvl[id]=ESTADOS[d.estado];RS.vol[id]=d.volumen||null;RS.cat[id]=d.categoria});
+    RS.lvl.revprev=ESTADOS[j.coordinacion.estado];RS.vol.revprev=j.coordinacion.volumen||null;
+    RS.st='ok';
+  }
+  function ahora(){return Date.now()+RS.skew}
+  /* Hora absoluta en UTC (sin ubicación ni minutos que no sean los de la hora en punto del JSON). */
+  function fmt(iso){
+    try{return new Intl.DateTimeFormat(ES?'es':'en',{timeZone:'UTC',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(iso))+' UTC'}
+    catch(e){return iso.slice(0,16).replace('T',' ')+' UTC'}
+  }
+  function isStr(n){return REAL&&(RS.st!=='ok'||(n.proc&&n.id!=='revprev'))}
+  function stText(id){var l=lvl(id),t=X.R.stLong[l]||'';return t.replace('{t}',RS.j?fmt(RS.j.datos):'')}
+  function volText(id){var v=RS.vol[id];return v?X.R.vol[v]:''}
+  if(REAL){X.names.revprev=X.R.coordName;X.desc.revprev=X.R.coordDesc}
 
   function nm(id){return X.names[id]}
   function lvlDept(id){return LVL[id]||1}
   function lvl(id){
+    if(REAL)return RS.st==='ok'?(RS.lvl[id]||1):1;
     if(id==='ceo')return 3;
     if(id==='brief')return 2;
     if(id==='revisor')return (lvlDept('frontend')===3||lvlDept('backend')===3)?3:1;
@@ -93,7 +199,7 @@
   function layout(){
     N=[];
     ROWS.forEach(function(r,ri){
-      var m=r.n.length,sp=r.k==='Products'?250:Math.min(156,860/m),cxx=600,y=TOP+ri*ROWH+(r.k==='Output'?44:0);
+      var m=r.n.length,sp=r.k==='Products'?250:Math.min(156,860/m),cxx=REAL?520:600,y=TOP+ri*ROWH+(r.k==='Output'?44:0);
       r.n.forEach(function(n,j){N.push({id:n[0],proc:!!n[1],col:n[2]||r.t,row:ri,x:cxx+(j-(m-1)/2)*sp,y:y,note:X.notes[n[0]]})});
     });
     E=[];
@@ -122,7 +228,7 @@
     P=[];
     N.forEach(function(n){
       var l=lvl(n.id),out=E.filter(function(e){return e.a===n});if(!out.length||l<2)return;
-      var cnt=l===3?9:2;for(var i=0;i<cnt;i++)P.push({n:n,e:out[Math.floor(Math.random()*out.length)],p:Math.random(),v:.18+Math.random()*.4,j:(Math.random()-.5)*14});
+      var cnt=REAL?(l===3?5:2):(l===3?9:2);for(var i=0;i<cnt;i++)P.push({n:n,e:out[Math.floor(Math.random()*out.length)],p:Math.random(),v:.18+Math.random()*.4,j:(Math.random()-.5)*14});
     });
   }
   function spring(s,dt){var k=Math.pow(2*Math.PI/.38,2),c=2*Math.sqrt(k);s.v+=(-k*(s.x-s.t)-c*s.v)*dt;s.x+=s.v*dt;if(Math.abs(s.x-s.t)<.002&&Math.abs(s.v)<.002){s.x=s.t;s.v=0;return false}return true}
@@ -152,20 +258,22 @@
     var net=$('net'),h='';
     ROWS.forEach(function(r,ri){h+='<div class="lay" aria-hidden="true" style="top:'+(TOP+ri*ROWH-8)+'px">'+esc(X.rows[r.k])+'</div>'});
     N.forEach(function(n){
-      var l=lvl(n.id),c=COL[n.col]||COL.gray;
-      h+='<button type="button" class="nd '+(l>=2?'on'+(l===3?' on3':''):'off')+(cur_sel===n.id?' sel':'')+'" data-nodo="'+n.id+'" aria-label="'+esc(nm(n.id))+'" style="left:'+(n.x-NW/2)+'px;top:'+(n.y-NH/2)+'px;--c:rgb('+c+');--rgb:'+c.join(',')+'">'
-        +'<b>'+esc(nm(n.id))+'</b><span>'+esc(n.id==='humano'?X.always:(n.note||X.LS[l]))+'</span><i class="dt"></i><div class="bar"><i style="width:'+(l===3?86:(l===2?44:8))+'%"></i></div></button>';
+      var l=lvl(n.id),c=COL[n.col]||COL.gray,sx=isStr(n);
+      var sb=REAL?(sx?(n.note||''):X.R.st[l]):(n.id==='humano'?X.always:(n.note||X.LS[l]));
+      var bw=REAL?(VOLS[RS.vol[n.id]]||(l>=2?44:8)):(l===3?86:(l===2?44:8));
+      h+='<button type="button" class="nd '+(sx?'str':(l>=2?'on'+(l===3?' on3':''):'off'))+(cur_sel===n.id?' sel':'')+'" data-nodo="'+n.id+'" aria-label="'+esc(nm(n.id)+(REAL&&!sx&&RS.st==='ok'?' — '+stText(n.id):''))+'" style="left:'+(n.x-NW/2)+'px;top:'+(n.y-NH/2)+'px;--c:rgb('+c+');--rgb:'+c.join(',')+'">'
+        +'<b>'+esc(nm(n.id))+'</b><span>'+esc(sb)+'</span><i class="dt"></i><div class="bar"><i style="width:'+bw+'%"></i></div></button>';
     });
     var ga=N.filter(function(n){return n.id==='bots'||n.id==='pilotos'});
     if(ga.length===2){var gx=Math.min(ga[0].x,ga[1].x)-NW/2-9,gw=Math.abs(ga[0].x-ga[1].x)+NW+18;h+='<div class="grp" style="left:'+gx+'px;top:'+(ga[0].y-NH/2-12)+'px;width:'+gw+'px;height:'+(NH+24)+'px"><i>'+X.aaasTag+'</i></div>'}
     var aa=N.filter(function(n){return n.id==='aaas'})[0],er=N.filter(function(n){return n.id==='erp'})[0],wb=N.filter(function(n){return n.id==='webs'})[0];
     if(aa&&er&&wb){
-      h+='<div class="xcon on" style="left:'+(aa.x+NW/2)+'px;top:'+(aa.y-1)+'px;width:'+(er.x-aa.x-NW)+'px"><span>'+X.operates+'</span><i></i></div>';
-      h+='<div class="xcon on" style="left:'+(er.x+NW/2)+'px;top:'+(er.y-1)+'px;width:'+(wb.x-er.x-NW)+'px"><span>'+X.landings+'</span><i></i></div>';
+      h+='<div class="xcon '+(REAL?'off':'on')+'" style="left:'+(aa.x+NW/2)+'px;top:'+(aa.y-1)+'px;width:'+(er.x-aa.x-NW)+'px"><span>'+X.operates+'</span><i></i></div>';
+      h+='<div class="xcon '+(REAL?'off':'on')+'" style="left:'+(er.x+NW/2)+'px;top:'+(er.y-1)+'px;width:'+(wb.x-er.x-NW)+'px"><span>'+X.landings+'</span><i></i></div>';
       h+='<div class="etypes" style="left:'+(er.x-130)+'px;top:'+(er.y+NH/2+8)+'px;width:260px"><small>'+X.types+'</small>'+X.typeNames.map(function(t){return '<span>'+t+'</span>'}).join('')+'</div>';
     }
     var pp=N.filter(function(n){return n.id==='pilotos'})[0];
-    if(pp){
+    if(pp&&!REAL){
       var pst=lvl('pilotos')>=2?'on':'off',x0=pp.x+NW/2;
       h+='<div class="pcon '+pst+'" style="left:'+x0+'px;top:'+(pp.y-1)+'px;width:'+(1044-x0)+'px"><i></i></div>';
       h+='<div class="pcol" style="left:1044px;top:'+(pp.y-118)+'px;width:176px"><div class="pack '+pst+'"><h5>'+X.pAgents+'</h5><b>'+X.pNine+'</b><div class="pg">'+X.AG.map(function(a,i){return '<span style="animation-delay:-'+(i*0.28).toFixed(2)+'s">'+PERSON+'<em>'+a+'</em></span>'}).join('')+'</div><p>'+X.pNote+'</p></div><div class="tcon '+pst+'"></div><div class="aitools"><h5>'+X.tools+' <span>'+X.planned+'</span></h5><small>'+X.toolsSub+'</small><ul>'+X.toolNames.map(function(t,i){return '<li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="'+TOOLPATH[i]+'"/></svg>'+t+'</li>'}).join('')+'</ul></div></div>';
@@ -177,6 +285,11 @@
   function info(id){
     var n=N.filter(function(x){return x.id===id})[0];if(!n)return;
     var l=lvl(id);
+    if(REAL){
+      var vt=volText(id);
+      $('info').innerHTML='<b>'+esc(nm(id))+'</b><em>'+esc(X.desc[id]||'')+'</em><em>'+esc(isStr(n)?X.R.strInfo:stText(id)+(vt?' · '+vt:''))+'</em>';
+      return;
+    }
     $('info').innerHTML='<b>'+esc(nm(id))+'</b><em>'+esc(X.desc[id]||'')+'</em><em>'+esc(id==='humano'?X.always:X.LS[l])+(X.work[id]&&l>=2?' · '+esc(X.work[id]):'')+'</em>';
   }
   function rail(){
@@ -194,13 +307,38 @@
     $('c-a').textContent=n3;$('c-c').textContent=MEETS;
     $('lead').textContent=X.lead(n3);
   }
+
+  function kv(a,b){return '<div class="kv"><span>'+esc(a)+'</span><b>'+esc(b)+'</b></div>'}
+  function railReal(){
+    var R=X.R,st=RS.st,rs='',h='';
+    $('tag').textContent=R.tag[st];
+    $('lead').textContent=R.lead[st].replace('{d}',RS.j?RS.j.delay:'').replace('{t}',RS.j?fmt(RS.j.datos):'');
+    var k=$('k-st');k.className='live smp'+(st==='ok'?'':' off');k.querySelector('span').textContent=R.kst[st];
+    $('k-data').textContent=RS.j?fmt(RS.j.datos):R.none;
+    $('k-delay').textContent=RS.j?RS.j.delay+' h':R.none;
+    if(st==='ok'||st==='expired'){
+      h=kv(R.pRecRows[0],fmt(RS.j.gen))+kv(R.pRecRows[1],fmt(RS.j.datos))+kv(R.pRecRows[2],fmt(RS.j.valido))+kv(R.pRecRows[3],RS.j.delay+' h');
+      rs+='<div class="pn"><h3>'+esc(R.pRec)+'</h3>'+h+(st==='expired'?'<p class="pnote">'+esc(R.lead.expired.replace('{t}',fmt(RS.j.datos)))+'</p>':'')+'</div>';
+    }else rs+='<div class="pn"><h3>'+esc(R.pRec)+'</h3><p class="pnote">'+esc(R.lead[st])+'</p></div>';
+    if(st==='ok'){
+      var deps=Object.keys(MAPA);
+      h='';CATS.forEach(function(c){
+        var m=deps.filter(function(id){return RS.cat[id]===c});if(!m.length)return;
+        h+='<div class="ar"><span class="n">'+esc(R.cats[c])+'</span><span class="ds" role="img" aria-label="'+esc(m.map(function(id){return nm(id)+': '+R.st[lvl(id)]}).join(', '))+'">'+m.map(function(id){return '<i class="d'+(lvl(id)>=2?'':' o')+'"></i>'}).join('')+'</span></div>';
+      });
+      rs+='<div class="pn"><h3>'+esc(R.pArea)+'<em>'+esc(R.pAreaE)+'</em></h3>'+h+'</div>';
+      var cv2=volText('revprev');
+      rs+='<div class="pn"><h3>'+esc(R.pCoord)+'</h3>'+kv(R.st[lvl('revprev')],cv2||R.none)+'</div>';
+    }
+    $('rail').innerHTML=rs;
+  }
   function mlist(){
     var h='';
-    ROWS.forEach(function(r){h+='<h4>'+esc(X.rows[r.k])+'</h4>';r.n.forEach(function(n){var id=n[0],c=COL[n[2]||r.t],l=lvl(id);h+='<button type="button" data-nodo="'+id+'" style="--c:rgb('+c+')"><i class="'+(l>=2?'on':'')+'"></i>'+esc(nm(id))+'<s>'+esc(id==='humano'?X.always:(X.notes[id]||X.LS[l]))+'</s></button>'});});
+    ROWS.forEach(function(r){h+='<h4>'+esc(X.rows[r.k])+'</h4>';r.n.forEach(function(n){var id=n[0],c=COL[n[2]||r.t],l=lvl(id),nx=N.filter(function(x){return x.id===id})[0],sx=REAL&&nx&&isStr(nx);h+='<button type="button" data-nodo="'+id+'" style="--c:rgb('+c+')"><i class="'+(l>=2&&!sx?'on':'')+(sx?' str':'')+'"></i>'+esc(nm(id))+'<s>'+esc(REAL?(sx?(X.notes[id]||''):X.R.st[l]):(id==='humano'?X.always:(X.notes[id]||X.LS[l])))+'</s></button>'});});
     $('mlist').innerHTML=h;
   }
   function fit(){var w=$('netw').clientWidth||1000,k=Math.min(1,w/W,Math.max(.6,(window.innerHeight-110)/H));$('net').style.transform='scale('+k+')';$('netw').style.height=Math.round(H*k)+'px'}
-  function all(){buildNodes();drawWires();seedParticles();rail();mlist();fit();setLift();dirty=true}
+  function all(){buildNodes();drawWires();seedParticles();if(REAL)railReal();else rail();mlist();fit();setLift();dirty=true}
   document.addEventListener('click',function(e){
     var n=e.target.closest('[data-nodo]');if(n){cur_sel=n.getAttribute('data-nodo');info(cur_sel);buildNodes();setLift()}
   });
@@ -208,6 +346,31 @@
   window.addEventListener('resize',fit);
   var dpr=Math.min(window.devicePixelRatio||1,2);cv.width=W*dpr;cv.height=H*dpr;
   layout();all();
-  $('info').innerHTML='<b>'+X.hover[0]+'</b><em>'+X.hover[1]+'</em>';
+  var HV=REAL?X.R.hover:X.hover;
+  $('info').innerHTML='<b>'+HV[0]+'</b><em>'+HV[1]+'</em>';
   requestAnimationFrame(frame);
+  if(REAL){
+    /* La hora de referencia es la del SERVIDOR (cabecera Date), no la del visitante: con el reloj atrasado
+       un registro caducado pasaría por vigente. Sin cabecera, se usa la del visitante. */
+    var carga=function(){
+      var ac=window.AbortController?new AbortController():null,to=setTimeout(function(){if(ac)ac.abort()},8000);
+      if(!window.fetch){RS.st='nodata';all();return}
+      fetch(SRC,{cache:'no-store',credentials:'omit',signal:ac?ac.signal:undefined})
+        .then(function(r){
+          if(!r.ok)throw new Error('http');
+          var d=Date.parse(r.headers.get('Date')||'');RS.skew=isNaN(d)?0:d-Date.now();
+          return r.text();
+        })
+        .then(function(t){if(t.length>20000)throw new Error('size');return JSON.parse(t)})
+        .then(function(j){RS.fetched=Date.now();aplica(j,ahora())})
+        .catch(function(){RS.st='nodata';RS.j=null;RS.lvl={}})
+        .then(function(){clearTimeout(to);all();if(cur_sel)info(cur_sel)});
+    };
+    carga();
+    /* Pestaña abierta mucho rato: cada minuto se comprueba la caducidad y, si pasaron 10 min, se vuelve a pedir. */
+    setInterval(function(){
+      if(RS.st==='ok'&&ahora()>=Date.parse(RS.j.valido)){RS.st='expired';all();if(cur_sel)info(cur_sel)}
+      if(!document.hidden&&Date.now()-RS.fetched>600000)carga();
+    },60000);
+  }
 })();
