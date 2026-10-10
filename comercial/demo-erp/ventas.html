@@ -218,6 +218,8 @@
     'Ya se abonó en parte: corrige el resto por diferencias.': 'It was already partly credited: correct the rest by differences.',
     'Se abonaría más de lo facturado.': 'More than the invoiced amount would be credited.',
     'El pago de la reserva está cobrado y no se pudo registrar ni dejar en «pagos por revisar»: no se emitió y el número no se gastó. Avisa al estudio.': 'The booking payment is collected and could neither be recorded nor left in “payments to review”: nothing was issued and the number was not used. Tell the studio.',
+    'No disponible en esta instancia: el módulo Reservas está apagado, así que las reservas no se pueden reclamar ni facturar desde aquí.': 'Not available on this instance: the Bookings module is switched off, so bookings cannot be claimed or invoiced from here.',
+    'No disponible en esta instancia: esta acción depende de un módulo que está apagado.': 'Not available on this instance: this action depends on a module that is switched off.',
     'Reintentar': 'Retry'
   };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
@@ -289,7 +291,29 @@
   var AVISO_TRUNCADO = 'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.';
   var SB = null;
   var E = { tab: 'operaciones', ops: [], opsSig: null, opsCargado: false, res: [], resSig: null, resCargado: false, cola: [], colaSig: null,
-            ficha: null, bloqueos: {}, ocupado: false, venta: { clave: null }, clientes: null, productos: null, emisor: null };
+            ficha: null, bloqueos: {}, ocupado: false, reservasOn: true, venta: { clave: null }, clientes: null, productos: null, emisor: null };
+
+  /* ── módulo Reservas (10-oct-2026) ── Con `reservas-producto` APAGADO la base contesta `null` (HTTP 200) a sus RPC: sin esta guarda la pantalla
+     lo leía como «la base no devolvió…» o «algo inesperado». `axwModuloActivo` (apagados_instancia.js) falla ABIERTO: sin el fichero (Lawang),
+     o sin saber aún, es true = el comportamiento de siempre. Solo dice false cuando la base ha contestado y el módulo no está. */
+  var NO_DISP_RES = 'No disponible en esta instancia: el módulo Reservas está apagado, así que las reservas no se pueden reclamar ni facturar desde aquí.';
+  var NO_DISP_ACC = 'No disponible en esta instancia: esta acción depende de un módulo que está apagado.';
+  function reservasOn() {
+    var activo = function () {
+      try { return typeof window.axwModuloActivo === 'function' ? window.axwModuloActivo('reservas-producto') !== false : true; }
+      catch (e) { return true; /* MUDO A PROPOSITO: falla abierto = el comportamiento de siempre; si la guarda no se puede evaluar no se esconde nada */ }
+    };
+    var listos = window.AXW_MODULOS_LISTOS;
+    if (!listos || typeof listos.then !== 'function') return Promise.resolve(activo());
+    return listos.then(activo, activo);
+  }
+  var modP = Promise.resolve(true);
+  function aplicaModulo() {
+    var t = raiz.querySelector('[data-accion="vt-tab"][data-tab="reservas"]');
+    if (t) oculta(t, !E.reservasOn);
+    if (!E.reservasOn && E.tab === 'reservas') pestana('operaciones');
+    if (E.ficha && E.ficha.op) pintaAccionesFicha();
+  }
 
   /* ── hablar con la base ── */
   function clave24() {
@@ -587,6 +611,11 @@
     vacia(ac);
     var o = E.ficha.op, fs = E.ficha.facturas;
     if (o.origen !== 'reserva' || o.estado === 'cancelada') return;
+    if (!E.reservasOn) {
+      var vivo0 = (fs || []).some(function (f) { return f.tipo === 'factura' && !f.rectifica_id && !f.anulada; });
+      if (fs && !vivo0) ac.appendChild(h('p', { class: 'vt-aviso', text: T(NO_DISP_RES) }));
+      return;
+    }
     if (!o.client_id) { ac.appendChild(h('p', { class: 'vt-aviso', text: T('Esta reserva no tiene cliente: reclámala primero para poder facturarla.') })); return; }
     if (!fs) return;
     var vivo = fs.some(function (f) { return f.tipo === 'factura' && !f.rectifica_id && !f.anulada; });
@@ -604,6 +633,7 @@
     llama('factura_desde_operacion', { p_operacion: o.id, p_sociedad: null }).then(function (r) {
       libera(btn);
       if (r.error) { error(mensaje(r.error)); return; }
+      if (r.data == null) { aviso(T(NO_DISP_ACC)); return; }   // módulo apagado con la pantalla abierta: la base contesta null, no es un fallo
       var d = r.data || {};
       if (!d.id || d.operacion_id !== o.id) { error(T('La base no devolvió el borrador: recarga y comprueba.')); return; }
       exito(d.creada === false ? T('El borrador ya existía: se enseña el que había.') : T('Borrador creado.'));
@@ -753,6 +783,9 @@
 
   /* ───────────────────────────── Reservas (bandeja) ───────────────────────────── */
   function cargaReservas(mas) {
+    return modP.then(function () { return E.reservasOn ? cargaReservasDe(mas) : null; });
+  }
+  function cargaReservasDe(mas) {
     var est = $v('res-estado');
     est.textContent = T('Cargando…');
     var args = { p_limit: 200 };
@@ -798,6 +831,13 @@
 
   /* ───────────────────────────── Cola «cobrado sin facturar» ───────────────────────────── */
   function cargaCola(mas) {
+    return modP.then(function () {
+      if (E.reservasOn) return cargaColaDe(mas);
+      E.cola = []; vacia($v('cola-tabla')); oculta(raiz.querySelector('[data-accion="vt-cola-mas"]'), true);
+      $v('cola-estado').textContent = T('El módulo Reservas está apagado en esta instancia: no hay reservas que mirar. Esto NO quiere decir que no haya nada cobrado sin facturar.');
+    });
+  }
+  function cargaColaDe(mas) {
     var est = $v('cola-estado');
     est.textContent = T('Cargando…');
     var args = { p_limit: 200 };
@@ -836,7 +876,7 @@
         tr.appendChild(celda(fecha(x.pago_registrado_en) + ' · ' + String(x.dias_sin_facturar == null ? '—' : x.dias_sin_facturar) + ' ' + T('Días sin facturar').toLowerCase(), 'vt-num'));
         tr.appendChild(celda(T(x.tiene_borrador ? 'Sí' : 'No')));
         var ac = h('div', { class: 'vt-acciones' });
-        if (x.sin_cliente) ac.appendChild(boton(T('Reclamar'), 'vt-reclamar', { 'data-reserva-id': x.id, 'data-origen': 'cola' }));
+        if (x.sin_cliente && E.reservasOn) ac.appendChild(boton(T('Reclamar'), 'vt-reclamar', { 'data-reserva-id': x.id, 'data-origen': 'cola' }));
         else if (x.operacion_id) ac.appendChild(boton(T('Abrir operación'), 'vt-abrir-op', { 'data-op-id': x.operacion_id, 'data-pago': x.pago_referencia ? '1' : null }));
         tr.appendChild(celda(ac));
         return tr;
@@ -886,6 +926,7 @@
           llama('reserva_asigna_cliente', { p_reserva: res.id, p_cliente: clienteId }).then(function (r) {
             libera(bt);
             if (r.error) { dd.error(mensaje(r.error)); return; }
+            if (r.data == null) { dd.cierra(); E.reservasOn = false; aplicaModulo(); aviso(T(NO_DISP_RES)); return cargaCola(false); }   // apagado con la pantalla abierta
             var x = r.data || {};
             dd.cierra();
             if (!x.operacion_id) { aviso(T('La base no devolvió la operación de la reserva reclamada: recarga y comprueba.')); return Promise.all([cargaReservas(false), cargaCola(false)]); }
@@ -1009,6 +1050,7 @@
       else if (t && t.hasAttribute && t.hasAttribute('data-campo') && E.venta) E.venta.clave = null;   // la clave de idempotencia es de UN contenido: otro contenido, otra clave
     });
     raiz.addEventListener('input', function (ev) { var t = ev.target; if (t && t.hasAttribute && t.getAttribute('data-campo') === 'venta-cantidad') E.venta.clave = null; });
+    modP = reservasOn().then(function (v) { E.reservasOn = v; aplicaModulo(); return v; });
     pestana('operaciones');
   }
 

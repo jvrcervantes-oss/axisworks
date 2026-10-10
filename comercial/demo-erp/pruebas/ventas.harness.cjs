@@ -46,6 +46,7 @@ async function servidor(b, nombre, a) {
   const o = b.o;
   if (o.lento) await new Promise(r => setTimeout(r, o.lento));
   if (o.sinRed && nombre === o.sinRed) return { data: null, error: { message: 'Failed to fetch' } };
+  if (o.nulos && o.nulos.includes(nombre)) return { data: null, error: null };   // modulo APAGADO en la demo: apagados_instancia.js contesta null con HTTP 200, sin marcador
   if (o.noDisponible && o.noDisponible.includes(nombre)) return err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
   switch (nombre) {
     case 'operaciones_cola_datos': {
@@ -134,7 +135,7 @@ async function servidor(b, nombre, a) {
 }
 
 // ── la página ───────────────────────────────────────────────────────────────────────────────────
-const pagina = (idioma, lectores) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
+const pagina = (idioma, lectores, mods) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
 ${MARCADO}
 <script>
 window.__xss = undefined; window.__fromLlamado = 0; window.__fetchLlamado = 0; window.__sinEn = []; window.__errores = [];
@@ -156,6 +157,7 @@ window.lwLocale = function () { return window.LW_IDIOMA === 'en' ? 'en-GB' : 'es
 window.lwT = function (s) { s = String(s); if (window.LW_IDIOMA === 'en') { if (Object.prototype.hasOwnProperty.call(window.LW_EN, s)) return window.LW_EN[s]; if (!/^[\\s—·0-9.,%():]*$/.test(s)) window.__sinEn.push(s); } return s; };
 window.lwIdiomaAplicar = function (raiz) { Array.prototype.forEach.call(raiz.querySelectorAll('[data-lwt]'), function (e) { e.textContent = window.lwT(e.textContent); }); };
 window.toast = function () {};
+${mods ? "window.axwModuloActivo = function (m) { return window.__mods[m] !== false; }; window.__mods = " + JSON.stringify(mods) + "; window.AXW_MODULOS_LISTOS = Promise.resolve(true);" : ''}
 window.onerror = function (m) { window.__errores.push(String(m)); };
 </script>
 <script>${SCRIPT.replace(/<\/?script>/g, '').replace("var LECT = { clientes: 'clientes_datos', productos: 'productos_datos', emisor: 'sociedades_emisor_datos' };", lectores)}</script></body></html>`;
@@ -173,7 +175,7 @@ const CON_LECTORES = LECT_REAL;
     const ctx = await nav.newContext({ viewport: { width: opts.ancho || 1440, height: 1000 } });
     const p = await ctx.newPage();
     await p.exposeFunction('__srv', (n, a) => servidor(base, n, a));
-    await p.setContent(pagina(opts.idioma || 'es', opts.lectores === false ? SIN_LECTORES : CON_LECTORES), { waitUntil: 'load' });
+    await p.setContent(pagina(opts.idioma || 'es', opts.lectores === false ? SIN_LECTORES : CON_LECTORES, opts.mods), { waitUntil: 'load' });
     await p.waitForFunction(() => !document.querySelector('[data-vt="ops-estado"]').textContent.includes('Cargando') && !document.querySelector('[data-vt="ops-estado"]').textContent.includes('Loading'), null, { timeout: 5000 });
     return { base, p, ctx };
   }
@@ -421,6 +423,67 @@ const CON_LECTORES = LECT_REAL;
     await p.click('[data-accion="vt-emitir"]'); await p.click('[data-accion="vt-modal-emitir"]');
     await espera(p, () => !!document.querySelector('[data-accion="vt-rectificar"]'));
     ok('si el recibí de la pasarela no se registró, sale una ALERTA además del número', (await txt(p, '[data-vt="aviso"]')).includes('Revisa el cobro') && (await txt(p, '[data-vt="exito"]')).includes('BBM-F2026-'));
+    await ctx.close();
+  }
+
+  // ── 3b. módulo Reservas APAGADO (10-oct-2026): la base contesta null (HTTP 200) a sus RPC; la pantalla no debe fallar ni ofrecer lo que no hay ──────
+  const NO_DISP = 'No disponible en esta instancia';
+  const RES_NULOS = ['reservas_cobradas_sin_facturar', 'reservas_producto_datos', 'reserva_asigna_cliente', 'factura_desde_operacion'];
+  {
+    const { base, p, ctx } = await abre({ mods: { 'reservas-producto': false }, base: { nulos: RES_NULOS } });
+    base.reservas[0].client_id = 'c2'; base.ops[0].client_id = 'c2'; base.ops[0].estado = 'abierta'; await recarga(p);
+    ok('apagado: la pestaña Reservas no se ofrece', await p.$eval('[data-accion="vt-tab"][data-tab="reservas"]', e => e.classList.contains('vt-oculto')));
+    ok('apagado: las otras pestañas siguen (Operaciones, Cobrado sin facturar, Nueva venta)', (await p.$$('[data-accion="vt-tab"]:not(.vt-oculto)')).length === 3);
+    await tab(p, 'cola');
+    await espera(p, () => document.querySelector('[data-vt="cola-estado"]').textContent.includes('apagado'));
+    ok('apagado: la cola dice que Reservas está apagado (y que eso NO es «nada sin facturar»), sin error rojo', (await txt(p, '[data-vt="cola-estado"]')).includes('NO quiere decir') && (await p.$eval('[data-vt="error"]', e => e.classList.contains('vt-oculto'))));
+    ok('apagado: la cola no pinta Reclamar ni tabla', (await p.$$('[data-vt="cola-tabla"] [data-accion="vt-reclamar"]')).length === 0 && (await p.$$('[data-vt="cola-tabla"] tbody tr')).length === 0);
+    ok('apagado: no se pidió nada a las RPC del módulo', llamadas(base, 'reservas_cobradas_sin_facturar').length === 0 && llamadas(base, 'reservas_producto_datos').length === 0);
+    await tab(p, 'operaciones');
+    await p.click('[data-accion="vt-abrir-op"]');
+    await espera(p, () => document.querySelector('[data-vt="ficha-acciones"]').textContent.includes('No disponible'));
+    ok('apagado: la ficha de una operación de reserva NO ofrece «Crear borrador» y dice «' + NO_DISP + '» en llano', !(await p.$('[data-accion="vt-crear-borrador"]')) && (await txt(p, '[data-vt="ficha-acciones"]')).includes(NO_DISP));
+    ok('apagado: ni una llamada a factura_desde_operacion ni error rojo', llamadas(base, 'factura_desde_operacion').length === 0 && (await p.$eval('[data-vt="error"]', e => e.classList.contains('vt-oculto'))));
+    ok('apagado: la venta de catálogo (otro módulo) no se ve afectada', (await p.$$('[data-accion="vt-tab"][data-tab="nueva"]:not(.vt-oculto)')).length === 1);
+    ok('apagado: sin errores de script', (await p.evaluate(() => window.__errores.length)) === 0);
+    await ctx.close();
+  }
+  {   // el módulo se apaga con la pantalla ya abierta: la guarda dice «activo» pero la base contesta null → texto en llano, no «la base no devolvió»
+    const { base, p, ctx } = await abre({ mods: { 'reservas-producto': true }, base: { nulos: ['factura_desde_operacion', 'reserva_asigna_cliente'] } });
+    base.reservas[0].client_id = 'c2'; base.ops[0].client_id = 'c2'; base.ops[0].estado = 'abierta'; await recarga(p);
+    await p.click('[data-accion="vt-abrir-op"]');
+    await espera(p, () => !!document.querySelector('[data-accion="vt-crear-borrador"]'));
+    await p.click('[data-accion="vt-crear-borrador"]');
+    await espera(p, () => document.querySelector('[data-vt="aviso"]').textContent.length > 0);
+    const av = await txt(p, '[data-vt="aviso"]');
+    ok('null al crear el borrador: «' + NO_DISP + '», nunca «La base no devolvió el borrador», y sin error rojo', av.includes(NO_DISP) && !av.includes('La base no devolvió') && (await p.$eval('[data-vt="error"]', e => e.classList.contains('vt-oculto'))), av);
+    ok('null al crear el borrador: el botón vuelve a estar libre', !(await p.$('[data-accion="vt-crear-borrador"]:disabled')));
+    await ctx.close();
+  }
+  {
+    const { base, p, ctx } = await abre({ mods: { 'reservas-producto': true }, base: { nulos: ['reserva_asigna_cliente'] } });
+    await tab(p, 'reservas');
+    await espera(p, () => document.querySelectorAll('[data-vt="res-tabla"] tbody tr').length === 1);
+    await p.click('[data-accion="vt-reclamar"]');
+    await espera(p, () => document.querySelectorAll('[data-vt="dialogo"] select option').length > 1);
+    await p.selectOption('[data-vt="dialogo"] select', 'c2');
+    await p.click('[data-accion="vt-modal-continuar"]');
+    await espera(p, () => !!document.querySelector('[data-accion="vt-modal-reclamar"]'));
+    await p.click('[data-accion="vt-modal-reclamar"]');
+    await espera(p, () => document.querySelector('[data-vt="aviso"]').textContent.length > 0);
+    const av = await txt(p, '[data-vt="aviso"]');
+    ok('null al reclamar: «' + NO_DISP + '», nunca «La base no devolvió la operación», diálogo cerrado y sin error rojo', av.includes(NO_DISP) && !av.includes('La base no devolvió') && !(await dialogoVisible(p)) && (await p.$eval('[data-vt="error"]', e => e.classList.contains('vt-oculto'))), av);
+    ok('null al reclamar: la pantalla pasa a «Reservas apagado» (pestaña fuera)', await p.$eval('[data-accion="vt-tab"][data-tab="reservas"]', e => e.classList.contains('vt-oculto')));
+    await ctx.close();
+  }
+  {   // en inglés, con el módulo apagado, no queda texto sin traducir
+    const { p, ctx } = await abre({ idioma: 'en', mods: { 'reservas-producto': false }, base: { nulos: RES_NULOS } });
+    await tab(p, 'cola');
+    await espera(p, () => document.querySelector('[data-vt="cola-estado"]').textContent.includes('switched off'));
+    await tab(p, 'operaciones');
+    await p.click('[data-accion="vt-abrir-op"]');
+    await espera(p, () => document.querySelector('[data-vt="ficha-acciones"]').textContent.includes('Not available'));
+    ok('apagado en inglés: sin textos sin traducir', (await p.evaluate(() => window.__sinEn)).length === 0, JSON.stringify(await p.evaluate(() => window.__sinEn)));
     await ctx.close();
   }
 
