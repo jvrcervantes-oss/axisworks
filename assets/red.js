@@ -111,7 +111,12 @@
   ];
   var LVL={backend:3,seguridad:3,calidad:3,frontend:3,diseno:3,deploy:3,bots:3,legal:2,marketing:2,documentacion:2,organizacion:2,pilotos:2,revprev:3,explore:3,plan:2,encargo:3,consulta:2,verificador:3,trampas:2};
   var MEETS=3;
-  var cur_sel=null,hov=null,W=REAL?1040:1250,H=1080,NW=132,NH=58,ROWH=90,TOP=64;
+  /* Dos maquetas: la de escritorio (lienzo fijo de DW×DH que se escala) y la COMPACTA, para contenedores
+     de menos de 720 px (10-oct-2026). Escalar el lienzo de escritorio a un móvil dejaba los rótulos en
+     unos 3 px, y por eso el diagrama estaba oculto en móvil; la compacta se maqueta al ancho real (escala 1),
+     con las filas partidas en líneas de 2 o 3 nodos. */
+  var DW=REAL?1040:1250,DH=1080,CMPMAX=720;
+  var cur_sel=null,hov=null,CMP=false,W=DW,H=DH,NW=132,NH=58,ROWH=90,TOP=64,LAYT=[];
   var N=[],E=[],P=[],off=null,cx=cv.getContext('2d'),dirty=true,last=0,LIFT={};
 
   /* ══ MODO DATOS (solo con data-src) ═════════════════════════════════════════════════════════
@@ -199,25 +204,48 @@
     return lvlDept(id);
   }
   function layout(){
-    N=[];
-    ROWS.forEach(function(r,ri){
-      var m=r.n.length,sp=r.k==='Products'?250:Math.min(156,860/m),cxx=REAL?520:600,y=TOP+ri*ROWH+(r.k==='Output'?44:0);
-      r.n.forEach(function(n,j){N.push({id:n[0],proc:!!n[1],col:n[2]||r.t,row:ri,x:cxx+(j-(m-1)/2)*sp,y:y,note:X.notes[n[0]]})});
-    });
+    N=[];LAYT=[];
+    var cw=$('netw').clientWidth;
+    CMP=cw>0&&cw<CMPMAX;
+    if(CMP){
+      /* Compacta: filas de 4 en 2×2, de 5-6 en líneas de 3. Los cables salen del borde inferior de la
+         fila entera y entran por el superior de la siguiente (out/inn): no cruzan sus propias líneas. */
+      /* Ancho por fila: las de 1-2 por línea usan nodos anchos para que no se corten los nombres. */
+      W=Math.max(300,cw);NH=48;
+      var y=30,w3=Math.min(124,Math.floor((W-28)/3)),w2=Math.min(150,Math.floor((W-28)/2));NW=w3;
+      ROWS.forEach(function(r,ri){
+        /* En Build, bots y pilotos van en la 2.ª línea con el recuadro AaaS: hace falta más aire entre líneas. */
+        var gy=NH+(r.k==='Build'?22:8),m=r.n.length,per=m===4?2:Math.min(m,3),lines=Math.ceil(m/per),top=y,bot=top+(lines-1)*gy+NH,w=per===3?w3:w2,gx=w+6;
+        r.n.forEach(function(n,j){
+          var li=Math.floor(j/per),inl=Math.min(per,m-li*per),c=j-li*per;
+          N.push({id:n[0],proc:!!n[1],col:n[2]||r.t,row:ri,x:W/2+(c-(inl-1)/2)*gx,y:top+li*gy+NH/2,w:w,inn:top,out:bot,note:X.notes[n[0]]});
+        });
+        LAYT.push(top-19);
+        y=bot+32+(r.k==='Products'?54:0);
+      });
+      H=y-32+18;
+    }else{
+      W=DW;H=DH;NW=132;NH=58;
+      ROWS.forEach(function(r,ri){
+        var m=r.n.length,sp=r.k==='Products'?250:Math.min(156,860/m),cxx=REAL?520:600,y=TOP+ri*ROWH+(r.k==='Output'?44:0);
+        r.n.forEach(function(n,j){N.push({id:n[0],proc:!!n[1],col:n[2]||r.t,row:ri,x:cxx+(j-(m-1)/2)*sp,y:y,inn:y-NH/2,out:y+NH/2,note:X.notes[n[0]]})});
+        LAYT.push(TOP+ri*ROWH-8);
+      });
+    }
     E=[];
     for(var ri=0;ri<ROWS.length-1;ri++)N.filter(function(a){return a.row===ri}).forEach(function(a){N.filter(function(b){return b.row===ri+1}).forEach(function(b){E.push({a:a,b:b})})});
     [['bots','aaas'],['pilotos','aaas'],['backend','erp'],['frontend','webs']].forEach(function(p){var a=N.filter(function(n){return n.id===p[0]})[0],b=N.filter(function(n){return n.id===p[1]})[0];if(a&&b)E.push({a:a,b:b,x:1})});
     N.forEach(function(n){LIFT[n.id]={x:0,v:0,t:0}});
   }
   function bez(e,t,dx){
-    var x1=e.a.x,y1=e.a.y+NH/2,x2=e.b.x,y2=e.b.y-NH/2,g=(y2-y1)*.55,cx1=x1+(dx||0),cy1=y1+g,cx2=x2+(dx||0),cy2=y2-g,u=1-t;
+    var x1=e.a.x,y1=e.a.out,x2=e.b.x,y2=e.b.inn,g=(y2-y1)*.55,cx1=x1+(dx||0),cy1=y1+g,cx2=x2+(dx||0),cy2=y2-g,u=1-t;
     return [u*u*u*x1+3*u*u*t*cx1+3*u*t*t*cx2+t*t*t*x2,u*u*u*y1+3*u*u*t*cy1+3*u*t*t*cy2+t*t*t*y2];
   }
   function drawWires(){
     var o=document.createElement('canvas'),dpr=Math.min(window.devicePixelRatio||1,2);o.width=W*dpr;o.height=H*dpr;var c=o.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);
     E.forEach(function(e,i){
       var l=lvl(e.a.id),hot=l===3,mid=l===2,col=COL[e.a.col]||COL.gray;
-      var x1=e.a.x,y1=e.a.y+NH/2,x2=e.b.x,y2=e.b.y-NH/2,g=(y2-y1)*.55;
+      var x1=e.a.x,y1=e.a.out,x2=e.b.x,y2=e.b.inn,g=(y2-y1)*.55;
       for(var k=0;k<4;k++){
         var j=(k-1.5)*7+((i*13+k*5)%9-4);
         c.beginPath();c.moveTo(x1,y1);c.bezierCurveTo(x1+j,y1+g,x2+j,y2-g,x2,y2);
@@ -258,24 +286,27 @@
   var TOOLPATH=['M8 5v14l11-7z','M12 3 2 8l10 5 10-5zM2 12l10 5 10-5-2-1-8 4-8-4zM2 16l10 5 10-5-2-1-8 4-8-4z','M10 4a6 6 0 1 0 3.5 10.9l5 5 1.5-1.5-5-5A6 6 0 0 0 10 4zm0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8z','M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z'];
   function buildNodes(){
     var net=$('net'),h='';
-    ROWS.forEach(function(r,ri){h+='<div class="lay" aria-hidden="true" style="top:'+(TOP+ri*ROWH-8)+'px">'+esc(X.rows[r.k])+'</div>'});
+    ROWS.forEach(function(r,ri){h+='<div class="lay" aria-hidden="true" style="top:'+LAYT[ri]+'px">'+esc(X.rows[r.k])+'</div>'});
     N.forEach(function(n){
       var l=lvl(n.id),c=COL[n.col]||COL.gray,sx=isStr(n);
       var sb=REAL?(sx?(n.note||''):X.R.st[l]):(n.id==='humano'?X.always:(n.note||X.LS[l]));
       var bw=REAL?(VOLS[RS.vol[n.id]]||(l>=2?44:8)):(l===3?86:(l===2?44:8));
-      h+='<button type="button" class="nd '+(sx?'str':(l>=2?'on'+(l===3?' on3':''):'off'))+(cur_sel===n.id?' sel':'')+'" data-nodo="'+n.id+'" aria-label="'+esc(nm(n.id)+(REAL&&!sx&&RS.st==='ok'?' — '+stText(n.id):''))+'" style="left:'+(n.x-NW/2)+'px;top:'+(n.y-NH/2)+'px;--c:rgb('+c+');--rgb:'+c.join(',')+'">'
+      h+='<button type="button" class="nd '+(sx?'str':(l>=2?'on'+(l===3?' on3':''):'off'))+(cur_sel===n.id?' sel':'')+'" data-nodo="'+n.id+'" aria-label="'+esc(nm(n.id)+(REAL&&!sx&&RS.st==='ok'?' — '+stText(n.id):''))+'" style="left:'+(n.x-(n.w||NW)/2)+'px;top:'+(n.y-NH/2)+'px;width:'+(n.w||NW)+'px;height:'+NH+'px;--c:rgb('+c+');--rgb:'+c.join(',')+'">'
         +'<b>'+esc(nm(n.id))+'</b><span>'+esc(sb)+'</span><i class="dt"></i><div class="bar"><i style="width:'+bw+'%"></i></div></button>';
     });
     var ga=N.filter(function(n){return n.id==='bots'||n.id==='pilotos'});
-    if(ga.length===2){var gx=Math.min(ga[0].x,ga[1].x)-NW/2-9,gw=Math.abs(ga[0].x-ga[1].x)+NW+18;h+='<div class="grp" style="left:'+gx+'px;top:'+(ga[0].y-NH/2-12)+'px;width:'+gw+'px;height:'+(NH+24)+'px"><i>'+X.aaasTag+'</i></div>'}
+    if(ga.length===2){var gnw=ga[0].w||NW,gpx=CMP?5:9,gpy=CMP?7:12,gx=Math.min(ga[0].x,ga[1].x)-gnw/2-gpx,gw=Math.abs(ga[0].x-ga[1].x)+gnw+2*gpx;h+='<div class="grp" style="left:'+gx+'px;top:'+(ga[0].y-NH/2-gpy)+'px;width:'+gw+'px;height:'+(NH+2*gpy)+'px"><i>'+X.aaasTag+'</i></div>'}
     var aa=N.filter(function(n){return n.id==='aaas'})[0],er=N.filter(function(n){return n.id==='erp'})[0],wb=N.filter(function(n){return n.id==='webs'})[0];
-    if(aa&&er&&wb){
+    if(aa&&er&&wb&&CMP){
+      var ew=Math.min(260,W-12);
+      h+='<div class="etypes" style="left:'+Math.max(6,Math.min(W-6-ew,er.x-ew/2))+'px;top:'+(er.y+NH/2+8)+'px;width:'+ew+'px"><small>'+X.types+'</small>'+X.typeNames.map(function(t){return '<span>'+t+'</span>'}).join('')+'</div>';
+    }else if(aa&&er&&wb){
       h+='<div class="xcon '+(REAL?'off':'on')+'" style="left:'+(aa.x+NW/2)+'px;top:'+(aa.y-1)+'px;width:'+(er.x-aa.x-NW)+'px"><span>'+X.operates+'</span><i></i></div>';
       h+='<div class="xcon '+(REAL?'off':'on')+'" style="left:'+(er.x+NW/2)+'px;top:'+(er.y-1)+'px;width:'+(wb.x-er.x-NW)+'px"><span>'+X.landings+'</span><i></i></div>';
       h+='<div class="etypes" style="left:'+(er.x-130)+'px;top:'+(er.y+NH/2+8)+'px;width:260px"><small>'+X.types+'</small>'+X.typeNames.map(function(t){return '<span>'+t+'</span>'}).join('')+'</div>';
     }
     var pp=N.filter(function(n){return n.id==='pilotos'})[0];
-    if(pp&&!REAL){
+    if(pp&&!REAL&&!CMP){  /* el pack de nueve y las AI Tools no caben en la compacta; la tarjeta de Agentes ya los cuenta */
       var pst=lvl('pilotos')>=2?'on':'off',x0=pp.x+NW/2;
       h+='<div class="pcon '+pst+'" style="left:'+x0+'px;top:'+(pp.y-1)+'px;width:'+(1044-x0)+'px"><i></i></div>';
       h+='<div class="pcol" style="left:1044px;top:'+(pp.y-118)+'px;width:176px"><div class="pack '+pst+'"><h5>'+X.pAgents+'</h5><b>'+X.pNine+'</b><div class="pg">'+X.AG.map(function(a,i){return '<span style="animation-delay:-'+(i*0.28).toFixed(2)+'s">'+PERSON+'<em>'+a+'</em></span>'}).join('')+'</div><p>'+X.pNote+'</p></div><div class="tcon '+pst+'"></div><div class="aitools"><h5>'+X.tools+' <span>'+X.planned+'</span></h5><small>'+X.toolsSub+'</small><ul>'+X.toolNames.map(function(t,i){return '<li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="'+TOOLPATH[i]+'"/></svg>'+t+'</li>'}).join('')+'</ul></div></div>';
@@ -334,20 +365,32 @@
     }
     $('rail').innerHTML=rs;
   }
-  function mlist(){
-    var h='';
-    ROWS.forEach(function(r){h+='<h4>'+esc(X.rows[r.k])+'</h4>';r.n.forEach(function(n){var id=n[0],c=COL[n[2]||r.t],l=lvl(id),nx=N.filter(function(x){return x.id===id})[0],sx=REAL&&nx&&isStr(nx);h+='<button type="button" data-nodo="'+id+'" style="--c:rgb('+c+')"><i class="'+(l>=2&&!sx?'on':'')+(sx?' str':'')+'"></i>'+esc(nm(id))+'<s>'+esc(REAL?(sx?(X.notes[id]||''):X.R.st[l]):(id==='humano'?X.always:(X.notes[id]||X.LS[l])))+'</s></button>'});});
-    $('mlist').innerHTML=h;
+  /* El lienzo toma el tamaño de la maqueta vigente (cambia al pasar de escritorio a compacta). */
+  function size(){
+    var dpr=Math.min(window.devicePixelRatio||1,2),net=$('net');
+    cv.width=W*dpr;cv.height=H*dpr;
+    net.style.width=cv.style.width=W+'px';net.style.height=cv.style.height=H+'px';
+    $('netw').classList.toggle('cmp',CMP);
   }
-  function fit(){var w=$('netw').clientWidth||1000,k=Math.min(1,w/W,Math.max(.6,(window.innerHeight-110)/H));$('net').style.transform='scale('+k+')';$('netw').style.height=Math.round(H*k)+'px'}
-  function all(){buildNodes();drawWires();seedParticles();if(REAL)railReal();else rail();mlist();fit();setLift();dirty=true}
+  function fit(){
+    if(CMP){$('net').style.transform='none';$('netw').style.height=H+'px';return}
+    var w=$('netw').clientWidth||1000,k=Math.min(1,w/W,Math.max(.6,(window.innerHeight-110)/H));$('net').style.transform='scale('+k+')';$('netw').style.height=Math.round(H*k)+'px';
+  }
+  function all(){size();buildNodes();drawWires();seedParticles();if(REAL)railReal();else rail();fit();setLift();dirty=true}
   document.addEventListener('click',function(e){
-    var n=e.target.closest('[data-nodo]');if(n){cur_sel=n.getAttribute('data-nodo');info(cur_sel);buildNodes();setLift()}
+    var n=e.target.closest('[data-nodo]');if(n){cur_sel=n.getAttribute('data-nodo');info(cur_sel);$('info').classList.add('fijo');buildNodes();setLift()}
   });
   $('netw').addEventListener('mouseover',function(e){var n=e.target.closest&&e.target.closest('.nd');var id=n?n.getAttribute('data-nodo'):null;if(id!==hov){hov=id;if(id)info(id);setLift()}});
-  window.addEventListener('resize',fit);
-  var dpr=Math.min(window.devicePixelRatio||1,2);cv.width=W*dpr;cv.height=H*dpr;
+  /* En móvil el resize salta al esconderse la barra del navegador (solo cambia el alto): se rehace la
+     maqueta solo si cambia el modo o, en la compacta, el ancho. */
+  window.addEventListener('resize',function(){
+    var cw=$('netw').clientWidth,c=cw>0&&cw<CMPMAX;
+    if(c!==CMP||(c&&Math.max(300,cw)!==W)){layout();all();if(cur_sel)info(cur_sel)}else fit();
+  });
   layout();all();
+  /* Sin ratón no hay «pasar el cursor»: en táctil el aviso dice «toca». */
+  var TOUCH=window.matchMedia&&matchMedia('(hover: none)').matches;
+  if(TOUCH){X.hover[0]=ES?'Toca un nodo':'Tap a node';X.R.hover[0]=X.hover[0]}
   var HV=REAL?X.R.hover:X.hover;
   $('info').innerHTML='<b>'+HV[0]+'</b><em>'+HV[1]+'</em>';
   requestAnimationFrame(frame);

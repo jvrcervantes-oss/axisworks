@@ -71,7 +71,6 @@ $colores = ['#FF2D55','#0A84FF','#32ADE6','#AF52DE','#30B650','#FF9F0A','#8E8E93
     <div class="netw real" id="netw" data-deps="<?= (int) $ORGANIGRAMA['n'] ?>" data-src="<?= e(ACT_JSON) ?>"><div class="net" id="net"><canvas id="cv" width="1040" height="1080" aria-hidden="true"></canvas></div></div>
     <aside class="rail" id="rail"></aside>
   </div>
-  <div class="mlist" id="mlist"></div>
   <noscript><p class="l-note"><?= e($A['noscript']) ?></p></noscript>
 </div></section>
 

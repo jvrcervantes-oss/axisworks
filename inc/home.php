@@ -98,7 +98,6 @@ $jsonld = [
     <div class="netw" id="netw" data-deps="<?= (int) $ORGANIGRAMA['n'] ?>"><div class="net" id="net"><canvas id="cv" width="1250" height="1080" aria-hidden="true"></canvas></div></div>
     <aside class="rail" id="rail" aria-hidden="true"></aside>
   </div>
-  <div class="mlist" id="mlist"></div>
 </div></section>
 
 <section class="l-sec" id="products"><div class="l-wrap">

@@ -45,7 +45,7 @@ $CAMPO_ES = [
 
 'chatbot-whatsapp-ia' => [
   'regla'=>'Un bot que improvisa sobre dinero es un riesgo. Los nuestros pasan a una persona en cuanto el dinero no está claro.',
-  'panel'=>['pie'=>'Qué hizo el bot con cada conversación: qué contestó solo y qué pasó a una persona.','tool'=>'SETTER // CONVERSACIONES','th'=>['Ref','Idioma','Intención','Bot','Traspaso'],'rows'=>[
+  'panel'=>['estado'=>'EN PRUEBAS','pie'=>'Qué hizo el bot con cada conversación: qué contestó solo y qué pasó a una persona.','tool'=>'SETTER // CONVERSACIONES','th'=>['Ref','Idioma','Intención','Bot','Traspaso'],'rows'=>[
     ['WA-2231','EN','Precio de una parcela','Contestado de la fuente','—',false],
     ['WA-2228','ES','Visitar la obra','Hueco ofrecido','—',false],
     ['WA-2219','EN','Forma de pago','Fuera de su alcance','A comercial',true],
@@ -55,8 +55,8 @@ $CAMPO_ES = [
   'modulos'=>['API oficial de WhatsApp Business','Setter dentro del CRM','Bot de apoyo a comerciales','Respuestas de una sola fuente','Lo que no puede decir, fijado por Legal','Lanzamiento con lista de números','Freno en el servidor'],
   'flujo'=>[['Mensaje','Un lead escribe por WhatsApp.'],['Fuente','El bot lee precios y reglas de un solo sitio.'],['Cualifica','Pregunta lo que preguntaría un comercial.'],['Traspaso','Pasa a una persona con el contexto pegado.'],['Cierre','El comercial sigue donde paró el bot.']],
   'caso'=>[
-    'titulo'=>'Lawang Estate — un setter y un asistente de comerciales, lanzados con cuidado',
-    'texto'=>'El CRM de la promotora tiene un setter de IA en un chat de dos paneles al estilo de WhatsApp, y un segundo bot contesta las dudas del propio equipo comercial desde una fuente que ha revisado Legal. Los dos corren sobre el número que ya recibe leads reales, en modo pruebas: hasta que el dueño lo abra, el bot solo contesta a los números de una lista. Así se estrena un bot sin número ni aplicación nuevos.',
+    'titulo'=>'Lawang Estate — un setter y un asistente de comerciales, en modo pruebas',
+    'texto'=>'El CRM de la promotora tiene un setter de IA en un chat de dos paneles al estilo de WhatsApp, y un segundo bot contesta las dudas del propio equipo comercial desde una fuente que ha revisado Legal. Los dos funcionan con el número que ya recibe leads reales, en modo pruebas: hasta que el dueño lo abra, el bot solo contesta a los números de una lista, y para probarlo no ha hecho falta ni un número ni una aplicación nuevos.',
     'cifras'=>[['0','precios que pueda inventarse'],['1','traspaso a una persona, con el contexto'],['2','bots: uno para compradores, otro para el equipo']],
   ],
 ],
@@ -71,7 +71,7 @@ $CAMPO_ES = [
     ['SOL','Solicitudes de cambio','1 pendiente','Sí/No enviado al dueño','—',false],
   ]],
   'modulos'=>['Vigilante de anuncios, 13 reglas','Presupuesto dentro de un tope mensual','Leads sincronizados al CRM','Reservas caducadas liberadas','Aviso antes del vencimiento de una factura','Cambios aprobados por Telegram','Chequeos de salud de los datos'],
-  'flujo'=>[['Intervalo','Se despierta con su propio horario.'],['Comprueba','Lee el estado contra una regla escrita.'],['Actúa','Solo dentro de la jaula: pausa, libera, protege.'],['Avisa','Un mensaje directo al dueño.'],['Registra','Cada acción anotada y reversible.']],
+  'flujo'=>[['Intervalo','Se despierta con su propio horario.'],['Comprueba','Lee el estado contra una regla escrita.'],['Actúa','Solo dentro de sus límites: pausa, libera, protege.'],['Avisa','Un mensaje directo al dueño.'],['Registra','Cada acción anotada y reversible.']],
   'caso'=>[
     'titulo'=>'Lawang Estate — trece reglas vigilando el dinero',
     'texto'=>'Un vigilante revisa la cuenta de anuncios de la promotora cada cuatro horas contra trece reglas escritas: pausa un conjunto que gasta sin leads, mueve el presupuesto diario dentro del tope mensual del dueño y baja los leads nuevos de los formularios al CRM. Otros procesos liberan las reservas cuyo plazo ha vencido, avisan antes de que venza una factura y convierten una petición de cambio en la ficha de un comprador en un sí o un no en el Telegram del dueño; la base de datos ejecuta la respuesta.',
@@ -80,7 +80,7 @@ $CAMPO_ES = [
 ],
 
 'portal-de-clientes' => [
-  'regla'=>'El acceso es una regla, no un favor: ficha más contrato abre la puerta.',
+  'regla'=>'El acceso lo da una regla: ficha de comprador más contrato abre la puerta.',
   'panel'=>['pie'=>'Lo que ve un comprador al entrar: sus documentos, qué ha pagado y qué le vence.','tool'=>'PORTAL DEL COMPRADOR // MI EXPEDIENTE','th'=>['Doc','Tipo','Estado','Pago','Vence'],'rows'=>[
     ['CTR-118','Bloqueo de parcela','Firmado','Pagado','—',false],
     ['CTR-121','Contrato de obra','Firmado','Hito 2 de 5','15 días',false],
@@ -92,7 +92,7 @@ $CAMPO_ES = [
   'flujo'=>[['Firma','El comprador firma un contrato.'],['Regla','Ficha más contrato es acceso.'],['Entra','Con su propio correo, sin invitación.'],['Lo suyo','Solo sus filas, lo impone la base.'],['Copias','Documentos firmados y recibís para descargar.']],
   'caso'=>[
     'titulo'=>'Lawang Estate — el portal del comprador',
-    'texto'=>'Cada comprador de una villa o de una parcela abre su propio expediente: contratos, copias firmadas, calendario de pagos y recibís, leídos en vivo de la misma base con la que trabaja la oficina. El acceso es una regla que se comprueba en la puerta —ficha de comprador y al menos un contrato— en vez de una invitación que alguien tiene que acordarse de mandar. La base de datos se niega a devolver las filas de otro.',
+    'texto'=>'Cada comprador de una villa o de una parcela abre su propio expediente: contratos, copias firmadas, calendario de pagos y recibís, leídos en vivo de la misma base con la que trabaja la oficina. El acceso es una regla que se comprueba en la puerta (ficha de comprador y al menos un contrato) en vez de una invitación que alguien tiene que acordarse de mandar. La base de datos se niega a devolver las filas de otro.',
     'cifras'=>[['24/7','acceso del comprador a su expediente'],['0','invitaciones que mandar'],['1','expediente por comprador, solo el suyo']],
   ],
 ],
@@ -145,13 +145,13 @@ $CAMPO_ES = [
   'flujo'=>[['Creatividad','Hecha para el móvil.'],['Conjunto','Segmentación explícita, siempre.'],['Formulario','El lead contesta en el anuncio.'],['CRM','Llega con su campaña.'],['Vigilante','Cada cuatro horas, dentro del tope.']],
   'caso'=>[
     'titulo'=>'Lawang Estate — anuncios vigilados cada cuatro horas',
-    'texto'=>'Campañas para una promotora que vende villas y suelo a compradores de fuera. Cada conjunto lleva su segmentación explícita, cada lead entra en el CRM con su campaña pegada, y un vigilante revisa gasto y leads cada cuatro horas contra trece reglas escritas: puede pausar y mover el presupuesto diario dentro del tope mensual del dueño, y nada más.',
+    'texto'=>'Campañas para una promotora que vende villas y suelo a compradores de fuera. Cada conjunto lleva su segmentación explícita, cada lead entra en el CRM con su campaña pegada, y un vigilante revisa gasto y leads cada cuatro horas contra trece reglas escritas: puede pausar o reactivar un conjunto y ajustar su presupuesto diario y su segmentación dentro del tope mensual del dueño. No puede crear campañas, públicos ni conjuntos.',
     'cifras'=>[['4h','de un conjunto que tira dinero a pausarlo'],['1','tope mensual, nunca superado'],['0','leads perdidos en una bandeja']],
   ],
 ],
 
 'seo-y-sem' => [
-  'regla'=>'Nadie puede prometer una posición. Lo que sí se puede prometer es que nada de tu propia web se lo impida.',
+  'regla'=>'Nadie puede prometer una posición. Podemos prometer que nada de tu propia web se ponga en medio.',
   'panel'=>['pie'=>'Lo que un buscador o un asistente de IA lee de su web, y de dónde se genera cada pieza.','tool'=>'BÚSQUEDA // ESTRUCTURA','th'=>['Pieza','Dónde','Se genera de','Estado'],'rows'=>[
     ['sitemap.xml','Las dos webs','El catálogo de páginas','En vivo',false],
     ['Pares hreflang','EN ↔ ES ↔ ID','El mapa de páginas','En vivo',false],
@@ -187,7 +187,7 @@ $CAMPO_ES = [
 
 'gestion-marca-y-rumbo' => [
   'regla'=>'Una decisión que solo vive en una reunión desaparece a la semana. Las nuestras quedan escritas con su motivo y su fecha.',
-  'panel'=>['pie'=>'Así es un registro de decisiones: qué se decidió, quién y si ya está aplicado.','tool'=>'DECISIONES // REGISTRO','th'=>['Fecha','Área','Decisión','Quién','Estado'],'rows'=>[
+  'panel'=>['estado'=>'EJEMPLO','pie'=>'Así es un registro de decisiones: qué se decidió, quién y si ya está aplicado.','tool'=>'DECISIONES // REGISTRO','th'=>['Fecha','Área','Decisión','Quién','Estado'],'rows'=>[
     ['S39','Ventas','Quién puede editar una ficha de comprador','Dueño','Aplicada',false],
     ['S39','Marca','Paleta de un proyecto nuevo','Dueño','Aplicada',false],
     ['S38','Finanzas','Cómo se aprueba una comisión','Dueño','Aplicada',false],
@@ -198,7 +198,7 @@ $CAMPO_ES = [
   'flujo'=>[['Escucha','Qué necesita el dueño y qué duele.'],['Decide','Con los datos encima de la mesa.'],['Escribe','La decisión, su motivo, su fecha.'],['Construye','El software la hace cumplir.'],['Revisa','Contra lo que dijimos que haríamos.']],
   'caso'=>[
     'titulo'=>'Lawang Estate — de la marca a la operación',
-    'texto'=>'Para la promotora construimos el sistema de marca —identidad, paleta, voz— y la organización que el software hace cumplir: quién es dueño de cada proceso, qué rol ve qué y cómo se estructuran los equipos de venta. Cada decisión del dueño queda registrada con su motivo y su fecha, y todo lo que espera a alguien vive en un único libro con dueño y antigüedad.',
+    'texto'=>'Para la promotora construimos el sistema de marca (identidad, paleta, voz) y la organización que el software hace cumplir: quién es dueño de cada proceso, qué rol ve qué y cómo se estructuran los equipos de venta. Cada decisión del dueño queda registrada con su motivo y su fecha, y todo lo que espera a alguien vive en un único libro con dueño y antigüedad.',
     'cifras'=>[['1','marca, igual en web, documentos y redes'],['1','registro escrito de cada decisión'],['0','decisiones que solo viven en una reunión']],
   ],
 ],
