@@ -15,7 +15,11 @@
      navegador no escribe en ninguna tabla ni llama a la base). Lo que enseña sale de la fila de la base: acción, parámetros ENTEROS
      y hash. El motivo lo escribió el piloto: sale aparte y rotulado como no verificado. Todo dato entra por textContent o
      setAttribute (nunca innerHTML): textContent no escapa la comilla doble y un atributo sí la necesita escapada.
-     Enganches: data-accion / data-lw, nunca el rótulo. «Aprobar» se desactiva cuando la base dice aprobable = false. -->
+     Enganches: data-accion / data-lw, nunca el rótulo. «Aprobar» se desactiva cuando la base dice aprobable = false.
+     CONSTRUCCIÓN DEL PADRINO (F6 P17, quinta tanda, 10-oct-2026): la sección «Construcción» pinta lo que la base afirma de la cola (propuestas
+     pendientes, aceptadas sin encolar CON SU HASH, tareas, cola congelada, construcción apagada) y ofrece los botones Aceptar, Encolar,
+     Cancelar, Descongelar y Encender. El hash lo calcula la base y viaja tal cual: esta pantalla no lo recalcula. Aceptar es la única vez que el
+     owner ESCRIBE algo (los ficheros que aprueba, uno por línea); la base decide si valen. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%234f46e5%22/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,6 +64,14 @@ pre.ap-mono{white-space:pre-wrap;background:#eff4ff;border-radius:8px;padding:10
 .ap-plazos label{display:block;margin:12px 0 4px;font:600 12px/16px Inter,sans-serif;color:#464555}
 .ap-plazos input{box-sizing:border-box;width:100%;max-width:420px;padding:8px 10px;border:1px solid #c7c4d8;border-radius:8px;font:400 14px/20px Inter,sans-serif}
 .ap-plazos input:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}
+.ap-cons{background:#fff;border-radius:12px;padding:16px;margin:0 0 16px;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.ap-cons[hidden]{display:none}
+.ap-cons.ap-mal{background:#ffdad6;color:#93000a}
+.ap-cons ul{margin:8px 0;padding-left:18px}
+.ap-cons li.ap-it{margin:0 0 12px;padding:12px;border-radius:8px;background:#f8f9ff;list-style:none}
+.ap-cons ul.ap-its{padding-left:0}
+.ap-cons textarea{box-sizing:border-box;width:100%;min-height:72px;padding:8px 10px;border:1px solid #c7c4d8;border-radius:8px;font:400 13px/18px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.ap-cons textarea:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}
 .ap-pend{margin:12px 0;padding:8px 12px;border-radius:8px;background:#ffedbd;color:#6a4700}
 .ap-pasadas{margin:8px 0 0;padding-left:18px;color:#464555}
 .ap-estado{padding:16px;border-radius:12px;background:#fff;color:#464555}
@@ -76,6 +88,7 @@ pre.ap-mono{white-space:pre-wrap;background:#eff4ff;border-radius:8px;padding:10
 __AXW_PANEL_NAV__
 <section id="pausa" data-lw="pausa" class="ap-pausa" aria-live="polite" hidden></section>
 <section id="plazos" data-lw="plazos" class="ap-plazos" aria-live="polite" hidden></section>
+<section id="construccion" data-lw="construccion" class="ap-cons" aria-live="polite" hidden></section>
 <div id="resultado" data-lw="aprobaciones-resultado" class="ap-res" role="status" aria-live="polite" hidden></div>
 <div id="estado" data-lw="aprobaciones-estado" class="ap-estado" role="status">Cargando…</div>
 <ul id="lista" data-lw="aprobaciones-lista" class="ap-lista" hidden></ul>
@@ -248,6 +261,142 @@ __AXW_PANEL_NAV__
     if (estadoHttp === 403) return [false, 'Esta cuenta no es la del owner del piloto.'];
     return [false, 'No se pudo completar (' + estadoHttp + '). Mira los plazos de arriba antes de repetir.'];
   }
+  /* Construcción del Padrino (F6 P17): lo pintado es lo que afirmó la base; sin lectura fiable no hay botones. Todo dato entra por
+     textContent/setAttribute. Los ficheros de «Aceptar» los escribe el owner (uno por línea): aquí solo se trocean, la base decide si valen. */
+  function lineas(texto) {
+    return String(texto == null ? '' : texto).split(/\r?\n/).map(function (x) { return x.trim(); }).filter(function (x) { return x !== ''; });
+  }
+  function boton(doc, clase, texto, accion, attrs) {
+    var b = el(doc, 'button', 'ap-btn ' + clase, texto);
+    b.setAttribute('type', 'button'); b.setAttribute('data-accion', accion);
+    Object.keys(attrs || {}).forEach(function (k) { b.setAttribute(k, String(attrs[k])); });
+    return b;
+  }
+  function itemCons(doc, lw, attrs) {
+    var li = el(doc, 'li', 'ap-it'); li.setAttribute('data-lw', lw);
+    Object.keys(attrs).forEach(function (k) { li.setAttribute(k, String(attrs[k])); });
+    return li;
+  }
+  function marcaCola(doc, caja, tipo, m) {
+    var ok = m && typeof m === 'object';
+    if (!ok) return;
+    var t = (tipo === 'apagada' ? 'Construcción APAGADA' : 'Cola CONGELADA') + (typeof m.motivo === 'string' ? ' (' + m.motivo + ')' : '')
+      + (typeof m.clave === 'string' ? ' por la tarea ' + m.clave : '') + (m.desde ? ' desde ' + fechaTxt(m.desde) : '') + '.';
+    var c = el(doc, 'div', 'ap-aviso'); c.setAttribute('data-lw', 'cola-' + tipo);
+    c.appendChild(el(doc, 'p', '', t));
+    c.appendChild(el(doc, 'p', '', tipo === 'apagada' ? 'El Padrino no construye nada hasta que la enciendas tú.' : 'No se empieza ninguna tarea nueva hasta que la descongeles tú.'));
+    c.appendChild(boton(doc, 'ap-si', tipo === 'apagada' ? 'Encender' : 'Descongelar', tipo === 'apagada' ? 'enciende' : 'descongela'));
+    caja.appendChild(c);
+  }
+  function pintaConstruccion(doc, caja, d) {
+    while (caja.firstChild) caja.removeChild(caja.firstChild);
+    caja.hidden = false;
+    caja.appendChild(el(doc, 'h2', 'ap-plazos-h', 'Construcción del Padrino'));
+    if (!d || d.ok !== true || !Array.isArray(d.propuestas) || !Array.isArray(d.aceptadas) || !Array.isArray(d.tareas)) {
+      caja.setAttribute('class', 'ap-cons ap-mal');
+      caja.appendChild(el(doc, 'p', '', 'No he podido leer la cola de construcción. No toques nada hasta poder verla.'));
+      return;
+    }
+    caja.setAttribute('class', 'ap-cons');
+    var libre = !(d.apagada && typeof d.apagada === 'object') && !(d.congelada && typeof d.congelada === 'object');
+    marcaCola(doc, caja, 'apagada', d.apagada); marcaCola(doc, caja, 'congelada', d.congelada);
+    if (libre) caja.appendChild(el(doc, 'p', '', 'La cola está libre: el Padrino construye lo que haya en ella, de una en una.'));
+
+    caja.appendChild(el(doc, 'div', 'ap-et', 'Propuestas pendientes de aceptar'));
+    var pend = d.propuestas.filter(function (x) { return x && entero(x.id) && x.id > 0; });
+    if (!pend.length) caja.appendChild(el(doc, 'p', '', 'Ninguna propuesta pendiente.'));
+    var ul1 = el(doc, 'ul', 'ap-its');
+    pend.forEach(function (x) {
+      var li = itemCons(doc, 'propuesta', { 'data-id': x.id });
+      li.appendChild(el(doc, 'div', 'ap-num', 'Propuesta ' + x.id + (typeof x.mes === 'string' ? ' · ' + x.mes : '')));
+      li.appendChild(el(doc, 'div', 'ap-et', 'Lo que se cambiaría (esto es lo que aceptas)'));
+      li.appendChild(el(doc, 'pre', 'ap-mono', x.cambio));
+      var pil = el(doc, 'div', 'ap-piloto');
+      pil.appendChild(el(doc, 'div', 'ap-et', 'Lo que dice el piloto (sin verificar: no es lo que se acepta)'));
+      pil.appendChild(el(doc, 'p', '', 'Problema: ' + (x.problema == null ? '' : x.problema)));
+      pil.appendChild(el(doc, 'p', '', 'Evidencia: ' + (x.evidencia == null ? '' : x.evidencia)));
+      pil.appendChild(el(doc, 'p', '', 'Riesgo: ' + (x.riesgo == null ? '' : x.riesgo)));
+      li.appendChild(pil);
+      if (x.toca_guarda === true) li.appendChild(el(doc, 'div', 'ap-aviso', 'Esta propuesta toca una GUARDA (una regla de dinero, despido o escalado). Léela dos veces.'));
+      if (x.aceptable === true) {
+        var l = el(doc, 'label', '', 'Ficheros que apruebas (uno por línea, hasta 15, rutas relativas). El Padrino solo podrá tocar estos.');
+        var id = 'ficheros-' + x.id; l.setAttribute('for', id); li.appendChild(l);
+        var ta = el(doc, 'textarea', ''); ta.setAttribute('id', id); ta.setAttribute('rows', '3'); ta.setAttribute('maxlength', '3200'); ta.setAttribute('autocomplete', 'off');
+        li.appendChild(ta);
+        var ac = el(doc, 'div', 'ap-acc'); ac.appendChild(boton(doc, 'ap-si', 'Aceptar', 'propuesta-acepta', { 'data-id': x.id })); li.appendChild(ac);
+      } else {
+        li.appendChild(el(doc, 'div', 'ap-aviso', 'No se puede aceptar: la primera línea del cambio no da un título legible (de 3 a 80 caracteres). Que el piloto la reescriba.'));
+      }
+      ul1.appendChild(li);
+    });
+    caja.appendChild(ul1);
+
+    caja.appendChild(el(doc, 'div', 'ap-et', 'Aceptadas, pendientes de encolar'));
+    var ace = d.aceptadas.filter(function (x) { return x && entero(x.id) && x.id > 0 && typeof x.hash === 'string' && /^[0-9a-f]{64}$/.test(x.hash); });
+    if (!ace.length) caja.appendChild(el(doc, 'p', '', 'Ninguna aceptada esperando.'));
+    var ul2 = el(doc, 'ul', 'ap-its');
+    ace.forEach(function (x) {
+      var li = itemCons(doc, 'aceptada', { 'data-id': x.id });
+      li.appendChild(el(doc, 'div', 'ap-num', 'Propuesta ' + x.id + ' aceptada'));
+      li.appendChild(el(doc, 'pre', 'ap-mono', x.cambio));
+      li.appendChild(el(doc, 'div', 'ap-et', 'Ficheros aprobados'));
+      var fu = el(doc, 'ul', '');
+      (Array.isArray(x.ficheros) ? x.ficheros : []).forEach(function (f) { fu.appendChild(el(doc, 'li', 'ap-mono', f)); });
+      li.appendChild(fu);
+      li.appendChild(el(doc, 'div', 'ap-et', 'Hash (lo calculó la base: identifica exactamente esto)'));
+      li.appendChild(el(doc, 'p', 'ap-mono', x.hash));
+      var ac2 = el(doc, 'div', 'ap-acc'); ac2.appendChild(boton(doc, 'ap-si', 'Encolar', 'encola', { 'data-id': x.id, 'data-hash': x.hash })); li.appendChild(ac2);
+      ul2.appendChild(li);
+    });
+    caja.appendChild(ul2);
+
+    caja.appendChild(el(doc, 'div', 'ap-et', 'Tareas en la cola'));
+    if (!d.tareas.length) caja.appendChild(el(doc, 'p', '', 'Todavía no hay tareas.'));
+    var ul3 = el(doc, 'ul', 'ap-its');
+    d.tareas.filter(function (x) { return x && typeof x.clave === 'string'; }).forEach(function (x) {
+      var li = itemCons(doc, 'tarea', { 'data-clave': x.clave });
+      li.appendChild(el(doc, 'div', 'ap-num', x.clave + ' · ' + (x.titulo == null ? '' : x.titulo)));
+      li.appendChild(el(doc, 'p', 'ap-cad', x.cancelada === true ? 'Cancelada por ti.' : (typeof x.estado === 'string' && x.estado !== '' ? 'Estado: ' + x.estado : 'Esperando su turno.')));
+      if (x.cancelable === true) {
+        var ac3 = el(doc, 'div', 'ap-acc'); ac3.appendChild(boton(doc, 'ap-no', 'Cancelar', 'tarea-cancela', { 'data-clave': x.clave })); li.appendChild(ac3);
+      }
+      ul3.appendChild(li);
+    });
+    caja.appendChild(ul3);
+
+    var av = Array.isArray(d.avisos) ? d.avisos.slice(0, 5) : [];
+    if (av.length) {
+      caja.appendChild(el(doc, 'div', 'ap-et', 'Últimos avisos de la cola'));
+      var ul4 = el(doc, 'ul', 'ap-pasadas');
+      av.forEach(function (a) { ul4.appendChild(el(doc, 'li', '', fechaTxt(a && a.cuando) + ' — ' + (a && typeof a.tipo === 'string' ? a.tipo : 'aviso') + (a && typeof a.rol === 'string' ? ' (' + a.rol + ')' : ''))); });
+      caja.appendChild(ul4);
+    }
+  }
+  var CONS_ERR = {
+    ficheros: 'Los ficheros no valen: de 1 a 15 rutas relativas, sin espacios ni «..», sin repetir y sin salir de la carpeta del proyecto.',
+    cambio: 'Esa propuesta no se puede encolar (el título que sale de la primera línea no es legible).',
+    titulo: 'Esa propuesta no da un título legible.',
+    clave: 'La clave de la tarea no es válida: recarga.',
+    estado: 'Esa propuesta ya no está pendiente: recarga.',
+    no_aceptada: 'Esa propuesta no está aceptada por ti: no se encola.',
+    hash: 'Lo aceptado ya no es lo que viste (el hash no coincide). Recarga y míralo otra vez.',
+    ya_encolada: 'Esa propuesta ya estaba encolada. Recarga.',
+    ya_empezada: 'Esa tarea ya empezó: ya no se puede cancelar.',
+    no_existe: 'Eso ya no existe: recarga.'
+  };
+  function textoConstruccion(estadoHttp, d, accion) {
+    if (estadoHttp === 200 && d && d.ok === true) {
+      if (accion === 'propuesta-acepta') return [true, 'Aceptada. Está abajo, en «Aceptadas», lista para encolar.'];
+      if (accion === 'encola' && typeof d.clave === 'string') return [true, 'Encolada como ' + d.clave + '.'];
+      if (accion === 'tarea-cancela' && typeof d.ya_estaba === 'boolean') return [true, d.ya_estaba ? 'Esa tarea ya estaba cancelada.' : 'Tarea cancelada.'];
+      if (accion === 'descongela' && typeof d.estaba === 'boolean') return [true, d.estaba ? 'Cola descongelada.' : 'La cola no estaba congelada.'];
+      if (accion === 'enciende' && typeof d.estaba === 'boolean') return [true, d.estaba ? 'Construcción encendida.' : 'La construcción no estaba apagada.'];
+    }
+    if (d && typeof d.error === 'string' && Object.prototype.hasOwnProperty.call(CONS_ERR, d.error) && (estadoHttp === 400 || estadoHttp === 404 || estadoHttp === 409)) return [false, CONS_ERR[d.error]];
+    if (estadoHttp === 401) return [false, 'La sesión ha caducado: vuelve a iniciar sesión.'];
+    if (estadoHttp === 403) return [false, 'Esta cuenta no es la del owner del piloto.'];
+    return [false, 'No se pudo completar (' + estadoHttp + '). Mira la cola de arriba antes de repetir.'];
+  }
   var MOTIVOS = {
     no_pendiente: 'Esa aprobación ya no está pendiente: caducó, la resolvió otro o el hash no coincide. Recarga la lista.',
     no_legible: 'No se puede aprobar: lo pedido no cabe entero en pantalla. Solo rechazar.'
@@ -314,9 +463,45 @@ __AXW_PANEL_NAV__
       .catch(function () { aviso(false, 'No se pudo completar. Mira los plazos de arriba antes de repetir.'); })
       .then(function () { ocupado = false; return cargaPlazos(); });
   }
+  function cargaConstruccion() {
+    return pide({ accion: 'construccion' }).then(function (d) {
+      pintaConstruccion(document, $('construccion'), d.__estado === 200 && d.ok === true ? d : null);
+    }).catch(function () { pintaConstruccion(document, $('construccion'), null); });
+  }
+  var CONFIRMA = {
+    'propuesta-acepta': 'Vas a ACEPTAR este cambio y a autorizar al Padrino a tocar SOLO esos ficheros. Lo aceptado queda congelado: no se puede editar después. ¿Continuar?',
+    encola: 'Vas a ENCOLAR lo aceptado: el Padrino lo construirá, lo revisará y, si todo pasa, lo mezclará en el código. ¿Continuar?',
+    'tarea-cancela': 'Vas a CANCELAR esta tarea antes de que empiece. No se puede deshacer ni volver a encolar esa propuesta. ¿Continuar?',
+    descongela: 'Vas a DESCONGELAR la cola: el Padrino volverá a empezar tareas nuevas. ¿Has mirado por qué se congeló?',
+    enciende: 'Vas a ENCENDER la construcción: el Padrino volverá a construir. ¿Has mirado por qué se apagó?'
+  };
+  function cambiaConstruccion(accion, boton) {
+    if (ocupado) return;
+    var box = $('resultado');
+    function aviso(ok, t) { box.hidden = false; box.textContent = t; box.setAttribute('class', ok ? 'ap-res' : 'ap-res ap-mal'); }
+    var cuerpo = { accion: accion.replace(/-/g, '_') };
+    if (accion === 'propuesta-acepta') {
+      var li = boton.closest && boton.closest('li'), ta = li && li.querySelector('textarea');
+      var ficheros = lineas(ta && ta.value);
+      if (!ficheros.length || ficheros.length > 15) return aviso(false, 'Escribe de 1 a 15 ficheros, uno por línea.');
+      cuerpo.id = Number(boton.getAttribute('data-id')); cuerpo.ficheros = ficheros;
+    } else if (accion === 'encola') {
+      cuerpo.id = Number(boton.getAttribute('data-id')); cuerpo.hash = boton.getAttribute('data-hash');
+    } else if (accion === 'tarea-cancela') {
+      cuerpo.clave = boton.getAttribute('data-clave');
+    }
+    if (typeof window.confirm === 'function' && !window.confirm(CONFIRMA[accion])) return;
+    ocupado = true;
+    var bs = document.querySelectorAll('#construccion [data-accion]');
+    Array.prototype.forEach.call(bs, function (b) { b.setAttribute('disabled', 'disabled'); });
+    pide(cuerpo).then(function (d) { var r = textoConstruccion(d.__estado, d, accion); aviso(r[0], r[1]); })
+      .catch(function () { aviso(false, 'No se pudo completar. Mira la cola de arriba antes de repetir.'); })
+      .then(function () { ocupado = false; return cargaConstruccion(); });
+  }
   function carga() {
     cargaPausa();
     cargaPlazos();
+    cargaConstruccion();
     var est = $('estado');
     est.hidden = false; est.setAttribute('class', 'ap-estado'); est.textContent = 'Cargando…'; $('lista').hidden = true;
     return pide({ accion: 'lista' }).then(function (d) {
@@ -346,6 +531,7 @@ __AXW_PANEL_NAV__
     else if (a === 'rechaza') resuelve(t, 'rechazada');
     else if (a === 'para' || a === 'arranca') cambiaPausa(a);
     else if (a === 'plazo-correos' || a === 'plazo-correos-cancela') cambiaPlazo(a);
+    else if (Object.prototype.hasOwnProperty.call(CONFIRMA, a)) cambiaConstruccion(a, t);
     else if (a === 'recarga') carga();
   });
   if (typeof window !== 'undefined' && window.LW_AUTH) {
