@@ -30,6 +30,13 @@ if (!raiz || !lawang) {
   process.exit(1);
 }
 const env = Object.assign({}, process.env, { AXW_AGENCIA_RAIZ: raiz, AXW_LAWANG_RAIZ: lawang, PYTHONIOENCODING: 'utf-8' });
+// El test pasa el fichero por limpia_publico.js, que necesita terser. node_modules/ está en el .gitignore: una copia de sesión no lo trae.
+// El gate ya añade el del clon principal a NODE_PATH (tools/test.py → _node_modules_del_clon); esto cubre además la copia que cuelga de
+// un worktree de la agencia, donde esa cuenta no lo encuentra. Solo AÑADE una ruta de búsqueda, y solo si aquí no hay node_modules.
+const nmClon = path.join(path.dirname(lawang), 'AxisWorks', 'comercial', 'demo-erp', 'node_modules');
+if (!fs.existsSync(path.join(__dirname, 'node_modules')) && fs.existsSync(nmClon)) {
+  env.NODE_PATH = [env.NODE_PATH, nmClon].filter(Boolean).join(path.delimiter);
+}
 let r = null;
 for (const py of [process.env.PYTHON, 'python', 'python3', 'py'].filter(Boolean)) {
   r = spawnSync(py, [path.join(__dirname, 'test_ajustes_correo.py')], { cwd: __dirname, env, encoding: 'utf8' });
