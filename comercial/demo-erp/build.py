@@ -1651,19 +1651,25 @@ AJUSTES_CORREO_UNA_VEZ = (
     ('el enganche de carga(): ajustaCamposCorreo()', r'\bajustaCamposCorreo\(\)\s*;'),
     ('el enganche de carga(): pintaServidorCorreo(guardada)', r'(?<!function\s)\bpintaServidorCorreo\(guardada\)'),
     ('el enganche de lee(): LEE_CORREO[clave]', r'\bLEE_CORREO\[clave\]'),
-    ('function arranca', r'\bfunction\s+arranca\s*\('),
 )
 
 
-def ajustes_correo_una_copia(js, donde):
+def ajustes_correo_una_copia(js, donde, con_comentarios=False):
     """PARA si «Ajustes › Correo» no está exactamente UNA vez en `js`. Porqué (revisor, 10-oct-2026): del 8 al 10-oct el build insertaba
     su propia copia del bloque encima de la que Lawang ya traía desde su porte (e0e88e58). Dos copias en el mismo IIFE no dan error: gana
     la segunda, lo que Lawang endurezca queda tapado, cada clic se oye dos veces («Reintentar» pedía el estado dos veces) y un código que
-    la edge sí devuelve (`host_no_comprobable`) se pintaba como «Respuesta no reconocida»."""
-    malos = ['%s: %d (se espera 1)' % (que, len(re.findall(rx, js))) for que, rx in AJUSTES_CORREO_UNA_VEZ if len(re.findall(rx, js)) != 1]
-    # Y, mientras el fichero conserve la forma de Lawang (dos espacios dentro del IIFE), ninguna función ni variable de la pantalla declarada
-    # dos veces: es la forma general del mismo fallo, también para lo que no está en la lista de arriba.
-    for rx, que in ((r'(?m)^  function (\w+)\(', 'function'), (r'(?m)^  var (\w+)\b', 'var')):
+    la edge sí devuelve (`host_no_comprobable`) se pintaba como «Respuesta no reconocida».
+    `con_comentarios`: el fichero de Lawang tal cual. Se cuenta sobre el código, sin sus comentarios: una nota que nombre
+    `pintaServidorCorreo(guardada)` no es una segunda copia y no puede parar el build. El fichero que SALE ya no trae comentarios
+    (limpia_publico.js) y se mide tal cual: es una sola línea, y quitarle «comentarios» a ojo se llevaría media pantalla."""
+    if con_comentarios:
+        js = re.sub(r'(?m)(^|\s)//.*$', r'\1', re.sub(r'/\*.*?\*/', '', js, flags=re.S))
+    veces = [(que, len(re.findall(rx, js))) for que, rx in AJUSTES_CORREO_UNA_VEZ]
+    malos = ['%s: %d (se espera 1)' % (que, n) for que, n in veces if n != 1]
+    # La forma general del mismo fallo, también para lo que no está en la lista de arriba: ninguna función con nombre declarada dos veces
+    # en todo el fichero (vale igual antes y después de limpia_publico.js; hoy son 57 y ninguna se repite). Las `var` del IIFE solo se
+    # distinguen de las locales por los dos espacios de Lawang, así que esa mitad solo dice algo sobre el fichero de entrada.
+    for rx, que in ((r'\bfunction\s+(\w+)\s*\(', 'function'), (r'(?m)^  var (\w+)\b', 'var')):
         nombres = re.findall(rx, js)
         malos += ['%s %s declarada %d veces' % (que, n, nombres.count(n)) for n in sorted(set(nombres)) if nombres.count(n) > 1]
     if malos:
@@ -1687,9 +1693,8 @@ def ajustes_correo_maestro():
     en DIST, nunca el repo de Lawang."""
     ruta = os.path.join(DIST, 'intranet', 'v4', 'assets', 'ajustes.js')
     t = open(ruta, encoding='utf-8').read()
-    ajustes_correo_una_copia(t, 'el ajustes.js de Lawang')
+    ajustes_correo_una_copia(t, 'el ajustes.js de Lawang', con_comentarios=True)
     t = _una_vez(t, AJUSTES_CORREO_INSTALADOR[0], AJUSTES_CORREO_INSTALADOR[1], 'ajustes.js «puesta por el instalador»')
-    ajustes_correo_una_copia(t, 'el ajustes.js del maestro')
     open(ruta, 'w', encoding='utf-8', newline='').write(t)
 
 

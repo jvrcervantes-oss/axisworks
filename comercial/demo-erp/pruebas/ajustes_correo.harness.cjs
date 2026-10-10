@@ -338,7 +338,8 @@ const err = (status, codigo, extra = {}) => ({ status, body: Object.assign({ ok:
     // Un clic = una llamada: con dos copias del bloque en el mismo fichero había dos oyentes y «Reintentar» pedía el estado DOS veces (revisor, 10-oct-2026).
     const antes = llamadas.length;
     await p.click('[data-accion="correo-estado-reintentar"]');
-    await p.waitForTimeout(500);
+    for (let i = 0; i < 100 && llamadas.length === antes; i++) await p.waitForTimeout(50);   // hasta 5 s a que SALGA la petición (máquina cargada)…
+    await p.waitForTimeout(400);                                                               // …y un margen para cazar una segunda
     ok('edge ' + nombre + ': «Reintentar» pide el estado UNA vez por clic', llamadas.length === antes + 1 && llamadas[antes].cuerpo.accion === 'estado', (llamadas.length - antes) + ' llamada(s)');
     await foto(p, '5_edge_caida_' + nombre.replace(/\W/g, ''));
     await ctx.close();

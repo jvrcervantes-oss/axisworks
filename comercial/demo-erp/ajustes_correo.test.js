@@ -37,16 +37,21 @@ const nmClon = path.join(path.dirname(lawang), 'AxisWorks', 'comercial', 'demo-e
 if (!fs.existsSync(path.join(__dirname, 'node_modules')) && fs.existsSync(nmClon)) {
   env.NODE_PATH = [env.NODE_PATH, nmClon].filter(Boolean).join(path.delimiter);
 }
-let r = null;
+// «Se lanzó» no es «era Python»: en Windows sin Python en el PATH, `python` es el alias de la Tienda, que arranca y sale con error sin
+// ejecutar nada. Un intérprete de verdad deja la firma del test (su recuento, sus fallos o un Traceback); sin firma se prueba el siguiente.
+const FIRMA = /comprobaciones|FALLOS \(|NO SE HA PODIDO MIRAR|Traceback/;
+let r = null, salida = '', motivo = 'sin intérprete';
 for (const py of [process.env.PYTHON, 'python', 'python3', 'py'].filter(Boolean)) {
-  r = spawnSync(py, [path.join(__dirname, 'test_ajustes_correo.py')], { cwd: __dirname, env, encoding: 'utf8' });
-  if (!r.error) break;
+  const x = spawnSync(py, [path.join(__dirname, 'test_ajustes_correo.py')], { cwd: __dirname, env, encoding: 'utf8' });
+  const s = String(x.stdout || '') + String(x.stderr || '');
+  if (x.error || !FIRMA.test(s)) { motivo = py + ': ' + (x.error ? x.error.message : 'salió con ' + x.status + ' sin ejecutar el test'); continue; }
+  r = x; salida = s;
+  break;
 }
-if (!r || r.error) {
-  console.error('NO SE HA PODIDO MIRAR: no se pudo lanzar Python (' + (r && r.error ? r.error.message : 'sin intérprete') + ')');
+if (!r) {
+  console.error('NO SE HA PODIDO MIRAR: no se pudo lanzar Python (' + motivo + ')');
   process.exit(1);
 }
-const salida = String(r.stdout || '') + String(r.stderr || '');
 if (r.status !== 0) {
   process.stdout.write(salida);
   console.error('ajustes_correo.test.js: test_ajustes_correo.py en ROJO (código ' + r.status + ')');

@@ -80,10 +80,18 @@ for que, rx in build.AJUSTES_CORREO_UNA_VEZ:
     mira('en lo que sale, una sola vez: ' + que + ' (hay %d)' % len(re.findall(rx, salida)), len(re.findall(rx, salida)) == 1)
 BLOQUE = salida[salida.index(INICIO):salida.index(FIN)] if r == 'pasa' else ''
 DOBLE = salida.replace(FIN, BLOQUE + FIN) if BLOQUE else ''   # el bloque dos veces en el mismo IIFE: lo que hacía el overlay
-pub = publicado(salida)
-mira('limpia_publico.js procesa el fichero (terser instalado en comercial/demo-erp/node_modules)', bool(pub))
+pub, pub_doble = publicado(salida), publicado(DOBLE) if DOBLE else ''
+mira('limpia_publico.js procesa el fichero (terser instalado en comercial/demo-erp/node_modules)', bool(pub) and bool(pub_doble))
 mira('tal como se publica (sin comentarios, reescrito) sigue pasando el control de una copia', bool(pub) and una_copia(pub) == 'pasa')
-mira('tal como se publica, el control CAZA el bloque dos veces', bool(DOBLE) and bool(publicado(DOBLE)) and una_copia(publicado(DOBLE)) == 'para')
+mira('tal como se publica, el control CAZA el bloque dos veces', bool(pub_doble) and una_copia(pub_doble) == 'para')
+# la forma general: una función cualquiera de la pantalla (no de la lista) repetida, también en el fichero publicado, que es una sola línea
+OTRA = '\n  function sueltaCodigo(u) { u.fase = \'idle\'; }\n'
+mira('tal como se publica, el control CAZA una función repetida que no está en la lista (sueltaCodigo)',
+     salida.count('function sueltaCodigo(') == 1 and una_copia(publicado(salida.replace(FIN, OTRA + FIN))) == 'para')
+# y no confunde una nota con una segunda copia: un comentario de Lawang que nombre una pieza no puede parar el build del maestro
+NOTAS = ("\n  // carga() llama a pintaServidorCorreo(guardada) y a ajustaCamposCorreo(); lee() mira LEE_CORREO[clave]\n"
+         "  /* function pintaServidorCorreo(guardada) { … } · var CORREO_MSG = {} · var srv = {} · function llamaCorreo() */\n")
+mira('un comentario que nombra las piezas del bloque NO para el build', corre(ORIGINAL.replace(FIN, NOTAS + FIN))[0] == 'pasa')
 mira('en el repo del maestro no queda una segunda copia del bloque (ajustes_correo.js retirado y build.py no lo abre)',
      not os.path.exists(os.path.join(AQUI, 'ajustes_correo.js')) and "'ajustes_correo.js'" not in open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read())
 
@@ -128,7 +136,8 @@ mira('las 4 direcciones no están en el formulario base (una sola mención de ca
      all(salida.count("clave: '%s'" % c) == 1 and CODIGO.count("clave: '%s'" % c) == 1 for c in DIRS)
      and 'a.soporte' in CODIGO and 'r.reply_to' in CODIGO and 'datos.valores' not in CODIGO)
 mira('cambiar host/usuario enseña la contraseña de la cuenta (current-password) y la manda como contrasena_actual', 'srv.reauth || cambia' in CODIGO and 'cuerpo.contrasena_actual = re' in CODIGO)
-mira('la contraseña del buzón no viaja en las acciones de dirección', "pass" not in re.findall(r"accion: 'guardar_ajuste'[^}]*\}", CODIGO)[0] and "pass" not in re.findall(r"alcance: 'ajuste'[^}]*\}", CODIGO)[0])
+cuerpos_dir = re.findall(r"accion: 'guardar_ajuste'[^}]*\}", CODIGO) + re.findall(r"alcance: 'ajuste'[^}]*\}", CODIGO)
+mira('la contraseña del buzón no viaja en las acciones de dirección', len(cuerpos_dir) == 2 and not any('pass' in c for c in cuerpos_dir))
 mira('las casillas nuevas salen solo si la base las declara editables', 'ed.indexOf(c.clave) >= 0' in CODIGO and 'Array.isArray(ed)' in CODIGO)
 mira('edge no disponible (404/5xx sin código, sin red) tiene mensaje propio', 'edge_no_disponible' in CODIGO and 'sin_red' in CODIGO and 'resp.status === 404 || resp.status >= 500' in CODIGO)
 mira('«puesta por el instalador» se dice con palabras y dentro de la frase con huecos de Lawang',
@@ -137,14 +146,50 @@ mira('«puesta por el instalador» se dice con palabras y dentro de la frase con
 # (4a) todo código que la edge del MAESTRO puede devolver tiene su texto en llano. La lista sale de su index.ts (no de la memoria de nadie):
 # `host_no_comprobable` existía en la edge y no en la pantalla del maestro, y salió «Respuesta no reconocida» (revisor, 10-oct-2026).
 edge = open(EDGE_TS, encoding='utf-8').read()
-DE_LA_EDGE = sorted(set(re.findall(r"\bno\('([a-z_]+)'", edge)) | set(re.findall(r"ok: false, codigo: '([a-z_]+)'", edge)))
-mira('se han leído los códigos de error de erp/funciones/ajustes-correo/index.ts (%d)' % len(DE_LA_EDGE), len(DE_LA_EDGE) >= 25 and 'host_no_comprobable' in DE_LA_EDGE and 'sin_sesion' in DE_LA_EDGE)
+DE_LA_EDGE = set(re.findall(r"\bno\('([a-z_]+)'", edge)) | set(re.findall(r"ok: false, codigo: '([a-z_]+)'", edge))
+# La edge también REENVÍA códigos que no escribe ella (revisión del 10-oct): los del validador del servidor (`no(val.codigo…)`, de
+# envia-correo/smtp.ts) y el `hint` de un 22023 de las dos funciones de la base que guardan (`no(g.hint…)`). Se leen de su fuente. Si aparece
+# un reenvío nuevo, esta prueba falla hasta que alguien diga de dónde salen sus códigos.
+reenvios = sorted(re.findall(r"\bno\((?!')([\w.]+),", edge))
+mira('los reenvíos de código de la edge son los tres conocidos (val.codigo y g.hint dos veces): %s' % reenvios, reenvios == ['g.hint', 'g.hint', 'val.codigo'])
+SMTP_TS = os.path.join(build.AGENCIA, 'erp', 'funciones', 'envia-correo', 'smtp.ts')
+del_validador = set(re.findall(r"codigo: '([a-z_]+)'", open(SMTP_TS, encoding='utf-8').read())) if os.path.isfile(SMTP_TS) else set()
+mira('se han leído los códigos del validador del servidor (envia-correo/smtp.ts): %s' % sorted(del_validador), len(del_validador) >= 5)
+MIGRACIONES = sorted(f for f in os.listdir(os.path.join(build.AGENCIA, 'erp', 'migraciones')) if f.endswith('.sql'))
+def cuerpo_sql(fn):
+    """La ÚLTIMA definición de una función de la base en erp/migraciones (la que manda)."""
+    ult = ''
+    for f in MIGRACIONES:
+        t = open(os.path.join(build.AGENCIA, 'erp', 'migraciones', f), encoding='utf-8').read()
+        for m in re.finditer(r'create or replace function\s+(?:public\.)?' + re.escape(fn) + r'\s*\(.*?\$\$;', t, flags=re.S | re.I):
+            ult = m.group(0)
+    return ult
+def hints(fn, hondo=1):
+    c = cuerpo_sql(fn)
+    h = set(re.findall(r"hint\s*:?=\s*'([a-z_]+)'", c))
+    if hondo:
+        for ayudante in set(re.findall(r'\b(_correo_\w+)\s*\(', c)) - {fn}:
+            h |= hints(ayudante, hondo - 1)
+    return h
+de_la_base = hints('correo_ajuste_guarda') | hints('correo_smtp_guarda_candidato')
+mira('se han leído los avisos (hint) de correo_ajuste_guarda y correo_smtp_guarda_candidato: %s' % sorted(de_la_base),
+     {'from_ajeno', 'buzon_ajeno', 'valor_no_valido', 'demasiados_intentos'} <= de_la_base)
+# Lo que la base puede avisar y la pantalla no traduce A PROPÓSITO, uno a uno y con su porqué (si deja de ser verdad, se quita de aquí):
+SIN_TEXTO_A_PROPOSITO = {
+    'motivo_no_valido': "el motivo lo escribe la edge ('sin otro destinatario de aviso' o nulo), nunca el usuario: no puede fallar por lo que se teclea",
+}
+DE_LA_EDGE = sorted((DE_LA_EDGE | del_validador | de_la_base) - set(SIN_TEXTO_A_PROPOSITO))
+mira('se han leído los códigos de error de erp/funciones/ajustes-correo/index.ts (%d con los reenviados)' % len(DE_LA_EDGE), len(DE_LA_EDGE) >= 30 and 'host_no_comprobable' in DE_LA_EDGE and 'sin_sesion' in DE_LA_EDGE)
 CODIGOS_EDGE = ['accion_no_valida', 'alcance_no_valido', 'base_no_responde', 'buzon_ajeno', 'clave_actual_incorrecta', 'clave_no_editable', 'clave_no_valida', 'codigo_no_disponible',
                 'codigo_no_enviado', 'codigo_no_valido', 'cuerpo_grande', 'demasiados_intentos', 'envios_pausados', 'from_ajeno', 'host_no_comprobable', 'host_no_resuelve', 'host_no_valido', 'host_privado',
                 'json_no_valido', 'metodo', 'no_super_admin', 'nombre_no_valido', 'origen', 'prueba_caducada', 'prueba_fallida', 'puerto_no_valido', 'reautenticar', 'sin_cambios',
                 'sin_correo_usuario', 'sin_dominio_web', 'sin_remitente', 'sin_sesion', 'usuario_no_valido', 'valor_no_valido', 'edge_no_disponible', 'sin_red', 'respuesta_ilegible',
                 'codigo_caducado', 'codigo_mal_formado', 'faltan_datos', 'direccion_mal_formada']
-bloque_cod = BLOQUE[BLOQUE.index('var CORREO_MSG = {'):BLOQUE.index('// Tras estos fallos')] if BLOQUE else ''
+def trozo(desde, hasta):
+    """El texto del bloque entre dos declaraciones; '' si falta alguna (lo dice la comprobación de abajo, no un traceback)."""
+    return BLOQUE[BLOQUE.index(desde):BLOQUE.index(hasta)] if desde in BLOQUE and hasta in BLOQUE and BLOQUE.index(desde) < BLOQUE.index(hasta) else ''
+bloque_cod = trozo('var CORREO_MSG = {', 'var CODIGO_SIGUE = {')
+mira('el bloque trae la tabla de mensajes entre CORREO_MSG y CODIGO_SIGUE', len(bloque_cod) > 2000)
 sin_texto = [c for c in sorted(set(CODIGOS_EDGE) | set(DE_LA_EDGE)) if not re.search(r'\b' + c + r": '", bloque_cod)]
 mira('todos los códigos de error de la edge tienen su texto en llano' + (' (faltan: ' + ', '.join(sin_texto) + ')' if sin_texto else ''), not sin_texto)
 jerga = [w for w in ('RPC', 'HMAC', 'canon', 'JWT', 'Vault', 'SMTP_', 'service_role', 'pepper', 'DNS') if w in bloque_cod]
@@ -170,8 +215,7 @@ for donde, rx in (('T()', r"\bT\('((?:[^'\\]|\\.)*)'\s*[,)]"),
             if g:
                 vistos += 1
                 exige(suelta(g), donde)
-bloque_msg = BLOQUE[BLOQUE.index('var CORREO_MSG = {'):BLOQUE.index('var srv = {')] if BLOQUE else ''
-for m in re.finditer(r":\s*'((?:[^'\\]|\\.)*)'[,\n]", bloque_msg):
+for m in re.finditer(r":\s*'((?:[^'\\]|\\.)*)'[,\n]", bloque_cod):
     vistos += 1
     exige(suelta(m.group(1)), 'CORREO_MSG')
 mira('se han encontrado los textos que pinta el bloque (%d)' % vistos, vistos >= 100)
