@@ -109,6 +109,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     'Guardado.': 'Saved.', 'Se guardó, pero no se pudo volver a leer: recarga la página.': 'It was saved, but it could not be read back: reload the page.',
     'Otra persona lo cambió mientras tú editabas. Recarga para ver los valores nuevos: lo que has escrito se conserva.': 'Someone else changed it while you were editing. Reload to see the new values: what you typed is kept.',
     'Recargar conservando lo que escribí': 'Reload and keep what I typed',
+    'Lo que cambió la otra persona': 'What the other person changed', 'se conserva lo que escribiste': 'what you typed is kept',
     'Recargado. Se conserva lo que escribiste: revisa los valores y vuelve a confirmar.': 'Reloaded. What you typed is kept: check the values and confirm again.',
     'Esa fila ya no existe: otra persona la borró. Cierra esta ventana.': 'That row no longer exists: someone else deleted it. Close this window.',
     'No hay cambios que guardar.': 'There are no changes to save.',
@@ -117,7 +118,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     'Editar moto': 'Edit bike',
     'Si la moto tiene reservas vivas, la base no dejará pasarla a taller ni de baja y lo dirá.': 'If the bike has live bookings, the database will not let it go to the workshop or be retired, and will say so.',
     'Añadir motos a': 'Add bikes to',
-    'Pega la lista de matrículas, una por línea. Se quitan los espacios de los extremos y se pasan a mayúsculas, como hace la base.': 'Paste the list of plates, one per line. Spaces at the ends are removed and they are turned into capitals, as the database does.',
+    'Pega la lista de matrículas, una por línea. Se quitan los espacios de los extremos, los espacios repetidos se juntan en uno y se pasa a mayúsculas, como hace la base.': 'Paste the list of plates, one per line. Spaces at the ends are removed, repeated spaces are merged into one and it is turned into capitals, as the database does.',
     'Matrículas (una por línea)': 'Plates (one per line)',
     'Las motos se añaden todas o ninguna: si una falla, no se añade ninguna.': 'Bikes are added all together or not at all: if one fails, none is added.',
     'Quitar repetidas': 'Remove repeated',
@@ -320,13 +321,16 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     return { v: m };
   }
   function marca(el, mal) { if (el) { if (mal) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); } }
+  /* Matrícula como la guarda la base: btrim + espacios internos colapsados (\s+ → uno) + MAYÚSCULAS. Una sola función para la vista previa del lote y la edición de una moto. */
+  function normaMat(v) { return String(v == null ? '' : v).replace(/^\s+|\s+$/g, '').replace(/\s+/g, ' ').toUpperCase(); }
   /* Abre una ventana: un solo diálogo a la vez (doble clic en «Añadir…» no abre dos) y el indicador se baja siempre al cerrarla (botón, ESC o tras guardar). */
   function abre(titulo, nodos, botones) {
     if (E.dialogo) return null;
-    E.dialogo = true;
-    var d = C.dialogo(titulo, nodos, botones);
+    var d = C.dialogo(titulo, nodos, botones);   // síncrono: nadie puede abrir otra ventana entre esta línea y la siguiente
+    E.dialogo = d;
     var cierra = d.cierra;
-    d.cierra = function () { E.dialogo = false; cierra(); };
+    // Solo baja el indicador si ESTA ventana sigue siendo la actual: si se cerró con ESC mientras guardaba y se abrió otra, al terminar el guardado no se la quita.
+    d.cierra = function () { if (E.dialogo === d) E.dialogo = false; cierra(); };
     d.cuerpo.classList.add('fl-modal');
     var rec = d.botones['fl-modal-recargar'];
     if (rec) oculta(rec, true);
@@ -368,9 +372,14 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       carga().then(function (l) {
         C.libera(bt);
         if (!l.ok) { d.error(T('No se ha podido mirar')); return; }
-        var existe = refresca();
+        var existe = refresca();   // false = la fila ya no existe · array = lo que cambió la otra persona (campos nuevos ya volcados a los que la persona NO tocó)
         if (existe === false) { d.error(T('Esa fila ya no existe: otra persona la borró. Cierra esta ventana.')); var c = d.botones['fl-modal-confirmar']; if (c) c.disabled = true; oculta(d.botones['fl-modal-recargar'], true); return; }
         d.conflicto = false; oculta(d.botones['fl-modal-recargar'], true);
+        var cambios = Array.isArray(existe) ? existe : [];
+        var nota = d.cuerpo.querySelector('[data-fl="cambios-ajenos"]');
+        if (!nota) { nota = h('p', { class: 'axw-aviso', 'data-fl': 'cambios-ajenos', role: 'status' }); d.cuerpo.insertBefore(nota, d.errorCaja); }
+        nota.textContent = cambios.length ? T('Lo que cambió la otra persona') + ': ' + cambios.map(function (c) { return c.etiqueta + ' → ' + c.valor + (c.conservado ? ' (' + T('se conserva lo que escribiste') + ')' : ''); }).join(' · ') : '';
+        oculta(nota, !cambios.length);
         d.error(''); aviso(T('Recargado. Se conserva lo que escribiste: revisa los valores y vuelve a confirmar.'));
       }, function () { C.libera(bt); });
     };
@@ -384,7 +393,10 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     var idEl = h('input', { type: 'text', id: 'fl-f-identificador', 'data-campo': 'identificador', autocomplete: 'off', maxlength: ti && ti.max != null ? String(ti.max) : null });
     var selEl = h('select', { id: 'fl-f-estado', 'data-campo': 'estado' }, Object.keys(ESTADOS).map(function (k) { return h('option', { value: k, text: T(ESTADOS[k][0]) }); }));
     var notasEl = h('input', { type: 'text', id: 'fl-f-notas', 'data-campo': 'notas', autocomplete: 'off' });
-    idEl.value = s.u.identificador == null ? '' : String(s.u.identificador); selEl.value = ESTADOS[s.u.estado] ? s.u.estado : 'disponible'; notasEl.value = s.u.notas == null ? '' : String(s.u.notas);
+    function deFila(u) { return { identificador: u.identificador == null ? '' : String(u.identificador), estado: ESTADOS[u.estado] ? u.estado : 'disponible', notas: u.notas == null ? '' : String(u.notas) }; }
+    var vis = deFila(s.u), tocado = {};   // vis = lo último que se vio de la base · tocado = campos que la persona ha escrito
+    idEl.value = vis.identificador; selEl.value = vis.estado; notasEl.value = vis.notas;
+    [idEl, selEl, notasEl].forEach(function (el) { ['input', 'change'].forEach(function (ev) { el.addEventListener(ev, function () { tocado[el.getAttribute('data-campo')] = true; }); }); });
     var motEl = campoMotivo();
     var form = h('div', { class: 'fl-form' }, [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-identificador', text: T('Matrícula o identificador') }), idEl]),
       h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-estado', text: T('Estado') }), selEl]),
@@ -392,7 +404,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     var d = abre(T('Editar moto'), [h('p', { class: 'fl-ayuda', text: s.p.nombre || '' }), form,
       h('p', { class: 'fl-ayuda', text: T('Si la moto tiene reservas vivas, la base no dejará pasarla a taller ni de baja y lo dirá.') }), h('p', { class: 'axw-nota', text: T('Esto cambia qué motos puede reservar el bot.') })],
       botonesBase(function (bt, dd) {
-        var idv = idEl.value.replace(/^\s+|\s+$/g, '').toUpperCase(), ti2 = tope('identificador');
+        var idv = normaMat(idEl.value), ti2 = tope('identificador');
         if (!idv) { marca(idEl, true); dd.error(T('Escribe el identificador (la matrícula).')); return; }
         if (fueraDe(idv.length, ti2)) { marca(idEl, true); dd.error(T('Matrícula o identificador') + ': ' + rango(ti2) + ' ' + T('caracteres')); return; }
         marca(idEl, false);
@@ -405,17 +417,29 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
         envia('producto_unidad_guarda', { p_id: id, p_datos: { identificador: idv, estado: selEl.value, notas: notas }, p_motivo: m.v, p_esperado: ctx.esperado }, bt, dd);
       }));
     if (!d) return;
-    recargaConserva(d, function () { var f = unidadPorId(id); if (!f) return false; ctx.esperado = f.u.actualizado_en; return true; });
+    recargaConserva(d, function () {
+      var f = unidadPorId(id); if (!f) return false;
+      ctx.esperado = f.u.actualizado_en;
+      // Lo que la otra persona cambió y la persona NO tocó se vuelca al formulario (si no, reconfirmar pisaría ese cambio); lo que sí escribió se conserva y se avisa del valor nuevo.
+      var nuevo = deFila(f.u), els = { identificador: idEl, estado: selEl, notas: notasEl }, et = { identificador: T('Matrícula o identificador'), estado: T('Estado'), notas: T('Notas') }, cambios = [];
+      Object.keys(nuevo).forEach(function (k) {
+        if (nuevo[k] === vis[k]) return;
+        if (!tocado[k]) els[k].value = nuevo[k];
+        cambios.push({ etiqueta: et[k], valor: k === 'estado' ? T(ESTADOS[nuevo.estado][0]) : (nuevo[k] === '' ? '—' : nuevo[k]), conservado: !!tocado[k] });
+        vis[k] = nuevo[k];
+      });
+      return cambios;
+    });
   }
 
   /* ── añadir motos: pegar una lista ── */
   function lineasDe(texto) {
     var crudas = String(texto).split(/\r?\n/), vistas = {}, filas = [], vacias = 0;
     var todas = {};
-    (E.d ? E.d.productos : []).forEach(function (p) { p.unidades.forEach(function (u) { todas[String(u.identificador).replace(/^\s+|\s+$/g, '').toUpperCase()] = 1; }); });
+    (E.d ? E.d.productos : []).forEach(function (p) { p.unidades.forEach(function (u) { todas[normaMat(u.identificador)] = 1; }); });
     var ti = tope('identificador');
     crudas.forEach(function (c) {
-      var v = c.replace(/^\s+|\s+$/g, '').toUpperCase();
+      var v = normaMat(c);
       if (!v) { vacias++; return; }
       var estado = 'ok';
       if (ti && ti.min != null && v.length < ti.min) estado = 'corta';
@@ -456,7 +480,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       if (dedupBtn) dedupBtn.disabled = cuenta.repetida === 0;
       return lectura;
     }
-    var d = abre(T('Añadir motos a') + ' ' + (p.nombre || '—'), [h('p', { class: 'fl-ayuda', text: T('Pega la lista de matrículas, una por línea. Se quitan los espacios de los extremos y se pasan a mayúsculas, como hace la base.') }),
+    var d = abre(T('Añadir motos a') + ' ' + (p.nombre || '—'), [h('p', { class: 'fl-ayuda', text: T('Pega la lista de matrículas, una por línea. Se quitan los espacios de los extremos, los espacios repetidos se juntan en uno y se pasa a mayúsculas, como hace la base.') }),
       h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-lista', text: T('Matrículas (una por línea)') }), area]), resumen, prev,
       h('div', { class: 'axw-acciones' }, [dedupBtn]), motEl,
       h('p', { class: 'fl-ayuda', text: T('Las motos se añaden todas o ninguna: si una falla, no se añade ninguna.') }), h('p', { class: 'axw-nota', text: T('Esto cambia qué motos puede reservar el bot.') })],
@@ -498,6 +522,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     existentes.forEach(function (m) { if (monedas.indexOf(m) === -1) monEl.appendChild(h('option', { value: m, text: m })); });   // una moneda ya usada que la base ya no admite sigue visible
     if (previa) { diasEl.value = String(previa.t.dias); diasEl.readOnly = true; precioEl.value = previa.t.precio == null ? '' : String(previa.t.precio); etqEl.value = previa.t.etiqueta == null ? '' : String(previa.t.etiqueta); monEl.value = String(previa.t.moneda); }
     else if (existentes.length === 1) monEl.value = existentes[0];
+    var visT = previa ? { precio: previa.t.precio == null ? '' : String(previa.t.precio), moneda: String(previa.t.moneda), etiqueta: previa.t.etiqueta == null ? '' : String(previa.t.etiqueta) } : null, tocadoT = {};
+    if (previa) [precioEl, monEl, etqEl].forEach(function (el) { ['input', 'change'].forEach(function (ev) { el.addEventListener(ev, function () { tocadoT[el.getAttribute('data-campo')] = true; }); }); });
     var motEl = campoMotivo();
     var form = h('div', { class: 'fl-form' }, [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-dias', text: T('Días del tramo') }), diasEl]),
       h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-precio', text: T('Precio') }), precioEl]),
@@ -551,7 +577,21 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     if (!d) return;
     ['input', 'change'].forEach(function (ev) { d.cuerpo.addEventListener(ev, function (e) { if (e.target !== motEl.querySelector('input')) { d.error(''); refresca(); } }); });
     refresca();
-    recargaConserva(d, function () { if (!prodPorId(pid)) return false; p = prodPorId(pid); instantanea(); refresca(); return true; });
+    recargaConserva(d, function () {
+      if (!prodPorId(pid)) return false;
+      p = prodPorId(pid); instantanea();
+      var cambios = [], f = previa ? tarifaPorId(previa.t.id) : null;
+      if (f) {   // mismo criterio que la moto: lo no tocado se vuelca, lo tecleado se conserva y se avisa del valor nuevo
+        var nuevo = { precio: f.t.precio == null ? '' : String(f.t.precio), moneda: String(f.t.moneda), etiqueta: f.t.etiqueta == null ? '' : String(f.t.etiqueta) }, els = { precio: precioEl, moneda: monEl, etiqueta: etqEl };
+        Object.keys(nuevo).forEach(function (k) {
+          if (nuevo[k] === visT[k]) return;
+          if (!tocadoT[k]) els[k].value = nuevo[k];
+          cambios.push({ etiqueta: T(k === 'precio' ? 'Precio' : (k === 'moneda' ? 'Moneda' : 'Etiqueta (opcional)')), valor: k === 'precio' ? precioTal(f.t.precio, f.t.moneda) : (nuevo[k] === '' ? '—' : nuevo[k]), conservado: !!tocadoT[k] });
+          visT[k] = nuevo[k];
+        });
+      }
+      refresca(); return cambios;
+    });
   }
   function abreBorra(tid) {
     var s = tarifaPorId(tid); if (!s) return;

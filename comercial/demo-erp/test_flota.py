@@ -184,7 +184,9 @@ mira('los rangos duros salen de `topes` (nada de 100, 101, 366, 365 ni 500 cable
 mira('las monedas salen de las claves de topes.precio.max_por_moneda (ni IDR ni EUR escritos en el codigo)', 'max_por_moneda' in CODIGO and not re.search(r"\b(IDR|EUR|USD)\b", CODIGO + MARCADO))
 mira('el precio se parsea con la ayuda comun importe() (sin adivinar el separador) y se rechaza lo ambiguo', 'C.importe(precioEl.value' in CODIGO and "im.e === 'ambiguo'" in CODIGO and 'function importe' in CODIGO_COMUN)
 mira('el precio se muestra de vuelta antes de confirmar (eco) con la moneda', "T('Se enviará')" in CODIGO and "'data-fl': 'eco'" in CODIGO)
-mira('la matricula se normaliza como la base: recorte + mayusculas (nada mas)', ".replace(/^\\s+|\\s+$/g, '').toUpperCase()" in CODIGO)
+mira('la matricula se normaliza como la base (btrim + espacios internos colapsados + mayusculas) con UNA sola funcion para lote y edicion',
+     ".replace(/^\\s+|\\s+$/g, '').replace(/\\s+/g, ' ').toUpperCase()" in CODIGO and CODIGO.count('normaMat(') >= 4 and ".replace(/^\\s+|\\s+$/g, '').toUpperCase()" not in CODIGO)
+mira('al cerrar una ventana solo se baja el indicador si sigue siendo la actual (ESC mientras guarda + otra ventana abierta)', 'E.dialogo = d;' in CODIGO and 'if (E.dialogo === d) E.dialogo = false' in CODIGO)
 mira('el lote se rechaza SIN enviar con mas lineas que topes.lote.max y no se quitan repetidas a escondidas (se marcan y se bloquea)',
      'tl.max != null && L.filas.length > tl.max' in CODIGO and "'repetida'" in CODIGO and "'existe'" in CODIGO and 'if (!a.ok)' in CODIGO)
 mira('el lote dice que es todo o nada y, si falla, la base dice cual (su mensaje con textContent)', "T('No se ha añadido ninguna moto: el lote es todo o nada.')" in CODIGO and 'C.mensaje(err, false, PROPIOS)' in CODIGO)

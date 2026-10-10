@@ -60,7 +60,7 @@ function datos(s) {
   return { productos: prods, recortado: !!s.o.recortado, topes: s.topes, versiones: JSON.parse(JSON.stringify(s.versiones)) };
 }
 const buscaU = (s, id) => { for (const p of s.productos) { const x = p.unidades.find(y => y.id === id); if (x) return [p, x]; } return [null, null]; };
-const norm = x => String(x).replace(/^\s+|\s+$/g, '').toUpperCase();
+const norm = x => String(x).replace(/^\s+|\s+$/g, '').replace(/\s+/g, ' ').toUpperCase();   // como la base: btrim + espacios internos colapsados + mayusculas
 const vermotivo = (s, m) => (!m || m.length < s.topes.motivo.min || m.length > s.topes.motivo.max) ? err('22023', 'El motivo es obligatorio (entre ' + s.topes.motivo.min + ' y ' + s.topes.motivo.max + ' caracteres)', 'motivo') : null;
 function apunta(s, tabla, que, motivo) { s.versiones.unshift({ cuando: marca(), quien: 'yo@x.com', motivo, tabla, que }); }
 
@@ -96,6 +96,7 @@ async function servidor(s, nombre, a) {
       return { data: nuevos.length, error: null };
     }
     case 'producto_unidad_guarda': {
+      if (o.otroCambiaCampos && !s.__otroC) { s.__otroC = true; const [, x] = buscaU(s, a.p_id); x.actualizado_en = marca(); x.estado = 'taller'; x.identificador = 'DK 2345 CX'; }
       if (o.otroCambia && !s.__otro) { s.__otro = true; const [, x] = buscaU(s, a.p_id); x.actualizado_en = marca(); x.notas = 'Cambiado por otra persona'; }
       const [p, x] = buscaU(s, a.p_id);
       if (!x) return err('22023', 'La unidad no existe', 'datos');
@@ -395,6 +396,74 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.click(accion('fl-modal-recargar'));
     await espera(p, () => document.querySelector('[data-axw="dialogo"] .axw-error:not(.axw-oculto)').textContent.includes('ya no existe'));
     ok('si al recargar la fila ya no existe lo dice y no deja confirmar', await p.$eval(accion('fl-modal-confirmar'), b => b.disabled));
+    await ctx.close();
+  }
+
+  {
+    // 1. la matricula se normaliza como la base: btrim + espacios internos colapsados + mayusculas (vista previa del lote y edicion de una moto)
+    const { base, p, ctx } = await abre();
+    await p.click(accion('fl-lote-abrir', prod('p1')));
+    await p.fill(campo('lista'), 'AB  12\nAB 12\nab\t12\ndk   1234    ab\nZZ  900');
+    ok('«AB  12», «AB 12» y «ab<tab>12» son la misma matricula: dos salen como repetidas y la que ya existe con espacios de mas (DK   1234    AB) como «ya existe»',
+       (await p.$$('[data-fila="repetida"]')).length === 2 && (await p.$$('[data-fila="existe"]')).length === 1 && (await p.$$('[data-fila="ok"]')).length === 2);
+    ok('la vista previa muestra la matricula ya colapsada (un solo espacio)', (await p.$$eval('[data-fila] span:first-child', a => a.map(e => e.textContent))).join('|') === 'AB 12|AB 12|AB 12|DK 1234 AB|ZZ 900');
+    await motivo(p, 'Prueba'); await confirmar(p);
+    ok('con repetidas no se envia nada: no lo descubre la base rechazando el lote entero', escritas(base).length === 0);
+    await p.click(accion('fl-modal-dedup')); await confirmar(p);
+    ok('quitar repetidas deja AB 12, la existente sigue marcada y tampoco se envia', escritas(base).length === 0 && (await p.$$('[data-fila="repetida"]')).length === 0);
+    await p.click(accion('fl-modal-cerrar'));
+    await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]'));
+    await p.fill(campo('identificador'), '  dk   7777    zz  '); await motivo(p, 'Colapso'); await confirmar(p);
+    await espera(p, () => !document.querySelector('[data-axw="dialogo"]') || document.querySelector('[data-axw="dialogo"] .axw-error:not(.axw-oculto)'));
+    const w = escritas(base);
+    ok('editar una moto manda la matricula colapsada y en mayusculas (DK 7777 ZZ), igual que la guarda la base', w.length === 1 && w[0][1].p_datos.identificador === 'DK 7777 ZZ', J(w));
+    await ctx.close();
+  }
+  {
+    // 2. conflicto: lo que la otra persona cambio y la persona NO toco se vuelca al formulario; lo que tecleo se conserva y se avisa del valor nuevo
+    const { base, p, ctx } = await abre({ base: { otroCambiaCampos: true } });
+    await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]'));
+    await p.fill(campo('notas'), 'Mi nota nueva'); await motivo(p, 'Mi motivo'); await confirmar(p);
+    await espera(p, () => !document.querySelector('[data-accion="fl-modal-recargar"]').classList.contains('axw-oculto'));
+    await p.click(accion('fl-modal-recargar'));
+    await espera(p, () => document.querySelector('[data-accion="fl-modal-recargar"]').classList.contains('axw-oculto'));
+    ok('tras recargar los campos NO tocados traen lo de la otra persona (matricula y estado) y el tecleado se conserva (notas y motivo)',
+       (await p.$eval(campo('identificador'), e => e.value)) === 'DK 2345 CX' && (await p.$eval(campo('estado'), e => e.value)) === 'taller' && (await p.$eval(campo('notas'), e => e.value)) === 'Mi nota nueva' && (await p.$eval(campo('motivo'), e => e.value)) === 'Mi motivo');
+    const nota = await p.$eval('[data-fl="cambios-ajenos"]', e => ({ t: e.textContent, v: !e.classList.contains('axw-oculto') }));
+    ok('el aviso dice que campos cambio la otra persona y su valor nuevo (matricula y estado), y no cita el que no cambio (notas)', nota.v && nota.t.includes('Lo que cambió la otra persona') && nota.t.includes('DK 2345 CX') && /Estado → En taller/.test(nota.t) && !nota.t.includes('Notas'), J(nota));
+    await confirmar(p); await esperaCierre(p);
+    const w = escritas(base), u = base.productos[0].unidades.find(x => x.id === 'u2');
+    ok('reconfirmar NO pisa el cambio ajeno: manda matricula y estado nuevos con la nota tecleada y la base lo acepta', w.length === 2 && w[1][1].p_datos.identificador === 'DK 2345 CX' && w[1][1].p_datos.estado === 'taller' && w[1][1].p_datos.notas === 'Mi nota nueva' && u.identificador === 'DK 2345 CX' && u.estado === 'taller', J(w[1]));
+    await ctx.close();
+  }
+  {
+    // 2b. si la persona SI tecleo un campo que la otra tambien cambio: se conserva lo suyo y el aviso lo dice con el valor nuevo
+    const { base, p, ctx } = await abre({ base: { otroCambia: true } });
+    await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]'));
+    await p.fill(campo('notas'), 'Mi nota tecleada'); await motivo(p, 'Mi motivo'); await confirmar(p);
+    await espera(p, () => !document.querySelector('[data-accion="fl-modal-recargar"]').classList.contains('axw-oculto'));
+    await p.click(accion('fl-modal-recargar'));
+    await espera(p, () => document.querySelector('[data-accion="fl-modal-recargar"]').classList.contains('axw-oculto'));
+    const t = await p.$eval('[data-fl="cambios-ajenos"]', e => e.textContent);
+    ok('campo tecleado que la otra persona tambien cambio: se conserva lo tecleado y el aviso enseña el valor nuevo y que se conserva lo escrito', (await p.$eval(campo('notas'), e => e.value)) === 'Mi nota tecleada' && t.includes('Cambiado por otra persona') && t.includes('se conserva lo que escribiste'), t);
+    await ctx.close();
+  }
+  {
+    // 3. ESC mientras se guarda: se cierra la ventana; al terminar el guardado NO se baja el indicador de la ventana nueva que ya se abrio
+    const { base, p, ctx } = await abre({ base: { lento: 500 } });
+    await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]'));
+    await p.fill(campo('notas'), 'Guardando'); await motivo(p, 'ESC en pleno guardado'); await confirmar(p);
+    await p.evaluate(() => document.querySelector('[data-axw="dialogo"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    ok('ESC durante el guardado cierra la ventana', (await dlg(p)) === 0);
+    await p.click(accion('fl-moto-editar', '[data-unidad-id="u3"]'));
+    ok('se puede abrir otra ventana (la de otra moto)', (await dlg(p)) === 1 && (await p.$eval('[data-axw="dialogo"]', e => e.textContent)).includes('Editar moto'));
+    await espera(p, () => document.querySelector('[data-fl="exito"]').textContent !== '');
+    ok('el guardado termino (una escritura, lista releida)', escritas(base).length === 1 && llamadas(base, 'producto_flota_datos').length === 2);
+    await p.evaluate(() => document.querySelector('[data-accion="fl-lote-abrir"]').click());   // la ventana tapa el boton: se dispara el clic directo, como un doble clic
+    ok('al terminar el guardado la ventana nueva sigue siendo la unica: el cierre tardio no bajo el indicador (un clic mas no abre una segunda)', (await dlg(p)) === 1 && (await p.$eval('[data-axw="dialogo"]', e => e.textContent)).includes('Editar moto'));
+    await p.click(accion('fl-modal-cerrar'));
+    await p.click(accion('fl-lote-abrir', prod('p1')));
+    ok('al cerrar la nueva de verdad se puede abrir otra', (await dlg(p)) === 1 && (await p.$eval('[data-axw="dialogo"]', e => e.textContent)).includes('Añadir motos'));
     await ctx.close();
   }
 
