@@ -72,7 +72,8 @@ DirectoryIndex index.php index.html
   # Sin esto responden 200 en blanco y son URLs rastreables de la nada.
   RewriteRule ^inc/ - [F,L]
   # Secreto y estado del formulario de contacto: nunca por web (24-sep-2026).
-  RewriteRule ^(private|api/_estado)/ - [F,L]
+  # tests/: las pruebas viven en el repo pero no tienen llamador en la web (10-oct-2026).
+  RewriteRule ^(private|api/_estado|tests)/ - [F,L]
 
   # Bodas se mudó a su dominio, bodaenlace.com (26-sep-2026). Destino FIJO y patrón cerrado
   # (`/bodas.evil.com/` no casa): no es una redirección abierta. La API no se redirige: un 301
