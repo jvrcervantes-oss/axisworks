@@ -224,10 +224,10 @@ function axwFotosGuiadas(cfg) {
   var input = h('input', { type: 'file', accept: 'image/*', capture: 'environment', class: 'fg-input', 'data-fg': 'input', tabindex: '-1', 'aria-hidden': 'true' });
   var pidiendo = null;
 
+  function ultimaClave(ranura) { var claves = Object.keys(local).filter(function (k) { return local[k].ranura === ranura; }); return claves.length ? claves[claves.length - 1] : null; }
   function estadoDe(ranura) {
-    var claves = Object.keys(local).filter(function (k) { return local[k].ranura === ranura; });
-    var ultimo = claves.length ? local[claves[claves.length - 1]] : null;
-    if (ultimo) return ultimo.estado;
+    var k = ultimaClave(ranura);
+    if (k) return local[k].estado;
     return base[ranura] ? 'subida' : 'vacia';
   }
   function pendientes() { return Object.keys(local).filter(function (k) { return local[k].estado === 'pendiente'; }).length; }
@@ -255,7 +255,8 @@ function axwFotosGuiadas(cfg) {
   function pinta() {
     while (caja.firstChild) caja.removeChild(caja.firstChild);
     var grid = h('div', { class: 'fg-rejilla' });
-    FIJAS.forEach(function (r) { grid.appendChild(casilla(r, null, estadoDe(r), base[r] && base[r].id)); });
+    // con su última captura: su mensaje (rechazo, 429, sin sesión) y su vista previa se ven también en las casillas fijas
+    FIJAS.forEach(function (r) { grid.appendChild(casilla(r, ultimaClave(r), estadoDe(r), base[r] && base[r].id)); });
     caja.appendChild(grid);
     var dan = h('div', { class: 'fg-danos' });
     dan.appendChild(h('p', { class: 'fg-cuenta', 'data-fg': 'danos', text: TT('Daños: {n} de {max}', { n: danosHechos(), max: MAX_DANO }) }));

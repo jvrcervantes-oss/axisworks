@@ -155,8 +155,7 @@
     'Elige el resultado.': 'Choose the result.', 'Para dejarla lista falta:': 'To leave it ready, missing:', 'Sin contestar': 'Not answered',
     'Solo la administración puede dejarla lista sin todo.': 'Only the administration can leave it ready without everything.',
     'Por qué se deja lista sin todo (3 a 500 caracteres)': 'Why it is left ready without everything (3 to 500 characters)',
-    'Nota del resultado (opcional)': 'Result note (optional)', 'Revisiones: {b} bien, {a} atención, {m} mal, {s} sin contestar': 'Checks: {b} good, {a} needs check, {m} bad, {s} not answered',
-    'Fotos fijas: {n} de 5': 'Fixed photos: {n} of 5',
+    'Nota del resultado (opcional)': 'Result note (optional)', '{b} bien, {a} atención, {m} mal, {s} sin contestar': '{b} good, {a} needs check, {m} bad, {s} not answered',
     'Hecho': 'Done', 'La moto vuelve a estar disponible.': 'The bike is available again.',
     'La moto se queda en el taller hasta que la administración la devuelva (estaba en el taller sin orden).': 'The bike stays in the workshop until the administration returns it (it was in the workshop without an order).',
     'La orden queda esperando el recambio; la moto sigue en el taller.': 'The order waits for the part; the bike stays in the workshop.',
@@ -244,8 +243,7 @@
     'Elige el resultado.': 'Pilih hasil.', 'Para dejarla lista falta:': 'Untuk siap disewa masih kurang:', 'Sin contestar': 'Belum diisi',
     'Solo la administración puede dejarla lista sin todo.': 'Hanya admin yang bisa menandai siap disewa tanpa kelengkapan.',
     'Por qué se deja lista sin todo (3 a 500 caracteres)': 'Alasan siap disewa tanpa kelengkapan (3 sampai 500 karakter)',
-    'Nota del resultado (opcional)': 'Catatan hasil (opsional)', 'Revisiones: {b} bien, {a} atención, {m} mal, {s} sin contestar': 'Pemeriksaan: {b} baik, {a} perlu dicek, {m} rusak, {s} belum diisi',
-    'Fotos fijas: {n} de 5': 'Foto wajib: {n} dari 5',
+    'Nota del resultado (opcional)': 'Catatan hasil (opsional)', '{b} bien, {a} atención, {m} mal, {s} sin contestar': '{b} baik, {a} perlu dicek, {m} rusak, {s} belum diisi',
     'Hecho': 'Selesai', 'La moto vuelve a estar disponible.': 'Motor tersedia lagi.',
     'La moto se queda en el taller hasta que la administración la devuelva (estaba en el taller sin orden).': 'Motor tetap di bengkel sampai admin mengaktifkannya lagi (sebelumnya di bengkel tanpa order).',
     'La orden queda esperando el recambio; la moto sigue en el taller.': 'Order menunggu suku cadang; motor tetap di bengkel.',
@@ -444,6 +442,7 @@
         return false;
       }
       E.datos = d;
+      vacia(est);   // el «Cargando…» no se queda si se entra directo a un paso (#m= / #o=)
       if (!Array.isArray(d.para_volver)) d.para_volver = [];
       return true;
     });
@@ -868,8 +867,8 @@
     var fijas = ['frente', 'atras', 'izquierda', 'derecha', 'cuentakm'].filter(function (r) { return E.orden.fotos.some(function (f) { return f.ranura === r && f.estado === 'confirmada'; }); }).length;
     var gas = GASOLINA.filter(function (g) { return g[0] === Number(o.gasolina); })[0];
     c.appendChild(C.resumen([['Motivo', T((MOTIVOS.filter(function (m) { return m[0] === o.motivo_tipo; })[0] || ['', 'Motivo'])[1])],
-      ['Kilómetros', o.km == null ? '—' : entero(o.km)], ['Gasolina', gas ? T(gas[1]) : '—'], ['Fotos', TT('Fotos fijas: {n} de 5', { n: fijas })],
-      ['Revisiones', TT('Revisiones: {b} bien, {a} atención, {m} mal, {s} sin contestar', { b: cuenta('bien'), a: cuenta('atencion'), m: cuenta('mal'), s: revs.filter(function (r) { return !r.resultado; }).length })]]));
+      ['Kilómetros', o.km == null ? '—' : entero(o.km)], ['Gasolina', gas ? T(gas[1]) : '—'], ['Fotos', fijas + ' / 5'],
+      ['Revisiones', TT('{b} bien, {a} atención, {m} mal, {s} sin contestar', { b: cuenta('bien'), a: cuenta('atencion'), m: cuenta('mal'), s: revs.filter(function (r) { return !r.resultado; }).length })]]));
     c.appendChild(grupo(T('Resultado'), '', RESULTADOS.map(function (x) { return radio('resultado', x[0], T(x[1]), E.resultado === x[0]); })));
     var faltan = E.orden.faltan;
     var caja = h('div', { 'data-tl': 'faltan', class: 'axw-oculto' });
@@ -1142,7 +1141,8 @@
     if (E.paso === 'fin') { E.fin = null; ir('inicio', false); return; }   // terminada la orden, Atrás no vuelve a sus pasos
     if (hsh.listas) { if (E.flota) ir('listas', false); else ir('inicio', false); return; }
     if (hsh.o) {
-      if (!inicial && E.orden && E.orden.orden.id === hsh.o && PASOS.indexOf(hsh.p) > 1) { ir(hsh.p, false); return; }
+      // Atrás dentro de la misma orden: al paso de la URL, con la orden RELEÍDA (las fotos y respuestas que se hicieron después tienen que verse)
+      if (!inicial && E.orden && E.orden.orden.id === hsh.o && PASOS.indexOf(hsh.p) > 1) return cargaOrden(hsh.o).then(function (ok) { if (ok) ir(hsh.p, false); });
       return entraOrden(hsh.o, false);
     }
     if (hsh.m && E.datos) {

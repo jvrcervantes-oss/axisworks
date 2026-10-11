@@ -196,7 +196,7 @@ MIG = migracion()
 # los propios de la edge taller-fotos (cabecera de erp/funciones/taller-fotos/index.ts, ebaab585, 12-oct-2026)
 EDGE_HINTS = {'origen', 'metodo', 'sin_sesion', 'sesion_no_comprobada', 'tope_minuto', 'cuerpo', 'accion', 'campo_no_admitido', 'orden', 'ranura', 'clave', 'foto',
               'fichero', 'fichero_grande', 'fichero_vacio', 'fichero_tipo', 'fichero_exif', 'almacen', 'base', 'config'}
-PENDIENTES_BASE = {'taller_sin_configurar'}   # setup del taller (pedido del orquestador 12-oct): aún NO está en 20261011170000; quitar de aquí cuando entre
+PENDIENTES_BASE = set()   # hints que la pantalla traduce antes de que la base los tenga (taller_sin_configurar ya entró en 20261011170000 el 12-oct)
 bloque = CODIGO[CODIGO.index('/*TEXTOS*/') if '/*TEXTOS*/' in CODIGO else 0:]
 textos = JS[JS.index('/*TEXTOS*/'):JS.index('/*FIN_TEXTOS*/')]
 out = node(textos + '\nconsole.log(JSON.stringify({h: Object.keys(TEXTO_HINT), v: [PASOS, TITULO, MOTIVOS, GASOLINA, RESULTADOS, REV, ESTADO_MOTO, SETUP, PORQUE, FOTO_RANURA, TEXTO_HINT]}));')
@@ -210,6 +210,7 @@ if MIG is None:
     NO_COMPROBADO.append('hints y funciones contra la migración 20261011170000 (no está en la agencia de este disco)')
 else:
     base_hints = set(re.findall(r"hint = '([a-z_]+)'", MIG))
+    mira('la base da el setup como lo lee la pantalla (setup.listo y setup.pasos con clave/hecho/obligatorio/donde)', ("'setup', (select jsonb_build_object('listo'" in MIG and "'pasos', s.p)" in MIG and "jsonb_build_object('clave', 'revisiones', 'hecho'" in MIG))
     malos = sorted(set(TX['h']) - base_hints - PENDIENTES_BASE)
     mira('todo hint que traduce la pantalla existe en la migración o está declarado pendiente (%s)' % ', '.join(malos), not malos)
     mira('los pendientes declarados de verdad faltan en la migración (si ya están, quítalos de PENDIENTES_BASE)', not (PENDIENTES_BASE & base_hints))
