@@ -30,7 +30,10 @@ async function servidor(b, n, a) {
       { clave: 'impuesto', hecho: true, detalle: 'PPN 12 % sobre 11/12', donde: '/sociedades/' },
       { clave: 'precio_incluye_impuesto', hecho: precio, detalle: precio ? 'Decidido' : 'Sin decidir', donde: '/ajustes/' },
       { clave: 'facturacion', hecho: !!o.todoHecho, detalle: 'Serie sin configurar', donde: 'estudio (registro de la instancia)' },
+      { clave: 'modulo_sociedades', hecho: !!o.todoHecho, detalle: 'Apagado', donde: 'panel de control del estudio' },
       { clave: 'modulo_facturas', hecho: !!o.todoHecho, detalle: 'Apagado', donde: 'panel de control del estudio' },
+      { clave: 'modulo_operaciones', hecho: !!o.todoHecho, detalle: 'Apagado', donde: 'panel de control del estudio' },
+      { clave: 'modulo_recibos', hecho: !!o.todoHecho, detalle: 'Apagado', donde: 'panel de control del estudio' },
       { clave: 'cotizacion', hecho: !!o.todoHecho, detalle: 'La cotización falla', donde: '/flota/', hint: o.todoHecho ? undefined : 'reparto_con_impuesto_dentro' }];
     return { data: { pasos, listo: !!o.todoHecho && precio && pkp }, error: null };
   }
@@ -76,9 +79,9 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   try {
     let { base, p, ctx } = await abre();
     const pasos = await p.$$eval('[data-pm-paso]', l => l.map(e => [e.getAttribute('data-pm-paso'), e.querySelector('[data-pm-hecho]').getAttribute('data-pm-hecho')]));
-    ok('pinta los siete pasos en el orden de la base, con su hecho', JSON.stringify(pasos) === JSON.stringify([['sociedad', '0'], ['pkp', '1'], ['impuesto', '1'], ['precio_incluye_impuesto', '0'], ['facturacion', '0'], ['modulo_facturas', '0'], ['cotizacion', '0']]), JSON.stringify(pasos));
-    ok('el resumen cuenta lo que falta según la base', (await p.$eval('[data-pm="resumen"]', e => e.textContent)) === 'Faltan 5 pasos.');
-    ok('el hint de la base se enseña en el paso que falla', (await p.$eval('[data-pm-hint="cotizacion"]', e => e.textContent)).includes('reparto_con_impuesto_dentro') && !(await p.$('[data-pm-hint="sociedad"]')));
+    ok('pinta los diez pasos en el orden de la base, con su hecho', JSON.stringify(pasos) === JSON.stringify([['sociedad', '0'], ['pkp', '1'], ['impuesto', '1'], ['precio_incluye_impuesto', '0'], ['facturacion', '0'], ['modulo_sociedades', '0'], ['modulo_facturas', '0'], ['modulo_operaciones', '0'], ['modulo_recibos', '0'], ['cotizacion', '0']]), JSON.stringify(pasos));
+    ok('el resumen cuenta lo que falta según la base', (await p.$eval('[data-pm="resumen"]', e => e.textContent)) === 'Faltan 8 pasos.');
+    ok('el código conocido de la base se dice con palabras en el paso que falla', (await p.$eval('[data-pm-hint="cotizacion"]', e => e.textContent)).includes('repartir el precio por día') && !(await p.$('[data-pm-hint="sociedad"]')));
     ok('dónde: una ruta es enlace, un texto no', (await p.$eval('[data-pm-paso="sociedad"] a', e => e.getAttribute('href'))) === '/sociedades/' && !(await p.$('[data-pm-paso="modulo_facturas"] a')));
     ok('el detalle de la base se pinta como texto (XSS)', (await p.$$('#lw-aj-puesta img')).length === 0 && (await p.evaluate(() => window.__xss)) === undefined
        && (await p.$eval('[data-pm-paso="sociedad"]', e => e.textContent)).includes('<img'));
@@ -98,7 +101,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await espera(p, () => (document.querySelector('[data-pm-estado="precio_incluye_impuesto"]') || {}).textContent === 'Guardado.');
     const g = base.llamadas.filter(x => x[0] === 'ajustes_config_guardar');
     ok('guardar manda SOLO la clave, si|no y el motivo tecleado', g.length === 1 && JSON.stringify(Object.keys(g[0][1]).sort()) === '["p_clave","p_motivo","p_valor"]' && g[0][1].p_clave === 'precio_incluye_impuesto' && g[0][1].p_valor === 'si' && g[0][1].p_motivo === 'Datos del gestor');
-    ok('repintar tras guardar no borra el motivo tecleado', (await p.$eval('[data-pm="motivo"]', e => e.value)) === 'Datos del gestor');
+    ok('tras guardar bien, el motivo se vacía (el siguiente cambio necesita el suyo)', (await p.$eval('[data-pm="motivo"]', e => e.value)) === '');
     ok('tras guardar vuelve a leer y el hecho lo pone la base', base.llamadas.slice(antes).some(x => x[0] === 'puesta_en_marcha_datos') && (await p.$eval('[data-pm-paso="precio_incluye_impuesto"] [data-pm-hecho]', e => e.getAttribute('data-pm-hecho'))) === '1');
     ok('sin tablas, sin errores de script', (await p.evaluate(() => window.__from + window.__errores.length)) === 0);
     await ctx.close();
@@ -113,7 +116,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('si la base rechaza, se dice y no se da por guardado', (await p.$eval('[data-pm-estado="precio_incluye_impuesto"]', e => e.textContent)).includes('super admin'));
     await ctx.close();
     ({ p, ctx } = await abre({ base: { todoHecho: true, valores: { precio_incluye_impuesto: 'no', reservas_sin_impuesto: 'no' } } }));
-    ok('con «listo» de la base: «Listo: ya puedes encender Facturas.»', (await p.$eval('[data-pm="resumen"]', e => e.textContent)) === 'Listo: ya puedes encender Facturas.');
+    ok('con «listo» de la base: «Listo: todo en marcha…»', (await p.$eval('[data-pm="resumen"]', e => e.textContent)) === 'Listo: todo en marcha, el ERP ya factura.');
     await ctx.close();
     for (const [k, frase] of [['noDisponible', 'todavía no está disponible'], ['sinPermiso', 'de administración']]) {
       ({ p, ctx } = await abre({ base: { [k]: true } }));
