@@ -138,7 +138,8 @@
       var num = numSerie(TIPO_PREF[tipo]); ++nC;
       var c = fila(Object.assign({}, plantK, { id: 'c-' + nC, tipo: tipo, numero: num, comprador_nombre: cli.full_name,
         proyecto_nombre: u.proyecto, precio_total: precio, moneda: u.moneda, fecha_firma: firmado ? dia(diasFirma) : null,
-        datos: { fields: Object.assign(tipo === 'construccion' ? {} : { parcela_codigo: u.codigo }, { adq1_pasaporte: cli.passport_number, adq1_email: cli.email }), hitos: [] }, created_at: ts(diasFirma - 3), bloqueado: !!firmado,
+        datos: { fields: Object.assign(tipo === 'construccion' ? {} : { parcela_codigo: u.codigo }, { adq1_nombre: cli.full_name, adq1_pasaporte: cli.passport_number,
+          adq1_email: cli.email, adq1_domicilio: cli.address, proyecto_nombre: u.proyecto, moneda: u.moneda, precio_total: precio, sociedad_firmante: u._p.soc }), hitos: [], adq1_client_id: cli.id }, created_at: ts(diasFirma - 3), bloqueado: !!firmado,
         pdf_firmado_path: null, creado_por: agente.email, cobrado: 0, contrato_id: 'c-' + nC,
         compradores: [{ client_id: cli.id, rol: 'adquiriente_1', clients: { id: cli.id, full_name: cli.full_name, email: cli.email } }], contrato_padre_id: padre ? padre.id : null,
         proyecto_id: u.proyecto_id, unidad_id: u.id, nombre_contrato: TIPO_NOMBRE[tipo], parcela_codigo: u.codigo, soc: u._p.soc }));
@@ -746,6 +747,10 @@
     aplic_cero: { es: 'el importe que se aplica a la factura % tiene que ser mayor que cero', en: 'The amount applied to invoice % has to be greater than zero.' },
     aplic_pendiente: { es: 'la factura % solo tiene % pendiente de cobro y este recibí le aplica %', en: 'Invoice % only has % outstanding and this receipt applies %.' },
     borra_numerada: { es: '% no se puede borrar: una factura o un recibí numerados se ANULAN (borrarlos deja un hueco en la numeración)', en: '% cannot be deleted: numbered invoices and receipts are VOIDED (deleting them would leave a gap in the numbering).' },
+    ya_anulado: { es: 'El documento % ya está anulado', en: 'Document % is already void.' },
+    no_anulado: { es: 'El documento % no está anulado', en: 'Document % is not void.' },
+    borra_proforma: { es: 'No puedes borrar esta proforma (enviada, con cobros aplicados, o sin permiso). Anúlala.', en: 'This pro forma cannot be deleted (it was sent or has payments). Void it instead.' },
+    anulado_no_envia: { es: 'El documento % está anulado: no se marca como enviado', en: 'Document % is void: it cannot be marked as sent.' },
     operacion_no_existe: { es: 'esa operacion no existe', en: 'That deal does not exist.' },
     operacion_pagada: { es: 'Esta operacion ya tiene una comision pagada (devengo %): no se puede borrar automaticamente, resuelvelo a mano', en: 'This deal already has a paid commission (%): it cannot be deleted automatically, it has to be resolved by hand.' },
     contrato_no_existe: { es: 'Ese contrato ya no existe', en: 'That contract no longer exists.' },
@@ -899,6 +904,15 @@
       ue.contrato_numero = c ? c.numero : null; ue.comprador_nombre = c ? c.comprador_nombre : null; ue.contrato_firmado = !!(c && c.bloqueado);
     });
     if (F.operaciones) F.operaciones_equipo = { data: F.operaciones.data, error: null };
+    /* Alias que la v4 pide con select('campos:datos->fields,…'): el doble de QA devuelve la fila entera sin resolverlos
+       (su cabecera lo dice), así que van como columnas, igual que hace el doble con `soc` y `venc`. Sin `campos`, elegir
+       contrato en la factura no rellenaba el cliente. */
+    filasDe(F, 'contratos').forEach(function (c) {
+      var d = c.datos || {}, f = d.fields || {};
+      c.campos = f; c.hitos = d.hitos || []; c.extras = d.compradores || null; c.ficha = d.adq1_client_id || compradorDe(F, c.id) || null;
+      c.precio_reserva = f.precio_reserva == null ? null : String(f.precio_reserva); if (!c.soc) c.soc = f.sociedad_firmante || null;
+    });
+    filasDe(F, 'facturas').forEach(function (fa) { var f = (fa.datos && fa.datos.fields) || {}; if (f.fecha_vencimiento && !fa.venc) fa.venc = f.fecha_vencimiento; });
   }
 
   window.LW_DEMO_REPITE = function (F) {
@@ -1330,6 +1344,34 @@
         return { id: rec.id, numero: rec.numero };
       },
 
+      /* Anular, reactivar, borrar (solo proformas) y marcar enviado — datos.js 1747-1781; SQL: 20260926085354_frontera_facturas_rpc.sql,
+         20261008202000 (factura_borra/factura_reactiva) y 20261010231825 (factura_marca_enviada). La demo es super admin. */
+      factura_anula: function (F, a) {
+        var f = porId(F, 'facturas', a.p_id);
+        if (!f) falla('doc_no_existe', [], 'P0002');
+        if (f.anulada) falla('ya_anulado', [f.numero], '22023');
+        actualiza(F, 'facturas', [f], { anulada: true });
+      },
+      factura_reactiva: function (F, a) {
+        var f = porId(F, 'facturas', a.p_id);
+        if (!f) falla('doc_no_existe', [], 'P0002');
+        if (!f.anulada) falla('no_anulado', [f.numero], '22023');
+        actualiza(F, 'facturas', [f], { anulada: false });
+      },
+      factura_borra: function (F, a) {
+        var f = porId(F, 'facturas', a.p_id);
+        if (!f) falla('doc_no_existe', [], 'P0002');
+        if (f.tipo !== 'proforma') falla('borra_numerada', [f.numero], '42501');
+        if (f.enviada) falla('borra_proforma', [], '42501');
+        borra(F, 'facturas', [f]);
+      },
+      factura_marca_enviada: function (F, a) {
+        var f = porId(F, 'facturas', a.p_id);
+        if (!f) falla('doc_no_existe', [], 'P0002');
+        if (f.anulada) falla('anulado_no_envia', [f.numero], '22023');
+        if (!f.enviada) actualiza(F, 'facturas', [f], { enviada: true, fecha_envio: dia(0) });
+      },
+
       /* «Borrar operación» (datos.js borrarOperacionV4): solo la cadena de ESE contrato. Lo numerado se ANULA (la
          serie no puede tener huecos), las firmas vivas se anulan, las comisiones se purgan (para si hay una pagada)
          y la parcela vuelve a estar disponible. Devuelve los recuentos que pinta el aviso. */
@@ -1383,8 +1425,9 @@
         var molde = {}; Object.keys(filasDe(F, 'contratos')[0] || {}).forEach(function (k) { molde[k] = null; });
         var c = inserta(F, 'contratos', [Object.assign(molde, { tipo: tipo, numero: numero, comprador_nombre: cli.full_name, proyecto_nombre: pro.nombre || u.proyecto || null,
           precio_total: precio, moneda: a.p_moneda || u.moneda || 'EUR', fecha_firma: null, bloqueado: false, pdf_firmado_path: null, creado_por: SESION_EMAIL, cobrado: 0,
-          datos: { fields: Object.assign(tipo === 'construccion' ? {} : { parcela_codigo: u.codigo }, { adq1_pasaporte: cli.passport_number, adq1_email: cli.email, sociedad_firmante: SOC_DEMO }),
-            hitos: [], texto_sha256: a.p_texto_sha || null },
+          datos: { fields: Object.assign(tipo === 'construccion' ? {} : { parcela_codigo: u.codigo }, { adq1_nombre: cli.full_name, adq1_pasaporte: cli.passport_number, adq1_email: cli.email,
+            adq1_domicilio: cli.address || null, proyecto_nombre: pro.nombre || u.proyecto || null, moneda: a.p_moneda || u.moneda || 'EUR', precio_total: precio, sociedad_firmante: SOC_DEMO }),
+            hitos: [], adq1_client_id: cli.id, texto_sha256: a.p_texto_sha || null },
           compradores: [{ client_id: cli.id, rol: 'adquiriente_1', clients: { id: cli.id, full_name: cli.full_name, email: cli.email } }],
           contrato_padre_id: padre ? raizDe(F, padre) : null, proyecto_id: u.proyecto_id, unidad_id: u.id, nombre_contrato: { reserva_parcela: 'Plot Hold', carta_reserva: 'Reservation Letter', construccion: 'Construction Contract' }[tipo],
           parcela_codigo: u.codigo, soc: SOC_DEMO, operacion_id: opId, created_at: t0 })])[0];

@@ -148,6 +148,13 @@ const r = (q) => Promise.resolve(q);
   const fa2 = await r(sb.rpc('factura_guarda', { p_id: null, p_factura: pf(1100, { datos: { fields: { imp_pct: '10' }, lineas: [{ descripcion: 'Second', importe: 1000 }] } }) }));
   ok('otra página: la numeración sigue sin repetir', fa2.data && Number(fa2.data[0].numero.slice(3)) === invMax + 2, fa2);
 
+  // ── anular / reactivar / borrar (solo proformas)
+  const idF2 = fa2.data[0].id;
+  ok('factura_borra de una numerada: error', ((await r(sb.rpc('factura_borra', { p_id: idF2 }))).error || {}).message.indexOf('VOIDED') !== -1);
+  ok('factura_anula', !(await r(sb.rpc('factura_anula', { p_id: idF2 }))).error && (await r(sb.from('facturas').select('*').eq('id', idF2).maybeSingle())).data.anulada === true);
+  ok('anular dos veces: error', /already void/.test(((await r(sb.rpc('factura_anula', { p_id: idF2 }))).error || {}).message));
+  ok('factura_reactiva', !(await r(sb.rpc('factura_reactiva', { p_id: idF2 }))).error && (await r(sb.from('facturas').select('*').eq('id', idF2).maybeSingle())).data.anulada === false);
+
   // ── borrar operación: anula lo numerado, libera la parcela, solo esa cadena
   const bo = await r(sb.rpc('borrar_operacion', { p_contrato_id: k.data.id }));
   ok('borrar operación: 1 contrato y sus 3 documentos anulados', !bo.error && bo.data.contratos_borrados === 1 && bo.data.facturas_anuladas === 3, bo);
