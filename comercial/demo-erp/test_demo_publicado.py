@@ -41,6 +41,15 @@ h = open(ht, encoding='utf-8').read() if os.path.isfile(ht) else ''
 ok("connect-src 'self'" in h and 'X-Robots-Tag' in h, 'cabeceras de la demo: connect-src \'self\' y noindex')
 ok('RewriteRule ^$ ' not in h, 'la raíz no redirige: sirve la portada')
 
+# Los controles de publicación, otra vez, sobre lo que hay en el repo: una fuga que caiga con un patrón añadido después del
+# último build la para el gate aunque la huella cuadre (revisor, 12-oct). aborta() sale con SystemExit.
+for nombre, control in (('comprueba_sin_secretos', build.comprueba_sin_secretos), ('comprueba_piel_demo', build.comprueba_piel_demo)):
+    try:
+        control(PUBLICADO)
+        ok(True, '%s sobre dist/demo-erp' % nombre)
+    except SystemExit:
+        ok(False, '%s sobre dist/demo-erp (ver ABORTA arriba)' % nombre)
+
 if FALLOS:
     print('\n%d fallo(s)' % len(FALLOS))
     sys.exit(1)

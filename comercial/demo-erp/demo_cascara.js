@@ -66,10 +66,7 @@
   function barra() {
     if (document.querySelector('[data-demo="barra"]')) return;
     var estrecho = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
-    // Con el menú lateral fijo a la vista (288 px desde 1024), la barra va a su derecha: encima tapaba «Salir».
-    var menu = document.querySelector('aside.fixed');
-    var izq = menu && menu.getBoundingClientRect().width > 0 && window.innerWidth >= 1024 ? Math.round(menu.getBoundingClientRect().right) + 16 : 12;
-    var n = el('nav', 'position:fixed;left:' + izq + 'px;bottom:12px;z-index:2147483000;display:flex;align-items:center;'
+    var n = el('nav', 'position:fixed;left:12px;bottom:12px;z-index:2147483000;display:flex;align-items:center;'
       + 'background:#15181C;color:#F4F2EC;border-radius:999px;font:500 13px/1.2 system-ui,sans-serif;overflow:hidden;max-width:calc(100vw - 24px)');
     n.setAttribute('aria-label', TEXTOS.barra);
     n.setAttribute('data-demo', 'barra');
@@ -87,6 +84,15 @@
     b.addEventListener('click', restablece);
     n.appendChild(b);
     document.body.appendChild(n);
+    // Con el menú lateral fijo a la vista (288 px desde 1024), la barra va a su derecha: encima tapaba «Salir». Se recalcula
+    // al cambiar el tamaño de la ventana.
+    function coloca() {
+      var menu = document.querySelector('aside.fixed');
+      var r = menu && menu.getBoundingClientRect();
+      n.style.left = (r && r.width > 0 && r.right > 0 && window.innerWidth >= 1024 ? Math.round(r.right) + 16 : 12) + 'px';
+    }
+    coloca();
+    window.addEventListener('resize', coloca);
     // Con un editor, cajón o diálogo abierto la barra se aparta: a 390 px tapaba «Emitir» del editor de factura (medido el
     // 12-oct con elementFromPoint). Vuelve sola al cerrarlo.
     var ABIERTO = '#lw-editor,#lw-cajon,.lw-dlg-fondo.abierto,.axf-capa:not([hidden]),#lw-novedades';

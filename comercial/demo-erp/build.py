@@ -862,6 +862,17 @@ DOC_MARCA = ("'</div><div aria-hidden=\"true\" style=\"position:fixed;inset:0;di
              "DEMO<br>NOT A VALID DOCUMENT</div></div></body></html>';")
 
 
+NOVEDADES_APAGA = 'if (window.__lwNovedades) return;'
+
+
+def comprueba_novedades_apagable():
+    """El pop-up de novedades de la intranet (anuncios internos del cliente) se apaga en la demo poniendo __lwNovedades antes de
+    que cargue: aprovecha su guarda contra doble carga. Si Lawang la cambia, el pop-up volvería sin avisar: el build para."""
+    p = os.path.join(DIST, 'assets', 'novedades.js')
+    if os.path.isfile(p) and NOVEDADES_APAGA not in open(p, encoding='utf-8').read():
+        aborta('novedades.js ya no trae %r: la demo no puede apagar el pop-up de novedades (revisa guard_demo)' % NOVEDADES_APAGA)
+
+
 def marca_agua_documentos():
     p = os.path.join(DIST, 'clasico', 'facturas', 'documento.js')
     t = open(p, encoding='utf-8').read()
@@ -1424,7 +1435,9 @@ DOBLE_VISIBLE = [
     (re.compile(r'QA-SELLADO-001'), 'CT-26-101'),
     (re.compile(r'-QA-(\d+)'), r'-26-\1'),
     (re.compile(r'QA (?=[A-Z])'), 'Demo '),
-    (re.compile(r'tabla:(["\'])bot_fuentes\1,id:(["\'])prompt_sistema\2'), r'tabla:\1ajustes\1,id:\2texto_base\2'),
+    # plantilla_web: una tabla que el asistente de correos SÍ sabe rotular («Plantilla (texto publicado)»); con otra salía
+    # el nombre técnico (revisor, 12-oct).
+    (re.compile(r'tabla:(["\'])bot_fuentes\1,id:(["\'])prompt_sistema\2'), r'tabla:\1plantilla_web\1,id:\2texto_base\2'),
     (re.compile(r'pendiente del owner'), 'pendiente de confirmar'),
 ]
 
@@ -2839,6 +2852,7 @@ def main():
     paginas_propias()
     engancha_flujo()
     marca_agua_documentos()
+    comprueba_novedades_apagable()
     idioma_ingles()
     avisos_para_rotos(demo=True)
     n = neutraliza()
