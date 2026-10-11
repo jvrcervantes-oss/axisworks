@@ -1,5 +1,5 @@
 /* Indonesio de la interfaz del ERP (instancias con "idiomas": ["id", "en"] en erp/instancias.json; hoy bbm). Owner, 11-oct-2026: «Añade Indonesio y quita español».
- * build.py (idiomas_instancia) lo pega AL FINAL del contracts/assets/i18n.js de la copia de esa instancia, con el diccionario de i18n_id.json en __AXW_LW_ID__.
+ * build.py (idiomas_instancia) lo pega AL FINAL del contracts/assets/i18n.js de la copia de esa instancia, con el diccionario de i18n_id.json en el hueco de window.LW_ID.
  * Lawang y la demo no lo llevan. No toca las tripas de lwT: lo ENVUELVE, así que lo que i18n.js ya hace (la ficha de la instancia, los %huecos, la
  * clave~contexto) sigue igual.
  *  · window.LW_ID: diccionario con la MISMA clave que LW_EN (el texto en español). Las pantallas del maestro le añaden el suyo (ID_xx) solo si existe.
