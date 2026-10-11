@@ -436,6 +436,12 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.reload(); await espera(p, () => document.querySelector('[data-rp="res-estado"]') && !document.querySelector('[data-rp="res-estado"]').textContent.includes('Cargando'));
     await p.click('[data-accion="rp-nueva"]'); await enPaso(p, 'resumen');
     ok('recargar la pagina con la duda abierta: igual, y reserva_producto_crea sigue llamada UNA vez', (await txt(p, '.rp-as-final')).includes('Comprobar de nuevo') && llamadas(base, 'reserva_producto_crea').length === 1);
+    ok('con la duda restaurada no sale el aviso de borrador recuperado (su «Empezar de cero» no puede saltarse la comprobacion)', !(await p.$('[data-rp="as-recuperado"]')));
+    await p.click('[data-accion="rp-modal-as-comprueba"]');
+    ok('mientras se comprueba no hay ningun «Empezar de cero» activo ni se puede cerrar', (await p.$$eval('[data-accion="rp-modal-as-reinicia"]', bs => bs.filter(b => !b.disabled).length)) === 0
+       && await p.$eval('[data-accion="rp-modal-as-cerrar"]', b => b.disabled));
+    await espera(p, () => document.querySelector('[data-rp="as-error-envio"]') && !/miramos/.test(document.querySelector('[data-rp="as-error-envio"]').textContent));
+    ok('tras comprobar sigue la duda guardada (no se pierde a mitad)', await p.evaluate(() => { try { return !!JSON.parse(sessionStorage.getItem('rp-asistente-borrador')).duda; } catch (e) { return false; } }));
     await ctx.close();
   }
   {

@@ -899,7 +899,7 @@ a.rp-boton{text-decoration:none}
     A.fondo = fondo; A.cuerpo = cuerpo;
     if (previo && previo.duda) {
       // un envío anterior quedó sin resolver (se cerró o se recargó la página): se vuelve al resumen y lo primero es comprobarlo; nunca se reenvía sin más
-      A.enviado = previo.duda.enviado; A.yaExiste = previo.duda.yaExiste; A.dudosaSinMirar = true; A.W.paso = 'resumen';
+      A.enviado = previo.duda.enviado; A.yaExiste = previo.duda.yaExiste; A.dudosaSinMirar = true; A.W.paso = 'resumen'; A.recuperado = false;
       A.errEnvio = T('Esta reserva se envió y no sabemos si se creó. Pulsa «Comprobar de nuevo» antes de hacer nada.');
     }
     fondo.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') asCierra(false); });
@@ -937,6 +937,7 @@ a.rp-boton{text-decoration:none}
   }
   function asCargaMotos() {
     var W = A.W, k = W.desde + '|' + W.hasta, yo = A;
+    if (!W.desde || !W.hasta) return Promise.resolve();
     if (A.cotClave === k) return Promise.resolve();
     A.cotClave = k; A.cot = {}; A.err.moto = A.err.moto || null; A.motoErr = null; A.cargandoMotos = true;
     E.flotaCargada = false;   // la flota se lee fresca: una moto que pasó a taller no se ofrece
@@ -1023,7 +1024,7 @@ a.rp-boton{text-decoration:none}
       h('span', { text: T('¿Salir? Lo que llevas se guarda: al volver a abrir «Nueva reserva» sigue donde lo dejaste.') + ' ' }),
       h('span', { class: 'rp-acciones' }, [boton(T('Salir'), 'rp-modal-as-salir'), boton(T('Seguir aquí'), 'rp-modal-as-seguir', { 'data-primario': '1' })])]));
     if (A.recuperado) c.appendChild(h('p', { class: 'rp-nota', 'data-rp': 'as-recuperado' }, [
-      h('span', { text: T('Seguimos con la reserva que dejaste a medias.') + ' ' }), boton(T('Empezar de cero'), 'rp-modal-as-reinicia')]));
+      h('span', { text: T('Seguimos con la reserva que dejaste a medias.') + ' ' }), boton(T('Empezar de cero'), 'rp-modal-as-reinicia', asBloqueado() ? { disabled: true } : null)]));
     var cuerpo = h('div', { class: 'rp-as-cuerpo', 'data-paso': W.paso });
     if (A.err[W.paso]) cuerpo.appendChild(h('p', { class: 'rp-error', role: 'alert', 'data-rp': 'as-error', text: A.err[W.paso] }));
     ({ fechas: asPasoFechas, moto: asPasoMoto, cliente: asPasoCliente, entrega: asPasoEntrega, resumen: asPasoResumen })[W.paso](cuerpo);
@@ -1320,12 +1321,12 @@ a.rp-boton{text-decoration:none}
     asGuarda();   // desde aquí el borrador lleva la duda: cerrar o recargar no deja reenviar a ciegas
     // la foto de «lo que ya había» se toma JUSTO antes de enviar (no la del paso de la moto: el bot o un compañero pueden haber reservado entre medias)
     llama('reservas_producto_datos', { p_desde: datos.desde, p_hasta: datos.hasta, p_limit: 500 }).then(function (rp) {
-      if (A !== yo) return null;
+      if (A !== yo || A.enviado !== env) return null;
       env.previos = vaListaDe(rp, 'reservas') && !rp.data.siguiente ? rp.data.reservas.map(function (x) { return x.id; }) : null;
       asGuarda();
       return llama('reserva_producto_crea', { p_datos: datos, p_bloqueo_minutos: minutos });
     }).then(function (r) {
-      if (A !== yo || !r) return;
+      if (A !== yo || A.enviado !== env || !r) return;
       A.enviando = false;
       if (r.error) {
         var c = clasifica(r.error);
@@ -1337,7 +1338,7 @@ a.rp-boton{text-decoration:none}
         }
         if (c.hint === 'impuesto_no_configurado') { A.cotClave = null; return asVe('moto'); }
         A.errEnvio = T('No se ha creado la reserva') + ': ' + mensaje(r.error);
-        asPinta(); return;
+        asGuarda(); asPinta(); return;   // la base contestó con un error: no se creó, el borrador deja de llevar la duda
       }
       var d = r.data || {};
       if (!d.id || !d.numero_reserva) return asComprueba();
@@ -1346,13 +1347,14 @@ a.rp-boton{text-decoration:none}
   }
   function asComprueba(yaExiste) {
     var E2 = A.enviado, yo = A;
+    if (!E2) { A.dudosaSinMirar = false; A.comprobando = false; asGuarda(); asPinta(); return Promise.resolve(); }   // nada enviado que comprobar (no debería pasar: «Empezar de cero» lo limpia todo)
     if (yaExiste) A.yaExiste = true;   // la base dijo «esa clave ya tiene un apartado»: existe, la encontremos o no
     A.comprobando = true; A.errEnvio = T('No ha llegado la respuesta de la base: miramos si la reserva se creó…'); asPinta();
     // se espera un poco antes de mirar: si la petición seguía en camino cuando se cortó, que le dé tiempo a terminar
     return new Promise(function (listo) { setTimeout(listo, AS_ESPERA_COMPRUEBA); }).then(function () {
       return llama('reservas_producto_datos', { p_desde: E2.desde, p_hasta: E2.hasta, p_limit: 500 });
     }).then(function (r) {
-      if (A !== yo) return;
+      if (A !== yo || A.enviado !== E2) return;
       A.comprobando = false;
       var lista = vaListaDe(r, 'reservas') ? r.data.reservas : null;
       // sin filtro por la hora del PC (el reloj de la tienda no es el de la base): lo ENVIADO (producto, fechas, cliente o teléfono por cifras), viva, y que no estuviera ya antes de enviar
@@ -1392,7 +1394,7 @@ a.rp-boton{text-decoration:none}
     if (a === 'rp-modal-as-cerrar') asCierra(false);
     else if (a === 'rp-modal-as-salir') asCierra(true);
     else if (a === 'rp-modal-as-seguir') { A.salir = false; asPinta(); }
-    else if (a === 'rp-modal-as-reinicia') { asOlvida(); A.W = asVacio(); A.recuperado = false; A.cot = {}; A.cotClave = null; A.coinc = []; A.dupTel = null; A.err = {}; A.errEnvio = null;
+    else if (a === 'rp-modal-as-reinicia') { if (A.enviando || A.comprobando) return; asOlvida(); A.W = asVacio(); A.recuperado = false; A.cot = {}; A.cotClave = null; A.coinc = []; A.dupTel = null; A.err = {}; A.errEnvio = null;
       A.enviado = null; A.yaExiste = false; A.dudosaSinMirar = false; A.recuperadaTrasCorte = false; A.pasoPintado = null; asPinta(); }
     else if (a === 'rp-modal-as-sig') asSiguiente();
     else if (a === 'rp-modal-as-atras') { var i = AS_PASOS.indexOf(W.paso); if (i > 0) asVe(AS_PASOS[i - 1]); }
