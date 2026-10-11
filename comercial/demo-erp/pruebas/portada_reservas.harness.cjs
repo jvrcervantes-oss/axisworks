@@ -77,6 +77,24 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
 </script>
 <script>${SCRIPT.replace(/<\/?script>/g, '')}</script></body></html>`;
 
+// Con PAQUETE=<carpeta de un build de la instancia> (revisión previa de Calidad, 12-oct): la misma portada con el idioma.js y el i18n.js REALES de ese paquete (los que
+// parchea build.py --instancia con "idiomas"), no un sustituto. Así se mide el lwT de verdad: cero frases en español (LW_T_ESPANOL) y ni una tilde en la interfaz.
+const PAQUETE = process.env.PAQUETE;
+const paginaReal = () => `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t · Inicio</title>
+<script>${fs.readFileSync(path.join(PAQUETE, 'contracts', 'assets', 'idioma.js'), 'utf8')}</script>
+<script>${fs.readFileSync(path.join(PAQUETE, 'contracts', 'assets', 'i18n.js'), 'utf8')}</script></head><body>
+${MARCADO}
+<script>
+window.__xss = undefined; window.__fromLlamado = 0; window.__fetchLlamado = 0; window.__errores = [];
+window.fetch = function () { window.__fetchLlamado++; return Promise.reject(new Error('fetch')); };
+var sb = { rpc: function (n, a) { return { then: function (f, g) { return window.__srv(n, a || {}).then(f, g); } }; }, from: function () { throw new Error('no'); } };
+window.LW_AUTH = Promise.resolve({ sb: sb, ficha: { rol: 'agente', herramientas: ['reservas-producto'] } });
+window.lwDatos = function (n, a) { return Promise.resolve(sb.rpc(n, a)).then(function (r) { return { data: r.data, error: r.error }; }); };
+window.onerror = function (m) { window.__errores.push(String(m)); };
+</script>
+<script>${SCRIPT.replace(/<\/?script>/g, '')}</script></body></html>`;
+const TILDES = /[áéíóúñÁÉÍÓÚÑ¿¡]/;
+
 (async () => {
   const exe = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
   const nav = await chromium.launch({ executablePath: fs.existsSync(exe) ? exe : undefined });
@@ -172,6 +190,40 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
       ok(ancho + ' px: la ficha cabe en la pantalla', dlg.l >= 0 && dlg.r <= dlg.w, JSON.stringify(dlg));
       if (SHOT) await p.screenshot({ path: SHOT + '_' + ancho + '_ficha.png' });
       await ctx.close();
+    }
+    // 5. con el i18n.js REAL del paquete de la instancia (solo si se pasa PAQUETE): indonesio sin español, en cuatro tamaños y con barras de scroll visibles
+    if (PAQUETE) {
+      const nav2 = await chromium.launch({ executablePath: fs.existsSync(exe) ? exe : undefined, ignoreDefaultArgs: ['--hide-scrollbars'] });
+      try {
+        for (const [w, hgt] of [[390, 844], [1440, 900], [1366, 640], [1280, 720]]) {
+          const base = nuevaBase({});
+          base.reservas.forEach(x => { x.producto = 'Honda Vario 160'; x.cliente = x.cliente ? 'Made Wirawan' : null; x.entrega_direccion = 'Jl. Raya Canggu 12'; });
+          const ctx2 = await nav2.newContext({ viewport: { width: w, height: hgt } });
+          const p2 = await ctx2.newPage();
+          await p2.exposeFunction('__srv', (n, a) => servidor(base, n, a));
+          await p2.setContent(paginaReal(), { waitUntil: 'load' });
+          await espera(p2, () => { const t = document.querySelector('[data-ph="estado-entregas"]').textContent; return !/Cargando|Loading|Memuat/.test(t) && document.querySelector('[data-ph="n-entregas"]').textContent !== ''; });
+          await p2.click('[data-ph="entregas"] li:nth-child(1) button');
+          await espera(p2, () => !!document.querySelector('[data-axw="dialogo"]'));
+          const m = await p2.evaluate(() => ({ idioma: window.LW_IDIOMA, lang: document.documentElement.lang, espanol: Array.from(window.LW_T_ESPANOL || []), caida: Array.from(window.LW_T_CAIDA_EN || []),
+            texto: document.querySelector('[data-ph="raiz"]').innerText, sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, errores: window.__errores }));
+          ok(w + 'x' + hgt + ' real: arranca en indonesio con lang="id"', m.idioma === 'id' && m.lang === 'id', JSON.stringify([m.idioma, m.lang]));
+          ok(w + 'x' + hgt + ' real: ninguna frase sale en español (LW_T_ESPANOL vacío)', m.espanol.length === 0, m.espanol.join(' | '));
+          ok(w + 'x' + hgt + ' real: ni una tilde ni ¿¡ en la interfaz', !TILDES.test(m.texto), (m.texto.match(/.{0,20}[áéíóúñÁÉÍÓÚÑ¿¡].{0,20}/) || [''])[0]);
+          ok(w + 'x' + hgt + ' real: sin scroll horizontal con barras visibles y sin errores', m.sw <= m.cw && m.errores.length === 0, JSON.stringify([m.sw, m.cw, m.errores]));
+          if (m.caida.length) console.log('       (cae a inglés: ' + m.caida.join(' | ') + ')');
+          if (SHOT) await p2.screenshot({ path: SHOT + '_real_' + w + 'x' + hgt + '.png', fullPage: true });
+          if (w === 390) {
+            // control: el barrido de tildes TIENE que cazar un texto en español sembrado (si no, su verde no vale nada)
+            const cazado = await p2.evaluate(re => { const s = document.createElement('span'); s.textContent = 'Devolución sin confirmar'; document.querySelector('[data-ph="raiz"]').appendChild(s);
+              const r = new RegExp(re).test(document.querySelector('[data-ph="raiz"]').innerText); s.remove(); return r; }, TILDES.source);
+            ok('control: el barrido de tildes caza un texto en español sembrado', cazado);
+          }
+          await ctx2.close();
+        }
+      } finally {
+        await nav2.close();
+      }
     }
   } finally {
     await nav.close();

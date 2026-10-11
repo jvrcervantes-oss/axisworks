@@ -2244,7 +2244,7 @@ def ajustes_puesta_en_marcha():
 # quede en español se cuenta aparte (LW_T_ESPANOL) para que la prueba pueda ponerse roja.
 IDIOMAS_CONOCIDOS = (('id', 'en'),)
 # Palabras que en indonesio se escriben igual que en español (Diseño, 12-oct): las únicas traducciones que pueden ser iguales a su clave.
-IGUALES_EN_ID = ('CRM', 'Intranet')
+IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis')
 # Lo que hay que tocar en el front copiado: (fichero en DIST, trozo de Lawang, sustituto). Cada trozo tiene que aparecer EXACTAMENTE una vez.
 IDIOMAS_PARCHES = (
     ('contracts/assets/idioma.js', "  window.LW_IDIOMA = (v === 'en') ? 'en' : 'es';",

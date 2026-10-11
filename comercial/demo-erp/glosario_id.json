@@ -1,0 +1,32 @@
+{
+ "_porque": "Fuente única del vocabulario indonesio de las pantallas del ERP (revisión previa de Diseño, 12-oct-2026): si la CLAVE en español lleva el término, la traducción lleva el suyo, o la clave está en «excepciones» con su motivo. Lo comprueba test_idiomas_instancia.py sobre i18n_id.json y los ID_xx de las pantallas del maestro. Validar con el equipo de Dion antes de darlo por cerrado.",
+ "terminos": {
+  "reserva": [
+   "booking"
+  ],
+  "cliente": "pelanggan",
+  "factura": "invoice",
+  "recibo": "kuitansi",
+  "taller": "bengkel",
+  "flota": "armada",
+  "tarifa": "tarif",
+  "sociedad": "perusahaan",
+  "impuesto": "pajak",
+  "usuarios": "pengguna",
+  "ajustes": "pengaturan",
+  "guardar": [
+   "simpan",
+   "menyimpan",
+   "tersimpan"
+  ]
+ },
+ "prohibidos": {
+  "balian": "rastro de otro cliente: el build de instancia aborta (pengembalian, pengembalian dana)",
+  "faktur": "se lee como faktur pajak (documento fiscal del PKP): se dice invoice",
+  "kamu": "registro coloquial: la interfaz va en formal-neutro"
+ },
+ "excepciones": {
+  "Carta de Reserva": "documento de Lawang (inmobiliaria): «Surat Booking» se mantiene",
+  "Facturas sin emitir": "rótulo de Lawang ya revisado en la fase A"
+ }
+}
