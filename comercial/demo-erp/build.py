@@ -33,6 +33,7 @@ Revisión previa (24-sep, Seguridad + Legal), cada regla con su porqué:
 - Se niega a escribir fuera de su `dist/` o dentro de `proyectos/Lawang/`: un
   guard falso escrito ahí lo desplegaría el webhook de Lawang.
 """
+import hashlib
 import html
 import json
 import os
@@ -107,6 +108,15 @@ if PRUEBA_ORIGENES:
 # Dónde vuelve la demo al configurador («← Modules», el aviso de módulo apagado, el final del tour): la portada, que en
 # la versión pública ya no está en el mismo origen. En local (presentar.cmd) es la raíz del mismo servidor.
 PORTADA_URL = (WEB_URL + '/') if '--publico' in sys.argv else '/'
+# ── Demo para un cliente (12-oct-2026, encargo 20261011_demo_cliente_flujo_total) ─────────────────────────────────────
+# La marca de la demo, en UN solo sitio (owner, 11-oct 23:07: «AxisWorks Demo» con el aspecto de AxisWorks, cambiable): la
+# leen la ficha (cabecera del menú y títulos de pestaña), el logotipo y el favicon, la portada de dos puertas y la piel
+# (preset aprobado de erp/tema/presets.json, el mismo mecanismo que las instancias, F14).
+DEMO = {'marca': 'AxisWorks Demo', 'cabecera': 'AXISWORKS', 'subcabecera': 'ERP DEMO', 'piel': 'axisworks'}
+# Marcas y nombres de clientes que NUNCA pueden salir en la demo pública (owner, 11-oct: «marca blanca»; revisión previa de
+# Backend: los proyectos de Lawang que lleva su portal). Se comprueba sobre TODO lo publicado, portal incluido.
+MARCAS_CLIENTE = re.compile(r'(?i)lawang|sandal\s*woods|boda\s*enlace|bali\s*best|balibest|palm\s*field|sumba\s*hills|bonian|'
+                            r'riverfront|bali\s*moto|bali2komodo|' + SB_HOST)
 # Sesión real que hubiera en el origen (sb-*: refresh token de Supabase), fuera antes de nada: la demo (Seguridad #2,
 # 25-sep) y la portada de erp., que fue el origen del ERP real y comparte storage con el configurador (rev. #146).
 LIMPIA_SESION = ("(function(){try{[localStorage,sessionStorage].forEach(function(s){for(var i=s.length-1;i>=0;i--){"
@@ -535,34 +545,40 @@ def guard_demo():
         # pide sus cifras por lwDatos ANTES de cualquier `.from()` (28-sep-2026, B10a).
         ("function chainable(table) {", "function __lwDemoSiembra() { if (!window.__LW_DEMO_SEMBRADO) { window.__LW_DEMO_SEMBRADO = true; "
                                         "window.LW_DEMO_SIEMBRA(FIXTURES, { fila: fila, hoy: hoy, FICHA: FICHA_QA, USUARIOS: USUARIOS_QA, VENTAS: VENTAS_QA }); "
-                                        "window.LW_DEMO_LIMPIA(FIXTURES); } }\n"
+                                        "window.LW_DEMO_LIMPIA(FIXTURES); window.LW_DEMO_REPITE(FIXTURES); } }\n"
                                         "  function chainable(table) { __lwDemoSiembra();"),
-        # Escrituras: se quedan en memoria para que «guardar» se vea en la demo.
+        # Escrituras (11-oct, demo-pA): las aplica Y las anota demo_datos.js (diario de la pestaña, se repite tras la
+        # siembra en cada página). Los filtros viajan con la escritura: el diario la repite sobre las filas que casen.
         ("if (obj._op === 'insert' || obj._op === 'update' || obj._op === 'upsert') {",
-         "if (obj._op === 'insert' || obj._op === 'upsert') { var nv = window.LW_DEMO_ESCRIBE(FIXTURES, table, obj._op, obj._val, []); "
-         "return { data: obj._single ? nv[0] : nv, error: null }; }\n"
-         "      if (obj._op === 'update' || obj._op === 'delete') { var rs0 = (FIXTURES[table] && Array.isArray(FIXTURES[table].data)) ? FIXTURES[table].data : []; "
-         "var af = rs0.filter(function (r) { return filtros.every(function (f) { return coincide(r, f[1], f[0], f[2]); }); }); "
-         "var hechas = window.LW_DEMO_ESCRIBE(FIXTURES, table, obj._op, obj._val, af); return { data: obj._single ? (hechas[0] || null) : hechas, error: null }; }\n"
+         "if (obj._op) { return window.LW_DEMO_TABLA(FIXTURES, table, obj._op, obj._val, filtros, !!obj._single); }\n"
          "      if (false) {"),
         # Filtros que el doble de QA deja pasar a propósito (su cabecera lo dice): en
         # una demo se VEN — «0 vencimientos en 30 días» con hitos la semana que viene.
-        ("    var v = row ? row[campo] : undefined;",
-         "    var v = row; String(campo).split('.').forEach(function (k) { v = v == null ? undefined : v[k]; });\n"
-         "    if (op === 'gte') return v != null && v >= val;\n"
-         "    if (op === 'lte') return v != null && v <= val;\n"
-         "    if (op === 'lt') return v != null && v < val;"),
+        # Los filtros los evalúa demo_datos.js (11-oct, demo-pA): or/not/contains/overlaps/match/filter FILTRAN de
+        # verdad. Antes eran no-op, y «Borrar operación» (.or('id.eq.X,contrato_padre_id.eq.X')) contaba la tabla entera.
+        # Uno que no sabe evaluar: en lectura deja pasar (como el doble de QA); en escritura, LW_DEMO_TABLA falla.
+        ("  function coincide(row, campo, op, val) {",
+         "  function coincide(row, campo, op, val) { return window.LW_DEMO_COINCIDE(row, campo, op, val);"),
         ("    ['gte', 'lte', 'not', 'or', 'order', 'limit', 'contains', 'overlaps', 'range', 'match']",
          "    obj.gte = function (c, v) { filtros.push(['gte', c, v]); return obj; };\n"
          "    obj.lte = function (c, v) { filtros.push(['lte', c, v]); return obj; };\n"
          "    obj.lt = function (c, v) { filtros.push(['lt', c, v]); return obj; };\n"
+         "    obj.like = function (c, v) { filtros.push(['like', c, v]); return obj; };\n"
+         "    obj.or = function (s, o) { if (!(o && (o.foreignTable || o.referencedTable))) filtros.push(['or', s, null]); return obj; };\n"
+         "    obj.not = function (c, op, v) { filtros.push(['not', c, [op, v]]); return obj; };\n"
+         "    obj.contains = function (c, v) { filtros.push(['contains', c, v]); return obj; };\n"
+         "    obj.overlaps = function (c, v) { filtros.push(['overlaps', c, v]); return obj; };\n"
+         "    obj.match = function (m) { Object.keys(m || {}).forEach(function (k) { filtros.push(['eq', k, m[k]]); }); return obj; };\n"
+         "    obj.filter = function (c, op, v) { filtros.push(['filter', c, [op, v]]); return obj; };\n"
+         "    obj.textSearch = function (c, v) { filtros.push(['desconocido', c, v]); return obj; };\n"
+         "    obj.range = function (a, b, o) { if (!(o && (o.foreignTable || o.referencedTable))) obj._rango = [a, b]; return obj; };\n"
          "    obj.order = function (c, o) { if (!(o && (o.foreignTable || o.referencedTable))) (obj._ord = obj._ord || []).push([c, !(o && o.ascending === false)]); return obj; };\n"
          "    obj.limit = function (n, o) { if (!(o && (o.foreignTable || o.referencedTable))) obj._lim = n; return obj; };\n"
-         "    obj.like = function (c, v) { filtros.push(['ilike', c, v]); return obj; };\n"
-         "    ['not', 'or', 'contains', 'overlaps', 'range', 'match', 'filter', 'textSearch', 'abortSignal', 'returns', 'csv']"),
+         "    ['abortSignal', 'returns', 'csv', 'explain']"),
         ("      var datos = Array.isArray(base.data) ? filtradas : base.data;",
          "      var datos = Array.isArray(base.data) ? filtradas : base.data;\n"
          "      if (Array.isArray(datos) && obj._ord) { datos = datos.slice().sort(function (a, b) { for (var i = 0; i < obj._ord.length; i++) { var c = obj._ord[i][0], x = a[c], y = b[c]; if (x === y) continue; if (x == null) return 1; if (y == null) return -1; return (x < y ? -1 : 1) * (obj._ord[i][1] ? 1 : -1); } return 0; }); }\n"
+         "      if (Array.isArray(datos) && obj._rango && !obj._count) datos = datos.slice(obj._rango[0], obj._rango[1] + 1);\n"
          "      if (Array.isArray(datos) && obj._lim != null && !obj._count) datos = datos.slice(0, obj._lim);"),
         # Portadas de la rejilla de Proyectos (createSignedUrls): «about:blank#qa-…» como <img> es un error de consola y
         # un icono roto en directo; en la demo no hay fotos, así que va una tesela neutra (data:, la CSP la admite).
@@ -573,29 +589,21 @@ def guard_demo():
         # Lo mismo para las fotos PÚBLICAS (getPublicUrl: fotos de modelo en /v4/modelos/ y lwFotoUrls): revisor, 28-sep.
         ("getPublicUrl: function (path) { return { data: { publicUrl: 'about:blank#qa-' + path } }; },",
          "getPublicUrl: function (path) { return { data: { publicUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E' } }; },"),
-        ("console.warn('[qa-doble] MODO QA activo", "console.info('[demo] Demo ERP — made-up data, no real network'); void ('"),
-        # Algunas RPC del doble devuelven una promesa pelada y el Panel financiero les encadena .select()
-        # (24-sep: «sb.rpc(...).select is not a function»). Envoltorio: si no es encadenable, los filtros
-        # devuelven la misma promesa, que ya trae las filas.
+        # Justificante «subido» (11-oct, demo-pA; Seguridad): se anota solo nombre y tamaño en la pestaña, el contenido no
+        # se lee. Lo comprueba el doble de guardar_recibi, como la base mira storage.objects.
+        ("          list: function () { return Promise.resolve({ data: [], error: null }); },",
+         "          list: function () { return Promise.resolve({ data: [], error: null }); },\n"
+         "          uploadToSignedUrl: function (path, token, file) { return window.LW_DEMO_SUBE(FIXTURES, bucket, path, file); },"),
+        ("console.warn('[qa-doble] MODO QA activo","console.info('[demo] Demo ERP — made-up data, no real network'); void ('"),
+        # Todo el despacho de rpc en UNA función de demo_datos.js (11-oct, demo-pA, revisión previa de Frontend): los
+        # guardados devuelven lo que devolvería la base (factura_guarda → {id, numero, total}, guardar_recibi → jsonb),
+        # las lecturas *_datos lo mismo, y TODO resultado es encadenable (sb.rpc('compradores_lista').select().order()).
+        # Lo que demo_datos.js no conoce sigue por el doble de QA (`siguiente`).
         ("    rpc: function (nombre, args) {\n      console.warn('[qa-doble] rpc bloqueada (no real):', nombre, args);",
          "    rpc: function (nombre, args) {\n"
-         # Guardados atómicos (26-sep): en producción son RPC que escriben; aquí, en memoria (demo_datos.js).
-         "      if (window.LW_DEMO_RPC_GUARDA && window.LW_DEMO_RPC_GUARDA[nombre]) {\n"
-         "        window.LW_DEMO_RPC_GUARDA[nombre](FIXTURES, args || {});\n"
-         "        return Promise.resolve({ data: null, error: null });\n"
-         "      }\n"
-         # Lecturas *_datos (B10a, 28-sep): calculadas sobre FIXTURES con la forma de su SQL (demo_datos.js). Solo las
-         # que tienen implementación: el resto (p. ej. sb.rpc('panel_bancos_datos')) sigue por el camino de siempre.
-         "      if (window.LW_DEMO_DATOS && Object.prototype.hasOwnProperty.call(window.LW_DEMO_DATOS, nombre)) {\n"
-         "        __lwDemoSiembra();\n"
-         "        try { return Promise.resolve({ data: window.LW_DEMO_DATOS[nombre](FIXTURES, args || {}), error: null }); }\n"
-         "        catch (e) { return Promise.resolve({ data: null, error: { message: String((e && e.message) || e), code: (e && e.code) || 'P0001' } }); }\n"
-         "      }\n"
-         "      var r = this._rpc(nombre, args);\n"
-         "      if (r && typeof r.then === 'function' && typeof r.select !== 'function') {\n"
-         "        ['select', 'order', 'limit', 'eq', 'neq', 'gte', 'lte', 'in', 'is', 'range'].forEach(function (k) { r[k] = function () { return r; }; });\n"
-         "      }\n"
-         "      return r;\n"
+         "      __lwDemoSiembra();\n"
+         "      var self = this;\n"
+         "      return window.LW_DEMO_RPC(FIXTURES, nombre, args || {}, function () { return self._rpc(nombre, args); }, chainable);\n"
          "    },\n"
          "    _rpc: function (nombre, args) {"),
     ]
@@ -603,27 +611,28 @@ def guard_demo():
         if doble.count(viejo) != 1:
             aborta('el doble de QA ha cambiado y no encuentro (1 vez): ' + viejo[:70])
         doble = doble.replace(viejo, nuevo)
-    doble = doble.replace("'qa-user-1'", "'d-u-1'").replace('qa@axisworks.test', 'direccion@demo.test')
-    # «← Modules» en todas las pantallas: la salida del recorrido (el guard es nuestro). En inglés: la demo pública lo es.
-    volver = ("document.addEventListener('DOMContentLoaded',function(){var n=document.createElement('nav');"
-              "n.setAttribute('aria-label','Leave the demo');"
-              "n.style.cssText='position:fixed;left:16px;bottom:16px;z-index:2147483000;display:flex;background:#485B37;"
-              "border-radius:999px;font:500 13px/1.2 system-ui,sans-serif;overflow:hidden';"
-              "[[window.AXW_PORTADA+'#configurador','← Modules']].forEach(function(x,i){var a=document.createElement('a');"
-              "a.href=x[0];a.textContent=x[1];a.style.cssText='color:#fff;text-decoration:none;padding:8px 14px'"
-              "+(i?';border-left:1px solid rgba(255,255,255,.3)':'');n.appendChild(a);});"
-              "document.body.appendChild(n);});\n"
-              # catalogo.js (fuente única de módulos) → modulos.js (menú y aviso de módulo apagado) → tour.js, en
-              # ese orden: un script insertado por JS es asíncrono salvo async=false.
-              "['/demo/catalogo.js','/demo/modulos.js','/demo/tour.js'].forEach(function(u){var s=document.createElement('script');"
+    doble = doble.replace("'qa-user-1'", "'d-u-1'").replace('qa@axisworks.test', 'direccion@example.com')
+    # La barra de la demo (vuelta a la portada, «Reset demo» y el aviso de datos ficticios) y el asistente de ejemplo viven
+    # en /demo/cascara.js (demo_cascara.js, 12-oct-2026): sustituye a la barra «← Modules», que llevaba al configurador de
+    # erp. y no a la portada de dos puertas. El pop-up de novedades de la intranet (anuncios internos del cliente para su
+    # equipo) no sale en la demo: novedades.js sale solo si encuentra __lwNovedades ya puesto.
+    # catalogo.js (fuente única de módulos) → modulos.js (menú y aviso de módulo apagado) → tour.js → cascara.js, en
+    # ese orden: un script insertado por JS es asíncrono salvo async=false. Detrás, «New contract» y la firma de ejemplo del
+    # paquete B (/flujo/nuevo-contrato.js carga sus otros tres ficheros desde su carpeta). El portal ya lo carga él mismo.
+    volver = ("window.__lwNovedades = true;\n"
+              "['/demo/catalogo.js','/demo/modulos.js','/demo/tour.js','/demo/cascara.js','/flujo/nuevo-contrato.js'].filter(function(u){"
+              "return u.indexOf('/flujo/')!==0||location.pathname.indexOf('/portal/')!==0;}).forEach(function(u){var s=document.createElement('script');"
               "s.src=u;s.async=false;(document.head||document.documentElement).appendChild(s);});\n")
     # Sesión real que el presentador pudiera tener en este origen: fuera antes de nada (Seguridad #2).
     limpia_sesion = LIMPIA_SESION + 'window.AXW_PORTADA = %s;\n' % json.dumps(PORTADA_URL)
     # Núcleo del ERP (25-sep): la demo ya enseña la OPERACIÓN. Bandera que Lawang no enciende nunca: su base aún no
     # tiene la tabla, y el código compartido (operaciones-cuentas.js, datos.js) solo la lee si está encendida.
     nucleo = 'window.AXW_NUCLEO_OPERACION = true;\n'
+    # Versión de los datos de ejemplo + doble: el diario de la pestaña (demo_datos.js) la lleva en su clave, así un
+    # diario escrito contra otra siembra no se repite sobre esta.
+    version = 'window.AXW_DEMO_VERSION = %s;\n' % json.dumps(hashlib.sha256((datos + doble).encode('utf-8')).hexdigest()[:12])
     return ('/* GENERADO por AxisWorks/comercial/demo-erp/build.py — no editar. Demo: datos inventados, sin red real. */\n'
-            + nucleo + limpia_sesion + volver + PUERTAS_DEMO + datos + '\n' + doble)
+            + nucleo + version + limpia_sesion + volver + PUERTAS_DEMO + datos + '\n' + doble)
 
 
 # Lo que el guard REAL de Lawang publica con fija() (window.lwDatos, lwEdge, lwFichero…) tiene que existir también en la
@@ -655,7 +664,8 @@ PUERTAS_DEMO = r"""(function () {
       .then(function (r) { return { data: r.data, error: r.error }; },
             function (e) { return { data: null, error: e }; });
   });
-  fija('lwFicheros', function () { return noDemo('Ficheros de contratos'); });
+  // Solo la URL de subida de un justificante (demo_datos.js la simula, sin red); el resto, cerrado con el error a la vista.
+  fija('lwFicheros', function (sb, accion, datos) { return window.LW_DEMO_FICHEROS ? window.LW_DEMO_FICHEROS(accion, datos) : noDemo('Ficheros de contratos'); });
   fija('lwKyc', function () { return noDemo('Documentos KYC'); });
   fija('lwKycSube', function () { return noDemo('Subir documentos KYC'); });
   fija('lwFichero', function () { return noDemo('Ficheros'); });
@@ -797,10 +807,12 @@ def paginas_propias():
     shutil.copy2(os.path.join(AQUI, 'catalogo.js'), os.path.join(DIST, 'demo', 'catalogo.js'))
     shutil.copy2(os.path.join(AQUI, 'roi.js'), os.path.join(DIST, 'demo', 'roi.js'))   # calculadora de la portada (28-sep)
     shutil.copy2(os.path.join(AQUI, 'modulos_demo.js'), os.path.join(DIST, 'demo', 'modulos.js'))
+    # Barra única de la demo y asistente de ejemplo (12-oct-2026): la carga el guard en todas las pantallas.
+    shutil.copy2(os.path.join(AQUI, 'demo_cascara.js'), os.path.join(DIST, 'demo', 'cascara.js'))
     # El panel de control (panel.html + /demo/instancia.js, que salían de datos_instancia(): ver git log) NO se publica desde el 27-sep
     # (owner: «oculta el panel»): encendía módulos solo en el navegador y la demo prometía algo que no hacía.
     # Vuelve cuando active módulos de verdad sobre la instancia (interruptores F4 del ERP maestro).
-    aviso = AVISO
+    aviso = AVISO_DEMO
     for carpeta_v4, t, m in (
             ('generador-contratos', 'Contract generator', AVISO_GENERADOR),
             ('contratos-inversor', 'Buyer portal',
@@ -820,10 +832,74 @@ def paginas_propias():
     os.makedirs(d, exist_ok=True)
     open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(aviso.format(
         t='Creatives', m='We show each project\'s asset library on the call: they are the client\'s real ads.'))
-    for sitio in ('portal', 'entrar'):
-        d = os.path.join(DIST, sitio)
-        os.makedirs(d, exist_ok=True)
-        open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(redir)
+    # /entrar/ (el acceso de la intranet real) lleva a la portada de dos puertas: en la demo no hay contraseña.
+    os.makedirs(os.path.join(DIST, 'entrar'), exist_ok=True)
+    open(os.path.join(DIST, 'entrar', 'index.html'), 'w', encoding='utf-8').write(redir.replace('/home/', '/'))
+    # /portal/: el portal de cliente de la demo (paquete B) cuando llegue; hasta entonces, un aviso que no engaña.
+    os.makedirs(os.path.join(DIST, 'portal'), exist_ok=True)
+    open(os.path.join(DIST, 'portal', 'index.html'), 'w', encoding='utf-8').write(AVISO_DEMO.format(
+        t='Client portal', m='The client portal of the demo opens here in its next update. Meanwhile, the intranet shows '
+                             'every client\'s record with their contracts, invoices and payments.'))
+
+
+FLUJO = os.path.join(AQUI, 'flujo')
+FLUJO_FICHEROS = ('textos.js', 'contrato_ejemplo.js', 'nuevo-contrato.js', 'flujo.css')
+FLUJO_PORTAL = ('portal.js', 'portal.css')
+# Ancla de la ficha de cliente (datos.js de Lawang): el botón de la vista previa del portal, enganchado por su atributo, nunca
+# por el rótulo. Delante se pone «New contract» del paquete B con el id del cliente (B lo casa contra la lista, no lo pinta).
+FICHA_ANCLA = '\'<button type="button" data-portal-preview '
+FICHA_NUEVO = ('\'<button type="button" data-accion="demo-nuevo-contrato" data-cliente="\' + esc(String(c2.id)) + \'" '
+               'style="padding:7px 14px;border-radius:8px;border:1px solid #15181C;background:#15181C;color:#F4F2EC;font-weight:600;'
+               'font-size:12.5px;cursor:pointer">New contract</button>\' + ')
+
+
+# Marca de agua en TODO documento de factura/proforma/recibí que la demo imprime o enseña (revisión previa de Seguridad,
+# 11-oct: lo que hay que vigilar en una demo abierta es que alguien fabrique un documento creíble). documentoPagina() de
+# documento.js arma la página que se imprime, la vista previa y el correo: se le añade antes del cierre del <body>.
+DOC_CIERRE = "'</div></body></html>';"
+DOC_MARCA = ("'</div><div aria-hidden=\"true\" style=\"position:fixed;inset:0;display:flex;align-items:center;justify-content:center;"
+             "pointer-events:none;z-index:9\"><div style=\"transform:rotate(-30deg);font:600 64px/1.1 system-ui,sans-serif;"
+             "letter-spacing:.08em;color:rgba(186,26,26,.22);text-align:center;border:6px solid rgba(186,26,26,.22);padding:12px 28px\">"
+             "DEMO<br>NOT A VALID DOCUMENT</div></div></body></html>';")
+
+
+NOVEDADES_APAGA = 'if (window.__lwNovedades) return;'
+
+
+def comprueba_novedades_apagable():
+    """El pop-up de novedades de la intranet (anuncios internos del cliente) se apaga en la demo poniendo __lwNovedades antes de
+    que cargue: aprovecha su guarda contra doble carga. Si Lawang la cambia, el pop-up volvería sin avisar: el build para."""
+    p = os.path.join(DIST, 'assets', 'novedades.js')
+    if os.path.isfile(p) and NOVEDADES_APAGA not in open(p, encoding='utf-8').read():
+        aborta('novedades.js ya no trae %r: la demo no puede apagar el pop-up de novedades (revisa guard_demo)' % NOVEDADES_APAGA)
+
+
+def marca_agua_documentos():
+    p = os.path.join(DIST, 'clasico', 'facturas', 'documento.js')
+    t = open(p, encoding='utf-8').read()
+    open(p, 'w', encoding='utf-8', newline='').write(_una_vez(t, DOC_CIERRE, DOC_MARCA, 'documento.js (marca de agua de la demo)'))
+
+
+def engancha_flujo():
+    """Paquete B de la demo para un cliente (12-oct-2026): «New contract» y la firma de ejemplo (flujo/, un panel dentro de la
+    intranet que escribe en la base falsa de la pestaña) y el portal de cliente (flujo/portal/). Se publican en /flujo/ y
+    /portal/, pasan por los mismos filtros que el resto (neutraliza, RASTRO, pii, comprueba_sin_secretos) y sustituyen a los
+    avisos «Not included» del generador y del portal."""
+    destino = os.path.join(DIST, 'flujo')
+    os.makedirs(os.path.join(destino, 'portal'), exist_ok=True)
+    for f in FLUJO_FICHEROS:
+        shutil.copy2(os.path.join(FLUJO, f), os.path.join(destino, f))
+    for f in FLUJO_PORTAL:
+        shutil.copy2(os.path.join(FLUJO, 'portal', f), os.path.join(destino, 'portal', f))
+    shutil.copy2(os.path.join(FLUJO, 'portal', 'index.html'), os.path.join(DIST, 'portal', 'index.html'))
+    # El generador de Lawang no va (Legal, 24-sep): su ruta abre el «New contract» de la demo.
+    open(os.path.join(DIST, 'generador-contratos', 'index.html'), 'w', encoding='utf-8').write(
+        '<!doctype html><meta charset="utf-8"><title>New contract · Demo</title>'
+        '<script>location.replace("/contratos/?nuevo")</script>'
+        '<p><a href="/contratos/?nuevo">New contract</a></p>')
+    p = os.path.join(DIST, 'assets', 'datos.js')
+    t = open(p, encoding='utf-8').read()
+    open(p, 'w', encoding='utf-8', newline='').write(_una_vez(t, FICHA_ANCLA, FICHA_NUEVO + FICHA_ANCLA, 'datos.js (ficha de cliente)'))
 
 
 # Textos de ejemplo de la intranet que casan con personas reales (tools/pii_maqueta.py). En la demo se cambian por
@@ -851,6 +927,14 @@ AVISO = ('<!doctype html><html lang="en"><meta charset="utf-8"><title>{t} · Dem
          'background:#fbf9f4;font:16px/1.6 system-ui,sans-serif;color:#2b2b25"><div style="max-width:30rem;padding:2rem">'
          '<h1 style="font-weight:500;color:#485B37">{t}</h1><p>{m}</p>'
          '<p><a href="/home/" style="color:#485B37">Back to home</a></p></div></body></html>')
+# La de la demo para un cliente (12-oct-2026): colores de AxisWorks y vuelta también a la portada de dos puertas. AVISO se
+# queda como estaba porque las instancias (bbm…) lo usan en avisos_para_rotos() y no cambian con este encargo.
+AVISO_DEMO = ('<!doctype html><html lang="en"><meta charset="utf-8"><title>{t} · Demo</title>'
+              '<body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;'
+              'background:#F4F2EC;font:16px/1.6 system-ui,sans-serif;color:#15181C"><div style="max-width:30rem;padding:2rem">'
+              '<h1 style="font-weight:500;color:#15181C">{t}</h1><p>{m}</p>'
+              '<p><a href="/home/" style="color:#15181C">Back to the intranet</a> · <a href="/" style="color:#15181C">Start</a></p>'
+              '</div></body></html>')
 # Pantallas que la demo no trae (texto de AVISO, en inglés). verifica() reconoce las propias por AVISO_NO_INCLUIDO.
 AVISO_NO_INCLUIDO = 'Not included in the demo:'
 AVISO_GENERADOR = AVISO_NO_INCLUIDO + ' its templates are the client\'s own documents. We show it on the call with a sample document.'
@@ -928,15 +1012,21 @@ def poda_ficheros_sin_pantalla(dist, candidatos):
     return sorted(quitados)
 
 
-def avisos_para_rotos():
-    """Cada herramienta enlazada que la demo no trae enseña el aviso, no un 404."""
+def avisos_para_rotos(demo=False):
+    """Cada herramienta enlazada que la demo no trae enseña el aviso, no un 404. `demo`: el de la demo para un cliente (en
+    inglés, AVISO_DEMO); sin él, el de siempre, que es el que usan las instancias."""
+    if demo:
+        texto = AVISO_DEMO.format(t='Not included in the demo',
+                                  m='This older tool is not part of the demo: the demo shows the current version of the ERP.')
+    else:
+        texto = AVISO.format(t='Herramienta no incluida',
+                             m='En la demo no se incluye esta herramienta clásica: la demo enseña la versión 4 del ERP.')
     for ruta in enlaces_rotos(DIST):
         if '.' in os.path.basename(ruta.rstrip('/')):
             continue                                   # un fichero que falta es un fallo, no una pantalla
         d = os.path.join(DIST, ruta.strip('/').replace('/', os.sep))
         os.makedirs(d, exist_ok=True)
-        open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(AVISO.format(
-            t='Herramienta no incluida', m='En la demo no se incluye esta herramienta clásica: la demo enseña la versión 4 del ERP.'))
+        open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(texto)
 
 
 def comprueba_resultado(raiz_dir):
@@ -1022,6 +1112,93 @@ def logos_neutros(texto='AxisWorks Demo'):
     d.rounded_rectangle((0, 0, 31, 31), radius=7, fill=(79, 70, 229, 255))
     d.text((16, 16), 'A', font=fuente(22), fill=(255, 255, 255, 255), anchor='mm')
     fav.save(os.path.join(DIST, 'favicon.png'))
+
+
+def logos_demo():
+    """Logo y favicon de la demo pública con la identidad de AxisWorks (owner, 11-oct 23:07): el sello de la web (la ✕ en
+    Signal sobre Ink, assets/favicon.svg dibujado aquí: PIL no lee SVG) y DEMO['marca']. Mismo lienzo que logos_neutros,
+    que sigue siendo el de las instancias sin icono."""
+    from PIL import Image, ImageDraw
+    p = _preset_aprobado(DEMO['piel'])
+    tinta, claro, senal = (tuple(p[k]) + (255,) for k in ('on-background', 'on-primary', 'accent-gold'))
+
+    def sello(lado):
+        im = Image.new('RGBA', (lado, lado), tinta)
+        d = ImageDraw.Draw(im)
+        a, b, g = round(lado * 9 / 32), round(lado * 23 / 32), max(2, round(lado * 3.2 / 32))
+        d.line((a, a, b, b), fill=senal, width=g)
+        d.line((b, a, a, b), fill=senal, width=g)
+        return im
+
+    def fuente(tam):
+        return _fuente_logo(tam) or aborta('sin fuente para el logotipo (segoeuib.ttf / arialbd.ttf)')
+    marca = os.path.join(DIST, 'contracts', 'assets', 'brand')
+    os.makedirs(marca, exist_ok=True)
+    for nombre, color in (('axw-logo-v3.png', claro), ('axw-logo-v3-dark.png', tinta)):
+        im = Image.new('RGBA', (1726, 240), (0, 0, 0, 0))
+        im.paste(sello(180), (0, 30))
+        ImageDraw.Draw(im).text((230, 120), DEMO['marca'], font=fuente(150), fill=color, anchor='lm')
+        im.save(os.path.join(marca, nombre))
+    sello(64).save(os.path.join(DIST, 'favicon.png'))
+
+
+def _preset_aprobado(piel):
+    """{token: [r, g, b]} de una piel APROBADA de erp/tema/presets.json, validada (el mismo filtro que _piel_preset)."""
+    D = _deriva()
+    if D.main(['--check']) != 0:
+        aborta('erp/tema/presets.json no corresponde a pieles.json: python erp/tema/deriva.py')
+    aprobadas = json.load(open(os.path.join(AGENCIA, 'erp', 'tema', 'presets.json'), encoding='utf-8'))['presets']
+    if piel not in aprobadas:
+        aborta('la piel %r no está entre las aprobadas de erp/tema/presets.json' % piel)
+    try:
+        return D.valida_preset(aprobadas[piel])
+    except ValueError as e:
+        aborta('preset %r no válido: %s' % (piel, e))
+
+
+def piel_demo():
+    """La piel de la demo (DEMO['piel']) en la ficha, con el MISMO aplicador que una instancia (piel_instancia): una línea al
+    final de contracts/assets/instancia.js, que todas las pantallas cargan en el <head>. comprueba_piel_demo() lo vigila."""
+    valores = {k: '%d %d %d' % tuple(v) for k, v in sorted(_preset_aprobado(DEMO['piel']).items())}
+    linea = ('%s%s;(function(){var s=document.documentElement.style,p=%s;for(var k in p)s.setProperty("--tema-"+k,p[k]);})();\n'
+             % (PIEL_MARCA, json.dumps(DEMO['piel']), json.dumps(valores, separators=(',', ':'))))
+    open(os.path.join(DIST, *FICHA_REL.split('/')), 'a', encoding='utf-8', newline='\n').write(linea)
+
+
+def comprueba_piel_demo(raiz):
+    """Un solo aplicador de piel en todo el paquete, en la ficha: lo mismo que comprueba_piel exige a una instancia."""
+    donde = []
+    for r, _d, fichs in os.walk(raiz):
+        for f in fichs:
+            if f in ('presets.json', 'pieles.json'):
+                aborta('presets de piel copiados a la demo: ' + f)
+            if f.endswith(EXT_TEXTO):
+                t = open(os.path.join(r, f), encoding='utf-8', errors='replace').read()
+                ruta = os.path.relpath(os.path.join(r, f), raiz).replace(os.sep, '/')
+                if t.count(PIEL_MARCA) != len(APLICA_TEMA.findall(t)):
+                    aborta('%s pone variables --tema- fuera del aplicador del build' % ruta)
+                donde += [ruta] * t.count(PIEL_MARCA)
+    if donde != [FICHA_REL]:
+        aborta('aplicadores de piel en la demo: %r (se esperaba 1, en %s)' % (donde, FICHA_REL))
+
+
+# Lo que la portada de dos puertas necesita además de su HTML: las dos fuentes de la web de AxisWorks (autoalojadas, Legal
+# 24-sep: sin Google Fonts), del propio repo.
+FUENTES_PUERTA = ('inter-400-latin.woff2', 'inter-500-latin.woff2', 'space-grotesk-500-latin.woff2')
+MARCA_HUECO = '__AXW_DEMO_MARCA__'
+
+
+def puerta_demo(destino):
+    """Escribe la portada de dos puertas (puerta_demo.html) en la raíz de `destino` con DEMO['marca'], sin sus comentarios."""
+    t = open(os.path.join(AQUI, 'puerta_demo.html'), encoding='utf-8').read()
+    if t.count(MARCA_HUECO) < 2:
+        aborta('puerta_demo.html sin el hueco %s de la marca' % MARCA_HUECO)
+    t = re.sub(r'<!--[\s\S]*?-->\n?', '', t).replace(MARCA_HUECO, html.escape(DEMO['marca']))
+    open(os.path.join(destino, 'index.html'), 'w', encoding='utf-8', newline='\n').write(t)
+    fuentes = os.path.join(destino, 'demo', 'fonts')
+    os.makedirs(fuentes, exist_ok=True)
+    for f in FUENTES_PUERTA:
+        shutil.copy2(os.path.join(AQUI, '..', '..', 'assets', 'fonts', f), os.path.join(fuentes, f))
 
 
 # ── Piel e identidad de una instancia (F14, 11-oct-2026; revisión previa #265 de Diseño + Seguridad) ──────────────────
@@ -1354,7 +1531,6 @@ def versiona(raiz):
     entero y conservaba su ?v=, y catalogo.js/modulos.js/tour.js iban sin versión. Un navegador que entró el 24-sep
     siguió usando el catalogo.js de antes de los packs (Hostinger cachea 7 días) y la landing se quedó sin módulos.
     Se repite hasta que nada cambia: si guard.js cambia al versionar lo que inyecta, cambia también su huella."""
-    import hashlib
 
     def huella(p):
         return hashlib.sha1(open(p, 'rb').read()).hexdigest()[:8]
@@ -1396,10 +1572,163 @@ def versiona(raiz):
     pasada('.html')
 
 
+# Lo que no puede salir NUNCA en la demo pública (revisión previa de Seguridad, 11-oct-2026, encargo demo_cliente_flujo_total).
+# Secretos y servidores: si aparecen, la demo podría hablar con algo real o lo enseña. Referencias internas: cuentan cómo
+# trabaja el estudio. Cada patrón con sus excepciones exactas (lo único que se admite y por qué).
+SECRETOS_DEMO = [
+    (re.compile(r'[a-z]{20}\.supabase\.co'), 'URL de una base de Supabase'),
+    (re.compile(r'sb_secret_'), 'clave secreta de Supabase'),
+    (re.compile(r'sb_publishable_(?!demo\b)'), 'clave publicable de Supabase que no es la de la demo'),
+    (re.compile(r'eyJhbGci'), 'token JWT'),
+    (re.compile(r'\b(?:sk|rk)_(?:live|test)_'), 'clave de Stripe'),
+    (re.compile(r'whsec_'), 'secreto de webhook'),
+    (re.compile(r'railway\.app'), 'servicio de Railway'),
+    # El dominio de su API, no el nombre: «cuentas GoHighLevel» es el rótulo de una integración del CRM (como «Stripe»).
+    (re.compile(r'(?i)leadconnectorhq\.com|gohighlevel\.com|msgsndr\.com'), 'API del CRM de un cliente'),
+    # Una función del servidor con su host escrito: las de la demo se componen sobre la URL falsa (lwEdge, sb.supabaseUrl
+    # = demo.invalid) y el candado de red y connect-src 'self' las cortan.
+    (re.compile(r'''["'`]https?://(?![a-z]*\.invalid)[^"'`\s]*/functions/v1/'''), 'función del servidor con host real'),
+    (re.compile(r'(?i)anthropic'), 'llamada a un modelo'),
+    (re.compile(r'(?:LAW|AXW|BBM|EST)-\d+'), 'referencia interna del estudio'),
+    (re.compile(r'(?<![A-Za-z0-9_$])[Qq][Aa][._-]'), 'resto del doble de QA'),
+    (re.compile(r'@demo\.test|@axisworks\.test'), 'correo de pruebas'),
+]
+
+
+REF_INTERNA = re.compile(r'\s*\((?:LAW|AXW|BBM|EST)-\d+\)|(?:LAW|AXW|BBM|EST)-\d+')
+QA_ID = re.compile(r'(?<![A-Za-z0-9_$])(qa|QA)(?=[._-])')
+QA_PALABRA = re.compile(r'(?<![A-Za-z0-9_$])QA(?![A-Za-z0-9_$])')
+# Lo visible del doble de QA que se cambia por algo de demo ANTES del renombrado genérico (cada uno debe aparecer: si el doble
+# cambia y deja de traerlo, el build lo dice). Datos de prueba, no de un cliente.
+DOBLE_VISIBLE = [
+    (re.compile(r'QA Tester'), 'Clara Montesinos'),
+    (re.compile(r'qa_super_admin'), 'super_admin'),
+    (re.compile(r'qa\.([a-z0-9]+)@axisworks\.test'), r'\1@example.com'),
+    (re.compile(r'QA-SELLADO-001'), 'CT-26-101'),
+    (re.compile(r'-QA-(\d+)'), r'-26-\1'),
+    (re.compile(r'QA (?=[A-Z])'), 'Demo '),
+    # plantilla_web: una tabla que el asistente de correos SÍ sabe rotular («Plantilla (texto publicado)»); con otra salía
+    # el nombre técnico (revisor, 12-oct).
+    (re.compile(r'tabla:(["\'])bot_fuentes\1,id:(["\'])prompt_sistema\2'), r'tabla:\1plantilla_web\1,id:\2texto_base\2'),
+    (re.compile(r'pendiente del owner'), 'pendiente de confirmar'),
+]
+
+
+def limpia_internos(dist):
+    """Fuera de la demo pública lo que cuenta cómo trabaja el estudio (revisión previa de Seguridad, 11-oct): las referencias
+    «LAW-124» de los textos del front y del doble, y los nombres del doble de QA (qa-user-2, qa.agente@…, «QA Tester»). Se
+    renombran en el guard ENTERO (doble + datos de la demo), así que siguen casando entre sí. Después comprueba_sin_secretos()
+    vuelve a mirar todo y aborta si queda algo."""
+    refs = 0
+    for raiz, _d, fichs in os.walk(dist):
+        for f in fichs:
+            if not f.endswith(EXT_TEXTO):
+                continue
+            p = os.path.join(raiz, f)
+            t = open(p, encoding='utf-8', errors='replace').read()
+            t2, n = REF_INTERNA.subn('', t)
+            if n:
+                refs += n
+                open(p, 'w', encoding='utf-8', newline='').write(t2)
+    g = os.path.join(dist, 'contracts', 'assets', 'guard.js')
+    t = open(g, encoding='utf-8').read()
+    for rx, nuevo in DOBLE_VISIBLE:
+        t, n = rx.subn(nuevo, t)
+        if not n:
+            aborta('limpia_internos: el doble de QA ya no trae %r (¿ha cambiado _qa_double_guard.js?)' % rx.pattern)
+    # Identificadores (qa-user-2, qa.lead, qa_x) y después la palabra «QA» suelta que queda a la vista («Equipo QA», «QA: …»,
+    # también dentro de las expresiones regulares del propio doble, que así siguen casando con sus datos). La propiedad `qa:`
+    # (sin . - _ detrás) no se toca: es código, no se ve.
+    t, n = QA_ID.subn(lambda m: 'dm' if m.group(1) == 'qa' else 'DM', t)
+    t, n2 = QA_PALABRA.subn('Demo', t)
+    # El dominio de los correos inventados: example.com (reservado, RFC 2606), no uno «de pruebas» del estudio. Opcional: el
+    # paquete A puede traerlo ya cambiado en demo_datos.js.
+    t = t.replace('@demo.test', '@example.com').replace('@axisworks.test', '@example.com')
+    open(g, 'w', encoding='utf-8', newline='').write(t)
+    print('limpia_internos: %d referencias internas fuera, %d nombres del doble de QA renombrados' % (refs, n + n2))
+
+
+def reemplaza_publico(t):
+    """REEMPLAZOS_PUBLICO sin repetirse: lo que YA es el nombre inventado no se vuelve a sustituir. Una regla cuyo destino
+    contiene su origen (X → «X algo») doblaba el nombre al pasar sobre los datos de la demo, que ya lo traen inventado
+    («Batu Ridge Ridge» en el portal, 12-oct-2026). Se aparta cada destino con una marca antes de sustituir y se devuelve."""
+    for i, (a, b) in enumerate(REEMPLAZOS_PUBLICO):
+        marca = '\x00%d\x00' % i
+        t = t.replace(b, marca).replace(a, b).replace(marca, b) if a in b else t.replace(a, b)
+    return t
+
+
+HUELLA = '.huella'
+
+
+def huella_de(raiz):
+    """sha256 de todo lo publicado (rutas + contenido), sin la propia huella. La comprueba test_demo_publicado.py. Los
+    finales de línea de los ficheros de texto cuentan como LF: el repo tiene core.autocrlf y otra copia los saca en CRLF."""
+    import hashlib
+    h = hashlib.sha256()
+    for r, dirs, fichs in os.walk(raiz):
+        dirs.sort()
+        for f in sorted(fichs):
+            if f == HUELLA and r == raiz:
+                continue
+            p = os.path.join(r, f)
+            datos = open(p, 'rb').read()
+            if f.endswith(EXT_TEXTO) or f in ('.htaccess', 'robots.txt'):
+                datos = datos.replace(b'\r\n', b'\n')
+            h.update(os.path.relpath(p, raiz).replace(os.sep, '/').encode('utf-8') + b'\0')
+            h.update(datos + b'\0')
+    return h.hexdigest()
+
+
+def escribe_huella(raiz):
+    """Lo último de publica(), DESPUÉS de todos los controles (revisión previa de Seguridad, 11-oct): dist/demo-erp solo es
+    válido si salió de un `build.py --publico` que los pasó. Editado a mano o copiado de un build viejo, la huella no casa y
+    test_demo_publicado.py (que corre en el control de subida) para el push."""
+    open(os.path.join(raiz, HUELLA), 'w', encoding='utf-8', newline='\n').write(huella_de(raiz) + '\n')
+
+
+def comprueba_sin_secretos(raiz):
+    """Aborta si lo que se va a publicar lleva un secreto, un servidor real, una marca de cliente o una referencia interna."""
+    malos = []
+    for r, _d, fichs in os.walk(raiz):
+        for f in fichs:
+            if not (f.endswith(EXT_TEXTO) or f in ('.htaccess', 'robots.txt')):
+                continue
+            p = os.path.join(r, f)
+            ruta = os.path.relpath(p, raiz).replace(os.sep, '/')
+            t = open(p, encoding='utf-8', errors='replace').read()
+            for rx, que in SECRETOS_DEMO + [(MARCAS_CLIENTE, 'marca o base de un cliente')]:
+                for m in rx.finditer(t):
+                    malos.append('%s: %s «%s»' % (ruta, que, t[max(0, m.start() - 30):m.end() + 20].replace('\n', ' ')))
+            # En la pantalla del asistente de correos son CLAVES del código de Lawang (rótulos de sus fuentes), no texto: se
+            # admiten. En cualquier otro sitio —sobre todo en las respuestas del doble, guard.js— son nombres internos.
+            if re.search(r'bot_fuentes|prompt_sistema', t) and not ruta.startswith('asistente-correos/'):
+                malos.append('%s: nombres internos del asistente (bot_fuentes / prompt_sistema)' % ruta)
+    if malos:
+        aborta('la demo pública lleva lo que no puede salir:\n  ' + '\n  '.join(malos[:40]))
+
+
+# La limpieza EN VIVO de los datos de partida (MARCA_BLANCA + LW_DEMO_LIMPIA de demo_datos.js) sirve a la demo local, que no
+# pasa por las sustituciones privadas. En la pública sobra y estorba (verificador, 12-oct): publicaba los nombres reales de su
+# tabla en claro, y las sustituciones del build reescribían sus expresiones («Batu → Batu Ridge» doblaba el nombre en el
+# navegador; «QA» → «Demo» la convertía en «borra Demo»). Aquí la limpieza se hace en el build y comprueba_sin_secretos lo mira.
+LIMPIEZA_EN_VIVO = re.compile(r'  var MARCA_BLANCA = \[.*?\n  \];\n  window\.LW_DEMO_LIMPIA = function \(F\) \{.*?\n  \};\n', re.S)
+
+
+def quita_limpieza_en_vivo():
+    g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
+    t = open(g, encoding='utf-8').read()
+    t, n = LIMPIEZA_EN_VIVO.subn('  window.LW_DEMO_LIMPIA = function () {};\n', t)
+    if n != 1:
+        aborta('quita_limpieza_en_vivo: esperaba 1 bloque MARCA_BLANCA + LW_DEMO_LIMPIA en guard.js y hay %d (¿cambió demo_datos.js?)' % n)
+    open(g, 'w', encoding='utf-8', newline='').write(t)
+
+
 def publica():
     """Versión pública: sin comentarios, sin marca ni nombres de Lawang, y comprobado antes de copiar a demo/."""
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json (repo privado del estudio): sin él no se puede anonimizar la demo')
+    quita_limpieza_en_vivo()
     r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), DIST], cwd=AQUI)
     if r.returncode != 0:
         aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
@@ -1418,13 +1747,12 @@ def publica():
                 continue
             p = os.path.join(raiz, f)
             t = open(p, encoding='utf-8', errors='replace').read()
-            t2 = t
-            for a, b in REEMPLAZOS_PUBLICO:
-                t2 = t2.replace(a, b)
+            t2 = reemplaza_publico(t)
             t2 = cambia_lawang(t2)
             if t2 != t:
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
-    logos_neutros()
+    limpia_internos(DIST)
+    logos_demo()
     # /favicon.ico: el navegador lo pide solo en las páginas sin <link rel=icon> (la Home de la v4) y daba un 404 en
     # consola; un PNG servido como .ico lo aceptan todos los navegadores.
     shutil.copy2(os.path.join(DIST, 'favicon.png'), os.path.join(DIST, 'favicon.ico'))
@@ -1458,16 +1786,18 @@ def publica():
         if not os.path.isfile(p):
             aborta('la portada no está donde se espera en la demo pública (%s): revisa paginas_propias()' % f)
         os.remove(p)
+    # La raíz de la demo es la portada de DOS PUERTAS (owner, 11-oct-2026: «al entrar quiero que pueda elegir ver el portal
+    # de cliente en demo o la intranet en demo»), no un 302 a la Home. La portada comercial (landing.html) sigue en erp.
+    puerta_demo(DESTINO_PUBLICO)
     # Solo se sirve desde demo.axisworks.studio: por axisworks.studio/demo/ las rutas absolutas no casan.
-    # La raíz ya no es la portada (vive en erp., AXW-70): 302 a la Home de la demo conservando la query (?tour=1&sel=).
-    # 302 y no 301 mientras dura el cambio de dominios (Deploy, rev. #146: el navegador guarda un 301 sin caducidad).
+    # El legado (/intranet/v4/<x>/ → /<x>/) sigue en 302 hasta verificar el mapa en producción (legado_htaccess); pasará a
+    # 301 en una subida aparte, ya verificado (decisión por defecto del 12-oct en el encargo).
     open(os.path.join(DESTINO_PUBLICO, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(
         '# GENERADO por comercial/demo-erp/build.py --publico — no editar.\n'
         '# demo.axisworks.studio: la demo del ERP. Fuera de ese host, redirige a él.\n'
         '<IfModule mod_rewrite.c>\n  RewriteEngine On\n'
         '  RewriteCond %{HTTP_HOST} !^demo\\.axisworks\\.studio$ [NC]\n'
-        '  RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=302,L]\n'
-        '  RewriteRule ^$ /home/ [R=302,L]\n</IfModule>\n'
+        '  RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=302,L]\n</IfModule>\n'
         + legado_htaccess(DESTINO_PUBLICO)
         + cabeceras_seguridad(
             # Sin cdn.tailwindcss.com desde el 27-sep-2026 (ERP F3 lote 4a): la v4 y la portada van con Tailwind
@@ -1476,13 +1806,20 @@ def publica():
             'https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src \'self\' '
             '\'unsafe-inline\' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src \'self\' data: '
             'https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src '
+            # form-action 'none' (revisión previa de Seguridad, 11-oct): ningún formulario de la demo se envía de verdad (todos
+            # van por JS); uno que se escapara al navegador no sale a ningún sitio.
             '\'self\' data: blob:; connect-src \'self\'; frame-ancestors \'self\'; base-uri \'self\'; form-action '
-            '\'self\'; object-src \'none\''))
+            '\'none\'; object-src \'none\''))
     open(os.path.join(DESTINO_PUBLICO, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(DESTINO_PUBLICO)
-    vuelve = [f for f in PORTADA_SOLO if os.path.exists(os.path.join(DESTINO_PUBLICO, f.replace('/', os.sep)))]
+    vuelve = [f for f in PORTADA_SOLO[1:] if os.path.exists(os.path.join(DESTINO_PUBLICO, f.replace('/', os.sep)))]
     if vuelve:
         aborta('la portada ha reaparecido en la demo pública (vive solo en erp.): ' + ', '.join(vuelve))
+    if 'data-puerta="portal"' not in open(os.path.join(DESTINO_PUBLICO, 'index.html'), encoding='utf-8').read():
+        aborta('la raíz de la demo pública no es la portada de dos puertas')
+    comprueba_piel_demo(DESTINO_PUBLICO)
+    comprueba_sin_secretos(DESTINO_PUBLICO)
+    escribe_huella(DESTINO_PUBLICO)
     total = sum(len(f) for _r, _d, f in os.walk(DESTINO_PUBLICO))
     print('OK versión pública en %s: %d ficheros, sin rastros de Lawang' % (os.path.relpath(DESTINO_PUBLICO, AGENCIA), total))
     publica_web()
@@ -1830,7 +2167,7 @@ def _una_vez(texto, viejo, nuevo, donde):
     """Reemplazo LITERAL de algo que tiene que aparecer exactamente una vez: si Lawang cambia ese trozo, el build para (nunca
     un reemplazo que no encuentra nada y deja el permiso o el menú a medias, sin un solo error)."""
     if texto.count(viejo) != 1:
-        aborta('asistente_maestro: %s: esperaba exactamente 1 vez %r y hay %d (¿cambió el fichero de Lawang?)' % (donde, viejo[:90], texto.count(viejo)))
+        aborta('%s: esperaba exactamente 1 vez %r y hay %d (¿cambió el fichero de Lawang?)' % (donde, viejo[:90], texto.count(viejo)))
     return texto.replace(viejo, nuevo)
 
 
@@ -2256,7 +2593,6 @@ def panel_contra_publicado(panel_dir, leer_publicado):
     """Reescribe en `panel_dir` los enlaces locales que salen de panel/ para que existan en lo publicado (`leer_publicado(rel)` ->
     bytes del fichero publicado o None) y lleven la huella de allí. Devuelve la lista de cambios (ruta, nueva, huella).
     Aborta si algo no existe en lo publicado ni con la raíz vieja (/intranet/v4)."""
-    import hashlib
     faltan, cambios = [], []
 
     def blob(ruta):
@@ -2950,16 +3286,20 @@ def main():
     g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
     os.makedirs(os.path.dirname(g), exist_ok=True)
     open(g, 'w', encoding='utf-8', newline='').write(guard_demo())
-    escribe_instancia({'sb_url': 'https://demo.invalid', 'sb_key': 'sb_publishable_demo', 'marca': 'AxisWorks Demo',
-                       'cabecera': 'AXISWORKS', 'subcabecera': 'ERP DEMO', 'titulo': 'AxisWorks ERP',
-                       'firma_correo': 'AxisWorks Demo'})
+    escribe_instancia({'sb_url': 'https://demo.invalid', 'sb_key': 'sb_publishable_demo', 'marca': DEMO['marca'],
+                       'cabecera': DEMO['cabecera'], 'subcabecera': DEMO['subcabecera'], 'titulo': DEMO['marca'],
+                       'firma_correo': DEMO['marca']})
+    piel_demo()
     # URLs limpias (1-oct-2026): lo copiado de Lawang (incluido el guard falso de arriba) pasa a la raíz; paginas_propias()
     # y lo que sigue escriben ya con las rutas nuevas.
     reraiz(DIST)
     sin_marca_lawang(DIST)
     paginas_propias()
+    engancha_flujo()
+    marca_agua_documentos()
+    comprueba_novedades_apagable()
     idioma_ingles()
-    avisos_para_rotos()
+    avisos_para_rotos(demo=True)
     n = neutraliza()
     verifica()
     comprueba_resultado(DIST)
