@@ -24,9 +24,7 @@
     'Encender el módulo Operaciones': 'Switch on the Operations module', 'Encender el módulo Recibos': 'Switch on the Receipts module',
     'Los precios de la tarifa': 'Rate prices', 'Llevan el impuesto DENTRO (el cliente paga el precio de la tarifa)': 'Include the tax (the customer pays the rate price)',
     'Llevan el impuesto FUERA (se suma al precio de la tarifa)': 'Exclude the tax (it is added to the rate price)',
-    '¿Las reservas llevan PPN?': 'Do bookings carry VAT (PPN)?', 'Sí: la sociedad es PKP y cobra PPN': 'Yes: the company is PKP and charges VAT (PPN)',
-    'No: la sociedad no es PKP': 'No: the company is not PKP',
-    'Sin decidir': 'Not decided', 'Guardar': 'Save', 'Guardando…': 'Saving…', 'Guardado.': 'Saved.', 'Sin cambios: ya valía eso.': 'No change: it already had that value.',
+            'Sin decidir': 'Not decided', 'Guardar': 'Save', 'Guardando…': 'Saving…', 'Guardado.': 'Saved.', 'Sin cambios: ya valía eso.': 'No change: it already had that value.',
     'No se guardó': 'Not saved', 'Elige una opción antes de guardar.': 'Choose an option before saving.',
     'Solo el super admin puede cambiar estos ajustes.': 'Only the super admin can change these settings.',
     'Listo: ya puedes encender Facturas.': 'Ready: you can switch Invoices on.',
@@ -37,14 +35,14 @@
     'La puesta en marcha es de administración: tu sesión no tiene acceso.': 'The setup is for administration: your session has no access.',
     'La base no ha respondido: prueba otra vez en un rato.': 'The database did not respond: try again in a moment.',
     'La base ha devuelto algo inesperado.': 'The database returned something unexpected.',
-    'Prueba de precio: una moto real, 1 y 10 días': 'Price check: a real bike, 1 and 10 days',
+    'Prueba de precio: una moto real, 10 días': 'Price check: a real bike, 10 days',
     'Reintentar': 'Retry', 'panel de control del estudio': "the studio's control panel",
     'La sociedad: si es PKP (cobra PPN) o no': 'The company: whether it is PKP (charges VAT) or not',
     'Facturación sin contrato y serie fiscal': 'Invoicing without a contract and fiscal series',
     'estudio (registro de la instancia)': 'the studio (instance registry)',
     '¿La sociedad es PKP (cobra PPN)?': 'Is the company PKP (does it charge VAT)?',
     'Sí: es PKP y cobra PPN': 'Yes: it is PKP and charges VAT (PPN)', 'No: no es PKP (las reservas van sin PPN)': 'No: it is not PKP (bookings carry no VAT)',
-    'Motivo del cambio': 'Reason for the change', 'Obligatorio: queda en el registro de cambios.': 'Required: it is kept in the change log.',
+    'Motivo del cambio': 'Reason for the change', 'Obligatorio: queda en el registro de cambios (p. ej. lo que confirmó el gestor y cuándo).': 'Required: it is kept in the change log (e.g. what the accountant confirmed and when).',
     'Escribe el motivo del cambio (al menos 3 letras).': 'Write the reason for the change (at least 3 letters).',
     'La base solo admite sí o no.': 'The database only accepts yes or no.', 'Código': 'Code'
   };
@@ -59,13 +57,11 @@
     'Precio con el impuesto dentro o fuera': 'Harga sudah termasuk pajak atau belum',
     'Encender el módulo Sociedades': 'Aktifkan modul Perusahaan', 'Encender el módulo Facturas': 'Aktifkan modul Invoice',
     'Encender el módulo Operaciones': 'Aktifkan modul Transaksi', 'Encender el módulo Recibos': 'Aktifkan modul Kuitansi',
-    'Prueba de precio: una moto real, 1 y 10 días': 'Cek harga: satu motor sungguhan, 1 dan 10 hari',
+    'Prueba de precio: una moto real, 10 días': 'Cek harga: satu motor sungguhan, 10 hari',
     'Los precios de la tarifa': 'Harga di tarif',
     'Llevan el impuesto DENTRO (el cliente paga el precio de la tarifa)': 'SUDAH termasuk pajak (pelanggan membayar sesuai harga tarif)',
     'Llevan el impuesto FUERA (se suma al precio de la tarifa)': 'BELUM termasuk pajak (pajak ditambahkan ke harga tarif)',
-    '¿Las reservas llevan PPN?': 'Apakah booking dikenakan PPN?', 'Sí: la sociedad es PKP y cobra PPN': 'Ya: perusahaan berstatus PKP dan memungut PPN',
-    'No: la sociedad no es PKP': 'Tidak: perusahaan bukan PKP',
-    'Sin decidir': 'Belum ditentukan', 'Guardar': 'Simpan', 'Guardando…': 'Menyimpan…', 'Guardado.': 'Tersimpan.', 'Sin cambios: ya valía eso.': 'Tidak ada perubahan: nilainya sudah sama.',
+            'Sin decidir': 'Belum ditentukan', 'Guardar': 'Simpan', 'Guardando…': 'Menyimpan…', 'Guardado.': 'Tersimpan.', 'Sin cambios: ya valía eso.': 'Tidak ada perubahan: nilainya sudah sama.',
     'No se guardó': 'Tidak tersimpan', 'Elige una opción antes de guardar.': 'Pilih salah satu sebelum menyimpan.',
     'Solo el super admin puede cambiar estos ajustes.': 'Hanya super admin yang dapat mengubah pengaturan ini.',
     'Listo: ya puedes encender Facturas.': 'Siap: modul Invoice sudah bisa diaktifkan.',
@@ -82,7 +78,7 @@
     'estudio (registro de la instancia)': 'studio (pengaturan sistem)',
     '¿La sociedad es PKP (cobra PPN)?': 'Apakah perusahaan berstatus PKP (memungut PPN)?',
     'Sí: es PKP y cobra PPN': 'Ya: PKP dan memungut PPN', 'No: no es PKP (las reservas van sin PPN)': 'Tidak: bukan PKP (booking tanpa PPN)',
-    'Motivo del cambio': 'Alasan perubahan', 'Obligatorio: queda en el registro de cambios.': 'Wajib diisi: tercatat di riwayat perubahan.',
+    'Motivo del cambio': 'Alasan perubahan', 'Obligatorio: queda en el registro de cambios (p. ej. lo que confirmó el gestor y cuándo).': 'Wajib diisi: tercatat di riwayat perubahan (misalnya apa yang dikonfirmasi konsultan pajak dan kapan).',
     'Escribe el motivo del cambio (al menos 3 letras).': 'Tulis alasan perubahan (minimal 3 huruf).',
     'La base solo admite sí o no.': 'Database hanya menerima ya atau tidak.', 'Código': 'Kode'
   };
@@ -94,7 +90,7 @@
     precio_incluye_impuesto: 'Precio con el impuesto dentro o fuera',
     modulo_sociedades: 'Encender el módulo Sociedades', modulo_facturas: 'Encender el módulo Facturas',
     modulo_operaciones: 'Encender el módulo Operaciones', modulo_recibos: 'Encender el módulo Recibos',
-    cotizacion: 'Prueba de precio: una moto real, 1 y 10 días'
+    cotizacion: 'Prueba de precio: una moto real, 10 días'
   };
   // Los dos sí/no que se eligen aquí. El valor que se guarda es el que la base espera ('si' | 'no'); el rótulo dice lo que significa para quien lo elige.
   var ELECCIONES = [
@@ -185,7 +181,7 @@
     c.appendChild(ol);
     if (puede) c.appendChild(h('div', { class: 'px-8 py-4 flex flex-col gap-2' }, [
       h('label', { for: 'lw-pm-motivo', class: 'font-label-md text-label-md text-on-surface', text: T('Motivo del cambio') }),
-      h('span', { class: 'font-body-sm text-body-sm text-outline', text: T('Obligatorio: queda en el registro de cambios.') }),
+      h('span', { class: 'font-body-sm text-body-sm text-outline', text: T('Obligatorio: queda en el registro de cambios (p. ej. lo que confirmó el gestor y cuándo).') }),
       (function () { var i = h('input', { id: 'lw-pm-motivo', type: 'text', maxlength: '500', autocomplete: 'off', 'data-pm': 'motivo',
                                           class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
                      i.value = motivoPrevio; return i; })()]));
