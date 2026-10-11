@@ -122,13 +122,14 @@
     var tiene = Object.prototype.hasOwnProperty.call(valores, e.clave) && valores[e.clave] != null && valores[e.clave] !== '';
     var actual = tiene ? String(valores[e.clave]) : '';
     var id = 'lw-pm-' + e.clave;
-    var sel = h('select', { id: id, 'data-pm-valor': e.clave, class: 'w-full md:w-auto rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
+    var sel = h('select', { id: id, 'data-pm-valor': e.clave, class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
+    sel.style.maxWidth = '100%';   // una opción larga (en indonesio) no puede ensanchar la página a 390 px
     if (!puede) sel.setAttribute('disabled', '');
     if (!tiene || ['si', 'no'].indexOf(actual) < 0) sel.appendChild(h('option', { value: '', text: T('Sin decidir') }));
     e.opciones.forEach(function (o) { sel.appendChild(h('option', { value: o[0], text: T(o[1]) })); });
     sel.value = ['si', 'no'].indexOf(actual) >= 0 ? actual : '';
     var fila = h('div', { class: 'flex flex-col md:flex-row md:items-center gap-3 pt-2', 'data-pm-fila': e.clave }, [
-      h('label', { for: id, class: 'font-label-md text-label-md text-on-surface md:w-56', text: T(e.pregunta) }), sel]);
+      h('label', { for: id, class: 'font-label-md text-label-md text-on-surface', text: T(e.pregunta) }), sel]);
     if (puede) fila.appendChild(h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-guardar', 'data-pm-clave': e.clave,
                                               class: 'shrink-0 px-4 py-2 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md', text: T('Guardar') }));
     fila.appendChild(h('span', { class: 'font-body-sm text-body-sm text-outline', role: 'status', 'aria-live': 'polite', 'data-pm-estado': e.clave }));
@@ -141,7 +142,7 @@
     var faltan = pasos.filter(function (p) { return p.hecho !== true; }).length;
     c.appendChild(h('p', { class: 'px-8 py-4 font-body-md text-body-md ' + (faltan ? 'text-on-surface' : 'text-deep-lagoon font-semibold'), role: 'status', 'data-pm': 'resumen',
                            text: faltan ? (faltan === 1 ? T('Falta 1 paso.') : T('Faltan %n pasos.', { n: faltan })) : T('Listo: ya puedes encender Facturas.') }));
-    var ol = h('ol', { class: 'flex flex-col', 'data-pm': 'pasos' });
+    var ol = h('ol', { class: 'flex flex-col list-none', 'data-pm': 'pasos' });
     pasos.forEach(function (p, i) {
       var clave = String(p.clave || '');
       var texto = h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
