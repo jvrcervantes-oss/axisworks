@@ -135,7 +135,7 @@ mira('no usa el esc() de Lawang (no escapa la comilla simple) ni lwCajonHtml / H
 mira('ningun console.log', 'console.log' not in CODIGO)
 mira('no nombra claves de servicio', not re.search(r'service_role|sb_secret_', JS + MARCADO))
 mira('el navegador no escribe ni lee tablas: ni .from( ni insert/update/upsert/delete', not re.search(r'\.from\(|\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.storage\b', CODIGO))
-PERMITIDAS = {'reservas_producto_datos', 'producto_flota_datos', 'reserva_producto_pagos_datos', 'clientes_datos',
+PERMITIDAS = {'reservas_producto_datos', 'producto_flota_datos', 'reserva_producto_pagos_datos', 'clientes_datos', 'reserva_producto_cotiza',
               'reserva_producto_crea', 'reserva_producto_estado', 'reserva_cancela_con_devolucion', 'reserva_producto_cambia_unidad'}
 llamadas = set(re.findall(r"\bllama\('([a-z_]+)'", CODIGO))
 literales = set(re.findall(r"(?:SB\.rpc|window\.lwDatos)\('([a-z_]+)'", CODIGO))
@@ -146,11 +146,29 @@ mira('lo que lee va por lwDatos y solo *_datos; lo que escribe va por sb.rpc', s
 mira('ninguna lectura por .rpc(...).select() ni encadenada', '.select(' not in CODIGO and not re.search(r"\.rpc\([^)]*\)\s*\.", CODIGO))
 # el navegador pide, no decide: ni precio, ni total, ni estado de pago, ni importe de la reserva
 mira('el precio nunca viaja: la reserva manda producto, unidad, cliente o contacto, fechas, direcciones y notas',
-     re.search(r"var datos = \{ producto_id: selP\.value, desde: desde\.value, hasta: hasta\.value \};", CODIGO) is not None
+     re.search(r"var datos = \{ producto_id: W\.prodId, desde: W\.desde, hasta: W\.hasta, clave: W\.clave \};", CODIGO) is not None
      and not re.search(r'precio_total\s*:|precio_unitario\s*:|p_total|p_importe(?!_devuelto)|p_precio|descuento|[{,]\s*pago_referencia\s*:|datos\.(estado|precio|moneda|desglose|dias|origen|numero)', CODIGO))
 claves_datos = set(re.findall(r"datos\.([a-z_]+)\s*=", CODIGO))
 mira('las unicas claves que se anaden a p_datos son las que la base lee (' + ', '.join(sorted(claves_datos)) + ')',
-     claves_datos <= {'unidad_id', 'client_id', 'contacto_nombre', 'contacto_telefono', 'entrega_direccion', 'recogida_direccion', 'notas'})
+     claves_datos <= {'unidad_id', 'client_id', 'contacto_nombre', 'contacto_telefono', 'entrega_direccion', 'recogida_direccion', 'notas', 'clave'})
+# P13 (asistente por pasos): la cotizacion solo pide producto y fechas; el alta lleva una clave unica por asistente (idempotencia en bloqueo; B1 la extiende a confirmada)
+mira('cotizar manda solo producto y fechas (la entrega por km del equipo no existe: la base solo la cotiza al bot)', "llama('reserva_producto_cotiza', { p_producto_id: p.id, p_desde: W.desde, p_hasta: W.hasta })" in CODIGO
+     and CODIGO.count("'reserva_producto_cotiza'") == 2)
+mira('el alta lleva clave (equipo-<aleatorio>, cabe en la regex de la base) y clave_repetida o red se tratan como «puede estar creada»', "return 'equipo-' + r;" in CODIGO
+     and "if (c.tipo === 'red' || !r.error.code || c.hint === 'clave_repetida') return asComprueba(c.hint === 'clave_repetida');" in CODIGO)
+mira('revisor 835f420: clave_repetida nunca acaba en «no se creo», sin reloj del PC, lista recortada = no se asegura, y no se cierra con un envio en vuelo',
+     'if (!lista || r.data.siguiente || A.yaExiste || (!E2.previos && cand.length) || E2.minutos == null) {' in CODIGO and 'creado_en' not in CODIGO[CODIGO.index('function asComprueba'):CODIGO.index('function asHecha')]
+     and 'if (!A || A.enviando || A.comprobando) return;' in CODIGO)
+mira('revisor 6aeaafa: se comprueba lo ENVIADO sin las reservas previas; una confirmada sin encontrar no reactiva el envio; nada se toca con el envio en duda',
+     'E2.previos.indexOf(y.id) === -1' in CODIGO and 'E2.minutos == null) {' in CODIGO and 'function asBloqueado()' in CODIGO and CODIGO.count('asBloqueado() ? true : null') >= 3
+     and 'if (A.enviado && A.enviado.firma !== firma) { W.clave = claveNueva();' in CODIGO)
+mira('revisor 3d6a177: la duda de un envio viaja en el borrador (cerrar o recargar vuelve a «Comprobar de nuevo») y la foto de lo previo se toma justo antes de enviar',
+     'function asDudaValida' in CODIGO and 'if (previo && previo.duda) {' in CODIGO and "env.previos = vaListaDe(rp, 'reservas') && !rp.data.siguiente" in CODIGO)
+mira('revisor 835f420: el cliente con ficha se conserva donde clientes_datos responde (manda client_id, no copia el contacto)',
+     'if (W.clienteId) datos.client_id = W.clienteId;' in CODIGO and "else { datos.contacto_nombre = W.nombre.trim(); datos.contacto_telefono = W.telefono; }" in CODIGO)
+mira('sin respuesta: antes de dejar repetir se busca la reserva por producto, fechas y telefono', 'function asComprueba' in CODIGO and 'mismoTel(y.contacto_telefono, E2.telefono)' in CODIGO)
+mira('el total que se dice tras crear es el de la base, y se avisa si no es el del resumen', "Number(A.cotTotal.total) !== Number(d.precio_total)" in CODIGO)
+mira('el borrador en sessionStorage va siempre en try/catch', CODIGO.count('window.sessionStorage') == 3 and CODIGO.count('try { ') >= 6)
 mira('crear: llama a reserva_producto_crea con p_datos y p_bloqueo_minutos y lee de vuelta id y numero_reserva', "llama('reserva_producto_crea', { p_datos: datos, p_bloqueo_minutos: minutos })" in CODIGO and '!d.id || !d.numero_reserva' in CODIGO)
 mira('el precio que se ensena tras crear sale de la respuesta de la base', "dinero(d.precio_total, d.moneda)" in CODIGO)
 mira('el cambio de estado manda solo id, estado y nota, y no se da por hecho si la base no devuelve el estado', "var args = { p_id: x.id, p_estado: nuevo };" in CODIGO and 'r.data !== nuevo' in CODIGO)
@@ -160,8 +178,9 @@ mira('cancelar con devolucion manda reserva, importe, referencia y motivo, y lee
 mira('el importe devuelto solo se valida de forma numerica (la base compara con lo cobrado y decide)', r"/^\d+(\.\d+)?$/.test(texto)" in CODIGO)
 mira('cambiar la unidad manda id y unidad y lee de vuelta la unidad', "{ p_id: x.id, p_unidad_id: sel.value }" in CODIGO and 'r.data !== sel.value' in CODIGO)
 mira('la flota se relee antes de ofrecer cambiar de unidad (una moto en taller no se ofrece) y solo se ofrecen las disponibles', "u.estado === 'disponible' && u.id !== x.unidad_id" in CODIGO and CODIGO.count('E.flotaCargada = false;') >= 3)
-mira('el formulario solo ofrece unidades disponibles', "p.unidades.filter(function (u) { return u.estado === 'disponible'; })" in CODIGO)
-mira('doble clic: un solo envio a la vez (ocupa/libera en cada accion que escribe)', 'function ocupa' in CODIGO and CODIGO.count('ocupa(bt)') >= 4 and CODIGO.count('libera(bt)') >= 4)
+mira('el asistente solo ofrece unidades disponibles y libres en esas fechas (comodidad: la base lo vuelve a comprobar)', "u.estado === 'disponible' && !ocupadas[u.id]" in CODIGO)
+mira('doble clic: un solo envio a la vez (ocupa/libera en cada accion que escribe; el asistente con su bandera enviando)', 'function ocupa' in CODIGO and CODIGO.count('ocupa(bt)') >= 3 and CODIGO.count('libera(bt)') >= 3
+     and 'if (A.enviando || A.comprobando || !W.modo || !asCot()) return;' in CODIGO)
 mira('enganche por data-accion; ningun texto de boton se usa para encontrar nada', not re.search(r'textContent\s*===|innerText|\.placeholder|querySelector\([^)]*placeholder', CODIGO))
 mira('las fechas de calendario se parten a mano (new Date("YYYY-MM-DD") ensena el dia anterior al oeste de UTC)', "new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))" in CODIGO and not re.search(r"new Date\(\s*(x\.desde|x\.hasta|d|s)\s*\)", CODIGO))
 mira('la lista distingue vacia de no se ha podido mirar en reservas, calendario, flota y pagos', CODIGO.count("T('No se ha podido mirar') + ': '") >= 5 and 'No hay reservas con ese filtro.' in CODIGO and 'No hay pagos por revisar.' in CODIGO)
@@ -217,6 +236,20 @@ mira('todo texto pintable esta en el diccionario ES/EN' + (' (faltan: ' + '; '.j
 bloque_lineas = re.findall(r"'((?:[^'\\]|\\.)*)'\s*:\s*'", bloque)
 repetidas = sorted({c for c in bloque_lineas if bloque_lineas.count(c) > 1})
 mira('ninguna clave repetida en EN_RP' + (' (' + ', '.join(repetidas) + ')' if repetidas else ''), not repetidas)
+
+# -- (5) diccionario ID (bbm va en indonesio e ingles, owner 11-oct-2026 23:22): toda clave de EN_RP y todo texto pintable tiene su indonesio en ID_RP,
+#    y la pantalla solo lo fusiona en window.LW_ID si existe (en Lawang y en la demo no existe: nada cambia)
+bloque_id = JS[JS.index('var ID_RP = {'):JS.index('if (window.LW_ID')]
+open(js_claves, 'w', encoding='utf-8').write(bloque_id + '\nconsole.log(JSON.stringify(Object.keys(ID_RP)));')
+claves_id = set(json.loads(subprocess.run(['node', js_claves], capture_output=True, text=True, encoding='utf-8').stdout or '[]'))
+sin_id = sorted(claves - claves_id)
+mira('toda clave de EN_RP tiene su indonesio en ID_RP' + (' (faltan: ' + '; '.join(s[:50] for s in sin_id[:8]) + ')' if sin_id else ''), claves_id and not sin_id)
+sobran_id = sorted(claves_id - claves)
+mira('ID_RP no trae claves que EN_RP no tenga' + (' (' + '; '.join(s[:50] for s in sobran_id[:8]) + ')' if sobran_id else ''), not sobran_id)
+mira('el indonesio se fusiona solo si window.LW_ID existe y sin pisar claves', "if (window.LW_ID && typeof window.LW_ID === 'object')" in JS and "if (!(k in window.LW_ID)) window.LW_ID[k] = ID_RP[k];" in JS)
+lineas_id = re.findall(r"'((?:[^'\\]|\\.)*)'\s*:\s*'", bloque_id)
+rep_id = sorted({c for c in lineas_id if lineas_id.count(c) > 1})
+mira('ninguna clave repetida en ID_RP' + (' (' + ', '.join(rep_id) + ')' if rep_id else ''), not rep_id)
 
 if fallos:
     print('FALLOS (%d de %d):\n  ' % (len(fallos), casos) + '\n  '.join(fallos))
