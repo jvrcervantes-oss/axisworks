@@ -1,5 +1,5 @@
 /* AxisWorks brand tokens, components and motion.
-   Source of truth: docs/brand/DESIGN-GUIDE-FOR-LLMS.md and the Brand kit artifact.
+   Source of truth: private/brand/DESIGN-GUIDE-FOR-LLMS.md and the Brand kit artifact.
    Fonts: self-host Unbounded (300, 500, 600), Manrope (400, 500, 600, 700) and
    IBM Plex Mono (400, 500) as woff2 in /assets/fonts, like the current fonts.css.
    Do not load Google Fonts from production pages. */
