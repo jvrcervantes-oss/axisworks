@@ -369,7 +369,7 @@
   }
 
   /* ── Enganches ───────────────────────────────────────────────────────── */
-  document.addEventListener('keydown', function (ev) { if (E && ev.key === 'Escape') cierra(); });
+  window.addEventListener('keydown', function (ev) { if (E && ev.key === 'Escape') { ev.stopPropagation(); cierra(); } }, true);
   document.addEventListener('click', function (ev) {
     var b = ev.target && ev.target.closest && ev.target.closest('[data-accion]');
     if (!b || (E && E.capa.contains(b))) return;
