@@ -852,6 +852,22 @@ FICHA_NUEVO = ('\'<button type="button" data-accion="demo-nuevo-contrato" data-c
                'font-size:12.5px;cursor:pointer">New contract</button>\' + ')
 
 
+# Marca de agua en TODO documento de factura/proforma/recibí que la demo imprime o enseña (revisión previa de Seguridad,
+# 11-oct: lo que hay que vigilar en una demo abierta es que alguien fabrique un documento creíble). documentoPagina() de
+# documento.js arma la página que se imprime, la vista previa y el correo: se le añade antes del cierre del <body>.
+DOC_CIERRE = "'</div></body></html>';"
+DOC_MARCA = ("'</div><div aria-hidden=\"true\" style=\"position:fixed;inset:0;display:flex;align-items:center;justify-content:center;"
+             "pointer-events:none;z-index:9\"><div style=\"transform:rotate(-30deg);font:600 64px/1.1 system-ui,sans-serif;"
+             "letter-spacing:.08em;color:rgba(186,26,26,.22);text-align:center;border:6px solid rgba(186,26,26,.22);padding:12px 28px\">"
+             "DEMO<br>NOT A VALID DOCUMENT</div></div></body></html>';")
+
+
+def marca_agua_documentos():
+    p = os.path.join(DIST, 'clasico', 'facturas', 'documento.js')
+    t = open(p, encoding='utf-8').read()
+    open(p, 'w', encoding='utf-8', newline='').write(_una_vez(t, DOC_CIERRE, DOC_MARCA, 'documento.js (marca de agua de la demo)'))
+
+
 def engancha_flujo():
     """Paquete B de la demo para un cliente (12-oct-2026): «New contract» y la firma de ejemplo (flujo/, un panel dentro de la
     intranet que escribe en la base falsa de la pestaña) y el portal de cliente (flujo/portal/). Se publican en /flujo/ y
@@ -1588,8 +1604,10 @@ def publica():
             'https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src \'self\' '
             '\'unsafe-inline\' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src \'self\' data: '
             'https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src '
+            # form-action 'none' (revisión previa de Seguridad, 11-oct): ningún formulario de la demo se envía de verdad (todos
+            # van por JS); uno que se escapara al navegador no sale a ningún sitio.
             '\'self\' data: blob:; connect-src \'self\'; frame-ancestors \'self\'; base-uri \'self\'; form-action '
-            '\'self\'; object-src \'none\''))
+            '\'none\'; object-src \'none\''))
     open(os.path.join(DESTINO_PUBLICO, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(DESTINO_PUBLICO)
     vuelve = [f for f in PORTADA_SOLO[1:] if os.path.exists(os.path.join(DESTINO_PUBLICO, f.replace('/', os.sep)))]
@@ -2820,6 +2838,7 @@ def main():
     sin_marca_lawang(DIST)
     paginas_propias()
     engancha_flujo()
+    marca_agua_documentos()
     idioma_ingles()
     avisos_para_rotos(demo=True)
     n = neutraliza()
