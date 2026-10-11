@@ -188,7 +188,7 @@ a.axw-boton{text-decoration:none}
   function noSeHaPodido(r) {
     var t = r.error ? C.mensaje(r.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
     ['entregas', 'devoluciones'].forEach(function (k) {
-      vacia($v(k)); $v('n-' + k).textContent = '';
+      vacia($v(k)); $v('n-' + k).textContent = ''; hayMas(k, false);
       var est = $v('estado-' + k); est.className = 'axw-error'; est.textContent = T('No se han podido mirar las reservas') + ': ' + t;
     });
   }
@@ -196,7 +196,7 @@ a.axw-boton{text-decoration:none}
   function carga(dia) {
     var yo = ++PETICION;
     error('');
-    ['entregas', 'devoluciones'].forEach(function (k) { var est = $v('estado-' + k); est.className = 'axw-vacio'; est.textContent = T('Cargando…'); });
+    ['entregas', 'devoluciones'].forEach(function (k) { var est = $v('estado-' + k); est.className = 'axw-vacio'; est.textContent = T('Cargando…'); hayMas(k, false); });
     return llama('portada_reservas_dia_datos', { p_dia: dia || null }).then(function (r) {
       if (yo !== PETICION) return;   // llegó tarde: ya se pidió otro día y ese manda
       var d = r.data;
@@ -210,6 +210,8 @@ a.axw-boton{text-decoration:none}
       pinta('devoluciones', d.devoluciones);
       hayMas('entregas', d.hay_mas_entregas === true);
       hayMas('devoluciones', d.hay_mas_devoluciones === true);
+      if (d.hay_mas_entregas === true) $v('n-entregas').textContent = '(' + d.entregas.length + '+)';
+      if (d.hay_mas_devoluciones === true) $v('n-devoluciones').textContent = '(' + d.devoluciones.length + '+)';
     });
   }
   function ver(x) {
