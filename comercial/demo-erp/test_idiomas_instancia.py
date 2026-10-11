@@ -165,8 +165,15 @@ mira('una sola traducción por clave entre diccionarios (%s)' % '; '.join(choque
 # la barra (topbar.js): toda clave de TB_T tiene su indonesio en TB_ID
 _tb = node(ORIGINAL['contracts/assets/topbar.js'][:ORIGINAL['contracts/assets/topbar.js'].index('function tb(k)')] + '\nconsole.log(JSON.stringify(Object.keys(TB_T)));')
 _tbid = [x for x in build.IDIOMAS_PARCHES if x[0] == 'contracts/assets/topbar.js' and 'TB_ID' in x[2]][0][2]
-_faltan = [k for k in json.loads(_tb) if (k + ':') not in _tbid]
+_faltan = [k for k in json.loads(_tb) if not re.search(r'(?<![A-Za-z_])' + re.escape(k) + r'\s*:', _tbid)]
 mira('toda clave de la barra (TB_T) tiene su indonesio en TB_ID (%s)' % ', '.join(_faltan), not _faltan)
+# pares que en una misma pantalla tienen que distinguirse (glosario «distinguir»)
+iguales = []
+for nombre, dic in dics.items():
+    for a_, b_ in G['distinguir']:
+        if a_ in dic and b_ in dic and dic[a_].strip().lower() == dic[b_].strip().lower():
+            iguales.append('%s: «%s» y «%s» = «%s»' % (nombre, a_, b_, dic[a_]))
+mira('los pares que deben distinguirse llevan traducciones distintas (%s)' % '; '.join(iguales), not iguales)
 mira('hay diccionarios ID que revisar (i18n_id.json y al menos los de portada, Ajustes y ayudas comunes)', len(dics) >= 3 and len(dics['i18n_id.json']) > 100)
 
 # -- (5) la comprobación del paquete construido
