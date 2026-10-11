@@ -1378,6 +1378,55 @@ def piel_suite_clasica(dist, nombre):
     return len(textos)
 
 
+# La puerta (/) de una instancia (12-oct-2026, verificador sobre la 2.ª de bbm; orquestador): (1) bbm sale en indonesio y el botón
+# de idioma de la puerta vive en la barra de la app, que en la puerta está oculta (display:none): quien no lee indonesio no podía
+# cambiar de idioma antes de entrar. Con MÁS de un idioma declarado, la tarjeta de entrada lleva un selector visible con SUS idiomas,
+# que usa el mismo lwSetIdioma que la barra (idioma.js, cargado en el <head> de la puerta). (2) El placeholder del correo venía de
+# Lawang con su dominio y, tras los reemplazos de marca, decía «nombre@axisworks.studio»: neutro en toda instancia. (3) La marca
+# de dos líneas a 390 px quedaba alineada a la izquierda bajo un «INTRANET» centrado. Enganche estable: #loginEmail, #fLogin, .marca.
+NOMBRE_IDIOMA = {'id': 'Bahasa Indonesia', 'en': 'English', 'es': 'Español'}
+PUERTA_CORREO = 'email@example.com'
+PUERTA_CSS = ('.lw-login .marca .word{text-align:center}'
+              '.lw-login .lw-login-idioma{display:flex;justify-content:center;gap:6px;margin-top:18px}'
+              '.lw-login .lw-login-idioma[hidden]{display:none}'
+              '.lw-login .lw-login-idioma button{width:auto;margin:0;padding:5px 12px;font-size:12px;font-weight:600;letter-spacing:.06em;'
+              'color:var(--ink-2);background:transparent;border:1px solid var(--line-fuerte);border-radius:999px;cursor:pointer}'
+              '.lw-login .lw-login-idioma button[aria-pressed="true"]{color:#fff;background:var(--dl);border-color:var(--dl);cursor:default}')
+PUERTA_JS = ('(function(){var d=document.querySelector(\'[data-lw="login-idioma"]\');if(!d||!window.lwSetIdioma)return;'
+             'var b=d.querySelectorAll("button[data-idioma]");for(var i=0;i<b.length;i++)(function(x){var c=x.getAttribute("data-idioma"),'
+             'on=c===window.LW_IDIOMA;x.setAttribute("aria-pressed",on?"true":"false");x.addEventListener("click",function(){if(c!==window.LW_IDIOMA)'
+             '{window.lwSetIdioma(c);location.reload();}});})(b[i]);d.hidden=false;})();')
+
+
+def puerta_instancia(dist, idiomas):
+    """Selector de idioma visible en la tarjeta de entrada (si hay más de un idioma), correo de ejemplo neutro y marca centrada.
+    Devuelve True si puso el selector. PARA si la puerta cambió de forma (sin #loginEmail, #fLogin o su <style> con .lw-login)."""
+    ruta = os.path.join(dist, 'index.html')
+    t = open(ruta, encoding='utf-8').read()
+    m = re.findall(r'<input[^>]*id="loginEmail"[^>]*>', t)
+    if len(m) != 1 or 'placeholder="' not in m[0]:
+        aborta('puerta: index.html ya no tiene UN #loginEmail con placeholder (¿cambió la puerta de Lawang?)')
+    t = t.replace(m[0], re.sub(r'placeholder="[^"]*"', 'placeholder="%s"' % PUERTA_CORREO, m[0]))
+    estilos = [x for x in re.finditer(r'<style>(.*?)</style>', t, flags=re.S) if '.lw-login' in x.group(1)]
+    if len(estilos) != 1 or _profundidad_llaves(estilos[0].group(1)) != 0:
+        aborta('puerta: index.html no tiene UN <style> con .lw-login y llaves cerradas')
+    t = t[:estilos[0].end(1)] + '\n' + PUERTA_CSS + '\n' + t[estilos[0].end(1):]
+    selector = bool(idiomas) and len(idiomas) > 1
+    if selector:
+        i = t.find('id="fLogin"')
+        j = t.find('</form>', i) if i >= 0 else -1
+        if i < 0 or j < 0 or t.count('id="fLogin"') != 1:
+            aborta('puerta: index.html ya no tiene UN <form id="fLogin"> (el selector de idioma va justo después)')
+        botones = ''.join('<button type="button" data-idioma="%s" lang="%s" title="%s" aria-label="%s">%s</button>'
+                          % (c, c, NOMBRE_IDIOMA[c], NOMBRE_IDIOMA[c], c.upper()) for c in idiomas)
+        bloque = ('<div class="lw-login-idioma" data-lw="login-idioma" role="group" aria-label="Bahasa / Language" hidden>%s</div>'
+                  '<script>%s</script>' % (botones, PUERTA_JS))
+        j += len('</form>')
+        t = t[:j] + bloque + t[j:]
+    open(ruta, 'w', encoding='utf-8', newline='').write(t)
+    return selector
+
+
 def mascota_versionada(dist):
     """MASCOTA_V de assets/nav.js = huella de la assets/mascota.js QUE SE PUBLICA (revisor, 12-oct). nav.js la carga con
     `assets/mascota.js?v=" + MASCOTA_V`, una URL que se arma al ejecutarse y que versiona() no ve: con el valor de Lawang, la CDN
@@ -3012,6 +3061,7 @@ def instancia(nombre):
     logos_instancia(nombre, marca)
     crea_contrasena_pantalla(marca)   # pieza C de I6 (9-oct-2026): «Crea tu contraseña» para el primer administrador invitado
     piel_suite_clasica(DIST, nombre)   # tras el renombrado (axw.css) y tras crea-contrasena; antes de versiona()
+    puerta_instancia(DIST, idiomas_de(nombre))   # selector de idioma visible, correo neutro, marca centrada (12-oct)
     tipografias_libres()
     neutraliza_ejemplos()   # ejemplos de persona que casan con gente real (pii_maqueta)
     # 2. Portada = la puerta de acceso, que reraiz() ha subido a la raíz (antes /intranet/). Lo que en la demo es un aviso,
