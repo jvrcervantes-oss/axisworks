@@ -34,7 +34,7 @@ $PRODUCTOS = [
     '/services/integrations','/es/servicios/integraciones-y-datos'],
   ['B07','BUILD','Web design &amp; development','Diseño y desarrollo web',
     '/services/web-design-development','/es/servicios/diseno-y-desarrollo-web'],
-  ['G01','GROW','Meta sales funnels','Funnels de venta en Meta',
+  ['G01','GROW','Meta sales funnels','Embudos de venta en Meta',
     '/services/meta-ads','/es/servicios/meta-ads'],
   ['G02','GROW','SEO, SEM &amp; AI search','SEO, SEM y buscadores de IA',
     '/services/seo-sem','/es/servicios/seo-y-sem'],

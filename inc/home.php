@@ -19,10 +19,10 @@ require_once __DIR__ . '/organigrama.php';   /* GENERADO desde las fichas de los
 $lang = $LANG;
 $hm   = $HOME[$lang];
 /* El número de departamentos no se escribe: se cuenta. Nace uno en la agencia, se regenera
-   organigrama.php en el cierre de turno y la cifra (13 → 14…) cambia sola en los tres sitios. */
+   organigrama.php en el cierre de turno y la cifra (13 → 14…) cambia sola donde aparece. */
 $org_pal = $ORGANIGRAMA['palabra'][$lang];
 $org_num = ['{N}' => $ORGANIGRAMA['n'], '{PALABRA}' => $org_pal, '{PALABRA_MAY}' => mb_strtoupper($org_pal, 'UTF-8')];
-foreach (['m2_v', 'who_3p', 'deps_t'] as $k) $hm[$k] = strtr($hm[$k], $org_num);
+foreach (['who_3p', 'deps_t'] as $k) $hm[$k] = strtr($hm[$k], $org_num);
 $hm['org'] = [];
 foreach ($hm['org_secs'] as $eje => $lema) {
   $deps = [];

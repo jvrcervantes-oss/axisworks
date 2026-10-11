@@ -51,8 +51,9 @@ Live and in production:
 - Lawang Estate — a property developer's website and internal suite: thirty-two tools
   under one menu (contracts with remote signature, invoices, banks, commissions,
   construction, CRM, buyer portal), watchers on the ad account · https://lawangproperties.com
-- Bali Moto Adventures — motorcycle tour platform, with a WhatsApp AI bot that books
-  and takes payment · https://balimotoadventures.com
+- Bali Moto Adventures — motorcycle tour platform with online booking and deposit payment,
+  and a WhatsApp AI bot that answers leads and alerts the owner when someone is ready
+  to book · https://balimotoadventures.com
 - Sumba Rental — motorbike rental with airport delivery · https://sumba.balibestmotorcycle.com
 
 In development (no public URL yet):

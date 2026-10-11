@@ -1,9 +1,11 @@
 <?php
-/* Los textos de la portada, en los dos idiomas y en un solo fichero.
+/* Textos del bloque ESTUDIO de la portada (home.php) y la línea de `alcance` de cada producto
+ * (hub.php), en los dos idiomas y en un solo fichero. Toda clave nueva entra en LAS DOS columnas.
+ * El resto de la portada vive en landing_textos.php desde la landing del 10-oct-2026.
  *
- * Una plantilla (`home.php`) renderiza `/` y `/es/`: el español no puede
- * quedarse atrás porque no hay dos páginas que mantener, hay una y dos
- * columnas de texto. Toda clave nueva entra en LAS DOS columnas.
+ * Limpieza del 11-oct-2026: se quitaron ~90 claves de la portada anterior (hero CAD, ERP de muestra,
+ * BodaEnlace, cuadro de piezas, proceso, formulario de alta) que ya no pintaba ninguna página.
+ * Siguen en git (commit bd11802 y anteriores) si hiciera falta recuperar alguna.
  *
  * Rediseño del 24-sep-2026 sobre el mockup de Stitch: se tomó su piel y su
  * composición; su TEXTO no. Nada de lo que hay aquí es una métrica: el
@@ -15,63 +17,9 @@
 $HOME = [
 
 'en' => [
-  'hud'=>'SHEET AW-01 · HOME',
-  'hero_chip'=>'AXISWORKS — PRECISION-BUILT SOFTWARE',
-  'hero_h1'=>'We measure twice. Everything aligns.',
-  'hero_lead'=>'Custom business software, built and maintained by two people and a team of AI departments. No templates, no bloat.',
-  'hero_cta'=>'Start project','hero_cta2'=>'Inspect ERP',
-  'm1_k'=>'ARCHITECTURE','m1_v'=>'1 DATABASE / CLIENT',
-  'm2_k'=>'DIRECTORS','m2_v'=>'02 + CEO + {N} AI',
-  'm3_k'=>'LANGUAGES','m3_v'=>'EN / ES',
-  'instr'=>'INSTRUMENT: RETICLE_CAD_v4','instr_al'=>'ALIGNMENT: 100.00%','instr_mode'=>'MODE: REALTIME TELEMETRY','instr_status'=>'STATUS: ALIGNED',
-  'hero_st_cal'=>'CALIBRATING','hero_st_ok'=>'ALIGNED',
-
-  'erp_eyebrow'=>'SHEET ERP-01 // FLAGSHIP SYSTEM',
-  'erp_h2'=>'One modular operating system for operation-heavy businesses.',
-  'erp_chip'=>'One codebase for every client. One private database per client.',
-  'erp_bar'=>'AXISWORKS ERP // DAILY DASHBOARD','erp_sample'=>'SAMPLE DATA',
-  'erp_alert'=>'Reservation expires in 2 days — deposit still pending',
-  'erp_today'=>'TODAY — WAITING ON SOMEONE',
-  'erp_th'=>['Ref','Item','Owner','State','Due'],
-  'erp_rows'=>[
-    ['RSV-014','Plot reservation','Sales','Deposit pending','2 days',true],
-    ['INV-208','Invoice','Admin','Awaiting receipt','Overdue',true],
-    ['CTR-031','Construction contract','Legal','1 of 2 signatures','Today',false],
-    ['LED-117','New lead from Meta Ads','Agent','Next step not set','Today',false],
-  ],
-  'erp_bot_t'=>'WHATSAPP AI SETTER',
-  'erp_bot_h'=>'Qualifies the lead from the first message.',
-  'erp_bot_p'=>'Answers, asks what an agent would ask, and hands the conversation to a person with the context attached.',
-  'erp_bot_f'=>'HANDOFF: TO A HUMAN',
-  'erp_mods'=>[
-    ['01 // CORE','Daily dashboard','Team &amp; permissions','EN / ES interface'],
-    ['02 // SALES','Lead CRM','AI setter on WhatsApp','Deals','Reservations','Commissions'],
-    ['03 // DOCUMENTS','Contract generator','E-signature','AI reply assistant','Buyer portal'],
-    ['04 // MONEY &amp; OPS','Invoicing EUR / IDR','Receipts','Treasury','Plot inventory','Construction'],
-  ],
-  'erp_vert_l'=>'VERTICALS','erp_vert_1'=>'Real estate','erp_vert_2'=>'Rental &amp; tours',
-  'erp_proof_l'=>'IN PRODUCTION',
-  'erp_proof'=>'A property developer with three projects in Bali runs sales, contracts, invoicing and construction in one system.',
-
-  /* Own product: BodaEnlace (owner, 26-sep-2026). */
-  'be_eyebrow'=>'SHEET PRD-02 // OWN PRODUCT',
-  'be_h2'=>'BodaEnlace: your wedding website, built and run by AI.',
-  'be_chip'=>'A product by AxisWorks. Pepito and his departments built it, and The Godfather runs it, with nobody at the wheel.',
-  'be_bar'=>'BODAENLACE // SELF-SERVICE WEDDING WEBSITES','be_pill'=>'LAUNCHING SOON',
-  'be_mods'=>[
-    ['BUILT BY AI', 'Design, code and copy by Pepito&rsquo;s departments', 'Reviewed by the Security and Legal agents before shipping', 'Payments, invoices and data deletion tested against real cases'],
-    ['RUN BY THE GODFATHER', 'Answers the inbox', 'Writes the guides and each week&rsquo;s plan', 'Only spends what it earns'],
-    ['FOR THE COUPLE', 'RSVP with menu and allergies', 'Music voted by the guests', 'Private dashboard and ZIP download'],
-  ],
-  'be_cta'=>'Visit bodaenlace.com',
-
-  'cat_eyebrow'=>'SHEET CAT-01 // THE PARTS LIST',
-  'cat_h2'=>'Eleven things we build.',
-  'cat_note'=>'BUILD is software. GROW is audience. ADVISORY crosses both.',
-  'cat_th'=>['Code','Product','Scope','Axis'],
   'alcance'=>[
     'B01'=>'Sales, documents, money and operations in one place',
-    'B02'=>'Pipelines shaped around how you actually sell',
+    'B02'=>'Pipelines shaped around how you sell',
     'B03'=>'Answer, qualify and book 24/7, then hand over to a person',
     'B04'=>'Processes that check and act on their own',
     'B05'=>'Each client sees their own file through a link',
@@ -82,28 +30,13 @@ $HOME = [
     'G03'=>'Content and cadence for your channels',
     'A01'=>'Where the company is going, and what to build first',
   ],
-  'cat_ask'=>'Every project is quoted on its own scope. No price list.',
 
-
-  'proc_eyebrow'=>'SHEET PRC-01 // FOUR PHASES','proc_h2'=>'Measure twice. Build once.',
-  'proc'=>[
-    ['Brief','We map how the company runs today and what hurts, before anything gets designed.','Written scope and quote'],
-    ['Blueprint','Data model, modules and screens decided on paper. Your data gets its own database.','A blueprint you approve'],
-    ['Build','Hand-coded, with design and development in the same hands, tested against real cases.','A working system in production'],
-    ['Run &amp; maintain','We keep it running: monitoring, fixes and improvements as the business changes.','Ongoing'],
-  ],
-  'proc_out'=>'OUTPUT','proc_phase'=>'PHASE',
-
-  'who_eyebrow'=>'SHEET STD-01 // THE STUDIO','who_h2'=>'A two-person studio with an AI team behind it.',
+  'who_h2'=>'A two-person studio with an AI team behind it.',
   'who_1role'=>'Engineering &amp; architecture','who_1p'=>'Designs the systems.',
   'who_2role'=>'Design &amp; content','who_2p'=>'Leads the brand, the content and the visual design.',
   'who_3role'=>'CEO · artificial intelligence','who_3p'=>'The studio&rsquo;s CEO is an AI: it takes each brief, hands it to the {PALABRA} departments below and checks their work.',
   'deps_t'=>'REPORTING TO PEPITO // {PALABRA_MAY} AI DEPARTMENTS',
   'deps_note'=>'Each department is an AI agent working to written rules, and reports to Pepito. Javier and Andrea direct the work and sign off on what ships.',
-  /* Organigrama: sección → departamento [cara, nombre, qué hace, productos].
-     Un producto con código (B01…) sale de $PRODUCTOS con su nombre y su enlace;
-     uno en texto es un entregable sin hoja propia y va plano. */
-  'org_lead'=>'DIRECTION','org_top'=>'A01',
   /* Los departamentos NO viven aquí: salen de inc/organigrama.php, generado desde la
      ficha pública de cada departamentos/<d>/prompt.md (tools/organigrama_web.py).
      Aquí solo queda la frase de cada sección, que es copy. */
@@ -117,78 +50,12 @@ $HOME = [
     ['investigador', 'The Investigator', 'finds sales partners', 'Pilot', ['Finds and ranks agencies that can resell a client&rsquo;s product', 'Prepares the outreach kit', 'A person makes the first contact']],
     ['padrino', 'The Godfather', 'pilot on our own product, in shadow mode', 'Shadow mode', ['Drafts replies to the inbox', 'Proposes how to find customers', 'Writes the business plan and proposes how to carry it out', 'Being tested on <a href="https://bodaenlace.com">BodaEnlace</a>']],
   ],
-
-  'ct_eyebrow'=>'// TERMINAL PROTOCOL 01-INTAKE','ct_h2'=>'Initiate project intake.',
-  'ct_lead'=>'Tell us what you run on today and what hurts. We reply in English or Spanish, usually within a day.',
-  'f_name'=>'Your name','f_email'=>'Contact email','f_brief'=>'What you run on today // what hurts','f_spec'=>'[SPECIFICATION]',
-  'f_brief_ph'=>'Spreadsheets, WhatsApp, five tools that do not talk to each other…',
-  'f_req'=>'[REQ]','f_opt'=>'[OPT]',
-  'f_send'=>'Execute intake brief',
-  'f_note'=>'Answered by Javier &amp; Andrea, usually within a day, in English or Spanish. Opens your email app; or write to',
-  'ct_email_l'=>'EMAIL','ct_lang_l'=>'LANGUAGES',
-  'asunto'=>'Enquiry — axisworks.studio',
-  'm_name'=>'Name','m_email'=>'Email','m_brief'=>'Brief',
 ],
 
 'es' => [
-  'hud'=>'HOJA AW-01 · INICIO',
-  'hero_chip'=>'AXISWORKS — SOFTWARE HECHO CON PRECISIÓN',
-  'hero_h1'=>'Medimos dos veces. Todo encaja.',
-  'hero_lead'=>'Software de gestión a medida, construido y mantenido por dos personas y un equipo de departamentos de IA. Sin plantillas, sin relleno.',
-  'hero_cta'=>'Empezar proyecto','hero_cta2'=>'Ver el ERP',
-  'm1_k'=>'ARQUITECTURA','m1_v'=>'1 BASE DE DATOS / CLIENTE',
-  'm2_k'=>'DIRECCIÓN','m2_v'=>'02 + CEO + {N} IA',
-  'm3_k'=>'IDIOMAS','m3_v'=>'ES / EN',
-  'instr'=>'INSTRUMENTO: RETICLE_CAD_v4','instr_al'=>'ALINEACIÓN: 100.00%','instr_mode'=>'MODO: TELEMETRÍA EN VIVO','instr_status'=>'ESTADO: ALINEADO',
-  'hero_st_cal'=>'CALIBRANDO','hero_st_ok'=>'ALINEADO',
-
-  'erp_eyebrow'=>'HOJA ERP-01 // SISTEMA PRINCIPAL',
-  'erp_h2'=>'Un solo sistema modular para empresas con mucha operación.',
-  'erp_chip'=>'Un mismo código para todos los clientes. Una base de datos privada para cada uno.',
-  'erp_bar'=>'AXISWORKS ERP // PANEL DEL DÍA','erp_sample'=>'DATOS DE EJEMPLO',
-  'erp_alert'=>'Una reserva vence en 2 días — falta el depósito',
-  'erp_today'=>'HOY — ESPERANDO A ALGUIEN',
-  'erp_th'=>['Ref','Asunto','Quién','Estado','Vence'],
-  'erp_rows'=>[
-    ['RSV-014','Reserva de parcela','Ventas','Depósito pendiente','2 días',true],
-    ['INV-208','Factura','Administración','Falta el recibí','Vencida',true],
-    ['CTR-031','Contrato de obra','Legal','1 de 2 firmas','Hoy',false],
-    ['LED-117','Lead nuevo de Meta Ads','Agente','Sin siguiente paso','Hoy',false],
-  ],
-  'erp_bot_t'=>'SETTER IA EN WHATSAPP',
-  'erp_bot_h'=>'Cualifica al lead desde el primer mensaje.',
-  'erp_bot_p'=>'Contesta, pregunta lo que preguntaría un comercial y pasa la conversación a una persona con el contexto adjunto.',
-  'erp_bot_f'=>'RELEVO: A UNA PERSONA',
-  'erp_mods'=>[
-    ['01 // NÚCLEO','Panel del día','Equipo y permisos','Interfaz ES / EN'],
-    ['02 // VENTAS','CRM de leads','Setter IA en WhatsApp','Operaciones','Reservas','Comisiones'],
-    ['03 // DOCUMENTOS','Generador de contratos','Firma electrónica','Asistente de respuestas IA','Portal del comprador'],
-    ['04 // DINERO Y OBRA','Facturación EUR / IDR','Recibís','Tesorería','Inventario de parcelas','Avance de obra'],
-  ],
-  'erp_vert_l'=>'VERTICALES','erp_vert_1'=>'Inmobiliaria','erp_vert_2'=>'Alquiler y excursiones',
-  'erp_proof_l'=>'EN PRODUCCIÓN',
-  'erp_proof'=>'Una promotora con tres proyectos en Bali lleva ventas, contratos, facturación y obra en un solo sistema.',
-
-  /* Producto propio: BodaEnlace (owner, 26-sep-2026). «Un producto de AxisWorks», hecho por Pepito y
-     sus departamentos y dirigido por El Padrino. Sustituye a «no se nombra hasta el lanzamiento». */
-  'be_eyebrow'=>'HOJA PRD-02 // PRODUCTO PROPIO',
-  'be_h2'=>'BodaEnlace: la web de vuestra boda, creada y gestionada por IA.',
-  'be_chip'=>'Un producto de AxisWorks. Lo construyeron Pepito y sus departamentos, y lo dirige El Padrino, sin nadie al volante.',
-  'be_bar'=>'BODAENLACE // WEBS DE BODA EN AUTOSERVICIO','be_pill'=>'LANZAMIENTO PRÓXIMO',
-  'be_mods'=>[
-    ['LO HIZO LA IA', 'Diseño, código y textos, de los departamentos de Pepito', 'Revisado por los agentes de Seguridad y Legal antes de salir', 'Pagos, facturas y borrado de datos probados con casos reales'],
-    ['LO DIRIGE EL PADRINO', 'Contesta el correo', 'Escribe las guías y el plan de cada semana', 'Solo gasta lo que gana'],
-    ['PARA LA PAREJA', 'Confirmación de asistencia con menú y alergias', 'Música con votos de los invitados', 'Panel privado y descarga en ZIP'],
-  ],
-  'be_cta'=>'Ver bodaenlace.com',
-
-  'cat_eyebrow'=>'HOJA CAT-01 // CUADRO DE PIEZAS',
-  'cat_h2'=>'Once cosas que construimos.',
-  'cat_note'=>'BUILD es el software. GROW es la audiencia. ADVISORY atraviesa a los dos.',
-  'cat_th'=>['Código','Producto','Alcance','Eje'],
   'alcance'=>[
     'B01'=>'Ventas, documentos, dinero y operación en un solo sitio',
-    'B02'=>'Embudos hechos a cómo vendes de verdad',
+    'B02'=>'Embudos hechos a la medida de cómo vendes',
     'B03'=>'Contesta, cualifica y agenda 24/7, y pasa a una persona',
     'B04'=>'Procesos que se revisan y actúan solos',
     'B05'=>'Cada cliente ve su expediente con un enlace',
@@ -199,25 +66,13 @@ $HOME = [
     'G03'=>'Contenido y ritmo para tus canales',
     'A01'=>'Hacia dónde va la empresa, y qué construir primero',
   ],
-  'cat_ask'=>'Cada proyecto se presupuesta por su alcance. No hay tarifa.',
 
-
-  'proc_eyebrow'=>'HOJA PRC-01 // CUATRO FASES','proc_h2'=>'Medir dos veces. Construir una.',
-  'proc'=>[
-    ['Brief','Entendemos cómo funciona hoy la empresa y qué le duele, antes de diseñar nada.','Alcance y presupuesto por escrito'],
-    ['Plano','Modelo de datos, módulos y pantallas decididos en papel. Tus datos, en su propia base.','Un plano que apruebas tú'],
-    ['Construcción','Escrito a mano, con diseño y desarrollo en las mismas manos, probado con casos reales.','Un sistema funcionando en producción'],
-    ['Mantenimiento','Lo mantenemos en marcha: vigilancia, arreglos y mejoras según cambia el negocio.','Continuo'],
-  ],
-  'proc_out'=>'ENTREGA','proc_phase'=>'FASE',
-
-  'who_eyebrow'=>'HOJA STD-01 // EL ESTUDIO','who_h2'=>'Un estudio de dos personas con un equipo de IA detrás.',
+  'who_h2'=>'Un estudio de dos personas con un equipo de IA detrás.',
   'who_1role'=>'Ingeniería y arquitectura','who_1p'=>'Diseña los sistemas.',
   'who_2role'=>'Diseño y contenido','who_2p'=>'Lleva la marca, el contenido y el diseño visual.',
   'who_3role'=>'CEO · inteligencia artificial','who_3p'=>'El CEO del estudio es una IA: recibe cada encargo, lo reparte entre los {PALABRA} departamentos de abajo y revisa lo que entregan.',
   'deps_t'=>'BAJO PEPITO // {PALABRA_MAY} DEPARTAMENTOS DE IA',
   'deps_note'=>'Cada departamento es un agente de IA que trabaja con reglas escritas y responde ante Pepito. Javier y Andrea dirigen el trabajo y dan el visto bueno a lo que sale.',
-  'org_lead'=>'DIRECCIÓN','org_top'=>'A01',
   /* Los departamentos NO viven aquí: salen de inc/organigrama.php, generado desde la
      ficha pública de cada departamentos/<d>/prompt.md (tools/organigrama_web.py).
      Aquí solo queda la frase de cada sección, que es copy. */
@@ -228,17 +83,6 @@ $HOME = [
     ['investigador', 'El Investigador', 'busca socios comerciales', 'Piloto', ['Encuentra y ordena agencias que pueden revender el producto de un cliente', 'Prepara el material de contacto', 'El primer contacto lo hace una persona']],
     ['padrino', 'El Padrino', 'piloto sobre un producto nuestro, en modo sombra', 'Modo sombra', ['Prepara respuestas al correo', 'Propone cómo buscar clientes', 'Escribe el plan de negocio y propone cómo aplicarlo', 'Se prueba en <a href="https://bodaenlace.com">BodaEnlace</a>']],
   ],
-
-  'ct_eyebrow'=>'// PROTOCOLO 01-ALTA','ct_h2'=>'Iniciar alta de proyecto.',
-  'ct_lead'=>'Cuéntanos con qué funcionas hoy y qué te duele. Respondemos en español o inglés, normalmente en un día.',
-  'f_name'=>'Tu nombre','f_email'=>'Email de contacto','f_brief'=>'Con qué funcionas hoy // qué te duele','f_spec'=>'[ESPECIFICACIÓN]',
-  'f_brief_ph'=>'Hojas de cálculo, WhatsApp, cinco herramientas que no se hablan…',
-  'f_req'=>'[OBL]','f_opt'=>'[OPC]',
-  'f_send'=>'Enviar el brief',
-  'f_note'=>'Responden Javier y Andrea, normalmente en un día, en español o inglés. Abre tu correo; o escribe a',
-  'ct_email_l'=>'EMAIL','ct_lang_l'=>'IDIOMAS',
-  'asunto'=>'Consulta — axisworks.studio',
-  'm_name'=>'Nombre','m_email'=>'Email','m_brief'=>'Brief',
 ],
 
 ];
