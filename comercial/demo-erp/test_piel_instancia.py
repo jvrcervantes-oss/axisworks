@@ -147,6 +147,41 @@ mira('favicon: el enlace lleva ?v= con la huella del fichero', n == 1 and re.sea
      and 'href="/favicon.png"' not in pag)
 mira('favicon: sin fichero no toca nada', build.favicon_versionado(paquete({'index.html': 'href="/favicon.png"'})) == 0)
 
+# 4d — suite clásica (puerta / y /crea-contrasena/): html:root gana a la :root propia de cada página (Calidad 12-oct: salía verde)
+mira('suite clásica sin piel: nada', con_registro({}, build.paleta_clasica_css, 'x') == ('pasa', ''))
+est, css = con_registro({'piel': PIEL}, build.paleta_clasica_css, 'x')
+mira('suite clásica con piel: una regla html:root con las variables de la puerta y de crea-contraseña', est == 'pasa'
+     and re.fullmatch(r'\nhtml:root\{(--[a-z0-9-]+:#[0-9A-F]{6};?)+\}\n', css or '') is not None
+     and all(v + ':' in css for v in ('--dl', '--tg', '--sc', '--ss', '--linen', '--stone', '--muted', '--paper')))
+mira('el registro real: axisworks-demo sin paleta clásica', build.paleta_clasica_css('axisworks-demo') == '')
+viejo_preset = build._piel_preset
+build._piel_preset = lambda _n: dict(viejo_preset('bbm'), **{'deep-lagoon': [200, 200, 200]})   # blanco sobre --dl ilegible
+mira('suite clásica: PARA si el blanco sobre --dl baja de 4,5:1', con_registro({'piel': 'bbm'}, build.paleta_clasica_css, 'bbm')[0] == 'para')
+build._piel_preset = viejo_preset
+PUERTA = '<style>\n:root{\n--dl:#104C4F}\n.a{box-shadow:0 0 0 3px rgba(72,91,55,.15)}.b{background:#F5F0E6}.c{color:#CBD6B6}' \
+         '.d{box-shadow:0 0 0 3px rgba(143,155,122,.22)}</style>'
+CREA = '<style>:root{--dl:#104c4f}.card{}</style>'
+HOJA = '@media (max-width:9px){.x{}}.lw-btn.primary:hover{background:#0d5b5f;box-shadow:0 2px 4px rgba(16,76,79,.32)}'
+d = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA})
+est, n = con_registro({'piel': 'bbm'}, build.piel_suite_clasica, d, 'bbm')
+hoja = open(os.path.join(d, 'contracts', 'assets', 'axw.css'), encoding='utf-8').read()
+puerta = open(os.path.join(d, 'index.html'), encoding='utf-8').read()
+crea = open(os.path.join(d, 'crea-contrasena', 'index.html'), encoding='utf-8').read()
+mira('suite clásica: la regla va al final de axw.css, fuera de cualquier bloque', est == 'pasa' and n == 3
+     and hoja.rstrip().endswith('}') and re.search(r'\}\nhtml:root\{[^}]+\}\n$', hoja) is not None)
+mira('suite clásica: la regla va DESPUÉS de la :root de cada página, dentro de su <style>', est == 'pasa'
+     and puerta.index(':root{') < puerta.index('html:root{') < puerta.index('</style>')
+     and crea.index(':root{') < crea.index('html:root{') < crea.index('</style>'))
+mira('suite clásica: los colores de Lawang escritos a mano ya no están', est == 'pasa'
+     and not re.search(r'#0d5b5f|rgba\(16,76,79|rgba\(72,91,55|#F5F0E6|#CBD6B6|rgba\(143,155,122', hoja + puerta, re.I))
+d = paquete({'index.html': PUERTA.replace('#CBD6B6', '#ABCDEF'), 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA})
+mira('suite clásica: PARA si Lawang quita un color fijo que la piel sustituye', con_registro({'piel': 'bbm'}, build.piel_suite_clasica, d, 'bbm')[0] == 'para')
+d = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA + '@media (x){'})
+mira('suite clásica: PARA si axw.css deja un bloque abierto', con_registro({'piel': 'bbm'}, build.piel_suite_clasica, d, 'bbm')[0] == 'para')
+d = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA})
+mira('suite clásica sin piel: no toca el paquete', con_registro({}, build.piel_suite_clasica, d, 'x') == ('pasa', 0)
+     and open(os.path.join(d, 'index.html'), encoding='utf-8').read() == PUERTA)
+
 # 5 — cableado en instancia()
 fuente = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
 cuerpo = fuente[fuente.index('def instancia(nombre):'):]
@@ -158,6 +193,8 @@ mira('instancia() añade el menú oscuro a assets/shell.css antes de versionar',
      and "os.path.join(DIST, 'assets', 'shell.css')" in cuerpo and cuerpo.index('menu = menu_oscuro_css(nombre)') < cuerpo.index('versiona(DIST)'))
 mira('instancia() versiona el favicon justo antes de versiona()', 'favicon_versionado(DIST)' in cuerpo
      and cuerpo.index('favicon_versionado(DIST)') < cuerpo.index('\n    versiona(DIST)'))
+mira('instancia() pinta la suite clásica tras crea-contraseña y ANTES de versionar (si no, la CDN sirve la hoja vieja)',
+     cuerpo.index('crea_contrasena_pantalla(marca)') < cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('\n    versiona(DIST)'))
 mira('instancia() pone los logos de la instancia, no los neutros a secas', 'logos_instancia(nombre, marca)' in cuerpo and 'logos_neutros(' not in cuerpo)
 mira('instancia() comprueba la piel antes de dar el paquete por bueno', cuerpo.index('comprueba_piel(DIST, nombre)') < cuerpo.index('comprueba_resultado(DIST)'))
 
