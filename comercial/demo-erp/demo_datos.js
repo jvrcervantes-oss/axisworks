@@ -724,7 +724,7 @@
     tipo_desconocido: { es: 'Tipo de documento desconocido: %', en: 'Unknown document type: %' },
     contrato_no_ves: { es: 'No puedes emitir un documento sobre un contrato que no ves', en: 'You cannot issue a document on a contract you cannot see.' },
     cliente_no_comprador: { es: 'Ese cliente no es comprador de este contrato ni un cliente que veas', en: 'That client is not a buyer on this contract.' },
-    impuesto_rango: { es: 'El impuesto tiene que estar entre 0 y 100 %%', en: 'The tax has to be between 0 and 100 %.' },
+    impuesto_rango: { es: 'El impuesto tiene que estar entre 0 y 100 %%', en: 'The tax has to be between 0 and 100 percent.' },
     sin_importe: { es: 'El documento no tiene importe (un total negativo es una rectificativa, no una factura)', en: 'The document has no amount (a negative total is a credit note, not an invoice).' },
     falta_total: { es: 'Falta el total que se ve en pantalla: recarga la página y vuelve a guardar', en: 'The total shown on screen is missing: reload the page and save again.' },
     no_cuadra: { es: 'El total no cuadra: la pantalla dice % y las líneas suman %. Recarga la página y vuelve a guardar.', en: 'The total does not add up: the screen says % and the lines add up to %. Reload the page and save again.' },
@@ -803,9 +803,17 @@
     } catch (e) { avisa('almacen_no'); }
     return DIARIO;
   }
+  /* Se apunta en memoria y se guarda UNA vez al final de cada operación (persiste): o entra la operación entera
+     (un recibí con sus aplicaciones, un contrato con su comprador) o no entra nada — nunca medio guardado. */
+  var SIN_GUARDAR = false;
   function apunta(ef) {
     if (REPITIENDO) return;
     diario().push(ef);
+    SIN_GUARDAR = true;
+  }
+  function persiste() {
+    if (!SIN_GUARDAR) return;
+    SIN_GUARDAR = false;
     var s = almacen();
     if (!s) return;
     try {
@@ -1008,9 +1016,9 @@
   window.LW_DEMO_TABLA = function (F, t, op, val, filtros, single) {
     try {
       var r = escribeTabla(F, t, op, val, filtros || []);
-      recalcula(F);
+      recalcula(F); persiste();
       return { data: single ? (r[0] || null) : r, error: null };
-    } catch (e) { return { data: null, error: errorDe(e) }; }
+    } catch (e) { persiste(); return { data: null, error: errorDe(e) }; }
   };
   function escribeTabla(F, t, op, val, filtros) {
     if (op === 'insert' || op === 'upsert') {
@@ -1057,6 +1065,7 @@
     }
     // nombre y tamaño; el contenido no se lee nunca (Seguridad)
     inserta(F, 'ficheros_demo', [{ id: 'fd-' + path, bucket: bucket, path: path, nombre: file && file.name ? String(file.name).slice(0, 200) : 'proof-of-payment', bytes: file && file.size || 0 }]);
+    persiste();
     return Promise.resolve({ data: { path: path }, error: null });
   };
 
@@ -1073,8 +1082,8 @@
   function hay(o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k); }
   window.LW_DEMO_RPC = function (F, nombre, args, siguiente, chainable) {
     if (hay(window.LW_DEMO_RPC_GUARDA, nombre)) {
-      try { var d = window.LW_DEMO_RPC_GUARDA[nombre](F, args || {}); recalcula(F); return encadena({ data: d === undefined ? null : d, error: null }); }
-      catch (e) { recalcula(F); return encadena({ data: null, error: errorDe(e) }); }
+      try { var d = window.LW_DEMO_RPC_GUARDA[nombre](F, args || {}); recalcula(F); persiste(); return encadena({ data: d === undefined ? null : d, error: null }); }
+      catch (e) { recalcula(F); persiste(); return encadena({ data: null, error: errorDe(e) }); }
     }
     if (hay(window.LW_DEMO_DATOS, nombre)) {
       try { return encadena({ data: window.LW_DEMO_DATOS[nombre](F, args || {}), error: null }); }
@@ -1267,7 +1276,7 @@
           if (!old) falla('doc_no_existe', [], 'P0002');
           if (old.tipo === 'recibi') falla('recibi_se_edita', [], '22023');
           if (old.anulada) falla('no_editar', [], '42501');
-          if (old.enviada) falla('enviada', [old.numero], '42501');
+          if (old.enviada && old.tipo === 'factura') falla('enviada', [old.numero], '42501');   // la base solo bloquea la factura enviada
         }
         // tope por cadena: lo facturado (subtotal, facturas vivas de la misma moneda) no pasa del precio acordado
         if (tipo === 'factura' && c) {
@@ -1429,7 +1438,7 @@
             adq1_domicilio: cli.address || null, proyecto_nombre: pro.nombre || u.proyecto || null, moneda: a.p_moneda || u.moneda || 'EUR', precio_total: precio, sociedad_firmante: SOC_DEMO }),
             hitos: [], adq1_client_id: cli.id, texto_sha256: a.p_texto_sha || null },
           compradores: [{ client_id: cli.id, rol: 'adquiriente_1', clients: { id: cli.id, full_name: cli.full_name, email: cli.email } }],
-          contrato_padre_id: padre ? raizDe(F, padre) : null, proyecto_id: u.proyecto_id, unidad_id: u.id, nombre_contrato: { reserva_parcela: 'Plot Hold', carta_reserva: 'Reservation Letter', construccion: 'Construction Contract' }[tipo],
+          contrato_padre_id: padre ? raizDe(F, padre) : null, proyecto_id: u.proyecto_id, unidad_id: u.id, nombre_contrato: TIPO_NOMBRE[tipo],
           parcela_codigo: u.codigo, soc: SOC_DEMO, operacion_id: opId, created_at: t0 })])[0];
         actualiza(F, 'contratos', [c], { contrato_id: c.id });
         inserta(F, 'contrato_compradores', [{ contrato_id: c.id, client_id: cli.id, rol: 'adquiriente_1', creado_en: t0,

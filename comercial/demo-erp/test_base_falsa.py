@@ -12,6 +12,9 @@ sys.path.insert(0, AQUI)
 import build
 
 fallos = []
+if not os.path.isfile(build.DOBLE_QA):
+    print('test_base_falsa: no encuentro el doble de QA de Lawang en %s — desde una copia de sesión pon AXW_AGENCIA_RAIZ=<raíz de la agencia>' % build.DOBLE_QA)
+    sys.exit(1)
 guard = build.guard_demo()
 d = tempfile.mkdtemp()
 ruta = os.path.join(d, 'guard.js')
