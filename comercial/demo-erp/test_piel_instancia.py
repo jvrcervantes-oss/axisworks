@@ -138,6 +138,13 @@ mira('el acento del menú ≥ 4,5:1 sobre la tinta, y la tinta sobre él', bool(
      and D.contraste(rgb['on-primary'], rgb['primary-container']) >= 4.5)
 mira('el registro real: axisworks-demo sin menú oscuro', build.menu_oscuro_css('axisworks-demo') == '')
 
+# 4b' — paleta de la suite clásica (puerta / y /crea-contrasena/)
+est, cl = con_registro({'piel': PIEL}, build.paleta_clasica_css, 'x')
+dec = dict(x.split(':', 1) for x in re.fullmatch(r'\n:root\{(.+)\}\n', cl or '\n:root{a:b}\n').group(1).split(';'))
+mira('paleta clásica: las 8 variables, cada una el hex de su token del preset', est == 'pasa' and all(
+     dec.get(v) == '#%02X%02X%02X' % tuple(APROBADAS['presets'][PIEL][t]) for v, t in build.PALETA_CLASICA))
+mira('paleta clásica sin piel: nada', con_registro({}, build.paleta_clasica_css, 'x') == ('pasa', ''))
+
 # 4c — favicon con versión (la CDN de Hostinger lo cachea 7 días)
 d = paquete({'index.html': '<link rel="icon" href="/favicon.png"><p>', 'a/index.html': '<p>sin icono</p>'})
 open(os.path.join(d, 'favicon.png'), 'wb').write(b'\x89PNG prueba')
@@ -156,6 +163,8 @@ mira('instancia() añade la piel a la ficha, después de escribirla', 'piel = pi
 mira('el guard.js ya no lleva la piel', 'piel_instancia(nombre) + interruptores' not in cuerpo)
 mira('instancia() añade el menú oscuro a assets/shell.css antes de versionar', 'menu = menu_oscuro_css(nombre)' in cuerpo
      and "os.path.join(DIST, 'assets', 'shell.css')" in cuerpo and cuerpo.index('menu = menu_oscuro_css(nombre)') < cuerpo.index('versiona(DIST)'))
+mira('instancia() añade la paleta clásica a axw.css DESPUÉS del renombrado (logos_instancia)', 'clasica = paleta_clasica_css(nombre)' in cuerpo
+     and cuerpo.index('logos_instancia(nombre, marca)') < cuerpo.index('clasica = paleta_clasica_css(nombre)') < cuerpo.index('versiona(DIST)'))
 mira('instancia() versiona el favicon justo antes de versiona()', 'favicon_versionado(DIST)' in cuerpo
      and cuerpo.index('favicon_versionado(DIST)') < cuerpo.index('\n    versiona(DIST)'))
 mira('instancia() pone los logos de la instancia, no los neutros a secas', 'logos_instancia(nombre, marca)' in cuerpo and 'logos_neutros(' not in cuerpo)

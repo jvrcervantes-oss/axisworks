@@ -1101,6 +1101,21 @@ def menu_oscuro_css(nombre):
     return '\n%s{%s}\n' % (MENU_SELECTOR, cuerpo)
 
 
+# La suite clásica (la puerta /, /crea-contrasena/…) pinta con su propia paleta en contracts/assets/axw.css (antes lawang.css):
+# `:root{--dl:#104C4F…}`. Cada variable es EXACTAMENTE un token de Lawang (medido contra tailwind.json, 12-oct), así que la piel
+# la redefine desde los mismos tríos ya medidos del preset (Calidad, 12-oct: la puerta de bbm salía con el botón y el título verdes).
+PALETA_CLASICA = (('--tg', 'territorial-green'), ('--dl', 'deep-lagoon'), ('--be', 'burnt-earth'), ('--sc', 'soft-canopy'),
+                  ('--va', 'volcanic-ash'), ('--ss', 'stone-sand'), ('--rl', 'raw-linen'), ('--ink', 'volcanic-ash'))
+
+
+def paleta_clasica_css(nombre):
+    """`:root{--dl:#…}` de la suite clásica con los colores de la piel de la instancia, o '' sin piel."""
+    p = _piel_preset(nombre)
+    if p is None:
+        return ''
+    return '\n:root{%s}\n' % ';'.join('%s:#%02X%02X%02X' % ((var,) + tuple(p[tok])) for var, tok in PALETA_CLASICA)
+
+
 def favicon_versionado(dist):
     """`href="/favicon.png"` → `?v=<huella>` en todas las páginas (Calidad, 12-oct): Hostinger cachea /favicon.png 7 días y,
     tras cambiar el icono de bbm, la URL sin versión seguía sirviendo el viejo. Devuelve cuántas páginas cambió."""
@@ -2311,6 +2326,12 @@ def instancia(nombre):
             if nuevo != f:
                 os.replace(os.path.join(raiz, f), os.path.join(raiz, nuevo))
     logos_instancia(nombre, marca)
+    clasica = paleta_clasica_css(nombre)   # tras el renombrado: la hoja ya se llama axw.css
+    if clasica:
+        hoja = os.path.join(DIST, 'contracts', 'assets', 'axw.css')
+        if not os.path.isfile(hoja) or ':root{' not in open(hoja, encoding='utf-8').read():
+            aborta('piel: contracts/assets/axw.css no está o ya no declara su paleta en :root (mirar paleta_clasica_css)')
+        open(hoja, 'a', encoding='utf-8', newline='\n').write(clasica)
     crea_contrasena_pantalla(marca)   # pieza C de I6 (9-oct-2026): «Crea tu contraseña» para el primer administrador invitado
     tipografias_libres()
     neutraliza_ejemplos()   # ejemplos de persona que casan con gente real (pii_maqueta)
