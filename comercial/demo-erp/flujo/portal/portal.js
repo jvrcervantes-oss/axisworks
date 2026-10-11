@@ -61,9 +61,11 @@
       var sb = a.sb;
       return Promise.all([
         sb.from('clients').select('*').order('full_name'),
-        sb.from('contratos').select('*'),
+        // Columnas concretas, sin el jsonb `datos` (gate de lecturas anchas, 12-oct): es la misma forma que se usaría contra
+        // una base real. El concepto de la factura cae a «Contract <número>» (concepto()).
+        sb.from('contratos').select('id,numero,tipo,bloqueado,created_at,fecha_firma,moneda,precio_total,proyecto_nombre,parcela_codigo'),
         sb.from('contrato_compradores').select('*'),
-        sb.from('facturas').select('*'),
+        sb.from('facturas').select('id,numero,tipo,anulada,client_id,contrato_id,contrato_numero,fecha_emision,moneda,total'),
         sb.from('recibi_aplicaciones').select('*'),
         sb.from('facturas_pendiente_equipo').select('*')
       ]);
