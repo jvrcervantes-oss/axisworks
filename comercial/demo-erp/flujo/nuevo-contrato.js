@@ -117,7 +117,6 @@
         E.pasos, E.aviso, E.cuerpo
       ])
     ]);
-    E.capa.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') cierra(); });
     document.body.appendChild(E.capa);
     document.documentElement.classList.add('axf-abierto');
     E.cuerpo.appendChild(el('p', { class: 'axf-cargando', text: t('panel.cargando') }));
@@ -370,6 +369,7 @@
   }
 
   /* ── Enganches ───────────────────────────────────────────────────────── */
+  document.addEventListener('keydown', function (ev) { if (E && ev.key === 'Escape') cierra(); });
   document.addEventListener('click', function (ev) {
     var b = ev.target && ev.target.closest && ev.target.closest('[data-accion]');
     if (!b || (E && E.capa.contains(b))) return;

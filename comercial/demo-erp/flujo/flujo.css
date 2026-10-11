@@ -17,13 +17,13 @@
 /* ── Panel ─────────────────────────────────────────────────────────────── */
 html.axf-abierto { overflow: hidden; }
 .axf-capa {
-  position: fixed; inset: 0; z-index: 9000; background: rgb(var(--tema-on-surface, 27 28 25) / .36);
+  position: fixed; inset: 0; z-index: 100000; background: rgb(var(--tema-on-surface, 27 28 25) / .36);
   display: flex; justify-content: center; align-items: stretch; padding: 24px; box-sizing: border-box;
   color: var(--axf-tinta); font-size: 15px; line-height: 1.5;
 }
 .axf-capa *, .axf-capa *::before, .axf-capa *::after { box-sizing: border-box; }
 .axf-marco {
-  background: var(--axf-fondo); width: 100%; max-width: 1180px; border-radius: 20px; overflow: auto;
+  background: var(--axf-fondo); width: 100%; max-width: 1180px; border-radius: 20px; overflow: hidden; min-height: 0;
   display: flex; flex-direction: column; box-shadow: 0 12px 40px rgb(0 0 0 / .18);
 }
 .axf-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 28px 8px; }
@@ -37,7 +37,7 @@ html.axf-abierto { overflow: hidden; }
 .axf-pasos li[aria-current] .axf-paso-n { background: var(--axf-acento); border-color: var(--axf-acento); color: var(--axf-sobre-acento); }
 .axf-pasos li.axf-hecho .axf-paso-n { border-color: var(--axf-acento); color: var(--axf-acento); }
 .axf-aviso { margin: 0 28px 12px; padding: 10px 14px; border-radius: 12px; background: var(--axf-error-fondo); color: var(--axf-error); }
-.axf-cuerpo { padding: 0 28px 28px; outline: none; }
+.axf-cuerpo { padding: 0 28px 28px; outline: none; flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; }
 .axf-cargando { color: var(--axf-suave); }
 .axf-intro { margin: 0 0 16px; color: var(--axf-suave); max-width: 62ch; }
 
@@ -70,7 +70,7 @@ html.axf-abierto { overflow: hidden; }
 
 .axf-revision { display: grid; gap: 16px; max-width: 820px; }
 .axf-firma { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 24px; align-items: start; }
-.axf-firma-lado { background: var(--axf-papel); border-radius: 16px; padding: 20px; position: sticky; top: 0; }
+.axf-firma-lado { background: var(--axf-papel); border-radius: 16px; padding: 20px; position: sticky; top: 0; z-index: 2; }
 .axf-firmante { margin: 0 0 10px; }
 .axf-pad { display: block; width: 100%; height: auto; aspect-ratio: 10 / 3; touch-action: none; cursor: crosshair; color: var(--axf-tinta);
   background: var(--axf-fondo); border: 1px dashed var(--axf-linea); border-radius: 12px; }
@@ -90,7 +90,7 @@ html.axf-abierto { overflow: hidden; }
 }
 .axf-marca span {
   display: block; text-align: center; white-space: nowrap; font-family: system-ui, sans-serif; font-weight: 700; font-size: 44px;
-  letter-spacing: .08em; color: rgb(var(--tema-error, 186 26 26) / .09);
+  letter-spacing: .08em; color: rgb(var(--tema-error, 186 26 26) / .065);
 }
 .axf-doc-banda {
   margin: 0 0 20px; padding: 8px 12px; border: 1.5px solid var(--axf-error); color: var(--axf-error); border-radius: 4px;
@@ -111,6 +111,7 @@ html.axf-abierto { overflow: hidden; }
 @media (max-width: 760px) {
   .axf-capa { padding: 0; }
   .axf-marco { border-radius: 0; }
+  .axf-cab-tit { gap: 8px; }
   .axf-cab { padding: 16px 16px 6px; }
   .axf-titulo { font-size: 22px; }
   .axf-pasos { padding: 6px 16px 12px; gap: 10px 14px; font-size: 12px; }
@@ -132,6 +133,7 @@ html.axf-abierto { overflow: hidden; }
   .axf-doc, .axf-doc * { visibility: visible !important; }
   .axf-capa { position: static; background: none; padding: 0; display: block; }
   .axf-marco { box-shadow: none; overflow: visible; background: none; }
+  .axf-cuerpo { overflow: visible; }
   .axf-doc { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: 0; padding: 0;
     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .axf-marca span { color: rgb(186 26 26 / .14) !important; }

@@ -65,6 +65,7 @@
     'doc.emisor': 'AxisWorks Demo Company (fictional)',
 
     'p.titulo': 'Client portal',
+    'p.salto': 'Skip to content',
     'p.demo': 'Demo — made-up data. Nothing you do here is sent anywhere, and it is cleared when you close this tab.',
     'p.viendo': 'Viewing as',
     'p.volver': 'Back to the intranet',
