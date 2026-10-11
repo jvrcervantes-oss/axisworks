@@ -50,7 +50,7 @@ async function servidor(b, nombre, a) {
   return { data: { dia, entregas: JSON.parse(JSON.stringify(vivas.filter(x => x.desde === dia))), devoluciones: JSON.parse(JSON.stringify(vivas.filter(x => x.hasta === dia))) }, error: null };
 }
 
-const pagina = (idioma) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
+const pagina = (idioma, ficha) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
 ${MARCADO}
 <script>
 window.__xss = undefined; window.__fromLlamado = 0; window.__fetchLlamado = 0; window.__sinTrad = []; window.__errores = [];
@@ -60,7 +60,7 @@ var sb = {
   from: function () { window.__fromLlamado++; throw new Error('el navegador no toca la base'); },
   auth: { getSession: function () { return Promise.resolve({ data: { session: { access_token: 'JWT' } } }); } }
 };
-window.LW_AUTH = Promise.resolve({ sb: sb, ficha: { rol: 'agente', herramientas: [] } });
+window.LW_AUTH = Promise.resolve({ sb: sb, ficha: ${JSON.stringify(ficha)} });
 window.lwDatos = function (n, a) { return Promise.resolve(sb.rpc(n, a)).then(function (r) { return { data: r.data, error: r.error }; }); };
 window.LW_IDIOMA = '${idioma}';
 window.LW_EN = {};
@@ -85,7 +85,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const ctx = await nav.newContext({ viewport: { width: opts.ancho || 1440, height: 1000 } });
     const p = await ctx.newPage();
     await p.exposeFunction('__srv', (n, a) => servidor(base, n, a));
-    await p.setContent(pagina(opts.idioma || 'es'), { waitUntil: 'load' });
+    await p.setContent(pagina(opts.idioma || 'es', opts.ficha || { rol: 'agente', herramientas: ['reservas-producto'] }), { waitUntil: 'load' });
     await espera(p, () => { const t = document.querySelector('[data-ph="estado-entregas"]').textContent; return !/Cargando|Loading|Memuat/.test(t) && (document.querySelector('[data-ph="n-entregas"]').textContent !== '' || t !== ''); });
     return { base, p, ctx };
   }
@@ -117,6 +117,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('XSS en la ficha', await sinInyeccion(p));
     await p.click('[data-axw="dialogo"] [data-accion="ph-cerrar"]');
     ok('cerrar quita la ficha', !(await p.$('[data-axw="dialogo"]')));
+    ok('con la herramienta, el enlace a Reservas de producto se ofrece', await p.$eval('[data-ph="ir-reservas"]', e => !e.classList.contains('axw-oculto')));
     // día siguiente
     await p.click('[data-accion="ph-despues"]');
     await espera(p, () => document.querySelector('[data-ph="estado-entregas"]').textContent.includes('Este día'));
@@ -125,6 +126,14 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await espera(p, () => document.querySelector('[data-ph="titulo"]').textContent === 'Hoy');
     ok('Hoy vuelve a pedir sin día', base.llamadas[base.llamadas.length - 1][1].p_dia === null);
     ok('el navegador no tocó tablas ni fetch, sin errores de script', (await p.evaluate(() => window.__fromLlamado + window.__fetchLlamado)) === 0 && (await p.evaluate(() => window.__errores.length)) === 0);
+    await ctx.close();
+
+    // 1b. sin la herramienta: la portada se ve (es el inicio), pero no se ofrece el enlace a una pantalla que la base le negaría
+    ({ p, ctx } = await abre({ ficha: { rol: 'agente', herramientas: ['taller'] } }));
+    ok('sin la herramienta, el enlace de la cabecera está oculto', await p.$eval('[data-ph="ir-reservas"]', e => e.classList.contains('axw-oculto')));
+    await p.click('[data-ph="entregas"] li:nth-child(1) button');
+    await espera(p, () => !!document.querySelector('[data-axw="dialogo"]'));
+    ok('sin la herramienta, la ficha no ofrece el enlace', !(await p.$('[data-axw="dialogo"] a')));
     await ctx.close();
 
     // 2. estados: vacío ≠ sin permiso ≠ módulo apagado ≠ no disponible ≠ raro ≠ sin red
