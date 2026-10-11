@@ -95,7 +95,7 @@
     window.addEventListener('resize', coloca);
     // Con un editor, cajón o diálogo abierto la barra se aparta: a 390 px tapaba «Emitir» del editor de factura (medido el
     // 12-oct con elementFromPoint). Vuelve sola al cerrarlo.
-    var ABIERTO = '#lw-editor,#lw-cajon,.lw-dlg-fondo.abierto,.axf-capa:not([hidden]),#lw-novedades';
+    var ABIERTO = '#lw-editor,#lw-cajon,.lw-dlg-fondo.abierto,.axf-capa:not([hidden]),.ptl-visor,#lw-novedades';
     function aparta() {
       var tapa = document.querySelector(ABIERTO) || document.body.classList.contains('v4-nav-abierta');
       n.style.display = tapa ? 'none' : 'flex';

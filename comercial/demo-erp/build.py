@@ -618,9 +618,10 @@ def guard_demo():
     # equipo) no sale en la demo: novedades.js sale solo si encuentra __lwNovedades ya puesto.
     # catalogo.js (fuente única de módulos) → modulos.js (menú y aviso de módulo apagado) → tour.js → cascara.js, en
     # ese orden: un script insertado por JS es asíncrono salvo async=false. Detrás, «New contract» y la firma de ejemplo del
-    # paquete B (/flujo/nuevo-contrato.js carga sus otros tres ficheros desde su carpeta).
+    # paquete B (/flujo/nuevo-contrato.js carga sus otros tres ficheros desde su carpeta). El portal ya lo carga él mismo.
     volver = ("window.__lwNovedades = true;\n"
-              "['/demo/catalogo.js','/demo/modulos.js','/demo/tour.js','/demo/cascara.js','/flujo/nuevo-contrato.js'].forEach(function(u){var s=document.createElement('script');"
+              "['/demo/catalogo.js','/demo/modulos.js','/demo/tour.js','/demo/cascara.js','/flujo/nuevo-contrato.js'].filter(function(u){"
+              "return u.indexOf('/flujo/')!==0||location.pathname.indexOf('/portal/')!==0;}).forEach(function(u){var s=document.createElement('script');"
               "s.src=u;s.async=false;(document.head||document.documentElement).appendChild(s);});\n")
     # Sesión real que el presentador pudiera tener en este origen: fuera antes de nada (Seguridad #2).
     limpia_sesion = LIMPIA_SESION + 'window.AXW_PORTADA = %s;\n' % json.dumps(PORTADA_URL)
@@ -1978,7 +1979,7 @@ def _una_vez(texto, viejo, nuevo, donde):
     """Reemplazo LITERAL de algo que tiene que aparecer exactamente una vez: si Lawang cambia ese trozo, el build para (nunca
     un reemplazo que no encuentra nada y deja el permiso o el menú a medias, sin un solo error)."""
     if texto.count(viejo) != 1:
-        aborta('asistente_maestro: %s: esperaba exactamente 1 vez %r y hay %d (¿cambió el fichero de Lawang?)' % (donde, viejo[:90], texto.count(viejo)))
+        aborta('%s: esperaba exactamente 1 vez %r y hay %d (¿cambió el fichero de Lawang?)' % (donde, viejo[:90], texto.count(viejo)))
     return texto.replace(viejo, nuevo)
 
 

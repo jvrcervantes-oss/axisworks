@@ -84,16 +84,19 @@
 
   /* ── Estado del panel ───────────────────────────────────────────────── */
   var E = null;   // { capa, cuerpo, paso, datos, clientes, proyectos, unidades, sel, contrato, firmaImg, cambiado }
+  var abriendo = false;   // dos clics mientras carga la primera vez montaban dos capas, y la primera no se cerraba (revisor, 12-oct)
 
   function abre(opc) {
     opc = opc || {};
-    if (E) return;
+    if (E || abriendo) return;
+    abriendo = true;
     prepara().then(function () {
+      abriendo = false;
       E = { paso: 0, sel: { cliente: null, proyecto: null, unidad: null, precio: '', notas: '' }, contrato: null, firmaImg: null, cambiado: false };
       montaCapa(opc.firmar ? t('panel.firmar') : t('panel.nuevo'));
       if (opc.firmar) return cargaParaFirmar(opc.firmar);
       return cargaListas(opc.cliente);
-    }).catch(fallo);
+    }).catch(function (e) { abriendo = false; fallo(e); });
   }
 
   function montaCapa(titulo) {
@@ -405,7 +408,13 @@
 
   function desdeUrl() {
     var q = new URLSearchParams(location.search);
-    if (q.has('nuevo')) abre({ cliente: q.get('cliente') });
+    if (!q.has('nuevo')) return;
+    var cliente = q.get('cliente');
+    // Fuera de la dirección antes de abrir: cerrar tras crear recarga la página, y con ?nuevo el panel se volvía a abrir
+    // vacío (revisor, 12-oct).
+    q.delete('nuevo'); q.delete('cliente');
+    try { history.replaceState(history.state, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); } catch (e) { /* MUDO A PROPOSITO: sin history el panel solo se reabre al recargar */ }
+    abre({ cliente: cliente });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', desdeUrl); else desdeUrl();
 
