@@ -17,9 +17,9 @@
    Qué se hace con cada hint (la edge reenvía los de la base tal cual; 12-oct-2026, contra la migración 20261011170000 y el brief de la edge):
      · DEFINITIVO (sale de la cola, se pide otra foto con su motivo): fichero_tipo, foto_tipo, fichero_exif, fichero_grande, foto_tamano, clave_usada,
        foto_caducada, foto_sustituida, ranura, clave, datos, fotos_tope_dano, fotos_tope_orden, ya_cerrada, orden_vieja, orden_no_existe, foto_no_existe,
-       origen, sin_acceso, modulo_apagado.
-     · REINTENTABLE con LA MISMA clave (se queda en la cola): foto_sin_objeto, red caída, 5xx, 401/sin_sesion (al volver a entrar), y 429/tope_minuto
-       (se reintenta solo pasados `reintenta_en` segundos).
+       origen, sin_acceso, modulo_apagado, campo_no_admitido, orden, fichero, fichero_vacio (la lista de DEFINITIVOS de la cabecera de la edge, ebaab585, más origen y datos).
+     · REINTENTABLE con LA MISMA clave (se queda en la cola): foto_sin_objeto, almacen, base, sesion_no_comprobada, config, red caída, 5xx, 401/sin_sesion
+       (al volver a entrar), y 429/tope_minuto (se reintenta solo pasados `reintenta_en` segundos).
    Reglas de pintado: solo createElement/createElementNS/textContent (nunca innerHTML); se engancha por data-accion / data-ranura / data-clave, nunca por un rótulo.
    Colores solo por var(--tema-*): el CSS de la casilla lo pone la pantalla que la usa.
    Uso: var F = axwFotosGuiadas({ T, h, caja, orden, fotos, edge: function(){ return url; }, token: function(){ return Promise<string>; }, alCambiar: fn, max_dano: 15 }); */
@@ -33,7 +33,7 @@ function axwFotosDiccionario() {
     'Esta orden ya tiene 40 fotos: no caben más.': 'This order already has 40 photos: no more fit.',
     'No tienes acceso a Taller.': 'You do not have access to the Workshop.',
     'Demasiadas fotos seguidas: se reintenta en {n} s.': 'Too many photos in a row: retrying in {n} s.',
-    'Frente': 'Front', 'Atrás': 'Back', 'Izquierda': 'Left', 'Derecha': 'Right', 'Cuentakilómetros': 'Odometer', 'Daño': 'Damage',
+    'Frente': 'Front', 'Parte de atrás': 'Back', 'Izquierda': 'Left', 'Derecha': 'Right', 'Cuentakilómetros': 'Odometer', 'Daño': 'Damage',
     'Toca para hacer la foto': 'Tap to take the photo', 'Preparando…': 'Preparing…', 'Subiendo…': 'Uploading…', 'Subida': 'Uploaded',
     'Pendiente de subir': 'Not uploaded yet', 'Repetir': 'Retake', 'Ver': 'View', 'Reintentar': 'Retry', '+ Foto de daño': '+ Damage photo',
     'Daños: {n} de {max}': 'Damage: {n} of {max}', '{n} sin subir': '{n} not uploaded',
@@ -53,7 +53,7 @@ function axwFotosDiccionario() {
     'Esta orden ya tiene 40 fotos: no caben más.': 'Order ini sudah punya 40 foto: tidak bisa tambah lagi.',
     'No tienes acceso a Taller.': 'Anda tidak punya akses ke Bengkel.',
     'Demasiadas fotos seguidas: se reintenta en {n} s.': 'Terlalu banyak foto berturut-turut: dicoba lagi dalam {n} detik.',
-    'Frente': 'Depan', 'Atrás': 'Belakang', 'Izquierda': 'Kiri', 'Derecha': 'Kanan', 'Cuentakilómetros': 'Odometer', 'Daño': 'Kerusakan',
+    'Frente': 'Depan', 'Parte de atrás': 'Belakang', 'Izquierda': 'Kiri', 'Derecha': 'Kanan', 'Cuentakilómetros': 'Odometer', 'Daño': 'Kerusakan',
     'Toca para hacer la foto': 'Ketuk untuk foto', 'Preparando…': 'Menyiapkan…', 'Subiendo…': 'Mengunggah…', 'Subida': 'Terunggah',
     'Pendiente de subir': 'Belum terunggah', 'Repetir': 'Ulangi', 'Ver': 'Lihat', 'Reintentar': 'Coba lagi', '+ Foto de daño': '+ Foto kerusakan',
     'Daños: {n} de {max}': 'Kerusakan: {n} dari {max}', '{n} sin subir': '{n} belum terunggah',
@@ -76,7 +76,7 @@ function axwFotosGuiadas(cfg) {
   var MAX_BYTES = 600 * 1024;
   var MAX_DANO = cfg.max_dano || 15;
   var FIJAS = ['frente', 'atras', 'izquierda', 'derecha', 'cuentakm'];
-  var ROTULO = { frente: 'Frente', atras: 'Atrás', izquierda: 'Izquierda', derecha: 'Derecha', cuentakm: 'Cuentakilómetros', dano: 'Daño' };
+  var ROTULO = { frente: 'Frente', atras: 'Parte de atrás', izquierda: 'Izquierda', derecha: 'Derecha', cuentakm: 'Cuentakilómetros', dano: 'Daño' };
   function TT(k, v) { var s = T(k); Object.keys(v || {}).forEach(function (n) { s = s.split('{' + n + '}').join(String(v[n])); }); return s; }
   /* Hints que NO se arreglan reintentando la misma captura: sale de la cola y se pide otra foto, con su motivo. Lo que no está aquí (red, 5xx, 401,
      foto_sin_objeto, tope_minuto) se queda en la cola con su clave y se reintenta. Ver la cabecera. */
@@ -86,6 +86,7 @@ function axwFotosGuiadas(cfg) {
     fichero_exif: 'La foto trae datos del móvil (ubicación): hazla otra vez.',
     fichero_grande: 'La foto pesa demasiado: hazla otra vez.', foto_tamano: 'La foto pesa demasiado: hazla otra vez.',
     clave_usada: REPITE, foto_caducada: REPITE, foto_sustituida: REPITE, ranura: REPITE, clave: REPITE, datos: REPITE, foto_no_existe: REPITE, origen: REPITE,
+    campo_no_admitido: REPITE, orden: REPITE, fichero: REPITE, fichero_vacio: REPITE,
     fotos_tope_dano: 'Ya hay {max} fotos de daño en esta orden.', fotos_tope_orden: 'Esta orden ya tiene 40 fotos: no caben más.',
     ya_cerrada: CERRADA, orden_vieja: CERRADA, orden_no_existe: CERRADA,
     sin_acceso: 'No tienes acceso a Taller.', modulo_apagado: 'No tienes acceso a Taller.'

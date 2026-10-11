@@ -207,7 +207,7 @@
     'Solo se ven los primeros 500 modelos o piezas.': 'Only the first 500 models or parts are shown.'
   };
   // Indonesio (owner, 11-oct-2026: bbm en indonesio e inglés, sin español). Mismas claves que EN_TL; glosario de §10.9 y glosario_id.json (Taller → Bengkel,
-  // Reserva → Booking, Guardar → Simpan, Flota → Armada; devolución de la moto = «kembali», nunca nada con «balian»). Lo lee alguien del equipo de Dion antes de abrir.
+  // Reserva → Booking, Guardar → Simpan, Flota → Armada; devolución de la moto = «kembali»; nada de lo que glosario_id.json pone en «prohibidos»). Lo lee alguien del equipo de Dion antes de abrir.
   var ID_TL = {
     'Taller': 'Bengkel', 'Motos': 'Motor', 'Listas por modelo': 'Daftar per model', 'Volver atrás': 'Kembali', 'Posición': 'Urutan', 'Siguiente': 'Lanjut', 'Guardar': 'Simpan', 'Continuar': 'Lanjutkan',
     'Revisa cada moto paso a paso. Mientras la orden esté abierta, la moto no se puede reservar.': 'Periksa setiap motor langkah demi langkah. Selama order masih terbuka, motor tidak bisa dibooking.',
@@ -224,7 +224,7 @@
     'Falta un paso de la configuración.': 'Ada langkah pengaturan yang belum selesai.', 'Abrir Listas por modelo': 'Buka daftar per model', 'Ir allí': 'Buka',
     'Orden de la pantalla anterior: ciérrala allí.': 'Order dari layar lama: tutup di sana.',
     'Moto': 'Motor', 'Modelo': 'Model', 'Orden': 'Order', 'Abierta por': 'Dibuka oleh', 'Motivo': 'Alasan', 'Nota': 'Catatan',
-    'Disponible': 'Tersedia', 'En taller': 'Di bengkel', 'De baja': 'Nonaktif', 'Otro estado': 'Status lain',
+    'Disponible': 'Tersedia', 'En taller': 'Di bengkel', 'De baja': 'Dikeluarkan', 'Otro estado': 'Status lain',
     'Esta moto ya tiene una orden abierta. Continúa donde se quedó.': 'Motor ini sudah punya order terbuka. Lanjutkan dari langkah terakhir.',
     'Al abrir la orden, la moto pasa al taller y no se puede reservar.': 'Saat order dibuka, motor masuk bengkel dan tidak bisa dibooking.',
     'Esta moto tiene la orden {n} de la pantalla anterior: ciérrala allí antes de usar este asistente.': 'Motor ini punya order {n} dari layar lama: tutup di sana sebelum memakai asisten ini.',
@@ -290,7 +290,7 @@
     'Clave': 'Kode', 'Nombre (indonesio)': 'Nama (Indonesia)', 'Nombre (inglés)': 'Nama (Inggris)', 'Activa': 'Aktif',
     'Añadir revisión': 'Tambah pemeriksaan', 'Esta lista no tiene revisiones.': 'Daftar ini belum punya pemeriksaan.', 'Cargar la lista básica': 'Muat daftar dasar',
     'Copiar de otro modelo': 'Salin dari model lain', 'Copiar': 'Salin', 'Copiadas: {r} revisiones y {v} piezas.': 'Disalin: {r} pemeriksaan dan {v} suku cadang.',
-    'Piezas de esta lista': 'Suku cadang di daftar ini', 'Esta lista no tiene piezas.': 'Daftar ini belum punya suku cadang.', 'Quitar': 'Hapus dari daftar', 'Revisión sugerida': 'Pemeriksaan terkait',
+    'Piezas de esta lista': 'Suku cadang di daftar ini', 'Esta lista no tiene piezas.': 'Daftar ini belum punya suku cadang.', 'Quitar': 'Hapus', 'Revisión sugerida': 'Pemeriksaan terkait',
     'Añadir pieza existente': 'Tambah suku cadang yang ada', 'Pieza nueva': 'Suku cadang baru', 'Referencia': 'Referensi', 'Coste de referencia': 'Biaya acuan', 'Moneda': 'Mata uang',
     'Añadir': 'Tambah', 'Ninguna': 'Tidak ada', 'Elige la pieza.': 'Pilih suku cadang.', 'Guardado.': 'Tersimpan.',
     'Solo se ven los primeros 500 modelos o piezas.': 'Hanya 500 model atau suku cadang pertama yang tampil.'
@@ -322,7 +322,7 @@
   var ESTADO_MOTO = { disponible: ['Disponible', 'ok'], taller: ['En taller', 'espera'], baja: ['De baja', 'mal'] };
   var SETUP = { revisiones: 'Falta la lista de revisión de algún modelo con motos.', mecanico: 'Nadie tiene todavía la herramienta Taller.' };
   var PORQUE = { no_existe: 'Esa moto ya no existe.', no_esta_en_taller: 'Ya no está en el taller.', orden_viva: 'Tiene una orden abierta.', no_lista_para_volver: 'Su última orden no la dejó lista.' };
-  var FOTO_RANURA = { frente: 'Frente', atras: 'Atrás', izquierda: 'Izquierda', derecha: 'Derecha', cuentakm: 'Cuentakilómetros' };
+  var FOTO_RANURA = { frente: 'Frente', atras: 'Parte de atrás', izquierda: 'Izquierda', derecha: 'Derecha', cuentakm: 'Cuentakilómetros' };
   // hint de la base → texto (la base habla español: en bbm no se enseña su mensaje). Los de la edge de fotos los traduce _compartido/fotos_guiadas.js.
   var TEXTO_HINT = {
     datos: 'Falta un dato: recarga la pantalla.', motivo_tipo: 'Elige el motivo.', nota: 'La nota es demasiado larga o tiene saltos de línea.',
