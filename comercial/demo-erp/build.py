@@ -1068,6 +1068,177 @@ def piel_instancia(nombre):
             % (PIEL_MARCA, json.dumps(_instancia_registro(nombre)['piel']), json.dumps(valores, separators=(',', ':'))))
 
 
+# Menú lateral y barra superior en la tinta de la marca (owner 11-oct, «es como la de Lawang y me confundo»; registro `menu:
+# "oscuro"`). Ningún token pinta SOLO el menú: se redefinen las variables de la piel DENTRO de él, en una regla de CSS
+# estática añadida a assets/shell.css del paquete (sin JS: nada de parpadeo; sin <style> ni inline: la CSP no cambia).
+# Enganche por identificador estable (norma del 29-sep), no por clases de Tailwind: el menú es el <aside> que lleva la
+# salida (a[data-path="login"], la misma estructura que usa maqueta.js) y la barra es el <header> del contador de avisos
+# ([data-lw="k-avisos"]). Colores medidos sobre el preset, nunca a mano: el build PARA si una pareja baja de 4,5:1.
+MENU_SELECTOR = 'aside:has(a[data-path="login"]),header:has([data-lw="k-avisos"])'
+
+
+def menu_oscuro_css(nombre):
+    """La regla CSS del menú oscuro de la instancia, o '' si no lo declara. Requiere piel."""
+    if _instancia_registro(nombre).get('menu') != 'oscuro':
+        return ''
+    p = _piel_preset(nombre)
+    if p is None:
+        aborta('menu "oscuro" de %s sin piel: el menú se pinta con los colores de su preset' % nombre)
+    D = _deriva()
+    tinta, fondo, acento = tuple(p['on-background']), tuple(p['background']), tuple(p['accent-gold'])
+    acento_menu, _p = D.minimo_p(acento, fondo, [tinta])   # el acento, aclarado lo justo para 4,5:1 sobre la tinta
+    m = {'surface-container-low': tinta, 'surface-container': D.mix(tinta, fondo, 0.10),
+         'surface-container-high': D.mix(tinta, fondo, 0.16), 'on-surface': fondo,
+         'on-surface-variant': D.mix(fondo, tinta, 0.12), 'outline': D.mix(fondo, tinta, 0.30),
+         'primary': acento_menu, 'primary-container': acento_menu, 'deep-lagoon': acento_menu, 'on-primary': tinta}
+    parejas = [(t, f) for t in ('on-surface', 'on-surface-variant', 'outline')
+               for f in ('surface-container-low', 'surface-container', 'surface-container-high')]
+    parejas += [('deep-lagoon', 'surface-container-low'), ('on-primary', 'primary-container')]
+    bajas = ['%s/%s %.2f' % (a, b, D.contraste(m[a], m[b])) for a, b in parejas if D.contraste(m[a], m[b]) < 4.5]
+    if bajas:
+        aborta('menú oscuro de %s por debajo de 4,5:1: %s' % (nombre, ', '.join(bajas)))
+    cuerpo = ';'.join('--tema-%s:%d %d %d' % ((k,) + tuple(v)) for k, v in sorted(m.items()))
+    return '\n%s{%s}\n' % (MENU_SELECTOR, cuerpo)
+
+
+# La suite clásica (la puerta /, /crea-contrasena/) no pinta con los tokens --tema-: cada página declara su paleta de Lawang en
+# un `:root{--dl:#104C4F…}` de su propio <style>, que va DESPUÉS de las hojas y por eso ganaba a cualquier `:root` añadido a
+# axw.css (Calidad, 12-oct: la puerta de bbm salía con el botón y el título verdes; el primer intento, que añadía `:root` a la
+# hoja, no pintaba nada). Aquí la regla es `html:root{…}` (especificidad 0,1,1 > 0,1,0): gana a la de la página sea cual sea
+# el orden. Cada variable va por su USO, no por su nombre (en la piel de bbm stone-sand y soft-canopy son el mismo gris oscuro):
+# --ss es fondo del botón desactivado (texto blanco: el tono medio de la piel, no el más claro; revisor 12-oct) y --stone borde
+# → neutros claros; --sc es texto sobre blanco y anillo de foco.
+PALETA_CLASICA = (('--tg', 'territorial-green'), ('--dl', 'deep-lagoon'), ('--be', 'burnt-earth'), ('--va', 'volcanic-ash'),
+                  ('--sc', 'soft-canopy'), ('--ss', 'secondary-fixed-dim'), ('--rl', 'raw-linen'), ('--ink', 'on-background'),
+                  ('--line', 'warm-border'), ('--line-fuerte', 'outline-variant'), ('--sup-2', 'surface-container-low'),
+                  ('--linen', 'background'), ('--paper', 'surface-container-lowest'), ('--stone', 'outline-variant'),
+                  ('--muted', 'on-surface-variant'))
+# Lo que la piel no alcanza redefiniendo variables: colores de Lawang escritos a mano. (fichero, literal, token, formato).
+# Reemplazo literal en la copia de DIST; si un literal desaparece de la fuente el build PARA (no se queda verde en silencio).
+CLASICA_FIJOS = (('contracts/assets/axw.css', '#0d5b5f', 'primary-container', 'hex'),          # hover de los botones primarios
+                 ('contracts/assets/axw.css', 'rgba(16,76,79,', 'deep-lagoon', 'rgba'),        # sombra del botón primario
+                 ('index.html', 'rgba(72,91,55,.15)', 'territorial-green', 'rgba.15'),         # anillo del campo de la puerta
+                 ('index.html', '#F5F0E6', 'background', 'hex'),                              # velo «entrando…»
+                 ('index.html', '#CBD6B6', 'inverse-primary', 'hex'),                          # rol «manda» del panel clásico
+                 ('index.html', 'rgba(143,155,122,.22)', 'soft-canopy', 'rgba.22'),            # anillo del buscador clásico
+                 # la mascota (botón flotante de avisos, en todas las pantallas v4): su marco y sus botones en Deep Lagoon fijo.
+                 # El personaje (su brote verde) es dibujo, no marca de la suite: se queda (orquestador decide si se cambia).
+                 ('assets/mascota.js', '#104C4F', 'deep-lagoon', 'hex'),
+                 ('assets/mascota.js', 'rgba(16,76,79,', 'deep-lagoon', 'rgba'),
+                 ('assets/mascota.js', '#0c3c3e', 'on-background', 'hex'),                     # hover del botón principal
+                 ('assets/mascota.js', '#316669', 'primary-container', 'hex'))                 # enlaces de texto
+# Texto del botón desactivado: no se exige 4,5 (WCAG lo exime) pero tampoco peor que en Lawang (blanco sobre #BEB3A5, 2,1:1).
+CLASICA_DESACTIVADO_MIN = 2.1
+CLASICA_CONTRASTE = (('#FFFFFF', '--dl'), ('#FFFFFF', '--tg'), ('#FFFFFF', 'primary-container'), ('#FFFFFF', 'on-background'), ('--sc', '#FFFFFF'),
+                     ('--muted', '--paper'), ('--linen', '--dl'), ('--ink', '--rl'))
+
+
+def _profundidad_llaves(css):
+    return css.count('{') - css.count('}')
+
+
+def paleta_clasica(nombre):
+    """{var: (r, g, b)} de la suite clásica con los colores de la piel, o None sin piel. PARA si una pareja baja de 4,5:1."""
+    p = _piel_preset(nombre)
+    if p is None:
+        return None
+    faltan = sorted(({tok for _v, tok in PALETA_CLASICA} | {f[2] for f in CLASICA_FIJOS} | {'primary-container', 'on-background'}) - set(p))
+    if faltan:
+        aborta('la piel de %s no trae los tokens que pinta la suite clásica: %s (mirar PALETA_CLASICA y CLASICA_FIJOS)' % (nombre, ', '.join(faltan)))
+    v = {var: tuple(p[tok]) for var, tok in PALETA_CLASICA}
+    D = _deriva()
+    if D.contraste((255, 255, 255), v['--ss']) < CLASICA_DESACTIVADO_MIN:
+        aborta('suite clásica de %s: el botón desactivado (blanco sobre --ss) da %.2f:1, peor que en Lawang'
+               % (nombre, D.contraste((255, 255, 255), v['--ss'])))
+    color = lambda k: (255, 255, 255) if k == '#FFFFFF' else (v[k] if k in v else tuple(p[k]))
+    bajas = ['%s/%s %.2f' % (a, b, D.contraste(color(a), color(b))) for a, b in CLASICA_CONTRASTE
+             if D.contraste(color(a), color(b)) < 4.5]
+    if bajas:
+        aborta('suite clásica de %s por debajo de 4,5:1: %s' % (nombre, ', '.join(bajas)))
+    return v
+
+
+def paleta_clasica_css(nombre):
+    """`html:root{--dl:#…}` de la suite clásica con la piel de la instancia, o '' sin piel."""
+    v = paleta_clasica(nombre)
+    if v is None:
+        return ''
+    return '\nhtml:root{%s}\n' % ';'.join('%s:#%02X%02X%02X' % ((var,) + v[var]) for var, _t in PALETA_CLASICA)
+
+
+def piel_suite_clasica(dist, nombre):
+    """Pone la piel en la puerta (/), en lo que carga axw.css, en /crea-contrasena/ y en el marco de la mascota. Sin piel no toca nada (Lawang, demo).
+    Va ANTES de versiona(): el ?v= de axw.css tiene que cambiar o la CDN sirve la hoja vieja (como pasó con el favicon)."""
+    css = paleta_clasica_css(nombre)
+    if not css:
+        return 0
+    p = _piel_preset(nombre)
+    fmt = {'hex': lambda c: '#%02X%02X%02X' % c, 'rgba': lambda c: 'rgba(%d,%d,%d,' % c,
+           'rgba.15': lambda c: 'rgba(%d,%d,%d,.15)' % c, 'rgba.22': lambda c: 'rgba(%d,%d,%d,.22)' % c}
+    textos = {}
+    for rel in sorted({'contracts/assets/axw.css', 'index.html', 'crea-contrasena/index.html'} | {f[0] for f in CLASICA_FIJOS}):
+        ruta = os.path.join(dist, rel)
+        if not os.path.isfile(ruta):
+            aborta('piel de la suite clásica: falta %s en el paquete' % rel)
+        textos[rel] = open(ruta, encoding='utf-8').read()
+    for rel, literal, tok, f in CLASICA_FIJOS:
+        if literal not in textos[rel]:
+            aborta('piel de la suite clásica: %s ya no lleva %r (¿cambió Lawang? mirar CLASICA_FIJOS)' % (rel, literal))
+        textos[rel] = textos[rel].replace(literal, fmt[f](tuple(p[tok])))
+    # axw.css: la regla al final, con las llaves cerradas (no dentro de un @media colgado)
+    if _profundidad_llaves(textos['contracts/assets/axw.css']) != 0:
+        aborta('piel de la suite clásica: axw.css no cierra sus llaves; la regla quedaría dentro de un bloque')
+    textos['contracts/assets/axw.css'] += css
+    # las dos páginas: al final de su ÚNICO <style> propio con :root (la CSP de la instancia admite style en línea)
+    for rel in ('index.html', 'crea-contrasena/index.html'):
+        t = textos[rel]
+        m = [x for x in re.finditer(r'<style>(.*?)</style>', t, flags=re.S) if ':root{' in x.group(1).replace(' ', '')]
+        if len(m) != 1 or _profundidad_llaves(m[0].group(1)) != 0:
+            aborta('piel de la suite clásica: %s no tiene UN <style> con :root y llaves cerradas' % rel)
+        textos[rel] = t[:m[0].end(1)] + css + t[m[0].end(1):]
+    for rel, t in textos.items():
+        open(os.path.join(dist, rel), 'w', encoding='utf-8', newline='').write(t)
+    return len(textos)
+
+
+def mascota_versionada(dist):
+    """MASCOTA_V de assets/nav.js = huella de la assets/mascota.js QUE SE PUBLICA (revisor, 12-oct). nav.js la carga con
+    `assets/mascota.js?v=" + MASCOTA_V`, una URL que se arma al ejecutarse y que versiona() no ve: con el valor de Lawang, la CDN
+    seguiría sirviendo la mascota vieja 7 días tras repintarla (piel) o reescribirla (reraiz, comentarios, tipografías). Va justo
+    antes de versiona(), cuando ya nadie toca mascota.js, y así cambia también el ?v= de nav.js. Sin nav.js ni mascota.js no hace nada."""
+    import hashlib
+    nav, masc = os.path.join(dist, 'assets', 'nav.js'), os.path.join(dist, 'assets', 'mascota.js')
+    if not (os.path.isfile(nav) and os.path.isfile(masc)):
+        return None
+    tn = open(nav, encoding='utf-8').read()
+    m = list(re.finditer(r'''(MASCOTA_V\s*=\s*)(['"])([^'"]+)\2''', tn))
+    if len(m) != 1:
+        aborta('assets/nav.js no declara UNA vez MASCOTA_V (la mascota publicada no cambiaría de URL)')
+    huella = 'p' + hashlib.sha1(open(masc, 'rb').read()).hexdigest()[:8]
+    open(nav, 'w', encoding='utf-8', newline='').write(tn[:m[0].start(3)] + huella + tn[m[0].end(3):])
+    return huella
+
+
+def favicon_versionado(dist):
+    """`href="/favicon.png"` → `?v=<huella>` en todas las páginas (Calidad, 12-oct): Hostinger cachea /favicon.png 7 días y,
+    tras cambiar el icono de bbm, la URL sin versión seguía sirviendo el viejo. Devuelve cuántas páginas cambió."""
+    import hashlib
+    fav = os.path.join(dist, 'favicon.png')
+    if not os.path.isfile(fav):
+        return 0
+    nuevo = 'href="/favicon.png?v=%s"' % hashlib.sha1(open(fav, 'rb').read()).hexdigest()[:8]
+    n = 0
+    for raiz, _d, fichs in os.walk(dist):
+        for f in fichs:
+            if f.endswith('.html'):
+                p = os.path.join(raiz, f)
+                t = open(p, encoding='utf-8', errors='replace').read()
+                if 'href="/favicon.png"' in t:
+                    open(p, 'w', encoding='utf-8', newline='').write(t.replace('href="/favicon.png"', nuevo))
+                    n += 1
+    return n
+
+
 APLICA_TEMA = re.compile(r"""setProperty\(\s*['"`]--tema-""")
 FICHA_REL = 'contracts/assets/instancia.js'
 
@@ -2171,6 +2342,82 @@ def rastros_en(raiz):
     return restos
 
 
+# ── Portada y Puesta en marcha de las instancias de tipo Reservas (11-oct-2026, plan único F8) ──────────────────────────────────────────
+# Solo las instancias con `"portada": "reservas"` en erp/instancias.json; Lawang, la demo y el resto siguen con la Home y los Ajustes de siempre.
+PORTADAS = ('reservas',)
+PORTADA_SEG = "  var seg = location.pathname.replace(/\\/(index\\.html)?$/, '').split('/').pop();\n"
+PORTADA_SEG_RESERVAS = ("  if (seg === 'home' && document.querySelector('script[data-axw-portada=\"reservas\"]')) seg = 'portada-reservas';"
+                        "   /* la Home de reservas pinta con su propio script (build.py portada_reservas) */\n")
+AJUSTES_PUESTA_TAB_ANCLA = ('<button class="lw-tab-btn px-4 py-2 rounded-full bg-primary-container text-on-primary font-label-md text-[13px] font-medium transition-colors"'
+                            ' role="tab" type="button" id="lw-tab-empresa"')
+AJUSTES_PUESTA_TAB = ('<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors"'
+                      ' role="tab" type="button" id="lw-tab-puesta" aria-controls="lw-panel-puesta" aria-selected="false" tabindex="-1" data-lw-tab="puesta" data-lwt>'
+                      'Puesta en marcha</button>\n')
+AJUSTES_PUESTA_PANEL_ANCLA = '<section id="lw-panel-empresa" role="tabpanel"'
+AJUSTES_PUESTA_PANEL = (
+    '<section id="lw-panel-puesta" role="tabpanel" aria-labelledby="lw-tab-puesta" data-lw-panel="puesta" class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden" hidden>\n'
+    '<div class="px-8 pt-8 pb-4 flex flex-col gap-1 border-b border-outline-variant/40">\n'
+    '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Puesta en marcha</span>\n'
+    '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Lo que hace falta para empezar a facturar, en orden</h2>\n'
+    '<p class="font-body-sm text-body-sm text-outline" data-lwt>Cada paso dice si está hecho y dónde se hace. Cuando estén todos, ya puedes encender Facturas.</p>\n'
+    '</div>\n'
+    '<div id="lw-aj-puesta">\n'
+    '<p class="px-8 py-6 font-body-md text-body-md text-on-surface-variant" data-lwt>Trayendo la puesta en marcha…</p>\n'
+    '</div>\n'
+    '</section>\n\n')
+AJUSTES_PESTANAS = "var PESTANAS = ['empresa', 'correo', 'usuarios', 'mantenimiento', 'reservas', 'registro'];"
+AJUSTES_DEFECTO = "return PESTANAS.indexOf(h) >= 0 ? h : 'empresa';"
+
+
+def portada_de(nombre):
+    """La portada que declara la instancia en el registro (`portada`), o None si sigue la de siempre. Un valor desconocido PARA: una errata no puede dejar
+    la Home de parcelas sin un solo aviso."""
+    p = _instancia_registro(nombre).get('portada')
+    if p is not None and p not in PORTADAS:
+        aborta('erp/instancias.json: %s declara "portada": %r y solo se conocen %s' % (nombre, p, ', '.join(PORTADAS)))
+    return p
+
+
+def portada_reservas():
+    """/home/ de una instancia de tipo Reservas: las entregas y devoluciones del día (portada_reservas.html sobre la cáscara de /asistente/, como taller).
+    SIN puerta de herramienta: es el `inicio` de todo el que entra (un mecánico con solo `taller` no puede rebotar al iniciar sesión); la lectura la vuelve
+    a exigir la base. Sustituye la Home de Lawang solo en lo copiado a DIST, nunca en su repo."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    if not os.path.isfile(os.path.join(v4, 'home', 'index.html')):
+        aborta('portada_reservas: no está la Home copiada de Lawang (intranet/v4/home/index.html): ¿cambió su sitio?')
+    _pantalla_bot(v4, 'portada_reservas.html', 'home', 'Inicio', puerta='data-axw-portada="reservas"')
+    # datos.js de Lawang elige qué cargar por el último trozo de la ruta: en /home/ arrancaba la Home de Lawang (KPIs de contratos y
+    # cobros, tabla de documentos) sobre esta portada: 7 errores de consola y cuatro lecturas que la portada no usa (bbm-p16-publica,
+    # 12-oct). Con la marca de la portada, datos.js no ve «home»: la trata como Taller o Ventas, que pintan con su propio script.
+    dj = os.path.join(v4, 'assets', 'datos.js')
+    t = open(dj, encoding='utf-8').read()
+    t = _una_vez(t, PORTADA_SEG, PORTADA_SEG + PORTADA_SEG_RESERVAS, 'datos.js segmento de la portada de reservas')
+    open(dj, 'w', encoding='utf-8', newline='').write(t)
+
+
+def ajustes_puesta_en_marcha():
+    """Ajustes › Puesta en marcha (instancias de tipo Reservas): una pestaña más, la PRIMERA y la que abre /ajustes/ sin #, con los pasos que da la base
+    (puesta_en_marcha_estado) y los dos sí/no de impuestos. El contenido lo pinta ajustes_puesta.js; aquí solo se pone la pestaña, su panel, el script y se
+    le dice a ajustes.js (que tiene la lista de pestañas CERRADA) que existe. Todo con reemplazo literal que para si Lawang cambia el trozo. Va después de
+    ajustes_correo_maestro(), que también reescribe ajustes.js. Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    pag = os.path.join(v4, 'ajustes', 'index.html')
+    t = open(pag, encoding='utf-8').read()
+    t = _una_vez(t, AJUSTES_PUESTA_TAB_ANCLA, AJUSTES_PUESTA_TAB + AJUSTES_PUESTA_TAB_ANCLA, 'ajustes/index.html pestaña Puesta en marcha')
+    t = _una_vez(t, AJUSTES_PUESTA_PANEL_ANCLA, AJUSTES_PUESTA_PANEL + AJUSTES_PUESTA_PANEL_ANCLA, 'ajustes/index.html panel Puesta en marcha')
+    m = re.findall(r'<script src="\.\./assets/ajustes\.js(?:\?v=[0-9a-f]+)?" defer></script>', t)
+    if len(m) != 1:
+        aborta('ajustes_puesta_en_marcha: ajustes/index.html no carga UNA vez ../assets/ajustes.js con defer (hay %d)' % len(m))
+    t = t.replace(m[0], m[0] + '<script src="../assets/ajustes_puesta.js" defer></script>')
+    open(pag, 'w', encoding='utf-8', newline='').write(t)
+    js = os.path.join(v4, 'assets', 'ajustes.js')
+    a = open(js, encoding='utf-8').read()
+    a = _una_vez(a, AJUSTES_PESTANAS, AJUSTES_PESTANAS.replace("['empresa',", "['puesta', 'empresa',"), 'ajustes.js PESTANAS')
+    a = _una_vez(a, AJUSTES_DEFECTO, AJUSTES_DEFECTO.replace("'empresa';", "'puesta';"), 'ajustes.js pestaña por defecto')
+    open(js, 'w', encoding='utf-8', newline='').write(a)
+    shutil.copy2(os.path.join(AQUI, 'ajustes_puesta.js'), os.path.join(v4, 'assets', 'ajustes_puesta.js'))
+
+
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
@@ -2181,6 +2428,9 @@ def instancia(nombre):
     taller_pantalla()   # F8 pieza 2 (8-oct-2026): Taller — órdenes de trabajo ligeras (tras reservas de producto: sus anclas de nav.js)
     entrega_pantalla()   # F8 pieza 8 (10-oct-2026): Entrega — sede, tarifa por km y límites (tras taller: sus anclas de nav.js y herramientas.js)
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
+    if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
+        portada_reservas()
+        ajustes_puesta_en_marcha()
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]
@@ -2223,6 +2473,12 @@ def instancia(nombre):
     piel = piel_instancia(nombre)
     if piel:
         open(os.path.join(DIST, 'contracts', 'assets', 'instancia.js'), 'a', encoding='utf-8', newline='\n').write(piel)
+    menu = menu_oscuro_css(nombre)
+    if menu:
+        hoja = os.path.join(DIST, 'assets', 'shell.css')   # la cargan todas las pantallas de la cáscara v4
+        if not os.path.isfile(hoja):
+            aborta('menú oscuro: falta assets/shell.css en el paquete')
+        open(hoja, 'a', encoding='utf-8', newline='\n').write(menu)
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
     # Módulos: el navegador pregunta a la base cuáles están activos al cargar (panel de control, 28-sep-2026). Va en
     # TODA instancia del ERP (antes solo si el registro traía modulos_activos, Des #4).
@@ -2253,6 +2509,7 @@ def instancia(nombre):
                 os.replace(os.path.join(raiz, f), os.path.join(raiz, nuevo))
     logos_instancia(nombre, marca)
     crea_contrasena_pantalla(marca)   # pieza C de I6 (9-oct-2026): «Crea tu contraseña» para el primer administrador invitado
+    piel_suite_clasica(DIST, nombre)   # tras el renombrado (axw.css) y tras crea-contrasena; antes de versiona()
     tipografias_libres()
     neutraliza_ejemplos()   # ejemplos de persona que casan con gente real (pii_maqueta)
     # 2. Portada = la puerta de acceso, que reraiz() ha subido a la raíz (antes /intranet/). Lo que en la demo es un aviso,
@@ -2319,6 +2576,8 @@ def instancia(nombre):
     # ?v= con la huella de lo que SALE de este build, como en la demo pública (28-sep-2026). Sin esto, la v4 llevaba el
     # ?v= del fichero de Lawang (guard.js se reescribe entero aquí: mapa de módulos + ficha) y /panel/ iba sin versión:
     # Hostinger cachea 7 días y el verificador vio el guard.js viejo en /panel/ tras publicar.
+    mascota_versionada(DIST)   # y la mascota, que nav.js pide con MASCOTA_V (revisor, 12-oct)
+    favicon_versionado(DIST)   # y el favicon, que versiona() no toca (Calidad, 12-oct: bbm servía el icono viejo sin ?cb)
     versiona(DIST)
     # Lo que SALE lleva UNA copia de Ajustes › Correo (10-oct-2026): se mide aquí, sobre el fichero ya reescrito por limpia_publico.js, y no
     # solo al entrar. Vale para el paquete entero.
