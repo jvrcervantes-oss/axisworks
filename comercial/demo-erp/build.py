@@ -33,6 +33,7 @@ Revisión previa (24-sep, Seguridad + Legal), cada regla con su porqué:
 - Se niega a escribir fuera de su `dist/` o dentro de `proyectos/Lawang/`: un
   guard falso escrito ahí lo desplegaría el webhook de Lawang.
 """
+import hashlib
 import html
 import json
 import os
@@ -544,34 +545,40 @@ def guard_demo():
         # pide sus cifras por lwDatos ANTES de cualquier `.from()` (28-sep-2026, B10a).
         ("function chainable(table) {", "function __lwDemoSiembra() { if (!window.__LW_DEMO_SEMBRADO) { window.__LW_DEMO_SEMBRADO = true; "
                                         "window.LW_DEMO_SIEMBRA(FIXTURES, { fila: fila, hoy: hoy, FICHA: FICHA_QA, USUARIOS: USUARIOS_QA, VENTAS: VENTAS_QA }); "
-                                        "window.LW_DEMO_LIMPIA(FIXTURES); } }\n"
+                                        "window.LW_DEMO_LIMPIA(FIXTURES); window.LW_DEMO_REPITE(FIXTURES); } }\n"
                                         "  function chainable(table) { __lwDemoSiembra();"),
-        # Escrituras: se quedan en memoria para que «guardar» se vea en la demo.
+        # Escrituras (11-oct, demo-pA): las aplica Y las anota demo_datos.js (diario de la pestaña, se repite tras la
+        # siembra en cada página). Los filtros viajan con la escritura: el diario la repite sobre las filas que casen.
         ("if (obj._op === 'insert' || obj._op === 'update' || obj._op === 'upsert') {",
-         "if (obj._op === 'insert' || obj._op === 'upsert') { var nv = window.LW_DEMO_ESCRIBE(FIXTURES, table, obj._op, obj._val, []); "
-         "return { data: obj._single ? nv[0] : nv, error: null }; }\n"
-         "      if (obj._op === 'update' || obj._op === 'delete') { var rs0 = (FIXTURES[table] && Array.isArray(FIXTURES[table].data)) ? FIXTURES[table].data : []; "
-         "var af = rs0.filter(function (r) { return filtros.every(function (f) { return coincide(r, f[1], f[0], f[2]); }); }); "
-         "var hechas = window.LW_DEMO_ESCRIBE(FIXTURES, table, obj._op, obj._val, af); return { data: obj._single ? (hechas[0] || null) : hechas, error: null }; }\n"
+         "if (obj._op) { return window.LW_DEMO_TABLA(FIXTURES, table, obj._op, obj._val, filtros, !!obj._single); }\n"
          "      if (false) {"),
         # Filtros que el doble de QA deja pasar a propósito (su cabecera lo dice): en
         # una demo se VEN — «0 vencimientos en 30 días» con hitos la semana que viene.
-        ("    var v = row ? row[campo] : undefined;",
-         "    var v = row; String(campo).split('.').forEach(function (k) { v = v == null ? undefined : v[k]; });\n"
-         "    if (op === 'gte') return v != null && v >= val;\n"
-         "    if (op === 'lte') return v != null && v <= val;\n"
-         "    if (op === 'lt') return v != null && v < val;"),
+        # Los filtros los evalúa demo_datos.js (11-oct, demo-pA): or/not/contains/overlaps/match/filter FILTRAN de
+        # verdad. Antes eran no-op, y «Borrar operación» (.or('id.eq.X,contrato_padre_id.eq.X')) contaba la tabla entera.
+        # Uno que no sabe evaluar: en lectura deja pasar (como el doble de QA); en escritura, LW_DEMO_TABLA falla.
+        ("  function coincide(row, campo, op, val) {",
+         "  function coincide(row, campo, op, val) { return window.LW_DEMO_COINCIDE(row, campo, op, val);"),
         ("    ['gte', 'lte', 'not', 'or', 'order', 'limit', 'contains', 'overlaps', 'range', 'match']",
          "    obj.gte = function (c, v) { filtros.push(['gte', c, v]); return obj; };\n"
          "    obj.lte = function (c, v) { filtros.push(['lte', c, v]); return obj; };\n"
          "    obj.lt = function (c, v) { filtros.push(['lt', c, v]); return obj; };\n"
+         "    obj.like = function (c, v) { filtros.push(['like', c, v]); return obj; };\n"
+         "    obj.or = function (s, o) { if (!(o && (o.foreignTable || o.referencedTable))) filtros.push(['or', s, null]); return obj; };\n"
+         "    obj.not = function (c, op, v) { filtros.push(['not', c, [op, v]]); return obj; };\n"
+         "    obj.contains = function (c, v) { filtros.push(['contains', c, v]); return obj; };\n"
+         "    obj.overlaps = function (c, v) { filtros.push(['overlaps', c, v]); return obj; };\n"
+         "    obj.match = function (m) { Object.keys(m || {}).forEach(function (k) { filtros.push(['eq', k, m[k]]); }); return obj; };\n"
+         "    obj.filter = function (c, op, v) { filtros.push(['filter', c, [op, v]]); return obj; };\n"
+         "    obj.textSearch = function (c, v) { filtros.push(['desconocido', c, v]); return obj; };\n"
+         "    obj.range = function (a, b, o) { if (!(o && (o.foreignTable || o.referencedTable))) obj._rango = [a, b]; return obj; };\n"
          "    obj.order = function (c, o) { if (!(o && (o.foreignTable || o.referencedTable))) (obj._ord = obj._ord || []).push([c, !(o && o.ascending === false)]); return obj; };\n"
          "    obj.limit = function (n, o) { if (!(o && (o.foreignTable || o.referencedTable))) obj._lim = n; return obj; };\n"
-         "    obj.like = function (c, v) { filtros.push(['ilike', c, v]); return obj; };\n"
-         "    ['not', 'or', 'contains', 'overlaps', 'range', 'match', 'filter', 'textSearch', 'abortSignal', 'returns', 'csv']"),
+         "    ['abortSignal', 'returns', 'csv', 'explain']"),
         ("      var datos = Array.isArray(base.data) ? filtradas : base.data;",
          "      var datos = Array.isArray(base.data) ? filtradas : base.data;\n"
          "      if (Array.isArray(datos) && obj._ord) { datos = datos.slice().sort(function (a, b) { for (var i = 0; i < obj._ord.length; i++) { var c = obj._ord[i][0], x = a[c], y = b[c]; if (x === y) continue; if (x == null) return 1; if (y == null) return -1; return (x < y ? -1 : 1) * (obj._ord[i][1] ? 1 : -1); } return 0; }); }\n"
+         "      if (Array.isArray(datos) && obj._rango && !obj._count) datos = datos.slice(obj._rango[0], obj._rango[1] + 1);\n"
          "      if (Array.isArray(datos) && obj._lim != null && !obj._count) datos = datos.slice(0, obj._lim);"),
         # Portadas de la rejilla de Proyectos (createSignedUrls): «about:blank#qa-…» como <img> es un error de consola y
         # un icono roto en directo; en la demo no hay fotos, así que va una tesela neutra (data:, la CSP la admite).
@@ -582,29 +589,21 @@ def guard_demo():
         # Lo mismo para las fotos PÚBLICAS (getPublicUrl: fotos de modelo en /v4/modelos/ y lwFotoUrls): revisor, 28-sep.
         ("getPublicUrl: function (path) { return { data: { publicUrl: 'about:blank#qa-' + path } }; },",
          "getPublicUrl: function (path) { return { data: { publicUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E' } }; },"),
-        ("console.warn('[qa-doble] MODO QA activo", "console.info('[demo] Demo ERP — made-up data, no real network'); void ('"),
-        # Algunas RPC del doble devuelven una promesa pelada y el Panel financiero les encadena .select()
-        # (24-sep: «sb.rpc(...).select is not a function»). Envoltorio: si no es encadenable, los filtros
-        # devuelven la misma promesa, que ya trae las filas.
+        # Justificante «subido» (11-oct, demo-pA; Seguridad): se anota solo nombre y tamaño en la pestaña, el contenido no
+        # se lee. Lo comprueba el doble de guardar_recibi, como la base mira storage.objects.
+        ("          list: function () { return Promise.resolve({ data: [], error: null }); },",
+         "          list: function () { return Promise.resolve({ data: [], error: null }); },\n"
+         "          uploadToSignedUrl: function (path, token, file) { return window.LW_DEMO_SUBE(FIXTURES, bucket, path, file); },"),
+        ("console.warn('[qa-doble] MODO QA activo","console.info('[demo] Demo ERP — made-up data, no real network'); void ('"),
+        # Todo el despacho de rpc en UNA función de demo_datos.js (11-oct, demo-pA, revisión previa de Frontend): los
+        # guardados devuelven lo que devolvería la base (factura_guarda → {id, numero, total}, guardar_recibi → jsonb),
+        # las lecturas *_datos lo mismo, y TODO resultado es encadenable (sb.rpc('compradores_lista').select().order()).
+        # Lo que demo_datos.js no conoce sigue por el doble de QA (`siguiente`).
         ("    rpc: function (nombre, args) {\n      console.warn('[qa-doble] rpc bloqueada (no real):', nombre, args);",
          "    rpc: function (nombre, args) {\n"
-         # Guardados atómicos (26-sep): en producción son RPC que escriben; aquí, en memoria (demo_datos.js).
-         "      if (window.LW_DEMO_RPC_GUARDA && window.LW_DEMO_RPC_GUARDA[nombre]) {\n"
-         "        window.LW_DEMO_RPC_GUARDA[nombre](FIXTURES, args || {});\n"
-         "        return Promise.resolve({ data: null, error: null });\n"
-         "      }\n"
-         # Lecturas *_datos (B10a, 28-sep): calculadas sobre FIXTURES con la forma de su SQL (demo_datos.js). Solo las
-         # que tienen implementación: el resto (p. ej. sb.rpc('panel_bancos_datos')) sigue por el camino de siempre.
-         "      if (window.LW_DEMO_DATOS && Object.prototype.hasOwnProperty.call(window.LW_DEMO_DATOS, nombre)) {\n"
-         "        __lwDemoSiembra();\n"
-         "        try { return Promise.resolve({ data: window.LW_DEMO_DATOS[nombre](FIXTURES, args || {}), error: null }); }\n"
-         "        catch (e) { return Promise.resolve({ data: null, error: { message: String((e && e.message) || e), code: (e && e.code) || 'P0001' } }); }\n"
-         "      }\n"
-         "      var r = this._rpc(nombre, args);\n"
-         "      if (r && typeof r.then === 'function' && typeof r.select !== 'function') {\n"
-         "        ['select', 'order', 'limit', 'eq', 'neq', 'gte', 'lte', 'in', 'is', 'range'].forEach(function (k) { r[k] = function () { return r; }; });\n"
-         "      }\n"
-         "      return r;\n"
+         "      __lwDemoSiembra();\n"
+         "      var self = this;\n"
+         "      return window.LW_DEMO_RPC(FIXTURES, nombre, args || {}, function () { return self._rpc(nombre, args); }, chainable);\n"
          "    },\n"
          "    _rpc: function (nombre, args) {"),
     ]
@@ -612,7 +611,7 @@ def guard_demo():
         if doble.count(viejo) != 1:
             aborta('el doble de QA ha cambiado y no encuentro (1 vez): ' + viejo[:70])
         doble = doble.replace(viejo, nuevo)
-    doble = doble.replace("'qa-user-1'", "'d-u-1'").replace('qa@axisworks.test', 'direccion@demo.test')
+    doble = doble.replace("'qa-user-1'", "'d-u-1'").replace('qa@axisworks.test', 'direccion@example.com')
     # «← Modules» en todas las pantallas: la salida del recorrido (el guard es nuestro). En inglés: la demo pública lo es.
     volver = ("document.addEventListener('DOMContentLoaded',function(){var n=document.createElement('nav');"
               "n.setAttribute('aria-label','Leave the demo');"
@@ -631,8 +630,11 @@ def guard_demo():
     # Núcleo del ERP (25-sep): la demo ya enseña la OPERACIÓN. Bandera que Lawang no enciende nunca: su base aún no
     # tiene la tabla, y el código compartido (operaciones-cuentas.js, datos.js) solo la lee si está encendida.
     nucleo = 'window.AXW_NUCLEO_OPERACION = true;\n'
+    # Versión de los datos de ejemplo + doble: el diario de la pestaña (demo_datos.js) la lleva en su clave, así un
+    # diario escrito contra otra siembra no se repite sobre esta.
+    version = 'window.AXW_DEMO_VERSION = %s;\n' % json.dumps(hashlib.sha256((datos + doble).encode('utf-8')).hexdigest()[:12])
     return ('/* GENERADO por AxisWorks/comercial/demo-erp/build.py — no editar. Demo: datos inventados, sin red real. */\n'
-            + nucleo + limpia_sesion + volver + PUERTAS_DEMO + datos + '\n' + doble)
+            + nucleo + version + limpia_sesion + volver + PUERTAS_DEMO + datos + '\n' + doble)
 
 
 # Lo que el guard REAL de Lawang publica con fija() (window.lwDatos, lwEdge, lwFichero…) tiene que existir también en la
@@ -664,7 +666,8 @@ PUERTAS_DEMO = r"""(function () {
       .then(function (r) { return { data: r.data, error: r.error }; },
             function (e) { return { data: null, error: e }; });
   });
-  fija('lwFicheros', function () { return noDemo('Ficheros de contratos'); });
+  // Solo la URL de subida de un justificante (demo_datos.js la simula, sin red); el resto, cerrado con el error a la vista.
+  fija('lwFicheros', function (sb, accion, datos) { return window.LW_DEMO_FICHEROS ? window.LW_DEMO_FICHEROS(accion, datos) : noDemo('Ficheros de contratos'); });
   fija('lwKyc', function () { return noDemo('Documentos KYC'); });
   fija('lwKycSube', function () { return noDemo('Subir documentos KYC'); });
   fija('lwFichero', function () { return noDemo('Ficheros'); });
@@ -1299,7 +1302,6 @@ def versiona(raiz):
     entero y conservaba su ?v=, y catalogo.js/modulos.js/tour.js iban sin versión. Un navegador que entró el 24-sep
     siguió usando el catalogo.js de antes de los packs (Hostinger cachea 7 días) y la landing se quedó sin módulos.
     Se repite hasta que nada cambia: si guard.js cambia al versionar lo que inyecta, cambia también su huella."""
-    import hashlib
 
     def huella(p):
         return hashlib.sha1(open(p, 'rb').read()).hexdigest()[:8]
@@ -2333,7 +2335,6 @@ def panel_contra_publicado(panel_dir, leer_publicado):
     """Reescribe en `panel_dir` los enlaces locales que salen de panel/ para que existan en lo publicado (`leer_publicado(rel)` ->
     bytes del fichero publicado o None) y lleven la huella de allí. Devuelve la lista de cambios (ruta, nueva, huella).
     Aborta si algo no existe en lo publicado ni con la raíz vieja (/intranet/v4)."""
-    import hashlib
     faltan, cambios = [], []
 
     def blob(ruta):
