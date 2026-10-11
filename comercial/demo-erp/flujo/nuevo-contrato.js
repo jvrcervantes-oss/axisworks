@@ -141,6 +141,7 @@
     });
     E.aviso.hidden = true;
     E.cuerpo.textContent = '';
+    E.cuerpo.scrollTop = 0;
   }
   function fallo(e) {
     var msg = (e && e.message) || String(e);

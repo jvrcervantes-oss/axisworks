@@ -75,7 +75,7 @@ html.axf-abierto { overflow: hidden; }
 .axf-pad { display: block; width: 100%; height: auto; aspect-ratio: 10 / 3; touch-action: none; cursor: crosshair; color: var(--axf-tinta);
   background: var(--axf-fondo); border: 1px dashed var(--axf-linea); border-radius: 12px; }
 .axf-hecho-caja { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 24px; align-items: start; }
-.axf-hecho-cab { background: var(--axf-papel); border-radius: 16px; padding: 20px; }
+.axf-hecho-cab { background: var(--axf-papel); border-radius: 16px; padding: 20px; position: sticky; top: 0; z-index: 2; }
 .axf-hecho-tit { margin: 0 0 8px; text-wrap: balance; font-size: 20px; color: var(--axf-ok); }
 
 /* ── Documento de ejemplo (contrato_ejemplo.js) ───────────────────────── */
@@ -120,7 +120,7 @@ html.axf-abierto { overflow: hidden; }
   .axf-form { padding: 16px; }
   .axf-fila, .axf-firma, .axf-hecho-caja { grid-template-columns: 1fr; gap: 0 16px; }
   .axf-firma, .axf-hecho-caja { gap: 16px; }
-  .axf-firma-lado { position: static; }
+  .axf-firma-lado, .axf-hecho-cab { position: static; }
   .axf-doc { padding: 24px 18px; font-size: 14.5px; }
   .axf-marca span { font-size: 30px; }
   .axf-acciones .axf-btn { flex: 1 1 auto; }
