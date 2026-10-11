@@ -1,6 +1,6 @@
 // node comercial/demo-erp/pruebas/ajustes_puesta.harness.cjs [captura_prefijo]
 // Harness de Ajustes › Puesta en marcha (11-oct-2026): ajustes_puesta.js REAL en Chromium, dentro de un panel como el que pone build.py, con la base SIMULADA
-// (puesta_en_marcha_datos, ajustes_config_datos y ajustes_config_guardar tal como los acordó Backend). Mide: pinta los pasos como los da la base (hecho/pendiente, detalle,
+// (puesta_en_marcha_estado, ajustes_config_datos y ajustes_config_guardar tal como los acordó Backend). Mide: pinta los pasos como los da la base (hecho/pendiente, detalle,
 // dónde), una clave ausente sale «Sin decidir», guardar manda SOLO la clave y 'si'|'no' y vuelve a leer, sin permiso no ofrece guardar, los errores se dicen, XSS en el
 // detalle, ES/EN/ID sin huecos y 390 px sin scroll horizontal. La base real NO se toca.
 const fs = require('fs');
@@ -19,9 +19,9 @@ const err = (code, message) => ({ data: null, error: { code, message, hint: null
 async function servidor(b, n, a) {
   b.llamadas.push([n, JSON.parse(JSON.stringify(a))]);
   const o = b.o;
-  if (o.noDisponible && n === 'puesta_en_marcha_datos') return err('PGRST202', 'Could not find the function public.puesta_en_marcha_datos');
-  if (o.sinPermiso && n === 'puesta_en_marcha_datos') return err('42501', 'sin acceso');
-  if (n === 'puesta_en_marcha_datos') {
+  if (o.noDisponible && n === 'puesta_en_marcha_estado') return err('PGRST202', 'Could not find the function public.puesta_en_marcha_estado');
+  if (o.sinPermiso && n === 'puesta_en_marcha_estado') return err('42501', 'sin acceso');
+  if (n === 'puesta_en_marcha_estado') {
     const precio = Object.prototype.hasOwnProperty.call(b.valores, 'precio_incluye_impuesto');
     const pkp = Object.prototype.hasOwnProperty.call(b.valores, 'reservas_sin_impuesto');
     const pasos = [
@@ -99,7 +99,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const g = base.llamadas.filter(x => x[0] === 'ajustes_config_guardar');
     ok('guardar manda SOLO la clave, si|no y el motivo tecleado', g.length === 1 && JSON.stringify(Object.keys(g[0][1]).sort()) === '["p_clave","p_motivo","p_valor"]' && g[0][1].p_clave === 'precio_incluye_impuesto' && g[0][1].p_valor === 'si' && g[0][1].p_motivo === 'Datos del gestor');
     ok('repintar tras guardar no borra el motivo tecleado', (await p.$eval('[data-pm="motivo"]', e => e.value)) === 'Datos del gestor');
-    ok('tras guardar vuelve a leer y el hecho lo pone la base', base.llamadas.slice(antes).some(x => x[0] === 'puesta_en_marcha_datos') && (await p.$eval('[data-pm-paso="precio_incluye_impuesto"] [data-pm-hecho]', e => e.getAttribute('data-pm-hecho'))) === '1');
+    ok('tras guardar vuelve a leer y el hecho lo pone la base', base.llamadas.slice(antes).some(x => x[0] === 'puesta_en_marcha_estado') && (await p.$eval('[data-pm-paso="precio_incluye_impuesto"] [data-pm-hecho]', e => e.getAttribute('data-pm-hecho'))) === '1');
     ok('sin tablas, sin errores de script', (await p.evaluate(() => window.__from + window.__errores.length)) === 0);
     await ctx.close();
 

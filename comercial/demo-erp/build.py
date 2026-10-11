@@ -2216,7 +2216,7 @@ def portada_reservas():
 
 def ajustes_puesta_en_marcha():
     """Ajustes › Puesta en marcha (instancias de tipo Reservas): una pestaña más, la PRIMERA y la que abre /ajustes/ sin #, con los pasos que da la base
-    (puesta_en_marcha_datos) y los dos sí/no de impuestos. El contenido lo pinta ajustes_puesta.js; aquí solo se pone la pestaña, su panel, el script y se
+    (puesta_en_marcha_estado) y los dos sí/no de impuestos. El contenido lo pinta ajustes_puesta.js; aquí solo se pone la pestaña, su panel, el script y se
     le dice a ajustes.js (que tiene la lista de pestañas CERRADA) que existe. Todo con reemplazo literal que para si Lawang cambia el trozo. Va después de
     ajustes_correo_maestro(), que también reescribe ajustes.js. Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
     v4 = os.path.join(DIST, 'intranet', 'v4')

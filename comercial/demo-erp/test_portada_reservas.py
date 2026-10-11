@@ -130,9 +130,9 @@ for nombre, cod in (('la portada', CODIGO), ('la puesta en marcha', CODIGO_AJ)):
 mira('no nombra claves de servicio', not re.search(r'service_role|sb_secret_', SCRIPT + MARCADO + AJ))
 mira('la portada solo LEE y solo portada_reservas_dia_datos, por lwDatos',
      set(re.findall(r"(?:\.rpc|lwDatos)\('([a-z_]+)'", CODIGO)) == {'portada_reservas_dia_datos'} and '.rpc(' not in CODIGO)
-mira('la puesta en marcha lee puesta_en_marcha_datos y ajustes_config_datos y SOLO escribe por ajustes_config_guardar',
-     set(re.findall(r"lwDatos\('([a-z_]+)'", CODIGO_AJ)) == {'puesta_en_marcha_datos', 'ajustes_config_datos'}
-     and set(re.findall(r"\.rpc\('([a-z_]+)'", CODIGO_AJ)) == {'ajustes_config_guardar'})
+mira('la puesta en marcha lee puesta_en_marcha_estado (sb.rpc: no es *_datos) y ajustes_config_datos (lwDatos) y SOLO escribe por ajustes_config_guardar',
+     set(re.findall(r"lwDatos\('([a-z_]+)'", CODIGO_AJ)) == {'ajustes_config_datos'}
+     and set(re.findall(r"\.rpc\('([a-z_]+)'", CODIGO_AJ)) == {'puesta_en_marcha_estado', 'ajustes_config_guardar'})
 mira('la puesta en marcha solo guarda las dos claves de sí/no, con valor si|no',
      set(re.findall(r"clave: '([a-z_]+)'", CODIGO_AJ)) == {'precio_incluye_impuesto', 'reservas_sin_impuesto'} and "sel.value !== 'si' && sel.value !== 'no'" in CODIGO_AJ)
 mira('el estado del pago sale de pago_estado de la base: la portada no mira importes ni referencias para decidirlo',
