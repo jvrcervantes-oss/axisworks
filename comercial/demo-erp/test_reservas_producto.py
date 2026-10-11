@@ -155,7 +155,7 @@ mira('las unicas claves que se anaden a p_datos son las que la base lee (' + ', 
 mira('cotizar manda solo producto y fechas (la entrega por km del equipo no existe: la base solo la cotiza al bot)', "llama('reserva_producto_cotiza', { p_producto_id: p.id, p_desde: W.desde, p_hasta: W.hasta })" in CODIGO
      and CODIGO.count("'reserva_producto_cotiza'") == 2)
 mira('el alta lleva clave (equipo-<aleatorio>, cabe en la regex de la base) y clave_repetida o red se tratan como «puede estar creada»', "return 'equipo-' + r;" in CODIGO
-     and "if (c.tipo === 'red' || c.hint === 'clave_repetida') return asComprueba(c.hint === 'clave_repetida');" in CODIGO)
+     and "if (c.tipo === 'red' || !r.error.code || c.hint === 'clave_repetida') return asComprueba(c.hint === 'clave_repetida');" in CODIGO)
 mira('revisor 835f420: clave_repetida nunca acaba en «no se creo», sin reloj del PC, lista recortada = no se asegura, y no se cierra con un envio en vuelo',
      'if (!lista || r.data.siguiente || A.yaExiste || (!E2.previos && cand.length) || E2.minutos == null) {' in CODIGO and 'creado_en' not in CODIGO[CODIGO.index('function asComprueba'):CODIGO.index('function asHecha')]
      and 'if (!A || A.enviando || A.comprobando) return;' in CODIGO)

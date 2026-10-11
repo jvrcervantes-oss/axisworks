@@ -88,7 +88,8 @@ async function servidor(b, nombre, a) {
         precio_total: precio, moneda: 'IDR', desglose: [], entrega_direccion: pd.entrega_direccion || null, recogida_direccion: pd.recogida_direccion || null, pago_referencia: null,
         notas: pd.notas || null, creado_en: new Date().toISOString(), creado_por: 'yo@x.com', clave: pd.clave || null };
       b.reservas.unshift(r);
-      if (o.creaSinRespuesta) return { data: null, error: { message: 'Failed to fetch' } };   // se creó, pero la respuesta no llegó
+      if (o.creaSinRespuesta) return { data: null, error: { message: 'Failed to fetch' } };
+      if (o.crea504) return { data: null, error: { message: '<html><body>504 Gateway Time-out</body></html>' } };   // el gateway: sin code; la reserva SI se guardo   // se creó, pero la respuesta no llegó
       if (o.creaSinId) return { data: {}, error: null };
       return { data: { id, numero_reserva: r.numero, estado: r.estado, precio_total: precio, moneda: 'IDR' }, error: null };
     }
@@ -436,6 +437,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.reload(); await espera(p, () => document.querySelector('[data-rp="res-estado"]') && !document.querySelector('[data-rp="res-estado"]').textContent.includes('Cargando'));
     await p.click('[data-accion="rp-nueva"]'); await enPaso(p, 'resumen');
     ok('recargar la pagina con la duda abierta: igual, y reserva_producto_crea sigue llamada UNA vez', (await txt(p, '.rp-as-final')).includes('Comprobar de nuevo') && llamadas(base, 'reserva_producto_crea').length === 1);
+    ok('duda restaurada: antes de comprobar no hay «Empezar de cero» (primero se mira)', !(await p.$('[data-accion="rp-modal-as-reinicia"]')));
     ok('con la duda restaurada no sale el aviso de borrador recuperado (su «Empezar de cero» no puede saltarse la comprobacion)', !(await p.$('[data-rp="as-recuperado"]')));
     await p.click('[data-accion="rp-modal-as-comprueba"]');
     ok('mientras se comprueba no hay ningun «Empezar de cero» activo ni se puede cerrar', (await p.$$eval('[data-accion="rp-modal-as-reinicia"]', bs => bs.filter(b => !b.disabled).length)) === 0
@@ -454,6 +456,14 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await confirma(p);
     await espera(p, () => document.querySelector('[data-rp="as-error-envio"]') && !/miramos/.test(document.querySelector('[data-rp="as-error-envio"]').textContent));
     ok('gemela creada entre la moto y el envio: no se ensena como creada (la foto de lo previo es de justo antes de enviar)', !(await p.$('[data-rp="as-hecha"]')) && (await txt(p, '.rp-as-final')).includes('Comprobar de nuevo'));
+    await ctx.close();
+  }
+  {
+    // revisor 094ae88: un 504 del gateway sin code (la reserva SI se guardo) no es un error claro: se comprueba, se encuentra y no se deja reenviar
+    const { base, p, ctx } = await abre({ base: { crea504: true } });
+    await hastaResumen(p); await confirma(p);
+    await espera(p, () => document.querySelector('[data-rp="as-hecha"]') || (document.querySelector('[data-rp="as-error-envio"]') && !/miramos/.test(document.querySelector('[data-rp="as-error-envio"]').textContent)));
+    ok('504 del gateway: se comprueba y se encuentra la reserva creada (una sola llamada a crear)', (await dlg(p)).includes('sí se creó') && llamadas(base, 'reserva_producto_crea').length === 1);
     await ctx.close();
   }
   {

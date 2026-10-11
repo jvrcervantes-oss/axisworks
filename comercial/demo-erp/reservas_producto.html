@@ -1196,7 +1196,7 @@ a.rp-boton{text-decoration:none}
     var W = A.W, k = asCot(), p = producto(W.prodId);
     if (!k && A.dudosaSinMirar) {   // con un envío en duda lo que importa es comprobarlo, aunque el precio aún no haya vuelto
       if (A.errEnvio) c.appendChild(h('p', { class: 'rp-error', role: 'alert', 'data-rp': 'as-error-envio', text: A.errEnvio }));
-      if (!A.comprobando) c.appendChild(h('div', { class: 'rp-acciones' }, [boton(T('Empezar de cero'), 'rp-modal-as-reinicia')]));
+      if (!A.comprobando && A.comprobadoUnaVez) c.appendChild(h('div', { class: 'rp-acciones' }, [boton(T('Empezar de cero'), 'rp-modal-as-reinicia')]));
       return;
     }
     if (!k) { c.appendChild(h('p', { class: 'rp-error', role: 'alert', text: T('Falta el precio de la base para esta moto: vuelve al paso de la moto.') })); return; }
@@ -1223,7 +1223,7 @@ a.rp-boton{text-decoration:none}
     c.appendChild(asOpciones('modo', W.modo, [['confirmada', 'Confirmada'], ['h1', 'Apartada 1 h'], ['h24', 'Apartada 24 h'], ['h72', 'Apartada 72 h']]));
     c.appendChild(h('p', { class: 'rp-vacio', text: T('Apartada: la moto queda guardada y la reserva caduca sola si nadie la confirma a tiempo. Confirmada: queda firme aunque no haya pagado.') }));
     if (A.errEnvio) c.appendChild(h('p', { class: 'rp-error', role: 'alert', 'data-rp': 'as-error-envio', text: A.errEnvio }));
-    if (A.dudosaSinMirar && !A.comprobando) c.appendChild(h('div', { class: 'rp-acciones' }, [boton(T('Empezar de cero'), 'rp-modal-as-reinicia')]));
+    if (A.dudosaSinMirar && !A.comprobando && A.comprobadoUnaVez) c.appendChild(h('div', { class: 'rp-acciones' }, [boton(T('Empezar de cero'), 'rp-modal-as-reinicia')]));
   }
 
   function asPintaHecha(c) {
@@ -1330,7 +1330,8 @@ a.rp-boton{text-decoration:none}
       A.enviando = false;
       if (r.error) {
         var c = clasifica(r.error);
-        if (c.tipo === 'red' || c.hint === 'clave_repetida') return asComprueba(c.hint === 'clave_repetida');
+        // los errores de la base siempre traen código (P0001, 22023, 23505, 42501, PGRST…); sin código (gateway 5xx, HTML, corte) no se sabe si se creó: se comprueba
+        if (c.tipo === 'red' || !r.error.code || c.hint === 'clave_repetida') return asComprueba(c.hint === 'clave_repetida');
         if (c.hint === 'sin_disponibilidad') {
           A.cotClave = null; W.unidadId = '';
           A.err.moto = T('Esa moto se acaba de ocupar en esas fechas: elige otra. No se ha creado nada.');
@@ -1355,7 +1356,7 @@ a.rp-boton{text-decoration:none}
       return llama('reservas_producto_datos', { p_desde: E2.desde, p_hasta: E2.hasta, p_limit: 500 });
     }).then(function (r) {
       if (A !== yo || A.enviado !== E2) return;
-      A.comprobando = false;
+      A.comprobando = false; A.comprobadoUnaVez = true;   // «Empezar de cero» solo sale después de mirar al menos una vez
       var lista = vaListaDe(r, 'reservas') ? r.data.reservas : null;
       // sin filtro por la hora del PC (el reloj de la tienda no es el de la base): lo ENVIADO (producto, fechas, cliente o teléfono por cifras), viva, y que no estuviera ya antes de enviar
       var cand = lista ? lista.filter(function (y) {
