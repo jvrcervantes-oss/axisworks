@@ -138,6 +138,15 @@ mira('el acento del menú ≥ 4,5:1 sobre la tinta, y la tinta sobre él', bool(
      and D.contraste(rgb['on-primary'], rgb['primary-container']) >= 4.5)
 mira('el registro real: axisworks-demo sin menú oscuro', build.menu_oscuro_css('axisworks-demo') == '')
 
+# 4c — favicon con versión (la CDN de Hostinger lo cachea 7 días)
+d = paquete({'index.html': '<link rel="icon" href="/favicon.png"><p>', 'a/index.html': '<p>sin icono</p>'})
+open(os.path.join(d, 'favicon.png'), 'wb').write(b'\x89PNG prueba')
+n = build.favicon_versionado(d)
+pag = open(os.path.join(d, 'index.html'), encoding='utf-8').read()
+mira('favicon: el enlace lleva ?v= con la huella del fichero', n == 1 and re.search(r'href="/favicon\.png\?v=[0-9a-f]{8}"', pag) is not None
+     and 'href="/favicon.png"' not in pag)
+mira('favicon: sin fichero no toca nada', build.favicon_versionado(paquete({'index.html': 'href="/favicon.png"'})) == 0)
+
 # 5 — cableado en instancia()
 fuente = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
 cuerpo = fuente[fuente.index('def instancia(nombre):'):]
@@ -147,6 +156,8 @@ mira('instancia() añade la piel a la ficha, después de escribirla', 'piel = pi
 mira('el guard.js ya no lleva la piel', 'piel_instancia(nombre) + interruptores' not in cuerpo)
 mira('instancia() añade el menú oscuro a assets/shell.css antes de versionar', 'menu = menu_oscuro_css(nombre)' in cuerpo
      and "os.path.join(DIST, 'assets', 'shell.css')" in cuerpo and cuerpo.index('menu = menu_oscuro_css(nombre)') < cuerpo.index('versiona(DIST)'))
+mira('instancia() versiona el favicon justo antes de versiona()', 'favicon_versionado(DIST)' in cuerpo
+     and cuerpo.index('favicon_versionado(DIST)') < cuerpo.index('\n    versiona(DIST)'))
 mira('instancia() pone los logos de la instancia, no los neutros a secas', 'logos_instancia(nombre, marca)' in cuerpo and 'logos_neutros(' not in cuerpo)
 mira('instancia() comprueba la piel antes de dar el paquete por bueno', cuerpo.index('comprueba_piel(DIST, nombre)') < cuerpo.index('comprueba_resultado(DIST)'))
 

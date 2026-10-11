@@ -1101,6 +1101,26 @@ def menu_oscuro_css(nombre):
     return '\n%s{%s}\n' % (MENU_SELECTOR, cuerpo)
 
 
+def favicon_versionado(dist):
+    """`href="/favicon.png"` → `?v=<huella>` en todas las páginas (Calidad, 12-oct): Hostinger cachea /favicon.png 7 días y,
+    tras cambiar el icono de bbm, la URL sin versión seguía sirviendo el viejo. Devuelve cuántas páginas cambió."""
+    import hashlib
+    fav = os.path.join(dist, 'favicon.png')
+    if not os.path.isfile(fav):
+        return 0
+    nuevo = 'href="/favicon.png?v=%s"' % hashlib.sha1(open(fav, 'rb').read()).hexdigest()[:8]
+    n = 0
+    for raiz, _d, fichs in os.walk(dist):
+        for f in fichs:
+            if f.endswith('.html'):
+                p = os.path.join(raiz, f)
+                t = open(p, encoding='utf-8', errors='replace').read()
+                if 'href="/favicon.png"' in t:
+                    open(p, 'w', encoding='utf-8', newline='').write(t.replace('href="/favicon.png"', nuevo))
+                    n += 1
+    return n
+
+
 APLICA_TEMA = re.compile(r"""setProperty\(\s*['"`]--tema-""")
 FICHA_REL = 'contracts/assets/instancia.js'
 
@@ -2358,6 +2378,7 @@ def instancia(nombre):
     # ?v= con la huella de lo que SALE de este build, como en la demo pública (28-sep-2026). Sin esto, la v4 llevaba el
     # ?v= del fichero de Lawang (guard.js se reescribe entero aquí: mapa de módulos + ficha) y /panel/ iba sin versión:
     # Hostinger cachea 7 días y el verificador vio el guard.js viejo en /panel/ tras publicar.
+    favicon_versionado(DIST)   # y el favicon, que versiona() no toca (Calidad, 12-oct: bbm servía el icono viejo sin ?cb)
     versiona(DIST)
     # Lo que SALE lleva UNA copia de Ajustes › Correo (10-oct-2026): se mide aquí, sobre el fichero ya reescrito por limpia_publico.js, y no
     # solo al entrar. Vale para el paquete entero.
