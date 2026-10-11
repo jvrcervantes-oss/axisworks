@@ -1,7 +1,8 @@
 # Prueba de build.py: piel_instancia(), comprueba_piel() y logos_instancia() (F14, 11-oct-2026): python test_piel_instancia.py
 # Mira que (1) una instancia con `piel` aprobada lleva UN aplicador con solo tríos de enteros y la lista cerrada de tokens, y una sin piel
 # no lleva ninguno (axisworks-demo y Lawang no cambian), (2) una propuesta sin aprobar o una piel desconocida PARA el build, (3) el build para
-# si el paquete lleva un segundo aplicador, uno fuera de guard.js, el init del arnés (addInitScript) o `skin=` por la URL, (4) con `icono` el
+# si el paquete lleva un segundo aplicador, uno fuera de la ficha (instancia.js), otro setProperty('--tema-…') suelto, el init del arnés (addInitScript), una piel por la URL
+# (`skin=`, get('skin')) o los presets enteros, (4) con `icono` el
 # logo y el favicon salen del icono del cliente con el lienzo de siempre, sin `icono` los neutros de AxisWorks, y un icono fuera de
 # erp/tema/marcas/ PARA, (5) instancia() las llama en su sitio. NO ejecuta build.instancia(): no escribe nada en erp/despliegues/.
 import io, json, os, re, sys, tempfile
@@ -69,17 +70,23 @@ def paquete(ficheros):
     return d
 
 
-GUARD = 'contracts/assets/guard.js'
-mira('paquete con su aplicador en guard.js: pasa',
+GUARD = build.FICHA_REL   # la ficha: la cargan todas las páginas, también la puerta y /crea-contrasena/
+mira('paquete con su aplicador en la ficha: pasa',
      con_registro({'piel': PIEL}, build.comprueba_piel, paquete({GUARD: js, 'a.js': 'var a=1;'}), 'x')[0] == 'pasa')
 mira('dos aplicadores: PARA', con_registro({'piel': PIEL}, build.comprueba_piel, paquete({GUARD: js, 'a.js': js}), 'x')[0] == 'para')
-mira('el aplicador fuera de guard.js: PARA', con_registro({'piel': PIEL}, build.comprueba_piel, paquete({GUARD: 'var g;', 'a.js': js}), 'x')[0] == 'para')
+mira('el aplicador fuera de la ficha: PARA', con_registro({'piel': PIEL}, build.comprueba_piel, paquete({GUARD: 'var g;', 'a.js': js}), 'x')[0] == 'para')
 mira('instancia sin piel con aplicador: PARA', con_registro({}, build.comprueba_piel, paquete({GUARD: js}), 'x')[0] == 'para')
 mira('instancia sin piel y sin aplicador: pasa', con_registro({}, build.comprueba_piel, paquete({GUARD: 'var g;'}), 'x')[0] == 'pasa')
 mira('el init del arnés (addInitScript): PARA',
      con_registro({'piel': PIEL}, build.comprueba_piel, paquete({GUARD: js, 'b.js': 'page.addInitScript(f)'}), 'x')[0] == 'para')
 mira('piel por la URL (?skin=): PARA',
      con_registro({'piel': PIEL}, build.comprueba_piel, paquete({GUARD: js, 'c.html': '<a href="/home/?skin=neon">'}), 'x')[0] == 'para')
+for nombre, extra in (('otro setProperty de --tema- sin la marca', {'d.js': 'document.documentElement.style.setProperty("--tema-primary","1 2 3")'}),
+                      ("piel leída por get('skin')", {'e.js': "new URLSearchParams(location.search).get('skin')"}),
+                      ('propuestas_sin_aprobar en el paquete', {'f.js': 'var x={propuestas_sin_aprobar:{}}'}),
+                      ('presets.json copiado al paquete', {'assets/presets.json': '{}'})):
+    ficheros = dict({GUARD: js}, **extra)
+    mira(nombre + ': PARA', con_registro({'piel': PIEL}, build.comprueba_piel, paquete(ficheros), 'x')[0] == 'para')
 
 
 # 4 — identidad
@@ -114,7 +121,9 @@ mira('icono que sube de carpeta: PARA', logos({'icono': 'erp/tema/marcas/../piel
 fuente = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
 cuerpo = fuente[fuente.index('def instancia(nombre):'):]
 cuerpo = cuerpo[:cuerpo.index('\ndef ')]
-mira('instancia() antepone la piel al guard.js', "% nombre + piel_instancia(nombre) + interruptores + t" in cuerpo)
+mira('instancia() añade la piel a la ficha, después de escribirla', 'piel = piel_instancia(nombre)' in cuerpo
+     and cuerpo.index('escribe_instancia(') < cuerpo.index('piel = piel_instancia(nombre)') < cuerpo.index('versiona(DIST)'))
+mira('el guard.js ya no lleva la piel', 'piel_instancia(nombre) + interruptores' not in cuerpo)
 mira('instancia() pone los logos de la instancia, no los neutros a secas', 'logos_instancia(nombre, marca)' in cuerpo and 'logos_neutros(' not in cuerpo)
 mira('instancia() comprueba la piel antes de dar el paquete por bueno', cuerpo.index('comprueba_piel(DIST, nombre)') < cuerpo.index('comprueba_resultado(DIST)'))
 

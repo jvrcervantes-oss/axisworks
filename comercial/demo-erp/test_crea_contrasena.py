@@ -55,7 +55,7 @@ mira('lleva el estilo de Lawang (:root, .card, .msg.err) y no queda ninguna marc
 mira('la marca va escapada en título y alt (no rompe el HTML)', 'Marca &lt;&amp;&gt; &quot;x&quot;' in pag and '<title>Marca &lt;&amp;&gt; &quot;x&quot; · Crea tu contraseña</title>' in pag)
 mira('sale sin comentarios (los internos del estudio no se publican)', '<!--' not in pag and '/*' not in pag and 'pieza C' not in pag and 'AskUserQuestion' not in pag)
 mira('Referrer-Policy no-referrer y noindex en la página', '<meta name="referrer" content="no-referrer">' in pag and 'noindex' in pag)
-mira('el logo es el de la instancia (logos_neutros), nunca el de Lawang', '/contracts/assets/brand/axw-logo-v3-dark.png' in pag and 'lawang' not in pag.lower())
+mira('el logo es el de la instancia (logos_instancia), nunca el de Lawang', '/contracts/assets/brand/axw-logo-v3-dark.png' in pag and 'lawang' not in pag.lower())
 mira('NO carga guard.js (es una página de antes de entrar) ni ningún otro script que no sea supabase-js, la ficha, idioma e i18n',
      re.findall(r'<script src="([^"]+)"', pag) == [re.search(r'src="([^"]+supabase-js[^"]+)"', pag).group(1), '/contracts/assets/instancia.js', '/contracts/assets/idioma.js', '/contracts/assets/i18n.js']
      and 'guard.js' not in pag)
