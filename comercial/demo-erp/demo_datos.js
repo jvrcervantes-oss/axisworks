@@ -138,7 +138,8 @@
       var num = numSerie(TIPO_PREF[tipo]); ++nC;
       var c = fila(Object.assign({}, plantK, { id: 'c-' + nC, tipo: tipo, numero: num, comprador_nombre: cli.full_name,
         proyecto_nombre: u.proyecto, precio_total: precio, moneda: u.moneda, fecha_firma: firmado ? dia(diasFirma) : null,
-        datos: { fields: Object.assign(tipo === 'construccion' ? {} : { parcela_codigo: u.codigo }, { adq1_pasaporte: cli.passport_number, adq1_email: cli.email }), hitos: [] }, created_at: ts(diasFirma - 3), bloqueado: !!firmado,
+        datos: { fields: Object.assign(tipo === 'construccion' ? {} : { parcela_codigo: u.codigo }, { adq1_nombre: cli.full_name, adq1_pasaporte: cli.passport_number,
+          adq1_email: cli.email, adq1_domicilio: cli.address, proyecto_nombre: u.proyecto, moneda: u.moneda, precio_total: precio, sociedad_firmante: u._p.soc }), hitos: [], adq1_client_id: cli.id }, created_at: ts(diasFirma - 3), bloqueado: !!firmado,
         pdf_firmado_path: null, creado_por: agente.email, cobrado: 0, contrato_id: 'c-' + nC,
         compradores: [{ client_id: cli.id, rol: 'adquiriente_1', clients: { id: cli.id, full_name: cli.full_name, email: cli.email } }], contrato_padre_id: padre ? padre.id : null,
         proyecto_id: u.proyecto_id, unidad_id: u.id, nombre_contrato: TIPO_NOMBRE[tipo], parcela_codigo: u.codigo, soc: u._p.soc }));
@@ -903,6 +904,15 @@
       ue.contrato_numero = c ? c.numero : null; ue.comprador_nombre = c ? c.comprador_nombre : null; ue.contrato_firmado = !!(c && c.bloqueado);
     });
     if (F.operaciones) F.operaciones_equipo = { data: F.operaciones.data, error: null };
+    /* Alias que la v4 pide con select('campos:datos->fields,…'): el doble de QA devuelve la fila entera sin resolverlos
+       (su cabecera lo dice), así que van como columnas, igual que hace el doble con `soc` y `venc`. Sin `campos`, elegir
+       contrato en la factura no rellenaba el cliente. */
+    filasDe(F, 'contratos').forEach(function (c) {
+      var d = c.datos || {}, f = d.fields || {};
+      c.campos = f; c.hitos = d.hitos || []; c.extras = d.compradores || null; c.ficha = d.adq1_client_id || compradorDe(F, c.id) || null;
+      c.precio_reserva = f.precio_reserva == null ? null : String(f.precio_reserva); if (!c.soc) c.soc = f.sociedad_firmante || null;
+    });
+    filasDe(F, 'facturas').forEach(function (fa) { var f = (fa.datos && fa.datos.fields) || {}; if (f.fecha_vencimiento && !fa.venc) fa.venc = f.fecha_vencimiento; });
   }
 
   window.LW_DEMO_REPITE = function (F) {
@@ -1415,8 +1425,9 @@
         var molde = {}; Object.keys(filasDe(F, 'contratos')[0] || {}).forEach(function (k) { molde[k] = null; });
         var c = inserta(F, 'contratos', [Object.assign(molde, { tipo: tipo, numero: numero, comprador_nombre: cli.full_name, proyecto_nombre: pro.nombre || u.proyecto || null,
           precio_total: precio, moneda: a.p_moneda || u.moneda || 'EUR', fecha_firma: null, bloqueado: false, pdf_firmado_path: null, creado_por: SESION_EMAIL, cobrado: 0,
-          datos: { fields: Object.assign(tipo === 'construccion' ? {} : { parcela_codigo: u.codigo }, { adq1_pasaporte: cli.passport_number, adq1_email: cli.email, sociedad_firmante: SOC_DEMO }),
-            hitos: [], texto_sha256: a.p_texto_sha || null },
+          datos: { fields: Object.assign(tipo === 'construccion' ? {} : { parcela_codigo: u.codigo }, { adq1_nombre: cli.full_name, adq1_pasaporte: cli.passport_number, adq1_email: cli.email,
+            adq1_domicilio: cli.address || null, proyecto_nombre: pro.nombre || u.proyecto || null, moneda: a.p_moneda || u.moneda || 'EUR', precio_total: precio, sociedad_firmante: SOC_DEMO }),
+            hitos: [], adq1_client_id: cli.id, texto_sha256: a.p_texto_sha || null },
           compradores: [{ client_id: cli.id, rol: 'adquiriente_1', clients: { id: cli.id, full_name: cli.full_name, email: cli.email } }],
           contrato_padre_id: padre ? raizDe(F, padre) : null, proyecto_id: u.proyecto_id, unidad_id: u.id, nombre_contrato: { reserva_parcela: 'Plot Hold', carta_reserva: 'Reservation Letter', construccion: 'Construction Contract' }[tipo],
           parcela_codigo: u.codigo, soc: SOC_DEMO, operacion_id: opId, created_at: t0 })])[0];
