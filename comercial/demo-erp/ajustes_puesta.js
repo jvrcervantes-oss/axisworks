@@ -38,7 +38,15 @@
     'La base no ha respondido: prueba otra vez en un rato.': 'The database did not respond: try again in a moment.',
     'La base ha devuelto algo inesperado.': 'The database returned something unexpected.',
     'Prueba de precio: una moto real, 1 y 10 días': 'Price check: a real bike, 1 and 10 days',
-    'Reintentar': 'Retry', 'panel de control del estudio': "the studio's control panel"
+    'Reintentar': 'Retry', 'panel de control del estudio': "the studio's control panel",
+    'La sociedad: si es PKP (cobra PPN) o no': 'The company: whether it is PKP (charges VAT) or not',
+    'Facturación sin contrato y serie fiscal': 'Invoicing without a contract and fiscal series',
+    'estudio (registro de la instancia)': 'the studio (instance registry)',
+    '¿La sociedad es PKP (cobra PPN)?': 'Is the company PKP (does it charge VAT)?',
+    'Sí: es PKP y cobra PPN': 'Yes: it is PKP and charges VAT (PPN)', 'No: no es PKP (las reservas van sin PPN)': 'No: it is not PKP (bookings carry no VAT)',
+    'Motivo del cambio': 'Reason for the change', 'Obligatorio: queda en el registro de cambios.': 'Required: it is kept in the change log.',
+    'Escribe el motivo del cambio (al menos 3 letras).': 'Write the reason for the change (at least 3 letters).',
+    'La base solo admite sí o no.': 'The database only accepts yes or no.', 'Código': 'Code'
   };
   // Indonesio (owner, 11-oct-2026: bbm en indonesio e inglés). Misma clave en español que EN_PM; se fusiona en window.LW_ID solo donde existe (bbm).
   var ID_PM = {
@@ -68,10 +76,20 @@
     'La puesta en marcha es de administración: tu sesión no tiene acceso.': 'Pengaturan awal khusus admin: akun Anda tidak punya akses.',
     'La base no ha respondido: prueba otra vez en un rato.': 'Database tidak merespons: coba lagi sebentar lagi.',
     'La base ha devuelto algo inesperado.': 'Database mengembalikan data yang tidak terduga.',
-    'Reintentar': 'Coba lagi', 'panel de control del estudio': 'panel kontrol studio'
+    'Reintentar': 'Coba lagi', 'panel de control del estudio': 'panel kontrol studio',
+    'La sociedad: si es PKP (cobra PPN) o no': 'Perusahaan: berstatus PKP (memungut PPN) atau tidak',
+    'Facturación sin contrato y serie fiscal': 'Faktur tanpa kontrak dan nomor seri faktur',
+    'estudio (registro de la instancia)': 'studio (pengaturan sistem)',
+    '¿La sociedad es PKP (cobra PPN)?': 'Apakah perusahaan berstatus PKP (memungut PPN)?',
+    'Sí: es PKP y cobra PPN': 'Ya: PKP dan memungut PPN', 'No: no es PKP (las reservas van sin PPN)': 'Tidak: bukan PKP (booking tanpa PPN)',
+    'Motivo del cambio': 'Alasan perubahan', 'Obligatorio: queda en el registro de cambios.': 'Wajib diisi: tercatat di riwayat perubahan.',
+    'Escribe el motivo del cambio (al menos 3 letras).': 'Tulis alasan perubahan (minimal 3 huruf).',
+    'La base solo admite sí o no.': 'Database hanya menerima ya atau tidak.', 'Código': 'Kode'
   };
   var TITULOS = {
     sociedad: 'Sociedad emisora: razón social, domicilio y NPWP',
+    pkp: 'La sociedad: si es PKP (cobra PPN) o no',
+    facturacion: 'Facturación sin contrato y serie fiscal',
     impuesto: 'Impuesto que se aplica a las reservas',
     precio_incluye_impuesto: 'Precio con el impuesto dentro o fuera',
     modulo_sociedades: 'Encender el módulo Sociedades', modulo_facturas: 'Encender el módulo Facturas',
@@ -80,10 +98,11 @@
   };
   // Los dos sí/no que se eligen aquí. El valor que se guarda es el que la base espera ('si' | 'no'); el rótulo dice lo que significa para quien lo elige.
   var ELECCIONES = [
-    { clave: 'precio_incluye_impuesto', pregunta: 'Los precios de la tarifa',
+    { clave: 'precio_incluye_impuesto', paso: 'precio_incluye_impuesto', pregunta: 'Los precios de la tarifa',
       opciones: [['si', 'Llevan el impuesto DENTRO (el cliente paga el precio de la tarifa)'], ['no', 'Llevan el impuesto FUERA (se suma al precio de la tarifa)']] },
-    { clave: 'reservas_sin_impuesto', pregunta: '¿Las reservas llevan PPN?',
-      opciones: [['no', 'Sí: la sociedad es PKP y cobra PPN'], ['si', 'No: la sociedad no es PKP']] }
+    // reservas_sin_impuesto = 'si' quiere decir que NO es PKP (sin PPN): por eso el «Sí» de la pregunta guarda 'no'
+    { clave: 'reservas_sin_impuesto', paso: 'pkp', pregunta: '¿La sociedad es PKP (cobra PPN)?',
+      opciones: [['no', 'Sí: es PKP y cobra PPN'], ['si', 'No: no es PKP (las reservas van sin PPN)']] }
   ];
 
   function T(x, huecos) { return (typeof window.lwT === 'function') ? window.lwT(x, huecos) : x; }
@@ -135,33 +154,41 @@
     fila.appendChild(h('span', { class: 'font-body-sm text-body-sm text-outline', role: 'status', 'aria-live': 'polite', 'data-pm-estado': e.clave }));
     return fila;
   }
-  function pinta(pasos, ajustes) {
+  function pinta(pasos, ajustes, listoBase) {
     var c = cont(); if (!c) return;
+    var mPrev = c.querySelector('[data-pm="motivo"]'), motivoPrevio = mPrev ? mPrev.value : '';   // repintar no borra lo tecleado
     vacia(c);
     var valores = (ajustes && ajustes.valores) || {}, puede = !!(ajustes && ajustes.puede_escribir);
     var faltan = pasos.filter(function (p) { return p.hecho !== true; }).length;
-    c.appendChild(h('p', { class: 'px-8 py-4 font-body-md text-body-md ' + (faltan ? 'text-on-surface' : 'text-deep-lagoon font-semibold'), role: 'status', 'data-pm': 'resumen',
-                           text: faltan ? (faltan === 1 ? T('Falta 1 paso.') : T('Faltan %n pasos.', { n: faltan })) : T('Listo: ya puedes encender Facturas.') }));
+    var listo = listoBase === true;   // «listo» lo decide la base; la cuenta de abajo solo informa
+    c.appendChild(h('p', { class: 'px-8 py-4 font-body-md text-body-md ' + (listo ? 'text-deep-lagoon font-semibold' : 'text-on-surface'), role: 'status', 'data-pm': 'resumen',
+                           text: listo ? T('Listo: ya puedes encender Facturas.') : (faltan === 1 ? T('Falta 1 paso.') : T('Faltan %n pasos.', { n: Math.max(faltan, 1) })) }));
     var ol = h('ol', { class: 'flex flex-col list-none', 'data-pm': 'pasos' });
     pasos.forEach(function (p, i) {
       var clave = String(p.clave || '');
       var texto = h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
         h('span', { class: 'font-label-md text-label-md text-on-surface', text: (i + 1) + '. ' + (TITULOS[clave] ? T(TITULOS[clave]) : clave) }),
         p.detalle ? h('span', { class: 'font-body-sm text-body-sm text-outline break-words', text: String(p.detalle) }) : null,
+        p.hint ? h('span', { class: 'font-body-sm text-body-sm text-error break-words', 'data-pm-hint': clave, text: T('Código') + ': ' + String(p.hint) }) : null,
         donde(p.donde)]);
       var li = h('li', { class: 'px-8 py-4 flex flex-col gap-2 border-b border-outline-variant/30', 'data-pm-paso': clave }, [
         h('div', { class: 'flex items-start justify-between gap-4' }, [texto, chip(p.hecho === true)])]);
-      ELECCIONES.forEach(function (e) { if (e.clave === clave) li.appendChild(eleccion(e, valores, puede)); });
+      ELECCIONES.forEach(function (e) { if (e.paso === clave) li.appendChild(eleccion(e, valores, puede)); });
       ol.appendChild(li);
     });
-    // la elección que no tenga paso propio (p. ej. «¿lleva PPN?») va con el del impuesto, o al final si la base no da ese paso
+    // una elección cuyo paso no venga de la base no se pierde: va al final
     ELECCIONES.forEach(function (e) {
       if (ol.querySelector('[data-pm-fila="' + e.clave + '"]')) return;
-      var ancla = ol.querySelector('[data-pm-paso="impuesto"]');
       var fila = eleccion(e, valores, puede);
-      if (ancla) ancla.appendChild(fila); else ol.appendChild(h('li', { class: 'px-8 py-4 border-b border-outline-variant/30' }, [fila]));
+      ol.appendChild(h('li', { class: 'px-8 py-4 border-b border-outline-variant/30' }, [fila]));
     });
     c.appendChild(ol);
+    if (puede) c.appendChild(h('div', { class: 'px-8 py-4 flex flex-col gap-2' }, [
+      h('label', { for: 'lw-pm-motivo', class: 'font-label-md text-label-md text-on-surface', text: T('Motivo del cambio') }),
+      h('span', { class: 'font-body-sm text-body-sm text-outline', text: T('Obligatorio: queda en el registro de cambios.') }),
+      (function () { var i = h('input', { id: 'lw-pm-motivo', type: 'text', maxlength: '500', autocomplete: 'off', 'data-pm': 'motivo',
+                                          class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
+                     i.value = motivoPrevio; return i; })()]));
     if (!puede) c.appendChild(h('p', { class: 'px-8 py-4 font-body-sm text-body-sm text-outline', text: T('Solo el super admin puede cambiar estos ajustes.') }));
   }
   function errorLectura(err) {
@@ -177,7 +204,7 @@
       var pm = rs[0] || {}, aj = rs[1] || {};
       if (pm.error || !pm.data || !Array.isArray(pm.data.pasos)) { errorLectura(pm.error); return; }
       if (aj.error || !aj.data) { errorLectura(aj.error); return; }
-      pinta(pm.data.pasos, aj.data);
+      pinta(pm.data.pasos, aj.data, pm.data.listo);
     }, function (e) { errorLectura(e); });
   }
   function guarda(btn) {
@@ -187,12 +214,17 @@
     var est = document.querySelector('[data-pm-estado="' + clave + '"]');
     if (!sel || !sb) return;
     if (sel.value !== 'si' && sel.value !== 'no') { if (est) { est.className = 'font-body-sm text-body-sm text-error'; est.textContent = T('Elige una opción antes de guardar.'); } return; }
+    var mot = document.querySelector('[data-pm="motivo"]');
+    var motivo = mot ? mot.value.trim() : '';
+    if ((motivo.match(/\p{L}/gu) || []).length < 3) { if (est) { est.className = 'font-body-sm text-body-sm text-error'; est.textContent = T('Escribe el motivo del cambio (al menos 3 letras).'); } if (mot) mot.focus(); return; }
     ocupado = true; btn.disabled = true;
     if (est) { est.className = 'font-body-sm text-body-sm text-outline'; est.textContent = T('Guardando…'); }
-    Promise.resolve(sb.rpc('ajustes_config_guardar', { p_clave: clave, p_valor: sel.value, p_motivo: 'Puesta en marcha' })).then(function (r) {
+    Promise.resolve(sb.rpc('ajustes_config_guardar', { p_clave: clave, p_valor: sel.value, p_motivo: motivo })).then(function (r) {
       ocupado = false; btn.disabled = false;
       if (!r || r.error) {
-        var msg = r && r.error && r.error.code === '42501' ? T('Solo el super admin puede cambiar estos ajustes.') : falla(r && r.error);
+        var hint = r && r.error && r.error.hint;
+        var msg = r && r.error && r.error.code === '42501' ? T('Solo el super admin puede cambiar estos ajustes.')
+          : hint === 'motivo' ? T('Escribe el motivo del cambio (al menos 3 letras).') : hint === 'si_o_no' ? T('La base solo admite sí o no.') : falla(r && r.error);
         if (est) { est.className = 'font-body-sm text-body-sm text-error'; est.textContent = T('No se guardó') + ': ' + msg; }
         aviso(T('No se guardó') + ': ' + msg);
         return;
