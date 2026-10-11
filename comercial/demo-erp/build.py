@@ -1068,6 +1068,39 @@ def piel_instancia(nombre):
             % (PIEL_MARCA, json.dumps(_instancia_registro(nombre)['piel']), json.dumps(valores, separators=(',', ':'))))
 
 
+# Menú lateral y barra superior en la tinta de la marca (owner 11-oct, «es como la de Lawang y me confundo»; registro `menu:
+# "oscuro"`). Ningún token pinta SOLO el menú: se redefinen las variables de la piel DENTRO de él, en una regla de CSS
+# estática añadida a assets/shell.css del paquete (sin JS: nada de parpadeo; sin <style> ni inline: la CSP no cambia).
+# Enganche por identificador estable (norma del 29-sep), no por clases de Tailwind: el menú es el <aside> que lleva la
+# salida (a[data-path="login"], la misma estructura que usa maqueta.js) y la barra es el <header> del contador de avisos
+# ([data-lw="k-avisos"]). Colores medidos sobre el preset, nunca a mano: el build PARA si una pareja baja de 4,5:1.
+MENU_SELECTOR = 'aside:has(a[data-path="login"]),header:has([data-lw="k-avisos"])'
+
+
+def menu_oscuro_css(nombre):
+    """La regla CSS del menú oscuro de la instancia, o '' si no lo declara. Requiere piel."""
+    if _instancia_registro(nombre).get('menu') != 'oscuro':
+        return ''
+    p = _piel_preset(nombre)
+    if p is None:
+        aborta('menu "oscuro" de %s sin piel: el menú se pinta con los colores de su preset' % nombre)
+    D = _deriva()
+    tinta, fondo, acento = tuple(p['on-background']), tuple(p['background']), tuple(p['accent-gold'])
+    acento_menu, _p = D.minimo_p(acento, fondo, [tinta])   # el acento, aclarado lo justo para 4,5:1 sobre la tinta
+    m = {'surface-container-low': tinta, 'surface-container': D.mix(tinta, fondo, 0.10),
+         'surface-container-high': D.mix(tinta, fondo, 0.16), 'on-surface': fondo,
+         'on-surface-variant': D.mix(fondo, tinta, 0.12), 'outline': D.mix(fondo, tinta, 0.30),
+         'primary': acento_menu, 'primary-container': acento_menu, 'deep-lagoon': acento_menu, 'on-primary': tinta}
+    parejas = [(t, f) for t in ('on-surface', 'on-surface-variant', 'outline')
+               for f in ('surface-container-low', 'surface-container', 'surface-container-high')]
+    parejas += [('deep-lagoon', 'surface-container-low'), ('on-primary', 'primary-container')]
+    bajas = ['%s/%s %.2f' % (a, b, D.contraste(m[a], m[b])) for a, b in parejas if D.contraste(m[a], m[b]) < 4.5]
+    if bajas:
+        aborta('menú oscuro de %s por debajo de 4,5:1: %s' % (nombre, ', '.join(bajas)))
+    cuerpo = ';'.join('--tema-%s:%d %d %d' % ((k,) + tuple(v)) for k, v in sorted(m.items()))
+    return '\n%s{%s}\n' % (MENU_SELECTOR, cuerpo)
+
+
 APLICA_TEMA = re.compile(r"""setProperty\(\s*['"`]--tema-""")
 FICHA_REL = 'contracts/assets/instancia.js'
 
@@ -2223,6 +2256,12 @@ def instancia(nombre):
     piel = piel_instancia(nombre)
     if piel:
         open(os.path.join(DIST, 'contracts', 'assets', 'instancia.js'), 'a', encoding='utf-8', newline='\n').write(piel)
+    menu = menu_oscuro_css(nombre)
+    if menu:
+        hoja = os.path.join(DIST, 'assets', 'shell.css')   # la cargan todas las pantallas de la cáscara v4
+        if not os.path.isfile(hoja):
+            aborta('menú oscuro: falta assets/shell.css en el paquete')
+        open(hoja, 'a', encoding='utf-8', newline='\n').write(menu)
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
     # Módulos: el navegador pregunta a la base cuáles están activos al cargar (panel de control, 28-sep-2026). Va en
     # TODA instancia del ERP (antes solo si el registro traía modulos_activos, Des #4).

@@ -117,6 +117,27 @@ mira('sin icono: los neutros de AxisWorks (favicon índigo de 32 px)', fav is no
 mira('icono fuera de erp/tema/marcas/: PARA', logos({'icono': 'erp/instancias.json'})[0] == 'para')
 mira('icono que sube de carpeta: PARA', logos({'icono': 'erp/tema/marcas/../pieles.json'})[0] == 'para')
 
+# 4b — menú oscuro (registro `menu: "oscuro"`)
+mira('sin `menu`: nada', con_registro({'piel': PIEL}, build.menu_oscuro_css, 'x') == ('pasa', ''))
+mira('menu oscuro sin piel: PARA', con_registro({'menu': 'oscuro'}, build.menu_oscuro_css, 'x')[0] == 'para')
+est, css = con_registro({'piel': PIEL, 'menu': 'oscuro'}, build.menu_oscuro_css, 'x')
+m = re.fullmatch(r'\n(.+?)\{(.+)\}\n', css or '', re.S)
+mira('menu oscuro: una regla con el enganche estable (data-path="login", data-lw="k-avisos")',
+     est == 'pasa' and bool(m) and m.group(1) == build.MENU_SELECTOR and 'data-path="login"' in m.group(1) and 'data-lw="k-avisos"' in m.group(1))
+decl = dict(x.split(':', 1) for x in m.group(2).split(';')) if m else {}
+mira('solo variables --tema- con tres enteros 0-255 (nada de url() ni texto)',
+     bool(decl) and all(k.startswith('--tema-') and re.fullmatch(r'\d{1,3} \d{1,3} \d{1,3}', v) and all(int(n) <= 255 for n in v.split())
+                         for k, v in decl.items()))
+mira('sin setProperty ni "skin": comprueba_piel no la confunde con un aplicador',
+     con_registro({'piel': PIEL, 'menu': 'oscuro'}, build.comprueba_piel, paquete({GUARD: js, 'assets/shell.css': 'a{}' + (css or '')}), 'x')[0] == 'pasa')
+D = build._deriva()
+rgb = {k[len('--tema-'):]: tuple(int(n) for n in v.split()) for k, v in decl.items()}
+mira('texto del menú ≥ 4,5:1 sobre sus tres fondos', bool(rgb) and all(D.contraste(rgb[t], rgb[f]) >= 4.5
+     for t in ('on-surface', 'on-surface-variant', 'outline') for f in ('surface-container-low', 'surface-container', 'surface-container-high')))
+mira('el acento del menú ≥ 4,5:1 sobre la tinta, y la tinta sobre él', bool(rgb) and D.contraste(rgb['deep-lagoon'], rgb['surface-container-low']) >= 4.5
+     and D.contraste(rgb['on-primary'], rgb['primary-container']) >= 4.5)
+mira('el registro real: axisworks-demo sin menú oscuro', build.menu_oscuro_css('axisworks-demo') == '')
+
 # 5 — cableado en instancia()
 fuente = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
 cuerpo = fuente[fuente.index('def instancia(nombre):'):]
@@ -124,6 +145,8 @@ cuerpo = cuerpo[:cuerpo.index('\ndef ')]
 mira('instancia() añade la piel a la ficha, después de escribirla', 'piel = piel_instancia(nombre)' in cuerpo
      and cuerpo.index('escribe_instancia(') < cuerpo.index('piel = piel_instancia(nombre)') < cuerpo.index('versiona(DIST)'))
 mira('el guard.js ya no lleva la piel', 'piel_instancia(nombre) + interruptores' not in cuerpo)
+mira('instancia() añade el menú oscuro a assets/shell.css antes de versionar', 'menu = menu_oscuro_css(nombre)' in cuerpo
+     and "os.path.join(DIST, 'assets', 'shell.css')" in cuerpo and cuerpo.index('menu = menu_oscuro_css(nombre)') < cuerpo.index('versiona(DIST)'))
 mira('instancia() pone los logos de la instancia, no los neutros a secas', 'logos_instancia(nombre, marca)' in cuerpo and 'logos_neutros(' not in cuerpo)
 mira('instancia() comprueba la piel antes de dar el paquete por bueno', cuerpo.index('comprueba_piel(DIST, nombre)') < cuerpo.index('comprueba_resultado(DIST)'))
 
