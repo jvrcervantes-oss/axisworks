@@ -1101,6 +1101,91 @@ def menu_oscuro_css(nombre):
     return '\n%s{%s}\n' % (MENU_SELECTOR, cuerpo)
 
 
+# La suite clásica (la puerta /, /crea-contrasena/) no pinta con los tokens --tema-: cada página declara su paleta de Lawang en
+# un `:root{--dl:#104C4F…}` de su propio <style>, que va DESPUÉS de las hojas y por eso ganaba a cualquier `:root` añadido a
+# axw.css (Calidad, 12-oct: la puerta de bbm salía con el botón y el título verdes; el primer intento, que añadía `:root` a la
+# hoja, no pintaba nada). Aquí la regla es `html:root{…}` (especificidad 0,1,1 > 0,1,0): gana a la de la página sea cual sea
+# el orden. Cada variable va por su USO, no por su nombre (en la piel de bbm stone-sand y soft-canopy son el mismo gris oscuro):
+# --ss/--stone son fondo del botón desactivado y borde → neutro claro; --sc es texto sobre blanco y anillo de foco.
+PALETA_CLASICA = (('--tg', 'territorial-green'), ('--dl', 'deep-lagoon'), ('--be', 'burnt-earth'), ('--va', 'volcanic-ash'),
+                  ('--sc', 'soft-canopy'), ('--ss', 'outline-variant'), ('--rl', 'raw-linen'), ('--ink', 'on-background'),
+                  ('--line', 'warm-border'), ('--line-fuerte', 'outline-variant'), ('--sup-2', 'surface-container-low'),
+                  ('--linen', 'background'), ('--paper', 'surface-container-lowest'), ('--stone', 'outline-variant'),
+                  ('--muted', 'on-surface-variant'))
+# Lo que la piel no alcanza redefiniendo variables: colores de Lawang escritos a mano. (fichero, literal, token, formato).
+# Reemplazo literal en la copia de DIST; si un literal desaparece de la fuente el build PARA (no se queda verde en silencio).
+CLASICA_FIJOS = (('contracts/assets/axw.css', '#0d5b5f', 'primary-container', 'hex'),          # hover de los botones primarios
+                 ('contracts/assets/axw.css', 'rgba(16,76,79,', 'deep-lagoon', 'rgba'),        # sombra del botón primario
+                 ('index.html', 'rgba(72,91,55,.15)', 'territorial-green', 'rgba.15'),         # anillo del campo de la puerta
+                 ('index.html', '#F5F0E6', 'background', 'hex'),                              # velo «entrando…»
+                 ('index.html', '#CBD6B6', 'inverse-primary', 'hex'),                          # rol «manda» del panel clásico
+                 ('index.html', 'rgba(143,155,122,.22)', 'soft-canopy', 'rgba.22'))            # anillo del buscador clásico
+CLASICA_CONTRASTE = (('#FFFFFF', '--dl'), ('#FFFFFF', '--tg'), ('#FFFFFF', 'primary-container'), ('--sc', '#FFFFFF'),
+                     ('--muted', '--paper'), ('--linen', '--dl'), ('--ink', '--rl'))
+
+
+def _profundidad_llaves(css):
+    return css.count('{') - css.count('}')
+
+
+def paleta_clasica(nombre):
+    """{var: (r, g, b)} de la suite clásica con los colores de la piel, o None sin piel. PARA si una pareja baja de 4,5:1."""
+    p = _piel_preset(nombre)
+    if p is None:
+        return None
+    v = {var: tuple(p[tok]) for var, tok in PALETA_CLASICA}
+    D = _deriva()
+    color = lambda k: (255, 255, 255) if k == '#FFFFFF' else (v[k] if k in v else tuple(p[k]))
+    bajas = ['%s/%s %.2f' % (a, b, D.contraste(color(a), color(b))) for a, b in CLASICA_CONTRASTE
+             if D.contraste(color(a), color(b)) < 4.5]
+    if bajas:
+        aborta('suite clásica de %s por debajo de 4,5:1: %s' % (nombre, ', '.join(bajas)))
+    return v
+
+
+def paleta_clasica_css(nombre):
+    """`html:root{--dl:#…}` de la suite clásica con la piel de la instancia, o '' sin piel."""
+    v = paleta_clasica(nombre)
+    if v is None:
+        return ''
+    return '\nhtml:root{%s}\n' % ';'.join('%s:#%02X%02X%02X' % ((var,) + v[var]) for var, _t in PALETA_CLASICA)
+
+
+def piel_suite_clasica(dist, nombre):
+    """Pone la piel en la puerta (/), en lo que carga axw.css y en /crea-contrasena/. Sin piel no toca nada (Lawang, demo).
+    Va ANTES de versiona(): el ?v= de axw.css tiene que cambiar o la CDN sirve la hoja vieja (como pasó con el favicon)."""
+    css = paleta_clasica_css(nombre)
+    if not css:
+        return 0
+    p = _piel_preset(nombre)
+    fmt = {'hex': lambda c: '#%02X%02X%02X' % c, 'rgba': lambda c: 'rgba(%d,%d,%d,' % c,
+           'rgba.15': lambda c: 'rgba(%d,%d,%d,.15)' % c, 'rgba.22': lambda c: 'rgba(%d,%d,%d,.22)' % c}
+    textos = {}
+    for rel in ('contracts/assets/axw.css', 'index.html', 'crea-contrasena/index.html'):
+        ruta = os.path.join(dist, rel)
+        if not os.path.isfile(ruta):
+            aborta('piel de la suite clásica: falta %s en el paquete' % rel)
+        textos[rel] = open(ruta, encoding='utf-8').read()
+    for rel, literal, tok, f in CLASICA_FIJOS:
+        if literal not in textos[rel]:
+            aborta('piel de la suite clásica: %s ya no lleva %r (¿cambió Lawang? mirar CLASICA_FIJOS)' % (rel, literal))
+        textos[rel] = textos[rel].replace(literal, fmt[f](tuple(p[tok])))
+    # axw.css: la regla al final, con las llaves cerradas (no dentro de un @media colgado)
+    if _profundidad_llaves(textos['contracts/assets/axw.css']) != 0:
+        aborta('piel de la suite clásica: axw.css no cierra sus llaves; la regla quedaría dentro de un bloque')
+    textos['contracts/assets/axw.css'] += css
+    # las dos páginas: al final de su ÚNICO <style> propio con :root (la CSP de la instancia admite style en línea)
+    for rel in ('index.html', 'crea-contrasena/index.html'):
+        t = textos[rel]
+        m = [x for x in re.finditer(r'<style>(.*?)</style>', t, flags=re.S) if ':root{' in x.group(1).replace(' ', '')]
+        if len(m) != 1 or _profundidad_llaves(m[0].group(1)) != 0:
+            aborta('piel de la suite clásica: %s no tiene UN <style> con :root y llaves cerradas' % rel)
+        textos[rel] = t[:m[0].end(1)] + css + t[m[0].end(1):]
+    for rel, t in textos.items():
+        open(os.path.join(dist, rel), 'w', encoding='utf-8', newline='').write(t)
+    return len(textos)
+
+
 def favicon_versionado(dist):
     """`href="/favicon.png"` → `?v=<huella>` en todas las páginas (Calidad, 12-oct): Hostinger cachea /favicon.png 7 días y,
     tras cambiar el icono de bbm, la URL sin versión seguía sirviendo el viejo. Devuelve cuántas páginas cambió."""
@@ -2312,6 +2397,7 @@ def instancia(nombre):
                 os.replace(os.path.join(raiz, f), os.path.join(raiz, nuevo))
     logos_instancia(nombre, marca)
     crea_contrasena_pantalla(marca)   # pieza C de I6 (9-oct-2026): «Crea tu contraseña» para el primer administrador invitado
+    piel_suite_clasica(DIST, nombre)   # tras el renombrado (axw.css) y tras crea-contrasena; antes de versiona()
     tipografias_libres()
     neutraliza_ejemplos()   # ejemplos de persona que casan con gente real (pii_maqueta)
     # 2. Portada = la puerta de acceso, que reraiz() ha subido a la raíz (antes /intranet/). Lo que en la demo es un aviso,
