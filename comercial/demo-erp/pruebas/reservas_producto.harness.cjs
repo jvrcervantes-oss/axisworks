@@ -156,6 +156,9 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   const nav = await chromium.launch({ executablePath: fs.existsSync(exe) ? exe : undefined, ignoreDefaultArgs: ['--hide-scrollbars'] });
   async function abre(opts = {}) {
     const base = nuevaBase(opts.base || {});
+    if (base.o.gemela) base.reservas.push({ id: 'r6', numero: 'RSV-6', producto_id: 'p1', producto: 'Honda Beat', unidad_id: 'u1', unidad: 'DK 1', client_id: null, cliente_oculto: false,
+      contacto_nombre: 'Dewi Lestari', contacto_telefono: '+6281234567890', desde: mas(20), hasta: mas(22), dias: 2, estado: 'confirmada', origen: 'equipo', caduca_en: null, precio_total: 200000, moneda: 'IDR',
+      desglose: [], entrega_direccion: null, recogida_direccion: null, pago_referencia: null, notas: null, creado_en: new Date().toISOString(), creado_por: 'yo@x.com' });
     if (base.o.dupTel) base.reservas.push({ id: 'r5', numero: 'RSV-5', producto_id: 'p1', producto: 'Honda Beat', unidad_id: 'u2', unidad: 'DK 2', client_id: null, cliente_oculto: false,
       contacto_nombre: 'Dewi Lestari', contacto_telefono: '+62 812-3456-7890', desde: mas(21), hasta: mas(25), dias: 4, estado: 'confirmada', origen: 'bot', caduca_en: null, precio_total: 400000, moneda: 'IDR',
       desglose: [], entrega_direccion: null, recogida_direccion: null, pago_referencia: null, notas: null, creado_en: new Date().toISOString(), creado_por: 'bot' });
@@ -385,15 +388,40 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await ctx.close();
   }
   {
+    // E12 · CONFIRMADA sin respuesta y sin encontrarla: la base aun no protege una confirmada contra duplicados (B1), asi que NO se reactiva el envio
     const { base, p, ctx } = await abre({ base: { creaSinRed: true } });
     await hastaResumen(p); await confirma(p);
+    ok('E12 · durante el envio en duda no se puede volver atras ni cambiar nada', await p.$eval('[data-accion="rp-modal-as-atras"]', b => b.disabled) && (await p.$$eval('[data-accion="rp-modal-as-paso"]', bs => bs.every(b => b.disabled))));
     await espera(p, () => document.querySelector('[data-rp="as-error-envio"]') && !/miramos/.test(document.querySelector('[data-rp="as-error-envio"]').textContent));
-    ok('E12 · no se creo: se mira la lista (tras esperar), se dice que no aparece y el boton vuelve a estar disponible', (await txt(p, '[data-rp="as-error-envio"]')).includes('no aparece en la lista') && !(await p.$eval('[data-accion="rp-modal-as-confirma"]', b => b.disabled)));
+    ok('E12 · confirmada sin encontrar: no se reactiva el envio, se ofrece comprobar de nuevo o empezar de cero', (await txt(p, '.rp-as-final')).includes('Comprobar de nuevo')
+       && (await txt(p, '[data-rp="as-error-envio"]')).includes('No la repitas') && !!(await p.$('[data-accion="rp-modal-as-reinicia"]')) && llamadas(base, 'reserva_producto_crea').length === 1);
+    await ctx.close();
+  }
+  {
+    // E12 · APARTADA sin respuesta y sin encontrarla: se puede reintentar con la MISMA clave (la base no duplica un apartado)
+    const { base, p, ctx } = await abre({ base: { creaSinRed: true } });
+    await hastaResumen(p); await confirma(p, 'h24');
+    await espera(p, () => document.querySelector('[data-rp="as-error-envio"]') && !/miramos/.test(document.querySelector('[data-rp="as-error-envio"]').textContent));
+    ok('E12 · apartado no creado: se mira la lista (tras esperar), se dice que no aparece y el boton vuelve a estar disponible', (await txt(p, '[data-rp="as-error-envio"]')).includes('no aparece en la lista') && !(await p.$eval('[data-accion="rp-modal-as-confirma"]', b => b.disabled)));
     base.o.creaSinRed = false;
     await p.click('[data-accion="rp-modal-as-confirma"]');
     await espera(p, () => document.querySelector('[data-rp="as-hecha"]'));
     const cr = llamadas(base, 'reserva_producto_crea');
     ok('E12 · el reintento manda la MISMA clave (la base no duplica un apartado)', cr.length === 2 && cr[0][1].p_datos.clave === cr[1][1].p_datos.clave);
+    await ctx.close();
+  }
+  {
+    // revisor 6aeaafa: una reserva ANTERIOR idéntica (mismo modelo, fechas y telefono: una pareja que alquila dos motos) no se da por la nueva tras un corte
+    const { base, p, ctx } = await abre({ base: { creaSinRed: true, gemela: true } });
+    await hastaCliente(p);
+    await p.fill('[data-as="numero"]', '081234567890'); await p.fill('[data-as="nombre"]', 'Dewi Lestari'); await sig(p);
+    await espera(p, () => document.querySelector('[data-rp="as-coincidencias"]'));
+    await sig(p); await enPaso(p, 'entrega'); await sig(p); await enPaso(p, 'resumen');
+    ok('la gemela sale como posible duplicado en el resumen', (await txt(p, '[data-rp="as-duplicado"]')).includes('RSV-6'));
+    await confirma(p);
+    await espera(p, () => document.querySelector('[data-rp="as-error-envio"]') && !/miramos/.test(document.querySelector('[data-rp="as-error-envio"]').textContent));
+    ok('la reserva gemela que ya existia NO se ensena como creada (sigue la duda y no se reactiva el envio)', !(await p.$('[data-rp="as-hecha"]')) && (await txt(p, '[data-rp="as-error-envio"]')).includes('No la repitas')
+       && (await txt(p, '.rp-as-final')).includes('Comprobar de nuevo'), await txt(p, '[data-rp="as-error-envio"]').catch(() => ''));
     await ctx.close();
   }
   {

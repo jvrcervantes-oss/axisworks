@@ -277,7 +277,7 @@ a.rp-boton{text-decoration:none}
     'Falta el precio de la base para esta moto: vuelve al paso de la moto.': 'The database price for this motorbike is missing: go back to the motorbike step.',
     'Total': 'Total', 'Base': 'Net', 'Sin impuesto': 'No tax', 'Entrega o recogida a domicilio: NO incluida en este total.': 'Delivery or collection: NOT included in this total.',
     'la que asigne la base': 'any free bike', 'Pendiente de pago': 'Still to pay', 'todo': 'all of it',
-    'Ojo: este teléfono ya tiene la reserva': 'Careful: this phone number already has booking', 'en fechas que se solapan. ¿Seguro que es otra?': 'on overlapping dates. Are you sure it is a different one?',
+    'Ojo: este cliente ya tiene la reserva': 'Careful: this customer already has booking', 'en fechas que se solapan. ¿Seguro que es otra?': 'on overlapping dates. Are you sure it is a different one?',
     'Notas / hora acordada (opcional)': 'Notes / agreed time (optional)', '¿Cómo queda la reserva?': 'How is the booking left?',
     'Apartada 1 h': 'Held 1 h', 'Apartada 24 h': 'Held 24 h', 'Apartada 72 h': 'Held 72 h', 'Apartar 1 h': 'Hold 1 h', 'Apartar 24 h': 'Hold 24 h', 'Apartar 72 h': 'Hold 72 h',
     'Apartada: la moto queda guardada y la reserva caduca sola si nadie la confirma a tiempo. Confirmada: queda firme aunque no haya pagado.': 'Held: the bike is kept and the booking expires by itself if nobody confirms it in time. Confirmed: it stands even if they have not paid.',
@@ -293,13 +293,14 @@ a.rp-boton{text-decoration:none}
     'Díselo al cliente con el total nuevo.': 'Tell the customer the new total.',
     'La respuesta no llegó por la conexión, pero la reserva sí se creó (la hemos encontrado en la lista).': 'The answer was lost on the connection, but the booking was created (we found it in the list).',
     'Ver en la lista': 'See it in the list',
-    'La conexión se cortó y la reserva no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez; si luego la ves repetida, cancela una de las dos.': 'The connection dropped and the booking is not in the list (checked a few seconds later). You can try again; if you later see it twice, cancel one of them.',
     'La base dice que esta reserva ya existe (apartada), pero no aparece en la lista. No la repitas: búscala en la pestaña Reservas.': 'The database says this booking already exists (held), but it is not in the list. Do not repeat it: look for it in the Bookings tab.',
     'Cliente con ficha': 'Customer with a record',
     'Cliente nuevo o sin ficha (escribe su teléfono)': 'New customer or no record (type their phone)',
     'La reserva se enlaza a la ficha de este cliente: su nombre y su teléfono salen de la ficha.': 'The booking is linked to this customer’s record: name and phone come from the record.',
     'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.': 'The customer list is cut to the first 500: if you cannot see the one you need, ask the administrator.',
-    'No se ha podido mirar si este teléfono ya tiene reservas. Pulsa Siguiente para seguir igualmente.': 'Could not check whether this phone already has bookings. Press Next to carry on anyway.'
+    'No se ha podido mirar si este teléfono ya tiene reservas. Pulsa Siguiente para seguir igualmente.': 'Could not check whether this phone already has bookings. Press Next to carry on anyway.',
+    'La reserva no aparece en la lista. No la repitas desde aquí (una reserva confirmada podría quedar doble): pulsa «Comprobar de nuevo» en un momento y, si sigue sin salir y tampoco está en la pestaña Reservas, empieza de cero.': 'The booking is not in the list. Do not repeat it from here (a confirmed booking could end up twice): press “Check again” in a moment and, if it still does not show and is not in the Bookings tab either, start again.',
+    'La conexión se cortó y el apartado no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez: la base no duplica un apartado con la misma clave.': 'The connection dropped and the hold is not in the list (checked a few seconds later). You can try again: the database does not duplicate a hold with the same key.'
   };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
     Object.keys(EN_RP).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_RP[k]; });
@@ -393,7 +394,7 @@ a.rp-boton{text-decoration:none}
     'Falta el precio de la base para esta moto: vuelve al paso de la moto.': 'Harga dari sistem untuk motor ini belum ada: kembali ke langkah motor.',
     'Total': 'Total', 'Base': 'DPP', 'Sin impuesto': 'Tanpa pajak', 'Entrega o recogida a domicilio: NO incluida en este total.': 'Antar atau jemput ke alamat: TIDAK termasuk dalam total ini.',
     'la que asigne la base': 'dipilihkan sistem', 'Pendiente de pago': 'Belum dibayar', 'todo': 'semua',
-    'Ojo: este teléfono ya tiene la reserva': 'Perhatian: nomor ini sudah punya booking', 'en fechas que se solapan. ¿Seguro que es otra?': 'di tanggal yang bentrok. Yakin ini booking lain?',
+    'Ojo: este cliente ya tiene la reserva': 'Perhatian: pelanggan ini sudah punya booking', 'en fechas que se solapan. ¿Seguro que es otra?': 'di tanggal yang bentrok. Yakin ini booking lain?',
     'Notas / hora acordada (opcional)': 'Catatan / jam yang disepakati (opsional)', '¿Cómo queda la reserva?': 'Booking-nya mau dibuat bagaimana?',
     'Apartada 1 h': 'Tahan 1 jam', 'Apartada 24 h': 'Tahan 24 jam', 'Apartada 72 h': 'Tahan 72 jam', 'Apartar 1 h': 'Tahan 1 jam', 'Apartar 24 h': 'Tahan 24 jam', 'Apartar 72 h': 'Tahan 72 jam',
     'Apartada: la moto queda guardada y la reserva caduca sola si nadie la confirma a tiempo. Confirmada: queda firme aunque no haya pagado.': 'Tahan: motor disimpan dan booking batal sendiri jika tidak dikonfirmasi tepat waktu. Dikonfirmasi: booking tetap jadi walau belum bayar.',
@@ -409,13 +410,14 @@ a.rp-boton{text-decoration:none}
     'Díselo al cliente con el total nuevo.': 'Beri tahu pelanggan total yang baru.',
     'La respuesta no llegó por la conexión, pero la reserva sí se creó (la hemos encontrado en la lista).': 'Jawabannya tidak sampai karena koneksi, tapi booking sudah dibuat (sudah kami temukan di daftar).',
     'Ver en la lista': 'Lihat di daftar',
-    'La conexión se cortó y la reserva no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez; si luego la ves repetida, cancela una de las dos.': 'Koneksi terputus dan booking tidak ada di daftar (dicek beberapa detik kemudian). Anda boleh mencoba lagi; jika nanti booking-nya muncul dua kali, batalkan salah satunya.',
     'La base dice que esta reserva ya existe (apartada), pero no aparece en la lista. No la repitas: búscala en la pestaña Reservas.': 'Sistem menyebut booking ini sudah ada (ditahan), tapi tidak muncul di daftar. Jangan diulang: cari di tab Booking.',
     'Cliente con ficha': 'Pelanggan terdaftar',
     'Cliente nuevo o sin ficha (escribe su teléfono)': 'Pelanggan baru atau belum terdaftar (isi nomornya)',
     'La reserva se enlaza a la ficha de este cliente: su nombre y su teléfono salen de la ficha.': 'Booking ditautkan ke data pelanggan ini: nama dan nomornya diambil dari data pelanggan.',
     'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.': 'Daftar pelanggan hanya 500 pertama: jika yang dicari tidak ada, minta ke pengelola.',
-    'No se ha podido mirar si este teléfono ya tiene reservas. Pulsa Siguiente para seguir igualmente.': 'Belum bisa dicek apakah nomor ini sudah punya booking. Tekan Lanjut untuk tetap melanjutkan.'
+    'No se ha podido mirar si este teléfono ya tiene reservas. Pulsa Siguiente para seguir igualmente.': 'Belum bisa dicek apakah nomor ini sudah punya booking. Tekan Lanjut untuk tetap melanjutkan.',
+    'La reserva no aparece en la lista. No la repitas desde aquí (una reserva confirmada podría quedar doble): pulsa «Comprobar de nuevo» en un momento y, si sigue sin salir y tampoco está en la pestaña Reservas, empieza de cero.': 'Booking tidak ada di daftar. Jangan diulang dari sini (booking yang dikonfirmasi bisa jadi dobel): tekan «Cek lagi» sebentar lagi dan, jika tetap tidak muncul dan juga tidak ada di tab Booking, mulai dari awal.',
+    'La conexión se cortó y el apartado no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez: la base no duplica un apartado con la misma clave.': 'Koneksi terputus dan booking yang ditahan tidak ada di daftar (dicek beberapa detik kemudian). Anda boleh mencoba lagi: sistem tidak menggandakan booking tahan dengan kunci yang sama.'
   };
   if (window.LW_ID && typeof window.LW_ID === 'object') {
     Object.keys(ID_RP).forEach(function (k) { if (!(k in window.LW_ID)) window.LW_ID[k] = ID_RP[k]; });
@@ -921,6 +923,7 @@ a.rp-boton{text-decoration:none}
       if (A !== yo || A.cotClave !== k) return;
       if (rs[0].error) { A.cargandoMotos = false; A.cotClave = null; A.motoErr = T('No se ha podido mirar') + ': ' + mensaje(rs[0].error, true); asPinta(); return; }
       A.rango = vaListaDe(rs[1], 'reservas') ? rs[1].data.reservas : null;
+      A.rangoRecortado = !!(A.rango && rs[1].data.siguiente);
       var lista = asListos();
       lista.forEach(function (p) { A.cot[p.id] = { estado: 'cargando' }; });
       asPinta();
@@ -941,6 +944,7 @@ a.rp-boton{text-decoration:none}
     return d.total != null;
   }
   function asLibre(c) { return !!c && c.estado === 'ok' && (c.r.disponibles == null || Number(c.r.disponibles) > 0); }
+  function asBloqueado() { return !!(A && (A.enviando || A.comprobando || A.dudosaSinMirar)); }   // envío en vuelo o con duda: no se cambia nada de lo enviado
   function asCot() { return A.W.prodId && A.cot[A.W.prodId] && A.cot[A.W.prodId].estado === 'ok' ? A.cot[A.W.prodId].r : null; }
   function asBloqueoMotos() {
     var ids = Object.keys(A.cot);
@@ -1004,7 +1008,7 @@ a.rp-boton{text-decoration:none}
     ({ fechas: asPasoFechas, moto: asPasoMoto, cliente: asPasoCliente, entrega: asPasoEntrega, resumen: asPasoResumen })[W.paso](cuerpo);
     c.appendChild(cuerpo);
     var pie = h('div', { class: 'rp-as-pie' });
-    pie.appendChild(n > 1 ? h('button', { type: 'button', class: 'rp-as-atras', 'data-accion': 'rp-modal-as-atras', text: '‹ ' + T('Atrás') }) : h('span'));
+    pie.appendChild(n > 1 ? h('button', { type: 'button', class: 'rp-as-atras', 'data-accion': 'rp-modal-as-atras', disabled: asBloqueado() ? true : null, text: '‹ ' + T('Atrás') }) : h('span'));
     if (W.paso === 'resumen') {
       var txt = A.enviando ? T('Trabajando…') : (A.comprobando ? T('Comprobando…') : (W.modo ? T(AS_BOTON[W.modo]) : T('Elige confirmar o apartar')));
       pie.appendChild(h('button', { type: 'button', class: 'rp-boton rp-as-final', 'data-primario': '1', 'data-accion': A.dudosaSinMirar ? 'rp-modal-as-comprueba' : 'rp-modal-as-confirma',
@@ -1101,7 +1105,8 @@ a.rp-boton{text-decoration:none}
       if (A !== yo) return;
       A.clientes = vaListaDe(r, 'clientes') ? r.data.clientes : null;   // sin lista (p. ej. Facturas apagado) se sigue con el contacto: no es un error del operario
       A.clientesTruncado = !!(A.clientes && r.data.truncado);
-      if (A.clientes && A.clientes.length && A.W.paso === 'cliente') asPinta();
+      var ae = document.activeElement;
+      if (A.clientes && A.clientes.length && A.W.paso === 'cliente' && !(ae && A.cuerpo.contains(ae) && /^(INPUT|TEXTAREA)$/.test(ae.tagName))) asPinta();   // tecleando: sale en el siguiente pintado
     });
   }
   function asPasoCliente(c) {
@@ -1112,7 +1117,7 @@ a.rp-boton{text-decoration:none}
       A.clientes.forEach(function (x) { selC.appendChild(h('option', { value: x.id, text: x.nombre || '—', selected: x.id === W.clienteId ? true : null })); });
       c.appendChild(campo('Cliente con ficha', selC, A.clientesTruncado ? [h('span', { class: 'rp-vacio', text: T('La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.') })] : []));
       if (W.clienteId) { c.appendChild(h('p', { class: 'rp-nota', text: T('La reserva se enlaza a la ficha de este cliente: su nombre y su teléfono salen de la ficha.') })); return; }
-    } else if (W.clienteId) { W.clienteId = ''; W.clienteNombre = ''; }
+    } else if (A.clientes === null && W.clienteId) { W.clienteId = ''; W.clienteNombre = ''; }   // solo si la lista NO existe (undefined = todavía cargando)
     var sel = h('select', { 'data-as': 'prefijo', 'aria-label': T('País') });
     PREFIJOS.forEach(function (x) { sel.appendChild(h('option', { value: x, text: x, selected: x === W.prefijo ? true : null })); });
     sel.appendChild(h('option', { value: 'otro', text: T('Otro país (+…)'), selected: W.prefijo === 'otro' ? true : null }));
@@ -1143,7 +1148,7 @@ a.rp-boton{text-decoration:none}
 
   function asOpciones(nombre, actual, ops) {
     var g = h('div', { class: 'rp-as-opciones', role: 'group' });
-    ops.forEach(function (o) { g.appendChild(h('button', { type: 'button', class: 'rp-as-opcion', 'data-accion': 'rp-modal-as-opcion', 'data-campo': nombre, 'data-valor': o[0],
+    ops.forEach(function (o) { g.appendChild(h('button', { type: 'button', class: 'rp-as-opcion', 'data-accion': 'rp-modal-as-opcion', 'data-campo': nombre, 'data-valor': o[0], disabled: asBloqueado() ? true : null,
                                                            'aria-pressed': actual === o[0] ? 'true' : 'false', text: T(o[1]) })); });
     return g;
   }
@@ -1163,7 +1168,7 @@ a.rp-boton{text-decoration:none}
 
   function asFila(etiqueta, valor, paso) {
     return h('div', { class: 'rp-as-fila' }, [h('span', { class: 'rp-as-etq', text: T(etiqueta) }), h('span', { class: 'rp-as-val', text: valor || '—' }),
-      paso ? boton(T('Cambiar'), 'rp-modal-as-paso', { 'data-paso': paso }) : h('span')]);
+      paso ? boton(T('Cambiar'), 'rp-modal-as-paso', { 'data-paso': paso, disabled: asBloqueado() ? true : null }) : h('span')]);
   }
   function asPasoResumen(c) {
     var W = A.W, k = asCot(), p = producto(W.prodId);
@@ -1183,13 +1188,15 @@ a.rp-boton{text-decoration:none}
       asFila('Entrega', W.entrega === 'domicilio' ? W.dirEntrega.trim() : T('En la tienda'), 'entrega'),
       asFila('Devolución', W.recogida === 'domicilio' ? W.dirRecogida.trim() : T('En la tienda'), 'entrega'),
       asFila('Pendiente de pago', dinero(k.total, k.moneda) + ' (' + T('todo') + ')', null)]));
-    var dup = (A.coinc || []).filter(function (x) { return seSolapa(x, W); })[0];
-    if (dup) c.appendChild(h('p', { class: 'rp-aviso', 'data-rp': 'as-duplicado', text: T('Ojo: este teléfono ya tiene la reserva') + ' ' + (dup.numero || '') + ' ' + T('en fechas que se solapan. ¿Seguro que es otra?') }));
+    var dup = W.clienteId ? (A.rango || []).filter(function (x) { return x.client_id === W.clienteId && seSolapa(x, W); })[0]
+                          : (A.coinc || []).filter(function (x) { return seSolapa(x, W); })[0];
+    if (dup) c.appendChild(h('p', { class: 'rp-aviso', 'data-rp': 'as-duplicado', text: T('Ojo: este cliente ya tiene la reserva') + ' ' + (dup.numero || '') + ' ' + T('en fechas que se solapan. ¿Seguro que es otra?') }));
     c.appendChild(campo('Notas / hora acordada (opcional)', h('textarea', { rows: '2', maxlength: '500', 'data-as': 'notas', 'aria-label': T('Notas / hora acordada (opcional)'), text: W.notas })));
     c.appendChild(h('p', { class: 'rp-as-sub', text: T('¿Cómo queda la reserva?') }));
     c.appendChild(asOpciones('modo', W.modo, [['confirmada', 'Confirmada'], ['h1', 'Apartada 1 h'], ['h24', 'Apartada 24 h'], ['h72', 'Apartada 72 h']]));
     c.appendChild(h('p', { class: 'rp-vacio', text: T('Apartada: la moto queda guardada y la reserva caduca sola si nadie la confirma a tiempo. Confirmada: queda firme aunque no haya pagado.') }));
     if (A.errEnvio) c.appendChild(h('p', { class: 'rp-error', role: 'alert', 'data-rp': 'as-error-envio', text: A.errEnvio }));
+    if (A.dudosaSinMirar && !A.comprobando) c.appendChild(h('div', { class: 'rp-acciones' }, [boton(T('Empezar de cero'), 'rp-modal-as-reinicia')]));
   }
 
   function asPintaHecha(c) {
@@ -1278,6 +1285,11 @@ a.rp-boton{text-decoration:none}
     if (W.recogida === 'domicilio') datos.recogida_direccion = W.dirRecogida.trim();
     if (W.notas.trim()) datos.notas = W.notas.trim();
     var minutos = AS_MODOS[W.modo];
+    var firma = JSON.stringify([datos.producto_id, datos.unidad_id || '', datos.desde, datos.hasta, datos.client_id || '', datos.contacto_telefono || '', minutos]);
+    if (A.enviado && A.enviado.firma !== firma) { W.clave = claveNueva(); datos.clave = W.clave; A.yaExiste = false; asGuarda(); }   // otra reserva tras un envío que no se creó: clave nueva (la vieja contestaría «ya existe» por el apartado anterior)
+    // lo que se comprueba si la respuesta no llega es ESTO (no lo que haya en pantalla luego), sin las reservas que ya estaban en esas fechas antes de enviar
+    A.enviado = { firma: firma, prodId: datos.producto_id, desde: datos.desde, hasta: datos.hasta, clienteId: datos.client_id || '', telefono: datos.contacto_telefono || '', minutos: minutos,
+                  previos: A.rango && !A.rangoRecortado ? A.rango.map(function (x) { return x.id; }) : null };
     var yo = A;
     llama('reserva_producto_crea', { p_datos: datos, p_bloqueo_minutos: minutos }).then(function (r) {
       if (A !== yo) return;
@@ -1300,31 +1312,34 @@ a.rp-boton{text-decoration:none}
     });
   }
   function asComprueba(yaExiste) {
-    var W = A.W, yo = A;
+    var E2 = A.enviado, yo = A;
     if (yaExiste) A.yaExiste = true;   // la base dijo «esa clave ya tiene un apartado»: existe, la encontremos o no
     A.comprobando = true; A.errEnvio = T('No ha llegado la respuesta de la base: miramos si la reserva se creó…'); asPinta();
     // se espera un poco antes de mirar: si la petición seguía en camino cuando se cortó, que le dé tiempo a terminar
     return new Promise(function (listo) { setTimeout(listo, AS_ESPERA_COMPRUEBA); }).then(function () {
-      return llama('reservas_producto_datos', { p_desde: W.desde, p_hasta: W.hasta, p_limit: 500 });
+      return llama('reservas_producto_datos', { p_desde: E2.desde, p_hasta: E2.hasta, p_limit: 500 });
     }).then(function (r) {
       if (A !== yo) return;
       A.comprobando = false;
       var lista = vaListaDe(r, 'reservas') ? r.data.reservas : null;
-      // sin filtro por la hora del PC (el reloj de la tienda no es el de la base): producto, fechas, cliente o teléfono (solo cifras) y viva
-      var x = lista ? lista.filter(function (y) {
-        return y.producto_id === W.prodId && y.desde === W.desde && y.hasta === W.hasta && (y.estado === 'bloqueo' || y.estado === 'confirmada') &&
-               (W.clienteId ? y.client_id === W.clienteId : mismoTel(y.contacto_telefono, W.telefono));
-      })[0] : null;
+      // sin filtro por la hora del PC (el reloj de la tienda no es el de la base): lo ENVIADO (producto, fechas, cliente o teléfono por cifras), viva, y que no estuviera ya antes de enviar
+      var cand = lista ? lista.filter(function (y) {
+        return y.producto_id === E2.prodId && y.desde === E2.desde && y.hasta === E2.hasta && (y.estado === 'bloqueo' || y.estado === 'confirmada') &&
+               (E2.clienteId ? y.client_id === E2.clienteId : mismoTel(y.contacto_telefono, E2.telefono));
+      }) : [];
+      var x = E2.previos ? cand.filter(function (y) { return E2.previos.indexOf(y.id) === -1; })[0] : null;
       if (x) { A.dudosaSinMirar = false; A.recuperadaTrasCorte = true; var d = Object.assign({}, x); d.numero_reserva = x.numero; asHecha(d, true); return; }   // la fila de la lista trae precio_total y moneda de la base
-      if (!lista || r.data.siguiente || A.yaExiste) {
-        // no se puede asegurar que no exista: ni se reactiva el envío ni se dice «no se creó»
+      if (!lista || r.data.siguiente || A.yaExiste || (!E2.previos && cand.length) || E2.minutos == null) {
+        // no se puede asegurar que no exista, o era una CONFIRMADA (la base aún no la protege contra duplicados: B1): no se reactiva el envío ni se dice «no se creó»
         A.dudosaSinMirar = true;
         A.errEnvio = A.yaExiste ? T('La base dice que esta reserva ya existe (apartada), pero no aparece en la lista. No la repitas: búscala en la pestaña Reservas.')
-                                : T('No sabemos si la reserva se creó y no hemos podido mirarlo. No la repitas: pulsa «Comprobar de nuevo» en un momento.');
+                   : (lista && !r.data.siguiente && !cand.length && E2.minutos == null
+                      ? T('La reserva no aparece en la lista. No la repitas desde aquí (una reserva confirmada podría quedar doble): pulsa «Comprobar de nuevo» en un momento y, si sigue sin salir y tampoco está en la pestaña Reservas, empieza de cero.')
+                      : T('No sabemos si la reserva se creó y no hemos podido mirarlo. No la repitas: pulsa «Comprobar de nuevo» en un momento.'));
         asPinta(); return;
       }
       A.dudosaSinMirar = false;
-      A.errEnvio = T('La conexión se cortó y la reserva no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez; si luego la ves repetida, cancela una de las dos.');
+      A.errEnvio = T('La conexión se cortó y el apartado no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez: la base no duplica un apartado con la misma clave.');
       asPinta();
     });
   }
@@ -1342,7 +1357,8 @@ a.rp-boton{text-decoration:none}
     if (a === 'rp-modal-as-cerrar') asCierra(false);
     else if (a === 'rp-modal-as-salir') asCierra(true);
     else if (a === 'rp-modal-as-seguir') { A.salir = false; asPinta(); }
-    else if (a === 'rp-modal-as-reinicia') { asOlvida(); A.W = asVacio(); A.recuperado = false; A.cot = {}; A.cotClave = null; A.coinc = []; A.dupTel = null; A.err = {}; A.errEnvio = null; asPinta(); }
+    else if (a === 'rp-modal-as-reinicia') { asOlvida(); A.W = asVacio(); A.recuperado = false; A.cot = {}; A.cotClave = null; A.coinc = []; A.dupTel = null; A.err = {}; A.errEnvio = null;
+      A.enviado = null; A.yaExiste = false; A.dudosaSinMirar = false; A.recuperadaTrasCorte = false; A.pasoPintado = null; asPinta(); }
     else if (a === 'rp-modal-as-sig') asSiguiente();
     else if (a === 'rp-modal-as-atras') { var i = AS_PASOS.indexOf(W.paso); if (i > 0) asVe(AS_PASOS[i - 1]); }
     else if (a === 'rp-modal-as-paso') asVe(el.getAttribute('data-paso'));

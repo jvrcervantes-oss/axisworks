@@ -150,18 +150,21 @@ mira('el precio nunca viaja: la reserva manda producto, unidad, cliente o contac
      and not re.search(r'precio_total\s*:|precio_unitario\s*:|p_total|p_importe(?!_devuelto)|p_precio|descuento|[{,]\s*pago_referencia\s*:|datos\.(estado|precio|moneda|desglose|dias|origen|numero)', CODIGO))
 claves_datos = set(re.findall(r"datos\.([a-z_]+)\s*=", CODIGO))
 mira('las unicas claves que se anaden a p_datos son las que la base lee (' + ', '.join(sorted(claves_datos)) + ')',
-     claves_datos <= {'unidad_id', 'client_id', 'contacto_nombre', 'contacto_telefono', 'entrega_direccion', 'recogida_direccion', 'notas'})
+     claves_datos <= {'unidad_id', 'client_id', 'contacto_nombre', 'contacto_telefono', 'entrega_direccion', 'recogida_direccion', 'notas', 'clave'})
 # P13 (asistente por pasos): la cotizacion solo pide producto y fechas; el alta lleva una clave unica por asistente (idempotencia en bloqueo; B1 la extiende a confirmada)
 mira('cotizar manda solo producto y fechas (la entrega por km del equipo no existe: la base solo la cotiza al bot)', "llama('reserva_producto_cotiza', { p_producto_id: p.id, p_desde: W.desde, p_hasta: W.hasta })" in CODIGO
      and CODIGO.count("'reserva_producto_cotiza'") == 2)
 mira('el alta lleva clave (equipo-<aleatorio>, cabe en la regex de la base) y clave_repetida o red se tratan como «puede estar creada»', "return 'equipo-' + r;" in CODIGO
      and "if (c.tipo === 'red' || c.hint === 'clave_repetida') return asComprueba(c.hint === 'clave_repetida');" in CODIGO)
 mira('revisor 835f420: clave_repetida nunca acaba en «no se creo», sin reloj del PC, lista recortada = no se asegura, y no se cierra con un envio en vuelo',
-     'if (!lista || r.data.siguiente || A.yaExiste) {' in CODIGO and 'creado_en' not in CODIGO[CODIGO.index('function asComprueba'):CODIGO.index('function asHecha')]
+     'if (!lista || r.data.siguiente || A.yaExiste || (!E2.previos && cand.length) || E2.minutos == null) {' in CODIGO and 'creado_en' not in CODIGO[CODIGO.index('function asComprueba'):CODIGO.index('function asHecha')]
      and 'if (!A || A.enviando || A.comprobando) return;' in CODIGO)
+mira('revisor 6aeaafa: se comprueba lo ENVIADO sin las reservas previas; una confirmada sin encontrar no reactiva el envio; nada se toca con el envio en duda',
+     'E2.previos.indexOf(y.id) === -1' in CODIGO and 'E2.minutos == null) {' in CODIGO and 'function asBloqueado()' in CODIGO and CODIGO.count('asBloqueado() ? true : null') >= 3
+     and 'if (A.enviado && A.enviado.firma !== firma) { W.clave = claveNueva();' in CODIGO)
 mira('revisor 835f420: el cliente con ficha se conserva donde clientes_datos responde (manda client_id, no copia el contacto)',
      'if (W.clienteId) datos.client_id = W.clienteId;' in CODIGO and "else { datos.contacto_nombre = W.nombre.trim(); datos.contacto_telefono = W.telefono; }" in CODIGO)
-mira('sin respuesta: antes de dejar repetir se busca la reserva por producto, fechas y telefono', 'function asComprueba' in CODIGO and 'mismoTel(y.contacto_telefono, W.telefono)' in CODIGO)
+mira('sin respuesta: antes de dejar repetir se busca la reserva por producto, fechas y telefono', 'function asComprueba' in CODIGO and 'mismoTel(y.contacto_telefono, E2.telefono)' in CODIGO)
 mira('el total que se dice tras crear es el de la base, y se avisa si no es el del resumen', "Number(A.cotTotal.total) !== Number(d.precio_total)" in CODIGO)
 mira('el borrador en sessionStorage va siempre en try/catch', CODIGO.count('window.sessionStorage') == 3 and CODIGO.count('try { ') >= 6)
 mira('crear: llama a reserva_producto_crea con p_datos y p_bloqueo_minutos y lee de vuelta id y numero_reserva', "llama('reserva_producto_crea', { p_datos: datos, p_bloqueo_minutos: minutos })" in CODIGO and '!d.id || !d.numero_reserva' in CODIGO)
