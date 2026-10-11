@@ -1469,7 +1469,10 @@
         var c = porId(F, 'contratos', a.p_contrato);
         if (!c) falla('contrato_no_existe', [], 'P0002');
         if (c.bloqueado) falla('ya_firmado');
-        var hoy = dia(0);
+        // El día de HOY del visitante, no el de UTC: en Bali de madrugada salía «firmado el 11» con el contrato del 12
+        // (verificación en vivo, 12-oct; las fechas de la siembra siguen en UTC, son relativas).
+        var ahoraLocal = new Date();
+        var hoy = ahoraLocal.getFullYear() + '-' + String(ahoraLocal.getMonth() + 1).padStart(2, '0') + '-' + String(ahoraLocal.getDate()).padStart(2, '0');
         actualiza(F, 'contratos', [c], { bloqueado: true, fecha_firma: hoy });
         actualiza(F, 'contrato_firmas', filasDe(F, 'contrato_firmas').filter(function (x) { return x.contrato_id === c.id && x.estado === 'pendiente'; }),
           { estado: 'firmado', firmado_en: ahora(), firmante_nombre: txt(a.p_firmante_nombre) || c.comprador_nombre });
