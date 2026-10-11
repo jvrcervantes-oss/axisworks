@@ -8,7 +8,7 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AQUI)
 import build
 
-FICHEROS = sorted({x[0] for x in build.IDIOMAS_PARCHES} | {'contracts/assets/i18n.js'})
+FICHEROS = sorted({x[0] for x in build.IDIOMAS_PARCHES} | {'contracts/assets/i18n.js'} | set(build.ES_ES_FIJOS))
 ORIGINAL = {f: open(os.path.join(build.LAWANG, *f.split('/')), encoding='utf-8').read() for f in FICHEROS}
 fallos, casos = [], 0
 def mira(nombre, ok):
@@ -68,6 +68,7 @@ if r == 'pasa':
     fp = lee(d, 'intranet/v4/assets/fechas_prueba.js')
     mira("'es-ES' escrito a mano pasa a depender del idioma (comillas simples y dobles)", fp.count("'id-ID'") == 2 and fp.count('"id-ID"') == 1 and fp.count('es-ES') == fp.count('id-ID'))
     i18n = lee(d, 'contracts/assets/i18n.js')
+    mira('los es-ES que no son de interfaz (importe editable, factura impresa) se quedan como estaban', all(lee(d, f) == ORIGINAL[f] for f in build.ES_ES_FIJOS))
     mira('el núcleo del indonesio va al final de i18n.js, una vez', i18n.count('window.LW_ID = {') == 1 and i18n.rstrip().endswith('})();') and '__AXW_LW_ID__' not in i18n)
     mira('el idioma.js parcheado declara los idiomas de la instancia', '["id", "en"]' in lee(d, 'contracts/assets/idioma.js'))
 
