@@ -1,39 +1,118 @@
-<!-- Pantalla /taller/ del ERP MAESTRO (F8 pieza 2, 8-oct-2026; encargos/20261008_erp_f8_bbm_inventario_reservas_plan.md §2, §3 y §7.2, decisión 1 del owner: orden ligera ahora, guion/parte/recambios/proveedor en F7).
-     NO es una página entera: build.py (taller_pantalla) la inyecta en la cáscara de /asistente/ de Lawang (la misma que usan ventas y reservas_producto), sustituyendo su contenedor y su script.
-     Dos partes separadas por la línea «AXW_SCRIPT». Las ayudas comunes (DOM sin innerHTML, errores clasificados, diálogo, un envío a la vez) y su CSS NO se pegan aquí: build.py las inyecta
-     desde _compartido/pantalla_comun.{js,css} donde esta página escribe las marcas AXW_COMUN_JS y AXW_COMUN_CSS.
-     Qué hace: abrir una orden de trabajo sobre una moto (y, si bloquea, la moto pasa a «taller» y no se reserva ni la ofrece el bot), ver las órdenes y cerrarlas con coste y nota.
-     El navegador SOLO pide: moto, motivo y si bloquea; número, autor, fechas y el estado de la moto los pone la base y la pantalla los lee de vuelta. No se cree su propio estado: tras cada
-     acción vuelve a leer. Todo texto que viene de la base (matrícula, motivo, nota, correo) se pinta con textContent. Se engancha por data-accion / data-tl / data-campo, nunca por un rótulo.
-     Idioma: ES/EN con el diccionario EN_TL de abajo más el de las ayudas comunes (se añaden a window.LW_EN solo si la clave no existe; el i18n.js es de Lawang y no se toca). -->
-<div class="flex flex-col w-full gap-8" data-tl="raiz">
+<!-- Pantalla /taller/ del ERP MAESTRO: TALLER POR PASOS (F8 8.T1, 12-oct-2026; encargos/20261008_erp_f8_bbm_inventario_reservas_plan.md §10.1, §10.3, §10.5, §10.8 y §10.9,
+     que manda). Sustituye a la orden ligera de la pieza 2 (8-oct): la base es la migración 20261011170000_f8_taller_pasos (funciones taller_*), y la edge taller-fotos.
+     NO es una página entera: build.py (taller_pantalla) la inyecta en la cáscara de /asistente/ de Lawang; las ayudas comunes (AXW_COMUN_CSS/JS) y las fotos guiadas
+     (AXW_FOTOS_JS) las pega el build desde _compartido/.
+     Qué hace:
+       · Inicio (paso 0): motos en taller sin orden, buscar matrícula (sin espacios encuentra con espacios), órdenes a medias y, para la administración, «Listas para
+         volver» (taller_moto_devuelve). Si la base dice que el taller no está configurado (setup.listo = false) no deja empezar y dice qué falta.
+       · Asistente del mecánico, un paso por pantalla: moto → motivo (abre o retoma la orden) → km y gasolina → fotos guiadas → revisiones (Baik / Perlu dicek / Rusak,
+         cada una se guarda al pulsar) → resultado (Siap disewa / Tunggu suku cadang / Tidak bisa jalan). El paso 6 (recambios) es de 8.T2.
+       · «Listas por modelo» (administración con Flota): revisiones y piezas por modelo, lista común, lista básica y copiar de otro modelo.
+     Reglas: el navegador solo PIDE (moto, motivo, km, foto, respuesta, resultado); número, autor, rutas, nombres congelados y el estado de la moto los pone la base.
+     Cada paso se guarda al pulsar y si falla se queda en pantalla con «No guardado · Reintentar», sin avanzar. «No hay nada» ≠ «no he podido mirar».
+     Todo dato de fuera con textContent. Enganche por data-accion / data-paso / data-tl, nunca por un rótulo. Colores solo por var(--tema-*).
+     URL: #o=<orden>&p=<paso> (pushState/popstate; al recargar manda el paso de la BASE), #m=<moto>&p=moto|motivo antes de abrir y #listas para la pestaña de listas.
+     Idioma: claves en español; EN_TL e ID_TL se fusionan en window.LW_EN / window.LW_ID (este solo existe en las instancias con indonesio: bbm). -->
+<div class="flex flex-col w-full gap-6 tl-raiz" data-tl="raiz" data-modo="inicio">
 <style>
 /*AXW_COMUN_CSS*/
+.tl-raiz{--tl-pie:56px}
+.tl-vista{display:flex;flex-direction:column;gap:16px}
+.tl-tarjeta{background:rgb(var(--tema-surface-container-lowest, 255 255 255));border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.tl-tarjeta h2{font-size:18px;line-height:1.3;margin:0;font-weight:600}
+.tl-rejilla{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px;align-items:start}
+.tl-pestanas{display:flex;flex-wrap:wrap;gap:8px}
+.tl-pestanas .axw-boton[aria-selected="true"]{background:rgb(var(--tema-deep-lagoon, 16 76 79));color:rgb(var(--tema-on-primary, 255 255 255))}
+.tl-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tl-fila{width:100%;min-height:56px;text-align:left;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;padding:10px 14px;border-radius:12px;border:1px solid rgb(var(--tema-outline-variant, 197 200 188));background:rgb(var(--tema-surface-container-lowest, 255 255 255));color:inherit;font:inherit;cursor:pointer}
+.tl-fila:disabled{cursor:not-allowed;opacity:.6}
+.tl-fila:focus-visible,.tl-op:focus-visible,.tl-res button:focus-visible{outline:3px solid rgb(var(--tema-deep-lagoon, 16 76 79));outline-offset:2px}
+.tl-mat{font-size:17px;font-weight:600;word-break:break-word}
+.tl-sub{font-size:14px;color:rgb(var(--tema-on-surface-variant, 68 72 63));word-break:break-word}
+.tl-buscar{width:100%;min-height:56px;font-size:18px;padding:10px 14px;border-radius:12px;border:1px solid rgb(var(--tema-outline-variant, 197 200 188));background:rgb(var(--tema-surface-container-lowest, 255 255 255));color:inherit;font-family:inherit;text-transform:uppercase}
+.tl-paso{width:100%;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.tl-linea{font-size:14px;color:rgb(var(--tema-on-surface-variant, 68 72 63));font-variant-numeric:tabular-nums;word-break:break-word}
+.tl-titulo{font-size:22px;line-height:1.25;margin:0;font-weight:600;outline:none}
+.tl-opciones{display:grid;gap:10px}
+.tl-op{min-height:56px;width:100%;display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;border:2px solid rgb(var(--tema-outline-variant, 197 200 188));background:rgb(var(--tema-surface-container-lowest, 255 255 255));color:inherit;font:inherit;font-size:17px;text-align:left;cursor:pointer}
+.tl-op[aria-checked="true"]{border-color:rgb(var(--tema-deep-lagoon, 16 76 79));background:rgb(var(--tema-surface-container-low, 245 244 238));font-weight:600}
+.tl-gas{grid-template-columns:repeat(5,1fr)}
+.tl-gas .tl-op{justify-content:center;padding:8px 4px;font-size:15px;text-align:center}
+.tl-km{width:100%;min-height:56px;font-size:24px;padding:10px 14px;border-radius:12px;border:2px solid rgb(var(--tema-outline-variant, 197 200 188));background:rgb(var(--tema-surface-container-lowest, 255 255 255));color:inherit;font-family:inherit;font-variant-numeric:tabular-nums}
+.tl-campo{display:flex;flex-direction:column;gap:6px}
+.tl-campo>label,.tl-etq{font-size:14px;font-weight:600}
+.tl-campo input,.tl-campo textarea,.tl-campo select{min-height:48px;font-size:16px;padding:8px 12px;border-radius:10px;border:1px solid rgb(var(--tema-outline-variant, 197 200 188));background:rgb(var(--tema-surface-container-lowest, 255 255 255));color:inherit;font-family:inherit}
+.tl-rev{border:1px solid rgb(var(--tema-outline-variant, 197 200 188));border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.tl-rev-nombre{font-size:17px;font-weight:600;word-break:break-word}
+.tl-res{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tl-res button{min-height:56px;border-radius:10px;border:2px solid rgb(var(--tema-outline-variant, 197 200 188));background:rgb(var(--tema-surface-container-lowest, 255 255 255));color:inherit;font:inherit;font-size:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px;cursor:pointer;line-height:1.2}
+.tl-res .tl-ico{font-size:18px;font-weight:700}
+.tl-res button[data-res="bien"][aria-checked="true"]{background:rgb(var(--tema-primary-container, 72 91 55));border-color:rgb(var(--tema-primary-container, 72 91 55));color:rgb(var(--tema-on-primary, 255 255 255))}
+.tl-res button[data-res="atencion"][aria-checked="true"]{background:rgb(var(--tema-accent-gold, 200 155 92));border-color:rgb(var(--tema-accent-gold, 200 155 92));color:rgb(var(--tema-on-surface, 27 28 25))}
+.tl-res button[data-res="mal"][aria-checked="true"]{background:rgb(var(--tema-error-container, 255 218 214));border-color:rgb(var(--tema-error, 186 26 26));color:rgb(var(--tema-on-error-container, 147 0 10))}
+.tl-res button[data-guardando="1"]{border-style:dashed}
+.tl-rev-estado{font-size:13px;color:rgb(var(--tema-on-surface-variant, 68 72 63));display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tl-rev-estado[data-mal="1"]{color:rgb(var(--tema-error, 186 26 26));font-weight:600}
+.tl-pie{display:flex;gap:12px}
+.tl-pie .axw-boton{min-height:56px;flex:1;font-size:16px;border-radius:12px}
+.tl-estado:empty{display:none}
+.tl-estado{display:flex;flex-direction:column;gap:8px}
+.tl-fg .fg-rejilla{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tl-fg .fg-celda{display:flex;flex-direction:column;gap:4px;min-width:0}
+.tl-fg .fg-casilla{min-height:120px;width:100%;border-radius:12px;border:2px dashed rgb(var(--tema-outline-variant, 197 200 188));background:rgb(var(--tema-surface-container-low, 245 244 238));color:rgb(var(--tema-on-surface-variant, 68 72 63));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px;font:inherit;cursor:pointer}
+.tl-fg .fg-casilla[data-estado="subida"]{border-style:solid;border-color:rgb(var(--tema-primary-container, 72 91 55))}
+.tl-fg .fg-casilla[data-estado="pendiente"],.tl-fg .fg-casilla[data-estado="error"]{border-style:solid;border-color:rgb(var(--tema-error, 186 26 26))}
+.tl-fg .fg-silueta{width:96px;height:68px}
+.tl-fg .fg-previa{width:100%;max-height:120px;object-fit:cover;border-radius:8px}
+.tl-fg .fg-rotulo{font-weight:600;font-size:15px}
+.tl-fg .fg-estado{font-size:12px;text-align:center;word-break:break-word}
+.tl-fg .fg-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.tl-fg .fg-danos{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.tl-fg .fg-mas{min-height:48px}
+.tl-fg .fg-pendientes{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.tl-fg .fg-mini{font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid rgb(var(--tema-outline-variant, 197 200 188));background:rgb(var(--tema-surface-container-lowest, 255 255 255));cursor:pointer}
+.tl-tabla-l input[type="text"],.tl-tabla-l input:not([type]){min-width:120px}
+.tl-casilla{display:flex;align-items:center;gap:10px;min-height:48px}
+.tl-casilla input{width:22px;height:22px}
+@media (max-width:767px){
+  main{padding-left:16px !important;padding-right:16px !important}
+  .tl-raiz[data-modo="paso"] .lw-cabecera{display:none}
+  .tl-tarjeta{padding:16px}
+  .tl-raiz[data-modo="paso"] .tl-paso{min-height:calc(100vh - 140px);min-height:calc(100dvh - 140px);padding-bottom:calc(var(--tl-pie) + 24px + env(safe-area-inset-bottom))}
+  .tl-pie{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:8px 16px calc(8px + env(safe-area-inset-bottom));background:rgb(var(--tema-surface-container-lowest, 255 255 255));border-top:1px solid rgb(var(--tema-outline-variant, 197 200 188))}
+}
 </style>
 
-<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-4 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
 <div class="flex flex-col gap-2 max-w-3xl">
 <h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Taller</h1>
-<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Las motos que entran al taller y por qué. Mientras una orden que bloquea esté abierta, esa moto no se puede reservar ni la ofrece el bot.</p>
+<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Revisa cada moto paso a paso. Mientras la orden esté abierta, la moto no se puede reservar.</p>
 </div>
-<div class="axw-acciones"><button class="axw-boton" type="button" data-accion="tl-abrir" data-primario="1"><span data-lwt>Abrir orden</span></button></div>
+<div class="tl-pestanas" role="tablist">
+<button class="axw-boton" type="button" role="tab" aria-selected="true" data-accion="tl-tab-taller"><span data-lwt>Motos</span></button>
+<button class="axw-boton axw-oculto" type="button" role="tab" aria-selected="false" data-accion="tl-tab-listas"><span data-lwt>Listas por modelo</span></button>
+</div>
 </div>
 
 <p class="axw-ok axw-oculto" data-tl="exito" role="status"></p>
-<p class="axw-aviso axw-oculto" data-tl="aviso" role="status"></p>
 <p class="axw-error axw-oculto" data-tl="error" role="alert"></p>
 
-<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4">
-<div class="axw-nota" data-lwt>Cerrar la orden devuelve la moto a disponible, salvo que quede otra orden abierta que también la bloquee. El mecánico ve y cierra las órdenes que ha abierto él; la administración ve todas.</div>
-<div class="axw-barra">
-<label><span data-lwt>Órdenes</span>
-<select data-tl="f-estado"><option value="abierta" data-lwt>Abiertas</option><option value="cerrada" data-lwt>Cerradas</option><option value="" data-lwt>Todas</option></select></label>
-<button class="axw-boton" type="button" data-accion="tl-actualizar"><span data-lwt>Actualizar</span></button>
+<section class="tl-vista" data-tl="vista-inicio" aria-label="Taller"></section>
+
+<section class="tl-vista axw-oculto" data-tl="vista-paso" data-paso="">
+<div class="tl-paso tl-tarjeta">
+<p class="tl-linea" data-tl="linea"></p>
+<h2 class="tl-titulo" tabindex="-1" data-tl="paso-titulo"></h2>
+<div data-tl="paso-cuerpo" class="tl-vista"></div>
+<div data-tl="paso-estado" class="tl-estado" role="status" aria-live="polite"></div>
+<div class="tl-pie">
+<button class="axw-boton" type="button" data-accion="tl-atras"><span data-lwt>Volver atrás</span></button>
+<button class="axw-boton" type="button" data-accion="tl-siguiente" data-primario="1" data-tl="siguiente"></button>
 </div>
-<div data-tl="estado" class="axw-vacio"></div>
-<div class="axw-tabla-caja"><table class="axw-tabla" data-tl="tabla"></table></div>
-<div class="axw-barra"><button class="axw-boton axw-oculto" type="button" data-accion="tl-mas"><span data-lwt>Cargar más</span></button></div>
+</div>
 </section>
+
+<section class="tl-vista axw-oculto" data-tl="vista-listas"></section>
 
 </div>
 <!--AXW_SCRIPT-->
@@ -41,266 +120,1057 @@
 (function () {
   'use strict';
   var EN_TL = {
-    'Taller': 'Workshop',
-    'Las motos que entran al taller y por qué. Mientras una orden que bloquea esté abierta, esa moto no se puede reservar ni la ofrece el bot.': 'The bikes that go into the workshop and why. While an order that blocks is open, that bike cannot be booked and the bot will not offer it.',
-    'Abrir orden': 'Open order',
-    'Cerrar la orden devuelve la moto a disponible, salvo que quede otra orden abierta que también la bloquee. El mecánico ve y cierra las órdenes que ha abierto él; la administración ve todas.': 'Closing the order puts the bike back to available, unless another open order also blocks it. The mechanic sees and closes the orders they opened; the administration sees all of them.',
-    'Órdenes': 'Orders', 'Abiertas': 'Open', 'Cerradas': 'Closed', 'Todas': 'All', 'Cargar más': 'Load more',
-    'Orden': 'Order', 'Moto': 'Bike', 'Motivo': 'Reason', 'Bloquea': 'Blocks', 'Estado': 'Status', 'Abierta': 'Opened', 'Coste': 'Cost', 'Acciones': 'Actions',
-    'Abierta por': 'Opened by', 'Cerrada': 'Closed', 'Cerrada por': 'Closed by', 'Nota de cierre': 'Closing note', 'Detalle': 'Details', 'Cerrar orden': 'Close order',
-    'Bloquea las reservas': 'Blocks bookings', 'La moto no se podrá reservar hasta cerrar la orden': 'The bike cannot be booked until the order is closed',
-    'No hay órdenes abiertas.': 'There are no open orders.', 'No hay órdenes cerradas.': 'There are no closed orders.', 'No hay órdenes.': 'There are no orders.',
-    'Elige una moto': 'Choose a bike', 'En taller': 'In workshop', 'Disponible': 'Available', 'Baja': 'Retired', 'Orden abierta': 'Order opened', 'Orden cerrada': 'Order closed',
-    'Qué se le hace a la moto (3 a 500 caracteres, una línea)': 'What is being done to the bike (3 to 500 characters, one line)',
-    'Bloquea las reservas: la moto pasa a taller y no se puede reservar hasta que cierres la orden': 'Blocks bookings: the bike goes to the workshop and cannot be booked until you close the order',
-    'Si no marcas esto, la orden queda anotada pero la moto sigue disponible.': 'If you do not tick this, the order is recorded but the bike stays available.',
-    'Solo se ofrecen las primeras 500 motos; si falta una, pídelo a la administración.': 'Only the first 500 bikes are offered; if one is missing, ask the administration.',
-    'Elige la moto': 'Choose the bike', 'Escribe el motivo (3 a 500 caracteres, en una sola línea)': 'Write the reason (3 to 500 characters, on a single line)',
-    'Esa moto tiene reservas pendientes. Cámbialas de moto antes de pasarla a taller:': 'That bike has pending bookings. Change them to another bike before sending it to the workshop:',
-    'Se cambian desde Reservas de producto (botón «Cambiar de unidad»).': 'They are changed from Product bookings (the “Change unit” button).',
-    'Ir a Reservas de producto': 'Go to Product bookings',
-    'Pídelo a quien lleve las reservas.': 'Ask whoever handles the bookings.',
-    'La base no confirmó la orden: recarga la lista antes de repetir.': 'The database did not confirm the order: reload the list before repeating.',
-    'Coste (opcional)': 'Cost (optional)', 'Moneda': 'Currency', 'Nota (opcional, hasta 1000 caracteres)': 'Note (optional, up to 1000 characters)',
-    'El coste es un número positivo. Usa solo cifras y un punto o una coma para los decimales.': 'The cost is a positive number. Use digits and one dot or comma for decimals only.',
-    'Con coste hace falta la moneda en tres letras (IDR, EUR…)': 'A cost needs the currency in three letters (IDR, EUR…)',
-    'En esta moneda el coste va sin puntos ni comas (por ejemplo 150000).': 'In this currency the cost has no dots or commas (for example 150000).',
-    'Ese coste es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 1500 o 15.50.': 'That cost is ambiguous (thousands or decimals?): write it without a thousands separator, for example 1500 or 15.50.',
-    'La nota admite hasta 1000 caracteres.': 'The note allows up to 1000 characters.',
-    'Cerrar la orden': 'Close the order', 'Volver': 'Back', 'Abrir': 'Open',
-    'El módulo de reservas de producto está apagado en esta instancia: no hay órdenes que mirar. Esto NO quiere decir que no haya nada.': 'The product bookings module is off in this instance: there are no orders to check. This does NOT mean there is nothing.',
-    'No tienes permiso para ver el taller. No es que esté vacío: no se ha podido mirar.': 'You do not have permission to see the workshop. It is not empty: it could not be checked.',
-    'No se ha podido mirar': 'It could not be checked'
+    'Taller': 'Workshop', 'Motos': 'Bikes', 'Listas por modelo': 'Lists by model', 'Volver atrás': 'Back', 'Posición': 'Position', 'Siguiente': 'Next', 'Guardar': 'Save', 'Continuar': 'Continue',
+    'Revisa cada moto paso a paso. Mientras la orden esté abierta, la moto no se puede reservar.': 'Check each bike step by step. While the order is open, the bike cannot be booked.',
+    'Buscar matrícula': 'Search plate', 'Escribe la matrícula': 'Type the plate', 'Ninguna moto con esa matrícula.': 'No bike with that plate.',
+    'Motos para revisar': 'Bikes to check', 'Órdenes a medias': 'Unfinished orders', 'Listas para volver': 'Ready to go back',
+    'No hay motos esperando revisión. Busca la matrícula para abrir una orden.': 'No bikes are waiting for a check. Search the plate to open an order.',
+    'No hay órdenes a medias.': 'There are no unfinished orders.', 'No hay motos listas para volver.': 'There are no bikes ready to go back.',
+    'Solo se ven las primeras 500 motos: busca la matrícula.': 'Only the first 500 bikes are shown: search the plate.',
+    'No se han podido mirar las motos': 'The bikes could not be checked',
+    'No tienes acceso a Taller. No es que esté vacío: no se ha podido mirar.': 'You do not have access to the Workshop. It is not empty: it could not be checked.',
+    'El módulo de reservas está apagado en esta instancia: no hay taller que mirar. Esto NO quiere decir que no haya nada.': 'The bookings module is off in this instance: there is no workshop to check. This does NOT mean there is nothing.',
+    'El taller aún no está listo': 'The workshop is not ready yet', 'Falta:': 'Missing:', 'Avisa a la administración.': 'Tell the administration.',
+    'Falta la lista de revisión de algún modelo con motos.': 'A model with bikes has no checklist yet.', 'Nadie tiene todavía la herramienta Taller.': 'Nobody has the Workshop tool yet.',
+    'Falta un paso de la configuración.': 'A setup step is missing.', 'Abrir Listas por modelo': 'Open Lists by model', 'Ir allí': 'Go there',
+    'Orden de la pantalla anterior: ciérrala allí.': 'Order from the previous screen: close it there.',
+    'Moto': 'Bike', 'Modelo': 'Model', 'Orden': 'Order', 'Abierta por': 'Opened by', 'Motivo': 'Reason', 'Nota': 'Note',
+    'Disponible': 'Available', 'En taller': 'In workshop', 'De baja': 'Retired', 'Otro estado': 'Other status',
+    'Esta moto ya tiene una orden abierta. Continúa donde se quedó.': 'This bike already has an open order. Continue where it was left.',
+    'Al abrir la orden, la moto pasa al taller y no se puede reservar.': 'When the order opens, the bike goes to the workshop and cannot be booked.',
+    'Esta moto tiene la orden {n} de la pantalla anterior: ciérrala allí antes de usar este asistente.': 'This bike has order {n} from the previous screen: close it there before using this assistant.',
+    '¿Por qué entra al taller?': 'Why is it in the workshop?', 'Devolución': 'Return', 'Revisión periódica': 'Periodic service', 'Avería': 'Breakdown', 'Accidente': 'Accident',
+    'Nota (opcional)': 'Note (optional)', 'Elige el motivo.': 'Choose the reason.',
+    'Km y gasolina': 'Km and fuel', 'Kilómetros': 'Kilometres', 'Último apuntado: {n} km': 'Last recorded: {n} km', 'Sin km anteriores.': 'No previous km.',
+    'Gasolina': 'Fuel', 'Vacío': 'Empty', 'Lleno': 'Full', 'Escribe los km en número entero.': 'Write the km as a whole number.', 'Elige la gasolina.': 'Choose the fuel level.',
+    '¿Los km son correctos?': 'Is the km correct?', 'Son menos que los últimos apuntados ({n} km). Confírmalo si es correcto.': 'It is less than the last recorded ({n} km). Confirm it if it is correct.',
+    'Sí, son correctos': 'Yes, it is correct', 'Corregir': 'Correct it',
+    'Fotos': 'Photos', 'Faltan {n} de las 5 fijas.': '{n} of the 5 fixed photos missing.', 'Las 5 fijas están hechas.': 'The 5 fixed photos are done.',
+    'Hay fotos sin subir: se suben solas al volver la red.': 'Some photos are not uploaded: they upload by themselves when the network is back.',
+    'Revisiones': 'Checks', 'Bien': 'Good', 'Atención': 'Needs check', 'Mal': 'Bad', 'Contestadas {n} de {t}': '{n} of {t} answered',
+    'Este modelo no tiene revisiones en su lista. Avisa a la administración.': 'This model has no checks in its list. Tell the administration.',
+    'Guardando…': 'Saving…', 'Guardado': 'Saved', 'No guardado': 'Not saved', 'Reintentar': 'Retry', 'Guardar nota': 'Save note',
+    'Espera a que se guarden las revisiones.': 'Wait until the checks are saved.',
+    'Resultado': 'Result', 'Lista para alquilar': 'Ready to rent', 'Espera recambio': 'Waiting for parts', 'No puede circular': 'Cannot be ridden',
+    'Elige el resultado.': 'Choose the result.', 'Para dejarla lista falta:': 'To leave it ready, missing:', 'Sin contestar': 'Not answered',
+    'Solo la administración puede dejarla lista sin todo.': 'Only the administration can leave it ready without everything.',
+    'Por qué se deja lista sin todo (3 a 500 caracteres)': 'Why it is left ready without everything (3 to 500 characters)',
+    'Nota del resultado (opcional)': 'Result note (optional)', 'Revisiones: {b} bien, {a} atención, {m} mal, {s} sin contestar': 'Checks: {b} good, {a} needs check, {m} bad, {s} not answered',
+    'Fotos fijas: {n} de 5': 'Fixed photos: {n} of 5',
+    'Hecho': 'Done', 'La moto vuelve a estar disponible.': 'The bike is available again.',
+    'La moto se queda en el taller hasta que la administración la devuelva (estaba en el taller sin orden).': 'The bike stays in the workshop until the administration returns it (it was in the workshop without an order).',
+    'La orden queda esperando el recambio; la moto sigue en el taller.': 'The order waits for the part; the bike stays in the workshop.',
+    'La moto sigue en el taller: la baja la da la administración en Flota.': 'The bike stays in the workshop: the administration retires it in Fleet.',
+    'La orden ya estaba cerrada (la respuesta se había perdido). Mira la moto en la lista.': 'The order was already closed (the answer had been lost). Check the bike in the list.',
+    'Volver al inicio': 'Back to start', 'Orden retomada': 'Order resumed',
+    'Espera a que termine de guardar.': 'Wait until it finishes saving.',
+    'No se ha podido abrir la orden': 'The order could not be opened', 'Esa orden ya no está abierta.': 'That order is no longer open.',
+    'Elige una moto o más.': 'Choose one bike or more.', 'Motivo de la vuelta (3 a 200 caracteres)': 'Reason for returning (3 to 200 characters)',
+    'Devolver a disponible': 'Make available again', 'Devueltas: {n}': 'Returned: {n}', 'No devuelta': 'Not returned',
+    'Cerrada por': 'Closed by',
+    'Esa moto ya no existe.': 'That bike no longer exists.', 'Ya no está en el taller.': 'It is no longer in the workshop.', 'Tiene una orden abierta.': 'It has an open order.',
+    'Su última orden no la dejó lista.': 'Its last order did not leave it ready.',
+    'No se ha podido guardar.': 'It could not be saved.',
+    'Esta moto tiene reservas pendientes: cámbialas de moto antes de pasarla al taller.': 'This bike has pending bookings: move them to another bike before sending it to the workshop.',
+    'Falta un dato: recarga la pantalla.': 'A field is missing: reload the screen.', 'La nota es demasiado larga o tiene saltos de línea.': 'The note is too long or has line breaks.',
+    'Esa moto ya no existe: recarga la pantalla.': 'That bike no longer exists: reload the screen.', 'Esa moto está dada de baja.': 'That bike is retired.',
+    'Otra persona acaba de abrir una orden para esta moto.': 'Someone else has just opened an order for this bike.',
+    'Los km van de 0 a 2.000.000, en número entero.': 'Km goes from 0 to 2,000,000, as a whole number.', 'La gasolina va de vacío a lleno.': 'Fuel goes from empty to full.',
+    'Esa revisión ya no es de este modelo: recarga la pantalla.': 'That check is no longer for this model: reload the screen.',
+    'El motivo de excepción solo vale para dejarla lista.': 'The exception reason only applies to leaving it ready.',
+    'Escribe por qué (3 a 500 caracteres, en una línea).': 'Write why (3 to 500 characters, on one line).',
+    'Faltan fotos o revisiones para dejarla lista.': 'Photos or checks are missing to leave it ready.',
+    'Esto lo hace la administración.': 'The administration does this.', 'Escribe el motivo (3 a 200 caracteres, en una línea).': 'Write the reason (3 to 200 characters, on one line).',
+    'Como mucho 100 motos a la vez.': 'At most 100 bikes at a time.',
+    'Esa orden ya no existe: recarga la pantalla.': 'That order no longer exists: reload the screen.', 'Esa orden ya está cerrada.': 'That order is already closed.',
+    'Esa orden es de la pantalla anterior: ciérrala allí.': 'That order is from the previous screen: close it there.',
+    'El taller aún no está configurado.': 'The workshop is not set up yet.',
+    'Las listas por modelo las cambia la administración con acceso a Flota.': 'The lists by model are changed by the administration with access to Fleet.',
+    'La clave va en minúsculas, cifras o guion bajo (2 a 40).': 'The key goes in lowercase, digits or underscore (2 to 40).',
+    'Los nombres van en una línea (hasta 80 caracteres).': 'The names go on one line (up to 80 characters).', 'El orden es un número de 0 a 9999.': 'The order is a number from 0 to 9999.',
+    'Ese modelo no existe.': 'That model does not exist.', 'Esa revisión ya no existe: recarga la pantalla.': 'That check no longer exists: reload the screen.',
+    'Esa revisión ya se usó: no cambia de clave; desactívala y crea otra.': 'That check was already used: its key does not change; deactivate it and create another.',
+    'Ya hay una revisión con esa clave en esa lista.': 'There is already a check with that key in that list.',
+    'La referencia va en una línea (hasta 60 caracteres).': 'The reference goes on one line (up to 60 characters).',
+    'El coste va con su moneda (las dos o ninguna, moneda en tres letras).': 'The cost goes with its currency (both or neither, currency in three letters).',
+    'El coste no es válido.': 'The cost is not valid.', 'Ya hay una pieza con esa referencia.': 'There is already a part with that reference.',
+    'Esa pieza ya no existe: recarga la pantalla.': 'That part no longer exists: reload the screen.', 'Esa pieza ya está en este modelo.': 'That part is already in this model.',
+    'La lista común ya tiene revisiones.': 'The common list already has checks.',
+    'Lista común (todos los modelos)': 'Common list (all models)', 'Elige la lista': 'Choose the list',
+    'No se han podido mirar las listas': 'The lists could not be checked',
+    'Clave': 'Key', 'Nombre (indonesio)': 'Name (Indonesian)', 'Nombre (inglés)': 'Name (English)', 'Activa': 'Active',
+    'Añadir revisión': 'Add check', 'Esta lista no tiene revisiones.': 'This list has no checks.', 'Cargar la lista básica': 'Load the basic list',
+    'Copiar de otro modelo': 'Copy from another model', 'Copiar': 'Copy', 'Copiadas: {r} revisiones y {v} piezas.': 'Copied: {r} checks and {v} parts.',
+    'Piezas de esta lista': 'Parts in this list', 'Esta lista no tiene piezas.': 'This list has no parts.', 'Quitar': 'Remove', 'Revisión sugerida': 'Suggested check',
+    'Añadir pieza existente': 'Add existing part', 'Pieza nueva': 'New part', 'Referencia': 'Reference', 'Coste de referencia': 'Reference cost', 'Moneda': 'Currency',
+    'Añadir': 'Add', 'Ninguna': 'None', 'Elige la pieza.': 'Choose the part.', 'Guardado.': 'Saved.',
+    'Solo se ven los primeros 500 modelos o piezas.': 'Only the first 500 models or parts are shown.'
+  };
+  // Indonesio (owner, 11-oct-2026: bbm en indonesio e inglés, sin español). Mismas claves que EN_TL; glosario de §10.9 y glosario_id.json (Taller → Bengkel,
+  // Reserva → Booking, Guardar → Simpan, Flota → Armada; devolución de la moto = «kembali», nunca nada con «balian»). Lo lee alguien del equipo de Dion antes de abrir.
+  var ID_TL = {
+    'Taller': 'Bengkel', 'Motos': 'Motor', 'Listas por modelo': 'Daftar per model', 'Volver atrás': 'Kembali', 'Posición': 'Urutan', 'Siguiente': 'Lanjut', 'Guardar': 'Simpan', 'Continuar': 'Lanjutkan',
+    'Revisa cada moto paso a paso. Mientras la orden esté abierta, la moto no se puede reservar.': 'Periksa setiap motor langkah demi langkah. Selama order masih terbuka, motor tidak bisa dibooking.',
+    'Buscar matrícula': 'Cari plat nomor', 'Escribe la matrícula': 'Tulis plat nomor', 'Ninguna moto con esa matrícula.': 'Tidak ada motor dengan plat itu.',
+    'Motos para revisar': 'Motor untuk diperiksa', 'Órdenes a medias': 'Order belum selesai', 'Listas para volver': 'Siap kembali disewa',
+    'No hay motos esperando revisión. Busca la matrícula para abrir una orden.': 'Tidak ada motor yang menunggu pemeriksaan. Cari plat nomor untuk membuka order.',
+    'No hay órdenes a medias.': 'Tidak ada order yang belum selesai.', 'No hay motos listas para volver.': 'Tidak ada motor yang siap kembali disewa.',
+    'Solo se ven las primeras 500 motos: busca la matrícula.': 'Hanya 500 motor pertama yang tampil: cari plat nomor.',
+    'No se han podido mirar las motos': 'Data motor tidak dapat diperiksa',
+    'No tienes acceso a Taller. No es que esté vacío: no se ha podido mirar.': 'Anda tidak punya akses ke Bengkel. Bukan berarti kosong: datanya tidak dapat diperiksa.',
+    'El módulo de reservas está apagado en esta instancia: no hay taller que mirar. Esto NO quiere decir que no haya nada.': 'Modul booking tidak aktif di sistem ini: tidak ada data bengkel yang bisa diperiksa. Ini BUKAN berarti tidak ada apa-apa.',
+    'El taller aún no está listo': 'Bengkel belum siap', 'Falta:': 'Yang kurang:', 'Avisa a la administración.': 'Beri tahu admin.',
+    'Falta la lista de revisión de algún modelo con motos.': 'Ada model dengan motor yang belum punya daftar pemeriksaan.', 'Nadie tiene todavía la herramienta Taller.': 'Belum ada pengguna dengan akses Bengkel.',
+    'Falta un paso de la configuración.': 'Ada langkah pengaturan yang belum selesai.', 'Abrir Listas por modelo': 'Buka daftar per model', 'Ir allí': 'Buka',
+    'Orden de la pantalla anterior: ciérrala allí.': 'Order dari layar lama: tutup di sana.',
+    'Moto': 'Motor', 'Modelo': 'Model', 'Orden': 'Order', 'Abierta por': 'Dibuka oleh', 'Motivo': 'Alasan', 'Nota': 'Catatan',
+    'Disponible': 'Tersedia', 'En taller': 'Di bengkel', 'De baja': 'Nonaktif', 'Otro estado': 'Status lain',
+    'Esta moto ya tiene una orden abierta. Continúa donde se quedó.': 'Motor ini sudah punya order terbuka. Lanjutkan dari langkah terakhir.',
+    'Al abrir la orden, la moto pasa al taller y no se puede reservar.': 'Saat order dibuka, motor masuk bengkel dan tidak bisa dibooking.',
+    'Esta moto tiene la orden {n} de la pantalla anterior: ciérrala allí antes de usar este asistente.': 'Motor ini punya order {n} dari layar lama: tutup di sana sebelum memakai asisten ini.',
+    '¿Por qué entra al taller?': 'Kenapa masuk bengkel?', 'Devolución': 'Motor kembali', 'Revisión periódica': 'Servis berkala', 'Avería': 'Mogok', 'Accidente': 'Kecelakaan',
+    'Nota (opcional)': 'Catatan (opsional)', 'Elige el motivo.': 'Pilih alasan.',
+    'Km y gasolina': 'Km dan bensin', 'Kilómetros': 'Kilometer', 'Último apuntado: {n} km': 'Terakhir dicatat: {n} km', 'Sin km anteriores.': 'Belum ada km sebelumnya.',
+    'Gasolina': 'Bensin', 'Vacío': 'Kosong', 'Lleno': 'Penuh', 'Escribe los km en número entero.': 'Tulis km dalam angka bulat.', 'Elige la gasolina.': 'Pilih level bensin.',
+    '¿Los km son correctos?': 'Apakah km sudah benar?', 'Son menos que los últimos apuntados ({n} km). Confírmalo si es correcto.': 'Lebih kecil dari catatan terakhir ({n} km). Konfirmasi kalau memang benar.',
+    'Sí, son correctos': 'Ya, sudah benar', 'Corregir': 'Perbaiki',
+    'Fotos': 'Foto', 'Faltan {n} de las 5 fijas.': '{n} dari 5 foto wajib belum ada.', 'Las 5 fijas están hechas.': '5 foto wajib sudah lengkap.',
+    'Hay fotos sin subir: se suben solas al volver la red.': 'Ada foto yang belum terunggah: akan terunggah sendiri saat sinyal kembali.',
+    'Revisiones': 'Pemeriksaan', 'Bien': 'Baik', 'Atención': 'Perlu dicek', 'Mal': 'Rusak', 'Contestadas {n} de {t}': '{n} dari {t} sudah diisi',
+    'Este modelo no tiene revisiones en su lista. Avisa a la administración.': 'Model ini belum punya daftar pemeriksaan. Beri tahu admin.',
+    'Guardando…': 'Menyimpan…', 'Guardado': 'Tersimpan', 'No guardado': 'Belum tersimpan', 'Reintentar': 'Coba lagi', 'Guardar nota': 'Simpan catatan',
+    'Espera a que se guarden las revisiones.': 'Tunggu sampai pemeriksaan tersimpan.',
+    'Resultado': 'Hasil', 'Lista para alquilar': 'Siap disewa', 'Espera recambio': 'Tunggu suku cadang', 'No puede circular': 'Tidak bisa jalan',
+    'Elige el resultado.': 'Pilih hasil.', 'Para dejarla lista falta:': 'Untuk siap disewa masih kurang:', 'Sin contestar': 'Belum diisi',
+    'Solo la administración puede dejarla lista sin todo.': 'Hanya admin yang bisa menandai siap disewa tanpa kelengkapan.',
+    'Por qué se deja lista sin todo (3 a 500 caracteres)': 'Alasan siap disewa tanpa kelengkapan (3 sampai 500 karakter)',
+    'Nota del resultado (opcional)': 'Catatan hasil (opsional)', 'Revisiones: {b} bien, {a} atención, {m} mal, {s} sin contestar': 'Pemeriksaan: {b} baik, {a} perlu dicek, {m} rusak, {s} belum diisi',
+    'Fotos fijas: {n} de 5': 'Foto wajib: {n} dari 5',
+    'Hecho': 'Selesai', 'La moto vuelve a estar disponible.': 'Motor tersedia lagi.',
+    'La moto se queda en el taller hasta que la administración la devuelva (estaba en el taller sin orden).': 'Motor tetap di bengkel sampai admin mengaktifkannya lagi (sebelumnya di bengkel tanpa order).',
+    'La orden queda esperando el recambio; la moto sigue en el taller.': 'Order menunggu suku cadang; motor tetap di bengkel.',
+    'La moto sigue en el taller: la baja la da la administración en Flota.': 'Motor tetap di bengkel: admin yang menonaktifkannya di Armada.',
+    'La orden ya estaba cerrada (la respuesta se había perdido). Mira la moto en la lista.': 'Order sudah ditutup (jawabannya sempat hilang). Cek motor di daftar.',
+    'Volver al inicio': 'Kembali ke awal', 'Orden retomada': 'Order dilanjutkan',
+    'Espera a que termine de guardar.': 'Tunggu sampai selesai menyimpan.',
+    'No se ha podido abrir la orden': 'Order tidak dapat dibuka', 'Esa orden ya no está abierta.': 'Order itu sudah tidak aktif.',
+    'Elige una moto o más.': 'Pilih satu motor atau lebih.', 'Motivo de la vuelta (3 a 200 caracteres)': 'Alasan kembali disewa (3 sampai 200 karakter)',
+    'Devolver a disponible': 'Jadikan tersedia', 'Devueltas: {n}': 'Sudah tersedia: {n}', 'No devuelta': 'Tidak diproses',
+    'Cerrada por': 'Ditutup oleh',
+    'Esa moto ya no existe.': 'Motor itu sudah tidak ada.', 'Ya no está en el taller.': 'Sudah tidak di bengkel.', 'Tiene una orden abierta.': 'Masih ada order terbuka.',
+    'Su última orden no la dejó lista.': 'Order terakhirnya tidak menandai siap disewa.',
+    'No se ha podido guardar.': 'Tidak dapat disimpan.',
+    'Esta moto tiene reservas pendientes: cámbialas de moto antes de pasarla al taller.': 'Motor ini punya booking aktif: pindahkan ke motor lain sebelum masuk bengkel.',
+    'Falta un dato: recarga la pantalla.': 'Ada data yang kurang: muat ulang halaman.', 'La nota es demasiado larga o tiene saltos de línea.': 'Catatan terlalu panjang atau ada ganti baris.',
+    'Esa moto ya no existe: recarga la pantalla.': 'Motor itu sudah tidak ada: muat ulang halaman.', 'Esa moto está dada de baja.': 'Motor itu sudah nonaktif.',
+    'Otra persona acaba de abrir una orden para esta moto.': 'Orang lain baru saja membuka order untuk motor ini.',
+    'Los km van de 0 a 2.000.000, en número entero.': 'Km dari 0 sampai 2.000.000, dalam angka bulat.', 'La gasolina va de vacío a lleno.': 'Bensin dari kosong sampai penuh.',
+    'Esa revisión ya no es de este modelo: recarga la pantalla.': 'Pemeriksaan itu bukan untuk model ini lagi: muat ulang halaman.',
+    'El motivo de excepción solo vale para dejarla lista.': 'Alasan pengecualian hanya untuk siap disewa.',
+    'Escribe por qué (3 a 500 caracteres, en una línea).': 'Tulis alasannya (3 sampai 500 karakter, satu baris).',
+    'Faltan fotos o revisiones para dejarla lista.': 'Masih ada foto atau pemeriksaan yang kurang untuk siap disewa.',
+    'Esto lo hace la administración.': 'Ini dilakukan oleh admin.', 'Escribe el motivo (3 a 200 caracteres, en una línea).': 'Tulis alasannya (3 sampai 200 karakter, satu baris).',
+    'Como mucho 100 motos a la vez.': 'Maksimal 100 motor sekaligus.',
+    'Esa orden ya no existe: recarga la pantalla.': 'Order itu sudah tidak ada: muat ulang halaman.', 'Esa orden ya está cerrada.': 'Order itu sudah ditutup.',
+    'Esa orden es de la pantalla anterior: ciérrala allí.': 'Order itu dari layar lama: tutup di sana.',
+    'El taller aún no está configurado.': 'Bengkel belum diatur.',
+    'Las listas por modelo las cambia la administración con acceso a Flota.': 'Daftar per model diubah oleh admin dengan akses Armada.',
+    'La clave va en minúsculas, cifras o guion bajo (2 a 40).': 'Kode memakai huruf kecil, angka, atau garis bawah (2 sampai 40).',
+    'Los nombres van en una línea (hasta 80 caracteres).': 'Nama ditulis satu baris (maksimal 80 karakter).', 'El orden es un número de 0 a 9999.': 'Urutan adalah angka 0 sampai 9999.',
+    'Ese modelo no existe.': 'Model itu tidak ada.', 'Esa revisión ya no existe: recarga la pantalla.': 'Pemeriksaan itu sudah tidak ada: muat ulang halaman.',
+    'Esa revisión ya se usó: no cambia de clave; desactívala y crea otra.': 'Pemeriksaan itu sudah dipakai: kodenya tidak bisa diubah; nonaktifkan dan buat yang baru.',
+    'Ya hay una revisión con esa clave en esa lista.': 'Sudah ada pemeriksaan dengan kode itu di daftar ini.',
+    'La referencia va en una línea (hasta 60 caracteres).': 'Referensi ditulis satu baris (maksimal 60 karakter).',
+    'El coste va con su moneda (las dos o ninguna, moneda en tres letras).': 'Biaya harus dengan mata uang (dua-duanya atau tidak sama sekali, mata uang tiga huruf).',
+    'El coste no es válido.': 'Biaya tidak valid.', 'Ya hay una pieza con esa referencia.': 'Sudah ada suku cadang dengan referensi itu.',
+    'Esa pieza ya no existe: recarga la pantalla.': 'Suku cadang itu sudah tidak ada: muat ulang halaman.', 'Esa pieza ya está en este modelo.': 'Suku cadang itu sudah ada di model ini.',
+    'La lista común ya tiene revisiones.': 'Daftar umum sudah punya pemeriksaan.',
+    'Lista común (todos los modelos)': 'Daftar umum (semua model)', 'Elige la lista': 'Pilih daftar',
+    'No se han podido mirar las listas': 'Daftar tidak dapat diperiksa',
+    'Clave': 'Kode', 'Nombre (indonesio)': 'Nama (Indonesia)', 'Nombre (inglés)': 'Nama (Inggris)', 'Activa': 'Aktif',
+    'Añadir revisión': 'Tambah pemeriksaan', 'Esta lista no tiene revisiones.': 'Daftar ini belum punya pemeriksaan.', 'Cargar la lista básica': 'Muat daftar dasar',
+    'Copiar de otro modelo': 'Salin dari model lain', 'Copiar': 'Salin', 'Copiadas: {r} revisiones y {v} piezas.': 'Disalin: {r} pemeriksaan dan {v} suku cadang.',
+    'Piezas de esta lista': 'Suku cadang di daftar ini', 'Esta lista no tiene piezas.': 'Daftar ini belum punya suku cadang.', 'Quitar': 'Hapus dari daftar', 'Revisión sugerida': 'Pemeriksaan terkait',
+    'Añadir pieza existente': 'Tambah suku cadang yang ada', 'Pieza nueva': 'Suku cadang baru', 'Referencia': 'Referensi', 'Coste de referencia': 'Biaya acuan', 'Moneda': 'Mata uang',
+    'Añadir': 'Tambah', 'Ninguna': 'Tidak ada', 'Elige la pieza.': 'Pilih suku cadang.', 'Guardado.': 'Tersimpan.',
+    'Solo se ven los primeros 500 modelos o piezas.': 'Hanya 500 model atau suku cadang pertama yang tampil.'
   };
   var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
-  var traduce = function (r) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(r); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
+  var traduce = function (r) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(r); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda con su clave */ } } };
   var raiz = document.querySelector('[data-tl="raiz"]');
   /*AXW_COMUN_JS*/
+  /*AXW_FOTOS_JS*/
   var C = axwComun(raiz, T);
-  if (window.LW_EN && typeof window.LW_EN === 'object') {
-    [EN_TL, C.EN].forEach(function (d) { Object.keys(d).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = d[k]; }); });
-  }
+  var FG = axwFotosDiccionario();
+  function funde(destino, dics) { dics.forEach(function (d) { Object.keys(d).forEach(function (k) { if (!(k in destino)) destino[k] = d[k]; }); }); }
+  if (window.LW_EN && typeof window.LW_EN === 'object') funde(window.LW_EN, [EN_TL, C.EN, FG.EN]);
+  if (window.LW_ID && typeof window.LW_ID === 'object') funde(window.LW_ID, [ID_TL, C.ID || {}, FG.ID]);
   traduce(raiz);
   var $v = function (n) { return raiz.querySelector('[data-tl="' + n + '"]'); };
-  var h = C.h, vacia = C.vacia, oculta = C.oculta, boton = C.boton, chip = C.chip, celda = C.celda, campo = C.campo;
-  function msg(clase, m) { var e = $v(clase); e.textContent = m || ''; oculta(e, !m); }
-  var exito = function (m) { msg('exito', m); }, aviso = function (m) { msg('aviso', m); }, error = function (m) { msg('error', m); };
+  var h = C.h, vacia = C.vacia, oculta = C.oculta, chip = C.chip;
+  function TT(k, v) { var s = T(k); Object.keys(v || {}).forEach(function (n) { s = s.split('{' + n + '}').join(String(v[n])); }); return s; }
+  function msg(n, m) { var e = $v(n); e.textContent = m || ''; oculta(e, !m); }
+  var exito = function (m) { msg('exito', m); }, error = function (m) { msg('error', m); };
 
-  var SB = null;
-  var AUT = null;
-  var E = { ordenes: [], siguiente: null, unidades: [], cargado: false, puedeReservas: false, recortadas: false };
-  var SIN_DECIMALES = ['IDR', 'JPY', 'KRW', 'VND', 'CLP'];   // las mismas que moneda_decimales() de la base
-  var ESTADO_ORDEN = { abierta: ['Abierta', 'espera'], cerrada: ['Cerrada', 'neutro'] };
+  /*TEXTOS*/
+  var PASOS = ['moto', 'motivo', 'km', 'fotos', 'revisiones', 'resultado'];
+  var TITULO = { moto: 'Moto', motivo: '¿Por qué entra al taller?', km: 'Km y gasolina', fotos: 'Fotos', revisiones: 'Revisiones', resultado: 'Resultado', fin: 'Hecho' };
+  var MOTIVOS = [['devolucion', 'Devolución'], ['revision', 'Revisión periódica'], ['averia', 'Avería'], ['accidente', 'Accidente']];
+  var GASOLINA = [[0, 'Vacío'], [1, '1/4'], [2, '1/2'], [3, '3/4'], [4, 'Lleno']];
+  var RESULTADOS = [['lista', 'Lista para alquilar'], ['espera_recambio', 'Espera recambio'], ['fuera_servicio', 'No puede circular']];
+  var REV = [['bien', 'Bien', '✓'], ['atencion', 'Atención', '!'], ['mal', 'Mal', '✕']];
+  var ESTADO_MOTO = { disponible: ['Disponible', 'ok'], taller: ['En taller', 'espera'], baja: ['De baja', 'mal'] };
+  var SETUP = { revisiones: 'Falta la lista de revisión de algún modelo con motos.', mecanico: 'Nadie tiene todavía la herramienta Taller.' };
+  var PORQUE = { no_existe: 'Esa moto ya no existe.', no_esta_en_taller: 'Ya no está en el taller.', orden_viva: 'Tiene una orden abierta.', no_lista_para_volver: 'Su última orden no la dejó lista.' };
+  var FOTO_RANURA = { frente: 'Frente', atras: 'Atrás', izquierda: 'Izquierda', derecha: 'Derecha', cuentakm: 'Cuentakilómetros' };
+  // hint de la base → texto (la base habla español: en bbm no se enseña su mensaje). Los de la edge de fotos los traduce _compartido/fotos_guiadas.js.
+  var TEXTO_HINT = {
+    datos: 'Falta un dato: recarga la pantalla.', motivo_tipo: 'Elige el motivo.', nota: 'La nota es demasiado larga o tiene saltos de línea.',
+    moto_no_existe: 'Esa moto ya no existe: recarga la pantalla.', unidad_de_baja: 'Esa moto está dada de baja.',
+    reservas_vivas: 'Esta moto tiene reservas pendientes: cámbialas de moto antes de pasarla al taller.',
+    orden_viva: 'Otra persona acaba de abrir una orden para esta moto.', km: 'Los km van de 0 a 2.000.000, en número entero.', gasolina: 'La gasolina va de vacío a lleno.',
+    paso: 'Falta un dato: recarga la pantalla.', resultado: 'Elige el resultado.', revision_ajena: 'Esa revisión ya no es de este modelo: recarga la pantalla.',
+    excepcion: 'El motivo de excepción solo vale para dejarla lista.', excepcion_solo_admin: 'Solo la administración puede dejarla lista sin todo.',
+    motivo_excepcion: 'Escribe por qué (3 a 500 caracteres, en una línea).', faltan_para_lista: 'Faltan fotos o revisiones para dejarla lista.',
+    solo_admin: 'Esto lo hace la administración.', motivo: 'Escribe el motivo (3 a 200 caracteres, en una línea).', tope: 'Como mucho 100 motos a la vez.',
+    orden_no_existe: 'Esa orden ya no existe: recarga la pantalla.', ya_cerrada: 'Esa orden ya está cerrada.', orden_vieja: 'Esa orden es de la pantalla anterior: ciérrala allí.',
+    taller_sin_configurar: 'El taller aún no está configurado.', sin_acceso: 'No tienes acceso a Taller.',
+    sin_acceso_listas: 'Las listas por modelo las cambia la administración con acceso a Flota.',
+    clave: 'La clave va en minúsculas, cifras o guion bajo (2 a 40).', nombre: 'Los nombres van en una línea (hasta 80 caracteres).', orden: 'El orden es un número de 0 a 9999.',
+    producto_no_existe: 'Ese modelo no existe.', revision_no_existe: 'Esa revisión ya no existe: recarga la pantalla.',
+    revision_usada: 'Esa revisión ya se usó: no cambia de clave; desactívala y crea otra.', clave_duplicada: 'Ya hay una revisión con esa clave en esa lista.',
+    campo_no_admitido: 'Falta un dato: recarga la pantalla.', ref: 'La referencia va en una línea (hasta 60 caracteres).',
+    moneda: 'El coste va con su moneda (las dos o ninguna, moneda en tres letras).', coste: 'El coste no es válido.', coste_decimales: 'El coste no es válido.',
+    ref_duplicada: 'Ya hay una pieza con esa referencia.', recambio_no_existe: 'Esa pieza ya no existe: recarga la pantalla.',
+    vinculo_duplicado: 'Esa pieza ya está en este modelo.', comun_no_vacia: 'La lista común ya tiene revisiones.'
+  };
+  /*FIN_TEXTOS*/
   var PROPIOS = {
-    modulo_apagado: T('El módulo de reservas de producto está apagado en esta instancia: no hay órdenes que mirar. Esto NO quiere decir que no haya nada.'),
-    sin_permiso: T('No tienes permiso para ver el taller. No es que esté vacío: no se ha podido mirar.'), soloLectura: true
+    modulo_apagado: T('El módulo de reservas está apagado en esta instancia: no hay taller que mirar. Esto NO quiere decir que no haya nada.'),
+    sin_permiso: T('No tienes acceso a Taller. No es que esté vacío: no se ha podido mirar.'), soloLectura: true
   };
 
-  /* Una entrada por RPC, con el nombre LITERAL: así erp/contrato_front.py ve cada llamada (extrae `.rpc('x')` y `lwDatos('x')`) y comprueba contra la base que existe y que
-     authenticated la ejecuta. La lectura va por lwDatos (único transporte de lecturas); las que escriben, por sb.rpc. */
+  /* Una entrada por RPC, con el nombre LITERAL: erp/contrato_front.py extrae `.rpc('x')` y `lwDatos('x')` y comprueba contra la base que existe y quién la
+     ejecuta. Lecturas (*_datos) por lwDatos; escrituras por sb.rpc. Las fotos NO pasan por aquí: van a la edge taller-fotos (fotos_guiadas.js). */
+  var SB = null;
   var RPC = {
-    orden_trabajo_datos: function (a) { return window.lwDatos('orden_trabajo_datos', a); },
-    orden_trabajo_abre: function (a) { return SB.rpc('orden_trabajo_abre', a); },
-    orden_trabajo_cierra: function (a) { return SB.rpc('orden_trabajo_cierra', a); }
+    taller_datos: function (a) { return window.lwDatos('taller_datos', a); },
+    taller_orden_datos: function (a) { return window.lwDatos('taller_orden_datos', a); },
+    taller_listas_datos: function (a) { return window.lwDatos('taller_listas_datos', a); },
+    taller_orden_abre: function (a) { return SB.rpc('taller_orden_abre', a); },
+    taller_orden_km: function (a) { return SB.rpc('taller_orden_km', a); },
+    taller_orden_paso: function (a) { return SB.rpc('taller_orden_paso', a); },
+    taller_revision_marca: function (a) { return SB.rpc('taller_revision_marca', a); },
+    taller_orden_resultado: function (a) { return SB.rpc('taller_orden_resultado', a); },
+    taller_moto_devuelve: function (a) { return SB.rpc('taller_moto_devuelve', a); },
+    taller_revision_guarda: function (a) { return SB.rpc('taller_revision_guarda', a); },
+    taller_recambio_guarda: function (a) { return SB.rpc('taller_recambio_guarda', a); },
+    taller_recambio_vincula: function (a) { return SB.rpc('taller_recambio_vincula', a); },
+    taller_listas_copia: function (a) { return SB.rpc('taller_listas_copia', a); },
+    taller_lista_basica: function (a) { return SB.rpc('taller_lista_basica', a); }
   };
   function llama(nombre, args) {
     var p;
-    try {
-      if (RPC[nombre]) p = RPC[nombre](args || {});
-      else p = Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function ' + nombre } });
-    } catch (e) { return Promise.resolve({ data: null, error: e }); }
+    try { p = RPC[nombre](args || {}); } catch (e) { return Promise.resolve({ data: null, error: e }); }
     return Promise.resolve(p).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; },
                                    function (e) { return { data: null, error: e }; });
   }
-  function vaListaDe(r, clave) { return r && !r.error && r.data && Array.isArray(r.data[clave]); }
+  function texto(err) {
+    var c = C.clasifica(err);
+    if (c.tipo === 'no_disponible' || c.tipo === 'sin_sesion' || c.tipo === 'red' || c.tipo === 'modulo_apagado') return C.mensaje(err, false, PROPIOS);
+    if (c.hint && Object.prototype.hasOwnProperty.call(TEXTO_HINT, c.hint)) return T(TEXTO_HINT[c.hint]);
+    if (c.tipo === 'sin_permiso') return T('No tienes acceso a Taller.');
+    return T('No se ha podido guardar.') + (c.hint ? ' (' + c.hint.replace(/[^a-z0-9_]/g, '').slice(0, 40) + ')' : '');
+  }
+  function esRed(err) { return C.clasifica(err).tipo === 'red'; }
+  function entero(n) { try { return new Intl.NumberFormat(C.locale(), { maximumFractionDigits: 0 }).format(Number(n)); } catch (e) { /* MUDO A PROPOSITO: sin Intl se enseña el número tal cual */ return String(n); } }
 
-  /* ── lectura ── */
-  function estadoFiltro() { var v = $v('f-estado').value; return v === 'abierta' || v === 'cerrada' ? v : null; }
-  var PETICION = 0;
-  function carga(mas) {
-    var yo = ++PETICION;
-    var est = $v('estado');
-    est.className = 'axw-vacio';
-    if (!mas) { E.siguiente = null; est.textContent = T('Cargando…'); }
-    var args = { p_estado: estadoFiltro(), p_limit: 50, p_despues: mas ? E.siguiente : null };
-    return llama('orden_trabajo_datos', args).then(function (r) {
-      if (yo !== PETICION) return r;   // llegó tarde: ya se pidió otra lectura (otro filtro) y esa manda
-      if (!vaListaDe(r, 'ordenes') || !Array.isArray(r.data.unidades)) {
-        // «no se ha podido mirar» NO es «no hay órdenes»: se dice, y la tabla no se vacía en silencio
+  /* ── estado ── */
+  var E = { ficha: null, admin: false, flota: false, datos: null, moto: null, orden: null, paso: 'inicio', motivo: null, gas: null, fg: null,
+            enviando: false, reintento: null, revGuardando: {}, revError: {}, resultado: null, fin: null, duda: false, empujes: 0, busca: '', listas: null, listaSel: '' };
+  function idioma() { return window.LW_IDIOMA || 'es'; }
+  function nombreDe(x) { if (!x) return ''; var a = idioma() === 'en' ? x.nombre_en : x.nombre_id; return String(a || x.nombre_id || x.nombre_en || ''); }
+  function norm(s) { return String(s == null ? '' : s).toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+  function chipMoto(est) { var t = ESTADO_MOTO[est]; return t ? chip(T(t[0]), t[1]) : chip(T('Otro estado'), 'neutro'); }
+  var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  function seguro(ruta) { return typeof ruta === 'string' && /^\/(?!\/)[A-Za-z0-9_\-\/]*(#[A-Za-z0-9_\-]*)?$/.test(ruta) ? ruta : null; }
+
+  /* ── URL ── */
+  function hashDe(paso) {
+    if (paso === 'listas') return '#listas';
+    if (E.orden && PASOS.indexOf(paso) > 1) return '#o=' + E.orden.orden.id + '&p=' + paso;
+    if (E.moto && (paso === 'moto' || paso === 'motivo')) return '#m=' + E.moto.id + '&p=' + paso;
+    return '#';
+  }
+  function ponHash(paso, push) {
+    var hs = hashDe(paso);
+    try {
+      if (push && hs !== location.hash) { history.pushState({ tl: 1 }, '', hs === '#' ? location.pathname + location.search : hs); E.empujes++; }
+      else history.replaceState({ tl: 1 }, '', hs === '#' ? location.pathname + location.search : hs);
+    } catch (e) { /* MUDO A PROPOSITO: sin historial (iframe, file:) la pantalla sigue; solo no se puede volver con Atrás del móvil */ }
+  }
+  function leeHash() {
+    var s = String(location.hash || '').replace(/^#/, ''), o = {};
+    if (s === 'listas') return { listas: true };
+    s.split('&').forEach(function (par) { var i = par.indexOf('='); if (i > 0) o[par.slice(0, i)] = decodeURIComponent(par.slice(i + 1)); });
+    return { o: UUID.test(o.o || '') ? o.o : null, m: UUID.test(o.m || '') ? o.m : null, p: o.p || null };
+  }
+
+  /* ── modos ── */
+  function modo(m) {
+    raiz.setAttribute('data-modo', m);
+    oculta($v('vista-inicio'), m !== 'inicio'); oculta($v('vista-paso'), m !== 'paso'); oculta($v('vista-listas'), m !== 'listas');
+    var tabs = raiz.querySelectorAll('[role="tab"]');
+    Array.prototype.forEach.call(tabs, function (t) { t.setAttribute('aria-selected', String((t.getAttribute('data-accion') === 'tl-tab-listas') === (m === 'listas'))); });
+  }
+
+  /* ── inicio (paso 0) ── */
+  function setupDe(d) {
+    var s = d && d.setup;
+    if (!s || typeof s !== 'object') return { listo: true, faltan: [] };   // base sin el estado de configuración (vieja): se trata como lista
+    var pasos = Array.isArray(s.pasos) ? s.pasos.filter(function (p) { return p && p.obligatorio === true && p.hecho !== true; }) : [];
+    return { listo: s.listo !== false, faltan: pasos };
+  }
+  function cargaDatos() {
+    var est = $v('vista-inicio');
+    vacia(est); est.appendChild(h('p', { class: 'axw-vacio', role: 'status', text: T('Cargando…') }));
+    return llama('taller_datos', {}).then(function (r) {
+      var d = r.data;
+      if (r.error || !d || !Array.isArray(d.motos) || !Array.isArray(d.vivas)) {
+        E.datos = null;
+        vacia(est);
         var t = r.error ? C.mensaje(r.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
-        est.className = 'axw-error'; est.textContent = T('No se ha podido mirar') + ': ' + t;
-        oculta(raiz.querySelector('[data-accion="tl-mas"]'), true);
-        if (!mas) { E.ordenes = []; vacia($v('tabla')); }
-        return r;
+        est.appendChild(h('p', { class: 'axw-error', role: 'alert', 'data-tl': 'no-mirado', text: T('No se han podido mirar las motos') + ': ' + t }));
+        return false;
       }
-      E.unidades = r.data.unidades; E.recortadas = r.data.unidades_recortadas === true;
-      E.ordenes = mas ? E.ordenes.concat(r.data.ordenes) : r.data.ordenes;
-      E.siguiente = typeof r.data.siguiente === 'string' ? r.data.siguiente : null;
-      E.cargado = true;
-      pinta();
-      return r;
+      E.datos = d;
+      if (!Array.isArray(d.para_volver)) d.para_volver = [];
+      return true;
     });
   }
-  function orden(id) { return E.ordenes.filter(function (o) { return o.id === id; })[0]; }
-  function unidad(id) { return E.unidades.filter(function (u) { return u.id === id; })[0]; }
-  function nombreMoto(o) { return (o.unidad || '—') + (o.producto ? ' · ' + o.producto : ''); }
-  function chipEstado(e) { var t = ESTADO_ORDEN[e]; return t ? chip(T(t[0]), t[1]) : chip(String(e || '—')); }
-
-  function pinta() {
-    var est = $v('estado');
-    if (!E.ordenes.length) {
-      est.className = 'axw-vacio';
-      est.textContent = estadoFiltro() === 'abierta' ? T('No hay órdenes abiertas.') : (estadoFiltro() === 'cerrada' ? T('No hay órdenes cerradas.') : T('No hay órdenes.'));
-      vacia($v('tabla'));
-    } else {
-      est.className = 'axw-vacio'; est.textContent = '';
-      var filas = E.ordenes.map(function (o) {
-        var acc = h('div', { class: 'axw-acciones' }, [boton(T('Detalle'), 'tl-detalle', { 'data-orden-id': o.id })]);
-        if (o.estado === 'abierta') acc.appendChild(boton(T('Cerrar orden'), 'tl-cerrar', { 'data-orden-id': o.id, 'data-primario': '1' }));
-        var tr = h('tr', { 'data-orden-id': o.id });
-        [celda(o.numero, 'axw-nw'), celda(nombreMoto(o)), celda(o.motivo), celda(chip(o.bloquea_reservas ? T('Sí') : T('No'), o.bloquea_reservas ? 'espera' : 'neutro')),
-         celda(chipEstado(o.estado)), celda(C.fechaHora(o.abierta_en), 'axw-nw'), celda(o.coste == null ? '—' : C.dinero(o.coste, o.moneda), 'axw-num'), celda(acc)]
-          .forEach(function (td) { tr.appendChild(td); });
-        return tr;
+  function filaMoto(m, accion) {
+    var izq = h('div', null, [h('div', { class: 'tl-mat', text: String(m.identificador || '—') }), h('div', { class: 'tl-sub', text: String(m.modelo || '—') })]);
+    return h('li', null, [h('button', { class: 'tl-fila', type: 'button', 'data-accion': accion, 'data-moto-id': String(m.id) }, [izq, chipMoto(m.estado)])]);
+  }
+  function seccion(titulo, hijos, extra) {
+    return h('section', { class: 'tl-tarjeta', 'data-tl': extra || null }, [h('h2', { text: T(titulo) })].concat(hijos));
+  }
+  function pintaInicio() {
+    var est = $v('vista-inicio');
+    vacia(est);
+    if (!E.datos) return;
+    var d = E.datos, s = setupDe(d);
+    if (!s.listo) {
+      var lis = s.faltan.map(function (p) {
+        var li = h('li', { 'data-setup': String(p.clave || '') }, [document.createTextNode(T(SETUP[p.clave] || 'Falta un paso de la configuración.'))]);
+        var ruta = seguro(p.donde);
+        if (E.admin && ruta && !/#listas$/.test(ruta)) { li.appendChild(document.createTextNode(' ')); li.appendChild(h('a', { href: ruta, text: T('Ir allí') })); }
+        return li;
       });
-      C.tabla($v('tabla'), [['Orden'], ['Moto'], ['Motivo'], ['Bloquea'], ['Estado'], ['Abierta'], ['Coste', 'axw-num'], ['Acciones']], filas);
+      var caja = h('div', { class: 'axw-aviso', role: 'alert', 'data-tl': 'setup' }, [h('strong', { text: T('El taller aún no está listo') }), h('p', { text: T('Falta:') }), h('ul', null, lis)]);
+      if (E.flota) caja.appendChild(h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-tab-listas', 'data-primario': '1', text: T('Abrir Listas por modelo') }));
+      else caja.appendChild(h('p', { text: T('Avisa a la administración.') }));
+      est.appendChild(caja);
     }
-    oculta(raiz.querySelector('[data-accion="tl-mas"]'), !E.siguiente);
-  }
-
-  function detalle(o) {
-    C.dialogo(T('Orden') + ' ' + o.numero, [C.resumen([
-      ['Moto', nombreMoto(o)], ['Motivo', o.motivo], ['Bloquea', o.bloquea_reservas ? T('Sí') : T('No')], ['Estado', T((ESTADO_ORDEN[o.estado] || [o.estado])[0])],
-      ['Abierta', C.fechaHora(o.abierta_en)], ['Abierta por', o.abierta_por_email],
-      ['Cerrada', o.cerrada_en ? C.fechaHora(o.cerrada_en) : null], ['Cerrada por', o.cerrada_por_email],
-      ['Coste', o.coste == null ? null : C.dinero(o.coste, o.moneda)], ['Nota de cierre', o.nota_cierre]])],
-      [{ texto: T('Cerrar'), accion: 'tl-modal-cerrar', cierra: true }]);
-  }
-
-  /* ── abrir ── */
-  function listaReservasVivas(c) {
-    var v = null;
-    try { v = typeof c.detail === 'string' ? JSON.parse(c.detail) : c.detail; } catch (e) { /* MUDO A PROPOSITO: si el detalle no se puede leer se enseña solo el mensaje de la base, que ya dice cuántas son */ v = null; }
-    if (!Array.isArray(v) || !v.length) return null;
-    var ul = h('ul', { class: 'axw-nota' }, v.map(function (r) {
-      return h('li', { text: String(r.numero || '—') + ' · ' + String(r.estado || '') + ' · ' + C.fechaDia(r.desde) + ' → ' + C.fechaDia(r.hasta) });
-    }));
-    var salida = [h('p', { text: T('Esa moto tiene reservas pendientes. Cámbialas de moto antes de pasarla a taller:') }), ul];
-    if (E.puedeReservas) {
-      salida.push(h('p', { text: T('Se cambian desde Reservas de producto (botón «Cambiar de unidad»).') }));
-      salida.push(h('a', { href: '/intranet/v4/reservas-producto/', text: T('Ir a Reservas de producto') }));
-    } else {
-      salida.push(h('p', { text: T('Pídelo a quien lleve las reservas.') }));
-    }
-    return salida;
-  }
-  function abrirOrden() {
-    error(''); exito(''); aviso('');
-    var sel = h('select', { 'data-campo': 'unidad' }, [h('option', { value: '', text: T('Elige una moto') })]);
-    E.unidades.forEach(function (u) {
-      sel.appendChild(h('option', { value: u.id, text: String(u.identificador) + (u.producto ? ' · ' + u.producto : '') + (u.estado === 'taller' ? ' — ' + T('En taller') : '') }));
+    var rej = h('div', { class: 'tl-rejilla' });
+    // buscar matrícula
+    var inp = h('input', { class: 'tl-buscar', type: 'search', 'data-tl': 'buscar', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', 'aria-label': T('Buscar matrícula'), placeholder: T('Escribe la matrícula') });
+    inp.value = E.busca;
+    if (!s.listo) inp.disabled = true;
+    var res = h('ul', { class: 'tl-lista', 'data-tl': 'resultados', 'aria-live': 'polite' });
+    rej.appendChild(seccion('Buscar matrícula', [inp, res], 'sec-buscar'));
+    // órdenes a medias
+    var ul = h('ul', { class: 'tl-lista', 'data-tl': 'vivas' });
+    d.vivas.forEach(function (o) {
+      var izq = h('div', null, [h('div', { class: 'tl-mat', text: String(o.identificador || '—') + ' · ' + String(o.numero || '') }),
+        h('div', { class: 'tl-sub', text: [String(o.modelo || ''), o.paso ? T(TITULO[o.paso] || 'Moto') : '', o.abierta_por_email ? T('Abierta por') + ' ' + String(o.abierta_por_email) : ''].filter(Boolean).join(' · ') })]);
+      if (!o.paso) {
+        ul.appendChild(h('li', null, [h('div', { class: 'tl-fila', 'data-orden-id': String(o.id) }, [izq, h('span', { class: 'tl-sub', text: T('Orden de la pantalla anterior: ciérrala allí.') })])]));
+        return;
+      }
+      var b = h('button', { class: 'tl-fila', type: 'button', 'data-accion': 'tl-continuar', 'data-orden-id': String(o.id) }, [izq, o.estado === 'espera_recambio' ? chip(T('Espera recambio'), 'espera') : chip(T('Continuar'), 'neutro')]);
+      if (!s.listo && o.estado === 'espera_recambio') b.disabled = true;   // retomar una en espera la vuelve a abrir: la base lo niega sin configurar
+      ul.appendChild(h('li', null, [b]));
     });
-    var motivo = h('input', { type: 'text', 'data-campo': 'motivo', maxlength: '500', autocomplete: 'off' });
-    var bloquea = h('input', { type: 'checkbox', 'data-campo': 'bloquea', checked: true });
-    var avisoReservas = h('div', { class: 'axw-oculto', 'data-campo': 'reservas' });
-    var d = C.dialogo(T('Abrir orden'), [
-      campo('Moto', sel), campo('Qué se le hace a la moto (3 a 500 caracteres, una línea)', motivo),
-      h('div', { class: 'axw-campo' }, [h('label', null, [bloquea, document.createTextNode(' ' + T('Bloquea las reservas: la moto pasa a taller y no se puede reservar hasta que cierres la orden'))]),
-                                         h('p', { class: 'axw-vacio', text: T('Si no marcas esto, la orden queda anotada pero la moto sigue disponible.') })]),
-      avisoReservas
-    ].concat(E.recortadas ? [h('p', { class: 'axw-aviso', text: T('Solo se ofrecen las primeras 500 motos; si falta una, pídelo a la administración.') })] : []), [
-      { texto: T('Abrir'), accion: 'tl-modal-abrir', primario: true, alclic: function (bt, dlg) {
-        dlg.error(''); vacia(avisoReservas); C.oculta(avisoReservas, true);
-        var m = motivo.value.replace(/^\s+|\s+$/g, '');
-        if (!sel.value) { dlg.error(T('Elige la moto')); return; }
-        if (m.length < 3 || m.length > 500 || /[\u0000-\u001f\u007f]/.test(m)) { dlg.error(T('Escribe el motivo (3 a 500 caracteres, en una sola línea)')); return; }
-        if (!C.ocupa(bt)) return;
-        llama('orden_trabajo_abre', { p_unidad: sel.value, p_motivo: m, p_bloquea: !!bloquea.checked }).then(function (r) {
-          C.libera(bt);
-          if (r.error) {
-            var c = C.clasifica(r.error);
-            var lista = c.hint === 'reservas_vivas' ? listaReservasVivas(c) : null;
-            dlg.error(C.mensaje(r.error, false));
-            if (lista) { lista.forEach(function (n) { avisoReservas.appendChild(n); }); C.oculta(avisoReservas, false); }
+    rej.appendChild(seccion('Órdenes a medias', d.vivas.length ? [ul] : [h('p', { class: 'axw-vacio', text: T('No hay órdenes a medias.') })], 'sec-vivas'));
+    // motos para revisar (en taller sin orden viva)
+    var para = d.motos.filter(function (m) { return m.estado === 'taller' && !m.orden_viva; });
+    var ul2 = h('ul', { class: 'tl-lista', 'data-tl': 'para-revisar' });
+    para.forEach(function (m) { var li = filaMoto(m, 'tl-moto'); if (!s.listo) li.firstChild.disabled = true; ul2.appendChild(li); });
+    rej.appendChild(seccion('Motos para revisar', para.length ? [ul2] : [h('p', { class: 'axw-vacio', text: T('No hay motos esperando revisión. Busca la matrícula para abrir una orden.') })], 'sec-revisar'));
+    if (E.admin) rej.appendChild(pintaVolver());
+    est.appendChild(rej);
+    if (d.recortadas === true) est.appendChild(h('p', { class: 'axw-aviso', role: 'status', text: T('Solo se ven las primeras 500 motos: busca la matrícula.') }));
+    pintaBusqueda();
+  }
+  function pintaBusqueda() {
+    var res = $v('resultados'), inp = $v('buscar');
+    if (!res || !inp) return;
+    vacia(res);
+    var q = norm(inp.value);
+    E.busca = inp.value;
+    if (!q || !E.datos) return;
+    var hay = E.datos.motos.filter(function (m) { return norm(m.identificador).indexOf(q) !== -1 || norm(m.numero).indexOf(q) !== -1; }).slice(0, 20);
+    if (!hay.length) { res.appendChild(h('li', { class: 'axw-vacio', text: T('Ninguna moto con esa matrícula.') })); return; }
+    hay.forEach(function (m) { res.appendChild(filaMoto(m, 'tl-moto')); });
+  }
+  function pintaVolver() {
+    var lista = E.datos.para_volver;
+    if (!lista.length) return seccion('Listas para volver', [h('p', { class: 'axw-vacio', text: T('No hay motos listas para volver.') })], 'sec-volver');
+    var ul = h('ul', { class: 'tl-lista', 'data-tl': 'volver' });
+    lista.forEach(function (m) {
+      var cb = h('input', { type: 'checkbox', 'data-volver-id': String(m.id) });
+      ul.appendChild(h('li', null, [h('label', { class: 'tl-casilla' }, [cb, h('span', null, [h('span', { class: 'tl-mat', text: String(m.identificador || '—') }),
+        h('span', { class: 'tl-sub', text: ' · ' + String(m.modelo || '') + ' · ' + String(m.orden_numero || '') + (m.cerrada_por_email ? ' · ' + T('Cerrada por') + ' ' + String(m.cerrada_por_email) : '') })])])]));
+    });
+    var motivo = h('input', { type: 'text', maxlength: '200', 'data-tl': 'volver-motivo', autocomplete: 'off' });
+    return seccion('Listas para volver', [ul, h('div', { class: 'tl-campo' }, [h('label', { text: T('Motivo de la vuelta (3 a 200 caracteres)') }), motivo]),
+      h('div', { 'data-tl': 'volver-estado', class: 'tl-estado', role: 'status' }),
+      h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-devolver', 'data-primario': '1', text: T('Devolver a disponible') })], 'sec-volver');
+  }
+  function devolver(bt) {
+    var ids = Array.prototype.map.call(raiz.querySelectorAll('[data-volver-id]:checked'), function (c) { return c.getAttribute('data-volver-id'); });
+    var mot = ($v('volver-motivo').value || '').replace(/^\s+|\s+$/g, '');
+    var est = $v('volver-estado');
+    vacia(est);
+    if (!ids.length) { est.appendChild(h('p', { class: 'axw-error', text: T('Elige una moto o más.') })); return; }
+    if (mot.length < 3 || mot.length > 200 || /[\u0000-\u001f\u007f]/.test(mot)) { est.appendChild(h('p', { class: 'axw-error', text: T('Escribe el motivo (3 a 200 caracteres, en una línea).') })); return; }
+    if (!C.ocupa(bt)) return;
+    // Reintentar tras perder la respuesta es seguro: las que ya volvieron salen como «no_esta_en_taller», nada se aplica dos veces.
+    llama('taller_moto_devuelve', { p_unidades: ids, p_motivo: mot }).then(function (r) {
+      C.libera(bt);
+      if (r.error || !r.data || !Array.isArray(r.data.devueltas)) {
+        est.appendChild(h('p', { class: 'axw-error', text: T('No guardado') + ' · ' + (r.error ? texto(r.error) : T('No se ha podido guardar.')) }));
+        return;
+      }
+      var mapa = {};
+      E.datos.para_volver.forEach(function (m) { mapa[m.id] = m.identificador; });
+      exito(TT('Devueltas: {n}', { n: r.data.devueltas.length }));
+      var rech = Array.isArray(r.data.rechazadas) ? r.data.rechazadas : [];
+      return cargaDatos().then(function () {
+        pintaInicio();
+        var e2 = $v('volver-estado') || $v('vista-inicio');
+        rech.forEach(function (x) { e2.appendChild(h('p', { class: 'axw-aviso', text: T('No devuelta') + ': ' + String(mapa[x.id] || x.id) + ' · ' + T(PORQUE[x.porque] || 'No se ha podido guardar.') })); });
+      });
+    });
+  }
+
+  /* ── asistente: pintado común ── */
+  function estadoPaso(tipo, t, reintento) {
+    var e = $v('paso-estado');
+    vacia(e);
+    E.reintento = reintento || null;
+    if (!t) return;
+    var p = h('p', { class: tipo === 'ok' ? 'axw-ok' : (tipo === 'aviso' ? 'axw-aviso' : 'axw-error'), 'data-tipo': tipo, text: t });
+    e.appendChild(p);
+    if (reintento) e.appendChild(h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-reintentar', text: T('Reintentar') }));
+  }
+  function noGuardado(err, reintento) { estadoPaso('error', T('No guardado') + ' · ' + texto(err), reintento); }
+  function bloquea(si) {
+    E.enviando = si;
+    var at = raiz.querySelector('[data-accion="tl-atras"]'), sg = $v('siguiente');
+    at.disabled = si; sg.disabled = si || sg.getAttribute('data-off') === '1';
+    if (si) sg.setAttribute('aria-busy', 'true'); else sg.removeAttribute('aria-busy');
+  }
+  /* Un envío del asistente: uno a la vez (doble toque = uno). Mientras dura no se navega ni se cierra nada (barra bloqueada; un Atrás del móvil se deshace). */
+  function envia(nombre, args) {
+    if (E.enviando) return Promise.resolve(null);
+    bloquea(true);
+    estadoPaso('aviso', T('Guardando…'));
+    return llama(nombre, args).then(function (r) { bloquea(false); estadoPaso(null, ''); if (r && !r.error) E.sucio = true; return r; });
+  }
+  function siguiente(rotulo, off) { var b = $v('siguiente'); b.textContent = T(rotulo); b.setAttribute('data-off', off ? '1' : '0'); b.disabled = !!off || E.enviando; }
+  function radio(grupo, valor, rotulo, marcado, extra) {
+    var a = { class: 'tl-op', type: 'button', role: 'radio', 'aria-checked': marcado ? 'true' : 'false', 'data-accion': 'tl-elige', 'data-grupo': grupo, 'data-valor': String(valor) };
+    Object.keys(extra || {}).forEach(function (k) { a[k] = extra[k]; });
+    return h('button', a, [h('span', { text: rotulo })]);
+  }
+  function grupo(etq, clase, hijos) { return h('div', { class: 'tl-opciones ' + (clase || ''), role: 'radiogroup', 'aria-label': etq }, hijos); }
+
+  function ir(paso, push) {
+    if (E.fg && paso !== 'fotos') { E.fg.destruye(); E.fg = null; }
+    E.paso = paso;
+    if (paso === 'inicio') {
+      modo('inicio'); ponHash('inicio', push); E.moto = null; E.orden = null;
+      if (E.sucio) { E.sucio = false; cargaDatos().then(function () { if (E.paso === 'inicio') pintaInicio(); }); } else pintaInicio();   // tras escribir, la lista se vuelve a leer
+      return;
+    }
+    if (paso === 'listas') { modo('listas'); ponHash('listas', push); abreListas(); return; }
+    modo('paso');
+    var sec = $v('vista-paso');
+    sec.setAttribute('data-paso', paso);
+    estadoPaso(null, '');
+    var i = PASOS.indexOf(paso);
+    var mat = E.orden ? E.orden.moto && E.orden.moto.identificador : (E.moto && E.moto.identificador);
+    $v('linea').textContent = (i >= 0 ? (i + 1) + '/' + PASOS.length + ' · ' : '') + String(mat || '—') + (E.orden ? ' · ' + String(E.orden.orden.numero || '') : '');
+    $v('paso-titulo').textContent = T(TITULO[paso] || 'Moto');
+    var cuerpo = $v('paso-cuerpo');
+    vacia(cuerpo);
+    oculta(raiz.querySelector('[data-accion="tl-atras"]'), paso === 'fin');
+    ({ moto: pasoMoto, motivo: pasoMotivo, km: pasoKm, fotos: pasoFotos, revisiones: pasoRevisiones, resultado: pasoResultado, fin: pasoFin })[paso](cuerpo);
+    if (paso !== 'fin') ponHash(paso, push);
+    traduce(sec);
+    try { $v('paso-titulo').focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ }
+    window.scrollTo(0, 0);
+  }
+  function atras() {
+    if (E.enviando) return;
+    if (E.empujes > 0) { history.back(); return; }
+    var i = PASOS.indexOf(E.paso);
+    var prev = E.paso === 'km' ? 'moto' : (i > 0 ? PASOS[i - 1] : 'inicio');   // el motivo queda congelado al abrir: de km se vuelve a la moto
+    if (prev === 'moto' && E.orden && !E.moto) E.moto = E.orden.moto;
+    ir(prev, false);
+  }
+
+  /* paso 1: la moto (solo lee) */
+  function vivaDe(m) { return m && m.orden_viva ? m.orden_viva : null; }
+  function pasoMoto(c) {
+    var m = E.moto, v = vivaDe(m);
+    if (E.orden && E.orden.moto && m && E.orden.moto.id === m.id && E.orden.orden.estado !== 'cerrada') v = { id: E.orden.orden.id, numero: E.orden.orden.numero, paso: E.orden.orden.paso, estado: E.orden.orden.estado };
+    c.appendChild(h('div', { class: 'tl-mat', text: String(m.identificador || '—') }));
+    c.appendChild(C.resumen([['Modelo', m.modelo], ['Moto', m.numero]]));
+    c.appendChild(h('div', null, [chipMoto(m.estado)]));
+    if (v && !v.paso) {
+      c.appendChild(h('p', { class: 'axw-aviso', text: TT('Esta moto tiene la orden {n} de la pantalla anterior: ciérrala allí antes de usar este asistente.', { n: String(v.numero || '') }) }));
+      siguiente('Siguiente', true);
+      return;
+    }
+    if (v) {
+      c.appendChild(h('p', { class: 'axw-nota', text: T('Esta moto ya tiene una orden abierta. Continúa donde se quedó.') + ' (' + String(v.numero || '') + (v.abierta_por_email ? ' · ' + String(v.abierta_por_email) : '') + ')' }));
+      siguiente('Continuar', false);
+      return;
+    }
+    if (m.estado === 'disponible') c.appendChild(h('p', { class: 'axw-nota', text: T('Al abrir la orden, la moto pasa al taller y no se puede reservar.') }));
+    siguiente('Siguiente', !setupDe(E.datos).listo);
+  }
+  /* paso 2: el motivo → ABRE (o retoma) la orden */
+  function pasoMotivo(c) {
+    c.appendChild(grupo(T('Motivo'), '', MOTIVOS.map(function (x) { return radio('motivo', x[0], T(x[1]), E.motivo === x[0]); })));
+    var nota = h('input', { type: 'text', maxlength: '400', 'data-tl': 'nota-motivo', autocomplete: 'off' });
+    c.appendChild(h('div', { class: 'tl-campo' }, [h('label', { text: T('Nota (opcional)') }), nota]));
+    c.appendChild(h('div', { 'data-tl': 'reservas', class: 'axw-oculto' }));
+    siguiente('Siguiente', false);
+  }
+  function abre() {
+    if (!E.motivo) { estadoPaso('error', T('Elige el motivo.')); return; }
+    var nota = ($v('nota-motivo') && $v('nota-motivo').value || '').replace(/^\s+|\s+$/g, '');
+    if (nota.length > 400 || /[\u0000-\u001f\u007f]/.test(nota)) { estadoPaso('error', T('La nota es demasiado larga o tiene saltos de línea.')); return; }
+    var args = { p_unidad: E.moto.id, p_motivo_tipo: E.motivo, p_nota: nota || null };
+    var intento = function (otraVez) {
+      return envia('taller_orden_abre', args).then(function (r) {
+        if (!r) return;
+        if (r.error) {
+          var c = C.clasifica(r.error);
+          if (c.hint === 'orden_viva' && !otraVez) return intento(true);   // otra persona la abrió a la vez: la base ahora la DEVUELVE (retomada)
+          if (c.hint === 'orden_vieja_viva') {
+            var n = (/OT-\d+/.exec(c.m) || [''])[0];
+            estadoPaso('error', TT('Esta moto tiene la orden {n} de la pantalla anterior: ciérrala allí antes de usar este asistente.', { n: n }));
             return;
           }
-          var x = r.data;
-          // no se da por abierta lo que la base no confirma con un número de orden
-          if (!x || typeof x.id !== 'string' || typeof x.numero !== 'string') { dlg.error(T('La base no confirmó la orden: recarga la lista antes de repetir.')); return; }
-          dlg.cierra();
-          exito(T('Orden abierta') + ' ' + x.numero + '. ' + T('Moto') + ': ' + T(x.unidad_estado === 'taller' ? 'En taller' : 'Disponible'));
-          carga(false);
-        });
-      } },
-      { texto: T('Cancelar'), accion: 'tl-modal-cerrar', cierra: true }
-    ]);
-    return d;
+          if (c.hint === 'taller_sin_configurar') { estadoPaso('error', T('El taller aún no está configurado.')); return cargaDatos(); }
+          if (c.hint === 'reservas_vivas') { estadoPaso('error', texto(r.error)); pintaReservas(c.detail); return; }
+          // sin respuesta: la orden puede haberse abierto. Reintentar es seguro: la base devuelve la MISMA orden viva (retomada), nunca una segunda.
+          noGuardado(r.error, esRed(r.error) ? abre : null);
+          return;
+        }
+        var x = r.data;
+        if (!x || !UUID.test(String(x.id || '')) || typeof x.numero !== 'string') { estadoPaso('error', T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'), abre); return; }
+        if (x.retomada) exito(T('Orden retomada') + ' ' + x.numero);
+        return entraOrden(x.id, E.paso !== 'motivo');   // desde el motivo se SUSTITUYE su entrada (motivo congelado); al retomar una en espera, entrada nueva
+      });
+    };
+    return intento(false);
+  }
+  function pintaReservas(det) {
+    var v = null;
+    try { v = typeof det === 'string' ? JSON.parse(det) : det; } catch (e) { /* MUDO A PROPOSITO: sin detalle legible queda el aviso general, que ya dice qué hacer */ v = null; }
+    var caja = $v('reservas');
+    if (!caja || !Array.isArray(v) || !v.length) return;
+    vacia(caja);
+    caja.appendChild(h('ul', { class: 'axw-nota' }, v.map(function (x) { return h('li', { text: String(x.numero || '—') + ' · ' + C.fechaDia(x.desde) + ' → ' + C.fechaDia(x.hasta) }); })));
+    oculta(caja, false);
+  }
+  /* Lee la orden y va al paso que dice LA BASE (al recargar, al retomar, al abrir). */
+  function entraOrden(id, push) {
+    return cargaOrden(id).then(function (ok) {
+      if (!ok) return;
+      var o = E.orden.orden;
+      if (o.estado === 'cerrada') { error(T('Esa orden ya no está abierta.')); ir('inicio', false); return; }
+      E.moto = E.orden.moto;
+      ir(PASOS.indexOf(o.paso) > 1 ? o.paso : 'km', push);
+    });
+  }
+  function cargaOrden(id) {
+    if (!E.enviando) estadoPaso('aviso', T('Cargando…'));
+    return llama('taller_orden_datos', { p_orden: id }).then(function (r) {
+      var d = r.data;
+      if (r.error || !d || !d.orden || !d.moto || !Array.isArray(d.revisiones) || !Array.isArray(d.fotos)) {
+        if (r.error && C.clasifica(r.error).hint === 'orden_no_existe') { E.orden = null; error(texto(r.error)); ir('inicio', false); return false; }
+        if (E.paso === 'inicio' || E.paso === 'listas') { modo('paso'); vacia($v('paso-cuerpo')); $v('paso-titulo').textContent = T('No se ha podido abrir la orden'); siguiente('Siguiente', true); }
+        estadoPaso('error', T('No se ha podido abrir la orden') + ': ' + (r.error ? C.mensaje(r.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.')), function () { entraOrden(id, false); });
+        return false;
+      }
+      estadoPaso(null, '');
+      E.orden = d;
+      if (!Array.isArray(d.faltan)) d.faltan = [];
+      E.revError = {}; E.revGuardando = {};
+      return true;
+    });
+  }
+  function continuar(ordenId) {
+    var v = (E.datos ? E.datos.vivas : []).filter(function (o) { return o.id === ordenId; })[0];
+    if (v && v.estado === 'espera_recambio') {
+      // en espera de recambio: retomarla la vuelve a abrir, y eso lo hace la base (taller_orden_abre devuelve la misma orden)
+      var m = (E.datos.motos || []).filter(function (x) { return x.id === v.unidad_id; })[0] || { id: v.unidad_id, identificador: v.identificador, modelo: v.modelo };
+      E.moto = m; E.motivo = v.motivo_tipo; E.orden = null;
+      modo('paso'); vacia($v('paso-cuerpo')); $v('paso-titulo').textContent = T('Moto'); $v('linea').textContent = String(m.identificador || '');
+      siguiente('Continuar', false);
+      return abre();
+    }
+    return entraOrden(ordenId, true);
   }
 
-  /* ── cerrar ── */
-  function cerrarOrden(o) {
-    error(''); exito(''); aviso('');
-    var u = unidad(o.unidad_id);
-    var coste = h('input', { type: 'text', inputmode: 'decimal', 'data-campo': 'coste', autocomplete: 'off' });
-    var moneda = h('input', { type: 'text', 'data-campo': 'moneda', maxlength: '3', autocomplete: 'off', value: u && u.moneda ? u.moneda : '' });
-    var nota = h('textarea', { 'data-campo': 'nota', rows: '3', maxlength: '1000' });
-    C.dialogo(T('Cerrar la orden') + ' ' + o.numero, [
-      C.resumen([['Moto', nombreMoto(o)], ['Motivo', o.motivo]]),
-      h('div', { class: 'axw-campo' }, [h('label', { text: T('Coste (opcional)') }), coste]),
-      h('div', { class: 'axw-campo' }, [h('label', { text: T('Moneda') }), moneda]),
-      campo('Nota (opcional, hasta 1000 caracteres)', nota)
-    ], [
-      { texto: T('Cerrar la orden'), accion: 'tl-modal-cierra', primario: true, alclic: function (bt, dlg) {
-        dlg.error('');
-        var c0 = coste.value.replace(/\s+/g, '');
-        var c = c0.replace(',', '.');
-        var mo = moneda.value.replace(/\s+/g, '').toUpperCase();
-        var n = nota.value.replace(/^\s+|\s+$/g, '');
-        if (c !== '' && !/^\d+(\.\d{1,4})?$/.test(c)) { dlg.error(T('El coste es un número positivo. Usa solo cifras y un punto o una coma para los decimales.')); return; }
-        if (c !== '' && !/^[A-Z]{3}$/.test(mo)) { dlg.error(T('Con coste hace falta la moneda en tres letras (IDR, EUR…)')); return; }
-        // «150.000» en IDR es ciento cincuenta mil, no ciento cincuenta: en monedas sin decimales NO se admite ni punto ni coma, y en las demás un grupo de tres cifras tras el separador es ambiguo
-        if (c !== '' && SIN_DECIMALES.indexOf(mo) !== -1 && /[.,]/.test(c0)) { dlg.error(T('En esta moneda el coste va sin puntos ni comas (por ejemplo 150000).')); return; }
-        if (c !== '' && /^\d{1,3}([.,]\d{3})+$/.test(c0)) { dlg.error(T('Ese coste es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 1500 o 15.50.')); return; }
-        if (n.length > 1000) { dlg.error(T('La nota admite hasta 1000 caracteres.')); return; }
-        if (!C.ocupa(bt)) return;
-        // el coste viaja como TEXTO numérico: la base lo valida contra los decimales de la moneda; aquí no se redondea nada
-        llama('orden_trabajo_cierra', { p_id: o.id, p_coste: c === '' ? null : c, p_moneda: c === '' ? null : mo, p_nota: n === '' ? null : n }).then(function (r) {
-          C.libera(bt);
-          if (r.error) { dlg.error(C.mensaje(r.error, false)); return; }
-          var x = r.data;
-          if (!x || x.estado !== 'cerrada') { dlg.error(T('La base no confirmó la orden: recarga la lista antes de repetir.')); return; }
-          dlg.cierra();
-          exito(T('Orden cerrada') + ' ' + x.numero + '. ' + T('Moto') + ': ' + T(x.unidad_estado === 'taller' ? 'En taller' : (x.unidad_estado === 'disponible' ? 'Disponible' : 'Baja')));
-          carga(false);
-        });
-      } },
-      { texto: T('Volver'), accion: 'tl-modal-cerrar', cierra: true }
-    ]);
+  /* paso 3: km y gasolina */
+  function pasoKm(c) {
+    var o = E.orden.orden, ult = E.orden.ultimo_km;
+    var km = h('input', { class: 'tl-km', type: 'text', inputmode: 'numeric', pattern: '[0-9]*', maxlength: '7', autocomplete: 'off', 'data-tl': 'km', 'aria-label': T('Kilómetros') });
+    if (o.km != null) km.value = String(o.km);
+    km.addEventListener('input', function () { var v = km.value.replace(/[^0-9]/g, ''); if (v !== km.value) km.value = v; });
+    c.appendChild(h('div', { class: 'tl-campo' }, [h('label', { text: T('Kilómetros') }), km,
+      h('p', { class: 'tl-sub', 'data-tl': 'ultimo-km', text: ult != null ? TT('Último apuntado: {n} km', { n: entero(ult) }) : T('Sin km anteriores.') })]));
+    if (E.gas == null && o.gasolina != null) E.gas = Number(o.gasolina);
+    c.appendChild(h('div', { class: 'tl-etq', text: T('Gasolina') }));
+    c.appendChild(grupo(T('Gasolina'), 'tl-gas', GASOLINA.map(function (g) { return radio('gas', g[0], T(g[1]), E.gas === g[0]); })));
+    siguiente('Siguiente', false);
+  }
+  function guardaKm(confirma) {
+    var v = ($v('km').value || '').replace(/[^0-9]/g, '');
+    if (!/^\d{1,7}$/.test(v) || Number(v) > 2000000) { estadoPaso('error', T('Escribe los km en número entero.')); return; }
+    if (E.gas == null) { estadoPaso('error', T('Elige la gasolina.')); return; }
+    var n = Number(v), id = E.orden.orden.id;
+    return envia('taller_orden_km', { p_orden: id, p_km: n, p_gasolina: E.gas, p_confirma: !!confirma }).then(function (r) {
+      if (!r) return;
+      if (r.error) {
+        var c = C.clasifica(r.error);
+        if (c.hint === 'km_menor') {
+          var ult = null;
+          try { ult = JSON.parse(c.detail).ultimo_km; } catch (e) { /* MUDO A PROPOSITO: sin detalle se usa el último que ya enseñaba la pantalla */ ult = E.orden.ultimo_km; }
+          C.dialogo(T('¿Los km son correctos?'), [h('p', { text: TT('Son menos que los últimos apuntados ({n} km). Confírmalo si es correcto.', { n: entero(ult) }) })], [
+            { texto: T('Sí, son correctos'), accion: 'tl-km-confirma', primario: true, alclic: function (bt, dlg) { dlg.cierra(); guardaKm(true); } },
+            { texto: T('Corregir'), accion: 'tl-km-corrige', cierra: true }]);
+          return;
+        }
+        noGuardado(r.error, function () { guardaKm(confirma); });   // reintentar km es idempotente (mismo valor)
+        return;
+      }
+      if (!r.data || typeof r.data.paso !== 'string') { estadoPaso('error', T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'), function () { guardaKm(confirma); }); return; }
+      E.orden.orden.km = n; E.orden.orden.gasolina = E.gas; E.orden.orden.paso = r.data.paso;
+      ir('fotos', true);
+    });
   }
 
+  /* paso 4: fotos guiadas (pieza común; habla con la edge taller-fotos, no con la base) */
+  function token() { return SB.auth.getSession().then(function (s) { return s && s.data && s.data.session ? s.data.session.access_token : ''; }); }
+  function pasoFotos(c) {
+    var info = h('p', { class: 'tl-sub', 'data-tl': 'fotos-info', role: 'status' });
+    var caja = h('div', { class: 'tl-fg', 'data-tl': 'fotos' });
+    c.appendChild(info); c.appendChild(caja);
+    E.fg = axwFotosGuiadas({ T: T, h: h, caja: caja, orden: E.orden.orden.id, fotos: E.orden.fotos, max_dano: 15, apikey: window.LW_SB_KEY,
+      edge: function () { return window.lwEdge('taller-fotos'); }, token: token,
+      alCambiar: function (x) {
+        info.textContent = (x.faltan ? TT('Faltan {n} de las 5 fijas.', { n: x.faltan }) : T('Las 5 fijas están hechas.')) + (x.pendientes ? ' ' + T('Hay fotos sin subir: se suben solas al volver la red.') : '');
+      } });
+    siguiente('Siguiente', false);
+  }
+  function pasoGuarda(siguientePaso) {
+    var id = E.orden.orden.id;
+    return envia('taller_orden_paso', { p_orden: id, p_paso: siguientePaso }).then(function (r) {
+      if (!r) return;
+      if (r.error || !r.data || r.data.paso !== siguientePaso) { noGuardado(r.error || {}, function () { pasoGuarda(siguientePaso); }); return; }
+      E.orden.orden.paso = siguientePaso;
+      if (siguientePaso === 'resultado') return cargaOrden(id).then(function (ok) { if (ok) ir('resultado', true); });   // «lo que falta» y las fotos al día
+      ir(siguientePaso, true);
+    });
+  }
+
+  /* paso 5: revisiones (cada respuesta se guarda al pulsar; upsert por orden y revisión) */
+  function pasoRevisiones(c) {
+    var revs = E.orden.revisiones;
+    if (!revs.length) { c.appendChild(h('p', { class: 'axw-aviso', text: T('Este modelo no tiene revisiones en su lista. Avisa a la administración.') })); siguiente('Siguiente', false); return; }
+    c.appendChild(h('p', { class: 'tl-sub', 'data-tl': 'rev-cuenta', role: 'status' }));
+    revs.forEach(function (r) { c.appendChild(tarjetaRev(r)); });
+    cuentaRev();
+    siguiente('Siguiente', false);
+  }
+  function cuentaRev() { var e = $v('rev-cuenta'); if (!e) return; var revs = E.orden.revisiones; e.textContent = TT('Contestadas {n} de {t}', { n: revs.filter(function (r) { return !!r.resultado; }).length, t: revs.length }); }
+  function revDe(id) { return E.orden.revisiones.filter(function (r) { return r.id === id; })[0]; }
+  function tarjetaRev(r) {
+    var g = h('div', { class: 'tl-res', role: 'radiogroup', 'aria-label': nombreDe(r) }, REV.map(function (x) {
+      var b = h('button', { type: 'button', role: 'radio', 'aria-checked': r.resultado === x[0] ? 'true' : 'false', 'data-accion': 'tl-rev', 'data-rev-id': String(r.id), 'data-res': x[0] },
+        [h('span', { class: 'tl-ico', 'aria-hidden': 'true', text: x[2] }), h('span', { text: T(x[1]) })]);
+      if (E.revGuardando[r.id] === x[0]) b.setAttribute('data-guardando', '1');
+      return b;
+    }));
+    var est = h('div', { class: 'tl-rev-estado', 'data-rev-estado': String(r.id) });
+    if (E.revGuardando[r.id]) est.appendChild(h('span', { text: T('Guardando…') }));
+    else if (E.revError[r.id]) {
+      est.setAttribute('data-mal', '1');
+      est.appendChild(h('span', { text: T('No guardado') + ' · ' + E.revError[r.id].texto }));
+      est.appendChild(h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-rev-reintentar', 'data-rev-id': String(r.id), text: T('Reintentar') }));
+    } else if (r.resultado) est.appendChild(h('span', { text: T('Guardado') }));
+    var hijos = [h('div', { class: 'tl-rev-nombre', text: nombreDe(r) }), g, est];
+    if (r.resultado === 'atencion' || r.resultado === 'mal') {
+      var nota = h('input', { type: 'text', maxlength: '200', 'data-rev-nota': String(r.id), autocomplete: 'off', 'aria-label': T('Nota') + ' · ' + nombreDe(r) });
+      nota.value = r.nota || '';
+      hijos.push(h('div', { class: 'tl-campo' }, [nota, h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-rev-nota', 'data-rev-id': String(r.id), text: T('Guardar nota') })]));
+    }
+    return h('div', { class: 'tl-rev', 'data-rev': String(r.id) }, hijos);
+  }
+  function repintaRev(id) {
+    var viejo = raiz.querySelector('[data-rev="' + id + '"]'), r = revDe(id);
+    if (!viejo || !r) return;
+    var foco = document.activeElement && viejo.contains(document.activeElement) ? document.activeElement.getAttribute('data-res') || document.activeElement.getAttribute('data-accion') : null;
+    var nuevo = tarjetaRev(r);
+    viejo.parentNode.replaceChild(nuevo, viejo);
+    traduce(nuevo);
+    if (foco) { var f = nuevo.querySelector('[data-res="' + foco + '"]') || nuevo.querySelector('[data-accion="' + foco + '"]'); if (f) f.focus(); }
+    cuentaRev();
+  }
+  function marca(id, res, nota) {
+    var r = revDe(id);
+    if (!r || E.revGuardando[id]) return;   // una a la vez por tarjeta: un doble toque no manda dos
+    var n = nota != null ? nota : (r.nota || null);
+    if (n && (n.length > 200 || /[\u0000-\u001f\u007f]/.test(n))) { E.revError[id] = { texto: T('La nota es demasiado larga o tiene saltos de línea.'), res: res, nota: null }; repintaRev(id); return; }
+    E.revGuardando[id] = res; delete E.revError[id];
+    repintaRev(id);
+    llama('taller_revision_marca', { p_orden: E.orden.orden.id, p_revision: id, p_resultado: res, p_nota: n || null }).then(function (x) {
+      delete E.revGuardando[id];
+      if (x.error || !x.data || x.data.resultado !== res) {
+        // sin respuesta puede haberse guardado; repetir es seguro (upsert por orden y revisión)
+        E.revError[id] = { texto: x.error ? texto(x.error) : T('No se ha podido guardar.'), res: res, nota: n };
+      } else { r.resultado = res; r.nota = n || null; E.sucio = true; }
+      repintaRev(id);
+    });
+  }
+
+  /* paso 7: resultado */
+  function textoFalta(f) {
+    var p = String(f).split(':'), k = p[0], v = p.slice(1).join(':');
+    var rv = E.orden.revisiones.filter(function (r) { return r.clave === v; })[0];
+    if (k === 'foto') return T('Fotos') + ': ' + T(FOTO_RANURA[v] || 'Fotos');
+    if (k === 'sin_contestar') return T('Sin contestar') + ': ' + (rv ? nombreDe(rv) : v);
+    if (k === 'mal') return T('Mal') + ': ' + (rv ? nombreDe(rv) : v);
+    return v || k;
+  }
+  function pasoResultado(c) {
+    var o = E.orden.orden, revs = E.orden.revisiones;
+    var cuenta = function (x) { return revs.filter(function (r) { return r.resultado === x; }).length; };
+    var fijas = ['frente', 'atras', 'izquierda', 'derecha', 'cuentakm'].filter(function (r) { return E.orden.fotos.some(function (f) { return f.ranura === r && f.estado === 'confirmada'; }); }).length;
+    var gas = GASOLINA.filter(function (g) { return g[0] === Number(o.gasolina); })[0];
+    c.appendChild(C.resumen([['Motivo', T((MOTIVOS.filter(function (m) { return m[0] === o.motivo_tipo; })[0] || ['', 'Motivo'])[1])],
+      ['Kilómetros', o.km == null ? '—' : entero(o.km)], ['Gasolina', gas ? T(gas[1]) : '—'], ['Fotos', TT('Fotos fijas: {n} de 5', { n: fijas })],
+      ['Revisiones', TT('Revisiones: {b} bien, {a} atención, {m} mal, {s} sin contestar', { b: cuenta('bien'), a: cuenta('atencion'), m: cuenta('mal'), s: revs.filter(function (r) { return !r.resultado; }).length })]]));
+    c.appendChild(grupo(T('Resultado'), '', RESULTADOS.map(function (x) { return radio('resultado', x[0], T(x[1]), E.resultado === x[0]); })));
+    var faltan = E.orden.faltan;
+    var caja = h('div', { 'data-tl': 'faltan', class: 'axw-oculto' });
+    if (faltan.length) {
+      caja.appendChild(h('p', { class: 'axw-aviso' }, [h('strong', { text: T('Para dejarla lista falta:') }), h('ul', null, faltan.map(function (f) { return h('li', { text: textoFalta(f) }); }))]));
+      if (E.admin) caja.appendChild(h('div', { class: 'tl-campo' }, [h('label', { text: T('Por qué se deja lista sin todo (3 a 500 caracteres)') }), h('input', { type: 'text', maxlength: '500', 'data-tl': 'excepcion', autocomplete: 'off' })]));
+      else caja.appendChild(h('p', { class: 'axw-error', text: T('Solo la administración puede dejarla lista sin todo.') }));
+    }
+    c.appendChild(caja);
+    c.appendChild(h('div', { class: 'tl-campo' }, [h('label', { text: T('Nota del resultado (opcional)') }), h('textarea', { rows: '3', maxlength: '1000', 'data-tl': 'nota-res' })]));
+    refrescaResultado();
+  }
+  function refrescaResultado() {
+    var caja = $v('faltan'), lista = E.resultado === 'lista' && E.orden.faltan.length > 0;
+    if (caja) oculta(caja, !lista);
+    siguiente('Guardar', !E.resultado || (lista && !E.admin));
+  }
+  function guardaResultado() {
+    if (!E.resultado) { estadoPaso('error', T('Elige el resultado.')); return; }
+    var nota = ($v('nota-res').value || '').replace(/^\s+|\s+$/g, '');
+    var exc = E.resultado === 'lista' && E.orden.faltan.length && $v('excepcion') ? ($v('excepcion').value || '').replace(/^\s+|\s+$/g, '') : '';
+    if (nota.length > 1000) { estadoPaso('error', T('La nota es demasiado larga o tiene saltos de línea.')); return; }
+    if (E.resultado === 'lista' && E.orden.faltan.length) {
+      if (!E.admin) { estadoPaso('error', T('Solo la administración puede dejarla lista sin todo.')); return; }
+      if (exc.length < 3 || exc.length > 500 || /[\u0000-\u001f\u007f]/.test(exc)) { estadoPaso('error', T('Escribe por qué (3 a 500 caracteres, en una línea).')); return; }
+    }
+    var id = E.orden.orden.id, moto = E.orden.moto.id, res = E.resultado;
+    return envia('taller_orden_resultado', { p_orden: id, p_resultado: res, p_nota: nota || null, p_motivo_excepcion: exc || null }).then(function (r) {
+      if (!r) return;
+      if (r.error) {
+        var c = C.clasifica(r.error);
+        /* Duda: una respuesta perdida ANTES pudo cerrar la orden. Un reintento que contesta «ya cerrada» (o «no existe», a un mecánico que no la abrió) no es un
+           error: se vuelve a mirar si la moto conserva esta orden viva; si no, se cerró. Solo un error CON código de la base que no sea ese es «no se guardó». */
+        if (E.duda && (c.hint === 'ya_cerrada' || c.hint === 'orden_no_existe')) {
+          return cargaDatos().then(function (ok) {
+            var m = ok ? E.datos.motos.filter(function (x) { return x.id === moto; })[0] : null;
+            if (ok && (!m || !m.orden_viva || m.orden_viva.id !== id)) { E.duda = false; E.fin = { perdida: true }; ir('fin', false); ponHash('inicio', false); return; }
+            noGuardado(r.error, guardaResultado);
+          });
+        }
+        if (esRed(r.error)) E.duda = true;
+        if (c.hint === 'faltan_para_lista') return cargaOrden(id).then(function (ok) { if (ok) ir('resultado', false); estadoPaso('error', texto(r.error)); });
+        noGuardado(r.error, guardaResultado);
+        return;
+      }
+      var x = r.data;
+      if (!x || typeof x.estado !== 'string' || typeof x.numero !== 'string') { E.duda = true; estadoPaso('error', T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'), guardaResultado); return; }
+      E.duda = false; E.fin = x; E.sucio = true;
+      if (x.estado === 'cerrada') E.orden.orden.estado = 'cerrada';
+      ir('fin', false);
+      ponHash('inicio', false);   // la orden ya no se retoma: Atrás no vuelve a ella
+    });
+  }
+  function pasoFin(c) {
+    var x = E.fin || {};
+    var t;
+    if (x.perdida) t = T('La orden ya estaba cerrada (la respuesta se había perdido). Mira la moto en la lista.');
+    else if (x.estado === 'espera_recambio') t = T('La orden queda esperando el recambio; la moto sigue en el taller.');
+    else if (x.para_volver) t = T('La moto se queda en el taller hasta que la administración la devuelva (estaba en el taller sin orden).');
+    else if (x.unidad_estado === 'disponible') t = T('La moto vuelve a estar disponible.');
+    else t = T('La moto sigue en el taller: la baja la da la administración en Flota.');
+    var res = RESULTADOS.filter(function (r) { return r[0] === x.resultado; })[0];
+    if (x.numero) c.appendChild(h('div', { class: 'tl-mat', text: String(x.numero) + (res ? ' · ' + T(res[1]) : '') }));
+    c.appendChild(h('p', { class: 'axw-ok', 'data-tl': 'fin-texto', text: t }));
+    siguiente('Volver al inicio', false);
+  }
+
+  /* ── Listas por modelo (administración con Flota) ── */
+  function abreListas() {
+    var v = $v('vista-listas');
+    vacia(v);
+    v.appendChild(h('p', { class: 'axw-vacio', role: 'status', text: T('Cargando…') }));
+    return llama('taller_listas_datos', { p_producto: E.listaSel || null }).then(function (r) {
+      var d = r.data;
+      vacia(v);
+      if (r.error || !d || !Array.isArray(d.revisiones) || !Array.isArray(d.recambios) || !Array.isArray(d.catalogo) || !Array.isArray(d.modelos)) {
+        var t = r.error ? (C.clasifica(r.error).hint === 'sin_acceso_listas' ? texto(r.error) : C.mensaje(r.error, true, PROPIOS)) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
+        v.appendChild(h('p', { class: 'axw-error', role: 'alert', 'data-tl': 'listas-no-mirado', text: T('No se han podido mirar las listas') + ': ' + t }));
+        return;
+      }
+      E.listas = d;
+      pintaListas(v, d);
+      traduce(v);
+    });
+  }
+  function opcionesModelos(sel, d, conComun, actual) {
+    if (conComun) sel.appendChild(h('option', { value: '', text: T('Lista común (todos los modelos)') }));
+    d.modelos.forEach(function (m) { var o = h('option', { value: String(m.id), text: String(m.nombre || '—') + ' (' + Number(m.revisiones || 0) + ' / ' + Number(m.recambios || 0) + ')' }); if (String(m.id) === actual) o.selected = true; sel.appendChild(o); });
+    return sel;
+  }
+  function campoL(etq, ctrl) { return h('div', { class: 'tl-campo' }, [h('label', { text: T(etq) }), ctrl]); }
+  function pintaListas(v, d) {
+    var sel = opcionesModelos(h('select', { 'data-tl': 'l-modelo' }), d, true, E.listaSel);
+    v.appendChild(h('section', { class: 'tl-tarjeta' }, [campoL('Elige la lista', sel), h('div', { 'data-tl': 'l-estado', class: 'tl-estado', role: 'status' })]));
+    if (d.recortado === true) v.appendChild(h('p', { class: 'axw-aviso', text: T('Solo se ven los primeros 500 modelos o piezas.') }));
+    // revisiones
+    var filas = d.revisiones.map(function (r) {
+      var tr = h('tr', { 'data-l-rev': String(r.id) });
+      [h('td', { text: String(r.clave) }),
+       h('td', null, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_id', value: String(r.nombre_id || ''), 'aria-label': T('Nombre (indonesio)') })]),
+       h('td', null, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_en', value: String(r.nombre_en || ''), 'aria-label': T('Nombre (inglés)') })]),
+       h('td', null, [h('input', { type: 'text', inputmode: 'numeric', maxlength: '4', 'data-f': 'orden', value: String(r.orden), 'aria-label': T('Posición') })]),
+       h('td', null, [h('input', { type: 'checkbox', 'data-f': 'activa', checked: r.activa === true, 'aria-label': T('Activa') })]),
+       h('td', null, [h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-guarda', 'data-rev-id': String(r.id), text: T('Guardar') })])].forEach(function (td) { tr.appendChild(td); });
+      return tr;
+    });
+    var tabla = h('table', { class: 'axw-tabla tl-tabla-l', 'data-tl': 'l-revisiones' });
+    var hijosRev = [];
+    if (filas.length) { C.tabla(tabla, [['Clave'], ['Nombre (indonesio)'], ['Nombre (inglés)'], ['Posición'], ['Activa'], ['']], filas); hijosRev.push(h('div', { class: 'axw-tabla-caja' }, [tabla])); }
+    else hijosRev.push(h('p', { class: 'axw-vacio', text: T('Esta lista no tiene revisiones.') }));
+    if (!filas.length && !E.listaSel) hijosRev.push(h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-basica', 'data-primario': '1', text: T('Cargar la lista básica') }));
+    var nueva = h('div', { class: 'axw-barra', 'data-tl': 'l-nueva' }, [
+      campoL('Clave', h('input', { type: 'text', maxlength: '40', 'data-f': 'clave', autocomplete: 'off' })),
+      campoL('Nombre (indonesio)', h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_id', autocomplete: 'off' })),
+      campoL('Nombre (inglés)', h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_en', autocomplete: 'off' })),
+      campoL('Posición', h('input', { type: 'text', inputmode: 'numeric', maxlength: '4', 'data-f': 'orden', autocomplete: 'off' })),
+      h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-nueva', 'data-primario': '1', text: T('Añadir revisión') })]);
+    hijosRev.push(nueva);
+    v.appendChild(seccion('Revisiones', hijosRev));
+    // copiar de otro modelo
+    if (E.listaSel) {
+      var desde = h('select', { 'data-tl': 'l-desde' });
+      d.modelos.filter(function (m) { return String(m.id) !== E.listaSel; }).forEach(function (m) { desde.appendChild(h('option', { value: String(m.id), text: String(m.nombre || '—') })); });
+      v.appendChild(seccion('Copiar de otro modelo', [desde, h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-copia', text: T('Copiar') })]));
+    }
+    // piezas
+    var revOpts = function () { var s = h('select', { 'data-f': 'revision' }, [h('option', { value: '', text: T('Ninguna') })]); d.revisiones.forEach(function (r) { s.appendChild(h('option', { value: String(r.id), text: nombreDe(r) })); }); return s; };
+    var ul = h('ul', { class: 'tl-lista', 'data-tl': 'l-piezas' });
+    d.recambios.forEach(function (p) {
+      var rv = d.revisiones.filter(function (r) { return r.id === p.revision_id; })[0];
+      ul.appendChild(h('li', { class: 'tl-fila' }, [h('span', { text: [p.ref ? String(p.ref) : null, nombreDe(p), rv ? T('Revisión sugerida') + ': ' + nombreDe(rv) : null].filter(Boolean).join(' · ') }),
+        h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-quita', 'data-rec-id': String(p.recambio_id), text: T('Quitar') })]));
+    });
+    var cat = h('select', { 'data-f': 'recambio' }, [h('option', { value: '', text: T('Elige la pieza.') })]);
+    d.catalogo.forEach(function (p) { if (!d.recambios.some(function (x) { return x.recambio_id === p.id; })) cat.appendChild(h('option', { value: String(p.id), text: (p.ref ? String(p.ref) + ' · ' : '') + nombreDe(p) })); });
+    v.appendChild(seccion('Piezas de esta lista', [d.recambios.length ? ul : h('p', { class: 'axw-vacio', text: T('Esta lista no tiene piezas.') }),
+      h('div', { class: 'axw-barra', 'data-tl': 'l-vincula' }, [campoL('Añadir pieza existente', cat), campoL('Revisión sugerida', revOpts()), h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-vincula', text: T('Añadir') })]),
+      h('div', { class: 'axw-barra', 'data-tl': 'l-pieza-nueva' }, [h('strong', { text: T('Pieza nueva') }),
+        campoL('Referencia', h('input', { type: 'text', maxlength: '60', 'data-f': 'ref', autocomplete: 'off' })),
+        campoL('Nombre (indonesio)', h('input', { type: 'text', maxlength: '120', 'data-f': 'nombre_id', autocomplete: 'off' })),
+        campoL('Nombre (inglés)', h('input', { type: 'text', maxlength: '120', 'data-f': 'nombre_en', autocomplete: 'off' })),
+        campoL('Coste de referencia', h('input', { type: 'text', inputmode: 'decimal', maxlength: '16', 'data-f': 'coste', autocomplete: 'off' })),
+        campoL('Moneda', h('input', { type: 'text', maxlength: '3', 'data-f': 'moneda', autocomplete: 'off' })),
+        campoL('Revisión sugerida', revOpts()),
+        h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rec-nueva', 'data-primario': '1', text: T('Añadir') })])]));
+  }
+  function lEstado(tipo, t) { var e = $v('l-estado'); if (!e) return; vacia(e); if (t) e.appendChild(h('p', { class: tipo === 'ok' ? 'axw-ok' : 'axw-error', text: t })); }
+  function fv(caja, f) { var e = caja && caja.querySelector('[data-f="' + f + '"]'); return e ? (e.type === 'checkbox' ? e.checked : String(e.value || '').replace(/^\s+|\s+$/g, '')) : null; }
+  /* Las escrituras de las listas: una a la vez; tras cada una se vuelve a leer (lo que se ve es lo que dice la base). Repetir tras perder la respuesta es seguro
+     salvo un alta (la base contesta clave_duplicada / ref_duplicada: no hay dos). */
+  function lEscribe(bt, nombre, args, okTexto) {
+    if (!C.ocupa(bt)) return Promise.resolve();
+    return llama(nombre, args).then(function (r) {
+      C.libera(bt);
+      if (r.error) { lEstado('error', T('No guardado') + ' · ' + texto(r.error)); return null; }
+      return abreListas().then(function () { lEstado('ok', okTexto || T('Guardado.')); return r.data; });
+    });
+  }
+  function accionListas(a, el) {
+    var prod = E.listaSel || null;
+    if (a === 'tl-l-basica') return lEscribe(el, 'taller_lista_basica', {});
+    if (a === 'tl-l-rev-guarda') {
+      var tr = el.closest('tr'), orden = fv(tr, 'orden');
+      if (!/^\d{1,4}$/.test(orden)) { lEstado('error', T('El orden es un número de 0 a 9999.')); return; }
+      return lEscribe(el, 'taller_revision_guarda', { p_id: el.getAttribute('data-rev-id'), p_datos: { nombre_id: fv(tr, 'nombre_id'), nombre_en: fv(tr, 'nombre_en'), orden: Number(orden), activa: fv(tr, 'activa') } });
+    }
+    if (a === 'tl-l-rev-nueva') {
+      var c = $v('l-nueva'), ord = fv(c, 'orden'), datos = { producto_id: prod, clave: fv(c, 'clave').toLowerCase(), nombre_id: fv(c, 'nombre_id'), nombre_en: fv(c, 'nombre_en') };
+      if (!/^[a-z0-9_]{2,40}$/.test(datos.clave)) { lEstado('error', T('La clave va en minúsculas, cifras o guion bajo (2 a 40).')); return; }
+      if (!datos.nombre_id || !datos.nombre_en) { lEstado('error', T('Los nombres van en una línea (hasta 80 caracteres).')); return; }
+      if (ord) { if (!/^\d{1,4}$/.test(ord)) { lEstado('error', T('El orden es un número de 0 a 9999.')); return; } datos.orden = Number(ord); }
+      return lEscribe(el, 'taller_revision_guarda', { p_id: null, p_datos: datos });
+    }
+    if (a === 'tl-l-copia') {
+      var desde = $v('l-desde') && $v('l-desde').value;
+      if (!desde || !prod) return;
+      if (!C.ocupa(el)) return;
+      return llama('taller_listas_copia', { p_desde: desde, p_a: prod }).then(function (r) {
+        C.libera(el);
+        if (r.error || !r.data) { lEstado('error', T('No guardado') + ' · ' + texto(r.error || {})); return; }
+        var t = TT('Copiadas: {r} revisiones y {v} piezas.', { r: Number(r.data.revisiones) || 0, v: Number(r.data.vinculos) || 0 });
+        return abreListas().then(function () { lEstado('ok', t); });
+      });
+    }
+    if (a === 'tl-l-quita') return lEscribe(el, 'taller_recambio_vincula', { p_recambio: el.getAttribute('data-rec-id'), p_producto: prod, p_revision: null, p_quita: true });
+    if (a === 'tl-l-vincula') {
+      var cv = $v('l-vincula'), rec = fv(cv, 'recambio');
+      if (!rec) { lEstado('error', T('Elige la pieza.')); return; }
+      return lEscribe(el, 'taller_recambio_vincula', { p_recambio: rec, p_producto: prod, p_revision: fv(cv, 'revision') || null, p_quita: false });
+    }
+    if (a === 'tl-l-rec-nueva') {
+      var cn = $v('l-pieza-nueva'), coste = fv(cn, 'coste'), mon = (fv(cn, 'moneda') || '').toUpperCase(), imp = C.importe(coste, 4);
+      if (imp.e || (!imp.vacio) !== !!mon || (mon && !/^[A-Z]{3}$/.test(mon))) { lEstado('error', T('El coste va con su moneda (las dos o ninguna, moneda en tres letras).')); return; }
+      var dp = { ref: fv(cn, 'ref') || null, nombre_id: fv(cn, 'nombre_id'), nombre_en: fv(cn, 'nombre_en'), coste_ref: imp.vacio ? null : imp.v, moneda: mon || null };
+      if (!dp.nombre_id || !dp.nombre_en) { lEstado('error', T('Los nombres van en una línea (hasta 80 caracteres).')); return; }
+      var revSug = fv(cn, 'revision') || null;
+      if (!C.ocupa(el)) return;
+      // alta y vínculo son dos llamadas: si la segunda falla, la pieza queda en el catálogo y se vincula con «Añadir pieza existente» (se dice)
+      return llama('taller_recambio_guarda', { p_id: null, p_datos: dp }).then(function (r) {
+        if (r.error || !UUID.test(String(r.data || ''))) { C.libera(el); lEstado('error', T('No guardado') + ' · ' + texto(r.error || {})); return; }
+        return llama('taller_recambio_vincula', { p_recambio: r.data, p_producto: prod, p_revision: revSug, p_quita: false }).then(function (r2) {
+          C.libera(el);
+          return abreListas().then(function () { if (r2.error) lEstado('error', T('No guardado') + ' · ' + texto(r2.error)); else lEstado('ok', T('Guardado.')); });
+        });
+      });
+    }
+  }
+
+  /* ── eventos ── */
   function alClic(ev) {
     var el = ev.target.closest ? ev.target.closest('[data-accion]') : null;
-    if (!el || !raiz.contains(el)) return;
+    if (!el || !raiz.contains(el) || el.disabled) return;
     var a = el.getAttribute('data-accion');
-    if (a.indexOf('tl-modal') === 0) return;   // los botones del diálogo llevan su propio manejador
-    var o = el.hasAttribute('data-orden-id') ? orden(el.getAttribute('data-orden-id')) : null;
-    if (a === 'tl-abrir') abrirOrden();
-    else if (a === 'tl-actualizar') { aviso(''); error(''); exito(''); carga(false); }
-    else if (a === 'tl-mas') carga(true);
-    else if (o) { error(''); exito(''); if (a === 'tl-detalle') detalle(o); else if (a === 'tl-cerrar') cerrarOrden(o); }
+    if (a.indexOf('fg-') === 0 || a.indexOf('tl-km-') === 0) return;   // las fotos y los diálogos llevan su propio manejador
+    if (a === 'tl-tab-taller') { error(''); exito(''); if (!E.enviando) ir('inicio', true); return; }
+    if (a === 'tl-tab-listas') { error(''); exito(''); if (!E.enviando && E.flota) ir('listas', true); return; }
+    if (a.indexOf('tl-l-') === 0) { accionListas(a, el); return; }
+    if (a === 'tl-moto') {
+      var m = E.datos && E.datos.motos.filter(function (x) { return x.id === el.getAttribute('data-moto-id'); })[0];
+      if (m) { error(''); exito(''); E.moto = m; E.orden = null; E.motivo = null; E.gas = null; E.resultado = null; ir('moto', true); }
+      return;
+    }
+    if (a === 'tl-continuar') { error(''); exito(''); E.gas = null; E.resultado = null; continuar(el.getAttribute('data-orden-id')); return; }
+    if (a === 'tl-devolver') { devolver(el); return; }
+    if (a === 'tl-atras') { atras(); return; }
+    if (a === 'tl-reintentar') { if (E.reintento && !E.enviando) E.reintento(); return; }
+    if (a === 'tl-elige') {
+      var g = el.getAttribute('data-grupo'), v = el.getAttribute('data-valor');
+      if (g === 'motivo') E.motivo = v; else if (g === 'gas') E.gas = Number(v); else if (g === 'resultado') E.resultado = v;
+      Array.prototype.forEach.call(el.parentNode.querySelectorAll('[role="radio"]'), function (b) { b.setAttribute('aria-checked', String(b === el)); });
+      if (g === 'resultado') refrescaResultado();
+      return;
+    }
+    if (a === 'tl-rev') { marca(el.getAttribute('data-rev-id'), el.getAttribute('data-res')); return; }
+    if (a === 'tl-rev-reintentar') { var er = E.revError[el.getAttribute('data-rev-id')]; if (er) marca(el.getAttribute('data-rev-id'), er.res, er.nota); return; }
+    if (a === 'tl-rev-nota') {
+      var id = el.getAttribute('data-rev-id'), r = revDe(id), inp = raiz.querySelector('[data-rev-nota="' + id + '"]');
+      if (r && r.resultado && inp) marca(id, r.resultado, (inp.value || '').replace(/^\s+|\s+$/g, ''));
+      return;
+    }
+    if (a === 'tl-siguiente') {
+      if (E.enviando) return;
+      error(''); exito('');
+      if (E.paso === 'moto') {
+        var vv = vivaDe(E.moto);
+        if (E.orden && E.orden.moto && E.orden.moto.id === E.moto.id && E.orden.orden.estado !== 'cerrada') return entraOrden(E.orden.orden.id, true);
+        if (vv && vv.paso) return continuar(vv.id);
+        return ir('motivo', true);
+      }
+      if (E.paso === 'motivo') return abre();
+      if (E.paso === 'km') return guardaKm(false);
+      if (E.paso === 'fotos') return pasoGuarda('revisiones');
+      if (E.paso === 'revisiones') {
+        if (Object.keys(E.revGuardando).length) { estadoPaso('aviso', T('Espera a que se guarden las revisiones.')); return; }
+        return pasoGuarda('resultado');
+      }
+      if (E.paso === 'resultado') return guardaResultado();
+      if (E.paso === 'fin') { E.fin = null; E.orden = null; E.empujes = 0; return cargaDatos().then(function () { ir('inicio', false); }); }
+    }
   }
-
-  function tieneReservas(f) {
-    if (!f) return false;
-    if (f.rol === 'super_admin') return true;
-    return Array.isArray(f.herramientas) && f.herramientas.indexOf('reservas-producto') !== -1;
+  /* Abrir una orden = sustituir la entrada «motivo» por «km» (replace, no push): el motivo queda congelado y Atrás desde km vuelve a la moto. */
+  function alVolver() {
+    if (E.enviando) { ponHash(E.paso, true); exito(''); error(T('Espera a que termine de guardar.')); return; }   // nada navegable mientras dura un envío
+    E.empujes = Math.max(0, E.empujes - 1);
+    rutea(false);
+  }
+  /* Lo que manda la URL. Con #o= la orden se LEE de la base y se va a SU paso (recarga, otro móvil); con Atrás dentro de la misma orden se va al paso de la URL. */
+  function rutea(inicial) {
+    var hsh = leeHash();
+    if (E.paso === 'fin') { E.fin = null; ir('inicio', false); return; }   // terminada la orden, Atrás no vuelve a sus pasos
+    if (hsh.listas) { if (E.flota) ir('listas', false); else ir('inicio', false); return; }
+    if (hsh.o) {
+      if (!inicial && E.orden && E.orden.orden.id === hsh.o && PASOS.indexOf(hsh.p) > 1) { ir(hsh.p, false); return; }
+      return entraOrden(hsh.o, false);
+    }
+    if (hsh.m && E.datos) {
+      var m = E.datos.motos.filter(function (x) { return x.id === hsh.m; })[0];
+      if (m) {
+        E.moto = m;
+        if (hsh.p === 'motivo' && !(E.orden && E.orden.moto && E.orden.moto.id === m.id)) { ir('motivo', false); return; }
+        ir('moto', false); return;
+      }
+    }
+    ir('inicio', false);
+  }
+  function admin(f) {
+    var rol = f ? (window.LW_ROL && typeof window.LW_ROL.efectivo === 'function' ? window.LW_ROL.efectivo(f) : f.rol) : null;
+    return rol === 'admin' || rol === 'super_admin' ? rol : null;
   }
   function init(aut) {
-    AUT = aut; SB = aut.sb;
-    E.puedeReservas = tieneReservas(aut.ficha);
+    SB = aut.sb; E.ficha = aut.ficha || {};
+    var rol = admin(E.ficha);
+    E.admin = !!rol;
+    // solo decide qué se OFRECE: la base vuelve a exigir el permiso en cada llamada
+    E.flota = rol === 'super_admin' || (!!rol && Array.isArray(E.ficha.herramientas) && E.ficha.herramientas.indexOf('flota') !== -1);
+    oculta(raiz.querySelector('[data-accion="tl-tab-listas"]'), !E.flota);
     raiz.addEventListener('click', alClic);
-    raiz.addEventListener('change', function (ev) { if (ev.target === $v('f-estado')) { error(''); carga(false); } });
-    carga(false);
+    raiz.addEventListener('input', function (ev) { if (ev.target === $v('buscar')) pintaBusqueda(); });
+    raiz.addEventListener('change', function (ev) { if (ev.target === $v('l-modelo')) { E.listaSel = ev.target.value; abreListas(); } });
+    window.addEventListener('popstate', alVolver);
+    cargaDatos().then(function () { rutea(true); });
   }
   function arranca() {
     if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { error(T('Sin sesión: recarga la página o vuelve a entrar.')); return; }

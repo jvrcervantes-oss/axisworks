@@ -2327,7 +2327,8 @@ def ajustes_correo_maestro():
 
 # Ayudas comunes de las pantallas del maestro (taller, 8-oct-2026): una pantalla escribe la marca donde las quiere y el build pega el fichero de _compartido/.
 # La marca va dentro de un comentario (CSS o JS) para que el fichero fuente siga siendo válido tal cual. Una marca repetida o un fichero que falta PARA.
-COMUN_MARCAS = {'/*AXW_COMUN_CSS*/': 'pantalla_comun.css', '/*AXW_COMUN_JS*/': 'pantalla_comun.js'}
+# AXW_FOTOS_JS (12-oct-2026, F8 8.T1): las fotos guiadas de la moto (taller; la entrega de 8.T3 las reutilizará), pieza común y no copia por pantalla.
+COMUN_MARCAS = {'/*AXW_COMUN_CSS*/': 'pantalla_comun.css', '/*AXW_COMUN_JS*/': 'pantalla_comun.js', '/*AXW_FOTOS_JS*/': 'fotos_guiadas.js'}
 
 
 def _inyecta_comun(texto, archivo):

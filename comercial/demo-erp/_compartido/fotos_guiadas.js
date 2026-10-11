@@ -12,15 +12,27 @@
    Contrato con la edge `taller-fotos` (lo que esta pieza manda y espera; el formato del cuerpo lo fija esta pieza, Backend lo casa):
      POST <edge>, Authorization: Bearer <token de sesión>, multipart/form-data:
        accion=sube · orden=<uuid> · ranura=frente|atras|izquierda|derecha|cuentakm|dano · clave=<uuid de la captura> · fichero=<image/webp | image/jpeg, ≤ 600 KB>
-       → 200 {ok:true, foto_id, ranura, estado:'confirmada'}  ·  4xx/5xx {ok:false, error, hint}
+       → 200 {ok:true, foto_id, ranura, estado:'confirmada'}  ·  4xx/5xx {ok:false, hint}  ·  429 {ok:false, hint:'tope_minuto', reintenta_en:<s>}
      POST <edge>, Authorization: Bearer <token>, application/json {accion:'ver', foto:<uuid>} → {ok:true, url} (firmada, 300 s)
+   Qué se hace con cada hint (la edge reenvía los de la base tal cual; 12-oct-2026, contra la migración 20261011170000 y el brief de la edge):
+     · DEFINITIVO (sale de la cola, se pide otra foto con su motivo): fichero_tipo, foto_tipo, fichero_exif, fichero_grande, foto_tamano, clave_usada,
+       foto_caducada, foto_sustituida, ranura, clave, datos, fotos_tope_dano, fotos_tope_orden, ya_cerrada, orden_vieja, orden_no_existe, foto_no_existe,
+       origen, sin_acceso, modulo_apagado.
+     · REINTENTABLE con LA MISMA clave (se queda en la cola): foto_sin_objeto, red caída, 5xx, 401/sin_sesion (al volver a entrar), y 429/tope_minuto
+       (se reintenta solo pasados `reintenta_en` segundos).
    Reglas de pintado: solo createElement/createElementNS/textContent (nunca innerHTML); se engancha por data-accion / data-ranura / data-clave, nunca por un rótulo.
    Colores solo por var(--tema-*): el CSS de la casilla lo pone la pantalla que la usa.
    Uso: var F = axwFotosGuiadas({ T, h, caja, orden, fotos, edge: function(){ return url; }, token: function(){ return Promise<string>; }, alCambiar: fn, max_dano: 15 }); */
 /* Diccionarios de la pieza (clave en español, como el resto del maestro). Función aparte para que la pantalla los fusione en LW_EN / LW_ID al arrancar, antes de tener orden. */
 function axwFotosDiccionario() {
   'use strict';
-  var EN = {
+  var EN_FG = {
+    'La foto tiene que ser WebP o JPEG: hazla otra vez.': 'The photo must be WebP or JPEG: take it again.',
+    'La foto trae datos del móvil (ubicación): hazla otra vez.': 'The photo carries phone data (location): take it again.',
+    'La foto pesa demasiado: hazla otra vez.': 'The photo is too large: take it again.',
+    'Esta orden ya tiene 40 fotos: no caben más.': 'This order already has 40 photos: no more fit.',
+    'No tienes acceso a Taller.': 'You do not have access to the Workshop.',
+    'Demasiadas fotos seguidas: se reintenta en {n} s.': 'Too many photos in a row: retrying in {n} s.',
     'Frente': 'Front', 'Atrás': 'Back', 'Izquierda': 'Left', 'Derecha': 'Right', 'Cuentakilómetros': 'Odometer', 'Daño': 'Damage',
     'Toca para hacer la foto': 'Tap to take the photo', 'Preparando…': 'Preparing…', 'Subiendo…': 'Uploading…', 'Subida': 'Uploaded',
     'Pendiente de subir': 'Not uploaded yet', 'Repetir': 'Retake', 'Ver': 'View', 'Reintentar': 'Retry', '+ Foto de daño': '+ Damage photo',
@@ -34,7 +46,13 @@ function axwFotosDiccionario() {
     'Esta orden ya no está abierta: vuelve al inicio.': 'This order is no longer open: go back to the start.',
     'Sin sesión: vuelve a entrar.': 'No session: sign in again.'
   };
-  var ID = {
+  var ID_FG = {
+    'La foto tiene que ser WebP o JPEG: hazla otra vez.': 'Foto harus WebP atau JPEG: ambil lagi.',
+    'La foto trae datos del móvil (ubicación): hazla otra vez.': 'Foto membawa data HP (lokasi): ambil lagi.',
+    'La foto pesa demasiado: hazla otra vez.': 'Ukuran foto terlalu besar: ambil lagi.',
+    'Esta orden ya tiene 40 fotos: no caben más.': 'Order ini sudah punya 40 foto: tidak bisa tambah lagi.',
+    'No tienes acceso a Taller.': 'Anda tidak punya akses ke Bengkel.',
+    'Demasiadas fotos seguidas: se reintenta en {n} s.': 'Terlalu banyak foto berturut-turut: dicoba lagi dalam {n} detik.',
     'Frente': 'Depan', 'Atrás': 'Belakang', 'Izquierda': 'Kiri', 'Derecha': 'Kanan', 'Cuentakilómetros': 'Odometer', 'Daño': 'Kerusakan',
     'Toca para hacer la foto': 'Ketuk untuk foto', 'Preparando…': 'Menyiapkan…', 'Subiendo…': 'Mengunggah…', 'Subida': 'Terunggah',
     'Pendiente de subir': 'Belum terunggah', 'Repetir': 'Ulangi', 'Ver': 'Lihat', 'Reintentar': 'Coba lagi', '+ Foto de daño': '+ Foto kerusakan',
@@ -48,7 +66,7 @@ function axwFotosDiccionario() {
     'Esta orden ya no está abierta: vuelve al inicio.': 'Order ini sudah tidak aktif: kembali ke awal.',
     'Sin sesión: vuelve a entrar.': 'Sesi habis: masuk lagi.'
   };
-  return { EN: EN, ID: ID };
+  return { EN: EN_FG, ID: ID_FG };
 }
 
 function axwFotosGuiadas(cfg) {
@@ -60,8 +78,18 @@ function axwFotosGuiadas(cfg) {
   var FIJAS = ['frente', 'atras', 'izquierda', 'derecha', 'cuentakm'];
   var ROTULO = { frente: 'Frente', atras: 'Atrás', izquierda: 'Izquierda', derecha: 'Derecha', cuentakm: 'Cuentakilómetros', dano: 'Daño' };
   function TT(k, v) { var s = T(k); Object.keys(v || {}).forEach(function (n) { s = s.split('{' + n + '}').join(String(v[n])); }); return s; }
-  /* Hints de la edge que NO se arreglan reintentando la misma captura: se saca de la cola y se pide otra foto. El resto (red, 5xx) se queda para reintentar. */
-  var DEFINITIVOS = { formato: 1, tamano: 1, exif: 1, tope: 1, orden_no_viva: 1, ranura: 1, datos: 1 };
+  /* Hints que NO se arreglan reintentando la misma captura: sale de la cola y se pide otra foto, con su motivo. Lo que no está aquí (red, 5xx, 401,
+     foto_sin_objeto, tope_minuto) se queda en la cola con su clave y se reintenta. Ver la cabecera. */
+  var REPITE = 'La foto no se ha aceptado: hazla otra vez.', CERRADA = 'Esta orden ya no está abierta: vuelve al inicio.';
+  var DEFINITIVOS = {
+    fichero_tipo: 'La foto tiene que ser WebP o JPEG: hazla otra vez.', foto_tipo: 'La foto tiene que ser WebP o JPEG: hazla otra vez.',
+    fichero_exif: 'La foto trae datos del móvil (ubicación): hazla otra vez.',
+    fichero_grande: 'La foto pesa demasiado: hazla otra vez.', foto_tamano: 'La foto pesa demasiado: hazla otra vez.',
+    clave_usada: REPITE, foto_caducada: REPITE, foto_sustituida: REPITE, ranura: REPITE, clave: REPITE, datos: REPITE, foto_no_existe: REPITE, origen: REPITE,
+    fotos_tope_dano: 'Ya hay {max} fotos de daño en esta orden.', fotos_tope_orden: 'Esta orden ya tiene 40 fotos: no caben más.',
+    ya_cerrada: CERRADA, orden_vieja: CERRADA, orden_no_existe: CERRADA,
+    sin_acceso: 'No tienes acceso a Taller.', modulo_apagado: 'No tienes acceso a Taller.'
+  };
 
   /* ── siluetas (SVG con createElementNS; trazo con currentColor) ── */
   var NS = 'http://www.w3.org/2000/svg';
@@ -250,6 +278,13 @@ function axwFotosGuiadas(cfg) {
   }
 
   /* ── subida (una a la vez por clave) ── */
+  var destruida = false;
+  function cabeceras(tok, json) {
+    var c = { authorization: 'Bearer ' + (tok || '') };
+    if (cfg.apikey) c.apikey = String(cfg.apikey);
+    if (json) c['content-type'] = 'application/json';
+    return c;
+  }
   function sube(e) {
     if (enCurso[e.clave]) return Promise.resolve(false);
     enCurso[e.clave] = true;
@@ -260,7 +295,7 @@ function axwFotosGuiadas(cfg) {
       var fd = new FormData();
       fd.append('accion', 'sube'); fd.append('orden', e.orden); fd.append('ranura', e.ranura); fd.append('clave', e.clave);
       fd.append('fichero', e.blob, 'foto.' + (e.blob.type === 'image/webp' ? 'webp' : 'jpg'));
-      return fetch(cfg.edge(), { method: 'POST', headers: { authorization: 'Bearer ' + (tok || '') }, body: fd });
+      return fetch(cfg.edge(), { method: 'POST', headers: cabeceras(tok, false), body: fd });
     }).then(function (r) {
       return r.json().then(function (d) { return { st: r.status, d: d }; }, function () { return { st: r.status, d: null }; });
     }).then(function (x) {
@@ -272,10 +307,15 @@ function axwFotosGuiadas(cfg) {
         delete local[e.clave]; delete enCurso[e.clave];
         return colaQuita(e.clave).then(function () { pinta(); return true; });
       }
-      if (x.st === 401) { fin('pendiente', T('Sin sesión: vuelve a entrar.')); return false; }
-      if (d.hint && DEFINITIVOS[d.hint]) {
-        var m = d.hint === 'tope' && e.ranura === 'dano' ? TT('Ya hay {max} fotos de daño en esta orden.', { max: MAX_DANO })
-              : d.hint === 'orden_no_viva' ? T('Esta orden ya no está abierta: vuelve al inicio.') : T('La foto no se ha aceptado: hazla otra vez.');
+      if (x.st === 401 || d.hint === 'sin_sesion') { fin('pendiente', T('Sin sesión: vuelve a entrar.')); return false; }
+      if (x.st === 429 || d.hint === 'tope_minuto') {
+        var s = Math.min(120, Math.max(1, Math.round(Number(d.reintenta_en) || 10)));
+        fin('pendiente', TT('Demasiadas fotos seguidas: se reintenta en {n} s.', { n: s }));
+        setTimeout(function () { if (!destruida) sube(e); }, s * 1000);
+        return false;
+      }
+      if (d.hint && Object.prototype.hasOwnProperty.call(DEFINITIVOS, d.hint)) {
+        var m = TT(DEFINITIVOS[d.hint], { max: MAX_DANO });
         return colaQuita(e.clave).then(function () { fin('error', m); return false; });
       }
       fin('pendiente'); return false;
@@ -300,6 +340,13 @@ function axwFotosGuiadas(cfg) {
     var f = input.files && input.files[0];
     var ranura = pidiendo; pidiendo = null;
     if (!f || !ranura) return;
+    /* Repetir una casilla FIJA: lo que quedaba de ella sin subir (error viejo o pendiente en la cola) se olvida. Si no, el error viejo tapaba la foto
+       buena (estadoDe mira la última entrada) y una pendiente vieja que subiera DESPUÉS sustituiría en la base a la nueva. Lo que ya está subiendo no se toca. */
+    if (ranura !== 'dano') {
+      Object.keys(local).forEach(function (k) {
+        if (local[k].ranura === ranura && !enCurso[k] && local[k].estado !== 'procesando') { delete local[k]; colaQuita(k); }
+      });
+    }
     var clave = uuid();
     local[clave] = { ranura: ranura, estado: 'procesando' };
     pinta();
@@ -316,7 +363,7 @@ function axwFotosGuiadas(cfg) {
   function ver(idFoto, boton) {
     boton.disabled = true;
     return Promise.resolve(cfg.token()).then(function (tok) {
-      return fetch(cfg.edge(), { method: 'POST', headers: { authorization: 'Bearer ' + (tok || ''), 'content-type': 'application/json' }, body: JSON.stringify({ accion: 'ver', foto: idFoto }) });
+      return fetch(cfg.edge(), { method: 'POST', headers: cabeceras(tok, true), body: JSON.stringify({ accion: 'ver', foto: idFoto }) });
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (!d || d.ok !== true || typeof d.url !== 'string' || !/^https:\/\//.test(d.url)) throw new Error('ver');
       var celda = boton.parentNode;
@@ -349,6 +396,6 @@ function axwFotosGuiadas(cfg) {
 
   return {
     pinta: pinta, reintenta: reintenta, pendientes: pendientes, faltan: faltanFijas,
-    destruye: function () { window.removeEventListener('online', alVolverRed); Object.keys(vistaPrevia).forEach(function (k) { try { URL.revokeObjectURL(vistaPrevia[k]); } catch (e) { /* MUDO A PROPOSITO: liberar memoria no es crítico */ } }); }
+    destruye: function () { destruida = true; window.removeEventListener('online', alVolverRed); Object.keys(vistaPrevia).forEach(function (k) { try { URL.revokeObjectURL(vistaPrevia[k]); } catch (e) { /* MUDO A PROPOSITO: liberar memoria no es crítico */ } }); }
   };
 }
