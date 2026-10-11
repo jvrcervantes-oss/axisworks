@@ -1,0 +1,158 @@
+/* AxisWorks brand tokens, components and motion.
+   Source of truth: docs/brand/DESIGN-GUIDE-FOR-LLMS.md and the Brand kit artifact.
+   Fonts: self-host Unbounded (300, 500, 600), Manrope (400, 500, 600, 700) and
+   IBM Plex Mono (400, 500) as woff2 in /assets/fonts, like the current fonts.css.
+   Do not load Google Fonts from production pages. */
+
+:root {
+  /* core */
+  --aw-ultramarine: #2E3BEB; /* build bar, trust bands, links on light */
+  --aw-volt:        #C8F04A; /* brand bar, the live signal, one static Volt moment per screen */
+  --aw-night:       #0B0C1E; /* default page background */
+  --aw-chalk:       #F2F3F7; /* menu, light sections, "a person decides" */
+
+  /* interface tints on Night */
+  --aw-panel:      #10112A; /* big panels */
+  --aw-raised:     #14152A; /* tiles, nodes, small cards */
+  --aw-lifted:     #1A1C33; /* active card */
+  --aw-line:       #23253D; /* borders, rules */
+  --aw-edge:       #2A2D47; /* control borders */
+  --aw-periwinkle: #8C95FF; /* Ultramarine as text or second signal on Night */
+  --aw-haze:       #C9CCDB; /* body text on Night (12.1:1) */
+  --aw-fog:        #A9ADC2; /* secondary text on Night (8.7:1) */
+  --aw-dusk:       #7D82A3; /* dimmest text on Night (5.2:1), never lower */
+
+  /* light surfaces */
+  --aw-ice:   #E3E6FD; /* current item, hover, chips on Chalk */
+  --aw-slate: #4A4E66; /* body text on Chalk (7.4:1) */
+  --aw-mist:  #DADCE6; /* borders on Chalk */
+  --aw-white: #FFFFFF; /* cards on Chalk */
+  --aw-ink:   #2B2E45; /* long text on white */
+
+  /* type */
+  --aw-font-display: 'Unbounded', system-ui, sans-serif;
+  --aw-font-body:    'Manrope', system-ui, sans-serif;
+  --aw-font-mono:    'IBM Plex Mono', ui-monospace, monospace;
+  --aw-h1: clamp(34px, 3.6vw, 52px);
+  --aw-h2: clamp(30px, 4vw, 54px);
+  --aw-lead: clamp(17px, 1.4vw, 19px);
+
+  /* motion */
+  --aw-ease: cubic-bezier(.2, .8, .2, 1);
+  --aw-t-state: 200ms;  /* color, toggle, menu hover */
+  --aw-t-move: 450ms;   /* hover moves, X to +, rows, numbers */
+  --aw-t-intro: 700ms;  /* entrances: intro, sections, the X */
+
+  /* shape and space */
+  --aw-r-chip: 8px; --aw-r-field: 12px; --aw-r-tile: 16px; --aw-r-card: 24px; --aw-r-panel: 28px; --aw-r-pill: 999px;
+  --aw-max: 1280px;
+  --aw-gutter: clamp(20px, 5vw, 80px);
+  --aw-section: clamp(64px, 9vw, 120px);
+}
+
+/* ---------- base ---------- */
+body { margin: 0; background: var(--aw-night); color: var(--aw-chalk); font-family: var(--aw-font-body); }
+a { color: inherit; text-decoration: none; }
+.aw-wrap { max-width: var(--aw-max); margin: 0 auto; padding-inline: var(--aw-gutter); }
+.aw-section { padding-block: var(--aw-section); }
+.aw-light { background: var(--aw-chalk); color: var(--aw-night); }
+.aw-blue { background: var(--aw-ultramarine); color: var(--aw-chalk); }
+
+/* ---------- type ---------- */
+.aw-h1, .aw-h2 { margin: 0; font-family: var(--aw-font-display); font-weight: 600; line-height: 1.04; }
+.aw-h1 { font-size: var(--aw-h1); letter-spacing: -.05em; }
+.aw-h2 { font-size: var(--aw-h2); letter-spacing: -.045em; }
+.aw-h1 > span, .aw-h2 > span { display: block; }      /* one span per line: no orphans */
+.aw-h1 .l, .aw-h2 .l { font-weight: 300; }             /* the second half of the split */
+.aw-lead { font-size: var(--aw-lead); line-height: 1.6; max-width: 46ch; color: var(--aw-haze); }
+.aw-light .aw-lead { color: var(--aw-slate); }
+.aw-eyebrow { font-family: var(--aw-font-mono); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--aw-fog); }
+.aw-light .aw-eyebrow { color: var(--aw-ultramarine); }
+.aw-stat dt { font-family: var(--aw-font-mono); font-size: 11px; letter-spacing: .1em; color: var(--aw-fog); }
+.aw-stat dd { margin: 4px 0 0; font-family: var(--aw-font-display); font-weight: 600; font-size: 28px; letter-spacing: -.05em; }
+
+/* ---------- menu: Chalk on every page, centred pill nav ---------- */
+.aw-menu { background: var(--aw-chalk); color: var(--aw-night); border-bottom: 1px solid var(--aw-mist); }
+.aw-menu__bar { max-width: var(--aw-max); margin: 0 auto; padding: 14px var(--aw-gutter);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; }
+.aw-menu__logo { grid-column: 1; justify-self: start; }
+.aw-menu__links { grid-column: 2; display: flex; gap: 2px; padding: 4px; border-radius: var(--aw-r-pill);
+  background: var(--aw-white); border: 1px solid var(--aw-mist); font-size: 15px; font-weight: 600; white-space: nowrap; }
+.aw-menu__end { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: 12px; }
+.aw-menu__links a { padding: 9px 16px; border-radius: var(--aw-r-pill); transition: background-color var(--aw-t-state), color var(--aw-t-state); }
+.aw-menu__links a:hover, .aw-menu__links a[aria-current] { background: var(--aw-ice); color: var(--aw-ultramarine); }
+.aw-menu__toggle { display: none; }
+@media (max-width: 1100px) { .aw-menu__links { display: none; } .aw-menu__toggle { display: block; } }
+
+/* ---------- buttons ---------- */
+.aw-btn { min-height: 52px; padding: 0 24px; border-radius: var(--aw-r-pill); display: inline-flex; align-items: center; gap: 12px;
+  font: 700 16px/1 var(--aw-font-body); border: 0; cursor: pointer; transition: transform var(--aw-t-state) var(--aw-ease), border-color var(--aw-t-state), color var(--aw-t-state); }
+.aw-btn--primary { background: var(--aw-volt); color: var(--aw-night); padding-right: 12px; } /* only on Night or Ultramarine */
+.aw-btn--ghost { background: transparent; color: inherit; border: 1.5px solid var(--aw-slate); }
+.aw-btn--dark { background: var(--aw-night); color: var(--aw-volt); }                       /* the action on light surfaces */
+.aw-btn--dark:hover { transform: translateY(-2px); }
+/* the X in the primary button straightens into a + */
+.aw-xbtn svg polygon { transform-box: fill-box; transform-origin: center; transition: transform var(--aw-t-move) var(--aw-ease); }
+.aw-xbtn:hover .xa, .aw-xbtn:focus-visible .xa { transform: rotate(-31.5deg); }
+.aw-xbtn:hover .xb, .aw-xbtn:focus-visible .xb { transform: rotate(58.5deg); }
+
+/* ---------- badges, chips, cards, fields ---------- */
+.aw-badge { font-family: var(--aw-font-mono); font-size: 11px; letter-spacing: .08em; padding: 5px 10px; border-radius: var(--aw-r-pill); }
+.aw-program { display: inline-flex; align-self: flex-start; width: max-content; border-radius: var(--aw-r-pill); border: 1px solid var(--aw-chalk); overflow: hidden;
+  font-family: var(--aw-font-mono); font-size: 12px; letter-spacing: .12em; }
+.aw-program > :first-child { padding: 8px 14px; background: var(--aw-chalk); color: var(--aw-night); font-weight: 500; }
+.aw-program > :last-child { padding: 8px 14px; }
+.aw-card { border-radius: var(--aw-r-card); padding: 28px; background: var(--aw-white); color: var(--aw-night); border: 1.5px solid var(--aw-white);
+  transition: transform var(--aw-t-move) var(--aw-ease), border-color var(--aw-t-state); }
+.aw-card--dark { background: var(--aw-night); color: var(--aw-chalk); border-color: var(--aw-night); }
+.aw-card:hover { transform: translateY(-4px); border-color: var(--aw-ultramarine); }
+.aw-field { min-height: 48px; border-radius: var(--aw-r-field); border: 1.5px solid var(--aw-fog); background: var(--aw-white);
+  padding: 0 14px; font: 400 16px var(--aw-font-body); color: var(--aw-night); transition: border-color var(--aw-t-state), box-shadow var(--aw-t-state); }
+.aw-field:focus { outline: none; border-color: var(--aw-ultramarine); box-shadow: 0 0 0 3px var(--aw-ice); }
+:focus-visible { outline: 2px solid var(--aw-volt); outline-offset: 3px; }
+.aw-light :focus-visible { outline-color: var(--aw-ultramarine); }
+
+/* ---------- motion ---------- */
+/* entrance: 18px rise, 700ms; stagger siblings 60-120ms with animation-delay */
+.aw-rise { animation: aw-rise var(--aw-t-intro) var(--aw-ease) both; }
+@keyframes aw-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+/* scroll reveal: finishes as soon as the element is fully in view.
+   Never use a cover-% range: on tall pages the last sections stay half faded. */
+@supports (animation-timeline: view()) {
+  .aw-reveal { animation: aw-rise linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+}
+
+/* replay pattern: two identical keyframe sets; alternate the class to restart an entrance without re-mounting */
+.aw-inA { animation: aw-inA var(--aw-t-move) var(--aw-ease) both; }
+.aw-inB { animation: aw-inB var(--aw-t-move) var(--aw-ease) both; }
+@keyframes aw-inA { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes aw-inB { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* live signals */
+.aw-pulse { animation: aw-pulse 1.3s ease-in-out infinite; }
+@keyframes aw-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+.aw-halo { animation: aw-halo 1.4s ease-out infinite; }
+@keyframes aw-halo { 0% { box-shadow: 0 0 0 0 rgba(200, 240, 74, .55); } 100% { box-shadow: 0 0 0 24px rgba(200, 240, 74, 0); } }
+/* a particle on a 1px line: put .aw-particle inside a positioned, rotated line element */
+.aw-particle { position: absolute; top: -3px; left: 0; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%;
+  background: var(--aw-volt); animation: aw-run 2.4s linear infinite; }
+@keyframes aw-run { 0% { left: 0; opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+/* blocked by a hard stop */
+.aw-hit { animation: aw-hit var(--aw-t-intro) var(--aw-ease) both; }
+@keyframes aw-hit { 18% { transform: translateX(-7px); } 38% { transform: translateX(6px); } 58% { transform: translateX(-3px); } 100% { transform: none; } }
+/* logo marquee: duplicate the list inside .aw-track */
+.aw-marquee { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
+.aw-track { display: flex; width: max-content; animation: aw-marq 60s linear infinite; }
+.aw-track--rev { animation-name: aw-marq-rev; animation-duration: 70s; }
+.aw-marquee:hover .aw-track { animation-play-state: paused; }
+@keyframes aw-marq { to { transform: translateX(-50%); } }
+@keyframes aw-marq-rev { from { transform: translateX(-50%); } to { transform: none; } }
+
+/* reduced motion: everything still, final states shown. In JS, also do not start timers. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 0s !important; }
+  .aw-particle { display: none; }
+  .aw-track { width: auto; flex-wrap: wrap; }
+  .aw-track > [aria-hidden="true"] { display: none; }
+}
