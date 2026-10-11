@@ -1537,10 +1537,27 @@ def comprueba_sin_secretos(raiz):
         aborta('la demo pública lleva lo que no puede salir:\n  ' + '\n  '.join(malos[:40]))
 
 
+# La limpieza EN VIVO de los datos de partida (MARCA_BLANCA + LW_DEMO_LIMPIA de demo_datos.js) sirve a la demo local, que no
+# pasa por las sustituciones privadas. En la pública sobra y estorba (verificador, 12-oct): publicaba los nombres reales de su
+# tabla en claro, y las sustituciones del build reescribían sus expresiones («Batu → Batu Ridge» doblaba el nombre en el
+# navegador; «QA» → «Demo» la convertía en «borra Demo»). Aquí la limpieza se hace en el build y comprueba_sin_secretos lo mira.
+LIMPIEZA_EN_VIVO = re.compile(r'  var MARCA_BLANCA = \[.*?\n  \];\n  window\.LW_DEMO_LIMPIA = function \(F\) \{.*?\n  \};\n', re.S)
+
+
+def quita_limpieza_en_vivo():
+    g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
+    t = open(g, encoding='utf-8').read()
+    t, n = LIMPIEZA_EN_VIVO.subn('  window.LW_DEMO_LIMPIA = function () {};\n', t)
+    if n != 1:
+        aborta('quita_limpieza_en_vivo: esperaba 1 bloque MARCA_BLANCA + LW_DEMO_LIMPIA en guard.js y hay %d (¿cambió demo_datos.js?)' % n)
+    open(g, 'w', encoding='utf-8', newline='').write(t)
+
+
 def publica():
     """Versión pública: sin comentarios, sin marca ni nombres de Lawang, y comprobado antes de copiar a demo/."""
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json (repo privado del estudio): sin él no se puede anonimizar la demo')
+    quita_limpieza_en_vivo()
     r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), DIST], cwd=AQUI)
     if r.returncode != 0:
         aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')

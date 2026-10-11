@@ -1100,6 +1100,23 @@
   /* RPC que en la base son funciones de tabla (forma: su `returns table`). */
   var RPC_TABLA = {
     sociedades_visibles: function (F) { return filasDe(F, 'sociedades').filter(function (s) { return s.activa !== false; }); },
+    /* Contratos con algún comprador en común con p_contrato_id (él incluido). Era una tabla fija con el primer contrato, y
+       «Crear recibí» desde la factura de cualquier otro contrato decía «ya no tiene saldo pendiente» (verificador, 12-oct;
+       arreglado por demo-pC-cascara con el paquete A ya cerrado). */
+    contratos_del_mismo_comprador: function (F, a) {
+      function suyos(id) {
+        var s = {};
+        filasDe(F, 'contrato_compradores').forEach(function (x) { if (x.contrato_id === id && x.client_id) s[x.client_id] = 1; });
+        filasDe(F, 'contratos').forEach(function (c) { var d = c.datos || {}; if (c.id === id && d.adq1_client_id) s[d.adq1_client_id] = 1; });
+        return s;
+      }
+      var base = suyos(a.p_contrato_id);
+      return filasDe(F, 'contratos').filter(function (c) {
+        if (c.id === a.p_contrato_id) return true;
+        var otros = suyos(c.id);
+        return Object.keys(otros).some(function (k) { return base[k]; });
+      }).map(function (c) { return { contrato_id: c.id }; });
+    },
     // 20261008960000_f2_b11_1_directorio_global_clientes.sql
     compradores_lista: function (F) {
       return filasDe(F, 'clients').map(function (c) {

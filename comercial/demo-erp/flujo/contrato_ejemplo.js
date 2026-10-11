@@ -20,9 +20,14 @@
   }
   function fecha(iso) {
     if (!iso) return '—';
-    var d = new Date(String(iso).length === 10 ? iso + 'T00:00:00Z' : iso);
+    // Una fecha sola (AAAA-MM-DD) se pinta tal cual (UTC); un instante con hora, en la hora del visitante, como el resto de
+    // la intranet: en UTC salía un día antes en Bali de madrugada (verificador, 12-oct).
+    var solo = String(iso).length === 10;
+    var d = new Date(solo ? iso + 'T00:00:00Z' : iso);
     if (isNaN(d)) return '—';
-    return d.toLocaleDateString(t.locale(), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+    var o = { day: 'numeric', month: 'long', year: 'numeric' };
+    if (solo) o.timeZone = 'UTC';
+    return d.toLocaleDateString(t.locale(), o);
   }
   function rellena(txt, v) {
     return txt.replace(/\{\{([a-z_]+)\}\}/g, function (_, k) { return v[k] == null || v[k] === '' ? '—' : String(v[k]); });
