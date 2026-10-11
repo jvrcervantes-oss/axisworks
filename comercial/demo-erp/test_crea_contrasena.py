@@ -130,11 +130,11 @@ i18n = open(os.path.join(build.LAWANG, 'contracts', 'assets', 'i18n.js'), encodi
 mira('no pisa claves de Lawang con otra traducción (solo se añaden las que no existen; las coincidentes se dejan)',
      "if (!(k in window.LW_EN))" in JS)
 
-# ── (5) instancia() la llama, después de logos_neutros() y antes de versiona()
+# ── (5) instancia() la llama, después de logos_instancia() (F14: logos del cliente o neutros) y antes de versiona()
 cuerpo = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
 inst = cuerpo[cuerpo.index('def instancia(nombre):'):cuerpo.index('EXENTOS_BASE = {')]
-mira('instancia() llama a crea_contrasena_pantalla(marca) tras logos_neutros() y antes de versiona()',
-     inst.count('crea_contrasena_pantalla(marca)') == 1 and inst.index('logos_neutros(marca)') < inst.index('crea_contrasena_pantalla(marca)') < inst.index('versiona(DIST)'))
+mira('instancia() llama a crea_contrasena_pantalla(marca) tras logos_instancia() y antes de versiona()',
+     inst.count('crea_contrasena_pantalla(marca)') == 1 and inst.index('logos_instancia(nombre, marca)') < inst.index('crea_contrasena_pantalla(marca)') < inst.index('versiona(DIST)'))
 
 # ── (6) el harness en Chromium, con Auth simulado
 if '--sin-navegador' not in sys.argv:

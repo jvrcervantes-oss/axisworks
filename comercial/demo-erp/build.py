@@ -1029,6 +1029,111 @@ def logos_neutros(texto='AxisWorks Demo'):
     fav.save(os.path.join(DIST, 'favicon.png'))
 
 
+# ── Piel e identidad de una instancia (F14, 11-oct-2026; revisión previa #265 de Diseño + Seguridad) ──────────────────
+# `piel` e `icono` del registro (erp/instancias.json, FUERA de `config`: nueva_instancia.py sube `config` a la base). La
+# instancia lleva SOLO su preset, ya derivado y validado (tríos de enteros, lista cerrada de tokens): nunca deriva en el
+# navegador, nunca texto CSS. Se aplica con style.setProperty en el guard.js, que va en el <head> antes que las hojas: sin
+# lectura a la base al cargar, así que no hay parpadeo con los colores de Lawang. Lawang no pasa por aquí: idéntica.
+PIEL_MARCA = 'window.AXW_PIEL='
+
+
+def _deriva():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('axw_tema_deriva', os.path.join(AGENCIA, 'erp', 'tema', 'deriva.py'))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _piel_preset(nombre):
+    """{token: [r, g, b]} de la piel aprobada de la instancia, o None si no declara piel (o declara la de Lawang)."""
+    piel = _instancia_registro(nombre).get('piel')
+    if not piel or piel == 'lawang':
+        return None
+    D = _deriva()
+    if D.main(['--check']) != 0:
+        aborta('erp/tema/presets.json no corresponde a pieles.json: python erp/tema/deriva.py')
+    aprobadas = json.load(open(os.path.join(AGENCIA, 'erp', 'tema', 'presets.json'), encoding='utf-8'))['presets']
+    if piel not in aprobadas:
+        aborta('la piel %r de %s no está entre las aprobadas de erp/tema/presets.json (una propuesta no se publica)' % (piel, nombre))
+    try:
+        return D.valida_preset(aprobadas[piel])
+    except ValueError as e:
+        aborta('preset %r no válido: %s' % (piel, e))
+
+
+def piel_instancia(nombre):
+    """JS (una línea) que pone la piel de la instancia en <html>, o '' sin piel."""
+    p = _piel_preset(nombre)
+    if p is None:
+        return ''
+    valores = {k: '%d %d %d' % tuple(v) for k, v in sorted(p.items())}
+    return ('%s%s;(function(){var s=document.documentElement.style,p=%s;for(var k in p)s.setProperty("--tema-"+k,p[k]);})();\n'
+            % (PIEL_MARCA, json.dumps(_instancia_registro(nombre)['piel']), json.dumps(valores, separators=(',', ':'))))
+
+
+def comprueba_piel(dist, nombre):
+    """Pendiente de Seguridad (#265): lo publicado no lleva caminos de piel ajenos. Un solo aplicador, en guard.js, y solo si
+    la instancia declara piel; ni el init del arnés (addInitScript) ni `skin=` por la URL."""
+    esperado = 1 if _piel_preset(nombre) is not None else 0
+    donde = []
+    for raiz, _d, fichs in os.walk(dist):
+        for f in fichs:
+            if not f.endswith(EXT_TEXTO):
+                continue
+            p = os.path.join(raiz, f)
+            t = open(p, encoding='utf-8', errors='replace').read()
+            if 'addInitScript' in t or re.search(r'[?&]skin=', t):
+                aborta('camino de piel ajeno en el paquete: ' + os.path.relpath(p, dist))
+            donde += [os.path.relpath(p, dist)] * t.count(PIEL_MARCA)
+    if len(donde) != esperado or (donde and donde[0].replace(os.sep, '/') != 'contracts/assets/guard.js'):
+        aborta('aplicadores de piel en el paquete: %r (se esperaba %d, en contracts/assets/guard.js)' % (donde, esperado))
+
+
+def logos_instancia(nombre, marca):
+    """Logo y favicon del CLIENTE si la instancia declara `icono` (su logo real, solo reducido: erp/tema/marcas/LEEME.md);
+    si no, los neutros de AxisWorks. Mismo lienzo que logos_neutros (1726×240, la maqueta no se mueve). El texto es la
+    marca en mayúsculas con el punto en el acento de su piel, como el logotipo de su web pública."""
+    icono = _instancia_registro(nombre).get('icono')
+    if not icono:
+        return logos_neutros(marca)
+    from PIL import Image, ImageDraw, ImageFont
+    base = os.path.join(AGENCIA, 'erp', 'tema', 'marcas')
+    ruta = os.path.normpath(os.path.join(AGENCIA, icono))
+    if not ruta.startswith(base + os.sep) or not os.path.isfile(ruta):
+        aborta('icono de %s fuera de erp/tema/marcas/ o inexistente: %s' % (nombre, icono))
+    p = _piel_preset(nombre) or {}
+    tinta = tuple(p.get('on-background', (15, 23, 48))) + (255,)
+    claro = tuple(p.get('background', (238, 240, 251))) + (255,)
+    acento = tuple(p.get('accent-gold', (79, 70, 229))) + (255,)
+
+    def fuente(tam):
+        for f in ('segoeuib.ttf', 'arialbd.ttf'):
+            try:
+                return ImageFont.truetype(os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', f), tam)
+            except OSError:
+                continue
+        aborta('sin fuente para el logotipo (segoeuib.ttf / arialbd.ttf)')
+    ico = Image.open(ruta).convert('RGBA')
+    mascara = Image.new('L', (180, 180), 0)
+    ImageDraw.Draw(mascara).rounded_rectangle((0, 0, 179, 179), radius=36, fill=255)
+    ico180 = ico.resize((180, 180), Image.LANCZOS)
+    texto = marca.upper()
+    tam = 150
+    while tam > 40 and ImageDraw.Draw(Image.new('RGBA', (1, 1))).textlength(texto + '.', font=fuente(tam)) > 1726 - 230:
+        tam -= 4
+    marca_dir = os.path.join(DIST, 'contracts', 'assets', 'brand')
+    os.makedirs(marca_dir, exist_ok=True)
+    for nombre_png, color in (('axw-logo-v3.png', claro), ('axw-logo-v3-dark.png', tinta)):
+        im = Image.new('RGBA', (1726, 240), (0, 0, 0, 0))
+        im.paste(ico180, (0, 30), mascara)
+        d = ImageDraw.Draw(im)
+        d.text((230, 120), texto, font=fuente(tam), fill=color, anchor='lm')
+        d.text((230 + d.textlength(texto, font=fuente(tam)), 120), '.', font=fuente(tam), fill=acento, anchor='lm')
+        im.save(os.path.join(marca_dir, nombre_png))
+    ico.resize((64, 64), Image.LANCZOS).save(os.path.join(DIST, 'favicon.png'))
+
+
 def tipografias_libres():
     """La demo pública no lleva las tipografías de marca de Lawang (owner, 25-sep, AXW-19): Neue Kabel y The Seasons
     son identidad del cliente y los .otf venían de fonnts.com, sin licencia web nuestra. Se sustituyen por dos parecidas
@@ -2118,7 +2223,7 @@ def instancia(nombre):
     t = open(g, encoding='utf-8').read()
     open(g, 'w', encoding='utf-8', newline='').write(
         '/* GENERADO por AxisWorks/comercial/demo-erp/build.py --instancia %s — no editar. */\n'
-        'window.AXW_NUCLEO_OPERACION = true;\n' % nombre + interruptores + t)
+        'window.AXW_NUCLEO_OPERACION = true;\n' % nombre + piel_instancia(nombre) + interruptores + t)
     for raiz, dirs, fichs in os.walk(DIST, topdown=False):
         for f in fichs + dirs:
             nuevo = f
@@ -2127,7 +2232,7 @@ def instancia(nombre):
             nuevo = nuevo.replace('Lawang', 'Axw')
             if nuevo != f:
                 os.replace(os.path.join(raiz, f), os.path.join(raiz, nuevo))
-    logos_neutros(marca)
+    logos_instancia(nombre, marca)
     crea_contrasena_pantalla(marca)   # pieza C de I6 (9-oct-2026): «Crea tu contraseña» para el primer administrador invitado
     tipografias_libres()
     neutraliza_ejemplos()   # ejemplos de persona que casan con gente real (pii_maqueta)
@@ -2206,6 +2311,7 @@ def instancia(nombre):
     restos = rastros_en(DIST)
     if restos:
         aborta('el build de la instancia no está limpio:\n  ' + '\n  '.join(restos[:40]))
+    comprueba_piel(DIST, nombre)
     comprueba_resultado(DIST)
     # 4. Copia al clon del repo privado de la instancia (gitignored en la agencia).
     destino = os.path.join(DESPLIEGUES, nombre)
