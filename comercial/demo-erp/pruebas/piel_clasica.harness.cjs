@@ -71,7 +71,8 @@ const PINTURA = `(function(lawang){
     const masc = path.join(RAIZ, 'assets', 'mascota.js');
     const navjs = fs.readFileSync(path.join(RAIZ, 'assets', 'nav.js'), 'utf8');
     const mv = (navjs.match(/MASCOTA_V\s*=\s*['"]([^'"]+)['"]/) || [])[1];
-    ok('mascota: nav.js la pide con una versión nueva (MASCOTA_V ≠ la de Lawang)', mv && /^p[0-9a-f]{8}$/.test(mv), String(mv));
+    const huella = 'p' + require('crypto').createHash('sha1').update(fs.readFileSync(path.join(RAIZ, 'assets', 'mascota.js'))).digest('hex').slice(0, 8);
+    ok('mascota: nav.js la pide con la huella de la mascota.js publicada (MASCOTA_V)', mv === huella, String(mv) + ' vs ' + huella);
     ok('mascota: su marco ya no lleva Deep Lagoon de Lawang', fs.existsSync(masc) && !/#104C4F|rgba\(16,76,79/i.test(fs.readFileSync(masc, 'utf8')));
     const p = await abre(ctx, '/');
     const r = await p.evaluate(() => {

@@ -182,21 +182,27 @@ mira('suite clásica: la regla va DESPUÉS de la :root de cada página, dentro d
 mira('suite clásica: los colores de Lawang escritos a mano ya no están', est == 'pasa'
      and not re.search(r'#0d5b5f|rgba\(16,76,79|rgba\(72,91,55|#F5F0E6|#CBD6B6|rgba\(143,155,122', hoja + puerta, re.I))
 mascota = open(os.path.join(d0, 'assets', 'mascota.js'), encoding='utf-8').read() if est == 'pasa' else ''
-import hashlib
-nav_d0 = open(os.path.join(d0, 'assets', 'nav.js'), encoding='utf-8').read() if est == 'pasa' else ''
-mira('suite clásica: MASCOTA_V de nav.js pasa a la huella de la mascota repintada (la CDN no sirve la de Lawang)', est == 'pasa'
-     and 'MASCOTA_V="p%s"' % hashlib.sha1(mascota.encode('utf-8')).hexdigest()[:8] in nav_d0 and 'CORTINA_V="20260926a"' in nav_d0)
 mira('suite clásica: el marco de la mascota ya no es Deep Lagoon de Lawang', est == 'pasa'
      and not re.search(r'#104C4F|rgba\(16,76,79|#0c3c3e|#316669', mascota, re.I) and '#442C1E' in mascota)
 d = paquete({'index.html': PUERTA.replace('#CBD6B6', '#ABCDEF'), 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA, 'assets/mascota.js': MASC, 'assets/nav.js': NAV})
 mira('suite clásica: PARA si Lawang quita un color fijo que la piel sustituye', con_registro({'piel': 'bbm'}, build.piel_suite_clasica, d, 'bbm')[0] == 'para')
-d = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA, 'assets/mascota.js': MASC, 'assets/nav.js': 'var x=1;'})
-mira('suite clásica: PARA si nav.js ya no declara MASCOTA_V', con_registro({'piel': 'bbm'}, build.piel_suite_clasica, d, 'bbm')[0] == 'para')
 d = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA + '@media (x){', 'assets/mascota.js': MASC, 'assets/nav.js': NAV})
 mira('suite clásica: PARA si axw.css deja un bloque abierto', con_registro({'piel': 'bbm'}, build.piel_suite_clasica, d, 'bbm')[0] == 'para')
 d = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA, 'assets/mascota.js': MASC, 'assets/nav.js': NAV})
 mira('suite clásica sin piel: no toca el paquete', con_registro({}, build.piel_suite_clasica, d, 'x') == ('pasa', 0)
      and open(os.path.join(d, 'index.html'), encoding='utf-8').read() == PUERTA)
+
+# 4e — la mascota cambia de URL cuando cambia el fichero publicado (nav.js la pide con MASCOTA_V, que versiona() no ve)
+import hashlib
+d = paquete({'assets/mascota.js': MASC + 'final', 'assets/nav.js': NAV})
+h = build.mascota_versionada(d)
+nav = open(os.path.join(d, 'assets', 'nav.js'), encoding='utf-8').read()
+mira('mascota: MASCOTA_V = huella de la mascota.js que queda en el paquete; CORTINA_V intacta',
+     h == 'p' + hashlib.sha1((MASC + 'final').encode('utf-8')).hexdigest()[:8] and 'MASCOTA_V="%s"' % h in nav and 'CORTINA_V="20260926a"' in nav)
+d = paquete({'assets/mascota.js': MASC, 'assets/nav.js': 'var x=1;'})
+est, _h = con_registro({}, build.mascota_versionada, d)
+mira('mascota: PARA si nav.js ya no declara MASCOTA_V una vez', est == 'para')
+mira('mascota: sin nav.js ni mascota.js no hace nada', build.mascota_versionada(paquete({'index.html': 'x'})) is None)
 
 # 5 — cableado en instancia()
 fuente = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
@@ -207,6 +213,8 @@ mira('instancia() añade la piel a la ficha, después de escribirla', 'piel = pi
 mira('el guard.js ya no lleva la piel', 'piel_instancia(nombre) + interruptores' not in cuerpo)
 mira('instancia() añade el menú oscuro a assets/shell.css antes de versionar', 'menu = menu_oscuro_css(nombre)' in cuerpo
      and "os.path.join(DIST, 'assets', 'shell.css')" in cuerpo and cuerpo.index('menu = menu_oscuro_css(nombre)') < cuerpo.index('versiona(DIST)'))
+mira('instancia() versiona la mascota justo antes de versiona(), cuando ya nadie toca mascota.js', 'mascota_versionada(DIST)' in cuerpo
+     and cuerpo.index('tipografias_libres()') < cuerpo.index('mascota_versionada(DIST)') < cuerpo.index('\n    versiona(DIST)'))
 mira('instancia() versiona el favicon justo antes de versiona()', 'favicon_versionado(DIST)' in cuerpo
      and cuerpo.index('favicon_versionado(DIST)') < cuerpo.index('\n    versiona(DIST)'))
 mira('instancia() pinta la suite clásica tras crea-contraseña y ANTES de versionar (si no, la CDN sirve la hoja vieja)',

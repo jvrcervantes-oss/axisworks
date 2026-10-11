@@ -1196,21 +1196,27 @@ def piel_suite_clasica(dist, nombre):
         if len(m) != 1 or _profundidad_llaves(m[0].group(1)) != 0:
             aborta('piel de la suite clásica: %s no tiene UN <style> con :root y llaves cerradas' % rel)
         textos[rel] = t[:m[0].end(1)] + css + t[m[0].end(1):]
-    # nav.js carga la mascota con `assets/mascota.js?v=" + MASCOTA_V`, una URL que se arma al ejecutarse y que versiona() no ve
-    # (revisor, 12-oct): sin subir MASCOTA_V la CDN seguiría sirviendo la mascota de Lawang 7 días. Se pone la huella de la ya
-    # repintada; así cambia también la de nav.js al versionar.
-    import hashlib
-    nav = os.path.join(dist, 'assets', 'nav.js')
-    tn = open(nav, encoding='utf-8').read() if os.path.isfile(nav) else ''
-    m = list(re.finditer(r'''(MASCOTA_V\s*=\s*)(['"])([^'"]+)\2''', tn))
-    if len(m) != 1:
-        aborta('piel de la suite clásica: assets/nav.js no declara UNA vez MASCOTA_V (la mascota repintada no cambiaría de URL)')
-    huella = 'p' + hashlib.sha1(textos['assets/mascota.js'].encode('utf-8')).hexdigest()[:8]
-    tn = tn[:m[0].start(3)] + huella + tn[m[0].end(3):]
     for rel, t in textos.items():
         open(os.path.join(dist, rel), 'w', encoding='utf-8', newline='').write(t)
-    open(nav, 'w', encoding='utf-8', newline='').write(tn)
     return len(textos)
+
+
+def mascota_versionada(dist):
+    """MASCOTA_V de assets/nav.js = huella de la assets/mascota.js QUE SE PUBLICA (revisor, 12-oct). nav.js la carga con
+    `assets/mascota.js?v=" + MASCOTA_V`, una URL que se arma al ejecutarse y que versiona() no ve: con el valor de Lawang, la CDN
+    seguiría sirviendo la mascota vieja 7 días tras repintarla (piel) o reescribirla (reraiz, comentarios, tipografías). Va justo
+    antes de versiona(), cuando ya nadie toca mascota.js, y así cambia también el ?v= de nav.js. Sin nav.js ni mascota.js no hace nada."""
+    import hashlib
+    nav, masc = os.path.join(dist, 'assets', 'nav.js'), os.path.join(dist, 'assets', 'mascota.js')
+    if not (os.path.isfile(nav) and os.path.isfile(masc)):
+        return None
+    tn = open(nav, encoding='utf-8').read()
+    m = list(re.finditer(r'''(MASCOTA_V\s*=\s*)(['"])([^'"]+)\2''', tn))
+    if len(m) != 1:
+        aborta('assets/nav.js no declara UNA vez MASCOTA_V (la mascota publicada no cambiaría de URL)')
+    huella = 'p' + hashlib.sha1(open(masc, 'rb').read()).hexdigest()[:8]
+    open(nav, 'w', encoding='utf-8', newline='').write(tn[:m[0].start(3)] + huella + tn[m[0].end(3):])
+    return huella
 
 
 def favicon_versionado(dist):
@@ -2560,6 +2566,7 @@ def instancia(nombre):
     # ?v= con la huella de lo que SALE de este build, como en la demo pública (28-sep-2026). Sin esto, la v4 llevaba el
     # ?v= del fichero de Lawang (guard.js se reescribe entero aquí: mapa de módulos + ficha) y /panel/ iba sin versión:
     # Hostinger cachea 7 días y el verificador vio el guard.js viejo en /panel/ tras publicar.
+    mascota_versionada(DIST)   # y la mascota, que nav.js pide con MASCOTA_V (revisor, 12-oct)
     favicon_versionado(DIST)   # y el favicon, que versiona() no toca (Calidad, 12-oct: bbm servía el icono viejo sin ?cb)
     versiona(DIST)
     # Lo que SALE lleva UNA copia de Ajustes › Correo (10-oct-2026): se mide aquí, sobre el fichero ya reescrito por limpia_publico.js, y no
