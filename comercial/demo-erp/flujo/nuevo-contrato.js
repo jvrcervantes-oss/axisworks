@@ -7,7 +7,7 @@
    Dónde engancha (por identificador estable, nunca por rótulo):
    - clic en [data-accion="nuevo-contrato" | "formulario-clasico" | "borrador-blanco" | "nueva-operacion" |
      "demo-nuevo-contrato"] (con data-cliente="<id>" opcional) → abre el panel. Se captura antes que editores.js:
-     en la demo esas cuatro vías acababan en «Not included in the demo» o en un 403 (el generador de Lawang no viaja).
+     en la demo esas cuatro vías acababan en «Not included in the demo» o en un 403 (el generador del ERP real no viaja a la demo).
    - clic en [data-accion="demo-firmar"][data-id="<contrato>"] → abre la firma de un contrato pendiente.
    - la dirección con ?nuevo (y &cliente=<id>) → abre el panel al cargar. El id solo se casa contra la lista de
      clientes; nada de la URL se pinta.
@@ -141,6 +141,7 @@
     });
     E.aviso.hidden = true;
     E.cuerpo.textContent = '';
+    E.cuerpo.scrollTop = 0;
   }
   function fallo(e) {
     var msg = (e && e.message) || String(e);

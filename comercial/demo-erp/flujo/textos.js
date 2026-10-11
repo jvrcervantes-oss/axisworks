@@ -56,7 +56,7 @@
     'hecho.facturas': 'Invoices',
 
     'doc.aria': 'Sample contract',
-    'doc.marca': 'SAMPLE — NO LEGAL VALUE',
+    'doc.marca': 'SAMPLE · NO LEGAL VALUE',
     'doc.sin_numero': 'assigned when saved',
     'doc.firma_img': 'Sample signature',
     'doc.firmado_clic': 'Signed (sample)',
@@ -66,7 +66,7 @@
 
     'p.titulo': 'Client portal',
     'p.salto': 'Skip to content',
-    'p.demo': 'Demo — made-up data. Nothing you do here is sent anywhere, and it is cleared when you close this tab.',
+    'p.demo': 'Demo with made-up data. Nothing you do here is sent anywhere, and it is cleared when you close this tab.',
     'p.viendo': 'Viewing as',
     'p.volver': 'Back to the intranet',
     'p.hola': 'Hello, {0}',
@@ -117,11 +117,11 @@
     'fa.contrato': 'Contract {0}',
     'd.vacio': 'No documents yet. Signed contracts and payment receipts appear here.',
     'd.contrato': 'Contract {0} (sample)',
-    'd.recibo': 'Payment receipt {0}',
+    'd.recibo': 'Payment receipt {0} (sample)',
     'd.ver': 'View',
     'd.nota': 'Documents in this demo are samples with no legal value. Downloads of real files are not part of the demo.',
     'v.cerrar': 'Close',
-    'v.recibo_tit': 'Payment receipt {0}',
+    'v.recibo_tit': 'Payment receipt {0} (sample)',
     'v.recibo_txt': 'Sample receipt: {0} {1} received on {2} for contract {3}. Demo only, made-up data, no legal effect.',
 
     'plantilla': [
@@ -129,8 +129,8 @@
       ['titulo', 'Sample reservation agreement'],
       ['meta', 'Sample no. {{numero}} · Date {{fecha}}'],
       ['h', 'Parties'],
-      ['p', 'Issued by {{emisor}}. Demo address, not a real company.'],
-      ['p', 'Prepared for {{cliente_nombre}}, {{cliente_pais}}. The client is a made-up profile picked in this demo.'],
+      ['p', 'Issued by {{emisor}}. It exists only in this demo.'],
+      ['p', 'Prepared for {{cliente_nombre}}, a made-up client picked in this demo.'],
       ['h', 'Subject'],
       ['p', 'This sample shows how a reservation of unit {{unidad}} in the project {{proyecto}} could look once the details are filled in. The project, the unit and both parties are invented for the demo.'],
       ['h', 'Price and payment'],
