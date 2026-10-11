@@ -55,7 +55,7 @@ mira('lleva el estilo de Lawang (:root, .card, .msg.err) y no queda ninguna marc
 mira('la marca va escapada en título y alt (no rompe el HTML)', 'Marca &lt;&amp;&gt; &quot;x&quot;' in pag and '<title>Marca &lt;&amp;&gt; &quot;x&quot; · Crea tu contraseña</title>' in pag)
 mira('sale sin comentarios (los internos del estudio no se publican)', '<!--' not in pag and '/*' not in pag and 'pieza C' not in pag and 'AskUserQuestion' not in pag)
 mira('Referrer-Policy no-referrer y noindex en la página', '<meta name="referrer" content="no-referrer">' in pag and 'noindex' in pag)
-mira('el logo es el de la instancia (logos_neutros), nunca el de Lawang', '/contracts/assets/brand/axw-logo-v3-dark.png' in pag and 'lawang' not in pag.lower())
+mira('el logo es el de la instancia (logos_instancia), nunca el de Lawang', '/contracts/assets/brand/axw-logo-v3-dark.png' in pag and 'lawang' not in pag.lower())
 mira('NO carga guard.js (es una página de antes de entrar) ni ningún otro script que no sea supabase-js, la ficha, idioma e i18n',
      re.findall(r'<script src="([^"]+)"', pag) == [re.search(r'src="([^"]+supabase-js[^"]+)"', pag).group(1), '/contracts/assets/instancia.js', '/contracts/assets/idioma.js', '/contracts/assets/i18n.js']
      and 'guard.js' not in pag)
@@ -130,11 +130,11 @@ i18n = open(os.path.join(build.LAWANG, 'contracts', 'assets', 'i18n.js'), encodi
 mira('no pisa claves de Lawang con otra traducción (solo se añaden las que no existen; las coincidentes se dejan)',
      "if (!(k in window.LW_EN))" in JS)
 
-# ── (5) instancia() la llama, después de logos_neutros() y antes de versiona()
+# ── (5) instancia() la llama, después de logos_instancia() (F14: logos del cliente o neutros) y antes de versiona()
 cuerpo = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
 inst = cuerpo[cuerpo.index('def instancia(nombre):'):cuerpo.index('EXENTOS_BASE = {')]
-mira('instancia() llama a crea_contrasena_pantalla(marca) tras logos_neutros() y antes de versiona()',
-     inst.count('crea_contrasena_pantalla(marca)') == 1 and inst.index('logos_neutros(marca)') < inst.index('crea_contrasena_pantalla(marca)') < inst.index('versiona(DIST)'))
+mira('instancia() llama a crea_contrasena_pantalla(marca) tras logos_instancia() y antes de versiona()',
+     inst.count('crea_contrasena_pantalla(marca)') == 1 and inst.index('logos_instancia(nombre, marca)') < inst.index('crea_contrasena_pantalla(marca)') < inst.index('versiona(DIST)'))
 
 # ── (6) el harness en Chromium, con Auth simulado
 if '--sin-navegador' not in sys.argv:
