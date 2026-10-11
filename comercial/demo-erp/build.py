@@ -617,9 +617,10 @@ def guard_demo():
     # erp. y no a la portada de dos puertas. El pop-up de novedades de la intranet (anuncios internos del cliente para su
     # equipo) no sale en la demo: novedades.js sale solo si encuentra __lwNovedades ya puesto.
     # catalogo.js (fuente única de módulos) → modulos.js (menú y aviso de módulo apagado) → tour.js → cascara.js, en
-    # ese orden: un script insertado por JS es asíncrono salvo async=false.
+    # ese orden: un script insertado por JS es asíncrono salvo async=false. Detrás, «New contract» y la firma de ejemplo del
+    # paquete B (/flujo/nuevo-contrato.js carga sus otros tres ficheros desde su carpeta).
     volver = ("window.__lwNovedades = true;\n"
-              "['/demo/catalogo.js','/demo/modulos.js','/demo/tour.js','/demo/cascara.js'].forEach(function(u){var s=document.createElement('script');"
+              "['/demo/catalogo.js','/demo/modulos.js','/demo/tour.js','/demo/cascara.js','/flujo/nuevo-contrato.js'].forEach(function(u){var s=document.createElement('script');"
               "s.src=u;s.async=false;(document.head||document.documentElement).appendChild(s);});\n")
     # Sesión real que el presentador pudiera tener en este origen: fuera antes de nada (Seguridad #2).
     limpia_sesion = LIMPIA_SESION + 'window.AXW_PORTADA = %s;\n' % json.dumps(PORTADA_URL)
@@ -838,6 +839,39 @@ def paginas_propias():
     open(os.path.join(DIST, 'portal', 'index.html'), 'w', encoding='utf-8').write(AVISO_DEMO.format(
         t='Client portal', m='The client portal of the demo opens here in its next update. Meanwhile, the intranet shows '
                              'every client\'s record with their contracts, invoices and payments.'))
+
+
+FLUJO = os.path.join(AQUI, 'flujo')
+FLUJO_FICHEROS = ('textos.js', 'contrato_ejemplo.js', 'nuevo-contrato.js', 'flujo.css')
+FLUJO_PORTAL = ('portal.js', 'portal.css')
+# Ancla de la ficha de cliente (datos.js de Lawang): el botón de la vista previa del portal, enganchado por su atributo, nunca
+# por el rótulo. Delante se pone «New contract» del paquete B con el id del cliente (B lo casa contra la lista, no lo pinta).
+FICHA_ANCLA = '\'<button type="button" data-portal-preview '
+FICHA_NUEVO = ('\'<button type="button" data-accion="demo-nuevo-contrato" data-cliente="\' + esc(String(c2.id)) + \'" '
+               'style="padding:7px 14px;border-radius:8px;border:1px solid #15181C;background:#15181C;color:#F4F2EC;font-weight:600;'
+               'font-size:12.5px;cursor:pointer">New contract</button>\' + ')
+
+
+def engancha_flujo():
+    """Paquete B de la demo para un cliente (12-oct-2026): «New contract» y la firma de ejemplo (flujo/, un panel dentro de la
+    intranet que escribe en la base falsa de la pestaña) y el portal de cliente (flujo/portal/). Se publican en /flujo/ y
+    /portal/, pasan por los mismos filtros que el resto (neutraliza, RASTRO, pii, comprueba_sin_secretos) y sustituyen a los
+    avisos «Not included» del generador y del portal."""
+    destino = os.path.join(DIST, 'flujo')
+    os.makedirs(os.path.join(destino, 'portal'), exist_ok=True)
+    for f in FLUJO_FICHEROS:
+        shutil.copy2(os.path.join(FLUJO, f), os.path.join(destino, f))
+    for f in FLUJO_PORTAL:
+        shutil.copy2(os.path.join(FLUJO, 'portal', f), os.path.join(destino, 'portal', f))
+    shutil.copy2(os.path.join(FLUJO, 'portal', 'index.html'), os.path.join(DIST, 'portal', 'index.html'))
+    # El generador de Lawang no va (Legal, 24-sep): su ruta abre el «New contract» de la demo.
+    open(os.path.join(DIST, 'generador-contratos', 'index.html'), 'w', encoding='utf-8').write(
+        '<!doctype html><meta charset="utf-8"><title>New contract · Demo</title>'
+        '<script>location.replace("/contratos/?nuevo")</script>'
+        '<p><a href="/contratos/?nuevo">New contract</a></p>')
+    p = os.path.join(DIST, 'assets', 'datos.js')
+    t = open(p, encoding='utf-8').read()
+    open(p, 'w', encoding='utf-8', newline='').write(_una_vez(t, FICHA_ANCLA, FICHA_NUEVO + FICHA_ANCLA, 'datos.js (ficha de cliente)'))
 
 
 # Textos de ejemplo de la intranet que casan con personas reales (tools/pii_maqueta.py). En la demo se cambian por
@@ -2777,6 +2811,7 @@ def main():
     reraiz(DIST)
     sin_marca_lawang(DIST)
     paginas_propias()
+    engancha_flujo()
     idioma_ingles()
     avisos_para_rotos(demo=True)
     n = neutraliza()
