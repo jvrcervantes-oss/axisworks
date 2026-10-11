@@ -45,6 +45,8 @@ async function servidor(b, nombre, a) {
   if (o.sinRed) return { data: null, error: { message: 'Failed to fetch' } };
   if (nombre !== 'portada_reservas_dia_datos') return err('42883', 'funcion desconocida ' + nombre);
   if (o.datosRaros) return { data: { dia: HOY, entregas: 'nada' }, error: null };
+  if (o.hayMas && !(o.fallaOtroDia && a.p_dia)) return { data: { dia: HOY, entregas: [], devoluciones: [], hay_mas_entregas: true, hay_mas_devoluciones: false }, error: null };
+  if (o.hayMas && o.fallaOtroDia && a.p_dia) return { data: null, error: { message: 'Failed to fetch' } };
   const dia = a.p_dia || HOY;
   const vivas = o.vacio ? [] : b.reservas;
   return { data: { dia, entregas: JSON.parse(JSON.stringify(vivas.filter(x => x.desde === dia))), devoluciones: JSON.parse(JSON.stringify(vivas.filter(x => x.hasta === dia))) }, error: null };
@@ -134,6 +136,23 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.click('[data-ph="entregas"] li:nth-child(1) button');
     await espera(p, () => !!document.querySelector('[data-axw="dialogo"]'));
     ok('sin la herramienta, la ficha no ofrece el enlace', !(await p.$('[data-axw="dialogo"] a')));
+    await ctx.close();
+
+    // 1c. la base cortó la lista (tope) y lo dice: se avisa, con enlace solo si tiene la herramienta
+    ({ p, ctx } = await abre({ base: { hayMas: true } }));
+    ok('hay_mas_entregas: aviso visible con enlace; devoluciones sin aviso', await p.$eval('[data-ph="mas-entregas"]', e => !e.classList.contains('axw-oculto') && /Hay más/.test(e.textContent) && !!e.querySelector('a'))
+       && await p.$eval('[data-ph="mas-devoluciones"]', e => e.classList.contains('axw-oculto')));
+    ok('con la lista cortada el contador lo dice («(0+)», no un número exacto)', (await txt(p, '[data-ph="n-entregas"]')) === '(0+)');
+    await ctx.close();
+    // sin la herramienta: el aviso se ve, sin enlace
+    ({ p, ctx } = await abre({ base: { hayMas: true }, ficha: { rol: 'agente', herramientas: ['taller'] } }));
+    ok('hay_mas sin la herramienta: aviso visible y SIN enlace', await p.$eval('[data-ph="mas-entregas"]', e => !e.classList.contains('axw-oculto') && !e.querySelector('a')));
+    await ctx.close();
+    // un día con hay_mas y luego otro cuya carga falla: el aviso no se queda colgado debajo del error
+    ({ p, ctx } = await abre({ base: { hayMas: true, fallaOtroDia: true } }));
+    await p.click('[data-accion="ph-despues"]');
+    await espera(p, () => document.querySelector('[data-ph="estado-entregas"]').className === 'axw-error');
+    ok('tras un error al cambiar de día, el aviso «hay más» desaparece', await p.$eval('[data-ph="mas-entregas"]', e => e.classList.contains('axw-oculto')));
     await ctx.close();
 
     // 2. estados: vacío ≠ sin permiso ≠ módulo apagado ≠ no disponible ≠ raro ≠ sin red
