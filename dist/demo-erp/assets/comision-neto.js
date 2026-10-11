@@ -1,0 +1,1 @@
+function lwAbonoSinEfecto(l,porId){if(!l||l.tipo_linea!=="abono")return false;var o=porId&&porId[l.linea_origen_id];return!!(o&&o.anulada&&(o.estado==="pendiente"||o.estado==="exenta"||o.estado==="facturada"))}if(typeof module!=="undefined"&&module.exports)module.exports={lwAbonoSinEfecto:lwAbonoSinEfecto};
