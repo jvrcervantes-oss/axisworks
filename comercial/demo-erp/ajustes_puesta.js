@@ -15,8 +15,8 @@
   var EN_PM = {
     'Puesta en marcha': 'Setup',
     'Lo que hace falta para empezar a facturar, en orden': 'What is needed to start invoicing, in order',
-    'Cada paso dice si está hecho y dónde se hace. Cuando estén todos, ya puedes encender Facturas.': 'Each step says whether it is done and where it is done. When they are all done, you can switch Invoices on.',
-    'Hecho': 'Done', 'Pendiente': 'Pending', 'Dónde': 'Where', 'Ir': 'Go',
+    'Cada paso dice si está hecho y dónde se hace. Cuando estén todos, el ERP ya puede facturar.': 'Each step says whether it is done and where it is done. When they are all done, the ERP can invoice.',
+    'Hecho': 'Done', 'Pendiente~paso': 'Pending', 'Dónde': 'Where', 'Ir': 'Go',
     'Sociedad emisora: razón social, domicilio, NPWP y prefijo de la serie': 'Issuing company: legal name, address, NPWP and invoice series prefix',
     'Impuesto que se aplica a las reservas': 'Tax applied to bookings',
     'Precio con el impuesto dentro o fuera': 'Price with tax included or added',
@@ -24,10 +24,10 @@
     'Encender el módulo Operaciones': 'Switch on the Operations module', 'Encender el módulo Recibos': 'Switch on the Receipts module',
     'Los precios de la tarifa': 'Rate prices', 'Llevan el impuesto DENTRO (el cliente paga el precio de la tarifa)': 'Include the tax (the customer pays the rate price)',
     'Llevan el impuesto FUERA (se suma al precio de la tarifa)': 'Exclude the tax (it is added to the rate price)',
-            'Sin decidir': 'Not decided', 'Guardar': 'Save', 'Guardando…': 'Saving…', 'Guardado.': 'Saved.', 'Sin cambios: ya valía eso.': 'No change: it already had that value.',
+    'Sin decidir': 'Not decided', 'Guardar': 'Save', 'Guardando…': 'Saving…', 'Guardado.': 'Saved.', 'Sin cambios: ya valía eso.': 'No change: it already had that value.',
     'No se guardó': 'Not saved', 'Elige una opción antes de guardar.': 'Choose an option before saving.',
     'Solo el super admin puede cambiar estos ajustes.': 'Only the super admin can change these settings.',
-    'Listo: ya puedes encender Facturas.': 'Ready: you can switch Invoices on.',
+    'Listo: todo en marcha, el ERP ya factura.': 'Ready: everything is set up, the ERP can invoice.',
     'Faltan %n pasos.': '%n steps left.', 'Falta 1 paso.': '1 step left.',
     'Trayendo la puesta en marcha…': 'Loading the setup…',
     'No se ha podido mirar la puesta en marcha': 'The setup could not be checked',
@@ -44,14 +44,17 @@
     'Sí: es PKP y cobra PPN': 'Yes: it is PKP and charges VAT (PPN)', 'No: no es PKP (las reservas van sin PPN)': 'No: it is not PKP (bookings carry no VAT)',
     'Motivo del cambio': 'Reason for the change', 'Obligatorio: queda en el registro de cambios (p. ej. lo que confirmó el gestor y cuándo).': 'Required: it is kept in the change log (e.g. what the accountant confirmed and when).',
     'Escribe el motivo del cambio (al menos 3 letras).': 'Write the reason for the change (at least 3 letters).',
-    'La base solo admite sí o no.': 'The database only accepts yes or no.', 'Código': 'Code'
+    'La base solo admite sí o no.': 'The database only accepts yes or no.', 'Código': 'Code',
+    'Con el precio con impuesto DENTRO, esta base todavía no sabe repartir el precio por día: pídelo al estudio.': 'With the tax INCLUDED in the price, this database cannot yet split the price per day: ask the studio.',
+    'Falta configurar el impuesto de las reservas.': 'The booking tax is not set up yet.',
+    'No hay tarifas para cotizar: revisa Flota y tarifas.': 'There are no rates to quote: check Fleet and rates.'
   };
   // Indonesio (owner, 11-oct-2026: bbm en indonesio e inglés). Misma clave en español que EN_PM; se fusiona en window.LW_ID solo donde existe (bbm).
   var ID_PM = {
     'Puesta en marcha': 'Pengaturan awal',
     'Lo que hace falta para empezar a facturar, en orden': 'Yang perlu disiapkan sebelum mulai membuat invoice, berurutan',
-    'Cada paso dice si está hecho y dónde se hace. Cuando estén todos, ya puedes encender Facturas.': 'Setiap langkah menunjukkan apakah sudah selesai dan di mana mengerjakannya. Jika semuanya selesai, modul Invoice bisa diaktifkan.',
-    'Hecho': 'Selesai', 'Pendiente': 'Belum', 'Dónde': 'Di mana', 'Ir': 'Lihat',
+    'Cada paso dice si está hecho y dónde se hace. Cuando estén todos, el ERP ya puede facturar.': 'Setiap langkah menunjukkan apakah sudah selesai dan di mana mengerjakannya. Jika semuanya selesai, ERP sudah bisa membuat invoice.',
+    'Hecho': 'Selesai', 'Pendiente~paso': 'Belum', 'Dónde': 'Di mana', 'Ir': 'Lihat',
     'Sociedad emisora: razón social, domicilio, NPWP y prefijo de la serie': 'Perusahaan penerbit invoice: nama badan usaha, alamat, NPWP, dan prefiks nomor invoice',
     'Impuesto que se aplica a las reservas': 'Pajak yang dikenakan pada booking',
     'Precio con el impuesto dentro o fuera': 'Harga sudah termasuk pajak atau belum',
@@ -61,10 +64,10 @@
     'Los precios de la tarifa': 'Harga di tarif',
     'Llevan el impuesto DENTRO (el cliente paga el precio de la tarifa)': 'SUDAH termasuk pajak (pelanggan membayar sesuai harga tarif)',
     'Llevan el impuesto FUERA (se suma al precio de la tarifa)': 'BELUM termasuk pajak (pajak ditambahkan ke harga tarif)',
-            'Sin decidir': 'Belum ditentukan', 'Guardar': 'Simpan', 'Guardando…': 'Menyimpan…', 'Guardado.': 'Tersimpan.', 'Sin cambios: ya valía eso.': 'Tidak ada perubahan: nilainya sudah sama.',
+    'Sin decidir': 'Belum ditentukan', 'Guardar': 'Simpan', 'Guardando…': 'Menyimpan…', 'Guardado.': 'Tersimpan.', 'Sin cambios: ya valía eso.': 'Tidak ada perubahan: nilainya sudah sama.',
     'No se guardó': 'Tidak tersimpan', 'Elige una opción antes de guardar.': 'Pilih salah satu sebelum menyimpan.',
     'Solo el super admin puede cambiar estos ajustes.': 'Hanya super admin yang dapat mengubah pengaturan ini.',
-    'Listo: ya puedes encender Facturas.': 'Siap: modul Invoice sudah bisa diaktifkan.',
+    'Listo: todo en marcha, el ERP ya factura.': 'Siap: semua sudah berjalan, ERP sudah bisa membuat invoice.',
     'Faltan %n pasos.': 'Masih %n langkah lagi.', 'Falta 1 paso.': 'Masih 1 langkah lagi.',
     'Trayendo la puesta en marcha…': 'Memuat pengaturan awal…',
     'No se ha podido mirar la puesta en marcha': 'Pengaturan awal tidak dapat diperiksa',
@@ -80,7 +83,15 @@
     'Sí: es PKP y cobra PPN': 'Ya: PKP dan memungut PPN', 'No: no es PKP (las reservas van sin PPN)': 'Tidak: bukan PKP (booking tanpa PPN)',
     'Motivo del cambio': 'Alasan perubahan', 'Obligatorio: queda en el registro de cambios (p. ej. lo que confirmó el gestor y cuándo).': 'Wajib diisi: tercatat di riwayat perubahan (misalnya apa yang dikonfirmasi konsultan pajak dan kapan).',
     'Escribe el motivo del cambio (al menos 3 letras).': 'Tulis alasan perubahan (minimal 3 huruf).',
-    'La base solo admite sí o no.': 'Database hanya menerima ya atau tidak.', 'Código': 'Kode'
+    'La base solo admite sí o no.': 'Database hanya menerima ya atau tidak.', 'Código': 'Kode',
+    'Con el precio con impuesto DENTRO, esta base todavía no sabe repartir el precio por día: pídelo al estudio.': 'Dengan harga SUDAH termasuk pajak, database ini belum bisa membagi harga per hari: minta ke studio.',
+    'Falta configurar el impuesto de las reservas.': 'Pajak booking belum diatur.',
+    'No hay tarifas para cotizar: revisa Flota y tarifas.': 'Belum ada tarif untuk dihitung: periksa Armada dan tarif.'
+  };
+  var HINTS = {
+    reparto_con_impuesto_dentro: 'Con el precio con impuesto DENTRO, esta base todavía no sabe repartir el precio por día: pídelo al estudio.',
+    impuesto_no_configurado: 'Falta configurar el impuesto de las reservas.',
+    sin_tarifas: 'No hay tarifas para cotizar: revisa Flota y tarifas.'
   };
   var TITULOS = {
     sociedad: 'Sociedad emisora: razón social, domicilio, NPWP y prefijo de la serie',
@@ -125,7 +136,7 @@
   function cont() { return document.getElementById('lw-aj-puesta'); }
   function chip(hecho) {
     return h('span', { class: 'shrink-0 px-3 py-1 rounded-full font-label-md text-[13px] ' + (hecho ? 'bg-primary-container text-on-primary' : 'bg-error-container text-on-error-container'),
-                       'data-pm-hecho': hecho ? '1' : '0', text: T(hecho ? 'Hecho' : 'Pendiente') });
+                       'data-pm-hecho': hecho ? '1' : '0', text: T(hecho ? 'Hecho' : 'Pendiente~paso') });
   }
   function donde(d) {
     if (!d) return null;
@@ -158,14 +169,14 @@
     var faltan = pasos.filter(function (p) { return p.hecho !== true; }).length;
     var listo = listoBase === true;   // «listo» lo decide la base; la cuenta de abajo solo informa
     c.appendChild(h('p', { class: 'px-8 py-4 font-body-md text-body-md ' + (listo ? 'text-deep-lagoon font-semibold' : 'text-on-surface'), role: 'status', 'data-pm': 'resumen',
-                           text: listo ? T('Listo: ya puedes encender Facturas.') : (faltan === 1 ? T('Falta 1 paso.') : T('Faltan %n pasos.', { n: Math.max(faltan, 1) })) }));
+                           text: listo ? T('Listo: todo en marcha, el ERP ya factura.') : (faltan === 1 ? T('Falta 1 paso.') : T('Faltan %n pasos.', { n: Math.max(faltan, 1) })) }));
     var ol = h('ol', { class: 'flex flex-col list-none', 'data-pm': 'pasos' });
     pasos.forEach(function (p, i) {
       var clave = String(p.clave || '');
       var texto = h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
         h('span', { class: 'font-label-md text-label-md text-on-surface', text: (i + 1) + '. ' + (TITULOS[clave] ? T(TITULOS[clave]) : clave) }),
         p.detalle ? h('span', { class: 'font-body-sm text-body-sm text-outline break-words', text: String(p.detalle) }) : null,
-        p.hint ? h('span', { class: 'font-body-sm text-body-sm text-error break-words', 'data-pm-hint': clave, text: T('Código') + ': ' + String(p.hint) }) : null,
+        p.hint ? h('span', { class: 'font-body-sm text-body-sm text-error break-words', 'data-pm-hint': clave, text: HINTS[p.hint] ? T(HINTS[p.hint]) : T('Código') + ': ' + String(p.hint) }) : null,
         donde(p.donde)]);
       var li = h('li', { class: 'px-8 py-4 flex flex-col gap-2 border-b border-outline-variant/30', 'data-pm-paso': clave }, [
         h('div', { class: 'flex items-start justify-between gap-4' }, [texto, chip(p.hecho === true)])]);
@@ -196,6 +207,7 @@
   }
   function carga() {
     var c = cont(); if (!c) return Promise.resolve();
+    if (!sb) { errorLectura(null); return Promise.resolve(); }   // sin cliente (sin sesión): Reintentar vuelve a decirlo, no lanza fuera de la promesa (revisor, BAJA)
     // puesta_en_marcha_estado NO es una *_datos (canon 7.r: cotiza de verdad con funciones internas, no puede ser de erp_lector): va por sb.rpc,
     // porque lwDatos solo admite *_datos. Misma forma de respuesta.
     var estado = Promise.resolve(sb.rpc('puesta_en_marcha_estado')).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; },
@@ -230,6 +242,7 @@
         return;
       }
       var cambiado = !!(r.data && r.data.cambiado);
+      if (mot) mot.value = '';
       carga().then(function () {   // se vuelve a leer: el «hecho» del paso lo decide la base, no este clic
         var e2 = document.querySelector('[data-pm-estado="' + clave + '"]');
         if (e2) { e2.className = 'font-body-sm text-body-sm text-on-surface'; e2.textContent = T(cambiado ? 'Guardado.' : 'Sin cambios: ya valía eso.'); }

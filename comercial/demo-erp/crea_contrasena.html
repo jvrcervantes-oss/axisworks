@@ -86,9 +86,35 @@
     'No se ha podido guardar la contraseña. Inténtalo de nuevo.': 'The password could not be saved. Try again.',
     'No se ha podido comprobar el enlace. Comprueba tu conexión y vuelve a abrirlo desde el correo.': 'The link could not be checked. Check your connection and open it again from the email.'
   };
+  // Indonesio (instancias con "idiomas": ["id", "en"], hoy bbm; owner 11-oct-2026). Misma clave en español; solo si la instancia trae LW_ID.
+  var ID_CP = {
+    'Crea tu contraseña': 'Buat kata sandi',
+    'Comprobando tu enlace…': 'Memeriksa tautan Anda…',
+    'Contraseña nueva (mínimo 10 caracteres)': 'Kata sandi baru (minimal 10 karakter)',
+    'Repítela': 'Ulangi kata sandi',
+    'Guardar y entrar': 'Simpan dan masuk',
+    'Elige la contraseña con la que entrarás en el ERP:': 'Pilih kata sandi untuk masuk ke ERP:',
+    'El enlace ha caducado, ya se ha usado o no es válido. Pide al administrador que te reenvíe la invitación.': 'Tautan sudah kedaluwarsa, sudah dipakai, atau tidak valid. Minta admin mengirim ulang undangan.',
+    'Necesita al menos 10 caracteres.': 'Minimal 10 karakter.',
+    'Las dos contraseñas no coinciden.': 'Kedua kata sandi tidak sama.',
+    'Guardando…': 'Menyimpan…',
+    'Contraseña guardada. Ya puedes entrar con tu correo y tu contraseña.': 'Kata sandi tersimpan. Sekarang Anda bisa masuk dengan email dan kata sandi.',
+    'Entrar': 'Masuk',
+    'Esa contraseña es demasiado débil. Prueba con otra más larga o menos habitual.': 'Kata sandi terlalu lemah. Coba yang lebih panjang atau tidak umum.',
+    'Elige una contraseña distinta de la que ya tienes.': 'Pilih kata sandi yang berbeda dari yang sekarang.',
+    'No se ha podido guardar la contraseña. Inténtalo de nuevo.': 'Kata sandi gagal disimpan. Coba lagi.',
+    'No se ha podido comprobar el enlace. Comprueba tu conexión y vuelve a abrirlo desde el correo.': 'Tautan tidak dapat diperiksa. Periksa koneksi Anda lalu buka lagi dari email.'
+  };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
     Object.keys(EN_CP).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_CP[k]; });
   }
+  if (window.LW_ID && typeof window.LW_ID === 'object') {
+    Object.keys(ID_CP).forEach(function (k) { if (!(k in window.LW_ID)) window.LW_ID[k] = ID_CP[k]; });
+  }
+  /* Los dos idiomas entre los que alterna el botón: los de la instancia si los declara (bbm: indonesio y inglés, sin español), si no español e inglés. */
+  var IDIOMAS = Array.isArray(window.AXW_IDIOMAS) && window.AXW_IDIOMAS.length === 2 ? window.AXW_IDIOMAS : ['es', 'en'];
+  var NOMBRE_IDIOMA = { es: 'Español', en: 'English', id: 'Bahasa Indonesia' };
+  function otroIdioma() { return window.LW_IDIOMA === IDIOMAS[1] ? IDIOMAS[0] : IDIOMAS[1]; }
   var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
   var q = function (n) { return document.querySelector('[data-cp="' + n + '"]'); };
   var raiz = q('raiz'), intro = q('intro'), form = q('form'), msg = q('msg'), p1 = q('p1'), p2 = q('p2');
@@ -97,12 +123,12 @@
   var estado = { intro: 'Comprobando tu enlace…', email: '', msg: '', ok: false, enlaceMalo: false, listo: false };
 
   function pinta() {
-    document.documentElement.lang = window.LW_IDIOMA === 'en' ? 'en' : 'es';
+    document.documentElement.lang = IDIOMAS.indexOf(window.LW_IDIOMA) >= 0 ? window.LW_IDIOMA : IDIOMAS[0];
     raiz.querySelectorAll('[data-cp-t]').forEach(function (el) { el.textContent = T(el.getAttribute('data-cp-t')); });
     intro.textContent = T(estado.intro) + (estado.email ? ' ' + estado.email : '');
     msg.textContent = estado.msg ? T(estado.msg) : '';
     msg.className = 'msg ' + (estado.ok ? 'ok' : 'err');
-    botonIdioma.textContent = window.LW_IDIOMA === 'en' ? 'Español' : 'English';
+    botonIdioma.textContent = NOMBRE_IDIOMA[otroIdioma()];
     var t = document.title.split(' · ');
     document.title = t[0] + ' · ' + T('Crea tu contraseña');
   }
@@ -115,7 +141,7 @@
     pinta();
   }
   botonIdioma.addEventListener('click', function () {
-    if (typeof window.lwSetIdioma === 'function') window.lwSetIdioma(window.LW_IDIOMA === 'en' ? 'es' : 'en');
+    if (typeof window.lwSetIdioma === 'function') window.lwSetIdioma(otroIdioma());
     pinta();
   });
   pinta();

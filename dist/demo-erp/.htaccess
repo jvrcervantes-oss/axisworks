@@ -4,7 +4,24 @@
   RewriteEngine On
   RewriteCond %{HTTP_HOST} !^demo\.axisworks\.studio$ [NC]
   RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=302,L]
-  RewriteRule ^$ /intranet/v4/home/ [R=302,L]
+</IfModule>
+# Legado: lo de antes no muere. 302 hasta verificar el mapa en producción; luego 301.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+  RewriteRule ^intranet(?:/index\.html)?/?$ / [R=302,L,QSA]
+  RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+  RewriteRule ^intranet/v4(?:/index\.html)?/?$ / [R=302,L,QSA]
+  RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+  RewriteRule ^intranet/v4/entrar(?:/.*)?$ /entrar/ [R=302,L,QSA]
+  RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+  RewriteRule ^intranet/v4/(ajustes|asistente|asistente\-correos|bancos|comision\-admin|comisiones|compradores|comunicacion|condiciones|contratos|contratos\-inversor|creatividades|cuentas|documentacion|emitir|equipos\-venta|facturas|finanzas|flujo|gastos|generador\-contratos|home|leads|modelos|obra|operaciones|plantillas|productos|proyectos|proyectos\-cuentas|recibos|reparto|reservas|sociedades|soporte|textos\-contrato|usuarios|vencimientos|assets)(?:/(.*))?$ /$1/$2 [R=302,L,QSA]
+  RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+  RewriteRule ^intranet/(facturas|vencimientos)/?(?:index\.html)?$ /$1/ [R=302,L,QSA]
+  RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+  RewriteRule ^intranet/(leads|obra|creatividades|dossier|facturas|vencimientos)(?:/(.*))?$ /clasico/$1/$2 [R=302,L,QSA]
+  RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+  RewriteRule ^intranet/(ajustes|asistente|asistente\-correos|bancos|comision\-admin|comisiones|compradores|comunicacion|condiciones|contratos|contratos\-inversor|cuentas|documentacion|emitir|equipos\-venta|finanzas|flujo|gastos|generador\-contratos|home|modelos|operaciones|plantillas|productos|proyectos|proyectos\-cuentas|recibos|reparto|reservas|sociedades|soporte|textos\-contrato|usuarios)(?:/(.*))?$ /$1/$2 [R=302,L,QSA]
 </IfModule>
 <IfModule mod_headers.c>
   Header always set X-Robots-Tag "noindex, nofollow"
@@ -13,7 +30,7 @@
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'none'; object-src 'none'"
   <FilesMatch "\.(html|js|css|json)$">
     Header unset Expires
     Header unset Cache-Control

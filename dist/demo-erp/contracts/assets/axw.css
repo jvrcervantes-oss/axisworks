@@ -29,9 +29,9 @@
   --font-body:    'Jost', sans-serif;
 
   
-  --brand-mark:      url(brand/tiki-totem.png);        
-  --brand-logo:      url(brand/axw-logo-v3.png);    
-  --brand-logo-dark: url(brand/axw-logo-v3-dark.png); 
+  --brand-mark:      none;        
+  --brand-logo:      none;    
+  --brand-logo-dark: none; 
 
   
   --grain-opacity: .14;   

@@ -202,7 +202,7 @@
       '.axt-carga{position:fixed;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;animation:axtgira .8s linear infinite;opacity:0;transition:opacity .3s}',
       '.axt.cargando .axt-carga{opacity:1}',
       '@keyframes axtgira{to{transform:rotate(360deg)}}',
-      'body.axt-activo nav[aria-label="Leave the demo"]{opacity:0;pointer-events:none}',
+      'body.axt-activo [data-demo="barra"]{opacity:0;pointer-events:none}',
       '@media (max-width:560px){.axt-tarjeta,.axt-tarjeta.hero{width:calc(100vw - 32px);padding:20px}.hero .axt-h{font-size:30px}.axt-tecla{display:none}}',
       '@media (prefers-reduced-motion:reduce){.axt-capa,.axt.on .axt-capa{transform:none}.axt-tarjeta{filter:none!important}.axt-l{transform:none!important;filter:none!important}}',
       '@media (prefers-reduced-transparency:reduce){.axt-tarjeta{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}}'
