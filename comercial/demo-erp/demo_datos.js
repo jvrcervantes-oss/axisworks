@@ -746,6 +746,10 @@
     aplic_cero: { es: 'el importe que se aplica a la factura % tiene que ser mayor que cero', en: 'The amount applied to invoice % has to be greater than zero.' },
     aplic_pendiente: { es: 'la factura % solo tiene % pendiente de cobro y este recibí le aplica %', en: 'Invoice % only has % outstanding and this receipt applies %.' },
     borra_numerada: { es: '% no se puede borrar: una factura o un recibí numerados se ANULAN (borrarlos deja un hueco en la numeración)', en: '% cannot be deleted: numbered invoices and receipts are VOIDED (deleting them would leave a gap in the numbering).' },
+    ya_anulado: { es: 'El documento % ya está anulado', en: 'Document % is already void.' },
+    no_anulado: { es: 'El documento % no está anulado', en: 'Document % is not void.' },
+    borra_proforma: { es: 'No puedes borrar esta proforma (enviada, con cobros aplicados, o sin permiso). Anúlala.', en: 'This pro forma cannot be deleted (it was sent or has payments). Void it instead.' },
+    anulado_no_envia: { es: 'El documento % está anulado: no se marca como enviado', en: 'Document % is void: it cannot be marked as sent.' },
     operacion_no_existe: { es: 'esa operacion no existe', en: 'That deal does not exist.' },
     operacion_pagada: { es: 'Esta operacion ya tiene una comision pagada (devengo %): no se puede borrar automaticamente, resuelvelo a mano', en: 'This deal already has a paid commission (%): it cannot be deleted automatically, it has to be resolved by hand.' },
     contrato_no_existe: { es: 'Ese contrato ya no existe', en: 'That contract no longer exists.' },
@@ -1328,6 +1332,34 @@
         }
         inserta(F, 'recibi_aplicaciones', aps.map(function (x) { return { recibi_id: rec.id, factura_id: x.factura_id, importe_aplicado: Number(x.importe), creado_por: SESION_EMAIL }; }));
         return { id: rec.id, numero: rec.numero };
+      },
+
+      /* Anular, reactivar, borrar (solo proformas) y marcar enviado — datos.js 1747-1781; SQL: 20260926085354_frontera_facturas_rpc.sql,
+         20261008202000 (factura_borra/factura_reactiva) y 20261010231825 (factura_marca_enviada). La demo es super admin. */
+      factura_anula: function (F, a) {
+        var f = porId(F, 'facturas', a.p_id);
+        if (!f) falla('doc_no_existe', [], 'P0002');
+        if (f.anulada) falla('ya_anulado', [f.numero], '22023');
+        actualiza(F, 'facturas', [f], { anulada: true });
+      },
+      factura_reactiva: function (F, a) {
+        var f = porId(F, 'facturas', a.p_id);
+        if (!f) falla('doc_no_existe', [], 'P0002');
+        if (!f.anulada) falla('no_anulado', [f.numero], '22023');
+        actualiza(F, 'facturas', [f], { anulada: false });
+      },
+      factura_borra: function (F, a) {
+        var f = porId(F, 'facturas', a.p_id);
+        if (!f) falla('doc_no_existe', [], 'P0002');
+        if (f.tipo !== 'proforma') falla('borra_numerada', [f.numero], '42501');
+        if (f.enviada) falla('borra_proforma', [], '42501');
+        borra(F, 'facturas', [f]);
+      },
+      factura_marca_enviada: function (F, a) {
+        var f = porId(F, 'facturas', a.p_id);
+        if (!f) falla('doc_no_existe', [], 'P0002');
+        if (f.anulada) falla('anulado_no_envia', [f.numero], '22023');
+        if (!f.enviada) actualiza(F, 'facturas', [f], { enviada: true, fecha_envio: dia(0) });
       },
 
       /* «Borrar operación» (datos.js borrarOperacionV4): solo la cadena de ESE contrato. Lo numerado se ANULA (la
