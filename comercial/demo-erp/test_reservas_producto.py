@@ -135,7 +135,7 @@ mira('no usa el esc() de Lawang (no escapa la comilla simple) ni lwCajonHtml / H
 mira('ningun console.log', 'console.log' not in CODIGO)
 mira('no nombra claves de servicio', not re.search(r'service_role|sb_secret_', JS + MARCADO))
 mira('el navegador no escribe ni lee tablas: ni .from( ni insert/update/upsert/delete', not re.search(r'\.from\(|\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.storage\b', CODIGO))
-PERMITIDAS = {'reservas_producto_datos', 'producto_flota_datos', 'reserva_producto_pagos_datos', 'reserva_producto_cotiza',
+PERMITIDAS = {'reservas_producto_datos', 'producto_flota_datos', 'reserva_producto_pagos_datos', 'clientes_datos', 'reserva_producto_cotiza',
               'reserva_producto_crea', 'reserva_producto_estado', 'reserva_cancela_con_devolucion', 'reserva_producto_cambia_unidad'}
 llamadas = set(re.findall(r"\bllama\('([a-z_]+)'", CODIGO))
 literales = set(re.findall(r"(?:SB\.rpc|window\.lwDatos)\('([a-z_]+)'", CODIGO))
@@ -155,7 +155,12 @@ mira('las unicas claves que se anaden a p_datos son las que la base lee (' + ', 
 mira('cotizar manda solo producto y fechas (la entrega por km del equipo no existe: la base solo la cotiza al bot)', "llama('reserva_producto_cotiza', { p_producto_id: p.id, p_desde: W.desde, p_hasta: W.hasta })" in CODIGO
      and CODIGO.count("'reserva_producto_cotiza'") == 2)
 mira('el alta lleva clave (equipo-<aleatorio>, cabe en la regex de la base) y clave_repetida o red se tratan como «puede estar creada»', "return 'equipo-' + r;" in CODIGO
-     and "if (c.tipo === 'red' || c.hint === 'clave_repetida') return asComprueba();" in CODIGO)
+     and "if (c.tipo === 'red' || c.hint === 'clave_repetida') return asComprueba(c.hint === 'clave_repetida');" in CODIGO)
+mira('revisor 835f420: clave_repetida nunca acaba en «no se creo», sin reloj del PC, lista recortada = no se asegura, y no se cierra con un envio en vuelo',
+     'if (!lista || r.data.siguiente || A.yaExiste) {' in CODIGO and 'creado_en' not in CODIGO[CODIGO.index('function asComprueba'):CODIGO.index('function asHecha')]
+     and 'if (!A || A.enviando || A.comprobando) return;' in CODIGO)
+mira('revisor 835f420: el cliente con ficha se conserva donde clientes_datos responde (manda client_id, no copia el contacto)',
+     'if (W.clienteId) datos.client_id = W.clienteId;' in CODIGO and "else { datos.contacto_nombre = W.nombre.trim(); datos.contacto_telefono = W.telefono; }" in CODIGO)
 mira('sin respuesta: antes de dejar repetir se busca la reserva por producto, fechas y telefono', 'function asComprueba' in CODIGO and 'mismoTel(y.contacto_telefono, W.telefono)' in CODIGO)
 mira('el total que se dice tras crear es el de la base, y se avisa si no es el del resumen', "Number(A.cotTotal.total) !== Number(d.precio_total)" in CODIGO)
 mira('el borrador en sessionStorage va siempre en try/catch', CODIGO.count('window.sessionStorage') == 3 and CODIGO.count('try { ') >= 6)

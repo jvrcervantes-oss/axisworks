@@ -57,6 +57,7 @@ async function servidor(b, nombre, a) {
   if (o.moduloApagado && nombre.endsWith('_datos')) return err('42501', 'Modulo no activo', null);
   switch (nombre) {
     case 'reservas_producto_datos': {
+      if (o.buscaFalla && !a.p_desde) return { data: null, error: { message: 'Failed to fetch' } };
       let l = b.reservas;
       if (a.p_estado) l = l.filter(r => r.estado === a.p_estado);
       if (a.p_desde) l = l.filter(r => r.hasta > a.p_desde);
@@ -75,6 +76,7 @@ async function servidor(b, nombre, a) {
       if (o.creaSinRed) return { data: null, error: { message: 'Failed to fetch' } };
       if (o.creaFalla) return err('23P01', 'No queda ninguna unidad libre de ese producto en esas fechas', 'sin_disponibilidad');
       if (o.creaReglaSinHint) return err('22023', 'El campo notas es demasiado largo');
+      if (o.creaClaveRepetida) return err('23505', 'Esa clave ya tiene una reserva en bloqueo', 'clave_repetida');
       const pd = a.p_datos;
       if (pd.clave && b.reservas.some(r => r.clave === pd.clave && r.estado === 'bloqueo')) return err('23505', 'Esa clave ya tiene una reserva en bloqueo', 'clave_repetida');
       const id = 'rn' + (++b.seq);
@@ -386,7 +388,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const { base, p, ctx } = await abre({ base: { creaSinRed: true } });
     await hastaResumen(p); await confirma(p);
     await espera(p, () => document.querySelector('[data-rp="as-error-envio"]') && !/miramos/.test(document.querySelector('[data-rp="as-error-envio"]').textContent));
-    ok('E12 · no se creo: se mira la lista, se dice que NO aparece y el boton vuelve a estar disponible', (await txt(p, '[data-rp="as-error-envio"]')).includes('NO aparece') && !(await p.$eval('[data-accion="rp-modal-as-confirma"]', b => b.disabled)));
+    ok('E12 · no se creo: se mira la lista (tras esperar), se dice que no aparece y el boton vuelve a estar disponible', (await txt(p, '[data-rp="as-error-envio"]')).includes('no aparece en la lista') && !(await p.$eval('[data-accion="rp-modal-as-confirma"]', b => b.disabled)));
     base.o.creaSinRed = false;
     await p.click('[data-accion="rp-modal-as-confirma"]');
     await espera(p, () => document.querySelector('[data-rp="as-hecha"]'));
@@ -397,8 +399,44 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   {
     const { p, ctx } = await abre({ base: { creaSinId: true } });
     await hastaResumen(p); await confirma(p);
-    await espera(p, () => document.querySelector('[data-rp="as-hecha"]') || document.querySelector('[data-rp="as-error-envio"]'));
+    await espera(p, () => document.querySelector('[data-rp="as-hecha"]') || (document.querySelector('[data-rp="as-error-envio"]') && !/miramos/.test(document.querySelector('[data-rp="as-error-envio"]').textContent)));
     ok('si la base no devuelve la reserva creada no se da por creada a ciegas: se busca en la lista antes', (await dlg(p)).includes('sí se creó'));
+    await ctx.close();
+  }
+  {
+    // revisor 835f420: clave_repetida = la base dice que YA existe; si la lista no la ensena, nunca se dice «no se creo» ni se reactiva el envio
+    const { base, p, ctx } = await abre({ base: { creaClaveRepetida: true } });
+    await hastaResumen(p); await confirma(p);
+    ok('mientras se comprueba, Cerrar esta bloqueado (la respuesta no se pierde)', await p.$eval('[data-accion="rp-modal-as-cerrar"]', b => b.disabled));
+    await espera(p, () => document.querySelector('[data-rp="as-error-envio"]') && !/miramos/.test(document.querySelector('[data-rp="as-error-envio"]').textContent));
+    const ev = await txt(p, '[data-rp="as-error-envio"]');
+    ok('clave repetida sin encontrarla: dice que ya existe y ofrece comprobar, nunca reintentar', ev.includes('ya existe') && (await txt(p, '.rp-as-final')).includes('Comprobar de nuevo') && llamadas(base, 'reserva_producto_crea').length === 1, ev);
+    await ctx.close();
+  }
+  {
+    // revisor 835f420: donde clientes_datos responde, el cliente con ficha se elige y la reserva se enlaza a el (client_id), sin copiar el contacto
+    const { base, p, ctx } = await abre();
+    await hastaCliente(p);
+    await espera(p, () => document.querySelector('[data-as="cliente"]'));
+    ok('el selector de clientes pinta el nombre con etiquetas como texto', await p.$eval('[data-as="cliente"] option[value="c1"]', o => o.textContent) === 'Ana <b>Q</b>');
+    await p.selectOption('[data-as="cliente"]', 'c2');
+    ok('con ficha elegida no se piden telefono ni nombre', !(await p.$('[data-as="numero"]')));
+    await sig(p); await enPaso(p, 'entrega'); await sig(p); await enPaso(p, 'resumen');
+    ok('el resumen ensena el cliente de la ficha', (await dlg(p)).includes('Bob'));
+    await confirma(p); await espera(p, () => document.querySelector('[data-rp="as-hecha"]'));
+    const pd = llamadas(base, 'reserva_producto_crea')[0][1].p_datos;
+    ok('con ficha: manda client_id y NO contacto', pd.client_id === 'c2' && pd.contacto_nombre === undefined && pd.contacto_telefono === undefined, JSON.stringify(pd));
+    await ctx.close();
+  }
+  {
+    // sin lista de clientes (bbm con Facturas apagado) no hay selector y se sigue con el contacto; si la busqueda de duplicados falla, se dice
+    const { p, ctx } = await abre({ base: { clientesFalla: true, buscaFalla: true } });
+    await hastaCliente(p);
+    await p.fill('[data-as="numero"]', '081234567890'); await p.fill('[data-as="nombre"]', 'Dewi'); await sig(p);
+    await espera(p, () => document.querySelector('[data-rp="as-busqueda-fallo"]'));
+    ok('sin clientes_datos no hay selector de ficha', !(await p.$('[data-as="cliente"]')));
+    ok('si no se pudo buscar el telefono se dice y el segundo Siguiente sigue', (await txt(p, '[data-rp="as-busqueda-fallo"]')).includes('No se ha podido mirar'));
+    await sig(p); await enPaso(p, 'entrega');
     await ctx.close();
   }
   {
