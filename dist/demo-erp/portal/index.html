@@ -1,1 +1,39 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><title>Client portal · Demo</title><body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#F4F2EC;font:16px/1.6 system-ui,sans-serif;color:#15181C"><div style="max-width:30rem;padding:2rem"><h1 style="font-weight:500;color:#15181C">Client portal</h1><p>The client portal of the demo opens here in its next update. Meanwhile, the intranet shows every client's record with their contracts, invoices and payments.</p><p><a href="/home/" style="color:#15181C">Back to the intranet</a> · <a href="/" style="color:#15181C">Start</a></p></div></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Client portal · Demo</title>
+<link rel="icon" href="/favicon.png">
+
+<script src="/contracts/assets/roles.js?v=69ce43cb"></script>
+<script src="/contracts/assets/cierre.js?v=0fa19668"></script>
+<script src="/contracts/assets/instancia.js?v=670f9fcd"></script>
+<script src="/contracts/assets/version.js?v=f321ade8"></script>
+<script src="/contracts/assets/guard.js?v=46e77a74" data-herramienta="portal"></script>
+<link rel="stylesheet" href="/assets/tw-base.css?v=fe5e922a">
+<link rel="stylesheet" href="/flujo/flujo.css?v=c54a9ab3" data-axf-css>
+<link rel="stylesheet" href="/flujo/portal/portal.css?v=26844b26">
+<script src="/flujo/textos.js?v=ab891159" defer="defer"></script>
+<script src="/flujo/contrato_ejemplo.js?v=05c2da1e" defer="defer"></script>
+<script src="/flujo/nuevo-contrato.js?v=bf450e31" defer="defer"></script>
+<script src="/flujo/portal/portal.js?v=42ab788c" defer="defer"></script>
+</head>
+<body class="ptl">
+<a class="ptl-salto" href="#ptl-main">Skip to content</a>
+<header class="ptl-cab">
+  <div class="ptl-cab-in">
+    <div class="ptl-marca"><span class="ptl-marca-nom" data-ptl="marca"></span><span class="ptl-marca-sub" data-ptl="titulo"></span></div>
+    <div class="ptl-cab-der">
+      <label class="ptl-viendo" for="ptl-cliente"><span data-ptl="viendo"></span><select id="ptl-cliente"></select></label>
+      <a class="ptl-volver" href="/home/" data-ptl="volver"></a>
+    </div>
+  </div>
+  <p class="ptl-demo" data-ptl="demo"></p>
+</header>
+<nav class="ptl-tabs" aria-label="Portal sections"><div class="ptl-tabs-in" role="tablist"></div></nav>
+<main id="ptl-main" class="ptl-main" tabindex="-1"></main>
+<noscript><p class="ptl-main">This demo needs JavaScript.</p></noscript>
+</body>
+</html>
