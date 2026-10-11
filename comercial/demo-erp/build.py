@@ -2695,7 +2695,7 @@ AJUSTES_PUESTA_PANEL = (
     '<div class="px-8 pt-8 pb-4 flex flex-col gap-1 border-b border-outline-variant/40">\n'
     '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Puesta en marcha</span>\n'
     '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Lo que hace falta para empezar a facturar, en orden</h2>\n'
-    '<p class="font-body-sm text-body-sm text-outline" data-lwt>Cada paso dice si está hecho y dónde se hace. Cuando estén todos, ya puedes encender Facturas.</p>\n'
+    '<p class="font-body-sm text-body-sm text-outline" data-lwt>Cada paso dice si está hecho y dónde se hace. Cuando estén todos, el ERP ya puede facturar.</p>\n'
     '</div>\n'
     '<div id="lw-aj-puesta">\n'
     '<p class="px-8 py-6 font-body-md text-body-md text-on-surface-variant" data-lwt>Trayendo la puesta en marcha…</p>\n'
@@ -2754,6 +2754,169 @@ def ajustes_puesta_en_marcha():
     shutil.copy2(os.path.join(AQUI, 'ajustes_puesta.js'), os.path.join(v4, 'assets', 'ajustes_puesta.js'))
 
 
+# ── Idiomas de la interfaz por instancia (owner, 11-oct-2026: bbm «Añade Indonesio y quita español») ─────────────────────────────────────────
+# Una instancia con `"idiomas": ["id", "en"]` en erp/instancias.json sale en indonesio (el primero, por defecto) e inglés, y el español deja de
+# ofrecerse. Todo con reemplazos literales sobre la COPIA (DIST), nunca en Lawang; si Lawang cambia un trozo, el build para. Sin la clave, nada cambia.
+# Plan y revisión previa (Calidad + Diseño): encargo estudio_erp_plan_unico F8; lo no traducido cae a INGLÉS y se cuenta (LW_T_CAIDA_EN), lo que
+# quede en español se cuenta aparte (LW_T_ESPANOL) para que la prueba pueda ponerse roja.
+IDIOMAS_CONOCIDOS = (('id', 'en'),)
+# Palabras que en indonesio se escriben igual que en español (Diseño, 12-oct): las únicas traducciones que pueden ser iguales a su clave.
+IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis', 'Panel', 'Bot')
+# Lo que hay que tocar en el front copiado: (fichero en DIST, trozo de Lawang, sustituto). Cada trozo tiene que aparecer EXACTAMENTE una vez.
+IDIOMAS_PARCHES = (
+    ('contracts/assets/idioma.js', "  window.LW_IDIOMA = (v === 'en') ? 'en' : 'es';",
+     "  window.AXW_IDIOMAS = __AXW_IDIOMAS__;\n  window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(v) >= 0) ? v : window.AXW_IDIOMAS[0];"),
+    ('contracts/assets/idioma.js', "    window.LW_IDIOMA = (idioma === 'en') ? 'en' : 'es';",
+     "    window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(idioma) >= 0) ? idioma : window.AXW_IDIOMAS[0];"),
+    # el par de botones de la barra lateral se encuentra por su TEXTO («ES»/«EN»): el «ES» pasa a ser «ID» y cada botón dice su idioma en su idioma
+    ('intranet/v4/assets/nav.js', "      if (t !== 'ES' && t !== 'EN') return;\n      var destino = t.toLowerCase();",
+     "      if (t === 'ES' && window.AXW_IDIOMAS) { t = window.AXW_IDIOMAS[0].toUpperCase(); b.textContent = t; }\n"
+     "      if (t !== 'ES' && t !== 'EN' && t !== 'ID') return;\n      var destino = t.toLowerCase();\n"
+     "      b.title = { id: 'Bahasa Indonesia', en: 'English', es: 'Español' }[destino] || t; b.setAttribute('aria-label', b.title);"),
+    ('contracts/assets/topbar.js', "function tb(k) { return (TB_T[k] && TB_T[k][window.LW_IDIOMA])",
+     "var TB_ID = { cuentaTitle: 'Akun dan notifikasi Anda', cerrarSesion: 'Keluar', notificaciones: 'Notifikasi', nadaNuevo: 'Belum ada yang baru.', cargando: 'Memuat…', rolSuperAdmin: 'Super admin',\n"
+     "  rolAdmin: 'Admin', rolAgente: 'Agen', hace: '', minAgo: ' menit lalu', hAgo: ' jam lalu', ayer: 'kemarin', volverIntranet: '← Beranda' };\n"
+     "function tb(k) { if (window.LW_IDIOMA === 'id') { if (Object.prototype.hasOwnProperty.call(TB_ID, k)) return TB_ID[k]; if (TB_T[k] && TB_T[k].en != null) return TB_T[k].en; }"
+     " return (TB_T[k] && TB_T[k][window.LW_IDIOMA])"),
+    ('contracts/assets/topbar.js', "  var otro = window.LW_IDIOMA === 'en' ? 'es' : 'en';",
+     "  var otro = window.LW_IDIOMA === 'en' ? (window.AXW_IDIOMAS ? window.AXW_IDIOMAS[0] : 'es') : 'en';"),
+    ('contracts/assets/topbar.js', "'<span>' + (otro === 'en' ? 'English' : 'Español') + '</span>';",
+     "'<span>' + (otro === 'en' ? 'English' : otro === 'id' ? 'Bahasa Indonesia' : 'Español') + '</span>';"),
+    ('contracts/assets/topbar.js', "  boton.title = otro === 'en' ? 'Switch interface to English' : 'Cambiar la interfaz a español';",
+     "  boton.title = otro === 'en' ? 'Switch interface to English' : otro === 'id' ? 'Ganti bahasa ke Bahasa Indonesia' : 'Cambiar la interfaz a español';"),
+    ('contracts/assets/version.js', "          boton: 'Reload' }\n  };",
+     "          boton: 'Reload' }\n  };\n"
+     "  TEXTOS.id = { msg: 'Ada versi baru halaman ini. Muat ulang untuk melanjutkan (Ctrl/Cmd+Shift+R).',\n"
+     "               pierde: 'Simpan atau salin dulu pekerjaan yang belum selesai: yang belum tersimpan akan hilang saat dimuat ulang.', boton: 'Muat ulang' };"),
+    ('contracts/assets/version.js', "    var idiomas = bilingue ? ['es', 'en'] : [idioma()];",
+     "    var idiomas = bilingue ? (raiz.AXW_IDIOMAS || ['es', 'en']) : [idioma()];"),
+    ('intranet/v4/assets/datos.js', "    var l = window.LW_IDIOMA === 'en' ? 'en' : 'es';\n    return o[l] || o.es || o.en || o.id || '';",
+     "    var l = window.LW_IDIOMA || 'es';\n    return o[l] || (l === 'id' && o.en) || o.es || o.en || o.id || '';"),
+    ('intranet/v4/assets/mascota.js', "(window.LW_IDIOMA === 'en' ? 'EN' : 'ES')", "String(window.LW_IDIOMA || 'es').toUpperCase()"),
+    # la puerta: la pregunta del pie no llevaba marca de idioma (lo cazó la prueba de las páginas de entrada, 12-oct)
+    ('intranet/index.html', '<p class="pie">¿Eres cliente? <a href="/portal/"', '<p class="pie"><span data-lwt>¿Eres cliente?</span> <a href="/portal/"'),
+)
+# Fechas y números escritos a mano en español: 'es-ES' → el locale del idioma elegido. Un 'es-ES' usado como CLAVE de objeto no se puede envolver: para.
+ES_ES_ENVUELTO = {"'": "(window.LW_IDIOMA === 'id' ? 'id-ID' : 'es-ES')", '"': '(window.LW_IDIOMA === "id" ? "id-ID" : "es-ES")'}
+# Los 'es-ES' que NO son de interfaz y se quedan como están (revisión, 12-oct): cambiarlos con el idioma de quien mira cambiaría un dato, no un rótulo.
+ES_ES_FIJOS = {
+    'contracts/assets/dinero.js': 'lwImporteCanonico escribe el importe DENTRO de un campo editable que lwParseImporte vuelve a leer: id-ID agrupa «1.500» donde es-ES deja «1500»',
+    'intranet/facturas/documento.js': 'la fecha de la factura impresa es del documento fiscal, no del idioma de quien la mira',
+}
+
+
+def idiomas_de(nombre):
+    """Los idiomas de la interfaz que declara la instancia (`idiomas`), o None. Solo combinaciones conocidas: una errata no puede publicar un idioma a medias."""
+    i = _instancia_registro(nombre).get('idiomas')
+    if i is None:
+        return None
+    if tuple(i) not in IDIOMAS_CONOCIDOS:
+        aborta('erp/instancias.json: %s declara "idiomas": %r y solo se conocen %s' % (nombre, i, IDIOMAS_CONOCIDOS))
+    return list(i)
+
+
+def _sintaxis(rutas):
+    """node comprueba la sintaxis de cada .js y de cada <script> en línea de cada .html (un solo proceso). Devuelve los que fallan."""
+    if not rutas:
+        return []
+    prog = ("const fs=require('fs'),vm=require('vm');const malos=[];"
+            "for(const f of process.argv.slice(1)){const t=fs.readFileSync(f,'utf8');"
+            "const trozos=f.endsWith('.js')?[t]:[...t.matchAll(/<script(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]);"
+            "for(const c of trozos){try{new vm.Script(c)}catch(e){malos.push(f+': '+e.message);break}}}"
+            "console.log(JSON.stringify(malos));")
+    r = subprocess.run(['node', '-e', prog] + rutas, capture_output=True, text=True, encoding='utf-8')
+    if r.returncode != 0:
+        aborta('idiomas: no se pudo comprobar la sintaxis: ' + (r.stderr or '')[-400:])
+    return json.loads(r.stdout.strip().splitlines()[-1])
+
+
+def idiomas_instancia(idiomas):
+    """Aplica los idiomas de la instancia sobre la copia del front (DIST, ANTES de quitar comentarios y de los reemplazos de marca: así las claves del
+    diccionario reciben el mismo trato que el código que las pide). Solo lo copiado, nunca el repo de Lawang."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    for rel_, viejo, nuevo in IDIOMAS_PARCHES:
+        ruta = os.path.join(DIST, *rel_.split('/'))
+        t = open(ruta, encoding='utf-8').read()
+        t = _una_vez(t, viejo, nuevo.replace('__AXW_IDIOMAS__', json.dumps(idiomas)), 'idiomas ' + rel_)
+        open(ruta, 'w', encoding='utf-8', newline='').write(t)
+    # El indonesio: núcleo (envuelve lwT, lwLocale y lwIdiomaAplicar) + diccionario, al FINAL de i18n.js
+    if idiomas[0] == 'id':
+        ruta = os.path.join(DIST, 'contracts', 'assets', 'i18n.js')
+        t = open(ruta, encoding='utf-8').read()
+        if not t.rstrip().endswith('})();'):
+            aborta('idiomas: i18n.js de Lawang ya no termina en «})();»: el núcleo del indonesio se pega al final y hay que revisar dónde')
+        dic = json.load(open(os.path.join(AQUI, 'i18n_id.json'), encoding='utf-8'))
+        malos = [k for k, v in dic.items() if not isinstance(v, str) or not v.strip() or (v == k and k not in IGUALES_EN_ID)]
+        if malos:
+            aborta('i18n_id.json: traducción vacía o igual a su clave: ' + ', '.join(malos[:10]))
+        nucleo = open(os.path.join(AQUI, 'i18n_id_nucleo.js'), encoding='utf-8').read()
+        if nucleo.count('__AXW_LW_ID__') != 1:
+            aborta('i18n_id_nucleo.js sin el hueco __AXW_LW_ID__ (una vez)')
+        open(ruta, 'w', encoding='utf-8', newline='').write(
+            t.rstrip() + '\n\n' + nucleo.replace('__AXW_LW_ID__', json.dumps(dic, ensure_ascii=False, sort_keys=True)))
+    # 'es-ES' a mano → locale del idioma elegido, en todo .js y .html de la copia
+    tocados = []
+    fijos = {os.path.normcase(os.path.join(DIST, *r_.split('/'))) for r_ in ES_ES_FIJOS}
+    for r_ in ES_ES_FIJOS:
+        if not os.path.isfile(os.path.join(DIST, *r_.split('/'))):
+            aborta('idiomas: ES_ES_FIJOS nombra %s y no está en la copia: revisa la lista' % r_)
+    for raiz_, _d, fichs in os.walk(DIST):
+        for f in fichs:
+            if not f.endswith(('.js', '.html')):
+                continue
+            ruta = os.path.join(raiz_, f)
+            if os.path.normcase(ruta) in fijos:
+                continue
+            t = open(ruta, encoding='utf-8', errors='replace').read()
+            if "es-ES'" not in t and 'es-ES"' not in t:
+                continue
+            if f.endswith('.html') and re.search(r'''['"]es-ES['"]''', re.sub(r'(?is)<script\b[^>]*>.*?</script>', '', t)):
+                aborta('idiomas: %s lleva es-ES fuera de un <script> (un atributo HTML no se puede envolver con JavaScript)' % rel(ruta))
+            t2 = t
+            for q, env in ES_ES_ENVUELTO.items():
+                lit = q + 'es-ES' + q
+                if re.search(re.escape(lit) + r'\s*:(?!\s*' + re.escape(q) + ')', t2.replace(env, '')):
+                    aborta("idiomas: %s usa %s como clave de objeto (no se puede envolver)" % (rel(ruta), lit))
+                t2 = t2.replace(env, '\0').replace(lit, env).replace('\0', env)
+            if t2 != t:
+                open(ruta, 'w', encoding='utf-8', newline='').write(t2)
+                tocados.append(ruta)
+    malos = _sintaxis(tocados + [os.path.join(DIST, *r_.split('/')) for r_ in {x[0] for x in IDIOMAS_PARCHES}] +
+                      ([os.path.join(DIST, 'contracts', 'assets', 'i18n.js')] if idiomas[0] == 'id' else []))
+    if malos:
+        aborta('idiomas: el parche deja JavaScript roto:\n  ' + '\n  '.join(malos[:20]))
+    print('idiomas %s: %d parches, %d ficheros con fechas en el idioma elegido' % ('+'.join(idiomas), len(IDIOMAS_PARCHES), len(tocados)))
+
+
+def comprueba_idiomas(dist, idiomas):
+    """Sobre el paquete YA construido: el diccionario llegó entero y sin cambios (los reemplazos de marca no lo tocaron), y no queda ningún 'es-ES' ni
+    ternario de dos idiomas sin envolver en lo que se sirve. Si queda uno, el build para: esa pantalla saldría en español."""
+    if idiomas[0] != 'id':
+        return
+    fuente = json.load(open(os.path.join(AQUI, 'i18n_id.json'), encoding='utf-8'))
+    t = open(os.path.join(dist, 'contracts', 'assets', 'i18n.js'), encoding='utf-8').read()
+    falta = [v for v in fuente.values() if json.dumps(v, ensure_ascii=False)[1:-1] not in t]
+    if falta:
+        aborta('idiomas: el diccionario indonesio no llegó intacto al paquete (¿un reemplazo de marca lo cambió?): ' + ' | '.join(falta[:5]))
+    # Por RECUENTO y no por forma: el build minifica después y cambia comillas y espacios. Cada 'es-ES' envuelto lleva su 'id-ID' al lado.
+    restos = []
+    # ES_ES_FIJOS, en su sitio de antes y de después de reraiz (intranet/facturas → clasico/facturas)
+    fijos = tuple(ES_ES_FIJOS) + ('clasico/facturas/documento.js',)
+    dos_idiomas = re.compile(r"""LW_IDIOMA\s*===?\s*(['"])en\1\s*\?\s*(['"])(?:en|es|EN|ES)\2\s*:\s*(['"])(?:es|en|ES|EN)\3""")
+    for raiz_, _d, fichs in os.walk(dist):
+        for f in fichs:
+            if f.endswith(('.js', '.html')):
+                x = open(os.path.join(raiz_, f), encoding='utf-8', errors='replace').read()
+                if os.path.relpath(os.path.join(raiz_, f), dist).replace(os.sep, '/') in fijos:
+                    continue
+                if x.count('es-ES') > x.count('id-ID'):
+                    restos.append('%s: %d es-ES sin su id-ID' % (rel(os.path.join(raiz_, f)), x.count('es-ES') - x.count('id-ID')))
+                for m in dos_idiomas.finditer(x):
+                    restos.append('%s: %s' % (rel(os.path.join(raiz_, f)), m.group(0)))
+    if restos:
+        aborta('idiomas: quedan formatos o idiomas fijados a español/inglés sin el idioma de la instancia:\n  ' + '\n  '.join(restos[:30]))
+
+
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
@@ -2767,6 +2930,9 @@ def instancia(nombre):
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
         ajustes_puesta_en_marcha()
+    idiomas = idiomas_de(nombre)
+    if idiomas:   # 12-oct-2026: interfaz en los idiomas de la instancia (bbm: indonesio e inglés)
+        idiomas_instancia(idiomas)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]
@@ -2926,6 +3092,8 @@ def instancia(nombre):
     if restos:
         aborta('el build de la instancia no está limpio:\n  ' + '\n  '.join(restos[:40]))
     comprueba_piel(DIST, nombre)
+    if idiomas:
+        comprueba_idiomas(DIST, idiomas)
     comprueba_resultado(DIST)
     # 4. Copia al clon del repo privado de la instancia (gitignored en la agencia).
     destino = os.path.join(DESPLIEGUES, nombre)
