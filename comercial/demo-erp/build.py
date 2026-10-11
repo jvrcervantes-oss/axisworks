@@ -1196,8 +1196,20 @@ def piel_suite_clasica(dist, nombre):
         if len(m) != 1 or _profundidad_llaves(m[0].group(1)) != 0:
             aborta('piel de la suite clásica: %s no tiene UN <style> con :root y llaves cerradas' % rel)
         textos[rel] = t[:m[0].end(1)] + css + t[m[0].end(1):]
+    # nav.js carga la mascota con `assets/mascota.js?v=" + MASCOTA_V`, una URL que se arma al ejecutarse y que versiona() no ve
+    # (revisor, 12-oct): sin subir MASCOTA_V la CDN seguiría sirviendo la mascota de Lawang 7 días. Se pone la huella de la ya
+    # repintada; así cambia también la de nav.js al versionar.
+    import hashlib
+    nav = os.path.join(dist, 'assets', 'nav.js')
+    tn = open(nav, encoding='utf-8').read() if os.path.isfile(nav) else ''
+    m = list(re.finditer(r'''(MASCOTA_V\s*=\s*)(['"])([^'"]+)\2''', tn))
+    if len(m) != 1:
+        aborta('piel de la suite clásica: assets/nav.js no declara UNA vez MASCOTA_V (la mascota repintada no cambiaría de URL)')
+    huella = 'p' + hashlib.sha1(textos['assets/mascota.js'].encode('utf-8')).hexdigest()[:8]
+    tn = tn[:m[0].start(3)] + huella + tn[m[0].end(3):]
     for rel, t in textos.items():
         open(os.path.join(dist, rel), 'w', encoding='utf-8', newline='').write(t)
+    open(nav, 'w', encoding='utf-8', newline='').write(tn)
     return len(textos)
 
 

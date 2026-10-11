@@ -167,8 +167,9 @@ PUERTA = '<style>\n:root{\n--dl:#104C4F}\n.a{box-shadow:0 0 0 3px rgba(72,91,55,
          '.d{box-shadow:0 0 0 3px rgba(143,155,122,.22)}</style>'
 CREA = '<style>:root{--dl:#104c4f}.card{}</style>'
 MASC = 'x.style="background:#104C4F;box-shadow:0 1px rgba(16,76,79,.7)";h="#0c3c3e";l="#316669"'
+NAV = 'var CORTINA_V="20260926a";var MASCOTA_V="20260930b";s.src=ROOT+"assets/mascota.js?v="+MASCOTA_V;'
 HOJA = '@media (max-width:9px){.x{}}.lw-btn.primary:hover{background:#0d5b5f;box-shadow:0 2px 4px rgba(16,76,79,.32)}'
-d = d0 = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA, 'assets/mascota.js': MASC})
+d = d0 = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA, 'assets/mascota.js': MASC, 'assets/nav.js': NAV})
 est, n = con_registro({'piel': 'bbm'}, build.piel_suite_clasica, d, 'bbm')
 hoja = open(os.path.join(d, 'contracts', 'assets', 'axw.css'), encoding='utf-8').read()
 puerta = open(os.path.join(d, 'index.html'), encoding='utf-8').read()
@@ -181,13 +182,19 @@ mira('suite clásica: la regla va DESPUÉS de la :root de cada página, dentro d
 mira('suite clásica: los colores de Lawang escritos a mano ya no están', est == 'pasa'
      and not re.search(r'#0d5b5f|rgba\(16,76,79|rgba\(72,91,55|#F5F0E6|#CBD6B6|rgba\(143,155,122', hoja + puerta, re.I))
 mascota = open(os.path.join(d0, 'assets', 'mascota.js'), encoding='utf-8').read() if est == 'pasa' else ''
+import hashlib
+nav_d0 = open(os.path.join(d0, 'assets', 'nav.js'), encoding='utf-8').read() if est == 'pasa' else ''
+mira('suite clásica: MASCOTA_V de nav.js pasa a la huella de la mascota repintada (la CDN no sirve la de Lawang)', est == 'pasa'
+     and 'MASCOTA_V="p%s"' % hashlib.sha1(mascota.encode('utf-8')).hexdigest()[:8] in nav_d0 and 'CORTINA_V="20260926a"' in nav_d0)
 mira('suite clásica: el marco de la mascota ya no es Deep Lagoon de Lawang', est == 'pasa'
      and not re.search(r'#104C4F|rgba\(16,76,79|#0c3c3e|#316669', mascota, re.I) and '#442C1E' in mascota)
-d = paquete({'index.html': PUERTA.replace('#CBD6B6', '#ABCDEF'), 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA, 'assets/mascota.js': MASC})
+d = paquete({'index.html': PUERTA.replace('#CBD6B6', '#ABCDEF'), 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA, 'assets/mascota.js': MASC, 'assets/nav.js': NAV})
 mira('suite clásica: PARA si Lawang quita un color fijo que la piel sustituye', con_registro({'piel': 'bbm'}, build.piel_suite_clasica, d, 'bbm')[0] == 'para')
-d = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA + '@media (x){', 'assets/mascota.js': MASC})
+d = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA, 'assets/mascota.js': MASC, 'assets/nav.js': 'var x=1;'})
+mira('suite clásica: PARA si nav.js ya no declara MASCOTA_V', con_registro({'piel': 'bbm'}, build.piel_suite_clasica, d, 'bbm')[0] == 'para')
+d = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA + '@media (x){', 'assets/mascota.js': MASC, 'assets/nav.js': NAV})
 mira('suite clásica: PARA si axw.css deja un bloque abierto', con_registro({'piel': 'bbm'}, build.piel_suite_clasica, d, 'bbm')[0] == 'para')
-d = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA, 'assets/mascota.js': MASC})
+d = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA, 'assets/mascota.js': MASC, 'assets/nav.js': NAV})
 mira('suite clásica sin piel: no toca el paquete', con_registro({}, build.piel_suite_clasica, d, 'x') == ('pasa', 0)
      and open(os.path.join(d, 'index.html'), encoding='utf-8').read() == PUERTA)
 
