@@ -358,7 +358,15 @@
       if (!k || Array.isArray(k)) throw new Error(t('firma.no_existe'));
       if (k.bloqueado) throw new Error(t('firma.ya', k.numero));
       var comp = filas(rs[1]).filter(function (x) { return x.rol === 'adquiriente_1'; })[0] || {};
-      var cl = comp.clients || {};
+      var cid = comp.client_id || (comp.clients && comp.clients.id) || null;
+      // La ficha del cliente manda (país incluido): la fila del comprador solo lleva una copia parcial.
+      return sb().then(function (c) { return cid ? c.from('clients').select('*').eq('id', cid).maybeSingle() : { data: null }; })
+        .then(function (rc) {
+          if (rc && rc.error) throw new Error(rc.error.message || String(rc.error));
+          return [k, comp, Object.assign({}, comp.clients || {}, (rc && rc.data && !Array.isArray(rc.data)) ? rc.data : {})];
+        });
+    }).then(function (x) {
+      var k = x[0], comp = x[1], cl = x[2];
       E.clienteFirma = comp.client_id || cl.id || null;
       E.clientes = [{ id: E.clienteFirma, full_name: k.comprador_nombre || cl.full_name, nationality: cl.nationality }];
       E.unidades = [{ id: k.unidad_id, codigo: k.parcela_codigo, proyecto: k.proyecto_nombre, moneda: k.moneda }];
@@ -369,7 +377,18 @@
   }
 
   /* ── Enganches ───────────────────────────────────────────────────────── */
-  window.addEventListener('keydown', function (ev) { if (E && ev.key === 'Escape') { ev.stopPropagation(); cierra(); } }, true);
+  window.addEventListener('keydown', function (ev) {
+    if (!E) return;
+    if (ev.key === 'Escape') { ev.stopPropagation(); cierra(); return; }
+    if (ev.key !== 'Tab') return;
+    // El foco no sale del panel mientras está abierto (diálogo modal).
+    var f = Array.prototype.filter.call(E.capa.querySelectorAll('button:not([disabled]), a[href], select, input, textarea'),
+      function (x) { return x.offsetParent !== null; });
+    if (!f.length) return;
+    var primero = f[0], ultimo = f[f.length - 1];
+    if (ev.shiftKey && (document.activeElement === primero || !E.capa.contains(document.activeElement))) { ev.preventDefault(); ultimo.focus(); }
+    else if (!ev.shiftKey && (document.activeElement === ultimo || !E.capa.contains(document.activeElement))) { ev.preventDefault(); primero.focus(); }
+  }, true);
   document.addEventListener('click', function (ev) {
     var b = ev.target && ev.target.closest && ev.target.closest('[data-accion]');
     if (!b || (E && E.capa.contains(b))) return;

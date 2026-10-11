@@ -14,8 +14,8 @@
 .ptl-cab-der { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .ptl-viendo { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--axf-suave); }
 .ptl-viendo select { font: inherit; font-size: 14px; color: var(--axf-tinta); background: var(--axf-papel); border: 1px solid var(--axf-linea);
-  border-radius: 999px; padding: 8px 14px; min-height: 40px; max-width: 220px; }
-.ptl-volver { color: var(--axf-acento); font-weight: 600; font-size: 14px; text-decoration: none; min-height: 40px; display: inline-flex; align-items: center; }
+  border-radius: 999px; padding: 8px 14px; min-height: 44px; max-width: 220px; }
+.ptl-volver { color: var(--axf-acento); font-weight: 600; font-size: 14px; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
 .ptl-volver:hover { text-decoration: underline; }
 .ptl-demo { margin: 0; padding: 8px 24px; text-align: center; font-size: 13px; background: var(--axf-fondo); color: var(--axf-suave); border-top: 1px solid var(--axf-linea); }
 
@@ -27,7 +27,7 @@
 .ptl-tab:focus-visible, .ptl-volver:focus-visible, .ptl-viendo select:focus-visible { outline: 2px solid var(--axf-acento); outline-offset: 2px; }
 
 .ptl-main { max-width: 1120px; margin: 0 auto; padding: 28px 24px 64px; display: grid; gap: 24px; outline: none; }
-.ptl-h1 { margin: 0 0 4px; font-size: 32px; line-height: 1.15; font-weight: 600; color: var(--axf-acento); letter-spacing: -.01em; }
+.ptl-h1 { margin: 0 0 4px; text-wrap: balance; font-size: 32px; line-height: 1.15; font-weight: 600; color: var(--axf-acento); letter-spacing: -.01em; }
 .ptl-h2 { margin: 0 0 12px; font-size: 18px; font-weight: 600; }
 .ptl-h3 { margin: 0; font-size: 18px; font-weight: 600; }
 .ptl-rot { margin: 0; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--axf-suave); font-weight: 600; }
@@ -63,7 +63,7 @@
 .ptl-doc-tit { margin: 0; font-weight: 600; }
 
 .ptl-visor { position: fixed; inset: 0; z-index: 8000; background: rgb(var(--tema-on-surface, 27 28 25) / .4); display: flex; justify-content: center; padding: 24px; overflow: auto; }
-.ptl-visor-marco { background: var(--axf-fondo); border-radius: 18px; padding: 20px; width: 100%; max-width: 880px; height: max-content; display: grid; gap: 16px; }
+.ptl-visor-marco { background: var(--axf-fondo); border-radius: 16px; padding: 20px; width: 100%; max-width: 880px; height: max-content; display: grid; gap: 16px; }
 .ptl-visor-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .ptl-visor-cab .ptl-h2 { margin: 0; }
 
