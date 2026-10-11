@@ -1,0 +1,78 @@
+/* Contrato de EJEMPLO de la demo pública (paquete B, 11-oct-2026): pinta la plantilla de Legal (fase B1 del encargo
+   20261011_demo_cliente_flujo_total) con los datos del contrato. El TEXTO vive en textos.js (`plantilla`), que es su
+   fuente única.
+   Lo leen la pantalla «New contract» de la intranet y el portal.
+
+   Reglas de la revisión previa (Seguridad + Legal, 11-oct):
+   - Emisor FIJO e inventado (doc.emisor), nunca un campo: un visitante no puede poner su empresa en algo con forma de contrato.
+   - La banda «SAMPLE…» y el cierre van DENTRO del documento, y una marca de agua cubre el documento en pantalla y al
+     imprimir (es texto, no una imagen de fondo: el navegador no imprime fondos por defecto).
+   - Los datos se ponen con textContent, nunca como HTML: el nombre, las notas y la dirección los teclea el visitante. */
+(function () {
+  'use strict';
+  if (window.AXW_DEMO_CONTRATO) return;
+  var t = window.AXW_DEMO_T;
+
+  function importe(n) {
+    var x = Number(n);
+    if (n == null || n === '' || !isFinite(x)) return '—';
+    return x.toLocaleString(t.locale(), { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+  function fecha(iso) {
+    if (!iso) return '—';
+    var d = new Date(String(iso).length === 10 ? iso + 'T00:00:00Z' : iso);
+    if (isNaN(d)) return '—';
+    return d.toLocaleDateString(t.locale(), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  }
+  function rellena(txt, v) {
+    return txt.replace(/\{\{([a-z_]+)\}\}/g, function (_, k) { return v[k] == null || v[k] === '' ? '—' : String(v[k]); });
+  }
+  function nodo(tag, cls, texto) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (texto != null) e.textContent = texto;
+    return e;
+  }
+
+  /* datos: { numero, fecha (ISO), cliente_nombre, cliente_pais, proyecto, unidad, precio (número), moneda, notas,
+     firmado (bool), firmante, fecha_firma (ISO), firma_img (dataURL en memoria, opcional) } → <article> */
+  function documento(datos) {
+    var d = datos || {};
+    var v = {
+      numero: d.numero || t('doc.sin_numero'), fecha: fecha(d.fecha), emisor: t('doc.emisor'),
+      cliente_nombre: d.cliente_nombre, cliente_pais: d.cliente_pais, proyecto: d.proyecto, unidad: d.unidad,
+      precio: importe(d.precio), moneda: d.moneda, notas: d.notas
+    };
+    var art = nodo('article', 'axf-doc');
+    art.setAttribute('aria-label', t('doc.aria'));
+    var marca = nodo('div', 'axf-marca');
+    marca.setAttribute('aria-hidden', 'true');
+    for (var i = 0; i < 9; i++) marca.appendChild(nodo('span', null, t('doc.marca')));
+    art.appendChild(marca);
+    var hayNotas = !!(d.notas && String(d.notas).trim());
+    t('plantilla').forEach(function (l) {
+      if (l[2] === 'notas' && !hayNotas) return;
+      var x = rellena(l[1], v);
+      if (l[0] === 'banda') art.appendChild(nodo('p', 'axf-doc-banda', x));
+      else if (l[0] === 'titulo') art.appendChild(nodo('h2', 'axf-doc-titulo', x));
+      else if (l[0] === 'meta') art.appendChild(nodo('p', 'axf-doc-meta', x));
+      else if (l[0] === 'h') art.appendChild(nodo('h3', 'axf-doc-h', x));
+      else if (l[0] === 'cierre') art.appendChild(nodo('p', 'axf-doc-banda axf-doc-cierre', x));
+      else art.appendChild(nodo('p', 'axf-doc-p', x));
+    });
+    var pie = nodo('div', 'axf-doc-firma');
+    var caja = nodo('div', 'axf-doc-firma-caja');
+    if (d.firmado) {
+      if (d.firma_img) { var img = nodo('img'); img.src = d.firma_img; img.alt = t('doc.firma_img'); caja.appendChild(img); }
+      else caja.appendChild(nodo('span', 'axf-doc-firma-clic', t('doc.firmado_clic')));
+    }
+    pie.appendChild(caja);
+    pie.appendChild(nodo('p', 'axf-doc-firma-pie', d.firmado
+      ? t('doc.firmado_pie', d.firmante || d.cliente_nombre || '—', fecha(d.fecha_firma))
+      : t('doc.pendiente_pie')));
+    art.appendChild(pie);
+    return art;
+  }
+
+  window.AXW_DEMO_CONTRATO = Object.freeze({ documento: documento, importe: importe, fecha: fecha });
+})();
