@@ -1007,12 +1007,7 @@ def logos_neutros(texto='AxisWorks Demo'):
     Ojo, nombres al revés de lo que parecen: el logo «-dark» es el de texto OSCURO (va sobre fondo claro)."""
     from PIL import Image, ImageDraw, ImageFont
     def fuente(tam):
-        for f in ('segoeuib.ttf', 'arialbd.ttf'):
-            try:
-                return ImageFont.truetype(os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', f), tam)
-            except OSError:
-                continue
-        return ImageFont.load_default()
+        return _fuente_logo(tam) or ImageFont.load_default()
     marca = os.path.join(DIST, 'contracts', 'assets', 'brand')
     for nombre, color in (('axw-logo-v3.png', (238, 240, 251, 255)), ('axw-logo-v3-dark.png', (15, 23, 48, 255))):
         im = Image.new('RGBA', (1726, 240), (0, 0, 0, 0))
@@ -1032,8 +1027,9 @@ def logos_neutros(texto='AxisWorks Demo'):
 # ── Piel e identidad de una instancia (F14, 11-oct-2026; revisión previa #265 de Diseño + Seguridad) ──────────────────
 # `piel` e `icono` del registro (erp/instancias.json, FUERA de `config`: nueva_instancia.py sube `config` a la base). La
 # instancia lleva SOLO su preset, ya derivado y validado (tríos de enteros, lista cerrada de tokens): nunca deriva en el
-# navegador, nunca texto CSS. Se aplica con style.setProperty en el guard.js, que va en el <head> antes que las hojas: sin
-# lectura a la base al cargar, así que no hay parpadeo con los colores de Lawang. Lawang no pasa por aquí: idéntica.
+# navegador, nunca texto CSS. Se aplica con style.setProperty desde la ficha (contracts/assets/instancia.js), que todas las
+# páginas cargan en el <head> antes que las hojas: sin lectura a la base al cargar, así que no hay parpadeo con los colores
+# de Lawang. Lawang no pasa por aquí: idéntica.
 PIEL_MARCA = 'window.AXW_PIEL='
 
 
@@ -1072,22 +1068,44 @@ def piel_instancia(nombre):
             % (PIEL_MARCA, json.dumps(_instancia_registro(nombre)['piel']), json.dumps(valores, separators=(',', ':'))))
 
 
+APLICA_TEMA = re.compile(r"""setProperty\(\s*['"`]--tema-""")
+FICHA_REL = 'contracts/assets/instancia.js'
+
+
 def comprueba_piel(dist, nombre):
-    """Pendiente de Seguridad (#265): lo publicado no lleva caminos de piel ajenos. Un solo aplicador, en guard.js, y solo si
-    la instancia declara piel; ni el init del arnés (addInitScript) ni `skin=` por la URL."""
+    """Pendiente de Seguridad (#265): lo publicado no lleva caminos de piel ajenos. Un solo aplicador, en la ficha, y solo si
+    la instancia declara piel: ningún otro `setProperty('--tema-…')`, ni el init del arnés (addInitScript), ni una piel
+    elegida por la URL (`skin=`, `get('skin')`), ni los presets enteros (presets.json, propuestas_sin_aprobar)."""
     esperado = 1 if _piel_preset(nombre) is not None else 0
     donde = []
     for raiz, _d, fichs in os.walk(dist):
         for f in fichs:
+            rel = os.path.relpath(os.path.join(raiz, f), dist).replace(os.sep, '/')
+            if f in ('presets.json', 'pieles.json'):
+                aborta('presets de piel copiados al paquete: ' + rel)
             if not f.endswith(EXT_TEXTO):
                 continue
-            p = os.path.join(raiz, f)
-            t = open(p, encoding='utf-8', errors='replace').read()
-            if 'addInitScript' in t or re.search(r'[?&]skin=', t):
-                aborta('camino de piel ajeno en el paquete: ' + os.path.relpath(p, dist))
-            donde += [os.path.relpath(p, dist)] * t.count(PIEL_MARCA)
-    if len(donde) != esperado or (donde and donde[0].replace(os.sep, '/') != 'contracts/assets/guard.js'):
-        aborta('aplicadores de piel en el paquete: %r (se esperaba %d, en contracts/assets/guard.js)' % (donde, esperado))
+            t = open(os.path.join(raiz, f), encoding='utf-8', errors='replace').read()
+            if ('addInitScript' in t or 'propuestas_sin_aprobar' in t or re.search(r'[?&]skin=', t)
+                    or re.search(r"""['"`]skin['"`]""", t)):
+                aborta('camino de piel ajeno en el paquete: ' + rel)
+            marcas, aplica = t.count(PIEL_MARCA), len(APLICA_TEMA.findall(t))
+            if marcas != aplica:
+                aborta('%s pone variables --tema- fuera del aplicador del build (%d aplicador, %d setProperty)' % (rel, marcas, aplica))
+            donde += [rel] * marcas
+    if len(donde) != esperado or (donde and donde[0] != FICHA_REL):
+        aborta('aplicadores de piel en el paquete: %r (se esperaba %d, en %s)' % (donde, esperado, FICHA_REL))
+
+
+def _fuente_logo(tam):
+    """La letra de los logotipos generados (neutros y de instancia): negrita del sistema, o None si no hay."""
+    from PIL import ImageFont
+    for f in ('segoeuib.ttf', 'arialbd.ttf'):
+        try:
+            return ImageFont.truetype(os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', f), tam)
+        except OSError:
+            continue
+    return None
 
 
 def logos_instancia(nombre, marca):
@@ -1097,23 +1115,19 @@ def logos_instancia(nombre, marca):
     icono = _instancia_registro(nombre).get('icono')
     if not icono:
         return logos_neutros(marca)
-    from PIL import Image, ImageDraw, ImageFont
-    base = os.path.join(AGENCIA, 'erp', 'tema', 'marcas')
-    ruta = os.path.normpath(os.path.join(AGENCIA, icono))
-    if not ruta.startswith(base + os.sep) or not os.path.isfile(ruta):
+    from PIL import Image, ImageDraw
+    # realpath + normcase: un enlace (junction) o una mayúscula no sacan el icono de su carpeta (incidente del 10-oct)
+    base = os.path.normcase(os.path.realpath(os.path.join(AGENCIA, 'erp', 'tema', 'marcas')))
+    ruta = os.path.realpath(os.path.join(AGENCIA, icono))
+    if not os.path.normcase(ruta).startswith(base + os.sep) or not os.path.isfile(ruta):
         aborta('icono de %s fuera de erp/tema/marcas/ o inexistente: %s' % (nombre, icono))
     p = _piel_preset(nombre) or {}
     tinta = tuple(p.get('on-background', (15, 23, 48))) + (255,)
-    claro = tuple(p.get('background', (238, 240, 251))) + (255,)
+    claro = tuple(p.get('on-primary', (238, 240, 251))) + (255,)   # va sobre la barra de marca: su «on», también en piel oscura
     acento = tuple(p.get('accent-gold', (79, 70, 229))) + (255,)
 
     def fuente(tam):
-        for f in ('segoeuib.ttf', 'arialbd.ttf'):
-            try:
-                return ImageFont.truetype(os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', f), tam)
-            except OSError:
-                continue
-        aborta('sin fuente para el logotipo (segoeuib.ttf / arialbd.ttf)')
+        return _fuente_logo(tam) or aborta('sin fuente para el logotipo (segoeuib.ttf / arialbd.ttf)')
     ico = Image.open(ruta).convert('RGBA')
     mascara = Image.new('L', (180, 180), 0)
     ImageDraw.Draw(mascara).rounded_rectangle((0, 0, 179, 179), radius=36, fill=255)
@@ -2273,6 +2287,11 @@ def instancia(nombre):
                        # F3 lote 3: los de la instancia en erp/instancias.json (hoy ninguna los declara → vacíos)
                        'masterplans': _instancia_registro(nombre).get('masterplans') or {},
                        'proyectos_con_fases': _instancia_registro(nombre).get('proyectos_con_fases') or []})
+    # F14: la piel va en la ficha, que cargan en el <head> TODAS las páginas de la instancia (la puerta / y /crea-contrasena/
+    # no cargan guard.js: revisor, 11-oct). Se añade después de escribirla: escribe_instancia también sirve a la demo, sin piel.
+    piel = piel_instancia(nombre)
+    if piel:
+        open(os.path.join(DIST, 'contracts', 'assets', 'instancia.js'), 'a', encoding='utf-8', newline='\n').write(piel)
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
     # Módulos: el navegador pregunta a la base cuáles están activos al cargar (panel de control, 28-sep-2026). Va en
     # TODA instancia del ERP (antes solo si el registro traía modulos_activos, Des #4).
@@ -2292,7 +2311,7 @@ def instancia(nombre):
     t = open(g, encoding='utf-8').read()
     open(g, 'w', encoding='utf-8', newline='').write(
         '/* GENERADO por AxisWorks/comercial/demo-erp/build.py --instancia %s — no editar. */\n'
-        'window.AXW_NUCLEO_OPERACION = true;\n' % nombre + piel_instancia(nombre) + interruptores + t)
+        'window.AXW_NUCLEO_OPERACION = true;\n' % nombre + interruptores + t)
     for raiz, dirs, fichs in os.walk(DIST, topdown=False):
         for f in fichs + dirs:
             nuevo = f
