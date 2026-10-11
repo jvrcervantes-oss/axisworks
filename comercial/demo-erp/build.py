@@ -1007,12 +1007,7 @@ def logos_neutros(texto='AxisWorks Demo'):
     Ojo, nombres al revés de lo que parecen: el logo «-dark» es el de texto OSCURO (va sobre fondo claro)."""
     from PIL import Image, ImageDraw, ImageFont
     def fuente(tam):
-        for f in ('segoeuib.ttf', 'arialbd.ttf'):
-            try:
-                return ImageFont.truetype(os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', f), tam)
-            except OSError:
-                continue
-        return ImageFont.load_default()
+        return _fuente_logo(tam) or ImageFont.load_default()
     marca = os.path.join(DIST, 'contracts', 'assets', 'brand')
     for nombre, color in (('axw-logo-v3.png', (238, 240, 251, 255)), ('axw-logo-v3-dark.png', (15, 23, 48, 255))):
         im = Image.new('RGBA', (1726, 240), (0, 0, 0, 0))
@@ -1027,6 +1022,130 @@ def logos_neutros(texto='AxisWorks Demo'):
     d.rounded_rectangle((0, 0, 31, 31), radius=7, fill=(79, 70, 229, 255))
     d.text((16, 16), 'A', font=fuente(22), fill=(255, 255, 255, 255), anchor='mm')
     fav.save(os.path.join(DIST, 'favicon.png'))
+
+
+# ── Piel e identidad de una instancia (F14, 11-oct-2026; revisión previa #265 de Diseño + Seguridad) ──────────────────
+# `piel` e `icono` del registro (erp/instancias.json, FUERA de `config`: nueva_instancia.py sube `config` a la base). La
+# instancia lleva SOLO su preset, ya derivado y validado (tríos de enteros, lista cerrada de tokens): nunca deriva en el
+# navegador, nunca texto CSS. Se aplica con style.setProperty desde la ficha (contracts/assets/instancia.js), que todas las
+# páginas cargan en el <head> antes que las hojas: sin lectura a la base al cargar, así que no hay parpadeo con los colores
+# de Lawang. Lawang no pasa por aquí: idéntica.
+PIEL_MARCA = 'window.AXW_PIEL='
+
+
+def _deriva():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('axw_tema_deriva', os.path.join(AGENCIA, 'erp', 'tema', 'deriva.py'))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _piel_preset(nombre):
+    """{token: [r, g, b]} de la piel aprobada de la instancia, o None si no declara piel (o declara la de Lawang)."""
+    piel = _instancia_registro(nombre).get('piel')
+    if not piel or piel == 'lawang':
+        return None
+    D = _deriva()
+    if D.main(['--check']) != 0:
+        aborta('erp/tema/presets.json no corresponde a pieles.json: python erp/tema/deriva.py')
+    aprobadas = json.load(open(os.path.join(AGENCIA, 'erp', 'tema', 'presets.json'), encoding='utf-8'))['presets']
+    if piel not in aprobadas:
+        aborta('la piel %r de %s no está entre las aprobadas de erp/tema/presets.json (una propuesta no se publica)' % (piel, nombre))
+    try:
+        return D.valida_preset(aprobadas[piel])
+    except ValueError as e:
+        aborta('preset %r no válido: %s' % (piel, e))
+
+
+def piel_instancia(nombre):
+    """JS (una línea) que pone la piel de la instancia en <html>, o '' sin piel."""
+    p = _piel_preset(nombre)
+    if p is None:
+        return ''
+    valores = {k: '%d %d %d' % tuple(v) for k, v in sorted(p.items())}
+    return ('%s%s;(function(){var s=document.documentElement.style,p=%s;for(var k in p)s.setProperty("--tema-"+k,p[k]);})();\n'
+            % (PIEL_MARCA, json.dumps(_instancia_registro(nombre)['piel']), json.dumps(valores, separators=(',', ':'))))
+
+
+APLICA_TEMA = re.compile(r"""setProperty\(\s*['"`]--tema-""")
+FICHA_REL = 'contracts/assets/instancia.js'
+
+
+def comprueba_piel(dist, nombre):
+    """Pendiente de Seguridad (#265): lo publicado no lleva caminos de piel ajenos. Un solo aplicador, en la ficha, y solo si
+    la instancia declara piel: ningún otro `setProperty('--tema-…')`, ni el init del arnés (addInitScript), ni una piel
+    elegida por la URL (`skin=`, `get('skin')`), ni los presets enteros (presets.json, propuestas_sin_aprobar)."""
+    esperado = 1 if _piel_preset(nombre) is not None else 0
+    donde = []
+    for raiz, _d, fichs in os.walk(dist):
+        for f in fichs:
+            rel = os.path.relpath(os.path.join(raiz, f), dist).replace(os.sep, '/')
+            if f in ('presets.json', 'pieles.json'):
+                aborta('presets de piel copiados al paquete: ' + rel)
+            if not f.endswith(EXT_TEXTO):
+                continue
+            t = open(os.path.join(raiz, f), encoding='utf-8', errors='replace').read()
+            if ('addInitScript' in t or 'propuestas_sin_aprobar' in t or re.search(r'[?&]skin=', t)
+                    or re.search(r"""['"`]skin['"`]""", t)):
+                aborta('camino de piel ajeno en el paquete: ' + rel)
+            marcas, aplica = t.count(PIEL_MARCA), len(APLICA_TEMA.findall(t))
+            if marcas != aplica:
+                aborta('%s pone variables --tema- fuera del aplicador del build (%d aplicador, %d setProperty)' % (rel, marcas, aplica))
+            donde += [rel] * marcas
+    if len(donde) != esperado or (donde and donde[0] != FICHA_REL):
+        aborta('aplicadores de piel en el paquete: %r (se esperaba %d, en %s)' % (donde, esperado, FICHA_REL))
+
+
+def _fuente_logo(tam):
+    """La letra de los logotipos generados (neutros y de instancia): negrita del sistema, o None si no hay."""
+    from PIL import ImageFont
+    for f in ('segoeuib.ttf', 'arialbd.ttf'):
+        try:
+            return ImageFont.truetype(os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', f), tam)
+        except OSError:
+            continue
+    return None
+
+
+def logos_instancia(nombre, marca):
+    """Logo y favicon del CLIENTE si la instancia declara `icono` (su logo real, solo reducido: erp/tema/marcas/LEEME.md);
+    si no, los neutros de AxisWorks. Mismo lienzo que logos_neutros (1726×240, la maqueta no se mueve). El texto es la
+    marca en mayúsculas con el punto en el acento de su piel, como el logotipo de su web pública."""
+    icono = _instancia_registro(nombre).get('icono')
+    if not icono:
+        return logos_neutros(marca)
+    from PIL import Image, ImageDraw
+    # realpath + normcase: un enlace (junction) o una mayúscula no sacan el icono de su carpeta (incidente del 10-oct)
+    base = os.path.normcase(os.path.realpath(os.path.join(AGENCIA, 'erp', 'tema', 'marcas')))
+    ruta = os.path.realpath(os.path.join(AGENCIA, icono))
+    if not os.path.normcase(ruta).startswith(base + os.sep) or not os.path.isfile(ruta):
+        aborta('icono de %s fuera de erp/tema/marcas/ o inexistente: %s' % (nombre, icono))
+    p = _piel_preset(nombre) or {}
+    tinta = tuple(p.get('on-background', (15, 23, 48))) + (255,)
+    claro = tuple(p.get('on-primary', (238, 240, 251))) + (255,)   # va sobre la barra de marca: su «on», también en piel oscura
+    acento = tuple(p.get('accent-gold', (79, 70, 229))) + (255,)
+
+    def fuente(tam):
+        return _fuente_logo(tam) or aborta('sin fuente para el logotipo (segoeuib.ttf / arialbd.ttf)')
+    ico = Image.open(ruta).convert('RGBA')
+    mascara = Image.new('L', (180, 180), 0)
+    ImageDraw.Draw(mascara).rounded_rectangle((0, 0, 179, 179), radius=36, fill=255)
+    ico180 = ico.resize((180, 180), Image.LANCZOS)
+    texto = marca.upper()
+    tam = 150
+    while tam > 40 and ImageDraw.Draw(Image.new('RGBA', (1, 1))).textlength(texto + '.', font=fuente(tam)) > 1726 - 230:
+        tam -= 4
+    marca_dir = os.path.join(DIST, 'contracts', 'assets', 'brand')
+    os.makedirs(marca_dir, exist_ok=True)
+    for nombre_png, color in (('axw-logo-v3.png', claro), ('axw-logo-v3-dark.png', tinta)):
+        im = Image.new('RGBA', (1726, 240), (0, 0, 0, 0))
+        im.paste(ico180, (0, 30), mascara)
+        d = ImageDraw.Draw(im)
+        d.text((230, 120), texto, font=fuente(tam), fill=color, anchor='lm')
+        d.text((230 + d.textlength(texto, font=fuente(tam)), 120), '.', font=fuente(tam), fill=acento, anchor='lm')
+        im.save(os.path.join(marca_dir, nombre_png))
+    ico.resize((64, 64), Image.LANCZOS).save(os.path.join(DIST, 'favicon.png'))
 
 
 def tipografias_libres():
@@ -2052,6 +2171,72 @@ def rastros_en(raiz):
     return restos
 
 
+# ── Portada y Puesta en marcha de las instancias de tipo Reservas (11-oct-2026, plan único F8) ──────────────────────────────────────────
+# Solo las instancias con `"portada": "reservas"` en erp/instancias.json; Lawang, la demo y el resto siguen con la Home y los Ajustes de siempre.
+PORTADAS = ('reservas',)
+AJUSTES_PUESTA_TAB_ANCLA = ('<button class="lw-tab-btn px-4 py-2 rounded-full bg-primary-container text-on-primary font-label-md text-[13px] font-medium transition-colors"'
+                            ' role="tab" type="button" id="lw-tab-empresa"')
+AJUSTES_PUESTA_TAB = ('<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors"'
+                      ' role="tab" type="button" id="lw-tab-puesta" aria-controls="lw-panel-puesta" aria-selected="false" tabindex="-1" data-lw-tab="puesta" data-lwt>'
+                      'Puesta en marcha</button>\n')
+AJUSTES_PUESTA_PANEL_ANCLA = '<section id="lw-panel-empresa" role="tabpanel"'
+AJUSTES_PUESTA_PANEL = (
+    '<section id="lw-panel-puesta" role="tabpanel" aria-labelledby="lw-tab-puesta" data-lw-panel="puesta" class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden" hidden>\n'
+    '<div class="px-8 pt-8 pb-4 flex flex-col gap-1 border-b border-outline-variant/40">\n'
+    '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Puesta en marcha</span>\n'
+    '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Lo que hace falta para empezar a facturar, en orden</h2>\n'
+    '<p class="font-body-sm text-body-sm text-outline" data-lwt>Cada paso dice si está hecho y dónde se hace. Cuando estén todos, ya puedes encender Facturas.</p>\n'
+    '</div>\n'
+    '<div id="lw-aj-puesta">\n'
+    '<p class="px-8 py-6 font-body-md text-body-md text-on-surface-variant" data-lwt>Trayendo la puesta en marcha…</p>\n'
+    '</div>\n'
+    '</section>\n\n')
+AJUSTES_PESTANAS = "var PESTANAS = ['empresa', 'correo', 'usuarios', 'mantenimiento', 'reservas', 'registro'];"
+AJUSTES_DEFECTO = "return PESTANAS.indexOf(h) >= 0 ? h : 'empresa';"
+
+
+def portada_de(nombre):
+    """La portada que declara la instancia en el registro (`portada`), o None si sigue la de siempre. Un valor desconocido PARA: una errata no puede dejar
+    la Home de parcelas sin un solo aviso."""
+    p = _instancia_registro(nombre).get('portada')
+    if p is not None and p not in PORTADAS:
+        aborta('erp/instancias.json: %s declara "portada": %r y solo se conocen %s' % (nombre, p, ', '.join(PORTADAS)))
+    return p
+
+
+def portada_reservas():
+    """/home/ de una instancia de tipo Reservas: las entregas y devoluciones del día (portada_reservas.html sobre la cáscara de /asistente/, como taller).
+    SIN puerta de herramienta: es el `inicio` de todo el que entra (un mecánico con solo `taller` no puede rebotar al iniciar sesión); la lectura la vuelve
+    a exigir la base. Sustituye la Home de Lawang solo en lo copiado a DIST, nunca en su repo."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    if not os.path.isfile(os.path.join(v4, 'home', 'index.html')):
+        aborta('portada_reservas: no está la Home copiada de Lawang (intranet/v4/home/index.html): ¿cambió su sitio?')
+    _pantalla_bot(v4, 'portada_reservas.html', 'home', 'Inicio', puerta='data-axw-portada="reservas"')
+
+
+def ajustes_puesta_en_marcha():
+    """Ajustes › Puesta en marcha (instancias de tipo Reservas): una pestaña más, la PRIMERA y la que abre /ajustes/ sin #, con los pasos que da la base
+    (puesta_en_marcha_estado) y los dos sí/no de impuestos. El contenido lo pinta ajustes_puesta.js; aquí solo se pone la pestaña, su panel, el script y se
+    le dice a ajustes.js (que tiene la lista de pestañas CERRADA) que existe. Todo con reemplazo literal que para si Lawang cambia el trozo. Va después de
+    ajustes_correo_maestro(), que también reescribe ajustes.js. Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    pag = os.path.join(v4, 'ajustes', 'index.html')
+    t = open(pag, encoding='utf-8').read()
+    t = _una_vez(t, AJUSTES_PUESTA_TAB_ANCLA, AJUSTES_PUESTA_TAB + AJUSTES_PUESTA_TAB_ANCLA, 'ajustes/index.html pestaña Puesta en marcha')
+    t = _una_vez(t, AJUSTES_PUESTA_PANEL_ANCLA, AJUSTES_PUESTA_PANEL + AJUSTES_PUESTA_PANEL_ANCLA, 'ajustes/index.html panel Puesta en marcha')
+    m = re.findall(r'<script src="\.\./assets/ajustes\.js(?:\?v=[0-9a-f]+)?" defer></script>', t)
+    if len(m) != 1:
+        aborta('ajustes_puesta_en_marcha: ajustes/index.html no carga UNA vez ../assets/ajustes.js con defer (hay %d)' % len(m))
+    t = t.replace(m[0], m[0] + '<script src="../assets/ajustes_puesta.js" defer></script>')
+    open(pag, 'w', encoding='utf-8', newline='').write(t)
+    js = os.path.join(v4, 'assets', 'ajustes.js')
+    a = open(js, encoding='utf-8').read()
+    a = _una_vez(a, AJUSTES_PESTANAS, AJUSTES_PESTANAS.replace("['empresa',", "['puesta', 'empresa',"), 'ajustes.js PESTANAS')
+    a = _una_vez(a, AJUSTES_DEFECTO, AJUSTES_DEFECTO.replace("'empresa';", "'puesta';"), 'ajustes.js pestaña por defecto')
+    open(js, 'w', encoding='utf-8', newline='').write(a)
+    shutil.copy2(os.path.join(AQUI, 'ajustes_puesta.js'), os.path.join(v4, 'assets', 'ajustes_puesta.js'))
+
+
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
@@ -2062,6 +2247,9 @@ def instancia(nombre):
     taller_pantalla()   # F8 pieza 2 (8-oct-2026): Taller — órdenes de trabajo ligeras (tras reservas de producto: sus anclas de nav.js)
     entrega_pantalla()   # F8 pieza 8 (10-oct-2026): Entrega — sede, tarifa por km y límites (tras taller: sus anclas de nav.js y herramientas.js)
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
+    if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
+        portada_reservas()
+        ajustes_puesta_en_marcha()
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]
@@ -2099,6 +2287,11 @@ def instancia(nombre):
                        # F3 lote 3: los de la instancia en erp/instancias.json (hoy ninguna los declara → vacíos)
                        'masterplans': _instancia_registro(nombre).get('masterplans') or {},
                        'proyectos_con_fases': _instancia_registro(nombre).get('proyectos_con_fases') or []})
+    # F14: la piel va en la ficha, que cargan en el <head> TODAS las páginas de la instancia (la puerta / y /crea-contrasena/
+    # no cargan guard.js: revisor, 11-oct). Se añade después de escribirla: escribe_instancia también sirve a la demo, sin piel.
+    piel = piel_instancia(nombre)
+    if piel:
+        open(os.path.join(DIST, 'contracts', 'assets', 'instancia.js'), 'a', encoding='utf-8', newline='\n').write(piel)
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
     # Módulos: el navegador pregunta a la base cuáles están activos al cargar (panel de control, 28-sep-2026). Va en
     # TODA instancia del ERP (antes solo si el registro traía modulos_activos, Des #4).
@@ -2127,7 +2320,7 @@ def instancia(nombre):
             nuevo = nuevo.replace('Lawang', 'Axw')
             if nuevo != f:
                 os.replace(os.path.join(raiz, f), os.path.join(raiz, nuevo))
-    logos_neutros(marca)
+    logos_instancia(nombre, marca)
     crea_contrasena_pantalla(marca)   # pieza C de I6 (9-oct-2026): «Crea tu contraseña» para el primer administrador invitado
     tipografias_libres()
     neutraliza_ejemplos()   # ejemplos de persona que casan con gente real (pii_maqueta)
@@ -2206,6 +2399,7 @@ def instancia(nombre):
     restos = rastros_en(DIST)
     if restos:
         aborta('el build de la instancia no está limpio:\n  ' + '\n  '.join(restos[:40]))
+    comprueba_piel(DIST, nombre)
     comprueba_resultado(DIST)
     # 4. Copia al clon del repo privado de la instancia (gitignored en la agencia).
     destino = os.path.join(DESPLIEGUES, nombre)
