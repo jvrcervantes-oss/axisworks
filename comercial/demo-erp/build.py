@@ -2174,6 +2174,9 @@ def rastros_en(raiz):
 # ── Portada y Puesta en marcha de las instancias de tipo Reservas (11-oct-2026, plan único F8) ──────────────────────────────────────────
 # Solo las instancias con `"portada": "reservas"` en erp/instancias.json; Lawang, la demo y el resto siguen con la Home y los Ajustes de siempre.
 PORTADAS = ('reservas',)
+PORTADA_SEG = "  var seg = location.pathname.replace(/\\/(index\\.html)?$/, '').split('/').pop();\n"
+PORTADA_SEG_RESERVAS = ("  if (seg === 'home' && document.querySelector('script[data-axw-portada=\"reservas\"]')) seg = 'portada-reservas';"
+                        "   /* la Home de reservas pinta con su propio script (build.py portada_reservas) */\n")
 AJUSTES_PUESTA_TAB_ANCLA = ('<button class="lw-tab-btn px-4 py-2 rounded-full bg-primary-container text-on-primary font-label-md text-[13px] font-medium transition-colors"'
                             ' role="tab" type="button" id="lw-tab-empresa"')
 AJUSTES_PUESTA_TAB = ('<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors"'
@@ -2212,6 +2215,13 @@ def portada_reservas():
     if not os.path.isfile(os.path.join(v4, 'home', 'index.html')):
         aborta('portada_reservas: no está la Home copiada de Lawang (intranet/v4/home/index.html): ¿cambió su sitio?')
     _pantalla_bot(v4, 'portada_reservas.html', 'home', 'Inicio', puerta='data-axw-portada="reservas"')
+    # datos.js de Lawang elige qué cargar por el último trozo de la ruta: en /home/ arrancaba la Home de Lawang (KPIs de contratos y
+    # cobros, tabla de documentos) sobre esta portada: 7 errores de consola y cuatro lecturas que la portada no usa (bbm-p16-publica,
+    # 12-oct). Con la marca de la portada, datos.js no ve «home»: la trata como Taller o Ventas, que pintan con su propio script.
+    dj = os.path.join(v4, 'assets', 'datos.js')
+    t = open(dj, encoding='utf-8').read()
+    t = _una_vez(t, PORTADA_SEG, PORTADA_SEG + PORTADA_SEG_RESERVAS, 'datos.js segmento de la portada de reservas')
+    open(dj, 'w', encoding='utf-8', newline='').write(t)
 
 
 def ajustes_puesta_en_marcha():
