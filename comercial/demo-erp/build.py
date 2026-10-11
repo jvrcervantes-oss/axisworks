@@ -2507,6 +2507,72 @@ def rastros_en(raiz):
     return restos
 
 
+# ── Portada y Puesta en marcha de las instancias de tipo Reservas (11-oct-2026, plan único F8) ──────────────────────────────────────────
+# Solo las instancias con `"portada": "reservas"` en erp/instancias.json; Lawang, la demo y el resto siguen con la Home y los Ajustes de siempre.
+PORTADAS = ('reservas',)
+AJUSTES_PUESTA_TAB_ANCLA = ('<button class="lw-tab-btn px-4 py-2 rounded-full bg-primary-container text-on-primary font-label-md text-[13px] font-medium transition-colors"'
+                            ' role="tab" type="button" id="lw-tab-empresa"')
+AJUSTES_PUESTA_TAB = ('<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors"'
+                      ' role="tab" type="button" id="lw-tab-puesta" aria-controls="lw-panel-puesta" aria-selected="false" tabindex="-1" data-lw-tab="puesta" data-lwt>'
+                      'Puesta en marcha</button>\n')
+AJUSTES_PUESTA_PANEL_ANCLA = '<section id="lw-panel-empresa" role="tabpanel"'
+AJUSTES_PUESTA_PANEL = (
+    '<section id="lw-panel-puesta" role="tabpanel" aria-labelledby="lw-tab-puesta" data-lw-panel="puesta" class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden" hidden>\n'
+    '<div class="px-8 pt-8 pb-4 flex flex-col gap-1 border-b border-outline-variant/40">\n'
+    '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Puesta en marcha</span>\n'
+    '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Lo que hace falta para empezar a facturar, en orden</h2>\n'
+    '<p class="font-body-sm text-body-sm text-outline" data-lwt>Cada paso dice si está hecho y dónde se hace. Cuando estén todos, ya puedes encender Facturas.</p>\n'
+    '</div>\n'
+    '<div id="lw-aj-puesta">\n'
+    '<p class="px-8 py-6 font-body-md text-body-md text-on-surface-variant" data-lwt>Trayendo la puesta en marcha…</p>\n'
+    '</div>\n'
+    '</section>\n\n')
+AJUSTES_PESTANAS = "var PESTANAS = ['empresa', 'correo', 'usuarios', 'mantenimiento', 'reservas', 'registro'];"
+AJUSTES_DEFECTO = "return PESTANAS.indexOf(h) >= 0 ? h : 'empresa';"
+
+
+def portada_de(nombre):
+    """La portada que declara la instancia en el registro (`portada`), o None si sigue la de siempre. Un valor desconocido PARA: una errata no puede dejar
+    la Home de parcelas sin un solo aviso."""
+    p = _instancia_registro(nombre).get('portada')
+    if p is not None and p not in PORTADAS:
+        aborta('erp/instancias.json: %s declara "portada": %r y solo se conocen %s' % (nombre, p, ', '.join(PORTADAS)))
+    return p
+
+
+def portada_reservas():
+    """/home/ de una instancia de tipo Reservas: las entregas y devoluciones del día (portada_reservas.html sobre la cáscara de /asistente/, como taller).
+    SIN puerta de herramienta: es el `inicio` de todo el que entra (un mecánico con solo `taller` no puede rebotar al iniciar sesión); la lectura la vuelve
+    a exigir la base. Sustituye la Home de Lawang solo en lo copiado a DIST, nunca en su repo."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    if not os.path.isfile(os.path.join(v4, 'home', 'index.html')):
+        aborta('portada_reservas: no está la Home copiada de Lawang (intranet/v4/home/index.html): ¿cambió su sitio?')
+    _pantalla_bot(v4, 'portada_reservas.html', 'home', 'Inicio', puerta='data-axw-portada="reservas"')
+
+
+def ajustes_puesta_en_marcha():
+    """Ajustes › Puesta en marcha (instancias de tipo Reservas): una pestaña más, la PRIMERA y la que abre /ajustes/ sin #, con los pasos que da la base
+    (puesta_en_marcha_estado) y los dos sí/no de impuestos. El contenido lo pinta ajustes_puesta.js; aquí solo se pone la pestaña, su panel, el script y se
+    le dice a ajustes.js (que tiene la lista de pestañas CERRADA) que existe. Todo con reemplazo literal que para si Lawang cambia el trozo. Va después de
+    ajustes_correo_maestro(), que también reescribe ajustes.js. Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    pag = os.path.join(v4, 'ajustes', 'index.html')
+    t = open(pag, encoding='utf-8').read()
+    t = _una_vez(t, AJUSTES_PUESTA_TAB_ANCLA, AJUSTES_PUESTA_TAB + AJUSTES_PUESTA_TAB_ANCLA, 'ajustes/index.html pestaña Puesta en marcha')
+    t = _una_vez(t, AJUSTES_PUESTA_PANEL_ANCLA, AJUSTES_PUESTA_PANEL + AJUSTES_PUESTA_PANEL_ANCLA, 'ajustes/index.html panel Puesta en marcha')
+    m = re.findall(r'<script src="\.\./assets/ajustes\.js(?:\?v=[0-9a-f]+)?" defer></script>', t)
+    if len(m) != 1:
+        aborta('ajustes_puesta_en_marcha: ajustes/index.html no carga UNA vez ../assets/ajustes.js con defer (hay %d)' % len(m))
+    t = t.replace(m[0], m[0] + '<script src="../assets/ajustes_puesta.js" defer></script>')
+    open(pag, 'w', encoding='utf-8', newline='').write(t)
+    js = os.path.join(v4, 'assets', 'ajustes.js')
+    a = open(js, encoding='utf-8').read()
+    a = _una_vez(a, AJUSTES_PESTANAS, AJUSTES_PESTANAS.replace("['empresa',", "['puesta', 'empresa',"), 'ajustes.js PESTANAS')
+    a = _una_vez(a, AJUSTES_DEFECTO, AJUSTES_DEFECTO.replace("'empresa';", "'puesta';"), 'ajustes.js pestaña por defecto')
+    open(js, 'w', encoding='utf-8', newline='').write(a)
+    shutil.copy2(os.path.join(AQUI, 'ajustes_puesta.js'), os.path.join(v4, 'assets', 'ajustes_puesta.js'))
+
+
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
@@ -2517,6 +2583,9 @@ def instancia(nombre):
     taller_pantalla()   # F8 pieza 2 (8-oct-2026): Taller — órdenes de trabajo ligeras (tras reservas de producto: sus anclas de nav.js)
     entrega_pantalla()   # F8 pieza 8 (10-oct-2026): Entrega — sede, tarifa por km y límites (tras taller: sus anclas de nav.js y herramientas.js)
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
+    if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
+        portada_reservas()
+        ajustes_puesta_en_marcha()
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]
