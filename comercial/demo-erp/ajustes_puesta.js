@@ -2,7 +2,7 @@
  * facturas. Tras meterlos en el ERP que se pueda activar. Haz un setup en el ERP y tras el setup que funcione.»
  * build.py (ajustes_puesta_en_marcha) pone en /ajustes/ de las instancias con `"portada": "reservas"` la pestaña y su contenedor (#lw-aj-puesta) y carga este fichero;
  * en Lawang no existe. Qué hace:
- *  · pinta los pasos que devuelve `puesta_en_marcha_datos()` TAL CUAL los decide la base (hecho / pendiente, el detalle y dónde se hace): la pantalla no
+ *  · pinta los pasos que devuelve `puesta_en_marcha_estado()` TAL CUAL los decide la base (hecho / pendiente, el detalle y dónde se hace): la pantalla no
  *    deduce si un paso está hecho;
  *  · deja elegir ahí mismo dos ajustes de sí/no (`precio_incluye_impuesto`, `reservas_sin_impuesto`) y los guarda por `ajustes_config_guardar`, una clave por
  *    botón. Quién puede escribir lo decide la base (super admin, 42501 si no); la pantalla solo no ofrece lo que la base va a rechazar (`puede_escribir`).
@@ -207,7 +207,12 @@
   }
   function carga() {
     var c = cont(); if (!c) return Promise.resolve();
-    return Promise.all([window.lwDatos('puesta_en_marcha_datos'), window.lwDatos('ajustes_config_datos')]).then(function (rs) {
+    if (!sb) { errorLectura(null); return Promise.resolve(); }   // sin cliente (sin sesión): Reintentar vuelve a decirlo, no lanza fuera de la promesa (revisor, BAJA)
+    // puesta_en_marcha_estado NO es una *_datos (canon 7.r: cotiza de verdad con funciones internas, no puede ser de erp_lector): va por sb.rpc,
+    // porque lwDatos solo admite *_datos. Misma forma de respuesta.
+    var estado = Promise.resolve(sb.rpc('puesta_en_marcha_estado')).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; },
+                                                                function (e) { return { data: null, error: e }; });
+    return Promise.all([estado, window.lwDatos('ajustes_config_datos')]).then(function (rs) {
       var pm = rs[0] || {}, aj = rs[1] || {};
       if (pm.error || !pm.data || !Array.isArray(pm.data.pasos)) { errorLectura(pm.error); return; }
       if (aj.error || !aj.data) { errorLectura(aj.error); return; }
