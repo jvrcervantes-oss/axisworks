@@ -17,7 +17,7 @@ def sin_comentarios(t):
 CODIGO = sin_comentarios(SCRIPT)
 CODIGO_AJ = sin_comentarios(AJ)
 FICHEROS = ['intranet/v4/asistente/index.html', 'intranet/v4/assets/nav.js', 'contracts/assets/herramientas.js', 'intranet/v4/assets/editores.js',
-            'intranet/v4/assets/ajustes.js', 'intranet/v4/ajustes/index.html', 'intranet/v4/home/index.html']
+            'intranet/v4/assets/ajustes.js', 'intranet/v4/ajustes/index.html', 'intranet/v4/home/index.html', 'intranet/v4/assets/datos.js']
 
 
 def cadena():
@@ -77,6 +77,11 @@ ajs = lee(d, 'intranet/v4/assets/ajustes.js') if r == 'pasa' else ''
 mira('la Home de parcelas ya no está: ni sus KPI ni sus acciones', 'kpi-unidades-libres' not in home and 'nuevo-contrato' not in home and 'data-ph="raiz"' in home)
 mira('la Home NO pide herramienta (es el inicio de todos) y no queda la puerta del asistente', 'data-herramienta=' not in home and 'data-axw-portada="reservas"' in home)
 mira('el título es Inicio', '<title data-lw-titulo>Inicio</title>' in home)
+datos = lee(d, 'intranet/v4/assets/datos.js') if r == 'pasa' else ''
+mira('datos.js no arranca la Home de Lawang sobre la portada (segmento propio, una vez, tras calcular seg)',
+     datos.count(build.PORTADA_SEG_RESERVAS) == 1 and datos.index(build.PORTADA_SEG) < datos.index(build.PORTADA_SEG_RESERVAS))
+c4 = compila(datos, 'd.js') if datos else None
+mira('el datos.js resultante compila', c4 is not None and c4.returncode == 0)
 mira('las ayudas comunes se pegan UNA vez y las marcas no quedan', home.count('function axwComun(raiz, T)') == 1 and '/*AXW_COMUN_' not in home)
 m = re.findall(r'<script>\n(.*?)\n</script>\n</body></html>', home, flags=re.S)
 chk = compila(m[-1], 'h.js') if m else None
