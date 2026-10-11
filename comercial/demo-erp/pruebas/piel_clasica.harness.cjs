@@ -68,6 +68,8 @@ const PINTURA = `(function(lawang){
   } else {
     ok('axw.css lleva la regla html:root al final', /html:root\{[^}]+\}\s*$/.test(css));
     ok('axw.css ya no lleva el hover #0d5b5f de Lawang', !/#0d5b5f/i.test(css));
+    const masc = path.join(RAIZ, 'assets', 'mascota.js');
+    ok('mascota: su marco ya no lleva Deep Lagoon de Lawang', fs.existsSync(masc) && !/#104C4F|rgba\(16,76,79/i.test(fs.readFileSync(masc, 'utf8')));
     const p = await abre(ctx, '/');
     const r = await p.evaluate(() => {
       const q = s => document.querySelector(s);

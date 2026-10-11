@@ -1106,9 +1106,10 @@ def menu_oscuro_css(nombre):
 # axw.css (Calidad, 12-oct: la puerta de bbm salía con el botón y el título verdes; el primer intento, que añadía `:root` a la
 # hoja, no pintaba nada). Aquí la regla es `html:root{…}` (especificidad 0,1,1 > 0,1,0): gana a la de la página sea cual sea
 # el orden. Cada variable va por su USO, no por su nombre (en la piel de bbm stone-sand y soft-canopy son el mismo gris oscuro):
-# --ss/--stone son fondo del botón desactivado y borde → neutro claro; --sc es texto sobre blanco y anillo de foco.
+# --ss es fondo del botón desactivado (texto blanco: el tono medio de la piel, no el más claro; revisor 12-oct) y --stone borde
+# → neutros claros; --sc es texto sobre blanco y anillo de foco.
 PALETA_CLASICA = (('--tg', 'territorial-green'), ('--dl', 'deep-lagoon'), ('--be', 'burnt-earth'), ('--va', 'volcanic-ash'),
-                  ('--sc', 'soft-canopy'), ('--ss', 'outline-variant'), ('--rl', 'raw-linen'), ('--ink', 'on-background'),
+                  ('--sc', 'soft-canopy'), ('--ss', 'secondary-fixed-dim'), ('--rl', 'raw-linen'), ('--ink', 'on-background'),
                   ('--line', 'warm-border'), ('--line-fuerte', 'outline-variant'), ('--sup-2', 'surface-container-low'),
                   ('--linen', 'background'), ('--paper', 'surface-container-lowest'), ('--stone', 'outline-variant'),
                   ('--muted', 'on-surface-variant'))
@@ -1119,8 +1120,16 @@ CLASICA_FIJOS = (('contracts/assets/axw.css', '#0d5b5f', 'primary-container', 'h
                  ('index.html', 'rgba(72,91,55,.15)', 'territorial-green', 'rgba.15'),         # anillo del campo de la puerta
                  ('index.html', '#F5F0E6', 'background', 'hex'),                              # velo «entrando…»
                  ('index.html', '#CBD6B6', 'inverse-primary', 'hex'),                          # rol «manda» del panel clásico
-                 ('index.html', 'rgba(143,155,122,.22)', 'soft-canopy', 'rgba.22'))            # anillo del buscador clásico
-CLASICA_CONTRASTE = (('#FFFFFF', '--dl'), ('#FFFFFF', '--tg'), ('#FFFFFF', 'primary-container'), ('--sc', '#FFFFFF'),
+                 ('index.html', 'rgba(143,155,122,.22)', 'soft-canopy', 'rgba.22'),            # anillo del buscador clásico
+                 # la mascota (botón flotante de avisos, en todas las pantallas v4): su marco y sus botones en Deep Lagoon fijo.
+                 # El personaje (su brote verde) es dibujo, no marca de la suite: se queda (orquestador decide si se cambia).
+                 ('assets/mascota.js', '#104C4F', 'deep-lagoon', 'hex'),
+                 ('assets/mascota.js', 'rgba(16,76,79,', 'deep-lagoon', 'rgba'),
+                 ('assets/mascota.js', '#0c3c3e', 'on-background', 'hex'),                     # hover del botón principal
+                 ('assets/mascota.js', '#316669', 'primary-container', 'hex'))                 # enlaces de texto
+# Texto del botón desactivado: no se exige 4,5 (WCAG lo exime) pero tampoco peor que en Lawang (blanco sobre #BEB3A5, 2,1:1).
+CLASICA_DESACTIVADO_MIN = 2.1
+CLASICA_CONTRASTE = (('#FFFFFF', '--dl'), ('#FFFFFF', '--tg'), ('#FFFFFF', 'primary-container'), ('#FFFFFF', 'on-background'), ('--sc', '#FFFFFF'),
                      ('--muted', '--paper'), ('--linen', '--dl'), ('--ink', '--rl'))
 
 
@@ -1133,8 +1142,14 @@ def paleta_clasica(nombre):
     p = _piel_preset(nombre)
     if p is None:
         return None
+    faltan = sorted(({tok for _v, tok in PALETA_CLASICA} | {f[2] for f in CLASICA_FIJOS} | {'primary-container', 'on-background'}) - set(p))
+    if faltan:
+        aborta('la piel de %s no trae los tokens que pinta la suite clásica: %s (mirar PALETA_CLASICA y CLASICA_FIJOS)' % (nombre, ', '.join(faltan)))
     v = {var: tuple(p[tok]) for var, tok in PALETA_CLASICA}
     D = _deriva()
+    if D.contraste((255, 255, 255), v['--ss']) < CLASICA_DESACTIVADO_MIN:
+        aborta('suite clásica de %s: el botón desactivado (blanco sobre --ss) da %.2f:1, peor que en Lawang'
+               % (nombre, D.contraste((255, 255, 255), v['--ss'])))
     color = lambda k: (255, 255, 255) if k == '#FFFFFF' else (v[k] if k in v else tuple(p[k]))
     bajas = ['%s/%s %.2f' % (a, b, D.contraste(color(a), color(b))) for a, b in CLASICA_CONTRASTE
              if D.contraste(color(a), color(b)) < 4.5]
@@ -1152,7 +1167,7 @@ def paleta_clasica_css(nombre):
 
 
 def piel_suite_clasica(dist, nombre):
-    """Pone la piel en la puerta (/), en lo que carga axw.css y en /crea-contrasena/. Sin piel no toca nada (Lawang, demo).
+    """Pone la piel en la puerta (/), en lo que carga axw.css, en /crea-contrasena/ y en el marco de la mascota. Sin piel no toca nada (Lawang, demo).
     Va ANTES de versiona(): el ?v= de axw.css tiene que cambiar o la CDN sirve la hoja vieja (como pasó con el favicon)."""
     css = paleta_clasica_css(nombre)
     if not css:
@@ -1161,7 +1176,7 @@ def piel_suite_clasica(dist, nombre):
     fmt = {'hex': lambda c: '#%02X%02X%02X' % c, 'rgba': lambda c: 'rgba(%d,%d,%d,' % c,
            'rgba.15': lambda c: 'rgba(%d,%d,%d,.15)' % c, 'rgba.22': lambda c: 'rgba(%d,%d,%d,.22)' % c}
     textos = {}
-    for rel in ('contracts/assets/axw.css', 'index.html', 'crea-contrasena/index.html'):
+    for rel in sorted({'contracts/assets/axw.css', 'index.html', 'crea-contrasena/index.html'} | {f[0] for f in CLASICA_FIJOS}):
         ruta = os.path.join(dist, rel)
         if not os.path.isfile(ruta):
             aborta('piel de la suite clásica: falta %s en el paquete' % rel)
