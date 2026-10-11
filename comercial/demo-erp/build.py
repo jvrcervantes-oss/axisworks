@@ -1447,6 +1447,16 @@ def limpia_internos(dist):
     print('limpia_internos: %d referencias internas fuera, %d nombres del doble de QA renombrados' % (refs, n + n2))
 
 
+def reemplaza_publico(t):
+    """REEMPLAZOS_PUBLICO sin repetirse: lo que YA es el nombre inventado no se vuelve a sustituir. Una regla cuyo destino
+    contiene su origen (X → «X algo») doblaba el nombre al pasar sobre los datos de la demo, que ya lo traen inventado
+    («Batu Ridge Ridge» en el portal, 12-oct-2026). Se aparta cada destino con una marca antes de sustituir y se devuelve."""
+    for i, (a, b) in enumerate(REEMPLAZOS_PUBLICO):
+        marca = '\x00%d\x00' % i
+        t = t.replace(b, marca).replace(a, b).replace(marca, b) if a in b else t.replace(a, b)
+    return t
+
+
 HUELLA = '.huella'
 
 
@@ -1519,9 +1529,7 @@ def publica():
                 continue
             p = os.path.join(raiz, f)
             t = open(p, encoding='utf-8', errors='replace').read()
-            t2 = t
-            for a, b in REEMPLAZOS_PUBLICO:
-                t2 = t2.replace(a, b)
+            t2 = reemplaza_publico(t)
             t2 = cambia_lawang(t2)
             if t2 != t:
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
