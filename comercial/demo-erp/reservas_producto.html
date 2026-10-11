@@ -300,7 +300,9 @@ a.rp-boton{text-decoration:none}
     'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.': 'The customer list is cut to the first 500: if you cannot see the one you need, ask the administrator.',
     'No se ha podido mirar si este teléfono ya tiene reservas. Pulsa Siguiente para seguir igualmente.': 'Could not check whether this phone already has bookings. Press Next to carry on anyway.',
     'La reserva no aparece en la lista. No la repitas desde aquí (una reserva confirmada podría quedar doble): pulsa «Comprobar de nuevo» en un momento y, si sigue sin salir y tampoco está en la pestaña Reservas, empieza de cero.': 'The booking is not in the list. Do not repeat it from here (a confirmed booking could end up twice): press “Check again” in a moment and, if it still does not show and is not in the Bookings tab either, start again.',
-    'La conexión se cortó y el apartado no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez: la base no duplica un apartado con la misma clave.': 'The connection dropped and the hold is not in the list (checked a few seconds later). You can try again: the database does not duplicate a hold with the same key.'
+    'La conexión se cortó y el apartado no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez: la base no duplica un apartado con la misma clave.': 'The connection dropped and the hold is not in the list (checked a few seconds later). You can try again: the database does not duplicate a hold with the same key.',
+    'Esta reserva se envió y no sabemos si se creó. Pulsa «Comprobar de nuevo» antes de hacer nada.': 'This booking was sent and we do not know whether it was created. Press “Check again” before doing anything.',
+    'En la lista hay una reserva igual, pero no se puede saber si es esta o una anterior. Mírala en la pestaña Reservas antes de hacer nada; no la repitas.': 'There is an identical booking in the list, but we cannot tell whether it is this one or an earlier one. Look at it in the Bookings tab before doing anything; do not repeat it.'
   };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
     Object.keys(EN_RP).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_RP[k]; });
@@ -417,7 +419,9 @@ a.rp-boton{text-decoration:none}
     'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.': 'Daftar pelanggan hanya 500 pertama: jika yang dicari tidak ada, minta ke pengelola.',
     'No se ha podido mirar si este teléfono ya tiene reservas. Pulsa Siguiente para seguir igualmente.': 'Belum bisa dicek apakah nomor ini sudah punya booking. Tekan Lanjut untuk tetap melanjutkan.',
     'La reserva no aparece en la lista. No la repitas desde aquí (una reserva confirmada podría quedar doble): pulsa «Comprobar de nuevo» en un momento y, si sigue sin salir y tampoco está en la pestaña Reservas, empieza de cero.': 'Booking tidak ada di daftar. Jangan diulang dari sini (booking yang dikonfirmasi bisa jadi dobel): tekan «Cek lagi» sebentar lagi dan, jika tetap tidak muncul dan juga tidak ada di tab Booking, mulai dari awal.',
-    'La conexión se cortó y el apartado no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez: la base no duplica un apartado con la misma clave.': 'Koneksi terputus dan booking yang ditahan tidak ada di daftar (dicek beberapa detik kemudian). Anda boleh mencoba lagi: sistem tidak menggandakan booking tahan dengan kunci yang sama.'
+    'La conexión se cortó y el apartado no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez: la base no duplica un apartado con la misma clave.': 'Koneksi terputus dan booking yang ditahan tidak ada di daftar (dicek beberapa detik kemudian). Anda boleh mencoba lagi: sistem tidak menggandakan booking tahan dengan kunci yang sama.',
+    'Esta reserva se envió y no sabemos si se creó. Pulsa «Comprobar de nuevo» antes de hacer nada.': 'Booking ini sudah dikirim dan belum diketahui apakah sudah dibuat. Tekan «Cek lagi» sebelum melakukan apa pun.',
+    'En la lista hay una reserva igual, pero no se puede saber si es esta o una anterior. Mírala en la pestaña Reservas antes de hacer nada; no la repitas.': 'Di daftar ada booking yang sama, tapi tidak bisa dipastikan apakah ini booking yang baru atau yang lama. Cek di tab Booking sebelum melakukan apa pun; jangan diulang.'
   };
   if (window.LW_ID && typeof window.LW_ID === 'object') {
     Object.keys(ID_RP).forEach(function (k) { if (!(k in window.LW_ID)) window.LW_ID[k] = ID_RP[k]; });
@@ -809,7 +813,8 @@ a.rp-boton{text-decoration:none}
   }
   function asTieneDatos(W) { return !!(W.desde || W.prodId || W.numero || W.nombre || W.dirEntrega || W.dirRecogida || W.notas); }
   function asGuarda() {
-    try { if (A && !A.creada) window.sessionStorage.setItem(AS_GUARDA, JSON.stringify(A.W)); }
+    var duda = A && A.enviado && (A.enviando || A.comprobando || A.dudosaSinMirar) ? { enviado: A.enviado, yaExiste: !!A.yaExiste } : null;
+    try { if (A && !A.creada) window.sessionStorage.setItem(AS_GUARDA, JSON.stringify({ W: A.W, duda: duda })); }
     catch (e) { /* MUDO A PROPOSITO: sin sessionStorage el borrador vive solo en memoria; la pantalla funciona igual */ }
   }
   function asOlvida() { try { window.sessionStorage.removeItem(AS_GUARDA); } catch (e) { /* MUDO A PROPOSITO: ver asGuarda */ } }
@@ -817,6 +822,8 @@ a.rp-boton{text-decoration:none}
     var x = null;
     try { x = JSON.parse(window.sessionStorage.getItem(AS_GUARDA) || 'null'); } catch (e) { x = null; }
     if (!x || typeof x !== 'object') return null;
+    var duda = asDudaValida(x.duda);
+    if (x.W && typeof x.W === 'object') x = x.W;
     var W = asVacio();
     Object.keys(W).forEach(function (k) { if (typeof x[k] === typeof W[k] || (W[k] === null && typeof x[k] === 'string')) W[k] = x[k]; });
     if (W.desde && (!esFecha(W.desde) || W.desde < hoy())) { W.desde = null; W.hasta = null; W.prodId = null; }
@@ -825,7 +832,16 @@ a.rp-boton{text-decoration:none}
     else if (AS_PASOS.indexOf(W.paso) > 1) W.paso = 'moto';   // los precios se vuelven a pedir: se retoma en la moto con todo lo demás ya metido
     if (!/^equipo-[a-z0-9]{6,100}$/.test(W.clave)) W.clave = claveNueva();
     if (!Object.prototype.hasOwnProperty.call(AS_MODOS, W.modo)) W.modo = null;
-    return asTieneDatos(W) ? W : null;
+    if (duda) return { W: W, duda: duda };   // con un envío sin resolver se vuelve SIEMPRE, aunque el resto parezca vacío
+    return asTieneDatos(W) ? { W: W, duda: null } : null;
+  }
+  function asDudaValida(d) {
+    if (!d || typeof d !== 'object' || !d.enviado || typeof d.enviado !== 'object') return null;
+    var e = d.enviado;
+    if (typeof e.prodId !== 'string' || !esFecha(e.desde) || !esFecha(e.hasta) || typeof e.firma !== 'string') return null;
+    return { enviado: { firma: e.firma, prodId: e.prodId, desde: e.desde, hasta: e.hasta, clienteId: typeof e.clienteId === 'string' ? e.clienteId : '',
+                        telefono: typeof e.telefono === 'string' ? e.telefono : '', minutos: typeof e.minutos === 'number' ? e.minutos : null,
+                        previos: Array.isArray(e.previos) ? e.previos.filter(function (i) { return typeof i === 'string'; }) : null }, yaExiste: d.yaExiste === true };
   }
   function fechaLarga(s) { var d = diaDe(s); return d ? d.toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', month: 'short' }) : '—'; }
 
@@ -876,11 +892,16 @@ a.rp-boton{text-decoration:none}
     error(''); exito('');
     if (A) return;
     var previo = asLee();
-    A = { W: previo || asVacio(), recuperado: !!previo, cot: {}, cotClave: null, rango: null, todas: null, todasRecortada: false, dupTel: null, coinc: [],
+    A = { W: previo ? previo.W : asVacio(), recuperado: !!previo, cot: {}, cotClave: null, rango: null, todas: null, todasRecortada: false, dupTel: null, coinc: [],
           err: {}, enviando: false, creada: null, dudosa: false, cotTotal: null, salir: false, previo: document.activeElement, pasoPintado: null };
     var cuerpo = h('div', { class: 'rp-modal rp-as', role: 'dialog', 'aria-modal': 'true', 'aria-label': T('Nueva reserva de producto') });
     var fondo = h('div', { class: 'rp-fondo', 'data-rp': 'dialogo', 'data-asistente': '1' }, [cuerpo]);
     A.fondo = fondo; A.cuerpo = cuerpo;
+    if (previo && previo.duda) {
+      // un envío anterior quedó sin resolver (se cerró o se recargó la página): se vuelve al resumen y lo primero es comprobarlo; nunca se reenvía sin más
+      A.enviado = previo.duda.enviado; A.yaExiste = previo.duda.yaExiste; A.dudosaSinMirar = true; A.W.paso = 'resumen';
+      A.errEnvio = T('Esta reserva se envió y no sabemos si se creó. Pulsa «Comprobar de nuevo» antes de hacer nada.');
+    }
     fondo.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') asCierra(false); });
     cuerpo.addEventListener('click', asClic);
     cuerpo.addEventListener('input', asTeclea);
@@ -1012,7 +1033,7 @@ a.rp-boton{text-decoration:none}
     if (W.paso === 'resumen') {
       var txt = A.enviando ? T('Trabajando…') : (A.comprobando ? T('Comprobando…') : (W.modo ? T(AS_BOTON[W.modo]) : T('Elige confirmar o apartar')));
       pie.appendChild(h('button', { type: 'button', class: 'rp-boton rp-as-final', 'data-primario': '1', 'data-accion': A.dudosaSinMirar ? 'rp-modal-as-comprueba' : 'rp-modal-as-confirma',
-                                    disabled: (!W.modo || A.enviando || A.comprobando || !asCot()) ? true : null, text: A.dudosaSinMirar && !A.comprobando ? T('Comprobar de nuevo') : txt }));
+                                    disabled: (A.enviando || A.comprobando || (!A.dudosaSinMirar && (!W.modo || !asCot()))) ? true : null, text: A.dudosaSinMirar && !A.comprobando ? T('Comprobar de nuevo') : txt }));
     } else {
       pie.appendChild(h('button', { type: 'button', class: 'rp-boton rp-as-final', 'data-primario': '1', 'data-accion': 'rp-modal-as-sig',
                                     disabled: A.buscando ? true : null, text: A.buscando ? T('Buscando…') : T('Siguiente') + ' ›' }));
@@ -1172,6 +1193,11 @@ a.rp-boton{text-decoration:none}
   }
   function asPasoResumen(c) {
     var W = A.W, k = asCot(), p = producto(W.prodId);
+    if (!k && A.dudosaSinMirar) {   // con un envío en duda lo que importa es comprobarlo, aunque el precio aún no haya vuelto
+      if (A.errEnvio) c.appendChild(h('p', { class: 'rp-error', role: 'alert', 'data-rp': 'as-error-envio', text: A.errEnvio }));
+      if (!A.comprobando) c.appendChild(h('div', { class: 'rp-acciones' }, [boton(T('Empezar de cero'), 'rp-modal-as-reinicia')]));
+      return;
+    }
     if (!k) { c.appendChild(h('p', { class: 'rp-error', role: 'alert', text: T('Falta el precio de la base para esta moto: vuelve al paso de la moto.') })); return; }
     A.cotTotal = { total: k.total, moneda: k.moneda };
     var tot = h('div', { class: 'rp-as-total', 'data-rp': 'as-total' }, [h('span', { class: 'rp-as-etq', text: T('Total') }), h('span', { class: 'rp-as-cifra', text: dinero(k.total, k.moneda) })]);
@@ -1289,10 +1315,17 @@ a.rp-boton{text-decoration:none}
     if (A.enviado && A.enviado.firma !== firma) { W.clave = claveNueva(); datos.clave = W.clave; A.yaExiste = false; asGuarda(); }   // otra reserva tras un envío que no se creó: clave nueva (la vieja contestaría «ya existe» por el apartado anterior)
     // lo que se comprueba si la respuesta no llega es ESTO (no lo que haya en pantalla luego), sin las reservas que ya estaban en esas fechas antes de enviar
     A.enviado = { firma: firma, prodId: datos.producto_id, desde: datos.desde, hasta: datos.hasta, clienteId: datos.client_id || '', telefono: datos.contacto_telefono || '', minutos: minutos,
-                  previos: A.rango && !A.rangoRecortado ? A.rango.map(function (x) { return x.id; }) : null };
-    var yo = A;
-    llama('reserva_producto_crea', { p_datos: datos, p_bloqueo_minutos: minutos }).then(function (r) {
-      if (A !== yo) return;
+                  previos: null };
+    var yo = A, env = A.enviado;
+    asGuarda();   // desde aquí el borrador lleva la duda: cerrar o recargar no deja reenviar a ciegas
+    // la foto de «lo que ya había» se toma JUSTO antes de enviar (no la del paso de la moto: el bot o un compañero pueden haber reservado entre medias)
+    llama('reservas_producto_datos', { p_desde: datos.desde, p_hasta: datos.hasta, p_limit: 500 }).then(function (rp) {
+      if (A !== yo) return null;
+      env.previos = vaListaDe(rp, 'reservas') && !rp.data.siguiente ? rp.data.reservas.map(function (x) { return x.id; }) : null;
+      asGuarda();
+      return llama('reserva_producto_crea', { p_datos: datos, p_bloqueo_minutos: minutos });
+    }).then(function (r) {
+      if (A !== yo || !r) return;
       A.enviando = false;
       if (r.error) {
         var c = clasifica(r.error);
@@ -1335,10 +1368,12 @@ a.rp-boton{text-decoration:none}
         A.errEnvio = A.yaExiste ? T('La base dice que esta reserva ya existe (apartada), pero no aparece en la lista. No la repitas: búscala en la pestaña Reservas.')
                    : (lista && !r.data.siguiente && !cand.length && E2.minutos == null
                       ? T('La reserva no aparece en la lista. No la repitas desde aquí (una reserva confirmada podría quedar doble): pulsa «Comprobar de nuevo» en un momento y, si sigue sin salir y tampoco está en la pestaña Reservas, empieza de cero.')
-                      : T('No sabemos si la reserva se creó y no hemos podido mirarlo. No la repitas: pulsa «Comprobar de nuevo» en un momento.'));
-        asPinta(); return;
+                      : (!E2.previos && cand.length
+                         ? T('En la lista hay una reserva igual, pero no se puede saber si es esta o una anterior. Mírala en la pestaña Reservas antes de hacer nada; no la repitas.')
+                         : T('No sabemos si la reserva se creó y no hemos podido mirarlo. No la repitas: pulsa «Comprobar de nuevo» en un momento.')));
+        asGuarda(); asPinta(); return;
       }
-      A.dudosaSinMirar = false;
+      A.dudosaSinMirar = false; asGuarda();
       A.errEnvio = T('La conexión se cortó y el apartado no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez: la base no duplica un apartado con la misma clave.');
       asPinta();
     });

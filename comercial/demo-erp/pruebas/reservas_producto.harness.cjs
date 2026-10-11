@@ -425,6 +425,32 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await ctx.close();
   }
   {
+    // revisor 3d6a177 (ALTA): confirmada en duda → Cerrar → Salir → Nueva reserva, y tambien recargar: vuelve al resumen con «Comprobar de nuevo»; nunca se reenvia
+    const { base, p, ctx } = await abre({ url: true, base: { creaSinRed: true } });
+    await hastaResumen(p); await confirma(p);
+    await espera(p, () => document.querySelector('[data-rp="as-error-envio"]') && !/miramos/.test(document.querySelector('[data-rp="as-error-envio"]').textContent));
+    await p.click('[data-accion="rp-modal-as-cerrar"]'); await p.click('[data-accion="rp-modal-as-salir"]');
+    await espera(p, () => !document.querySelector('[data-rp="dialogo"]'));
+    await p.click('[data-accion="rp-nueva"]'); await enPaso(p, 'resumen');
+    ok('cerrar con la duda abierta y volver: resumen con «Comprobar de nuevo», sin poder reenviar', (await txt(p, '.rp-as-final')).includes('Comprobar de nuevo') && !(await p.$('[data-accion="rp-modal-as-confirma"]')));
+    await p.reload(); await espera(p, () => document.querySelector('[data-rp="res-estado"]') && !document.querySelector('[data-rp="res-estado"]').textContent.includes('Cargando'));
+    await p.click('[data-accion="rp-nueva"]'); await enPaso(p, 'resumen');
+    ok('recargar la pagina con la duda abierta: igual, y reserva_producto_crea sigue llamada UNA vez', (await txt(p, '.rp-as-final')).includes('Comprobar de nuevo') && llamadas(base, 'reserva_producto_crea').length === 1);
+    await ctx.close();
+  }
+  {
+    // revisor 3d6a177 (MEDIA): una gemela creada ENTRE el paso de la moto y el envio (el bot, un companero) no se da por la reserva nueva tras un corte
+    const { base, p, ctx } = await abre({ base: { creaSinRed: true } });
+    await hastaResumen(p, '0812 9999 8888', 'Komang');
+    base.reservas.push({ id: 'r7', numero: 'RSV-7', producto_id: 'p1', producto: 'Honda Beat', unidad_id: 'u1', unidad: 'DK 1', client_id: null, cliente_oculto: false,
+      contacto_nombre: 'Komang', contacto_telefono: '+6281299998888', desde: mas(20), hasta: mas(22), dias: 2, estado: 'confirmada', origen: 'bot', caduca_en: null, precio_total: 200000, moneda: 'IDR',
+      desglose: [], entrega_direccion: null, recogida_direccion: null, pago_referencia: null, notas: null, creado_en: new Date().toISOString(), creado_por: 'bot' });
+    await confirma(p);
+    await espera(p, () => document.querySelector('[data-rp="as-error-envio"]') && !/miramos/.test(document.querySelector('[data-rp="as-error-envio"]').textContent));
+    ok('gemela creada entre la moto y el envio: no se ensena como creada (la foto de lo previo es de justo antes de enviar)', !(await p.$('[data-rp="as-hecha"]')) && (await txt(p, '.rp-as-final')).includes('Comprobar de nuevo'));
+    await ctx.close();
+  }
+  {
     const { p, ctx } = await abre({ base: { creaSinId: true } });
     await hastaResumen(p); await confirma(p);
     await espera(p, () => document.querySelector('[data-rp="as-hecha"]') || (document.querySelector('[data-rp="as-error-envio"]') && !/miramos/.test(document.querySelector('[data-rp="as-error-envio"]').textContent)));

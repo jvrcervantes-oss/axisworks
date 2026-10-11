@@ -162,6 +162,8 @@ mira('revisor 835f420: clave_repetida nunca acaba en «no se creo», sin reloj d
 mira('revisor 6aeaafa: se comprueba lo ENVIADO sin las reservas previas; una confirmada sin encontrar no reactiva el envio; nada se toca con el envio en duda',
      'E2.previos.indexOf(y.id) === -1' in CODIGO and 'E2.minutos == null) {' in CODIGO and 'function asBloqueado()' in CODIGO and CODIGO.count('asBloqueado() ? true : null') >= 3
      and 'if (A.enviado && A.enviado.firma !== firma) { W.clave = claveNueva();' in CODIGO)
+mira('revisor 3d6a177: la duda de un envio viaja en el borrador (cerrar o recargar vuelve a «Comprobar de nuevo») y la foto de lo previo se toma justo antes de enviar',
+     'function asDudaValida' in CODIGO and 'if (previo && previo.duda) {' in CODIGO and "env.previos = vaListaDe(rp, 'reservas') && !rp.data.siguiente" in CODIGO)
 mira('revisor 835f420: el cliente con ficha se conserva donde clientes_datos responde (manda client_id, no copia el contacto)',
      'if (W.clienteId) datos.client_id = W.clienteId;' in CODIGO and "else { datos.contacto_nombre = W.nombre.trim(); datos.contacto_telefono = W.telefono; }" in CODIGO)
 mira('sin respuesta: antes de dejar repetir se busca la reserva por producto, fechas y telefono', 'function asComprueba' in CODIGO and 'mismoTel(y.contacto_telefono, E2.telefono)' in CODIGO)
