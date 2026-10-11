@@ -137,6 +137,7 @@
  "Operaciones recientes": "Aktivitas terbaru",
  "Pagos de %marca": "Pembayaran %marca",
  "Pagos que piden los comerciales — comisiones y acordados: quién pide qué, y en qué quedó cada uno.": "Pembayaran yang diminta sales — komisi dan yang disepakati: siapa meminta apa, dan hasil tiap permintaan.",
+ "Panel": "Panel",
  "Para empezar necesitas: el servidor, el usuario y la contraseña del buzón desde el que envía este ERP (no es la contraseña con la que entras al ERP), y acceso a tu correo, donde te llegará un código de confirmación.": "Untuk memulai Anda memerlukan: server, pengguna, dan kata sandi kotak surat yang dipakai ERP ini untuk mengirim (bukan kata sandi untuk masuk ke ERP), serta akses ke email Anda, tempat kode konfirmasi akan dikirim.",
  "Paso": "Langkah",
  "Pasos para cambiar el servidor": "Langkah mengganti server",
@@ -231,5 +232,6 @@
  "solo ver y descargar lo aprobado": "hanya lihat dan unduh yang disetujui",
  "usuario": "pengguna",
  "vacío": "kosong",
+ "¿Eres cliente?": "Anda pelanggan?",
  "Último cambio": "Perubahan terakhir"
 }

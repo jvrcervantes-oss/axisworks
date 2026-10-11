@@ -2244,7 +2244,7 @@ def ajustes_puesta_en_marcha():
 # quede en español se cuenta aparte (LW_T_ESPANOL) para que la prueba pueda ponerse roja.
 IDIOMAS_CONOCIDOS = (('id', 'en'),)
 # Palabras que en indonesio se escriben igual que en español (Diseño, 12-oct): las únicas traducciones que pueden ser iguales a su clave.
-IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis')
+IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis', 'Panel')
 # Lo que hay que tocar en el front copiado: (fichero en DIST, trozo de Lawang, sustituto). Cada trozo tiene que aparecer EXACTAMENTE una vez.
 IDIOMAS_PARCHES = (
     ('contracts/assets/idioma.js', "  window.LW_IDIOMA = (v === 'en') ? 'en' : 'es';",
@@ -2275,9 +2275,16 @@ IDIOMAS_PARCHES = (
     ('intranet/v4/assets/datos.js', "    var l = window.LW_IDIOMA === 'en' ? 'en' : 'es';\n    return o[l] || o.es || o.en || o.id || '';",
      "    var l = window.LW_IDIOMA || 'es';\n    return o[l] || (l === 'id' && o.en) || o.es || o.en || o.id || '';"),
     ('intranet/v4/assets/mascota.js', "(window.LW_IDIOMA === 'en' ? 'EN' : 'ES')", "String(window.LW_IDIOMA || 'es').toUpperCase()"),
+    # la puerta: la pregunta del pie no llevaba marca de idioma (lo cazó la prueba de las páginas de entrada, 12-oct)
+    ('intranet/index.html', '<p class="pie">¿Eres cliente? <a href="/portal/"', '<p class="pie"><span data-lwt>¿Eres cliente?</span> <a href="/portal/"'),
 )
 # Fechas y números escritos a mano en español: 'es-ES' → el locale del idioma elegido. Un 'es-ES' usado como CLAVE de objeto no se puede envolver: para.
 ES_ES_ENVUELTO = {"'": "(window.LW_IDIOMA === 'id' ? 'id-ID' : 'es-ES')", '"': '(window.LW_IDIOMA === "id" ? "id-ID" : "es-ES")'}
+# Los 'es-ES' que NO son de interfaz y se quedan como están (revisión, 12-oct): cambiarlos con el idioma de quien mira cambiaría un dato, no un rótulo.
+ES_ES_FIJOS = {
+    'contracts/assets/dinero.js': 'lwImporteCanonico escribe el importe DENTRO de un campo editable que lwParseImporte vuelve a leer: id-ID agrupa «1.500» donde es-ES deja «1500»',
+    'intranet/facturas/documento.js': 'la fecha de la factura impresa es del documento fiscal, no del idioma de quien la mira',
+}
 
 
 def idiomas_de(nombre):
@@ -2331,11 +2338,17 @@ def idiomas_instancia(idiomas):
             t.rstrip() + '\n\n' + nucleo.replace('__AXW_LW_ID__', json.dumps(dic, ensure_ascii=False, sort_keys=True)))
     # 'es-ES' a mano → locale del idioma elegido, en todo .js y .html de la copia
     tocados = []
+    fijos = {os.path.normcase(os.path.join(DIST, *r_.split('/'))) for r_ in ES_ES_FIJOS}
+    for r_ in ES_ES_FIJOS:
+        if not os.path.isfile(os.path.join(DIST, *r_.split('/'))):
+            aborta('idiomas: ES_ES_FIJOS nombra %s y no está en la copia: revisa la lista' % r_)
     for raiz_, _d, fichs in os.walk(DIST):
         for f in fichs:
             if not f.endswith(('.js', '.html')):
                 continue
             ruta = os.path.join(raiz_, f)
+            if os.path.normcase(ruta) in fijos:
+                continue
             t = open(ruta, encoding='utf-8', errors='replace').read()
             if "es-ES'" not in t and 'es-ES"' not in t:
                 continue
@@ -2367,11 +2380,15 @@ def comprueba_idiomas(dist, idiomas):
         aborta('idiomas: el diccionario indonesio no llegó intacto al paquete (¿un reemplazo de marca lo cambió?): ' + ' | '.join(falta[:5]))
     # Por RECUENTO y no por forma: el build minifica después y cambia comillas y espacios. Cada 'es-ES' envuelto lleva su 'id-ID' al lado.
     restos = []
+    # ES_ES_FIJOS, en su sitio de antes y de después de reraiz (intranet/facturas → clasico/facturas)
+    fijos = tuple(ES_ES_FIJOS) + ('clasico/facturas/documento.js',)
     dos_idiomas = re.compile(r"""LW_IDIOMA\s*===?\s*(['"])en\1\s*\?\s*(['"])(?:en|es|EN|ES)\2\s*:\s*(['"])(?:es|en|ES|EN)\3""")
     for raiz_, _d, fichs in os.walk(dist):
         for f in fichs:
             if f.endswith(('.js', '.html')):
                 x = open(os.path.join(raiz_, f), encoding='utf-8', errors='replace').read()
+                if os.path.relpath(os.path.join(raiz_, f), dist).replace(os.sep, '/') in fijos:
+                    continue
                 if x.count('es-ES') > x.count('id-ID'):
                     restos.append('%s: %d es-ES sin su id-ID' % (rel(os.path.join(raiz_, f)), x.count('es-ES') - x.count('id-ID')))
                 for m in dos_idiomas.finditer(x):

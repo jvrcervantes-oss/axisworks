@@ -25,6 +25,8 @@
     return null;
   }
   // Solo letras y signos que no hace falta traducir (números, fechas, guiones, porcentajes, códigos en mayúsculas cortos): no cuentan como «sin traducir».
+  // El nombre de la instancia (marca, cabecera…) no es español: no se cuenta como frase sin traducir.
+  function esMarca(s) { var f = window.LW_INSTANCIA || {}; return ['marca', 'cabecera', 'subcabecera', 'titulo', 'firma_correo'].some(function (c) { return f[c] && String(f[c]) === s; }); }
   function sinTexto(s) { return /^[\s\d.,:;%()\[\]\/+\-–—·…×#*'"«»<>=?!¡¿€$Rp]*$/.test(s) || /^[A-Z0-9_\-]{1,6}$/.test(s); }
 
   window.lwT = function (s, huecos) {
@@ -33,7 +35,7 @@
     var v = busca(window.LW_ID, base);
     if (v != null) return tSinId(v, huecos);   // la traducción pasa por el lwT de siempre: ficha (%marca) y huecos como en inglés
     var en = busca(window.LW_EN || {}, base);
-    if (!sinTexto(base.split('~')[0])) (en != null ? window.LW_T_CAIDA_EN : window.LW_T_ESPANOL).add(base);
+    if (!sinTexto(base.split('~')[0]) && !esMarca(base)) (en != null ? window.LW_T_CAIDA_EN : window.LW_T_ESPANOL).add(base);
     if (en != null) return tSinId(en, huecos);
     return tSinId(base, huecos);
   };
