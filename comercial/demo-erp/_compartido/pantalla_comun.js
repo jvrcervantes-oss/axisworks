@@ -19,6 +19,16 @@ function axwComun(raiz, T) {
     'No tienes permiso para ver esta lista. No es que esté vacía: no se ha podido mirar.': 'You do not have permission to see this list. It is not empty: it could not be checked.',
     'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'The database returned something unexpected. It is not empty: it could not be checked.'
   };
+  // Indonesio (11-oct-2026: las instancias que lo llevan, hoy bbm). Mismas claves que EN; cada pantalla lo fusiona en window.LW_ID solo si existe.
+  var ID = {
+    'Trabajando…': 'Memproses…', 'Cargando…': 'Memuat…', 'Cerrar': 'Tutup', 'Cancelar': 'Batal', 'Actualizar': 'Muat ulang', 'Sí': 'Ya', 'No': 'Tidak',
+    'Sin sesión: recarga la página o vuelve a entrar.': 'Sesi habis: muat ulang halaman atau masuk lagi.',
+    'La base no ha respondido: prueba otra vez en un rato.': 'Database tidak merespons: coba lagi sebentar lagi.',
+    'Esta función todavía no está disponible en esta base. No es que esté vacía: no se ha podido mirar.': 'Fungsi ini belum tersedia di database ini. Bukan berarti kosong: datanya tidak dapat diperiksa.',
+    'Esta función todavía no está disponible en esta base.': 'Fungsi ini belum tersedia di database ini.',
+    'No tienes permiso para ver esta lista. No es que esté vacía: no se ha podido mirar.': 'Anda tidak punya akses untuk melihat daftar ini. Bukan berarti kosong: datanya tidak dapat diperiksa.',
+    'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'Database mengembalikan data yang tidak terduga. Bukan berarti kosong: datanya tidak dapat diperiksa.'
+  };
 
   function h(tag, attrs, hijos) {
     var e = document.createElement(tag);
@@ -152,6 +162,6 @@ function axwComun(raiz, T) {
     return d;
   }
 
-  return { EN: EN, h: h, vacia: vacia, oculta: oculta, boton: boton, chip: chip, celda: celda, tabla: tabla, campo: campo, resumen: resumen, locale: locale, dinero: dinero,
+  return { EN: EN, ID: ID, h: h, vacia: vacia, oculta: oculta, boton: boton, chip: chip, celda: celda, tabla: tabla, campo: campo, resumen: resumen, locale: locale, dinero: dinero,
            fechaDia: fechaDia, fechaHora: fechaHora, clasifica: clasifica, mensaje: mensaje, importe: importe, ocupa: ocupa, libera: libera, dialogo: dialogo };
 }
