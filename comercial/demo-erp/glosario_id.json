@@ -27,6 +27,7 @@
  },
  "excepciones": {
   "Carta de Reserva": "documento de Lawang (inmobiliaria): «Surat Booking» se mantiene",
-  "Facturas sin emitir": "rótulo de Lawang ya revisado en la fase A"
+  "Facturas sin emitir": "rótulo de Lawang ya revisado en la fase A",
+  "Reserva devuelta.": "aviso de Reservas de producto: lo que se le dice al operario es que la moto ha vuelto («Motor sudah kembali»), no el nombre del documento"
  }
 }

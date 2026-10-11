@@ -17,7 +17,7 @@
     'Lo que hace falta para empezar a facturar, en orden': 'What is needed to start invoicing, in order',
     'Cada paso dice si está hecho y dónde se hace. Cuando estén todos, el ERP ya puede facturar.': 'Each step says whether it is done and where it is done. When they are all done, the ERP can invoice.',
     'Hecho': 'Done', 'Pendiente~paso': 'Pending', 'Dónde': 'Where', 'Ir': 'Go',
-    'Sociedad emisora: razón social, domicilio y NPWP': 'Issuing company: legal name, address and NPWP',
+    'Sociedad emisora: razón social, domicilio, NPWP y prefijo de la serie': 'Issuing company: legal name, address, NPWP and invoice series prefix',
     'Impuesto que se aplica a las reservas': 'Tax applied to bookings',
     'Precio con el impuesto dentro o fuera': 'Price with tax included or added',
     'Encender el módulo Sociedades': 'Switch on the Companies module', 'Encender el módulo Facturas': 'Switch on the Invoices module',
@@ -55,7 +55,7 @@
     'Lo que hace falta para empezar a facturar, en orden': 'Yang perlu disiapkan sebelum mulai membuat invoice, berurutan',
     'Cada paso dice si está hecho y dónde se hace. Cuando estén todos, el ERP ya puede facturar.': 'Setiap langkah menunjukkan apakah sudah selesai dan di mana mengerjakannya. Jika semuanya selesai, ERP sudah bisa membuat invoice.',
     'Hecho': 'Selesai', 'Pendiente~paso': 'Belum', 'Dónde': 'Di mana', 'Ir': 'Lihat',
-    'Sociedad emisora: razón social, domicilio y NPWP': 'Perusahaan penerbit invoice: nama badan usaha, alamat, dan NPWP',
+    'Sociedad emisora: razón social, domicilio, NPWP y prefijo de la serie': 'Perusahaan penerbit invoice: nama badan usaha, alamat, NPWP, dan prefiks nomor invoice',
     'Impuesto que se aplica a las reservas': 'Pajak yang dikenakan pada booking',
     'Precio con el impuesto dentro o fuera': 'Harga sudah termasuk pajak atau belum',
     'Encender el módulo Sociedades': 'Aktifkan modul Perusahaan', 'Encender el módulo Facturas': 'Aktifkan modul Invoice',
@@ -94,7 +94,7 @@
     sin_tarifas: 'No hay tarifas para cotizar: revisa Flota y tarifas.'
   };
   var TITULOS = {
-    sociedad: 'Sociedad emisora: razón social, domicilio y NPWP',
+    sociedad: 'Sociedad emisora: razón social, domicilio, NPWP y prefijo de la serie',
     pkp: 'La sociedad: si es PKP (cobra PPN) o no',
     facturacion: 'Facturación sin contrato y serie fiscal',
     impuesto: 'Impuesto que se aplica a las reservas',

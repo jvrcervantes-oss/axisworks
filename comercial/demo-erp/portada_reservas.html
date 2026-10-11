@@ -43,12 +43,14 @@ a.axw-boton{text-decoration:none}
 <h2 id="ph-t-entregas" class="font-headline-sm text-headline-sm text-deep-lagoon"><span data-lwt>Entregas</span> <span class="ph-cuenta" data-ph="n-entregas"></span></h2>
 <div data-ph="estado-entregas" class="axw-vacio" role="status"></div>
 <ul class="ph-lista" data-ph="entregas"></ul>
+<p class="axw-aviso axw-oculto" data-ph="mas-entregas" role="status"></p>
 </section>
 
 <section class="bg-surface-container-lowest rounded-xl p-6 shadow-sm flex flex-col gap-3" aria-labelledby="ph-t-devoluciones">
 <h2 id="ph-t-devoluciones" class="font-headline-sm text-headline-sm text-deep-lagoon"><span data-lwt>Devoluciones</span> <span class="ph-cuenta" data-ph="n-devoluciones"></span></h2>
 <div data-ph="estado-devoluciones" class="axw-vacio" role="status"></div>
 <ul class="ph-lista" data-ph="devoluciones"></ul>
+<p class="axw-aviso axw-oculto" data-ph="mas-devoluciones" role="status"></p>
 </section>
 
 </div>
@@ -57,6 +59,7 @@ a.axw-boton{text-decoration:none}
 (function () {
   'use strict';
   var EN_PH = {
+    'Hay más de las que caben aquí.': 'There are more than fit here.', 'Ábrelas en Reservas de producto': 'Open them in Product bookings',
     'Inicio': 'Home', 'Hoy': 'Today', '‹ Día anterior': '‹ Previous day', 'Día siguiente ›': 'Next day ›', 'Reservas de producto': 'Product bookings',
     'Entregas': 'Handovers', 'Devoluciones': 'Returns',
     'Hoy no hay entregas.': 'No handovers today.', 'Hoy no hay devoluciones.': 'No returns today.',
@@ -74,14 +77,15 @@ a.axw-boton{text-decoration:none}
   };
   // Indonesio (owner, 11-oct-2026: bbm en indonesio e inglés). Misma clave en español que EN_PH; se fusiona en window.LW_ID solo donde existe (bbm).
   var ID_PH = {
-    'Inicio': 'Beranda', 'Hoy': 'Hari ini', '‹ Día anterior': '‹ Hari sebelumnya', 'Día siguiente ›': 'Hari berikutnya ›', 'Reservas de producto': 'Booking',
+    'Hay más de las que caben aquí.': 'Masih ada lagi yang tidak muat di sini.', 'Ábrelas en Reservas de producto': 'Buka di daftar booking',
+    'Inicio': 'Beranda', 'Hoy': 'Hari ini', '‹ Día anterior': '‹ Hari sebelumnya', 'Día siguiente ›': 'Hari berikutnya ›', 'Reservas de producto': 'Booking sewa motor',
     'Entregas': 'Serah terima', 'Devoluciones': 'Motor kembali',
     'Hoy no hay entregas.': 'Hari ini tidak ada serah terima.', 'Hoy no hay devoluciones.': 'Hari ini tidak ada motor yang kembali.',
     'Este día no hay entregas.': 'Tidak ada serah terima pada tanggal ini.', 'Este día no hay devoluciones.': 'Tidak ada motor yang kembali pada tanggal ini.',
     'Pagado': 'Lunas', 'Pago registrado, sin confirmar': 'Pembayaran tercatat, belum dikonfirmasi', 'Pendiente de pago': 'Belum dibayar',
     'Estado del pago desconocido': 'Status pembayaran tidak diketahui',
-    'Sin confirmar': 'Belum dikonfirmasi', 'Confirmada': 'Terkonfirmasi', 'En curso': 'Sedang disewa', 'Devuelta': 'Sudah kembali',
-    'Sin cliente': 'Tanpa pelanggan', 'Cliente sin permiso para verlo': 'Pelanggan (Anda tidak punya akses)',
+    'Sin confirmar': 'Belum dikonfirmasi', 'Confirmada': 'Dikonfirmasi', 'En curso': 'Sedang disewa', 'Devuelta': 'Sudah kembali',
+    'Sin cliente': 'Tanpa pelanggan', 'Cliente sin permiso para verlo': 'Pelanggan yang tidak boleh Anda lihat',
     'Reserva': 'Booking', 'Modelo': 'Model', 'Unidad': 'Unit', 'Cliente': 'Pelanggan', 'Fechas': 'Tanggal', 'Estado': 'Status', 'Pago': 'Pembayaran', 'Precio': 'Harga',
     'Dirección de entrega': 'Alamat antar', 'Dirección de recogida': 'Alamat jemput', 'Hora': 'Jam',
     'Abrir Reservas de producto': 'Buka daftar booking',
@@ -174,10 +178,17 @@ a.axw-boton{text-decoration:none}
     est.textContent = '';
     lista.forEach(function (x) { ul.appendChild(fila(x)); });
   }
+  function hayMas(clave, si) {
+    var el = $v('mas-' + clave);
+    vacia(el); oculta(el, !si);
+    if (!si) return;
+    el.appendChild(document.createTextNode(T('Hay más de las que caben aquí.') + ' '));
+    if (E.puedeReservas) el.appendChild(h('a', { href: '/intranet/v4/reservas-producto/', text: T('Ábrelas en Reservas de producto') }));
+  }
   function noSeHaPodido(r) {
     var t = r.error ? C.mensaje(r.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
     ['entregas', 'devoluciones'].forEach(function (k) {
-      vacia($v(k)); $v('n-' + k).textContent = '';
+      vacia($v(k)); $v('n-' + k).textContent = ''; hayMas(k, false);
       var est = $v('estado-' + k); est.className = 'axw-error'; est.textContent = T('No se han podido mirar las reservas') + ': ' + t;
     });
   }
@@ -185,7 +196,7 @@ a.axw-boton{text-decoration:none}
   function carga(dia) {
     var yo = ++PETICION;
     error('');
-    ['entregas', 'devoluciones'].forEach(function (k) { var est = $v('estado-' + k); est.className = 'axw-vacio'; est.textContent = T('Cargando…'); });
+    ['entregas', 'devoluciones'].forEach(function (k) { var est = $v('estado-' + k); est.className = 'axw-vacio'; est.textContent = T('Cargando…'); hayMas(k, false); });
     return llama('portada_reservas_dia_datos', { p_dia: dia || null }).then(function (r) {
       if (yo !== PETICION) return;   // llegó tarde: ya se pidió otro día y ese manda
       var d = r.data;
@@ -197,6 +208,10 @@ a.axw-boton{text-decoration:none}
       $v('fecha').textContent = fechaLarga(E.dia);
       pinta('entregas', d.entregas);
       pinta('devoluciones', d.devoluciones);
+      hayMas('entregas', d.hay_mas_entregas === true);
+      hayMas('devoluciones', d.hay_mas_devoluciones === true);
+      if (d.hay_mas_entregas === true) $v('n-entregas').textContent = '(' + d.entregas.length + '+)';
+      if (d.hay_mas_devoluciones === true) $v('n-devoluciones').textContent = '(' + d.devoluciones.length + '+)';
     });
   }
   function ver(x) {
