@@ -55,7 +55,7 @@ var sb = { rpc: function (n, a) { return { then: function (f, g) { return window
 window.LW_AUTH = Promise.resolve({ sb: sb });
 window.lwDatos = function (n, a) { return Promise.resolve(sb.rpc(n, a)).then(function (r) { return { data: r.data, error: r.error }; }); };
 window.LW_IDIOMA = '${idioma}'; window.LW_EN = {}; if ('${idioma}' === 'id') window.LW_ID = {};
-window.lwT = function (s, hu) { s = String(s); var d = window.LW_IDIOMA === 'en' ? window.LW_EN : window.LW_IDIOMA === 'id' ? window.LW_ID : null; var v = s;
+window.lwT = function (s, hu) { s = String(s); var d = window.LW_IDIOMA === 'en' ? window.LW_EN : window.LW_IDIOMA === 'id' ? window.LW_ID : null; var v = s.split('~')[0];   /* como i18n.js: 'clave~contexto' enseña solo lo de antes de «~» */
   if (d) { if (Object.prototype.hasOwnProperty.call(d, s)) v = d[s]; else if (!/^[\\s0-9.:]*$/.test(s)) window.__sinTrad.push(s); }
   if (hu) for (var k in hu) v = v.split('%' + k).join(hu[k]); return v; };
 window.lwIdiomaAplicar = function () {};

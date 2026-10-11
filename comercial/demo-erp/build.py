@@ -2257,9 +2257,10 @@ IDIOMAS_PARCHES = (
      "      if (t !== 'ES' && t !== 'EN' && t !== 'ID') return;\n      var destino = t.toLowerCase();\n"
      "      b.title = { id: 'Bahasa Indonesia', en: 'English', es: 'Español' }[destino] || t; b.setAttribute('aria-label', b.title);"),
     ('contracts/assets/topbar.js', "function tb(k) { return (TB_T[k] && TB_T[k][window.LW_IDIOMA])",
-     "var TB_ID = { cerrarSesion: 'Keluar', notificaciones: 'Notifikasi', nadaNuevo: 'Belum ada yang baru.', cargando: 'Memuat…', rolSuperAdmin: 'Super admin',\n"
+     "var TB_ID = { cuentaTitle: 'Akun dan notifikasi Anda', cerrarSesion: 'Keluar', notificaciones: 'Notifikasi', nadaNuevo: 'Belum ada yang baru.', cargando: 'Memuat…', rolSuperAdmin: 'Super admin',\n"
      "  rolAdmin: 'Admin', rolAgente: 'Agen', hace: '', minAgo: ' menit lalu', hAgo: ' jam lalu', ayer: 'kemarin', volverIntranet: '← Beranda' };\n"
-     "function tb(k) { if (window.LW_IDIOMA === 'id' && Object.prototype.hasOwnProperty.call(TB_ID, k)) return TB_ID[k]; return (TB_T[k] && TB_T[k][window.LW_IDIOMA])"),
+     "function tb(k) { if (window.LW_IDIOMA === 'id') { if (Object.prototype.hasOwnProperty.call(TB_ID, k)) return TB_ID[k]; if (TB_T[k] && TB_T[k].en != null) return TB_T[k].en; }"
+     " return (TB_T[k] && TB_T[k][window.LW_IDIOMA])"),
     ('contracts/assets/topbar.js', "  var otro = window.LW_IDIOMA === 'en' ? 'es' : 'en';",
      "  var otro = window.LW_IDIOMA === 'en' ? (window.AXW_IDIOMAS ? window.AXW_IDIOMAS[0] : 'es') : 'en';"),
     ('contracts/assets/topbar.js', "'<span>' + (otro === 'en' ? 'English' : 'Español') + '</span>';",
@@ -2352,6 +2353,8 @@ def idiomas_instancia(idiomas):
             t = open(ruta, encoding='utf-8', errors='replace').read()
             if "es-ES'" not in t and 'es-ES"' not in t:
                 continue
+            if f.endswith('.html') and re.search(r'''['"]es-ES['"]''', re.sub(r'(?is)<script\b[^>]*>.*?</script>', '', t)):
+                aborta('idiomas: %s lleva es-ES fuera de un <script> (un atributo HTML no se puede envolver con JavaScript)' % rel(ruta))
             t2 = t
             for q, env in ES_ES_ENVUELTO.items():
                 lit = q + 'es-ES' + q

@@ -16,7 +16,7 @@
     'Puesta en marcha': 'Setup',
     'Lo que hace falta para empezar a facturar, en orden': 'What is needed to start invoicing, in order',
     'Cada paso dice si está hecho y dónde se hace. Cuando estén todos, el ERP ya puede facturar.': 'Each step says whether it is done and where it is done. When they are all done, the ERP can invoice.',
-    'Hecho': 'Done', 'Pendiente': 'Pending', 'Dónde': 'Where', 'Ir': 'Go',
+    'Hecho': 'Done', 'Pendiente~paso': 'Pending', 'Dónde': 'Where', 'Ir': 'Go',
     'Sociedad emisora: razón social, domicilio y NPWP': 'Issuing company: legal name, address and NPWP',
     'Impuesto que se aplica a las reservas': 'Tax applied to bookings',
     'Precio con el impuesto dentro o fuera': 'Price with tax included or added',
@@ -54,7 +54,7 @@
     'Puesta en marcha': 'Pengaturan awal',
     'Lo que hace falta para empezar a facturar, en orden': 'Yang perlu disiapkan sebelum mulai membuat invoice, berurutan',
     'Cada paso dice si está hecho y dónde se hace. Cuando estén todos, el ERP ya puede facturar.': 'Setiap langkah menunjukkan apakah sudah selesai dan di mana mengerjakannya. Jika semuanya selesai, ERP sudah bisa membuat invoice.',
-    'Hecho': 'Selesai', 'Pendiente': 'Belum', 'Dónde': 'Di mana', 'Ir': 'Lihat',
+    'Hecho': 'Selesai', 'Pendiente~paso': 'Belum', 'Dónde': 'Di mana', 'Ir': 'Lihat',
     'Sociedad emisora: razón social, domicilio y NPWP': 'Perusahaan penerbit invoice: nama badan usaha, alamat, dan NPWP',
     'Impuesto que se aplica a las reservas': 'Pajak yang dikenakan pada booking',
     'Precio con el impuesto dentro o fuera': 'Harga sudah termasuk pajak atau belum',
@@ -136,7 +136,7 @@
   function cont() { return document.getElementById('lw-aj-puesta'); }
   function chip(hecho) {
     return h('span', { class: 'shrink-0 px-3 py-1 rounded-full font-label-md text-[13px] ' + (hecho ? 'bg-primary-container text-on-primary' : 'bg-error-container text-on-error-container'),
-                       'data-pm-hecho': hecho ? '1' : '0', text: T(hecho ? 'Hecho' : 'Pendiente') });
+                       'data-pm-hecho': hecho ? '1' : '0', text: T(hecho ? 'Hecho' : 'Pendiente~paso') });
   }
   function donde(d) {
     if (!d) return null;

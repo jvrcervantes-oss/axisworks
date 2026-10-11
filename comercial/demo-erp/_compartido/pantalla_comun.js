@@ -21,7 +21,7 @@ function axwComun(raiz, T) {
   };
   // Indonesio (11-oct-2026: las instancias que lo llevan, hoy bbm). Mismas claves que EN; cada pantalla lo fusiona en window.LW_ID solo si existe.
   var ID = {
-    'Trabajando…': 'Memproses…', 'Cargando…': 'Memuat…', 'Cerrar': 'Tutup', 'Cancelar': 'Batal', 'Actualizar': 'Muat ulang', 'Sí': 'Ya', 'No': 'Tidak',
+    'Trabajando…': 'Memproses…', 'Cargando…': 'Memuat…', 'Cerrar': 'Tutup', 'Cancelar': 'Batalkan', 'Actualizar': 'Muat ulang', 'Sí': 'Ya', 'No': 'Tidak',
     'Sin sesión: recarga la página o vuelve a entrar.': 'Sesi habis: muat ulang halaman atau masuk lagi.',
     'La base no ha respondido: prueba otra vez en un rato.': 'Database tidak merespons: coba lagi sebentar lagi.',
     'Esta función todavía no está disponible en esta base. No es que esté vacía: no se ha podido mirar.': 'Fungsi ini belum tersedia di database ini. Bukan berarti kosong: datanya tidak dapat diperiksa.',

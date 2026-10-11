@@ -75,6 +75,7 @@ if r == 'pasa':
 # -- (2) para si algo no casa
 mira('para si cambia la línea de idioma.js', corre(cambia={'contracts/assets/idioma.js': lambda t: t.replace("(v === 'en') ? 'en' : 'es'", "(v === 'en') ? 'en' : 'es' ", 1)})[0] == 'para')
 mira('para si cambia el selector de nav.js', corre(cambia={'intranet/v4/assets/nav.js': lambda t: t.replace("if (t !== 'ES' && t !== 'EN') return;", "if (t !== 'ES' && t !== 'EN' && t !== 'FR') return;", 1)})[0] == 'para')
+mira("para si un 'es-ES' va en un atributo HTML (fuera de <script>)", corre(extra={'intranet/v4/z/index.html': '<html lang="es-ES"><body></body></html>'})[0] == 'para')
 mira("para si 'es-ES' es CLAVE de un objeto (no se puede envolver)", corre(extra={'intranet/v4/assets/x.js': "var M = { 'es-ES': 1 };\n"})[0] == 'para')
 mira('para si el parche deja JavaScript roto', corre(extra={'intranet/v4/assets/y.js': "var a = 'es-ES' +;\n"})[0] == 'para')
 viejo_reg = build._instancia_registro
@@ -153,14 +154,28 @@ for nombre, dic in dics.items():
 mira('ningún diccionario indonesio con traducción vacía o igual a su clave (%s)' % '; '.join(malos[:5]), not malos)
 mira('ninguna traducción con palabras prohibidas (%s)' % '; '.join(prohibidos[:5]), not prohibidos)
 mira('el glosario se cumple en todos los diccionarios (%s)' % '; '.join(glosario[:6]), not glosario)
+# una sola traducción por clave entre todos los diccionarios (el primero que se fusiona en LW_ID gana sin avisar)
+vistos, choques = {}, []
+for nombre, dic in dics.items():
+    for k, v in dic.items():
+        if k in vistos and vistos[k][1] != v:
+            choques.append('%s: %s=«%s» vs %s=«%s»' % (k[:30], vistos[k][0], vistos[k][1][:25], nombre, v[:25]))
+        vistos.setdefault(k, (nombre, v))
+mira('una sola traducción por clave entre diccionarios (%s)' % '; '.join(choques[:4]), not choques)
+# la barra (topbar.js): toda clave de TB_T tiene su indonesio en TB_ID
+_tb = node(ORIGINAL['contracts/assets/topbar.js'][:ORIGINAL['contracts/assets/topbar.js'].index('function tb(k)')] + '\nconsole.log(JSON.stringify(Object.keys(TB_T)));')
+_tbid = [x for x in build.IDIOMAS_PARCHES if x[0] == 'contracts/assets/topbar.js' and 'TB_ID' in x[2]][0][2]
+_faltan = [k for k in json.loads(_tb) if (k + ':') not in _tbid]
+mira('toda clave de la barra (TB_T) tiene su indonesio en TB_ID (%s)' % ', '.join(_faltan), not _faltan)
 mira('hay diccionarios ID que revisar (i18n_id.json y al menos los de portada, Ajustes y ayudas comunes)', len(dics) >= 3 and len(dics['i18n_id.json']) > 100)
 
 # -- (5) la comprobación del paquete construido
 if r == 'pasa':
     viejo_aqui = build.AQUI
     mira('comprueba_idiomas da por bueno el paquete recién parcheado', (lambda: (build.comprueba_idiomas(d, ['id', 'en']), True)[1])())
-    roto = prepara(extra={'x/y.js': "var f = d.toLocaleDateString('es-ES');\n"})
-    shutil.copy(os.path.join(d, 'contracts', 'assets', 'i18n.js'), os.path.join(roto, 'contracts', 'assets', 'i18n.js'))
+    roto = tempfile.mkdtemp(); shutil.rmtree(roto); shutil.copytree(d, roto)
+    os.makedirs(os.path.join(roto, 'x'), exist_ok=True)
+    open(os.path.join(roto, 'x', 'y.js'), 'w', encoding='utf-8').write("var f = d.toLocaleDateString('es-ES');\n")
     try:
         build.comprueba_idiomas(roto, ['id', 'en']); res = 'pasa'
     except SystemExit:
