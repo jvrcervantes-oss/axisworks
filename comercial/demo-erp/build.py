@@ -612,18 +612,14 @@ def guard_demo():
             aborta('el doble de QA ha cambiado y no encuentro (1 vez): ' + viejo[:70])
         doble = doble.replace(viejo, nuevo)
     doble = doble.replace("'qa-user-1'", "'d-u-1'").replace('qa@axisworks.test', 'direccion@example.com')
-    # «← Modules» en todas las pantallas: la salida del recorrido (el guard es nuestro). En inglés: la demo pública lo es.
-    volver = ("document.addEventListener('DOMContentLoaded',function(){var n=document.createElement('nav');"
-              "n.setAttribute('aria-label','Leave the demo');"
-              "n.style.cssText='position:fixed;left:16px;bottom:16px;z-index:2147483000;display:flex;background:#485B37;"
-              "border-radius:999px;font:500 13px/1.2 system-ui,sans-serif;overflow:hidden';"
-              "[[window.AXW_PORTADA+'#configurador','← Modules']].forEach(function(x,i){var a=document.createElement('a');"
-              "a.href=x[0];a.textContent=x[1];a.style.cssText='color:#fff;text-decoration:none;padding:8px 14px'"
-              "+(i?';border-left:1px solid rgba(255,255,255,.3)':'');n.appendChild(a);});"
-              "document.body.appendChild(n);});\n"
-              # catalogo.js (fuente única de módulos) → modulos.js (menú y aviso de módulo apagado) → tour.js, en
-              # ese orden: un script insertado por JS es asíncrono salvo async=false.
-              "['/demo/catalogo.js','/demo/modulos.js','/demo/tour.js'].forEach(function(u){var s=document.createElement('script');"
+    # La barra de la demo (vuelta a la portada, «Reset demo» y el aviso de datos ficticios) y el asistente de ejemplo viven
+    # en /demo/cascara.js (demo_cascara.js, 12-oct-2026): sustituye a la barra «← Modules», que llevaba al configurador de
+    # erp. y no a la portada de dos puertas. El pop-up de novedades de la intranet (anuncios internos del cliente para su
+    # equipo) no sale en la demo: novedades.js sale solo si encuentra __lwNovedades ya puesto.
+    # catalogo.js (fuente única de módulos) → modulos.js (menú y aviso de módulo apagado) → tour.js → cascara.js, en
+    # ese orden: un script insertado por JS es asíncrono salvo async=false.
+    volver = ("window.__lwNovedades = true;\n"
+              "['/demo/catalogo.js','/demo/modulos.js','/demo/tour.js','/demo/cascara.js'].forEach(function(u){var s=document.createElement('script');"
               "s.src=u;s.async=false;(document.head||document.documentElement).appendChild(s);});\n")
     # Sesión real que el presentador pudiera tener en este origen: fuera antes de nada (Seguridad #2).
     limpia_sesion = LIMPIA_SESION + 'window.AXW_PORTADA = %s;\n' % json.dumps(PORTADA_URL)

@@ -10,7 +10,7 @@
 (function () {
   'use strict';
   var TEXTOS = {
-    barra: 'Leave or reset the demo',
+    barra: 'Leave the demo',
     inicio: '← Start',
     reset: 'Reset demo',
     datos: 'Made-up data · don\'t enter real personal data',
@@ -107,7 +107,7 @@
     sec.setAttribute('data-demo', 'asistente');
     sec.setAttribute('aria-label', TEXTOS.asisTitulo);
     sec.appendChild(el('h2', 'margin:0;font:500 28px/1.15 system-ui,sans-serif;color:#15181C', TEXTOS.asisTitulo));
-    var rotulo = el('p', 'margin:0;padding:10px 14px;border-radius:999px;background:#15181C;color:#F4F2EC;font:500 13px/1.4 system-ui,sans-serif;align-self:flex-start', TEXTOS.asisRotulo);
+    var rotulo = el('p', 'margin:0;padding:10px 14px;border-left:3px solid #E2581C;background:#15181C;color:#F4F2EC;font:400 13px/1.5 system-ui,sans-serif;align-self:flex-start;max-width:46rem', TEXTOS.asisRotulo);
     rotulo.setAttribute('data-demo', 'rotulo-ejemplo');
     sec.appendChild(rotulo);
     var pestanas = el('div', 'display:flex;flex-wrap:wrap;gap:8px');
@@ -144,7 +144,8 @@
     sec.appendChild(hilo);
     // La pantalla real (peticiones a un administrador) llama a una función del servidor que en la demo no existe y se
     // quedaba parada (mapa, 11-oct): se oculta, no se borra, para que su script siga encontrando sus nodos.
-    Array.prototype.forEach.call(main.children, function (h) { h.hidden = true; h.setAttribute('aria-hidden', 'true'); });
+    // style y no el atributo hidden: las clases de la pantalla (.flex, .grid) ganan a [hidden].
+    Array.prototype.forEach.call(main.children, function (h) { h.style.setProperty('display', 'none', 'important'); h.setAttribute('aria-hidden', 'true'); });
     main.insertBefore(sec, main.firstChild);
     abre(0);
   }
