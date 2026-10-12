@@ -1568,7 +1568,7 @@ MENU_I18N = {
     'Flota y tarifas': {'en': 'Fleet and rates', 'id': 'Armada dan tarif'},
     'Ventas': {'en': 'Sales', 'id': 'Penjualan'},
     'Reservas de producto': {'en': 'Product bookings', 'id': 'Booking sewa motor'},
-    'Puesta en marcha': {'en': 'Setup', 'id': 'Pengaturan awal'},
+    'Configurar módulos': {'en': 'Module setup', 'id': 'Penyiapan modul'},
 }
 
 
@@ -2912,17 +2912,17 @@ AJUSTES_PUESTA_TAB_ANCLA = ('<button class="lw-tab-btn px-4 py-2 rounded-full bg
                             ' role="tab" type="button" id="lw-tab-empresa"')
 AJUSTES_PUESTA_TAB = ('<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors"'
                       ' role="tab" type="button" id="lw-tab-puesta" aria-controls="lw-panel-puesta" aria-selected="false" tabindex="-1" data-lw-tab="puesta" data-lwt>'
-                      'Puesta en marcha</button>\n')
+                      'Configurar módulos</button>\n')
 AJUSTES_PUESTA_PANEL_ANCLA = '<section id="lw-panel-empresa" role="tabpanel"'
 AJUSTES_PUESTA_PANEL = (
     '<section id="lw-panel-puesta" role="tabpanel" aria-labelledby="lw-tab-puesta" data-lw-panel="puesta" class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden" hidden>\n'
     '<div class="px-8 pt-8 pb-4 flex flex-col gap-1 border-b border-outline-variant/40">\n'
-    '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Puesta en marcha</span>\n'
-    '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Lo que hace falta para empezar a facturar, en orden</h2>\n'
-    '<p class="font-body-sm text-body-sm text-outline" data-lwt>Cada paso dice si está hecho y dónde se hace. Cuando estén todos, el ERP ya puede facturar.</p>\n'
+    '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Configurar módulos</span>\n'
+    '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Lo que hace falta para que cada módulo funcione</h2>\n'
+    '<p class="font-body-sm text-body-sm text-outline" data-lwt>Cada módulo encendido, con sus pasos. Se cambian aquí o con el asistente, paso a paso.</p>\n'
     '</div>\n'
     '<div id="lw-aj-puesta">\n'
-    '<p class="px-8 py-6 font-body-md text-body-md text-on-surface-variant" data-lwt>Trayendo la puesta en marcha…</p>\n'
+    '<p class="px-8 py-6 font-body-md text-body-md text-on-surface-variant" data-lwt>Trayendo la configuración…</p>\n'
     '</div>\n'
     '</section>\n\n')
 # Solo el comienzo de la lista (12-oct-2026): Lawang añadió 'sociedades' tras 'empresa' (Sociedades emisoras en Ajustes) y puede añadir más; lo que hace
@@ -3015,7 +3015,7 @@ def ajustes_puesta_en_marcha():
     m = re.findall(r'<script src="\.\./assets/ajustes\.js(?:\?v=[0-9a-f]+)?" defer></script>', t)
     if len(m) != 1:
         aborta('ajustes_puesta_en_marcha: ajustes/index.html no carga UNA vez ../assets/ajustes.js con defer (hay %d)' % len(m))
-    t = t.replace(m[0], m[0] + '<script src="../assets/ajustes_puesta.js" defer></script>')
+    t = t.replace(m[0], m[0] + '<script src="../assets/setup_pasos.js" defer></script><script src="../assets/ajustes_puesta.js" defer></script>')
     open(pag, 'w', encoding='utf-8', newline='').write(t)
     js = os.path.join(v4, 'assets', 'ajustes.js')
     a = open(js, encoding='utf-8').read()
@@ -3023,6 +3023,7 @@ def ajustes_puesta_en_marcha():
     a = _una_vez(a, AJUSTES_DEFECTO, AJUSTES_DEFECTO.replace("'empresa';", "'puesta';"), 'ajustes.js pestaña por defecto')
     open(js, 'w', encoding='utf-8', newline='').write(a)
     shutil.copy2(os.path.join(AQUI, 'ajustes_puesta.js'), os.path.join(v4, 'assets', 'ajustes_puesta.js'))
+    shutil.copy2(os.path.join(AQUI, 'setup_pasos.js'), os.path.join(v4, 'assets', 'setup_pasos.js'))   # el mismo componente por paso que el asistente
 
 
 # ── Idiomas de la interfaz por instancia (owner, 11-oct-2026: bbm «Añade Indonesio y quita español») ─────────────────────────────────────────
@@ -3199,9 +3200,9 @@ def instancia(nombre):
     entrega_pantalla()   # F8 pieza 8 (10-oct-2026): Entrega — sede, tarifa por km y límites (tras taller: sus anclas de nav.js y herramientas.js)
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
     asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)
+    ajustes_puesta_en_marcha()   # F3 (12-oct-2026): Ajustes › Configurar módulos, primera pestaña, en todas las instancias (antes solo las de reservas)
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
-        ajustes_puesta_en_marcha()
     idiomas = idiomas_de(nombre)
     if idiomas:   # 12-oct-2026: interfaz en los idiomas de la instancia (bbm: indonesio e inglés)
         idiomas_instancia(idiomas)

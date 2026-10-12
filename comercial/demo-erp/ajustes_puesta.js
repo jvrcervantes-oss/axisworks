@@ -1,276 +1,183 @@
-/* Ajustes › Puesta en marcha (ERP maestro, 11-oct-2026; plan único F8). Brief literal del owner: «Datos del gestor: se meten en el ERP. En Ajustes. Encender
- * facturas. Tras meterlos en el ERP que se pueda activar. Haz un setup en el ERP y tras el setup que funcione.»
- * build.py (ajustes_puesta_en_marcha) pone en /ajustes/ de las instancias con `"portada": "reservas"` la pestaña y su contenedor (#lw-aj-puesta) y carga este fichero;
- * en Lawang no existe. Qué hace:
- *  · pinta los pasos que devuelve `puesta_en_marcha_estado()` TAL CUAL los decide la base (hecho / pendiente, el detalle y dónde se hace): la pantalla no
- *    deduce si un paso está hecho;
- *  · deja elegir ahí mismo dos ajustes de sí/no (`precio_incluye_impuesto`, `reservas_sin_impuesto`) y los guarda por `ajustes_config_guardar`, una clave por
- *    botón. Quién puede escribir lo decide la base (super admin, 42501 si no); la pantalla solo no ofrece lo que la base va a rechazar (`puede_escribir`).
- *  · una clave que la base no trae es «sin decidir», nunca «no».
- * Todo dato de la base se pinta con textContent / createElement. Se engancha por data-accion / data-pm, nunca por un rótulo.
+/* Ajustes › Configurar módulos (antes «Puesta en marcha»; F3 Entrega 1, bbm-p18-front, 12-oct-2026). Owner, 12-oct 08:00: «…Salta un asistente que
+ * te guia por pasos y deja todo eso en Ajustes.» y 05:12: «módulo primero y setup después». build.py (ajustes_puesta_en_marcha) pone la pestaña
+ * (data-lw-panel="puesta", identificador de siempre) y su contenedor (#lw-aj-puesta) en /ajustes/ de TODAS las instancias; en Lawang no existe.
+ *
+ * Qué hace, y solo esto:
+ *  · una sección por módulo encendido, con su estado y sus pasos TAL CUAL los da modulos_setup_estado (setup_modulos.js): «hecho» lo dice la base;
+ *  · cada paso se cambia aquí con el MISMO componente que el asistente (setup_pasos.js) y la misma función de la base; cambiar algo ya guardado
+ *    pide motivo (lo exige la base). Un paso irreversible sin hacer (moneda, prefijo) se hace en el asistente, que es donde vive su confirmación
+ *    tecleada; hecho, sale «Fijado» y no se ofrece cambiarlo. Un paso de otra pantalla (Flota, Entrega) lleva a esa pantalla;
+ *  · «Abrir el asistente» por módulo; quien no configura ve el estado de cada módulo, sin pasos ni detalle.
+ *  · Un fallo de lectura se dice («no se ha podido mirar», con Reintentar), nunca como «todo configurado».
+ * Todo dato va por textContent / createElement; se engancha por data-accion / data-pm-*, nunca por un rótulo. Sin piel propia: la viste Claude Design.
  */
 (function () {
   'use strict';
-
+  // Solo los textos fijos de la pestaña (los pone build.py en el HTML con data-lwt); el resto sale del mapa único de setup_modulos.js
   var EN_PM = {
-    'Puesta en marcha': 'Setup',
-    'Lo que hace falta para empezar a facturar, en orden': 'What is needed to start invoicing, in order',
-    'Cada paso dice si está hecho y dónde se hace. Cuando estén todos, el ERP ya puede facturar.': 'Each step says whether it is done and where it is done. When they are all done, the ERP can invoice.',
-    'Hecho': 'Done', 'Pendiente~paso': 'Pending', 'Dónde': 'Where', 'Ir': 'Go',
-    'Sociedad emisora: razón social, domicilio, NPWP y prefijo de la serie': 'Issuing company: legal name, address, NPWP and invoice series prefix',
-    'Impuesto que se aplica a las reservas': 'Tax applied to bookings',
-    'Precio con el impuesto dentro o fuera': 'Price with tax included or added',
-    'Encender el módulo Sociedades': 'Switch on the Companies module', 'Encender el módulo Facturas': 'Switch on the Invoices module',
-    'Encender el módulo Operaciones': 'Switch on the Operations module', 'Encender el módulo Recibos': 'Switch on the Receipts module',
-    'Los precios de la tarifa': 'Rate prices', 'Llevan el impuesto DENTRO (el cliente paga el precio de la tarifa)': 'Include the tax (the customer pays the rate price)',
-    'Llevan el impuesto FUERA (se suma al precio de la tarifa)': 'Exclude the tax (it is added to the rate price)',
-    'Sin decidir': 'Not decided', 'Guardar': 'Save', 'Guardando…': 'Saving…', 'Guardado.': 'Saved.', 'Sin cambios: ya valía eso.': 'No change: it already had that value.',
-    'No se guardó': 'Not saved', 'Elige una opción antes de guardar.': 'Choose an option before saving.',
-    'Solo el super admin puede cambiar estos ajustes.': 'Only the super admin can change these settings.',
-    'Listo: todo en marcha, el ERP ya factura.': 'Ready: everything is set up, the ERP can invoice.',
-    'Faltan %n pasos.': '%n steps left.', 'Falta 1 paso.': '1 step left.',
-    'Trayendo la puesta en marcha…': 'Loading the setup…',
-    'No se ha podido mirar la puesta en marcha': 'The setup could not be checked',
-    'Esta función todavía no está disponible en esta base.': 'This function is not available on this database yet.',
-    'La puesta en marcha es de administración: tu sesión no tiene acceso.': 'The setup is for administration: your session has no access.',
-    'La base no ha respondido: prueba otra vez en un rato.': 'The database did not respond: try again in a moment.',
-    'La base ha devuelto algo inesperado.': 'The database returned something unexpected.',
-    'Prueba de precio: una moto real, 10 días': 'Price check: a real bike, 10 days',
-    'Reintentar': 'Retry', 'panel de control del estudio': "the studio's control panel",
-    'La sociedad: si es PKP (cobra PPN) o no': 'The company: whether it is PKP (charges VAT) or not',
-    'Facturación sin contrato y serie fiscal': 'Invoicing without a contract and fiscal series',
-    'estudio (registro de la instancia)': 'the studio (instance registry)',
-    '¿La sociedad es PKP (cobra PPN)?': 'Is the company PKP (does it charge VAT)?',
-    'Sí: es PKP y cobra PPN': 'Yes: it is PKP and charges VAT (PPN)', 'No: no es PKP (las reservas van sin PPN)': 'No: it is not PKP (bookings carry no VAT)',
-    'Motivo del cambio': 'Reason for the change', 'Obligatorio: queda en el registro de cambios (p. ej. lo que confirmó el gestor y cuándo).': 'Required: it is kept in the change log (e.g. what the accountant confirmed and when).',
-    'Escribe el motivo del cambio (al menos 3 letras).': 'Write the reason for the change (at least 3 letters).',
-    'La base solo admite sí o no.': 'The database only accepts yes or no.', 'Código': 'Code',
-    'Con el precio con impuesto DENTRO, esta base todavía no sabe repartir el precio por día: pídelo al estudio.': 'With the tax INCLUDED in the price, this database cannot yet split the price per day: ask the studio.',
-    'Falta configurar el impuesto de las reservas.': 'The booking tax is not set up yet.',
-    'No hay tarifas para cotizar: revisa Flota y tarifas.': 'There are no rates to quote: check Fleet and rates.'
+    'Configurar módulos': 'Module setup',
+    'Lo que hace falta para que cada módulo funcione': 'What each module needs in order to work',
+    'Cada módulo encendido, con sus pasos. Se cambian aquí o con el asistente, paso a paso.': 'Every module that is switched on, with its steps. Change them here or with the wizard, step by step.',
+    'Trayendo la configuración…': 'Loading the setup…'
   };
-  // Indonesio (owner, 11-oct-2026: bbm en indonesio e inglés). Misma clave en español que EN_PM; se fusiona en window.LW_ID solo donde existe (bbm).
   var ID_PM = {
-    'Puesta en marcha': 'Pengaturan awal',
-    'Lo que hace falta para empezar a facturar, en orden': 'Yang perlu disiapkan sebelum mulai membuat invoice, berurutan',
-    'Cada paso dice si está hecho y dónde se hace. Cuando estén todos, el ERP ya puede facturar.': 'Setiap langkah menunjukkan apakah sudah selesai dan di mana mengerjakannya. Jika semuanya selesai, ERP sudah bisa membuat invoice.',
-    'Hecho': 'Selesai', 'Pendiente~paso': 'Belum', 'Dónde': 'Di mana', 'Ir': 'Lihat',
-    'Sociedad emisora: razón social, domicilio, NPWP y prefijo de la serie': 'Perusahaan penerbit invoice: nama badan usaha, alamat, NPWP, dan prefiks nomor invoice',
-    'Impuesto que se aplica a las reservas': 'Pajak yang dikenakan pada booking',
-    'Precio con el impuesto dentro o fuera': 'Harga sudah termasuk pajak atau belum',
-    'Encender el módulo Sociedades': 'Aktifkan modul Perusahaan', 'Encender el módulo Facturas': 'Aktifkan modul Invoice',
-    'Encender el módulo Operaciones': 'Aktifkan modul Transaksi', 'Encender el módulo Recibos': 'Aktifkan modul Kuitansi',
-    'Prueba de precio: una moto real, 10 días': 'Cek harga: satu motor sungguhan, 10 hari',
-    'Los precios de la tarifa': 'Harga di tarif',
-    'Llevan el impuesto DENTRO (el cliente paga el precio de la tarifa)': 'SUDAH termasuk pajak (pelanggan membayar sesuai harga tarif)',
-    'Llevan el impuesto FUERA (se suma al precio de la tarifa)': 'BELUM termasuk pajak (pajak ditambahkan ke harga tarif)',
-    'Sin decidir': 'Belum ditentukan', 'Guardar': 'Simpan', 'Guardando…': 'Menyimpan…', 'Guardado.': 'Tersimpan.', 'Sin cambios: ya valía eso.': 'Tidak ada perubahan: nilainya sudah sama.',
-    'No se guardó': 'Tidak tersimpan', 'Elige una opción antes de guardar.': 'Pilih salah satu sebelum menyimpan.',
-    'Solo el super admin puede cambiar estos ajustes.': 'Hanya super admin yang dapat mengubah pengaturan ini.',
-    'Listo: todo en marcha, el ERP ya factura.': 'Siap: semua sudah berjalan, ERP sudah bisa membuat invoice.',
-    'Faltan %n pasos.': 'Masih %n langkah lagi.', 'Falta 1 paso.': 'Masih 1 langkah lagi.',
-    'Trayendo la puesta en marcha…': 'Memuat pengaturan awal…',
-    'No se ha podido mirar la puesta en marcha': 'Pengaturan awal tidak dapat diperiksa',
-    'Esta función todavía no está disponible en esta base.': 'Fungsi ini belum tersedia di database ini.',
-    'La puesta en marcha es de administración: tu sesión no tiene acceso.': 'Pengaturan awal khusus admin: akun Anda tidak punya akses.',
-    'La base no ha respondido: prueba otra vez en un rato.': 'Database tidak merespons: coba lagi sebentar lagi.',
-    'La base ha devuelto algo inesperado.': 'Database mengembalikan data yang tidak terduga.',
-    'Reintentar': 'Coba lagi', 'panel de control del estudio': 'panel kontrol studio',
-    'La sociedad: si es PKP (cobra PPN) o no': 'Perusahaan: berstatus PKP (memungut PPN) atau tidak',
-    'Facturación sin contrato y serie fiscal': 'Invoice tanpa kontrak dan nomor seri invoice',
-    'estudio (registro de la instancia)': 'studio (pengaturan sistem)',
-    '¿La sociedad es PKP (cobra PPN)?': 'Apakah perusahaan berstatus PKP (memungut PPN)?',
-    'Sí: es PKP y cobra PPN': 'Ya: PKP dan memungut PPN', 'No: no es PKP (las reservas van sin PPN)': 'Tidak: bukan PKP (booking tanpa PPN)',
-    'Motivo del cambio': 'Alasan perubahan', 'Obligatorio: queda en el registro de cambios (p. ej. lo que confirmó el gestor y cuándo).': 'Wajib diisi: tercatat di riwayat perubahan (misalnya apa yang dikonfirmasi konsultan pajak dan kapan).',
-    'Escribe el motivo del cambio (al menos 3 letras).': 'Tulis alasan perubahan (minimal 3 huruf).',
-    'La base solo admite sí o no.': 'Database hanya menerima ya atau tidak.', 'Código': 'Kode',
-    'Con el precio con impuesto DENTRO, esta base todavía no sabe repartir el precio por día: pídelo al estudio.': 'Dengan harga SUDAH termasuk pajak, database ini belum bisa membagi harga per hari: minta ke studio.',
-    'Falta configurar el impuesto de las reservas.': 'Pajak booking belum diatur.',
-    'No hay tarifas para cotizar: revisa Flota y tarifas.': 'Belum ada tarif untuk dihitung: periksa Armada dan tarif.'
+    'Configurar módulos': 'Penyiapan modul',
+    'Lo que hace falta para que cada módulo funcione': 'Yang dibutuhkan setiap modul agar berfungsi',
+    'Cada módulo encendido, con sus pasos. Se cambian aquí o con el asistente, paso a paso.': 'Setiap modul yang aktif, beserta langkah-langkahnya. Ubah di sini atau dengan panduan, langkah demi langkah.',
+    'Trayendo la configuración…': 'Memuat pengaturan…'
   };
-  var HINTS = {
-    reparto_con_impuesto_dentro: 'Con el precio con impuesto DENTRO, esta base todavía no sabe repartir el precio por día: pídelo al estudio.',
-    impuesto_no_configurado: 'Falta configurar el impuesto de las reservas.',
-    sin_tarifas: 'No hay tarifas para cotizar: revisa Flota y tarifas.'
-  };
-  var TITULOS = {
-    sociedad: 'Sociedad emisora: razón social, domicilio, NPWP y prefijo de la serie',
-    pkp: 'La sociedad: si es PKP (cobra PPN) o no',
-    facturacion: 'Facturación sin contrato y serie fiscal',
-    impuesto: 'Impuesto que se aplica a las reservas',
-    precio_incluye_impuesto: 'Precio con el impuesto dentro o fuera',
-    modulo_sociedades: 'Encender el módulo Sociedades', modulo_facturas: 'Encender el módulo Facturas',
-    modulo_operaciones: 'Encender el módulo Operaciones', modulo_recibos: 'Encender el módulo Recibos',
-    cotizacion: 'Prueba de precio: una moto real, 10 días'
-  };
-  // Los dos sí/no que se eligen aquí. El valor que se guarda es el que la base espera ('si' | 'no'); el rótulo dice lo que significa para quien lo elige.
-  var ELECCIONES = [
-    { clave: 'precio_incluye_impuesto', paso: 'precio_incluye_impuesto', pregunta: 'Los precios de la tarifa',
-      opciones: [['si', 'Llevan el impuesto DENTRO (el cliente paga el precio de la tarifa)'], ['no', 'Llevan el impuesto FUERA (se suma al precio de la tarifa)']] },
-    // reservas_sin_impuesto = 'si' quiere decir que NO es PKP (sin PPN): por eso el «Sí» de la pregunta guarda 'no'
-    { clave: 'reservas_sin_impuesto', paso: 'pkp', pregunta: '¿La sociedad es PKP (cobra PPN)?',
-      opciones: [['no', 'Sí: es PKP y cobra PPN'], ['si', 'No: no es PKP (las reservas van sin PPN)']] }
-  ];
-
-  function T(x, huecos) { return (typeof window.lwT === 'function') ? window.lwT(x, huecos) : x; }
+  var S = null, P = null, sb = null, ctx = null, ocupado = false;
+  function U(k, h) { return S.ui(k, h); }
   function h(tag, attrs, hijos) {
     var e = document.createElement(tag);
-    if (attrs) Object.keys(attrs).forEach(function (k) {
-      if (attrs[k] == null) return;
-      if (k === 'text') e.textContent = attrs[k]; else e.setAttribute(k, attrs[k]);
-    });
-    (hijos || []).forEach(function (c) { if (c == null) return; e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    Object.keys(attrs || {}).forEach(function (k) { if (attrs[k] == null) return; if (k === 'text') e.textContent = attrs[k]; else e.setAttribute(k, attrs[k]); });
+    (hijos || []).forEach(function (c) { if (c) e.appendChild(c); });
     return e;
   }
   function vacia(el) { while (el.firstChild) el.removeChild(el.firstChild); return el; }
-  function aviso(t) { if (typeof window.toast === 'function') window.toast(t); }
-  function falla(err) {
-    var e = err || {}, m = String(e.message || '');
-    if (e.code === 'PGRST202' || e.status === 404 || /Could not find the function|schema cache/i.test(m)) return T('Esta función todavía no está disponible en esta base.');
-    if (e.code === '42501') return T('La puesta en marcha es de administración: tu sesión no tiene acceso.');
-    if (!e.code && (!m || /failed to fetch|network|load failed|timeout/i.test(m))) return T('La base no ha respondido: prueba otra vez en un rato.');
-    return m || T('La base no ha respondido: prueba otra vez en un rato.');
+  function cont() { return document.getElementById('lw-aj-puesta'); }
+  var RAIZ = location.pathname.replace(/ajustes\/.*$/, '');
+  var BTN1 = 'shrink-0 px-4 py-2 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md';
+  var BTN2 = 'shrink-0 px-4 py-2 rounded-full border border-outline-variant text-deep-lagoon font-label-md text-label-md';
+  function chip(hecho, texto) {
+    return h('span', { class: 'shrink-0 px-3 py-1 rounded-full font-label-md text-[13px] ' + (hecho ? 'bg-primary-container text-on-primary' : 'bg-surface-container-high text-on-surface'), 'data-pm-hecho': hecho ? '1' : '0', text: texto });
   }
 
-  var sb = null, ocupado = false;
-  function cont() { return document.getElementById('lw-aj-puesta'); }
-  function chip(hecho) {
-    return h('span', { class: 'shrink-0 px-3 py-1 rounded-full font-label-md text-[13px] ' + (hecho ? 'bg-primary-container text-on-primary' : 'bg-error-container text-on-error-container'),
-                       'data-pm-hecho': hecho ? '1' : '0', text: T(hecho ? 'Hecho' : 'Pendiente~paso') });
-  }
-  function donde(d) {
-    if (!d) return null;
-    var s = String(d);
-    if (/^\/[a-z0-9\-\/]*$/i.test(s)) return h('a', { class: 'underline text-deep-lagoon', href: s, text: T('Ir') + ': ' + s });
-    return h('span', { text: T('Dónde') + ': ' + T(s) });
-  }
-  function eleccion(e, valores, puede) {
-    var tiene = Object.prototype.hasOwnProperty.call(valores, e.clave) && valores[e.clave] != null && valores[e.clave] !== '';
-    var actual = tiene ? String(valores[e.clave]) : '';
-    var id = 'lw-pm-' + e.clave;
-    var sel = h('select', { id: id, 'data-pm-valor': e.clave, class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
-    sel.style.maxWidth = '100%';   // una opción larga (en indonesio) no puede ensanchar la página a 390 px
-    if (!puede) sel.setAttribute('disabled', '');
-    if (!tiene || ['si', 'no'].indexOf(actual) < 0) sel.appendChild(h('option', { value: '', text: T('Sin decidir') }));
-    e.opciones.forEach(function (o) { sel.appendChild(h('option', { value: o[0], text: T(o[1]) })); });
-    sel.value = ['si', 'no'].indexOf(actual) >= 0 ? actual : '';
-    var fila = h('div', { class: 'flex flex-col md:flex-row md:items-center gap-3 pt-2', 'data-pm-fila': e.clave }, [
-      h('label', { for: id, class: 'font-label-md text-label-md text-on-surface', text: T(e.pregunta) }), sel]);
-    if (puede) fila.appendChild(h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-guardar', 'data-pm-clave': e.clave,
-                                              class: 'shrink-0 px-4 py-2 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md', text: T('Guardar') }));
-    fila.appendChild(h('span', { class: 'font-body-sm text-body-sm text-outline', role: 'status', 'aria-live': 'polite', 'data-pm-estado': e.clave }));
-    return fila;
-  }
-  function pinta(pasos, ajustes, listoBase) {
-    var c = cont(); if (!c) return;
-    var mPrev = c.querySelector('[data-pm="motivo"]'), motivoPrevio = mPrev ? mPrev.value : '';   // repintar no borra lo tecleado
-    vacia(c);
-    var valores = (ajustes && ajustes.valores) || {}, puede = !!(ajustes && ajustes.puede_escribir);
-    var faltan = pasos.filter(function (p) { return p.hecho !== true; }).length;
-    var listo = listoBase === true;   // «listo» lo decide la base; la cuenta de abajo solo informa
-    c.appendChild(h('p', { class: 'px-8 py-4 font-body-md text-body-md ' + (listo ? 'text-deep-lagoon font-semibold' : 'text-on-surface'), role: 'status', 'data-pm': 'resumen',
-                           text: listo ? T('Listo: todo en marcha, el ERP ya factura.') : (faltan === 1 ? T('Falta 1 paso.') : T('Faltan %n pasos.', { n: Math.max(faltan, 1) })) }));
-    var ol = h('ol', { class: 'flex flex-col list-none', 'data-pm': 'pasos' });
-    pasos.forEach(function (p, i) {
-      var clave = String(p.clave || '');
-      var texto = h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
-        h('span', { class: 'font-label-md text-label-md text-on-surface', text: (i + 1) + '. ' + (TITULOS[clave] ? T(TITULOS[clave]) : clave) }),
-        p.detalle ? h('span', { class: 'font-body-sm text-body-sm text-outline break-words', text: String(p.detalle) }) : null,
-        p.hint ? h('span', { class: 'font-body-sm text-body-sm text-error break-words', 'data-pm-hint': clave, text: HINTS[p.hint] ? T(HINTS[p.hint]) : T('Código') + ': ' + String(p.hint) }) : null,
-        donde(p.donde)]);
-      var li = h('li', { class: 'px-8 py-4 flex flex-col gap-2 border-b border-outline-variant/30', 'data-pm-paso': clave }, [
-        h('div', { class: 'flex items-start justify-between gap-4' }, [texto, chip(p.hecho === true)])]);
-      ELECCIONES.forEach(function (e) { if (e.paso === clave) li.appendChild(eleccion(e, valores, puede)); });
-      ol.appendChild(li);
-    });
-    // una elección cuyo paso no venga de la base no se pierde: va al final
-    ELECCIONES.forEach(function (e) {
-      if (ol.querySelector('[data-pm-fila="' + e.clave + '"]')) return;
-      var fila = eleccion(e, valores, puede);
-      ol.appendChild(h('li', { class: 'px-8 py-4 border-b border-outline-variant/30' }, [fila]));
-    });
-    c.appendChild(ol);
-    if (puede) c.appendChild(h('div', { class: 'px-8 py-4 flex flex-col gap-2' }, [
-      h('label', { for: 'lw-pm-motivo', class: 'font-label-md text-label-md text-on-surface', text: T('Motivo del cambio') }),
-      h('span', { class: 'font-body-sm text-body-sm text-outline', text: T('Obligatorio: queda en el registro de cambios (p. ej. lo que confirmó el gestor y cuándo).') }),
-      (function () { var i = h('input', { id: 'lw-pm-motivo', type: 'text', maxlength: '500', autocomplete: 'off', 'data-pm': 'motivo',
-                                          class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
-                     i.value = motivoPrevio; return i; })()]));
-    if (!puede) c.appendChild(h('p', { class: 'px-8 py-4 font-body-sm text-body-sm text-outline', text: T('Solo el super admin puede cambiar estos ajustes.') }));
-  }
   function errorLectura(err) {
     var c = cont(); if (!c) return;
-    vacia(c);
-    c.appendChild(h('div', { class: 'px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-3', role: 'alert' }, [
-      h('span', { class: 'font-body-md text-body-md text-error', text: T('No se ha podido mirar la puesta en marcha') + ': ' + (err ? falla(err) : T('La base ha devuelto algo inesperado.')) }),
-      h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-reintentar', class: 'shrink-0 px-4 py-2 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md', text: T('Reintentar') })]));
+    vacia(c).appendChild(h('div', { class: 'px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-3', role: 'alert' }, [
+      h('span', { class: 'font-body-md text-body-md text-error', text: U('no_mirar') + ': ' + S.explica(err || { message: '' }, true).texto }),
+      h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-reintentar', class: BTN1, text: U('reintentar') })]));
   }
   function carga() {
-    var c = cont(); if (!c) return Promise.resolve();
-    if (!sb) { errorLectura(null); return Promise.resolve(); }   // sin cliente (sin sesión): Reintentar vuelve a decirlo, no lanza fuera de la promesa (revisor, BAJA)
-    // puesta_en_marcha_estado NO es una *_datos (canon 7.r: cotiza de verdad con funciones internas, no puede ser de erp_lector): va por sb.rpc,
-    // porque lwDatos solo admite *_datos. Misma forma de respuesta.
-    var estado = Promise.resolve(sb.rpc('puesta_en_marcha_estado')).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; },
-                                                                function (e) { return { data: null, error: e }; });
-    return Promise.all([estado, window.lwDatos('ajustes_config_datos')]).then(function (rs) {
-      var pm = rs[0] || {}, aj = rs[1] || {};
-      if (pm.error || !pm.data || !Array.isArray(pm.data.pasos)) { errorLectura(pm.error); return; }
-      if (aj.error || !aj.data) { errorLectura(aj.error); return; }
-      pinta(pm.data.pasos, aj.data, pm.data.listo);
+    var c = cont(); if (!c || !sb) return Promise.resolve();
+    return S.estado(true).then(function (r) {
+      if (!r.ok) { errorLectura(r.error); return; }
+      var d = r.datos, ref = d.pasos.map(function (p) { return p.ref; }).filter(Boolean)[0];
+      var aj = d.puede_configurar && typeof window.lwDatos === 'function' ? window.lwDatos('ajustes_config_datos') : Promise.resolve({ data: null });
+      var soc = d.puede_configurar && ref ? Promise.resolve(sb.from('sociedades').select('clave,razon,npwp,npwp_label,domicilio,rep,prefijo_serie').eq('clave', ref).maybeSingle()) : Promise.resolve({ data: null });
+      return Promise.all([aj, soc]).then(function (rs) {
+        if (rs[0] && rs[0].error) { errorLectura(rs[0].error); return; }
+        if (rs[1] && rs[1].error) { errorLectura(rs[1].error); return; }
+        ctx = { datos: d, ajustes: (rs[0] && rs[0].data && rs[0].data.valores) || {}, sociedad: (rs[1] && rs[1].data) || null };
+        pinta();
+      });
     }, function (e) { errorLectura(e); });
   }
-  function guarda(btn) {
-    if (ocupado) return;
-    var clave = btn.getAttribute('data-pm-clave');
-    var sel = document.querySelector('[data-pm-valor="' + clave + '"]');
-    var est = document.querySelector('[data-pm-estado="' + clave + '"]');
-    if (!sel || !sb) return;
-    if (sel.value !== 'si' && sel.value !== 'no') { if (est) { est.className = 'font-body-sm text-body-sm text-error'; est.textContent = T('Elige una opción antes de guardar.'); } return; }
-    var mot = document.querySelector('[data-pm="motivo"]');
-    var motivo = mot ? mot.value.trim() : '';
-    if ((motivo.match(/\p{L}/gu) || []).length < 3) { if (est) { est.className = 'font-body-sm text-body-sm text-error'; est.textContent = T('Escribe el motivo del cambio (al menos 3 letras).'); } if (mot) mot.focus(); return; }
-    ocupado = true; btn.disabled = true;
-    if (est) { est.className = 'font-body-sm text-body-sm text-outline'; est.textContent = T('Guardando…'); }
-    Promise.resolve(sb.rpc('ajustes_config_guardar', { p_clave: clave, p_valor: sel.value, p_motivo: motivo })).then(function (r) {
-      ocupado = false; btn.disabled = false;
-      if (!r || r.error) {
-        var hint = r && r.error && r.error.hint;
-        var msg = r && r.error && r.error.code === '42501' ? T('Solo el super admin puede cambiar estos ajustes.')
-          : hint === 'motivo' ? T('Escribe el motivo del cambio (al menos 3 letras).') : hint === 'si_o_no' ? T('La base solo admite sí o no.') : falla(r && r.error);
-        if (est) { est.className = 'font-body-sm text-body-sm text-error'; est.textContent = T('No se guardó') + ': ' + msg; }
-        aviso(T('No se guardó') + ': ' + msg);
-        return;
+  function enlaceAsistente(m, paso) {
+    return RAIZ + 'ajustes/configurar/?modulo=' + encodeURIComponent(m) + (paso ? '&paso=' + encodeURIComponent(paso) : '') + '&vuelta=ajustes';
+  }
+  function pinta() {
+    var c = cont(); if (!c) return;
+    vacia(c);
+    var d = ctx.datos;
+    if (!d.modulos.length) { c.appendChild(h('p', { class: 'px-8 py-6 font-body-md text-body-md text-on-surface', text: U('todo_listo') })); return; }
+    d.modulos.forEach(function (m) {
+      var listo = m.estado === 'configurado';
+      var cab = h('div', { class: 'flex flex-col md:flex-row md:items-center justify-between gap-3' }, [
+        h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
+          h('h3', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', text: S.nombreModulo(m.modulo) }),
+          !listo && m.falta && d.puede_configurar ? h('span', { class: 'font-body-sm text-body-sm text-outline', text: S.texto('paso', m.falta, 0) }) : null]),
+        h('div', { class: 'flex items-center gap-3' }, [
+          chip(listo, S.texto('estado', m.estado)),
+          d.puede_configurar && !listo ? h('a', { href: enlaceAsistente(m.modulo), 'data-pm-asistente': m.modulo, class: BTN1, text: U('abrir_asistente') }) : null])]);
+      var sec = h('section', { class: 'px-8 py-5 flex flex-col gap-3 border-b border-outline-variant/30', 'data-pm-modulo': m.modulo }, [cab]);
+      if (d.puede_configurar) {
+        var ol = h('ol', { class: 'flex flex-col list-none gap-0' });
+        d.pasos.filter(function (p) { return p.modulo === m.modulo; }).forEach(function (p) { ol.appendChild(filaPaso(p)); });
+        sec.appendChild(ol);
       }
-      var cambiado = !!(r.data && r.data.cambiado);
-      if (mot) mot.value = '';
-      carga().then(function () {   // se vuelve a leer: el «hecho» del paso lo decide la base, no este clic
-        var e2 = document.querySelector('[data-pm-estado="' + clave + '"]');
-        if (e2) { e2.className = 'font-body-sm text-body-sm text-on-surface'; e2.textContent = T(cambiado ? 'Guardado.' : 'Sin cambios: ya valía eso.'); }
+      c.appendChild(sec);
+    });
+    if (!d.puede_configurar) c.appendChild(h('p', { class: 'px-8 py-4 font-body-sm text-body-sm text-outline', text: U('solo_admin') }));
+  }
+  function filaPaso(p) {
+    var comp = P.de(p.clave);
+    var texto = h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
+      h('span', { class: 'font-label-md text-label-md text-on-surface', text: S.texto('paso', p.clave, 0) + (p.obligatorio ? '' : ' · ' + U('opcional')) }),
+      h('span', { class: 'font-body-sm text-body-sm text-outline break-words', text: p.hecho ? S.texto('paso', p.clave, 1) : (p.falta ? S.textoFalta(p.falta) : S.texto('paso', p.clave, 1)) })]);
+    var acciones = h('div', { class: 'flex items-center gap-2' });
+    if (p.irreversible && p.hecho) acciones.appendChild(chip(true, U('fijado')));
+    else {
+      acciones.appendChild(chip(p.hecho, U(p.hecho ? 'hecho' : 'pendiente')));
+      if (comp.externo) {
+        if (/^\/[a-z0-9\-\/]*$/i.test(String(p.donde || ''))) acciones.appendChild(h('a', { href: p.donde, class: BTN2, text: U('abrir', { pantalla: S.texto('paso', p.clave, 0) }) }));
+      } else if (p.irreversible) {
+        acciones.appendChild(h('a', { href: enlaceAsistente(p.modulo, p.clave), 'data-pm-asistente-paso': p.clave, class: BTN2, text: U('abrir_asistente') }));
+      } else {
+        acciones.appendChild(h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-editar', 'data-pm-paso': p.clave, 'data-pm-modulo': p.modulo, class: BTN2, text: p.hecho ? U('cambiar') : S.texto('general', 'configurar') }));
+      }
+    }
+    var li = h('li', { class: 'py-3 flex flex-col gap-3 border-t border-outline-variant/20', 'data-pm-fila': p.clave }, [
+      h('div', { class: 'flex flex-col md:flex-row md:items-start justify-between gap-3' }, [texto, acciones])]);
+    li._paso = p;
+    return li;
+  }
+  function editor(li) {
+    var p = li._paso, comp = P.de(p.clave);
+    var viejo = li.querySelector('[data-pm-editor]'); if (viejo) { li.removeChild(viejo); return; }
+    var caja = h('div', { class: 'flex flex-col gap-3', 'data-pm-editor': p.clave });
+    var ctl = comp.pinta(caja, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: p.hecho });
+    var motivo = null;
+    if (p.hecho) {
+      motivo = h('input', { type: 'text', maxlength: '500', autocomplete: 'off', 'data-pm': 'motivo', id: 'pm-motivo-' + p.clave, class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
+      caja.appendChild(h('div', { class: 'flex flex-col gap-1.5' }, [h('label', { for: 'pm-motivo-' + p.clave, class: 'font-label-md text-label-md text-on-surface', text: U('motivo') }), motivo,
+        h('span', { class: 'font-body-sm text-body-sm text-outline', text: U('motivo_ayuda') })]));
+    }
+    var estado = h('span', { role: 'status', 'aria-live': 'polite', class: 'font-body-sm text-body-sm text-outline', 'data-pm-estado': p.clave });
+    caja.appendChild(h('div', { class: 'flex flex-col md:flex-row md:items-center gap-3' }, [
+      h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-guardar', 'data-pm-paso': p.clave, class: BTN1, text: U('guardar') }), estado]));
+    caja._ctl = ctl; caja._motivo = motivo; caja._estado = estado;
+    li.appendChild(caja);
+  }
+  function guarda(li) {
+    if (ocupado) return;
+    var p = li._paso, caja = li.querySelector('[data-pm-editor]');
+    if (!caja) return;
+    var est = caja._estado, r = caja._ctl.valores();
+    function di(t, mal) { est.className = 'font-body-sm text-body-sm ' + (mal ? 'text-error' : 'text-outline'); est.textContent = t; }
+    if (!r.ok) { di(r.error, true); return; }
+    var motivo = caja._motivo ? caja._motivo.value.trim() : '';
+    if (caja._motivo && (motivo.match(/\p{L}/gu) || []).length < 3) { di(U('motivo_corto'), true); caja._motivo.focus(); return; }
+    ocupado = true; di(U('cargando'), false);
+    caja.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+    P.de(p.clave).guarda(sb, r.v, { paso: p, datos: ctx.datos }, false, motivo || null).then(function (res) {
+      if (res.ok) { ocupado = false; return carga(); }
+      if (!res.sinRespuesta) {   // con código de la base: «no se guardó», y por qué
+        ocupado = false; caja.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+        di(U('no_se_guardo', { e: S.explica(res.error, true).texto }), true); return;
+      }
+      di(U('comprobando'), false);   // sin respuesta: se relee la base; nada se reenvía solo
+      return S.estado(true).then(function (rr) {
+        ocupado = false;
+        var ahora = rr.ok && rr.datos.pasos.filter(function (x) { return x.clave === p.clave && x.modulo === p.modulo; })[0];
+        if (ahora && ahora.hecho && !p.hecho) return carga();
+        caja.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+        di(rr.ok ? U('no_guardado') : U('no_mirar'), true);
       });
-    }, function (e) {
-      ocupado = false; btn.disabled = false;
-      if (est) { est.className = 'font-body-sm text-body-sm text-error'; est.textContent = T('No se guardó') + ': ' + falla(e); }
     });
   }
   function arranca() {
     var c = cont();
-    if (!c) return;   // otra página: nada que hacer
+    if (!c) return;
+    S = window.AXW_SETUP; P = window.AXW_PASOS;
     if (window.LW_EN && typeof window.LW_EN === 'object') Object.keys(EN_PM).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_PM[k]; });
     if (window.LW_ID && typeof window.LW_ID === 'object') Object.keys(ID_PM).forEach(function (k) { if (!(k in window.LW_ID)) window.LW_ID[k] = ID_PM[k]; });
     if (typeof window.lwIdiomaAplicar === 'function') {
-      var panel = c.closest('[data-lw-panel]');
-      try { window.lwIdiomaAplicar(panel || c); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ }
+      try { window.lwIdiomaAplicar(c.closest('[data-lw-panel]') || c); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla */ }
     }
+    if (!S || !P) { c.textContent = 'setup_modulos.js / setup_pasos.js'; return; }
     c.addEventListener('click', function (ev) {
       var b = ev.target.closest && ev.target.closest('[data-accion]');
       if (!b) return;
-      var a = b.getAttribute('data-accion');
-      if (a === 'pm-guardar') { ev.stopPropagation(); guarda(b); }
-      else if (a === 'pm-reintentar') { ev.stopPropagation(); carga(); }
+      var a = b.getAttribute('data-accion'), li = b.closest('[data-pm-fila]');
+      if (a === 'pm-reintentar') { ev.stopPropagation(); carga(); }
+      else if (a === 'pm-editar' && li) { ev.stopPropagation(); editor(li); }
+      else if (a === 'pm-guardar' && li) { ev.stopPropagation(); guarda(li); }
     });
-    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { errorLectura({ code: '42501', message: 'sin sesión' }); return; }
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { errorLectura({ code: '42501' }); return; }
     window.LW_AUTH.then(function (aut) {
-      if (!aut || !aut.sb) { errorLectura(null); return; }
+      if (!aut || !aut.sb) { errorLectura({ code: '42501' }); return; }
       sb = aut.sb;
       carga();
     });

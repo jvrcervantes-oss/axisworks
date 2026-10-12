@@ -90,10 +90,11 @@ c2 = compila(AJ, 'a.js')
 mira('ajustes_puesta.js compila' + (': ' + c2.stderr.strip()[:300] if c2.returncode else ''), c2.returncode == 0)
 c3 = compila(ajs, 'aj.js') if ajs else None
 mira('el ajustes.js resultante compila', c3 is not None and c3.returncode == 0)
-mira('Ajustes: pestaña y panel de Puesta en marcha UNA vez, la pestaña antes de Empresa',
+mira('Ajustes: pestaña y panel de Configurar módulos UNA vez, la pestaña antes de Empresa',
      ajp.count('data-lw-tab="puesta"') == 1 and ajp.count('data-lw-panel="puesta"') == 1 and ajp.count('id="lw-aj-puesta"') == 1
      and 0 <= ajp.find('data-lw-tab="puesta"') < ajp.find('data-lw-tab="empresa"'))
 mira('Ajustes carga ajustes_puesta.js UNA vez y después de ajustes.js', ajp.count('ajustes_puesta.js') == 1 and ajp.find('assets/ajustes.js') < ajp.find('ajustes_puesta.js'))
+mira('Ajustes carga setup_pasos.js UNA vez y antes de ajustes_puesta.js', ajp.count('setup_pasos.js') == 1 and ajp.find('setup_pasos.js') < ajp.find('ajustes_puesta.js'))
 mira('ajustes.js conoce la pestaña y abre en ella sin #', "var PESTANAS = ['puesta', 'empresa'," in ajs and "? h : 'puesta';" in ajs)
 mira('Ajustes › Correo sigue con UNA copia tras el parche', ajs.count('ajustes-correo') >= 1 and build.ajustes_correo_una_copia(ajs, 'prueba', con_comentarios=True) is None)
 if r == 'pasa':
@@ -135,22 +136,26 @@ for nombre, cod in (('la portada', CODIGO), ('la puesta en marcha', CODIGO_AJ)):
     mira('%s: ningún innerHTML ni insertAdjacentHTML ni outerHTML ni document.write' % nombre, not re.search(r'innerHTML|insertAdjacentHTML|outerHTML|document\.write', cod))
     mira('%s: no usa el esc() de Lawang' % nombre, not re.search(r'\besc\(', cod))
     mira('%s: ningún console.log' % nombre, 'console.log' not in cod)
-    mira('%s: ni .from( ni insert/update/upsert/delete ni storage' % nombre, not re.search(r'\.from\(|\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.storage\b', cod))
+    sin_lectura_soc = re.sub(r"\.from\('sociedades'\)\.select\(", '', cod)   # F3: Configurar módulos lee la fila de la empresa (solo select)
+    mira('%s: ni .from( (salvo leer sociedades) ni insert/update/upsert/delete ni storage' % nombre, not re.search(r'\.from\(|\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.storage\b', sin_lectura_soc))
 mira('no nombra claves de servicio', not re.search(r'service_role|sb_secret_', SCRIPT + MARCADO + AJ))
 mira('la portada solo LEE y solo portada_reservas_dia_datos, por lwDatos',
      set(re.findall(r"(?:\.rpc|lwDatos)\('([a-z_]+)'", CODIGO)) == {'portada_reservas_dia_datos'} and '.rpc(' not in CODIGO)
-mira('la puesta en marcha lee puesta_en_marcha_estado (sb.rpc: no es *_datos) y ajustes_config_datos (lwDatos) y SOLO escribe por ajustes_config_guardar',
-     set(re.findall(r"lwDatos\('([a-z_]+)'", CODIGO_AJ)) == {'ajustes_config_datos'}
-     and set(re.findall(r"\.rpc\('([a-z_]+)'", CODIGO_AJ)) == {'puesta_en_marcha_estado', 'ajustes_config_guardar'})
-mira('la puesta en marcha solo guarda las dos claves de sí/no, con valor si|no',
-     set(re.findall(r"clave: '([a-z_]+)'", CODIGO_AJ)) == {'precio_incluye_impuesto', 'reservas_sin_impuesto'} and "sel.value !== 'si' && sel.value !== 'no'" in CODIGO_AJ)
+PASOS_JS = open(os.path.join(AQUI, 'setup_pasos.js'), encoding='utf-8').read()
+mira('Configurar módulos lee ajustes_config_datos (lwDatos) y no llama a la base por su cuenta: escribe por los componentes de setup_pasos.js',
+     set(re.findall(r"lwDatos\('([a-z_]+)'", CODIGO_AJ)) == {'ajustes_config_datos'} and not re.findall(r"\.rpc\('", CODIGO_AJ))
+mira('los pasos solo escriben por ajustes_config_guardar y sociedad_guarda', set(re.findall(r"\.rpc\('([a-z_]+)'", PASOS_JS)) == {'ajustes_config_guardar', 'sociedad_guarda'})
+mira('los ajustes que guardan los pasos son una lista cerrada (moneda y los dos sí/no, con valor si|no)',
+     set(re.findall(r"opcionUnica\('([a-z_]+)'", PASOS_JS)) == {'precio_incluye_impuesto', 'reservas_sin_impuesto'}
+     and set(re.findall(r"guardaAjuste\(sb, '([a-z_]+)'", PASOS_JS)) == {'moneda'} and "v === 'si' || v === 'no'" in PASOS_JS)
 mira('el estado del pago sale de pago_estado de la base: la portada no mira importes ni referencias para decidirlo',
      'x.pago_estado' in CODIGO and not re.search(r'pago_referencia|precio_total\s*[<>=!]|pagado_en', CODIGO))
 mira('el día por defecto lo decide la base (p_dia null), no el reloj del navegador', "p_dia: dia || null" in CODIGO and 'new Date()' not in CODIGO and 'Date.now' not in CODIGO)
 mira('la portada distingue vacía de no se ha podido mirar, y sin permiso / módulo apagado',
      'Hoy no hay entregas.' in CODIGO and "T('No se han podido mirar las reservas')" in CODIGO and 'No es que no haya' in CODIGO and 'Esto NO quiere decir que no haya nada' in CODIGO)
-mira('la puesta en marcha no deduce el hecho: lo lee del paso y vuelve a leer tras guardar', 'p.hecho === true' in CODIGO_AJ and 'carga().then' in CODIGO_AJ)
-mira('una clave ausente es «sin decidir», no «no»', "T('Sin decidir')" in CODIGO_AJ)
+mira('Configurar módulos no deduce el hecho: lee modulos_setup_estado y vuelve a leer tras guardar', 'S.estado(true)' in CODIGO_AJ and 'return carga()' in CODIGO_AJ and 'puesta_en_marcha_estado' not in CODIGO_AJ)
+mira('no poder mirar no es «todo configurado»: se dice y se ofrece Reintentar', "U('no_mirar')" in CODIGO_AJ and 'pm-reintentar' in CODIGO_AJ)
+mira('cambiar lo guardado pide motivo y un irreversible sin hacer lleva al asistente', "U('motivo_corto')" in CODIGO_AJ and 'enlaceAsistente(p.modulo, p.clave)' in CODIGO_AJ)
 mira('sin columna de hora vacía: la hora solo se pinta si llega', CODIGO.count('if (x.hora)') == 2)
 acciones = set(re.findall(r'data-accion="(ph-[a-z-]+)"', MARCADO)) | set(re.findall(r"'data-accion': '(ph-[a-z-]+)'", CODIGO))
 mira('todo data-accion de la portada tiene manejador', all(("a === '" + a + "'") in CODIGO for a in acciones))
@@ -164,15 +169,13 @@ def claves_de(bloque, var):
 COMUN = open(os.path.join(AQUI, '_compartido', 'pantalla_comun.js'), encoding='utf-8').read()
 claves = claves_de(SCRIPT[SCRIPT.index('var EN_PH = {'):SCRIPT.index('var T = typeof window.lwT')], 'EN_PH')
 claves |= claves_de(COMUN + '\nvar X = axwComun(null, function (s) { return s; }).EN;', 'X')
-claves |= claves_de(AJ[AJ.index('var EN_PM = {'):AJ.index('var TITULOS')], 'EN_PM')
+claves |= claves_de(AJ[AJ.index('var EN_PM = {'):AJ.index('var ID_PM')], 'EN_PM')
 i18n = open(os.path.join(build.LAWANG, 'contracts', 'assets', 'i18n.js'), encoding='utf-8').read()
 def conocida(c):
     return c in claves or ("'" + c.replace("'", "\\'") + "':") in i18n or ('"' + c + '":') in i18n
 pintados = set(re.findall(r"T\('([^']+)'", CODIGO + CODIGO_AJ))
 pintados |= {s.strip() for s in re.findall(r'data-lwt>([^<]+)<', MARCADO + build.AJUSTES_PUESTA_TAB + build.AJUSTES_PUESTA_PANEL)}
 pintados |= set(re.findall(r"\['(Pagado|Pago registrado, sin confirmar|Pendiente de pago|Sin confirmar|Confirmada|En curso|Devuelta)'", CODIGO))
-_tit = CODIGO_AJ[CODIGO_AJ.index('var TITULOS = {'):CODIGO_AJ.index('};', CODIGO_AJ.index('var TITULOS = {'))]
-pintados |= set(re.findall(r": '([^']+)'", _tit))
 pintados |= set(re.findall(r"pregunta: '([^']+)'", CODIGO_AJ))
 for par in re.findall(r"\['(?:si|no)', '([^']{4,})'\]", CODIGO_AJ):
     pintados.add(par)
