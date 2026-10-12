@@ -1,0 +1,86 @@
+/* Portada C01 — CSS de la mesa, tal cual. */
+body{margin:0;background:#0B0C1E}
+a{color:inherit;text-decoration:none}a:hover{color:#C8F04A}
+.navlight a:hover{color:#2E3BEB}.navlight a.navcta:hover,.navlight a.on:hover{color:#C8F04A}
+summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}
+.nl{padding:9px 16px;border-radius:999px;transition:background-color .2s,color .2s}
+.navlight .nl:hover{background:#E3E6FD;color:#2E3BEB}
+.menubtn{display:none;position:relative}
+.menubtn[open] summary{background:#0B0C1E;color:#F2F3F7}
+@media (max-width: 1100px){.navlinks{display:none !important}.menubtn{display:block}}
+@media (max-width: 600px){.lang,.navcta{display:none !important}}
+
+/* entrance choreography · brand easing (.2,.8,.2,1) · 700 ms intro */
+.rise{animation:rise .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.barA,.barB,.ptIn{transform-box:fill-box;transform-origin:center}
+.barA{animation:barA .7s cubic-bezier(.2,.8,.2,1) .3s both}
+.barB{animation:barB .7s cubic-bezier(.2,.8,.2,1) .5s both}
+@keyframes barA{from{transform:translate(-16%,-27%);opacity:0}to{transform:none;opacity:1}}
+@keyframes barB{from{transform:translate(16%,-27%);opacity:0}to{transform:none;opacity:1}}
+.ptIn{animation:ptIn .6s cubic-bezier(.2,.8,.2,1) .95s both}
+@keyframes ptIn{0%{transform:scale(0)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+.axis{stroke-dasharray:1100;animation:draw 1.4s cubic-bezier(.2,.8,.2,1) .2s both}
+@keyframes draw{from{stroke-dashoffset:1100}to{stroke-dashoffset:0}}
+/* swarm */
+.xm{position:absolute;width:10px;height:12px;margin:-6px 0 0 -5px;color:#272A47}
+.xm::before,.xm::after{content:"";position:absolute;left:4px;top:0;width:2.5px;height:12px;background:currentColor;border-radius:1px}
+.xm::before{transform:rotate(-31.5deg)}
+.xm::after{transform:rotate(31.5deg)}
+.c0{animation:cin .5s cubic-bezier(.2,.8,.2,1) both}
+.c1{animation:cin .5s cubic-bezier(.2,.8,.2,1) both,b1 5s linear infinite}
+.c2{animation:cin .5s cubic-bezier(.2,.8,.2,1) both,b2 7s linear infinite}
+@keyframes cin{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes b1{0%,80%,100%{color:#272A47}85%,91%{color:#C8F04A}}
+@keyframes b2{0%,78%,100%{color:#272A47}84%,92%{color:#6F79F5}}
+/* pop-ups: two identical keyframe sets, alternated so each new task replays its entrance */
+.pop{transition:opacity .5s ease}
+.dotA{animation:dotIn .45s cubic-bezier(.2,.8,.2,1) both}.dotB{animation:dotIn2 .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes dotIn{0%{transform:scale(0)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes dotIn2{0%{transform:scale(0)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+.lineA{animation:lineIn .45s cubic-bezier(.2,.8,.2,1) both}.lineB{animation:lineIn2 .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes lineIn{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes lineIn2{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+.tagA{animation:tagIn .35s cubic-bezier(.2,.8,.2,1) .12s both}.tagB{animation:tagIn2 .35s cubic-bezier(.2,.8,.2,1) .12s both}
+@keyframes tagIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes tagIn2{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.pt{position:absolute;top:-3px;left:0;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:#C8F04A;animation:run 1.3s cubic-bezier(.5,0,.8,.4) .3s infinite}
+@keyframes run{0%{left:0;opacity:0}15%{opacity:1}100%{left:100%;opacity:.2}}
+.ring{position:absolute;left:360px;top:300px;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;border:2px solid #C8F04A;animation:ring 1.3s ease-out 1.2s infinite both}
+@keyframes ring{0%{transform:scale(.25);opacity:.8}100%{transform:scale(1.4);opacity:0}}
+.pulse{animation:pulse 1.3s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* console rows */
+.rowA{animation:rowIn .45s cubic-bezier(.2,.8,.2,1) both}.rowB{animation:rowIn2 .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rowIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes rowIn2{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.numA{animation:numIn .45s cubic-bezier(.2,.8,.2,1) both}.numB{animation:numIn2 .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes numIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes numIn2{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+/* primary CTA: the X straightens into a + */
+.xbtn .xa,.xbtn .xb{transform-box:fill-box;transform-origin:center;transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.xbtn:hover .xa,.xbtn:focus-visible .xa{transform:rotate(-31.5deg)}
+.xbtn:hover .xb,.xbtn:focus-visible .xb{transform:rotate(58.5deg)}
+.xbtn:hover{color:#0B0C1E}
+@media (prefers-reduced-motion: reduce){.rise,.barA,.barB,.ptIn,.axis,.c0,.c1,.c2,.dotA,.dotB,.lineA,.lineB,.tagA,.tagB,.pt,.ring,.pulse,.rowA,.rowB,.numA,.numB{animation:none}}
+.ept{position:absolute;top:-3px;left:0;width:6px;height:6px;margin-left:-3px;border-radius:50%;animation:ptrun 2.4s linear infinite}
+@keyframes ptrun{0%{left:0;opacity:0}12%{opacity:1}88%{opacity:1}100%{left:100%;opacity:0}}
+.node{transition:border-color .4s,background-color .4s,box-shadow .4s}
+.node:hover{border-color:#F2F3F7}
+.seal{animation:spin 24s linear infinite;transform-origin:50% 50%}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.ept{display:none}.seal{animation:none}}
+/* tools carousel: two rows, opposite directions, pause on hover */
+.logos{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}
+.ltrack{display:flex;width:max-content;animation:marq 60s linear infinite}
+.ltrack.rev{animation-name:marqR;animation-duration:70s}
+@keyframes marq{to{transform:translateX(-50%)}}
+@keyframes marqR{from{transform:translateX(-50%)}to{transform:none}}
+.logos:hover .ltrack{animation-play-state:paused}
+.tool{transition:border-color .2s,color .2s}.tool:hover{border-color:#8C95FF;color:#F2F3F7}
+.stagewrap{position:relative;height:720px}
+.stage{position:absolute;left:50%;top:0;width:720px;height:720px;margin-left:-360px;transform-origin:top center}
+@media (max-width: 760px){.stagewrap{height:470px}.stage{transform:scale(.64)}}
+@media (prefers-reduced-motion: reduce){.ltrack{animation:none;width:auto}.ltrack ul{flex-wrap:wrap}.ltrack ul+ul{display:none}}
+@supports (animation-timeline: view()){.reveal{animation:rise linear both;animation-timeline:view();animation-range:entry 0% entry 100%}}
+@media (prefers-reduced-motion: reduce){.reveal{animation:none}}

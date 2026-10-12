@@ -57,18 +57,26 @@ $abs    = SITE . $url;
 
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
 <?php /* Fuentes autoalojadas: ninguna petición a Google (Legal, 24-sep-2026). */ ?>
-<?php if (!empty($landing)): /* portada nueva y AaaS: Plus Jakarta Sans + Inter, sin site.css */ ?>
+<?php if (!empty($xpage)): /* diseño «X marks the work» (12-oct-2026): Unbounded + Manrope + Plex Mono y el CSS de su mesa */ ?>
+<link rel="preload" href="/assets/fonts/x/unbounded-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/x/manrope-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/x/fonts.css?v=<?= VER ?>">
+<link rel="stylesheet" href="/assets/x/<?= e($xpage) ?>.css?v=<?= VER ?>">
+<?php elseif (!empty($landing)): /* portada nueva y AaaS: Plus Jakarta Sans + Inter, sin site.css */ ?>
 <link rel="preload" href="/assets/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/inter-400-latin.woff2" as="font" type="font/woff2" crossorigin>
 <?php else: ?>
 <link rel="preload" href="/assets/fonts/space-grotesk-600-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/inter-400-latin.woff2" as="font" type="font/woff2" crossorigin>
 <?php endif; ?>
-<link rel="stylesheet" href="/assets/fonts/fonts.css?v=<?= VER ?>">
 <?php /* El sello de versión vive en config.php y en ningún otro sitio: el
        * .htaccess cachea CSS un año, y sin sello una corrección de estilo
        * tardaría doce meses en verse. */ ?>
-<?php if (!empty($landing)): ?>
+<?php if (empty($xpage)): ?>
+<link rel="stylesheet" href="/assets/fonts/fonts.css?v=<?= VER ?>">
+<?php endif; ?>
+<?php if (!empty($xpage)): ?>
+<?php elseif (!empty($landing)): ?>
 <link rel="stylesheet" href="/assets/landing.css?v=<?= VER ?>">
 <?php else: ?>
 <link rel="stylesheet" href="/assets/site.css?v=<?= VER ?>">
