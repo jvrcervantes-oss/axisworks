@@ -1,0 +1,41 @@
+{
+ "_que_es": "Nombres EN para el mapa de la instalación (S00) del panel de control (/panel/#mapa), 12-oct-2026, erp-panel-2. Solo presentación: qué módulos hay, qué pasos declara cada uno y qué tipo de negocio lleva cuál salen del registro (erp/modulos.json → setup, erp/perfiles.json). La lámina se enseña a un cliente: en inglés y sin nombres de clientes reales. build.py aborta si un módulo de erp/modulos.json o un tipo de erp/perfiles.json no tiene fila aquí.",
+ "modulos": {
+  "agente": "Autonomous agent",
+  "asistente": "Requests to management",
+  "asistente-correos": "Reply assistant",
+  "bancos": "Banks and reconciliation",
+  "base": "Business basics",
+  "comision-admin": "Management fee",
+  "comisiones": "Commissions",
+  "compradores": "Customers",
+  "comunicacion": "Announcements",
+  "contratos": "Contracts",
+  "copias-firmadas": "Signed copy by email",
+  "creatividades": "Creatives and brochures",
+  "cuentas": "Bank accounts",
+  "deck": "Investor deck",
+  "facturas": "Invoices",
+  "finanzas": "Finance dashboard",
+  "gastos": "Expenses and suppliers",
+  "leads": "Leads CRM",
+  "modelos": "House models",
+  "obra": "Construction",
+  "operaciones": "Sales",
+  "portal": "Buyer portal",
+  "productos": "Products",
+  "proyectos": "Projects and plots",
+  "recibos": "Payments and receipts",
+  "reservas": "Reservations",
+  "reservas-producto": "Product bookings",
+  "sociedades": "Issuing companies",
+  "soporte": "Customer support",
+  "textos-contrato": "Contract texts",
+  "vencimientos": "Due dates",
+  "whatsapp-bot": "WhatsApp bot"
+ },
+ "tipos": {
+  "inmobiliario": ["Properties", "Developers: projects, plots, contracts, commissions"],
+  "generalista": ["Products and bookings", "Products, services and dated bookings"]
+ }
+}
