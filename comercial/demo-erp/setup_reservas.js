@@ -32,7 +32,8 @@
     },
     campo: {
       bloqueo_minutos: 'tiempo de una reserva sin pagar', dias_min: 'alquiler más corto', dias_max: 'alquiler más largo',
-      horizonte_dias: 'antelación máxima', recogida: 'recogida al final', km_max: 'distancia máxima'
+      horizonte_dias: 'antelación máxima', recogida: 'recogida al final', km_max: 'distancia máxima',
+      entrega_activa: 'entrega encendida'   // `activa` ya es «empresa activa» (sociedad): Backend lo renombró para la entrega (bbm-p26, ba11880e)
     },
     hint: {
       sin_herramienta: 'No tienes la herramienta de este módulo: pídesela al administrador principal en Usuarios.',
@@ -212,7 +213,7 @@
     'Aún no hay ningún producto de alquiler activo.': 'There is no active rental product yet.',
     'Falta decir qué unidades están alquiladas ahora (o que no hay ninguna).': 'Still to say which units are rented out now (or that none are).',
     'tiempo de una reserva sin pagar': 'how long an unpaid booking is held', 'alquiler más corto': 'shortest rental', 'alquiler más largo': 'longest rental',
-    'antelación máxima': 'how far ahead', 'recogida al final': 'collection at the end', 'distancia máxima': 'maximum distance',
+    'antelación máxima': 'how far ahead', 'recogida al final': 'collection at the end', 'distancia máxima': 'maximum distance', 'entrega encendida': 'delivery switched on',
     'No tienes la herramienta de este módulo: pídesela al administrador principal en Usuarios.': 'You do not have the tool for this module: ask the main administrator for it in Users.',
     'Este producto tiene unidades: no puede dejar de ser de alquiler.': 'This product has units: it cannot stop being a rental.',
     'Esa unidad está dada de baja.': 'That unit is retired.',
@@ -319,7 +320,7 @@
     'Aún no hay ningún producto de alquiler activo.': 'Belum ada produk sewa yang aktif.',
     'Falta decir qué unidades están alquiladas ahora (o que no hay ninguna).': 'Belum diisi unit mana yang sedang disewa (atau bahwa tidak ada).',
     'tiempo de una reserva sin pagar': 'lama menahan booking yang belum dibayar', 'alquiler más corto': 'sewa terpendek', 'alquiler más largo': 'sewa terpanjang',
-    'antelación máxima': 'batas waktu pemesanan ke depan', 'recogida al final': 'penjemputan di akhir sewa', 'distancia máxima': 'jarak maksimum',
+    'antelación máxima': 'batas waktu pemesanan ke depan', 'recogida al final': 'penjemputan di akhir sewa', 'distancia máxima': 'jarak maksimum', 'entrega encendida': 'pengantaran aktif',
     'No tienes la herramienta de este módulo: pídesela al administrador principal en Usuarios.': 'Anda belum punya akses alat modul ini: minta ke admin utama di Pengguna.',
     'Este producto tiene unidades: no puede dejar de ser de alquiler.': 'Produk ini punya unit: tidak bisa berhenti menjadi produk sewa.',
     'Esa unidad está dada de baja.': 'Unit itu sudah tidak dipakai lagi.',

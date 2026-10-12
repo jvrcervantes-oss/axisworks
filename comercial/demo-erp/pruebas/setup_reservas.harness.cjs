@@ -57,7 +57,7 @@ function pasosDe(b) {
     P('flota', flotaOk, true, '/flota/', { codigo: 'sin_flota', campos: [] }, alq[0] ? alq[0].id : null),
     P('reglas_reserva', r.bloqueo_minutos != null && r.dias_min != null && r.dias_max != null, false, '/ajustes/', { codigo: 'falta_dato', campos: ['bloqueo_minutos', 'dias_min', 'dias_max'].filter(k => r[k] == null) }),
     P('alquileres_previos', !!b.revisado, true, '/flota/', { codigo: 'previos_sin_revisar', campos: [] }),
-    P('entrega', e.ajustes.activa && e.ajustes.sede_lat != null && !!e.tarifa && e.ajustes.cobra_recogida != null, false, '/entrega/', { codigo: 'falta_dato', campos: ['sede', 'precio_km', 'recogida'] }),
+    P('entrega', e.ajustes.activa && e.ajustes.sede_lat != null && !!e.tarifa && e.ajustes.cobra_recogida != null, false, '/entrega/', { codigo: 'falta_dato', campos: ['entrega_activa', 'sede', 'precio_km', 'recogida'] }),
     P('cobros', true, true, '/ajustes/', null), P('usuarios', true, true, '/usuarios/', null)
   ];
 }
