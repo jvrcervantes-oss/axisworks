@@ -1,0 +1,39 @@
+"""Prueba de las páginas del diseño «X marks the work» (12-oct-2026), sin navegador ni servidor.
+
+1. Cada x('clave') que usa una plantilla existe en EN y en ES de su diccionario (inc/x/t_*.php): una página ES
+   no se publica con un hueco que x() rellenaría en inglés.
+2. Los .es.js son exactamente lo que genera tools/web_x/traduce_js.py desde home.js y aaas.js (EN y ES no se
+   desfasan cuando alguien toca la fuente).
+Uso: python tests/web_x.prueba.py   (necesita php en el PATH)
+"""
+import json, os, re, subprocess, sys
+
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PLANTILLAS = {
+    'home': ['inc/x/home_tpl.php'],
+    'aaas': ['inc/x/aaas_tpl.php'],
+    'hoja': ['inc/x/hoja_tpl.php', 'inc/x/cabecera.php', 'inc/x/pie.php'],
+}
+
+def dic(nombre):
+    php = "echo json_encode(require 'inc/x/t_%s.php');" % nombre
+    out = subprocess.run(['php', '-r', php], cwd=RAIZ, capture_output=True, text=True, check=True).stdout
+    return json.loads(out)
+
+mal = 0
+for nombre, ficheros in PLANTILLAS.items():
+    d = dic(nombre)
+    usadas = set()
+    for f in ficheros:
+        usadas |= set(re.findall(r"x\('([a-z0-9_]+)'\)", open(os.path.join(RAIZ, f), encoding='utf-8').read()))
+    for lg in ('en', 'es'):
+        faltan = sorted(k for k in usadas if k not in d.get(lg, {}))
+        if faltan:
+            print('MAL  t_%s.php sin %s en %s' % (nombre, ', '.join(faltan), lg)); mal += 1
+        else:
+            print('OK   t_%s.php: las %d claves que usan sus plantillas existen en %s' % (nombre, len(usadas), lg))
+
+r = subprocess.run([sys.executable, os.path.join(RAIZ, 'tools', 'web_x', 'traduce_js.py'), '--check'], capture_output=True, text=True)
+print(('OK   ' if r.returncode == 0 else 'MAL  ') + 'los .es.js casan con su fuente: ' + r.stdout.strip().replace('\n', '; '))
+mal += r.returncode != 0
+sys.exit(1 if mal else 0)

@@ -1,6 +1,7 @@
-/* GENERADO por tr_aaas.py desde aaas.js: no se edita a mano. */
+/* GENERADO por tools/web_x/traduce_js.py desde aaas.js: no se edita a mano. */
 /* Lógica de la mesa, copiada del diseño (clase DCLogic del lienzo) y montada con dc.js.
- * GENERADO por convierte/gen_js.py desde WebAgents.dc.html: no se edita a mano. */
+ * Sacada de la mesa C04 (WebAgents.dc.html) el 12-oct-2026; desde entonces ESTE fichero es la fuente y se edita a
+ * mano. Su versión en español (aaas.es.js) la genera tools/web_x/traduce_js.py: tras tocar este, regenerarla. */
 (function () {
 'use strict';
 if (!window.XDC) return;

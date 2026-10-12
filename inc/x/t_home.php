@@ -196,7 +196,7 @@ return [
     'footer' => 'Footer',
     'services_index' => 'Services',
     'js_highlighted' => 'Highlighted',
-    'js_lead' => 'Sample data: {A} of {N} departments highlighted in this frame.',
+    'js_lead' => 'Sample data: {A} of {T} departments highlighted in this frame.',
   ],
   'es' => [
     'a' => 'a',
@@ -356,7 +356,7 @@ return [
     'for_example_two_people' => 'Por ejemplo: dos personas contestan WhatsApp todo el día y copian cada reserva en una hoja de cálculo.',
     'footer' => 'Pie de página',
     'js_highlighted' => 'Resaltado',
-    'js_lead' => 'Datos de ejemplo: {A} de {N} departamentos resaltados en este fotograma.',
+    'js_lead' => 'Datos de ejemplo: {A} de {T} departamentos resaltados en este fotograma.',
     'services_index' => 'Servicios',
   ],
 ];

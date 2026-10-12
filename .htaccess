@@ -73,7 +73,8 @@ DirectoryIndex index.php index.html
   RewriteRule ^inc/ - [F,L]
   # Secreto y estado del formulario de contacto: nunca por web (24-sep-2026).
   # tests/: las pruebas viven en el repo pero no tienen llamador en la web (10-oct-2026).
-  RewriteRule ^(private|api/_estado|tests)/ - [F,L]
+  # tools/: generadores del repo (p. ej. tools/web_x/traduce_js.py), sin llamador en la web (12-oct-2026).
+  RewriteRule ^(private|api/_estado|tests|tools)/ - [F,L]
 
   # Bodas se mudó a su dominio, bodaenlace.com (26-sep-2026). Destino FIJO y patrón cerrado
   # (`/bodas.evil.com/` no casa): no es una redirección abierta. La API no se redirige: un 301

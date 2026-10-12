@@ -103,7 +103,10 @@ function ct_smtp_envia(array $c, string $para, string $mime): string {
   $err = '';
   $fin = microtime(true) + 25;   /* plazo total: un servidor lento no retiene el proceso más de 25 s (Seguridad #287) */
   foreach ($pasos as $i => [$cmd, $esp]) {
-    if (microtime(true) > $fin) { $err = 'plazo'; break; }
+    $queda = $fin - microtime(true);
+    if ($queda <= 0) { $err = 'plazo'; break; }
+    /* cada lectura espera como mucho lo que queda del plazo total: el peor caso son 25 s, no 25 + 15 (revisor) */
+    stream_set_timeout($s, max(1, (int) ceil($queda)));
     if ($cmd !== '') @fwrite($s, $cmd . "\r\n");
     if (strpos($lee(), $esp) !== 0) { $err = 'paso ' . $i; break; }
   }

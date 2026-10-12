@@ -115,10 +115,13 @@
     var zonas = [];
     var tpls = raiz.querySelectorAll('template[data-r]');
     for (var i = 0; i < tpls.length; i++) {
+      /* dentro de un <svg> un <template> no es plantilla HTML (no tiene .content): no se pinta, en vez de romper */
+      if (!tpls[i].content) continue;
       var out = document.createElement('x-r');
       out.style.display = 'contents';
       tpls[i].parentNode.insertBefore(out, tpls[i].nextSibling);
-      zonas.push({ tpl: tpls[i], out: out });
+      /* data-fija: la zona no depende del estado (p. ej. las 380 ✕ del enjambre): se pinta una vez y no se repasa */
+      zonas.push({ tpl: tpls[i], out: out, fija: tpls[i].hasAttribute('data-fija'), pintada: false });
     }
     ['click', 'change', 'input', 'submit', 'keydown'].forEach(function (tipo) {
       raiz.addEventListener(tipo, function (ev) {
@@ -130,6 +133,8 @@
     function repinta() {
       var vals = logica.renderVals();
       for (var z = 0; z < zonas.length; z++) {
+        if (zonas[z].fija && zonas[z].pintada) continue;
+        zonas[z].pintada = true;
         var tmp = document.createElement('x-r');
         pinta(zonas[z].tpl.content, tmp, vals);
         parchea(zonas[z].out, tmp);
