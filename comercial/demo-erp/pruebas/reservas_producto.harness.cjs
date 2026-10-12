@@ -749,6 +749,18 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
       const m = await medida();
       ok(ancho + ' px · pestana ' + t + ': sin scroll horizontal de pagina', m.sw <= m.cw, JSON.stringify(m));
       if (SHOT) await p.screenshot({ path: SHOT + '_' + ancho + '_' + t + '.png', fullPage: true });
+      if (t === 'calendario') {
+        // el calendario se desliza DENTRO de su caja y los primeros dias se ven al lado de la columna de motos (13-oct: a 390 la columna
+        // de motos ocupaba toda la caja y los dias quedaban fuera, sin desborde de pagina que lo delatara)
+        const c = await p.evaluate(() => {
+          const caja = document.querySelector('.rp-cal-caja'), moto = document.querySelector('[data-rp="cal-tabla"] th.rp-ini');
+          const dia = document.querySelector('[data-rp="cal-tabla"] thead th:nth-child(2)');
+          if (!caja || !moto || !dia) return null;
+          const rc = caja.getBoundingClientRect(), rd = dia.getBoundingClientRect();
+          return { moto: Math.round(moto.getBoundingClientRect().width), dia: Math.round(rd.width), finDia: Math.round(rd.right), finCaja: Math.round(rc.right) };
+        });
+        ok(ancho + ' px · calendario: la columna de motos deja ver los dias al lado', c && c.finDia <= c.finCaja && (ancho > 640 || (c.moto <= 110 && c.dia >= 40)), JSON.stringify(c));
+      }
     }
     await ctx.close();
   }

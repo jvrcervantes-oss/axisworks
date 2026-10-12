@@ -251,6 +251,11 @@ lineas_id = re.findall(r"'((?:[^'\\]|\\.)*)'\s*:\s*'", bloque_id)
 rep_id = sorted({c for c in lineas_id if lineas_id.count(c) > 1})
 mira('ninguna clave repetida en ID_RP' + (' (' + ', '.join(rep_id) + ')' if rep_id else ''), not rep_id)
 
+# a 390 px el calendario tiene el ancho justo de sus columnas (moto 104 + DIAS_CAL x 44): con «auto» la columna de motos se comia la caja
+_dias = re.search(r'var DIAS_CAL = (\d+);', FUENTE)
+mira('a 390 px la tabla del calendario mide moto + DIAS_CAL dias (104 + n x 44)', _dias is not None and
+     '.rp-cal{min-width:0;width:%dpx}' % (104 + 44 * int(_dias.group(1))) in FUENTE)
+
 if fallos:
     print('FALLOS (%d de %d):\n  ' % (len(fallos), casos) + '\n  '.join(fallos))
     sys.exit(1)
