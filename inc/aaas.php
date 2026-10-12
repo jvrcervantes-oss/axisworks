@@ -41,6 +41,7 @@ $jsonld = [
 <script src="/assets/x/dc.js?v=<?= VER ?>" defer></script>
 <script src="/assets/x/aaas<?= $lang === 'es' ? '.es' : '' ?>.js?v=<?= VER ?>" defer></script>
 <script src="/assets/contacto.js?v=<?= VER ?>" defer></script>
+<script src="/assets/x/menu.js?v=<?= VER ?>" defer></script>
 <?php if (getenv('X_PRUEBA')): /* solo en pruebas locales: textos ES que faltan */ ?><!-- x-faltan: <?= e(implode(',', array_unique($X_FALTAN))) ?> --><?php endif; ?>
 </body>
 </html>

@@ -73,3 +73,12 @@ summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:n
  * el 12-oct en la hoja C02 (misma barra): el corte de la mesa (1100) sube. Diferencia admitida 15. */
 @media (max-width: 1160px){.navlinks{display:none !important}.menubtn{display:block}}
 @media (max-width: 1340px){html[lang="es"] .navlinks{display:none !important}html[lang="es"] .menubtn{display:block}}
+
+/* Foco visible (diferencia admitida 8: la mesa no lo trae). Anillo de dos tonos porque un solo color no llega a
+ * 3:1 en los cuatro fondos: azul #2E3BEB por fuera (6,4:1 sobre #F2F3F7/#FFFFFF) y halo #F2F3F7 por dentro (16:1
+ * sobre #0B0C1E, 6,4:1 sobre #2E3BEB). El box-shadow lleva !important para ganar a las sombras en línea (nodos de
+ * la red de la portada). Las zonas con scroll (role=region) dibujan el anillo hacia dentro porque su caja las
+ * recorta, y sin halo (las filas de la tabla lo tapan): azul sobre claro; .rg-osc (zona sobre #0B0C1E) en lima, 15:1. */
+:focus-visible{outline:3px solid #2E3BEB;outline-offset:3px;box-shadow:0 0 0 3px #F2F3F7 !important}
+[role="region"][tabindex]:focus-visible{outline-offset:-3px;box-shadow:none !important}
+.rg-osc:focus-visible{outline-color:#C8F04A}

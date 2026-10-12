@@ -1,7 +1,7 @@
-<?php /* Agents as a Service del diseño «X marks the work» (lienzo del owner, 12-oct-2026), mesa C04. Generada con
- * convierte.py y retocada por su parche (encargo 20261012_axisworks_web_nueva_brand_kit). Textos: inc/x/t_<página>.php;
+<?php /* Agents as a Service del diseño «X marks the work» (lienzo del owner, 12-oct-2026), mesa C04. Sacada de la mesa el
+ * 12-oct (encargo 20261012_axisworks_web_nueva_brand_kit); desde entonces ESTE fichero es la fuente y se edita a mano. Textos: inc/x/t_<página>.php;
  * las zonas <template data-r> las pinta su assets/x/<página>.js con assets/x/dc.js. */ ?>
-<div style="font-family: Manrope, sans-serif; color: #F2F3F7; background: #0B0C1E; overflow-x: hidden">
+<div id="top" style="font-family: Manrope, sans-serif; color: #F2F3F7; background: #0B0C1E; overflow-x: hidden">
 <header class="navlight" style="background: #F2F3F7; color: #0B0C1E; border-bottom: 1px solid #DADCE6">
 <div style="max-width: 1280px; margin: 0 auto; padding: 14px clamp(20px, 5vw, 80px); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px">
 <a aria-label="<?= x('axisworks_home') ?>" href="<?= h("WebHome.dc.html", 'a') ?>" style="grid-column: 1; justify-self: start; font-family: Unbounded, sans-serif; font-size: 20px; letter-spacing: -.03em; display: inline-flex; align-items: baseline"><span style="font-weight: 600"><?= x('a') ?></span><svg aria-hidden="true" style="width: .57em; height: .57em; margin: 0 .05em" viewbox="10 10 80 80"><polygon fill="#2E3BEB" points="10,10 41,10 90,90 59,90"></polygon><polygon fill="#C8F04A" points="59,10 90,10 41,90 10,90"></polygon><polygon fill="#0B0C1E" points="50,24.7 65.5,50 50,75.3 34.5,50"></polygon></svg><span style="font-weight: 600"><?= x('is') ?></span><span style="font-weight: 300"><?= x('works') ?></span></a>
@@ -18,7 +18,7 @@
 </div>
 </header>
 <section id="hero" style="position: relative; overflow: hidden">
-<div style="max-width: 1280px; margin: 0 auto; padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 80px) clamp(40px, 5vw, 64px); display: flex; flex-wrap: wrap; align-items: center; gap: 32px">
+<div id="status" style="max-width: 1280px; margin: 0 auto; padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 80px) clamp(40px, 5vw, 64px); display: flex; flex-wrap: wrap; align-items: center; gap: 32px">
 <div style="flex: 1 1 500px; min-width: 0; display: flex; flex-direction: column; gap: 22px">
 <span class="rise" style="animation-delay: .1s; display: inline-flex; align-items: center; gap: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; letter-spacing: .14em; color: #A9ADC2"><svg aria-hidden="true" height="16" viewbox="10 10 80 80" width="16"><polygon fill="#2E3BEB" points="10,10 41,10 90,90 59,90"></polygon><polygon fill="#C8F04A" points="59,10 90,10 41,90 10,90"></polygon></svg><?= x('agents_as_a_service') ?></span>
 <h1 style="margin: 0; font-family: Unbounded, sans-serif; font-weight: 600; font-size: clamp(34px, 3.6vw, 52px); line-height: 1.04; letter-spacing: -.05em"><span class="rise" style="animation-delay: .2s; display: block"><?= x('an_agent_that_runs') ?></span><span class="rise" style="animation-delay: .28s; display: block"><?= x('your_business') ?></span><span class="rise" style="animation-delay: .36s; display: block; font-weight: 300"><?= x('within_limits') ?></span><span class="rise" style="animation-delay: .44s; display: block; font-weight: 300"><?= x('a_person_sets') ?></span></h1>
@@ -70,7 +70,7 @@
 </div>
 </section>
 <section id="pack" style="background: #F2F3F7; color: #0B0C1E">
-<div style="max-width: 1280px; margin: 0 auto; padding: clamp(64px, 9vw, 120px) clamp(20px, 5vw, 80px); display: flex; flex-direction: column; gap: 36px">
+<div id="agents" style="max-width: 1280px; margin: 0 auto; padding: clamp(64px, 9vw, 120px) clamp(20px, 5vw, 80px); display: flex; flex-direction: column; gap: 36px">
 <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 20px">
 <div style="display: flex; flex-direction: column; gap: 14px; max-width: 760px">
 <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; letter-spacing: .14em; color: #2E3BEB"><?= x('the_pack') ?></span>
@@ -185,7 +185,7 @@
 </div>
 </section>
 <section id="erp" style="background: #F2F3F7; color: #0B0C1E">
-<div style="max-width: 1280px; margin: 0 auto; padding: clamp(64px, 9vw, 120px) clamp(20px, 5vw, 80px); display: flex; flex-wrap: wrap; align-items: center; gap: 48px">
+<div id="on" style="max-width: 1280px; margin: 0 auto; padding: clamp(64px, 9vw, 120px) clamp(20px, 5vw, 80px); display: flex; flex-wrap: wrap; align-items: center; gap: 48px">
 <div style="flex: 1 1 440px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
 <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; letter-spacing: .14em; color: #2E3BEB"><?= x('what_it_runs_on') ?></span>
 <h2 class="reveal" style="margin: 0; font-family: Unbounded, sans-serif; font-weight: 600; font-size: clamp(30px, 4vw, 54px); line-height: 1.04; letter-spacing: -.045em"><?= x('it_operates_on') ?> <span style="font-weight: 300"><?= x('your_erp_data') ?></span></h2>

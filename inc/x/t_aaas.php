@@ -1,6 +1,6 @@
 <?php
 /* Textos de la página «aaas» del diseño «X marks the work», por idioma. Las claves salen del texto de la mesa
- * (convierte.py); el EN es el del diseño con los cambios del owner y de Legal (encargo 20261012). {N} y {PALABRA*}
+ * (12-oct; desde entonces se editan aquí); el EN es el del diseño con los cambios del owner y de Legal (encargo 20261012). {N} y {PALABRA*}
  * los rellena x() desde inc/organigrama.php. Una clave que falte en ES sale en EN y la prueba lo marca. */
 return [
   'en' => [

@@ -1,6 +1,6 @@
 <?php /* Hoja de servicio del diseño «X marks the work» (lienzo del owner, 12-oct-2026), mesa C02, como plantilla de
  * las 24 hojas (encargo 20261012_axisworks_web_nueva_brand_kit, S3; mapeo de Diseño #284). Marcado y estilos de la
- * mesa (scratchpad gen/hoja_tpl.php); los datos de cada hoja salen de hojas_*.php / campo_*.php y YA son HTML (se
+ * mesa, sacados el 12-oct; ESTE fichero es la fuente y se edita a mano; los datos de cada hoja salen de hojas_*.php / campo_*.php y YA son HTML (se
  * pintan tal cual, como en la plantilla anterior); solo la cáscara pasa por x() desde inc/x/t_hoja.php.
  * Espera lo que deja inc/hoja.php: $H, $ID, $lang, $url, $hub, $inicio, $prev, $next. */
 
@@ -83,13 +83,13 @@ $X3 = '<polygon fill="#2E3BEB" points="10,10 41,10 90,90 59,90"></polygon>';
 <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
 <div style="display: flex; flex-direction: column; gap: 12px">
 <span style="<?= $TAG ?>"><?= $hj_rotulo('l_seen') ?></span>
-<h2 style="<?= $H2 ?>"><?= $CRM ? x('crm_h02a') . ' <span style="font-weight: 300">' . x('crm_h02b') . '</span>' : $hj_h2g('l_seen') ?></h2>
+<h2 id="hj-panel-t" style="<?= $H2 ?>"><?= $CRM ? x('crm_h02a') . ' <span style="font-weight: 300">' . x('crm_h02b') . '</span>' : $hj_h2g('l_seen') ?></h2>
 </div>
 <span style="display: flex; flex-wrap: wrap; gap: 8px"><?php if (!empty($P['estado'])): ?><span style="<?= $PILL ?>"><?= $P['estado'] ?></span><?php endif; ?><span style="<?= $PILL ?>"><?= x('sample_data') ?></span></span>
 </div>
 <div style="border-radius: 24px; background: #0B0C1E; color: #F2F3F7; overflow: hidden">
 <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 18px 24px; border-bottom: 1px solid #23253D; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .1em; color: #A9ADC2"><span><?= str_replace(' // ', ' × ', $P['tool']) ?></span><span><?= e(str_replace('{n}', (string) $nf, xt('n_of_n'))) ?></span></div>
-<div style="overflow-x: auto">
+<div aria-labelledby="hj-panel-t" class="rg-osc" role="region" style="overflow-x: auto" tabindex="0">
 <table style="width: 100%; min-width: 720px; border-collapse: collapse; font-size: 15px">
 <thead><tr style="text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .12em; color: #A9ADC2; text-transform: uppercase"><?php $nc = count($P['th']); foreach ($P['th'] as $ci => $th):
   $pad = $ci === 0 ? '14px 24px' : ($ci === $nc - 1 ? '14px 24px 14px 12px' : '14px 12px'); ?><th style="padding: <?= $pad ?>; font-weight: 500"><?= $th ?></th><?php endforeach; ?></tr></thead>
@@ -162,7 +162,7 @@ endforeach; ?></tr>
 <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px, 8vw, 104px) clamp(20px, 5vw, 80px); display: flex; flex-wrap: wrap; gap: 40px">
 <div style="flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
 <span style="<?= $TAG ?>"><?= $hj_rotulo('l_incl') ?></span>
-<h2 style="<?= $H2 ?>"><?= $CRM ? e($nw !== '' ? $nw : (string) $ns) . ' ' . x('parts') . ' <span style="font-weight: 300">' . x('one_record') . '</span>' : $hj_h2g('l_incl') ?></h2>
+<h2 id="hj-partes-t" style="<?= $H2 ?>"><?= $CRM ? e($nw !== '' ? $nw : (string) $ns) . ' ' . x('parts') . ' <span style="font-weight: 300">' . x('one_record') . '</span>' : $hj_h2g('l_incl') ?></h2>
 <?php if (!empty($H['modulos'])): ?>
 <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px">
 <?php foreach (array_slice($H['modulos'], 0, 6) as $mo): ?><span style="<?= $PILL ?>"><?= $mo ?></span>
@@ -170,7 +170,7 @@ endforeach; ?></tr>
 </div>
 <?php endif; ?>
 </div>
-<div style="flex: 2 1 560px; min-width: 0; overflow-x: auto">
+<div aria-labelledby="hj-partes-t" role="region" style="flex: 2 1 560px; min-width: 0; overflow-x: auto" tabindex="0">
 <table style="width: 100%; min-width: 480px; border-collapse: collapse; font-size: 15px; line-height: 1.5">
 <thead><tr style="text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .12em; color: #4A4E66"><th style="padding: 10px 12px 10px 0; font-weight: 500; width: 40px"><?= x('x_4') ?></th><th style="padding: 10px 12px; font-weight: 500; width: 180px"><?= x('component') ?></th><th style="padding: 10px 0; font-weight: 500"><?= x('what_it_means') ?></th></tr></thead>
 <tbody>

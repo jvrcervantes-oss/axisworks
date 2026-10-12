@@ -1,7 +1,7 @@
-<?php /* Portada C01 del diseño «X marks the work» (lienzo del owner, 12-oct-2026). Generada desde la mesa con
- * convierte.py y retocada por patch_home.py (encargo 20261012_axisworks_web_nueva_brand_kit). Los textos viven en
+<?php /* Portada C01 del diseño «X marks the work» (lienzo del owner, 12-oct-2026). Sacada de la mesa el
+ * 12-oct (encargo 20261012_axisworks_web_nueva_brand_kit); desde entonces ESTE fichero es la fuente y se edita a mano. Los textos viven en
  * inc/x/t_home.php; las zonas <template data-r> las pinta assets/x/home.js con assets/x/dc.js. */ ?>
-<div style="font-family: Manrope, sans-serif; color: #F2F3F7; background: #0B0C1E; overflow-x: hidden">
+<div id="top" style="font-family: Manrope, sans-serif; color: #F2F3F7; background: #0B0C1E; overflow-x: hidden">
 <header class="navlight" style="background: #F2F3F7; color: #0B0C1E; border-bottom: 1px solid #DADCE6">
 <div style="max-width: 1280px; margin: 0 auto; padding: 14px clamp(20px, 5vw, 80px); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px">
 <a aria-label="<?= x('axisworks_home') ?>" href="<?= h("#", 'a') ?>" style="grid-column: 1; justify-self: start; font-family: Unbounded, sans-serif; font-size: 20px; letter-spacing: -.03em; display: inline-flex; align-items: baseline"><span style="font-weight: 600"><?= x('a') ?></span><svg aria-hidden="true" style="width: .57em; height: .57em; margin: 0 .05em" viewbox="10 10 80 80"><polygon fill="#2E3BEB" points="10,10 41,10 90,90 59,90"></polygon><polygon fill="#C8F04A" points="59,10 90,10 41,90 10,90"></polygon><polygon fill="#0B0C1E" points="50,24.7 65.5,50 50,75.3 34.5,50"></polygon></svg><span style="font-weight: 600"><?= x('is') ?></span><span style="font-weight: 300"><?= x('works') ?></span></a>
@@ -35,7 +35,7 @@
 <div class="stage">
 <svg aria-hidden="true" height="720" style="position: absolute; inset: 0" viewbox="0 0 720 720" width="720"><g stroke="#A9ADC2" stroke-opacity=".2" stroke-width="1"><line class="axis" x1="176.3" x2="617.2" y1="0" y2="720"></line><line class="axis" x1="543.7" x2="102.8" y1="0" y2="720"></line></g></svg>
 <div aria-hidden="true">
-<template data-r="2"><sc-for as="c" hint-placeholder-count="40" list="{{ cells }}">
+<template data-fija data-r="2"><sc-for as="c" hint-placeholder-count="40" list="{{ cells }}">
 <span class="xm {{ c.cls }}" style="left: {{ c.x }}px; top: {{ c.y }}px; opacity: {{ c.op }}; animation-delay: {{ c.delay }}"></span>
 </sc-for></template>
 </div>
@@ -109,7 +109,7 @@
 </div>
 </div>
 <div style="display: flex; flex-wrap: wrap">
-<div style="flex: 999 1 640px; min-width: 0; overflow-x: auto; padding: 18px 18px 8px">
+<div aria-label="<?= x('how_a_request_moves') ?>" class="rg-osc" role="region" style="flex: 999 1 640px; min-width: 0; overflow-x: auto; padding: 18px 18px 8px" tabindex="0">
 <div aria-label="<?= x('how_a_request_moves') ?>" role="group" style="position: relative; min-width: 760px; aspect-ratio: 1000 / 760">
 <template data-r="7"><sc-for as="rl" hint-placeholder-count="10" list="{{ rowLabels }}">
 <span style="position: absolute; left: 0; top: {{ rl.top }}; transform: translateY(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .12em; color: #7D82A3">{{ rl.label }}</span>

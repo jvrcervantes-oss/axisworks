@@ -60,5 +60,6 @@ $X_CTA = $inicio . '#contact';
 </main>
 <?php require __DIR__ . '/x/pie.php'; ?>
 </div>
+<script src="/assets/x/menu.js?v=<?= VER ?>" defer></script>
 </body>
 </html>

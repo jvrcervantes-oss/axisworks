@@ -66,5 +66,6 @@ $xpage = 'hoja';
 <body>
 <?php require __DIR__ . '/x/hoja_tpl.php'; ?>
 <script src="/assets/contacto.js?v=<?= VER ?>" defer></script>
+<script src="/assets/x/menu.js?v=<?= VER ?>" defer></script>
 </body>
 </html>

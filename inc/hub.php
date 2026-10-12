@@ -8,7 +8,6 @@
  * publicando ese 403 como nodo rastreable. */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/catalogo.php';
-require_once __DIR__ . '/home_textos.php';   /* la línea de alcance de cada producto: una sola fuente con la portada */
 
 $H = $HUBS[$LANG];
 $lang = $H['lang']; $url = $H['url']; $t = $T[$lang];
@@ -72,5 +71,6 @@ $hub_nombre = function ($h) use ($PRODUCTOS, $lang) {
 </main>
 <?php require __DIR__ . '/x/pie.php'; ?>
 </div>
+<script src="/assets/x/menu.js?v=<?= VER ?>" defer></script>
 </body>
 </html>
