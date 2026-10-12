@@ -18,6 +18,7 @@
  *     buzón es manual y va antes de dar esto por bueno.
  */
 declare(strict_types=1);
+ini_set('display_errors', '0');   /* un aviso de PHP no puede romper el JSON ni enseñar nada (Seguridad #287) */
 
 const CT_DESTINO  = 'hello@axisworks.studio';
 /* Hostinger rechaza mail() si el remitente no es un buzón que exista en el
@@ -70,6 +71,50 @@ function ct_cuenta(string $f, int $tope, int $ventana): bool {
   return $ok;
 }
 
+/* SMTP autenticado (12-oct-2026, AXW-17: mail() de Hostinger devuelve falso y el correo no llega).
+ * Credenciales del buzón hello@ en private/smtp.php (gitignored, carpeta denegada), que pone Deploy en el
+ * servidor: `<?php return ['host'=>..., 'puerto'=>465, 'usuario'=>'hello@axisworks.studio', 'clave'=>...];`.
+ * Sin ese fichero se sigue con mail() como hasta ahora: subir este código no cambia nada hasta activarlo.
+ * Mismo cliente que Bodas (app/correo.php): TLS implícito, AUTH LOGIN, verificación de certificado. */
+function ct_smtp_conf(): ?array {
+  $f = __DIR__ . '/../private/smtp.php';
+  if (!is_file($f)) return null;
+  $c = @include $f;
+  if (!is_array($c) || empty($c['host']) || empty($c['usuario']) || empty($c['clave'])) return null;
+  return $c;
+}
+
+/* Devuelve '' si el servidor aceptó el mensaje, o el motivo (sin la contraseña ni nada del visitante). */
+function ct_smtp_envia(array $c, string $para, string $mime): string {
+  $host = (string) $c['host'];
+  $ctx = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true, 'peer_name' => $host]]);
+  $s = @stream_socket_client('ssl://' . $host . ':' . (int)($c['puerto'] ?? 465), $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $ctx);
+  if (!$s) return 'conexion';
+  stream_set_timeout($s, 15);
+  $lee = function () use ($s): string {
+    $r = '';
+    while (($l = fgets($s, 1024)) !== false) { $r .= $l; if (strlen($l) < 4 || $l[3] === ' ') break; }
+    return $r;
+  };
+  $datos = preg_replace('/^\./m', '..', $mime);   /* RFC 5321 §4.5.2 */
+  $pasos = [['', '220'], ['EHLO ' . CT_ORIGEN, '250'], ['AUTH LOGIN', '334'], [base64_encode((string) $c['usuario']), '334'],
+    [base64_encode((string) $c['clave']), '235'], ['MAIL FROM:<' . $c['usuario'] . '>', '250'], ['RCPT TO:<' . $para . '>', '25'],
+    ['DATA', '354'], [rtrim($datos, "\r\n") . "\r\n.", '250']];
+  $err = '';
+  $fin = microtime(true) + 25;   /* plazo total: un servidor lento no retiene el proceso más de 25 s (Seguridad #287) */
+  foreach ($pasos as $i => [$cmd, $esp]) {
+    $queda = $fin - microtime(true);
+    if ($queda <= 0) { $err = 'plazo'; break; }
+    /* cada lectura espera como mucho lo que queda del plazo total: el peor caso son 25 s, no 25 + 15 (revisor) */
+    stream_set_timeout($s, max(1, (int) ceil($queda)));
+    if ($cmd !== '') @fwrite($s, $cmd . "\r\n");
+    if (strpos($lee(), $esp) !== 0) { $err = 'paso ' . $i; break; }
+  }
+  @fwrite($s, "QUIT\r\n");
+  fclose($s);
+  return $err;
+}
+
 function ct_limpio(string $s, int $max): string {
   $s = trim(str_replace(["\r", "\n", "\0"], ' ', $s));
   return mb_substr($s, 0, $max);
@@ -107,7 +152,7 @@ try {
   $mensaje = trim(str_replace("\0", '', (string)($P['mensaje'] ?? '')));
   $pagina  = (string)($P['pagina'] ?? '/');
   $lang    = ($P['lang'] ?? 'en') === 'es' ? 'es' : 'en';
-  if (!preg_match('~^/[a-z0-9/_-]*$~', $pagina)) $pagina = '/';
+  if (!preg_match('~^/[a-z0-9/_-]*\z~', $pagina)) $pagina = '/';   /* \z y no $: $ admite un salto final (Seguridad #287) */
   $utm = [];
   foreach (['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as $k) {
     $v = ct_limpio((string)($P[$k] ?? ''), 120);
@@ -138,11 +183,34 @@ try {
     'Content-Transfer-Encoding: 8bit',
     'X-Mailer: axisworks-contacto',
   ]);
-  /* Sin `-f`: en Hostinger compartido el sobre lo pone el servidor. */
-  $ok = mail(CT_DESTINO, mb_encode_mimeheader($asunto, 'UTF-8'), $cuerpo, $cab);
+  $smtp = ct_smtp_conf();
+  if ($smtp) {
+    /* El cuerpo va en base64: el visitante puede escribir cualquier cosa y así ninguna línea se interpreta. */
+    $mime = implode("\r\n", [
+      'From: AxisWorks web <' . $smtp['usuario'] . '>',
+      'To: <' . CT_DESTINO . '>',
+      'Reply-To: ' . $email,
+      'Subject: ' . mb_encode_mimeheader($asunto, 'UTF-8', 'B', "\r\n"),
+      'Date: ' . date(DATE_RFC2822),
+      'Message-ID: <' . bin2hex(random_bytes(12)) . '@' . CT_ORIGEN . '>',
+      'MIME-Version: 1.0',
+      'Content-Type: text/plain; charset=UTF-8',
+      'Content-Transfer-Encoding: base64',
+      'X-Mailer: axisworks-contacto',
+      '',
+      rtrim(chunk_split(base64_encode($cuerpo), 76, "\r\n")),
+    ]);
+    $motivo = ct_smtp_envia($smtp, CT_DESTINO, $mime);
+    $ok = $motivo === '';
+    $via = 'smtp' . ($ok ? '' : ':' . $motivo);
+  } else {
+    /* Sin `-f`: en Hostinger compartido el sobre lo pone el servidor. */
+    $ok = mail(CT_DESTINO, mb_encode_mimeheader($asunto, 'UTF-8'), $cuerpo, $cab);
+    $via = 'mail';
+  }
 
-  /* Log sin datos personales: fecha, página, resultado. */
-  @file_put_contents($d . '/envios.log', date('c') . "\t$pagina\t" . ($ok ? 'ok' : 'fallo') . "\n", FILE_APPEND | LOCK_EX);
+  /* Log sin datos personales: fecha, página, vía y resultado (nunca el contenido: lo promete la privacidad). */
+  @file_put_contents($d . '/envios.log', date('c') . "\t$pagina\t$via\t" . ($ok ? 'ok' : 'fallo') . "\n", FILE_APPEND | LOCK_EX);
 
   ct_fin($ok ? 200 : 502, ['ok' => $ok]);
 } catch (Throwable $e) {

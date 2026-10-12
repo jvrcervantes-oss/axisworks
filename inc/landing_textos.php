@@ -43,7 +43,7 @@ $LAND = [
   'c_p'=>'Tell us about your business and we will show you the ERP, the agents and the website we would build around it.',
   'c_erp'=>'Open the ERP demo',
   'f_blurb'=>'Business software, bots and automation, built to order.',
-  'f_blurb2'=>'A two-person studio with a team of AI departments behind it. We work in English and Spanish.',
+  'f_blurb2'=>'A two-person studio with a team of AI departments behind it.',
   'f_trade'=>'© 2026 AXISWORKS · PT MAHKOTA PROPERTY GLOBAL',
 ],
 'es' => [
@@ -78,7 +78,7 @@ $LAND = [
   'c_p'=>'Cuéntanos a qué se dedica tu negocio y te enseñamos el ERP, los agentes y la web que montaríamos alrededor.',
   'c_erp'=>'Abrir la demo del ERP',
   'f_blurb'=>'Software de gestión, bots y automatización, hechos a medida.',
-  'f_blurb2'=>'Un estudio de dos personas con un equipo de departamentos de IA detrás. Trabajamos en español e inglés.',
+  'f_blurb2'=>'Un estudio de dos personas con un equipo de departamentos de IA detrás.',
   'f_trade'=>'© 2026 AXISWORKS · PT MAHKOTA PROPERTY GLOBAL',
 ],
 ];

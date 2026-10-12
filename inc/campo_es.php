@@ -9,7 +9,7 @@ $CAMPO_ES = [
 
 'software-de-gestion-a-medida' => [
   'regla'=>'Una fuente por dato. Un precio escrito en dos sitios acaba divergiendo, y un día se factura una villa al doble.',
-  'panel'=>['pie'=>'La mañana de su equipo: cada fila es algo que espera a alguien, y lo rojo no puede esperar.','tool'=>'SUITE LAWANG // HOY','th'=>['Ref','Asunto','Herramienta','Estado','Vence'],'rows'=>[
+  'panel'=>['pie'=>'La mañana de su equipo: cada fila es algo que espera a alguien, y lo resaltado no puede esperar.','tool'=>'SUITE LAWANG // HOY','th'=>['Ref','Asunto','Herramienta','Estado','Vence'],'rows'=>[
     ['CTR-118','Contrato de obra','Contratos','Falta 2.ª firma','Hoy',true],
     ['INV-204','Factura — plazo de suelo','Facturas','Falta el recibí','Vencida',true],
     ['BNK-332','Movimiento del banco','Bancos','Sin conciliar','2 días',false],
@@ -27,7 +27,7 @@ $CAMPO_ES = [
 
 'crm-a-medida' => [
   'regla'=>'Un CRM al que alguien tiene que copiar los leads es una hoja de cálculo con una interfaz más lenta.',
-  'panel'=>['pie'=>'Cada lead con su origen, quién lo lleva y cuál es el siguiente paso. Rojo: alguien tiene que moverse hoy.','tool'=>'LEADS // EMBUDO','th'=>['Ref','Origen','Fase','Responsable','Siguiente paso'],'rows'=>[
+  'panel'=>['pie'=>'Cada lead con su origen, quién lo lleva y cuál es el siguiente paso. Resaltado: alguien tiene que moverse hoy.','tool'=>'LEADS // EMBUDO','th'=>['Ref','Origen','Fase','Responsable','Siguiente paso'],'rows'=>[
     ['LED-417','Formulario Meta — campaña B','Nuevo','Sin asignar','Llamar hoy',true],
     ['LED-409','WhatsApp','Cualificado','Comercial 03','Enviar dossier',false],
     ['LED-388','Web','Visita agendada','Comercial 01','Sáb 10:00',false],
@@ -99,7 +99,7 @@ $CAMPO_ES = [
 
 'integraciones-y-datos' => [
   'regla'=>'Cada dato tiene un dueño. Copiar en las dos direcciones es la forma de acabar con dos sistemas que no coinciden.',
-  'panel'=>['pie'=>'De dónde viene cada dato, a dónde va y si la última pasada funcionó. Lo rojo necesita a una persona.','tool'=>'INTEGRACIONES // EJECUCIONES','th'=>['Origen','Destino','Qué','Última','Estado'],'rows'=>[
+  'panel'=>['pie'=>'De dónde viene cada dato, a dónde va y si la última pasada funcionó. Lo resaltado necesita a una persona.','tool'=>'INTEGRACIONES // EJECUCIONES','th'=>['Origen','Destino','Qué','Última','Estado'],'rows'=>[
     ['Meta Lead Ads','CRM','Leads de formularios','08:00','OK',false],
     ['GoHighLevel','CRM','Trazabilidad del lead','07:45','OK',false],
     ['CSV del banco','Bancos','Movimientos','Ayer','3 por cuadrar',true],

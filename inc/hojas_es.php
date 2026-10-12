@@ -321,7 +321,7 @@ $HOJAS_ES = [
     ['¿Nos ponéis los primeros en Google?','Nadie honesto puede prometer eso. Podemos quitar lo que te frena, hacer páginas para lo que buscan tus clientes y después medirlo.'],
     ['¿Cuándo se ven resultados?','El SEO se mide en meses, no en semanas. El SEM empieza el día que se enciende, y cuesta en consecuencia.'],
     ['¿Qué es posicionar en buscadores de IA?','Que asistentes como ChatGPT o Perplexity encuentren una descripción clara y correcta de tu negocio cuando leen tu web, y que tengan permiso para leerla.'],
-    ['¿Escribís los contenidos?','Sí, en español e inglés, para la persona que busca y sin rellenar de palabras clave.'],
+    ['¿Escribís los contenidos?','Sí, para la persona que busca y sin rellenar de palabras clave.'],
     ['¿Hace falta una web nueva?','No siempre. Si la actual se puede arreglar, la arreglamos. Si lo que frena es la plataforma, te lo diremos.'],
   ],
   'asunto'=>'SEO y SEM — /es/servicios/seo-y-sem',
