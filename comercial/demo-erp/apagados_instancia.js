@@ -208,6 +208,7 @@
     }
     plegables();
     secciones();
+    gruposHub();
   }
   function rutaDe(a) {
     try { return new URL(a.getAttribute('href'), location.href).pathname; } catch (e) { return null; }
@@ -261,6 +262,18 @@
         var quiere = alguna ? '' : 'none';
         if (s.style.display !== quiere) s.style.display = quiere;
       }
+    }
+  }
+  /* El hub clásico (la raíz, al volver con ?sin_permiso=…) pinta sus herramientas en `#grupos > section.grupo`, cada una con su
+     rótulo y sus filas `.filas > a`. Si la capa oculta todas las filas de un grupo (módulo apagado), el rótulo salía solo
+     (12-oct-2026, bbm: «DOKUMEN» vacío con Asistente apagado). Mismo criterio que secciones(): la visibilidad calculada. */
+  function gruposHub() {
+    var gs = document.querySelectorAll('#grupos > section.grupo');
+    for (var i = 0; i < gs.length; i++) {
+      var filas = gs[i].querySelectorAll('.filas > a'), alguna = !filas.length;
+      for (var k = 0; k < filas.length && !alguna; k++) alguna = getComputedStyle(filas[k]).display !== 'none';
+      var quiere = alguna ? '' : 'none';
+      if (gs[i].style.display !== quiere) gs[i].style.display = quiere;
     }
   }
   function pinta() {

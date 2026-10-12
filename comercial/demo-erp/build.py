@@ -2417,6 +2417,47 @@ def rotulos():
     return r
 
 
+def setup_para_panel():
+    """Lo que el panel de control necesita del REGISTRO para el setup (12-oct-2026, erp-panel-2; owner: «módulo primero y setup
+    después»): el hueco __AXW_SETUP__ de panel_control.html. Nada se escribe a mano aquí:
+      - `registro`: erp/modulos.json → setup.modulos (lo que declara erp/modulos.py → SETUP). Solo lo usa el mapa de la instalación
+        (S00, la lámina por tipo de negocio): los pasos de UNA instancia los da su base (erp_control_estado → setup), nunca esto.
+      - `textos`: los títulos de cada paso y de cada módulo en es y en, sacados de setup_modulos.js (el mismo mapa código → frase del
+        aviso, el asistente y Ajustes; no hay una segunda copia de las frases).
+      - `en`: panel_setup_en.json (nombres EN de módulos y tipos). Aborta si falta un módulo del registro o un tipo de perfiles.json."""
+    reg = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))
+    perf = json.load(open(os.path.join(AGENCIA, 'erp', 'perfiles.json'), encoding='utf-8'))['perfiles']
+    en = json.load(open(os.path.join(AQUI, 'panel_setup_en.json'), encoding='utf-8'))
+    faltan = sorted(set(reg['modulos']) - set(en['modulos'])) + sorted('tipo ' + t for t in set(perf) - set(en['tipos']))
+    if faltan:
+        aborta('panel_setup_en.json: sin nombre en inglés para %s' % faltan)
+    prog = ("global.window={};global.document={readyState:'complete'};require(process.argv[1]);var S=window.AXW_SETUP;"
+            "var o={paso:{},modulo:{}};Object.keys(S.TEXTOS.paso).forEach(function(k){var t=S.TEXTOS.paso[k][0];o.paso[k]={es:t,en:S.EN[t]||null};});"
+            "Object.keys(S.TEXTOS.modulo).forEach(function(k){var t=S.TEXTOS.modulo[k];o.modulo[k]={es:t,en:S.EN[t]||null};});"
+            "process.stdout.write(JSON.stringify(o));")
+    r = subprocess.run(['node', '-e', prog, os.path.join(AQUI, 'setup_modulos.js')], capture_output=True, text=True, encoding='utf-8')
+    if r.returncode != 0:
+        aborta('setup_modulos.js no se deja leer para el panel: ' + (r.stderr or '')[-400:])
+    textos = json.loads(r.stdout)
+    sin_en = sorted(k for k, v in textos['paso'].items() if not v['en'])
+    pasos_decl = sorted({p['clave'] for m in reg['setup']['modulos'].values() if isinstance(m, dict) for p in m.get('pasos', [])})
+    sin_texto = [k for k in pasos_decl if k not in textos['paso']]
+    if sin_en or sin_texto:
+        aborta('setup_modulos.js: pasos sin frase en inglés %s · pasos declarados sin frase %s' % (sin_en, sin_texto))
+    # Lista blanca (revisor, 12-oct): /panel/ es público (sin sesión da 200), así que solo sale lo que el mapa lee — clave, obligatorio,
+    # irreversible y si el módulo se declara «ninguno» —, nunca rpc, ajustes, funciones de estado, herramientas ni el motivo interno.
+    registro = {}
+    for k, d in reg['setup']['modulos'].items():
+        if isinstance(d, str) and d.startswith('ninguno'):
+            registro[k] = {'ninguno': True}
+        elif isinstance(d, dict) and isinstance(d.get('pasos'), list):
+            registro[k] = {'pasos': [{'clave': p['clave'], 'obligatorio': bool(p['obligatorio']), 'irreversible': bool(p['irreversible'])}
+                                     for p in d['pasos']]}
+        else:
+            aborta('erp/modulos.json → setup.%s: forma desconocida' % k)
+    return {'registro': registro, 'textos': textos, 'en': {'modulos': en['modulos'], 'tipos': en['tipos']}}
+
+
 # Los textos de pantalla() en apagados_instancia.js: deben ser los mismos que aquí (no_instalado_base lo comprueba).
 TEXTOS_NO_INSTALADO = ('Módulo no instalado', ' no está activo en esta instancia.',
                        'Este módulo no está activo en esta instancia.', 'Activar módulo: ')
@@ -3450,10 +3491,11 @@ def instancia(nombre):
         d = os.path.join(DIST, 'panel')
         os.makedirs(d, exist_ok=True)
         panel = open(os.path.join(AQUI, 'panel_control.html'), encoding='utf-8').read()
-        if '__AXW_ROTULOS__' not in panel:
-            aborta('panel_control.html sin el hueco __AXW_ROTULOS__')
+        if '__AXW_ROTULOS__' not in panel or '__AXW_SETUP__' not in panel:
+            aborta('panel_control.html sin el hueco __AXW_ROTULOS__ o __AXW_SETUP__')
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8', newline='').write(
-            panel_nav(panel, 'modulos').replace('__AXW_ROTULOS__', json.dumps(rotulos(), ensure_ascii=False, sort_keys=True)))
+            panel_nav(panel, 'modulos').replace('__AXW_ROTULOS__', json.dumps(rotulos(), ensure_ascii=False, sort_keys=True).replace('</', '<\/'))
+            .replace('__AXW_SETUP__', json.dumps(setup_para_panel(), ensure_ascii=False, sort_keys=True).replace('</', '<\\/')))
         # La vista «Pilotos» (1-oct-2026, encargos/20261001_panel_pilotos_vista.md): /panel/pilotos/, mismo CSS. Esta página
         # NO lleva su contenido (/panel/ es público): lo pide a la edge erp-control (acción `pilotos`, solo operador).
         d_pil = os.path.join(d, 'pilotos')

@@ -66,8 +66,17 @@
         return { valores: function () { var v = lee(caja, clave); return v === 'si' || v === 'no' ? { ok: true, v: { valor: v } } : { ok: false, error: U('elige') }; } };
       },
       guarda: function (sb, v, ctx, confirmo, motivo) { return guardaAjuste(sb, clave, v.valor, false, motivo); },
-      comprueba: function (v, ctx) { return !!(ctx.ajustes && String(ctx.ajustes[clave]) === v.valor); }
+      comprueba: function (v, ctx) { return !!(ctx.ajustes && String(ctx.ajustes[clave]) === v.valor); },
+      // ¿hay ya un valor guardado? La base pide motivo al CAMBIAR uno que existe (130000), aunque el paso siga sin hecho
+      // (p. ej. «no» guardado sin impuesto por defecto: impuesto_pkp sin hecho, y cambiarlo sí pide motivo)
+      guardado: function (ctx) { return !!(ctx.ajustes && ctx.ajustes[clave] != null); }
     };
+  }
+  /* ¿Pedir motivo al guardar este paso? Si el componente sabe si hay valor guardado, manda eso; si no, «hecho» (lo de siempre). */
+  function pideMotivo(clave, ctx) {
+    var c = de(clave);
+    if (c.externo || c.sinMotivo) return false;
+    return c.guardado ? c.guardado(ctx) : !!(ctx.paso && ctx.paso.hecho);
   }
   /* sociedad_guarda (también la de la S1) exige razón y domicilio y, al actualizar, REESCRIBE la fila entera: lo que no llega queda vacío
      (revisor 12-oct: «Cambiar empresa» borraba logo, NIB, folio y tinta; el prefijo solo daba 22023). Por eso el setup lee la fila con
@@ -98,7 +107,9 @@
         };
       },
       guarda: function (sb, v, ctx, confirmo, motivo) { return guardaAjuste(sb, 'moneda', v.moneda, confirmo, motivo); },
-      comprueba: function (v, ctx) { return !!(ctx.datos && ctx.datos.moneda === v.moneda); }
+      comprueba: function (v, ctx) { return !!(ctx.datos && ctx.datos.moneda === v.moneda); },
+      // valor guardado = la fila de config_instancia, aunque no sea un código válido (entonces «hecho» es false y la base igual pide motivo)
+      guardado: function (ctx) { return !!(ctx.ajustes && ctx.ajustes.moneda != null); }
     },
     sociedad: {
       sinMotivo: true,   // sociedad_guarda no lleva motivo: no se pide lo que no se guarda (revisor 12-oct)
@@ -180,5 +191,5 @@
   // flota y entrega se hacen fuera aunque se conozcan
   ['flota', 'entrega'].forEach(function (k) { PASOS[k] = EXTERNO; });
 
-  window.AXW_PASOS = { de: de, slug: slug, conocidos: Object.keys(PASOS), COLS_SOCIEDAD: COLS_SOCIEDAD };
+  window.AXW_PASOS = { de: de, slug: slug, pideMotivo: pideMotivo, conocidos: Object.keys(PASOS), COLS_SOCIEDAD: COLS_SOCIEDAD };
 })();

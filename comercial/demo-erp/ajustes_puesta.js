@@ -123,7 +123,8 @@
     var caja = h('div', { class: 'flex flex-col gap-3', 'data-pm-editor': p.clave });
     var ctl = comp.pinta(caja, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: p.hecho });
     var motivo = null;
-    if (p.hecho && !comp.sinMotivo) {   // sociedad_guarda no guarda motivo: no se pide (revisor 12-oct)
+    // sociedad_guarda no guarda motivo: no se pide (revisor 12-oct); y se decide por el VALOR guardado, no por «hecho» (repaso 12-oct)
+    if (P.pideMotivo(p.clave, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad })) {
       motivo = h('input', { type: 'text', maxlength: '500', autocomplete: 'off', 'data-pm': 'motivo', id: 'pm-motivo-' + p.clave, class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
       caja.appendChild(h('div', { class: 'flex flex-col gap-1.5' }, [h('label', { for: 'pm-motivo-' + p.clave, class: 'font-label-md text-label-md text-on-surface', text: U('motivo') }), motivo,
         h('span', { class: 'font-body-sm text-body-sm text-outline', text: U('motivo_ayuda') })]));
