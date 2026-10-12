@@ -206,6 +206,12 @@ const r = (q) => Promise.resolve(q);
     ok('portal: el adaptador sustituye el cliente y falla cerrado si no', p1.AXW_PORTAL_DEMO === true && !!p1.LW_DEMO);
     let d = await sit(p1);
     ok('portal: sin nada creado, el cliente de la siembra con más historial (varios contratos firmados)', d.contratos.filter(k => k.firmado).length >= 2, d.nombre);
+    // El escaparate que pidió el orquestador (12-oct): como el portal de referencia, varias propiedades en fases distintas.
+    const hoyIso = new Date().toISOString().slice(0, 10);
+    ok('portal: el cliente de ejemplo tiene 3 proyectos o más (selector y «By property»)', d.proyectos.length >= 3, d.proyectos.map(p => p.nombre));
+    ok('portal: … una factura vencida sin cobrar («Overdue»)', d.facturas.some(f => f.tipo === 'factura' && f.vence && f.vence < hoyIso && Number(f.aplicado) < Number(f.total)));
+    ok('portal: … una firma pendiente y una villa entregada', d.firma_pendiente.length >= 1 && d.obra.some(o => o.fase === 'entregada'), [d.firma_pendiente.length, d.obra.map(o => o.fase)]);
+    ok('portal: … y el pasaporte de ejemplo (aviso de Inicio)', d.kyc.some(k => k.tipo === 'passport'));
     const rec = suma(d.facturas.filter(f => f.tipo === 'recibi'), f => f.total);
     ok('portal: lo cobrado de los contratos es lo de sus recibís (sin contar dos veces la Carta)', suma(d.contratos, k => k.cobrado) === rec, [suma(d.contratos, k => k.cobrado), rec]);
     const cartas = d.contratos.filter(k => k.tipo === 'carta_reserva');

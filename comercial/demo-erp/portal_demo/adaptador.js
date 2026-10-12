@@ -244,9 +244,14 @@
       var kk = mios.filter(function (x) { return x.id === k.id; })[0];
       var u = kk && uPorId[kk.unidad_id];
       if (k.tipo !== 'construccion' || !k.firmado || !u || !u.obra_fase) return;
-      var titulos = u.obra_fase === 'cimentacion' ? [['Foundation pour', -6], ['Excavation', -19], ['Site set-out', -33]]
-        : u.obra_fase === 'estructura' ? [['Columns, north side', -4], ['Slab formwork', -12], ['Foundations finished', -30], ['Excavation', -52]]
-        : [['Key handover', -15], ['Interior finishes', -48], ['Roof completed', -110]];
+      // Fotos de ejemplo según la fase de la unidad; las fechas de la entregada cuelgan de su fecha de entrega.
+      var entrega = u.obra_fecha_entrega ? Math.round((new Date(soloDia(u.obra_fecha_entrega) + 'T12:00:00').getTime() - hoyMs()) / DIA) : -20;
+      var TITULOS = {
+        cimentacion: [['Foundation pour', -6], ['Excavation', -19], ['Site set-out', -33]],
+        estructura: [['Columns, north side', -4], ['Slab formwork', -12], ['Foundations finished', -30], ['Excavation', -52]],
+        entregada: [['Key handover', entrega], ['Interior finishes', entrega - 30], ['Roof completed', entrega - 90]]
+      };
+      var titulos = TITULOS[u.obra_fase] || [['Site progress', -7], ['Site progress', -21]];
       obra.push({ unidad: u.codigo, proyecto: k.proyecto, contrato_numero: k.numero, fase: u.obra_fase, fecha_entrega: soloDia(u.obra_fecha_entrega),
         actualizado: soloDia(u.obra_actualizado) || dia(-4),
         fotos: titulos.map(function (t, i) { return { path: img('obra/' + u.codigo + '/' + i, foto(i + j, u.obra_fase)), titulo: t[0], fecha: dia(t[1]) }; }) });

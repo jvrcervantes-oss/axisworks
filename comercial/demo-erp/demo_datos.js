@@ -218,13 +218,15 @@
       }
       if (etapa === 'bloqueo') reservas.push({ unidad_id: u.id, codigo: u.codigo, proyecto: u.proyecto, contrato_id: rp.id,
         numero: rp.numero, tipo: 'reserva_parcela', proyecto_id: u.proyecto_id, proyecto_nombre: u.proyecto,
-        comprador_nombre: cli.full_name, vence_el: dia(d0 + 14), n_prorrogas: 0 });
+        // la de la señal impagada lleva una prórroga viva: si no, sería la única reserva vencida de la siembra (revisor, 12-oct)
+        comprador_nombre: cli.full_name, vence_el: dia(opc.impagada ? 9 : d0 + 14), n_prorrogas: opc.impagada ? 1 : 0 });
       if (etapa === 'construccion' || etapa === 'construccion_sin_firmar') {
         var firmadoCC = etapa === 'construccion';
         var k = contrato('construccion', u, cli, ag, u.precio_construccion, firmadoCC, d0 + 20, padre);
         if (firmadoCC) { u.estado = 'vendida'; u.obra_fase = d0 < -150 ? 'estructura' : 'cimentacion';
           u.obra_fecha_entrega = dia(d0 + 330); u.obra_actualizado = ts(-(i % 9) - 1);
-          if (opc.fase) { u.obra_fase = opc.fase; if (opc.fase === 'entregada') u.obra_fecha_entrega = dia(-20); } }
+          // entregada: la entrega, el día del hito «Key handover» (d0 + 320), que ya está cobrado
+          if (opc.fase) { u.obra_fase = opc.fase; if (opc.fase === 'entregada') { u.obra_fecha_entrega = dia(d0 + 320); u.obra_actualizado = ts(d0 + 320); } } }
         /* Calendario por hitos de obra: 30 / 30 / 30 / 10. */
         [['Contract signing', 30, 0], ['Structure complete', 30, 90], ['Roof and enclosure', 30, 180], ['Key handover', 10, 300]]
           .forEach(function (h, j) {
