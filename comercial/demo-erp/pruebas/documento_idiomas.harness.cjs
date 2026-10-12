@@ -36,7 +36,8 @@ const ok = (c, m) => { if (!c) fallos.push(m); };
 const texto = h => h.replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
 // Palabras del papel de Lawang en español, meses y palabras sueltas (de, la, por…), para cazar también un rótulo NUEVO que Lawang añada:
 // ninguna puede salir en el de la instancia (los datos de prueba de abajo no llevan ninguna)
-const ESPANOL = /\b(Factura|Recib[ií]|Cobro|Conceptos?|Descripci[oó]n|Importe|Impuesto|Notas?|Datos|Cuenta|Titular|Direcci[oó]n|Vencimiento|Contrato|Proyecto|Sin|Facturar|Rectifica|Motivo|Fecha|Banco|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|de|del|la|las|el|los|por|para|con|pago|forma)\b/i;
+// límites por letra Unicode y no \b: sin la marca u, \b tras una vocal con tilde («Recibí») no casa nunca (revisor, 2.ª vuelta)
+const ESPANOL = /(?<!\p{L})(Factura|Recib[ií]|Cobro|Conceptos?|Descripci[oó]n|Importe|Impuesto|Notas?|Datos|Cuenta|Titular|Direcci[oó]n|Vencimiento|Contrato|Proyecto|Sin|Facturar|Rectifica|Motivo|Fecha|Banco|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|de|del|la|las|el|los|por|para|con|pago|forma)(?!\p{L})/iu;
 
 const base = {
   sociedad: 'emisor', moneda: 'IDR', fecha_emision: '2026-10-14', fecha_vencimiento: '2026-10-21',
