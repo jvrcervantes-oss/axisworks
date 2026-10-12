@@ -253,7 +253,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (editando || comp.externo) ctl = comp.pinta(cuerpo, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: st.cambia });
     t.appendChild(cuerpo);
     var motivo = null;
-    if (editando && p.hecho && !comp.externo && !comp.sinMotivo) {   // cambiar algo ya guardado: la base pide motivo (p17, 12-oct)
+    // cambiar algo ya guardado: la base pide motivo (p17, 12-oct); se decide por el VALOR guardado, no por «hecho» (repaso 12-oct)
+    if (editando && P.pideMotivo(p.clave, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad })) {
       motivo = el('input', { id: 'axw-motivo', type: 'text', maxlength: '500', autocomplete: 'off', 'data-axw-campo': 'motivo', class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
       cuerpo.appendChild(el('div', { class: 'flex flex-col gap-1.5' }, [el('label', { for: 'axw-motivo', class: 'font-label-md text-label-md text-on-surface', text: U('motivo') }), motivo,
         el('span', { class: 'font-body-sm text-body-sm text-outline', text: U('motivo_ayuda') })]));

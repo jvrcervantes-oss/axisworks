@@ -164,6 +164,28 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   ok('con motivo, se guarda el cambio', (llamadas(b, 'ajustes_config_guardar')[2] || [])[1] && llamadas(b, 'ajustes_config_guardar')[2][1].p_motivo === 'Lo confirmó el gestor');
   await ctx.close();
 
+  // 2a. Repaso 12-oct (MEDIA): «no» ya guardado pero el paso SIN hecho (falta el impuesto por defecto). Cambiarlo pide motivo en la base:
+  // el campo tiene que estar, o era un callejón sin salida («escribe el motivo» sin dónde escribirlo)
+  {
+    const bm = base('sin_configurar', { valores: { reservas_sin_impuesto: 'no' } });
+    bm.d.pasos.find(x => x.clave === 'impuesto_pkp').hecho = false;
+    let pm, cm;
+    ({ p: pm, ctx: cm } = await abre(nav, bm, { url: '/ajustes/configurar/?modulo=reservas-producto' }));
+    await pm.waitForSelector('[data-axw-paso="impuesto_pkp"]', { timeout: 8000 }).catch(() => {});
+    ok('valor guardado y paso sin hecho: sale el campo del motivo', !!(await pm.$('[data-axw-campo="motivo"]')));
+    await pm.selectOption('[data-axw-campo="reservas_sin_impuesto"]', 'si');
+    await pm.fill('[data-axw-campo="motivo"]', 'Ya no es PKP'); await clic(pm, 'enviar'); await pm.waitForTimeout(300);
+    const g = llamadas(bm, 'ajustes_config_guardar')[0];
+    ok('y con el motivo se guarda el cambio', g && g[1].p_valor === 'si' && g[1].p_motivo === 'Ya no es PKP', JSON.stringify(g && g[1]));
+    await cm.close();
+    // y al revés: sin valor guardado, ni el campo (primer valor)
+    const bn = base('sin_configurar'); bn.d.pasos.find(x => x.clave === 'impuesto_pkp').hecho = false;
+    ({ p: pm, ctx: cm } = await abre(nav, bn, { url: '/ajustes/configurar/?modulo=reservas-producto' }));
+    await pm.waitForSelector('[data-axw-paso="impuesto_pkp"]', { timeout: 8000 }).catch(() => {});
+    ok('sin valor guardado: no sale el motivo', !(await pm.$('[data-axw-campo="motivo"]')));
+    await cm.close();
+  }
+
   // 2b. Una falta que el paso no resuelve (la empresa no tiene impuesto) lleva a su pestaña de Ajustes; una que sí, no
   {
     const bb = base('sin_configurar');
