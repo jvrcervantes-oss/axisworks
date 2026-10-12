@@ -205,7 +205,7 @@
  "Pasos para cambiar el servidor": "Langkah mengganti server",
  "Pedirle algo": "Minta sesuatu",
  "Pendiente": "Tertunda",
- "Pendiente de cobro": "Belum dibayar",
+ "Pendiente de cobro": "Belum diterima",
  "Plantillas": "Templat",
  "Por ejemplo: «Anula la factura INV00160, el importe está mal».": "Contoh: «Batalkan invoice INV00160, jumlahnya salah».",
  "Por hoy no mando más avisos. Si es urgente, pídelo en el Asistente.": "Untuk hari ini saya tidak mengirim laporan lagi. Jika mendesak, minta lewat Asisten.",
@@ -255,7 +255,7 @@
  "Sesión iniciada. Entrando…": "Berhasil masuk. Membuka…",
  "Si no ha hecho lo que esperabas, avísame y se lo paso al estudio con los detalles técnicos.": "Jika hasilnya tidak sesuai harapan, beri tahu saya dan akan saya teruskan ke studio beserta detail teknisnya.",
  "Si vence sin prórroga ni Bloqueo firmado, el cliente pierde la reserva. Revísalas hoy.": "Jika kedaluwarsa tanpa perpanjangan atau Bloqueo yang ditandatangani, pelanggan kehilangan booking-nya. Periksa hari ini.",
- "Siguiente": "Berikutnya",
+ "Siguiente": "Lanjut",
  "Sin cambios": "Tanpa perubahan",
  "Sin cambios: ya valía eso.": "Tidak ada perubahan: nilainya sudah sama.",
  "Sin documento": "Tanpa dokumen",
@@ -333,6 +333,6 @@
  "¿Qué ha pasado?": "Apa yang terjadi?",
  "¿Qué ha pasado? Por ejemplo: «al guardar la factura no hace nada».": "Apa yang terjadi? Contoh: «saat menyimpan invoice tidak terjadi apa-apa».",
  "¿Qué necesitas?": "Apa yang Anda butuhkan?",
- "¿Qué sabes hacer?": "Apa yang bisa kamu lakukan?",
+ "¿Qué sabes hacer?": "Apa yang bisa Anda lakukan?",
  "Último cambio": "Perubahan terakhir"
 }
