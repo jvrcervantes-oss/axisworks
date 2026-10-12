@@ -6,7 +6,8 @@ Aplica las marcas sobre el HTML REAL de Lawang (AXW_LAWANG_RAIZ o <agencia>/proy
   · cada trozo de Lawang está exactamente una vez (si Lawang lo cambia, esto y el build se ponen rojos a la vez);
   · en cada tabla, la cabecera marcada y la celda marcada de la fila PLANTILLA (la que clona plantillaFilas() de datos.js: la 2.ª del tbody)
     están en la MISMA posición y con el mismo marcador: si no, se ocultaría la cabecera de una columna y la celda de otra;
-  · la regla CSS que genera oculta_por_modulo() pide TODOS los módulos del marcador (se oculta solo si están todos apagados).
+  · la regla CSS que genera oculta_por_modulo() pide TODOS los módulos del marcador (se oculta solo si están todos apagados);
+  · la condición del editor de factura (EDITOR_SIN_CONTRATO) en 7 casos, evaluada en Node.
 Sin navegador: lee el HTML con html.parser."""
 import ast
 import os
@@ -101,6 +102,35 @@ cuerpo = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
 ok('oculta_por_modulo() existe y se llama en instancia()', 'def oculta_por_modulo():' in cuerpo and '\n    oculta_por_modulo()' in cuerpo)
 ok('la regla exige TODOS los módulos del marcador',
    "''.join('.axw-sin-' + m for m in mods.split())" in cuerpo and '[data-axw-sin="%s"]{display:none!important}' in cuerpo)
+
+# El editor de factura (EDITOR_SIN_CONTRATO, BAJA 1 del revisor): la condición parcheada, evaluada en Node con los casos que importan.
+# Nace «sin contrato» SOLO con el módulo contratos apagado (base ya contestó) y la empresa sin exigir contrato; un documento ya guardado
+# se reabre como estaba; con el módulo sin saber (axwModuloActivo da true, falla abierto) o sin la función (Lawang), como siempre.
+import json
+import subprocess
+EDITOR = tupla_de_build('EDITOR_SIN_CONTRATO')
+cond = EDITOR[0][2]
+ok('EDITOR_SIN_CONTRATO[0] es la condición de sinContrato', cond.lstrip().startswith('sinContrato: '))
+expr = cond.strip()[len('sinContrato: '):]
+CASOS = [   # (nombre, regla.sinContrato, origen, pre.contrato_id, axwModuloActivo('contratos') o None si no existe, esperado)
+    ('nuevo, contratos apagado, empresa sin exigir', True, None, None, False, True),
+    ('nuevo, contratos apagado, empresa EXIGE contrato', False, None, None, False, False),
+    ('nuevo, módulos sin saber (falla abierto)', True, None, None, True, False),
+    ('nuevo, sin axwModuloActivo (Lawang)', True, None, None, None, False),
+    ('nuevo desde un contrato (pre.contrato_id)', True, None, 'c1', False, False),
+    ('reabre uno guardado CON contrato', True, {'contrato_id': 'c1'}, None, False, False),
+    ('reabre uno guardado SIN contrato', True, {'contrato_id': None}, None, True, True),
+]
+js = 'var out = [];\n' + ''.join(
+    '(function () { var regla = {sinContrato: %s}, origen = %s, pre = {contrato_id: %s}; var window = %s; out.push(!!(%s)); })();\n'
+    % (json.dumps(r), json.dumps(o), json.dumps(p), '{}' if m is None else '{axwModuloActivo: function () { return %s; }}' % json.dumps(m), expr)
+    for _, r, o, p, m, _e in CASOS) + 'console.log(JSON.stringify(out));'
+r = subprocess.run(['node', '-e', js], capture_output=True, text=True, encoding='utf-8')
+ok('la condición del editor se evalúa en Node', r.returncode == 0, (r.stderr or '')[-300:])
+if r.returncode == 0:
+    res = json.loads(r.stdout.strip().splitlines()[-1])
+    for (nombre, *_x, esperado), dio in zip(CASOS, res):
+        ok('editor: ' + nombre, dio is esperado, 'dio %s' % dio)
 
 print(('OK' if not fallos else 'MAL') + ' test_oculta_por_modulo: %d/%d' % (total - len(fallos), total))
 for f in fallos:
