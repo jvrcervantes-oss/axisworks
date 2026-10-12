@@ -2925,7 +2925,9 @@ AJUSTES_PUESTA_PANEL = (
     '<p class="px-8 py-6 font-body-md text-body-md text-on-surface-variant" data-lwt>Trayendo la puesta en marcha…</p>\n'
     '</div>\n'
     '</section>\n\n')
-AJUSTES_PESTANAS = "var PESTANAS = ['empresa', 'correo', 'usuarios', 'mantenimiento', 'reservas', 'registro'];"
+# Solo el comienzo de la lista (12-oct-2026): Lawang añadió 'sociedades' tras 'empresa' (Sociedades emisoras en Ajustes) y puede añadir más; lo que hace
+# falta es que 'puesta' entre la PRIMERA. Vale con la lista vieja y con la nueva.
+AJUSTES_PESTANAS = "var PESTANAS = ['empresa',"
 AJUSTES_DEFECTO = "return PESTANAS.indexOf(h) >= 0 ? h : 'empresa';"
 
 
