@@ -788,10 +788,10 @@ window.AXW_ASIS = (function () {
     if (e === null) {
       if (sd.tipo === 'sin_declarar') return { cls: 'sin', txt: 'Sin asistente aún' };
       if (sd.tipo === 'ninguno') return { cls: 'listo', txt: 'Nada que configurar' };
-      return { cls: 'falta', txt: 'Estado desconocido' };   // con pasos y sin estado: la base no cuadra, no se da por bueno
+      return { cls: 'falta', txt: 'Estado desconocido', raro: true };   // con pasos y sin estado: la base no cuadra, no se da por bueno
     }
     if (!e || typeof e !== 'object' || typeof e.hechos !== 'number' || typeof e.total !== 'number' ||
-        (e.estado !== 'configurado' && e.estado !== 'sin_configurar')) return { cls: 'falta', txt: 'Estado desconocido' };
+        (e.estado !== 'configurado' && e.estado !== 'sin_configurar')) return { cls: 'falta', txt: 'Estado desconocido', raro: true };
     if (e.estado === 'configurado') return { cls: 'listo', txt: 'Listo' };
     return e.hechos > 0 ? { cls: 'medias', txt: 'A medias · ' + e.hechos + ' de ' + e.total }
                         : { cls: 'falta', txt: 'Sin configurar · 0 de ' + e.total };
@@ -869,14 +869,15 @@ window.AXW_ASIS = (function () {
     var enc = (e.modulos || []).filter(function (m) { return m.modulo === 'base' || act.indexOf(m.modulo) !== -1; });
     if (!enc.some(function (m) { return tieneCampo(m, 'setup_estado'); }))
       return '<p class="mt-space-sm font-body-sm text-body-sm text-on-surface-variant" data-setup-resumen="sin_dato">La base de esta instancia aún no informa de la configuración de cada módulo: el estado («listo», «a medias», «sin configurar») saldrá aquí cuando lo haga.</p>';
-    var n = { listo: 0, medias: 0, falta: 0, sin: 0 };
-    enc.forEach(function (m) { var st = estadoSetup(m); if (st) n[st.cls]++; });
+    var n = { listo: 0, medias: 0, falta: 0, sin: 0, raro: 0 };
+    enc.forEach(function (m) { var st = estadoSetup(m); if (st) n[st.raro ? 'raro' : st.cls]++; });
     var base = enc.filter(function (m) { return m.modulo === 'base'; })[0];
     var partes = [];
     if (n.listo) partes.push(n.listo + ' listos');
     if (n.medias) partes.push(n.medias + ' a medias');
     if (n.falta) partes.push(n.falta + ' sin configurar');
     if (n.sin) partes.push(n.sin + ' sin asistente aún');
+    if (n.raro) partes.push(n.raro + ' con estado desconocido');
     return '<div class="mt-space-sm flex flex-wrap items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" data-setup-resumen="ok">' +
       '<span>Configuración en la base: ' + esc(partes.join(' · ') || 'sin módulos encendidos') + '.</span>' +
       (base ? '<span>' + esc(nombre('base')) + ':</span>' + etiquetaEstado(estadoSetup(base)) : '') + '</div>';
@@ -949,7 +950,7 @@ window.AXW_ASIS = (function () {
   function nombreEn(k) { return SETUP.en.modulos[k] || k; }
   function declaracion(k) {
     var d = SETUP.registro[k];
-    if (typeof d === 'string' && d.indexOf('ninguno') === 0) return { tipo: 'ninguno' };
+    if (d && d.ninguno === true) return { tipo: 'ninguno' };
     if (d && typeof d === 'object' && Array.isArray(d.pasos) && d.pasos.length) return { tipo: 'pasos', pasos: d.pasos };
     return d == null ? { tipo: 'sin_declarar' } : { tipo: 'raro' };
   }
@@ -1000,7 +1001,7 @@ window.AXW_ASIS = (function () {
     caja.innerHTML =
       '<div class="ax-sec ax-night"><div class="flex flex-wrap items-center justify-between gap-space-sm"><span class="ax-mono" style="color:var(--aw-fog)">AxisWorks ERP · Installation map</span></div>' +
       '<h1 class="ax-h1"><span>Every step of your install,</span><span class="l">from switch-on to ready.</span></h1>' +
-      '<p class="ax-lead">The studio turns on the modules you need. You set each one up in a short assistant, one step per screen. Everything you enter stays in Settings, where you can change it later.</p>' +
+      '<p class="ax-lead">The studio turns on the modules you need. You set each one up in a short assistant, one step per screen. Everything you enter stays in Settings; most of it can be changed later, and steps with a lock are confirmed once.</p>' +
       '<div class="ax-facts"><span class="ax-fact"><b>' + tipos.length + '</b> types of business</span><span class="ax-fact"><b>' + nPasos + '</b> steps listed</span>' +
       '<span class="ax-fact"><b>1</b> step per screen</span></div></div>' +
       '<div class="ax-sec ax-ultra"><div><span class="ax-mono">How an install runs</span><h2 class="ax-hh"><span>Four moments,</span><span class="l">one assistant.</span></h2></div>' +
@@ -1023,7 +1024,7 @@ window.AXW_ASIS = (function () {
     var mapa = location.hash === '#mapa';
     $('mapa').classList.toggle('hidden', !mapa);
     $('vista').classList.toggle('hidden', mapa || !instancias.length);
-    if (mapa) $('estado-carga').classList.add('hidden');
+    $('estado-carga').classList.toggle('hidden', mapa || instancias.length > 0);
     document.querySelector('main').style.maxWidth = mapa ? 'none' : '';
     var t = document.querySelector('header h1');
     if (t) t.innerHTML = mapa ? 'Mapa de la instalación' : '<span class="sm:hidden">Módulos</span><span class="hidden sm:inline">Módulos por instancia</span>';
@@ -1136,6 +1137,9 @@ window.AXW_ASIS = (function () {
       if (ef.length) bloqueos.push('A ' + esc(lista(ef)) + ' le faltan funciones por desplegar (' + esc([].concat.apply([], ef.map(function (k) { return s.edges_faltan[k]; })).join(', ')) +
         '). Las prepara el estudio (quedan cerradas hasta encenderlo): ' + ef.map(function (k) { return '<code>python erp/nueva_instancia.py ' + esc(actual.nombre) + ' --aplica --paso edges --modulo ' + esc(k) + '</code>'; }).join(' · ') + '.');
       if ((s.desconocidos || []).length) bloqueos.push('Módulos que la base no conoce: ' + esc(s.desconocidos.join(', ')) + '.');
+      var cf = s.condiciones_faltan && typeof s.condiciones_faltan === 'object' ? Object.keys(s.condiciones_faltan) : [];
+      if (cf.length) bloqueos.push(cf.map(function (k) { var v = s.condiciones_faltan[k];
+        return esc(nombre(k)) + ' no se puede encender todavía: le falta ' + esc(Array.isArray(v) ? v.join(', ') : String(v)) + ' (lo pide la base).'; }).join(' '));
       var cambios = '<p>' + (s.enciende.length ? '<strong>Se enciende:</strong> ' + esc(lista(s.enciende)) + '<br>' : '') +
         (s.apaga.length ? '<strong>Se apaga:</strong> ' + esc(lista(s.apaga)) : '') + '</p>';
       if (bloqueos.length) return dialogo(cambios + bloqueos.map(function (b) { return '<p class="ax-error">' + b + '</p>'; }).join(''), null, null, 'No se puede aplicar').then(function () { return null; });

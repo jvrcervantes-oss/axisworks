@@ -51,7 +51,8 @@ function simula(actuales, activos) {
   activos.forEach(k => { const f = (DEPENDE[k] || []).filter(d => activos.indexOf(d) === -1); if (f.length) faltan[k] = f; });
   return { enciende: activos.filter(k => actuales.indexOf(k) === -1), apaga: actuales.filter(k => activos.indexOf(k) === -1),
     faltan_dependencias: faltan, sugerido_con_dependencias: cierra(activos), sugerido_sin_dependientes: activos,
-    no_instalables: [], edges_faltan: {}, desconocidos: [] };
+    no_instalables: [], edges_faltan: {}, desconocidos: [],
+    condiciones_faltan: activos.indexOf('gastos') !== -1 && actuales.indexOf('gastos') === -1 ? { gastos: ['terminos_sin_aceptar'] } : undefined };
 }
 function edge(cuerpo) {
   llamadas.push(cuerpo);
@@ -111,6 +112,9 @@ const ajena = [];
   const p = await ctx.newPage();
   p.on('pageerror', e => errores.push(e.message));
   p.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|Failed to load resource/.test(m.text())) errores.push(m.text()); });
+  const html = fs.readFileSync(path.join(RAIZ, 'panel', 'index.html'), 'utf8');
+  const fuga = (html.match(/_[a-z_]+_setup_estado|sociedad_guarda|ajustes_config_guardar|producto_guarda|#283|"rpc"|"ajustes"|"herramienta"|"operativo"/) || [])[0];
+  ok('/panel/ es público: no lleva rpc, ajustes, funciones de estado ni motivos internos del registro', !fuga, fuga);
   await p.goto(ORIGEN + '/panel/', { waitUntil: 'load' });
   await p.waitForSelector('#modulos [data-mod]', { timeout: 15000 });
 
@@ -124,6 +128,7 @@ const ajena = [];
   ok('estado: un módulo apagado no lleva etiqueta', (await etiqueta('facturas')) === null);
   const resumen = await p.evaluate(() => { const r = document.querySelector('[data-setup-resumen]'); return r ? [r.getAttribute('data-setup-resumen'), r.textContent] : null; });
   ok('estado: el resumen de la instancia sale de la base (y nombra la base)', !!resumen && resumen[0] === 'ok' && /Base/.test(resumen[1]) && /a medias/.test(resumen[1]), JSON.stringify(resumen));
+  ok('estado: el desconocido se cuenta aparte, no como «sin configurar»', !!resumen && /1 con estado desconocido/.test(resumen[1]) && !/sin configurar/.test(resumen[1]), resumen && resumen[1]);
 
   // ── S01: encender Facturas ─────────────────────────────────────────────────────────────────────────────────────────────────────
   const antes = llamadas.length;
@@ -156,6 +161,14 @@ const ajena = [];
   await p.waitForTimeout(800);
   const cambios = llamadas.filter(c => c.accion === 'cambia');
   ok('S01: Encender aplica el conjunto final (al doble)', cambios.length === 1 && ['facturas', 'recibos', 'sociedades'].every(k => cambios[0].activos.indexOf(k) !== -1), JSON.stringify(cambios));
+
+  // ── condiciones que pide la base (whatsapp-bot: términos) bloquean, no se ofrecen como «Encender» ──────────────────────────────
+  await p.click('#modulos [data-mod="gastos"]');
+  await p.waitForSelector('#dlg[open]');
+  const cfd = await p.evaluate(() => ({ t: document.getElementById('dlg-titulo').textContent, ok: document.getElementById('dlg-ok').classList.contains('hidden'),
+    txt: document.getElementById('dlg-cuerpo').textContent }));
+  ok('condiciones_faltan: bloquea sin botón de encender', cfd.t === 'No se puede aplicar' && cfd.ok && /terminos_sin_aceptar/.test(cfd.txt), JSON.stringify(cfd));
+  await p.click('#dlg button[value="no"]');
 
   // ── una base que aún no manda `setup` ─────────────────────────────────────────────────────────────────────────────────────────
   await p.click('#lista-instancias [data-inst="old-base"]');
