@@ -220,7 +220,7 @@ a.axw-boton{text-decoration:none}
     var pares = [['Reserva', x.numero_reserva], ['Modelo', x.producto], ['Unidad', x.unidad], ['Cliente', quien(x)],
                  ['Fechas', C.fechaDia(x.desde) + ' → ' + C.fechaDia(x.hasta)],
                  ['Estado', est ? T(est[0]) : x.estado], ['Pago', p ? T(p[0]) : T('Estado del pago desconocido')],
-                 ['Precio', C.dinero(x.precio_total, x.moneda)]];
+                 ['Precio', x.origen === 'previo' ? '—' : C.dinero(x.precio_total, x.moneda)]];   // F3-E3: un previo no tiene precio en el ERP
     if (x.hora) pares.push(['Hora', x.hora]);
     if (x.entrega_direccion) pares.push(['Dirección de entrega', x.entrega_direccion]);
     if (x.recogida_direccion) pares.push(['Dirección de recogida', x.recogida_direccion]);

@@ -31,7 +31,10 @@ function nuevaBase(o = {}) {
     { id: 'r2', numero_reserva: 'RP-00002', estado: 'bloqueo', desde: HOY, hasta: suma(HOY, 7), hora: null, producto: 'Yamaha NMAX 155', unidad: 'DK 5678 CD', cliente: 'Ana Pérez',
       entrega_direccion: null, recogida_direccion: null, precio_total: 1050000, moneda: 'IDR', pago_estado: 'pendiente' },
     { id: 'r3', numero_reserva: 'RP-00003', estado: 'en_curso', desde: suma(HOY, -5), hasta: HOY, hora: '10:30', producto: 'Honda Scoopy', unidad: 'DK 9 EF', cliente: null,
-      entrega_direccion: null, recogida_direccion: 'Canggu', precio_total: 500000, moneda: 'IDR', pago_estado: 'registrado' }
+      entrega_direccion: null, recogida_direccion: 'Canggu', precio_total: 500000, moneda: 'IDR', pago_estado: 'registrado' },
+    // F3-E3: alquiler previo (la moto ya estaba fuera al empezar con el ERP): vuelve mañana, se cobró fuera del ERP y no tiene precio
+    { id: 'r4', numero_reserva: 'RP-00004', estado: 'en_curso', desde: suma(HOY, -2), hasta: suma(HOY, 1), hora: null, producto: 'Honda PCX', unidad: 'DK 77 GH', cliente: null,
+      entrega_direccion: null, recogida_direccion: null, precio_total: 0, moneda: 'IDR', pago_estado: 'fuera_erp', origen: 'previo' }
   ];
   return { llamadas: [], o, reservas };
 }
@@ -142,6 +145,13 @@ const TILDES = /[áéíóúñÁÉÍÓÚÑ¿¡]/;
     await p.click('[data-accion="ph-despues"]');
     await espera(p, () => document.querySelector('[data-ph="estado-entregas"]').textContent.includes('Este día'));
     ok('día siguiente: pide HOY+1 y dice «Este día no hay entregas.»', base.llamadas[base.llamadas.length - 1][1].p_dia === suma(HOY, 1) && (await txt(p, '[data-ph="titulo"]')) !== 'Hoy');
+    ok('alquiler previo: su pago sale «Cobrado fuera del ERP» en tono ok, nunca «Pendiente de pago»', (await txt(p, '[data-ph="devoluciones"] li')).includes('Cobrado fuera del ERP')
+       && !(await txt(p, '[data-ph="devoluciones"] li')).includes('Pendiente') && (await p.$eval('[data-ph="devoluciones"] li .axw-chip', e => e.getAttribute('data-tono'))) === 'ok');
+    await p.click('[data-ph="devoluciones"] li:nth-child(1) button');
+    await espera(p, () => !!document.querySelector('[data-axw="dialogo"]'));
+    const ficPrevio = await txt(p, '[data-axw="dialogo"]');
+    ok('alquiler previo: la ficha no enseña «0 IDR» de precio', ficPrevio.includes('RP-00004') && !/0\s*IDR|IDR\s*0/.test(ficPrevio) && ficPrevio.includes('—'));
+    await p.click('[data-axw="dialogo"] [data-accion="ph-cerrar"]');
     await p.click('[data-accion="ph-hoy"]');
     await espera(p, () => document.querySelector('[data-ph="titulo"]').textContent === 'Hoy');
     ok('Hoy vuelve a pedir sin día', base.llamadas[base.llamadas.length - 1][1].p_dia === null);

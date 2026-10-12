@@ -198,7 +198,7 @@ a.rp-boton{text-decoration:none}
     'Incluir los ya resueltos': 'Include the ones already resolved',
     'Reserva nº': 'Booking no.', 'Producto': 'Product', 'Unidad': 'Unit', 'Fechas': 'Dates', 'Cliente': 'Customer', 'Precio': 'Price', 'Pago': 'Payment', 'Origen': 'Source', 'Acciones': 'Actions',
     'Referencia': 'Reference', 'Importe': 'Amount', 'Motivo': 'Reason', 'Recibido': 'Received', 'Resuelto': 'Resolved', 'Resolución': 'Resolution', 'Reserva': 'Booking',
-    'Equipo': 'Team', 'Bot': 'Bot', 'Alquiler previo': 'Earlier rental', 'Sin pago': 'No payment', 'Por reclamar': 'To claim', 'Cliente sin permiso para verlo': 'Customer you cannot see', 'Sin cliente': 'No customer',
+    'Equipo': 'Team', 'Bot': 'Bot', 'Alquiler previo': 'Earlier rental', 'Cobrado fuera del ERP': 'Paid outside the ERP', 'Sin pago': 'No payment', 'Por reclamar': 'To claim', 'Cliente sin permiso para verlo': 'Customer you cannot see', 'Sin cliente': 'No customer',
     'Caduca': 'Expires', 'Detalles': 'Details', 'Confirmar': 'Confirm', 'Cancelar': 'Cancel', 'Cambiar de unidad': 'Change unit', 'Entregar (en curso)': 'Hand over (in progress)', 'Marcar devuelta': 'Mark as returned',
     'Cancelar con devolución': 'Cancel with refund', 'Cerrar': 'Close', 'Volver': 'Back', 'Trabajando…': 'Working…', 'Cargando…': 'Loading…',
     'Nueva reserva de producto': 'New product booking',
@@ -324,7 +324,7 @@ a.rp-boton{text-decoration:none}
     'Incluir los ya resueltos': 'Tampilkan juga yang sudah selesai',
     'Reserva nº': 'No. booking', 'Producto': 'Produk', 'Unidad': 'Unit', 'Fechas': 'Tanggal', 'Cliente': 'Pelanggan', 'Precio': 'Harga', 'Pago': 'Pembayaran', 'Origen': 'Sumber', 'Acciones': 'Aksi',
     'Referencia': 'Referensi', 'Importe': 'Jumlah', 'Motivo': 'Alasan', 'Recibido': 'Diterima', 'Resuelto': 'Selesai', 'Resolución': 'Penyelesaian', 'Reserva': 'Booking',
-    'Equipo': 'Tim', 'Bot': 'Bot', 'Alquiler previo': 'Sewa sebelumnya', 'Sin pago': 'Belum bayar', 'Por reclamar': 'Belum diklaim', 'Cliente sin permiso para verlo': 'Pelanggan yang tidak boleh Anda lihat', 'Sin cliente': 'Tanpa pelanggan',
+    'Equipo': 'Tim', 'Bot': 'Bot', 'Alquiler previo': 'Sewa sebelumnya', 'Cobrado fuera del ERP': 'Dibayar di luar ERP', 'Sin pago': 'Belum bayar', 'Por reclamar': 'Belum diklaim', 'Cliente sin permiso para verlo': 'Pelanggan yang tidak boleh Anda lihat', 'Sin cliente': 'Tanpa pelanggan',
     'Caduca': 'Berlaku sampai', 'Detalles': 'Detail', 'Confirmar': 'Konfirmasi', 'Cancelar': 'Batalkan', 'Cambiar de unidad': 'Ganti unit', 'Entregar (en curso)': 'Serahkan motor', 'Marcar devuelta': 'Tandai sudah kembali',
     'Cancelar con devolución': 'Batalkan dengan refund', 'Cerrar': 'Tutup', 'Volver': 'Kembali', 'Trabajando…': 'Memproses…', 'Cargando…': 'Memuat…',
     'Nueva reserva de producto': 'Booking sewa baru', 'Dirección de entrega': 'Alamat antar', 'Dirección de recogida': 'Alamat jemput', 'Notas': 'Catatan',
@@ -659,11 +659,11 @@ a.rp-boton{text-decoration:none}
       var c = h('div', null, [h('span', { text: quienEs(x) })]);
       if (x.sin_reclamar === true) c.appendChild(h('div', null, [chip(T('Por reclamar'), 'espera')]));
       tr.appendChild(celda(c));
-      tr.appendChild(celda(dinero(x.precio_total, x.moneda), 'rp-num'));
+      tr.appendChild(celda(precioDe(x), 'rp-num'));
       var e = h('div', null, [chipEstado(x.estado)]);
       if (x.estado === 'bloqueo' && x.caduca_en) e.appendChild(h('div', { class: 'rp-vacio', text: T('Caduca') + ': ' + fechaHora(x.caduca_en) }));
       tr.appendChild(celda(e));
-      tr.appendChild(celda(x.pago_referencia ? x.pago_referencia : T('Sin pago')));
+      tr.appendChild(celda(pagoDe(x)));
       tr.appendChild(celda(x.origen === 'bot' ? T('Bot') : x.origen === 'previo' ? T('Alquiler previo') : T('Equipo')));
       tr.appendChild(celda(accionesDe(x)));
       return tr;
@@ -675,6 +675,9 @@ a.rp-boton{text-decoration:none}
     else if (E.avisoRecorte) { aviso(''); E.avisoRecorte = false; }
   }
   /* Qué botones ofrece cada estado. Es COMODIDAD: la base vuelve a comprobar el estado, el permiso y las fechas en cada llamada. */
+  // F3-E3: un alquiler previo (la moto ya estaba fuera al empezar con el ERP) se cobró fuera: ni «Sin pago» ni «0 IDR» (la base no le deja pago ni precio)
+  function pagoDe(x) { return x.origen === 'previo' ? T('Cobrado fuera del ERP') : (x.pago_referencia || T('Sin pago')); }
+  function precioDe(x) { return x.origen === 'previo' ? '—' : dinero(x.precio_total, x.moneda); }
   function accionesDe(x) {
     var ac = h('div', { class: 'rp-acciones' });
     var id = { 'data-reserva-id': x.id };
@@ -699,8 +702,8 @@ a.rp-boton{text-decoration:none}
     }).join('\n') : '';
     var d = dialogo(T('Detalle de la reserva'), [resumen([
       ['Número de reserva', x.numero], ['Producto', x.producto], ['Unidad', x.unidad], ['Fechas', fechaDia(x.desde) + ' → ' + fechaDia(x.hasta) + ' (' + x.dias + ')'],
-      ['Estado', T((ESTADO[x.estado] || [x.estado])[0])], ['Cliente', quienEs(x)], ['Teléfono', x.contacto_telefono], ['Precio congelado', dinero(x.precio_total, x.moneda)],
-      ['Desglose del precio', lineas], ['Pago', x.pago_referencia || T('Sin pago')], ['Entrega', x.entrega_direccion], ['Recogida', x.recogida_direccion],
+      ['Estado', T((ESTADO[x.estado] || [x.estado])[0])], ['Cliente', quienEs(x)], ['Teléfono', x.contacto_telefono], ['Precio congelado', precioDe(x)],
+      ['Desglose del precio', lineas], ['Pago', pagoDe(x)], ['Entrega', x.entrega_direccion], ['Recogida', x.recogida_direccion],
       ['Notas', x.notas], ['Creada', fechaHora(x.creado_en) + (x.creado_por ? ' · ' + T('por') + ' ' + x.creado_por : '')]])],
       [{ texto: T('Cerrar'), accion: 'rp-modal-cerrar', cierra: true }]);
     d.cuerpo.querySelector('.rp-resumen').style.whiteSpace = 'pre-line';
@@ -744,7 +747,7 @@ a.rp-boton{text-decoration:none}
     var ref = h('input', { type: 'text', maxlength: '100', 'data-campo': 'referencia-devolucion', 'aria-label': T('Referencia de la devolución (la transferencia o el reembolso)') });
     var motivo = h('textarea', { rows: '3', maxlength: '300', 'data-campo': 'motivo', 'aria-label': T('Motivo de la cancelación (obligatorio, hasta 300 caracteres)') });
     return dialogo(T('Cancelar con devolución'), [
-      resumen([['Reserva', x.numero], ['Cliente', quienEs(x)], ['Precio congelado', dinero(x.precio_total, x.moneda)], ['Pago', x.pago_referencia || T('Sin pago')]]),
+      resumen([['Reserva', x.numero], ['Cliente', quienEs(x)], ['Precio congelado', precioDe(x)], ['Pago', pagoDe(x)]]),
       h('p', { class: 'rp-nota', text: T('Cancelar con devolución: rectifica las facturas emitidas de la reserva, anota lo devuelto al cliente y la cancela. Si no se devuelve nada, pon 0.') }),
       campo('Importe devuelto al cliente (0 si no se devuelve nada)', importe),
       campo('Referencia de la devolución (la transferencia o el reembolso)', ref),
