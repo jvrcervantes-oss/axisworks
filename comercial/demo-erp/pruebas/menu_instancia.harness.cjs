@@ -98,6 +98,18 @@ const MIDE = () => {
     ok(lengua + ': al abrir «Cobros» salen Facturas y Recibos y no Vencimientos', !!sub && sub.indexOf('facturas') !== -1 && sub.indexOf('recibos') !== -1 && sub.indexOf('vencimientos') === -1, JSON.stringify(sub));
     if (SHOT) await p.screenshot({ path: `${SHOT}_1440_${lengua}.png` });
   }
+  // DENTRO de una pestaña del grupo (orquestador 12-oct en /facturas/ de bbm: «Collections» salía plegado y vacío): el grupo
+  // se abre solo y enseña sus pestañas encendidas, con la actual marcada
+  for (const ruta of ['facturas', 'recibos']) {
+    await p.goto(ORIGEN + '/' + ruta + '/', { waitUntil: 'load' });
+    await p.waitForTimeout(3000);
+    const r = await p.evaluate(() => { const vis = e => !!e && e.getClientRects().length > 0 && getComputedStyle(e).display !== 'none';
+      const g = document.querySelector('aside a[data-path="cobros"]'); const s = g && document.getElementById(g.getAttribute('aria-controls'));
+      return { abierto: !!s && vis(s) && g.getAttribute('aria-expanded') === 'true',
+        visibles: s ? [...s.querySelectorAll('a[data-lw-pestana]')].filter(vis).map(a => a.getAttribute('data-lw-pestana')) : [] }; });
+    ok('dentro de /' + ruta + '/: «Cobros» abierto con Facturas y Recibos (sin Vencimientos)', r.abierto && r.visibles.indexOf('facturas') !== -1
+       && r.visibles.indexOf('recibos') !== -1 && r.visibles.indexOf('vencimientos') === -1, JSON.stringify(r));
+  }
   ok('0 errores de consola', errores.length === 0, errores.slice(0, 4).join(' | '));
   await nav.close();
   console.log(fallos ? `\n${fallos} de ${total} FALLAN` : `\nTODO BIEN (${total})`);

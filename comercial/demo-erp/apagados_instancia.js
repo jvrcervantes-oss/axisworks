@@ -229,7 +229,13 @@
       var g = gs[i], sub = document.getElementById(g.getAttribute('aria-controls'));
       if (!sub) continue;
       var hijos = sub.querySelectorAll('a[data-lw-pestana]'), primero = null;
-      for (var j = 0; j < hijos.length; j++) if (vivo(hijos[j])) { primero = hijos[j]; break; }
+      /* Cada pestaña por SU módulo: nav.js las crea clonando la entrada del grupo, y si el grupo ya estaba oculto aquí (dentro
+         de /facturas/ el submenú se rehace después), los clones nacen con su display:none y el grupo salía abierto y vacío. */
+      for (var j = 0; j < hijos.length; j++) {
+        var v = vivo(hijos[j]), quiere = v ? '' : 'none';
+        if (hijos[j].style.display !== quiere) hijos[j].style.display = quiere;
+        if (v && !primero) primero = hijos[j];
+      }
       if (primero) {
         if (!vivo(g)) g.setAttribute('href', primero.getAttribute('href'));
         if (g.style.display === 'none') g.style.display = '';
