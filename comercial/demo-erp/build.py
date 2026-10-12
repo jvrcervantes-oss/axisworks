@@ -1444,6 +1444,8 @@ def menu_oscuro_css(nombre):
              'on-surface-variant': D.mix(fondo, tinta, 0.12), 'outline': D.mix(fondo, tinta, 0.30),
              'primary': acento_menu, 'primary-container': acento_menu, 'deep-lagoon': acento_menu, 'on-primary': tinta}
     else:
+        # `primary` (el acento aclarado) es TEXTO en el menú; no hay fondo bg-primary en el aside (nav.js pinta la activa con
+        # bg-primary-container), así que on-primary sobre primary no se comprueba: si un día lo hay, añadir su pareja abajo.
         pastilla, sobre_pastilla = (acento, fondo) if D.contraste(fondo, acento) >= 4.5 else (acento_menu, tinta)
         m = {'surface-container-low': tinta, 'surface-container': D.mix(tinta, fondo, 0.04),
              'surface-container-high': D.mix(tinta, fondo, 0.07), 'on-surface': fondo,
@@ -1917,9 +1919,10 @@ SISTEMAS_INSTANCIA = {
                 'html main .bg-surface-container-lowest.shadow-sm{border:1px solid rgb(var(--tema-filete))}\n'
                 'html main .bg-surface-container-lowest.rounded-xl.shadow-sm:not(.rounded-full){border-radius:20px}\n'
                 # campos: borde visible (≥ 3:1, medido 1,4:1 antes) sin cambiar su tamaño; el buscador en pastilla no tenía borde
-                'html main input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),html main select,'
-                'html main textarea{border-color:rgb(var(--tema-outline))!important}\n'
-                'html main input.shadow-sm.rounded-full{box-shadow:inset 0 0 0 1.5px rgb(var(--tema-outline))}\n'
+                # (solo en reposo: el foco de cada campo, su anillo y su borde, sigue siendo el suyo; revisor 13-oct)
+                'html main input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not(:focus),'
+                'html main select:not(:focus),html main textarea:not(:focus){border-color:rgb(var(--tema-outline))!important}\n'
+                'html main input.shadow-sm.rounded-full:not(:focus){box-shadow:inset 0 0 0 1.5px rgb(var(--tema-outline))}\n'
                 # botón secundario de las pantallas del maestro: el «fantasma» del diseño (contorno de 1,5 px en la tinta) en
                 # vez de gris sobre blanco (1,2:1 como control, medido); el principal, el elegido y el de peligro no cambian
                 'html main .axw-boton:not([data-primario="1"]):not([aria-selected="true"]):not([data-peligro="1"])'
@@ -1927,7 +1930,11 @@ SISTEMAS_INSTANCIA = {
     },
 }
 GOOGLE_TEXTO = re.compile(r'<link[^>]*fonts\.googleapis\.com/css2\?family=(?:Jost|Cormorant)[^>]*>')
-GOOGLE_MANROPE_PANEL = 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap'
+# Toda URL de Google Fonts de TEXTO que quede tras el renombrado (Jost ya es Manrope: el @import de shell.css, el panel de
+# editores.js, piel.js…) pasa a la hoja propia. Se aplica DESPUÉS de renombrar (revisor 13-oct: antes no casaba nunca).
+GOOGLE_TEXTO_URL = re.compile(r'''https://fonts\.googleapis\.com/css2\?family=(?!Material)[^'"\)\s]*''')
+# El documento imprimible de facturas carga SUS fuentes (aspecto del documento, no de la interfaz): no se toca en nada.
+SISTEMA_EXCLUIDOS = ('clasico/facturas/documento.js',)
 
 
 def sistema_instancia(nombre):
@@ -1955,19 +1962,19 @@ def sistema_instancia(nombre):
             if not f.endswith(EXT_TEXTO):
                 continue
             p = os.path.join(raiz, f)
+            if os.path.relpath(p, DIST).replace(os.sep, '/') in SISTEMA_EXCLUIDOS:
+                continue
             t = open(p, encoding='utf-8', errors='replace').read()
             t2 = GOOGLE_TEXTO.sub('<link rel="stylesheet" href="/assets/fonts/fonts.css">', t) if f.endswith('.html') else t
-            # el panel lateral de los editores (las-css, editores.js) pide Manrope a Google por JS: la sirve la propia hoja.
-            # El documento imprimible (clasico/facturas/documento.js) NO se toca: es el aspecto del documento, no de la interfaz.
-            t2 = t2.replace(GOOGLE_MANROPE_PANEL, '/assets/fonts/fonts.css')
             for viejo, nuevo in juego['familias']:
                 t2 = t2.replace(viejo, nuevo)
+            t2 = GOOGLE_TEXTO_URL.sub('/assets/fonts/fonts.css', t2)
             if t2 != t:
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
                 cambiados += 1
-    quedan = [rel(os.path.join(r, f)) for r, _d, fs in os.walk(DIST) for f in fs if f.endswith(EXT_TEXTO)
-              and re.search(r'fonts\.googleapis\.com/css2\?family=(?:Jost|Cormorant)|family=Jost',
-                            open(os.path.join(r, f), encoding='utf-8', errors='replace').read())]
+    quedan = [os.path.relpath(os.path.join(r, f), DIST) for r, _d, fs in os.walk(DIST) for f in fs if f.endswith(EXT_TEXTO)
+              and os.path.relpath(os.path.join(r, f), DIST).replace(os.sep, '/') not in SISTEMA_EXCLUIDOS
+              and GOOGLE_TEXTO_URL.search(open(os.path.join(r, f), encoding='utf-8', errors='replace').read())]
     if quedan:
         aborta('sistema de %s: quedan peticiones de texto a Google en %s' % (nombre, ', '.join(quedan[:5])))
     return cambiados
