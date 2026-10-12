@@ -95,8 +95,8 @@ function carga(idioma, rpc) {
   }
   // un código que no está sale con su código y traducido, y se cuenta
   const { S: Sen } = carga('en');
-  ok('código desconocido: traducido y con su código', Sen.texto('paso', 'cobros', 0) === 'Unnamed step (code: cobros)');
-  ok('código desconocido: se cuenta', Sen.desconocidos.indexOf('paso:cobros') >= 0);
+  ok('código desconocido: traducido y con su código', Sen.texto('paso', 'paso_inventado', 0) === 'Unnamed step (code: paso_inventado)');
+  ok('código desconocido: se cuenta', Sen.desconocidos.indexOf('paso:paso_inventado') >= 0);
 
   // ── 5. Errores por code + hint, nunca por el mensaje ─────────────────────────────────────────────────────────────────────────
   const E = DOBLE.errores_de_ejemplo;

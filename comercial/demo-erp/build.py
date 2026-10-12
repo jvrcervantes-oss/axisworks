@@ -3151,6 +3151,53 @@ def ajustes_puesta_en_marcha():
     shutil.copy2(os.path.join(AQUI, 'setup_pasos.js'), os.path.join(v4, 'assets', 'setup_pasos.js'))   # el mismo componente por paso que el asistente
 
 
+# ── Ajustes › Cobros (F3 Entrega 2, bbm-p24-cobros-front, 12-oct-2026) ─────────────────────────────────────────────────────────────────────
+# Owner, 12-oct 04:56: «La clave de xendit o stripe que la ponga el cliente en ajustes»; 08:25: «El ERP crea el enlace de pago». cobros_paso.js es el
+# componente del paso «cobros» (se registra en setup_pasos.js) y el anfitrión de la pestaña. La pestaña nace OCULTA: cobros_paso.js la enseña solo
+# si la base declara el paso (modulos_setup_estado) — en una instancia sin Cobros aplicado no sale nada. Es el único llamador de la edge ajustes-pagos.
+AJUSTES_COBROS_TAB_ANCLA = ('<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors"'
+                            ' role="tab" type="button" id="lw-tab-registro"')
+AJUSTES_COBROS_TAB = ('<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors"'
+                      ' role="tab" type="button" id="lw-tab-cobros" aria-controls="lw-panel-cobros" aria-selected="false" tabindex="-1" data-lw-tab="cobros" data-lwt hidden>'
+                      'Cobros</button>\n')
+AJUSTES_COBROS_PANEL_ANCLA = '<section id="lw-panel-registro" role="tabpanel"'
+AJUSTES_COBROS_PANEL = (
+    '<section id="lw-panel-cobros" role="tabpanel" aria-labelledby="lw-tab-cobros" data-lw-panel="cobros" class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden" hidden>\n'
+    '<div class="px-8 pt-8 pb-4 flex flex-col gap-1 border-b border-outline-variant/40">\n'
+    '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Cobros</span>\n'
+    '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Cobros en línea</h2>\n'
+    '<p class="font-body-sm text-body-sm text-outline" data-lwt>Las claves de Xendit con las que el ERP crea el enlace de pago y comprueba los pagos. Se escriben una vez y no se vuelven a enseñar.</p>\n'
+    '</div>\n'
+    '<div id="lw-aj-cobros"></div>\n'
+    '</section>\n\n')
+AJUSTES_COBROS_PESTANAS = "'registro'];"
+COBROS_TRAS = '/setup_pasos.js" defer></script>'
+
+
+def ajustes_cobros():
+    """La pestaña Ajustes › Cobros y cobros_paso.js en /ajustes/ y en /ajustes/configurar/, justo DETRÁS de setup_pasos.js (registra el componente
+    del paso «cobros») y, en /ajustes/, antes de ajustes_puesta.js (el orden de los defer). Va después de ajustes_puesta_en_marcha() y de
+    asistente_setup_pantalla(), que ponen setup_pasos.js. Reemplazos literales que paran si Lawang cambia el trozo; solo se toca DIST."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    pag = os.path.join(v4, 'ajustes', 'index.html')
+    t = open(pag, encoding='utf-8').read()
+    t = _una_vez(t, AJUSTES_COBROS_TAB_ANCLA, AJUSTES_COBROS_TAB + AJUSTES_COBROS_TAB_ANCLA, 'ajustes/index.html pestaña Cobros')
+    t = _una_vez(t, AJUSTES_COBROS_PANEL_ANCLA, AJUSTES_COBROS_PANEL + AJUSTES_COBROS_PANEL_ANCLA, 'ajustes/index.html panel Cobros')
+    t = _una_vez(t, '../assets' + COBROS_TRAS, '../assets' + COBROS_TRAS + '<script src="../assets/cobros_paso.js" defer></script>', 'ajustes/index.html cobros_paso.js')
+    if t.index('cobros_paso.js') > t.index('ajustes_puesta.js'):
+        aborta('ajustes_cobros: cobros_paso.js tiene que cargar antes que ajustes_puesta.js')
+    open(pag, 'w', encoding='utf-8', newline='').write(t)
+    conf = os.path.join(v4, 'ajustes', 'configurar', 'index.html')
+    s = open(conf, encoding='utf-8').read()
+    s = _una_vez(s, '../../assets' + COBROS_TRAS, '../../assets' + COBROS_TRAS + '\n<script src="../../assets/cobros_paso.js" defer></script>', 'ajustes/configurar cobros_paso.js')
+    open(conf, 'w', encoding='utf-8', newline='').write(s)
+    js = os.path.join(v4, 'assets', 'ajustes.js')
+    a = open(js, encoding='utf-8').read()
+    a = _una_vez(a, AJUSTES_COBROS_PESTANAS, "'cobros', " + AJUSTES_COBROS_PESTANAS, 'ajustes.js PESTANAS (cobros)')
+    open(js, 'w', encoding='utf-8', newline='').write(a)
+    shutil.copy2(os.path.join(AQUI, 'cobros_paso.js'), os.path.join(v4, 'assets', 'cobros_paso.js'))
+
+
 # ── Idiomas de la interfaz por instancia (owner, 11-oct-2026: bbm «Añade Indonesio y quita español») ─────────────────────────────────────────
 # Una instancia con `"idiomas": ["id", "en"]` en erp/instancias.json sale en indonesio (el primero, por defecto) e inglés, y el español deja de
 # ofrecerse. Todo con reemplazos literales sobre la COPIA (DIST), nunca en Lawang; si Lawang cambia un trozo, el build para. Sin la clave, nada cambia.
@@ -3326,6 +3373,7 @@ def instancia(nombre):
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
     asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)
     ajustes_puesta_en_marcha()   # F3 (12-oct-2026): Ajustes › Configurar módulos, primera pestaña, en todas las instancias (antes solo las de reservas)
+    ajustes_cobros()   # F3 E2 (12-oct-2026): Ajustes › Cobros y el paso «cobros» (oculto hasta que la base declare el paso)
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
     idiomas = idiomas_de(nombre)
