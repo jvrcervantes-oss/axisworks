@@ -4,115 +4,485 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>__AXW_DEMO_MARCA__</title>
+<title>__AXW_DEMO_MARCA__ · See the ERP from both sides</title>
 <link rel="icon" href="/favicon.png">
-<!-- Portada de demo.axisworks.studio (12-oct-2026): las dos puertas que pidió el owner. La escribe build.py --publico en
-     la raíz con la marca de DEMO (un solo sitio). No es landing.html: ésa es la portada comercial de erp.axisworks.studio.
-     Sin red: fuentes del propio paquete (Legal, 24-sep: nada de Google Fonts) y ningún script que llame fuera. -->
+<!-- Portada de demo.axisworks.studio (12-oct-2026): calco de la mesa del owner «D01 — Demo landing» (1440, 390 y States,
+     Claude Design). La escribe build.py --publico en la raíz con la marca de DEMO (un solo sitio). No es landing.html: ésa
+     es la portada comercial de erp.axisworks.studio. Sin red: las tres tipografías (Unbounded, Manrope, IBM Plex Mono,
+     OFL) y las dos vistas previas salen del propio paquete; ningún script llama fuera. El <style> es el del diseño tal cual
+     (tokens incluidos); lo único añadido son los @font-face locales y el desvanecido del aviso del Reset. -->
 <style>
-@font-face{font-family:'Inter';font-weight:400;font-display:swap;src:url(/demo/fonts/inter-400-latin.woff2) format('woff2')}
-@font-face{font-family:'Inter';font-weight:500;font-display:swap;src:url(/demo/fonts/inter-500-latin.woff2) format('woff2')}
-@font-face{font-family:'Space Grotesk';font-weight:500;font-display:swap;src:url(/demo/fonts/space-grotesk-500-latin.woff2) format('woff2')}
-:root{--fondo:#F4F2EC;--tinta:#15181C;--tinta-2:#3A3F45;--filete:#D0D1D1;--senal:#E2581C;--alto:#E8E6E1}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--fondo);color:var(--tinta)}
-body{font:400 16px/1.55 'Inter',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
-a{color:inherit}
-.marco{width:100%;max-width:1120px;margin:0 auto;padding:0 24px}
-header{border-bottom:1px solid var(--filete)}
-header .marco{display:flex;align-items:center;justify-content:space-between;height:64px}
-.marca{display:flex;align-items:center;gap:12px;text-decoration:none;font:500 15px/1 'Space Grotesk',system-ui,sans-serif;letter-spacing:.02em}
-.marca svg{width:28px;height:28px;display:block}
-.etiqueta{font:500 12px/1 'Inter',system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta-2);
-  border:1px solid var(--filete);border-radius:999px;padding:6px 12px}
-main{flex:1}
-.cabeza{padding:88px 0 56px}
-h1{font:500 clamp(40px,7vw,88px)/1.02 'Space Grotesk',system-ui,sans-serif;letter-spacing:-.02em;margin:0;max-width:14ch}
-.entrada{font-size:19px;color:var(--tinta-2);max-width:40rem;margin:28px 0 0}
-.puertas{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--tinta)}
-.puerta{display:flex;flex-direction:column;gap:20px;padding:40px 40px 36px 0;text-decoration:none;min-height:300px;
-  border-bottom:1px solid var(--tinta);transition:background-color .2s ease}
-.puerta + .puerta{border-left:1px solid var(--tinta);padding-left:40px}
-.puerta:hover,.puerta:focus-visible{background:var(--alto)}
-.puerta:focus-visible{outline:2px solid var(--tinta);outline-offset:-2px}
-.puerta .num{font:500 13px/1 'Inter',system-ui,sans-serif;letter-spacing:.08em;color:var(--tinta-2)}
-.puerta h2{font:500 clamp(28px,3.4vw,40px)/1.1 'Space Grotesk',system-ui,sans-serif;margin:0;letter-spacing:-.01em}
-.puerta p{margin:0;color:var(--tinta-2);max-width:30rem}
-.puerta .ir{margin-top:auto;display:flex;align-items:center;gap:10px;font-weight:500}
-.puerta .ir span{display:inline-block;transition:transform .2s ease}
-.puerta:hover .ir span{transform:translateX(4px)}
-.aviso{display:flex;flex-wrap:wrap;gap:12px 32px;align-items:baseline;justify-content:space-between;padding:32px 0 48px;color:var(--tinta-2);font-size:15px}
-.aviso p{margin:0;max-width:44rem}
-.aviso p::before{content:'';display:inline-block;width:8px;height:8px;border-radius:999px;background:var(--senal);margin-right:10px;vertical-align:1px}
-button.restablece{font:500 15px/1 'Inter',system-ui,sans-serif;color:var(--tinta);background:none;border:1px solid var(--tinta);border-radius:999px;
-  padding:12px 20px;cursor:pointer;min-height:44px}
-button.restablece:hover{background:var(--tinta);color:var(--fondo)}
-.hecho{font-size:14px;color:var(--tinta-2);min-height:1.5em}
-@media (max-width:760px){
-  .marco{padding:0 16px}
-  .cabeza{padding:48px 0 36px}
-  .entrada{font-size:17px}
-  .puertas{grid-template-columns:1fr}
-  .puerta,.puerta + .puerta{padding:28px 0;min-height:0;border-left:0}
+@font-face{font-family:'Unbounded';font-weight:300;font-display:swap;src:url(/demo/fonts/unbounded-300.woff2) format('woff2')}
+@font-face{font-family:'Unbounded';font-weight:600;font-display:swap;src:url(/demo/fonts/unbounded-600.woff2) format('woff2')}
+@font-face{font-family:'Manrope';font-weight:400;font-display:swap;src:url(/demo/fonts/manrope-400.woff2) format('woff2')}
+@font-face{font-family:'Manrope';font-weight:500;font-display:swap;src:url(/demo/fonts/manrope-500.woff2) format('woff2')}
+@font-face{font-family:'Manrope';font-weight:700;font-display:swap;src:url(/demo/fonts/manrope-700.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;font-display:swap;src:url(/demo/fonts/ibm-plex-mono-400.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;font-display:swap;src:url(/demo/fonts/ibm-plex-mono-500.woff2) format('woff2')}
+:root{
+  /* Palette */
+  --aw-night:#0B0C1E;
+  --aw-panel:#14152A;
+  --aw-line:#23253D;
+  --aw-ultramarine:#2E3BEB;
+  --aw-volt:#C8F04A;
+  --aw-chalk:#F2F3F7;
+  --aw-fog:#A9ADC2;
+  --aw-dusk:#7D82A3;
+  --aw-ice:#E3E6FD;
+  --aw-white:#FFFFFF;
+  --aw-slate:#474B68;
+  --aw-mist:#D6D9E6;
+  /* Semantic: Night is the default theme */
+  --bg:var(--aw-night);
+  --text-strong:var(--aw-chalk);
+  --text:var(--aw-fog);
+  --link:var(--aw-ice);
+  --focus:var(--aw-volt);
+  /* Type */
+  --font-display:"Unbounded", system-ui, sans-serif;
+  --font-body:"Manrope", system-ui, sans-serif;
+  --font-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --fs-display:clamp(38px, 5.6vw, 84px);
+  --fs-h2:clamp(30px, 4vw, 54px);
+  --fs-h3:clamp(24px, 2.2vw, 32px);
+  --fs-lead:clamp(17px, 1.4vw, 19px);
+  --fs-body:16px;
+  --fs-small:14px;
+  --fs-label:12px;
+  /* Space: 8px base */
+  --space-8:8px;
+  --space-16:16px;
+  --space-24:24px;
+  --space-40:40px;
+  --space-64:64px;
+  --space-104:104px;
+  --gutter:clamp(16px, 4.5vw, 80px);
+  --section-pad:clamp(64px, 8vw, 104px);
+  --content-max:1280px;
+  --axis-w:112px;
+  /* Shape */
+  --radius-chip:8px;
+  --radius-tile:16px;
+  --radius-card:24px;
+  --radius-panel:28px;
+  --radius-pill:999px;
+  --tap:56px;
+  /* Motion */
+  --ease:cubic-bezier(.22, 1, .36, 1);
+  --dur-1:160ms;
+  --dur-2:320ms;
+  --dur-3:640ms;
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+[data-theme="light"]{
+  --bg:var(--aw-chalk);
+  --text-strong:var(--aw-night);
+  --text:var(--aw-slate);
+  --link:var(--aw-ultramarine);
+  --focus:var(--aw-ultramarine);
+}
+[data-theme="ultramarine"]{
+  --bg:var(--aw-ultramarine);
+  --text-strong:var(--aw-chalk);
+  --text:var(--aw-chalk);
+  --link:var(--aw-chalk);
+  --focus:var(--aw-volt);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--aw-night);color:var(--aw-fog);font-family:var(--font-body);font-size:var(--fs-body);line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-underline-offset:.2em}
+a:hover{color:var(--text-strong)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+img,svg{display:block}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip{position:absolute;top:-80px;left:16px;z-index:50;padding:12px 18px;border-radius:var(--radius-pill);background:var(--aw-volt);color:var(--aw-night);font-weight:700;text-decoration:none}
+.skip:focus{top:12px}
+.wrap{width:min(100% - 2 * var(--gutter), var(--content-max));margin-inline:auto}
+.label{font-family:var(--font-mono);font-size:var(--fs-label);font-weight:500;line-height:1.3;letter-spacing:.12em;text-transform:uppercase}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:var(--tap);padding:0 26px;border:1.5px solid transparent;border-radius:var(--radius-pill);font-family:var(--font-body);font-size:16px;font-weight:700;line-height:1.1;text-decoration:none;cursor:pointer;transition:background-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease)}
+.btn .arrow{display:inline-block;transition:transform var(--dur-2) var(--ease)}
+.btn-volt,.btn-volt:hover{background:var(--aw-volt);color:var(--aw-night)}
+.btn-ultra,.btn-ultra:hover{background:var(--aw-ultramarine);color:var(--aw-white)}
+.btn-night{background:var(--aw-night);color:var(--aw-chalk)}
+.btn-night:hover{background:var(--aw-ultramarine);color:var(--aw-white)}
+
+/* Demo bar: the fixed notice and the reset */
+.demo-bar{position:sticky;top:0;z-index:20;background:var(--aw-panel);border-bottom:1px solid var(--aw-line)}
+.demo-bar-row{display:flex;align-items:center;gap:14px;padding-block:8px}
+.demo-bar-icon{flex:none;width:20px;height:20px;color:var(--aw-chalk)}
+.demo-bar-text{flex:1 1 auto;min-width:0;margin:0;font-size:var(--fs-small);line-height:1.45;color:var(--aw-fog)}
+.reset{position:relative;flex:none}
+.btn-reset{min-height:44px;padding:0 18px 0 14px;font-size:15px;background:transparent;color:var(--aw-chalk);border-color:var(--aw-dusk)}
+.btn-reset svg{width:18px;height:18px;transition:transform var(--dur-2) var(--ease)}
+.btn-reset:hover{background:var(--aw-chalk);color:var(--aw-night);border-color:var(--aw-chalk)}
+.btn-reset:hover svg{transform:rotate(-120deg)}
+.toast-slot{position:absolute;top:calc(100% + 14px);right:0;z-index:30}
+.toast{display:inline-flex;align-items:center;gap:10px;padding:12px 18px 12px 12px;border:1px solid var(--aw-line);border-radius:var(--radius-pill);background:var(--aw-night);color:var(--aw-chalk);font-size:15px;font-weight:600;line-height:1.2;white-space:nowrap;animation:toast-in var(--dur-2) var(--ease) backwards}
+.toast svg{width:22px;height:22px;color:var(--aw-volt)}
+@keyframes toast-in{from{opacity:0;transform:translateY(-6px)}}
+
+/* Header */
+.site-header{background:var(--aw-chalk);color:var(--aw-night)}
+.header-row{display:grid;grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr);align-items:center;gap:24px;min-height:84px}
+.brand-group{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+.brand{display:inline-flex;align-items:baseline;gap:12px;color:var(--aw-night);text-decoration:none}
+.brand:hover{color:var(--aw-night)}
+.wordmark{display:inline-flex;align-items:baseline;font-family:var(--font-display);font-size:24px;line-height:1;letter-spacing:-.03em}
+.wordmark b{font-weight:600}
+.wordmark .w{font-weight:300}
+.wm-x{display:inline-block;width:.57em;height:.57em;margin:0 .05em}
+.brand-demo{padding-left:12px;border-left:1.5px solid var(--aw-mist);font-size:18px;font-weight:600;line-height:1.1;color:var(--aw-slate)}
+.chip{display:inline-flex;align-items:center;padding:6px 10px;border-radius:var(--radius-chip);background:var(--aw-ice);color:var(--aw-ultramarine)}
+.pill-nav{display:flex;gap:4px;padding:6px;border:1px solid var(--aw-mist);border-radius:var(--radius-pill);background:var(--aw-white)}
+.pill-nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:var(--radius-pill);color:var(--aw-night);font-size:15px;font-weight:600;text-decoration:none;transition:background-color var(--dur-1) var(--ease)}
+.pill-nav a:hover{background:var(--aw-ice)}
+.header-cta{justify-self:end;min-height:48px;padding:0 22px;font-size:15px}
+
+/* Hero */
+.stage{padding-bottom:var(--section-pad);background:var(--aw-night)}
+.hero{padding-block:clamp(40px, 5vw, 72px) clamp(32px, 3.5vw, 48px)}
+.hero-grid{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px 64px}
+.hero-head{flex:1 1 720px;min-width:0}
+.eyebrow{margin:0 0 20px;color:var(--text)}
+.display{margin:0;font-family:var(--font-display);font-size:var(--fs-display);font-weight:600;line-height:1.02;letter-spacing:-.035em;color:var(--text-strong)}
+.display span,.h2 span{display:block}
+.display .l,.h2 .l{font-weight:300}
+.lead{flex:1 1 320px;max-width:400px;margin:0;font-size:var(--fs-lead);line-height:1.55;color:var(--text)}
+.lead strong{font-weight:700;color:var(--text-strong)}
+.rise{animation:rise var(--dur-3) var(--ease) backwards}
+.rise-2{animation-delay:80ms}
+.rise-3{animation-delay:160ms}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}}
+
+/* The two doors */
+.doors-grid{display:grid;grid-template-columns:minmax(0, 1fr) var(--axis-w) minmax(0, 1fr);align-items:stretch}
+.door{--accent:var(--aw-volt);position:relative;display:flex;flex-direction:column;min-width:0;padding:12px;border:1px solid var(--aw-line);border-radius:var(--radius-panel);background:var(--aw-panel);color:var(--aw-fog);transition:transform var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);animation:rise var(--dur-3) var(--ease) backwards 200ms}
+.door--intranet{--accent:var(--aw-ultramarine);animation-delay:320ms}
+.door:hover,.door.is-hover,.door.is-focus{transform:translateY(-4px);border-color:var(--accent)}
+.door:has(.door-link:focus-visible){transform:translateY(-4px);border-color:var(--accent)}
+.door-preview{position:relative;aspect-ratio:16 / 9;overflow:hidden;border-radius:18px;background:var(--aw-line)}
+.door-preview img{width:100%;height:100%;object-fit:cover;object-position:top left}
+.door-body{display:flex;flex:1;flex-direction:column;align-items:flex-start;padding:24px 20px 16px}
+.door-meta{display:flex;align-items:center;gap:12px;margin:0 0 14px}
+.door-num{font-family:var(--font-display);font-size:22px;font-weight:300;line-height:1;letter-spacing:-.02em;color:var(--aw-chalk)}
+.door-bar{width:22px;height:22px}
+.door-title{margin:0 0 10px;font-family:var(--font-display);font-size:var(--fs-h3);font-weight:600;line-height:1.1;letter-spacing:-.02em;color:var(--aw-chalk)}
+.door-text{max-width:52ch;margin:0 0 28px;color:var(--aw-fog)}
+.door-link{margin-top:auto}
+.door-link::after{content:"";position:absolute;inset:-1px;z-index:1;border-radius:var(--radius-panel)}
+.door-link:focus-visible{outline:none}
+.door-link:focus-visible::after,.door.is-focus .door-link::after{outline:2px solid var(--focus);outline-offset:3px}
+.door:hover .arrow,.door.is-hover .arrow,.door.is-focus .arrow{transform:translateX(4px)}
+.door:has(.door-link:focus-visible) .arrow{transform:translateX(4px)}
+
+/* The axis: where both sides cross on the same data */
+.axis{position:relative;display:flex;align-items:center;justify-content:center;animation:rise var(--dur-3) var(--ease) backwards 260ms}
+.axis::before{content:"";position:absolute;top:28px;bottom:28px;left:50%;border-left:1px dashed var(--aw-dusk);opacity:.6}
+.axis-link{position:absolute;top:50%;left:0;right:0;border-top:1px solid var(--aw-dusk)}
+.axis-pulse{position:absolute;top:50%;left:100%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--aw-volt);animation:travel 3.6s cubic-bezier(.45, 0, .55, 1) 1.4s infinite backwards}
+.axis-core{position:relative;z-index:1;padding:8px;background:var(--aw-night)}
+.axis-x{width:64px;height:64px}
+.axis-x .bar-build{animation:bar-build var(--dur-3) var(--ease) backwards 500ms}
+.axis-x .bar-brand{animation:bar-brand var(--dur-3) var(--ease) backwards 600ms}
+.axis-x .point{animation:point-in var(--dur-2) var(--ease) backwards 1000ms}
+.axis-label{position:absolute;top:100%;left:50%;padding:6px 0;background:var(--aw-night);color:var(--aw-fog);text-align:center;white-space:nowrap;transform:translateX(-50%)}
+@keyframes bar-build{from{opacity:0;transform:translate(-16px, -16px)}}
+@keyframes bar-brand{from{opacity:0;transform:translate(16px, -16px)}}
+@keyframes point-in{from{opacity:0}}
+@keyframes travel{0%{left:100%;opacity:0}15%{opacity:1}85%{opacity:1}100%{left:0;opacity:0}}
+@keyframes travel-v{0%{top:100%;opacity:0}15%{opacity:1}85%{opacity:1}100%{top:0;opacity:0}}
+
+/* Try this in 3 minutes */
+.tour{padding-block:var(--section-pad);background:var(--bg);color:var(--text)}
+.tour-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 40px;margin-bottom:48px}
+.h2{margin:0;font-family:var(--font-display);font-size:var(--fs-h2);font-weight:600;line-height:1.05;letter-spacing:-.03em;color:var(--text-strong)}
+.tour-note{margin:0;color:var(--text)}
+.steps{display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:16px;margin:0;padding:0;list-style:none}
+.step{display:flex;flex-direction:column;gap:24px;min-height:220px;padding:28px;border:1px solid var(--aw-mist);border-radius:var(--radius-card);background:var(--aw-white)}
+.step-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.step-num{font-family:var(--font-display);font-size:48px;font-weight:300;line-height:1;letter-spacing:-.03em;color:var(--aw-night)}
+.side{display:inline-flex;align-items:center;gap:8px;padding:6px 10px 6px 8px;border-radius:var(--radius-chip);background:var(--aw-ice);color:var(--aw-ultramarine)}
+.side svg{width:14px;height:14px}
+.side--portal{background:var(--aw-night);color:var(--aw-chalk)}
+.step-text{margin:auto 0 0;font-size:18px;font-weight:600;line-height:1.4;color:var(--aw-night)}
+.step-text a{color:var(--aw-ultramarine);text-decoration-thickness:1.5px}
+.step-text a:hover{color:var(--aw-night)}
+
+/* Closing call to action */
+.cta{position:relative;overflow:hidden;padding-block:var(--section-pad);background:var(--aw-ultramarine);color:var(--aw-chalk)}
+.cta-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:40px}
+.cta-copy{flex:1 1 560px;min-width:0}
+.cta-actions{display:flex;flex-wrap:wrap;align-items:center;gap:16px 32px;margin-top:40px}
+.xplus{width:14px;height:14px;transform:rotate(45deg);transition:transform var(--dur-2) var(--ease)}
+.btn-primary:hover .xplus{transform:rotate(0deg)}
+.textlink{display:inline-flex;align-items:center;gap:8px;min-height:44px;color:var(--aw-chalk);font-weight:700;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:.25em}
+.textlink .arrow{display:inline-block;transition:transform var(--dur-2) var(--ease)}
+.textlink:hover{color:var(--aw-chalk);text-decoration-thickness:2.5px}
+.textlink:hover .arrow{transform:translateX(4px)}
+.cta-x{flex:none;width:clamp(160px, 17vw, 232px);height:auto;aspect-ratio:1}
+
+/* Footer */
+.footer{padding-block:48px 40px;background:var(--aw-night);color:var(--aw-fog)}
+.footer-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px 40px}
+.footer-brand{margin:0;color:var(--aw-chalk)}
+.footer-brand .wordmark{font-size:20px}
+.legal{display:flex;flex-wrap:wrap;gap:0 24px;margin:0;padding:0;list-style:none}
+.legal a{display:inline-flex;align-items:center;min-height:44px;color:var(--aw-fog);font-size:var(--fs-small);text-decoration:none}
+.legal a:hover{color:var(--aw-chalk);text-decoration:underline}
+.copy{margin:0;font-size:var(--fs-small);color:var(--aw-fog)}
+
+/* Tablet */
+@media (max-width:1100px){
+  .pill-nav{display:none}
+  .header-row{grid-template-columns:minmax(0, 1fr) auto}
+  .steps{grid-template-columns:repeat(2, minmax(0, 1fr))}
+}
+@media (max-width:860px){
+  .doors-grid{grid-template-columns:minmax(0, 1fr)}
+  .axis{height:112px}
+  .axis::before{top:50%;bottom:auto;left:0;right:0;border-left:0;border-top:1px dashed var(--aw-dusk)}
+  .axis-link{top:0;bottom:0;left:50%;right:auto;border-top:0;border-left:1px solid var(--aw-dusk)}
+  .axis-pulse{top:100%;left:50%;animation-name:travel-v}
+  .axis-x{width:48px;height:48px}
+  .axis-label{top:50%;left:100%;padding:4px 8px 4px 12px;text-align:left;transform:translateY(-50%)}
+  .cta-x{display:none}
+}
+/* Phone */
+@media (max-width:720px){
+  .demo-bar{position:static}
+  .demo-bar-row{flex-wrap:wrap;align-items:flex-start;gap:12px;padding-block:14px}
+  .demo-bar-icon{margin-top:1px}
+  .demo-bar-text{flex:1 1 0}
+  .reset{flex-basis:100%}
+  .btn-reset{width:100%;min-height:var(--tap);font-size:16px}
+  .toast-slot{left:0;right:auto}
+  .header-row{grid-template-columns:minmax(0, 1fr);min-height:0;padding-block:16px}
+  .header-cta{display:none}
+  .wordmark{font-size:22px}
+  .brand-demo{font-size:17px}
+  .lead{max-width:none}
+  .door{padding:10px;border-radius:var(--radius-card)}
+  .door-link::after{border-radius:var(--radius-card)}
+  .door-preview{border-radius:16px}
+  .door-body{padding:20px 10px 10px}
+  .door-link{width:100%}
+  .tour-head{margin-bottom:32px}
+  .step{min-height:0;padding:24px}
+  .step-num{font-size:40px}
+  .cta-actions{flex-direction:column;align-items:stretch;gap:12px}
+  .cta-actions .btn{width:100%}
+  .textlink{justify-content:center}
+  .footer-row{flex-direction:column;align-items:flex-start}
+}
+@media (max-width:640px){
+  .steps{grid-template-columns:minmax(0, 1fr)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important}
+  .axis-pulse{display:none}
+  .door:hover,.door.is-hover,.door.is-focus{transform:none}
+  .door:has(.door-link:focus-visible){transform:none}
+}
+.toast{transition:opacity var(--dur-2) var(--ease)}
+.toast.is-out{opacity:0}
 </style>
 </head>
 <body>
-<header>
-  <div class="marco">
-    <a class="marca" href="/" aria-label="__AXW_DEMO_MARCA__ — start">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" fill="#15181C"/><g stroke="#E2581C" stroke-width="3.2" stroke-linecap="square"><line x1="9" y1="9" x2="23" y2="23"/><line x1="23" y1="9" x2="9" y2="23"/></g></svg>
-      <span>__AXW_DEMO_MARCA__</span>
-    </a>
-    <span class="etiqueta">Demo · sample data</span>
-  </div>
-</header>
-<main>
-  <div class="marco">
-    <section class="cabeza">
-      <h1>See the ERP from both sides.</h1>
-      <p class="entrada">Pick a door. One is what your clients see, the other is what your team works in. No sign-in: both open as a sample user.</p>
-    </section>
-    <nav class="puertas" aria-label="Choose a demo">
-      <a class="puerta" href="/portal/" data-puerta="portal">
-        <span class="num">01</span>
-        <h2>Client portal (demo)</h2>
-        <p>Signed in as a sample client: their contracts, invoices and payments, the same records the team creates in the intranet.</p>
-        <span class="ir">Open the client portal <span aria-hidden="true">→</span></span>
-      </a>
-      <a class="puerta" href="/home/" data-puerta="intranet">
-        <span class="num">02</span>
-        <h2>Intranet (demo)</h2>
-        <p>Signed in as an administrator: add a client, draft and sign a contract, issue the invoice and record the payment.</p>
-        <span class="ir">Open the intranet <span aria-hidden="true">→</span></span>
-      </a>
-    </nav>
-    <div class="aviso">
-      <p>Everything here is made-up sample data. Nothing you do leaves this browser tab, and closing the tab resets it. Please don't enter real personal data.</p>
-      <div>
-        <button type="button" class="restablece" data-accion="demo-restablece">Reset demo</button>
-        <div class="hecho" role="status" aria-live="polite"></div>
+<div class="page" id="top">
+  <a class="skip" href="#doors">Skip to the two doors</a>
+
+  <aside class="demo-bar" aria-label="About this demo">
+    <div class="wrap demo-bar-row">
+      <svg class="demo-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>
+      <p class="demo-bar-text">Everything here is made-up sample data. Nothing you do leaves your browser, and closing the tab resets the sample data. Please don't enter real personal data.</p>
+      <div class="reset">
+        <button class="btn btn-reset" type="button" data-accion="demo-restablece">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          Reset demo
+        </button>
+        <div class="toast-slot" role="status" aria-live="polite"></div>
       </div>
     </div>
-  </div>
-</main>
+  </aside>
+
+  <header class="site-header" data-theme="light">
+    <div class="wrap header-row">
+      <div class="brand-group">
+        <a class="brand" href="#top">
+          <span class="sr-only">__AXW_DEMO_MARCA__</span>
+          <span class="wordmark" aria-hidden="true"><b>a</b><svg class="wm-x" viewBox="10 10 80 80"><polygon points="10,10 41,10 90,90 59,90" fill="#2E3BEB"></polygon><polygon points="59,10 90,10 41,90 10,90" fill="#C8F04A"></polygon></svg><b>is</b><span class="w">works</span></span>
+          <span class="brand-demo" aria-hidden="true">Demo</span>
+        </a>
+        <span class="chip label">DEMO · SAMPLE DATA</span>
+      </div>
+      <nav class="pill-nav" aria-label="On this page">
+        <a href="#door-portal">Client portal</a>
+        <a href="#door-intranet">Intranet</a>
+        <a href="#tour">3-minute tour</a>
+      </nav>
+      <a class="btn btn-night header-cta" href="https://axisworks.studio">Talk to the studio</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="stage">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="wrap hero-grid">
+          <div class="hero-head">
+            <p class="eyebrow label rise">AxisWorks ERP · One record, two sides</p>
+            <h1 id="hero-title" class="display rise rise-2"><span>See the ERP</span><span class="l">from both sides.</span></h1>
+          </div>
+          <p class="lead rise rise-3"><strong>Pick a door.</strong> One is what your clients see, the other is what your team works in. No sign-in: both open as a sample user.</p>
+        </div>
+      </section>
+
+      <section id="doors" class="doors" aria-label="The two doors">
+        <div class="wrap doors-grid">
+          <article class="door door--portal" id="door-portal" aria-labelledby="door-portal-title">
+            <div class="door-preview">
+              <img src="/demo/portada/portal.webp" width="1280" height="720" alt="Preview of the client portal: a sample client's home with contracts to sign, what is paid and what is outstanding.">
+            </div>
+            <div class="door-body">
+              <p class="door-meta">
+                <span class="door-num">01</span>
+                <svg class="door-bar" viewBox="10 10 80 80" aria-hidden="true"><polygon points="59,10 90,10 41,90 10,90" fill="#C8F04A"></polygon></svg>
+                <span class="label">What your clients see</span>
+              </p>
+              <h2 class="door-title" id="door-portal-title">Client portal</h2>
+              <p class="door-text">Signed in as a sample client: their contracts, invoices and payments, the same records the team creates in the intranet.</p>
+              <a class="btn btn-volt door-link" href="/portal/" data-puerta="portal">Open the client portal <span class="arrow" aria-hidden="true">→</span></a>
+            </div>
+          </article>
+
+          <div class="axis" aria-hidden="true">
+            <span class="axis-link"></span>
+            <span class="axis-pulse"></span>
+            <span class="axis-core">
+              <svg class="axis-x" viewBox="10 10 80 80"><polygon class="bar-build" points="10,10 41,10 90,90 59,90" fill="#2E3BEB"></polygon><polygon class="bar-brand" points="59,10 90,10 41,90 10,90" fill="#C8F04A"></polygon><polygon class="point" points="50,24.7 65.5,50 50,75.3 34.5,50" fill="#F2F3F7"></polygon></svg>
+              <span class="axis-label label">Same data,<br>both sides</span>
+            </span>
+          </div>
+
+          <article class="door door--intranet" id="door-intranet" aria-labelledby="door-intranet-title">
+            <div class="door-preview">
+              <img src="/demo/portada/intranet.webp" width="1280" height="720" alt="Preview of the intranet: the team's home with active contracts, collections, due dates and today's tasks.">
+            </div>
+            <div class="door-body">
+              <p class="door-meta">
+                <span class="door-num">02</span>
+                <svg class="door-bar" viewBox="10 10 80 80" aria-hidden="true"><polygon points="10,10 41,10 90,90 59,90" fill="#2E3BEB"></polygon></svg>
+                <span class="label">What your team works in</span>
+              </p>
+              <h2 class="door-title" id="door-intranet-title">Intranet</h2>
+              <p class="door-text">Signed in as an administrator: add a client, draft and sign a contract, issue the invoice and record the payment.</p>
+              <a class="btn btn-ultra door-link" href="/home/" data-puerta="intranet">Open the intranet <span class="arrow" aria-hidden="true">→</span></a>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <section id="tour" class="tour" data-theme="light" aria-labelledby="tour-title">
+      <div class="wrap">
+        <div class="tour-head">
+          <h2 id="tour-title" class="h2"><span>Try this</span><span class="l">in 3 minutes</span></h2>
+          <p class="tour-note label">Steps 1–3 in the intranet · Step 4 in the client portal</p>
+        </div>
+        <ol class="steps">
+          <li class="step">
+            <div class="step-top">
+              <span class="step-num" aria-hidden="true">1</span>
+              <span class="side label"><svg viewBox="10 10 80 80" aria-hidden="true"><polygon points="10,10 41,10 90,90 59,90" fill="#2E3BEB"></polygon></svg>Intranet</span>
+            </div>
+            <p class="step-text"><a href="/home/">Open the intranet</a> and add a client</p>
+          </li>
+          <li class="step">
+            <div class="step-top">
+              <span class="step-num" aria-hidden="true">2</span>
+              <span class="side label"><svg viewBox="10 10 80 80" aria-hidden="true"><polygon points="10,10 41,10 90,90 59,90" fill="#2E3BEB"></polygon></svg>Intranet</span>
+            </div>
+            <p class="step-text">Draft a contract and sign it</p>
+          </li>
+          <li class="step">
+            <div class="step-top">
+              <span class="step-num" aria-hidden="true">3</span>
+              <span class="side label"><svg viewBox="10 10 80 80" aria-hidden="true"><polygon points="10,10 41,10 90,90 59,90" fill="#2E3BEB"></polygon></svg>Intranet</span>
+            </div>
+            <p class="step-text">Issue the invoice and record the payment</p>
+          </li>
+          <li class="step">
+            <div class="step-top">
+              <span class="step-num" aria-hidden="true">4</span>
+              <span class="side side--portal label"><svg viewBox="10 10 80 80" aria-hidden="true"><polygon points="59,10 90,10 41,90 10,90" fill="#C8F04A"></polygon></svg>Client portal</span>
+            </div>
+            <p class="step-text"><a href="/portal/">Open the client portal</a> and see it all there</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="cta" data-theme="ultramarine" aria-labelledby="cta-title">
+      <div class="wrap cta-row">
+        <div class="cta-copy">
+          <h2 id="cta-title" class="h2"><span>Want it running</span><span class="l">with your modules?</span></h2>
+          <div class="cta-actions">
+            <a class="btn btn-volt btn-primary" href="https://axisworks.studio">Talk to the studio <svg class="xplus" viewBox="0 0 14 14" aria-hidden="true"><rect x="6" y="0" width="2" height="14" rx="1" fill="currentColor"></rect><rect x="0" y="6" width="14" height="2" rx="1" fill="currentColor"></rect></svg></a>
+            <a class="textlink" href="https://erp.axisworks.studio">See the ERP <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+        <svg class="cta-x" viewBox="10 10 80 80" aria-hidden="true"><polygon points="10,10 41,10 90,90 59,90" fill="#F2F3F7"></polygon><polygon points="59,10 90,10 41,90 10,90" fill="#F2F3F7"></polygon><polygon points="50,24.7 65.5,50 50,75.3 34.5,50" fill="#2E3BEB"></polygon></svg>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-row">
+      <p class="footer-brand"><span class="sr-only">AxisWorks</span><span class="wordmark" aria-hidden="true"><b>a</b><svg class="wm-x" viewBox="10 10 80 80"><polygon points="10,10 41,10 90,90 59,90" fill="#2E3BEB"></polygon><polygon points="59,10 90,10 41,90 10,90" fill="#C8F04A"></polygon></svg><b>is</b><span class="w">works</span></span></p>
+      <nav aria-label="Legal">
+        <ul class="legal">
+          <li><a href="https://axisworks.studio/legal-notice">Legal notice</a></li>
+          <li><a href="https://axisworks.studio/privacy">Privacy</a></li>
+          <li><a href="https://axisworks.studio/cookies">Cookies</a></li>
+        </ul>
+      </nav>
+      <p class="copy">© 2026 AxisWorks · PT Mahkota Property Global</p>
+    </div>
+  </footer>
+</div>
 <script>
-/* «Reset demo» en la portada: la portada no carga guard.js, así que borra aquí las mismas claves que LW_DEMO_RESTABLECE()
-   (contrato con el paquete A: sessionStorage, prefijo «axw-demo:»). Nunca toca localStorage. */
+/* «Reset demo» en la portada (mesa States: aviso «Demo reset. Back to the start.» 4 s y se desvanece). La portada no carga
+   guard.js, así que borra aquí lo mismo que LW_DEMO_RESTABLECE() (contrato con el paquete A: sessionStorage, prefijo
+   «axw-demo:») y, además, el localStorage de este origen: demo.axisworks.studio solo sirve la demo, y ahí guardan sus
+   preferencias de pantalla (idioma, módulos encendidos, tour visto). Sin esto, «Reset» no volvía del todo al principio. */
 (function () {
   var b = document.querySelector('[data-accion="demo-restablece"]');
-  var hecho = document.querySelector('.hecho');
-  if (!b) return;
+  var hueco = document.querySelector('.toast-slot');
+  if (!b || !hueco) return;
+  var t1, t2;
+  function avisa(texto) {
+    clearTimeout(t1); clearTimeout(t2);
+    hueco.textContent = '';
+    var s = document.createElement('span');
+    s.className = 'toast';
+    s.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>';
+    s.appendChild(document.createTextNode(texto));
+    hueco.appendChild(s);
+    t1 = setTimeout(function () { s.classList.add('is-out'); }, 4000);
+    t2 = setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 4400);
+  }
   b.addEventListener('click', function () {
     try {
       for (var i = sessionStorage.length - 1; i >= 0; i--) {
         var k = sessionStorage.key(i);
         if (k && k.indexOf('axw-demo:') === 0) sessionStorage.removeItem(k);
       }
-      hecho.textContent = 'Done: the demo is back to its starting data.';
+      try { localStorage.clear(); } catch (e) { /* sin localStorage no hay preferencias que borrar */ }
+      avisa('Demo reset. Back to the start.');
     } catch (e) {
-      hecho.textContent = 'This browser blocks tab storage: the demo already starts clean every time.';
+      avisa('This browser blocks tab storage: the demo already starts clean every time.');
     }
   });
 })();
