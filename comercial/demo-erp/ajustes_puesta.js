@@ -49,20 +49,23 @@
       h('span', { class: 'font-body-md text-body-md text-error', text: U('no_mirar') + ': ' + S.explica(err || { message: '' }, true).texto }),
       h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-reintentar', class: BTN1, text: U('reintentar') })]));
   }
-  function carga() {
-    var c = cont(); if (!c || !sb) return Promise.resolve();
+  // Lee el estado, los ajustes y la fila de la empresa SIN pintar: lo usan la carga y la duda tras perder una respuesta
+  function relee() {
     return S.estado(true).then(function (r) {
-      if (!r.ok) { errorLectura(r.error); return; }
+      if (!r.ok) return { ok: false, error: r.error };
       var d = r.datos, ref = d.pasos.map(function (p) { return p.ref; }).filter(Boolean)[0];
       var aj = d.puede_configurar && typeof window.lwDatos === 'function' ? window.lwDatos('ajustes_config_datos') : Promise.resolve({ data: null });
-      var soc = d.puede_configurar && ref ? Promise.resolve(sb.from('sociedades').select('clave,razon,npwp,npwp_label,domicilio,rep,prefijo_serie').eq('clave', ref).maybeSingle()) : Promise.resolve({ data: null });
+      var soc = d.puede_configurar && ref ? Promise.resolve(sb.from('sociedades').select(P.COLS_SOCIEDAD).eq('clave', ref).maybeSingle()) : Promise.resolve({ data: null });
       return Promise.all([aj, soc]).then(function (rs) {
-        if (rs[0] && rs[0].error) { errorLectura(rs[0].error); return; }
-        if (rs[1] && rs[1].error) { errorLectura(rs[1].error); return; }
-        ctx = { datos: d, ajustes: (rs[0] && rs[0].data && rs[0].data.valores) || {}, sociedad: (rs[1] && rs[1].data) || null };
-        pinta();
+        if (rs[0] && rs[0].error) return { ok: false, error: rs[0].error };
+        if (rs[1] && rs[1].error) return { ok: false, error: rs[1].error };
+        return { ok: true, ctx: { datos: d, ajustes: (rs[0] && rs[0].data && rs[0].data.valores) || {}, sociedad: (rs[1] && rs[1].data) || null } };
       });
-    }, function (e) { errorLectura(e); });
+    }, function (e) { return { ok: false, error: e }; });
+  }
+  function carga() {
+    var c = cont(); if (!c || !sb) return Promise.resolve();
+    return relee().then(function (r) { if (!r.ok) { errorLectura(r.error); return; } ctx = r.ctx; pinta(); });
   }
   function enlaceAsistente(m, paso) {
     return RAIZ + 'ajustes/configurar/?modulo=' + encodeURIComponent(m) + (paso ? '&paso=' + encodeURIComponent(paso) : '') + '&vuelta=ajustes';
@@ -120,7 +123,7 @@
     var caja = h('div', { class: 'flex flex-col gap-3', 'data-pm-editor': p.clave });
     var ctl = comp.pinta(caja, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: p.hecho });
     var motivo = null;
-    if (p.hecho) {
+    if (p.hecho && !comp.sinMotivo) {   // sociedad_guarda no guarda motivo: no se pide (revisor 12-oct)
       motivo = h('input', { type: 'text', maxlength: '500', autocomplete: 'off', 'data-pm': 'motivo', id: 'pm-motivo-' + p.clave, class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
       caja.appendChild(h('div', { class: 'flex flex-col gap-1.5' }, [h('label', { for: 'pm-motivo-' + p.clave, class: 'font-label-md text-label-md text-on-surface', text: U('motivo') }), motivo,
         h('span', { class: 'font-body-sm text-body-sm text-outline', text: U('motivo_ayuda') })]));
@@ -142,17 +145,20 @@
     if (caja._motivo && (motivo.match(/\p{L}/gu) || []).length < 3) { di(U('motivo_corto'), true); caja._motivo.focus(); return; }
     ocupado = true; di(U('cargando'), false);
     caja.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
-    P.de(p.clave).guarda(sb, r.v, { paso: p, datos: ctx.datos }, false, motivo || null).then(function (res) {
+    P.de(p.clave).guarda(sb, r.v, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad }, false, motivo || null).then(function (res) {
       if (res.ok) { ocupado = false; return carga(); }
       if (!res.sinRespuesta) {   // con código de la base: «no se guardó», y por qué
         ocupado = false; caja.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
         di(U('no_se_guardo', { e: S.explica(res.error, true).texto }), true); return;
       }
       di(U('comprobando'), false);   // sin respuesta: se relee la base; nada se reenvía solo
-      return S.estado(true).then(function (rr) {
+      // la duda se resuelve mirando el VALOR releído, no solo «hecho» (un paso ya hecho sigue hecho aunque no se guardara; revisor 12-oct)
+      return relee().then(function (rr) {
         ocupado = false;
-        var ahora = rr.ok && rr.datos.pasos.filter(function (x) { return x.clave === p.clave && x.modulo === p.modulo; })[0];
-        if (ahora && ahora.hecho && !p.hecho) return carga();
+        var comp = P.de(p.clave);
+        var ahora = rr.ok && rr.ctx.datos.pasos.filter(function (x) { return x.clave === p.clave && x.modulo === p.modulo; })[0];
+        var guardado = rr.ok && (comp.comprueba ? comp.comprueba(r.v, rr.ctx) : !!(ahora && ahora.hecho && !p.hecho));
+        if (guardado) { ctx = rr.ctx; pinta(); return; }
         caja.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
         di(rr.ok ? U('no_guardado') : U('no_mirar'), true);
       });
@@ -167,7 +173,7 @@
     if (typeof window.lwIdiomaAplicar === 'function') {
       try { window.lwIdiomaAplicar(c.closest('[data-lw-panel]') || c); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla */ }
     }
-    if (!S || !P) { c.textContent = 'setup_modulos.js / setup_pasos.js'; return; }
+    if (!S || !P) { c.textContent = (S && S.ui) ? S.ui('no_mirar') : '—'; return; }
     c.addEventListener('click', function (ev) {
       var b = ev.target.closest && ev.target.closest('[data-accion]');
       if (!b) return;

@@ -65,9 +65,20 @@
               { opciones: opciones.map(function (o) { return [o[0], U(o[1])]; }) });
         return { valores: function () { var v = lee(caja, clave); return v === 'si' || v === 'no' ? { ok: true, v: { valor: v } } : { ok: false, error: U('elige') }; } };
       },
-      guarda: function (sb, v, ctx, confirmo, motivo) { return guardaAjuste(sb, clave, v.valor, false, motivo); }
+      guarda: function (sb, v, ctx, confirmo, motivo) { return guardaAjuste(sb, clave, v.valor, false, motivo); },
+      comprueba: function (v, ctx) { return !!(ctx.ajustes && String(ctx.ajustes[clave]) === v.valor); }
     };
   }
+  /* sociedad_guarda (también la de la S1) exige razón y domicilio y, al actualizar, REESCRIBE la fila entera: lo que no llega queda vacío
+     (revisor 12-oct: «Cambiar empresa» borraba logo, NIB, folio y tinta; el prefijo solo daba 22023). Por eso el setup lee la fila con
+     estas columnas (todas con SELECT para authenticated en bbm, medido por Backend el 12-oct) y la reenvía entera con lo cambiado. */
+  var COLS_SOCIEDAD = 'clave,label,razon,marca,npwp,npwp_label,nib,domicilio,rep,logo,logo_alto,emisor_debajo,folio,tinta,activa,orden,es_indonesia,prefijo_serie';
+  function filaCompleta(s) {
+    var f = {};
+    COLS_SOCIEDAD.split(',').forEach(function (k) { if (k !== 'clave' && s && s[k] !== undefined) f[k] = s[k]; });
+    return f;
+  }
+  function faltaFila() { return Promise.resolve({ ok: false, error: { code: 'axw_sin_fila', message: U('no_mirar') } }); }
   function slug(s) {   // la clave de una sociedad nueva: la regla de sociedad_guarda (^[a-z][a-z0-9_]{2,}$); la base la vuelve a comprobar
     var b = String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30);
     if (!/^[a-z]/.test(b)) b = 'e_' + b;
@@ -86,31 +97,36 @@
           resumen: function (v) { return { grande: v.moneda, teclea: v.moneda, boton: U('fijar_moneda', { v: v.moneda }) }; }
         };
       },
-      guarda: function (sb, v, ctx, confirmo, motivo) { return guardaAjuste(sb, 'moneda', v.moneda, confirmo, motivo); }
+      guarda: function (sb, v, ctx, confirmo, motivo) { return guardaAjuste(sb, 'moneda', v.moneda, confirmo, motivo); },
+      comprueba: function (v, ctx) { return !!(ctx.datos && ctx.datos.moneda === v.moneda); }
     },
     sociedad: {
+      sinMotivo: true,   // sociedad_guarda no lleva motivo: no se pide lo que no se guarda (revisor 12-oct)
       // Lo mínimo que pide la base; el editor completo (logo, aspecto, NIB…) está en Ajustes › Sociedades emisoras (#285)
       pinta: function (caja, ctx) {
         var s = ctx.sociedad || {};
         campo(caja, 'razon', U('razon') + ' *', s.razon, { max: 200 });
         campo(caja, 'npwp_label', U('npwp_label'), s.npwp_label || 'NPWP', { max: 20 });
-        campo(caja, 'npwp', U('npwp'), s.npwp, { max: 40 });
+        campo(caja, 'npwp', U('npwp') + ' *', s.npwp, { max: 40 });
         campo(caja, 'domicilio', U('domicilio') + ' *', s.domicilio, { max: 400 });
         campo(caja, 'rep', U('rep'), s.rep, { max: 200 });
         return { valores: function () {
           var v = { razon: lee(caja, 'razon'), npwp_label: lee(caja, 'npwp_label') || 'NPWP', npwp: lee(caja, 'npwp'), domicilio: lee(caja, 'domicilio'), rep: lee(caja, 'rep') };
           var faltan = [];
           if (!v.razon) faltan.push(U('razon'));
+          if (!v.npwp) faltan.push(U('npwp'));   // la base solo da el paso por hecho con identificación fiscal
           if (!v.domicilio) faltan.push(U('domicilio'));
           return faltan.length ? { ok: false, error: U('falta_valor', { c: faltan.join(', ') }) } : { ok: true, v: v };
         } };
       },
       guarda: function (sb, v, ctx) {
         var ref = ctx.paso.ref || null;
-        var fila = { razon: v.razon, label: v.razon, npwp_label: v.npwp_label, npwp: v.npwp || null, domicilio: v.domicilio, rep: v.rep || null };
-        if (!ref) { fila.es_indonesia = true; fila.activa = true; }
+        if (ref && !(ctx.sociedad && ctx.sociedad.clave === ref)) return faltaFila();   // sin la fila entera no se reescribe nada
+        // alta: lo que se teclea, y el país y la etiqueta por defecto los pone la base; cambio: la fila entera con lo tecleado encima
+        var fila = Object.assign(ref ? filaCompleta(ctx.sociedad) : {}, { razon: v.razon, npwp_label: v.npwp_label, npwp: v.npwp, domicilio: v.domicilio, rep: v.rep || null });
         return resultado(sb.rpc('sociedad_guarda', { p_clave: ref || slug(v.razon), p_datos: fila, p_nueva: !ref }));
-      }
+      },
+      comprueba: function (v, ctx) { var x = ctx.sociedad; return !!(x && x.razon === v.razon && x.domicilio === v.domicilio && (x.npwp || '') === v.npwp); }
     },
     prefijo: {
       pinta: function (caja, ctx) {
@@ -133,11 +149,14 @@
           resumen: function (v) { return { grande: v.prefijo + '-…', teclea: v.prefijo, boton: U('fijar_prefijo', { v: v.prefijo }) }; }
         };
       },
+      sinMotivo: true,
       guarda: function (sb, v, ctx, confirmo) {
-        var args = { p_clave: ctx.paso.ref, p_datos: { prefijo_serie: v.prefijo }, p_nueva: false };
+        if (!(ctx.sociedad && ctx.sociedad.clave === ctx.paso.ref)) return faltaFila();
+        var args = { p_clave: ctx.paso.ref, p_datos: Object.assign(filaCompleta(ctx.sociedad), { prefijo_serie: v.prefijo }), p_nueva: false };
         if (confirmo) args.p_confirmo = true;
         return resultado(sb.rpc('sociedad_guarda', args));
-      }
+      },
+      comprueba: function (v, ctx) { return !!(ctx.sociedad && ctx.sociedad.prefijo_serie === v.prefijo); }
     },
     // reservas_sin_impuesto = 'si' quiere decir que NO es PKP: por eso «Sí, es PKP» guarda 'no' (igual que la Puesta en marcha de antes)
     impuesto_pkp: opcionUnica('reservas_sin_impuesto', [['no', 'si_pkp'], ['si', 'no_pkp']]),
@@ -161,5 +180,5 @@
   // flota y entrega se hacen fuera aunque se conozcan
   ['flota', 'entrega'].forEach(function (k) { PASOS[k] = EXTERNO; });
 
-  window.AXW_PASOS = { de: de, slug: slug, conocidos: Object.keys(PASOS) };
+  window.AXW_PASOS = { de: de, slug: slug, conocidos: Object.keys(PASOS), COLS_SOCIEDAD: COLS_SOCIEDAD };
 })();

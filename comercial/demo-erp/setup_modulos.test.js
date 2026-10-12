@@ -131,6 +131,23 @@ function carga(idioma, rpc) {
   ok('la red cae = «red»', (await c.S.estado()).tipo === 'red');
   ok('moneda sin estado = null (las sumas esperan, nunca asumen EUR)', (await c.S.moneda()) === null);
 
+  // La lista cerrada de la BASE (erp/modulos.py de la agencia: SETUP_FALTAS y SETUP_HINTS) tiene frase aquí (revisor 12-oct: sin_flota salía
+  // «Paso sin nombre (código: sin_flota)»). Fuera de la agencia (otra máquina sin el repo al lado) se avisa y no se mide.
+  {
+    const modpy = path.join(process.env.AXW_AGENCIA_RAIZ || path.join(__dirname, '..', '..', '..', '..'), 'erp', 'modulos.py');
+    if (!fs.existsSync(modpy)) console.log('AVISO: sin erp/modulos.py al lado (' + modpy + '): no se compara con la lista de la base');
+    else {
+      const py = fs.readFileSync(modpy, 'utf8');
+      const lista = (nombre) => { const m = py.match(new RegExp('^' + nombre + ' = \\(([^)]*)\\)', 'm')); return m ? (m[1].match(/'([a-z0-9_]+)'/g) || []).map(x => x.slice(1, -1)) : null; };
+      const faltas = lista('SETUP_FALTAS'), hints = lista('SETUP_HINTS');
+      // hasta que la S1 de Backend llegue a main, erp/modulos.py no trae las listas: se avisa (las trae la rama de Backend del 12-oct)
+      if (!faltas || !hints) console.log('AVISO: erp/modulos.py aún sin SETUP_FALTAS/SETUP_HINTS: no se compara con la lista de la base');
+      const tiene = (seccion, k) => new RegExp('\\n    ' + seccion + ': \\{[^}]*?\\n      ' + k + ': ').test(FUENTE);
+      (faltas || []).forEach(k => ok('falta de la base con frase: ' + k, tiene('falta', k)));
+      (hints || []).forEach(k => ok('hint de la base con frase: ' + k, tiene('hint', k)));
+    }
+  }
+
   console.log((fallos ? 'FALLAN ' + fallos + ' de ' : 'OK ') + total + ' comprobaciones — setup_modulos.test.js');
   process.exit(fallos ? 1 : 0);
 })();

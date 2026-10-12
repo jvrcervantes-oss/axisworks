@@ -46,16 +46,20 @@ function servidor(b, n, a) {
     if (b.perdidas > 0) { b.perdidas--; return { perdida: true }; }   // la red se pierde DESPUÉS de que la base guardó (o.guardaAntes) o antes
     return null;
   };
-  if (n === 'sociedad_guarda') {
-    if (o.prefijoFijo && a.p_datos && a.p_datos.prefijo_serie) return err('55000', 'prefijo_fijo');
+  if (n === 'sociedad_guarda') {   // la regla REAL de la base (S1, 20261012130000): razón y domicilio obligatorios y la fila se REESCRIBE entera
+    const dd = a.p_datos || {};
+    if (!String(dd.razon || '').trim() || !String(dd.domicilio || '').trim()) return err('22023', null);
+    const antes = (b.sociedad && b.sociedad.prefijo_serie) || null;
+    const cambiaPref = Object.prototype.hasOwnProperty.call(dd, 'prefijo_serie') && (dd.prefijo_serie || null) !== antes;
+    if (o.prefijoFijo && cambiaPref) return err('55000', 'prefijo_fijo');
+    if (cambiaPref && !a.p_confirmo) return err('22023', 'falta_confirmo');
     const g = guarda();
     if (g && !o.guardaAntes) return { red: true };
-    if (a.p_datos.prefijo_serie) {
-      if (!a.p_confirmo) return err('22023', 'falta_confirmo');
-      b.sociedad.prefijo_serie = a.p_datos.prefijo_serie; b.d.pasos.find(p => p.clave === 'prefijo').hecho = true;
-    } else {
-      b.sociedad = Object.assign({ clave: a.p_clave }, a.p_datos); b.d.pasos.find(p => p.clave === 'sociedad').hecho = true;
-    }
+    const nueva = Object.assign({ clave: a.p_clave }, dd);
+    if (!Object.prototype.hasOwnProperty.call(dd, 'prefijo_serie')) nueva.prefijo_serie = antes;
+    b.sociedad = nueva;
+    b.d.pasos.find(p => p.clave === 'sociedad').hecho = !!(nueva.razon && nueva.domicilio && nueva.npwp);
+    if (nueva.prefijo_serie) b.d.pasos.find(p => p.clave === 'prefijo').hecho = true;
     return g ? { red: true } : { data: { ok: true }, error: null };
   }
   if (n === 'ajustes_config_guardar') {
@@ -162,18 +166,20 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   // 3. Máquina de duda: la red se pierde tras guardar → se relee y sigue; la red se pierde sin guardar → «no se guardó», sin reenviar
   for (const guardaAntes of [true, false]) {
     b = base('a_medias', { perdidas: 1, guardaAntes });
-    b.sociedad = { clave: 'pt_bbm', razon: 'PT BBM' }; b.d.pasos.find(x => x.clave === 'sociedad').hecho = true;
+    b.sociedad = { clave: 'pt_bbm', razon: 'PT BBM', domicilio: 'Jl. Raya 1, Denpasar', npwp: '01.234.567.8-901.000', logo: '/x/logo.png', nib: '123' }; b.d.pasos.find(x => x.clave === 'sociedad').hecho = true;
     ({ p, ctx } = await abre(nav, b));
     await p.fill('[data-axw-campo="prefijo_serie"]', 'BBM'); await clic(p, 'enviar');
     await p.fill('[data-axw-campo="teclea"]', 'BBM'); await clic(p, 'fijar'); await p.waitForTimeout(500);
     const envios = llamadas(b, 'sociedad_guarda').length;
     if (guardaAntes) ok('duda, sí se guardó: se relee y da «listo», un solo envío', (await txt(p, '[data-axw-estado="listo"]')) === 'Facturas está listo.' && envios === 1, 'envíos ' + envios);
+    if (guardaAntes) ok('fijar el prefijo reenvía la fila entera: la empresa conserva logo, NIB y domicilio (revisor 12-oct)',
+      b.sociedad.logo === '/x/logo.png' && b.sociedad.nib === '123' && b.sociedad.domicilio === 'Jl. Raya 1, Denpasar' && b.sociedad.prefijo_serie === 'BBM', JSON.stringify(b.sociedad));
     else ok('duda, no se guardó: lo dice, un solo envío, nada en vuelo', (await txt(p, '[data-axw-as="error"]')) === 'El ERP dice que no se guardó. Puedes volver a intentarlo.' && envios === 1, (await txt(p, '[data-axw-as="error"]')) + ' / envíos ' + envios);
     await ctx.close();
   }
 
   // 4. Error con código: se lee por hint
-  b = base('a_medias', { prefijoFijo: true }); b.sociedad = { clave: 'pt_bbm', razon: 'PT BBM' };
+  b = base('a_medias', { prefijoFijo: true }); b.sociedad = { clave: 'pt_bbm', razon: 'PT BBM', domicilio: 'Jl. Raya 1, Denpasar', npwp: '01.234.567.8-901.000', logo: '/x/logo.png', nib: '123' };
   ({ p, ctx } = await abre(nav, b));
   await p.fill('[data-axw-campo="prefijo_serie"]', 'BBM'); await clic(p, 'enviar'); await p.fill('[data-axw-campo="teclea"]', 'BBM'); await clic(p, 'fijar'); await p.waitForTimeout(300);
   ok('55000 prefijo_fijo: el texto del código, sigue en la confirmación', ((await txt(p, '[data-axw-as="error"]')) || '').includes('ya no se puede cambiar') && (await p.$('[data-axw-confirma="valor"]')));

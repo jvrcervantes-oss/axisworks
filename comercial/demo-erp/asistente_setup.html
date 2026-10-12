@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!r.ok) { fallo(U('no_mirar') + ': ' + S.explica(r.error, true).texto, 'releer'); return false; }
       var datos = r.datos, refs = datos.pasos.map(function (p) { return p.ref; }).filter(Boolean);
       var aj = typeof window.lwDatos === 'function' ? window.lwDatos('ajustes_config_datos') : Promise.resolve({ data: null });
-      var soc = refs.length ? Promise.resolve(sb.from('sociedades').select('clave,razon,npwp,npwp_label,domicilio,rep,prefijo_serie').eq('clave', refs[0]).maybeSingle()) : Promise.resolve({ data: null });
+      var soc = refs.length ? Promise.resolve(sb.from('sociedades').select(P.COLS_SOCIEDAD).eq('clave', refs[0]).maybeSingle()) : Promise.resolve({ data: null });
       return Promise.all([aj, soc]).then(function (rs) {
         if (rs[0] && rs[0].error) { fallo(U('no_mirar') + ': ' + S.explica(rs[0].error, true).texto, 'releer'); return false; }
         if (rs[1] && rs[1].error) { fallo(U('no_mirar') + ': ' + S.explica(rs[1].error, true).texto, 'releer'); return false; }
@@ -190,7 +190,10 @@ document.addEventListener('DOMContentLoaded', function () {
       t.appendChild(el('p', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', style: 'font-size:24px;line-height:1.2', 'data-axw-estado': 'listo', text: U('listo', { m: S.nombreModulo(st.modulo) }) }));
       t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: U('listo_lead') }));
       t.appendChild(el('a', { href: RAIZ + 'ajustes/#puesta', class: BTN2 + ' self-start', style: 'min-height:44px', text: U('revisar_ajustes') }));
-    } else t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-estado': 'falta', text: mod.falta ? S.texto('falta', mod.falta) : S.texto('estado', 'sin_configurar') }));
+    } else {   // modulos[].falta es la CLAVE del primer paso pendiente (no un código de falta): se nombra y se enlaza
+      t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-estado': 'falta', text: mod.falta ? S.texto('paso', mod.falta, 0) + ' · ' + U('pendiente') : S.texto('estado', 'sin_configurar') }));
+      if (mod.falta) t.appendChild(el('a', { href: '?modulo=' + encodeURIComponent(st.modulo) + '&paso=' + encodeURIComponent(mod.falta), class: BTN2 + ' self-start', style: 'min-height:44px', text: U('configurar_m', { m: S.texto('paso', mod.falta, 0) }) }));
+    }
     L.opcionales.forEach(function (p) {
       t.appendChild(el('a', { href: '?modulo=' + encodeURIComponent(st.modulo) + '&paso=' + encodeURIComponent(p.clave), class: BTN2, style: 'min-height:44px',
                               text: U('opcional') + ' · ' + S.texto('paso', p.clave, 0) + (p.hecho ? ' · ' + U('hecho') : '') }));
@@ -227,7 +230,12 @@ document.addEventListener('DOMContentLoaded', function () {
       el('dd', { class: 'font-body-md text-body-md text-on-surface-variant', text: S.texto('paso', p.clave, 1) })
     ]));
     if (p.hecho) cab.appendChild(el('span', { class: 'self-start px-3 py-1 rounded-full font-label-md text-[13px] bg-primary-container text-on-primary', 'data-axw-hecho': '1', text: U('hecho') }));
-    else if (p.falta) cab.appendChild(el('p', { class: 'font-body-sm text-body-sm text-outline', 'data-axw-falta': p.falta.codigo, text: S.textoFalta(p.falta) }));
+    else if (p.falta) {
+      cab.appendChild(el('p', { class: 'font-body-sm text-body-sm text-outline', 'data-axw-falta': p.falta.codigo, text: S.textoFalta(p.falta) }));
+      // dónde se arregla lo que falta (impuesto, flota…): sin esto el paso volvía una y otra vez sin decir a dónde ir (revisor 12-oct)
+      var dnd = String(p.donde || '');
+      if (/^\/[a-z0-9\-\/]*$/i.test(dnd) && dnd.indexOf('/ajustes/configurar') < 0) cab.appendChild(el('a', { href: dnd, 'data-axw-accion': 'abrir-donde', class: BTN2 + ' self-start', style: 'min-height:44px', text: U('abrir', { pantalla: S.texto('paso', p.clave, 0) }) }));
+    }
     t.appendChild(cab);
     var pie = el('footer', { class: 'flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-outline-variant', 'data-axw-as': 'pie' });
     var idx = L.obligatorios.indexOf(p);
@@ -243,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (editando || comp.externo) ctl = comp.pinta(cuerpo, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: st.cambia });
     t.appendChild(cuerpo);
     var motivo = null;
-    if (editando && p.hecho && !comp.externo) {   // cambiar algo ya guardado: la base pide motivo (p17, 12-oct)
+    if (editando && p.hecho && !comp.externo && !comp.sinMotivo) {   // cambiar algo ya guardado: la base pide motivo (p17, 12-oct)
       motivo = el('input', { id: 'axw-motivo', type: 'text', maxlength: '500', autocomplete: 'off', 'data-axw-campo': 'motivo', class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
       cuerpo.appendChild(el('div', { class: 'flex flex-col gap-1.5' }, [el('label', { for: 'axw-motivo', class: 'font-label-md text-label-md text-on-surface', text: U('motivo') }), motivo,
         el('span', { class: 'font-body-sm text-body-sm text-outline', text: U('motivo_ayuda') })]));
@@ -298,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ocupado = true;
     window.addEventListener('beforeunload', sinSalir);
     document.querySelectorAll('[data-axw-accion]').forEach(function (b) { if (b.tagName === 'BUTTON') b.disabled = true; });
-    P.de(p.clave).guarda(sb, v, { paso: p, datos: ctx.datos }, confirmo, motivo).then(function (r) {
+    P.de(p.clave).guarda(sb, v, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad }, confirmo, motivo).then(function (r) {
       if (r.ok) return siguiente(p);
       if (!r.sinRespuesta) { termina(); st.error = U('no_se_guardo', { e: S.explica(r.error, true).texto }); st.vista = st.vista === 'confirma' ? 'confirma' : 'paso'; pinta(); return; }
       st.vista = 'duda'; pinta(); comprueba(p);
@@ -308,8 +316,10 @@ document.addEventListener('DOMContentLoaded', function () {
     lee().then(function (bien) {
       if (!bien) { termina(); st.vista = 'duda'; fallo(U('no_mirar'), 'recomprobar'); return; }   // sigue la duda: «Reintentar» vuelve a MIRAR, nunca reenvía
       var ahora = ctx.datos.pasos.filter(function (x) { return x.clave === p.clave && x.modulo === p.modulo; })[0];
+      var comp = P.de(p.clave);
       termina();
-      if (ahora && ahora.hecho) { st.error = ''; st.vista = 'paso'; st.cambia = false; st.paso = ''; pinta(); return; }
+      // por VALOR releído cuando el componente sabe compararlo (un paso ya hecho sigue hecho aunque no se guardara; revisor 12-oct)
+      if (comp.comprueba ? comp.comprueba(st.valores, ctx) : (ahora && ahora.hecho)) { st.error = ''; st.vista = 'paso'; st.cambia = false; st.paso = ''; pinta(); return; }
       st.error = U('no_guardado'); st.vista = 'paso'; pinta();
     });
   }
@@ -355,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (a === 'fijar') { envia(p, st.valores, true, st.motivo || null); return; }
   });
 
-  if (!S || !P) { fallo('setup_modulos.js / setup_pasos.js', null); return; }
+  if (!S || !P) { fallo(S && S.ui ? S.ui('no_mirar') : '—', null); return; }
   cargando();
   if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { fallo(S.explica({ code: '42501' }, true).texto, null); return; }
   window.LW_AUTH.then(function (aut) {
