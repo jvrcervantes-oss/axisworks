@@ -340,7 +340,9 @@
       el('div', { class: 'axf-hecho-cab' }, [
         el('h3', { class: 'axf-hecho-tit', text: t('hecho.tit', E.contrato.numero) }),
         el('p', { class: 'axf-intro', text: t('hecho.texto') }),
-        el('div', { class: 'axf-acciones' }, [
+        // Firmado desde el portal de clientes (12-oct): quien firma es el cliente, así que no se le ofrecen pantallas de la
+        // intranet; «Close» recarga el portal y el contrato sale firmado.
+        el('div', { class: 'axf-acciones' }, location.pathname.indexOf('/portal/') === 0 ? [imp, cerrar] : [
           enlace(t('hecho.contratos'), '/contratos/', 'axf-btn-pri'),
           enlace(t('hecho.portal'), '/portal/' + (cli ? '?cliente=' + encodeURIComponent(cli) : ''), 'axf-btn-sec'),
           enlace(t('hecho.facturas'), '/facturas/', 'axf-btn-sec'),
