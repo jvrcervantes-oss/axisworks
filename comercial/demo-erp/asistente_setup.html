@@ -6,7 +6,6 @@
      modulos_setup_estado; aquí no se guarda progreso (se retoma en el primer paso no hecho). Sin piel propia: la viste Claude Design después. -->
 <!-- Piel del diseño del owner (12-oct, Claude Design «AxisWorks ERP Setup»: S03 inicio, S91 componente de paso, S80 listo): misma lógica y mismos
      enganches data-axw-*; colores solo por token de la piel de la instancia (marca blanca). -->
-<style>[data-axw-setup] .axw-btn{width:100%}@media (min-width:768px){[data-axw-setup] .axw-btn{width:auto}}</style>
 <div class="flex flex-col w-full gap-6" data-axw-setup="asistente">
 <div class="lw-cabecera flex flex-col md:flex-row md:items-end gap-4 bg-surface-container-lowest p-6 md:p-8 rounded-2xl border border-outline-variant">
 <div class="flex flex-col gap-2 flex-1 min-w-0">
@@ -50,8 +49,9 @@ document.addEventListener('DOMContentLoaded', function () {
   function cargando() { var t = $('tarjeta'); t.setAttribute('aria-busy', 'true'); vacia(t).appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: U('cargando') })); }
   function fallo(texto, reintento) {
     var t = $('tarjeta'); t.setAttribute('aria-busy', 'false'); vacia(t);
-    t.appendChild(el('p', { role: 'alert', class: 'font-body-md text-body-md text-error', text: texto }));
-    if (reintento) t.appendChild(boton(U('reintentar'), reintento, true));
+    // S90: lo que ha pasado, en su caja, y la única cosa que hacer (Reintentar vuelve a MIRAR, nunca reenvía)
+    t.appendChild(el('div', { role: 'alert', class: 'rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-error', text: texto }));
+    if (reintento) { var b = boton(U('reintentar'), reintento, true); b.className += ' self-start'; t.appendChild(b); }
   }
   function cabecera(titulo, n, total) {
     $('eyebrow').textContent = U('configurar_modulos');
@@ -185,8 +185,12 @@ document.addEventListener('DOMContentLoaded', function () {
     cabecera(U('configurar_m', { m: S.nombreModulo(st.modulo) }), L.obligatorios.length, L.obligatorios.length);
     st.paso = ''; apuntaUrl();
     // «listo» solo si la base dice configurado; si no (un paso que la base aún ve pendiente), se dice que falta algo
-    if (mod.estado === 'configurado') t.appendChild(el('p', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', 'data-axw-estado': 'listo', text: U('listo', { m: S.nombreModulo(st.modulo) }) }));
-    else t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-estado': 'falta', text: mod.falta ? S.texto('falta', mod.falta) : S.texto('estado', 'sin_configurar') }));
+    if (mod.estado === 'configurado') {   // S80: listo, dónde queda lo configurado y cómo se cambia
+      t.appendChild(el('span', { class: 'font-label-md text-[11px] tracking-[0.14em] uppercase text-outline', text: U('listo_eyebrow') }));
+      t.appendChild(el('p', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', style: 'font-size:24px;line-height:1.2', 'data-axw-estado': 'listo', text: U('listo', { m: S.nombreModulo(st.modulo) }) }));
+      t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: U('listo_lead') }));
+      t.appendChild(el('a', { href: RAIZ + 'ajustes/#puesta', class: BTN2 + ' self-start', style: 'min-height:44px', text: U('revisar_ajustes') }));
+    } else t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-estado': 'falta', text: mod.falta ? S.texto('falta', mod.falta) : S.texto('estado', 'sin_configurar') }));
     L.opcionales.forEach(function (p) {
       t.appendChild(el('a', { href: '?modulo=' + encodeURIComponent(st.modulo) + '&paso=' + encodeURIComponent(p.clave), class: BTN2, style: 'min-height:44px',
                               text: U('opcional') + ' · ' + S.texto('paso', p.clave, 0) + (p.hecho ? ' · ' + U('hecho') : '') }));
@@ -202,7 +206,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var meta = el('div', { class: 'flex flex-wrap items-center gap-2' }, [
       el('span', { class: 'font-label-md text-[11px] tracking-[0.12em] uppercase text-outline',
                    text: S.nombreModulo(p.modulo) }),   // el «Paso n de N» ya va en la cabecera de la página; aquí, los segmentos
-      chip(p.obligatorio ? U('obligatorio') : U('opcional'), false)
+      chip(p.obligatorio ? U('obligatorio') : U('opcional'), false),
+      p.irreversible && !p.hecho ? chip(U('se_fija'), false) : null
     ]);
     var cab = el('header', { class: 'flex flex-col gap-4 pb-4 border-b border-outline-variant' }, [meta]);
     if (idx >= 0 && L.obligatorios.length > 1) {
@@ -264,8 +269,10 @@ document.addEventListener('DOMContentLoaded', function () {
   function pintaConfirma(p) {
     var t = $('tarjeta'), ctl = P.de(p.clave);
     var r = st.resumen;
-    t.appendChild(el('h2', { tabindex: '-1', class: 'font-headline-sm text-headline-sm text-deep-lagoon', text: S.texto('paso', p.clave, 0) }));
-    t.appendChild(el('p', { class: 'text-deep-lagoon', style: 'font-size:32px;line-height:1.1', 'data-axw-confirma': 'valor', text: r.grande }));
+    var cab = cabezaPaso(p, lista(ctx.datos, st.modulo));   // S11/S21: la misma cabeza del paso; el valor que se fija, en su recuadro
+    cab.appendChild(el('h2', { tabindex: '-1', class: 'font-headline-sm text-headline-sm text-deep-lagoon', style: 'font-size:24px;line-height:1.2', text: S.texto('paso', p.clave, 0) }));
+    t.appendChild(cab);
+    t.appendChild(el('p', { class: 'text-deep-lagoon rounded-2xl border border-outline-variant bg-surface-container-low px-5 py-4', style: 'font-size:32px;line-height:1.1', 'data-axw-confirma': 'valor', text: r.grande }));
     t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', text: U('no_cambia') }));
     var inp = el('input', { id: 'axw-teclea', type: 'text', autocomplete: 'off', 'data-axw-campo': 'teclea', class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
     t.appendChild(el('div', { class: 'flex flex-col gap-1.5' }, [el('label', { for: 'axw-teclea', class: 'font-label-md text-label-md text-on-surface', text: U('teclea', { v: r.teclea }) }), inp]));

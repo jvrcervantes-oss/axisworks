@@ -70,8 +70,13 @@
     cierra.addEventListener('click', function () { ocultaSesion(); if (caja.parentNode) caja.parentNode.removeChild(caja); });
     return caja;
   }
-  function nota(S) {
-    return h('p', { role: 'status', 'data-axw-aviso': 'nota', class: 'rounded-xl border border-outline-variant bg-surface-container-low px-5 py-3 font-body-sm text-body-sm text-on-surface-variant', text: S.texto('general', 'sin_configurar_resto') });
+  // Nota del diseño del owner (S02b): el nombre del módulo, «aún no está listo» y que no hay nada que hacer. Sin botones: quien la ve no configura.
+  function nota(S, d) {
+    return h('section', { role: 'status', 'data-axw-aviso': 'nota', class: 'flex flex-col gap-2 rounded-2xl border border-outline-variant bg-surface-container-lowest px-5 py-5' }, [
+      h('span', { class: 'font-label-md text-[11px] tracking-[0.14em] uppercase text-outline', text: S.nombreModulo(d.modulo) }),
+      h('h2', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', text: S.texto('general', 'nota_titulo') }),
+      h('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: S.texto('general', 'nota_texto') })
+    ]);
   }
   function pon(el) {
     var main = document.querySelector('main');
@@ -86,7 +91,7 @@
       if (!r.ok) { try { console.info('[axw] aviso de setup sin pintar: no se pudo mirar (' + r.tipo + ')'); } catch (e) {} return; }
       var d = decide(r.datos, window.AXW_MODULO_PAGINA || null, location.pathname, leeOculto());
       if (!d) return;
-      var el = d.tipo === 'banda' ? banda(S, d) : nota(S);
+      var el = d.tipo === 'banda' ? banda(S, d) : nota(S, d);
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { pon(el); }); else pon(el);
     });
   }
