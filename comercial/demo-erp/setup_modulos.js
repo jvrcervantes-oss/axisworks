@@ -54,6 +54,66 @@
       modulo_apagado: 'Este módulo no está encendido en este ERP.',
       impuesto_no_configurado: 'Falta configurar el impuesto de las reservas.'
     },
+    ui: {
+      elige: "Elige una opción",
+      moneda: "Moneda",
+      razon: "Razón social",
+      domicilio: "Domicilio",
+      npwp_label: "Etiqueta fiscal",
+      npwp: "Identificación fiscal",
+      rep: "Representante (opcional)",
+      prefijo: "Prefijo",
+      prefijo_ayuda: "Mayúsculas y números, de 2 a 8. Por ejemplo: BBM",
+      prefijo_ejemplo: "Las facturas empezarán así: %p-…",
+      primero_sociedad: "Primero hay que dar de alta la empresa que emite las facturas.",
+      si_pkp: "Sí: es PKP y cobra PPN",
+      no_pkp: "No: no es PKP (las reservas van sin PPN)",
+      dentro: "El precio de la tarifa ya lleva el impuesto",
+      fuera: "El impuesto se suma al precio de la tarifa",
+      abrir: "Abrir %pantalla",
+      comprobar: "Ya lo hice, comprobar",
+      otra_pantalla: "Este paso se hace en otra pantalla. Al terminar, vuelve aquí y pulsa «Ya lo hice, comprobar».",
+      falta_valor: "Falta rellenar: %c.",
+      prefijo_formato: "El prefijo va en mayúsculas y números, de 2 a 8 caracteres.",
+      no_cambia: "No se podrá cambiar después.",
+      teclea: "Para confirmar, escribe %v",
+      no_coincide: "Lo escrito no coincide.",
+      fijar_moneda: "Fijar la moneda: %v",
+      fijar_prefijo: "Fijar el prefijo: %v",
+      fijado: "Fijado",
+      comprobando: "Comprobando si se guardó…",
+      no_guardado: "El ERP dice que no se guardó. Puedes volver a intentarlo.",
+      guardar_seguir: "Guardar y seguir",
+      siguiente: "Siguiente",
+      atras: "Atrás",
+      luego: "Dejar para luego",
+      listo: "%m está listo.",
+      paso_n: "Paso %n de %t",
+      opcional: "Opcional",
+      solo_admin: "Solo el administrador principal puede configurar los módulos.",
+      volver: "Volver",
+      configurar_m: "Configurar %m",
+      cargando: "Cargando…",
+      reintentar: "Reintentar",
+      no_mirar: "No se ha podido mirar la configuración",
+      requiere: "Este paso necesita el módulo %m: pídelo al estudio.",
+      hecho: "Hecho",
+      pendiente: "Pendiente",
+      cambiar: "Cambiar",
+      todo_listo: "Todos los módulos están configurados.",
+      elige_modulo: "Módulos por configurar",
+      configurar_modulos: "Configurar módulos",
+      abrir_asistente: "Abrir el asistente",
+      guardar: "Guardar",
+      guardado: "Guardado.",
+      no_se_guardo: "No se guardó: %e",
+      motivo: "Motivo del cambio",
+      motivo_ayuda: "Obligatorio al cambiar algo ya guardado: queda en el registro de cambios.",
+      motivo_corto: "Escribe el motivo del cambio (al menos 3 letras).",
+      valor_actual: "Ahora: %v",
+      sin_valor: "Sin decidir",
+      ir_inicio: "Ir al inicio"
+    },
     general: {
       sin_configurar_admin: '%m aún no está configurado.',
       sin_configurar_resto: 'Este módulo aún no está listo: lo está configurando el administrador.',
@@ -72,6 +132,7 @@
 
   // EN e ID, indexados por la frase en español (el patrón de ajustes_puesta.js). Glosario id: glosario_id.json (test_idiomas_instancia.py).
   var EN = {
+    "Elige una opción": "Choose an option", "Moneda": "Currency", "Razón social": "Legal name", "Domicilio": "Address", "Etiqueta fiscal": "Tax label", "Identificación fiscal": "Tax ID", "Representante (opcional)": "Representative (optional)", "Prefijo": "Prefix", "Mayúsculas y números, de 2 a 8. Por ejemplo: BBM": "Capital letters and numbers, 2 to 8. For example: BBM", "Las facturas empezarán así: %p-…": "Invoices will start like this: %p-…", "Primero hay que dar de alta la empresa que emite las facturas.": "First, add the company that issues the invoices.", "Sí: es PKP y cobra PPN": "Yes: it is PKP and charges VAT (PPN)", "No: no es PKP (las reservas van sin PPN)": "No: it is not PKP (bookings carry no VAT)", "El precio de la tarifa ya lleva el impuesto": "The rate price already includes the tax", "El impuesto se suma al precio de la tarifa": "The tax is added to the rate price", "Abrir %pantalla": "Open %pantalla", "Ya lo hice, comprobar": "Done, check it", "Este paso se hace en otra pantalla. Al terminar, vuelve aquí y pulsa «Ya lo hice, comprobar».": "This step is done on another screen. When you finish, come back here and press «Done, check it».", "Falta rellenar: %c.": "Still to fill in: %c.", "El prefijo va en mayúsculas y números, de 2 a 8 caracteres.": "The prefix uses capital letters and numbers, 2 to 8 characters.", "No se podrá cambiar después.": "It cannot be changed later.", "Para confirmar, escribe %v": "To confirm, type %v", "Lo escrito no coincide.": "What you typed does not match.", "Fijar la moneda: %v": "Set the currency: %v", "Fijar el prefijo: %v": "Set the prefix: %v", "Fijado": "Set", "Comprobando si se guardó…": "Checking whether it was saved…", "El ERP dice que no se guardó. Puedes volver a intentarlo.": "The ERP says it was not saved. You can try again.", "Guardar y seguir": "Save and continue", "Siguiente": "Next", "Atrás": "Back", "Dejar para luego": "Leave it for later", "%m está listo.": "%m is ready.", "Paso %n de %t": "Step %n of %t", "Opcional": "Optional", "Solo el administrador principal puede configurar los módulos.": "Only the main administrator can set up the modules.", "Volver": "Go back", "Configurar %m": "Set up %m", "Cargando…": "Loading…", "Reintentar": "Retry", "No se ha podido mirar la configuración": "The setup could not be checked", "Este paso necesita el módulo %m: pídelo al estudio.": "This step needs the %m module: ask the studio.", "Hecho": "Done", "Pendiente": "Pending", "Cambiar": "Change", "Todos los módulos están configurados.": "All modules are set up.", "Módulos por configurar": "Modules to set up", "Configurar módulos": "Module setup", "Abrir el asistente": "Open the wizard", "Guardar": "Save", "Guardado.": "Saved.", "No se guardó: %e": "Not saved: %e", "Motivo del cambio": "Reason for the change", "Obligatorio al cambiar algo ya guardado: queda en el registro de cambios.": "Required when changing something already saved: it is kept in the change log.", "Escribe el motivo del cambio (al menos 3 letras).": "Write the reason for the change (at least 3 letters).", "Ahora: %v": "Now: %v", "Sin decidir": "Not decided", "Ir al inicio": "Go to home",
     'Datos generales': 'General settings', 'Facturas': 'Invoices', 'Recibos': 'Receipts', 'Reservas de producto': 'Product bookings',
     'Sociedades emisoras': 'Issuing companies', 'Taller': 'Workshop', 'Vencimientos': 'Due dates', 'Productos': 'Products',
     'Sin configurar': 'Not set up', 'Configurado': 'Set up',
@@ -108,6 +169,7 @@
     'Configurar': 'Set up', '%m: sin configurar': '%m: not set up', '%n módulos sin configurar: %lista': '%n modules not set up: %lista', 'Ahora no': 'Not now', 'Paso sin nombre (código: %c)': 'Unnamed step (code: %c)', 'No se pudo hacer (código: %c).': 'It could not be done (code: %c).'
   };
   var ID = {
+    "Elige una opción": "Pilih salah satu", "Moneda": "Mata uang", "Razón social": "Nama badan usaha", "Domicilio": "Alamat", "Etiqueta fiscal": "Label pajak", "Identificación fiscal": "Identitas pajak", "Representante (opcional)": "Perwakilan (opsional)", "Prefijo": "Prefiks", "Mayúsculas y números, de 2 a 8. Por ejemplo: BBM": "Huruf kapital dan angka, 2 sampai 8. Contoh: BBM", "Las facturas empezarán así: %p-…": "Invoice akan diawali seperti ini: %p-…", "Primero hay que dar de alta la empresa que emite las facturas.": "Daftarkan dulu perusahaan penerbit invoice.", "Sí: es PKP y cobra PPN": "Ya: PKP dan memungut PPN", "No: no es PKP (las reservas van sin PPN)": "Tidak: bukan PKP (booking tanpa PPN)", "El precio de la tarifa ya lleva el impuesto": "Harga di tarif sudah termasuk pajak", "El impuesto se suma al precio de la tarifa": "Pajak ditambahkan ke harga di tarif", "Abrir %pantalla": "Buka %pantalla", "Ya lo hice, comprobar": "Sudah, periksa", "Este paso se hace en otra pantalla. Al terminar, vuelve aquí y pulsa «Ya lo hice, comprobar».": "Langkah ini dikerjakan di layar lain. Setelah selesai, kembali ke sini dan tekan «Sudah, periksa».", "Falta rellenar: %c.": "Masih perlu diisi: %c.", "El prefijo va en mayúsculas y números, de 2 a 8 caracteres.": "Prefiks memakai huruf kapital dan angka, 2 sampai 8 karakter.", "No se podrá cambiar después.": "Tidak bisa diubah nanti.", "Para confirmar, escribe %v": "Untuk konfirmasi, ketik %v", "Lo escrito no coincide.": "Yang diketik tidak sama.", "Fijar la moneda: %v": "Tetapkan mata uang: %v", "Fijar el prefijo: %v": "Tetapkan prefiks: %v", "Fijado": "Ditetapkan", "Comprobando si se guardó…": "Memeriksa apakah sudah tersimpan…", "El ERP dice que no se guardó. Puedes volver a intentarlo.": "ERP menyatakan belum tersimpan. Anda bisa mencoba lagi.", "Guardar y seguir": "Simpan dan lanjut", "Siguiente": "Berikutnya", "Atrás": "Kembali", "Dejar para luego": "Nanti saja", "%m está listo.": "%m sudah siap.", "Paso %n de %t": "Langkah %n dari %t", "Opcional": "Opsional", "Solo el administrador principal puede configurar los módulos.": "Hanya admin utama yang dapat mengatur modul.", "Volver": "Kembali ke halaman sebelumnya", "Configurar %m": "Atur %m", "Cargando…": "Memuat…", "Reintentar": "Coba lagi", "No se ha podido mirar la configuración": "Pengaturan tidak dapat diperiksa", "Este paso necesita el módulo %m: pídelo al estudio.": "Langkah ini memerlukan modul %m: minta ke studio.", "Hecho": "Selesai", "Pendiente": "Belum", "Cambiar": "Ubah", "Todos los módulos están configurados.": "Semua modul sudah diatur.", "Módulos por configurar": "Modul yang perlu diatur", "Configurar módulos": "Penyiapan modul", "Abrir el asistente": "Buka panduan", "Guardar": "Simpan", "Guardado.": "Tersimpan.", "No se guardó: %e": "Tidak tersimpan: %e", "Motivo del cambio": "Alasan perubahan", "Obligatorio al cambiar algo ya guardado: queda en el registro de cambios.": "Wajib saat mengubah yang sudah tersimpan: tercatat di riwayat perubahan.", "Escribe el motivo del cambio (al menos 3 letras).": "Tulis alasan perubahan (minimal 3 huruf).", "Ahora: %v": "Saat ini: %v", "Sin decidir": "Belum ditentukan", "Ir al inicio": "Ke beranda",
     'Datos generales': 'Pengaturan umum', 'Facturas': 'Invoice', 'Recibos': 'Kuitansi', 'Reservas de producto': 'Booking sewa motor',
     'Sociedades emisoras': 'Perusahaan penerbit', 'Taller': 'Bengkel', 'Vencimientos': 'Jatuh tempo', 'Productos': 'Produk',
     'Sin configurar': 'Belum diatur', 'Configurado': 'Sudah diatur',
@@ -163,6 +225,7 @@
     var f = frase(tipo, codigo, parte);
     return f == null ? T(TEXTOS.general.desconocido, { c: String(codigo) }) : T(f);
   }
+  function ui(k, huecos) { var f = frase('ui', k); return f == null ? T(TEXTOS.general.desconocido, { c: String(k) }) : T(f, huecos); }
   function nombreModulo(m) {
     var f = frase('modulo', m);
     if (f != null) return T(f);
@@ -252,7 +315,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fusiona);   // i18n.js puede llegar después (defer)
 
   window.AXW_SETUP = {
-    estado: estado, moneda: moneda, explica: explica, texto: texto, nombreModulo: nombreModulo, textoFalta: textoFalta,
+    estado: estado, moneda: moneda, explica: explica, texto: texto, ui: ui, nombreModulo: nombreModulo, textoFalta: textoFalta,
     formaValida: formaValida, desconocidos: desconocidos, TEXTOS: TEXTOS, EN: EN, ID: ID
   };
 })();
