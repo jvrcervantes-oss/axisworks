@@ -1633,6 +1633,17 @@ MENU_I18N = {
     # rótulos que whatsapp_bot_pantalla() injerta en el menú (idiomas-pH, 12-oct): el menú los pasa por lwT aunque estén ocultos
     'Bot de WhatsApp': {'en': 'WhatsApp bot', 'id': 'Bot WhatsApp'},
     'Bot de WhatsApp · alta': {'en': 'WhatsApp bot · sign-up', 'id': 'Bot WhatsApp · pendaftaran'},
+    # textos_instancia() (owner, 12-oct): lo que sustituye a proyectos, villas y Cartas de Reserva en las pantallas comunes
+    'Referencia': {'en': 'Reference', 'id': 'Referensi'},
+    'Ej. Reserva R-0012 — Honda PCX': {'en': 'e.g. Booking R-0012 — Honda PCX', 'id': 'Contoh: Booking R-0012 — Honda PCX'},
+    'Ej. Reserva R-0012': {'en': 'e.g. Booking R-0012', 'id': 'Contoh: Booking R-0012'},
+    'Buscar por número, cliente o reserva…': {'en': 'Search by number, client or booking…', 'id': 'Cari nomor, pelanggan, atau booking…'},
+    'Lo que el sistema aplica solo y no hace falta tocar en el código: el nombre y la zona horaria de la instalación, el correo y el modo mantenimiento. Cambiarlos aquí vale desde ese momento, y cada cambio queda en el registro.': {
+        'en': 'What the system applies by itself, with no need to touch the code: the installation name and time zone, email and maintenance mode. Changes made here apply from that moment, and every change is logged.',
+        'id': 'Yang diterapkan sistem secara otomatis, tanpa perlu mengubah kode: nama dan zona waktu instalasi, email, dan mode pemeliharaan. Perubahan di sini langsung berlaku, dan setiap perubahan tercatat.'},
+    'Impuestos': {'en': 'Taxes', 'id': 'Pajak'},
+    'Plazos': {'en': 'Time limits', 'id': 'Batas waktu'},
+    'Empresa, correo, impuestos y usuarios del ERP.': {'en': 'Company, email, taxes and users of the ERP.', 'id': 'Perusahaan, email, pajak, dan pengguna ERP.'},
 }
 
 
@@ -3341,6 +3352,45 @@ def setup_comun_pasos():
     open(js, 'w', encoding='utf-8', newline='').write(a)
 
 
+# ── Textos de inmobiliaria fuera de las pantallas COMUNES de una instancia (owner, 12-oct-2026: «Sí, tal cual» a la lista de idiomas-pH) ──────────────
+# En una instancia del ERP (bbm alquila motos) no hay proyectos, villas ni Cartas de Reserva: el campo de la factura, su ejemplo, el buscador de
+# Facturas, la cabecera y la pestaña de Ajustes y la tarjeta de Ajustes del hub hablaban de ellos. Solo cambia el TEXTO: el campo sigue siendo
+# `proyecto_nombre`, la pestaña sigue siendo data-lw-tab="reservas" y la tarjeta sigue apuntando a /ajustes/ (enganche por identificador, norma del
+# 29-sep). Reemplazos literales sobre la COPIA que paran si Lawang cambia el trozo; Lawang no cambia. Traducciones en MENU_I18N (en/id).
+TEXTOS_INSTANCIA = (
+    # (fichero en DIST, trozo de Lawang, sustituto, veces que aparece)
+    ('intranet/v4/assets/editores.js', "label: 'Proyecto / unidad'", "label: 'Referencia'", 2),
+    ('intranet/v4/facturas/index.html', 'placeholder="Buscar por número, cliente, contrato o proyecto…"', 'placeholder="Buscar por número, cliente o reserva…"', 1),
+    ('intranet/v4/ajustes/index.html', 'el correo, el modo mantenimiento y los plazos de las Cartas de Reserva. Cambiarlos aquí',
+     'el correo y el modo mantenimiento. Cambiarlos aquí', 1),
+    ('intranet/v4/ajustes/index.html', '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Reservas</span>\n'
+     '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Vencimiento, gracia y prórrogas de las Cartas de Reserva</h2>',
+     '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Ajustes</span>\n'
+     '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Plazos</h2>', 1),
+    ('contracts/assets/herramientas.js', "para:'Días de gracia, prórrogas y techos de las reservas: lo que el sistema aplica solo.',",
+     "para:'Empresa, correo, impuestos y usuarios del ERP.',", 1),
+)
+# Solo en las instancias de alquileres (portada «reservas»): el ejemplo del campo y la pestaña «Reservas» de Ajustes, que en ellas solo lleva los impuestos
+TEXTOS_ALQUILER = (
+    ('intranet/v4/assets/editores.js', "placeholder: 'Ej. Proyecto — Villa 2BR S2'", "placeholder: 'Ej. Reserva R-0012 — Honda PCX'", 2),
+    ('intranet/v4/ajustes/index.html', 'data-lw-tab="reservas" data-lwt>Reservas<', 'data-lw-tab="reservas" data-lwt>Impuestos<', 1),
+)
+TEXTOS_OTRA = (   # el resto de instancias: un ejemplo neutro, sin la villa de Lawang
+    ('intranet/v4/assets/editores.js', "placeholder: 'Ej. Proyecto — Villa 2BR S2'", "placeholder: 'Ej. Reserva R-0012'", 2),
+)
+
+
+def textos_instancia(nombre):
+    """Los textos de inmobiliaria de las pantallas comunes, cambiados en la copia de la instancia (ver TEXTOS_INSTANCIA). Cada trozo tiene que
+    aparecer EXACTAMENTE las veces dichas: si Lawang lo cambia, el build para en vez de dejar medio cambio."""
+    for rel_, viejo, nuevo, veces in TEXTOS_INSTANCIA + (TEXTOS_ALQUILER if portada_de(nombre) == 'reservas' else TEXTOS_OTRA):
+        ruta = os.path.join(DIST, *rel_.split('/'))
+        t = open(ruta, encoding='utf-8').read()
+        if t.count(viejo) != veces:
+            aborta('textos_instancia: %s: esperaba %d vez/veces %r y hay %d (¿cambió el fichero de Lawang?)' % (rel_, veces, viejo[:70], t.count(viejo)))
+        open(ruta, 'w', encoding='utf-8', newline='').write(t.replace(viejo, nuevo))
+
+
 # ── Idiomas de la interfaz por instancia (owner, 11-oct-2026: bbm «Añade Indonesio y quita español») ─────────────────────────────────────────
 # Una instancia con `"idiomas": ["id", "en"]` en erp/instancias.json sale en indonesio (el primero, por defecto) e inglés, y el español deja de
 # ofrecerse. Todo con reemplazos literales sobre la COPIA (DIST), nunca en Lawang; si Lawang cambia un trozo, el build para. Sin la clave, nada cambia.
@@ -3524,6 +3574,7 @@ def instancia(nombre):
     ajustes_puesta_en_marcha()   # F3 (12-oct-2026): Ajustes › Configurar módulos, primera pestaña, en todas las instancias (antes solo las de reservas)
     ajustes_cobros()   # F3 E2 (12-oct-2026): Ajustes › Cobros y el paso «cobros» (oculto hasta que la base declare el paso)
     setup_comun_pasos()   # F3 (12-oct-2026, bbm-p31): pasos negocio/idiomas/correo/taller_* y Ajustes › Idiomas contra la base
+    textos_instancia(nombre)   # owner 12-oct («Sí, tal cual»): fuera proyectos, villas y Cartas de Reserva de las pantallas comunes de la instancia
     # F3 E3/E4 (pasos de Reservas de producto, setup_reservas.js): FUERA del paquete en la rama setup-sin-e3 (agencia-81, 12-oct): Cobros se publica en cuanto
     # su base esté en bbm, sin esperar a E3 (que al aplicarse deja bbm sin cotizar hasta el paso de Dion). Volver a meterlo = descomentar estas dos líneas
     # cuando E3/E4 esté aplicado (setup-junto las lleva).
