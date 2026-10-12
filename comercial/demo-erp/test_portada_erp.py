@@ -71,6 +71,14 @@ ok('url(' not in CSS or not re.search(r'url\(\s*["\']?https?:', CSS), 'portada.c
 # Enlaces estáticos a la demo (publica_web los hace absolutos) y su versión con ?sel= por data-enlace
 ok(HTML.count('href="/home/"') >= 2 and HTML.count('href="/home/?tour=1"') >= 3, 'faltan los enlaces estáticos a /home/')
 ok(all('data-enlace=' in a for a in re.findall(r'<a [^>]*href="/home/[^>]*>', HTML)), 'un enlace a /home/ sin data-enlace')
+# La demo vuelve a «#configurador» (tour.js al acabar, modulos_demo.js en «Choose modules»): ese id no se puede perder
+# aunque la sección se llame #modules (revisor C03, 12-oct), y tiene que caer DENTRO de la sección de módulos.
+_mods = re.search(r'<section id="modules"[\s\S]*?</section>', HTML)
+ok(HTML.count('id="configurador"') == 1 and _mods is not None and 'id="configurador"' in _mods.group(0),
+   'el ancla #configurador (a la que vuelve la demo) no está, una sola vez, dentro de <section id="modules">')
+_demo = open(os.path.join(AQUI, 'tour.js'), encoding='utf-8').read() + open(os.path.join(AQUI, 'modulos_demo.js'), encoding='utf-8').read()
+ok('#configurador' in _demo, 'la demo ya no vuelve a #configurador: revisa este test y el ancla de landing.html')
+ok('AXW_PORTADA =' not in JS and 'AXW_PORTADA_API' in JS, 'portada.js no expone su API como AXW_PORTADA_API (AXW_PORTADA es la URL de vuelta de la demo)')
 # La cifra de módulos sale de catalogo.js, no se escribe
 ok(not re.search(r'>\s*\d{2}\s*<', HTML_SIN_COM.split('<dt>3</dt>')[0]) and '30 modules' not in HTML and '>30<' not in HTML,
    'la cifra de módulos está escrita a mano')

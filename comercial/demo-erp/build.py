@@ -2112,9 +2112,9 @@ def cabeceras_seguridad(csp):
 PORTADA_SOLO = ('index.html', 'demo/landing.css', 'demo/roi.js', 'demo/portada.js')
 # Fuentes de la portada (C03, 12-oct-2026): Unbounded, Manrope e IBM Plex Mono, OFL, AUTOALOJADAS (Legal 24-sep: nada a
 # Google), los mismos ficheros que la web de axisworks.studio. Fuente única: <raíz del repo>/assets/x/fonts.css; las
-# copia publica_web() desde sus url() (con las licencias OFL al lado) y antepone sus @font-face a demo/landing.css. Mientras
-# no estén en main, AXW_FUENTES_X apunta a otro fonts.css (con la misma estructura assets/x + assets/fonts/x debajo de
-# su raíz) y, si no hay ninguno, el build PARA al publicar: sin fuentes la portada saldría con las del sistema.
+# copia publica_web() desde sus url() (con las licencias OFL al lado) y antepone sus @font-face a demo/landing.css. En main
+# desde fdcfb73 (web nueva, 12-oct); AXW_FUENTES_X solo para probar otro fonts.css (misma estructura assets/x +
+# assets/fonts/x debajo de su raíz). Si no hay ninguno, el build PARA al publicar: sin fuentes saldría con las del sistema.
 FUENTES_CSS = os.path.abspath(os.environ.get('AXW_FUENTES_X') or os.path.join(AQUI, '..', '..', 'assets', 'x', 'fonts.css'))
 FUENTES_WEB = tuple('assets/fonts/x/' + f for f in (
     'unbounded-300.woff2', 'unbounded-500.woff2', 'unbounded-600.woff2', 'manrope-400.woff2', 'manrope-500.woff2',
@@ -2122,8 +2122,9 @@ FUENTES_WEB = tuple('assets/fonts/x/' + f for f in (
     'OFL-unbounded.txt', 'OFL-manrope.txt', 'OFL-ibm-plex-mono.txt'))
 LISTA_WEB = ('index.html', 'demo/landing.css', 'demo/catalogo.js', 'demo/roi.js', 'demo/portada.js', 'favicon.png',
              'favicon.ico', 'robots.txt', '.htaccess') + FUENTES_WEB
-# Banda «Claude for Startups» de la portada (owner 12-oct, 10:10: se queda; Legal #286 la quiere apagada sin prueba de
-# membresía, choque llevado al orquestador). ESTE es el único interruptor: False la quita del HTML al construir (no se
+# Banda «Claude for Startups» de la portada. ACEPTADO: owner 12-oct 10:10 («estoy en el programa: se queda») + opción (a)
+# de Legal 10:25 (encargos/20261012_axisworks_web_nueva_brand_kit.md); la prueba de membresía la guarda el owner. ESTE es
+# el único interruptor: False la quita del HTML al construir (no se
 # oculta con CSS: no sale). En landing.html va entre <!--axw:startups--> y <!--/axw:startups-->.
 CLAUDE_STARTUPS = True
 STARTUPS_RE = re.compile(r'<!--axw:startups-->([\s\S]*?)<!--/axw:startups-->')
@@ -2143,8 +2144,9 @@ def fuentes_portada():
     """(texto de fonts.css, [(ruta publicada, fichero de origen)]) de las url() de fonts.css + sus licencias OFL.
     PARA con un mensaje claro si falta algo: es bloqueo de la PUBLICACIÓN, no de construir (solo lo llama publica_web)."""
     if not os.path.isfile(FUENTES_CSS):
-        aborta('faltan las fuentes de la portada de erp.: no existe %s.\n  Están en la rama web-nueva-x (fc9374a) y aún no en '
-               'main. Para publicar antes, AXW_FUENTES_X=<ruta a un assets/x/fonts.css con assets/fonts/x/ al lado>.' % FUENTES_CSS)
+        aborta('faltan las fuentes de la portada de erp.: no existe %s.\n  Viven en main (assets/x/fonts.css + '
+               'assets/fonts/x/, desde fdcfb73): ¿copia sin actualizar? Para otro origen, AXW_FUENTES_X=<ruta a un '
+               'assets/x/fonts.css con assets/fonts/x/ al lado>.' % FUENTES_CSS)
     raiz_f = os.path.dirname(os.path.dirname(os.path.dirname(FUENTES_CSS)))
     css = open(FUENTES_CSS, encoding='utf-8').read()
     urls = re.findall(r'''url\(\s*['"]?(/assets/fonts/x/[A-Za-z0-9._-]+\.woff2)['"]?\s*\)''', css)

@@ -75,7 +75,8 @@
 
   var api = { nucleo: nucleo, TIPOS: TIPOS, EN_PRUEBAS: EN_PRUEBAS };
   if (typeof module !== 'undefined' && module.exports) { module.exports = api; return; }
-  raiz.AXW_PORTADA = api;
+  // AXW_PORTADA_API y no AXW_PORTADA: ese nombre es, en la demo, la URL de vuelta a esta portada (tour.js, modulos_demo.js)
+  raiz.AXW_PORTADA_API = api;
   if (typeof document === 'undefined' || !raiz.AXW_CATALOGO) return;
 
   var CAT = raiz.AXW_CATALOGO, N = nucleo(CAT);
