@@ -480,16 +480,19 @@
   var AVISO_TRUNCADO = 'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.';
   var SB = null;
   var E = { tab: 'operaciones', ops: [], opsSig: null, opsCargado: false, res: [], resSig: null, resCargado: false, cola: [], colaSig: null,
-            ficha: null, bloqueos: {}, ocupado: false, reservasOn: true, venta: { clave: null }, clientes: null, productos: null, emisor: null };
+            ficha: null, bloqueos: {}, ocupado: false, reservasOn: true, opsOn: true, venta: { clave: null }, clientes: null, productos: null, emisor: null };
 
   /* ── módulo Reservas (10-oct-2026) ── Con `reservas-producto` APAGADO la base contesta `null` (HTTP 200) a sus RPC: sin esta guarda la pantalla
      lo leía como «la base no devolvió…» o «algo inesperado». `axwModuloActivo` (apagados_instancia.js) falla ABIERTO: sin el fichero (Lawang),
      o sin saber aún, es true = el comportamiento de siempre. Solo dice false cuando la base ha contestado y el módulo no está. */
   var NO_DISP_RES = 'No disponible en esta instancia: el módulo Reservas está apagado, así que las reservas no se pueden reclamar ni facturar desde aquí.';
   var NO_DISP_ACC = 'No disponible en esta instancia: esta acción depende de un módulo que está apagado.';
-  function reservasOn() {
+  // 12-oct-2026 (medido por Backend con la cuenta de pruebas de bbm): con Operaciones apagado, Transaksi decía «la base ha devuelto algo inesperado»
+  var NO_DISP_OPS = 'No disponible en esta instancia: el módulo Operaciones está apagado.';
+  function reservasOn() { return moduloOn('reservas-producto'); }
+  function moduloOn(m) {
     var activo = function () {
-      try { return typeof window.axwModuloActivo === 'function' ? window.axwModuloActivo('reservas-producto') !== false : true; }
+      try { return typeof window.axwModuloActivo === 'function' ? window.axwModuloActivo(m) !== false : true; }
       catch (e) { return true; /* MUDO A PROPOSITO: falla abierto = el comportamiento de siempre; si la guarda no se puede evaluar no se esconde nada */ }
     };
     var listos = window.AXW_MODULOS_LISTOS;
@@ -500,7 +503,10 @@
   function aplicaModulo() {
     var t = raiz.querySelector('[data-accion="vt-tab"][data-tab="reservas"]');
     if (t) oculta(t, !E.reservasOn);
-    if (!E.reservasOn && E.tab === 'reservas') pestana('operaciones');
+    var to = raiz.querySelector('[data-accion="vt-tab"][data-tab="operaciones"]');
+    if (to) oculta(to, !E.opsOn);
+    if (!E.reservasOn && E.tab === 'reservas') pestana(E.opsOn ? 'operaciones' : 'cola');
+    if (!E.opsOn && E.tab === 'operaciones') pestana(E.reservasOn ? 'reservas' : 'cola');
     if (E.ficha && E.ficha.op) pintaAccionesFicha();
   }
 
@@ -631,6 +637,7 @@
 
   function cargaOps(mas) {
     var est = $v('ops-estado');
+    if (!E.opsOn) { vacia($v('ops-tabla')); est.textContent = T(NO_DISP_OPS); return Promise.resolve(false); }
     est.textContent = T('Cargando…');
     var args = { p_limit: 500 };
     var fo = $v('f-origen').value, fe = $v('f-estado').value;
@@ -1239,7 +1246,7 @@
       else if (t && t.hasAttribute && t.hasAttribute('data-campo') && E.venta) E.venta.clave = null;   // la clave de idempotencia es de UN contenido: otro contenido, otra clave
     });
     raiz.addEventListener('input', function (ev) { var t = ev.target; if (t && t.hasAttribute && t.getAttribute('data-campo') === 'venta-cantidad') E.venta.clave = null; });
-    modP = reservasOn().then(function (v) { E.reservasOn = v; aplicaModulo(); return v; });
+    modP = Promise.all([reservasOn(), moduloOn('operaciones')]).then(function (v) { E.reservasOn = v[0]; E.opsOn = v[1]; aplicaModulo(); return v[0]; });
     pestana('operaciones');
   }
 
