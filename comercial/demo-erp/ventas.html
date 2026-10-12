@@ -303,6 +303,9 @@
     "No disponible en esta instancia: el módulo Reservas está apagado, así que las reservas no se pueden reclamar ni facturar desde aquí.": "Tidak tersedia di instance ini: modul Booking nonaktif, sehingga booking tidak bisa diklaim atau di-invoice dari sini.",
     "No disponible en esta instancia: esta acción depende de un módulo que está apagado.": "Tidak tersedia di instance ini: aksi ini bergantung pada modul yang nonaktif.",
     "No disponible en esta instancia: el módulo Operaciones está apagado.": "Tidak tersedia di instance ini: modul Transaksi nonaktif.",
+    "No se ha podido comprobar qué módulos están encendidos: recarga la página.": "Tidak dapat memeriksa modul yang aktif: muat ulang halaman.",
+    "Reserva reclamada. Su ficha de operación no se puede abrir aquí: el módulo Operaciones está apagado.": "Booking sudah diklaim. Detail transaksinya tidak bisa dibuka di sini: modul Transaksi nonaktif.",
+    "Venta creada con su borrador de factura: lo tienes en Facturas.": "Penjualan dibuat dengan draf invoice-nya: ada di Invoice.",
     "Reintentar": "Coba lagi"
   };
   var EN_VT = {
@@ -408,6 +411,9 @@
     'No disponible en esta instancia: el módulo Reservas está apagado, así que las reservas no se pueden reclamar ni facturar desde aquí.': 'Not available on this instance: the Bookings module is switched off, so bookings cannot be claimed or invoiced from here.',
     'No disponible en esta instancia: esta acción depende de un módulo que está apagado.': 'Not available on this instance: this action depends on a module that is switched off.',
     'No disponible en esta instancia: el módulo Operaciones está apagado.': 'Not available on this instance: the Operations module is switched off.',
+    'No se ha podido comprobar qué módulos están encendidos: recarga la página.': 'Could not check which modules are switched on: reload the page.',
+    'Reserva reclamada. Su ficha de operación no se puede abrir aquí: el módulo Operaciones está apagado.': 'Booking claimed. Its operation card cannot be opened here: the Operations module is switched off.',
+    'Venta creada con su borrador de factura: lo tienes en Facturas.': 'Sale created with its draft invoice: you will find it in Invoices.',
     'Reintentar': 'Retry'
   };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
@@ -482,7 +488,7 @@
   var AVISO_TRUNCADO = 'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.';
   var SB = null;
   var E = { tab: 'operaciones', ops: [], opsSig: null, opsCargado: false, res: [], resSig: null, resCargado: false, cola: [], colaSig: null,
-            ficha: null, bloqueos: {}, ocupado: false, reservasOn: true, opsOn: true, venta: { clave: null }, clientes: null, productos: null, emisor: null };
+            ficha: null, bloqueos: {}, ocupado: false, reservasOn: true, opsOn: true, modOk: true, venta: { clave: null }, clientes: null, productos: null, emisor: null };
 
   /* ── módulo Reservas (10-oct-2026) ── Con `reservas-producto` APAGADO la base contesta `null` (HTTP 200) a sus RPC: sin esta guarda la pantalla
      lo leía como «la base no devolvió…» o «algo inesperado». `axwModuloActivo` (apagados_instancia.js) falla ABIERTO: sin el fichero (Lawang),
@@ -658,6 +664,7 @@
       return llama('operaciones_cola_datos', args);
     }).then(function (r) {
       if (r === false) return false;
+      if (r && !r.error && r.data == null && !E.modOk) { E.ops = []; E.opsCargado = false; vacia($v('ops-tabla')); $v('ops-estado').textContent = T('No se ha podido comprobar qué módulos están encendidos: recarga la página.'); return false; }   // la capa de módulos no pudo mirar y contesta null por todo
       if (r && !r.error && r.data == null) { E.opsOn = false; aplicaModulo(); return opsApagado(); }   // apagado con la pantalla abierta: la base contesta null sin error
       if (!vaListaDe(r, 'operaciones')) {
         if (!mas) { E.ops = []; E.opsCargado = false; }
@@ -709,6 +716,7 @@
     return f.anulada ? [T('Rectificada'), 'mal'] : [T('Emitida'), 'ok'];
   }
   function abreFicha(id, ctx) {
+    if (!E.opsOn) { aviso(T(NO_DISP_OPS)); return Promise.resolve(); }
     return buscaOp(id).then(function (o) {
       var f = $v('ficha');
       if (!o) { error(T('No encuentro esa operación entre las que puedes ver.')); return; }
@@ -1031,7 +1039,7 @@
       tr.appendChild(celda(x.pago_referencia ? x.pago_referencia : T('Sin pago')));
       var ac = h('div', { class: 'vt-acciones' });
       if (!x.client_id && x.estado !== 'cancelada' && x.estado !== 'caducada') ac.appendChild(boton(T('Reclamar'), 'vt-reclamar', { 'data-reserva-id': x.id, 'data-origen': 'reservas' }));
-      if (x.operacion_id) ac.appendChild(boton(T('Ver operación'), 'vt-abrir-op', { 'data-op-id': x.operacion_id, 'data-pago': x.pago_referencia ? '1' : null }));
+      if (x.operacion_id && E.opsOn) ac.appendChild(boton(T('Ver operación'), 'vt-abrir-op', { 'data-op-id': x.operacion_id, 'data-pago': x.pago_referencia ? '1' : null }));
       tr.appendChild(celda(ac));
       return tr;
     });
@@ -1087,7 +1095,7 @@
         tr.appendChild(celda(T(x.tiene_borrador ? 'Sí' : 'No')));
         var ac = h('div', { class: 'vt-acciones' });
         if (x.sin_cliente && E.reservasOn) ac.appendChild(boton(T('Reclamar'), 'vt-reclamar', { 'data-reserva-id': x.id, 'data-origen': 'cola' }));
-        else if (x.operacion_id) ac.appendChild(boton(T('Abrir operación'), 'vt-abrir-op', { 'data-op-id': x.operacion_id, 'data-pago': x.pago_referencia ? '1' : null }));
+        else if (x.operacion_id && E.opsOn) ac.appendChild(boton(T('Abrir operación'), 'vt-abrir-op', { 'data-op-id': x.operacion_id, 'data-pago': x.pago_referencia ? '1' : null }));
         tr.appendChild(celda(ac));
         return tr;
       });
@@ -1140,6 +1148,7 @@
             var x = r.data || {};
             dd.cierra();
             if (!x.operacion_id) { aviso(T('La base no devolvió la operación de la reserva reclamada: recarga y comprueba.')); return Promise.all([cargaReservas(false), cargaCola(false)]); }
+            if (!E.opsOn) { exito(T('Reserva reclamada. Su ficha de operación no se puede abrir aquí: el módulo Operaciones está apagado.')); return Promise.all([cargaReservas(false), cargaCola(false)]); }
             exito(T('Reserva reclamada. Ya puedes crear su borrador de factura.'));
             return Promise.all([cargaReservas(false), cargaCola(false), cargaOps(false)]).then(function () { return abreFicha(x.operacion_id, { pago: !!res.pago_referencia }); });
           });
@@ -1201,8 +1210,9 @@
       if (r.error) { error(mensaje(r.error)); return; }
       var d = r.data || {};
       if (!d.operacion_id || !d.factura_id) { error(T('La base no devolvió la venta: recarga y comprueba.')); return; }
-      exito(d.creada === false ? T('La venta ya estaba creada: se enseña la que había.') : T('Venta creada con su borrador de factura.'));
       E.venta.clave = null;
+      if (!E.opsOn) { exito(T('Venta creada con su borrador de factura: lo tienes en Facturas.')); pintaNueva(); return; }   // sin Operaciones no hay ficha que abrir: se dice dónde queda el borrador
+      exito(d.creada === false ? T('La venta ya estaba creada: se enseña la que había.') : T('Venta creada con su borrador de factura.'));
       pintaNueva();   // formulario limpio: un segundo clic no puede crear la misma venta otra vez
       return cargaOps(false).then(function () { return abreFicha(d.operacion_id); });
     });
@@ -1260,7 +1270,8 @@
       else if (t && t.hasAttribute && t.hasAttribute('data-campo') && E.venta) E.venta.clave = null;   // la clave de idempotencia es de UN contenido: otro contenido, otra clave
     });
     raiz.addEventListener('input', function (ev) { var t = ev.target; if (t && t.hasAttribute && t.getAttribute('data-campo') === 'venta-cantidad') E.venta.clave = null; });
-    modP = Promise.all([reservasOn(), moduloOn('operaciones')]).then(function (v) { E.reservasOn = v[0]; E.opsOn = v[1]; aplicaModulo(); return v[0]; });
+    var listos = window.AXW_MODULOS_LISTOS && typeof window.AXW_MODULOS_LISTOS.then === 'function' ? window.AXW_MODULOS_LISTOS.then(function (x) { return x !== false; }, function () { return false; }) : Promise.resolve(true);
+    modP = Promise.all([reservasOn(), moduloOn('operaciones'), listos]).then(function (v) { E.reservasOn = v[0]; E.opsOn = v[1]; E.modOk = v[2]; aplicaModulo(); return v[0]; });
     pestana('operaciones');
   }
 

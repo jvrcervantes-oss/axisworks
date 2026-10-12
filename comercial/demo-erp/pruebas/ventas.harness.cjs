@@ -158,7 +158,7 @@ window.lwLocale = function () { return window.LW_IDIOMA === 'en' ? 'en-GB' : 'es
 window.lwT = function (s) { s = String(s); if (window.LW_IDIOMA === 'id' && Object.prototype.hasOwnProperty.call(window.LW_ID, s)) return window.LW_ID[s]; if (window.LW_IDIOMA === 'en') { if (Object.prototype.hasOwnProperty.call(window.LW_EN, s)) return window.LW_EN[s]; if (!/^[\\s—·0-9.,%():]*$/.test(s)) window.__sinEn.push(s); } return s; };
 window.lwIdiomaAplicar = function (raiz) { Array.prototype.forEach.call(raiz.querySelectorAll('[data-lwt]'), function (e) { e.textContent = window.lwT(e.textContent); }); };
 window.toast = function () {};
-${mods ? "window.axwModuloActivo = function (m) { return window.__mods[m] !== false; }; window.__mods = " + JSON.stringify(mods) + "; window.AXW_MODULOS_LISTOS = Promise.resolve(true);" : ''}
+${mods ? "window.axwModuloActivo = function (m) { return window.__mods.__falla ? true : window.__mods[m] !== false; }; window.__mods = " + JSON.stringify(mods) + "; window.AXW_MODULOS_LISTOS = Promise.resolve(!window.__mods.__falla);" : ''}
 window.onerror = function (m) { window.__errores.push(String(m)); };
 </script>
 <script>${SCRIPT.replace(/<\/?script>/g, '').replace("var LECT = { clientes: 'clientes_datos', productos: 'productos_datos', emisor: 'sociedades_emisor_datos' };", lectores)}</script></body></html>`;
@@ -484,7 +484,27 @@ const CON_LECTORES = LECT_REAL;
     ok('ops apagado: no se pidió operaciones_cola_datos', llamadas(base, 'operaciones_cola_datos').length === 0);
     ok('ops apagado: se abre otra pestaña visible', await p.evaluate(() => { const t = document.querySelector('[data-accion="vt-tab"][aria-selected="true"]'); return !!t && !t.classList.contains('vt-oculto') && t.getAttribute('data-tab') !== 'operaciones'; }));
     ok('ops apagado: ni «algo inesperado» ni error rojo', !(await txt(p, '[data-vt="ops-estado"]')).includes('inesperado') && (await p.$eval('[data-vt="error"]', e => e.classList.contains('vt-oculto'))));
+    // sin Operaciones no hay ficha (revisor, 12-oct): ningún botón lleva a ella y reclamar o vender no acaban en error rojo
+    await tab(p, 'reservas');
+    await espera(p, () => document.querySelectorAll('[data-vt="res-tabla"] tbody tr').length > 0);
+    ok('ops apagado: Reservas no ofrece «Ver operación»', (await p.$$('[data-vt="res-tabla"] [data-accion="vt-abrir-op"]')).length === 0);
+    await tab(p, 'cola');
+    await new Promise(r => setTimeout(r, 300));
+    ok('ops apagado: Cobrado sin facturar no ofrece «Abrir operación»', (await p.$$('[data-vt="cola-tabla"] [data-accion="vt-abrir-op"]')).length === 0);
+    await tab(p, 'nueva');
+    await espera(p, () => !!document.querySelector('[data-accion="vt-venta-crear"]'));
+    await p.selectOption('[data-campo="venta-cliente"]', 'c1');
+    await p.selectOption('[data-campo="venta-producto"]', 'p1');
+    await p.click('[data-accion="vt-venta-crear"]');
+    await espera(p, () => !document.querySelector('[data-vt="exito"]').classList.contains('vt-oculto') || !document.querySelector('[data-vt="error"]').classList.contains('vt-oculto'));
+    ok('ops apagado: vender dice dónde queda el borrador y sin error rojo', (await txt(p, '[data-vt="exito"]')).includes('Facturas') && (await p.$eval('[data-vt="error"]', e => e.classList.contains('vt-oculto'))), await txt(p, '[data-vt="error"]'));
     ok('ops apagado: sin errores de script', (await p.evaluate(() => window.__errores.length)) === 0);
+    await ctx.close();
+  }
+  {   // la comprobación de módulos FALLÓ y la capa contesta null: «no se pudo comprobar», nunca «apagado», y la pestaña se queda
+    const { p, ctx } = await abre({ mods: { __falla: true }, base: { nulos: ['operaciones_cola_datos'] } });
+    await espera(p, () => document.querySelector('[data-vt="ops-estado"]').textContent.includes('comprobar'));
+    ok('módulos sin comprobar: lo dice y no esconde Operaciones', (await txt(p, '[data-vt="ops-estado"]')).includes('No se ha podido comprobar') && !(await p.$eval('[data-accion="vt-tab"][data-tab="operaciones"]', e => e.classList.contains('vt-oculto'))));
     await ctx.close();
   }
   {   // sin saber el módulo (Lawang: falla abierto) pero la base contesta null: la pantalla lo lee como apagado
