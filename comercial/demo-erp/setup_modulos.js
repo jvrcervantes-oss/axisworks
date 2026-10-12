@@ -112,7 +112,24 @@
       motivo_corto: "Escribe el motivo del cambio (al menos 3 letras).",
       valor_actual: "Ahora: %v",
       sin_valor: "Sin decidir",
-      ir_inicio: "Ir al inicio"
+      ir_inicio: "Ir al inicio",
+      obligatorio: "Obligatorio",
+      para_que: "Para qué sirve",
+      pasos_hechos: "%n de %t pasos hechos",
+      volver_erp: "Volver al ERP",
+      as_eyebrow: "Asistente de configuración · solo el administrador principal",
+      as_titulo: "Configura tu ERP,",
+      as_titulo2: "paso a paso.",
+      as_lead: "Cada módulo hace unas pocas preguntas, una por pantalla. Todo se guarda al momento y puedes cambiarlo después en Ajustes.",
+      solo_tu: "Solo tú, como administrador principal, puedes configurar los módulos. Hasta que termines, tu equipo ve que el módulo aún no está listo.",
+      sigue_donde: "Sigue donde lo dejaste",
+      modulos_encendidos: "Módulos encendidos",
+      n_modulos_pasos: "%m módulos · %p pasos",
+      a_medias: "A medias",
+      empezar: "Empezar",
+      continuar: "Continuar",
+      revisar: "Revisar",
+      se_guarda: "Se guarda al momento. El asistente abre siempre en el primer paso que falta."
     },
     general: {
       sin_configurar_admin: '%m aún no está configurado.',
@@ -122,8 +139,10 @@
       red: 'El ERP no ha respondido: prueba otra vez en un rato.',
       forma: 'El ERP ha devuelto algo inesperado.',
       configurar: 'Configurar',
-      aviso_uno: '%m: sin configurar',
-      aviso_varios: '%n módulos sin configurar: %lista',
+      aviso_titulo_uno: "Tienes un módulo sin configurar",
+      aviso_titulo_varios: "Tienes %n módulos sin configurar",
+      aviso_detalle_uno: "%m está encendido. Todo lo demás sigue funcionando mientras lo configuras.",
+      aviso_detalle_varios: "%lista están encendidos. Todo lo demás sigue funcionando mientras los configuras.",
       ahora_no: 'Ahora no',
       desconocido: 'Paso sin nombre (código: %c)',
       error_codigo: 'No se pudo hacer (código: %c).'
@@ -166,7 +185,8 @@
     'Esta función todavía no está disponible en este ERP.': 'This function is not available in this ERP yet.',
     'El ERP no ha respondido: prueba otra vez en un rato.': 'The ERP did not respond: try again in a moment.',
     'El ERP ha devuelto algo inesperado.': 'The ERP returned something unexpected.',
-    'Configurar': 'Set up', '%m: sin configurar': '%m: not set up', '%n módulos sin configurar: %lista': '%n modules not set up: %lista', 'Ahora no': 'Not now', 'Paso sin nombre (código: %c)': 'Unnamed step (code: %c)', 'No se pudo hacer (código: %c).': 'It could not be done (code: %c).'
+    'Configurar': 'Set up', 'Ahora no': 'Not now', 'Paso sin nombre (código: %c)': 'Unnamed step (code: %c)', 'No se pudo hacer (código: %c).': 'It could not be done (code: %c).',
+    "Obligatorio": "Required", "Para qué sirve": "What it's for", "%n de %t pasos hechos": "%n of %t steps done", "Volver al ERP": "Back to the ERP", "Asistente de configuración · solo el administrador principal": "Setup assistant · main administrator only", "Configura tu ERP,": "Set up your ERP,", "paso a paso.": "one step at a time.", "Cada módulo hace unas pocas preguntas, una por pantalla. Todo se guarda al momento y puedes cambiarlo después en Ajustes.": "Each module asks a few short questions, one per screen. Everything is saved as you go, and you can change it later in Settings.", "Solo tú, como administrador principal, puedes configurar los módulos. Hasta que termines, tu equipo ve que el módulo aún no está listo.": "Only you, as main administrator, can set up the modules. Until you finish, your team sees that the module is not ready yet.", "Sigue donde lo dejaste": "Continue where you left off", "Módulos encendidos": "Modules turned on", "%m módulos · %p pasos": "%m modules · %p steps", "A medias": "Partly done", "Empezar": "Start", "Continuar": "Continue", "Revisar": "Review", "Se guarda al momento. El asistente abre siempre en el primer paso que falta.": "Saved as you go. The assistant always opens at the first step left.", "Tienes un módulo sin configurar": "You have a module that is not set up", "Tienes %n módulos sin configurar": "You have %n modules that are not set up", "%m está encendido. Todo lo demás sigue funcionando mientras lo configuras.": "%m is switched on. Everything else keeps working while you set it up.", "%lista están encendidos. Todo lo demás sigue funcionando mientras los configuras.": "%lista are switched on. Everything else keeps working while you set them up."
   };
   var ID = {
     "Elige una opción": "Pilih salah satu", "Moneda": "Mata uang", "Razón social": "Nama badan usaha", "Domicilio": "Alamat", "Etiqueta fiscal": "Label pajak", "Identificación fiscal": "Identitas pajak", "Representante (opcional)": "Perwakilan (opsional)", "Prefijo": "Prefiks", "Mayúsculas y números, de 2 a 8. Por ejemplo: BBM": "Huruf kapital dan angka, 2 sampai 8. Contoh: BBM", "Las facturas empezarán así: %p-…": "Invoice akan diawali seperti ini: %p-…", "Primero hay que dar de alta la empresa que emite las facturas.": "Daftarkan dulu perusahaan penerbit invoice.", "Sí: es PKP y cobra PPN": "Ya: PKP dan memungut PPN", "No: no es PKP (las reservas van sin PPN)": "Tidak: bukan PKP (booking tanpa PPN)", "El precio de la tarifa ya lleva el impuesto": "Harga di tarif sudah termasuk pajak", "El impuesto se suma al precio de la tarifa": "Pajak ditambahkan ke harga di tarif", "Abrir %pantalla": "Buka %pantalla", "Ya lo hice, comprobar": "Sudah, periksa", "Este paso se hace en otra pantalla. Al terminar, vuelve aquí y pulsa «Ya lo hice, comprobar».": "Langkah ini dikerjakan di layar lain. Setelah selesai, kembali ke sini dan tekan «Sudah, periksa».", "Falta rellenar: %c.": "Masih perlu diisi: %c.", "El prefijo va en mayúsculas y números, de 2 a 8 caracteres.": "Prefiks memakai huruf kapital dan angka, 2 sampai 8 karakter.", "No se podrá cambiar después.": "Tidak bisa diubah nanti.", "Para confirmar, escribe %v": "Untuk konfirmasi, ketik %v", "Lo escrito no coincide.": "Yang diketik tidak sama.", "Fijar la moneda: %v": "Tetapkan mata uang: %v", "Fijar el prefijo: %v": "Tetapkan prefiks: %v", "Fijado": "Ditetapkan", "Comprobando si se guardó…": "Memeriksa apakah sudah tersimpan…", "El ERP dice que no se guardó. Puedes volver a intentarlo.": "ERP menyatakan belum tersimpan. Anda bisa mencoba lagi.", "Guardar y seguir": "Simpan dan lanjut", "Siguiente": "Berikutnya", "Atrás": "Kembali", "Dejar para luego": "Nanti saja", "%m está listo.": "%m sudah siap.", "Paso %n de %t": "Langkah %n dari %t", "Opcional": "Opsional", "Solo el administrador principal puede configurar los módulos.": "Hanya admin utama yang dapat mengatur modul.", "Volver": "Kembali ke halaman sebelumnya", "Configurar %m": "Atur %m", "Cargando…": "Memuat…", "Reintentar": "Coba lagi", "No se ha podido mirar la configuración": "Pengaturan tidak dapat diperiksa", "Este paso necesita el módulo %m: pídelo al estudio.": "Langkah ini memerlukan modul %m: minta ke studio.", "Hecho": "Selesai", "Pendiente": "Belum", "Cambiar": "Ubah", "Todos los módulos están configurados.": "Semua modul sudah diatur.", "Módulos por configurar": "Modul yang perlu diatur", "Configurar módulos": "Penyiapan modul", "Abrir el asistente": "Buka panduan", "Guardar": "Simpan", "Guardado.": "Tersimpan.", "No se guardó: %e": "Tidak tersimpan: %e", "Motivo del cambio": "Alasan perubahan", "Obligatorio al cambiar algo ya guardado: queda en el registro de cambios.": "Wajib saat mengubah yang sudah tersimpan: tercatat di riwayat perubahan.", "Escribe el motivo del cambio (al menos 3 letras).": "Tulis alasan perubahan (minimal 3 huruf).", "Ahora: %v": "Saat ini: %v", "Sin decidir": "Belum ditentukan", "Ir al inicio": "Ke beranda",
@@ -203,7 +223,8 @@
     'Esta función todavía no está disponible en este ERP.': 'Fungsi ini belum tersedia di ERP ini.',
     'El ERP no ha respondido: prueba otra vez en un rato.': 'ERP tidak merespons: coba lagi sebentar lagi.',
     'El ERP ha devuelto algo inesperado.': 'ERP mengembalikan data yang tidak terduga.',
-    'Configurar': 'Atur', '%m: sin configurar': '%m: belum diatur', '%n módulos sin configurar: %lista': '%n modul belum diatur: %lista', 'Ahora no': 'Nanti saja', 'Paso sin nombre (código: %c)': 'Langkah tanpa nama (kode: %c)', 'No se pudo hacer (código: %c).': 'Tidak bisa dilakukan (kode: %c).'
+    'Configurar': 'Atur', 'Ahora no': 'Nanti saja', 'Paso sin nombre (código: %c)': 'Langkah tanpa nama (kode: %c)', 'No se pudo hacer (código: %c).': 'Tidak bisa dilakukan (kode: %c).',
+    "Obligatorio": "Wajib", "Para qué sirve": "Fungsinya", "%n de %t pasos hechos": "%n dari %t langkah selesai", "Volver al ERP": "Kembali ke ERP", "Asistente de configuración · solo el administrador principal": "Panduan penyiapan · hanya admin utama", "Configura tu ERP,": "Atur ERP Anda,", "paso a paso.": "langkah demi langkah.", "Cada módulo hace unas pocas preguntas, una por pantalla. Todo se guarda al momento y puedes cambiarlo después en Ajustes.": "Setiap modul mengajukan beberapa pertanyaan singkat, satu per layar. Semuanya langsung tersimpan dan bisa diubah nanti di Pengaturan.", "Solo tú, como administrador principal, puedes configurar los módulos. Hasta que termines, tu equipo ve que el módulo aún no está listo.": "Hanya Anda, sebagai admin utama, yang dapat mengatur modul. Sampai Anda selesai, tim Anda melihat bahwa modul belum siap.", "Sigue donde lo dejaste": "Lanjutkan dari terakhir kali", "Módulos encendidos": "Modul yang aktif", "%m módulos · %p pasos": "%m modul · %p langkah", "A medias": "Sebagian selesai", "Empezar": "Mulai", "Continuar": "Lanjutkan", "Revisar": "Tinjau", "Se guarda al momento. El asistente abre siempre en el primer paso que falta.": "Tersimpan otomatis. Panduan selalu terbuka di langkah pertama yang belum selesai.", "Tienes un módulo sin configurar": "Ada satu modul yang belum diatur", "Tienes %n módulos sin configurar": "Ada %n modul yang belum diatur", "%m está encendido. Todo lo demás sigue funcionando mientras lo configuras.": "%m sudah aktif. Semua yang lain tetap berjalan selama Anda mengaturnya.", "%lista están encendidos. Todo lo demás sigue funcionando mientras los configuras.": "%lista sudah aktif. Semua yang lain tetap berjalan selama Anda mengaturnya."
   };
 
   function T(x, huecos) {

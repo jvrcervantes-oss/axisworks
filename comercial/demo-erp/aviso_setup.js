@@ -39,17 +39,32 @@
     (hijos || []).forEach(function (c) { if (c) e.appendChild(c); });
     return e;
   }
-  function textoBanda(S, d) {
+  // Banda del diseño del owner (S02, 12-oct): círculo con icono, título y detalle, «Configurar» y «Ahora no». Colores por token de la piel.
+  function textosBanda(S, d) {
     var nombres = d.modulos.map(function (m) { return S.nombreModulo(m); });
     var T = window.lwT || function (x, hh) { var v = x; Object.keys(hh || {}).forEach(function (k) { v = v.split('%' + k).join(hh[k]); }); return v; };
-    return nombres.length === 1 ? T(S.TEXTOS.general.aviso_uno, { m: nombres[0] })
-                                : T(S.TEXTOS.general.aviso_varios, { n: String(nombres.length), lista: nombres.join(', ') });
+    if (nombres.length === 1) return { titulo: T(S.TEXTOS.general.aviso_titulo_uno), detalle: T(S.TEXTOS.general.aviso_detalle_uno, { m: nombres[0] }) };
+    return { titulo: T(S.TEXTOS.general.aviso_titulo_varios, { n: String(nombres.length) }), detalle: T(S.TEXTOS.general.aviso_detalle_varios, { lista: nombres.join(', ') }) };
+  }
+  function icono() {
+    var ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('width', '22'); svg.setAttribute('height', '22'); svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.6'); svg.setAttribute('stroke-linejoin', 'round');
+    ['M12 3l9 5-9 5-9-5z', 'M3 13l9 5 9-5'].forEach(function (dd) { var p = document.createElementNS(ns, 'path'); p.setAttribute('d', dd); svg.appendChild(p); });
+    return svg;
   }
   function banda(S, d) {
-    var cierra = h('button', { type: 'button', 'data-axw-aviso': 'ahora-no', class: 'font-label-md text-label-md text-on-surface-variant underline px-2', style: 'min-height:44px', text: S.texto('general', 'ahora_no') });
+    var tx = textosBanda(S, d);
+    var cierra = h('button', { type: 'button', 'data-axw-aviso': 'ahora-no', class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant text-deep-lagoon font-label-md text-label-md w-full md:w-auto', style: 'min-height:44px', text: S.texto('general', 'ahora_no') });
     var ir = h('a', { href: d.destino, 'data-axw-aviso': 'configurar', class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md w-full md:w-auto', style: 'min-height:44px', text: S.texto('general', 'configurar') });
-    var caja = h('div', { role: 'status', 'data-axw-aviso': 'banda', class: 'flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-xl border border-outline-variant bg-surface-container-low px-5 py-4' }, [
-      h('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-aviso': 'texto', text: textoBanda(S, d) }),
+    var circulo = h('span', { class: 'flex-none inline-flex items-center justify-center rounded-full bg-surface-container-high text-deep-lagoon', style: 'width:44px;height:44px', 'aria-hidden': 'true' });
+    circulo.appendChild(icono());
+    var caja = h('section', { role: 'status', 'data-axw-aviso': 'banda', class: 'flex flex-col md:flex-row md:items-center gap-4 rounded-2xl border border-outline-variant bg-surface-container-lowest px-5 py-5 md:px-6' }, [
+      h('div', { class: 'flex items-start md:items-center gap-4 flex-1 min-w-0' }, [circulo,
+        h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
+          h('h2', { class: 'font-headline-sm text-deep-lagoon', style: 'font-size:16px;line-height:1.3', 'data-axw-aviso': 'titulo', text: tx.titulo }),
+          h('p', { class: 'font-body-md text-body-md text-on-surface-variant', 'data-axw-aviso': 'texto', text: tx.detalle })
+        ])]),
       h('div', { class: 'flex flex-col md:flex-row md:items-center gap-2' }, [ir, cierra])
     ]);
     cierra.addEventListener('click', function () { ocultaSesion(); if (caja.parentNode) caja.parentNode.removeChild(caja); });

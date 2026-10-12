@@ -81,7 +81,8 @@
         h('div', { class: 'flex items-center gap-3' }, [
           chip(listo, S.texto('estado', m.estado)),
           d.puede_configurar && !listo ? h('a', { href: enlaceAsistente(m.modulo), 'data-pm-asistente': m.modulo, class: BTN1, text: U('abrir_asistente') }) : null])]);
-      var sec = h('section', { class: 'px-8 py-5 flex flex-col gap-3 border-b border-outline-variant/30', 'data-pm-modulo': m.modulo }, [cab]);
+      // tarjeta por módulo (diseño del owner S81, 12-oct): borde y radio de la piel, sin sombra; los pasos dentro con su estado
+      var sec = h('section', { class: 'mx-4 md:mx-8 my-3 rounded-2xl border border-outline-variant px-5 py-5 md:px-6 flex flex-col gap-3', 'data-pm-modulo': m.modulo }, [cab]);
       if (d.puede_configurar) {
         var ol = h('ol', { class: 'flex flex-col list-none gap-0' });
         d.pasos.filter(function (p) { return p.modulo === m.modulo; }).forEach(function (p) { ol.appendChild(filaPaso(p)); });
