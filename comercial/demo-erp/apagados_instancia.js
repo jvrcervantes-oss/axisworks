@@ -66,6 +66,7 @@
   }
   var RUTA = location.pathname;
   var MOD_PAGINA = esExtraRuta(RUTA) ? '(no portado)' : moduloDeRuta(RUTA);
+  window.AXW_MODULO_PAGINA = MOD_PAGINA;   // el módulo de esta pantalla, para el aviso de setup (aviso_setup.js, F3 12-oct-2026); null = núcleo
 
   // ── hoja: todo lo de módulo tapado hasta saber ──────────────────────────────────────────────
   var hoja = document.createElement('style');

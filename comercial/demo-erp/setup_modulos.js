@@ -62,6 +62,9 @@
       red: 'El ERP no ha respondido: prueba otra vez en un rato.',
       forma: 'El ERP ha devuelto algo inesperado.',
       configurar: 'Configurar',
+      aviso_uno: '%m: sin configurar',
+      aviso_varios: '%n módulos sin configurar: %lista',
+      ahora_no: 'Ahora no',
       desconocido: 'Paso sin nombre (código: %c)',
       error_codigo: 'No se pudo hacer (código: %c).'
     }
@@ -102,7 +105,7 @@
     'Esta función todavía no está disponible en este ERP.': 'This function is not available in this ERP yet.',
     'El ERP no ha respondido: prueba otra vez en un rato.': 'The ERP did not respond: try again in a moment.',
     'El ERP ha devuelto algo inesperado.': 'The ERP returned something unexpected.',
-    'Configurar': 'Set up', 'Paso sin nombre (código: %c)': 'Unnamed step (code: %c)', 'No se pudo hacer (código: %c).': 'It could not be done (code: %c).'
+    'Configurar': 'Set up', '%m: sin configurar': '%m: not set up', '%n módulos sin configurar: %lista': '%n modules not set up: %lista', 'Ahora no': 'Not now', 'Paso sin nombre (código: %c)': 'Unnamed step (code: %c)', 'No se pudo hacer (código: %c).': 'It could not be done (code: %c).'
   };
   var ID = {
     'Datos generales': 'Pengaturan umum', 'Facturas': 'Invoice', 'Recibos': 'Kuitansi', 'Reservas de producto': 'Booking sewa motor',
@@ -138,7 +141,7 @@
     'Esta función todavía no está disponible en este ERP.': 'Fungsi ini belum tersedia di ERP ini.',
     'El ERP no ha respondido: prueba otra vez en un rato.': 'ERP tidak merespons: coba lagi sebentar lagi.',
     'El ERP ha devuelto algo inesperado.': 'ERP mengembalikan data yang tidak terduga.',
-    'Configurar': 'Atur', 'Paso sin nombre (código: %c)': 'Langkah tanpa nama (kode: %c)', 'No se pudo hacer (código: %c).': 'Tidak bisa dilakukan (kode: %c).'
+    'Configurar': 'Atur', '%m: sin configurar': '%m: belum diatur', '%n módulos sin configurar: %lista': '%n modul belum diatur: %lista', 'Ahora no': 'Nanti saja', 'Paso sin nombre (código: %c)': 'Langkah tanpa nama (kode: %c)', 'No se pudo hacer (código: %c).': 'Tidak bisa dilakukan (kode: %c).'
   };
 
   function T(x, huecos) {
