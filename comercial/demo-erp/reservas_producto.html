@@ -198,7 +198,7 @@ a.rp-boton{text-decoration:none}
     'Incluir los ya resueltos': 'Include the ones already resolved',
     'Reserva nº': 'Booking no.', 'Producto': 'Product', 'Unidad': 'Unit', 'Fechas': 'Dates', 'Cliente': 'Customer', 'Precio': 'Price', 'Pago': 'Payment', 'Origen': 'Source', 'Acciones': 'Actions',
     'Referencia': 'Reference', 'Importe': 'Amount', 'Motivo': 'Reason', 'Recibido': 'Received', 'Resuelto': 'Resolved', 'Resolución': 'Resolution', 'Reserva': 'Booking',
-    'Equipo': 'Team', 'Bot': 'Bot', 'Sin pago': 'No payment', 'Por reclamar': 'To claim', 'Cliente sin permiso para verlo': 'Customer you cannot see', 'Sin cliente': 'No customer',
+    'Equipo': 'Team', 'Bot': 'Bot', 'Alquiler previo': 'Earlier rental', 'Sin pago': 'No payment', 'Por reclamar': 'To claim', 'Cliente sin permiso para verlo': 'Customer you cannot see', 'Sin cliente': 'No customer',
     'Caduca': 'Expires', 'Detalles': 'Details', 'Confirmar': 'Confirm', 'Cancelar': 'Cancel', 'Cambiar de unidad': 'Change unit', 'Entregar (en curso)': 'Hand over (in progress)', 'Marcar devuelta': 'Mark as returned',
     'Cancelar con devolución': 'Cancel with refund', 'Cerrar': 'Close', 'Volver': 'Back', 'Trabajando…': 'Working…', 'Cargando…': 'Loading…',
     'Nueva reserva de producto': 'New product booking',
@@ -324,7 +324,7 @@ a.rp-boton{text-decoration:none}
     'Incluir los ya resueltos': 'Tampilkan juga yang sudah selesai',
     'Reserva nº': 'No. booking', 'Producto': 'Produk', 'Unidad': 'Unit', 'Fechas': 'Tanggal', 'Cliente': 'Pelanggan', 'Precio': 'Harga', 'Pago': 'Pembayaran', 'Origen': 'Sumber', 'Acciones': 'Aksi',
     'Referencia': 'Referensi', 'Importe': 'Jumlah', 'Motivo': 'Alasan', 'Recibido': 'Diterima', 'Resuelto': 'Selesai', 'Resolución': 'Penyelesaian', 'Reserva': 'Booking',
-    'Equipo': 'Tim', 'Bot': 'Bot', 'Sin pago': 'Belum bayar', 'Por reclamar': 'Belum diklaim', 'Cliente sin permiso para verlo': 'Pelanggan yang tidak boleh Anda lihat', 'Sin cliente': 'Tanpa pelanggan',
+    'Equipo': 'Tim', 'Bot': 'Bot', 'Alquiler previo': 'Sewa sebelumnya', 'Sin pago': 'Belum bayar', 'Por reclamar': 'Belum diklaim', 'Cliente sin permiso para verlo': 'Pelanggan yang tidak boleh Anda lihat', 'Sin cliente': 'Tanpa pelanggan',
     'Caduca': 'Berlaku sampai', 'Detalles': 'Detail', 'Confirmar': 'Konfirmasi', 'Cancelar': 'Batalkan', 'Cambiar de unidad': 'Ganti unit', 'Entregar (en curso)': 'Serahkan motor', 'Marcar devuelta': 'Tandai sudah kembali',
     'Cancelar con devolución': 'Batalkan dengan refund', 'Cerrar': 'Tutup', 'Volver': 'Kembali', 'Trabajando…': 'Memproses…', 'Cargando…': 'Memuat…',
     'Nueva reserva de producto': 'Booking sewa baru', 'Dirección de entrega': 'Alamat antar', 'Dirección de recogida': 'Alamat jemput', 'Notas': 'Catatan',
@@ -664,7 +664,7 @@ a.rp-boton{text-decoration:none}
       if (x.estado === 'bloqueo' && x.caduca_en) e.appendChild(h('div', { class: 'rp-vacio', text: T('Caduca') + ': ' + fechaHora(x.caduca_en) }));
       tr.appendChild(celda(e));
       tr.appendChild(celda(x.pago_referencia ? x.pago_referencia : T('Sin pago')));
-      tr.appendChild(celda(x.origen === 'bot' ? T('Bot') : T('Equipo')));
+      tr.appendChild(celda(x.origen === 'bot' ? T('Bot') : x.origen === 'previo' ? T('Alquiler previo') : T('Equipo')));
       tr.appendChild(celda(accionesDe(x)));
       return tr;
     });

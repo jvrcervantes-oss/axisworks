@@ -65,7 +65,7 @@ a.axw-boton{text-decoration:none}
     'Hoy no hay entregas.': 'No handovers today.', 'Hoy no hay devoluciones.': 'No returns today.',
     'Este día no hay entregas.': 'No handovers on this day.', 'Este día no hay devoluciones.': 'No returns on this day.',
     'Pagado': 'Paid', 'Pago registrado, sin confirmar': 'Payment recorded, not confirmed', 'Pendiente de pago': 'Payment pending',
-    'Estado del pago desconocido': 'Payment status unknown',
+    'Estado del pago desconocido': 'Payment status unknown', 'Cobrado fuera del ERP': 'Paid outside the ERP',
     'Sin confirmar': 'Not confirmed', 'Confirmada': 'Confirmed', 'En curso': 'Ongoing', 'Devuelta': 'Returned',
     'Sin cliente': 'No customer', 'Cliente sin permiso para verlo': 'Customer you cannot see',
     'Reserva': 'Booking', 'Modelo': 'Model', 'Unidad': 'Unit', 'Cliente': 'Customer', 'Fechas': 'Dates', 'Estado': 'Status', 'Pago': 'Payment', 'Precio': 'Price',
@@ -83,7 +83,7 @@ a.axw-boton{text-decoration:none}
     'Hoy no hay entregas.': 'Hari ini tidak ada serah terima.', 'Hoy no hay devoluciones.': 'Hari ini tidak ada motor yang kembali.',
     'Este día no hay entregas.': 'Tidak ada serah terima pada tanggal ini.', 'Este día no hay devoluciones.': 'Tidak ada motor yang kembali pada tanggal ini.',
     'Pagado': 'Lunas', 'Pago registrado, sin confirmar': 'Pembayaran tercatat, belum dikonfirmasi', 'Pendiente de pago': 'Belum dibayar',
-    'Estado del pago desconocido': 'Status pembayaran tidak diketahui',
+    'Estado del pago desconocido': 'Status pembayaran tidak diketahui', 'Cobrado fuera del ERP': 'Dibayar di luar ERP',
     'Sin confirmar': 'Belum dikonfirmasi', 'Confirmada': 'Dikonfirmasi', 'En curso': 'Sedang disewa', 'Devuelta': 'Sudah kembali',
     'Sin cliente': 'Tanpa pelanggan', 'Cliente sin permiso para verlo': 'Pelanggan yang tidak boleh Anda lihat',
     'Reserva': 'Booking', 'Modelo': 'Model', 'Unidad': 'Unit', 'Cliente': 'Pelanggan', 'Fechas': 'Tanggal', 'Estado': 'Status', 'Pago': 'Pembayaran', 'Precio': 'Harga',
@@ -110,7 +110,8 @@ a.axw-boton{text-decoration:none}
   function error(m) { var e = $v('error'); e.textContent = m || ''; oculta(e, !m); }
 
   // El estado del pago lo decide la base (pago_estado); aquí solo se le pone nombre y tono. Texto Y color: el color solo no se lee.
-  var PAGO = { pagado: ['Pagado', 'ok'], registrado: ['Pago registrado, sin confirmar', 'espera'], pendiente: ['Pendiente de pago', 'mal'] };
+  var PAGO = { pagado: ['Pagado', 'ok'], registrado: ['Pago registrado, sin confirmar', 'espera'], pendiente: ['Pendiente de pago', 'mal'],
+    fuera_erp: ['Cobrado fuera del ERP', 'ok'] };   // F3-E3: un alquiler previo (la moto ya estaba fuera al empezar con el ERP) se cobró fuera
   var ESTADO = { bloqueo: ['Sin confirmar', 'espera'], confirmada: ['Confirmada', 'neutro'], en_curso: ['En curso', 'neutro'], devuelta: ['Devuelta', 'neutro'] };
   var PROPIOS = {
     modulo_apagado: T('El módulo de reservas está apagado en esta instancia: no hay reservas que mirar. Esto NO quiere decir que no haya nada.'),
