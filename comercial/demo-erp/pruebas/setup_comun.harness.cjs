@@ -266,6 +266,13 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:/i.test(String(t || ''));
   ok('sin 220000: Ajustes no enseña ningún paso nuevo', !(await p.$('[data-pm-fila="negocio"]')) && !(await p.$('[data-pm-fila="correo"]')) && !(await p.$('[data-pm-fila="taller_revisiones"]')));
   ok('sin 220000: ninguna llamada a la edge de correo', b.edge.length === 0);
   await ctx.close();
+  // el asistente, igual: «Datos generales» sin la 220000 solo tiene la moneda (hecha); ni negocio, ni idiomas, ni correo, ni un código suelto
+  b = base({ sin220000: true });
+  ({ p, ctx } = await abre(nav, b, { idioma: 'id' }));
+  const t7 = await p.evaluate(() => document.body.innerText);
+  ok('sin 220000 (asistente, id): ningún paso nuevo a la vista', !(await p.$('[data-axw-paso="negocio"]')) && !(await p.$('[data-axw-opcional]')) && !/negocio|idiomas|correo|taller_/.test(t7) && !/(kode|code|código)\s*:/i.test(t7), t7.slice(0, 200));
+  ok('sin 220000 (asistente): ningún código sin frase', (await p.evaluate(() => window.AXW_SETUP.desconocidos.slice())).length === 0);
+  await ctx.close();
 
   // ── 8. Un paso que la pantalla no conoce: frase digna, sin el código ──────────────────────────────────────────────────────────────────────────
   b = base({ pasoRaro: true, valores: { marca: 'X', zona_horaria: 'Asia/Makassar' } });

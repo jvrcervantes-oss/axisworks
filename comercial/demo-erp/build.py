@@ -3524,8 +3524,11 @@ def instancia(nombre):
     ajustes_puesta_en_marcha()   # F3 (12-oct-2026): Ajustes › Configurar módulos, primera pestaña, en todas las instancias (antes solo las de reservas)
     ajustes_cobros()   # F3 E2 (12-oct-2026): Ajustes › Cobros y el paso «cobros» (oculto hasta que la base declare el paso)
     setup_comun_pasos()   # F3 (12-oct-2026, bbm-p31): pasos negocio/idiomas/correo/taller_* y Ajustes › Idiomas contra la base
-    if reservas_en_paquete(nombre):   # F3 E3/E4 (12-oct-2026): pasos de Reservas de producto (clase, alquiler, reglas, ya alquilado, entrega) en asistente y Ajustes
-        setup_reservas_pasos()
+    # F3 E3/E4 (pasos de Reservas de producto, setup_reservas.js): FUERA del paquete en la rama setup-sin-e3 (agencia-81, 12-oct): Cobros se publica en cuanto
+    # su base esté en bbm, sin esperar a E3 (que al aplicarse deja bbm sin cotizar hasta el paso de Dion). Volver a meterlo = descomentar estas dos líneas
+    # cuando E3/E4 esté aplicado (setup-junto las lleva).
+    # if reservas_en_paquete(nombre):
+    #     setup_reservas_pasos()
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
     idiomas = idiomas_de(nombre)
