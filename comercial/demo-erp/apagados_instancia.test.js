@@ -150,6 +150,22 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(/Reintentar/.test(E.doc.body.innerHTML) && !/no instalado/i.test(E.doc.body.innerHTML), 'fallo ≠ no instalado: ofrece reintentar');
     ok(/aria-label="Cómo activarlo"\s+hidden/.test(E.doc.body.innerHTML) && !/<span\s+hidden><button type="button" id="axw-reintenta"/.test(E.doc.body.innerHTML),
       'fallo: sin bloque de contacto (no es que falte el módulo) y con el botón visible');
+    ok(![...E.clases].some((c) => c.startsWith('axw-sin-')), 'fallo: no se esconde nada por módulo (axw-sin-*: falla abierto)');
+  }
+
+  // 5b. lo que sobra con un módulo apagado (bbm-p39): axw-sin-<módulo> en <html> SOLO cuando la base ya contestó
+  {
+    const E = escenario({ activos: ['facturas'] });
+    ok(![...E.clases].some((c) => c.startsWith('axw-sin-')), 'sin saber aún: ninguna clase axw-sin-*');
+    E.publica();
+    await espera(50);
+    ok(E.clases.has('axw-sin-comisiones') && E.clases.has('axw-sin-contratos') && E.clases.has('axw-sin-reservas') && E.clases.has('axw-sin-obra'),
+      'apagados: axw-sin-<módulo> por cada uno (tablas, funciones, buckets, edges y pantallas)');
+    ok(!E.clases.has('axw-sin-facturas') && !E.clases.has('axw-sin-base'), 'encendido o núcleo: sin clase');
+    const T = escenario({ activos: null });
+    T.publica();
+    await espera(50);
+    ok(![...T.clases].some((c) => c.startsWith('axw-sin-')), 'sin modulos_activos (todo encendido): ninguna clase');
   }
 
   // 6. lo que se rellena va escapado (el nombre sale de un JSON, pero la plantilla va por innerHTML)

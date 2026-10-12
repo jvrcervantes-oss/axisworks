@@ -276,9 +276,21 @@
       if (gs[i].style.display !== quiere) gs[i].style.display = quiere;
     }
   }
+  /* Lo que sobra con un módulo apagado (bbm-p39, 13-oct-2026): build.py marca en la copia `data-axw-sin="<módulos>"` y pone su regla; aquí
+     solo se dice qué módulos están apagados, con `axw-sin-<módulo>` en <html>. Solo cuando la base ya ha contestado: sin saber, o si falló,
+     no se esconde nada (falla abierto, como axwModuloActivo). */
+  var MODULOS = (function () {
+    var s = {};
+    ['t', 'f', 'b', 'e', 'p'].forEach(function (k) { for (var o in (M[k] || {})) s[M[k][o]] = 1; });
+    return Object.keys(s);
+  })();
   function pinta() {
     var apagados = Object.keys(M.p).filter(function (p) { return !activo(M.p[p]); }).concat(M.xp || []);
     hoja.textContent = reglas(apagados);
+    MODULOS.forEach(function (m) {
+      if (estado.listo && !estado.error && !activo(m)) raiz.classList.add('axw-sin-' + m);
+      else raiz.classList.remove('axw-sin-' + m);
+    });
     if (MOD_PAGINA) {
       if (activo(MOD_PAGINA)) raiz.classList.remove('axw-mod-pend');
       else aviso(!!estado.error);

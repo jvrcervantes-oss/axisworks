@@ -1735,6 +1735,16 @@ MENU_I18N = {
     'Trayendo la configuración…': {'en': 'Loading the setup…', 'id': 'Memuat pengaturan…'},
     '¿Eres cliente?': {'en': 'Are you a client?', 'id': 'Anda pelanggan?'},
     'Empresa, correo, impuestos y usuarios del ERP.': {'en': 'Company, email, taxes and users of the ERP.', 'id': 'Perusahaan, email, pajak, dan pengguna ERP.'},
+    # bbm-p39 (13-oct): Facturas, Recibos y Ajustes › Mantenimiento sin contratos, proyectos ni portal de compradores
+    'Cliente': {'en': 'Client', 'id': 'Pelanggan'},
+    'sin referencia': {'en': 'no reference', 'id': 'tanpa referensi'},
+    'Buscar por número, cliente, factura o referencia…': {'en': 'Search by number, client, invoice or reference…', 'id': 'Cari nomor, pelanggan, invoice, atau referensi…'},
+    'En pausa no sale ningún email: ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.': {
+        'en': 'While paused no email goes out: no invitations, no alerts, no announcements. The server blocks it, not this screen. Whatever is queued in Communication waits and goes out by itself on resume. Pause and resume: any admin.',
+        'id': 'Saat dijeda, tidak ada email yang terkirim: tidak ada undangan, peringatan, maupun pengumuman. Server yang memblokirnya, bukan layar ini. Yang masuk antrean di Komunikasi akan menunggu dan terkirim otomatis saat dilanjutkan. Menjeda dan melanjutkan: admin mana pun.'},
+    'Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. Cerrar y reabrir: cualquier admin.': {
+        'en': 'When closed, only admins get in: the rest of the team sees a maintenance screen with the reason, and anyone inside gets a warning and is signed out after 3 minutes. It is a screen gate: it does not change database permissions. Closing and reopening: any admin.',
+        'id': 'Saat ditutup, hanya admin yang bisa masuk: anggota tim lain melihat layar pemeliharaan beserta alasannya, dan siapa pun yang sedang berada di dalam menerima peringatan lalu dikeluarkan setelah 3 menit. Ini hanya pintu di layar: izin basis data tidak berubah. Menutup dan membuka kembali: admin mana pun.'},
 }
 
 
@@ -3570,15 +3580,77 @@ TEXTOS_INSTANCIA = (
      '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Plazos</h2>', 1),
     ('contracts/assets/herramientas.js', "para:'Días de gracia, prórrogas y techos de las reservas: lo que el sistema aplica solo.',",
      "para:'Empresa, correo, impuestos y usuarios del ERP.',", 1),
+    # bbm-p39 (13-oct): la columna y el dato que enseñan ese campo (`proyecto_nombre`) se llaman como él. La base no lo rellena al facturar una
+    # reserva (medido en bbm: ni factura_producto_crea ni el borrador de operación lo escriben); solo el editor manual, en «Referencia».
+    ('intranet/v4/facturas/index.html', '<th class="py-3.5 px-4 font-semibold" data-lwt>Proyecto</th>', '<th class="py-3.5 px-4 font-semibold" data-lwt>Referencia</th>', 1),
+    ('intranet/v4/recibos/index.html', '<th class="py-3.5 px-4 font-semibold" data-lwt>Proyecto</th>', '<th class="py-3.5 px-4 font-semibold" data-lwt>Referencia</th>', 1),
+    ('intranet/v4/assets/datos.js', "H.dato('Proyecto', f.proyecto_nombre)", "H.dato('Referencia', f.proyecto_nombre)", 1),
+    ('intranet/v4/assets/datos.js', "(g.proyecto || tx('sin proyecto'))", "(g.proyecto || tx('sin referencia'))", 1),
+    # la ficha de factura/recibí: sin el módulo contratos no hay contrato que enseñar (el dato salía «—» siempre); uno ya guardado se sigue viendo
+    ('intranet/v4/assets/datos.js', "H.seccion('Cliente y contrato',", "H.seccion(contratosActivo() ? 'Cliente y contrato' : 'Cliente',", 1),
+    ('intranet/v4/assets/datos.js', "        H.dato('Contrato', c ? (contratosActivo() ? enlaceFichaContrato(c) : esc(c.numero || '')) : (f.contrato_numero || null), { html: !!c }) +",
+     "        (c || f.contrato_numero || contratosActivo() ? H.dato('Contrato', c ? (contratosActivo() ? enlaceFichaContrato(c) : esc(c.numero || '')) : (f.contrato_numero || null), { html: !!c }) : '') +", 1),
 )
 # Solo en las instancias de alquileres (portada «reservas»): el ejemplo del campo y la pestaña «Reservas» de Ajustes, que en ellas solo lleva los impuestos
 TEXTOS_ALQUILER = (
     ('intranet/v4/assets/editores.js', "placeholder: 'Ej. Proyecto — Villa 2BR S2'", "placeholder: 'Ej. Reserva R-0012 — Honda PCX'", 2),
     ('intranet/v4/ajustes/index.html', 'data-lw-tab="reservas" data-lwt>Reservas<', 'data-lw-tab="reservas" data-lwt>Impuestos<', 1),
+    # bbm-p39 (13-oct, barrido en bbm real): Recibos hablaba de titular, contrato y proyecto; Mantenimiento de contratos para firmar y del portal de compradores
+    ('intranet/v4/recibos/index.html', '<th class="py-3.5 px-4 font-semibold" data-lwt>Titular / Pagador</th>', '<th class="py-3.5 px-4 font-semibold" data-lwt>Cliente</th>', 1),
+    ('intranet/v4/recibos/index.html', 'placeholder="Buscar por número, cliente, contrato o proyecto…"', 'placeholder="Buscar por número, cliente, factura o referencia…"', 1),
+    ('intranet/v4/ajustes/index.html', 'data-lwt>En pausa no sale ningún email: ni contratos para firmar, ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 'data-lwt>En pausa no sale ningún email: ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 1),
+    ('intranet/v4/ajustes/index.html', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. El portal de compradores sigue abierto. Cerrar y reabrir: cualquier admin.</p>', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. Cerrar y reabrir: cualquier admin.</p>', 1),
 )
 TEXTOS_OTRA = (   # el resto de instancias: un ejemplo neutro, sin la villa de Lawang
     ('intranet/v4/assets/editores.js', "placeholder: 'Ej. Proyecto — Villa 2BR S2'", "placeholder: 'Ej. Reserva R-0012'", 2),
 )
+# Lo que no tiene sentido con un módulo apagado se oculta POR EL MÓDULO, nunca por el nombre del cliente (bbm-p39, 13-oct-2026). build.py marca el
+# trozo de la COPIA con `data-axw-sin="<módulos>"` y pone en esa página su regla; apagados_instancia.js pone `axw-sin-<módulo>` en <html> por cada
+# módulo apagado, solo cuando la base ya ha contestado (sin saber, o si falló, no se esconde nada: falla abierto, como axwModuloActivo). Se oculta
+# cuando están apagados TODOS los módulos del marcador. Medido en bbm (contratos y operaciones apagados): la columna «Contrato» de Facturas pintaba
+# «Venta suelta» en todas las filas, la de Recibos «—» siempre, y la vista «Por operación» lo metía todo en un solo cajón. Las celdas salen de la
+# fila plantilla del HTML, que plantillaFilas() de datos.js clona con sus atributos: no cambia ningún índice de columna de datos.js. Lawang no pasa por aquí.
+OCULTA_POR_MODULO = (
+    # (fichero en DIST, trozo de Lawang, el mismo trozo marcado)
+    ('intranet/v4/facturas/index.html', '<th class="py-3.5 px-4 font-semibold" data-lwt>Contrato</th>',
+     '<th class="py-3.5 px-4 font-semibold" data-axw-sin="contratos operaciones" data-lwt>Contrato</th>'),
+    ('intranet/v4/facturas/index.html', '<td class="py-4 px-4 font-medium text-on-surface">—</td>\n<td class="py-4 px-4 font-label-md text-on-surface">—</td>',
+     '<td class="py-4 px-4 font-medium text-on-surface">—</td>\n<td class="py-4 px-4 font-label-md text-on-surface" data-axw-sin="contratos operaciones">—</td>'),
+    ('intranet/v4/facturas/index.html', '<div class="flex flex-wrap items-center gap-2" data-lw-vista>',
+     '<div class="flex flex-wrap items-center gap-2" data-lw-vista data-axw-sin="contratos operaciones">'),
+    ('intranet/v4/recibos/index.html', '<th class="py-3.5 px-4 font-semibold" data-lwt>Contrato</th>',
+     '<th class="py-3.5 px-4 font-semibold" data-axw-sin="contratos" data-lwt>Contrato</th>'),
+    ('intranet/v4/recibos/index.html', '<td class="py-4 px-5 font-label-md font-semibold text-deep-lagoon tracking-wide">—</td>\n<td class="py-4 px-4 font-label-md text-on-surface">—</td>',
+     '<td class="py-4 px-5 font-label-md font-semibold text-deep-lagoon tracking-wide">—</td>\n<td class="py-4 px-4 font-label-md text-on-surface" data-axw-sin="contratos">—</td>'),
+)
+# El editor de factura de una instancia SIN el módulo contratos y cuya empresa permite facturar sin contrato nace en el modo «sin contrato» que ya
+# existe (el cliente se elige en el editor) y no enseña el selector de contrato, que solo podía ofrecer «— sin contrato —». Mismo camino que pulsar
+# esa opción: lo que se envía no cambia. Un documento ya guardado con contrato se reabre como siempre. Toda instancia; Lawang no pasa por aquí.
+EDITOR_SIN_CONTRATO = (
+    ('intranet/v4/assets/editores.js', "          sinContrato: !!(regla.sinContrato && origen && !origen.contrato_id)\n",
+     "          sinContrato: !!(regla.sinContrato && (origen ? !origen.contrato_id\n"
+     "            : (!pre.contrato_id && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false)))\n"),
+    ('intranet/v4/assets/editores.js', "          secDoc.appendChild(lblC); secDoc.appendChild(btnC); secDoc.appendChild(notaC);\n",
+     "          if (!(estadoContrato.sinContrato && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false)) {\n"
+     "            secDoc.appendChild(lblC); secDoc.appendChild(btnC); secDoc.appendChild(notaC);\n          }\n"),
+)
+
+
+def oculta_por_modulo():
+    """Marca en la copia lo que sobra con un módulo apagado (OCULTA_POR_MODULO) y pone en cada página su regla; y el editor de factura sin
+    contrato (EDITOR_SIN_CONTRATO). Cada trozo exactamente una vez o el build para."""
+    reglas = {}
+    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO:
+        ruta = os.path.join(DIST, *rel_.split('/'))
+        t = open(ruta, encoding='utf-8').read()
+        open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, viejo, nuevo, 'oculta_por_modulo ' + rel_))
+        for mods in re.findall(r'data-axw-sin="([a-z -]+)"', nuevo):
+            reglas.setdefault(rel_, set()).add(mods)
+    for rel_, marcas in sorted(reglas.items()):
+        css = ''.join('html%s [data-axw-sin="%s"]{display:none!important}' % (''.join('.axw-sin-' + m for m in mods.split()), mods) for mods in sorted(marcas))
+        ruta = os.path.join(DIST, *rel_.split('/'))
+        t = open(ruta, encoding='utf-8').read()
+        open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, '</head>', '<style id="axw-sin-modulo">%s</style>\n</head>' % css, 'oculta_por_modulo css ' + rel_))
 
 
 def textos_instancia(nombre):
@@ -3891,6 +3963,7 @@ def instancia(nombre):
     ajustes_cobros()   # F3 E2 (12-oct-2026): Ajustes › Cobros y el paso «cobros» (oculto hasta que la base declare el paso)
     setup_comun_pasos()   # F3 (12-oct-2026, bbm-p31): pasos negocio/idiomas/correo/taller_* y Ajustes › Idiomas contra la base
     textos_instancia(nombre)   # owner 12-oct («Sí, tal cual»): fuera proyectos, villas y Cartas de Reserva de las pantallas comunes de la instancia
+    oculta_por_modulo()   # bbm-p39 (13-oct): columnas, vista y selector de contrato que no tienen sentido con su módulo apagado
     # F3 E3/E4 (pasos de Reservas de producto, setup_reservas.js): FUERA del paquete hasta que E3/E4 (20261012210000) esté aplicada en bbm (bbm-p35, 13-oct:
     # a la sesión se le denegó aplicarla; la aplica el owner). Con ellas dentro y sin E3, el contrato front↔base para toda publicación de bbm. Volver a
     # meterlo = descomentar estas dos líneas EN EL MISMO PASO en que se aplica E3 (relevo de bbm-p35).
