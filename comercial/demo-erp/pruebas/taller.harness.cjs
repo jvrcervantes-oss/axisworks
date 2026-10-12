@@ -115,7 +115,13 @@ function viva(B, id, u) {
 const ultimoKm = (B, unidad, excl) => { const l = B.ordenes.filter(o => o.unidad_id === unidad && o.id !== excl && o.km != null).sort((a, b) => b.abierta_en - a.abierta_en); return l.length ? l[0].km : null; };
 function rpc(B, n, a, u) {
   B.llamadas.push([n, JSON.parse(JSON.stringify(a)), u]);
-  if (B.o.datosFalla && n === 'taller_datos') return ERR('42501', 'No tienes acceso a Taller', 'sin_acceso');
+  if (B.o.datosFalla && n === 'taller_datos') {
+    // repaso 12-oct: la pantalla engancha por code + hint, no por el texto. 'viejo:<hint>' = el texto de siempre sin hint; '<hint>' = hint con otro texto
+    if (B.o.datosFalla === 'viejo:sin_sesion') return ERR('42501', 'Sin sesión');
+    if (B.o.datosFalla === 'viejo:modulo_apagado') return ERR('42501', 'Módulo no activo en esta instancia');
+    if (typeof B.o.datosFalla === 'string') return ERR('42501', 'Texto que alguien corrigió', B.o.datosFalla);
+    return ERR('42501', 'No tienes acceso a Taller', 'sin_acceso');
+  }
   const vivaDe = m => B.ordenes.find(o => o.unidad_id === m && o.estado !== 'cerrada');
   switch (n) {
     case 'taller_datos': {
@@ -771,6 +777,13 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await duerme(300);
     ok('taller_datos falla: el aviso «no se ha podido mirar» sigue en pantalla', ((await p.$eval('[data-tl="vista-inicio"]', e => e.textContent)) || '').includes('tidak dapat diperiksa'));
     await ctx.close();
+    B.o.datosFalla = false;
+    // el error se reconoce por el hint estable aunque cambie el texto de la base: mismo aviso que con el texto de siempre
+    for (const hint of ['sin_sesion', 'modulo_apagado']) {
+      const lee = async (modo) => { B.o.datosFalla = modo; ({ p, ctx } = await abre(B)); await duerme(300); const t = await p.$eval('[data-tl="vista-inicio"]', e => e.textContent); await ctx.close(); return t; };
+      const conTexto = await lee('viejo:' + hint), conHint = await lee(hint);
+      ok('taller_datos ' + hint + ': por hint con otro texto = el mismo aviso que por el texto de siempre', conHint === conTexto && !!conHint, JSON.stringify([conHint, conTexto]).slice(0, 200));
+    }
     B.o.datosFalla = false;
     ({ p, ctx } = await abre(B, { hash: '#o=%E0%A4&p=km' }));
     ok('URL con un trozo mal codificado: va al inicio sin romperse', (await p.$eval('[data-tl="raiz"]', e => e.getAttribute('data-modo'))) === 'inicio' && !!(await p.$('[data-tl="buscar"]')));

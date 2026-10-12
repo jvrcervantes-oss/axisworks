@@ -97,7 +97,8 @@ function axwComun(raiz, T) {
     var e = err || {}, m = String(e.message || ''), hint = e.hint ? String(e.hint) : '';
     if (e.code === 'PGRST202' || e.status === 404 || /Could not find the function|schema cache/i.test(m)) return { tipo: 'no_disponible', hint: hint, m: m, detail: e.details || e.detail || null };
     if (e.code === '42501') {
-      if (/sin sesi[oó]n/i.test(m)) return { tipo: 'sin_sesion', hint: hint, m: m, detail: null };
+      // por el hint estable (repaso 12-oct: _taller_exige y el resto mandan sin_sesion); el texto queda para las RPC viejas sin hint
+      if (hint === 'sin_sesion' || /sin sesi[oó]n/i.test(m)) return { tipo: 'sin_sesion', hint: hint, m: m, detail: null };
       if (/m[oó]dulo no activo/i.test(m) || hint === 'modulo_apagado') return { tipo: 'modulo_apagado', hint: hint, m: m, detail: null };
       return { tipo: 'sin_permiso', hint: hint, m: m, detail: null };
     }
