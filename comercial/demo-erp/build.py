@@ -1933,7 +1933,7 @@ GOOGLE_TEXTO = re.compile(r'<link[^>]*fonts\.googleapis\.com/css2\?family=(?:Jos
 # Toda URL de Google Fonts de TEXTO que quede tras el renombrado (Jost ya es Manrope: el @import de shell.css, el panel de
 # editores.js, piel.js…) pasa a la hoja propia. Se aplica DESPUÉS de renombrar (revisor 13-oct: antes no casaba nunca).
 GOOGLE_TEXTO_URL = re.compile(r'''https://fonts\.googleapis\.com/css2\?family=(?!Material)[^'"\)\s]*''')
-# El documento imprimible de facturas carga SUS fuentes (aspecto del documento, no de la interfaz): no se toca en nada.
+# El documento imprimible de facturas no pasa por el renombrado de familias; SOLO se le cambia el enlace de fuentes (sistema_documento_fuentes, p37 13-oct).
 SISTEMA_EXCLUIDOS = ('clasico/facturas/documento.js',)
 
 
