@@ -2957,6 +2957,51 @@ def portada_reservas():
     open(dj, 'w', encoding='utf-8', newline='').write(t)
 
 
+# ── Setup por módulo (F3 Entrega 1, bbm-p18-front, 12-oct-2026) ────────────────────────────────────────────────────────────────────────────
+# Owner, 12-oct 08:00: «1. Yo activo modulo. 2. Al entrar a la intranet salta un aviso de modulo sin configurar, te toca configurarlo. Salta un
+# asistente que te guia por pasos y deja todo eso en Ajustes.» El núcleo (setup_modulos.js) y el aviso (aviso_setup.js) van pegados al guard.js
+# de la instancia, como apagados_instancia.js, así salen en TODAS las páginas sin tocar su HTML; el asistente es una pantalla nueva en
+# /ajustes/configurar/ (no /ajustes/asistente/: datos.js de Lawang arranca por el último trozo de la ruta y «asistente» es la pantalla del
+# Asistente). Mientras la base no tenga modulos_setup_estado, el aviso no pinta nada y el asistente dice «todavía no disponible».
+SETUP_GUARD = ('setup_modulos.js', 'aviso_setup.js')
+
+
+def setup_para_guard():
+    """El núcleo y el aviso, sin comentarios (son notas internas del estudio), para pegarlos detrás del guard.js de la instancia."""
+    trozos = []
+    for f in SETUP_GUARD:
+        s = open(os.path.join(AQUI, f), encoding='utf-8').read()
+        s = re.sub(r'/\*.*?\*/', '', s, flags=re.S)
+        s = re.sub(r'^\s*//[^\n]*\n', '', s, flags=re.M)
+        if 'window.AXW_SETUP' not in s and 'window.AXW_AVISO' not in s:
+            aborta('%s: no publica window.AXW_SETUP / window.AXW_AVISO' % f)
+        trozos.append(s.strip())
+    return '\n' + '\n'.join(trozos) + '\n'
+
+
+def asistente_setup_pantalla():
+    """/ajustes/configurar/: el asistente por pasos (asistente_setup.html) sobre la cáscara de /asistente/, con la puerta de administración (quién
+    configura lo decide la base: puede_configurar). Va dos niveles por debajo de la raíz: sus rutas relativas pasan de ../assets/ a ../../assets/
+    (nav.js saca su raíz de la src de su propio script). setup_pasos.js se carga aquí; el núcleo ya viene en guard.js."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    _pantalla_bot(v4, 'asistente_setup.html', os.path.join('ajustes', 'configurar'), 'Configurar', puerta='data-rol="admin"')
+    pag = os.path.join(v4, 'ajustes', 'configurar', 'index.html')
+    s = open(pag, encoding='utf-8').read()
+    n = s.count('"../assets/')
+    if n < 3:
+        aborta('asistente_setup_pantalla: la cáscara de /asistente/ ya no carga sus assets con ../assets/ (hay %d)' % n)
+    s = s.replace('"../assets/', '"../../assets/')
+    if '"../assets/' in s or s.count('"../../assets/') != n:
+        aborta('asistente_setup_pantalla: rutas relativas a medias')
+    s = _una_vez(s, '<!--AXW_SCRIPT-->', '', 'configurar sin marca') if '<!--AXW_SCRIPT-->' in s else s
+    cierre = '</body></html>'
+    if s.count(cierre) != 1:
+        aborta('asistente_setup_pantalla: la página no cierra con </body></html> una vez')
+    s = s.replace(cierre, '<script src="../../assets/setup_pasos.js" defer></script>\n' + cierre)
+    open(pag, 'w', encoding='utf-8', newline='').write(s)
+    shutil.copy2(os.path.join(AQUI, 'setup_pasos.js'), os.path.join(v4, 'assets', 'setup_pasos.js'))
+
+
 def ajustes_puesta_en_marcha():
     """Ajustes › Puesta en marcha (instancias de tipo Reservas): una pestaña más, la PRIMERA y la que abre /ajustes/ sin #, con los pasos que da la base
     (puesta_en_marcha_estado) y los dos sí/no de impuestos. El contenido lo pinta ajustes_puesta.js; aquí solo se pone la pestaña, su panel, el script y se
@@ -3153,6 +3198,7 @@ def instancia(nombre):
     taller_pantalla()   # F8 pieza 2 (8-oct-2026): Taller — órdenes de trabajo ligeras (tras reservas de producto: sus anclas de nav.js)
     entrega_pantalla()   # F8 pieza 8 (10-oct-2026): Entrega — sede, tarifa por km y límites (tras taller: sus anclas de nav.js y herramientas.js)
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
+    asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
         ajustes_puesta_en_marcha()
@@ -3227,7 +3273,7 @@ def instancia(nombre):
     t = open(g, encoding='utf-8').read()
     open(g, 'w', encoding='utf-8', newline='').write(
         '/* GENERADO por AxisWorks/comercial/demo-erp/build.py --instancia %s — no editar. */\n'
-        'window.AXW_NUCLEO_OPERACION = true;\n' % nombre + interruptores + t)
+        'window.AXW_NUCLEO_OPERACION = true;\n' % nombre + interruptores + t + setup_para_guard())
     for raiz, dirs, fichs in os.walk(DIST, topdown=False):
         for f in fichs + dirs:
             nuevo = f

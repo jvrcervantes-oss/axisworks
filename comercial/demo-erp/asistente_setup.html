@@ -1,0 +1,276 @@
+<!-- Asistente de setup por módulo — /ajustes/configurar/?modulo=<m>[&paso=<clave>] (F3 Entrega 1, bbm-p18-front, 12-oct-2026). Owner, 12-oct 08:00:
+     «Salta un asistente que te guia por pasos y deja todo eso en Ajustes.»; 11-oct 22:38: «asistente por pasos. Habrá operarios al otro lado, que
+     se puedan equivocar lo menos posible.» build.py lo monta sobre la cáscara de /asistente/ de Lawang (asistente_setup_pantalla). Plan de front
+     con la revisión previa #285 (Diseño): un paso por pantalla, «Paso n de N» con N = los obligatorios (la moneda de «base» delante si falta), sin
+     lista lateral, irreversibles con confirmación tecleada, máquina de duda si se pierde la respuesta. El orden, «hecho» y quién configura los dice
+     modulos_setup_estado; aquí no se guarda progreso (se retoma en el primer paso no hecho). Sin piel propia: la viste Claude Design después. -->
+<div class="flex flex-col w-full gap-8" data-axw-setup="asistente">
+<div class="lw-cabecera flex flex-col gap-3 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-axw-as="eyebrow"></span>
+<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-axw-as="titulo"></h1>
+<p class="font-label-md text-[13px] text-on-surface-variant" data-axw-as="progreso"></p>
+<div class="w-full rounded-full bg-surface-container-high" style="height:4px" aria-hidden="true"><div class="rounded-full bg-primary-container" style="height:4px;width:0" data-axw-as="barra"></div></div>
+</div>
+<section class="bg-surface-container-lowest rounded-xl shadow-sm p-6 md:p-8 flex flex-col gap-5" style="max-width:44rem;width:100%" data-axw-as="tarjeta" aria-live="polite" aria-busy="true"></section>
+</div>
+<!--AXW_SCRIPT-->
+<script>
+// Corre al terminar de leer la página: setup_modulos.js (en guard.js) y setup_pasos.js (defer) ya están cargados.
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+  var S = window.AXW_SETUP, P = window.AXW_PASOS;
+  function U(k, h) { return S.ui(k, h); }
+  function $(k) { return document.querySelector('[data-axw-as="' + k + '"]'); }
+  function el(tag, attrs, hijos) {
+    var e = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) { if (attrs[k] == null) return; if (k === 'text') e.textContent = attrs[k]; else e.setAttribute(k, attrs[k]); });
+    (hijos || []).forEach(function (c) { if (c) e.appendChild(c); });
+    return e;
+  }
+  function vacia(e) { while (e.firstChild) e.removeChild(e.firstChild); return e; }
+  var BTN1 = 'inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md w-full md:w-auto disabled:opacity-50';
+  var BTN2 = 'inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant text-deep-lagoon font-label-md text-label-md w-full md:w-auto';
+  function boton(texto, accion, primario) { return el('button', { type: 'button', 'data-axw-accion': accion, class: primario ? BTN1 : BTN2, style: 'min-height:44px', text: texto }); }
+  var RAIZ = location.pathname.replace(/ajustes\/configurar\/.*$/, '');   // «/» en una instancia; «/intranet/v4/» en una copia sin reubicar
+  var qs = new URLSearchParams(location.search);
+  var VUELTAS = { home: 'home/', ajustes: 'ajustes/#puesta' };   // lista blanca: «Dejar para luego» nunca lleva a una URL de fuera
+  var vuelta = RAIZ + (VUELTAS[qs.get('vuelta')] || VUELTAS.home);
+
+  var sb = null, ctx = null, ocupado = false;
+  var st = { modulo: qs.get('modulo') || '', paso: qs.get('paso') || '', vista: 'paso', cambia: false, valores: null, error: '' };
+
+  function cargando() { var t = $('tarjeta'); t.setAttribute('aria-busy', 'true'); vacia(t).appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: U('cargando') })); }
+  function fallo(texto, reintento) {
+    var t = $('tarjeta'); t.setAttribute('aria-busy', 'false'); vacia(t);
+    t.appendChild(el('p', { role: 'alert', class: 'font-body-md text-body-md text-error', text: texto }));
+    if (reintento) t.appendChild(boton(U('reintentar'), reintento, true));
+  }
+  function cabecera(titulo, n, total) {
+    $('eyebrow').textContent = U('configurar_modulos');
+    $('titulo').textContent = titulo;
+    $('progreso').textContent = total ? U('paso_n', { n: String(n), t: String(total) }) : '';
+    $('barra').style.width = total ? Math.round(100 * Math.min(n, total) / total) + '%' : '0';
+    document.title = titulo;
+  }
+  // Los pasos de este módulo en el orden de la base: delante, los obligatorios pendientes de «base» (la moneda); después, los del módulo
+  function lista(datos, m) {
+    var pre = m === 'base' ? [] : datos.pasos.filter(function (p) { return p.modulo === 'base' && p.obligatorio && !p.hecho; });
+    var mios = datos.pasos.filter(function (p) { return p.modulo === m; });
+    var ob = pre.concat(mios.filter(function (p) { return p.obligatorio; }));
+    return { obligatorios: ob, opcionales: mios.filter(function (p) { return !p.obligatorio; }) };
+  }
+  function lee() {
+    cargando();
+    return S.estado(true).then(function (r) {
+      if (!r.ok) { fallo(U('no_mirar') + ': ' + S.explica(r.error, true).texto, 'releer'); return false; }
+      var datos = r.datos, refs = datos.pasos.map(function (p) { return p.ref; }).filter(Boolean);
+      var aj = typeof window.lwDatos === 'function' ? window.lwDatos('ajustes_config_datos') : Promise.resolve({ data: null });
+      var soc = refs.length ? Promise.resolve(sb.from('sociedades').select('clave,razon,npwp,npwp_label,domicilio,rep,prefijo_serie').eq('clave', refs[0]).maybeSingle()) : Promise.resolve({ data: null });
+      return Promise.all([aj, soc]).then(function (rs) {
+        if (rs[0] && rs[0].error) { fallo(U('no_mirar') + ': ' + S.explica(rs[0].error, true).texto, 'releer'); return false; }
+        if (rs[1] && rs[1].error) { fallo(U('no_mirar') + ': ' + S.explica(rs[1].error, true).texto, 'releer'); return false; }
+        ctx = { datos: datos, ajustes: (rs[0] && rs[0].data && rs[0].data.valores) || {}, sociedad: (rs[1] && rs[1].data) || null };
+        return true;
+      });
+    }, function (e) { fallo(U('no_mirar') + ': ' + S.explica(e, true).texto, 'releer'); return false; });
+  }
+  function apuntaUrl() {
+    var u = new URLSearchParams(location.search);
+    if (st.modulo) u.set('modulo', st.modulo); else u.delete('modulo');
+    if (st.paso) u.set('paso', st.paso); else u.delete('paso');
+    try { history.replaceState(null, '', location.pathname + '?' + u.toString()); } catch (e) { /* MUDO A PROPOSITO: sin history la vista sigue igual */ }
+  }
+
+  function pinta() {
+    var t = $('tarjeta'); t.setAttribute('aria-busy', 'false'); vacia(t);
+    var d = ctx.datos;
+    if (!d.puede_configurar) {
+      cabecera(U('configurar_modulos'), 0, 0);
+      t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', text: U('solo_admin') }));
+      t.appendChild(el('a', { href: vuelta, class: BTN2, style: 'min-height:44px', text: U('volver') }));
+      return;
+    }
+    var mod = d.modulos.filter(function (x) { return x.modulo === st.modulo; })[0];
+    var pendientes = d.modulos.filter(function (x) { return x.estado === 'sin_configurar'; });
+    if (!mod) return pintaElige(pendientes);
+    var L = lista(d, st.modulo), todos = L.obligatorios.concat(L.opcionales);
+    var actual = todos.filter(function (p) { return p.clave === st.paso && (p.modulo === st.modulo || p.modulo === 'base'); })[0];
+    if (!actual) actual = L.obligatorios.filter(function (p) { return !p.hecho; })[0] || null;
+    if (!actual) return pintaListo(mod, L, pendientes);
+    st.paso = actual.clave; apuntaUrl();
+    var i = L.obligatorios.indexOf(actual);
+    cabecera(U('configurar_m', { m: S.nombreModulo(st.modulo) }), i >= 0 ? i + 1 : L.obligatorios.length, L.obligatorios.length);
+    if (st.vista === 'confirma') return pintaConfirma(actual);
+    if (st.vista === 'duda') return pintaDuda();
+    pintaPaso(actual, L);
+  }
+  function pintaElige(pendientes) {
+    var t = $('tarjeta');
+    cabecera(U('configurar_modulos'), 0, 0);
+    if (!pendientes.length) {
+      t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-estado': 'todo-listo', text: U('todo_listo') }));
+      t.appendChild(el('a', { href: vuelta, class: BTN1, style: 'min-height:44px', text: U('ir_inicio') }));
+      return;
+    }
+    t.appendChild(el('h2', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', text: U('elige_modulo') }));
+    pendientes.forEach(function (m) {
+      t.appendChild(el('a', { href: '?modulo=' + encodeURIComponent(m.modulo), 'data-axw-modulo': m.modulo, class: BTN2, style: 'min-height:44px', text: U('configurar_m', { m: S.nombreModulo(m.modulo) }) }));
+    });
+  }
+  function pintaListo(mod, L, pendientes) {
+    var t = $('tarjeta');
+    cabecera(U('configurar_m', { m: S.nombreModulo(st.modulo) }), L.obligatorios.length, L.obligatorios.length);
+    st.paso = ''; apuntaUrl();
+    // «listo» solo si la base dice configurado; si no (un paso que la base aún ve pendiente), se dice que falta algo
+    if (mod.estado === 'configurado') t.appendChild(el('p', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', 'data-axw-estado': 'listo', text: U('listo', { m: S.nombreModulo(st.modulo) }) }));
+    else t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-estado': 'falta', text: mod.falta ? S.texto('falta', mod.falta) : S.texto('estado', 'sin_configurar') }));
+    L.opcionales.forEach(function (p) {
+      t.appendChild(el('a', { href: '?modulo=' + encodeURIComponent(st.modulo) + '&paso=' + encodeURIComponent(p.clave), class: BTN2, style: 'min-height:44px',
+                              text: U('opcional') + ' · ' + S.texto('paso', p.clave, 0) + (p.hecho ? ' · ' + U('hecho') : '') }));
+    });
+    var otro = pendientes.filter(function (m) { return m.modulo !== st.modulo; })[0];
+    if (otro) t.appendChild(el('a', { href: '?modulo=' + encodeURIComponent(otro.modulo), 'data-axw-accion': 'siguiente-modulo', class: BTN1, style: 'min-height:44px', text: U('configurar_m', { m: S.nombreModulo(otro.modulo) }) }));
+    else t.appendChild(el('a', { href: vuelta, class: BTN1, style: 'min-height:44px', text: U('ir_inicio') }));
+  }
+  function moduloActivo(m) { return !m || !window.axwModuloActivo || window.axwModuloActivo(m); }
+  function pintaPaso(p, L) {
+    var t = $('tarjeta');
+    var h = el('h2', { tabindex: '-1', class: 'font-headline-sm text-headline-sm text-deep-lagoon', 'data-axw-paso': p.clave, text: S.texto('paso', p.clave, 0) });
+    t.appendChild(h);
+    t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: S.texto('paso', p.clave, 1) }));
+    if (p.hecho) t.appendChild(el('span', { class: 'self-start px-3 py-1 rounded-full font-label-md text-[13px] bg-primary-container text-on-primary', 'data-axw-hecho': '1', text: U('hecho') }));
+    else if (p.falta) t.appendChild(el('p', { class: 'font-body-sm text-body-sm text-outline', 'data-axw-falta': p.falta.codigo, text: S.textoFalta(p.falta) }));
+    var pie = el('div', { class: 'flex flex-col-reverse md:flex-row md:items-center md:justify-between gap-3 pt-2', 'data-axw-as': 'pie' });
+    var idx = L.obligatorios.indexOf(p);
+    var atras = idx > 0 ? boton(U('atras'), 'atras', false) : null;
+    if (p.modulo_requerido && !moduloActivo(p.modulo_requerido)) {
+      t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-requiere': p.modulo_requerido, text: U('requiere', { m: S.nombreModulo(p.modulo_requerido) }) }));
+      if (atras) pie.appendChild(atras);
+      t.appendChild(pie); t.appendChild(enlaceLuego()); h.focus(); return;
+    }
+    var comp = P.de(p.clave), cuerpo = el('div', { class: 'flex flex-col gap-4', 'data-axw-as': 'cuerpo' });
+    var editando = !p.hecho || st.cambia;
+    var ctl = null;
+    if (editando || comp.externo) ctl = comp.pinta(cuerpo, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: st.cambia });
+    t.appendChild(cuerpo);
+    var motivo = null;
+    if (editando && p.hecho && !comp.externo) {   // cambiar algo ya guardado: la base pide motivo (p17, 12-oct)
+      motivo = el('input', { id: 'axw-motivo', type: 'text', maxlength: '500', autocomplete: 'off', 'data-axw-campo': 'motivo', class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
+      cuerpo.appendChild(el('div', { class: 'flex flex-col gap-1.5' }, [el('label', { for: 'axw-motivo', class: 'font-label-md text-label-md text-on-surface', text: U('motivo') }), motivo,
+        el('span', { class: 'font-body-sm text-body-sm text-outline', text: U('motivo_ayuda') })]));
+    }
+    var err = el('p', { role: 'alert', class: 'font-body-sm text-body-sm text-error', 'data-axw-as': 'error', text: st.error || '' });
+    t.appendChild(err);
+    var principal;
+    if (comp.externo) principal = boton(U('comprobar'), 'comprobar', true);
+    else if (!editando) principal = boton(U('siguiente'), 'siguiente', true);
+    else if (ctl && ctl.bloqueado) principal = boton(U('siguiente'), 'siguiente', true);
+    else principal = boton(p.irreversible ? U('siguiente') : U('guardar_seguir'), 'enviar', true);
+    if (atras) pie.appendChild(atras);
+    var der = el('div', { class: 'flex flex-col md:flex-row gap-3' });
+    if (!editando && !p.irreversible && !comp.externo) der.appendChild(boton(U('cambiar'), 'cambiar', false));
+    der.appendChild(principal);
+    pie.appendChild(der);
+    t.appendChild(pie);
+    t.appendChild(enlaceLuego());
+    t._ctl = ctl; t._paso = p; t._motivo = motivo;
+    h.focus();
+  }
+  function enlaceLuego() { return el('a', { href: vuelta, 'data-axw-accion': 'luego', class: 'self-center font-label-md text-label-md text-on-surface-variant underline px-2 py-2', style: 'min-height:44px', text: U('luego') }); }
+  function pintaConfirma(p) {
+    var t = $('tarjeta'), ctl = P.de(p.clave);
+    var r = st.resumen;
+    t.appendChild(el('h2', { tabindex: '-1', class: 'font-headline-sm text-headline-sm text-deep-lagoon', text: S.texto('paso', p.clave, 0) }));
+    t.appendChild(el('p', { class: 'text-deep-lagoon', style: 'font-size:32px;line-height:1.1', 'data-axw-confirma': 'valor', text: r.grande }));
+    t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', text: U('no_cambia') }));
+    var inp = el('input', { id: 'axw-teclea', type: 'text', autocomplete: 'off', 'data-axw-campo': 'teclea', class: 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md' });
+    t.appendChild(el('div', { class: 'flex flex-col gap-1.5' }, [el('label', { for: 'axw-teclea', class: 'font-label-md text-label-md text-on-surface', text: U('teclea', { v: r.teclea }) }), inp]));
+    t.appendChild(el('p', { role: 'alert', class: 'font-body-sm text-body-sm text-error', 'data-axw-as': 'error', text: st.error || '' }));
+    var fijar = boton(r.boton, 'fijar', true);
+    fijar.disabled = true;
+    inp.addEventListener('input', function () { fijar.disabled = inp.value.trim().toUpperCase() !== String(r.teclea).toUpperCase(); });
+    var pie = el('div', { class: 'flex flex-col-reverse md:flex-row md:items-center md:justify-between gap-3 pt-2' }, [boton(U('atras'), 'confirma-atras', false), fijar]);
+    t.appendChild(pie);
+    t._paso = p; t._ctlComp = ctl;
+    inp.focus();
+  }
+  function pintaDuda() {
+    var t = $('tarjeta');
+    t.setAttribute('aria-busy', 'true');
+    t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-estado': 'duda', text: U('comprobando') }));   // sin botones: no se reenvía ni se sale
+  }
+
+  // ── Guardar, con su máquina de duda (lección de Frontend 2026-10-12): solo un error CON código de la base es «no se guardó» ─────────
+  function sinSalir(e) { e.preventDefault(); e.returnValue = ''; }
+  function envia(p, v, confirmo, motivo) {
+    if (ocupado) return;
+    ocupado = true;
+    window.addEventListener('beforeunload', sinSalir);
+    document.querySelectorAll('[data-axw-accion]').forEach(function (b) { if (b.tagName === 'BUTTON') b.disabled = true; });
+    P.de(p.clave).guarda(sb, v, { paso: p, datos: ctx.datos }, confirmo, motivo).then(function (r) {
+      if (r.ok) return siguiente(p);
+      if (!r.sinRespuesta) { termina(); st.error = U('no_se_guardo', { e: S.explica(r.error, true).texto }); st.vista = st.vista === 'confirma' ? 'confirma' : 'paso'; pinta(); return; }
+      st.vista = 'duda'; pinta(); comprueba(p);
+    });
+  }
+  function comprueba(p) {
+    lee().then(function (bien) {
+      if (!bien) { termina(); st.vista = 'duda'; fallo(U('no_mirar'), 'recomprobar'); return; }   // sigue la duda: «Reintentar» vuelve a MIRAR, nunca reenvía
+      var ahora = ctx.datos.pasos.filter(function (x) { return x.clave === p.clave && x.modulo === p.modulo; })[0];
+      termina();
+      if (ahora && ahora.hecho) { st.error = ''; st.vista = 'paso'; st.cambia = false; st.paso = ''; pinta(); return; }
+      st.error = U('no_guardado'); st.vista = 'paso'; pinta();
+    });
+  }
+  function termina() { ocupado = false; window.removeEventListener('beforeunload', sinSalir); }
+  function siguiente(p) {
+    lee().then(function (bien) {
+      termina();
+      if (!bien) return;
+      st.error = ''; st.vista = 'paso'; st.cambia = false; st.paso = ''; st.resumen = null;
+      pinta();
+    });
+  }
+
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest && ev.target.closest('[data-axw-accion]');
+    if (!b || ocupado) return;
+    var a = b.getAttribute('data-axw-accion'), t = $('tarjeta'), p = t._paso;
+    if (a === 'releer') { lee().then(function (ok) { if (ok) pinta(); }); return; }
+    if (a === 'recomprobar') { st.vista = 'duda'; vacia(t); pintaDuda(); comprueba(p || { clave: st.paso, modulo: st.modulo }); return; }
+    if (!ctx) return;
+    if (a === 'atras') {
+      var L = lista(ctx.datos, st.modulo), i = L.obligatorios.indexOf(p);
+      if (i > 0) { st.paso = L.obligatorios[i - 1].clave; st.error = ''; st.cambia = false; pinta(); }
+      return;
+    }
+    if (a === 'siguiente') {
+      var L2 = lista(ctx.datos, st.modulo), j = L2.obligatorios.indexOf(p), sig = L2.obligatorios.slice(j + 1).filter(function (x) { return !x.hecho; })[0] || L2.obligatorios[j + 1];
+      st.paso = sig ? sig.clave : '__fin'; st.error = ''; st.cambia = false;
+      if (!sig) { st.paso = ''; var mod = ctx.datos.modulos.filter(function (x) { return x.modulo === st.modulo; })[0]; vacia(t); pintaListo(mod, L2, ctx.datos.modulos.filter(function (x) { return x.estado === 'sin_configurar'; })); return; }
+      pinta(); return;
+    }
+    if (a === 'cambiar') { st.cambia = true; st.error = ''; pinta(); return; }
+    if (a === 'comprobar') { siguiente(p); return; }
+    if (a === 'confirma-atras') { st.vista = 'paso'; st.error = ''; pinta(); return; }
+    if (a === 'enviar') {
+      var r = t._ctl ? t._ctl.valores() : { ok: false, error: U('elige') };
+      if (!r.ok) { var e = t.querySelector('[data-axw-as="error"]'); if (e) e.textContent = r.error; return; }
+      var motivo = t._motivo ? t._motivo.value.trim() : '';
+      if (t._motivo && (motivo.match(/\p{L}/gu) || []).length < 3) { var e2 = t.querySelector('[data-axw-as="error"]'); if (e2) e2.textContent = U('motivo_corto'); t._motivo.focus(); return; }
+      if (p.irreversible && t._ctl.resumen) { st.valores = r.v; st.resumen = t._ctl.resumen(r.v); st.motivo = motivo; st.vista = 'confirma'; st.error = ''; pinta(); return; }
+      st.valores = r.v; envia(p, r.v, false, motivo || null); return;
+    }
+    if (a === 'fijar') { envia(p, st.valores, true, st.motivo || null); return; }
+  });
+
+  if (!S || !P) { fallo('setup_modulos.js / setup_pasos.js', null); return; }
+  cargando();
+  if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { fallo(S.explica({ code: '42501' }, true).texto, null); return; }
+  window.LW_AUTH.then(function (aut) {
+    if (!aut || !aut.sb) { fallo(S.explica({ code: '42501' }, true).texto, null); return; }
+    sb = aut.sb;
+    lee().then(function (ok) { if (ok) pinta(); });
+  });
+});
+</script>
