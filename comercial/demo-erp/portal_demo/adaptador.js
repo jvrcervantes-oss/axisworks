@@ -34,7 +34,7 @@
   function copia(x) { return JSON.parse(JSON.stringify(x)); }
 
   /* ── fotos de relleno: portadas y fotos de obra (12-oct-2026). Libres de licencia (Unsplash/Pexels/CC0), de ningún proyecto
-     real, servidas desde la propia demo; procedencia en portal_demo/fotos/LICENCIAS.md. build.py exige estas mismas (FOTOS_PORTAL). ── */
+     real, servidas desde la propia demo; procedencia en portal_demo/fotos/LICENCIAS.txt. build.py exige estas mismas (FOTOS_PORTAL). ── */
   var FOTOS = '/portal/demo/fotos/';
   // Una escena por proyecto: villas en ladera, villa con piscina y casas entre palmeras.
   function portada(i) { return FOTOS + 'portada-' + (i % 3 + 1) + '.webp'; }

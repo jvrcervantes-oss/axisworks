@@ -957,12 +957,14 @@ def portal_demo_assets():
     if not copia(os.path.join(LAWANG, 'assets', 'img', 'papel-grano.jpg'), os.path.join(destino, 'demo', 'papel-grano.jpg')):
         aborta('portal_demo_assets: no encuentro assets/img/papel-grano.jpg en Lawang')
     # Fotos de relleno del portal (owner vía agencia-40, 12-oct): libres de licencia, servidas desde la propia demo. Su
-    # procedencia vive en portal_demo/fotos/LICENCIAS.md, que no se publica; sin ella las fotos no salen.
+    # procedencia vive en portal_demo/fotos/LICENCIAS.txt (no .md: el .gitignore del repo ignora *.md), que no se publica;
+    # sin ella las fotos no salen.
     fotos = os.path.join(PORTAL_DEMO, 'fotos')
     webp = sorted(f for f in os.listdir(fotos) if f.endswith('.webp')) if os.path.isdir(fotos) else []
-    licencias = open(os.path.join(fotos, 'LICENCIAS.md'), encoding='utf-8').read() if os.path.isfile(os.path.join(fotos, 'LICENCIAS.md')) else ''
+    lic = os.path.join(fotos, 'LICENCIAS.txt')
+    licencias = open(lic, encoding='utf-8').read() if os.path.isfile(lic) else ''
     if sorted(webp) != sorted(FOTOS_PORTAL) or any(f not in licencias for f in webp):
-        aborta('portal_demo_assets: portal_demo/fotos/ tiene que traer exactamente %s, cada una con su fila en LICENCIAS.md' % ', '.join(FOTOS_PORTAL))
+        aborta('portal_demo_assets: portal_demo/fotos/ tiene que traer exactamente %s, cada una con su fila en LICENCIAS.txt' % ', '.join(FOTOS_PORTAL))
     os.makedirs(os.path.join(destino, 'demo', 'fotos'), exist_ok=True)
     for f in webp:
         shutil.copy2(os.path.join(fotos, f), os.path.join(destino, 'demo', 'fotos', f))

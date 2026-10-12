@@ -1,0 +1,21 @@
+# Fotos de relleno del portal de la demo (demo.axisworks.studio)
+
+Estas fotos son de relleno para la demo del ERP inmobiliario: se pueden sustituir en cualquier momento por fotos reales del cliente.
+No son de ningún proyecto real de AxisWorks ni de sus clientes; son fotos de stock de uso comercial sin atribución obligatoria.
+
+Licencias: [Pexels](https://www.pexels.com/license/) y [Unsplash](https://unsplash.com/license). Ambas permiten uso comercial sin atribución. Fecha de descarga de todas: 12-oct-2026. Los originales no se guardan aquí; salen recortados al tamaño indicado y sin metadatos (EXIF).
+
+| Fichero | Página de la foto | Autor | Licencia | Descarga | Notas (recorte aplicado) |
+|---|---|---|---|---|---|
+| portada-1.webp | https://www.pexels.com/photo/hotel-built-of-top-of-mountain-4870616/ | Roman Odintsov | [Pexels](https://www.pexels.com/license/) | 12-oct-2026 | Recorte panorámico 1600×800, centrado algo bajo para incluir las terrazas; saturación +15 % y calidez leve para casar con las otras portadas |
+| portada-2.webp | https://www.pexels.com/photo/photo-of-villas-near-beach-2476632/ | Quang Nguyen Vinh | [Pexels](https://www.pexels.com/license/) | 12-oct-2026 | Recorte panorámico 1600×800 centrado; saturación -5 % |
+| portada-3.webp | https://www.pexels.com/photo/hotel-building-with-straw-roof-among-palm-trees-14036481/ | Quang Nguyen Vinh | [Pexels](https://www.pexels.com/license/) | 12-oct-2026 | Recorte panorámico 1600×800, centrado algo bajo; sin retoque de color |
+| obra-replanteo.webp | https://unsplash.com/photos/_WaiAXYmII8 | Iain | [Unsplash](https://unsplash.com/license) | 12-oct-2026 | Vista aérea del solar limpio con el perímetro marcado; recorte 4:3 centrado a 1200×900 |
+| obra-excavacion.webp | https://www.pexels.com/photo/construction-site-with-trenches-and-pipes-in-suburban-area-37627672/ | D Goug | [Pexels](https://www.pexels.com/license/) | 12-oct-2026 | Zanja de excavación; recorte 4:3 a 1200×900, algo bajo para quitar cielo |
+| obra-hormigonado.webp | https://www.pexels.com/photo/aerial-view-of-construction-site-in-leon-mexico-34017008/ | Pepe Picon | [Pexels](https://www.pexels.com/license/) | 12-oct-2026 | Vista aérea de la bomba de hormigón sobre la armadura; recorte 4:3 a 1200×900, desplazado a la derecha. Se ven operarios diminutos desde arriba, sin rostro identificable |
+| obra-cimentacion.webp | https://www.pexels.com/photo/construction-site-against-an-overcast-sky-13353595/ | Tanhauser Vázquez R. | [Pexels](https://www.pexels.com/license/) | 12-oct-2026 | Zapatas con arranque de pilares; original vertical, recorte 4:3 a 1200×900 en la zona inferior. Maquinaria y una figura diminuta al fondo, sin rótulos legibles |
+| obra-pilares.webp | https://unsplash.com/photos/ycR29rrEESQ | Shaturniano's Photography | [Unsplash](https://unsplash.com/license) | 12-oct-2026 | Pilares y vigas de hormigón con armadura; recorte 4:3 centrado a 1200×900 |
+| obra-encofrado.webp | https://unsplash.com/photos/-NS8rPrmSxs | Julia Taubitz | [Unsplash](https://unsplash.com/license) | 12-oct-2026 | Encofrado metálico modular (de muro, no de losa); recorte 4:3 centrado a 1200×900 |
+| obra-cubierta.webp | https://unsplash.com/photos/tJUd98RM61s | Divaris Shirichena | [Unsplash](https://unsplash.com/license) | 12-oct-2026 | Vivienda con la cubierta terminada; recorte 4:3 centrado a 1200×900 |
+| obra-interior.webp | https://www.pexels.com/photo/spacious-living-room-of-modern-house-7031618/ | Max Vakhtbovych | [Pexels](https://www.pexels.com/license/) | 12-oct-2026 | Estancia luminosa casi terminada; recorte 4:3 centrado a 1200×900 |
+| obra-llaves.webp | https://unsplash.com/photos/0juktkOTkpU | Amol Tyagi | [Unsplash](https://unsplash.com/license) | 12-oct-2026 | Llaves colgando en una puerta, sin manos ni texto; original vertical, recorte 4:3 a 1200×900 |
