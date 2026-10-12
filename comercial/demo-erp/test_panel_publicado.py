@@ -14,6 +14,7 @@ import hashlib
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -127,8 +128,15 @@ def main():
     copia = lee(os.path.join(AQUI, 'panel_aprobaciones.html'))
     ok('panel_aprobaciones.html lleva su bloque RENDER y las tres lineas de piel', '/*RENDER-INICIO*/' in copia and cuerpo(copia, True) is not None)
     fuente = os.path.join(build.AGENCIA, 'erp', 'funciones', 'agente-aprobaciones', 'panel_aprobaciones.html')
-    if os.path.isfile(fuente):
-        ok('la copia es la fuente de la agencia (la que prueba panel.test.js) salvo cabecera y piel', cuerpo(copia, True) == cuerpo(lee(fuente), False))
+    # La fuente que manda es la PUBLICADA (origin/main de la agencia), no el disco del clon: un clon principal atrasado (12-oct-2026: no podía
+    # avanzar por ficheros sin commitear de otros) dejaba este test en rojo para todas las sesiones con la copia ya al día. Sin git o sin
+    # origin/main, el fichero en disco, como antes. Saltos de línea normalizados en los dos lados.
+    publicada = subprocess.run(['git', '-C', build.AGENCIA, 'show', 'origin/main:erp/funciones/agente-aprobaciones/panel_aprobaciones.html'],
+                               capture_output=True)
+    texto_fuente = publicada.stdout.decode('utf-8') if publicada.returncode == 0 else (lee(fuente) if os.path.isfile(fuente) else None)
+    if texto_fuente is not None:
+        ok('la copia es la fuente de la agencia (la que prueba panel.test.js) salvo cabecera y piel',
+           cuerpo(copia.replace('\r\n', '\n'), True) == cuerpo(texto_fuente.replace('\r\n', '\n'), False))
     else:
         print('aviso: no hay fuente de la agencia en %s: no se compara' % fuente)
     vista = re.sub(r'<!--.*?-->|/\*.*?\*/', '', lee(os.path.join(AQUI, 'panel_aprobaciones.html')), flags=re.S)   # sin comentarios, que nombran lo prohibido
@@ -137,7 +145,6 @@ def main():
     ok('la barra compartida tiene la sección aprobaciones y build la monta', 'data-nav="aprobaciones"' in lee(os.path.join(AQUI, '_compartido', 'panel_nav.html')) and "panel_nav(aprob, 'aprobaciones')" in lee(os.path.join(AQUI, 'build.py')))
 
     # 6) publicado_de_clon con repos git de verdad: una origin/main local VIEJA no engaña (hace fetch); un HEAD adelantado para
-    import subprocess
 
     def g(cwd, *a):
         subprocess.run(['git', '-c', 'user.email=t@t', '-c', 'user.name=t'] + list(a), cwd=cwd, check=True, capture_output=True)

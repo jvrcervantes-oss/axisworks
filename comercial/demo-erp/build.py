@@ -3494,7 +3494,7 @@ def instancia(nombre):
         if '__AXW_ROTULOS__' not in panel or '__AXW_SETUP__' not in panel:
             aborta('panel_control.html sin el hueco __AXW_ROTULOS__ o __AXW_SETUP__')
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8', newline='').write(
-            panel_nav(panel, 'modulos').replace('__AXW_ROTULOS__', json.dumps(rotulos(), ensure_ascii=False, sort_keys=True).replace('</', '<\/'))
+            panel_nav(panel, 'modulos').replace('__AXW_ROTULOS__', json.dumps(rotulos(), ensure_ascii=False, sort_keys=True).replace('</', '<\\/'))
             .replace('__AXW_SETUP__', json.dumps(setup_para_panel(), ensure_ascii=False, sort_keys=True).replace('</', '<\\/')))
         # La vista «Pilotos» (1-oct-2026, encargos/20261001_panel_pilotos_vista.md): /panel/pilotos/, mismo CSS. Esta página
         # NO lleva su contenido (/panel/ es público): lo pide a la edge erp-control (acción `pilotos`, solo operador).
