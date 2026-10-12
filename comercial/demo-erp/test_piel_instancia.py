@@ -138,6 +138,73 @@ mira('el acento del menú ≥ 4,5:1 sobre la tinta, y la tinta sobre él', bool(
      and D.contraste(rgb['on-primary'], rgb['primary-container']) >= 4.5)
 mira('el registro real: axisworks-demo sin menú oscuro', build.menu_oscuro_css('axisworks-demo') == '')
 
+# 4b2 — menú lateral (registro `menu: "lateral"`, bbm-p33): solo el <aside>, la barra superior clara como en el diseño
+BBM = 'bbm' if 'bbm' in APROBADAS['presets'] else PIEL
+est, css = con_registro({'piel': BBM, 'menu': 'lateral'}, build.menu_oscuro_css, 'x')
+reglas = re.findall(r'\n?(.+?)\{(.+?)\}\n', css or '')
+mira('menu lateral: el aside y nada de la barra superior', est == 'pasa' and len(reglas) == 2
+     and reglas[0][0] == build.MENU_LATERAL and 'k-avisos' not in css and reglas[1][0] == build.MENU_LATERAL + ' .bg-deep-lagoon')
+decl = dict(x.split(':', 1) for x in reglas[0][1].split(';')) if reglas else {}
+rgb = {k[len('--tema-'):]: tuple(int(n) for n in v.split()) for k, v in decl.items()}
+p_bbm = {k: tuple(v) for k, v in APROBADAS['presets'][BBM].items()}
+mira('menu lateral: solo --tema- con tríos y todo ≥ 4,5:1 (texto, marca, pastilla)', bool(rgb)
+     and all(re.fullmatch(r'\d{1,3} \d{1,3} \d{1,3}', v) for v in decl.values())
+     and all(D.contraste(rgb[t], rgb[f]) >= 4.5 for t in ('on-surface', 'on-surface-variant', 'outline', 'deep-lagoon', 'primary')
+             for f in ('surface-container-low',)) and D.contraste(rgb['on-primary'], rgb['primary-container']) >= 4.5)
+mira('menu lateral con el estándar AxisWorks: pastilla del acento con el fondo encima',
+     BBM != 'bbm' or (rgb['primary-container'] == p_bbm['accent-gold'] and rgb['on-primary'] == p_bbm['background']))
+mira('menu de valor desconocido: nada', con_registro({'piel': BBM, 'menu': 'raro'}, build.menu_oscuro_css, 'x') == ('pasa', ''))
+
+
+# 4b3 — sistema de la instancia (registro `sistema`): fuentes autoalojadas y forma, y los colores a mano de la cáscara v4
+def en_dist(ficheros, reg, f, *a):
+    d = paquete(ficheros)
+    v = build.DIST
+    build.DIST = d
+    try:
+        r = con_registro(reg, f, *a)
+    finally:
+        build.DIST = v
+    return r, d
+
+mira('sin `sistema`: nada', en_dist({}, {'piel': BBM}, build.sistema_instancia, 'x')[0] == ('pasa', 0))
+mira('sistema desconocido: PARA', en_dist({}, {'piel': BBM, 'sistema': 'no-existe'}, build.sistema_instancia, 'x')[0][0] == 'para')
+mira('sistema sin piel: PARA', en_dist({}, {'sistema': 'axisworks'}, build.sistema_instancia, 'x')[0][0] == 'para')
+# cadenas REALES de Lawang tal como llegan tras tipografias_libres (Jost ya en lugar de Neue Kabel; revisor 13-oct)
+GJ = 'https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap'
+GM = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap'
+DOC = '[["lw-doc-fonts","https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=Cormorant+Garamond:wght@400;600"]];x="Jost"'
+(est, n), d = en_dist({'assets/fonts/fonts.css': "@import url('https://fonts.googleapis.com/css2?family=Jost');",
+                       'a/index.html': '<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400&display=swap" rel="stylesheet"><p style="font-family:Jost">',
+                       'assets/shell.css': "@import url('%s');.a{font-family:Jost,system-ui,sans-serif}" % GJ,
+                       'contracts/assets/piel.js': 'a="%s";b="%s"' % (GJ, GM),
+                       'assets/editores.js': 'l.href="%s";x="Cormorant Garamond"' % GJ,
+                       'clasico/facturas/documento.js': DOC},
+                      {'piel': BBM, 'sistema': 'axisworks'}, build.sistema_instancia, 'x')
+lee = lambda r: open(os.path.join(d, *r.split('/')), encoding='utf-8').read()
+mira('sistema: fonts.css con @font-face propias (nada a Google) y la forma', est == 'pasa' and 'googleapis' not in lee('assets/fonts/fonts.css')
+     and "src:url(/assets/fonts/x/manrope-400.woff2)" in lee('assets/fonts/fonts.css') and 'box-shadow:none' in lee('assets/fonts/fonts.css'))
+mira('sistema: la página carga la hoja propia y usa Manrope; shell.css, piel.js y editores.js ya no piden texto a Google',
+     est == 'pasa' and '<link rel="stylesheet" href="/assets/fonts/fonts.css">' in lee('a/index.html') and 'Manrope' in lee('a/index.html')
+     and "@import url('/assets/fonts/fonts.css')" in lee('assets/shell.css') and 'Manrope' in lee('assets/shell.css')
+     and 'family=Jost' not in lee('contracts/assets/piel.js') and 'family=Manrope' not in lee('contracts/assets/piel.js')
+     and 'googleapis' not in lee('assets/editores.js') and 'Unbounded' in lee('assets/editores.js'))
+mira('sistema: los iconos (Material Symbols) siguen igual', est == 'pasa' and GM in lee('contracts/assets/piel.js'))
+mira('sistema: el documento imprimible no se toca', est == 'pasa' and lee('clasico/facturas/documento.js') == DOC)
+mira('sistema: las woff2 están en el paquete', est == 'pasa' and os.path.isfile(os.path.join(d, 'assets', 'fonts', 'x', 'unbounded-600.woff2')))
+
+NAV = 'a.style.cssText=on?"background:#485B37;color:#fff":"color:#44483f"'
+MASC = ''.join(lit for rel_f, lit, _t, _f in build.V4_FIJOS if rel_f == 'assets/mascota.js')
+d = paquete({'assets/nav.js': NAV, 'assets/mascota.js': MASC})
+est, n = con_registro({'piel': BBM}, build.piel_v4_fijos, d, 'x')
+fuera = [lit for rel_f, lit, _t, _f in build.V4_FIJOS if lit in lee(rel_f)]
+mira('colores a mano de la cáscara v4: todos los literales de Lawang reemplazados', est == 'pasa' and n == len(build.V4_FIJOS) and not fuera)
+mira('la pestaña activa ≥ 4,5:1', est == 'pasa' and (lambda m: m and D.contraste(D.rgb(m.group(1)), D.rgb(m.group(2))) >= 4.5)(
+     re.search(r'background:(#[0-9A-F]{6});color:(#[0-9A-F]{6})', lee('assets/nav.js'))))
+mira('un literal que ya no está PARA (¿cambió Lawang?)',
+     con_registro({'piel': BBM}, build.piel_v4_fijos, paquete({'assets/nav.js': 'nada', 'assets/mascota.js': MASC}), 'x')[0] == 'para')
+mira('sin piel: los colores a mano no se tocan', con_registro({}, build.piel_v4_fijos, paquete({'assets/nav.js': NAV}), 'x') == ('pasa', 0))
+
 # 4c — favicon con versión (la CDN de Hostinger lo cachea 7 días)
 d = paquete({'index.html': '<link rel="icon" href="/favicon.png"><p>', 'a/index.html': '<p>sin icono</p>'})
 open(os.path.join(d, 'favicon.png'), 'wb').write(b'\x89PNG prueba')
@@ -183,7 +250,8 @@ mira('suite clásica: los colores de Lawang escritos a mano ya no están', est =
      and not re.search(r'#0d5b5f|rgba\(16,76,79|rgba\(72,91,55|#F5F0E6|#CBD6B6|rgba\(143,155,122', hoja + puerta, re.I))
 mascota = open(os.path.join(d0, 'assets', 'mascota.js'), encoding='utf-8').read() if est == 'pasa' else ''
 mira('suite clásica: el marco de la mascota ya no es Deep Lagoon de Lawang', est == 'pasa'
-     and not re.search(r'#104C4F|rgba\(16,76,79|#0c3c3e|#316669', mascota, re.I) and '#442C1E' in mascota)
+     and not re.search(r'#104C4F|rgba\(16,76,79|#0c3c3e|#316669', mascota, re.I)
+     and '#%02X%02X%02X' % tuple(APROBADAS['presets']['bbm']['deep-lagoon']) in mascota)   # el de la piel vigente, no un hex fijo
 d = paquete({'index.html': PUERTA.replace('#CBD6B6', '#ABCDEF'), 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA, 'assets/mascota.js': MASC, 'assets/nav.js': NAV})
 mira('suite clásica: PARA si Lawang quita un color fijo que la piel sustituye', con_registro({'piel': 'bbm'}, build.piel_suite_clasica, d, 'bbm')[0] == 'para')
 d = paquete({'index.html': PUERTA, 'crea-contrasena/index.html': CREA, 'contracts/assets/axw.css': HOJA + '@media (x){', 'assets/mascota.js': MASC, 'assets/nav.js': NAV})
@@ -293,6 +361,9 @@ mira('hub: la capa va en su fichero y se carga justo antes de instancia.js',
 mira('hub sin window.LW_SB = sb: PARA', hub(HUB.replace('window.LW_SB=sb;', ''))[0] == 'para')
 mira('hub con dos cargas de instancia.js: PARA', hub(HUB + '<script src="/contracts/assets/instancia.js"></script>')[0] == 'para')
 mira('sin hub en el paquete: nada', hub(None)[0] == 'pasa')
+mira('instancia() pone el sistema tras tipografias_libres y los colores a mano tras la suite clásica, todo antes de versionar',
+     cuerpo.index('tipografias_libres()') < cuerpo.index('sistema_instancia(nombre)') < cuerpo.index('\n    versiona(DIST)')
+     and cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('piel_v4_fijos(DIST, nombre)') < cuerpo.index('\n    versiona(DIST)'))
 mira('instancia() pone la capa en el hub justo después de pegarla al guard', cuerpo.index('setup_para_guard())') < cuerpo.index('capa_modulos_hub(interruptores)') < cuerpo.index('\n    versiona(DIST)'))
 
 print('%d/%d' % (casos - len(fallos), casos))
