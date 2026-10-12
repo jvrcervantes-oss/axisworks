@@ -43,7 +43,7 @@ function nuevaBase(o = {}) {
       { id: 'r4', numero: 'RSV-4', producto_id: 'p1', producto: 'Honda Beat', unidad_id: 'u2', unidad: 'DK 2', client_id: null, cliente_oculto: false, contacto_nombre: 'Cai', contacto_telefono: null,
         desde: mas(10), hasta: mas(12), dias: 2, estado: 'confirmada', origen: 'equipo', caduca_en: null, precio_total: 200000, moneda: 'IDR', desglose: [], entrega_direccion: null, recogida_direccion: null,
         pago_referencia: null, notas: null, creado_en: new Date().toISOString(), creado_por: 'yo@x.com' }
-    ].concat(o.conPrevio ? [
+    ].concat(o.extraReservas || []).concat(o.conPrevio ? [
       // F3-E3: alquiler previo (la moto ya estaba fuera al empezar con el ERP): sin precio ni pago en el ERP (CHECK de la base)
       { id: 'r9', numero: 'RSV-9', producto_id: 'p1', producto: 'Honda Beat', unidad_id: 'u2', unidad: 'DK 2', client_id: null, cliente_oculto: false, contacto_nombre: null, contacto_telefono: null,
         desde: mas(-3), hasta: mas(2), dias: 5, estado: 'en_curso', origen: 'previo', caduca_en: null, precio_total: 0, moneda: 'IDR', desglose: [], entrega_direccion: null, recogida_direccion: null,
@@ -631,6 +631,29 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await ctx.close();
   }
 
+  // 6b. las barras del calendario (revisor, 13-oct): cada fila suma 14 días, corte a izquierda y derecha, solape avisado y la que cae dentro de otra no se pinta
+  {
+    const R = (id, unidad_id, estado, d0, d1) => ({ id, numero: id.toUpperCase(), producto_id: 'p1', producto: 'Honda Beat', unidad_id, unidad: unidad_id, client_id: null, cliente_oculto: false,
+      contacto_nombre: 'X', contacto_telefono: null, desde: mas(d0), hasta: mas(d1), dias: d1 - d0, estado, origen: 'equipo', caduca_en: null, precio_total: 1, moneda: 'IDR', desglose: [],
+      entrega_direccion: null, recogida_direccion: null, pago_referencia: null, notas: null, creado_en: new Date().toISOString(), creado_por: 'yo@x.com' });
+    const extra = [R('rs', 'u1', 'en_curso', -3, 1),     // empieza antes de la ventana: corte a la izquierda, 1 día visible (r1 empieza justo cuando acaba)
+                   R('rd', 'u1', 'confirmada', 12, 20),  // sigue después de la ventana: corte a la derecha, 2 días visibles
+                   R('rp', 'u2', 'bloqueo', 2, 5),       // pisa a r2 (0..3): sale desde el día 3, recortada a la izquierda
+                   R('rq', 'u2', 'confirmada', 10, 11)]; // cae entera dentro de r4 (10..12): no se pinta
+    const { p, ctx } = await abre({ base: { extraReservas: extra } });
+    await tab(p, 'calendario');
+    await espera(p, () => document.querySelectorAll('[data-rp="cal-tabla"] tbody tr').length === 3);
+    const filas = await p.$$eval('[data-rp="cal-tabla"] tbody tr', trs => trs.map(tr => Array.from(tr.querySelectorAll('td:not(.rp-ini)')).reduce((s, td) => s + Number(td.getAttribute('colspan') || 1), 0)));
+    ok('cada fila del calendario suma 14 días', filas.every(n => n === 14), JSON.stringify(filas));
+    const celda = id => p.$eval('[data-rp="cal-tabla"] td[data-reserva-id="' + id + '"]', td => [td.getAttribute('data-corte') || '', Number(td.getAttribute('colspan') || 1)]).catch(() => null);
+    ok('la que empieza antes de la ventana: corte a la izquierda y 1 día', JSON.stringify(await celda('rs')) === '["izq",1]', JSON.stringify(await celda('rs')));
+    ok('la que sigue después: corte a la derecha y 2 días', JSON.stringify(await celda('rd')) === '["der",2]', JSON.stringify(await celda('rd')));
+    ok('la que pisa a otra empieza donde acaba la primera (corte izquierdo, 2 días)', JSON.stringify(await celda('rp')) === '["izq",2]', JSON.stringify(await celda('rp')));
+    ok('la que cae entera dentro de otra no se pinta', (await celda('rq')) === null);
+    ok('el solape se avisa y el aviso dice que puede no salir', await p.$eval('[data-rp="cal-aviso"]', e => !e.classList.contains('rp-oculto') && /se pisan/.test(e.textContent) && /no sale/.test(e.textContent)));
+    await ctx.close();
+  }
+
   // 6. calendario y flota
   {
     const { base, p, ctx } = await abre();
@@ -642,6 +665,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
        (await p.$$eval('[data-rp="cal-tabla"] td[data-estado="confirmada"]', tds => tds.reduce((s, td) => s + Number(td.getAttribute('colspan') || 1), 0))) >= 3 && (await p.$$('[data-rp="cal-tabla"] tr[data-unidad-id="u3"] td[data-fuera="1"]')).length === 14);
     ok('una reserva cancelada/pasada no pinta', (await p.$$('[data-rp="cal-tabla"] td[data-estado="devuelta"], [data-rp="cal-tabla"] td[data-estado="cancelada"]')).length === 0);
     ok('el calendario no inyecta nada', await sinInyeccion(p));
+    ok('sin reservas que se pisen, no hay aviso de solape', await p.$eval('[data-rp="cal-aviso"]', e => e.classList.contains('rp-oculto')));
     await p.click('[data-accion="rp-cal-sig"]');
     for (let i = 0; i < 50 && llamadas(base, 'reservas_producto_datos').pop()[1].p_desde !== mas(7); i++) await p.waitForTimeout(100);
     ok('semana siguiente mueve la ventana 7 dias', llamadas(base, 'reservas_producto_datos').pop()[1].p_desde === mas(7));

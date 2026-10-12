@@ -207,6 +207,8 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
   var PAGO = { pagado: ['Pagado', 'ok', 'check'], registrado: ['Pago registrado, sin confirmar', 'registrado', 'schedule'], pendiente: ['Pendiente de pago', 'espera', 'euro'],
     fuera_erp: ['Cobrado fuera del ERP', 'ok', 'check'] };   // F3-E3: un alquiler previo (la moto ya estaba fuera al empezar con el ERP) se cobró fuera
   var ESTADO = { bloqueo: ['Sin confirmar', 'espera', 'schedule'], confirmada: ['Confirmada', 'confirmada', 'check'], en_curso: ['En curso', 'curso', 'arrow_forward'], devuelta: ['Devuelta', 'neutro', 'keyboard_return'] };
+  // lo que da la base se busca como CLAVE PROPIA: un pago_estado «constructor» o «toString» no puede casar con lo heredado de Object (revisor, 13-oct)
+  function de(mapa, k) { return Object.prototype.hasOwnProperty.call(mapa, k) ? mapa[k] : null; }
   var PROPIOS = {
     modulo_apagado: T('El módulo de reservas está apagado en esta instancia: no hay reservas que mirar. Esto NO quiere decir que no haya nada.'),
     sin_permiso: T('No tienes permiso para ver las reservas. No es que no haya: no se ha podido mirar.'), soloLectura: true
@@ -250,7 +252,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
     return h('span', { class: 'axw-chip ph-chip', 'data-tono': tono, 'data-ph': cual }, [h('span', { class: 'material-symbols-outlined', 'aria-hidden': 'true', text: icono }), h('span', { text: texto })]);
   }
   function chipPago(x) {
-    var p = PAGO[x.pago_estado];
+    var p = de(PAGO, x.pago_estado);
     return p ? chipDe(T(p[0]), p[1], p[2], 'chip-pago') : chipDe(T('Estado del pago desconocido'), 'mal', 'help', 'chip-pago');
   }
   // Fila con la forma del diseño: hora (o «Sin hora»: la columna nunca queda vacía ni se deduce), modelo + matrícula, dirección de ESA lista, cliente, estado y pago.
@@ -266,7 +268,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
     if (dir) sitio.push(h('span', { text: T(clave === 'entregas' ? 'Entrega' : 'Recogida') + ': ' }), h('strong', { text: String(dir) }), ' · ');
     sitio.push(T('Reserva') + ' ' + (x.numero_reserva ? String(x.numero_reserva) : '—'));
     var chips = h('span', { class: 'ph-chips' });
-    var est = ESTADO[x.estado];
+    var est = de(ESTADO, x.estado);
     if (est) chips.appendChild(chipDe(T(est[0]), est[1], est[2], 'chip-estado'));
     chips.appendChild(chipPago(x));
     var cuerpo = h('span', { class: 'ph-cuerpo' }, [linea,
@@ -297,7 +299,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
     var rec = me || md;
     var pend = n(unicas, function (x) { return x.pago_estado === 'pendiente'; });
     var regis = n(unicas, function (x) { return x.pago_estado === 'registrado'; });
-    var desc = n(unicas, function (x) { return !PAGO[x.pago_estado]; });
+    var desc = n(unicas, function (x) { return !de(PAGO, x.pago_estado); });
     var num = $v('c-pago');
     num.textContent = cuenta(pend, rec);
     if (pend) num.setAttribute('data-tono', 'espera'); else num.removeAttribute('data-tono');
@@ -309,7 +311,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
   function cifrasSinDato() {
     ['c-entregas', 'c-devoluciones', 'c-pago'].forEach(function (k) { $v(k).textContent = '—'; $v(k).removeAttribute('data-tono'); vacia($v(k + '-sub')); });
   }
-  function pinta(clave, lista) {
+  function pinta(clave, lista, conSalida) {
     var ul = $v(clave), est = $v('estado-' + clave), n = $v('n-' + clave);
     vacia(ul);
     n.textContent = '(' + lista.length + ')';
@@ -317,9 +319,11 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
       est.className = 'axw-vacio';
       var esHoy = E.dia === E.hoy;
       est.textContent = clave === 'entregas' ? T(esHoy ? 'Hoy no hay entregas.' : 'Este día no hay entregas.') : T(esHoy ? 'Hoy no hay devoluciones.' : 'Este día no hay devoluciones.');
-      // vacío con salida (Diseño, 13-oct): el mismo data-accion que «Día siguiente ›» de arriba
-      est.appendChild(document.createTextNode(' '));
-      est.appendChild(h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'ph-despues', text: T('Día siguiente ›') }));
+      // vacío con salida (Diseño, 13-oct): el mismo data-accion que «Día siguiente ›» de arriba, UNA vez y solo si el día entero viene vacío (revisor, 13-oct)
+      if (conSalida) {
+        est.appendChild(document.createTextNode(' '));
+        est.appendChild(h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'ph-despues', text: T('Día siguiente ›') }));
+      }
       return;
     }
     est.textContent = '';
@@ -360,8 +364,9 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
       var bh = $v('dia').querySelector('[data-accion="ph-hoy"]');
       if (bh) bh.setAttribute('aria-pressed', E.dia === E.hoy ? 'true' : 'false');
       cifras(d);
-      pinta('entregas', d.entregas);
-      pinta('devoluciones', d.devoluciones);
+      var diaVacio = !d.entregas.length && !d.devoluciones.length && d.hay_mas_entregas !== true && d.hay_mas_devoluciones !== true;
+      pinta('entregas', d.entregas, diaVacio);
+      pinta('devoluciones', d.devoluciones, false);
       hayMas('entregas', d.hay_mas_entregas === true);
       hayMas('devoluciones', d.hay_mas_devoluciones === true);
       if (d.hay_mas_entregas === true) $v('n-entregas').textContent = '(' + d.entregas.length + '+)';
@@ -369,7 +374,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
     });
   }
   function ver(x) {
-    var p = PAGO[x.pago_estado], est = ESTADO[x.estado];
+    var p = de(PAGO, x.pago_estado), est = de(ESTADO, x.estado);
     var pares = [['Reserva', x.numero_reserva], ['Modelo', x.producto], ['Unidad', x.unidad], ['Cliente', quien(x)],
                  ['Fechas', C.fechaDia(x.desde) + ' → ' + C.fechaDia(x.hasta)],
                  ['Estado', est ? T(est[0]) : x.estado], ['Pago', p ? T(p[0]) : T('Estado del pago desconocido')],

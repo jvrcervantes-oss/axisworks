@@ -236,7 +236,7 @@ a.rp-boton{text-decoration:none}
   var EN_RP = {
     'Reservas de producto': 'Product bookings',
     'Seguimiento': 'Pipeline', 'Cada moto, día a día.': 'Every bike, day by day.', 'Taller o baja': 'Workshop or retired', '%n días': '%n days', '1 día': '1 day',
-    'Dos reservas vivas se pisan en la misma moto: el calendario enseña la primera entera y la otra desde donde acaba. Míralas en la lista.': 'Two live bookings overlap on the same bike: the calendar shows the first in full and the other from where it ends. Check them in the list.',
+    'Dos reservas vivas se pisan en la misma moto: el calendario pinta cada día una sola vez, así que la que empieza después sale recortada o no sale. Míralas en la lista.': 'Two live bookings overlap on the same bike: the calendar paints each day only once, so the one that starts later is cut short or not shown. Check them in the list.',
     'Las reservas de tus productos por fechas (motos, coches…): calendario por unidad, flota y tarifas, y el paso de cada reserva. Los precios los calcula siempre la base; aquí solo se piden.': 'Bookings of your products by date (motorbikes, cars…): calendar per unit, fleet and rates, and each booking’s status. Prices are always worked out by the database; here they are only requested.',
     'Nueva reserva': 'New booking', 'Reservas': 'Bookings', 'Calendario': 'Calendar', 'Flota y tarifas': 'Fleet and rates', 'Editar flota': 'Edit fleet', 'Pagos por revisar': 'Payments to review',
     'Estado': 'Status', 'Todos': 'All', 'Bloqueo': 'Hold', 'Confirmada': 'Confirmed', 'En curso': 'In progress', 'Devuelta': 'Returned', 'Cancelada': 'Cancelled', 'Caducada': 'Expired',
@@ -364,7 +364,7 @@ a.rp-boton{text-decoration:none}
   var ID_RP = {
     'Reservas de producto': 'Booking sewa motor',
     'Seguimiento': 'Tindak lanjut', 'Cada moto, día a día.': 'Setiap motor, hari demi hari.', 'Taller o baja': 'Bengkel atau nonaktif', '%n días': '%n hari', '1 día': '1 hari',
-    'Dos reservas vivas se pisan en la misma moto: el calendario enseña la primera entera y la otra desde donde acaba. Míralas en la lista.': 'Dua booking aktif bertumpuk pada motor yang sama: kalender menampilkan yang pertama penuh dan yang lain mulai dari akhir yang pertama. Cek di daftar.',
+    'Dos reservas vivas se pisan en la misma moto: el calendario pinta cada día una sola vez, así que la que empieza después sale recortada o no sale. Míralas en la lista.': 'Dua booking aktif bertumpuk pada motor yang sama: kalender hanya menampilkan setiap hari satu kali, jadi booking yang mulai belakangan terpotong atau tidak tampil. Cek di daftar.',
     'Las reservas de tus productos por fechas (motos, coches…): calendario por unidad, flota y tarifas, y el paso de cada reserva. Los precios los calcula siempre la base; aquí solo se piden.': 'Booking sewa per tanggal (motor, mobil…): kalender per unit, armada dan tarif, dan status tiap booking. Harga selalu dihitung oleh sistem; di sini hanya diminta.',
     'Nueva reserva': 'Booking baru', 'Reservas': 'Booking', 'Calendario': 'Kalender', 'Flota y tarifas': 'Armada dan tarif', 'Editar flota': 'Ubah armada', 'Pagos por revisar': 'Pembayaran perlu dicek',
     'Estado': 'Status', 'Todos': 'Semua', 'Bloqueo': 'Ditahan', 'Confirmada': 'Dikonfirmasi', 'En curso': 'Sedang disewa', 'Devuelta': 'Sudah kembali', 'Cancelada': 'Dibatalkan', 'Caducada': 'Kedaluwarsa',
@@ -1614,7 +1614,7 @@ a.rp-boton{text-decoration:none}
     t.appendChild(tb);
     var avisos = [];
     if (recortado) avisos.push(T('El calendario está recortado: hay más reservas en estas fechas de las que caben. Acorta el rango o mira la lista.'));
-    if (pisadas) avisos.push(T('Dos reservas vivas se pisan en la misma moto: el calendario enseña la primera entera y la otra desde donde acaba. Míralas en la lista.'));
+    if (pisadas) avisos.push(T('Dos reservas vivas se pisan en la misma moto: el calendario pinta cada día una sola vez, así que la que empieza después sale recortada o no sale. Míralas en la lista.'));
     avisoCal.textContent = avisos.join('\n'); oculta(avisoCal, !avisos.length);
   }
 

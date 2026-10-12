@@ -464,7 +464,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   // Cifras de arriba: SOLO cuentas del estado de cada moto que da la base. «Disponible» = no está en taller ni de baja (puede estar alquilada: la base no lo dice aquí).
   function cifras(d) {
     var c = { disponible: 0, taller: 0, baja: 0 }, total = 0;
-    d.productos.forEach(function (p) { p.unidades.forEach(function (u) { total++; if (u.estado in c) c[u.estado]++; }); });
+    d.productos.forEach(function (p) { p.unidades.forEach(function (u) { total++; if (Object.prototype.hasOwnProperty.call(c, u.estado)) c[u.estado]++; }); });
     var mas = d.recortado === true ? '+' : '';
     Object.keys(c).forEach(function (k) { $v('c-' + k).textContent = c[k] + mas; });
     $v('c-total').textContent = T('De %n motos en total').replace('%n', total + mas);

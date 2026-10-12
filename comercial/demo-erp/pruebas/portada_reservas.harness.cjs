@@ -48,6 +48,7 @@ async function servidor(b, nombre, a) {
   if (o.sinRed) return { data: null, error: { message: 'Failed to fetch' } };
   if (nombre !== 'portada_reservas_dia_datos') return err('42883', 'funcion desconocida ' + nombre);
   if (o.datosRaros) return { data: { dia: HOY, entregas: 'nada' }, error: null };
+  if (o.dato) return { data: JSON.parse(JSON.stringify(o.dato)), error: null };   // la respuesta tal cual (cifras, 13-oct)
   if (o.hayMas && !(o.fallaOtroDia && a.p_dia)) return { data: { dia: HOY, entregas: [], devoluciones: [], hay_mas_entregas: true, hay_mas_devoluciones: false }, error: null };
   if (o.hayMas && o.fallaOtroDia && a.p_dia) return { data: null, error: { message: 'Failed to fetch' } };
   const dia = a.p_dia || HOY;
@@ -186,6 +187,42 @@ const TILDES = /[áéíóúñÁÉÍÓÚÑ¿¡]/;
     await p.click('[data-accion="ph-despues"]');
     await espera(p, () => document.querySelector('[data-ph="estado-entregas"]').className === 'axw-error');
     ok('tras un error al cambiar de día, el aviso «hay más» desaparece', await p.$eval('[data-ph="mas-entregas"]', e => e.classList.contains('axw-oculto')));
+    await ctx.close();
+
+    // 1d. las cifras de arriba (revisor, 13-oct): un «Nada pendiente de pago» falso es lo que engaña al operario
+    const R = (id, estado, pago, extra) => Object.assign({ id, numero_reserva: 'RP-' + id, estado, desde: HOY, hasta: suma(HOY, 2), hora: null, producto: 'Honda Vario', unidad: 'DK 1 A',
+      cliente: 'C', entrega_direccion: null, recogida_direccion: null, precio_total: 1, moneda: 'IDR', pago_estado: pago }, extra || {});
+    const cifra = (p, k) => txt(p, '[data-ph="' + k + '"]');
+    // a) la misma reserva sale y vuelve el mismo día: su pago cuenta UNA vez; registrado y desconocido aparte; «constructor» no es un estado
+    ({ p, ctx } = await abre({ base: { dato: { dia: HOY, entregas: [R('a', 'bloqueo', 'pendiente'), R('b', 'confirmada', 'constructor'), R('m', 'confirmada', 'pendiente')],
+      devoluciones: [R('m', 'confirmada', 'pendiente'), R('c', 'en_curso', 'registrado')] } } }));
+    ok('cifras: sin pagar cuenta la reserva repetida una vez (2) y no dice «Nada pendiente»', (await cifra(p, 'c-pago')) === '2' && !(await cifra(p, 'c-pago-sub')).includes('Nada pendiente'),
+       (await cifra(p, 'c-pago')) + ' | ' + (await cifra(p, 'c-pago-sub')));
+    ok('cifras: «Pago registrado, sin confirmar: 1» y «Estado del pago desconocido: 1»', (await cifra(p, 'c-registrado')).includes(': 1') && (await cifra(p, 'c-desconocido')).includes(': 1'));
+    ok('un pago_estado que no es de la lista («constructor») sale como desconocido, en rojo', await p.$eval('[data-ph="entregas"] li:nth-child(2) [data-ph="chip-pago"]',
+       e => e.getAttribute('data-tono') === 'mal' && e.textContent.includes('desconocido')));
+    ok('cifras: entregas 3 (1 sin confirmar) y devoluciones 2 (1 en curso)', (await cifra(p, 'c-entregas')) === '3' && (await cifra(p, 'c-sin-confirmar')).includes(': 1')
+       && (await cifra(p, 'c-devoluciones')) === '2' && (await cifra(p, 'c-devoluciones-sub')).includes(': 1'));
+    await ctx.close();
+    // b) todo pagado y la lista entera: «Nada pendiente de pago»
+    ({ p, ctx } = await abre({ base: { dato: { dia: HOY, entregas: [R('a', 'confirmada', 'pagado'), R('f', 'confirmada', 'fuera_erp')], devoluciones: [] } } }));
+    ok('todo pagado (también fuera del ERP) y sin recorte: 0 y «Nada pendiente de pago»', (await cifra(p, 'c-pago')) === '0' && (await cifra(p, 'c-pago-sub')).includes('Nada pendiente de pago'));
+    await ctx.close();
+    // c) lo mismo pero la base dice que hay más: «0+» y NUNCA «Nada pendiente»
+    ({ p, ctx } = await abre({ base: { dato: { dia: HOY, entregas: [R('a', 'confirmada', 'pagado')], devoluciones: [], hay_mas_devoluciones: true } } }));
+    ok('lista recortada: «0+» y sin «Nada pendiente de pago»; las cuentas con «+» donde toca', (await cifra(p, 'c-pago')) === '0+' && !(await cifra(p, 'c-pago-sub')).includes('Nada pendiente')
+       && (await cifra(p, 'c-devoluciones')) === '0+' && (await cifra(p, 'c-entregas')) === '1');
+    await ctx.close();
+    // d) la carga falla: «—», nunca 0
+    ({ p, ctx } = await abre({ base: { sinRed: true } }));
+    ok('si no se ha podido mirar, las tres cifras dicen «—»', (await cifra(p, 'c-entregas')) === '—' && (await cifra(p, 'c-devoluciones')) === '—' && (await cifra(p, 'c-pago')) === '—');
+    await ctx.close();
+    // e) día vacío: un solo «Día siguiente ›» dentro de las columnas (más el de arriba); con una columna con reservas, ninguno
+    ({ p, ctx } = await abre({ base: { vacio: true } }));
+    ok('día vacío: UN botón «Día siguiente ›» en las columnas', (await p.$$('[data-ph="estado-entregas"] [data-accion="ph-despues"], [data-ph="estado-devoluciones"] [data-accion="ph-despues"]')).length === 1);
+    await ctx.close();
+    ({ p, ctx } = await abre({ base: { dato: { dia: HOY, entregas: [R('a', 'confirmada', 'pagado')], devoluciones: [] } } }));
+    ok('con entregas y sin devoluciones: la columna vacía no repite el botón', (await p.$$('[data-ph="estado-devoluciones"] [data-accion="ph-despues"]')).length === 0);
     await ctx.close();
 
     // 2. estados: vacío ≠ sin permiso ≠ módulo apagado ≠ no disponible ≠ raro ≠ sin red

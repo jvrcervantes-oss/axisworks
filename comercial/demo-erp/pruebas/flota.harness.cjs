@@ -257,9 +257,14 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   {
     const { p, ctx } = await abre({ base: { recortado: true } });
     ok('lista recortada (recortado=true): avisa y no cita ningun numero', (await visible(p, '[data-fl="recortado"]')) && !/\d/.test(await txt(p, '[data-fl="recortado"]')));
+    // las cifras de arriba cuentan sobre una lista cortada: llevan «+» (revisor, 13-oct)
+    ok('lista recortada: las cifras de arriba llevan «+» (disponibles 3+, taller 1+, total y modelos)', (await txt(p, '[data-fl="c-disponible"]')) === '3+' && (await txt(p, '[data-fl="c-taller"]')) === '1+'
+       && (await txt(p, '[data-fl="c-total"]')).includes('4+') && (await txt(p, '[data-fl="n-modelos"]')).includes('2+'),
+       [await txt(p, '[data-fl="c-disponible"]'), await txt(p, '[data-fl="c-total"]'), await txt(p, '[data-fl="n-modelos"]')].join(' | '));
     await ctx.close();
     const b2 = await abre();
     ok('sin recortar el aviso no sale', !(await visible(b2.p, '[data-fl="recortado"]')));
+    ok('sin recortar, las cifras son exactas (sin «+»)', (await txt(b2.p, '[data-fl="c-disponible"]')) === '3' && !(await txt(b2.p, '[data-fl="c-total"]')).includes('+'));
     await b2.ctx.close();
   }
 
