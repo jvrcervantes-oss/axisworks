@@ -1738,7 +1738,8 @@ MENU_I18N = {
     # bbm-p39 (13-oct): Facturas, Recibos y Ajustes › Mantenimiento sin contratos, proyectos ni portal de compradores
     'Cliente': {'en': 'Client', 'id': 'Pelanggan'},
     'sin referencia': {'en': 'no reference', 'id': 'tanpa referensi'},
-    'Buscar por número, cliente, factura o referencia…': {'en': 'Search by number, client, invoice or reference…', 'id': 'Cari nomor, pelanggan, invoice, atau referensi…'},
+    # corto a propósito: el de Lawang ya se cortaba en el buscador a 1440 (gate impeccable, bbm-p39)
+    'Número, cliente, factura o referencia…': {'en': 'Number, client, invoice or reference…', 'id': 'Nomor, pelanggan, invoice, referensi…'},
     'En pausa no sale ningún email: ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.': {
         'en': 'While paused no email goes out: no invitations, no alerts, no announcements. The server blocks it, not this screen. Whatever is queued in Communication waits and goes out by itself on resume. Pause and resume: any admin.',
         'id': 'Saat dijeda, tidak ada email yang terkirim: tidak ada undangan, peringatan, maupun pengumuman. Server yang memblokirnya, bukan layar ini. Yang masuk antrean di Komunikasi akan menunggu dan terkirim otomatis saat dilanjutkan. Menjeda dan melanjutkan: admin mana pun.'},
@@ -3597,7 +3598,7 @@ TEXTOS_ALQUILER = (
     ('intranet/v4/ajustes/index.html', 'data-lw-tab="reservas" data-lwt>Reservas<', 'data-lw-tab="reservas" data-lwt>Impuestos<', 1),
     # bbm-p39 (13-oct, barrido en bbm real): Recibos hablaba de titular, contrato y proyecto; Mantenimiento de contratos para firmar y del portal de compradores
     ('intranet/v4/recibos/index.html', '<th class="py-3.5 px-4 font-semibold" data-lwt>Titular / Pagador</th>', '<th class="py-3.5 px-4 font-semibold" data-lwt>Cliente</th>', 1),
-    ('intranet/v4/recibos/index.html', 'placeholder="Buscar por número, cliente, contrato o proyecto…"', 'placeholder="Buscar por número, cliente, factura o referencia…"', 1),
+    ('intranet/v4/recibos/index.html', 'placeholder="Buscar por número, cliente, contrato o proyecto…"', 'placeholder="Número, cliente, factura o referencia…"', 1),
     ('intranet/v4/ajustes/index.html', 'data-lwt>En pausa no sale ningún email: ni contratos para firmar, ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 'data-lwt>En pausa no sale ningún email: ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 1),
     ('intranet/v4/ajustes/index.html', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. El portal de compradores sigue abierto. Cerrar y reabrir: cualquier admin.</p>', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. Cerrar y reabrir: cualquier admin.</p>', 1),
 )
