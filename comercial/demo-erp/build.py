@@ -3738,6 +3738,104 @@ def comprueba_idiomas(dist, idiomas):
         aborta('idiomas: quedan formatos o idiomas fijados a español/inglés sin el idioma de la instancia:\n  ' + '\n  '.join(restos[:30]))
 
 
+# ── El DOCUMENTO (factura, proforma, recibí) en el par de idiomas de la instancia (owner, 12-oct-2026, BBM-65: «Indonesio e inglés») ───────────────
+# documento.js de Lawang pinta el papel bilingüe es·en, y de él salen la vista previa, el PDF (window.print del iframe) y el correo (la edge recibe el
+# HTML ya armado). En una instancia con `"idiomas": ["id", ...]` en erp/instancias.json, la COPIA pasa a id·en: rótulos, títulos, concepto del
+# recibí, fecha en id-ID fija (del documento, no de quien mira: por eso documento.js sigue en ES_ES_FIJOS) y lang del HTML. El par sale del BUILD y
+# no de AXW_IDIOMAS/localStorage: dos navegadores no pueden emitir el mismo documento en idiomas distintos (decisión por defecto, encargo
+# estudio_erp_plan_unico; cuando la 220000 deje cambiar los idiomas desde Ajustes se decide si el papel la sigue). Sin `idiomas` o con es primero:
+# no se toca nada (Lawang y la demo siguen es·en byte a byte). Los importes no cambian: lwFormatoImporte ya da «1.500.000 IDR», sin decimales.
+# Términos fiscales en indonesio revisados por Legal (bbm-p36, 13-oct); lo que solo confirma un hablante nativo va a la fila del owner.
+DOC_TITULOS_ID = {'factura': 'Invoice', 'proforma': 'Invoice Proforma', 'recibi': 'Kuitansi', 'rectificativa': 'Invoice Koreksi'}
+DOC_PARCHES_ID = (
+    # (fichero en DIST, trozo de Lawang, sustituto)
+    ('intranet/facturas/documento.js', "  factura:  { es:'Factura',", "  factura:  { id:'%(factura)s', es:'Factura',"),
+    ('intranet/facturas/documento.js', "  proforma: { es:'Factura proforma',", "  proforma: { id:'%(proforma)s', es:'Factura proforma',"),
+    ('intranet/facturas/documento.js', "  recibi:   { es:'Recibí',", "  recibi:   { id:'%(recibi)s', es:'Recibí',"),
+    ('intranet/facturas/documento.js', "  rectificativa: { es:'Factura rectificativa',", "  rectificativa: { id:'%(rectificativa)s', es:'Factura rectificativa',"),
+    # en indonesio la factura se llama «Invoice» (como en la interfaz): si el título id y el en coinciden, el subtítulo no se repite
+    ('intranet/facturas/documento.js', "      '<h2>' + escDoc(tipo.es) + '</h2>' +\n      '<div class=\"titulo-en\">' + escDoc(tipo.en) + '</div>' +",
+     # un tipo que Lawang añada sin `id` sale con su título inglés, nunca vacío (revisor, 1.ª vuelta)
+     "      '<h2>' + escDoc(tipo.id || tipo.en) + '</h2>' +\n      ((tipo.id || tipo.en) !== tipo.en ? '<div class=\"titulo-en\">' + escDoc(tipo.en) + '</div>' : '') +"),
+    ('intranet/facturas/documento.js', "'Cobro de la factura ' + numero + ' · Payment of invoice ' + numero : 'Cobro · Payment'",
+     "'Pembayaran invoice ' + numero + ' · Payment of invoice ' + numero : 'Pembayaran · Payment'"),
+    ('intranet/facturas/documento.js', "? (v.es || '') : (v || '')", "? (v.id || v.en || v.es || '') : (v || '')"),
+    ('intranet/facturas/documento.js', "'<h3>Datos bancarios · Bank details</h3>'", "'<h3>Rekening bank · Bank details</h3>'"),
+    ('intranet/facturas/documento.js', "dato('Titular · Holder',", "dato('Atas nama · Account holder',"),
+    ('intranet/facturas/documento.js', "dato('Banco · Bank',", "dato('Bank',"),
+    ('intranet/facturas/documento.js', "dato('Cuenta · Account',", "dato('Nomor rekening · Account number',"),
+    ('intranet/facturas/documento.js', "dato('Dirección · Address',", "dato('Alamat bank · Bank address',"),
+    ('intranet/facturas/documento.js', "dato('Nota · Note',", "dato('Catatan · Note',"),
+    ('intranet/facturas/documento.js', "toLocaleDateString('es-ES',", "toLocaleDateString('id-ID',"),
+    ('intranet/facturas/documento.js', "'<tr><td class=\"vacio\">Sin conceptos</td>", "'<tr><td class=\"vacio\">Tidak ada rincian · No items</td>"),
+    ('intranet/facturas/documento.js', "'Fecha · Date: '", "'Tanggal · Date: '"),
+    ('intranet/facturas/documento.js', "'Vencimiento · Due: '", "'Jatuh tempo · Due date: '"),
+    ('intranet/facturas/documento.js', "'Contrato · Contract: '", "'Kontrak · Contract: '"),
+    ('intranet/facturas/documento.js', "'<div class=\"meta rectifica\">Rectifica a · Corrects: <b>'", "'<div class=\"meta rectifica\">Mengoreksi · Corrects: <b>'"),
+    ('intranet/facturas/documento.js', "'<br>Motivo · Reason: '", "'<br>Alasan · Reason: '"),
+    # un recibí no factura a nadie: acredita lo recibido (Legal, 13-oct)
+    ('intranet/facturas/documento.js', "'<h3>Facturar a · Bill to</h3>'",
+     "'<h3>' + (d.tipo === 'recibi' ? 'Diterima dari · Received from' : 'Ditagihkan kepada · Bill to') + '</h3>'"),
+    # en una instancia el campo `proyecto_nombre` es la «Referencia» (textos_instancia, owner 12-oct)
+    ('intranet/facturas/documento.js', ">Proyecto · Project: <b>'", ">Referensi · Reference: <b>'"),
+    ('intranet/facturas/documento.js', "'<h3>Conceptos · Items</h3>'", "'<h3>Rincian · Items</h3>'"),
+    ('intranet/facturas/documento.js', "<th>Descripción · Description</th><th class=\"imp\">Importe · Amount</th>",
+     "<th>Deskripsi · Description</th><th class=\"imp\">Jumlah · Amount</th>"),
+    ('intranet/facturas/documento.js', "(d.imp_etiqueta || 'Impuesto · Tax')", "(d.imp_etiqueta || 'Pajak · Tax')"),
+    ('intranet/facturas/documento.js', "'<h3>Notas · Notes</h3>", "'<h3>Catatan · Notes</h3>"),
+    ('intranet/facturas/documento.js', "'<!DOCTYPE html><html lang=\"es\">", "'<!DOCTYPE html><html lang=\"id\">"),
+    # El correo que acompaña al PDF (lo recibe el cliente): asunto con el título id del documento y mensaje por defecto id + en (editable antes de enviar)
+    # tipoDocEs conserva su nombre (lo usan el asunto, el mensaje y el título del PDF) pero en la copia devuelve el título id del tipo REAL:
+    # una rectificativa es tipo 'factura' con rectifica_numero, igual que en documentoHTML (revisor, 1.ª vuelta)
+    ('intranet/v4/assets/editores.js', "TIPOS_DOC[vals.tipo]) || { es: 'Factura' }).es;", "TIPOS_DOC[DOC_TIPO_REAL]) || { id: '%(factura)s' }).id;"),
+    ('intranet/v4/assets/editores.js',
+     "'Buenos días' + (vals.cliente_nombre ? ' ' + vals.cliente_nombre : '') + ',\\n\\n' +\n"
+     "        'Adjunto ' + tipo.toLowerCase() + ' ' + saved.numero + ' para su revisión.\\n\\nUn saludo,\\n' + lwMarca('%%firma_correo'));",
+     "'Halo' + (vals.cliente_nombre ? ' ' + vals.cliente_nombre : '') + ',\\n\\n' +\n"
+     "        'Terlampir ' + tipo.toLowerCase() + ' ' + saved.numero + ' untuk Anda periksa.\\n' +\n"
+     "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[DOC_TIPO_REAL]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n' +\n"
+     "        'Salam / Kind regards,\\n' + lwMarca('%%firma_correo'));"),
+)
+# Lo que NO puede quedar en el documento.js servido de una instancia en indonesio (comprobación sobre el paquete construido, tras minificar)
+DOC_ESPANOL = ('Factura · ', 'Fecha · Date', 'Vencimiento · ', 'Facturar a', 'Conceptos · ', 'Descripción · ', 'Importe · ', 'Impuesto · ',
+               'Notas · ', 'Datos bancarios', 'Titular · ', 'Cuenta · ', 'Dirección · ', 'Nota · Note', 'Cobro de la factura', 'Cobro · Payment',
+               'Sin conceptos', 'Proyecto · Project', 'Contrato · Contract', 'Rectifica a', 'Motivo · ', "'es-ES'", '"es-ES"', 'lang="es"')
+
+
+DOC_TIPO_REAL_JS = "(vals.rectifica_numero && vals.tipo !== 'proforma' && vals.tipo !== 'recibi' ? 'rectificativa' : vals.tipo)"
+
+
+def documento_idiomas(idiomas):
+    """El papel de factura/proforma/recibí y el correo que lo acompaña, en el par de la instancia (ver DOC_PARCHES_ID). Solo la copia (DIST, antes de
+    reraiz y de quitar comentarios); cada trozo exactamente una vez o el build para."""
+    if not idiomas or idiomas[0] != 'id':
+        return
+    for rel_, viejo, nuevo in DOC_PARCHES_ID:
+        ruta = os.path.join(DIST, *rel_.split('/'))
+        t = open(ruta, encoding='utf-8').read()
+        t = _una_vez(t, viejo.replace('%%', '%'), (nuevo % DOC_TITULOS_ID).replace('DOC_TIPO_REAL', DOC_TIPO_REAL_JS), 'documento ' + rel_)
+        open(ruta, 'w', encoding='utf-8', newline='').write(t)
+    malos = _sintaxis([os.path.join(DIST, *r_.split('/')) for r_ in {x[0] for x in DOC_PARCHES_ID}])
+    if malos:
+        aborta('documento: el parche deja JavaScript roto:\n  ' + '\n  '.join(malos))
+    print('documento %s: %d parches (factura, proforma, recibí y correo)' % ('+'.join(idiomas), len(DOC_PARCHES_ID)))
+
+
+def comprueba_documento_idiomas(dist, idiomas):
+    """Sobre el paquete construido: el documento.js servido no lleva ningún rótulo español del papel. Además corre el arnés
+    (pruebas/documento_idiomas.harness.cjs), que pinta los cinco casos y busca palabras españolas en el resultado: así para un rótulo NUEVO de Lawang."""
+    if not idiomas or idiomas[0] != 'id':
+        return
+    t = open(os.path.join(dist, 'clasico', 'facturas', 'documento.js'), encoding='utf-8').read()
+    restos = [x for x in DOC_ESPANOL if x in t]
+    if restos:
+        aborta('documento: el papel de la instancia sigue con rótulos en español: ' + ', '.join(restos))
+    # La lista fija solo repite lo que _una_vez ya garantiza: un rótulo NUEVO de Lawang lo caza pintar el papel y buscar español en él (revisor)
+    r = subprocess.run(['node', os.path.join(AQUI, 'pruebas', 'documento_idiomas.harness.cjs'), dist], capture_output=True, text=True, encoding='utf-8')
+    if r.returncode != 0:
+        aborta('documento: el papel de la instancia no sale entero en %s:\n%s' % ('·'.join(idiomas), (r.stdout + r.stderr)[-1500:]))
+
+
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
@@ -3762,6 +3860,7 @@ def instancia(nombre):
     idiomas = idiomas_de(nombre)
     if idiomas:   # 12-oct-2026: interfaz en los idiomas de la instancia (bbm: indonesio e inglés)
         idiomas_instancia(idiomas)
+        documento_idiomas(idiomas)   # BBM-65 (13-oct): el papel de factura/recibí y su correo en el par de la instancia (id·en en bbm)
     menu_i18n()   # rótulos del menú en en/id en todas las páginas (después del núcleo del indonesio)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
@@ -3933,6 +4032,7 @@ def instancia(nombre):
     comprueba_piel(DIST, nombre)
     if idiomas:
         comprueba_idiomas(DIST, idiomas)
+        comprueba_documento_idiomas(DIST, idiomas)
     comprueba_resultado(DIST)
     # 4. Copia al clon del repo privado de la instancia (gitignored en la agencia).
     destino = os.path.join(DESPLIEGUES, nombre)
