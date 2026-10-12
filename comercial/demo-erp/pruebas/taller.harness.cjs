@@ -538,27 +538,38 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
        colaAtras.length === 1 && subAtras.length === 1 && subAtras[0].clave === colaAtras[0].clave && B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'atras' && f.estado === 'confirmada')[0].clave === colaAtras[0].clave, JSON.stringify([colaAtras, subAtras.map(x => x.clave)]));
     // ── capturas en la cola de una carga anterior (nunca enviadas) para casillas que YA tienen foto confirmada en la base (otra pestaña, otro móvil):
     //    dos de «frente» (solo cuenta la más nueva) y una de «atrás». Al abrir NO sube nada: pendientes con Reintentar/Descartar y un aviso.
-    //    Descartar quita la de «atrás» (vuelve a la confirmada); Reintentar sube la más nueva de «frente» (revisor 12-oct, 2ª vuelta) ──
-    const b64 = PEQ.buffer.toString('base64'), kVieja = uuid().replace(/^b/, 'c'), kNueva = uuid().replace(/^b/, 'd'), kAnt = uuid().replace(/^b/, 'c');
+    //    Descartar quita la de «atrás» (vuelve a la confirmada); el botón de SU casilla sube la más nueva de «frente»; y el Reintentar GENERAL, que el
+    //    mecánico pulsa por otra foto (una de daño que se quedó pendiente), nunca manda una anterior (revisor 12-oct, 2ª vuelta) ──
+    const nDano0 = B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'dano' && !f.semilla).length;
+    const b64 = PEQ.buffer.toString('base64'), kVieja = uuid().replace(/^b/, 'c'), kNueva = uuid().replace(/^b/, 'd'), kAnt = uuid().replace(/^b/, 'c'), kDan = uuid().replace(/^b/, 'd');
     await ponCola(p, [{ clave: kVieja, orden: orden.id, ranura: 'frente', creado: Date.now() - 60000, b64 }, { clave: kNueva, orden: orden.id, ranura: 'frente', creado: Date.now() - 30000, b64 },
-                      { clave: kAnt, orden: orden.id, ranura: 'atras', creado: Date.now() - 20000, b64 }]);
+                      { clave: kAnt, orden: orden.id, ranura: 'atras', creado: Date.now() - 20000, b64 }, { clave: kDan, orden: orden.id, ranura: 'dano', creado: Date.now() - 10000, b64 }]);
     const nFrente = B.subidas.filter(x => x.ranura === 'frente').length, nSub0 = B.subidas.length;
+    B.fuerza = { st: 503, j: { ok: false, hint: 'base' } };   // la de daño (sí sube sola al abrir) se queda pendiente
     await p.reload(); await enPaso(p, 'fotos');
-    await espera(p, () => !!document.querySelector('[data-fg="anterior"]')); await duerme(1200);
+    await espera(p, () => !!document.querySelector('[data-fg="anterior"]') && !document.querySelector('[data-fg="pendientes"]').classList.contains('axw-oculto')); await duerme(1200);
     const cFa = await casillaFija(p, 'frente'), cAa = await casillaFija(p, 'atras'), colaA = (await colaIdb(p)).map(e => e.clave);
-    ok('al abrir con capturas viejas de casillas ya confirmadas: no sube NADA, se ven pendientes con el aviso (Coba lagi / Buang) y la más vieja de «frente» sale de la cola',
-       B.subidas.length === nSub0 && cFa.estado === 'pendiente' && cAa.estado === 'pendiente' && /Coba lagi/.test(await p.$eval('[data-fg="anterior"]', e => e.textContent))
-       && !colaA.includes(kVieja) && colaA.includes(kNueva) && colaA.includes(kAnt), JSON.stringify([B.subidas.length - nSub0, cFa.estado, cAa.estado, colaA]));
+    const subA = B.subidas.slice(nSub0).map(x => x.clave);
+    ok('al abrir con capturas viejas de casillas ya confirmadas: solo intenta la de daño, NINGUNA anterior; pendientes con su Reintentar/Descartar, el aviso (Coba lagi / Buang) y la más vieja de «frente» fuera de la cola',
+       subA.length === 1 && subA[0] === kDan && cFa.estado === 'pendiente' && cAa.estado === 'pendiente' && /Coba lagi/.test(await p.$eval('[data-fg="anterior"]', e => e.textContent))
+       && !!(await p.$('.fg-celda[data-ranura="frente"] [data-accion="fg-subir-anterior"]')) && !!(await p.$('.fg-celda[data-ranura="frente"] [data-accion="fg-descartar"]'))
+       && !colaA.includes(kVieja) && colaA.includes(kNueva) && colaA.includes(kAnt) && colaA.includes(kDan), JSON.stringify([subA, cFa.estado, cAa.estado, colaA]));
+    await p.click('[data-accion="fg-reintentar"]');   // el Reintentar general, por la de daño
+    await esperaNode(() => B.fotos.some(f => f.clave === kDan && f.estado === 'confirmada'), 12000); await duerme(800);
+    ok('el Reintentar general sube la de daño y NO las anteriores (siguen pendientes, en la cola y sin subir)',
+       B.subidas.slice(nSub0).every(x => x.clave === kDan) && (await casillaFija(p, 'frente')).estado === 'pendiente' && (await colaIdb(p)).some(e => e.clave === kNueva)
+       && !!(await p.$('[data-fg="anterior"]')), JSON.stringify(B.subidas.slice(nSub0).map(x => x.clave.slice(-6))));
+    const nSub1 = B.subidas.length;
     await sig(p); await espera(p, () => /Buang/.test(document.querySelector('[data-tl="paso-estado"]').textContent));
     ok('con una foto anterior sin decidir, Siguiente no sale del paso', (await paso(p)) === 'fotos');
     await p.click('.fg-celda[data-ranura="atras"] [data-accion="fg-descartar"]');
     await espera(p, () => document.querySelector('[data-accion="fg-captura"][data-ranura="atras"]').getAttribute('data-estado') === 'subida');
-    ok('Descartar la anterior: sale de la cola, la casilla vuelve a la foto confirmada y no se sube nada', B.subidas.length === nSub0 && !(await colaIdb(p)).some(e => e.clave === kAnt));
-    await p.click('[data-accion="fg-reintentar"]');
+    ok('Descartar la anterior: sale de la cola, la casilla vuelve a la foto confirmada y no se sube nada', B.subidas.length === nSub1 && !(await colaIdb(p)).some(e => e.clave === kAnt));
+    await p.click('.fg-celda[data-ranura="frente"] [data-accion="fg-subir-anterior"]');
     await esperaNode(() => B.fotos.some(f => f.clave === kNueva && f.estado === 'confirmada'), 12000); await duerme(600);
     const subF = B.subidas.filter(x => x.ranura === 'frente').slice(nFrente);
-    ok('Reintentar la anterior: sube SOLO la más nueva de «frente» (la vieja y la descartada nunca) y queda vigente',
-       subF.length === 1 && subF[0].clave === kNueva && B.subidas.length === nSub0 + 1 && !(await colaIdb(p)).some(e => e.clave === kVieja || e.clave === kNueva)
+    ok('el Reintentar de su casilla sube la anterior: SOLO la más nueva de «frente» (la vieja y la descartada nunca) y queda vigente',
+       subF.length === 1 && subF[0].clave === kNueva && B.subidas.length === nSub1 + 1 && !(await colaIdb(p)).some(e => e.clave === kVieja || e.clave === kNueva)
        && !(await p.$('[data-fg="anterior"]')), JSON.stringify(subF.map(x => x.clave)));
     ok('fotos: el aviso dice que están las 5', (await p.$eval('[data-tl="fotos-info"]', e => e.textContent)).includes('5 foto wajib sudah lengkap'));
     ctx.__sinRed = true; await ctx.setOffline(true);
@@ -569,7 +580,7 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     ctx.__sinRed = false; await ctx.setOffline(false);
     await p.click('[data-accion="fg-reintentar"]', { timeout: 1500 }).catch(() => {});   // al volver la red ya sube sola (evento online): el botón puede no llegar a verse
     await espera(p, () => document.querySelector('[data-fg="pendientes"]').classList.contains('axw-oculto'), null, 15000);
-    ok('al volver la red / Reintentar: la foto de daño sube una sola vez', B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'dano' && !f.semilla).length === 1);
+    ok('al volver la red / Reintentar: la foto de daño sube una sola vez', B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'dano' && !f.semilla).length === nDano0 + 2);   // +1 la de la cola de arriba
     // ── respuestas que reintentar no arregla: hint «cuerpo» (400) y un 404 sin hint → definitivas, fuera de la cola, sin reintento ──
     for (const [nombre, r] of [['hint cuerpo (400)', { st: 400, j: { ok: false, hint: 'cuerpo' } }], ['404 sin hint', { st: 404, j: {} }]]) {
       const n0 = B.subidas.length; B.fuerza = r;

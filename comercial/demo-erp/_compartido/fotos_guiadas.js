@@ -30,8 +30,8 @@
    24 h. Así el paso nunca queda sin salida por una foto que no va a subir. La pantalla limpia la cola al arrancar con axwFotosLimpiaCola (48 h, órdenes no vivas
    y entradas de otro usuario).
    Segunda vuelta del revisor (12-oct): (a) el temporizador del 429 y cualquier camino tardío solo suben una clave que sigue «pendiente» (no reenvían una ya
-   subida); (b) al abrir, una captura de la cola para una casilla fija que YA tiene foto confirmada en la base no sube sola: queda pendiente con Reintentar y
-   Descartar y un aviso; (c) cada entrada de la cola guarda el usuario de la sesión y la de otro usuario ni se sube ni se queda; (d) una captura nueva de una
+   subida); (b) al abrir, una captura de la cola para una casilla fija que YA tiene foto confirmada en la base no sube sola ni con el Reintentar general: queda
+   pendiente con SU botón Reintentar (data-accion fg-subir-anterior) y Descartar en la casilla, y un aviso; (c) cada entrada de la cola guarda el usuario de la sesión y la de otro usuario ni se sube ni se queda; (d) una captura nueva de una
    casilla fija espera (tope 30 s) a que termine la subida en curso de una vieja de esa casilla antes de mandarse.
    Reglas de pintado: solo createElement/createElementNS/textContent (nunca innerHTML); se engancha por data-accion / data-ranura / data-clave, nunca por un rótulo.
    Colores solo por var(--tema-*): el CSS de la casilla lo pone la pantalla que la usa.
@@ -220,6 +220,7 @@ function axwFotosGuiadas(cfg) {
   // la sesión que captura: lo que haya en la cola de OTRO usuario (o sin usuario) se ignora aquí aunque la limpieza aún no lo haya borrado; sin usuario conocido
   // no se retoma nada de cargas anteriores (lo de esta carga vive en memoria)
   var yo = typeof cfg.usuario === 'string' && cfg.usuario ? cfg.usuario : null;
+  if (yo === null) volatil = true;   // sin usuario la cola no se retoma al recargar: la casilla lo DICE (aviso «Sin almacén en el móvil»), no se calla
   function colaDeOrden(orden) {
     return tx('readonly', function (s) { return s ? s.index('orden').getAll(orden) : null; }).then(function (lista) {
       var porClave = {};
@@ -309,7 +310,8 @@ function axwFotosGuiadas(cfg) {
   function danosHechos() { return danosBase.length + Object.keys(local).filter(function (k) { return local[k].ranura === 'dano' && local[k].estado !== 'error'; }).length; }
   function cuenta(estados) { return Object.keys(local).filter(function (k) { return estados.indexOf(local[k].estado) !== -1; }).length; }
   function atascada() { return Object.keys(local).some(function (k) { return local[k].estado === 'pendiente' && local[k].tope; }); }
-  function hayAnterior() { return Object.keys(local).some(function (k) { return local[k].estado === 'pendiente' && local[k].anterior; }); }
+  function esAnterior(k) { return !!local[k] && local[k].estado === 'pendiente' && !!local[k].anterior && !enCurso[k]; }
+  function hayAnterior() { return Object.keys(local).some(esAnterior); }
   function avisa() { if (typeof cfg.alCambiar === 'function') { try { cfg.alCambiar({ faltan: faltanFijas(), pendientes: pendientes(), tope: atascada(), anterior: hayAnterior() }); } catch (e) { /* MUDO A PROPOSITO: el aviso a la pantalla no puede tumbar la subida */ } } }
   /* Olvidar una captura: no se vuelve a mandar (olvidadas), sale de la pantalla y de la cola, y su vista previa se libera. Su respuesta, si ya iba en camino, no cuenta. */
   function olvida(k) {
@@ -335,6 +337,9 @@ function axwFotosGuiadas(cfg) {
     var envoltura = h('div', { class: 'fg-celda', 'data-ranura': ranura }, [b]);
     if (clave) envoltura.setAttribute('data-clave', clave);
     if (estado === 'subida' && idBase && !url) envoltura.appendChild(h('button', { type: 'button', class: 'fg-mini', 'data-accion': 'fg-ver', 'data-foto': idBase, text: T('Ver') }));
+    // una «anterior» (foto de una carga previa en una casilla ya confirmada) se sube SOLO con su propio botón: el Reintentar general nunca la manda
+    if (clave && esAnterior(clave)) envoltura.appendChild(h('button', { type: 'button', class: 'fg-mini', 'data-accion': 'fg-subir-anterior', 'data-clave': clave,
+                                                                       'aria-label': T('Reintentar') + ': ' + T(ROTULO[ranura]), text: T('Reintentar') }));
     if (clave && descartable(clave)) envoltura.appendChild(h('button', { type: 'button', class: 'fg-mini', 'data-accion': 'fg-descartar', 'data-clave': clave,
                                                                         'aria-label': T('Descartar') + ': ' + T(ROTULO[ranura]), text: T('Descartar') }));
     return envoltura;
@@ -355,7 +360,7 @@ function axwFotosGuiadas(cfg) {
     if (danosHechos() >= MAX_DANO) mas.disabled = true;
     dan.appendChild(mas);
     caja.appendChild(dan);
-    var n = pendientes();
+    var n = pendientes() - Object.keys(local).filter(esAnterior).length;   // el Reintentar general no toca las «anteriores» (tienen su botón en la casilla)
     var fila = h('div', { class: 'fg-pendientes' + (n ? '' : ' axw-oculto'), 'data-fg': 'pendientes', role: 'status' }, [
       h('span', { text: TT('{n} sin subir', { n: n }) }),
       h('button', { type: 'button', class: 'axw-boton', 'data-accion': 'fg-reintentar', text: T('Reintentar') })]);
@@ -465,14 +470,13 @@ function axwFotosGuiadas(cfg) {
     return Promise.race([Promise.all(lista), new Promise(function (ok) { setTimeout(ok, 30000); })]);
   }
   /* Una vuelta de reintento a la vez (Reintentar, la red que vuelve y el arranque no se solapan); cada entrada se mira JUSTO antes de subirla: si ya subió,
-     se repitió su casilla o salió de la cola, no se sube. Las «anteriores» (captura de una carga previa para una casilla que ya tiene foto confirmada) solo
-     suben con el Reintentar que pulsa el mecánico (manual), nunca con el arranque ni con la red que vuelve. Un Reintentar durante una vuelta automática se
-     encadena detrás, para que no se pierda. */
+     se repitió su casilla o salió de la cola, no se sube. Las «anteriores» (captura de una carga previa para una casilla que ya tiene foto confirmada) NUNCA
+     van en una vuelta (ni el arranque, ni la red que vuelve, ni el Reintentar general, que el mecánico pulsa por otra foto): solo con el botón de su casilla. */
   var vuelta = null;
-  function reintenta(manual) {
-    if (vuelta) return manual ? vuelta.then(function () { return reintenta(true); }) : vuelta;
+  function reintenta() {
+    if (vuelta) return vuelta;
     vuelta = colaDeOrden(orden).then(function (lista) {
-      return lista.reduce(function (p, e) { return p.then(function () { var l = local[e.clave]; return l && l.estado === 'pendiente' && (manual || !l.anterior) ? sube(e) : false; }); }, Promise.resolve());
+      return lista.reduce(function (p, e) { return p.then(function () { var l = local[e.clave]; return l && l.estado === 'pendiente' && !l.anterior ? sube(e) : false; }); }, Promise.resolve());
     }).then(function () { vuelta = null; }, function () { vuelta = null; /* MUDO A PROPOSITO: una vuelta que falla deja las fotos «pendiente» a la vista, con su Reintentar */ });
     return vuelta;
   }
@@ -539,7 +543,19 @@ function axwFotosGuiadas(cfg) {
     var a = el.getAttribute('data-accion');
     if (a === 'fg-captura') captura(el.getAttribute('data-ranura'));
     else if (a === 'fg-dano') captura('dano');
-    else if (a === 'fg-reintentar') { aviso = ''; reintenta(true); }
+    else if (a === 'fg-reintentar') { aviso = ''; reintenta(); }
+    else if (a === 'fg-subir-anterior') {   // el mecánico decide subir ESA foto anterior (sustituirá a la confirmada): solo esa clave
+      var ka = el.getAttribute('data-clave');
+      if (ka && esAnterior(ka)) {
+        aviso = '';
+        colaDeOrden(orden).then(function (lista) {
+          var e = lista.filter(function (x) { return x.clave === ka; })[0];
+          if (e && esAnterior(ka)) return sube(e);
+          if (!e && local[ka]) { local[ka].msg = T('No se pudo abrir la foto.'); pinta(); }   // ya no está en la cola: se dice, no se queda callado
+          return false;
+        });
+      }
+    }
     else if (a === 'fg-ver') ver(el.getAttribute('data-foto'), el);
     else if (a === 'fg-descartar') {   // solo la cola LOCAL: el navegador no escribe en la base; la fila pendiente, si llegó a crearse, caduca sola a las 24 h
       var k = el.getAttribute('data-clave');
