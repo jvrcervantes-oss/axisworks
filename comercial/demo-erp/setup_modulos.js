@@ -54,8 +54,8 @@
     // hint de la base → frase. `<m>_sin_configurar` se resuelve aparte (lleva el nombre del módulo).
     hint: {
       // Ajustes › Cobros (F3 Entrega 2, bbm-p24-cobros-front): los `codigo` de la edge ajustes-pagos (erp/funciones/ajustes-pagos/index.ts, cabecera).
-      // cobros_paso.js los pasa con el codigo como code y 'cobros_' + codigo como hint (salvo live_no_permitido y cuenta_pruebas_solo_mira, hints
-      // de la base que van tal cual), así explica() los lee por código como al resto (sin llaves en este
+      // cobros_paso.js los pasa con el codigo como code y 'cobros_' + codigo como hint (salvo falta_confirmar_live, live_no_permitido y
+      // cuenta_pruebas_solo_mira, hints de la base que van tal cual), así explica() los lee por código como al resto (sin llaves en este
       // comentario: setup_modulos.test.js lee el grupo hasta la primera llave de cierre).
       cobros_faltan_claves: 'La primera vez hay que poner las tres: clave de creación, clave de lectura y token de avisos.',
       cobros_clave_no_valida: 'Esa clave no tiene la forma de las de Xendit: cópiala entera desde el panel de Xendit.',
@@ -66,7 +66,12 @@
       cobros_clave_actual_incorrecta: 'Esa contraseña no es la de tu cuenta.',
       cobros_no_super_admin: 'Las claves de cobro solo las cambia el administrador principal.',
       cobros_codigo_no_valido: 'El código no vale o ha caducado: pide uno nuevo.',
-      live_no_permitido: 'Las claves reales todavía no están autorizadas en este ERP: pídelo al estudio.',
+      // live_no_permitido: solo lo da el servidor de ANTES de 20261012233000 (bbm-p38: neutra, sin «pídelo al estudio»; se va cuando ningún ERP lo tenga)
+      live_no_permitido: 'El modo real todavía no está disponible en este ERP.',
+      falta_confirmar_live: 'Con claves reales hay que escribir LIVE para confirmar que vas a cobrar dinero de verdad.',
+      cobros_aviso_no_enviado: 'No se ha podido avisar por correo a los demás del paso a cobros reales: no se ha guardado nada. El código sigue valiendo: inténtalo otra vez en un rato.',
+      // la frase propia de sin_a_quien_avisar: la pantalla enseña el texto del servidor (dos causas); esta va en el pie y si no hay traducción
+      cobros_sin_a_quien_avisar: 'Para cobrar de verdad tiene que haber alguien más a quien avisar del cambio: no se ha guardado nada.',
       cobros_prueba_caducada: 'La prueba ha caducado: pide un código nuevo y vuelve a probar.',
       cobros_prueba_fallida: 'Xendit no ha aceptado las claves: no se ha cambiado nada y siguen las de antes.',
       cobros_demasiados_intentos: 'Demasiados intentos seguidos: espera unos minutos.',
@@ -231,7 +236,11 @@
       modo_live: 'Modo real',
       dinero_real: 'Dinero real',
       live_aviso: 'Modo real: a los clientes se les cobra dinero de verdad.',
+      live_confirma_d: 'Nadie del estudio lo revisa antes: lo confirmas tú. Al guardar se avisa por correo a los demás administradores.',
       modo_guardado: 'Las claves guardadas son de %m.',
+      modo_desde: 'Desde el %f.',
+      modo_desde_por: 'Desde el %f, puesto por %p.',
+      modo_cambiado: 'Otro administrador ha cambiado el modo de cobro mientras tenías esta página abierta. Revisa el modo y vuelve a pegar las claves: Xendit da un token de avisos distinto en cada modo.',
       m_test: 'modo prueba',
       m_live: 'modo real',
       creacion: 'Clave de creación (Money-in Write)',
@@ -268,6 +277,14 @@
       prueba_respuesta_rara: 'Xendit ha respondido algo inesperado con esta clave.',
       prueba_con_escritura: 'Esta clave también puede crear cobros y devolver dinero: aquí va una de solo lectura (Money-in Read).',
       prueba_no_se_prueba: 'Xendit no deja probarlo: se comprobará con el primer aviso de pago.'
+    },
+    // Textos que la edge ajustes-pagos manda TAL CUAL y la pantalla enseña (contrato de bbm-p34, 20261012233000): sin_a_quien_avisar tiene dos causas y
+    // solo el servidor sabe cuál. Copiados byte a byte de erp/funciones/ajustes-pagos/index.ts (411a147b); aquí solo para que EN e ID los traduzcan por su
+    // frase exacta. Si la edge cambia un texto, la pantalla en en/id cae en hint.cobros_sin_a_quien_avisar (nunca enseña español). bbm-p38, 13-oct.
+    servidor: {
+      sin_a_quien_avisar_correo: 'El servidor de correo ha cambiado hace menos de 24 horas: para cobrar de verdad espera a que pasen y vuelve a intentarlo. No se ha guardado nada.',
+      sin_a_quien_avisar_testigo_24h: 'Para cobrar de verdad tiene que haber alguien más a quien avisar desde hace al menos 24 horas: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo) que no haya cambiado en ese tiempo. No se ha guardado nada.',
+      sin_a_quien_avisar_testigo: 'Para cobrar de verdad tiene que haber alguien más a quien avisar: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo). No se ha guardado nada.'
     }
   };
 
@@ -313,7 +330,16 @@
     'Esa contraseña no es la de tu cuenta.': 'That is not your account password.',
     'Las claves de cobro solo las cambia el administrador principal.': 'Only the main administrator can change the payment keys.',
     'El código no vale o ha caducado: pide uno nuevo.': 'The code is not valid or has expired: ask for a new one.',
-    'Las claves reales todavía no están autorizadas en este ERP: pídelo al estudio.': 'Live keys are not authorised in this ERP yet: ask the studio.',
+    'El modo real todavía no está disponible en este ERP.': 'Live mode is not available in this ERP yet.',
+    'Con claves reales hay que escribir LIVE para confirmar que vas a cobrar dinero de verdad.': 'With live keys you must type LIVE to confirm that you are going to charge real money.',
+    'No se ha podido avisar por correo a los demás del paso a cobros reales: no se ha guardado nada. El código sigue valiendo: inténtalo otra vez en un rato.': 'The others could not be told by email about the switch to live payments: nothing was saved. The code is still valid: try again in a moment.',
+    'Para cobrar de verdad tiene que haber alguien más a quien avisar del cambio: no se ha guardado nada.': 'To charge real money there must be someone else to tell about the change: nothing was saved.',
+    'El servidor de correo ha cambiado hace menos de 24 horas: para cobrar de verdad espera a que pasen y vuelve a intentarlo. No se ha guardado nada.':
+      'The mail server changed less than 24 hours ago: to charge real money, wait until 24 hours have passed and try again. Nothing was saved.',
+    'Para cobrar de verdad tiene que haber alguien más a quien avisar desde hace al menos 24 horas: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo) que no haya cambiado en ese tiempo. No se ha guardado nada.':
+      'To charge real money there must be someone else to notify, in place for at least 24 hours: another active super admin, or a system notification mailbox on your domain (Settings › Email) that has not changed in that time. Nothing was saved.',
+    'Para cobrar de verdad tiene que haber alguien más a quien avisar: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo). No se ha guardado nada.':
+      'To charge real money there must be someone else to notify: another active super admin, or a system notification mailbox on your domain (Settings › Email). Nothing was saved.',
     'La prueba ha caducado: pide un código nuevo y vuelve a probar.': 'The test has expired: ask for a new code and test again.',
     'Xendit no ha aceptado las claves: no se ha cambiado nada y siguen las de antes.': 'Xendit did not accept the keys: nothing was changed and the previous ones stay.',
     'Demasiados intentos seguidos: espera unos minutos.': 'Too many attempts in a row: wait a few minutes.',
@@ -331,6 +357,9 @@
     'Modo': 'Mode', 'Modo prueba · sin dinero real': 'Test mode · no real money', 'Modo real': 'Live mode', 'Dinero real': 'Real money',
     'Modo real: a los clientes se les cobra dinero de verdad.': 'Live mode: customers are charged real money.',
     'Las claves guardadas son de %m.': 'The saved keys are for %m.', 'modo prueba': 'test mode', 'modo real': 'live mode',
+    'Nadie del estudio lo revisa antes: lo confirmas tú. Al guardar se avisa por correo a los demás administradores.': 'Nobody at the studio reviews it first: you confirm it. On saving, the other administrators are told by email.',
+    'Otro administrador ha cambiado el modo de cobro mientras tenías esta página abierta. Revisa el modo y vuelve a pegar las claves: Xendit da un token de avisos distinto en cada modo.': 'Another administrator changed the payment mode while you had this page open. Check the mode and paste the keys again: Xendit gives a different callback token for each mode.',
+    'Desde el %f.': 'Since %f.', 'Desde el %f, puesto por %p.': 'Since %f, set by %p.',
     'Clave de creación (Money-in Write)': 'Creation key (Money-in Write)', 'El ERP la usa solo para crear el enlace de pago.': 'The ERP uses it only to create the payment link.',
     'Clave de lectura (Money-in Read)': 'Read key (Money-in Read)', 'El ERP la usa para comprobar que el pago ha entrado. Tiene que ser otra clave, de solo lectura.': 'The ERP uses it to check that the payment came in. It must be a different, read-only key.',
     'Token de avisos (callback)': 'Callback token', 'Xendit lo manda con cada aviso de pago para demostrar que el aviso es suyo.': 'Xendit sends it with every payment notice to prove the notice is theirs.',
@@ -408,7 +437,16 @@
     'Esa contraseña no es la de tu cuenta.': 'Itu bukan kata sandi akun Anda.',
     'Las claves de cobro solo las cambia el administrador principal.': 'Kunci pembayaran hanya bisa diubah oleh admin utama.',
     'El código no vale o ha caducado: pide uno nuevo.': 'Kode tidak valid atau sudah kedaluwarsa: minta kode baru.',
-    'Las claves reales todavía no están autorizadas en este ERP: pídelo al estudio.': 'Kunci live belum diizinkan di ERP ini: minta ke studio.',
+    'El modo real todavía no está disponible en este ERP.': 'Mode live belum tersedia di ERP ini.',
+    'Con claves reales hay que escribir LIVE para confirmar que vas a cobrar dinero de verdad.': 'Dengan kunci live, ketik LIVE untuk mengonfirmasi bahwa Anda akan menagih uang sungguhan.',
+    'No se ha podido avisar por correo a los demás del paso a cobros reales: no se ha guardado nada. El código sigue valiendo: inténtalo otra vez en un rato.': 'Admin lain tidak bisa diberi tahu lewat email tentang peralihan ke pembayaran live: tidak ada yang disimpan. Kodenya masih berlaku: coba lagi sebentar lagi.',
+    'Para cobrar de verdad tiene que haber alguien más a quien avisar del cambio: no se ha guardado nada.': 'Untuk menagih uang sungguhan harus ada orang lain yang diberi tahu tentang perubahan ini: tidak ada yang disimpan.',
+    'El servidor de correo ha cambiado hace menos de 24 horas: para cobrar de verdad espera a que pasen y vuelve a intentarlo. No se ha guardado nada.':
+      'Server email berubah kurang dari 24 jam yang lalu: untuk menagih uang sungguhan, tunggu sampai 24 jam berlalu lalu coba lagi. Tidak ada yang disimpan.',
+    'Para cobrar de verdad tiene que haber alguien más a quien avisar desde hace al menos 24 horas: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo) que no haya cambiado en ese tiempo. No se ha guardado nada.':
+      'Untuk menagih uang sungguhan harus ada orang lain yang bisa diberi tahu, yang sudah ada minimal 24 jam: super admin aktif lain, atau kotak surat notifikasi sistem di domain Anda (Pengaturan › Email) yang tidak berubah selama waktu itu. Tidak ada yang disimpan.',
+    'Para cobrar de verdad tiene que haber alguien más a quien avisar: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo). No se ha guardado nada.':
+      'Untuk menagih uang sungguhan harus ada orang lain yang bisa diberi tahu: super admin aktif lain, atau kotak surat notifikasi sistem di domain Anda (Pengaturan › Email). Tidak ada yang disimpan.',
     'La prueba ha caducado: pide un código nuevo y vuelve a probar.': 'Uji coba sudah kedaluwarsa: minta kode baru dan uji lagi.',
     'Xendit no ha aceptado las claves: no se ha cambiado nada y siguen las de antes.': 'Xendit tidak menerima kunci tersebut: tidak ada yang diubah dan kunci sebelumnya tetap dipakai.',
     'Demasiados intentos seguidos: espera unos minutos.': 'Terlalu banyak percobaan berturut-turut: tunggu beberapa menit.',
@@ -426,6 +464,9 @@
     'Modo': 'Mode', 'Modo prueba · sin dinero real': 'Mode uji · tanpa uang sungguhan', 'Modo real': 'Mode live', 'Dinero real': 'Uang sungguhan',
     'Modo real: a los clientes se les cobra dinero de verdad.': 'Mode live: pelanggan ditagih dengan uang sungguhan.',
     'Las claves guardadas son de %m.': 'Kunci yang tersimpan untuk %m.', 'modo prueba': 'mode uji', 'modo real': 'mode live',
+    'Nadie del estudio lo revisa antes: lo confirmas tú. Al guardar se avisa por correo a los demás administradores.': 'Tidak ada orang studio yang memeriksanya lebih dulu: Anda sendiri yang mengonfirmasi. Saat disimpan, admin lain diberi tahu lewat email.',
+    'Otro administrador ha cambiado el modo de cobro mientras tenías esta página abierta. Revisa el modo y vuelve a pegar las claves: Xendit da un token de avisos distinto en cada modo.': 'Admin lain mengubah mode pembayaran saat halaman ini Anda buka. Periksa mode dan tempel ulang kuncinya: Xendit memberi token callback yang berbeda untuk setiap mode.',
+    'Desde el %f.': 'Sejak %f.', 'Desde el %f, puesto por %p.': 'Sejak %f, diatur oleh %p.',
     'Clave de creación (Money-in Write)': 'Kunci pembuatan (Money-in Write)', 'El ERP la usa solo para crear el enlace de pago.': 'ERP memakainya hanya untuk membuat tautan pembayaran.',
     'Clave de lectura (Money-in Read)': 'Kunci baca (Money-in Read)', 'El ERP la usa para comprobar que el pago ha entrado. Tiene que ser otra clave, de solo lectura.': 'ERP memakainya untuk memeriksa bahwa pembayaran sudah masuk. Harus kunci lain yang hanya bisa membaca.',
     'Token de avisos (callback)': 'Token callback', 'Xendit lo manda con cada aviso de pago para demostrar que el aviso es suyo.': 'Xendit mengirimnya bersama setiap notifikasi pembayaran untuk membuktikan bahwa notifikasi itu dari Xendit.',
