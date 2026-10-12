@@ -30,6 +30,97 @@
 @media (prefers-reduced-motion:reduce){.tgl>span{transition:none}}
 dialog::backdrop{background:rgba(11,28,48,.35)}
 </style>
+<!-- Piel del setup (S00 mapa de la instalación, S01 encender un módulo; diseño del owner 12-oct, sistema AxisWorks): tokens aquí y
+     clases ax-* propias. No va al Tailwind compilado: panel.css lo comparten Pilotos y Aprobaciones y la publicación solo sube esta página. -->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@300;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--aw-ultra:#2E3BEB;--aw-volt:#C8F04A;--aw-night:#0B0C1E;--aw-chalk:#F2F3F7;--aw-panel:#10112A;--aw-raised:#14152A;--aw-edge:#2A2D47;
+  --aw-peri:#8C95FF;--aw-haze:#C9CCDB;--aw-fog:#A9ADC2;--aw-dusk:#7D82A3;--aw-ice:#E3E6FD;--aw-slate:#4A4E66;--aw-ink:#2B2E45;--aw-mist:#DADCE6;
+  --aw-white:#FFFFFF;--aw-control:#8A8EAB;--aw-caution:#8A5200;--aw-caution-line:#E2B04A;--aw-caution-soft:#FFF3D9;--aw-danger:#FF9AA5;
+  --aw-r-chip:8px;--aw-r-tile:16px;--aw-r-card:24px;--aw-r-panel:28px;
+  --aw-f-display:Unbounded,"Arial Black",system-ui,sans-serif;--aw-f-sans:Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --aw-f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+/* S01: el diálogo de confirmar (encender, apagar, bloqueos) */
+#dlg.ax-dlg{width:min(640px,calc(100vw - 32px));max-width:100%;max-height:calc(100vh - 32px);overflow:auto;border:0;border-radius:var(--aw-r-panel);padding:0;background:var(--aw-night);color:var(--aw-chalk);font-family:var(--aw-f-sans)}
+#dlg.ax-dlg::backdrop{background:rgba(11,12,30,.55)}
+.ax-dlg form{padding:32px;display:flex;flex-direction:column;gap:20px}
+@media (max-width:480px){.ax-dlg form{padding:20px}}
+.ax-eyebrow{font:500 11px/1.4 var(--aw-f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--aw-fog)}
+.ax-h2{margin:0;font-family:var(--aw-f-display);font-weight:600;font-size:clamp(22px,4vw,28px);line-height:1.1;letter-spacing:-.04em;color:var(--aw-chalk)}
+.ax-cuerpo{display:flex;flex-direction:column;gap:16px;font-size:15px;line-height:1.5;color:var(--aw-haze)}
+.ax-cuerpo b,.ax-cuerpo strong{color:var(--aw-chalk);font-weight:700}
+.ax-cuerpo code{font:12px/1.5 var(--aw-f-mono);overflow-wrap:anywhere;color:var(--aw-chalk)}
+.ax-dep{display:flex;flex-direction:column;gap:14px;padding:18px 20px;border-radius:var(--aw-r-tile);background:var(--aw-ultra);color:var(--aw-chalk)}
+.ax-chips{display:flex;flex-wrap:wrap;gap:8px}
+.ax-chip{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:999px;background:var(--aw-chalk);color:var(--aw-night);font-weight:800;font-size:14px}
+.ax-sub{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:4px}
+.ax-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--aw-edge);font-size:14px}
+.ax-grow{flex:1;min-width:0}
+.ax-md{color:var(--aw-fog);font-size:13px;overflow-wrap:anywhere}
+.ax-tags{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.ax-tag{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:var(--aw-r-chip);font:500 10px/1 var(--aw-f-mono);letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--aw-dusk);color:var(--aw-fog);white-space:nowrap}
+.ax-tag.lock,.ax-tag.aviso{border-color:var(--aw-caution-line);color:var(--aw-caution-line)}
+.ax-aviso{padding:12px 14px;border-radius:var(--aw-r-tile);border:1px solid var(--aw-caution-line);color:var(--aw-chalk);font-size:14px}
+.ax-error{color:var(--aw-danger)}
+.ax-nota{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--aw-fog)}
+.ax-acc{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px;padding-top:4px}
+.ax-btn{min-height:44px;padding:0 20px;border-radius:999px;border:1.5px solid transparent;font:700 15px var(--aw-f-sans);cursor:pointer}
+.ax-btn-ghost{background:transparent;color:var(--aw-chalk);border-color:var(--aw-slate)}
+.ax-btn-sec{background:var(--aw-raised);color:var(--aw-chalk);border-color:var(--aw-edge)}
+.ax-btn-pri{background:var(--aw-volt);color:var(--aw-night)}
+.ax-dlg :focus-visible{outline:2px solid var(--aw-volt);outline-offset:2px}
+/* estado de configuración de cada módulo encendido (lo que dice su base) */
+.ax-st{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;border:1px solid transparent;font:600 12px/1 var(--aw-f-sans);white-space:nowrap}
+.ax-st.listo{background:var(--aw-ice);color:var(--aw-ultra)}
+.ax-st.medias{background:var(--aw-caution-soft);color:var(--aw-caution)}
+.ax-st.falta{background:var(--aw-white);color:var(--aw-slate);border:1.5px dashed var(--aw-control)}
+.ax-st.sin{background:var(--aw-chalk);color:var(--aw-slate);border-color:var(--aw-mist)}
+/* S00: mapa de la instalación (/panel/#mapa), en inglés: se enseña a un cliente */
+.ax-mapa{font-family:var(--aw-f-sans);color:var(--aw-slate);border-radius:var(--aw-r-panel);overflow:hidden}
+.ax-mapa h1,.ax-mapa h2,.ax-mapa h3,.ax-mapa p{margin:0}
+.ax-sec{padding:clamp(24px,4vw,48px) clamp(16px,4vw,48px);display:flex;flex-direction:column;gap:24px}
+.ax-night{background:var(--aw-night);color:var(--aw-haze)}
+.ax-ultra{background:var(--aw-ultra);color:var(--aw-chalk)}
+.ax-chalk{background:var(--aw-chalk)}
+.ax-mono{font:500 12px/1.4 var(--aw-f-mono);letter-spacing:.12em;text-transform:uppercase}
+.ax-h1{font-family:var(--aw-f-display);font-weight:600;font-size:clamp(30px,3.6vw,52px);line-height:1.04;letter-spacing:-.05em;color:var(--aw-chalk)}
+.ax-h1 span,.ax-hh span{display:block}.ax-h1 .l,.ax-hh .l{font-weight:300}
+.ax-hh{font-family:var(--aw-f-display);font-weight:600;font-size:clamp(22px,2.4vw,30px);line-height:1.08;letter-spacing:-.045em;color:inherit}
+.ax-lead{font-size:clamp(16px,1.4vw,19px);line-height:1.6;max-width:56ch;color:var(--aw-fog)}
+.ax-facts{display:flex;flex-wrap:wrap;gap:10px}
+.ax-fact{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;background:var(--aw-edge);color:var(--aw-chalk);font-size:13.5px;font-weight:600}
+.ax-fact b{font-family:var(--aw-f-display);font-weight:600}
+.ax-grid4{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.ax-fase{display:flex;flex-direction:column;gap:10px;padding:22px;border-radius:var(--aw-r-card);border:1px solid rgba(242,243,247,.45)}
+.ax-fase .n{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--aw-chalk);color:var(--aw-ultra);font:600 15px var(--aw-f-display)}
+.ax-fase h3{font-family:var(--aw-f-display);font-weight:600;font-size:18px;letter-spacing:-.02em;color:var(--aw-chalk)}
+.ax-fase p{font-size:14.5px;line-height:1.5}
+.ax-leyenda{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;font-size:13px}
+.ax-leyenda span{display:inline-flex;align-items:center;gap:8px}
+.ax-tabla-caja{background:var(--aw-white);border:1px solid var(--aw-mist);border-radius:var(--aw-r-panel);overflow-x:auto}
+.ax-tabla{width:100%;min-width:640px;border-collapse:collapse;font-size:14px}
+.ax-tabla th,.ax-tabla td{padding:0 16px;text-align:left;vertical-align:middle}
+.ax-tabla thead th{padding-top:20px;padding-bottom:18px;border-bottom:1px solid var(--aw-mist);font-weight:500;vertical-align:bottom}
+.ax-tabla tbody td{height:42px;border-bottom:1px solid var(--aw-mist)}
+.ax-tabla tbody tr:last-child td{border-bottom:0}
+.ax-tabla .g td{height:34px;background:var(--aw-chalk);color:var(--aw-slate)}
+.ax-tabla .nm{color:var(--aw-night);font-weight:700}
+.ax-tabla th.ty{text-align:center;min-width:170px;background:var(--aw-ice)}
+.ax-tabla .ty b{display:block;font-family:var(--aw-f-display);font-weight:600;font-size:16px;letter-spacing:-.02em;color:var(--aw-night)}
+.ax-tabla .ty small{display:block;margin-top:4px;font-size:12.5px;line-height:1.35}
+.ax-tabla .cnt{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:999px;background:var(--aw-white);color:var(--aw-ultra);font:500 10.5px var(--aw-f-mono);letter-spacing:.08em}
+.ax-tabla .prep{display:inline-block;margin-top:6px;padding:3px 8px;border-radius:var(--aw-r-chip);border:1px solid var(--aw-caution);color:var(--aw-caution);font:500 10px var(--aw-f-mono);letter-spacing:.08em;text-transform:uppercase}
+.ax-tabla td.c{text-align:center}
+.ax-tabla .req{font:500 10.5px var(--aw-f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--aw-slate);white-space:nowrap}
+.m1,.m2,.m0{display:inline-block;vertical-align:middle}
+.m1{width:14px;height:14px;border-radius:50%;background:var(--aw-night)}
+.m2{width:14px;height:14px;border-radius:50%;border:2px solid var(--aw-ultra)}
+.m0{width:14px;height:2px;border-radius:2px;background:var(--aw-control)}
+.ax-lk{display:inline-flex;vertical-align:-3px;margin-left:8px;color:var(--aw-caution)}
+.ax-reglas{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.ax-reglas p{font-size:14.5px;line-height:1.5}.ax-reglas b{display:block;color:var(--aw-chalk);font-weight:700;margin-bottom:4px}
+.ax-pie{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-top:18px;border-top:1px solid var(--aw-edge);font-size:13px;color:var(--aw-fog)}
+</style>
 <!-- Tailwind COMPILADO (tailwind.json, salida panel/panel.css; F3 lote 4a): la CSP de las instancias ya no admite el Play CDN. Al final del head, donde el CDN inyectaba su hoja -->
 <link rel="stylesheet" href="/panel/panel.css">
 </head>
@@ -78,17 +169,20 @@ __AXW_PANEL_NAV__
 <ol id="historial" class="space-y-1"></ol>
 </div>
 </section>
+<!-- S00 · Mapa de la instalación (/panel/#mapa): una columna por tipo de negocio de erp/perfiles.json (los da la edge) y los pasos que
+     declara cada módulo en el registro (erp/modulos.py → SETUP, por build.py). Nada escrito a mano: un módulo declarado mañana sale solo. -->
+<section id="mapa" data-vista="mapa" class="hidden ax-mapa" lang="en" aria-label="Installation map"></section>
 </main>
 </div>
 
-<dialog id="dlg" class="rounded-xl p-0 w-[min(560px,calc(100vw-32px))] shadow-xl" aria-labelledby="dlg-titulo">
-<form method="dialog" class="p-space-lg space-y-space-md">
-<h2 id="dlg-titulo" class="font-headline-sm text-headline-sm font-bold text-on-surface">Confirmar cambio</h2>
-<div id="dlg-cuerpo" class="space-y-space-sm font-body-md text-body-md text-on-surface"></div>
-<div class="flex flex-wrap justify-end gap-space-sm pt-space-sm">
-<button value="no" class="px-space-md py-space-xs rounded-lg bg-surface-container text-on-surface font-label-md text-label-md" type="submit">Cancelar</button>
-<button id="dlg-alt" value="alt" class="hidden px-space-md py-space-xs rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md" type="submit"></button>
-<button id="dlg-ok" value="ok" class="px-space-md py-space-xs rounded-lg bg-primary-container text-on-primary font-label-md text-label-md" type="submit">Aplicar</button>
+<dialog id="dlg" class="ax-dlg" aria-labelledby="dlg-titulo">
+<form method="dialog">
+<div><div id="dlg-ceja" class="ax-eyebrow"></div><h2 id="dlg-titulo" class="ax-h2">Confirmar cambio</h2></div>
+<div id="dlg-cuerpo" class="ax-cuerpo"></div>
+<div class="ax-acc">
+<button value="no" class="ax-btn ax-btn-ghost" type="submit">Cancelar</button>
+<button id="dlg-alt" value="alt" class="hidden ax-btn ax-btn-sec" type="submit"></button>
+<button id="dlg-ok" value="ok" class="ax-btn ax-btn-pri" type="submit">Aplicar</button>
 </div>
 </form>
 </dialog>
@@ -661,9 +755,51 @@ window.AXW_ASIS = (function () {
   function rot(k) { return ROTULO[k] || [k, 'Otros', 'extension']; }
   function nombre(k) { return rot(k)[0]; }
   function lista(ks) { return ks.map(nombre).join(', '); }
+  function listaY(ks) { var n = ks.map(nombre); return n.length > 1 ? n.slice(0, -1).join(', ') + ' y ' + n[n.length - 1] : n.join(''); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function ms(n, c) { return '<span class="material-symbols-outlined ' + (c || '') + '" aria-hidden="true">' + n + '</span>'; }
   function $(id) { return document.getElementById(id); }
+  /* Setup por módulo (F3, 12-oct-2026, erp-panel-2; owner: «módulo primero y setup después»). Lo pone build.py (setup_para_panel):
+     `textos` (título de cada paso en es/en, de setup_modulos.js), `registro` (SETUP de erp/modulos.py: SOLO para el mapa S00) y `en`
+     (nombres EN de módulos y tipos). Los pasos y el estado de UNA instancia los da su base por erp_control_estado (forma de Backend,
+     bbm-p21, 12-oct): por módulo `setup` = erp_modulos.setup tal cual ({pasos:[…]} | {ninguno: motivo} | null = sin declarar) y, en
+     los encendidos con pasos, `setup_estado` = {estado: sin_configurar|configurado, hechos, total} (total = obligatorios). */
+  var SETUP = __AXW_SETUP__;
+  var tieneCampo = function (o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k); };
+  function pasoEs(k) { var t = SETUP.textos.paso[k]; return t ? t.es : 'Paso «' + k + '»'; }
+  /* Lo que la base de la instancia dice del setup de un módulo. «sin_dato» (la base aún no manda el campo) NO es «sin declarar»:
+     confundirlos le diría al owner que Facturas no tiene pasos cuando tiene tres. Una forma rara es un error, nunca «nada que hacer». */
+  function setupDe(m) {
+    if (!tieneCampo(m, 'setup')) return { tipo: 'sin_dato' };
+    var s = m.setup;
+    if (s === null) return { tipo: 'sin_declarar' };
+    if (s && typeof s === 'object' && !Array.isArray(s)) {
+      if (typeof s.ninguno === 'string') return { tipo: 'ninguno', motivo: s.ninguno };
+      if (Array.isArray(s.pasos) && s.pasos.length && s.pasos.every(function (p) {
+        return p && typeof p.clave === 'string' && typeof p.obligatorio === 'boolean' && typeof p.irreversible === 'boolean';
+      })) return { tipo: 'pasos', pasos: s.pasos };
+    }
+    return { tipo: 'raro' };
+  }
+  /* Etiqueta de estado de un módulo ENCENDIDO: {cls, txt} o null si la base aún no da el estado (eso se avisa una vez, arriba). */
+  function estadoSetup(m) {
+    if (!tieneCampo(m, 'setup_estado')) return null;
+    var sd = setupDe(m), e = m.setup_estado;
+    if (e === null) {
+      if (sd.tipo === 'sin_declarar') return { cls: 'sin', txt: 'Sin asistente aún' };
+      if (sd.tipo === 'ninguno') return { cls: 'listo', txt: 'Nada que configurar' };
+      return { cls: 'falta', txt: 'Estado desconocido', raro: true };   // con pasos y sin estado: la base no cuadra, no se da por bueno
+    }
+    if (!e || typeof e !== 'object' || typeof e.hechos !== 'number' || typeof e.total !== 'number' ||
+        (e.estado !== 'configurado' && e.estado !== 'sin_configurar')) return { cls: 'falta', txt: 'Estado desconocido', raro: true };
+    if (e.estado === 'configurado') return { cls: 'listo', txt: 'Listo' };
+    return e.hechos > 0 ? { cls: 'medias', txt: 'A medias · ' + e.hechos + ' de ' + e.total }
+                        : { cls: 'falta', txt: 'Sin configurar · 0 de ' + e.total };
+  }
+  function etiquetaEstado(st) {
+    return st ? '<span class="ax-st ' + st.cls + '" data-setup-estado="' + st.cls + '">' + esc(st.txt) + '</span>' : '';
+  }
+
   var tT;
   function toast(t) { var b = $('toast'); b.textContent = t; b.classList.remove('hidden'); clearTimeout(tT); tT = setTimeout(function () { b.classList.add('hidden'); }, 4000); }
 
@@ -727,6 +863,26 @@ window.AXW_ASIS = (function () {
       '</dl>' + (avisos.length ? '<p class="mt-space-xs font-body-sm text-body-sm text-error">' + avisos.join(' ') + '</p>' : '');
   }
 
+  /* Resumen del setup de la instancia (solo lectura, de su base): cuántos encendidos están listos, a medias o sin configurar, y la base
+     («Datos generales», que no sale como tarjeta). Si la base aún no da el estado, se dice una vez aquí y las tarjetas no lo inventan. */
+  function resumenSetup(e, act) {
+    var enc = (e.modulos || []).filter(function (m) { return m.modulo === 'base' || act.indexOf(m.modulo) !== -1; });
+    if (!enc.some(function (m) { return tieneCampo(m, 'setup_estado'); }))
+      return '<p class="mt-space-sm font-body-sm text-body-sm text-on-surface-variant" data-setup-resumen="sin_dato">La base de esta instancia aún no informa de la configuración de cada módulo: el estado («listo», «a medias», «sin configurar») saldrá aquí cuando lo haga.</p>';
+    var n = { listo: 0, medias: 0, falta: 0, sin: 0, raro: 0 };
+    enc.forEach(function (m) { var st = estadoSetup(m); if (st) n[st.raro ? 'raro' : st.cls]++; });
+    var base = enc.filter(function (m) { return m.modulo === 'base'; })[0];
+    var partes = [];
+    if (n.listo) partes.push(n.listo + ' listos');
+    if (n.medias) partes.push(n.medias + ' a medias');
+    if (n.falta) partes.push(n.falta + ' sin configurar');
+    if (n.sin) partes.push(n.sin + ' sin asistente aún');
+    if (n.raro) partes.push(n.raro + ' con estado desconocido');
+    return '<div class="mt-space-sm flex flex-wrap items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" data-setup-resumen="ok">' +
+      '<span>Configuración en la base: ' + esc(partes.join(' · ') || 'sin módulos encendidos') + '.</span>' +
+      (base ? '<span>' + esc(nombre('base')) + ':</span>' + etiquetaEstado(estadoSetup(base)) : '') + '</div>';
+  }
+
   function pintaInstancia() {
     var i = actual, e = i.estado, aviso = $('aviso-instancia');
     var act = activosDe(i);
@@ -737,7 +893,7 @@ window.AXW_ASIS = (function () {
       (e ? '<div class="flex flex-wrap gap-space-xs">' +
         '<span class="px-space-sm py-[2px] rounded-full bg-secondary-container text-on-secondary-container font-code-metric text-code-metric font-semibold">' + act.length + ' módulos activos</span>' +
         '<span class="px-space-sm py-[2px] rounded-full bg-surface-container text-on-surface-variant font-code-metric text-code-metric font-semibold">' + (e.apagados || 0) + ' objetos cerrados en la base</span>' +
-        '</div>' : '') + '</div>';
+        '</div>' : '') + '</div>' + (e ? resumenSetup(e, act) : '');
     if (!i.editable) {
       aviso.classList.remove('hidden');
       aviso.innerHTML = ms('lock', 'align-middle text-[20px] mr-1') + '<strong>No se controla desde aquí.</strong> ' + esc(i.motivo || 'Esta instancia no tiene llave de control.');
@@ -767,7 +923,8 @@ window.AXW_ASIS = (function () {
           return '<div class="rounded-xl p-space-md bg-surface-container-lowest shadow-sm flex items-start justify-between gap-space-sm' + (on ? '' : ' opacity-80') + '">' +
             '<div class="flex items-start gap-space-sm min-w-0"><div class="p-space-xs rounded-lg shrink-0 ' + (on ? 'bg-primary-container text-on-primary' : 'bg-surface-container-low text-on-surface-variant') + '">' + ms(rot(m.modulo)[2], 'text-[22px]') + '</div>' +
             '<div class="min-w-0"><div class="font-label-md text-label-md text-on-surface">' + esc(nombre(m.modulo)) + '</div>' +
-            '<div class="font-code-metric text-code-metric text-on-surface-variant">' + esc(nota) + '</div></div></div>' +
+            '<div class="font-code-metric text-code-metric text-on-surface-variant">' + esc(nota) + '</div>' +
+            (on ? (function (st) { return st ? '<div class="mt-1">' + etiquetaEstado(st) + '</div>' : ''; })(estadoSetup(m)) : '') + '</div></div>' +
             '<button class="tgl shrink-0 w-12 h-6 rounded-full p-1 flex items-center ' + (on ? 'bg-primary-container' : 'bg-surface-container-highest') + (bloqueado ? ' cursor-not-allowed opacity-50' : '') +
             '" type="button" role="switch" aria-checked="' + on + '" aria-label="' + (on ? 'Apagar ' : 'Encender ') + esc(nombre(m.modulo)) + '"' +
             (bloqueado ? ' disabled' : '') + ' data-mod="' + esc(m.modulo) + '"><span class="w-4 h-4 bg-surface-container-lowest rounded-full shadow-sm" style="transform:translateX(' + (on ? '24px' : '0') + ')"></span></button></div>';
@@ -786,6 +943,99 @@ window.AXW_ASIS = (function () {
     pintaInstancia();
   }
 
+  /* ── S00 · mapa de la instalación (/panel/#mapa) ─────────────────────────────────────────────────────────────────────────────
+     Una columna por tipo de negocio (perfiles de la edge: erp/perfiles.json) y una fila por paso que DECLARA cada módulo en el registro.
+     Lo que un tipo lleva siempre (`modulos`) es «part of the install»; lo opcional, «only if on»; la base, en todos. Un módulo de algún
+     tipo sin declaración sale como «no assistant yet». Inglés y sin clientes: es la lámina que el owner enseña a un cliente. */
+  function nombreEn(k) { return SETUP.en.modulos[k] || k; }
+  function declaracion(k) {
+    var d = SETUP.registro[k];
+    if (d && d.ninguno === true) return { tipo: 'ninguno' };
+    if (d && typeof d === 'object' && Array.isArray(d.pasos) && d.pasos.length) return { tipo: 'pasos', pasos: d.pasos };
+    return d == null ? { tipo: 'sin_declarar' } : { tipo: 'raro' };
+  }
+  function marca(k, t) {
+    if (k === 'base' || (t.modulos || []).indexOf(k) !== -1) return 'm1';
+    return (t.modulos_opcionales || []).indexOf(k) !== -1 ? 'm2' : 'm0';
+  }
+  var ARIA_MARCA = { m1: 'Part of the install', m2: 'Only if that module is on', m0: 'Not used' };
+  function celdas(k, tipos) {
+    return tipos.map(function (t) { var c = marca(k, t); return '<td class="c"><span class="' + c + '" role="img" aria-label="' + ARIA_MARCA[c] + '"></span></td>'; }).join('');
+  }
+  var CANDADO = '<span class="ax-lk" role="img" aria-label="Confirmed once: no way back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>';
+  function pintaMapa() {
+    var caja = $('mapa'), tipos = (perfiles && perfiles.tipos) || [];
+    if (!tipos.length) { caja.innerHTML = '<div class="ax-sec ax-chalk"><p lang="es">No se han podido leer los tipos de negocio: el mando no ha respondido. Recarga la página.</p></div>'; return; }
+    var enTipo = {};
+    tipos.forEach(function (t) { (t.modulos || []).concat(t.modulos_opcionales || []).forEach(function (k) { enTipo[k] = true; }); });
+    var conPasos = Object.keys(SETUP.registro).filter(function (k) { return declaracion(k).tipo === 'pasos'; })
+      .sort(function (a, b) { return a === 'base' ? -1 : b === 'base' ? 1 : nombreEn(a).localeCompare(nombreEn(b), 'en'); });
+    var ninguno = Object.keys(enTipo).filter(function (k) { return declaracion(k).tipo === 'ninguno'; }).sort();
+    var sinAsis = Object.keys(enTipo).filter(function (k) { var x = declaracion(k).tipo; return x === 'sin_declarar' || x === 'raro'; })
+      .sort(function (a, b) { return nombreEn(a).localeCompare(nombreEn(b), 'en'); });
+    var cuenta = tipos.map(function () { return { si: 0, op: 0 }; }), filas = [];
+    conPasos.forEach(function (k) {
+      filas.push('<tr class="g"><td colspan="' + (2 + tipos.length) + '"><span class="ax-mono">' + (k === 'base' ? 'Every business' : esc(nombreEn(k))) + '</span></td></tr>');
+      declaracion(k).pasos.forEach(function (p) {
+        tipos.forEach(function (t, i) { var c = marca(k, t); if (c === 'm1') cuenta[i].si++; else if (c === 'm2') cuenta[i].op++; });
+        var tt = SETUP.textos.paso[p.clave];
+        filas.push('<tr data-paso="' + esc(k + '.' + p.clave) + '"><td><span class="nm">' + esc(tt ? tt.en : p.clave) + '</span>' + (p.irreversible ? CANDADO : '') + '</td>' +
+          '<td><span class="req">' + (p.obligatorio ? 'Required' : 'Optional') + '</span></td>' + celdas(k, tipos) + '</tr>');
+      });
+    });
+    if (ninguno.length) {
+      filas.push('<tr class="g"><td colspan="' + (2 + tipos.length) + '"><span class="ax-mono">Nothing to set up</span></td></tr>');
+      ninguno.forEach(function (k) { filas.push('<tr data-modulo-mapa="' + esc(k) + '"><td><span class="nm">' + esc(nombreEn(k)) + '</span></td><td><span class="req">Uses the steps above</span></td>' + celdas(k, tipos) + '</tr>'); });
+    }
+    if (sinAsis.length) {
+      filas.push('<tr class="g"><td colspan="' + (2 + tipos.length) + '"><span class="ax-mono">No assistant yet · ' + sinAsis.length + ' modules</span></td></tr>');
+      sinAsis.forEach(function (k) { filas.push('<tr data-sin-asistente="' + esc(k) + '"><td><span class="nm">' + esc(nombreEn(k)) + '</span></td><td><span class="req">Steps not listed yet</span></td>' + celdas(k, tipos) + '</tr>'); });
+    }
+    var cabeza = tipos.map(function (t, i) {
+      var en = SETUP.en.tipos[t.tipo] || [t.nombre || t.tipo, ''];
+      var c = cuenta[i];
+      return '<th scope="col" class="ty" data-tipo="' + esc(t.tipo) + '"><b>' + esc(en[0]) + '</b>' + (en[1] ? '<small>' + esc(en[1]) + '</small>' : '') +
+        '<span class="cnt">' + c.si + ' steps' + (c.op ? ' · +' + c.op + ' if on' : '') + '</span>' + (t.comprobado ? '' : '<br><span class="prep">In preparation</span>') + '</th>';
+    }).join('');
+    var nPasos = conPasos.reduce(function (n, k) { return n + declaracion(k).pasos.length; }, 0);
+    caja.innerHTML =
+      '<div class="ax-sec ax-night"><div class="flex flex-wrap items-center justify-between gap-space-sm"><span class="ax-mono" style="color:var(--aw-fog)">AxisWorks ERP · Installation map</span></div>' +
+      '<h1 class="ax-h1"><span>Every step of your install,</span><span class="l">from switch-on to ready.</span></h1>' +
+      '<p class="ax-lead">The studio turns on the modules you need. You set each one up in a short assistant, one step per screen. Everything you enter stays in Settings; most of it can be changed later, and steps with a lock are confirmed once.</p>' +
+      '<div class="ax-facts"><span class="ax-fact"><b>' + tipos.length + '</b> types of business</span><span class="ax-fact"><b>' + nPasos + '</b> steps listed</span>' +
+      '<span class="ax-fact"><b>1</b> step per screen</span></div></div>' +
+      '<div class="ax-sec ax-ultra"><div><span class="ax-mono">How an install runs</span><h2 class="ax-hh"><span>Four moments,</span><span class="l">one assistant.</span></h2></div>' +
+      '<div class="ax-grid4">' + [['We turn on a module', 'Modules that need each other switch on together.'], ['You see what’s missing', 'A notice when you sign in. Nothing else stops.'],
+        ['One step per screen', 'Leave halfway: it reopens at the first step left.'], ['Change it later', 'The same fields stay in Settings.']].map(function (f, i) {
+        return '<div class="ax-fase"><span class="n">0' + (i + 1) + '</span><h3>' + f[0] + '</h3><p>' + f[1] + '</p></div>'; }).join('') + '</div></div>' +
+      '<div class="ax-sec ax-chalk"><div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px"><div><span class="ax-mono">Step by step</span>' +
+      '<h2 class="ax-hh" style="color:var(--aw-night)"><span>What each business</span><span class="l">sets up.</span></h2></div>' +
+      '<div class="ax-leyenda"><span><span class="m1" aria-hidden="true"></span>Part of the install</span><span><span class="m2" aria-hidden="true"></span>Only if that module is on</span>' +
+      '<span><span class="m0" aria-hidden="true"></span>Not used</span><span>' + CANDADO + 'Confirmed once: no way back</span></div></div>' +
+      '<div class="ax-tabla-caja"><table class="ax-tabla"><caption class="sr-only">Steps in an install, by type of business</caption><thead><tr>' +
+      '<th scope="col"><span class="ax-mono">Step</span></th><th scope="col"><span class="ax-mono">Needed</span></th>' + cabeza + '</tr></thead><tbody>' + filas.join('') + '</tbody></table></div></div>' +
+      '<div class="ax-sec ax-night"><span class="ax-mono" style="color:var(--aw-fog)">Rules every install keeps</span><div class="ax-reglas">' +
+      '<p><b>Only the main admin sets things up.</b>Everyone else sees that the module isn’t ready yet, until it is.</p>' +
+      '<p><b>Steps with a lock are confirmed once.</b>The assistant asks you to confirm them before saving.</p>' +
+      '<p><b>Settings keeps it all.</b>What the assistant saves is what you see and change in Settings.</p></div>' +
+      '<div class="ax-pie"><span class="ax-mono">AxisWorks ERP · Installation map</span><span>Two halves, one axis.</span></div></div>';
+  }
+  function vistaActual() {
+    var mapa = location.hash === '#mapa';
+    $('mapa').classList.toggle('hidden', !mapa);
+    $('vista').classList.toggle('hidden', mapa || !instancias.length);
+    $('estado-carga').classList.toggle('hidden', mapa || instancias.length > 0);
+    document.querySelector('main').style.maxWidth = mapa ? 'none' : '';
+    var t = document.querySelector('header h1');
+    if (t) t.innerHTML = mapa ? 'Mapa de la instalación' : '<span class="sm:hidden">Módulos</span><span class="hidden sm:inline">Módulos por instancia</span>';
+    [].forEach.call(document.querySelectorAll('[data-nav]'), function (a) {
+      var es = a.getAttribute('data-nav') === (mapa ? 'mapa' : 'modulos');
+      if (a.getAttribute('data-nav') === 'mapa' || a.getAttribute('data-nav') === 'modulos') { if (es) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
+    });
+    if (mapa) pintaMapa();
+  }
+  window.addEventListener('hashchange', vistaActual);
+
   function carga(mantener) {
     var mi = ++cargaSeq;   // una respuesta vieja no pisa a la nueva (dos cargas seguidas: la última manda)
     return pide({ accion: 'estado' }).then(function (d) {
@@ -799,11 +1049,14 @@ window.AXW_ASIS = (function () {
       $('estado-carga').classList.add('hidden');
       $('vista').classList.remove('hidden');
       elige(sigue || (instancias.filter(function (i) { return i.editable; })[0] || instancias[0] || {}).nombre);
+      vistaActual();
     });
   }
 
   // ── cambiar: simular en la base, confirmar, aplicar ───────────────────────────────────────────
-  function dialogo(html, ok, alt) {
+  function dialogo(html, ok, alt, titulo, ceja) {
+    $('dlg-titulo').textContent = titulo || 'Confirmar cambio';
+    $('dlg-ceja').textContent = ceja || ('Módulos · ' + (actual ? actual.marca : ''));
     $('dlg-cuerpo').innerHTML = html;
     $('dlg-ok').textContent = ok || 'Aplicar';
     $('dlg-ok').classList.toggle('hidden', !ok);
@@ -815,7 +1068,67 @@ window.AXW_ASIS = (function () {
     return new Promise(function (r) { dlg.addEventListener('close', function f() { dlg.removeEventListener('close', f); r(dlg.returnValue); }); });
   }
 
-  function propone(activos, mod, enciende) {
+  /* S01 — antes de confirmar un encendido, qué se enciende con él (lo calcula la base: erp_control_simula sobre el conjunto FINAL) y qué
+     le tocará configurar al cliente en cada uno (sus pasos, leídos de la base de esa instancia). Un módulo sin declaración AVISA y no
+     impide (decisión de Backend para S3: 27 de 32 aún sin declarar). La pantalla no decide nada: solo lo enseña. */
+  function filaPaso(k, p, final) {
+    var req = p.modulo_requerido && final.indexOf(p.modulo_requerido) === -1
+      ? ' · necesita el módulo ' + esc(nombre(p.modulo_requerido)) + ', que no se enciende' : '';
+    return '<div class="ax-row" data-paso="' + esc(k + '.' + p.clave) + '"><div class="ax-grow"><b>' + esc(pasoEs(p.clave)) + '</b>' +
+      '<div class="ax-md">' + esc(nombre(k)) + (p.donde ? ' · ' + esc(p.donde) : '') + req + '</div></div><div class="ax-tags">' +
+      (p.irreversible ? '<span class="ax-tag lock" data-irreversible>Sin vuelta atrás</span>' : '') +
+      '<span class="ax-tag">' + (p.obligatorio ? 'Obligatorio' : 'Opcional') + '</span></div></div>';
+  }
+  function setupDelEncendido(enciende, final) {
+    var mods = {}, filas = [], nPasos = 0, sinDato = [];
+    (actual.estado.modulos || []).forEach(function (m) { mods[m.modulo] = m; });
+    enciende.forEach(function (k) {
+      var sd = setupDe(mods[k]);
+      if (sd.tipo === 'sin_dato') { sinDato.push(k); return; }
+      if (sd.tipo === 'pasos') { nPasos += sd.pasos.length; sd.pasos.forEach(function (p) { filas.push(filaPaso(k, p, final)); }); return; }
+      if (sd.tipo === 'ninguno') {
+        filas.push('<div class="ax-row" data-setup="ninguno"><div class="ax-grow"><b>' + esc(nombre(k)) + '</b><div class="ax-md">Nada que configurar' +
+          (sd.motivo ? ': ' + esc(sd.motivo) : '') + '</div></div></div>');
+        return;
+      }
+      if (sd.tipo === 'sin_declarar') {
+        filas.push('<div class="ax-row" data-setup="sin_declarar"><div class="ax-grow"><b>' + esc(nombre(k)) + '</b><div class="ax-md">Aún sin asistente: ' +
+          'el cliente no verá pasos para configurarlo. Se enciende igual.</div></div><div class="ax-tags"><span class="ax-tag aviso">Sin asistente</span></div></div>');
+        return;
+      }
+      filas.push('<div class="ax-row ax-error" data-setup="raro"><div class="ax-grow"><b>' + esc(nombre(k)) + '</b><div class="ax-md ax-error">La base devuelve ' +
+        'una configuración que el panel no entiende: no se puede decir qué tendrá que configurar el cliente.</div></div></div>');
+    });
+    var html = '';
+    if (filas.length) {
+      html += '<div data-setup-lista><div class="ax-sub"><span class="ax-eyebrow">Lo que tendrá que configurar el administrador del cliente</span>' +
+        '<span class="ax-md">' + nPasos + (nPasos === 1 ? ' paso' : ' pasos') + '</span></div>' + filas.join('') + '</div>';
+    }
+    if (sinDato.length) {
+      html += '<p class="ax-aviso" data-setup="sin_dato">La base de ' + esc(actual.marca) + ' aún no informa de la configuración de ' + esc(lista(sinDato)) +
+        ': no se pueden enseñar sus pasos. Lo que se enciende con él sí es lo que calcula la base.</p>';
+    }
+    if (nPasos) {
+      html += '<p class="ax-nota"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">info</span><span>El administrador principal de ' + esc(actual.marca) +
+        ' verá un aviso al entrar y un asistente con estos pasos. Hasta entonces el módulo está encendido pero sin configurar; lo que guarde queda en Ajustes.</span></p>';
+    }
+    return html;
+  }
+  function confirmaEncendido(s, mod, activos) {
+    var otros = s.enciende.filter(function (k) { return k !== mod; });
+    var html = '';
+    if (otros.length) {
+      html += '<div class="ax-dep" data-arrastra><p><b>' + esc(nombre(mod)) + ' necesita también ' + esc(listaY(otros)) + ':</b> se encienden juntos.</p>' +
+        '<div class="ax-chips">' + s.enciende.map(function (k) { return '<span class="ax-chip">' + (k === mod ? '' : '+ ') + esc(nombre(k)) + '</span>'; }).join('') + '</div></div>';
+    }
+    if (s.apaga.length) html += '<p><strong>Se apaga:</strong> ' + esc(lista(s.apaga)) + '</p>';
+    html += setupDelEncendido(s.enciende, activos);
+    var n = s.enciende.length;
+    return dialogo(html, n > 1 ? 'Encender ' + n + ' módulos' : 'Encender ' + nombre(mod), null, 'Encender ' + nombre(mod),
+      'Encender un módulo · ' + actual.marca).then(function (v) { return v === 'ok' ? activos : null; });
+  }
+
+  function propone(activos, mod, enciende, vuelta) {
     return pide({ accion: 'simula', instancia: actual.nombre, activos: activos }).then(function (d) {
       if (d.__estado !== 200 || !d.simulacion) throw new Error(d.mensaje || 'No se pudo simular el cambio (' + d.__estado + ').');
       var s = d.simulacion, bloqueos = [];
@@ -824,10 +1137,20 @@ window.AXW_ASIS = (function () {
       if (ef.length) bloqueos.push('A ' + esc(lista(ef)) + ' le faltan funciones por desplegar (' + esc([].concat.apply([], ef.map(function (k) { return s.edges_faltan[k]; })).join(', ')) +
         '). Las prepara el estudio (quedan cerradas hasta encenderlo): ' + ef.map(function (k) { return '<code>python erp/nueva_instancia.py ' + esc(actual.nombre) + ' --aplica --paso edges --modulo ' + esc(k) + '</code>'; }).join(' · ') + '.');
       if ((s.desconocidos || []).length) bloqueos.push('Módulos que la base no conoce: ' + esc(s.desconocidos.join(', ')) + '.');
+      var cf = s.condiciones_faltan && typeof s.condiciones_faltan === 'object' ? Object.keys(s.condiciones_faltan) : [];
+      if (cf.length) bloqueos.push(cf.map(function (k) { var v = s.condiciones_faltan[k];
+        return esc(nombre(k)) + ' no se puede encender todavía: le falta ' + esc(Array.isArray(v) ? v.join(', ') : String(v)) + ' (lo pide la base).'; }).join(' '));
       var cambios = '<p>' + (s.enciende.length ? '<strong>Se enciende:</strong> ' + esc(lista(s.enciende)) + '<br>' : '') +
         (s.apaga.length ? '<strong>Se apaga:</strong> ' + esc(lista(s.apaga)) : '') + '</p>';
-      if (bloqueos.length) return dialogo(cambios + bloqueos.map(function (b) { return '<p class="text-error">' + b + '</p>'; }).join(''), null).then(function () { return null; });
+      if (bloqueos.length) return dialogo(cambios + bloqueos.map(function (b) { return '<p class="ax-error">' + b + '</p>'; }).join(''), null, null, 'No se puede aplicar').then(function () { return null; });
       var faltan = s.faltan_dependencias || {}, fk = Object.keys(faltan);
+      // Encender con lo que arrastra: se vuelve a simular el conjunto que propone la base y se confirma UNA vez, enseñando qué se
+      // enciende y qué setup trae cada uno (plan F3 punto 5). Solo una vuelta: si el conjunto propuesto sigue sin cerrar, no hay salida sola.
+      if (fk.length && enciende && !vuelta) {
+        var conDeps = (s.sugerido_con_dependencias || []).filter(function (k) { return activos.indexOf(k) === -1; });
+        if (conDeps.length) return propone(s.sugerido_con_dependencias, mod, true, 1);
+      }
+      if (!fk.length && enciende) return confirmaEncendido(s, mod, activos);
       if (fk.length) {
         var sugerido = enciende ? s.sugerido_con_dependencias : s.sugerido_sin_dependientes;
         var texto = enciende
@@ -837,14 +1160,14 @@ window.AXW_ASIS = (function () {
           ? sugerido.filter(function (k) { return activos.indexOf(k) === -1; })
           : activos.filter(function (k) { return sugerido.indexOf(k) === -1 && k !== mod; });
         // sin nada más que añadir o quitar, no hay salida automática (p. ej. lo que arrastra no se puede encender)
-        if (!extra.length) return dialogo(texto + '<p>No hay una combinación que lo resuelva sola: cambia primero los módulos que lo usan.</p>', null).then(function () { return null; });
+        if (!extra.length) return dialogo(texto + '<p>No hay una combinación que lo resuelva sola: cambia primero los módulos que lo usan.</p>', null, null, 'No se puede aplicar').then(function () { return null; });
         texto += '<p>' + (enciende ? 'Se puede encender junto con: ' : 'Se puede apagar junto con: ') + '<strong>' + esc(lista(extra)) + '</strong>.</p>';
         return dialogo(texto, null, enciende ? 'Encender todo' : 'Apagar todo').then(function (v) {
-          return v === 'alt' ? propone(sugerido, mod, enciende) : null;
+          return v === 'alt' ? propone(sugerido, mod, enciende, 1) : null;
         });
       }
-      return dialogo(cambios + '<p class="font-body-sm text-body-sm text-on-surface-variant">Se aplica al momento en la base de ' + esc(actual.marca) +
-        ': lo apagado deja de responder y desaparece del menú al recargar.</p>', 'Aplicar').then(function (v) { return v === 'ok' ? activos : null; });
+      return dialogo(cambios + '<p class="ax-md">Se aplica al momento en la base de ' + esc(actual.marca) +
+        ': lo apagado deja de responder y desaparece del menú al recargar.</p>', 'Aplicar', null, 'Apagar ' + nombre(mod)).then(function (v) { return v === 'ok' ? activos : null; });
     });
   }
 
