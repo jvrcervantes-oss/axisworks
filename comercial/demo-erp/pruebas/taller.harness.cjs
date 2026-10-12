@@ -110,6 +110,7 @@ function viva(B, id, u) {
 const ultimoKm = (B, unidad, excl) => { const l = B.ordenes.filter(o => o.unidad_id === unidad && o.id !== excl && o.km != null).sort((a, b) => b.abierta_en - a.abierta_en); return l.length ? l[0].km : null; };
 function rpc(B, n, a, u) {
   B.llamadas.push([n, JSON.parse(JSON.stringify(a)), u]);
+  if (B.o.datosFalla && n === 'taller_datos') return ERR('42501', 'No tienes acceso a Taller', 'sin_acceso');
   const vivaDe = m => B.ordenes.find(o => o.unidad_id === m && o.estado !== 'cerrada');
   switch (n) {
     case 'taller_datos': {
@@ -333,6 +334,7 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     };
     const GRANDE = { name: 'IMG_0001.jpg', mimeType: 'image/jpeg', buffer: conGps(await jpeg(4000, 3000, 40, 0.97)) };
     const PEQ = { name: 'p.jpg', mimeType: 'image/jpeg', buffer: await jpeg(800, 600, 6, 0.8) };
+    const PEQ2 = { name: 'q.jpg', mimeType: 'image/jpeg', buffer: await jpeg(640, 480, 10, 0.8) };
     await fx.close();
     ok('control: el JPEG de prueba pasa de 600 KB y trae APP1 Exif con GPS', GRANDE.buffer.length > 614400 && tipoBytes(GRANDE.buffer) === 'jpeg-exif', GRANDE.buffer.length);
 
@@ -381,6 +383,13 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.type('[data-tl="km"]', 'a4b0,0.0');
     ok('km: solo cifras (teclado numérico)', (await p.$eval('[data-tl="km"]', e => e.value)) === '4000' && (await p.$eval('[data-tl="km"]', e => e.getAttribute('inputmode'))) === 'numeric');
     await p.click('[data-grupo="gas"][data-valor="2"]');
+    const largo = await p.evaluate(() => history.length);
+    await p.click('[data-accion="tl-atras"]'); await enPaso(p, 'moto');
+    ok('Atrás desde km: vuelve a la moto (el motivo ya está congelado) por el historial, sin entradas nuevas', (await p.evaluate(() => history.length)) === largo
+       && (await p.$eval('[data-tl="paso-cuerpo"]', e => e.textContent)).includes(orden.numero));
+    await sig(p); await enPaso(p, 'km');
+    ok('Siguiente en la moto con orden viva la retoma (sin abrir otra)', llamadas(B, 'taller_orden_abre').length === 1);
+    await p.fill('[data-tl="km"]', '4000'); await p.click('[data-grupo="gas"][data-valor="2"]');
     ctx.__sinRed = true; await ctx.setOffline(true);
     await sig(p); await espera(p, () => /Belum tersimpan/.test(document.querySelector('[data-tl="paso-estado"]').textContent));
     ok('sin red en km: «No guardado · Reintentar» y no avanza', (await paso(p)) === 'km' && !!(await p.$('[data-accion="tl-reintentar"]')));
@@ -408,9 +417,25 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await fotoSubida(p, 'izquierda');
     const iz = B.subidas.filter(x => x.ranura === 'izquierda');
     ok('el reintento tras el 429 lleva la MISMA clave de captura', iz.length === 2 && iz[0].clave === iz[1].clave);
-    for (const r of ['derecha', 'cuentakm']) { await foto(p, r, PEQ); await fotoSubida(p, r); }
+    B.tope429 = 1;
+    await foto(p, 'derecha', PEQ);
+    await espera(p, () => document.querySelector('[data-ranura="derecha"] .fg-estado').textContent.includes('detik'));
+    await foto(p, 'derecha', PEQ2); await fotoSubida(p, 'derecha');
+    await duerme(1600);
+    const de = B.subidas.filter(x => x.ranura === 'derecha'), vig = B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'derecha' && f.estado === 'confirmada');
+    ok('repetir una casilla durante la espera del 429: la captura vieja NO se sube después y la vigente es la nueva', de.length === 2 && de[0].clave !== de[1].clave && vig.length === 1 && vig[0].clave === de[1].clave, JSON.stringify(de.map(x => x.clave.slice(0, 8))));
+    await foto(p, 'cuentakm', PEQ); await fotoSubida(p, 'cuentakm');
     ok('las 5 fijas confirmadas en la base', ['frente', 'atras', 'izquierda', 'derecha', 'cuentakm'].every(r => B.fotos.some(f => f.orden_id === orden.id && f.ranura === r && f.estado === 'confirmada')));
     ok('fotos: el aviso dice que están las 5', (await p.$eval('[data-tl="fotos-info"]', e => e.textContent)).includes('5 foto wajib sudah lengkap'));
+    ctx.__sinRed = true; await ctx.setOffline(true);
+    await foto(p, 'dano', PEQ);
+    await espera(p, () => !document.querySelector('[data-fg="pendientes"]').classList.contains('axw-oculto'));
+    await sig(p); await espera(p, () => /belum terunggah/.test(document.querySelector('[data-tl="paso-estado"]').textContent));
+    ok('foto de daño sin subir: Siguiente no sale del paso (la pieza que reintenta se cerraría)', (await paso(p)) === 'fotos' && llamadas(B, 'taller_orden_paso').length === 0);
+    ctx.__sinRed = false; await ctx.setOffline(false);
+    await p.click('[data-accion="fg-reintentar"]', { timeout: 1500 }).catch(() => {});   // al volver la red ya sube sola (evento online): el botón puede no llegar a verse
+    await espera(p, () => document.querySelector('[data-fg="pendientes"]').classList.contains('axw-oculto'), null, 15000);
+    ok('al volver la red / Reintentar: la foto de daño sube una sola vez', B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'dano').length === 1);
     await sinScroll(p, 'paso 4 (390)');
     await shot(p, 'paso4_390_id.png', true);
     ctx.__sinRed = true; await ctx.setOffline(true);
@@ -545,6 +570,17 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
        && (await p.$$eval('[data-tl="setup"] a', as => as.map(a => a.getAttribute('href')))).join() === '/usuarios/');
     await ctx.close();
     B.setup = null;
+
+    // lectura que falla: «no se ha podido mirar» se QUEDA (no una pantalla vacía); y una URL mal escrita no tumba la pantalla
+    B.o.datosFalla = true;
+    ({ p, ctx } = await abre(B));
+    await duerme(300);
+    ok('taller_datos falla: el aviso «no se ha podido mirar» sigue en pantalla', ((await p.$eval('[data-tl="vista-inicio"]', e => e.textContent)) || '').includes('tidak dapat diperiksa'));
+    await ctx.close();
+    B.o.datosFalla = false;
+    ({ p, ctx } = await abre(B, { hash: '#o=%E0%A4&p=km' }));
+    ok('URL con un trozo mal codificado: va al inicio sin romperse', (await p.$eval('[data-tl="raiz"]', e => e.getAttribute('data-modo'))) === 'inicio' && !!(await p.$('[data-tl="buscar"]')));
+    await ctx.close();
 
     // ═══ 4. inglés, 390 y 1440 ═══
     for (const anchoEn of [390, 1440]) {

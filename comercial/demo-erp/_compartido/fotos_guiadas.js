@@ -287,8 +287,9 @@ function axwFotosGuiadas(cfg) {
     if (json) c['content-type'] = 'application/json';
     return c;
   }
+  var olvidadas = {};   // capturas sustituidas por una repetición de su casilla: un temporizador o una vuelta de reintento que llegue tarde no las sube
   function sube(e) {
-    if (enCurso[e.clave]) return Promise.resolve(false);
+    if (enCurso[e.clave] || olvidadas[e.clave] || destruida) return Promise.resolve(false);
     enCurso[e.clave] = true;
     local[e.clave] = { ranura: e.ranura, estado: 'subiendo' };
     pinta();
@@ -304,7 +305,8 @@ function axwFotosGuiadas(cfg) {
       var d = x.d || {};
       if (x.st >= 200 && x.st < 300 && d.ok === true && typeof d.foto_id === 'string') {
         aviso = '';
-        if (e.ranura === 'dano') danosBase.push({ id: d.foto_id }); else base[e.ranura] = { id: d.foto_id };
+        if (e.ranura === 'dano') { if (!danosBase.some(function (x) { return x.id === d.foto_id; })) danosBase.push({ id: d.foto_id }); }   // la misma clave = la misma foto (repetida)
+        else base[e.ranura] = { id: d.foto_id };
         if (vistaPrevia[e.clave] && e.ranura !== 'dano') { vistaPrevia[e.ranura] = vistaPrevia[e.clave]; delete vistaPrevia[e.clave]; }
         delete local[e.clave]; delete enCurso[e.clave];
         return colaQuita(e.clave).then(function () { pinta(); return true; });
@@ -313,7 +315,7 @@ function axwFotosGuiadas(cfg) {
       if (x.st === 429 || d.hint === 'tope_minuto') {
         var s = Math.min(120, Math.max(1, Math.round(Number(d.reintenta_en) || 10)));
         fin('pendiente', TT('Demasiadas fotos seguidas: se reintenta en {n} s.', { n: s }));
-        setTimeout(function () { if (!destruida) sube(e); }, s * 1000);
+        setTimeout(function () { sube(e); }, s * 1000);   // sube() no hace nada si la casilla se repitió o la pieza se cerró
         return false;
       }
       if (d.hint && Object.prototype.hasOwnProperty.call(DEFINITIVOS, d.hint)) {
@@ -326,10 +328,15 @@ function axwFotosGuiadas(cfg) {
       fin('pendiente'); return false;
     });
   }
+  /* Una vuelta de reintento a la vez (Reintentar, la red que vuelve y el arranque no se solapan); cada entrada se mira JUSTO antes de subirla: si ya subió,
+     se repitió su casilla o salió de la cola, no se sube. */
+  var vuelta = null;
   function reintenta() {
-    return colaDeOrden(orden).then(function (lista) {
-      return lista.reduce(function (p, e) { return p.then(function () { return sube(e); }); }, Promise.resolve());
-    });
+    if (vuelta) return vuelta;
+    vuelta = colaDeOrden(orden).then(function (lista) {
+      return lista.reduce(function (p, e) { return p.then(function () { return local[e.clave] && local[e.clave].estado === 'pendiente' ? sube(e) : false; }); }, Promise.resolve());
+    }).then(function () { vuelta = null; }, function () { vuelta = null; /* MUDO A PROPOSITO: una vuelta que falla deja las fotos «pendiente» a la vista, con su Reintentar */ });
+    return vuelta;
   }
 
   function captura(ranura) {
@@ -342,17 +349,18 @@ function axwFotosGuiadas(cfg) {
     var f = input.files && input.files[0];
     var ranura = pidiendo; pidiendo = null;
     if (!f || !ranura) return;
-    /* Repetir una casilla FIJA: lo que quedaba de ella sin subir (error viejo o pendiente en la cola) se olvida. Si no, el error viejo tapaba la foto
-       buena (estadoDe mira la última entrada) y una pendiente vieja que subiera DESPUÉS sustituiría en la base a la nueva. Lo que ya está subiendo no se toca. */
-    if (ranura !== 'dano') {
-      Object.keys(local).forEach(function (k) {
-        if (local[k].ranura === ranura && !enCurso[k] && local[k].estado !== 'procesando') { delete local[k]; colaQuita(k); }
-      });
-    }
     var clave = uuid();
     local[clave] = { ranura: ranura, estado: 'procesando' };
     pinta();
     recodifica(f).then(function (blob) {
+      /* Repetir una casilla FIJA: lo que quedaba de ella sin subir (error viejo o pendiente en la cola) se olvida, pero SOLO cuando la nueva ya está
+         preparada (si la nueva falla, la vieja sigue en la cola). Si no, el error viejo tapaba la foto buena (estadoDe mira la última entrada) y una
+         pendiente vieja que subiera DESPUÉS sustituiría en la base a la nueva. Lo que ya está subiendo no se toca (su casilla está desactivada). */
+      if (ranura !== 'dano') {
+        Object.keys(local).forEach(function (k) {
+          if (k !== clave && local[k].ranura === ranura && !enCurso[k] && local[k].estado !== 'procesando') { olvidadas[k] = true; delete local[k]; colaQuita(k); }
+        });
+      }
       var e = { clave: clave, orden: orden, ranura: ranura, blob: blob, creado: Date.now() };
       try { vistaPrevia[clave] = URL.createObjectURL(blob); } catch (x) { /* MUDO A PROPOSITO: sin vista previa se ve la silueta, la foto sigue */ }
       return colaPon(e).then(function () { return sube(e); });
@@ -398,6 +406,7 @@ function axwFotosGuiadas(cfg) {
 
   return {
     pinta: pinta, reintenta: reintenta, pendientes: pendientes, faltan: faltanFijas,
+    sinSubir: function () { return Object.keys(local).filter(function (k) { return ['procesando', 'subiendo', 'pendiente'].indexOf(local[k].estado) !== -1; }).length; },
     destruye: function () { destruida = true; window.removeEventListener('online', alVolverRed); Object.keys(vistaPrevia).forEach(function (k) { try { URL.revokeObjectURL(vistaPrevia[k]); } catch (e) { /* MUDO A PROPOSITO: liberar memoria no es crítico */ } }); }
   };
 }

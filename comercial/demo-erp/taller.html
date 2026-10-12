@@ -147,6 +147,7 @@
     'Sí, son correctos': 'Yes, it is correct', 'Corregir': 'Correct it',
     'Fotos': 'Photos', 'Faltan {n} de las 5 fijas.': '{n} of the 5 fixed photos missing.', 'Las 5 fijas están hechas.': 'The 5 fixed photos are done.',
     'Hay fotos sin subir: se suben solas al volver la red.': 'Some photos are not uploaded: they upload by themselves when the network is back.',
+    'Quedan fotos sin subir: espera a que suban o pulsa Reintentar.': 'Some photos are not uploaded yet: wait for them or tap Retry.',
     'Revisiones': 'Checks', 'Bien': 'Good', 'Atención': 'Needs check', 'Mal': 'Bad', 'Contestadas {n} de {t}': '{n} of {t} answered',
     'Este modelo no tiene revisiones en su lista. Avisa a la administración.': 'This model has no checks in its list. Tell the administration.',
     'Guardando…': 'Saving…', 'Guardado': 'Saved', 'No guardado': 'Not saved', 'Reintentar': 'Retry', 'Guardar nota': 'Save note',
@@ -235,6 +236,7 @@
     'Sí, son correctos': 'Ya, sudah benar', 'Corregir': 'Perbaiki',
     'Fotos': 'Foto', 'Faltan {n} de las 5 fijas.': '{n} dari 5 foto wajib belum ada.', 'Las 5 fijas están hechas.': '5 foto wajib sudah lengkap.',
     'Hay fotos sin subir: se suben solas al volver la red.': 'Ada foto yang belum terunggah: akan terunggah sendiri saat sinyal kembali.',
+    'Quedan fotos sin subir: espera a que suban o pulsa Reintentar.': 'Masih ada foto yang belum terunggah: tunggu atau ketuk Coba lagi.',
     'Revisiones': 'Pemeriksaan', 'Bien': 'Baik', 'Atención': 'Perlu dicek', 'Mal': 'Rusak', 'Contestadas {n} de {t}': '{n} dari {t} sudah diisi',
     'Este modelo no tiene revisiones en su lista. Avisa a la administración.': 'Model ini belum punya daftar pemeriksaan. Beri tahu admin.',
     'Guardando…': 'Menyimpan…', 'Guardado': 'Tersimpan', 'No guardado': 'Belum tersimpan', 'Reintentar': 'Coba lagi', 'Guardar nota': 'Simpan catatan',
@@ -385,7 +387,7 @@
 
   /* ── estado ── */
   var E = { ficha: null, admin: false, flota: false, datos: null, moto: null, orden: null, paso: 'inicio', motivo: null, gas: null, fg: null,
-            enviando: false, reintento: null, revGuardando: {}, revError: {}, resultado: null, fin: null, duda: false, empujes: 0, busca: '', listas: null, listaSel: '' };
+            enviando: false, reintento: null, revGuardando: {}, revError: {}, resultado: null, fin: null, duda: null, sucio: false, busca: '', listas: null, listaSel: '' };
   function idioma() { return window.LW_IDIOMA || 'es'; }
   function nombreDe(x) { if (!x) return ''; var a = idioma() === 'en' ? x.nombre_en : x.nombre_id; return String(a || x.nombre_id || x.nombre_en || ''); }
   function norm(s) { return String(s == null ? '' : s).toUpperCase().replace(/[^A-Z0-9]/g, ''); }
@@ -403,14 +405,17 @@
   function ponHash(paso, push) {
     var hs = hashDe(paso);
     try {
-      if (push && hs !== location.hash) { history.pushState({ tl: 1 }, '', hs === '#' ? location.pathname + location.search : hs); E.empujes++; }
-      else history.replaceState({ tl: 1 }, '', hs === '#' ? location.pathname + location.search : hs);
+      if (push && hs !== location.hash) { history.pushState({ tl: 1, desde: location.hash || '#' }, '', hs === '#' ? location.pathname + location.search : hs); }
+      else history.replaceState({ tl: 1, desde: history.state && history.state.desde || null }, '', hs === '#' ? location.pathname + location.search : hs);   // sustituir no olvida de dónde se vino
     } catch (e) { /* MUDO A PROPOSITO: sin historial (iframe, file:) la pantalla sigue; solo no se puede volver con Atrás del móvil */ }
   }
   function leeHash() {
     var s = String(location.hash || '').replace(/^#/, ''), o = {};
     if (s === 'listas') return { listas: true };
-    s.split('&').forEach(function (par) { var i = par.indexOf('='); if (i > 0) o[par.slice(0, i)] = decodeURIComponent(par.slice(i + 1)); });
+    s.split('&').forEach(function (par) {
+      var i = par.indexOf('=');
+      if (i > 0) { try { o[par.slice(0, i)] = decodeURIComponent(par.slice(i + 1)); } catch (e) { /* MUDO A PROPOSITO: un trozo de URL mal escrito se ignora y se va al inicio */ } }
+    });
     return { o: UUID.test(o.o || '') ? o.o : null, m: UUID.test(o.m || '') ? o.m : null, p: o.p || null };
   }
 
@@ -456,8 +461,8 @@
   }
   function pintaInicio() {
     var est = $v('vista-inicio');
+    if (!E.datos) return;   // sin datos se queda lo que pintó cargaDatos: «no se ha podido mirar», nunca una pantalla vacía
     vacia(est);
-    if (!E.datos) return;
     var d = E.datos, s = setupDe(d);
     if (!s.listo) {
       var lis = s.faltan.map(function (p) {
@@ -614,10 +619,11 @@
   }
   function atras() {
     if (E.enviando) return;
-    if (E.empujes > 0) { history.back(); return; }
     var i = PASOS.indexOf(E.paso);
     var prev = E.paso === 'km' ? 'moto' : (i > 0 ? PASOS[i - 1] : 'inicio');   // el motivo queda congelado al abrir: de km se vuelve a la moto
-    if (prev === 'moto' && E.orden && !E.moto) E.moto = E.orden.moto;
+    if (prev === 'moto' && E.orden) E.moto = E.orden.moto;
+    // el Atrás del navegador solo si la entrada anterior ES el paso anterior de esta orden (la guarda pushState en «desde»); si no, se va a él sin historial
+    if (history.state && history.state.tl && history.state.desde === hashDe(prev)) { history.back(); return; }
     ir(prev, false);
   }
 
@@ -722,8 +728,7 @@
       // en espera de recambio: retomarla la vuelve a abrir, y eso lo hace la base (taller_orden_abre devuelve la misma orden)
       var m = (E.datos.motos || []).filter(function (x) { return x.id === v.unidad_id; })[0] || { id: v.unidad_id, identificador: v.identificador, modelo: v.modelo };
       E.moto = m; E.motivo = v.motivo_tipo; E.orden = null;
-      modo('paso'); vacia($v('paso-cuerpo')); $v('paso-titulo').textContent = T('Moto'); $v('linea').textContent = String(m.identificador || '');
-      siguiente('Continuar', false);
+      ir('moto', true);   // se ve la moto con su orden; si abrir falla, el error queda en ESTE paso y su Siguiente lo vuelve a intentar
       return abre();
     }
     return entraOrden(ordenId, true);
@@ -902,21 +907,25 @@
         var c = C.clasifica(r.error);
         /* Duda: una respuesta perdida ANTES pudo cerrar la orden. Un reintento que contesta «ya cerrada» (o «no existe», a un mecánico que no la abrió) no es un
            error: se vuelve a mirar si la moto conserva esta orden viva; si no, se cerró. Solo un error CON código de la base que no sea ese es «no se guardó». */
-        if (E.duda && (c.hint === 'ya_cerrada' || c.hint === 'orden_no_existe')) {
-          return cargaDatos().then(function (ok) {
-            var m = ok ? E.datos.motos.filter(function (x) { return x.id === moto; })[0] : null;
-            if (ok && (!m || !m.orden_viva || m.orden_viva.id !== id)) { E.duda = false; E.fin = { perdida: true }; ir('fin', false); ponHash('inicio', false); return; }
+        if (E.duda === id && (c.hint === 'ya_cerrada' || c.hint === 'orden_no_existe')) {
+          // se pregunta por ESTA orden (no por la lista de motos, que se corta a 500): cerrada, o invisible para quien no la abrió (solo se ocultan las cerradas)
+          return llama('taller_orden_datos', { p_orden: id }).then(function (x) {
+            var o2 = x.data && x.data.orden;
+            if ((o2 && o2.estado === 'cerrada') || (x.error && C.clasifica(x.error).hint === 'orden_no_existe')) {
+              E.duda = null; E.sucio = true; E.fin = { perdida: true, numero: o2 ? o2.numero : null, resultado: o2 ? o2.resultado : null };
+              ir('fin', false); ponHash('inicio', false); return;
+            }
             noGuardado(r.error, guardaResultado);
           });
         }
-        if (esRed(r.error)) E.duda = true;
+        if (!c.hint) E.duda = id;   // sin código de la base (red, 5xx, tiempo agotado): pudo guardarse; la duda es de ESTA orden
         if (c.hint === 'faltan_para_lista') return cargaOrden(id).then(function (ok) { if (ok) ir('resultado', false); estadoPaso('error', texto(r.error)); });
         noGuardado(r.error, guardaResultado);
         return;
       }
       var x = r.data;
-      if (!x || typeof x.estado !== 'string' || typeof x.numero !== 'string') { E.duda = true; estadoPaso('error', T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'), guardaResultado); return; }
-      E.duda = false; E.fin = x; E.sucio = true;
+      if (!x || typeof x.estado !== 'string' || typeof x.numero !== 'string') { E.duda = id; estadoPaso('error', T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'), guardaResultado); return; }
+      E.duda = null; E.fin = x; E.sucio = true;
       if (x.estado === 'cerrada') E.orden.orden.estado = 'cerrada';
       ir('fin', false);
       ponHash('inicio', false);   // la orden ya no se retoma: Atrás no vuelve a ella
@@ -1120,19 +1129,22 @@
       }
       if (E.paso === 'motivo') return abre();
       if (E.paso === 'km') return guardaKm(false);
-      if (E.paso === 'fotos') return pasoGuarda('revisiones');
+      if (E.paso === 'fotos') {
+        // salir del paso cierra la pieza de fotos y con ella sus reintentos: no se sale con fotos a medio subir
+        if (E.fg && E.fg.sinSubir() > 0) { estadoPaso('aviso', T('Quedan fotos sin subir: espera a que suban o pulsa Reintentar.')); return; }
+        return pasoGuarda('revisiones');
+      }
       if (E.paso === 'revisiones') {
         if (Object.keys(E.revGuardando).length) { estadoPaso('aviso', T('Espera a que se guarden las revisiones.')); return; }
         return pasoGuarda('resultado');
       }
       if (E.paso === 'resultado') return guardaResultado();
-      if (E.paso === 'fin') { E.fin = null; E.orden = null; E.empujes = 0; return cargaDatos().then(function () { ir('inicio', false); }); }
+      if (E.paso === 'fin') { E.fin = null; E.orden = null; E.sucio = true; ir('inicio', false); return; }   // ir() relee la lista (una vez)
     }
   }
   /* Abrir una orden = sustituir la entrada «motivo» por «km» (replace, no push): el motivo queda congelado y Atrás desde km vuelve a la moto. */
   function alVolver() {
     if (E.enviando) { ponHash(E.paso, true); exito(''); error(T('Espera a que termine de guardar.')); return; }   // nada navegable mientras dura un envío
-    E.empujes = Math.max(0, E.empujes - 1);
     rutea(false);
   }
   /* Lo que manda la URL. Con #o= la orden se LEE de la base y se va a SU paso (recarga, otro móvil); con Atrás dentro de la misma orden se va al paso de la URL. */
