@@ -54,6 +54,16 @@
         if (p[1]) el.setAttribute(p[1], window.lwT(k)); else el.textContent = window.lwT(k);
       });
     });
+    // data-lwt-nodos (idiomas-pH, 12-oct): frase partida por un dato («Mostrando <b data-lw>…</b> de …»). Como i18n.js en inglés: solo los nodos de texto
+    // hijos directos, cada uno por su texto sin los blancos de los lados, y el original guardado en el nodo. Sin esto salían en español en indonesio.
+    r.querySelectorAll('[data-lwt-nodos]').forEach(function (el) {
+      for (var n = el.firstChild; n; n = n.nextSibling) {
+        if (n.nodeType !== 3) continue;
+        if (n.__lwtOrig == null) n.__lwtOrig = n.nodeValue;
+        var m = n.__lwtOrig.match(/^(\s*)([\s\S]*?)(\s*)$/);
+        if (m[2]) n.nodeValue = m[1] + window.lwT(m[2]) + m[3];
+      }
+    });
     if (document.title.indexOf(' · ') !== -1) {
       var tramos = document.title.split(' · '), ultimo = tramos.pop();
       document.title = tramos.concat(window.lwT(ultimo)).join(' · ');
