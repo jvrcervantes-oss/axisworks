@@ -72,7 +72,7 @@ a.rp-boton{text-decoration:none}
 .rp-cal-ley i{display:inline-block;width:20px;height:12px;border-radius:4px}
 .rp-cal-caja{position:relative;overflow-x:auto;border-radius:16px;max-width:100%}
 .rp [data-rp="panel"]{min-width:0;max-width:100%}
-.rp-cal{border-collapse:separate;border-spacing:0;font-size:12px;table-layout:fixed;width:100%;min-width:920px}
+.rp .rp-cal{display:table;max-width:none;border-collapse:separate;border-spacing:0;font-size:12px;table-layout:fixed;width:100%;min-width:920px}
 .rp-cal col.rp-col-moto{width:200px}
 .rp .rp-cal th{padding:8px 2px;text-align:center;font-weight:400;color:rgb(var(--rp-tinta2));border-bottom:1px solid rgb(var(--rp-filete));white-space:nowrap;overflow:hidden}
 .rp .rp-cal th .rp-dsem{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
@@ -96,7 +96,7 @@ a.rp-boton{text-decoration:none}
 .rp-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width:640px){
   .rp .rp-tabs{display:flex;flex-wrap:wrap;border-radius:20px}
-  .rp-cal{min-width:0;width:720px}
+  .rp .rp-cal{min-width:720px;width:720px}
   .rp-cal col.rp-col-moto{width:104px}
   .rp-cal col.rp-col-dia{width:44px}
   .rp .rp-acciones,.rp .rp-acciones .rp-boton{width:100%}

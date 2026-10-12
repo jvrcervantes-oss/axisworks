@@ -254,7 +254,8 @@ mira('ninguna clave repetida en ID_RP' + (' (' + ', '.join(rep_id) + ')' if rep_
 # a 390 px el calendario tiene el ancho justo de sus columnas (moto 104 + DIAS_CAL x 44): con «auto» la columna de motos se comia la caja
 _dias = re.search(r'var DIAS_CAL = (\d+);', FUENTE)
 mira('a 390 px la tabla del calendario mide moto + DIAS_CAL dias (104 + n x 44)', _dias is not None and
-     '.rp-cal{min-width:0;width:%dpx}' % (104 + 44 * int(_dias.group(1))) in FUENTE)
+     '.rp .rp-cal{min-width:%dpx;width:%dpx}' % ((104 + 44 * int(_dias.group(1)),) * 2) in FUENTE
+     and '.rp .rp-cal{display:table;max-width:none;' in FUENTE)  # shell.css (<1024 px) pone table{display:block;max-width:100%}
 
 if fallos:
     print('FALLOS (%d de %d):\n  ' % (len(fallos), casos) + '\n  '.join(fallos))

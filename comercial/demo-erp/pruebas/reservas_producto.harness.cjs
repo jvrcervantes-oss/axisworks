@@ -743,6 +743,8 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   // 9. responsive: sin scroll horizontal de pagina a 390 px en ninguna pestana ni dialogo, y captura
   for (const ancho of [1440, 390]) {
     const { p, ctx } = await abre({ ancho });
+    // la regla de tablas de la cascara (shell.css de Lawang, < 1024 px) que en la pagina real convertia el calendario en bloque al 100 %
+    await p.addStyleTag({ content: '@media (max-width:1023px){table{display:block;overflow-x:auto;max-width:100%}}' });
     const medida = async () => p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
     for (const t of ['reservas', 'calendario', 'flota', 'pagos']) {
       await tab(p, t); await p.waitForTimeout(250);
