@@ -14,6 +14,7 @@ import hashlib
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -124,12 +125,27 @@ def main():
                 return None
             txt = txt.replace(l, '')
         return re.sub(r'<!--.*?-->', '', txt, count=1, flags=re.S)
-    copia = lee(os.path.join(AQUI, 'panel_aprobaciones.html'))
+    copia = lee(os.path.join(AQUI, 'panel_aprobaciones.html')).replace('\r\n', '\n')   # saltos de línea normalizados para TODO lo de abajo
     ok('panel_aprobaciones.html lleva su bloque RENDER y las tres lineas de piel', '/*RENDER-INICIO*/' in copia and cuerpo(copia, True) is not None)
-    fuente = os.path.join(build.AGENCIA, 'erp', 'funciones', 'agente-aprobaciones', 'panel_aprobaciones.html')
-    if os.path.isfile(fuente):
-        ok('la copia es la fuente de la agencia (la que prueba panel.test.js) salvo cabecera y piel', cuerpo(copia, True) == cuerpo(lee(fuente), False))
+    RUTA_FUENTE = 'erp/funciones/agente-aprobaciones/panel_aprobaciones.html'
+    fuente = os.path.join(build.AGENCIA, *RUTA_FUENTE.split('/'))
+    # La fuente que manda es la PUBLICADA: la origin/main LOCAL de la agencia (la que dejó el último fetch; las copias de sesión comparten
+    # esa ref con el clon principal, así que avanza aunque el clon no pueda), no el disco del clon. Un clon principal atrasado (12-oct-2026:
+    # no podía avanzar por ficheros sin commitear de otros) dejaba este test en rojo para todas las sesiones con la copia ya al día.
+    # Al disco solo se cae si la agencia no es un repo con origin/main (otra máquina); si lo es y la ruta no está allí, es un FALLO.
+    hay_ref = subprocess.run(['git', '-C', build.AGENCIA, 'rev-parse', '--verify', '-q', 'origin/main'], capture_output=True).returncode == 0
+    if hay_ref:
+        publicada = subprocess.run(['git', '-C', build.AGENCIA, 'show', 'origin/main:' + RUTA_FUENTE], capture_output=True)
+        texto_fuente = publicada.stdout.decode('utf-8') if publicada.returncode == 0 else None
+        print('fuente de Aprobaciones: origin/main de la agencia' if texto_fuente is not None else 'fuente de Aprobaciones: NO está en origin/main')
+        ok('la fuente de Aprobaciones existe en origin/main de la agencia', texto_fuente is not None)
     else:
+        texto_fuente = lee(fuente) if os.path.isfile(fuente) else None
+        print('fuente de Aprobaciones: disco (%s), sin origin/main de la agencia' % fuente)
+    if texto_fuente is not None:
+        ok('la copia es la fuente de la agencia (la que prueba panel.test.js) salvo cabecera y piel',
+           cuerpo(copia, True) == cuerpo(texto_fuente.replace('\r\n', '\n'), False))
+    elif not hay_ref:
         print('aviso: no hay fuente de la agencia en %s: no se compara' % fuente)
     vista = re.sub(r'<!--.*?-->|/\*.*?\*/', '', lee(os.path.join(AQUI, 'panel_aprobaciones.html')), flags=re.S)   # sin comentarios, que nombran lo prohibido
     ok('aprobaciones: noindex, guard de super_admin y hueco de la barra', 'name="robots" content="noindex"' in vista and 'data-rol="super_admin"' in vista and vista.count('__AXW_PANEL_NAV__') == 1)
@@ -137,7 +153,6 @@ def main():
     ok('la barra compartida tiene la sección aprobaciones y build la monta', 'data-nav="aprobaciones"' in lee(os.path.join(AQUI, '_compartido', 'panel_nav.html')) and "panel_nav(aprob, 'aprobaciones')" in lee(os.path.join(AQUI, 'build.py')))
 
     # 6) publicado_de_clon con repos git de verdad: una origin/main local VIEJA no engaña (hace fetch); un HEAD adelantado para
-    import subprocess
 
     def g(cwd, *a):
         subprocess.run(['git', '-c', 'user.email=t@t', '-c', 'user.name=t'] + list(a), cwd=cwd, check=True, capture_output=True)

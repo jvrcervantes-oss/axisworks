@@ -2,7 +2,7 @@
 # build.py: poda_ficheros_sin_pantalla() / ficheros_cargados() y la lista `apagados_extra.p` de axisworks-demo (erp/instancias.json).
 # Porqué existe: una pantalla sustituida por «Pantalla no incluida» deja sus .js en /assets/ y erp/contrato_front.py lee TODO lo servido;
 # si la poda quitara de más (un fichero compartido) se rompen pantallas sin un error, y si quitara de menos el contrato sigue en rojo.
-import os, sys, tempfile
+import json, os, sys, tempfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import build
 
@@ -63,6 +63,16 @@ for fuera in ('/whatsapp-bot/', '/textos-contrato/', '/asistente/'):
 for dentro in ('/ventas/', '/facturas/', '/home/', '/ajustes/'):
     if dentro in xp_bbm:
         fallos.append('bbm: %s NO debe salir del paquete: %s' % (dentro, sorted(xp_bbm)))
+
+# TODA instancia del maestro saca /textos-contrato/ (12-oct-2026, G2 de Ajustes): en Lawang esa pantalla es su «Plantillas», y el menú
+# compartido (nav.js) no la ofrece con AXW_NUCLEO_OPERACION (`sinNucleo`). Una instancia nueva que la llevara en el paquete tendría la
+# pantalla sin entrada en el menú y llamando a RPC que su base no tiene. Lawang no se construye con este build: queda fuera.
+_reg = json.load(open(os.path.join(build.AGENCIA, 'erp', 'instancias.json'), encoding='utf-8'))['instancias']
+for _n in sorted(_reg):
+    if _n == 'lawang':
+        continue
+    if '/textos-contrato/' not in set(build.mapa_modulos(_n)['xp']):
+        fallos.append('%s: /textos-contrato/ debería salir del paquete (apagados_extra.p de erp/instancias.json): es la Plantillas de Lawang' % _n)
 
 # el texto de la pantalla de taller no miente: no dice que «Reservas de producto» no esté activo
 marca = 'AxisWorks'
