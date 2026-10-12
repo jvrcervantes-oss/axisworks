@@ -639,7 +639,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const pidio = llamadas(base, 'reservas_producto_datos').pop()[1];
     ok('el calendario pide solo la ventana de 14 dias', pidio.p_desde === mas(0) && pidio.p_hasta === mas(14), JSON.stringify(pidio));
     ok('las celdas ocupadas llevan estado y las de la unidad en taller salen marcadas «fuera»',
-       (await p.$$('[data-rp="cal-tabla"] td[data-estado="confirmada"]')).length >= 3 && (await p.$$('[data-rp="cal-tabla"] tr[data-unidad-id="u3"] td[data-fuera="1"]')).length === 14);
+       (await p.$$eval('[data-rp="cal-tabla"] td[data-estado="confirmada"]', tds => tds.reduce((s, td) => s + Number(td.getAttribute('colspan') || 1), 0))) >= 3 && (await p.$$('[data-rp="cal-tabla"] tr[data-unidad-id="u3"] td[data-fuera="1"]')).length === 14);
     ok('una reserva cancelada/pasada no pinta', (await p.$$('[data-rp="cal-tabla"] td[data-estado="devuelta"], [data-rp="cal-tabla"] td[data-estado="cancelada"]')).length === 0);
     ok('el calendario no inyecta nada', await sinInyeccion(p));
     await p.click('[data-accion="rp-cal-sig"]');

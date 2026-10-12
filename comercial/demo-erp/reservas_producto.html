@@ -11,7 +11,7 @@
      (a window.LW_ID solo si la cáscara de la instancia lo crea: bbm, owner 11-oct-2026).
      «Nueva reserva» es un ASISTENTE POR PASOS (P13, 11-oct-2026; owner: «que los operarios se equivoquen lo menos posible»): fechas en calendario → moto (la base
      cotiza cada modelo: precio, impuesto, días y unidades libres) → cliente (teléfono normalizado, búsqueda de duplicados) → entrega → resumen con UN botón. -->
-<div class="flex flex-col w-full gap-8" data-rp="raiz">
+<div class="flex flex-col w-full gap-8 rp" data-rp="raiz">
 <style>
 .rp-oculto{display:none !important}
 .rp-aviso{padding:10px 14px;border-radius:8px;background:#fff3e0;color:#8a4b00;font-size:14px;white-space:pre-line;word-break:break-word}
@@ -50,14 +50,58 @@ a.rp-boton{text-decoration:none}
 .rp-resumen{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
 .rp-resumen dt{color:rgb(var(--tema-outline, 117 120 110))}
 .rp-resumen dd{margin:0;word-break:break-word}
-.rp-cal{border-collapse:collapse;font-size:12px;min-width:760px}
-.rp-cal th,.rp-cal td{border:1px solid #ecebe5;padding:4px 6px;text-align:center;white-space:nowrap}
-.rp-cal th.rp-ini,.rp-cal td.rp-ini{text-align:left;position:sticky;left:0;background:#faf9f5;min-width:120px;z-index:1}
-.rp-cal td[data-estado="bloqueo"]{background:#fff3e0;color:#8a4b00}
-.rp-cal td[data-estado="confirmada"]{background:rgb(var(--tema-deep-lagoon, 16 76 79));color:rgb(var(--tema-on-primary, 255 255 255))}
-.rp-cal td[data-estado="en_curso"]{background:rgb(var(--tema-primary-container, 72 91 55));color:rgb(var(--tema-on-primary, 255 255 255))}
-.rp-cal td[data-fuera="1"]{background:repeating-linear-gradient(45deg,#f0eee8,#f0eee8 4px,rgb(var(--tema-surface-container-highest, 228 226 221)) 4px,rgb(var(--tema-surface-container-highest, 228 226 221)) 8px);color:rgb(var(--tema-outline, 117 120 110))}
-.rp-cal th[data-hoy="1"]{background:#e6efdd}
+/* Composición del diseño del owner «Reservas · Calendario de reservas» (p37, 13-oct-2026): cabecera sobre el fondo, pestañas en control segmentado y cada reserva
+   como UNA barra que ocupa sus días visibles (colspan). Colores por la piel; los tonos sin token con el valor del diseño de respaldo. */
+.rp{--rp-tinta:var(--tema-on-surface, 27 28 25);--rp-tinta2:var(--tema-on-surface-variant, 68 72 63);--rp-filete:var(--tema-filete, 218 220 230);
+  --rp-acento:var(--tema-burnt-earth, 46 59 235);--rp-noche:var(--tema-primary-container, 11 12 30);--rp-volt:var(--tema-on-primary, 200 240 74);
+  --rp-fondo:var(--tema-surface, 242 243 247);--rp-blanco:var(--tema-surface-container-lowest, 255 255 255)}
+.rp .rp-cabp.lw-cabecera{background:transparent!important;padding:0 0 8px!important;border-radius:0!important;box-shadow:none!important}
+.rp-ante{margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:rgb(var(--rp-acento))}
+.rp .rp-h1{margin:16px 0 0;font-weight:600;font-size:clamp(28px,2.7vw,40px);line-height:1.04;letter-spacing:-.05em;color:rgb(var(--rp-tinta));word-break:break-word}
+.rp .rp-h1>span{display:block}
+.rp .rp-h1 .rp-h1-b{font-weight:300}
+.rp-lede{margin:16px 0 0;max-width:60ch;font-size:17px;line-height:1.6;color:rgb(var(--rp-tinta2))}
+.rp .rp-acciones .rp-boton[data-primario="1"]{min-height:52px;padding:0 24px;font-size:16px;font-weight:700;background:rgb(var(--rp-noche));color:rgb(var(--rp-volt))}
+/* botón secundario: el «fantasma» del sistema (contorno de 1,5 px en la tinta), como .axw-boton en la piel; el principal y el de peligro no cambian */
+.rp .rp-boton:not([data-primario="1"]):not([data-peligro="1"]){background:rgb(var(--rp-blanco));box-shadow:inset 0 0 0 1.5px rgb(var(--rp-tinta))}
+.rp .rp-tabs{display:inline-flex;align-self:flex-start;gap:0;padding:4px;border-radius:999px;background:rgb(var(--rp-blanco));border:1px solid rgb(var(--rp-filete))}
+.rp .rp-tabs .rp-tab{min-height:40px;padding:0 18px;font-size:14px;font-weight:600;background:transparent;color:rgb(var(--rp-tinta))}
+.rp .rp-tabs .rp-tab[aria-selected="true"]{background:rgb(var(--rp-noche));color:rgb(var(--rp-volt))}
+.rp-cal-ley{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;margin:4px 0 8px;font-size:13px;color:rgb(var(--rp-tinta2))}
+.rp-cal-ley span{display:inline-flex;align-items:center;gap:8px}
+.rp-cal-ley i{display:inline-block;width:20px;height:12px;border-radius:4px}
+.rp-cal-caja{position:relative;overflow-x:auto;border-radius:16px;max-width:100%}
+.rp [data-rp="panel"]{min-width:0;max-width:100%}
+.rp-cal{border-collapse:separate;border-spacing:0;font-size:12px;table-layout:fixed;width:100%;min-width:920px}
+.rp-cal col.rp-col-moto{width:200px}
+.rp .rp-cal th{padding:8px 2px;text-align:center;font-weight:400;color:rgb(var(--rp-tinta2));border-bottom:1px solid rgb(var(--rp-filete));white-space:nowrap;overflow:hidden}
+.rp .rp-cal th .rp-dsem{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.rp .rp-cal th .rp-dnum{display:block;margin-top:2px;font-size:15px;font-weight:500;color:rgb(var(--rp-tinta))}
+.rp .rp-cal th[data-hoy="1"]{background:#E3E6FD;border-radius:10px 10px 0 0}
+.rp .rp-cal th[data-hoy="1"] .rp-dsem,.rp .rp-cal th[data-hoy="1"] .rp-dnum{color:rgb(var(--rp-acento))}
+.rp .rp-cal th.rp-ini{text-align:left;vertical-align:bottom;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.rp .rp-cal td{height:44px;padding:4px 2px;border:0;border-bottom:1px solid rgb(var(--rp-filete));text-align:left;white-space:nowrap;overflow:hidden;vertical-align:middle}
+.rp .rp-cal td.rp-ini,.rp .rp-cal th.rp-ini{position:sticky;left:0;background:rgb(var(--rp-blanco));z-index:1;padding-left:4px}
+.rp-cal td.rp-ini .rp-moto{font-size:14px;font-weight:600;color:rgb(var(--rp-tinta));overflow:hidden;text-overflow:ellipsis}
+.rp-cal td.rp-ini .rp-mat{font-size:11px;letter-spacing:.06em;color:rgb(var(--rp-tinta2));overflow:hidden;text-overflow:ellipsis}
+.rp-barra-r{display:flex;align-items:center;gap:6px;min-height:30px;padding:0 10px;border-radius:8px;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rp-barra-r .rp-num{font-weight:600}
+.rp-barra-r .rp-dias{font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.rp-cal td[data-corte~="izq"] .rp-barra-r{border-top-left-radius:0;border-bottom-left-radius:0}
+.rp-cal td[data-corte~="der"] .rp-barra-r{border-top-right-radius:0;border-bottom-right-radius:0}
+.rp-cal td[data-estado="confirmada"] .rp-barra-r,.rp-cal-ley i[data-estado="confirmada"]{background:rgb(var(--rp-acento));color:rgb(var(--rp-blanco))}
+.rp-cal td[data-estado="bloqueo"] .rp-barra-r,.rp-cal-ley i[data-estado="bloqueo"]{background:#FFE9D2;color:rgb(var(--tema-aviso, 143 70 0));border:1.5px dashed rgb(var(--tema-aviso, 143 70 0))}
+.rp-cal td[data-estado="en_curso"] .rp-barra-r,.rp-cal-ley i[data-estado="en_curso"]{background:rgb(var(--rp-noche));color:rgb(var(--rp-fondo))}
+.rp .rp-cal td[data-fuera="1"],.rp-cal-ley i[data-fuera="1"]{background:repeating-linear-gradient(135deg,rgb(var(--rp-fondo)) 0 4px,rgb(var(--rp-filete)) 4px 6px)}
+.rp-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:640px){
+  .rp .rp-tabs{display:flex;flex-wrap:wrap;border-radius:20px}
+  .rp-cal{min-width:0;width:auto}
+  .rp-cal col.rp-col-moto{width:104px}
+  .rp-cal col.rp-col-dia{width:44px}
+  .rp .rp-acciones,.rp .rp-acciones .rp-boton{width:100%}
+}
+
 .rp-as{max-width:760px;gap:0;padding:0;overflow:hidden}
 .rp-as-zona{flex:1 1 auto;min-height:0;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:14px}
 .rp-as-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -117,10 +161,11 @@ a.rp-boton{text-decoration:none}
 }
 </style>
 
-<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
-<div class="flex flex-col gap-2 max-w-3xl">
-<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Reservas de producto</h1>
-<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Las reservas de tus productos por fechas (motos, coches…): calendario por unidad, flota y tarifas, y el paso de cada reserva. Los precios los calcula siempre la base; aquí solo se piden.</p>
+<div class="lw-cabecera rp-cabp flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+<div class="flex flex-col max-w-3xl">
+<p class="rp-ante font-label-md uppercase"><span data-lwt>Seguimiento</span> · <span data-lwt>Calendario</span></p>
+<h1 class="rp-h1 font-headline-lg"><span data-lwt>Reservas de producto</span><span class="rp-h1-b" data-lwt>Cada moto, día a día.</span></h1>
+<p class="rp-lede" data-lwt>Las reservas de tus productos por fechas (motos, coches…): calendario por unidad, flota y tarifas, y el paso de cada reserva. Los precios los calcula siempre la base; aquí solo se piden.</p>
 </div>
 <div class="rp-acciones"><button class="rp-boton" type="button" data-accion="rp-nueva" data-primario="1"><span data-lwt>Nueva reserva</span></button></div>
 </div>
@@ -157,9 +202,11 @@ a.rp-boton{text-decoration:none}
 <button class="rp-boton" type="button" data-accion="rp-cal-sig"><span data-lwt>Semana siguiente</span></button>
 <button class="rp-boton" type="button" data-accion="rp-cal-actualizar"><span data-lwt>Actualizar</span></button>
 </div>
+<div class="rp-cal-ley" aria-hidden="true"><span><i data-estado="confirmada"></i><span data-lwt>Confirmada</span></span><span><i data-estado="bloqueo"></i><span data-lwt>Bloqueo</span></span><span><i data-estado="en_curso"></i><span data-lwt>En curso</span></span><span><i data-fuera="1"></i><span data-lwt>Taller o baja</span></span></div>
 <div class="rp-nota" data-lwt>Cada fila es una unidad. Un día cuenta como ocupado desde la recogida hasta el día anterior a la devolución. Las unidades en taller o de baja salen rayadas: no se pueden reservar.</div>
 <div data-rp="cal-estado" class="rp-vacio"></div>
-<div class="rp-tabla-caja"><table class="rp-cal" data-rp="cal-tabla"></table></div>
+<p class="rp-aviso rp-oculto" data-rp="cal-aviso" role="status"></p>
+<div class="rp-cal-caja"><table class="rp-cal" data-rp="cal-tabla"></table></div>
 </div>
 
 <div data-rp="panel" data-tab="flota" role="tabpanel" class="rp-oculto">
@@ -188,6 +235,8 @@ a.rp-boton{text-decoration:none}
   'use strict';
   var EN_RP = {
     'Reservas de producto': 'Product bookings',
+    'Seguimiento': 'Pipeline', 'Cada moto, día a día.': 'Every bike, day by day.', 'Taller o baja': 'Workshop or retired', '%n días': '%n days', '1 día': '1 day',
+    'Dos reservas vivas se pisan en la misma moto: el calendario enseña la primera entera y la otra desde donde acaba. Míralas en la lista.': 'Two live bookings overlap on the same bike: the calendar shows the first in full and the other from where it ends. Check them in the list.',
     'Las reservas de tus productos por fechas (motos, coches…): calendario por unidad, flota y tarifas, y el paso de cada reserva. Los precios los calcula siempre la base; aquí solo se piden.': 'Bookings of your products by date (motorbikes, cars…): calendar per unit, fleet and rates, and each booking’s status. Prices are always worked out by the database; here they are only requested.',
     'Nueva reserva': 'New booking', 'Reservas': 'Bookings', 'Calendario': 'Calendar', 'Flota y tarifas': 'Fleet and rates', 'Editar flota': 'Edit fleet', 'Pagos por revisar': 'Payments to review',
     'Estado': 'Status', 'Todos': 'All', 'Bloqueo': 'Hold', 'Confirmada': 'Confirmed', 'En curso': 'In progress', 'Devuelta': 'Returned', 'Cancelada': 'Cancelled', 'Caducada': 'Expired',
@@ -314,6 +363,8 @@ a.rp-boton{text-decoration:none}
      SOLO si existe (lo crea la cáscara de la instancia que lleva id; en las instancias sin indonesio no existe y nada cambia). Escrito como se habla en un alquiler de motos en Bali. */
   var ID_RP = {
     'Reservas de producto': 'Booking sewa motor',
+    'Seguimiento': 'Tindak lanjut', 'Cada moto, día a día.': 'Setiap motor, hari demi hari.', 'Taller o baja': 'Bengkel atau nonaktif', '%n días': '%n hari', '1 día': '1 hari',
+    'Dos reservas vivas se pisan en la misma moto: el calendario enseña la primera entera y la otra desde donde acaba. Míralas en la lista.': 'Dua booking aktif bertumpuk pada motor yang sama: kalender menampilkan yang pertama penuh dan yang lain mulai dari akhir yang pertama. Cek di daftar.',
     'Las reservas de tus productos por fechas (motos, coches…): calendario por unidad, flota y tarifas, y el paso de cada reserva. Los precios los calcula siempre la base; aquí solo se piden.': 'Booking sewa per tanggal (motor, mobil…): kalender per unit, armada dan tarif, dan status tiap booking. Harga selalu dihitung oleh sistem; di sini hanya diminta.',
     'Nueva reserva': 'Booking baru', 'Reservas': 'Booking', 'Calendario': 'Kalender', 'Flota y tarifas': 'Armada dan tarif', 'Editar flota': 'Ubah armada', 'Pagos por revisar': 'Pembayaran perlu dicek',
     'Estado': 'Status', 'Todos': 'Semua', 'Bloqueo': 'Ditahan', 'Confirmada': 'Dikonfirmasi', 'En curso': 'Sedang disewa', 'Devuelta': 'Sudah kembali', 'Cancelada': 'Dibatalkan', 'Caducada': 'Kedaluwarsa',
@@ -1498,34 +1549,73 @@ a.rp-boton{text-decoration:none}
     var unidades = [];
     (E.flota || []).forEach(function (p) { p.unidades.forEach(function (u) { unidades.push({ p: p, u: u }); }); });
     var vivas = reservas.filter(function (x) { return x.estado === 'bloqueo' || x.estado === 'confirmada' || x.estado === 'en_curso'; });
+    var avisoCal = $v('cal-aviso');
+    avisoCal.textContent = ''; oculta(avisoCal, true);
     if (!unidades.length) { $v('cal-estado').textContent = T('No hay unidades que mostrar en el calendario.'); vacia($v('cal-tabla')); return; }
     var dias = [];
     for (var i = 0; i < DIAS_CAL; i++) dias.push(sumaDias(ini, i));
+    var fin = sumaDias(ini, DIAS_CAL);
     var t = vacia($v('cal-tabla'));
-    var cab = h('tr', null, [h('th', { class: 'rp-ini', text: T('Unidad') })]);
-    dias.forEach(function (d) { cab.appendChild(h('th', { 'data-hoy': d === hoy() ? '1' : null, text: diaDe(d).toLocaleDateString(locale(), { day: '2-digit', month: 'short' }) })); });
+    var cols = h('colgroup', null, [h('col', { class: 'rp-col-moto' })]);
+    dias.forEach(function () { cols.appendChild(h('col', { class: 'rp-col-dia' })); });
+    t.appendChild(cols);
+    var cab = h('tr', null, [h('th', { class: 'rp-ini font-label-md uppercase', text: T('Moto') })]);
+    dias.forEach(function (d) {
+      var f = diaDe(d);
+      cab.appendChild(h('th', { 'data-hoy': d === hoy() ? '1' : null }, [h('span', { class: 'rp-dsem', text: f.toLocaleDateString(locale(), { weekday: 'short' }).replace(/\.$/, '') }),
+        h('span', { class: 'rp-dnum', text: String(f.getDate()) })]));
+    });
     t.appendChild(h('thead', null, [cab]));
     var tb = h('tbody');
+    var pisadas = 0;
     unidades.forEach(function (it) {
       var tr = h('tr', { 'data-unidad-id': it.u.id });
-      tr.appendChild(h('td', { class: 'rp-ini' }, [h('div', { text: it.u.identificador }), h('div', { class: 'rp-vacio', text: it.p.nombre })]));
-      dias.forEach(function (d) {
-        var ocupada = vivas.filter(function (x) { return x.unidad_id === it.u.id && x.desde <= d && d < x.hasta; })[0];
+      tr.appendChild(h('td', { class: 'rp-ini' }, [h('div', { class: 'rp-moto', text: it.p.nombre }), h('div', { class: 'rp-mat font-label-md uppercase', text: it.u.identificador })]));
+      // las reservas vivas de ESTA moto, por fecha de recogida y recortadas a la ventana [ini, fin): mismo criterio de ocupación de siempre (desde ≤ d < hasta).
+      // Si dos se pisan (la base no debería dejarlo), la segunda empieza donde acaba la primera y se avisa: nunca se pintan dos barras en el mismo día.
+      var suyas = vivas.filter(function (x) { return x.unidad_id === it.u.id && x.desde < fin && x.hasta > ini; })
+        .sort(function (a, b) { return a.desde < b.desde ? -1 : a.desde > b.desde ? 1 : 0; });
+      var tramos = [], hasta = ini;
+      suyas.forEach(function (x) {
+        var a = x.desde > hasta ? x.desde : hasta, b = x.hasta < fin ? x.hasta : fin;
+        if (tramos.length && x.desde < hasta) pisadas++;
+        if (a >= b) return;
+        tramos.push({ x: x, a: a, b: b });
+        hasta = b;
+      });
+      var k = 0;
+      while (k < dias.length) {
+        var d = dias[k];
+        var tr0 = tramos.filter(function (s) { return s.a === d; })[0];
+        if (tr0) {
+          var n = 0;
+          while (k + n < dias.length && dias[k + n] < tr0.b) n++;
+          var x = tr0.x;
+          var corte = [x.desde < tr0.a ? 'izq' : null, x.hasta > tr0.b ? 'der' : null].filter(Boolean).join(' ');
+          var est = ESTADO[x.estado] || [x.estado];
+          var nd = Number(x.dias);
+          var diasTxt = isFinite(nd) && nd > 0 ? (nd === 1 ? T('1 día') : T('%n días').replace('%n', String(nd))) : '';
+          tr.appendChild(h('td', { colspan: n > 1 ? String(n) : null, 'data-estado': x.estado, 'data-reserva-id': x.id, 'data-corte': corte || null, title: (x.numero || '') + ' · ' + quienEs(x) }, [
+            h('div', { class: 'rp-barra-r' }, [h('span', { class: 'rp-num font-label-md uppercase', text: x.numero || '' }), diasTxt ? h('span', { class: 'rp-dias', text: diasTxt }) : null,
+              h('span', { class: 'rp-sr', text: T(est[0]) })])]));
+          k += n;
+          continue;
+        }
         var td = h('td');
-        if (ocupada) {
-          td.setAttribute('data-estado', ocupada.estado);
-          td.setAttribute('title', (ocupada.numero || '') + ' · ' + quienEs(ocupada));
-          if (ocupada.desde === d || d === ini) td.textContent = ocupada.numero || '';
-        } else if (it.u.estado !== 'disponible') {
+        if (it.u.estado !== 'disponible') {
           td.setAttribute('data-fuera', '1');
           td.setAttribute('title', T((UNIDAD[it.u.estado] || [it.u.estado])[0]));
         }
         tr.appendChild(td);
-      });
+        k++;
+      }
       tb.appendChild(tr);
     });
     t.appendChild(tb);
-    if (recortado) aviso(T('El calendario está recortado: hay más reservas en estas fechas de las que caben. Acorta el rango o mira la lista.'));
+    var avisos = [];
+    if (recortado) avisos.push(T('El calendario está recortado: hay más reservas en estas fechas de las que caben. Acorta el rango o mira la lista.'));
+    if (pisadas) avisos.push(T('Dos reservas vivas se pisan en la misma moto: el calendario enseña la primera entera y la otra desde donde acaba. Míralas en la lista.'));
+    avisoCal.textContent = avisos.join('\n'); oculta(avisoCal, !avisos.length);
   }
 
   /* ───────────────────────────── Flota y tarifas (solo lectura) ───────────────────────────── */

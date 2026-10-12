@@ -75,7 +75,7 @@ her = lee(d, 'contracts/assets/herramientas.js') if r == 'pasa' else ''
 mira('la pagina lleva la puerta de la herramienta reservas-producto y ya no la del asistente', 'data-herramienta="reservas-producto"' in pagina and 'data-herramienta="asistente"' not in pagina)
 mira('el titulo es Reservas de producto', '<title data-lw-titulo>Reservas de producto</title>' in pagina)
 mira('la pantalla de Lawang (asistente) no se mezcla en la nueva', 'asistente-peticiones' not in pagina and 'Telegram' not in pagina)
-mira('el marcado de la fuente entra una vez y el script una vez', pagina.count('<div class="flex flex-col w-full gap-8" data-rp="raiz">') == 1 and pagina.count('var EN_RP = {') == 1)
+mira('el marcado de la fuente entra una vez y el script una vez', pagina.count('<div class="flex flex-col w-full gap-8 rp" data-rp="raiz">') == 1 and pagina.count('var EN_RP = {') == 1)
 m = re.findall(r'<script>\n(.*?)\n</script>\n</body></html>', pagina, flags=re.S)
 chk = compila(m[-1], 'v.js') if m else None
 mira('el script de la pagina resultante compila (node --check)' + (': ' + chk.stderr.strip()[:300] if chk is not None and chk.returncode else ''), bool(m) and chk.returncode == 0)
