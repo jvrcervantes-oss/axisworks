@@ -9,7 +9,9 @@
 // goBack() y recarga a mitad (retoma en el paso de la BASE), JPEG grande con GPS (lo subido es webp o jpeg, <= 600 KB, sin Exif) y la rama JPEG (Safari), 429,
 // XSS en matrícula, modelo, revisión y nota, retomar desde otro usuario, orden_vieja_viva, setup sin hacer y el hint taller_sin_configurar; y (12-oct, revisor de la pantalla)
 // retomar órdenes vivas con el Taller sin configurar, la vigencia por casilla (vieja en camino, vieja confirmada con respuesta tardía, vieja sin enviar, dos en la
-// cola de una carga anterior), el tope de 10 a medio subir que no se libera solo con Descartar, hints sin clasificar (cuerpo, 404) y la limpieza de la cola.
+// cola de una carga anterior), el tope de 10 a medio subir que no se libera solo con Descartar, hints sin clasificar (cuerpo, 404) y la limpieza de la cola;
+// y (12-oct, 2ª vuelta del revisor) el 429 con Reintentar que sube antes del temporizador (no reenvía), la captura vieja de la cola en una casilla ya
+// confirmada (no sube sola: Descartar o Reintentar), el móvil compartido (lo de otro usuario se borra y no se sube) y la nueva que espera a la vieja en camino.
 // NO prueba: la cámara de verdad ni un móvil de verdad (los hará una persona), ni Postgres (eso es erp/pruebas/f8_taller_pasos.sql), ni la edge real (Deno).
 // En esta PC: PLAYWRIGHT_CORE=C:/Users/jvrce/AppData/Roaming/npm/node_modules/@playwright/mcp/node_modules/playwright-core
 const fs = require('fs');
@@ -53,6 +55,7 @@ window.lwIdiomaAplicar = function (r) { (r || document).querySelectorAll('[data-
 window.LW_SB_KEY = 'clave-publicable';
 window.lwEdge = function (n) { return '${ORIGEN}/functions/v1/' + n; };
 var TOK = 'tok-' + ${JSON.stringify(usuario)};
+var SESION = { access_token: TOK, user: { id: 'uid-' + ${JSON.stringify(usuario)} } };   // el «sub» de la sesión: la cola de fotos lo guarda por entrada
 var sb = {
   rpc: function (n, a) {
     return fetch('${ORIGEN}/rest/v1/rpc/' + n, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + TOK }, body: JSON.stringify(a || {}) })
@@ -60,10 +63,10 @@ var sb = {
             function (e) { return { data: null, error: { message: 'TypeError: Failed to fetch', details: String(e), hint: '', code: '' } }; });
   },
   from: function () { window.__errores.push('from'); throw new Error('el navegador no toca la base'); },
-  auth: { getSession: function () { return Promise.resolve({ data: { session: { access_token: TOK } } }); } }
+  auth: { getSession: function () { return Promise.resolve({ data: { session: SESION } }); } }
 };
 window.lwDatos = function (n, a) { return sb.rpc(n, a); };
-window.LW_AUTH = Promise.resolve({ sb: sb, ficha: ${JSON.stringify(ficha)} });
+window.LW_AUTH = Promise.resolve({ sb: sb, session: SESION, ficha: ${JSON.stringify(ficha)} });
 document.addEventListener('DOMContentLoaded', function () { document.body.classList.add('lw-listo'); });   // lo que pone nav.js al terminar: sin ella shell.css esconde <main> 12 s`;
 }
 
@@ -254,7 +257,7 @@ async function edge(B, req) {
   const t = tipoBytes(p.fichero);
   B.subidas.push({ ranura: p.ranura, tipo: t, bytes: p.fichero.length, clave: p.clave, u });
   if (B.fuerza) { const r = B.fuerza; B.fuerza = null; return r; }   // una respuesta impuesta (hint sin clasificar, 404 sin hint…)
-  if (B.tope429 > 0) { B.tope429--; return { st: 429, j: { ok: false, hint: 'tope_minuto', reintenta_en: 1 } }; }
+  if (B.tope429 > 0) { B.tope429--; return { st: 429, j: { ok: false, hint: 'tope_minuto', reintenta_en: B.reintentaEn || 1 } }; }
   // 1. bytes (antes de reservar la fila, como la edge real)
   if (p.fichero.length > 614400) return { st: 413, j: { ok: false, hint: 'fichero_grande' } };
   if (/exif/.test(t)) return { st: 415, j: { ok: false, hint: 'fichero_exif' } };
@@ -335,14 +338,14 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
   // la cola de fotos del móvil (IndexedDB), leída y sembrada desde la página: lo que mide la limpieza, el Descartar y la vigencia por casilla
   const colaIdb = p => p.evaluate(() => new Promise(ok => { const r = indexedDB.open('axw-fotos-cola', 1);
     r.onupgradeneeded = () => { const s = r.result.createObjectStore('cola', { keyPath: 'clave' }); s.createIndex('orden', 'orden'); };
-    r.onsuccess = () => { const q = r.result.transaction('cola').objectStore('cola').getAll(); q.onsuccess = () => { const l = q.result.map(e => ({ clave: e.clave, orden: e.orden, ranura: e.ranura, creado: e.creado })); r.result.close(); ok(l); }; };
+    r.onsuccess = () => { const q = r.result.transaction('cola').objectStore('cola').getAll(); q.onsuccess = () => { const l = q.result.map(e => ({ clave: e.clave, orden: e.orden, ranura: e.ranura, creado: e.creado, usuario: e.usuario })); r.result.close(); ok(l); }; };
     r.onerror = () => ok(null); }));
   const ponCola = (p, entradas) => p.evaluate(es => new Promise(ok => { const r = indexedDB.open('axw-fotos-cola', 1);
     r.onupgradeneeded = () => { const s = r.result.createObjectStore('cola', { keyPath: 'clave' }); s.createIndex('orden', 'orden'); };
     r.onsuccess = () => { const tx = r.result.transaction('cola', 'readwrite'), s = tx.objectStore('cola');
       es.forEach(e => { const bin = atob(e.b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
-        s.put({ clave: e.clave, orden: e.orden, ranura: e.ranura, creado: e.creado, blob: new Blob([u], { type: 'image/jpeg' }) }); });
-      tx.oncomplete = () => { r.result.close(); ok(true); }; }; }), entradas);
+        s.put({ clave: e.clave, orden: e.orden, ranura: e.ranura, creado: e.creado, usuario: e.usuario, blob: new Blob([u], { type: 'image/jpeg' }) }); });
+      tx.oncomplete = () => { r.result.close(); ok(true); }; }; }), entradas.map(e => Object.assign({ usuario: 'uid-mec1' }, e)));   // por defecto, de mec1 (el usuario de abre())
   const esperaNode = async (fn, ms = 9000) => { const t0 = Date.now(); while (!fn()) { if (Date.now() - t0 > ms) throw new Error('espera en Node agotada'); await duerme(40); } };
   const casillaFija = (p, r) => p.$eval(`[data-accion="fg-captura"][data-ranura="${r}"]`, b => ({ estado: b.getAttribute('data-estado'), texto: b.textContent, src: (b.querySelector('img.fg-previa') || {}).src || null }));
   const fotoSubida = (p, ranura) => espera(p, r => { const b = document.querySelector(`[data-accion="fg-captura"][data-ranura="${r}"]`); return b && b.getAttribute('data-estado') === 'subida'; }, ranura, 15000);
@@ -457,6 +460,19 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await duerme(1600);
     const de = B.subidas.filter(x => x.ranura === 'derecha'), vig = B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'derecha' && f.estado === 'confirmada');
     ok('repetir una casilla durante la espera del 429: la captura vieja NO se sube después y la vigente es la nueva', de.length === 2 && de[0].clave !== de[1].clave && vig.length === 1 && vig[0].clave === de[1].clave, JSON.stringify(de.map(x => x.clave.slice(0, 8))));
+    // ── 429 y el mecánico pulsa Reintentar durante la cuenta atrás y sube bien: el temporizador, al saltar, NO la reenvía (revisor 12-oct, 2ª vuelta) ──
+    B.tope429 = 1; B.reintentaEn = 3;
+    const nF429 = B.subidas.length;
+    await foto(p, 'frente', PEQ2);
+    await espera(p, () => document.querySelector('[data-ranura="frente"] .fg-estado').textContent.includes('detik'));
+    await p.click('[data-accion="fg-reintentar"]');
+    await fotoSubida(p, 'frente');
+    await duerme(3600);   // más que reintenta_en
+    B.reintentaEn = null;
+    const f429 = B.subidas.slice(nF429).filter(x => x.ranura === 'frente');
+    ok('429 + Reintentar con éxito antes de reintenta_en: esa clave tiene exactamente 2 subidas y ninguna pendiente (el temporizador no la reenvía)',
+       f429.length === 2 && f429[0].clave === f429[1].clave && (await casillaFija(p, 'frente')).estado === 'subida'
+       && (await p.$eval('[data-fg="pendientes"]', e => e.classList.contains('axw-oculto'))), JSON.stringify(f429.map(x => x.clave.slice(-6))));
     const siembra = n => { const l = []; for (let i = 0; i < n; i++) l.push({ id: uuid(), orden_id: orden.id, ranura: 'dano', clave: uuid(), estado: 'pendiente', semilla: true }); B.fotos.push(...l); return l; };
     let semillas = siembra(10);   // 10 a medio subir (otro móvil): el tope de la base, que llega como 409
     await foto(p, 'cuentakm', PEQ);
@@ -483,8 +499,11 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await esperaNode(() => B.fotos.some(f => f.orden_id === orden.id && f.ranura === 'izquierda' && f.estado === 'confirmada' && f.clave !== rI.clave && f.clave !== iz[0].clave), 12000);
     await duerme(2800);   // llega la respuesta de la vieja: foto_caducada
     const cI = await casillaFija(p, 'izquierda'), vigI = B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'izquierda' && f.estado === 'confirmada');
-    ok('repetir con la vieja en camino: la base la deja caducada, su foto_caducada NO pinta error y la vigente es la nueva',
-       B.fotos.find(f => f.clave === rI.clave).estado === 'caducada' && vigI.length === 1 && vigI[0].clave !== rI.clave && cI.estado === 'subida' && !/ditolak/.test(cI.texto), JSON.stringify(cI));
+    // la nueva ESPERA a que termine la subida en curso de la vieja (revisor 12-oct, 2ª vuelta): la vieja llega a confirmarse y la nueva la sustituye después.
+    // Sin esa espera la nueva se preparaba mientras la vieja seguía en la edge, y la vieja acababa «caducada» (o, si llegaba tarde, caducaba a la nueva).
+    ok('repetir con la vieja en camino: la nueva espera a la vieja (que queda «sustituida», no «caducada»), sin error pintado, y la vigente es la nueva',
+       B.fotos.find(f => f.clave === rI.clave).estado === 'sustituida' && vigI.length === 1 && vigI[0].clave !== rI.clave && cI.estado === 'subida' && !/ditolak/.test(cI.texto),
+       JSON.stringify([B.fotos.find(f => f.clave === rI.clave).estado, cI]));
     // ── la vieja la confirma la base ANTES, pero su respuesta llega tarde: no pisa a la nueva en pantalla ──
     ctx.__sinRed = true; await ctx.setOffline(true);
     await foto(p, 'derecha', PEQ);
@@ -517,15 +536,30 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     const subAtras = B.subidas.filter(x => x.ranura === 'atras').slice(nAtras);
     ok('repetir con la vieja sin enviar: la vieja sale de la cola al quedar lista la nueva y SOLO sube la nueva',
        colaAtras.length === 1 && subAtras.length === 1 && subAtras[0].clave === colaAtras[0].clave && B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'atras' && f.estado === 'confirmada')[0].clave === colaAtras[0].clave, JSON.stringify([colaAtras, subAtras.map(x => x.clave)]));
-    // ── dos capturas de la misma casilla en la cola de una carga anterior (nunca enviadas): al abrir solo se manda la más nueva ──
-    const b64 = PEQ.buffer.toString('base64'), kVieja = uuid().replace(/^b/, 'c'), kNueva = uuid().replace(/^b/, 'd');
-    await ponCola(p, [{ clave: kVieja, orden: orden.id, ranura: 'frente', creado: Date.now() - 60000, b64 }, { clave: kNueva, orden: orden.id, ranura: 'frente', creado: Date.now() - 30000, b64 }]);
-    const nFrente = B.subidas.filter(x => x.ranura === 'frente').length;
+    // ── capturas en la cola de una carga anterior (nunca enviadas) para casillas que YA tienen foto confirmada en la base (otra pestaña, otro móvil):
+    //    dos de «frente» (solo cuenta la más nueva) y una de «atrás». Al abrir NO sube nada: pendientes con Reintentar/Descartar y un aviso.
+    //    Descartar quita la de «atrás» (vuelve a la confirmada); Reintentar sube la más nueva de «frente» (revisor 12-oct, 2ª vuelta) ──
+    const b64 = PEQ.buffer.toString('base64'), kVieja = uuid().replace(/^b/, 'c'), kNueva = uuid().replace(/^b/, 'd'), kAnt = uuid().replace(/^b/, 'c');
+    await ponCola(p, [{ clave: kVieja, orden: orden.id, ranura: 'frente', creado: Date.now() - 60000, b64 }, { clave: kNueva, orden: orden.id, ranura: 'frente', creado: Date.now() - 30000, b64 },
+                      { clave: kAnt, orden: orden.id, ranura: 'atras', creado: Date.now() - 20000, b64 }]);
+    const nFrente = B.subidas.filter(x => x.ranura === 'frente').length, nSub0 = B.subidas.length;
     await p.reload(); await enPaso(p, 'fotos');
+    await espera(p, () => !!document.querySelector('[data-fg="anterior"]')); await duerme(1200);
+    const cFa = await casillaFija(p, 'frente'), cAa = await casillaFija(p, 'atras'), colaA = (await colaIdb(p)).map(e => e.clave);
+    ok('al abrir con capturas viejas de casillas ya confirmadas: no sube NADA, se ven pendientes con el aviso (Coba lagi / Buang) y la más vieja de «frente» sale de la cola',
+       B.subidas.length === nSub0 && cFa.estado === 'pendiente' && cAa.estado === 'pendiente' && /Coba lagi/.test(await p.$eval('[data-fg="anterior"]', e => e.textContent))
+       && !colaA.includes(kVieja) && colaA.includes(kNueva) && colaA.includes(kAnt), JSON.stringify([B.subidas.length - nSub0, cFa.estado, cAa.estado, colaA]));
+    await sig(p); await espera(p, () => /Buang/.test(document.querySelector('[data-tl="paso-estado"]').textContent));
+    ok('con una foto anterior sin decidir, Siguiente no sale del paso', (await paso(p)) === 'fotos');
+    await p.click('.fg-celda[data-ranura="atras"] [data-accion="fg-descartar"]');
+    await espera(p, () => document.querySelector('[data-accion="fg-captura"][data-ranura="atras"]').getAttribute('data-estado') === 'subida');
+    ok('Descartar la anterior: sale de la cola, la casilla vuelve a la foto confirmada y no se sube nada', B.subidas.length === nSub0 && !(await colaIdb(p)).some(e => e.clave === kAnt));
+    await p.click('[data-accion="fg-reintentar"]');
     await esperaNode(() => B.fotos.some(f => f.clave === kNueva && f.estado === 'confirmada'), 12000); await duerme(600);
     const subF = B.subidas.filter(x => x.ranura === 'frente').slice(nFrente);
-    ok('al abrir con dos capturas de una casilla en la cola: solo sube la más nueva y la vieja sale de la cola',
-       subF.length === 1 && subF[0].clave === kNueva && !(await colaIdb(p)).some(e => e.clave === kVieja), JSON.stringify(subF.map(x => x.clave)));
+    ok('Reintentar la anterior: sube SOLO la más nueva de «frente» (la vieja y la descartada nunca) y queda vigente',
+       subF.length === 1 && subF[0].clave === kNueva && B.subidas.length === nSub0 + 1 && !(await colaIdb(p)).some(e => e.clave === kVieja || e.clave === kNueva)
+       && !(await p.$('[data-fg="anterior"]')), JSON.stringify(subF.map(x => x.clave)));
     ok('fotos: el aviso dice que están las 5', (await p.$eval('[data-tl="fotos-info"]', e => e.textContent)).includes('5 foto wajib sudah lengkap'));
     ctx.__sinRed = true; await ctx.setOffline(true);
     await foto(p, 'dano', PEQ);
@@ -746,6 +780,22 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.goto(ORIGEN + '/intranet/v4/taller/'); await espera(p, () => !!document.querySelector(`[data-tl="vivas"] [data-orden-id]`));
     await p.click(`[data-accion="tl-continuar"][data-orden-id="${oAb.id}"]`); await enPaso(p, 'revisiones');
     ok('Taller sin configurar + orden abierta → se retoma en su paso, sin abrir nada', llamadas(B2, 'taller_orden_abre').length === 1);
+    // ── móvil compartido (revisor 12-oct, 2ª vuelta): la cola guarda quién capturó; lo de OTRO usuario se borra al arrancar y la pieza nunca lo sube ──
+    const oFo = { id: uuid(), numero: 'OT-00012', unidad_id: U.m2, estado: 'abierta', paso: 'fotos', km: 50, gasolina: 2, motivo_tipo: 'revision', resultado: null, abierta_por: 'mec1', abierta_en: 12, adopto_unidad: false };
+    B2.ordenes.push(oFo);
+    const b64U = PEQ.buffer.toString('base64'), kOtro = uuid().replace(/^b/, 'f'), kMio = uuid().replace(/^b/, 'f'), kOtro2 = uuid().replace(/^b/, 'f');
+    await ponCola(p, [{ clave: kOtro, orden: oFo.id, ranura: 'frente', creado: Date.now() - 5000, b64: b64U, usuario: 'uid-mec2' }, { clave: kMio, orden: oFo.id, ranura: 'atras', creado: Date.now() - 4000, b64: b64U }]);
+    await p.goto(ORIGEN + '/intranet/v4/taller/'); await espera(p, () => !!document.querySelector(`[data-tl="vivas"] [data-orden-id]`)); await duerme(400);
+    const colaU = (await colaIdb(p)).map(e => e.clave);
+    ok('móvil compartido: al arrancar se borra de la cola la captura de OTRO usuario y se queda la propia', !colaU.includes(kOtro) && colaU.includes(kMio), JSON.stringify(colaU));
+    await ponCola(p, [{ clave: kOtro2, orden: oFo.id, ranura: 'izquierda', creado: Date.now() - 3000, b64: b64U, usuario: 'uid-mec2' }]);   // llega DESPUÉS de la limpieza
+    const nU0 = B2.subidas.length;
+    await p.click(`[data-accion="tl-continuar"][data-orden-id="${oFo.id}"]`); await enPaso(p, 'fotos');
+    await esperaNode(() => B2.fotos.some(f => f.clave === kMio && f.estado === 'confirmada'), 12000); await duerme(800);
+    const subU = B2.subidas.slice(nU0);
+    ok('móvil compartido: la pieza sube sola la propia (casilla sin foto confirmada) con esta sesión y nunca la de otro usuario aunque siga en la cola',
+       subU.length === 1 && subU[0].clave === kMio && subU[0].u === 'mec1' && !B2.subidas.some(x => x.clave === kOtro || x.clave === kOtro2)
+       && (await casillaFija(p, 'izquierda')).estado === 'vacia' && (await casillaFija(p, 'atras')).estado === 'subida', JSON.stringify(subU.map(x => [x.clave.slice(-6), x.u])));
     await sinTraducir(p, 'sin configurar id');
     await ctx.close();
 

@@ -784,10 +784,11 @@
     var caja = h('div', { class: 'tl-fg', 'data-tl': 'fotos' });
     c.appendChild(info); c.appendChild(caja);
     E.fg = axwFotosGuiadas({ T: T, h: h, caja: caja, orden: E.orden.orden.id, fotos: E.orden.fotos, max_dano: 15, apikey: window.LW_SB_KEY,
-      edge: function () { return window.lwEdge('taller-fotos'); }, token: token,
+      edge: function () { return window.lwEdge('taller-fotos'); }, token: token, usuario: E.yo,
       alCambiar: function (x) {
+        // tope lleno o una foto anterior del móvil que espera decisión: no se sube sola, el mecánico elige Reintentar o Descartar
         info.textContent = (x.faltan ? TT('Faltan {n} de las 5 fijas.', { n: x.faltan }) : T('Las 5 fijas están hechas.'))
-          + (x.pendientes ? ' ' + (x.tope ? T('Quedan fotos sin subir: pulsa Reintentar o Descartar en las que no suban.') : T('Hay fotos sin subir: se suben solas al volver la red.')) : '');
+          + (x.pendientes ? ' ' + (x.tope || x.anterior ? T('Quedan fotos sin subir: pulsa Reintentar o Descartar en las que no suban.') : T('Hay fotos sin subir: se suben solas al volver la red.')) : '');
       } });
     siguiente('Siguiente', false);
   }
@@ -1181,6 +1182,8 @@
   }
   function init(aut) {
     SB = aut.sb; E.ficha = aut.ficha || {};
+    // quién usa el móvil (el `sub` de la sesión): la cola de fotos solo sube lo que capturó esta misma persona; sin id no se retoma ni se borra nada por usuario
+    E.yo = aut.session && aut.session.user && typeof aut.session.user.id === 'string' ? aut.session.user.id : '';
     var rol = admin(E.ficha);
     E.admin = !!rol;
     // solo decide qué se OFRECE: la base vuelve a exigir el permiso en cada llamada
@@ -1192,7 +1195,9 @@
     window.addEventListener('popstate', alVolver);
     cargaDatos().then(function (ok) {
       // la cola de fotos del móvil se limpia al arrancar (48 h y órdenes que ya no están vivas), SOLO con la lista de vivas leída entera: sin ella no se borra por orden
-      if (ok && E.datos) axwFotosLimpiaCola({ ambito: 'taller', vivas: E.datos.vivas.length < 500 ? E.datos.vivas.map(function (o) { return o.id; }) : null });
+      // y siempre las de otro usuario del mismo móvil (eso no depende de haber leído la lista)
+      if (ok && E.datos) axwFotosLimpiaCola({ ambito: 'taller', usuario: E.yo, vivas: E.datos.vivas.length < 500 ? E.datos.vivas.map(function (o) { return o.id; }) : null });
+      else axwFotosLimpiaCola({ ambito: 'taller', usuario: E.yo, vivas: null });
       rutea(true);
     });
   }

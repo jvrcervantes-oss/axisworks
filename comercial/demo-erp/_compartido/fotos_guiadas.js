@@ -27,10 +27,15 @@
    orden (en memoria y en la cola de IndexedDB, también las que nunca llegaron al servidor y las que se están subiendo): ninguna se vuelve a mandar, y la respuesta
    tardía de una que ya iba en camino no cuenta (ni su éxito ni su foto_caducada; la base, al preparar la nueva, deja caducada la pendiente vieja).
    Descartar: una foto pendiente que no sube (o una de daño rechazada) se quita de la cola local con su botón; la fila de la base, si llegó a crearse, caduca sola a las
-   24 h. Así el paso nunca queda sin salida por una foto que no va a subir. La pantalla limpia la cola al arrancar con axwFotosLimpiaCola (48 h y órdenes no vivas).
+   24 h. Así el paso nunca queda sin salida por una foto que no va a subir. La pantalla limpia la cola al arrancar con axwFotosLimpiaCola (48 h, órdenes no vivas
+   y entradas de otro usuario).
+   Segunda vuelta del revisor (12-oct): (a) el temporizador del 429 y cualquier camino tardío solo suben una clave que sigue «pendiente» (no reenvían una ya
+   subida); (b) al abrir, una captura de la cola para una casilla fija que YA tiene foto confirmada en la base no sube sola: queda pendiente con Reintentar y
+   Descartar y un aviso; (c) cada entrada de la cola guarda el usuario de la sesión y la de otro usuario ni se sube ni se queda; (d) una captura nueva de una
+   casilla fija espera (tope 30 s) a que termine la subida en curso de una vieja de esa casilla antes de mandarse.
    Reglas de pintado: solo createElement/createElementNS/textContent (nunca innerHTML); se engancha por data-accion / data-ranura / data-clave, nunca por un rótulo.
    Colores solo por var(--tema-*): el CSS de la casilla lo pone la pantalla que la usa.
-   Uso: var F = axwFotosGuiadas({ T, h, caja, orden, fotos, edge: function(){ return url; }, token: function(){ return Promise<string>; }, alCambiar: fn, max_dano: 15, ambito: 'taller' }); y, al arrancar la pantalla, axwFotosLimpiaCola({ ambito, vivas }). */
+   Uso: var F = axwFotosGuiadas({ T, h, caja, orden, fotos, edge: function(){ return url; }, token: function(){ return Promise<string>; }, alCambiar: fn, max_dano: 15, ambito: 'taller', usuario: <id de la sesión> }); y, al arrancar la pantalla, axwFotosLimpiaCola({ ambito, vivas, usuario }). */
 /* Diccionarios de la pieza (clave en español, como el resto del maestro). Función aparte para que la pantalla los fusione en LW_EN / LW_ID al arrancar, antes de tener orden. */
 function axwFotosDiccionario() {
   'use strict';
@@ -55,7 +60,8 @@ function axwFotosDiccionario() {
     'No se pudo abrir la foto.': 'The photo could not be opened.',
     'Sin conexión: la foto queda guardada en el móvil y se sube al volver la red.': 'No connection: the photo stays on the phone and uploads when the network is back.',
     'Esta orden ya no está abierta: vuelve al inicio.': 'This order is no longer open: go back to the start.',
-    'Sin sesión: vuelve a entrar.': 'No session: sign in again.'
+    'Sin sesión: vuelve a entrar.': 'No session: sign in again.',
+    'Hay una foto anterior guardada en este móvil: pulsa Reintentar para subirla o Descartar.': 'There is an earlier photo saved on this phone: tap Retry to upload it, or Discard.'
   };
   var ID_FG = {
     'La foto tiene que ser WebP o JPEG: hazla otra vez.': 'Foto harus WebP atau JPEG: ambil lagi.',
@@ -78,12 +84,14 @@ function axwFotosDiccionario() {
     'No se pudo abrir la foto.': 'Foto tidak bisa dibuka.',
     'Sin conexión: la foto queda guardada en el móvil y se sube al volver la red.': 'Tidak ada sinyal: foto disimpan di HP dan diunggah saat sinyal kembali.',
     'Esta orden ya no está abierta: vuelve al inicio.': 'Order ini sudah tidak aktif: kembali ke awal.',
-    'Sin sesión: vuelve a entrar.': 'Sesi habis: masuk lagi.'
+    'Sin sesión: vuelve a entrar.': 'Sesi habis: masuk lagi.',
+    'Hay una foto anterior guardada en este móvil: pulsa Reintentar para subirla o Descartar.': 'Ada foto sebelumnya tersimpan di HP ini: ketuk Coba lagi untuk mengunggah, atau Buang.'
   };
   return { EN: EN_FG, ID: ID_FG };
 }
 
-/* La cola de IndexedDB (una base por origen; cada entrada {clave, orden, ranura, blob, creado, ambito}). Promesa con la base abierta, o rechazo si no hay. */
+/* La cola de IndexedDB (una base por origen; cada entrada {clave, orden, ranura, blob, creado, ambito, usuario}). Promesa con la base abierta, o rechazo si no hay.
+   `usuario` es el id de la sesión que hizo la captura (revisor 12-oct, móvil compartido): una entrada de OTRO usuario nunca se sube con esta sesión. */
 function axwFotosAbreCola() {
   'use strict';
   return new Promise(function (ok, ko) {
@@ -98,12 +106,15 @@ function axwFotosAbreCola() {
 }
 /* Limpieza al arrancar la pantalla (revisor 12-oct: la cola no se limpiaba nunca). Borra las entradas de más de 48 h (la base ya caducó su fila a las 24 h)
    y, SOLO si la pantalla pasa la lista COMPLETA de órdenes vivas (taller_datos contestó y no viene recortada), las de su ámbito cuya orden ya no está viva.
-   Sin lista (no se pudo mirar) no se borra nada por orden: «no he podido mirar» no es «no está viva». Devuelve cuántas borró (o null si no pudo abrir la cola). */
+   Sin lista (no se pudo mirar) no se borra nada por orden: «no he podido mirar» no es «no está viva».
+   Con `usuario` (el id de la sesión), borra además las de OTRO usuario, de cualquier ámbito (móvil compartido: sus fotos no se suben con esta sesión ni se quedan
+   en el móvil). Sin usuario conocido no se borra nada por usuario. Devuelve cuántas borró (o null si no pudo abrir la cola). */
 function axwFotosLimpiaCola(opc) {
   'use strict';
   opc = opc || {};
   var ambito = opc.ambito || 'taller';
   var vivas = Array.isArray(opc.vivas) ? opc.vivas.map(String) : null;
+  var yo = typeof opc.usuario === 'string' && opc.usuario ? opc.usuario : null;
   var limite = Date.now() - 48 * 3600 * 1000;
   return axwFotosAbreCola().then(function (d) {
     return new Promise(function (ok, ko) {
@@ -116,7 +127,8 @@ function axwFotosLimpiaCola(opc) {
           var e = cur.value || {};
           var vieja = !(Number(e.creado) > limite);
           var muerta = vivas !== null && (e.ambito || 'taller') === ambito && vivas.indexOf(String(e.orden)) === -1;
-          if (vieja || muerta) { cur.delete(); n++; }
+          var ajena = yo !== null && e.usuario !== yo;
+          if (vieja || muerta || ajena) { cur.delete(); n++; }
           cur.continue();
         };
         t.oncomplete = function () { try { d.close(); } catch (x) { /* MUDO A PROPOSITO: cerrar la conexión no es crítico */ } ok(n); };
@@ -205,10 +217,13 @@ function axwFotosGuiadas(cfg) {
     delete memoria[clave];
     return tx('readwrite', function (s) { return s ? s.delete(clave) : null; }).catch(function () { return null; /* MUDO A PROPOSITO: una entrada que no se pudo borrar se reintenta, y la base la reconoce por su clave (no duplica) */ });
   }
+  // la sesión que captura: lo que haya en la cola de OTRO usuario (o sin usuario) se ignora aquí aunque la limpieza aún no lo haya borrado; sin usuario conocido
+  // no se retoma nada de cargas anteriores (lo de esta carga vive en memoria)
+  var yo = typeof cfg.usuario === 'string' && cfg.usuario ? cfg.usuario : null;
   function colaDeOrden(orden) {
     return tx('readonly', function (s) { return s ? s.index('orden').getAll(orden) : null; }).then(function (lista) {
       var porClave = {};
-      (Array.isArray(lista) ? lista : []).forEach(function (e) { porClave[e.clave] = e; });
+      (Array.isArray(lista) ? lista : []).forEach(function (e) { if (yo !== null && e.usuario === yo) porClave[e.clave] = e; });
       Object.keys(memoria).forEach(function (k) { if (memoria[k].orden === orden) porClave[k] = memoria[k]; });
       return Object.keys(porClave).map(function (k) { return porClave[k]; }).sort(function (a, b) { return a.creado - b.creado; });
     }, function () { volatil = true; return Object.keys(memoria).map(function (k) { return memoria[k]; }).filter(function (e) { return e.orden === orden; }); /* MUDO A PROPOSITO: sin lectura de la cola se usa la de memoria y se avisa */ });
@@ -265,7 +280,8 @@ function axwFotosGuiadas(cfg) {
   var ambito = cfg.ambito || 'taller';
   var base = {};      // ranura fija → {id, creado} confirmada en la base (creado: el de la captura que la subió en esta sesión; 0 si venía de la base)
   var danosBase = []; // [{id}]
-  var local = {};     // clave → {ranura, estado: procesando|subiendo|pendiente|error, creado, msg, tope (pendiente por fotos_tope_pendientes)}
+  var local = {};     // clave → {ranura, estado: procesando|subiendo|pendiente|error, creado, msg, tope (pendiente por fotos_tope_pendientes),
+                      //         anterior (captura de una carga anterior para una casilla fija que YA tiene foto confirmada: no sube sola, decide el mecánico)}
   var ultimoCreado = 0;
   function sello() { ultimoCreado = Math.max(Date.now(), ultimoCreado + 1); return ultimoCreado; }   // orden de captura estricto aunque dos caigan en el mismo ms
   var vistaPrevia = {}; // ranura fija o clave de daño → objectURL
@@ -293,7 +309,8 @@ function axwFotosGuiadas(cfg) {
   function danosHechos() { return danosBase.length + Object.keys(local).filter(function (k) { return local[k].ranura === 'dano' && local[k].estado !== 'error'; }).length; }
   function cuenta(estados) { return Object.keys(local).filter(function (k) { return estados.indexOf(local[k].estado) !== -1; }).length; }
   function atascada() { return Object.keys(local).some(function (k) { return local[k].estado === 'pendiente' && local[k].tope; }); }
-  function avisa() { if (typeof cfg.alCambiar === 'function') { try { cfg.alCambiar({ faltan: faltanFijas(), pendientes: pendientes(), tope: atascada() }); } catch (e) { /* MUDO A PROPOSITO: el aviso a la pantalla no puede tumbar la subida */ } } }
+  function hayAnterior() { return Object.keys(local).some(function (k) { return local[k].estado === 'pendiente' && local[k].anterior; }); }
+  function avisa() { if (typeof cfg.alCambiar === 'function') { try { cfg.alCambiar({ faltan: faltanFijas(), pendientes: pendientes(), tope: atascada(), anterior: hayAnterior() }); } catch (e) { /* MUDO A PROPOSITO: el aviso a la pantalla no puede tumbar la subida */ } } }
   /* Olvidar una captura: no se vuelve a mandar (olvidadas), sale de la pantalla y de la cola, y su vista previa se libera. Su respuesta, si ya iba en camino, no cuenta. */
   function olvida(k) {
     olvidadas[k] = true;
@@ -346,6 +363,8 @@ function axwFotosGuiadas(cfg) {
     if (volatil) caja.appendChild(h('p', { class: 'axw-aviso', 'data-fg': 'volatil', text: T('Sin almacén en el móvil: si cierras la página, las fotos sin subir se pierden.') }));
     if (atascada()) caja.appendChild(h('p', { class: 'axw-aviso', 'data-fg': 'tope', role: 'status',
                                               text: T('Demasiadas fotos a medio subir en esta orden: pulsa Reintentar, o Descartar en las que no suban (se liberan solas en 24 h).') }));
+    if (hayAnterior()) caja.appendChild(h('p', { class: 'axw-aviso', 'data-fg': 'anterior', role: 'status',
+                                                 text: T('Hay una foto anterior guardada en este móvil: pulsa Reintentar para subirla o Descartar.') }));
     if (aviso) caja.appendChild(h('p', { class: 'axw-aviso', 'data-fg': 'aviso', role: 'status', text: aviso }));
     caja.appendChild(input);
     avisa();
@@ -360,8 +379,14 @@ function axwFotosGuiadas(cfg) {
     return c;
   }
   var olvidadas = {};   // capturas sustituidas por una repetición de su casilla o descartadas: un temporizador, una vuelta de reintento o una respuesta tardía no cuentan
+  var esperas = {};     // clave → temporizador del 429 (uno por clave; se anula si la clave vuelve a subir por otro camino)
+  var vuelo = {};       // clave → promesa de su subida en curso (una captura nueva de la misma casilla fija espera a que termine)
+  /* Solo sube lo que está por subir: la captura recién preparada (procesando) o una pendiente. Cualquier camino asíncrono (el temporizador del 429, una vuelta de
+     reintento, la red que vuelve) que llegue tarde a una clave ya subida, olvidada o en camino no la resucita (revisor 12-oct: el 429 reenviaba una ya subida). */
   function sube(e) {
-    if (enCurso[e.clave] || olvidadas[e.clave] || destruida) return Promise.resolve(false);
+    var l = local[e.clave];
+    if (enCurso[e.clave] || olvidadas[e.clave] || destruida || !l || (l.estado !== 'pendiente' && l.estado !== 'procesando')) return Promise.resolve(false);
+    if (esperas[e.clave]) { clearTimeout(esperas[e.clave]); delete esperas[e.clave]; }
     enCurso[e.clave] = true;
     local[e.clave] = { ranura: e.ranura, estado: 'subiendo', creado: e.creado || 0 };
     pinta();
@@ -372,7 +397,7 @@ function axwFotosGuiadas(cfg) {
     };
     // una repetición de la casilla o un Descartar mientras esta iba en camino: su respuesta no cuenta (ni su éxito pisa a la nueva, ni su error se pinta)
     var olvidada = function () { if (!olvidadas[e.clave]) return false; delete enCurso[e.clave]; if (!destruida) pinta(); return true; };
-    return Promise.resolve(cfg.token()).then(function (tok) {
+    var p = Promise.resolve(cfg.token()).then(function (tok) {
       var fd = new FormData();
       fd.append('accion', 'sube'); fd.append('orden', e.orden); fd.append('ranura', e.ranura); fd.append('clave', e.clave);
       fd.append('fichero', e.blob, 'foto.' + (e.blob.type === 'image/webp' ? 'webp' : 'jpg'));
@@ -398,7 +423,9 @@ function axwFotosGuiadas(cfg) {
       if (x.st === 429 || hint === 'tope_minuto') {
         var s = Math.min(120, Math.max(1, Math.round(Number(d.reintenta_en) || 10)));
         fin('pendiente', TT('Demasiadas fotos seguidas: se reintenta en {n} s.', { n: s }));
-        setTimeout(function () { sube(e); }, s * 1000);   // sube() no hace nada si la casilla se repitió, se descartó o la pieza se cerró
+        if (esperas[e.clave]) clearTimeout(esperas[e.clave]);
+        // solo si la clave SIGUE pendiente cuando salta: si entretanto Reintentar la subió (o se repitió, se descartó o la pieza se cerró) no se reenvía
+        esperas[e.clave] = setTimeout(function () { delete esperas[e.clave]; if (local[e.clave] && local[e.clave].estado === 'pendiente') sube(e); }, s * 1000);
         return false;
       }
       if (hint === 'fotos_tope_pendientes') {   // 10 pendientes vivas por orden: REINTENTABLE con la misma clave; sin reintento solo, y el aviso dice qué hacer
@@ -422,14 +449,30 @@ function axwFotosGuiadas(cfg) {
       aviso = T('Sin conexión: la foto queda guardada en el móvil y se sube al volver la red.');
       fin('pendiente'); return false;
     });
+    var v = { p: p, ranura: e.ranura, creado: e.creado || 0 };
+    vuelo[e.clave] = v;
+    var suelta = function () { if (vuelo[e.clave] === v) delete vuelo[e.clave]; };
+    p.then(suelta, suelta);
+    return p;
+  }
+  /* Lo que una captura NUEVA de una casilla fija espera antes de mandarse (revisor 12-oct, carrera de la vieja en camino): las subidas en curso de capturas
+     anteriores de esa casilla. Si la vieja llegara a la edge DESPUÉS que la nueva, la base caducaría la nueva al preparar la vieja y ganaría la foto antigua.
+     Con tope de 30 s: una petición colgada no deja la casilla en «Preparando…» para siempre (pasado el tope se manda como antes). */
+  function esperaViejas(ranura, creado) {
+    var lista = Object.keys(vuelo).filter(function (k) { return vuelo[k].ranura === ranura && vuelo[k].creado < creado; })
+                                  .map(function (k) { return vuelo[k].p.catch(function () { return null; /* MUDO A PROPOSITO: solo se espera a que termine, su resultado lo pinta sube() */ }); });
+    if (!lista.length) return Promise.resolve();
+    return Promise.race([Promise.all(lista), new Promise(function (ok) { setTimeout(ok, 30000); })]);
   }
   /* Una vuelta de reintento a la vez (Reintentar, la red que vuelve y el arranque no se solapan); cada entrada se mira JUSTO antes de subirla: si ya subió,
-     se repitió su casilla o salió de la cola, no se sube. */
+     se repitió su casilla o salió de la cola, no se sube. Las «anteriores» (captura de una carga previa para una casilla que ya tiene foto confirmada) solo
+     suben con el Reintentar que pulsa el mecánico (manual), nunca con el arranque ni con la red que vuelve. Un Reintentar durante una vuelta automática se
+     encadena detrás, para que no se pierda. */
   var vuelta = null;
-  function reintenta() {
-    if (vuelta) return vuelta;
+  function reintenta(manual) {
+    if (vuelta) return manual ? vuelta.then(function () { return reintenta(true); }) : vuelta;
     vuelta = colaDeOrden(orden).then(function (lista) {
-      return lista.reduce(function (p, e) { return p.then(function () { return local[e.clave] && local[e.clave].estado === 'pendiente' ? sube(e) : false; }); }, Promise.resolve());
+      return lista.reduce(function (p, e) { return p.then(function () { var l = local[e.clave]; return l && l.estado === 'pendiente' && (manual || !l.anterior) ? sube(e) : false; }); }, Promise.resolve());
     }).then(function () { vuelta = null; }, function () { vuelta = null; /* MUDO A PROPOSITO: una vuelta que falla deja las fotos «pendiente» a la vista, con su Reintentar */ });
     return vuelta;
   }
@@ -461,11 +504,13 @@ function axwFotosGuiadas(cfg) {
                                   .map(function (x) { return olvida(x.clave); }));
         });
       }
-      var e = { clave: clave, orden: orden, ranura: ranura, blob: blob, creado: creado, ambito: ambito };
+      var e = { clave: clave, orden: orden, ranura: ranura, blob: blob, creado: creado, ambito: ambito, usuario: yo };
       try { vistaPrevia[clave] = URL.createObjectURL(blob); } catch (x) { /* MUDO A PROPOSITO: sin vista previa se ve la silueta, la foto sigue */ }
       return previo.then(function () {
         if (olvidadas[clave]) return false;   // una aún más nueva la olvidó mientras tanto
-        return colaPon(e).then(function () { return olvidadas[clave] ? colaQuita(clave).then(function () { return false; }) : sube(e); });
+        // ya en la cola (sobrevive a que se cierre la pestaña), espera a que acabe la subida en curso de una vieja de esta casilla y solo entonces se manda
+        return colaPon(e).then(function () { return ranura !== 'dano' ? esperaViejas(ranura, creado) : null; })
+          .then(function () { return olvidadas[clave] ? colaQuita(clave).then(function () { return false; }) : sube(e); });
       });
     }, function () {
       if (olvidadas[clave]) return;
@@ -494,7 +539,7 @@ function axwFotosGuiadas(cfg) {
     var a = el.getAttribute('data-accion');
     if (a === 'fg-captura') captura(el.getAttribute('data-ranura'));
     else if (a === 'fg-dano') captura('dano');
-    else if (a === 'fg-reintentar') { aviso = ''; reintenta(); }
+    else if (a === 'fg-reintentar') { aviso = ''; reintenta(true); }
     else if (a === 'fg-ver') ver(el.getAttribute('data-foto'), el);
     else if (a === 'fg-descartar') {   // solo la cola LOCAL: el navegador no escribe en la base; la fila pendiente, si llegó a crearse, caduca sola a las 24 h
       var k = el.getAttribute('data-clave');
@@ -507,24 +552,32 @@ function axwFotosGuiadas(cfg) {
   pinta();
   /* al abrir: lo que quedó en la cola de ESTA orden (pestaña descartada, red caída) se enseña como pendiente y se intenta una vez */
   /* de una casilla FIJA solo vale la captura más nueva: si en la cola quedaron varias (cargas anteriores), las viejas se olvidan antes de mandar nada */
+  /* y si esa casilla YA tiene foto confirmada en la base (cfg.fotos), la captura de la cola NO se manda sola (revisor 12-oct): puede ser una vieja de otra pestaña
+     o de antes de que otro la repitiera, y en la base confirmar sustituye. Se enseña pendiente con Reintentar y Descartar y el aviso lo pregunta. No se comparan
+     horas del móvil con las de la base: decide el mecánico. Solo cuenta la cola de ESTA sesión (colaDeOrden filtra por usuario). */
   colaDeOrden(orden).then(function (lista) {
     var nueva = {};
     lista.forEach(function (e) { if (e.ranura !== 'dano' && (!nueva[e.ranura] || (e.creado || 0) > (nueva[e.ranura].creado || 0))) nueva[e.ranura] = e; });
     var viejas = lista.filter(function (e) { return e.ranura !== 'dano' && nueva[e.ranura] !== e; });
     viejas.forEach(function (e) { olvida(e.clave); });
+    var auto = 0;
     lista.forEach(function (e) {
       if (e.creado > ultimoCreado) ultimoCreado = e.creado;
-      if (!olvidadas[e.clave] && !local[e.clave]) local[e.clave] = { ranura: e.ranura, estado: 'pendiente', creado: e.creado || 0 };
+      if (olvidadas[e.clave] || local[e.clave]) return;
+      var anterior = e.ranura !== 'dano' && !!base[e.ranura];
+      local[e.clave] = { ranura: e.ranura, estado: 'pendiente', creado: e.creado || 0, anterior: anterior };
+      if (!anterior) auto++;
     });
     pinta();
-    if (lista.length > viejas.length) reintenta();
+    if (auto) reintenta();
   });
 
   return {
     pinta: pinta, reintenta: reintenta, pendientes: pendientes, faltan: faltanFijas,
     sinSubir: function () { return cuenta(['procesando', 'subiendo', 'pendiente']); },
     // qué falta por subir y si hay salida: en marcha (esperar), pendientes (Reintentar o Descartar), tope (fotos_tope_pendientes: el aviso dice qué hacer)
-    estadoSubida: function () { return { enMarcha: cuenta(['procesando', 'subiendo']), pendientes: cuenta(['pendiente']), tope: atascada() }; },
-    destruye: function () { destruida = true; window.removeEventListener('online', alVolverRed); Object.keys(vistaPrevia).forEach(function (k) { try { URL.revokeObjectURL(vistaPrevia[k]); } catch (e) { /* MUDO A PROPOSITO: liberar memoria no es crítico */ } }); }
+    estadoSubida: function () { return { enMarcha: cuenta(['procesando', 'subiendo']), pendientes: cuenta(['pendiente']), tope: atascada(), anterior: hayAnterior() }; },
+    destruye: function () { destruida = true; window.removeEventListener('online', alVolverRed);
+      Object.keys(esperas).forEach(function (k) { clearTimeout(esperas[k]); delete esperas[k]; }); Object.keys(vistaPrevia).forEach(function (k) { try { URL.revokeObjectURL(vistaPrevia[k]); } catch (e) { /* MUDO A PROPOSITO: liberar memoria no es crítico */ } }); }
   };
 }

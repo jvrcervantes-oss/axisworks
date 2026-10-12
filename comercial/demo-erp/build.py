@@ -2456,7 +2456,8 @@ def taller_pantalla():
                  "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'reservas-producto') + 1, 0," + '\n' +
                  "    { grupo:'Seguimiento', nombre:'Taller', icon:'ph-wrench', href:'/intranet/v4/taller/', herr:'taller'," + '\n' +
                  "      para:'El mecánico revisa cada moto paso a paso (motivo, km, fotos, revisiones) y la deja lista o en espera; mientras está en el taller no se puede reservar.'," + '\n' +
-                 "      claves:'taller orden de trabajo moto reparacion mecanico mantenimiento revision fotos bloquear reservas bengkel servis workshop repair mechanic maintenance inspection work order' });" + '\n' + "}",
+                 "      claves:'taller orden de trabajo moto reparacion mecanico mantenimiento revision fotos bloquear reservas bengkel servis workshop repair mechanic maintenance inspection work order' });" + '\n' +
+                 "  /*AXW_FIN_TARJETA_TALLER*/" + '\n' + "}",
                  'herramientas.js tarjeta Taller')
     open(her, 'w', encoding='utf-8', newline='').write(h)
 
@@ -2485,10 +2486,11 @@ def entrega_pantalla():
     open(nav, 'w', encoding='utf-8', newline='').write(n)
     her = os.path.join(DIST, 'contracts', 'assets', 'herramientas.js')
     h = open(her, encoding='utf-8').read()
-    # la tarjeta de Taller acaba en «… maintenance inspection work order» desde 4f686ba (8.T1): la de Entrega se engancha detrás
-    ancla = "maintenance inspection work order' });" + '\n' + "}"
+    # la de Entrega se engancha detrás de la MARCA que deja taller_pantalla() al final de su tarjeta, no del texto de sus claves (revisor 12-oct: cambiar las palabras
+    # de búsqueda del Taller ya rompió este ancla una vez, en 4f686ba)
+    ancla = "  /*AXW_FIN_TARJETA_TALLER*/" + '\n' + "}"
     h = _una_vez(h, ancla,
-                 "maintenance inspection work order' });" + '\n' +
+                 "  /*AXW_FIN_TARJETA_TALLER*/" + '\n' +
                  "  /* ENTREGA (F8 pieza 8, 10-oct-2026): la sede, la tarifa por km y los límites de la entrega a domicilio. Permiso propio `entrega`; sin esta tarjeta la casilla no existiría en Usuarios. La base exige además administración. */" + '\n' +
                  "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'taller') + 1, 0," + '\n' +
                  "    { grupo:'Seguimiento', nombre:'Entrega', icon:'ph-truck', href:'/intranet/v4/entrega/', herr:'entrega'," + '\n' +
