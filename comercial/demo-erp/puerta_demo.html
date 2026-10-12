@@ -288,6 +288,7 @@ img,svg{display:block}
 }
 .toast{transition:opacity var(--dur-2) var(--ease)}
 .toast.is-out{opacity:0}
+@media (max-width:720px){.toast{white-space:normal}}
 </style>
 </head>
 <body>
@@ -452,11 +453,12 @@ img,svg{display:block}
     </div>
   </footer>
 </div>
+<!-- «Reset demo» en la portada (mesa States: aviso «Demo reset. Back to the start.» 4 s y se desvanece). La portada no carga
+     guard.js, así que borra aquí lo mismo que LW_DEMO_RESTABLECE() (contrato con el paquete A: sessionStorage, prefijo
+     «axw-demo:») y, además, el localStorage de este origen: demo.axisworks.studio solo sirve la demo, y ahí guardan sus
+     preferencias de pantalla (idioma, módulos encendidos, tour visto). Sin esto, «Reset» no volvía del todo al principio.
+     Comentario HTML y no de JS a propósito: puerta_demo() quita los <!-- --> y la portada no pasa por limpia_publico.js. -->
 <script>
-/* «Reset demo» en la portada (mesa States: aviso «Demo reset. Back to the start.» 4 s y se desvanece). La portada no carga
-   guard.js, así que borra aquí lo mismo que LW_DEMO_RESTABLECE() (contrato con el paquete A: sessionStorage, prefijo
-   «axw-demo:») y, además, el localStorage de este origen: demo.axisworks.studio solo sirve la demo, y ahí guardan sus
-   preferencias de pantalla (idioma, módulos encendidos, tour visto). Sin esto, «Reset» no volvía del todo al principio. */
 (function () {
   var b = document.querySelector('[data-accion="demo-restablece"]');
   var hueco = document.querySelector('.toast-slot');
