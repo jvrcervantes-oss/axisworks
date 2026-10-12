@@ -284,6 +284,7 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
         const u = (/^Bearer tok-(\w+)$/.exec(req.headers().authorization || '') || [])[1];
         const r = rpc(B, rp[1], JSON.parse(req.postData() || '{}'), u);
         if (B.cortaTras === rp[1]) { B.cortaTras = null; return route.abort('connectionreset'); }   // la base ESCRIBIÓ y la respuesta se pierde
+        if (B.falla502 === rp[1]) { B.falla502 = null; return route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ message: 'Bad gateway' }) }); }   // escribió y el proxy contesta 502 sin código
         return route.fulfill({ status: r.st, contentType: 'application/json', body: JSON.stringify(r.j) });
       }
       if (url.pathname === '/functions/v1/taller-fotos') { const r = edge(B, req); return route.fulfill({ status: r.st, contentType: 'application/json', headers: { 'access-control-allow-origin': ORIGEN, vary: 'Origin' }, body: JSON.stringify(r.j) }); }
@@ -552,6 +553,11 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await espera(p, () => /Bengkel belum diatur/.test(document.querySelector('[data-tl="paso-estado"]').textContent));
     ok('hint taller_sin_configurar: «Bengkel belum diatur.» y no abre', (await paso(p)) === 'motivo' && !B.ordenes.some(o => o.unidad_id === U.m2));
     B.abreSinConfigurar = false;
+    B.falla502 = 'taller_orden_abre';
+    await sig(p); await espera(p, () => !!document.querySelector('[data-accion="tl-reintentar"]'));
+    ok('abrir con 502 sin código (pudo abrirse): ofrece Reintentar y no avanza', (await paso(p)) === 'motivo');
+    await p.click('[data-accion="tl-reintentar"]'); await enPaso(p, 'km');
+    ok('reintentar tras el 502: retoma la MISMA orden (una sola para esa moto)', B.ordenes.filter(o => o.unidad_id === U.m2 && o.estado !== 'cerrada').length === 1);
     await sinTraducir(p, 'casos raros id');
     await ctx.close();
     B.setup = { listo: false, pasos: [{ clave: 'revisiones', hecho: false, obligatorio: true, detalle: 'Falta X (español de la base)', donde: '/taller/#listas', fase: 1 },

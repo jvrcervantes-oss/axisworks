@@ -675,7 +675,8 @@
           if (c.hint === 'taller_sin_configurar') { estadoPaso('error', T('El taller aún no está configurado.')); return cargaDatos(); }
           if (c.hint === 'reservas_vivas') { estadoPaso('error', texto(r.error)); pintaReservas(c.detail); return; }
           // sin respuesta: la orden puede haberse abierto. Reintentar es seguro: la base devuelve la MISMA orden viva (retomada), nunca una segunda.
-          noGuardado(r.error, esRed(r.error) ? abre : null);
+          // sin código de la base (red, 5xx, tiempo agotado) la orden pudo abrirse: se ofrece reintentar, que es seguro (la base devuelve la MISMA orden viva)
+          noGuardado(r.error, !c.hint ? abre : null);
           return;
         }
         var x = r.data;
