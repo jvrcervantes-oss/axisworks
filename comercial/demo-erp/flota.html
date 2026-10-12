@@ -7,7 +7,7 @@
      (no están copiados aquí) y el análisis de la matrícula/precio/días de la pantalla es solo una ayuda: la base lo revalida y se enseña SU mensaje.
      Todo texto que viene de la base se pinta con textContent. Se engancha por data-accion / data-campo / data-fl / data-*-id, nunca por un rótulo.
      Idioma: ES/EN con el diccionario EN_FL de abajo más el de las ayudas comunes (la suite solo tiene es y en: otro idioma cae a es, como el resto de pantallas). -->
-<div class="flex flex-col w-full gap-8" data-fl="raiz">
+<div class="flex flex-col w-full gap-8 fl" data-fl="raiz">
 <style>
 /*AXW_COMUN_CSS*/
 .fl-ayuda{font-size:13px;color:rgb(var(--tema-outline, 117 120 110));line-height:1.45;margin:0;word-break:break-word}
@@ -34,12 +34,62 @@
 .fl-prev>div{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:13px;word-break:break-word}
 .fl-modal textarea{font-family:inherit}
 details.fl-versiones summary{cursor:pointer;font-weight:600}
+/* Composición del diseño del owner «Reservas · Flota y tarifas» (lienzo AxisWorks ERP Dashboard; p37, 13-oct-2026). Cada modelo es una tarjeta ancha: sus tramos en
+   baldosas a la izquierda y sus motos en tabla a la derecha, todo a la vista (sin plegables: al guardar se relee y se repinta). Colores por la piel. */
+.fl{--fl-tinta:var(--tema-on-surface, 27 28 25);--fl-tinta2:var(--tema-on-surface-variant, 68 72 63);--fl-filete:var(--tema-filete, 218 220 230);
+  --fl-acento:var(--tema-burnt-earth, 46 59 235);--fl-fondo:var(--tema-surface, 242 243 247);--fl-blanco:var(--tema-surface-container-lowest, 255 255 255)}
+.fl .fl-cab.lw-cabecera{background:transparent!important;padding:0 0 8px!important;border-radius:0!important;box-shadow:none!important}
+.fl-ante{margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:rgb(var(--fl-acento))}
+.fl .fl-h1{margin:16px 0 0;font-weight:600;font-size:clamp(28px,2.7vw,40px);line-height:1.04;letter-spacing:-.05em;color:rgb(var(--fl-tinta));word-break:break-word}
+.fl .fl-h1>span{display:block}
+.fl .fl-h1 .fl-h1-b{font-weight:300}
+.fl-lede{margin:16px 0 0;max-width:54ch;font-size:17px;line-height:1.6;color:rgb(var(--fl-tinta2))}
+.fl-cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.fl-cifra{background:rgb(var(--fl-blanco));border:1px solid rgb(var(--fl-filete));border-radius:20px;padding:20px 22px;min-width:0}
+.fl-cifra h2{margin:0;display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--fl-tinta2))}
+.fl-cifra h2::before{content:"";width:10px;height:10px;border-radius:3px;flex:none;background:var(--fl-marca, rgb(var(--fl-filete)))}
+.fl-cifra[data-estado="disponible"]{--fl-marca:rgb(var(--tema-ok, 29 107 59))}
+.fl-cifra[data-estado="taller"]{--fl-marca:rgb(var(--tema-aviso, 143 70 0))}
+.fl-cifra[data-estado="baja"]{--fl-marca:rgb(var(--fl-tinta2))}
+.fl .fl-num{margin-top:12px;font-weight:600;font-size:28px;line-height:1.1;letter-spacing:-.05em;color:rgb(var(--fl-tinta))}
+.fl-num-sub{margin-top:8px;font-size:13px;color:rgb(var(--fl-tinta2))}
+.fl-modelos-cab{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px}
+.fl-modelos-cab .fl-etq{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--fl-acento))}
+.fl .fl-prod{border-radius:24px;padding:24px 28px;gap:18px}
+.fl .fl-cab h2{font-weight:500;font-size:19px;letter-spacing:-.04em;color:rgb(var(--fl-tinta))}
+.fl-cuenta{margin-left:auto;font-size:13px;color:rgb(var(--fl-tinta2));white-space:nowrap}
+.fl-cuerpo{display:grid;grid-template-columns:minmax(320px,400px) minmax(0,1fr);gap:24px 32px;align-items:start}
+.fl-bloque-cab{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
+.fl .fl-bloque h3{font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--fl-tinta2))}
+.fl-tarifas-rej{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.fl .fl-tarifas-rej .fl-fila{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 14px;border:0;border-radius:10px;background:rgb(var(--fl-fondo))}
+.fl .fl-tarifas-rej .fl-dias{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--fl-tinta2))}
+.fl .fl-tarifas-rej .fl-precio{font-size:17px;font-weight:700;color:rgb(var(--fl-tinta));word-break:break-word}
+.fl .fl-tarifas-rej .fl-notas{font-size:13px;color:rgb(var(--fl-tinta2));flex:none}
+.fl .fl-tarifas-rej .axw-acciones{margin:4px 0 0;display:flex;flex-wrap:wrap;gap:6px}
+.fl .fl-tarifas-rej .axw-acciones .axw-boton{min-height:32px;padding:4px 12px;font-size:13px}
+.fl-sin{padding:12px 14px;border-radius:12px;border:1px solid #F3C5BE;background:#FDE4E1;color:rgb(var(--tema-error, 163 38 26));font-size:14px;line-height:1.45}
+.fl-motos-tabla{border-top:1px solid rgb(var(--fl-filete))}
+.fl-motos-th,.fl .fl-motos-tabla .fl-fila{display:grid;grid-template-columns:minmax(110px,150px) minmax(110px,150px) minmax(0,1fr) auto;gap:6px 16px;align-items:center}
+.fl-motos-th{padding:10px 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--fl-tinta2));border-bottom:1px solid rgb(var(--fl-filete))}
+.fl .fl-motos-tabla .fl-fila{padding:10px 0;border:0;border-bottom:1px solid rgb(var(--fl-filete));border-radius:0}
+.fl .fl-motos-tabla .fl-grande{font-size:13px;letter-spacing:.04em}
+.fl .fl-motos-tabla .fl-notas{color:rgb(var(--fl-tinta2))}
+.fl .fl-motos-tabla .axw-acciones{margin-left:0}
+@media (max-width:900px){.fl-cuerpo{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){
+  .fl .fl-prod{padding:20px 18px;border-radius:20px}
+  .fl-motos-th{display:none}
+  .fl .fl-motos-tabla .fl-fila{grid-template-columns:minmax(0,1fr) auto;padding:12px 0}
+  .fl .fl-motos-tabla .fl-notas{grid-column:1 / -1}
+}
 </style>
 
-<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
-<div class="flex flex-col gap-2 max-w-3xl">
-<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Flota y tarifas</h1>
-<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Las motos de cada producto y lo que cuesta alquilarlas según los días. Lo que cambies aquí es lo que el bot cotiza y cobra.</p>
+<div class="lw-cabecera fl-cab">
+<div>
+<p class="fl-ante font-label-md uppercase"><span data-lwt>Seguimiento</span> · <span data-lwt>Flota y tarifas</span></p>
+<h1 class="fl-h1 font-headline-lg"><span data-lwt>Flota y tarifas</span><span class="fl-h1-b" data-lwt>Lo que el bot puede alquilar.</span></h1>
+<p class="fl-lede" data-lwt>Las motos de cada producto y lo que cuesta alquilarlas según los días. Lo que cambies aquí es lo que el bot cotiza y cobra.</p>
 </div>
 </div>
 
@@ -55,7 +105,13 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
 <div data-fl="estado" data-tipo="cargando" class="axw-vacio"></div>
 
 <div class="flex flex-col gap-8 axw-oculto" data-fl="contenido">
-<div class="fl-barra">
+<div class="fl-cifras" data-fl="cifras">
+<section class="fl-cifra" data-estado="disponible"><h2 class="font-label-md uppercase" data-lwt>Disponible</h2><div class="fl-num font-headline-sm" data-fl="c-disponible">—</div><div class="fl-num-sub" data-lwt>No están en taller ni de baja</div></section>
+<section class="fl-cifra" data-estado="taller"><h2 class="font-label-md uppercase" data-lwt>En taller</h2><div class="fl-num font-headline-sm" data-fl="c-taller">—</div></section>
+<section class="fl-cifra" data-estado="baja"><h2 class="font-label-md uppercase" data-lwt>De baja</h2><div class="fl-num font-headline-sm" data-fl="c-baja">—</div><div class="fl-num-sub" data-fl="c-total"></div></section>
+</div>
+<div class="fl-modelos-cab">
+<span class="fl-etq font-label-md uppercase" data-fl="n-modelos"></span>
 <button class="axw-boton" type="button" data-accion="fl-actualizar"><span data-lwt>Actualizar</span></button>
 </div>
 <p class="axw-aviso axw-oculto" data-fl="recortado" data-lwt>La lista está recortada: no se enseñan todos los productos.</p>
@@ -81,6 +137,9 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   // Indonesio (instancias con "idiomas": ["id", "en"], hoy bbm; owner 11-oct-2026). Misma clave en español; se fusiona en window.LW_ID solo si existe.
   var ID_FL = {
     "Flota y tarifas": "Armada dan tarif",
+    "Seguimiento": "Tindak lanjut", "Lo que el bot puede alquilar.": "Yang bisa disewakan bot.", "No están en taller ni de baja": "Tidak di bengkel dan tidak dinonaktifkan",
+    "De %n motos en total": "Dari %n motor seluruhnya", "Modelos · %n": "Model · %n", "%n motos": "%n motor", "1 moto": "1 motor", "Matrícula": "Plat nomor",
+    "Sin tarifas: no se podrá cotizar. Pon los precios para que el bot pueda ofrecerla.": "Belum ada tarif: belum bisa dikutip. Isi harganya agar bot bisa menawarkannya.",
     "Las motos de cada producto y lo que cuesta alquilarlas según los días. Lo que cambies aquí es lo que el bot cotiza y cobra.": "Motor untuk setiap produk dan biaya sewanya berdasarkan jumlah hari. Yang diubah di sini adalah yang dikutip dan ditagih bot.",
     "Las reservas ya hechas no cambian de precio; el cambio vale para lo que se cotice desde ahora.": "Harga booking yang sudah dibuat tidak berubah; perubahan berlaku untuk penawaran mulai sekarang.",
     "Actualizar": "Muat ulang",
@@ -198,6 +257,9 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   };
   var EN_FL = {
     'Flota y tarifas': 'Fleet and rates',
+    'Seguimiento': 'Pipeline', 'Lo que el bot puede alquilar.': 'What the bot can rent out.', 'No están en taller ni de baja': 'Not in the workshop or retired',
+    'De %n motos en total': 'Out of %n bikes in total', 'Modelos · %n': 'Models · %n', '%n motos': '%n bikes', '1 moto': '1 bike', 'Matrícula': 'Plate',
+    'Sin tarifas: no se podrá cotizar. Pon los precios para que el bot pueda ofrecerla.': 'No rates: it cannot be quoted. Set the prices so the bot can offer it.',
     'Las motos de cada producto y lo que cuesta alquilarlas según los días. Lo que cambies aquí es lo que el bot cotiza y cobra.': 'The bikes of each product and what they cost to rent by number of days. What you change here is what the bot quotes and charges.',
     'Las reservas ya hechas no cambian de precio; el cambio vale para lo que se cotice desde ahora.': 'Bookings already made keep their price; the change applies to whatever is quoted from now on.',
     'Actualizar': 'Refresh',
@@ -353,11 +415,13 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   function unDia(n) { return n + ' ' + T(Number(n) === 1 ? 'día' : 'días'); }
 
   /* ── lo que se pinta ── */
+  function cuantasMotos(n) { return n === 1 ? T('1 moto') : T('%n motos').replace('%n', String(n)); }
   function pintaProducto(p) {
     var faltan = Array.isArray(p.faltan) ? p.faltan : [];
-    var cab = h('div', { class: 'fl-cab' }, [h('h2', { class: 'font-headline-sm text-headline-sm text-deep-lagoon tracking-tight', text: (p.nombre || '—') + (p.numero ? ' · ' + p.numero : '') }),
+    var cab = h('div', { class: 'fl-cab' }, [h('h2', { class: 'font-headline-sm', text: (p.nombre || '—') + (p.numero ? ' · ' + p.numero : '') }),
       C.chip(p.activo === false ? T('Inactivo') : T('Activo'), p.activo === false ? 'neutro' : 'ok'),
-      C.chip(p.listo_para_reservar === true ? T('Listo para reservar') : T('No se puede reservar todavía'), p.listo_para_reservar === true ? 'ok' : 'espera')]);
+      C.chip(p.listo_para_reservar === true ? T('Listo para reservar') : T('No se puede reservar todavía'), p.listo_para_reservar === true ? 'ok' : 'espera'),
+      h('span', { class: 'fl-cuenta font-label-md uppercase', text: cuantasMotos(p.unidades.length) })]);
     var caja = h('section', { class: 'bg-surface-container-lowest rounded-xl p-8 shadow-sm fl-prod', 'data-producto-id': p.id, 'data-listo': p.listo_para_reservar === true ? '1' : '0' }, [cab]);
     if (p.listo_para_reservar !== true) {
       var ul = h('ul', { class: 'fl-lista axw-aviso', 'data-fl': 'faltan' });
@@ -368,33 +432,49 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       if (!faltan.length) ul.appendChild(h('li', { 'data-faltante': '', text: T('La base no dice qué falta, pero no está listo para reservar.') }));
       caja.appendChild(ul);
     }
-    // motos
-    var motos = h('div', { class: 'fl-bloque', 'data-fl': 'motos' }, [h('div', { class: 'fl-barra' }, [h('h3', { text: T('Motos') + ' (' + p.unidades.length + ')' }),
-      C.boton(T('Añadir motos'), 'fl-lote-abrir', { 'data-producto-id': p.id })])]);
-    if (!p.unidades.length) motos.appendChild(h('p', { class: 'fl-ayuda', text: T('Este producto no tiene motos.') }));
-    p.unidades.forEach(function (u) {
-      var e = ESTADOS[u.estado] || [String(u.estado == null ? '—' : u.estado), 'neutro'];
-      motos.appendChild(h('div', { class: 'fl-fila', 'data-unidad-id': u.id }, [h('span', { class: 'fl-dato fl-grande', text: u.identificador }),
-        C.chip(ESTADOS[u.estado] ? T(e[0]) : e[0], e[1]), h('span', { class: 'fl-dato fl-notas', text: u.notas ? String(u.notas) : T('Sin notas') }),
-        h('div', { class: 'axw-acciones' }, [C.boton(T('Editar'), 'fl-moto-editar', { 'data-unidad-id': u.id })])]));
-    });
-    caja.appendChild(motos);
-    // tarifas
-    var tar = h('div', { class: 'fl-bloque', 'data-fl': 'tarifas' }, [h('div', { class: 'fl-barra' }, [h('h3', { text: T('Tarifas por días') }),
-      C.boton(T('Añadir o cambiar un tramo'), 'fl-tarifa-abrir', { 'data-producto-id': p.id })])]);
-    if (!p.tarifas.length) tar.appendChild(h('p', { class: 'fl-ayuda', text: T('Este producto no tiene tarifas.') }));
+    // tramos: baldosas (los días y el precio tal cual los da la base, con su moneda; ningún rango deducido)
+    var hayTarifas = p.tarifas.length > 0;
+    var tar = h('div', { class: 'fl-bloque', 'data-fl': 'tarifas' }, [h('div', { class: 'fl-bloque-cab' }, [h('h3', { class: 'font-label-md uppercase', text: T('Tarifas por días') })])]);
+    if (!hayTarifas) tar.appendChild(h('p', { class: 'fl-sin', text: T('Sin tarifas: no se podrá cotizar. Pon los precios para que el bot pueda ofrecerla.') }));
+    var rej = h('div', { class: 'fl-tarifas-rej' });
     p.tarifas.slice().sort(function (a, b) { return Number(a.dias) - Number(b.dias); }).forEach(function (t) {
-      tar.appendChild(h('div', { class: 'fl-fila', 'data-tarifa-id': t.id, 'data-dias': String(t.dias) }, [h('span', { class: 'fl-dato fl-grande', text: unDia(t.dias) }),
-        h('span', { class: 'fl-dato', text: precioTal(t.precio, t.moneda) }), h('span', { class: 'fl-dato fl-notas', text: t.etiqueta ? String(t.etiqueta) : '' }),
+      rej.appendChild(h('div', { class: 'fl-fila', 'data-tarifa-id': t.id, 'data-dias': String(t.dias) }, [h('span', { class: 'fl-dato fl-grande fl-dias font-label-md uppercase', text: unDia(t.dias) }),
+        h('span', { class: 'fl-dato fl-precio', text: precioTal(t.precio, t.moneda) }), t.etiqueta ? h('span', { class: 'fl-dato fl-notas', text: String(t.etiqueta) }) : null,
         h('div', { class: 'axw-acciones' }, [C.boton(T('Cambiar'), 'fl-tarifa-cambiar', { 'data-tarifa-id': t.id }), C.boton(T('Borrar'), 'fl-tarifa-borrar', { 'data-tarifa-id': t.id, 'data-peligro': '1' })])]));
     });
-    caja.appendChild(tar);
+    if (hayTarifas) tar.appendChild(rej);
+    tar.appendChild(h('div', { class: 'fl-barra' }, [C.boton(T('Añadir o cambiar un tramo'), 'fl-tarifa-abrir', hayTarifas ? { 'data-producto-id': p.id } : { 'data-producto-id': p.id, 'data-primario': '1' })]));
+    // motos: tabla (matrícula · estado · notas · editar); las filas siguen siendo .fl-fila[data-unidad-id]
+    var motos = h('div', { class: 'fl-bloque', 'data-fl': 'motos' }, [h('div', { class: 'fl-bloque-cab' }, [h('h3', { class: 'font-label-md uppercase', text: T('Motos') + ' (' + p.unidades.length + ')' }),
+      C.boton(T('Añadir motos'), 'fl-lote-abrir', { 'data-producto-id': p.id })])]);
+    if (!p.unidades.length) motos.appendChild(h('p', { class: 'fl-ayuda', text: T('Este producto no tiene motos.') }));
+    else {
+      var tabla = h('div', { class: 'fl-motos-tabla' }, [h('div', { class: 'fl-motos-th font-label-md uppercase', 'aria-hidden': 'true' }, [h('span', { text: T('Matrícula') }), h('span', { text: T('Estado') }), h('span', { text: T('Notas') }), h('span')])]);
+      p.unidades.forEach(function (u) {
+        var e = ESTADOS[u.estado] || [String(u.estado == null ? '—' : u.estado), 'neutro'];
+        tabla.appendChild(h('div', { class: 'fl-fila', 'data-unidad-id': u.id }, [h('span', { class: 'fl-dato fl-grande font-label-md uppercase', text: u.identificador }),
+          h('span', null, [C.chip(ESTADOS[u.estado] ? T(e[0]) : e[0], e[1])]), h('span', { class: 'fl-dato fl-notas', text: u.notas ? String(u.notas) : T('Sin notas') }),
+          h('div', { class: 'axw-acciones' }, [C.boton(T('Editar'), 'fl-moto-editar', { 'data-unidad-id': u.id })])]));
+      });
+      motos.appendChild(tabla);
+    }
+    caja.appendChild(h('div', { class: 'fl-cuerpo' }, [tar, motos]));
     return caja;
+  }
+  // Cifras de arriba: SOLO cuentas del estado de cada moto que da la base. «Disponible» = no está en taller ni de baja (puede estar alquilada: la base no lo dice aquí).
+  function cifras(d) {
+    var c = { disponible: 0, taller: 0, baja: 0 }, total = 0;
+    d.productos.forEach(function (p) { p.unidades.forEach(function (u) { total++; if (u.estado in c) c[u.estado]++; }); });
+    var mas = d.recortado === true ? '+' : '';
+    Object.keys(c).forEach(function (k) { $v('c-' + k).textContent = c[k] + mas; });
+    $v('c-total').textContent = T('De %n motos en total').replace('%n', total + mas);
+    $v('n-modelos').textContent = T('Modelos · %n').replace('%n', d.productos.length + mas);
   }
   function pinta(d) {
     E.d = d;
     var lista = vacia($v('lista'));
     d.productos.forEach(function (p) { lista.appendChild(pintaProducto(p)); });
+    cifras(d);
     oculta($v('recortado'), d.recortado !== true);
     var est = $v('estado');
     if (!d.productos.length) {

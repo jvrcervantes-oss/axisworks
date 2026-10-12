@@ -84,7 +84,7 @@ her = lee(d, 'contracts/assets/herramientas.js') if r == 'pasa' else ''
 mira('la pagina lleva la puerta de la herramienta flota y ya no la del asistente', 'data-herramienta="flota"' in pagina and 'data-herramienta="asistente"' not in pagina)
 mira('el titulo es Flota y tarifas', '<title data-lw-titulo>Flota y tarifas</title>' in pagina)
 mira('las pantallas de Lawang, Taller y Entrega no se mezclan en la nueva', 'asistente-peticiones' not in pagina and 'Telegram' not in pagina and 'data-tl="raiz"' not in pagina and 'data-en="raiz"' not in pagina)
-mira('el marcado y el script de la fuente entran una vez', pagina.count('<div class="flex flex-col w-full gap-8" data-fl="raiz">') == 1 and pagina.count('var EN_FL = {') == 1)
+mira('el marcado y el script de la fuente entran una vez', pagina.count('<div class="flex flex-col w-full gap-8 fl" data-fl="raiz">') == 1 and pagina.count('var EN_FL = {') == 1)
 mira('las ayudas comunes se pegan UNA vez (js y css) y las marcas no quedan en la pagina',
      pagina.count('function axwComun(raiz, T)') == 1 and pagina.count('.axw-boton{') == 1 and '/*AXW_COMUN_' not in pagina)
 mira('NO hay otra copia local de las ayudas (h, dialogo, clasifica, ocupa, tabla, chip, importe...) fuera de las comunes',
@@ -243,6 +243,12 @@ mira('todo texto pintable esta en el diccionario ES/EN' + (' (faltan: ' + '; '.j
 bloque_lineas = re.findall(r"'((?:[^'\\]|\\.)*)'\s*:\s*'", bloque)
 repetidas = sorted({c for c in bloque_lineas if bloque_lineas.count(c) > 1})
 mira('ninguna clave repetida en EN_FL' + (' (' + ', '.join(repetidas) + ')' if repetidas else ''), not repetidas)
+# el indonesio cubre todo el inglés de la pantalla: una clave nueva sin indonesio caería al inglés en bbm sin avisar (Frontend, revisión previa p37, 13-oct)
+js_id = os.path.join(tmp, 'kid.js')
+open(js_id, 'w', encoding='utf-8').write(JS[JS.index('var ID_FL = {'):JS.index('var T = typeof window.lwT')] + '\nconsole.log(JSON.stringify([Object.keys(ID_FL), Object.keys(EN_FL)]));')
+_id, _en = json.loads(subprocess.run(['node', js_id], capture_output=True, text=True, encoding='utf-8').stdout or '[[],[]]')
+faltan_id = sorted(set(_en) - set(_id))
+mira('ID_FL tiene indonesio para toda clave de EN_FL' + (' (faltan: ' + '; '.join(c[:50] for c in faltan_id[:6]) + ')' if faltan_id else ''), bool(_en) and not faltan_id)
 
 if fallos:
     print('FALLOS (%d de %d):\n  ' % (len(fallos), casos) + '\n  '.join(fallos))
