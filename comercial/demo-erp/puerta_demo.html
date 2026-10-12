@@ -457,7 +457,8 @@ img,svg{display:block}
      guard.js, así que borra aquí lo mismo que LW_DEMO_RESTABLECE() (contrato con el paquete A: sessionStorage, prefijo
      «axw-demo:») y, además, el localStorage de este origen: demo.axisworks.studio solo sirve la demo, y ahí guardan sus
      preferencias de pantalla (idioma, módulos encendidos, tour visto). Sin esto, «Reset» no volvía del todo al principio.
-     Comentario HTML y no de JS a propósito: puerta_demo() quita los <!-- --> y la portada no pasa por limpia_publico.js. -->
+     Comentario HTML y no de JS a propósito: puerta_demo() quita los comentarios HTML y la portada no pasa por el limpiador
+     de comentarios del resto del paquete. Dentro de un comentario nunca se escribe su marca de cierre. -->
 <script>
 (function () {
   var b = document.querySelector('[data-accion="demo-restablece"]');
