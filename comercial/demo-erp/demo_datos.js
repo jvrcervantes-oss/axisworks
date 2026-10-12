@@ -164,20 +164,26 @@
       return f;
     }
 
-    /* Guion de ventas: [proyecto, parcela, comprador, agente, etapa, días desde el bloqueo]
-       etapa: 'bloqueo_sin_firmar' | 'bloqueo' | 'carta' | 'construccion' | 'construccion_sin_firmar' */
+    /* Guion de ventas: [proyecto, parcela, comprador, agente, etapa, días desde el bloqueo, opciones?]
+       etapa: 'bloqueo_sin_firmar' | 'bloqueo' | 'carta' | 'construccion' | 'construccion_sin_firmar'
+       opciones: { fase: fase de obra que se impone (p. ej. 'entregada'), impagada: la señal se factura y no se cobra (vencida) } */
     var GUION = [
       [0, 1, 0, 0, 'construccion', -210], [0, 2, 1, 1, 'construccion', -160], [0, 4, 2, 2, 'carta', -40],
       [0, 7, 3, 0, 'bloqueo', -12], [0, 9, 4, 3, 'bloqueo_sin_firmar', -2],
       [1, 1, 5, 2, 'construccion', -180], [1, 3, 6, 1, 'construccion_sin_firmar', -25], [1, 6, 7, 3, 'carta', -18],
       [2, 1, 8, 0, 'construccion', -240], [2, 2, 9, 2, 'construccion', -130], [2, 3, 10, 1, 'carta', -27],
       [2, 5, 11, 3, 'carta', -8], [2, 8, 12, 0, 'construccion', -95], [2, 11, 13, 2, 'bloqueo', -5],
-      [2, 13, 14, 1, 'bloqueo_sin_firmar', -1]
+      [2, 13, 14, 1, 'bloqueo_sin_firmar', -1],
+      /* El cliente de ejemplo del portal (Jasper van Duinhoven, 12-oct, orquestador: «el portal se ve pobre al lado del de
+         referencia») tiene varias propiedades en fases distintas, como el modo demo del portal de origen: una entregada y
+         pagada, una con la firma pendiente y una con la señal vencida. Van AL FINAL para no mover la numeración de las de arriba. */
+      [0, 11, 8, 1, 'construccion', -400, { fase: 'entregada' }], [1, 8, 8, 2, 'bloqueo_sin_firmar', -3],
+      [0, 12, 8, 3, 'bloqueo', -45, { impagada: true }]
     ];
     GUION.forEach(function (g, i) {
       var p = PROYECTOS[g[0]];
       var u = unidades.filter(function (x) { return x.proyecto_id === p.id; })[g[1] - 1];
-      var cli = clientes[g[2]], ag = AGENTES[g[3]], etapa = g[4], d0 = g[5];
+      var cli = clientes[g[2]], ag = AGENTES[g[3]], etapa = g[4], d0 = g[5], opc = g[6] || {};
       var firmadoRP = etapa !== 'bloqueo_sin_firmar';
       var rp = contrato('reserva_parcela', u, cli, ag, u.precio_suelo, firmadoRP, d0);
       u.estado = firmadoRP ? 'reservada' : 'disponible'; u.contrato_id = rp.id;
@@ -185,7 +191,10 @@
       /* Bloqueo: señal del 10 % del suelo — proforma y, si está firmado, cobrada. */
       var senal = redondea(u.precio_suelo * 0.1, 100);
       factura('proforma', rp, cli, senal, d0, 'Plot hold deposit ' + u.codigo);
-      if (firmadoRP) {
+      if (firmadoRP && opc.impagada) {
+        // facturada y sin cobrar, vencida hace días: el «Overdue» del portal y un pendiente de cobro en la intranet
+        factura('factura', rp, cli, senal, d0 + 1, 'Plot hold deposit ' + u.codigo, { venc: dia(d0 + 15) });
+      } else if (firmadoRP) {
         var fs = factura('factura', rp, cli, senal, d0 + 1, 'Plot hold deposit ' + u.codigo);
         var rs = factura('recibi', rp, cli, senal, d0 + 3, 'Deposit payment ' + u.codigo);
         aplic.push({ id: 'ra-' + rs.id, recibi_id: rs.id, factura_id: fs.id, importe_aplicado: senal });
@@ -214,7 +223,8 @@
         var firmadoCC = etapa === 'construccion';
         var k = contrato('construccion', u, cli, ag, u.precio_construccion, firmadoCC, d0 + 20, padre);
         if (firmadoCC) { u.estado = 'vendida'; u.obra_fase = d0 < -150 ? 'estructura' : 'cimentacion';
-          u.obra_fecha_entrega = dia(d0 + 330); u.obra_actualizado = ts(-(i % 9) - 1); }
+          u.obra_fecha_entrega = dia(d0 + 330); u.obra_actualizado = ts(-(i % 9) - 1);
+          if (opc.fase) { u.obra_fase = opc.fase; if (opc.fase === 'entregada') u.obra_fecha_entrega = dia(-20); } }
         /* Calendario por hitos de obra: 30 / 30 / 30 / 10. */
         [['Contract signing', 30, 0], ['Structure complete', 30, 90], ['Roof and enclosure', 30, 180], ['Key handover', 10, 300]]
           .forEach(function (h, j) {

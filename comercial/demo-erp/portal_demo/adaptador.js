@@ -36,22 +36,44 @@
   /* ── imágenes dibujadas: portadas y fotos de obra (data: SVG; la CSP de la demo admite img-src data:) ── */
   function svgUrl(s) { return 'data:image/svg+xml;utf8,' + encodeURIComponent(s); }
   var PALETAS = [['#cfe0dc', '#9fbfb6', '#5f8f86', '#2f5d57'], ['#efe2cc', '#d9bf95', '#b08d57', '#6e5530'], ['#dfe3ec', '#aab6cc', '#6f82a3', '#3c4d6b']];
+  // Tres escenas distintas (no solo de color), una por proyecto: villas en ladera, villa con piscina frente al mar y casas
+  // entre palmeras. Dibujos propios, sin ninguna foto de un proyecto real.
+  function palmera(x, y, c) {
+    return '<rect x="' + (x - 3) + '" y="' + y + '" width="6" height="70" fill="' + c + '"/>' +
+      '<path d="M' + x + ' ' + y + ' q-34 -6 -46 14 M' + x + ' ' + y + ' q34 -6 46 14 M' + x + ' ' + y + ' q-20 -26 -40 -22 M' + x + ' ' + y + ' q20 -26 40 -22" stroke="' + c + '" stroke-width="7" fill="none" stroke-linecap="round"/>';
+  }
   function portada(i) {
-    var p = PALETAS[i % PALETAS.length];
-    var casas = '';
-    for (var k = 0; k < 5; k++) {
-      var x = 70 + k * 120, y = 250 - (k % 2) * 18;
-      casas += '<rect x="' + x + '" y="' + y + '" width="86" height="48" fill="#f7f4ee"/><polygon points="' + (x - 6) + ',' + y + ' ' + (x + 43) + ',' + (y - 30) + ' ' + (x + 92) + ',' + y + '" fill="' + p[3] + '"/>';
+    var p = PALETAS[i % PALETAS.length], v = i % 3, s = '';
+    if (v === 0) {   // ladera con villas escalonadas
+      s += '<path d="M0 230 Q200 150 400 210 T800 190 V400 H0Z" fill="' + p[1] + '"/><path d="M0 300 Q260 250 520 290 T800 280 V400 H0Z" fill="' + p[2] + '"/>';
+      for (var k = 0; k < 5; k++) {
+        var x = 70 + k * 120, y = 250 - (k % 2) * 18;
+        s += '<rect x="' + x + '" y="' + y + '" width="86" height="48" fill="#f7f4ee"/><polygon points="' + (x - 6) + ',' + y + ' ' + (x + 43) + ',' + (y - 30) + ' ' + (x + 92) + ',' + y + '" fill="' + p[3] + '"/>';
+      }
+      s += '<circle cx="660" cy="80" r="34" fill="#fbf9f4" opacity=".85"/>';
+    } else if (v === 1) {   // villa con piscina frente al mar
+      s += '<rect y="170" width="800" height="70" fill="' + p[2] + '"/><rect y="240" width="800" height="160" fill="' + p[1] + '"/>' +
+        '<rect x="170" y="150" width="380" height="110" fill="#f7f4ee"/><rect x="150" y="136" width="420" height="16" fill="' + p[3] + '"/>' +
+        '<rect x="210" y="185" width="110" height="75" fill="' + p[2] + '" opacity=".55"/><rect x="360" y="185" width="150" height="75" fill="' + p[2] + '" opacity=".55"/>' +
+        '<rect x="120" y="290" width="520" height="70" rx="6" fill="#9fd3d6"/><rect x="120" y="290" width="520" height="70" rx="6" fill="none" stroke="#fbf9f4" stroke-width="6"/>' +
+        palmera(680, 170, p[3]) + '<circle cx="120" cy="70" r="30" fill="#fbf9f4" opacity=".85"/>';
+    } else {   // casas bajas entre palmeras
+      s += '<rect y="250" width="800" height="150" fill="' + p[1] + '"/><path d="M0 270 Q400 230 800 270 V400 H0Z" fill="' + p[2] + '"/>';
+      for (var j = 0; j < 3; j++) {
+        var x2 = 110 + j * 220;
+        s += '<rect x="' + x2 + '" y="205" width="130" height="60" fill="#f7f4ee"/><polygon points="' + (x2 - 14) + ',208 ' + (x2 + 65) + ',160 ' + (x2 + 144) + ',208" fill="' + p[3] + '"/>';
+      }
+      s += palmera(70, 190, p[3]) + palmera(330, 180, p[3]) + palmera(560, 185, p[3]) + palmera(760, 195, p[3]) +
+        '<circle cx="640" cy="70" r="30" fill="#fbf9f4" opacity=".85"/>';
     }
-    return svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400"><rect width="800" height="400" fill="' + p[0] + '"/>' +
-      '<path d="M0 230 Q200 150 400 210 T800 190 V400 H0Z" fill="' + p[1] + '"/><path d="M0 300 Q260 250 520 290 T800 280 V400 H0Z" fill="' + p[2] + '"/>' +
-      casas + '<circle cx="660" cy="80" r="34" fill="#fbf9f4" opacity=".85"/></svg>');
+    return svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400"><rect width="800" height="400" fill="' + p[0] + '"/>' + s + '</svg>');
   }
   function foto(n, fase) {
     var f = ['#cdbfa6', '#bfae92', '#b09c7e'][n % 3], pilares = fase === 'cimentacion' ? 0 : 3 + (n % 3), p = '';
     for (var i = 0; i < pilares; i++) p += '<rect x="' + (60 + i * 70) + '" y="' + (120 - n % 4 * 10) + '" width="16" height="' + (130 + n % 4 * 10) + '" fill="#8A8474"/>';
+    var techo = (fase === 'cimentacion' || fase === 'estructura') ? '' : '<rect x="44" y="104" width="312" height="14" fill="#42210B"/>';
     return svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="#e7e1d2"/><rect y="236" width="400" height="64" fill="' + f + '"/>' +
-      '<rect x="40" y="228" width="320" height="14" fill="#6f6a5c"/>' + p + '</svg>');
+      '<rect x="40" y="228" width="320" height="14" fill="#6f6a5c"/>' + p + techo + '</svg>');
   }
   var DOC_MUESTRA = '/portal/demo/documento.html';
   var IMG = {};
@@ -65,7 +87,7 @@
   }
   function lee(sb) {
     return Promise.all([
-      sb.from('clients').select('id,full_name,email,phone,nationality,kyc_status,created_at,portal_prefs'),
+      sb.from('clients').select('id,full_name,email,phone,nationality,kyc_status,created_at,portal_prefs,passport_number,tipo'),
       sb.from('contratos').select('id,numero,tipo,bloqueado,created_at,fecha_firma,moneda,precio_total,proyecto_id,proyecto_nombre,parcela_codigo,unidad_id,contrato_padre_id'),
       sb.from('contrato_compradores').select('contrato_id,client_id,rol'),
       sb.from('facturas').select('id,numero,tipo,anulada,client_id,contrato_id,contrato_numero,proyecto_nombre,fecha_emision,moneda,total,sociedad,venc,datos'),
@@ -223,7 +245,8 @@
       var u = kk && uPorId[kk.unidad_id];
       if (k.tipo !== 'construccion' || !k.firmado || !u || !u.obra_fase) return;
       var titulos = u.obra_fase === 'cimentacion' ? [['Foundation pour', -6], ['Excavation', -19], ['Site set-out', -33]]
-        : [['Columns, north side', -4], ['Slab formwork', -12], ['Foundations finished', -30], ['Excavation', -52]];
+        : u.obra_fase === 'estructura' ? [['Columns, north side', -4], ['Slab formwork', -12], ['Foundations finished', -30], ['Excavation', -52]]
+        : [['Key handover', -15], ['Interior finishes', -48], ['Roof completed', -110]];
       obra.push({ unidad: u.codigo, proyecto: k.proyecto, contrato_numero: k.numero, fase: u.obra_fase, fecha_entrega: soloDia(u.obra_fecha_entrega),
         actualizado: soloDia(u.obra_actualizado) || dia(-4),
         fotos: titulos.map(function (t, i) { return { path: img('obra/' + u.codigo + '/' + i, foto(i + j, u.obra_fase)), titulo: t[0], fecha: dia(t[1]) }; }) });
@@ -237,7 +260,9 @@
       });
     });
 
-    var kyc = cli.kyc_status === 'verified'
+    // Pasaporte de ejemplo de quien tiene número de pasaporte en su ficha (no las empresas): caduca pronto para que se vea el
+    // aviso de Inicio, como en el modo demo del portal de origen.
+    var kyc = cli.passport_number && cli.tipo !== 'empresa'
       ? [{ tipo: 'passport', subido: cli.created_at || iso(-200), caduca: dia(13), path: 'kyc/passport.html' }]
       : [];
 
