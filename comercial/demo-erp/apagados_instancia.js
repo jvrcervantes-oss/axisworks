@@ -302,7 +302,12 @@
         // {activos: [...] | null} (forma declarada en FORMAS_DATOS de erp/modulos.py)
         if (x.error) decide(x.error);
         else if (!x.data || typeof x.data !== 'object' || Array.isArray(x.data) || !('activos' in x.data)) decide(new Error('forma de modulos_activos_datos'));
-        else decide(null, x.data.activos);
+        else {
+          /* La moneda de la instancia (F3 fase E, 12-oct-2026; Backend la añade a esta misma respuesta): se fija ANTES de soltar la sesión, así
+             ninguna pantalla de módulo pinta un importe sin saberla. null o ausente = desconocida, nunca EUR (lwMonedaBase la lee). */
+          if ('moneda' in x.data) window.LW_MONEDA_BASE = typeof x.data.moneda === 'string' && /^[A-Z]{3}$/.test(x.data.moneda) ? x.data.moneda : null;
+          decide(null, x.data.activos);
+        }
       });
     }).catch(function (e) { decide(e); });
     return true;
