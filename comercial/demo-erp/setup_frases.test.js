@@ -15,7 +15,9 @@ const path = require('path');
 const vm = require('vm');
 
 const AQUI = __dirname;
-const ORDEN = ['setup_modulos.js', 'setup_pasos.js', 'cobros_paso.js', 'setup_reservas.js', 'setup_comun.js'];   // el orden de build.py
+// el orden en que los sirve el paquete (medido en el build de bbm): setup_modulos (dentro de guard.js) → setup_pasos → setup_reservas → setup_comun →
+// cobros_paso. Cuenta para los choques: fusiona() no pisa, así que entre dos ficheros gana el que carga antes.
+const ORDEN = ['setup_modulos.js', 'setup_pasos.js', 'setup_reservas.js', 'setup_comun.js', 'cobros_paso.js'];
 const FUENTES = ORDEN.map(f => [f, fs.readFileSync(path.join(AQUI, f), 'utf8')]);
 const I18N_ID = JSON.parse(fs.readFileSync(path.join(AQUI, 'i18n_id.json'), 'utf8'));
 

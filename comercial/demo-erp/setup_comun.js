@@ -230,13 +230,16 @@
     document.body.appendChild(dl);
     return id;
   }
+  // Lo tecleado sobrevive a un guardado que falla: el anfitrión repinta el paso con los valores que tenía (revisor, 12-oct, BAJA)
+  var BORRADOR_NEGOCIO = null;
   function marcaActual(ctx) { return texto(ctx.ajustes && ctx.ajustes.marca).trim(); }
   function zonaActual(ctx) { return texto(ctx.ajustes && ctx.ajustes.zona_horaria).trim(); }
   var negocio = {
     sinMotivo: true,   // la base no pide motivo para marca ni zona_horaria (130000: solo impuestos y moneda)
     pinta: function (caja, ctx) {
-      campo(caja, 'marca', U('co_nombre'), marcaActual(ctx), { max: 60, ayuda: U('co_nombre_ayuda') });
-      campo(caja, 'zona_horaria', U('co_zona'), zonaActual(ctx), { max: 64, lista: listaZonas(), ayuda: U('co_zona_ayuda') });
+      var bn = BORRADOR_NEGOCIO;
+      campo(caja, 'marca', U('co_nombre'), bn ? bn.marca : marcaActual(ctx), { max: 60, ayuda: U('co_nombre_ayuda') });
+      campo(caja, 'zona_horaria', U('co_zona'), bn ? bn.zona_horaria : zonaActual(ctx), { max: 64, lista: listaZonas(), ayuda: U('co_zona_ayuda') });
       return {
         valores: function () {
           var m = val(caja, 'marca'), z = val(caja, 'zona_horaria'), er = [];
@@ -260,7 +263,8 @@
         }
         return guardaClave(sb, cola[i][0], cola[i][1]).then(function (r) { return r.ok ? uno(i + 1) : r; });
       }
-      return uno(0);
+      BORRADOR_NEGOCIO = { marca: v.marca, zona_horaria: v.zona_horaria };
+      return uno(0).then(function (r) { if (r.ok) BORRADOR_NEGOCIO = null; return r; });
     },
     comprueba: function (v, ctx) { return marcaActual(ctx) === v.marca && zonaActual(ctx) === v.zona_horaria; }
   };

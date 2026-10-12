@@ -15,7 +15,7 @@
 (function () {
   'use strict';
 
-  // ── Textos: código → frase (es). Lista cerrada; un código que no esté sale como «… (código: x)» traducido y se cuenta. ───────────────
+  // ── Textos: código → frase (es). Lista cerrada; un código que no esté sale con una frase digna por tipo, SIN el código, y se cuenta. ──
   var TEXTOS = {
     modulo: {
       base: 'Datos generales', facturas: 'Facturas', recibos: 'Recibos', 'reservas-producto': 'Reservas de producto',
