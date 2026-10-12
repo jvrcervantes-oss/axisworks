@@ -9,19 +9,19 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
-  RewriteRule ^intranet(?:/index\.html)?/?$ / [R=302,L,QSA]
+  RewriteRule ^intranet(?:/index\.html)?/?$ / [R=301,L,QSA]
   RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
-  RewriteRule ^intranet/v4(?:/index\.html)?/?$ / [R=302,L,QSA]
+  RewriteRule ^intranet/v4(?:/index\.html)?/?$ / [R=301,L,QSA]
   RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
-  RewriteRule ^intranet/v4/entrar(?:/.*)?$ /entrar/ [R=302,L,QSA]
+  RewriteRule ^intranet/v4/entrar(?:/.*)?$ /entrar/ [R=301,L,QSA]
   RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
-  RewriteRule ^intranet/v4/(ajustes|asistente|asistente\-correos|bancos|comision\-admin|comisiones|compradores|comunicacion|condiciones|contratos|contratos\-inversor|creatividades|cuentas|documentacion|emitir|equipos\-venta|facturas|finanzas|flujo|gastos|generador\-contratos|home|leads|modelos|obra|operaciones|plantillas|productos|proyectos|proyectos\-cuentas|recibos|reparto|reservas|sociedades|soporte|textos\-contrato|usuarios|vencimientos|assets)(?:/(.*))?$ /$1/$2 [R=302,L,QSA]
+  RewriteRule ^intranet/v4/(ajustes|asistente|asistente\-correos|bancos|comision\-admin|comisiones|compradores|comunicacion|condiciones|contratos|contratos\-inversor|creatividades|cuentas|documentacion|emitir|equipos\-venta|facturas|finanzas|flujo|gastos|generador\-contratos|home|leads|modelos|obra|operaciones|plantillas|productos|proyectos|proyectos\-cuentas|recibos|reparto|reservas|sociedades|soporte|textos\-contrato|usuarios|vencimientos|assets)(?:/(.*))?$ /$1/$2 [R=301,L,QSA]
   RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
-  RewriteRule ^intranet/(facturas|vencimientos)/?(?:index\.html)?$ /$1/ [R=302,L,QSA]
+  RewriteRule ^intranet/(facturas|vencimientos)/?(?:index\.html)?$ /$1/ [R=301,L,QSA]
   RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
-  RewriteRule ^intranet/(leads|obra|creatividades|dossier|facturas|vencimientos)(?:/(.*))?$ /clasico/$1/$2 [R=302,L,QSA]
+  RewriteRule ^intranet/(leads|obra|creatividades|dossier|facturas|vencimientos)(?:/(.*))?$ /clasico/$1/$2 [R=301,L,QSA]
   RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
-  RewriteRule ^intranet/(ajustes|asistente|asistente\-correos|bancos|comision\-admin|comisiones|compradores|comunicacion|condiciones|contratos|contratos\-inversor|cuentas|documentacion|emitir|equipos\-venta|finanzas|flujo|gastos|generador\-contratos|home|modelos|operaciones|plantillas|productos|proyectos|proyectos\-cuentas|recibos|reparto|reservas|sociedades|soporte|textos\-contrato|usuarios)(?:/(.*))?$ /$1/$2 [R=302,L,QSA]
+  RewriteRule ^intranet/(ajustes|asistente|asistente\-correos|bancos|comision\-admin|comisiones|compradores|comunicacion|condiciones|contratos|contratos\-inversor|cuentas|documentacion|emitir|equipos\-venta|finanzas|flujo|gastos|generador\-contratos|home|modelos|operaciones|plantillas|productos|proyectos|proyectos\-cuentas|recibos|reparto|reservas|sociedades|soporte|textos\-contrato|usuarios)(?:/(.*))?$ /$1/$2 [R=301,L,QSA]
 </IfModule>
 <IfModule mod_headers.c>
   Header always set X-Robots-Tag "noindex, nofollow"

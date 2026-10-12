@@ -87,7 +87,8 @@
     // Con el menú lateral fijo a la vista (288 px desde 1024), la barra va a su derecha: encima tapaba «Salir». Se recalcula
     // al cambiar el tamaño de la ventana.
     function coloca() {
-      var menu = document.querySelector('aside.fixed');
+      // #sidebar: el menú del portal de clientes (12-oct); en la intranet es el aside fijo.
+      var menu = document.querySelector('aside.fixed') || document.querySelector('#vApp #sidebar');
       var r = menu && menu.getBoundingClientRect();
       n.style.left = (r && r.width > 0 && r.right > 0 && window.innerWidth >= 1024 ? Math.round(r.right) + 16 : 12) + 'px';
     }
@@ -95,7 +96,9 @@
     window.addEventListener('resize', coloca);
     // Con un editor, cajón o diálogo abierto la barra se aparta: a 390 px tapaba «Emitir» del editor de factura (medido el
     // 12-oct con elementFromPoint). Vuelve sola al cerrarlo.
-    var ABIERTO = '#lw-editor,#lw-cajon,.lw-dlg-fondo.abierto,.axf-capa:not([hidden]),.ptl-visor,#lw-novedades';
+    // Portal de clientes (12-oct): su cajón (#drawer), el velo del menú en móvil y el visor de fotos de obra.
+    var ABIERTO = '#lw-editor,#lw-cajon,.lw-dlg-fondo.abierto,.axf-capa:not([hidden]),#lw-novedades,' +
+      '#drawer:not([hidden]),#overlaySidebar:not([hidden]),.ob-visor';
     function aparta() {
       var tapa = document.querySelector(ABIERTO) || document.body.classList.contains('v4-nav-abierta');
       n.style.display = tapa ? 'none' : 'flex';

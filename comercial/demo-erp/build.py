@@ -116,7 +116,10 @@ DEMO = {'marca': 'AxisWorks Demo', 'cabecera': 'AXISWORKS', 'subcabecera': 'ERP 
 # Marcas y nombres de clientes que NUNCA pueden salir en la demo pública (owner, 11-oct: «marca blanca»; revisión previa de
 # Backend: los proyectos de Lawang que lleva su portal). Se comprueba sobre TODO lo publicado, portal incluido.
 MARCAS_CLIENTE = re.compile(r'(?i)lawang|sandal\s*woods|boda\s*enlace|bali\s*best|balibest|palm\s*field|sumba\s*hills|bonian|'
-                            r'riverfront|bali\s*moto|bali2komodo|' + SB_HOST)
+                            r'riverfront|bali\s*moto|bali2komodo|'
+                            # 12-oct (portal de la demo = el del ERP): la mascota del cliente, su demo de origen y su zona
+                            # («balian» con borde: «pengembalian» es indonesio corriente).
+                            r'moanito|marta\s*keller|(?<![a-z])balian(?![a-z])|' + SB_HOST)
 # Sesión real que hubiera en el origen (sb-*: refresh token de Supabase), fuera antes de nada: la demo (Seguridad #2,
 # 25-sep) y la portada de erp., que fue el origen del ERP real y comparte storage con el configurador (rev. #146).
 LIMPIA_SESION = ("(function(){try{[localStorage,sessionStorage].forEach(function(s){for(var i=s.length-1;i>=0;i--){"
@@ -460,7 +463,7 @@ def reraiz(dist):
     return pantallas
 
 
-def legado_htaccess(dist):
+def legado_htaccess(dist, codigo=302):
     """Bloque de .htaccess con el legado: lo de antes no muere (enlaces guardados, correos ya enviados, `?next=`).
     302 y no 301 mientras el mapa no esté verificado en producción (un 301 se guarda para siempre en el navegador);
     pasarán a 301 cuando lo esté. Solo GET/HEAD. Patrones CERRADOS: el primer segmento del destino sale de una lista
@@ -489,9 +492,11 @@ def legado_htaccess(dist):
         # enlaces así (avisos) y cabecera.js ya los traducía al pintar. Detrás de las clásicas, que comparten algún nombre.
         ('^intranet/(' + lista_v3 + ')(?:/(.*))?$', '/$1/$2'),
     ]
+    if codigo not in (301, 302):
+        aborta('legado_htaccess: código de redirección %r (solo 301 o 302)' % codigo)
     return ('# Legado: lo de antes no muere. 302 hasta verificar el mapa en producción; luego 301.\n'
             '<IfModule mod_rewrite.c>\n  RewriteEngine On\n'
-            + ''.join(get + '  RewriteRule %s %s [R=302,L,QSA]\n' % (p, d) for p, d in reglas) + '</IfModule>\n')
+            + ''.join(get + '  RewriteRule %s %s [R=%d,L,QSA]\n' % (p, d, codigo) for p, d in reglas) + '</IfModule>\n')
 
 
 def escribe_instancia(ficha):
@@ -619,9 +624,12 @@ def guard_demo():
     # catalogo.js (fuente única de módulos) → modulos.js (menú y aviso de módulo apagado) → tour.js → cascara.js, en
     # ese orden: un script insertado por JS es asíncrono salvo async=false. Detrás, «New contract» y la firma de ejemplo del
     # paquete B (/flujo/nuevo-contrato.js carga sus otros tres ficheros desde su carpeta). El portal ya lo carga él mismo.
+    # En /portal/ (el portal de clientes, otra puerta de la demo) solo la barra: ni el filtro de módulos marcados en la portada
+    # (taparía el portal con su aviso o escondería botones por su texto) ni el tour de la intranet; «New contract»/firma la carga
+    # la propia página (revisión previa de Frontend #279, 12-oct).
     volver = ("window.__lwNovedades = true;\n"
               "['/demo/catalogo.js','/demo/modulos.js','/demo/tour.js','/demo/cascara.js','/flujo/nuevo-contrato.js'].filter(function(u){"
-              "return u.indexOf('/flujo/')!==0||location.pathname.indexOf('/portal/')!==0;}).forEach(function(u){var s=document.createElement('script');"
+              "return location.pathname.indexOf('/portal/')!==0||u==='/demo/cascara.js';}).forEach(function(u){var s=document.createElement('script');"
               "s.src=u;s.async=false;(document.head||document.documentElement).appendChild(s);});\n")
     # Sesión real que el presentador pudiera tener en este origen: fuera antes de nada (Seguridad #2).
     limpia_sesion = LIMPIA_SESION + 'window.AXW_PORTADA = %s;\n' % json.dumps(PORTADA_URL)
@@ -835,16 +843,133 @@ def paginas_propias():
     # /entrar/ (el acceso de la intranet real) lleva a la portada de dos puertas: en la demo no hay contraseña.
     os.makedirs(os.path.join(DIST, 'entrar'), exist_ok=True)
     open(os.path.join(DIST, 'entrar', 'index.html'), 'w', encoding='utf-8').write(redir.replace('/home/', '/'))
-    # /portal/: el portal de cliente de la demo (paquete B) cuando llegue; hasta entonces, un aviso que no engaña.
-    os.makedirs(os.path.join(DIST, 'portal'), exist_ok=True)
-    open(os.path.join(DIST, 'portal', 'index.html'), 'w', encoding='utf-8').write(AVISO_DEMO.format(
-        t='Client portal', m='The client portal of the demo opens here in its next update. Meanwhile, the intranet shows '
-                             'every client\'s record with their contracts, invoices and payments.'))
+    # /portal/: el portal de clientes del ERP, copiado y transformado por portal_lawang() antes de cierra_referencias().
+    if not os.path.isfile(os.path.join(DIST, 'portal', 'index.html')):
+        aborta('paginas_propias: falta /portal/index.html (portal_lawang() no se ha ejecutado)')
 
 
 FLUJO = os.path.join(AQUI, 'flujo')
 FLUJO_FICHEROS = ('textos.js', 'contrato_ejemplo.js', 'nuevo-contrato.js', 'flujo.css')
-FLUJO_PORTAL = ('portal.js', 'portal.css')
+
+# ── El portal de clientes de la demo es el del ERP TAL CUAL (owner, 12-oct-2026 07:02: «El client portal no! Quiero la demo que
+# hicimos para Lawang, tal cual está»; 07:08: «igual, con marca AxisWorks Demo», «enlazado con la intranet», «inglés»). Se copia
+# de Lawang FIJADO (el mismo commit que la intranet de la demo) y se transforma con reemplazos LITERALES de recuento exacto: si
+# Lawang cambia uno de estos trozos, el build para en vez de publicar un portal a medias. No se copian su fichero de datos de
+# demo (nombres de un cliente real), sus portadas reales ni sus pruebas: los datos salen del MISMO doble que la intranet, por el
+# adaptador portal_demo/adaptador.js. Revisión previa #279 (Frontend + Seguridad) en encargos/20261011_demo_cliente_flujo_total.md.
+PORTAL_LAWANG = ('index.html', 'resumen.js', 'calendario.js', 'zip.js', 'motion.js', 'enlace.js')
+PORTAL_DEMO = os.path.join(AQUI, 'portal_demo')
+# El bloque «MODO DEMO» del portal de origen: con ?demo carga su fichero de datos y, si no carga, falla cerrado. En la demo
+# pública se cambia por la carga FIJA del doble (guard.js, con su candado y la barra de la demo) y del adaptador.
+PORTAL_MODO_DEMO = re.compile(r'<script>if\(/\[\?&\]demo\(=\|&\|\$\)/\.test\(location\.search\)\)\{document\.write\(\'<script src="/portal/demo\.js'
+                              r'[^"]*"><\\/script>\'\);\}</script><script>if\(/\[\?&\]demo\(=\|&\|\$\)/\.test\(location\.search\)&&'
+                              r'!window\.LW_DEMO\).*?</script>', re.S)
+PORTAL_VERSION_JS = re.compile(r'<script src="/contracts/assets/version\.js[^"]*"></script>')
+PORTAL_CARGA_DEMO = (
+    '<script src="/contracts/assets/roles.js"></script>'
+    '<script src="/contracts/assets/guard.js" data-herramienta="portal"></script>'
+    '<script src="/portal/demo-axw.js"></script>'
+    # Falla CERRADO, como el modo demo de origen: sin el adaptador no se crea ningún cliente y la página lo dice.
+    '<script>if(!window.AXW_PORTAL_DEMO){try{window.supabase={createClient:function(){throw new Error(\'demo unavailable\');}};}catch(e){}'
+    'document.addEventListener(\'DOMContentLoaded\',function(){document.body.textContent=\'The demo portal is not available right now.\';});}</script>'
+    # «Sign now» abre la firma de ejemplo de la demo (paquete B, por data-accion="demo-firmar"); el guard no la carga en /portal/.
+    '<script src="/flujo/nuevo-contrato.js" defer></script>')
+SELLO_DOC = ('<div class="axw-demo-sello" style="margin:0 0 12px;padding:6px 10px;border:3px solid rgba(186,26,26,.55);color:#ba1a1a;'
+             'text-align:center;font:600 13px/1.4 system-ui,sans-serif;letter-spacing:.08em">DEMO · NOT A VALID DOCUMENT</div>')
+ICONO_PERFIL = ('<svg viewBox="0 0 24 24" width="58%" height="58%" fill="#fff" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/>'
+                '<path d="M3.8 21c.7-4.3 4-7 8.2-7s7.5 2.7 8.2 7z"/></svg>')
+# (viejo, nuevo, veces): cada uno tiene que aparecer EXACTAMENTE esas veces en el index.html de Lawang fijado.
+PORTAL_CAMBIOS = [
+    ('<title>Lawang · Área de clientes</title>', '<title>Client area · AxisWorks Demo</title>', 1),
+    # Tipografía de marca del cliente: no se publica (tipografias_libres). El portal ya carga Jost de Google Fonts.
+    ('<link rel="stylesheet" href="/assets/neue-kabel.css">\n', '', 1),
+    ('<span class="carga-marca">Lawang</span>', '<span class="carga-marca">AxisWorks Demo</span>', 1),
+    ('<div class="marca">LAWANG</div>', '<div class="marca">AXISWORKS DEMO</div>', 1),
+    ('<b>LAWANG</b>', '<b>AXISWORKS DEMO</b>', 1),
+    # Isotipo e icono de perfil del cliente → dibujos neutros; la textura de papel (hecha por el estudio, 9-oct) junto al portal.
+    ("url('/assets/img/isotipo.png')", "url('/portal/demo/isotipo.svg')", 6),
+    ("url('/assets/img/papel-grano.jpg')", "url('/portal/demo/papel-grano.jpg')", 1),
+    ('<img src="/assets/img/moanito-face.webp" alt="">', ICONO_PERFIL, 1),
+    # Sin formularios de contraseña en una página pública (Seguridad #279): la entrada no se ve nunca (sesión de demo siempre
+    # abierta), pero sus ids se quedan porque el script del portal los engancha al cargar.
+    ('<input type="password" id="inPass" autocomplete="current-password" required placeholder="••••••••">', '<input type="hidden" id="inPass">', 1),
+    ('placeholder="tu@correo.com"', 'placeholder="you@example.com"', 2),
+    ('<a href="mailto:sales@lawangproperties.com" class="link-sutil">sales@lawangproperties.com</a>', '<span>hello@example.com</span>', 1),
+    ('sales@lawangproperties.com', 'hello@example.com', 6),   # los avisos de la entrada en es/en/id
+    ("ph_correo:'tu@correo.com'", "ph_correo:'tu@example.com'", 1),
+    ("ph_correo:'you@email.com'", "ph_correo:'you@example.com'", 1),
+    ("ph_correo:'anda@email.com'", "ph_correo:'anda@example.com'", 1),
+    ('iconoMoanito', 'iconoPerfil', 3),
+    ('Lawang Estate', 'AxisWorks Demo', 9),   # «N properties with …» en es/en/id
+    ('<a href="/intranet/" class="link-sutil" data-t="team_link">', '<a href="/home/" class="link-sutil" data-t="team_link">', 1),
+    ("'<div class=\"campo\"><label>' + esc(t('cambiar_pass_nueva')) + '</label><input type=\"password\" id=\"cpNueva\" autocomplete=\"new-password\"></div>' +\n"
+     "      '<div class=\"campo\"><label>' + esc(t('cambiar_pass_repite')) + '</label><input type=\"password\" id=\"cpRepite\" autocomplete=\"new-password\"></div>' +",
+     "'<p class=\"aviso\" data-demo=\"sin-contrasena\">Disabled in the demo: there is no real account behind this portal.</p>"
+     "<input type=\"hidden\" id=\"cpNueva\"><input type=\"hidden\" id=\"cpRepite\">' +", 1),
+    ("'<button type=\"button\" class=\"btn-oscuro\" id=\"btnCpGuardar\">'", "'<button type=\"button\" class=\"btn-oscuro\" id=\"btnCpGuardar\" hidden>'", 1),
+    # Inglés (owner, 12-oct): el portal trae su diccionario es/en/id; sin elección, inglés. La elección vive en la pestaña con el
+    # prefijo de la demo, así «Reset demo» la borra con lo demás (Seguridad #279).
+    ("localStorage.getItem('lw_portal_lang')", "sessionStorage.getItem('axw-demo:portal-lang')", 1),
+    ("localStorage.setItem('lw_portal_lang', LANG)", "sessionStorage.setItem('axw-demo:portal-lang', LANG)", 1),
+    ("LANG = (nl === 'es' || nl === 'id') ? nl : 'en';", "LANG = 'en';", 1),
+    # «Sign now»: la firma de ejemplo de la demo en la MISMA página (sin pestaña nueva, que no tendría el almacén de la pestaña),
+    # enganchada por data-accion, nunca por la clase de estilo.
+    ("'<a class=\"btn-oscuro ct-firmar\" href=\"' + esc(fp.enlace) + '\" target=\"_blank\" rel=\"noopener\">'",
+     "'<a class=\"btn-oscuro ct-firmar\" data-accion=\"demo-firmar\" data-id=\"' + esc(fp.contrato_id) + '\" href=\"' + esc(fp.enlace) + '\">'", 2),
+    # «Sign out» vuelve a la portada de dos puertas (en la demo no hay sesión que cerrar).
+    ("location.replace('/portal/' + (window.LW_DEMO ? '?demo=1' : ''))", "location.replace('/')", 1),
+]
+# Lo que no puede quedar en el portal publicado (Seguridad #279): enlaces a fuera, campos de contraseña, rastros del modo demo de
+# origen o del cliente. Los enlaces a Google Fonts sí (hoja de estilo de la tipografía).
+PORTAL_FUERA = re.compile(r'''(?:href|src|action)\s*=\s*["'](?:https?:)?//(?!fonts\.(?:googleapis|gstatic)\.com)|wa\.me/|["']tel:|["']mailto:|'''
+                          r'''type=["']password|/assets/img/|neue-kabel|/portal/demo\.js|moanito-face''', re.I)
+
+
+def portal_lawang():
+    """Copia el portal de Lawang fijado a dist/portal/ y lo transforma (ver PORTAL_CAMBIOS). Se llama ANTES de cierra_referencias()
+    para que lo que el portal pide de /contracts/ y /intranet/ venga con él, y nada de /assets/img/ del cliente."""
+    destino = os.path.join(DIST, 'portal')
+    os.makedirs(destino, exist_ok=True)
+    for f in PORTAL_LAWANG:
+        if not copia(os.path.join(LAWANG, 'portal', f), os.path.join(destino, f)):
+            aborta('portal_lawang: no se pudo copiar portal/%s de Lawang' % f)
+    p = os.path.join(destino, 'index.html')
+    t = open(p, encoding='utf-8', newline='').read()
+    t, n = PORTAL_MODO_DEMO.subn('', t)
+    if n != 1:
+        aborta('portal_lawang: el bloque MODO DEMO del portal aparece %d veces (esperaba 1): ¿cambió el portal de Lawang?' % n)
+    t, n = PORTAL_VERSION_JS.subn(lambda m: m.group(0) + PORTAL_CARGA_DEMO, t)
+    if n != 1:
+        aborta('portal_lawang: version.js aparece %d veces en el portal (esperaba 1)' % n)
+    for viejo, nuevo, veces in PORTAL_CAMBIOS:
+        if t.count(viejo) != veces:
+            aborta('portal_lawang: esperaba %d vez/veces %r y hay %d (¿cambió el portal de Lawang?)' % (veces, viejo[:90], t.count(viejo)))
+        t = t.replace(viejo, nuevo)
+    open(p, 'w', encoding='utf-8', newline='').write(t)
+
+
+def portal_demo_assets():
+    """El adaptador y los ficheros propios del portal de la demo (después de reraiz: /portal/ no se mueve)."""
+    destino = os.path.join(DIST, 'portal')
+    os.makedirs(os.path.join(destino, 'demo'), exist_ok=True)
+    shutil.copy2(os.path.join(PORTAL_DEMO, 'adaptador.js'), os.path.join(destino, 'demo-axw.js'))
+    shutil.copy2(os.path.join(PORTAL_DEMO, 'isotipo.svg'), os.path.join(destino, 'demo', 'isotipo.svg'))
+    shutil.copy2(os.path.join(PORTAL_DEMO, 'documento.html'), os.path.join(destino, 'demo', 'documento.html'))
+    if not copia(os.path.join(LAWANG, 'assets', 'img', 'papel-grano.jpg'), os.path.join(destino, 'demo', 'papel-grano.jpg')):
+        aborta('portal_demo_assets: no encuentro assets/img/papel-grano.jpg en Lawang')
+
+
+def comprueba_portal():
+    """Después de neutraliza() (que quita supabase-js del CDN): nada en /portal/ que salga fuera o pida una contraseña."""
+    destino = os.path.join(DIST, 'portal')
+    malos = []
+    for raiz, _d, fichs in os.walk(destino):
+        for f in fichs:
+            if f.endswith(('.html', '.js', '.css')):
+                for m in PORTAL_FUERA.finditer(open(os.path.join(raiz, f), encoding='utf-8', errors='replace').read()):
+                    malos.append('%s: %s' % (rel(os.path.join(raiz, f)), m.group(0)))
+    if malos:
+        aborta('el portal de la demo lleva lo que no puede salir (enlaces a fuera, contraseñas, restos del cliente):\n  ' + '\n  '.join(malos[:20]))
 # Ancla de la ficha de cliente (datos.js de Lawang): el botón de la vista previa del portal, enganchado por su atributo, nunca
 # por el rótulo. Delante se pone «New contract» del paquete B con el id del cliente (B lo casa contra la lista, no lo pinta).
 FICHA_ANCLA = '\'<button type="button" data-portal-preview '
@@ -875,23 +1000,27 @@ def comprueba_novedades_apagable():
 
 
 def marca_agua_documentos():
+    """La gran marca diagonal en documentoPagina (la página que se imprime o se envía) y, además, un sello «DEMO · NOT A VALID
+    DOCUMENT» al principio de documentoHTML, de la que tiran TODOS: el cajón de factura del portal imprime con documentoHTML, no
+    con documentoPagina, y oculta en la impresión todo lo que no sea el cajón (revisión previa de Seguridad #279, 12-oct)."""
     p = os.path.join(DIST, 'clasico', 'facturas', 'documento.js')
     t = open(p, encoding='utf-8').read()
-    open(p, 'w', encoding='utf-8', newline='').write(_una_vez(t, DOC_CIERRE, DOC_MARCA, 'documento.js (marca de agua de la demo)'))
+    t = _una_vez(t, DOC_CIERRE, DOC_MARCA, 'documento.js (marca de agua de la demo)')
+    t = _una_vez(t, "  return '' +\n  '<div class=\"head\">' +", "  return '" + SELLO_DOC.replace("'", "\\'") + "' +\n  '<div class=\"head\">' +",
+                 'documento.js (sello de la demo en documentoHTML)')
+    open(p, 'w', encoding='utf-8', newline='').write(t)
 
 
 def engancha_flujo():
     """Paquete B de la demo para un cliente (12-oct-2026): «New contract» y la firma de ejemplo (flujo/, un panel dentro de la
-    intranet que escribe en la base falsa de la pestaña) y el portal de cliente (flujo/portal/). Se publican en /flujo/ y
-    /portal/, pasan por los mismos filtros que el resto (neutraliza, RASTRO, pii, comprueba_sin_secretos) y sustituyen a los
-    avisos «Not included» del generador y del portal."""
+    intranet que escribe en la base falsa de la pestaña). Se publican en /flujo/, pasan por los mismos filtros que el resto
+    (neutraliza, RASTRO, pii, comprueba_sin_secretos) y sustituyen al aviso «Not included» del generador. El portal de cliente
+    propio que traía B (flujo/portal/) se retiró el 12-oct (owner: el portal es el del ERP tal cual, ver portal_lawang())."""
     destino = os.path.join(DIST, 'flujo')
-    os.makedirs(os.path.join(destino, 'portal'), exist_ok=True)
+    os.makedirs(destino, exist_ok=True)
     for f in FLUJO_FICHEROS:
         shutil.copy2(os.path.join(FLUJO, f), os.path.join(destino, f))
-    for f in FLUJO_PORTAL:
-        shutil.copy2(os.path.join(FLUJO, 'portal', f), os.path.join(destino, 'portal', f))
-    shutil.copy2(os.path.join(FLUJO, 'portal', 'index.html'), os.path.join(DIST, 'portal', 'index.html'))
+    portal_demo_assets()
     # El generador de Lawang no va (Legal, 24-sep): su ruta abre el «New contract» de la demo.
     open(os.path.join(DIST, 'generador-contratos', 'index.html'), 'w', encoding='utf-8').write(
         '<!doctype html><meta charset="utf-8"><title>New contract · Demo</title>'
@@ -1084,8 +1213,10 @@ def verifica():
     # esto el check pasaba en verde sin haber leído un solo nombre (24-sep).
     import tempfile
     envoltorio = os.path.join(tempfile.mkdtemp(prefix='demo_erp_pii_'), 'guard_demo.html')
+    # El adaptador del portal también: sus textos de ejemplo (consultas, documentos) son JS (Seguridad #279, 12-oct).
     with open(envoltorio, 'w', encoding='utf-8') as fh:
-        fh.write('<script>' + open(os.path.join(DIST, 'contracts', 'assets', 'guard.js'), encoding='utf-8').read() + '</script>')
+        for js in (('contracts', 'assets', 'guard.js'), ('portal', 'demo-axw.js')):
+            fh.write('<script>' + open(os.path.join(DIST, *js), encoding='utf-8').read() + '</script>\n')
     pii = subprocess.run([sys.executable, os.path.join(AGENCIA, 'tools', 'pii_maqueta.py'), '--check',
                           envoltorio, DIST], cwd=AGENCIA)
     if pii.returncode != 0:
@@ -1592,7 +1723,22 @@ SECRETOS_DEMO = [
     (re.compile(r'(?:LAW|AXW|BBM|EST)-\d+'), 'referencia interna del estudio'),
     (re.compile(r'(?<![A-Za-z0-9_$])[Qq][Aa][._-]'), 'resto del doble de QA'),
     (re.compile(r'@demo\.test|@axisworks\.test'), 'correo de pruebas'),
+    # Revisión previa de Seguridad #279 (12-oct, portal de la demo): un correo que no sea de un dominio reservado, un teléfono
+    # (internacional que no empiece por +00, o nacional con separadores), un IBAN o un NPWP con dígitos que no sean ceros.
+    (re.compile(r'[A-Za-z0-9._%+-]+@(?!example\.(?:com|org|net)\b)(?![A-Za-z0-9-]+\.invalid\b)[A-Za-z0-9-]+\.(?:com|net|org|id|co|io|es|de|fr|uk|studio|app)\b'),
+     'correo con un dominio real'),
+    (re.compile(r'(?<![\w.+/-])\+(?!00)\d{2}[ -]\d{2,4}[ -]\d{3,4}[ -]?\d{2,4}(?![\w.])'), 'teléfono internacional'),
+    (re.compile(r'(?<![\w.:/-])0[1-9]\d{1,3}[ -]\d{3,4}[ -]\d{3,4}(?![\w.])'), 'teléfono nacional'),
+    (re.compile(r'\b[A-Z]{2}\d{2}(?: ?[0-9]{4}){4,7}\b'), 'IBAN'),
+    (re.compile(r'\b(?!00\.000\.000)\d{2}\.\d{3}\.\d{3}\.\d-\d{3}\.\d{3}\b'), 'NPWP'),
 ]
+# Lo único que esos patrones admiten: textos de AYUDA del front compartido (placeholders y ejemplos de «cómo se escribe»), no
+# datos de nadie. Lista CERRADA y exacta: uno nuevo para el build y se decide aquí, con su porqué (12-oct, primera pasada).
+EJEMPLOS_ADMITIDOS = frozenset((
+    'nombre@tudominio.com', 'name@yourdomain.com', 'nombre@dominio.com', 'cliente@email.com', 'ejemplo@ejemplo.com',
+    'tucorreo+portal@gmail.com', 'youraddress+portal@gmail.com',   # cómo usar un alias de Gmail (ayuda de Ajustes)
+    '+34 600 000 000',                                           # ejemplo de teléfono en el cuadro del asistente
+))
 
 
 REF_INTERNA = re.compile(r'\s*\((?:LAW|AXW|BBM|EST)-\d+\)|(?:LAW|AXW|BBM|EST)-\d+')
@@ -1699,6 +1845,8 @@ def comprueba_sin_secretos(raiz):
             t = open(p, encoding='utf-8', errors='replace').read()
             for rx, que in SECRETOS_DEMO + [(MARCAS_CLIENTE, 'marca o base de un cliente')]:
                 for m in rx.finditer(t):
+                    if m.group(0) in EJEMPLOS_ADMITIDOS:
+                        continue
                     malos.append('%s: %s «%s»' % (ruta, que, t[max(0, m.start() - 30):m.end() + 20].replace('\n', ' ')))
             # En la pantalla del asistente de correos son CLAVES del código de Lawang (rótulos de sus fuentes), no texto: se
             # admiten. En cualquier otro sitio —sobre todo en las respuestas del doble, guard.js— son nombres internos.
@@ -1790,15 +1938,15 @@ def publica():
     # de cliente en demo o la intranet en demo»), no un 302 a la Home. La portada comercial (landing.html) sigue en erp.
     puerta_demo(DESTINO_PUBLICO)
     # Solo se sirve desde demo.axisworks.studio: por axisworks.studio/demo/ las rutas absolutas no casan.
-    # El legado (/intranet/v4/<x>/ → /<x>/) sigue en 302 hasta verificar el mapa en producción (legado_htaccess); pasará a
-    # 301 en una subida aparte, ya verificado (decisión por defecto del 12-oct en el encargo).
+    # El legado (/intranet/v4/<x>/ → /<x>/) pasa a 301 en la demo: el mapa se verificó en producción con la tanda 1 (curl de las
+    # direcciones viejas, demo-pC-cascara, 12-oct) — decisión por defecto del encargo. Las instancias siguen en 302.
     open(os.path.join(DESTINO_PUBLICO, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(
         '# GENERADO por comercial/demo-erp/build.py --publico — no editar.\n'
         '# demo.axisworks.studio: la demo del ERP. Fuera de ese host, redirige a él.\n'
         '<IfModule mod_rewrite.c>\n  RewriteEngine On\n'
         '  RewriteCond %{HTTP_HOST} !^demo\\.axisworks\\.studio$ [NC]\n'
         '  RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=302,L]\n</IfModule>\n'
-        + legado_htaccess(DESTINO_PUBLICO)
+        + legado_htaccess(DESTINO_PUBLICO, 301)
         + cabeceras_seguridad(
             # Sin cdn.tailwindcss.com desde el 27-sep-2026 (ERP F3 lote 4a): la v4 y la portada van con Tailwind
             # COMPILADO. jsdelivr en estilos y fuentes: los iconos Phosphor del CRM (visto en producción, 25-sep).
@@ -3283,6 +3431,9 @@ def main():
         if i + 1 >= len(sys.argv):
             aborta('uso: build.py --instancia <nombre de erp/instancias.json>')
         return instancia(sys.argv[i + 1])
+    # Solo la demo: el portal de clientes del ERP con los datos del doble (las instancias no llevan /portal/ propio).
+    portal_lawang()
+    faltan |= cierra_referencias()
     g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
     os.makedirs(os.path.dirname(g), exist_ok=True)
     open(g, 'w', encoding='utf-8', newline='').write(guard_demo())
@@ -3301,6 +3452,7 @@ def main():
     idioma_ingles()
     avisos_para_rotos(demo=True)
     n = neutraliza()
+    comprueba_portal()
     verifica()
     comprueba_resultado(DIST)
     total = sum(len(f) for _r, _d, f in os.walk(DIST))
