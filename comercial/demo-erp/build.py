@@ -3088,7 +3088,7 @@ def instancia(nombre):
     logos_instancia(nombre, marca)
     crea_contrasena_pantalla(marca)   # pieza C de I6 (9-oct-2026): «Crea tu contraseña» para el primer administrador invitado
     piel_suite_clasica(DIST, nombre)   # tras el renombrado (axw.css) y tras crea-contrasena; antes de versiona()
-    puerta_instancia(DIST, idiomas_de(nombre))   # selector de idioma visible, correo neutro, marca centrada (12-oct)
+    puerta_instancia(DIST, idiomas)   # selector de idioma visible, correo neutro, marca centrada (12-oct)
     tipografias_libres()
     neutraliza_ejemplos()   # ejemplos de persona que casan con gente real (pii_maqueta)
     # 2. Portada = la puerta de acceso, que reraiz() ha subido a la raíz (antes /intranet/). Lo que en la demo es un aviso,

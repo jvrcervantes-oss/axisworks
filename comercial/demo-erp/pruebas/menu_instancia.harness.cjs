@@ -89,6 +89,7 @@ const MIDE = () => {
     ok(lengua + ': la sección de finanzas se ve con «Cobros» dentro', !!fin && fin.visible);
     for (const k of ['taller', 'entrega', 'flota']) ok(lengua + ': el menú traduce ' + k + ' (' + ESPERADO[lengua][k] + ')', (r[k] || '').indexOf(ESPERADO[lengua][k]) !== -1, String(r[k]));
     // abrir «Cobros»: Facturas y Recibos sí, Vencimientos no
+    await p.evaluate(() => { const n = document.getElementById('lw-novedades'); if (n) n.remove(); });   // el aviso de novedades de la 1.ª visita tapa el menú
     await p.click('aside a[data-path="cobros"]', { timeout: 3000 }).catch(() => null);   // oculto = ya contado arriba
     await p.waitForTimeout(300);
     const sub = await p.evaluate(() => { const vis = e => !!e && e.getClientRects().length > 0 && getComputedStyle(e).display !== 'none';
