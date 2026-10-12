@@ -1015,12 +1015,12 @@ NOVEDADES_APAGA = 'if (window.__lwNovedades) return;'
 
 
 def comprueba_novedades_apagable():
-    """El pop-up de novedades de la intranet (anuncios internos del cliente) se apaga en la demo poniendo __lwNovedades antes de
-    que cargue: aprovecha su guarda contra doble carga. Si Lawang la cambia, el pop-up volvería sin avisar: el build para."""
+    """El pop-up de novedades de la intranet (anuncios internos de Lawang) se apaga en la demo y en toda instancia poniendo
+    __lwNovedades antes de que cargue: aprovecha su guarda contra doble carga. Si Lawang la cambia, el pop-up volvería sin avisar: el build para."""
     p = os.path.join(DIST, 'assets', 'novedades.js')
     # sin blancos: en una instancia se mira después de limpia_publico.js, que compacta «if (x) return;» a «if(x)return;»
     if os.path.isfile(p) and re.sub(r'\s', '', NOVEDADES_APAGA) not in re.sub(r'\s', '', open(p, encoding='utf-8').read()):
-        aborta('novedades.js ya no trae %r: la demo no puede apagar el pop-up de novedades (revisa guard_demo)' % NOVEDADES_APAGA)
+        aborta('novedades.js ya no trae %r: ni la demo ni las instancias pueden apagar el pop-up de novedades de Lawang (revisa guard_demo y la cabecera del guard de instancia)' % NOVEDADES_APAGA)
 
 
 def marca_agua_documentos():

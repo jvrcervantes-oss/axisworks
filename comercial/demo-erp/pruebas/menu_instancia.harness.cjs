@@ -89,7 +89,8 @@ const MIDE = () => {
     ok(lengua + ': la sección de finanzas se ve con «Cobros» dentro', !!fin && fin.visible);
     for (const k of ['taller', 'entrega', 'flota']) ok(lengua + ': el menú traduce ' + k + ' (' + ESPERADO[lengua][k] + ')', (r[k] || '').indexOf(ESPERADO[lengua][k]) !== -1, String(r[k]));
     // abrir «Cobros»: Facturas y Recibos sí, Vencimientos no
-    await p.evaluate(() => { const n = document.getElementById('lw-novedades'); if (n) n.remove(); });   // el aviso de novedades de la 1.ª visita tapa el menú
+    // el pop-up de novedades son anuncios de Lawang: en una instancia no sale (idiomas-pH, 12-oct; antes se borraba aquí sin contarlo)
+    ok(lengua + ': el pop-up de novedades de Lawang no sale en la instancia', await p.evaluate(() => !document.getElementById('lw-novedades')));
     await p.click('aside a[data-path="cobros"]', { timeout: 3000 }).catch(() => null);   // oculto = ya contado arriba
     await p.waitForTimeout(300);
     const sub = await p.evaluate(() => { const vis = e => !!e && e.getClientRects().length > 0 && getComputedStyle(e).display !== 'none';
@@ -100,6 +101,7 @@ const MIDE = () => {
   }
   // DENTRO de una pestaña del grupo (orquestador 12-oct en /facturas/ de bbm: «Collections» salía plegado y vacío): el grupo
   // se abre solo y enseña sus pestañas encendidas, con la actual marcada
+  await p.evaluate(() => window.lwSetIdioma('id'));   // el bucle de idiomas acaba en inglés: aquí se mira en indonesio, como abre la instancia
   for (const ruta of ['facturas', 'recibos']) {
     await p.goto(ORIGEN + '/' + ruta + '/', { waitUntil: 'load' });
     await p.waitForTimeout(3000);
@@ -107,6 +109,9 @@ const MIDE = () => {
       const g = document.querySelector('aside a[data-path="cobros"]'); const s = g && document.getElementById(g.getAttribute('aria-controls'));
       return { abierto: !!s && vis(s) && g.getAttribute('aria-expanded') === 'true',
         visibles: s ? [...s.querySelectorAll('a[data-lw-pestana]')].filter(vis).map(a => a.getAttribute('data-lw-pestana')) : [] }; });
+    // frases partidas por un dato (data-lwt-nodos, «Mostrando … de … recibís»): en indonesio, que es como abre la instancia, nada en español
+    const nodos = await p.evaluate(() => [...document.querySelectorAll('[data-lwt-nodos]')].map(e => e.textContent.replace(/\s+/g, ' ').trim()));
+    ok('dentro de /' + ruta + '/: las frases partidas por un dato salen en indonesio (' + nodos.join(' | ') + ')', nodos.length > 0 && nodos.every(t => !/Mostrando|recibís|documentos|Showing|receipts/.test(t)));
     ok('dentro de /' + ruta + '/: «Cobros» abierto con Facturas y Recibos (sin Vencimientos)', r.abierto && r.visibles.indexOf('facturas') !== -1
        && r.visibles.indexOf('recibos') !== -1 && r.visibles.indexOf('vencimientos') === -1, JSON.stringify(r));
   }
