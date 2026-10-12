@@ -204,6 +204,28 @@ est, _h = con_registro({}, build.mascota_versionada, d)
 mira('mascota: PARA si nav.js ya no declara MASCOTA_V una vez', est == 'para')
 mira('mascota: sin nav.js ni mascota.js no hace nada', build.mascota_versionada(paquete({'index.html': 'x'})) is None)
 
+# 4f — la puerta: selector de idioma visible con más de un idioma, correo neutro, marca centrada (verificador 12-oct sobre bbm)
+PUERTA2 = ('<style>.lw-login{}</style><div class="lw-login"><div class="marca"><div class="word">X</div></div><form id="fLogin">'
+           '<input type="email" id="loginEmail" autocomplete="username" placeholder="nombre@axisworks.studio" required></form><p class="pie">p</p></div>')
+d = paquete({'index.html': PUERTA2})
+puso = build.puerta_instancia(d, ['id', 'en'])
+pg = open(os.path.join(d, 'index.html'), encoding='utf-8').read()
+mira('puerta: con id+en, selector justo después del formulario con SUS idiomas', puso is True
+     and pg.index('</form>') < pg.index('data-lw="login-idioma"') < pg.index('class="pie"')
+     and 'data-idioma="id"' in pg and 'data-idioma="en"' in pg and 'data-idioma="es"' not in pg and 'window.lwSetIdioma' in pg)
+mira('puerta: el correo de ejemplo es neutro', 'placeholder="email@example.com"' in pg and 'axisworks.studio' not in pg)
+mira('puerta: la marca va centrada y el selector oculto respeta [hidden]', '.lw-login .marca .word{text-align:center}' in pg
+     and '.lw-login .lw-login-idioma[hidden]{display:none}' in pg)
+d = paquete({'index.html': PUERTA2})
+puso = build.puerta_instancia(d, None)
+pg = open(os.path.join(d, 'index.html'), encoding='utf-8').read()
+mira('puerta: sin idiomas declarados no hay selector, pero sí correo neutro', puso is False and 'login-idioma"' not in pg.split('</style>')[1]
+     and 'placeholder="email@example.com"' in pg)
+d = paquete({'index.html': PUERTA2.replace('id="loginEmail"', 'id="otro"')})
+mira('puerta: PARA si ya no hay #loginEmail', con_registro({}, build.puerta_instancia, d, ['id', 'en'])[0] == 'para')
+d = paquete({'index.html': PUERTA2.replace('id="fLogin"', 'id="f2"')})
+mira('puerta: PARA si ya no hay #fLogin y hay que poner el selector', con_registro({}, build.puerta_instancia, d, ['id', 'en'])[0] == 'para')
+
 # 5 — cableado en instancia()
 fuente = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
 cuerpo = fuente[fuente.index('def instancia(nombre):'):]
@@ -219,6 +241,7 @@ mira('instancia() versiona el favicon justo antes de versiona()', 'favicon_versi
      and cuerpo.index('favicon_versionado(DIST)') < cuerpo.index('\n    versiona(DIST)'))
 mira('instancia() pinta la suite clásica tras crea-contraseña y ANTES de versionar (si no, la CDN sirve la hoja vieja)',
      cuerpo.index('crea_contrasena_pantalla(marca)') < cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('\n    versiona(DIST)'))
+mira('instancia() arregla la puerta tras la piel y antes de versionar', cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('puerta_instancia(DIST, idiomas_de(nombre))') < cuerpo.index('\n    versiona(DIST)'))
 mira('instancia() pone los logos de la instancia, no los neutros a secas', 'logos_instancia(nombre, marca)' in cuerpo and 'logos_neutros(' not in cuerpo)
 mira('instancia() comprueba la piel antes de dar el paquete por bueno', cuerpo.index('comprueba_piel(DIST, nombre)') < cuerpo.index('comprueba_resultado(DIST)'))
 
