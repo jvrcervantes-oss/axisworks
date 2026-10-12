@@ -1330,9 +1330,14 @@ def comprueba_piel_demo(raiz):
         aborta('aplicadores de piel en la demo: %r (se esperaba 1, en %s)' % (donde, FICHA_REL))
 
 
-# Lo que la portada de dos puertas necesita además de su HTML: las dos fuentes de la web de AxisWorks (autoalojadas, Legal
-# 24-sep: sin Google Fonts), del propio repo.
-FUENTES_PUERTA = ('inter-400-latin.woff2', 'inter-500-latin.woff2', 'space-grotesk-500-latin.woff2')
+# Lo que la portada de dos puertas necesita además de su HTML (mesa «D01 — Demo landing» del owner, 12-oct-2026): las tres
+# tipografías de la marca nueva (Unbounded, Manrope, IBM Plex Mono, licencia OFL; autoalojadas, Legal 24-sep: sin Google
+# Fonts) de assets/fonts/x/, con sus licencias, y las dos vistas previas de las puertas (capturas REALES de la demo
+# publicada, 1280×720, datos inventados) de portada/. Solo index.html usa /demo/fonts/.
+FUENTES_PUERTA = ('unbounded-300.woff2', 'unbounded-600.woff2', 'manrope-400.woff2', 'manrope-500.woff2', 'manrope-700.woff2',
+                  'ibm-plex-mono-400.woff2', 'ibm-plex-mono-500.woff2',
+                  'OFL-unbounded.txt', 'OFL-manrope.txt', 'OFL-ibm-plex-mono.txt')
+VISTAS_PUERTA = ('portal.webp', 'intranet.webp')
 MARCA_HUECO = '__AXW_DEMO_MARCA__'
 
 
@@ -1346,7 +1351,13 @@ def puerta_demo(destino):
     fuentes = os.path.join(destino, 'demo', 'fonts')
     os.makedirs(fuentes, exist_ok=True)
     for f in FUENTES_PUERTA:
-        shutil.copy2(os.path.join(AQUI, '..', '..', 'assets', 'fonts', f), os.path.join(fuentes, f))
+        shutil.copy2(os.path.join(AQUI, '..', '..', 'assets', 'fonts', 'x', f), os.path.join(fuentes, f))
+    vistas = os.path.join(destino, 'demo', 'portada')
+    os.makedirs(vistas, exist_ok=True)
+    for f in VISTAS_PUERTA:
+        if ('/demo/portada/' + f) not in t:
+            aborta('puerta_demo.html no usa la vista previa %s' % f)
+        shutil.copy2(os.path.join(AQUI, 'portada', f), os.path.join(vistas, f))
 
 
 # ── Piel e identidad de una instancia (F14, 11-oct-2026; revisión previa #265 de Diseño + Seguridad) ──────────────────
@@ -2569,7 +2580,8 @@ def ajustes_correo_maestro():
 
 # Ayudas comunes de las pantallas del maestro (taller, 8-oct-2026): una pantalla escribe la marca donde las quiere y el build pega el fichero de _compartido/.
 # La marca va dentro de un comentario (CSS o JS) para que el fichero fuente siga siendo válido tal cual. Una marca repetida o un fichero que falta PARA.
-COMUN_MARCAS = {'/*AXW_COMUN_CSS*/': 'pantalla_comun.css', '/*AXW_COMUN_JS*/': 'pantalla_comun.js'}
+# AXW_FOTOS_JS (12-oct-2026, F8 8.T1): las fotos guiadas de la moto (taller; la entrega de 8.T3 las reutilizará), pieza común y no copia por pantalla.
+COMUN_MARCAS = {'/*AXW_COMUN_CSS*/': 'pantalla_comun.css', '/*AXW_COMUN_JS*/': 'pantalla_comun.js', '/*AXW_FOTOS_JS*/': 'fotos_guiadas.js'}
 
 
 def _inyecta_comun(texto, archivo):
@@ -2693,11 +2705,12 @@ def taller_pantalla():
     ancla = "bookings rental fleet unit calendar rate hold return' });" + '\n' + "}"
     h = _una_vez(h, ancla,
                  "bookings rental fleet unit calendar rate hold return' });" + '\n' +
-                 "  /* TALLER (F8 pieza 2, 8-oct-2026): órdenes de trabajo del taller. Permiso propio `taller` (es el que exigen las RPC orden_trabajo_*); sin esta tarjeta la casilla no existiría en Usuarios. */" + '\n' +
+                 "  /* TALLER (F8 pieza 2, 8-oct-2026; asistente por pasos 8.T1, 12-oct-2026): el mecánico revisa cada moto paso a paso. Permiso propio `taller` (es el que exigen las RPC taller_* y orden_trabajo_*); sin esta tarjeta la casilla no existiría en Usuarios, y sin un usuario con ella el Taller sale «sin configurar». */" + '\n' +
                  "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'reservas-producto') + 1, 0," + '\n' +
                  "    { grupo:'Seguimiento', nombre:'Taller', icon:'ph-wrench', href:'/intranet/v4/taller/', herr:'taller'," + '\n' +
-                 "      para:'Las motos que entran al taller y por qué: mientras una orden que bloquea esté abierta, la moto no se puede reservar.'," + '\n' +
-                 "      claves:'taller orden de trabajo moto reparacion mecanico mantenimiento bloquear reservas workshop repair mechanic maintenance work order' });" + '\n' + "}",
+                 "      para:'El mecánico revisa cada moto paso a paso (motivo, km, fotos, revisiones) y la deja lista o en espera; mientras está en el taller no se puede reservar.'," + '\n' +
+                 "      claves:'taller orden de trabajo moto reparacion mecanico mantenimiento revision fotos bloquear reservas bengkel servis workshop repair mechanic maintenance inspection work order' });" + '\n' +
+                 "  /*AXW_FIN_TARJETA_TALLER*/" + '\n' + "}",
                  'herramientas.js tarjeta Taller')
     open(her, 'w', encoding='utf-8', newline='').write(h)
 
@@ -2726,9 +2739,11 @@ def entrega_pantalla():
     open(nav, 'w', encoding='utf-8', newline='').write(n)
     her = os.path.join(DIST, 'contracts', 'assets', 'herramientas.js')
     h = open(her, encoding='utf-8').read()
-    ancla = "maintenance work order' });" + '\n' + "}"
+    # la de Entrega se engancha detrás de la MARCA que deja taller_pantalla() al final de su tarjeta, no del texto de sus claves (revisor 12-oct: cambiar las palabras
+    # de búsqueda del Taller ya rompió este ancla una vez, en 4f686ba)
+    ancla = "  /*AXW_FIN_TARJETA_TALLER*/" + '\n' + "}"
     h = _una_vez(h, ancla,
-                 "maintenance work order' });" + '\n' +
+                 "  /*AXW_FIN_TARJETA_TALLER*/" + '\n' +
                  "  /* ENTREGA (F8 pieza 8, 10-oct-2026): la sede, la tarifa por km y los límites de la entrega a domicilio. Permiso propio `entrega`; sin esta tarjeta la casilla no existiría en Usuarios. La base exige además administración. */" + '\n' +
                  "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'taller') + 1, 0," + '\n' +
                  "    { grupo:'Seguimiento', nombre:'Entrega', icon:'ph-truck', href:'/intranet/v4/entrega/', herr:'entrega'," + '\n' +

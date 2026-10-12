@@ -136,7 +136,7 @@ def con_fuente_alterada(alterar=None, quitar_comun=None):
         shutil.copy(os.path.join(AQUI, otro), os.path.join(alt, otro))
     open(os.path.join(alt, 'flota.html'), 'w', encoding='utf-8').write(alterar(FUENTE) if alterar else FUENTE)
     os.makedirs(os.path.join(alt, '_compartido'))
-    for f in ('pantalla_comun.js', 'pantalla_comun.css'):
+    for f in ('pantalla_comun.js', 'pantalla_comun.css', 'fotos_guiadas.js'):   # fotos_guiadas: la pide taller.html (8.T1), que va antes en la cadena
         if f != quitar_comun:
             shutil.copy(os.path.join(AQUI, '_compartido', f), os.path.join(alt, '_compartido', f))
     viejo, build.AQUI = build.AQUI, alt        # la fuente alterada vive en otra carpeta: flota.html y _compartido no se tocan
