@@ -19,6 +19,11 @@ const AQUI = __dirname;
 // cobros_paso. Cuenta para los choques: fusiona() no pisa, así que entre dos ficheros gana el que carga antes.
 const ORDEN = ['setup_modulos.js', 'setup_pasos.js', 'setup_reservas.js', 'setup_comun.js', 'cobros_paso.js'];
 const FUENTES = ORDEN.map(f => [f, fs.readFileSync(path.join(AQUI, f), 'utf8')]);
+// ¿Mete build.py setup_reservas.js (pasos de E3/E4) en el paquete de la instancia? En la rama setup-sin-e3 la llamada va comentada (revisor, 12-oct:
+// el test medía un paquete que no sale). Se lee de build.py, no se supone: la llamada viva es `setup_reservas_pasos()` dentro de instancia().
+const BUILD = fs.readFileSync(path.join(AQUI, 'build.py'), 'utf8');
+const CON_E3 = /^ {8}setup_reservas_pasos\(\)\s*$/m.test(BUILD);
+const SERVIDOS = FUENTES.filter(([f]) => f !== 'setup_reservas.js' || CON_E3);
 const I18N_ID = JSON.parse(fs.readFileSync(path.join(AQUI, 'i18n_id.json'), 'utf8'));
 
 let fallos = 0, total = 0;
@@ -81,7 +86,7 @@ function ventana(extra) {
   return win;
 }
 // ── El vm: los cinco scripts, en orden, con lo justo de navegador ────────────────────────────────────────────────────────────────────────────
-function carga(idioma) {
+function carga(idioma, fuentes) {
   const win = ventana({});
   if (idioma === 'id') Object.assign(win.LW_ID, I18N_ID);   // el paquete de bbm trae el diccionario antes (i18n.js + i18n_id.json)
   if (idioma !== 'es') {
@@ -93,7 +98,7 @@ function carga(idioma) {
     };
   }
   win.LW_AUTH = Promise.resolve({ sb: { rpc: () => Promise.resolve({ data: null, error: null }) } });
-  for (const [f, src] of FUENTES) {
+  for (const [f, src] of (fuentes || FUENTES)) {
     try { vm.runInNewContext(src, win, { filename: f }); } catch (e) { ok('carga ' + f, false, e.message); }
   }
   return win;
@@ -124,6 +129,29 @@ function carga(idioma) {
       ok(idioma + ': ' + que + ' sin código a la vista', typeof t === 'string' && t.length > 0 && !/\(c[óo]digo|\(code|\(kode|_[a-z]/.test(t), t);
       if (idioma !== 'es') ok(idioma + ': ' + que + ' traducido', !enEspanol.has(t), t);
     }
+  }
+
+  // ── El paquete que SALE: sin setup_reservas.js (rama setup-sin-e3), los códigos que solo él traduce caen en la frase genérica. No es rojo (es lo
+  // decidido: Cobros sale antes que E3), pero se dice en voz alta, y TODO lo que cae tiene que ser de E3/E4, nunca de otro sitio.
+  if (!CON_E3) {
+    const sinE3 = carga('es', SERVIDOS).AXW_SETUP;
+    const pide = () => {
+      for (const k of codigos.pasos) { sinE3.texto('paso', k, 0); sinE3.texto('paso', k, 1); }
+      for (const k of codigos.faltas) sinE3.textoFalta({ codigo: k, campos: [] });
+      for (const k of codigos.campos) sinE3.texto('campo', k);
+      for (const k of codigos.opcionales) sinE3.lineaOpcional({ clave: k });
+      for (const k of codigos.hints) sinE3.explica({ code: '22023', hint: k }, true);
+    };
+    pide();
+    // los que añade setup_reservas.js: lo que conoce con él y no sin él
+    const conR = carga('es', FUENTES.filter(([f]) => f !== 'setup_comun.js' && f !== 'cobros_paso.js')).AXW_SETUP;
+    const sinR = carga('es', FUENTES.filter(([f]) => f === 'setup_modulos.js' || f === 'setup_pasos.js')).AXW_SETUP;
+    const deE3 = new Set();
+    for (const g of Object.keys(conR.TEXTOS)) for (const k of Object.keys(conR.TEXTOS[g])) if (!(k in (sinR.TEXTOS[g] || {}))) deE3.add(k);
+    const caen = [...new Set(sinE3.desconocidos.map(d => d.replace(/^[a-z]+:/, '')))];
+    ok('paquete sin setup_reservas.js: lo que cae en frase genérica es SOLO de E3/E4', caen.every(k => deE3.has(k)), caen.filter(k => !deE3.has(k)).join(', '));
+    console.log('AVISO: este paquete NO lleva setup_reservas.js (build.py). ' + caen.length + ' códigos de E3/E4 saldrían con frase genérica: ' + caen.join(', ') +
+      '. Aplicar E3/E4 en una base con este front deja «alquileres_previos» (obligatorio) sin pantalla: E3/E4 y publicar setup-junto van en el MISMO paso.');
   }
 
   // ── Una frase, una traducción: si dos ficheros traen traducciones distintas para la misma frase, gana la del primero que cargue ────────────
