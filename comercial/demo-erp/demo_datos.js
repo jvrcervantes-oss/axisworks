@@ -518,7 +518,14 @@
       ajustes_config_datos: function () { return { valores: {}, actualizado: {}, puede_escribir: false }; },
       ajustes_log_datos: function () { return { filas: [], hay_mas: false }; },
       sociedades_ajustes_datos: function () { return { sociedades: [], puede_escribir: false }; },
-      plantillas_contrato_datos: function () { return { tipos: [], plantillas: [], puede_editar: false }; },
+      /* Los tres tipos de contrato que usa la siembra (la misma fuente: TIPO_NOMBRE y TIPO_PREF), activos. Con la lista
+         vacía, Usuarios › permisos y «+ Invite member» decían «The contract type catalogue could not be read…» y salían 2
+         console.error (verificador en vivo, 12-oct-2026; ya pasaba desde que se escribió este doble). */
+      plantillas_contrato_datos: function () {
+        return { tipos: Object.keys(TIPO_NOMBRE).map(function (k, i) {
+          return { clave: k, nombre: TIPO_NOMBRE[k], prefijo: TIPO_PREF[k], orden: i + 1, activo: true };
+        }), plantillas: [], puede_editar: false };
+      },
       plantilla_version_datos: function () { return null; },
       contrato_plantilla_texto_datos: function () { return { numero: null, texto: null, texto_sha256: null }; },
       comunicacion_datos: function (F, a) {

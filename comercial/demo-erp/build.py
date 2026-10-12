@@ -956,6 +956,22 @@ def portal_demo_assets():
     shutil.copy2(os.path.join(PORTAL_DEMO, 'documento.html'), os.path.join(destino, 'demo', 'documento.html'))
     if not copia(os.path.join(LAWANG, 'assets', 'img', 'papel-grano.jpg'), os.path.join(destino, 'demo', 'papel-grano.jpg')):
         aborta('portal_demo_assets: no encuentro assets/img/papel-grano.jpg en Lawang')
+    # Fotos de relleno del portal (owner vía agencia-40, 12-oct): libres de licencia, servidas desde la propia demo. Su
+    # procedencia vive en portal_demo/fotos/LICENCIAS.md, que no se publica; sin ella las fotos no salen.
+    fotos = os.path.join(PORTAL_DEMO, 'fotos')
+    webp = sorted(f for f in os.listdir(fotos) if f.endswith('.webp')) if os.path.isdir(fotos) else []
+    licencias = open(os.path.join(fotos, 'LICENCIAS.md'), encoding='utf-8').read() if os.path.isfile(os.path.join(fotos, 'LICENCIAS.md')) else ''
+    if sorted(webp) != sorted(FOTOS_PORTAL) or any(f not in licencias for f in webp):
+        aborta('portal_demo_assets: portal_demo/fotos/ tiene que traer exactamente %s, cada una con su fila en LICENCIAS.md' % ', '.join(FOTOS_PORTAL))
+    os.makedirs(os.path.join(destino, 'demo', 'fotos'), exist_ok=True)
+    for f in webp:
+        shutil.copy2(os.path.join(fotos, f), os.path.join(destino, 'demo', 'fotos', f))
+
+
+# Las que pide portal_demo/adaptador.js (portada-N y obra-<paso>): si cambia una, cambian las dos listas.
+FOTOS_PORTAL = ('portada-1.webp', 'portada-2.webp', 'portada-3.webp', 'obra-replanteo.webp', 'obra-excavacion.webp',
+                'obra-hormigonado.webp', 'obra-cimentacion.webp', 'obra-pilares.webp', 'obra-encofrado.webp',
+                'obra-cubierta.webp', 'obra-interior.webp', 'obra-llaves.webp')
 
 
 def comprueba_portal():

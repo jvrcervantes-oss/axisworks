@@ -48,6 +48,10 @@ button.restablece{font:500 15px/1 'Inter',system-ui,sans-serif;color:var(--tinta
   padding:12px 20px;cursor:pointer;min-height:44px}
 button.restablece:hover{background:var(--tinta);color:var(--fondo)}
 .hecho{font-size:14px;color:var(--tinta-2);min-height:1.5em}
+.pie-legal{border-top:1px solid var(--filete);font-size:13px;color:var(--tinta-2)}
+.pie-legal .marco{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;padding-top:20px;padding-bottom:20px}
+.pie-legal a{color:var(--tinta-2)}
+.pie-legal a:hover{color:var(--tinta)}
 @media (max-width:760px){
   .marco{padding:0 16px}
   .cabeza{padding:48px 0 36px}
@@ -97,6 +101,14 @@ button.restablece:hover{background:var(--tinta);color:var(--fondo)}
     </div>
   </div>
 </main>
+<!-- Pie legal (Legal, 12-oct-2026: las políticas tienen que ser fáciles de encontrar desde la demo). Mismos enlaces que la portada
+     de erp.: las páginas legales viven en axisworks.studio. -->
+<footer class="pie-legal">
+  <div class="marco">
+    <span>© 2026 PT MAHKOTA PROPERTY GLOBAL (AxisWorks)</span>
+    <nav aria-label="Legal"><a href="https://axisworks.studio/legal-notice">Legal notice</a> · <a href="https://axisworks.studio/privacy">Privacy</a> · <a href="https://axisworks.studio/cookies">Cookies</a></nav>
+  </div>
+</footer>
 <script>
 /* «Reset demo» en la portada: la portada no carga guard.js, así que borra aquí las mismas claves que LW_DEMO_RESTABLECE()
    (contrato con el paquete A: sessionStorage, prefijo «axw-demo:»). Nunca toca localStorage. */
