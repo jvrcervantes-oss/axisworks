@@ -153,8 +153,9 @@ window.LW_AUTH = Promise.resolve({ sb: sb });
 window.lwDatos = function (n, a) { return Promise.resolve(sb.rpc(n, a)).then(function (r) { return { data: r.data, error: r.error }; }); };
 window.LW_IDIOMA = '${idioma}';
 window.LW_EN = {};
+window.LW_ID = {};
 window.lwLocale = function () { return window.LW_IDIOMA === 'en' ? 'en-GB' : 'es-ES'; };
-window.lwT = function (s) { s = String(s); if (window.LW_IDIOMA === 'en') { if (Object.prototype.hasOwnProperty.call(window.LW_EN, s)) return window.LW_EN[s]; if (!/^[\\s—·0-9.,%():]*$/.test(s)) window.__sinEn.push(s); } return s; };
+window.lwT = function (s) { s = String(s); if (window.LW_IDIOMA === 'id' && Object.prototype.hasOwnProperty.call(window.LW_ID, s)) return window.LW_ID[s]; if (window.LW_IDIOMA === 'en') { if (Object.prototype.hasOwnProperty.call(window.LW_EN, s)) return window.LW_EN[s]; if (!/^[\\s—·0-9.,%():]*$/.test(s)) window.__sinEn.push(s); } return s; };
 window.lwIdiomaAplicar = function (raiz) { Array.prototype.forEach.call(raiz.querySelectorAll('[data-lwt]'), function (e) { e.textContent = window.lwT(e.textContent); }); };
 window.toast = function () {};
 ${mods ? "window.axwModuloActivo = function (m) { return window.__mods[m] !== false; }; window.__mods = " + JSON.stringify(mods) + "; window.AXW_MODULOS_LISTOS = Promise.resolve(true);" : ''}
@@ -476,6 +477,30 @@ const CON_LECTORES = LECT_REAL;
     ok('null al reclamar: la pantalla pasa a «Reservas apagado» (pestaña fuera)', await p.$eval('[data-accion="vt-tab"][data-tab="reservas"]', e => e.classList.contains('vt-oculto')));
     await ctx.close();
   }
+  // ── 3c. módulo Operaciones APAGADO (12-oct-2026, medido en bbm): Transaksi no debe decir «algo inesperado» ──────
+  {
+    const { base, p, ctx } = await abre({ mods: { operaciones: false }, base: { nulos: ['operaciones_cola_datos'] } });
+    ok('ops apagado: la pestaña Operaciones no se ofrece', await p.$eval('[data-accion="vt-tab"][data-tab="operaciones"]', e => e.classList.contains('vt-oculto')));
+    ok('ops apagado: no se pidió operaciones_cola_datos', llamadas(base, 'operaciones_cola_datos').length === 0);
+    ok('ops apagado: se abre otra pestaña visible', await p.evaluate(() => { const t = document.querySelector('[data-accion="vt-tab"][aria-selected="true"]'); return !!t && !t.classList.contains('vt-oculto') && t.getAttribute('data-tab') !== 'operaciones'; }));
+    ok('ops apagado: ni «algo inesperado» ni error rojo', !(await txt(p, '[data-vt="ops-estado"]')).includes('inesperado') && (await p.$eval('[data-vt="error"]', e => e.classList.contains('vt-oculto'))));
+    ok('ops apagado: sin errores de script', (await p.evaluate(() => window.__errores.length)) === 0);
+    await ctx.close();
+  }
+  {   // sin saber el módulo (Lawang: falla abierto) pero la base contesta null: la pantalla lo lee como apagado
+    const { base, p, ctx } = await abre({ base: { nulos: ['operaciones_cola_datos'] } });
+    await espera(p, () => document.querySelector('[data-accion="vt-tab"][data-tab="operaciones"]').classList.contains('vt-oculto'));
+    ok('null sin error en Operaciones: pestaña fuera y aviso de módulo apagado, no «algo inesperado»', (await txt(p, '[data-vt="ops-estado"]')).includes('Operaciones está apagado'));
+    ok('null sin error en Operaciones: sin errores de script', (await p.evaluate(() => window.__errores.length)) === 0);
+    await ctx.close();
+  }
+  {   // en indonesio, apagado: el aviso sale traducido
+    const { p, ctx } = await abre({ idioma: 'id', base: { nulos: ['operaciones_cola_datos'] } });
+    await espera(p, () => document.querySelector('[data-vt="ops-estado"]').textContent.includes('nonaktif'));
+    ok('ops apagado en indonesio: «modul Transaksi nonaktif»', (await txt(p, '[data-vt="ops-estado"]')).includes('modul Transaksi nonaktif'));
+    await ctx.close();
+  }
+
   {   // en inglés, con el módulo apagado, no queda texto sin traducir
     const { p, ctx } = await abre({ idioma: 'en', mods: { 'reservas-producto': false }, base: { nulos: RES_NULOS } });
     await tab(p, 'cola');

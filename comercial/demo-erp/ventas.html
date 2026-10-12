@@ -302,6 +302,7 @@
     "El pago de la reserva está cobrado y no se pudo registrar ni dejar en «pagos por revisar»: no se emitió y el número no se gastó. Avisa al estudio.": "Pembayaran booking sudah diterima tetapi tidak bisa dicatat maupun ditaruh di «pembayaran yang perlu diperiksa»: invoice tidak terbit dan nomornya tidak terpakai. Beri tahu studio.",
     "No disponible en esta instancia: el módulo Reservas está apagado, así que las reservas no se pueden reclamar ni facturar desde aquí.": "Tidak tersedia di instance ini: modul Booking nonaktif, sehingga booking tidak bisa diklaim atau di-invoice dari sini.",
     "No disponible en esta instancia: esta acción depende de un módulo que está apagado.": "Tidak tersedia di instance ini: aksi ini bergantung pada modul yang nonaktif.",
+    "No disponible en esta instancia: el módulo Operaciones está apagado.": "Tidak tersedia di instance ini: modul Transaksi nonaktif.",
     "Reintentar": "Coba lagi"
   };
   var EN_VT = {
@@ -406,6 +407,7 @@
     'El pago de la reserva está cobrado y no se pudo registrar ni dejar en «pagos por revisar»: no se emitió y el número no se gastó. Avisa al estudio.': 'The booking payment is collected and could neither be recorded nor left in “payments to review”: nothing was issued and the number was not used. Tell the studio.',
     'No disponible en esta instancia: el módulo Reservas está apagado, así que las reservas no se pueden reclamar ni facturar desde aquí.': 'Not available on this instance: the Bookings module is switched off, so bookings cannot be claimed or invoiced from here.',
     'No disponible en esta instancia: esta acción depende de un módulo que está apagado.': 'Not available on this instance: this action depends on a module that is switched off.',
+    'No disponible en esta instancia: el módulo Operaciones está apagado.': 'Not available on this instance: the Operations module is switched off.',
     'Reintentar': 'Retry'
   };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
@@ -635,16 +637,28 @@
   var ORIGEN = { reserva: 'Reserva', venta: 'Venta', contrato: 'Contrato' };
   function nombreCliente(o) { return o.cliente_oculto ? T('Cliente sin permiso para verlo') : (o.cliente || (o.client_id ? '—' : T('Sin cliente'))); }
 
+  function opsApagado() {
+    E.ops = []; E.opsCargado = false;
+    vacia($v('ops-tabla'));
+    $v('ops-estado').textContent = T(NO_DISP_OPS);
+    oculta(raiz.querySelector('[data-accion="vt-ops-mas"]'), true);
+    return false;
+  }
   function cargaOps(mas) {
     var est = $v('ops-estado');
-    if (!E.opsOn) { vacia($v('ops-tabla')); est.textContent = T(NO_DISP_OPS); return Promise.resolve(false); }
     est.textContent = T('Cargando…');
-    var args = { p_limit: 500 };
-    var fo = $v('f-origen').value, fe = $v('f-estado').value;
-    if (fo) args.p_origen = fo;
-    if (fe) args.p_estado = fe;
-    if (mas && E.opsSig) args.p_despues = E.opsSig;
-    return llama('operaciones_cola_datos', args).then(function (r) {
+    // se espera a saber si Operaciones está encendido: la pestaña es la de entrada y se abre antes de que conteste apagados_instancia.js
+    return modP.then(function () {
+      if (!E.opsOn) return opsApagado();
+      var args = { p_limit: 500 };
+      var fo = $v('f-origen').value, fe = $v('f-estado').value;
+      if (fo) args.p_origen = fo;
+      if (fe) args.p_estado = fe;
+      if (mas && E.opsSig) args.p_despues = E.opsSig;
+      return llama('operaciones_cola_datos', args);
+    }).then(function (r) {
+      if (r === false) return false;
+      if (r && !r.error && r.data == null) { E.opsOn = false; aplicaModulo(); return opsApagado(); }   // apagado con la pantalla abierta: la base contesta null sin error
       if (!vaListaDe(r, 'operaciones')) {
         if (!mas) { E.ops = []; E.opsCargado = false; }
         vacia($v('ops-tabla'));
