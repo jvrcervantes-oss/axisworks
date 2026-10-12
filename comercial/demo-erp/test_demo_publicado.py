@@ -36,6 +36,9 @@ portada = os.path.join(PUBLICADO, 'index.html')
 t = open(portada, encoding='utf-8').read() if os.path.isfile(portada) else ''
 ok('data-puerta="portal"' in t and 'data-puerta="intranet"' in t, 'la raíz de la demo es la portada de dos puertas')
 ok(build.DEMO['marca'] in t and build.MARCA_HUECO not in t, 'la portada lleva la marca de DEMO y ningún hueco sin rellenar')
+# puerta_demo() quita los comentarios HTML; uno que lleve dentro su marca de cierre deja texto suelto en la página (revisor,
+# 12-oct: « y la portada no pasa por limpia_publico.js. -->» salió en el <body>).
+ok('<!--' not in t and '-->' not in t, 'la portada publicada no lleva comentarios ni restos de un comentario cortado')
 ht = os.path.join(PUBLICADO, '.htaccess')
 h = open(ht, encoding='utf-8').read() if os.path.isfile(ht) else ''
 ok("connect-src 'self'" in h and 'X-Robots-Tag' in h, 'cabeceras de la demo: connect-src \'self\' y noindex')

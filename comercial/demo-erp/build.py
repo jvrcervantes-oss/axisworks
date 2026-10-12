@@ -1312,9 +1312,14 @@ def comprueba_piel_demo(raiz):
         aborta('aplicadores de piel en la demo: %r (se esperaba 1, en %s)' % (donde, FICHA_REL))
 
 
-# Lo que la portada de dos puertas necesita además de su HTML: las dos fuentes de la web de AxisWorks (autoalojadas, Legal
-# 24-sep: sin Google Fonts), del propio repo.
-FUENTES_PUERTA = ('inter-400-latin.woff2', 'inter-500-latin.woff2', 'space-grotesk-500-latin.woff2')
+# Lo que la portada de dos puertas necesita además de su HTML (mesa «D01 — Demo landing» del owner, 12-oct-2026): las tres
+# tipografías de la marca nueva (Unbounded, Manrope, IBM Plex Mono, licencia OFL; autoalojadas, Legal 24-sep: sin Google
+# Fonts) de assets/fonts/x/, con sus licencias, y las dos vistas previas de las puertas (capturas REALES de la demo
+# publicada, 1280×720, datos inventados) de portada/. Solo index.html usa /demo/fonts/.
+FUENTES_PUERTA = ('unbounded-300.woff2', 'unbounded-600.woff2', 'manrope-400.woff2', 'manrope-500.woff2', 'manrope-700.woff2',
+                  'ibm-plex-mono-400.woff2', 'ibm-plex-mono-500.woff2',
+                  'OFL-unbounded.txt', 'OFL-manrope.txt', 'OFL-ibm-plex-mono.txt')
+VISTAS_PUERTA = ('portal.webp', 'intranet.webp')
 MARCA_HUECO = '__AXW_DEMO_MARCA__'
 
 
@@ -1328,7 +1333,13 @@ def puerta_demo(destino):
     fuentes = os.path.join(destino, 'demo', 'fonts')
     os.makedirs(fuentes, exist_ok=True)
     for f in FUENTES_PUERTA:
-        shutil.copy2(os.path.join(AQUI, '..', '..', 'assets', 'fonts', f), os.path.join(fuentes, f))
+        shutil.copy2(os.path.join(AQUI, '..', '..', 'assets', 'fonts', 'x', f), os.path.join(fuentes, f))
+    vistas = os.path.join(destino, 'demo', 'portada')
+    os.makedirs(vistas, exist_ok=True)
+    for f in VISTAS_PUERTA:
+        if ('/demo/portada/' + f) not in t:
+            aborta('puerta_demo.html no usa la vista previa %s' % f)
+        shutil.copy2(os.path.join(AQUI, 'portada', f), os.path.join(vistas, f))
 
 
 # ── Piel e identidad de una instancia (F14, 11-oct-2026; revisión previa #265 de Diseño + Seguridad) ──────────────────
