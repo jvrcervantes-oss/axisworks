@@ -3802,7 +3802,24 @@ DOC_ESPANOL = ('Factura · ', 'Fecha · Date', 'Vencimiento · ', 'Facturar a', 
                'Sin conceptos', 'Proyecto · Project', 'Contrato · Contract', 'Rectifica a', 'Motivo · ', "'es-ES'", '"es-ES"', 'lang="es"')
 
 
-DOC_TIPO_REAL_JS = "(vals.rectifica_numero && vals.tipo !== 'proforma' && vals.tipo !== 'recibi' ? 'rectificativa' : vals.tipo)"
+# La factura y el recibí NUEVOS nacen en la moneda de la instancia (Ajustes › moneda → lwMonedaBase() de guard.js), no en 'EUR' escrito a mano
+# (bbm-p36, medido en producción el 13-oct: la vista previa de una factura nueva de bbm decía «0 EUR»). Sin moneda decidida, EUR como antes.
+# Toda instancia; Lawang no cambia. Parte de BBM-64 (el resto de 'EUR' a mano sigue en esa fila).
+MONEDA_DOC_PARCHES = (
+    ('intranet/v4/assets/editores.js', "k: 'moneda', label: 'Moneda', tipo: 'select', valor: f0.moneda || 'EUR',",
+     "k: 'moneda', label: 'Moneda', tipo: 'select', valor: f0.moneda || lwMonedaBase() || 'EUR',"),
+    ('intranet/v4/assets/editores.js', "          moneda: f0.moneda || 'EUR',\n", "          moneda: f0.moneda || lwMonedaBase() || 'EUR',\n"),
+)
+
+
+def moneda_documento():
+    for rel_, viejo, nuevo in MONEDA_DOC_PARCHES:
+        ruta = os.path.join(DIST, *rel_.split('/'))
+        t = open(ruta, encoding='utf-8').read()
+        open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, viejo, nuevo, 'moneda del documento ' + rel_))
+
+
+DOC_TIPO_REAL_JS ="(vals.rectifica_numero && vals.tipo !== 'proforma' && vals.tipo !== 'recibi' ? 'rectificativa' : vals.tipo)"
 
 
 def documento_idiomas(idiomas):
@@ -3857,6 +3874,7 @@ def instancia(nombre):
         setup_reservas_pasos()
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
+    moneda_documento()   # 13-oct (bbm-p36): factura y recibí nuevos en la moneda de la instancia, no en EUR
     idiomas = idiomas_de(nombre)
     if idiomas:   # 12-oct-2026: interfaz en los idiomas de la instancia (bbm: indonesio e inglés)
         idiomas_instancia(idiomas)

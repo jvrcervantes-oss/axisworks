@@ -79,7 +79,8 @@ for (const [nombre, d, numero] of casos) {
 const ed = fs.readFileSync(path.join(dist, 'assets', 'editores.js'), 'utf8');
 ok(!/Buenos d[ií]as/.test(ed) && !/para su revisi[oó]n/.test(ed), 'correo: el mensaje por defecto sigue en español');
 ok(/Terlampir /.test(ed) && /Please find attached /.test(ed), 'correo: falta el mensaje id + en');
-ok(/["']rectificativa["']/.test(ed), 'correo: el asunto no distingue la rectificativa (tipo real del documento)');
+ok((ed.match(/f0\.moneda\s*\|\|\s*lwMonedaBase\(\)\s*\|\|/g) || []).length === 2, 'factura y recibí nuevos: no nacen en la moneda de la instancia (lwMonedaBase)');
+ok(/["']rectificativa["']/.test(ed),'correo: el asunto no distingue la rectificativa (tipo real del documento)');
 
 if (fallos.length) { console.error('MAL (' + fallos.length + '):\n  ' + fallos.join('\n  ')); process.exit(1); }
 console.log('TODO BIEN: documento id·en (' + casos.length + ' casos: factura, proforma, recibí, rectificativa, vacío) y correo');
