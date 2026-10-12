@@ -61,6 +61,7 @@
     ui: {
       sr_motivo_alta: 'Alta inicial desde el asistente de configuración',
       sr_motivo_previo: 'Alquileres que ya estaban en curso, apuntados en la configuración',
+      sr_motivo_anade: 'Añadido desde el asistente de configuración',
       sr_parcial: 'Se guardó: %h. No se guardó: %f.',
       sr_detalle: 'Afecta a: %d',
       sr_no_preparada: 'La entrega aún no está preparada en este ERP: avisa al estudio.',
@@ -236,6 +237,7 @@
     'El ERP no confirmó el guardado: vuelve a cargar la página antes de repetir.': 'The ERP did not confirm the save: reload the page before trying again.',
     'Alta inicial desde el asistente de configuración': 'Initial setup from the setup assistant',
     'Alquileres que ya estaban en curso, apuntados en la configuración': 'Rentals already under way, recorded during setup',
+    'Añadido desde el asistente de configuración': 'Added from the setup assistant',
     'Se guardó: %h. No se guardó: %f.': 'Saved: %h. Not saved: %f.',
     'Afecta a: %d': 'Affects: %d',
     'La entrega aún no está preparada en este ERP: avisa al estudio.': 'Delivery is not prepared in this ERP yet: tell the studio.',
@@ -343,6 +345,7 @@
     'El ERP no confirmó el guardado: vuelve a cargar la página antes de repetir.': 'ERP tidak mengonfirmasi bahwa data tersimpan: muat ulang halaman sebelum mencoba lagi.',
     'Alta inicial desde el asistente de configuración': 'Penyiapan awal dari panduan penyiapan',
     'Alquileres que ya estaban en curso, apuntados en la configuración': 'Sewa yang sudah berjalan, dicatat saat penyiapan',
+    'Añadido desde el asistente de configuración': 'Ditambahkan dari panduan penyiapan',
     'Se guardó: %h. No se guardó: %f.': 'Tersimpan: %h. Tidak tersimpan: %f.',
     'Afecta a: %d': 'Terkait: %d',
     'La entrega aún no está preparada en este ERP: avisa al estudio.': 'Pengantaran belum disiapkan di ERP ini: beri tahu studio.',
@@ -800,7 +803,8 @@
       function fila() {
         var n = lista.querySelectorAll('[data-axw-sr-fila]').length;
         var id = 'axw-sr-mat-' + n;
-        var inp = el('input', { id: id, type: 'text', 'data-axw-campo': 'mat_' + n, maxlength: '20', autocomplete: 'off', class: CLS_IN, style: 'min-width:0' });
+        var tid = d.flota.topes && d.flota.topes.identificador, mx = esObj(tid) && num(tid.max) ? String(num(tid.max)) : null;   // el tope lo da la base (hoy 40)
+        var inp = el('input', { id: id, type: 'text', 'data-axw-campo': 'mat_' + n, maxlength: mx, autocomplete: 'off', class: CLS_IN, style: 'min-width:0' });
         inp.addEventListener('input', function () { var c = inp.selectionStart; inp.value = inp.value.toUpperCase(); try { inp.setSelectionRange(c, c); } catch (e) { /* MUDO A PROPOSITO: navegador sin cursor */ } });
         var quita = el('button', { type: 'button', 'data-axw-sr-accion': 'quitar-unidad', 'aria-label': U('sr_quitar_fila'), class: CLS_BTN2, style: ALTO + ';min-width:44px', text: '×' });
         var f = el('div', { class: 'flex items-center gap-2', 'data-axw-sr-fila': String(n) }, [el('label', { for: id, style: OCULTO, text: U('sr_matricula_n', { n: String(ya.length + n + 1) }) }), inp, quita]);
@@ -854,7 +858,7 @@
     guarda: function (sb, v, st) {
       var d = st.datos, mon = (st.ctx.datos && st.ctx.datos.moneda) || null;
       var est = { pid: d.pid, antes: d.flota.productos.map(function (x) { return x.id; }) };
-      var mot = v.motivo || U('sr_motivo_alta');
+      var mot = v.motivo || U(d.p ? 'sr_motivo_anade' : 'sr_motivo_alta');   // añadir a lo que ya existe no es «alta inicial»
       var plan = v.plan, pasos = [];
       function relee() { return leeAlquiler({ paso: { ref: est.pid } }).then(function (r) { if (!r.ok) return r; return { ok: true, datos: r.datos }; }); }
       if (plan.alta) {
@@ -869,7 +873,7 @@
           } });
       } else if (plan.producto) {
         pasos.push({ etq: U('sr_e_producto'), llama: function (s) { return escribe(s, 'producto_guarda', { p_id: est.pid, p_datos: plan.producto }); },
-          verifica: function (rd) { return !!rd.p && Object.keys(plan.producto).every(function (k) { return String(rd.p[k]) === String(plan.producto[k]); }); } });
+          verifica: function (rd) { return !!rd.p && rd.p.nombre === plan.producto.nombre; } });
       }
       plan.tarifas.forEach(function (t) {
         pasos.push({ etq: U('sr_e_tarifa', { t: txtTramo(t.dias) }),
@@ -907,12 +911,9 @@
   // Lo que hay que mandar: solo lo que cambia respecto de lo leído (un reintento tras un fallo a medias no duplica nada)
   function planAlquiler(st, v) {
     var d = st.datos, p = d.p, plan = { alta: !p, producto: null, tarifas: [], garantia: null, seguros: [], seguroBorra: [], cambia: false };
-    if (p) {
-      var pc = {};
-      if (v.nombre !== p.nombre) pc.nombre = v.nombre;
-      if (v.tarifas[1] != null && num(p.precio) !== v.tarifas[1]) pc.precio = v.tarifas[1];
-      if (Object.keys(pc).length) { plan.producto = pc; plan.cambia = true; }
-    }
+    // En una edición solo cambia el NOMBRE: producto_flota_datos no devuelve el precio de catálogo (revisor, 12-oct) y los precios de alquiler son los
+    // tramos, como en /flota/ (que tampoco toca el precio del producto). El precio de catálogo = el del día solo se pone al dar de alta.
+    if (p && v.nombre !== p.nombre) { plan.producto = { nombre: v.nombre }; plan.cambia = true; }
     [1, 7, 30].forEach(function (dd) {
       var nv = v.tarifas[dd]; if (nv == null) return;   // vaciar un tramo no lo borra: eso se hace en Flota y tarifas
       var x = p ? p.tarifas.filter(function (y) { return Number(y.dias) === dd; })[0] : null;

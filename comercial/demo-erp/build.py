@@ -3192,6 +3192,14 @@ def ajustes_puesta_en_marcha():
     shutil.copy2(os.path.join(AQUI, 'setup_pasos.js'), os.path.join(v4, 'assets', 'setup_pasos.js'))   # el mismo componente por paso que el asistente
 
 
+def reservas_en_paquete(nombre):
+    """¿Lleva esta instancia la pantalla de Reservas de producto? No si su registro la saca del paquete (apagados_extra.p): axisworks-demo tiene el
+    módulo APAGADO a propósito (owner, 10-oct) y sacó /flota/ y /entrega/ por sus RPC; los pasos de setup_reservas.js las llamarían desde Ajustes y
+    pondrían rojo su contrato del paquete (revisor, 12-oct). Sin el script, esos pasos caen en el componente genérico de «otra pantalla»."""
+    fuera = {ruta_limpia(u) for u in ((_instancia_registro(nombre).get('apagados_extra') or {}).get('p') or [])}
+    return ruta_limpia('/intranet/v4/reservas-producto/') not in fuera
+
+
 def setup_reservas_pasos():
     """Pasos del setup de Reservas de producto (F3 Entregas 3 y 4, bbm-p27, 12-oct-2026): clase, alquiler con unidades, reglas, lo ya alquilado y
     entrega, en setup_reservas.js. Se suman a los componentes de setup_pasos.js con AXW_PASOS.registra(), así que van DETRÁS de setup_pasos.js y
@@ -3381,7 +3389,8 @@ def instancia(nombre):
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
     asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)
     ajustes_puesta_en_marcha()   # F3 (12-oct-2026): Ajustes › Configurar módulos, primera pestaña, en todas las instancias (antes solo las de reservas)
-    setup_reservas_pasos()       # F3 E3/E4 (12-oct-2026): pasos de Reservas de producto (clase, alquiler, reglas, ya alquilado, entrega) en asistente y Ajustes
+    if reservas_en_paquete(nombre):   # F3 E3/E4 (12-oct-2026): pasos de Reservas de producto (clase, alquiler, reglas, ya alquilado, entrega) en asistente y Ajustes
+        setup_reservas_pasos()
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
     idiomas = idiomas_de(nombre)

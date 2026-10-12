@@ -74,8 +74,10 @@ function setupDatos(b, a) {
     topes: { seguro_precio_max: { IDR: 300000000, EUR: 5000, USD: 5000 }, dias_max: 366, bloqueo_minutos: [10, 10080] } };
 }
 function flotaDatos(b, a) {
-  const prods = b.productos.filter(p => !a.p_producto || p.id === a.p_producto).map(p => Object.assign(JSON.parse(JSON.stringify(p)), { listo_para_reservar: true, faltan: [] }));
-  return { productos: prods, recortado: false, versiones: [], topes: { precio: { min: 1000, max_por_moneda: { IDR: 50000000 } }, dias: { min: 1, max: 366 }, lote: { max: 100 }, unidades_por_producto: { max: 250 }, motivo: { min: 3, max: 200 }, identificador: { min: 3, max: 20 } } };
+  // la forma REAL (erp/migraciones/20261008138700): id, numero, nombre, activo, listo_para_reservar, faltan, unidades, tarifas. Ni precio ni clase.
+  const prods = b.productos.filter(p => !a.p_producto || p.id === a.p_producto).map(p => ({ id: p.id, numero: p.numero, nombre: p.nombre, activo: p.activo, listo_para_reservar: true, faltan: [],
+    unidades: JSON.parse(JSON.stringify(p.unidades)), tarifas: JSON.parse(JSON.stringify(p.tarifas)) }));
+  return { productos: prods, recortado: false, versiones: [], topes: { precio: { min: 1000, max_por_moneda: { IDR: 50000000 } }, dias: { min: 1, max: 366 }, lote: { max: 100 }, unidades_por_producto: { max: 250 }, motivo: { min: 3, max: 200 }, identificador: { min: 1, max: 40 } } };
 }
 function entregaDatos(b) {
   const e = b.entrega, a = e.ajustes, faltan = [];
@@ -346,9 +348,25 @@ async function rellenaAlquiler(p, o = {}) {
   const esp0 = b.productos[0].tarifas[0].actualizado_en;
   await p.fill('[data-axw-sr="flota"] [data-axw-campo="sr_motivo"]', 'Subida de temporada'); await clic(p, 'enviar'); await p.waitForTimeout(400);
   const t1 = llamadas(b, 'producto_tarifa_guarda')[0];
-  ok('S41 cambio: ese producto, con su versión y el motivo del usuario; el producto también cambia de precio', t1 && t1[1].p_producto_id === 'p-honda' && t1[1].p_esperado === esp0 && t1[1].p_motivo === 'Subida de temporada'
-     && llamadas(b, 'producto_guarda')[0][1].p_id === 'p-honda' && llamadas(b, 'producto_guarda')[0][1].p_datos.precio === 95000, JSON.stringify(escrituras(b)));
+  ok('S41 cambio de precio: solo el tramo, de ese producto, con su versión y el motivo del usuario (el producto no se toca)', t1 && t1[1].p_producto_id === 'p-honda' && t1[1].p_esperado === esp0 && t1[1].p_motivo === 'Subida de temporada'
+     && llamadas(b, 'producto_guarda').length === 0 && escrituras(b).length === 1, JSON.stringify(escrituras(b)));
   ok('S41 cambio: no se dio de alta ningún producto ni tramo de 3 días', b.productos.length === 1 && !escrituras(b).some(x => x[1].p_dias === 3));
+  await ctx.close();
+  // añadir solo unidades a un producto que ya existe: sin motivo obligatorio, sin tocar el producto, y el motivo fijo no dice «alta inicial»
+  b = base({ conProducto: true });
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=flota' }));
+  await clic(p, 'cambiar'); await p.waitForSelector('[data-axw-sr="flota"] [data-axw-campo="nombre"]');
+  await p.click('[data-axw-sr-accion="anadir-unidad"]'); await p.fill('[data-axw-campo="mat_0"]', 'DK 4444 DD'); await clic(p, 'enviar'); await p.waitForTimeout(400);
+  const lt = llamadas(b, 'producto_unidades_alta_lote')[0];
+  ok('S41 añadir unidades a lo existente: solo el lote, con «Añadido desde el asistente»', escrituras(b).length === 1 && lt && lt[1].p_motivo === 'Añadido desde el asistente de configuración' && JSON.stringify(lt[1].p_identificadores) === '["DK 4444 DD"]', JSON.stringify(escrituras(b)));
+  await ctx.close();
+  // respuesta perdida al CAMBIAR el nombre (después de guardar): se relee, se reconoce por el nombre y la cadena sigue
+  b = base({ conProducto: true, pierde: { producto_guarda: 'despues' } });
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=flota' }));
+  await clic(p, 'cambiar'); await p.waitForSelector('[data-axw-sr="flota"] [data-axw-campo="nombre"]');
+  await p.fill('[data-axw-campo="nombre"]', 'Honda Scoopy 2024'); await p.fill('[data-axw-campo="tarifa_7"]', '500.000');
+  await p.fill('[data-axw-sr="flota"] [data-axw-campo="sr_motivo"]', 'Nombre del modelo nuevo'); await clic(p, 'enviar'); await p.waitForTimeout(600);
+  ok('S41 duda al renombrar: se reconoce por el nombre releído y sigue con el tramo', b.productos[0].nombre === 'Honda Scoopy 2024' && llamadas(b, 'producto_guarda').length === 1 && llamadas(b, 'producto_tarifa_guarda').some(x => x[1].p_dias === 7), JSON.stringify(escrituras(b)));
   await ctx.close();
   // conflicto de versión: 40001 flota_cambio
   b = base({ conProducto: true, falla: { 'producto_tarifa_guarda:1': ['40001', 'flota_cambio'] } });
