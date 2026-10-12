@@ -2485,9 +2485,10 @@ def entrega_pantalla():
     open(nav, 'w', encoding='utf-8', newline='').write(n)
     her = os.path.join(DIST, 'contracts', 'assets', 'herramientas.js')
     h = open(her, encoding='utf-8').read()
-    ancla = "maintenance work order' });" + '\n' + "}"
+    # la tarjeta de Taller acaba en «… maintenance inspection work order» desde 4f686ba (8.T1): la de Entrega se engancha detrás
+    ancla = "maintenance inspection work order' });" + '\n' + "}"
     h = _una_vez(h, ancla,
-                 "maintenance work order' });" + '\n' +
+                 "maintenance inspection work order' });" + '\n' +
                  "  /* ENTREGA (F8 pieza 8, 10-oct-2026): la sede, la tarifa por km y los límites de la entrega a domicilio. Permiso propio `entrega`; sin esta tarjeta la casilla no existiría en Usuarios. La base exige además administración. */" + '\n' +
                  "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'taller') + 1, 0," + '\n' +
                  "    { grupo:'Seguimiento', nombre:'Entrega', icon:'ph-truck', href:'/intranet/v4/entrega/', herr:'entrega'," + '\n' +
