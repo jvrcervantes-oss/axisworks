@@ -79,10 +79,12 @@
   }
   // El error en la forma que entienden los anfitriones (AXW_SETUP.explica lo lee por code + hint): sin red = «el ERP no ha respondido».
   // Los códigos de la edge llevan el prefijo cobros_ en el mapa compartido (clave_no_valida o sin_sesion ya significan otra cosa en otros
-  // módulos); live_no_permitido es un hint de la BASE (erp/modulos.py SETUP_HINTS) y va tal cual. Un código sin frase sale «(código: x)».
+  // módulos); live_no_permitido y cuenta_pruebas_solo_mira son hints de la BASE (erp/modulos.py SETUP_HINTS) y van tal cual, con su frase de
+  // siempre. Un código sin frase sale «(código: x)».
+  var DE_LA_BASE = { live_no_permitido: 1, cuenta_pruebas_solo_mira: 1 };
   function errorDe(codigo) {
     if (codigo === 'sin_red') return { message: 'Failed to fetch' };
-    return { code: codigo, hint: codigo === 'live_no_permitido' ? codigo : 'cobros_' + codigo, message: '' };
+    return { code: codigo, hint: DE_LA_BASE[codigo] ? codigo : 'cobros_' + codigo, message: '' };
   }
   function textoError(codigo) { return S().explica(errorDe(codigo), true).texto; }
 

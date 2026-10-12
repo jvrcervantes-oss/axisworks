@@ -64,6 +64,7 @@ function edge(b, c) {
   b.edge.push(JSON.parse(JSON.stringify(c)));
   const no = (status, codigo, extra = {}) => ({ status, json: Object.assign({ ok: false, codigo, error: 'texto en español que el front NO debe pintar' }, extra) });
   if (b.o.puede === false) return no(403, 'no_super_admin');
+  if (b.o.pruebas) return no(403, 'cuenta_pruebas_solo_mira');   // la cuenta de pruebas del estudio: super admin que solo mira
   if (c.accion === 'estado') return { status: 200, json: { ok: true, estado: JSON.parse(JSON.stringify(b.est)), pide_codigo: b.pide } };
   if (!b.pide) return no(503, 'codigo_no_disponible');
   const v = {};
@@ -233,6 +234,12 @@ const C = '[data-axw-cobros-caja]';
   b = base({ pide: false });
   ({ p, ctx } = await abre(nav, b));
   ok('pide_codigo=false: lo dice y no ofrece pedir código', !!(await p.$('[data-axw-cobros-error="codigo_no_disponible"]')) && !(await p.$('[data-axw-cobros="pedir"]')));
+  await ctx.close();
+
+  // 7b. la cuenta de pruebas (super admin que solo mira): la edge responde 403 cuenta_pruebas_solo_mira y se dice con su frase de siempre
+  b = base({ pruebas: true });
+  ({ p, ctx } = await abre(nav, b));
+  ok('cuenta de pruebas: «Esta es una cuenta de pruebas…», sin campos', ((await txt(p, '[data-axw-cobros-error]')) || '').startsWith('Esta es una cuenta de pruebas') && !(await p.$('#lw-aj-cobros input')));
   await ctx.close();
 
   // 8. modo real: prefijo que no casa, confirmación tecleada, live autorizado

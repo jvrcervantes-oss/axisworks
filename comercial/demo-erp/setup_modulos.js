@@ -54,7 +54,8 @@
     // hint de la base → frase. `<m>_sin_configurar` se resuelve aparte (lleva el nombre del módulo).
     hint: {
       // Ajustes › Cobros (F3 Entrega 2, bbm-p24-cobros-front): los `codigo` de la edge ajustes-pagos (erp/funciones/ajustes-pagos/index.ts, cabecera).
-      // cobros_paso.js los pasa con code 'axw_edge' y el codigo como hint, así explica() los lee por código como al resto (sin llaves en este
+      // cobros_paso.js los pasa con el codigo como code y 'cobros_' + codigo como hint (salvo live_no_permitido y cuenta_pruebas_solo_mira, hints
+      // de la base que van tal cual), así explica() los lee por código como al resto (sin llaves en este
       // comentario: setup_modulos.test.js lee el grupo hasta la primera llave de cierre).
       cobros_faltan_claves: 'La primera vez hay que poner las tres: clave de creación, clave de lectura y token de avisos.',
       cobros_clave_no_valida: 'Esa clave no tiene la forma de las de Xendit: cópiala entera desde el panel de Xendit.',
