@@ -145,7 +145,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
     'Hoy no hay entregas.': 'No handovers today.', 'Hoy no hay devoluciones.': 'No returns today.',
     'Este día no hay entregas.': 'No handovers on this day.', 'Este día no hay devoluciones.': 'No returns on this day.',
     'Pagado': 'Paid', 'Pago registrado, sin confirmar': 'Payment recorded, not confirmed', 'Pendiente de pago': 'Payment pending',
-    'Estado del pago desconocido': 'Payment status unknown',
+    'Estado del pago desconocido': 'Payment status unknown', 'Cobrado fuera del ERP': 'Paid outside the ERP',
     'Sin confirmar': 'Not confirmed', 'Confirmada': 'Confirmed', 'En curso': 'Ongoing', 'Devuelta': 'Returned',
     'Sin cliente': 'No customer', 'Cliente sin permiso para verlo': 'Customer you cannot see',
     'Reserva': 'Booking', 'Modelo': 'Model', 'Unidad': 'Unit', 'Cliente': 'Customer', 'Fechas': 'Dates', 'Estado': 'Status', 'Pago': 'Payment', 'Precio': 'Price',
@@ -169,7 +169,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
     'Hoy no hay entregas.': 'Hari ini tidak ada serah terima.', 'Hoy no hay devoluciones.': 'Hari ini tidak ada motor yang kembali.',
     'Este día no hay entregas.': 'Tidak ada serah terima pada tanggal ini.', 'Este día no hay devoluciones.': 'Tidak ada motor yang kembali pada tanggal ini.',
     'Pagado': 'Lunas', 'Pago registrado, sin confirmar': 'Pembayaran tercatat, belum dikonfirmasi', 'Pendiente de pago': 'Belum dibayar',
-    'Estado del pago desconocido': 'Status pembayaran tidak diketahui',
+    'Estado del pago desconocido': 'Status pembayaran tidak diketahui', 'Cobrado fuera del ERP': 'Dibayar di luar ERP',
     'Sin confirmar': 'Belum dikonfirmasi', 'Confirmada': 'Dikonfirmasi', 'En curso': 'Sedang disewa', 'Devuelta': 'Sudah kembali',
     'Sin cliente': 'Tanpa pelanggan', 'Cliente sin permiso para verlo': 'Pelanggan yang tidak boleh Anda lihat',
     'Reserva': 'Booking', 'Modelo': 'Model', 'Unidad': 'Unit', 'Cliente': 'Pelanggan', 'Fechas': 'Tanggal', 'Estado': 'Status', 'Pago': 'Pembayaran', 'Precio': 'Harga',
@@ -204,7 +204,8 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
   // El estado del pago lo decide la base (pago_estado); aquí solo se le pone nombre y tono. Texto Y color: el color solo no se lee.
   // Tono e icono del diseño del owner (13-oct): pendiente en naranja (el rojo queda para lo desconocido); registrado con borde discontinuo («sin confirmar»).
   // El icono es una ligadura de Material Symbols (la cáscara ya carga la fuente) y va aria-hidden: el texto del chip es el que dice el estado.
-  var PAGO = { pagado: ['Pagado', 'ok', 'check'], registrado: ['Pago registrado, sin confirmar', 'registrado', 'schedule'], pendiente: ['Pendiente de pago', 'espera', 'euro'] };
+  var PAGO = { pagado: ['Pagado', 'ok', 'check'], registrado: ['Pago registrado, sin confirmar', 'registrado', 'schedule'], pendiente: ['Pendiente de pago', 'espera', 'euro'],
+    fuera_erp: ['Cobrado fuera del ERP', 'ok', 'check'] };   // F3-E3: un alquiler previo (la moto ya estaba fuera al empezar con el ERP) se cobró fuera
   var ESTADO = { bloqueo: ['Sin confirmar', 'espera', 'schedule'], confirmada: ['Confirmada', 'confirmada', 'check'], en_curso: ['En curso', 'curso', 'arrow_forward'], devuelta: ['Devuelta', 'neutro', 'keyboard_return'] };
   var PROPIOS = {
     modulo_apagado: T('El módulo de reservas está apagado en esta instancia: no hay reservas que mirar. Esto NO quiere decir que no haya nada.'),
@@ -372,7 +373,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
     var pares = [['Reserva', x.numero_reserva], ['Modelo', x.producto], ['Unidad', x.unidad], ['Cliente', quien(x)],
                  ['Fechas', C.fechaDia(x.desde) + ' → ' + C.fechaDia(x.hasta)],
                  ['Estado', est ? T(est[0]) : x.estado], ['Pago', p ? T(p[0]) : T('Estado del pago desconocido')],
-                 ['Precio', C.dinero(x.precio_total, x.moneda)]];
+                 ['Precio', x.origen === 'previo' ? '—' : C.dinero(x.precio_total, x.moneda)]];   // F3-E3: un previo no tiene precio en el ERP
     if (x.hora) pares.push(['Hora', x.hora]);
     if (x.entrega_direccion) pares.push(['Dirección de entrega', x.entrega_direccion]);
     if (x.recogida_direccion) pares.push(['Dirección de recogida', x.recogida_direccion]);

@@ -43,7 +43,11 @@ function nuevaBase(o = {}) {
       { id: 'r4', numero: 'RSV-4', producto_id: 'p1', producto: 'Honda Beat', unidad_id: 'u2', unidad: 'DK 2', client_id: null, cliente_oculto: false, contacto_nombre: 'Cai', contacto_telefono: null,
         desde: mas(10), hasta: mas(12), dias: 2, estado: 'confirmada', origen: 'equipo', caduca_en: null, precio_total: 200000, moneda: 'IDR', desglose: [], entrega_direccion: null, recogida_direccion: null,
         pago_referencia: null, notas: null, creado_en: new Date().toISOString(), creado_por: 'yo@x.com' }
-    ],
+    ].concat(o.conPrevio ? [
+      // F3-E3: alquiler previo (la moto ya estaba fuera al empezar con el ERP): sin precio ni pago en el ERP (CHECK de la base)
+      { id: 'r9', numero: 'RSV-9', producto_id: 'p1', producto: 'Honda Beat', unidad_id: 'u2', unidad: 'DK 2', client_id: null, cliente_oculto: false, contacto_nombre: null, contacto_telefono: null,
+        desde: mas(-3), hasta: mas(2), dias: 5, estado: 'en_curso', origen: 'previo', caduca_en: null, precio_total: 0, moneda: 'IDR', desglose: [], entrega_direccion: null, recogida_direccion: null,
+        pago_referencia: null, notas: 'Alquiler previo apuntado por admin', creado_en: new Date().toISOString(), creado_por: 'admin@x.com' }] : []),
     pagos: [{ id: 'g1', reserva_id: 'r2', reserva: 'RSV-2', referencia: 'PAY-X <b>', importe: 300000, moneda: 'IDR', motivo: 'llego tarde', recibido_en: new Date().toISOString(), resuelto_en: null, resuelto_por: null, resolucion: null }]
   };
 }
@@ -203,6 +207,22 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.click('[data-accion="rp-modal-cerrar"]');
     ok('nada escribio por .from ni por fetch', (await p.evaluate(() => window.__fromLlamado + window.__fetchLlamado)) === 0);
     ok('ningun error de JS', (await p.evaluate(() => window.__errores)).length === 0);
+    await ctx.close();
+  }
+
+  // 1p. alquiler previo (F3-E3, revisor 13-oct): se cobró fuera del ERP; ni «Sin pago» ni «0 IDR», y ningún botón de dinero
+  {
+    const { p, ctx } = await abre({ base: { conPrevio: true } });
+    const tp = await p.$eval('[data-reserva-id="r9"]', tr => tr.textContent);
+    ok('alquiler previo: origen «Alquiler previo» y pago «Cobrado fuera del ERP», sin «Sin pago» ni «0 IDR»',
+       tp.includes('Alquiler previo') && tp.includes('Cobrado fuera del ERP') && !tp.includes('Sin pago') && !/(^|[^0-9.])0\s*IDR/.test(tp) && tp.includes('—'), tp);
+    const bs = (await p.$$eval('[data-reserva-id="r9"] [data-accion]', x => x.map(b => b.getAttribute('data-accion')))).join();
+    ok('alquiler previo: solo detalle, marcar devuelta y cambiar de unidad', bs === 'rp-detalle,rp-devuelta,rp-cambia-unidad', bs);
+    await p.click('[data-reserva-id="r9"] [data-accion="rp-detalle"]');
+    await p.waitForSelector('[data-axw="dialogo"], [role="dialog"]', { timeout: 5000 }).catch(() => null);
+    const dt = await p.evaluate(() => (document.querySelector('[data-axw="dialogo"], [role="dialog"]') || {}).textContent || '');
+    ok('alquiler previo: el detalle dice «Cobrado fuera del ERP» y no enseña precio 0', dt.includes('Cobrado fuera del ERP') && !dt.includes('Sin pago') && !/(^|[^0-9.])0\s*IDR/.test(dt), dt.slice(0, 300));
+    ok('alquiler previo: ningún error de JS', (await p.evaluate(() => window.__errores)).length === 0);
     await ctx.close();
   }
 
