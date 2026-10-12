@@ -253,7 +253,7 @@ if ($H['codigo'] !== 'DOC') {
         <h2><?= $t['cta_h'] ?></h2>
         <p><?= $t['cta_p'] ?></p>
         <?php $fc_pagina = $url; require __DIR__ . '/form_contacto.php'; ?>
-        <p class="hj-close__meta"><span><?= $lang === 'es' ? 'IDIOMAS' : 'LANGUAGES' ?>: <?= $t['langs'] ?></span><a href="<?= $hub ?>"><?= $t['index'] ?> →</a></p>
+        <p class="hj-close__meta"><a href="<?= $hub ?>"><?= $t['index'] ?> →</a></p>
       </div>
     </div>
   </section>

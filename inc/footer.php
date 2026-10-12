@@ -18,7 +18,7 @@ $hojas_pie = array_filter($PRODUCTOS, function ($p) use ($col) {
     <div class="foot__brand">
       <p class="eyebrow"><span>AXISWORKS</span></p>
       <p class="foot__h"><?= $lang === 'es' ? 'Software de gestión, bots y automatización, hechos con precisión.' : 'Business software, bots and automation, precision-built.' ?></p>
-      <p class="foot__p"><?= $lang === 'es' ? 'Un estudio de dos personas con un equipo de departamentos de IA detrás. Trabajamos en español e inglés.' : 'A two-person studio with a team of AI departments behind it. We work in English and Spanish.' ?></p>
+      <p class="foot__p"><?= $lang === 'es' ? 'Un estudio de dos personas con un equipo de departamentos de IA detrás.' : 'A two-person studio with a team of AI departments behind it.' ?></p>
     </div>
     <nav class="foot__idx" aria-label="<?= $t['index'] ?>">
       <p class="lbl"><?= $t['index'] ?></p>

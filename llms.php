@@ -16,7 +16,7 @@ $d = fn($s) => html_entity_decode($s, ENT_QUOTES, 'UTF-8');
 
 > AxisWorks is a two-person studio that builds the software a company runs on
 > (internal tool suites, CRM, WhatsApp AI bots, automations that monitor themselves)
-> and the ad campaigns that bring it leads. English and Spanish.
+> and the ad campaigns that bring it leads.
 
 ## Contact
 - Email: <?= EMAIL ?>
@@ -25,7 +25,6 @@ $d = fn($s) => html_entity_decode($s, ENT_QUOTES, 'UTF-8');
 
 ## Key facts
 - Approach: hand-coded, non-template, design and development in the same hands
-- Languages: English and Spanish (interfaces also in Bahasa Indonesia)
 - Pricing: no published rates. Every project is quoted on its own scope.
 
 ## What we build — the catalogue

@@ -12,6 +12,9 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../landing_textos.php';   /* ERP_URL, AAAS_EN, AAAS_ES */
 require_once __DIR__ . '/../organigrama.php';
 require_once __DIR__ . '/../herramientas_datos.php';
+require_once __DIR__ . '/../catalogo.php';        /* $T: textos del formulario (fc_*) */
+require_once __DIR__ . '/../legal_en.php';      /* capa 1 de Legal junto al botón */
+require_once __DIR__ . '/../legal_es.php';
 
 $XT = require __DIR__ . '/t_' . basename($XPAGINA) . '.php';
 $X_FALTAN = [];
