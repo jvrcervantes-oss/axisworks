@@ -173,12 +173,15 @@ for mm in re.finditer(r"\[\['(?:[^\]]*?)\]\]|\['([A-ZÁÉÍÓÚ][^']*)'(?:, 'vt-
     if mm.group(1): exige(mm.group(1), 'cabecera/etiqueta')
 for mm in re.finditer(r'<(\w+)[^>]*data-lwt[^>]*>([^<]+)</\1>', MARCADO):
     exige(mm.group(2).strip(), 'data-lwt')
-for nombre_c in ('NO_DISP_RES', 'NO_DISP_ACC'):
+for nombre_c in ('NO_DISP_RES', 'NO_DISP_ACC', 'NO_DISP_OPS'):
     mm = re.search(r"var " + nombre_c + r" = '([^']*)';", JS)
     exige(mm.group(1) if mm else 'FALTA ' + nombre_c, nombre_c)
 mira('Reservas apagado: guarda por axwModuloActivo + AXW_MODULOS_LISTOS (falla abierto); null sin error = no disponible; sin Reclamar ni Crear borrador',
-     "axwModuloActivo('reservas-producto')" in CODIGO and 'AXW_MODULOS_LISTOS' in CODIGO and 'r.data == null' in CODIGO
+     "moduloOn('reservas-producto')" in CODIGO and 'window.axwModuloActivo(m) !== false' in CODIGO and 'AXW_MODULOS_LISTOS' in CODIGO and 'r.data == null' in CODIGO
      and 'x.sin_cliente && E.reservasOn' in CODIGO and 'if (!E.reservasOn) {' in CODIGO)
+mira('Operaciones apagado (12-oct): la pestaña de entrada espera a saber el módulo, se esconde y dice «módulo apagado»; null sin error = apagado, no «algo inesperado»',
+     "moduloOn('operaciones')" in CODIGO and 'return modP.then(function ()' in CODIGO and 'if (!E.opsOn) return opsApagado();' in CODIGO
+     and "if (r && !r.error && r.data == null) { E.opsOn = false; aplicaModulo(); return opsApagado(); }" in CODIGO)
 mira('todo texto pintable está en el diccionario ES/EN' + (' (faltan: ' + '; '.join(sin[:8]) + ')' if sin else ''), not sin)
 claves_lista = re.findall(r"^\s*'((?:[^'\\]|\\.)*)'\s*:\s*'", bloque, flags=re.M)
 mira('ninguna clave repetida en EN_VT', len(claves_lista) == len(set(claves_lista)))
