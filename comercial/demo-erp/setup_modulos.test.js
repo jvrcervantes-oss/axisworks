@@ -93,10 +93,13 @@ function carga(idioma, rpc) {
     }
     ok(idioma + ': «falta_dato» lista sus campos', S.textoFalta({ codigo: 'falta_dato', campos: ['sede', 'precio_km'] }).includes(S.texto('campo', 'precio_km')));
   }
-  // un código que no está sale con su código y traducido, y se cuenta
+  // un código que no está sale con una frase digna y traducida, SIN el código (bbm-p31: el cliente vio «kode: negocio»), y se cuenta
   const { S: Sen } = carga('en');
-  ok('código desconocido: traducido y con su código', Sen.texto('paso', 'paso_inventado', 0) === 'Unnamed step (code: paso_inventado)');
+  ok('código desconocido: frase digna y traducida, sin el código', Sen.texto('paso', 'paso_inventado', 0) === 'Another setup step' && !/paso_inventado/.test(Sen.texto('paso', 'paso_inventado', 1)));
   ok('código desconocido: se cuenta', Sen.desconocidos.indexOf('paso:paso_inventado') >= 0);
+  ok('falta desconocida: sin el código', !/x_rara/.test(Sen.textoFalta({ codigo: 'x_rara', campos: ['y_raro'] })) && Sen.desconocidos.indexOf('falta:x_rara') >= 0);
+  ok('campo desconocido: sin el código', !/y_raro/.test(Sen.textoFalta({ codigo: 'falta_dato', campos: ['y_raro'] })));
+  ok('módulo desconocido: sin el código', !/mod_raro/.test(Sen.nombreModulo('mod_raro')));
 
   // ── 5. Errores por code + hint, nunca por el mensaje ─────────────────────────────────────────────────────────────────────────
   const E = DOBLE.errores_de_ejemplo;
@@ -112,7 +115,8 @@ function carga(idioma, rpc) {
   ok('<m>_sin_configurar con otro código no se toma por «sin configurar»', es.explica({ code: '42501', hint: 'taller_sin_configurar' }, true).configurar === null);
   ok('PGRST202 = todavía no disponible', es.explica({ code: 'PGRST202', message: 'Could not find the function' }, true).texto === es.TEXTOS.general.no_existe);
   ok('sin código y fallo de red = no ha respondido', es.explica({ message: 'Failed to fetch' }, true).texto === es.TEXTOS.general.red);
-  ok('código desconocido: lo dice con su código', es.explica({ code: 'P0001', hint: 'rarisimo' }, true).texto === 'No se pudo hacer (código: P0001).');
+  ok('error desconocido: frase digna, sin el código, y contado', es.explica({ code: 'P0001', hint: 'rarisimo' }, true).texto === es.TEXTOS.general.error_codigo
+    && !/P0001|rarisimo/.test(es.explica({ code: 'P0001', hint: 'rarisimo' }, true).texto) && es.desconocidos.indexOf('hint:rarisimo') >= 0);
 
   // ── 6. estado(): una sola petición; lo raro y los errores no se confunden con «todo listo» ───────────────────────────────────
   let c = carga('es', () => ({ data: DOBLE.casos.a_medias, error: null }));
@@ -131,22 +135,8 @@ function carga(idioma, rpc) {
   ok('la red cae = «red»', (await c.S.estado()).tipo === 'red');
   ok('moneda sin estado = null (las sumas esperan, nunca asumen EUR)', (await c.S.moneda()) === null);
 
-  // La lista cerrada de la BASE (erp/modulos.py de la agencia: SETUP_FALTAS y SETUP_HINTS) tiene frase aquí (revisor 12-oct: sin_flota salía
-  // «Paso sin nombre (código: sin_flota)»). Fuera de la agencia (otra máquina sin el repo al lado) se avisa y no se mide.
-  {
-    const modpy = path.join(process.env.AXW_AGENCIA_RAIZ || path.join(__dirname, '..', '..', '..', '..'), 'erp', 'modulos.py');
-    if (!fs.existsSync(modpy)) console.log('AVISO: sin erp/modulos.py al lado (' + modpy + '): no se compara con la lista de la base');
-    else {
-      const py = fs.readFileSync(modpy, 'utf8');
-      const lista = (nombre) => { const m = py.match(new RegExp('^' + nombre + ' = \\(([^)]*)\\)', 'm')); return m ? (m[1].match(/'([a-z0-9_]+)'/g) || []).map(x => x.slice(1, -1)) : null; };
-      const faltas = lista('SETUP_FALTAS'), hints = lista('SETUP_HINTS');
-      // hasta que la S1 de Backend llegue a main, erp/modulos.py no trae las listas: se avisa (las trae la rama de Backend del 12-oct)
-      if (!faltas || !hints) console.log('AVISO: erp/modulos.py aún sin SETUP_FALTAS/SETUP_HINTS: no se compara con la lista de la base');
-      const tiene = (seccion, k) => new RegExp('\\n    ' + seccion + ': \\{[^}]*?\\n      ' + k + ': ').test(FUENTE);
-      (faltas || []).forEach(k => ok('falta de la base con frase: ' + k, tiene('falta', k)));
-      (hints || []).forEach(k => ok('hint de la base con frase: ' + k, tiene('hint', k)));
-    }
-  }
+  // La lista cerrada de la BASE (pasos, faltas, hints y campos de erp/modulos.json / modulos.py) se cruza en setup_frases.test.js, con TODOS los scripts
+  // del setup cargados: aquí solo se veían las frases de este fichero y no las que suman setup_reservas.js, cobros_paso.js y setup_comun.js (bbm-p31, 12-oct).
 
   console.log((fallos ? 'FALLAN ' + fallos + ' de ' : 'OK ') + total + ' comprobaciones — setup_modulos.test.js');
   process.exit(fallos ? 1 : 0);

@@ -112,7 +112,7 @@ window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' 
   if (hu) for (var k in hu) v = v.split('%' + k).join(hu[k]); return v; };`;
 // /ajustes/ como lo deja build.py: la pestaña Cobros oculta y su panel, y Configurar módulos
 const ajustes = idioma => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}[hidden]{display:none!important}</style><style>${CSS_PIEL}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>
-<nav><button type="button" data-lw-tab="cobros" hidden>Cobros</button></nav>
+<nav><button type="button" data-lw-tab="cobros" hidden>Cobros en línea</button></nav>
 <section data-lw-panel="cobros"><div id="lw-aj-cobros"></div></section>
 <section data-lw-panel="puesta"><div id="lw-aj-puesta"><p>…</p></div></section></main>
 <script>${comun(idioma)}</script>${JS.map(j => '<script>' + j + '</script>').join('')}</body></html>`;
@@ -317,7 +317,7 @@ const C = '[data-axw-cobros-caja]';
     await ctx.close();
     b = base();
     ({ p, ctx } = await abre(nav, b, { tipo: 'real', url: '/ajustes/#cobros', idioma: 'id' }));
-    ok('real, id: los rótulos fijos de build.py salen en indonesio', (await txt(p, '[data-lw-tab="cobros"]')) === 'Pembayaran' && ((await txt(p, '[data-lw-panel="cobros"] h2')) || '') === 'Pembayaran online',
+    ok('real, id: los rótulos fijos de build.py salen en indonesio', (await txt(p, '[data-lw-tab="cobros"]')) === 'Pembayaran online' && ((await txt(p, '[data-lw-panel="cobros"] h2')) || '') === 'Pembayaran online',
        (await txt(p, '[data-lw-tab="cobros"]')) + ' / ' + (await txt(p, '[data-lw-panel="cobros"] h2')));
     ok('real: sin errores de página', (await p.evaluate(() => window.__errores)).length === 0, JSON.stringify(await p.evaluate(() => window.__errores)));
     await ctx.close();

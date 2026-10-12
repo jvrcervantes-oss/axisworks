@@ -304,6 +304,32 @@
     pinta();
     avisaListo();
   }
+  /* Idiomas de la instancia (owner, 12-oct: «Sí, en Ajustes»; bbm-p31). La base los da con sesión ({ofrecidos, defecto} | null): la pantalla de entrada
+     no puede preguntarlos (sin lectura anónima, Seguridad #289), así que se APUNTAN aquí, tras el login, y el arranque de cada página (parche de idioma.js
+     en build.py) los lee antes que lo que fijó el build. Solo si este paquete sabe pintarlos (id+en necesita el núcleo indonesio del build). Si lo apuntado
+     cambia lo que ya se está viendo, UNA recarga por cambio (marca en sessionStorage: nunca un bucle). Sin idiomas en el build no hay nada que aplicar. */
+  var CLAVE_IDIOMAS = 'axw_idiomas_erp';
+  function idiomasDeLaBase(v) {
+    var b = window.AXW_IDIOMAS_BUILD;
+    if (!Array.isArray(b) || !b.length) return;
+    var lista = null;
+    if (v && typeof v === 'object' && Array.isArray(v.ofrecidos) && typeof v.defecto === 'string' && v.ofrecidos.indexOf(v.defecto) >= 0) {
+      lista = [v.defecto].concat(v.ofrecidos.filter(function (c) { return c !== v.defecto; }));
+    }
+    var pintable = !!lista && [['es', 'en'], ['id', 'en']].some(function (p) { return p.join() === lista.join(); }) && (lista[0] !== 'id' || b.indexOf('id') >= 0);
+    var nueva = pintable ? lista : b;   // null (sin guardar) o algo que este paquete no sabe pintar: manda el build
+    try {
+      if (pintable) localStorage.setItem(CLAVE_IDIOMAS, JSON.stringify(lista)); else localStorage.removeItem(CLAVE_IDIOMAS);
+      if ((localStorage.getItem(CLAVE_IDIOMAS) || '') !== (pintable ? JSON.stringify(lista) : '')) return;   // sin almacenamiento, recargar no cambiaría nada
+    } catch (e) { return; }
+    var actual = Array.isArray(window.AXW_IDIOMAS) ? window.AXW_IDIOMAS : b;
+    if (nueva.join() === actual.join()) return;
+    try {
+      if (sessionStorage.getItem('axw_idiomas_recarga') === nueva.join()) return;
+      sessionStorage.setItem('axw_idiomas_recarga', nueva.join());
+    } catch (e) { return; }
+    location.reload();
+  }
   function pide() {
     var sb = window.LW_SB;
     if (!sb || !sb.auth) return false;
@@ -319,6 +345,7 @@
           /* La moneda de la instancia (F3 fase E, 12-oct-2026; Backend la añade a esta misma respuesta): se fija ANTES de soltar la sesión, así
              ninguna pantalla de módulo pinta un importe sin saberla. null o ausente = desconocida, nunca EUR (lwMonedaBase la lee). */
           if ('moneda' in x.data) window.LW_MONEDA_BASE = typeof x.data.moneda === 'string' && /^[A-Z]{3}$/.test(x.data.moneda) ? x.data.moneda : null;
+          if ('idiomas' in x.data) idiomasDeLaBase(x.data.idiomas);   // sin la clave: esa base aún no guarda idiomas y manda el build
           decide(null, x.data.activos);
         }
       });

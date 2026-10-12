@@ -3222,12 +3222,12 @@ AJUSTES_COBROS_TAB_ANCLA = ('<button class="lw-tab-btn px-4 py-2 rounded-full te
                             ' role="tab" type="button" id="lw-tab-registro"')
 AJUSTES_COBROS_TAB = ('<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors"'
                       ' role="tab" type="button" id="lw-tab-cobros" aria-controls="lw-panel-cobros" aria-selected="false" tabindex="-1" data-lw-tab="cobros" data-lwt hidden>'
-                      'Cobros</button>\n')
+                      'Cobros en línea</button>\n')
 AJUSTES_COBROS_PANEL_ANCLA = '<section id="lw-panel-registro" role="tabpanel"'
 AJUSTES_COBROS_PANEL = (
     '<section id="lw-panel-cobros" role="tabpanel" aria-labelledby="lw-tab-cobros" data-lw-panel="cobros" class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden" hidden>\n'
     '<div class="px-8 pt-8 pb-4 flex flex-col gap-1 border-b border-outline-variant/40">\n'
-    '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Cobros</span>\n'
+    '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Ajustes</span>\n'
     '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Cobros en línea</h2>\n'
     '<p class="font-body-sm text-body-sm text-outline" data-lwt>Las claves de Xendit con las que el ERP crea el enlace de pago y comprueba los pagos. Se escriben una vez y no se vuelven a enseñar.</p>\n'
     '</div>\n'
@@ -3261,6 +3261,82 @@ def ajustes_cobros():
     shutil.copy2(os.path.join(AQUI, 'cobros_paso.js'), os.path.join(v4, 'assets', 'cobros_paso.js'))
 
 
+# ── Pasos comunes del setup y del Taller + Ajustes › Idiomas contra la base (F3, bbm-p31-front-comun, 12-oct-2026) ─────────────────────────────
+# setup_comun.js registra los componentes de negocio, idiomas, correo y taller_* (setup_pasos.js → AXW_PASOS.registra) en las DOS páginas que comparten
+# componente. No pinta nada que la base no declare: sin la migración 20261012220000 (bbm-p28) aplicada, ningún paso suyo sale.
+# El adaptador de Ajustes › Idiomas (IDIOMAS_ORIGEN de Lawang, ajustes-pG2) se sustituye en la COPIA: lee modulos_activos_datos().idiomas y guarda por
+# ajustes_config_guardar('idiomas', [...]). Si la respuesta de la base no trae `idiomas` (base sin la 220000), sigue en solo lectura como hoy. Lawang no cambia.
+IDIOMAS_ORIGEN_LAWANG = ("  var IDIOMAS_ORIGEN = {\n    lee: function () {\n"
+                         "      var dec = Array.isArray(window.AXW_IDIOMAS) && window.AXW_IDIOMAS.length ? window.AXW_IDIOMAS.slice() : ['es', 'en'];\n"
+                         "      return Promise.resolve({ ofrecidos: dec, defecto: dec[0], origen: 'publicacion' });\n    },\n"
+                         "    puedeGuardar: false,   // pasa a true cuando la base tenga su clave y su función de guardar\n"
+                         "    guarda: function () { return Promise.resolve({ ok: false, motivo: 'sin_base' }); }\n  };\n")
+IDIOMAS_ORIGEN_BASE = """  var IDIOMAS_ORIGEN = {
+    // AxisWorks (build.py, bbm-p31, 12-oct): la base guarda los idiomas (clave `idiomas`, migración 20261012220000). Sin `idiomas` en la respuesta = esa
+    // base aún no los guarda: solo lectura, como antes. null = no se han guardado: manda lo que fijó el build.
+    puedeGuardar: false,
+    lee: function () {
+      var b = Array.isArray(window.AXW_IDIOMAS_BUILD) ? window.AXW_IDIOMAS_BUILD.slice() : (Array.isArray(window.AXW_IDIOMAS) && window.AXW_IDIOMAS.length ? window.AXW_IDIOMAS.slice() : ['es', 'en']);
+      var deBuild = { ofrecidos: b, defecto: b[0], origen: 'publicacion' };
+      if (!sb) return Promise.resolve(deBuild);
+      return Promise.resolve(sb.rpc('modulos_activos_datos')).then(function (r) {
+        if (!r || r.error || !r.data || typeof r.data !== 'object' || Array.isArray(r.data)) throw new Error('modulos_activos_datos');
+        if (!('idiomas' in r.data)) { IDIOMAS_ORIGEN.puedeGuardar = false; return deBuild; }
+        IDIOMAS_ORIGEN.puedeGuardar = true;
+        var v = r.data.idiomas;
+        if (v == null) return deBuild;
+        if (typeof v !== 'object' || !Array.isArray(v.ofrecidos)) throw new Error('forma de idiomas');
+        return { ofrecidos: v.ofrecidos.slice(), defecto: v.defecto, origen: 'base' };
+      });
+    },
+    guarda: function (v) {
+      var lista = [v.defecto].concat(v.ofrecidos.filter(function (c) { return c !== v.defecto; }));
+      function apunta() { try { localStorage.setItem('axw_idiomas_erp', JSON.stringify(lista)); } catch (e) { /* MUDO A PROPOSITO: el arranque cae al build */ } return { ok: true }; }
+      // sin respuesta: se relee y se compara (nunca se reenvía solo)
+      function duda() {
+        return IDIOMAS_ORIGEN.lee().then(function (x) {
+          var l = [x.defecto].concat(x.ofrecidos.filter(function (c) { return c !== x.defecto; }));
+          return x.origen === 'base' && l.join() === lista.join() ? apunta() : { ok: false, motivo: T('sin respuesta') };
+        }, function () { return { ok: false, motivo: T('sin respuesta') }; });
+      }
+      if (!sb) return Promise.resolve({ ok: false, motivo: T('sin respuesta') });
+      return Promise.resolve(sb.rpc('ajustes_config_guardar', { p_clave: 'idiomas', p_valor: lista })).then(function (r) {
+        if (r && !r.error) return apunta();
+        var e = (r && r.error) || {};
+        if (e.code === '42501') return { ok: false, motivo: T('Solo el super admin puede cambiar los ajustes.') };
+        if (e.hint === 'idiomas_no_validos') return { ok: false, motivo: T('Esa combinación de idiomas todavía no se puede usar en este ERP. Pídesela al estudio.') };
+        if (!e.code) return duda();
+        return { ok: false, motivo: T('sin detalle') };
+      }, duda);
+    }
+  };
+"""
+IDIOMAS_PINTABLES_LAWANG = "  var IDIOMAS_PINTABLES = [['es', 'en'], ['id', 'en']];"
+# id+en solo si el paquete trae el indonesio (el build lo fijó): sin su diccionario sería una casilla que no hace nada
+IDIOMAS_PINTABLES_BASE = ("  var IDIOMAS_PINTABLES = [['es', 'en'], ['id', 'en']].filter(function (p) { return p[0] !== 'id' || "
+                          "(Array.isArray(window.AXW_IDIOMAS_BUILD) && window.AXW_IDIOMAS_BUILD.indexOf('id') >= 0); });")
+
+
+def setup_comun_pasos():
+    """setup_comun.js detrás de setup_pasos.js en /ajustes/configurar/ y en /ajustes/ (todas las instancias: el módulo base está en todas), y el adaptador
+    de Ajustes › Idiomas contra la base. Va después de asistente_setup_pantalla() y ajustes_puesta_en_marcha(). Reemplazos literales que paran si cambia el
+    trozo de Lawang; solo se toca DIST."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    for pag, pre in ((os.path.join(v4, 'ajustes', 'configurar', 'index.html'), '../../assets/'), (os.path.join(v4, 'ajustes', 'index.html'), '../assets/')):
+        t = open(pag, encoding='utf-8').read()
+        tag = '<script src="%ssetup_pasos.js" defer></script>' % pre
+        t = _una_vez(t, tag, tag + '<script src="%ssetup_comun.js" defer></script>' % pre, 'setup_comun_pasos %s' % os.path.relpath(pag, v4))
+        if 'ajustes_puesta.js' in t and t.index('setup_comun.js') > t.index('ajustes_puesta.js'):
+            aborta('setup_comun_pasos: setup_comun.js tiene que cargar antes que ajustes_puesta.js')
+        open(pag, 'w', encoding='utf-8', newline='').write(t)
+    shutil.copy2(os.path.join(AQUI, 'setup_comun.js'), os.path.join(v4, 'assets', 'setup_comun.js'))
+    js = os.path.join(v4, 'assets', 'ajustes.js')
+    a = open(js, encoding='utf-8').read()
+    a = _una_vez(a, IDIOMAS_ORIGEN_LAWANG, IDIOMAS_ORIGEN_BASE, 'ajustes.js IDIOMAS_ORIGEN')
+    a = _una_vez(a, IDIOMAS_PINTABLES_LAWANG, IDIOMAS_PINTABLES_BASE, 'ajustes.js IDIOMAS_PINTABLES')
+    open(js, 'w', encoding='utf-8', newline='').write(a)
+
+
 # ── Idiomas de la interfaz por instancia (owner, 11-oct-2026: bbm «Añade Indonesio y quita español») ─────────────────────────────────────────
 # Una instancia con `"idiomas": ["id", "en"]` en erp/instancias.json sale en indonesio (el primero, por defecto) e inglés, y el español deja de
 # ofrecerse. Todo con reemplazos literales sobre la COPIA (DIST), nunca en Lawang; si Lawang cambia un trozo, el build para. Sin la clave, nada cambia.
@@ -3272,7 +3348,13 @@ IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis', 'Panel', 'Bot')
 # Lo que hay que tocar en el front copiado: (fichero en DIST, trozo de Lawang, sustituto). Cada trozo tiene que aparecer EXACTAMENTE una vez.
 IDIOMAS_PARCHES = (
     ('contracts/assets/idioma.js', "  window.LW_IDIOMA = (v === 'en') ? 'en' : 'es';",
-     "  window.AXW_IDIOMAS = __AXW_IDIOMAS__;\n  window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(v) >= 0) ? v : window.AXW_IDIOMAS[0];"),
+     # bbm-p31 (12-oct): AXW_IDIOMAS_BUILD = lo que fija el build (respaldo). Lo que la base guardó (Ajustes › Idiomas, 220000) lo apunta
+     # apagados_instancia.js en localStorage tras el login y GANA aquí, en <head>, antes de pintar nada; solo si este paquete sabe pintarlo.
+     "  window.AXW_IDIOMAS_BUILD = __AXW_IDIOMAS__;\n"
+     "  window.AXW_IDIOMAS = (function (b) { var g = null; try { g = JSON.parse(localStorage.getItem('axw_idiomas_erp') || 'null'); } catch (e) { g = null; }\n"
+     "    var ok = Array.isArray(g) && [['es', 'en'], ['id', 'en']].some(function (p) { return p.join() === g.join(); }) && (g[0] !== 'id' || b.indexOf('id') >= 0);\n"
+     "    return ok ? g : b.slice(); })(window.AXW_IDIOMAS_BUILD);\n"
+     "  window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(v) >= 0) ? v : window.AXW_IDIOMAS[0];"),
     ('contracts/assets/idioma.js', "    window.LW_IDIOMA = (idioma === 'en') ? 'en' : 'es';",
      "    window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(idioma) >= 0) ? idioma : window.AXW_IDIOMAS[0];"),
     # el par de botones de la barra lateral se encuentra por su TEXTO («ES»/«EN»): el «ES» pasa a ser «ID» y cada botón dice su idioma en su idioma
@@ -3437,6 +3519,7 @@ def instancia(nombre):
     asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)
     ajustes_puesta_en_marcha()   # F3 (12-oct-2026): Ajustes › Configurar módulos, primera pestaña, en todas las instancias (antes solo las de reservas)
     ajustes_cobros()   # F3 E2 (12-oct-2026): Ajustes › Cobros y el paso «cobros» (oculto hasta que la base declare el paso)
+    setup_comun_pasos()   # F3 (12-oct-2026, bbm-p31): pasos negocio/idiomas/correo/taller_* y Ajustes › Idiomas contra la base
     if reservas_en_paquete(nombre):   # F3 E3/E4 (12-oct-2026): pasos de Reservas de producto (clase, alquiler, reglas, ya alquilado, entrega) en asistente y Ajustes
         setup_reservas_pasos()
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)

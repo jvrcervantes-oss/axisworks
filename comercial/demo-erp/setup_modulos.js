@@ -189,12 +189,19 @@
       nota_titulo: "Este módulo aún no está listo.",
       nota_texto: "Lo está configurando el administrador principal. Aparecerá aquí en cuanto esté listo: no tienes que hacer nada.",
       ahora_no: 'Ahora no',
-      desconocido: 'Paso sin nombre (código: %c)',
-      error_codigo: 'No se pudo hacer (código: %c).'
+      // Un código que este mapa no conoce NUNCA se enseña al cliente (bbm-p31, 12-oct: el ensayo de Calidad vio «Langkah tanpa nama (kode: negocio)»):
+      // sale una frase digna por tipo, se cuenta en `desconocidos` y se avisa por consola para el estudio. setup_frases.test.js cruza la lista de la base.
+      desconocido: 'Pendiente de revisar',
+      desconocido_paso: 'Otro paso de la configuración',
+      desconocido_paso_d: 'Esta pantalla aún no sabe explicar este paso. Si no sabes cómo hacerlo, avisa al estudio.',
+      desconocido_campo: 'otro dato',
+      desconocido_modulo: 'Otro módulo',
+      desconocido_falta: 'Falta completar este paso.',
+      error_codigo: 'No se ha podido hacer. Si vuelve a pasar, avisa al estudio.'
     },
     // Ajustes › Cobros y su paso del asistente (cobros_paso.js). `prueba_*`: el resultado de la prueba contra Xendit de cada clave (`fallo` de la edge).
     cobros: {
-      pestana: 'Cobros',
+      pestana: 'Cobros en línea',   // no «Cobros» a secas: en indonesio esa frase ya es «Penerimaan» (lo cobrado, Finanzas) en i18n_id.json (bbm-p31)
       titulo: 'Cobros en línea',
       lead: 'Las claves de Xendit con las que el ERP crea el enlace de pago y comprueba los pagos. Se escriben una vez y no se vuelven a enseñar.',
       proveedor: 'Quién procesa los cobros',
@@ -299,7 +306,6 @@
     'Esta pantalla no se ha abierto desde la dirección del ERP.': 'This screen was not opened from the ERP address.',
     'Los cobros en línea todavía no están disponibles en este ERP.': 'Online payments are not available in this ERP yet.',
     'No se sabe si se ha guardado: mira cómo están las claves antes de repetir.': 'It is not known whether it was saved: check the keys before trying again.',
-    'Cobros': 'Payments',
     'Las claves de Xendit con las que el ERP crea el enlace de pago y comprueba los pagos. Se escriben una vez y no se vuelven a enseñar.': 'The Xendit keys the ERP uses to create payment links and check payments. They are typed once and never shown again.',
     'Quién procesa los cobros': 'Who processes the payments', 'Tarjeta, transferencia y monederos electrónicos. Indonesia y el Sudeste Asiático.': 'Cards, bank transfer and e-wallets. Indonesia and Southeast Asia.',
     'Modo': 'Mode', 'Modo prueba · sin dinero real': 'Test mode · no real money', 'Modo real': 'Live mode', 'Dinero real': 'Real money',
@@ -334,11 +340,14 @@
     'Esta función todavía no está disponible en este ERP.': 'This function is not available in this ERP yet.',
     'El ERP no ha respondido: prueba otra vez en un rato.': 'The ERP did not respond: try again in a moment.',
     'El ERP ha devuelto algo inesperado.': 'The ERP returned something unexpected.',
-    'Configurar': 'Set up', 'Ahora no': 'Not now', 'Paso sin nombre (código: %c)': 'Unnamed step (code: %c)', 'No se pudo hacer (código: %c).': 'It could not be done (code: %c).',
+    'Configurar': 'Set up', 'Ahora no': 'Not now', 'Pendiente de revisar': 'To be checked', 'Otro paso de la configuración': 'Another setup step',
+    'Esta pantalla aún no sabe explicar este paso. Si no sabes cómo hacerlo, avisa al estudio.': 'This screen cannot explain this step yet. If you are not sure how to do it, tell the studio.',
+    'otro dato': 'another detail', 'Otro módulo': 'Another module', 'Falta completar este paso.': 'This step still needs to be completed.',
+    'No se ha podido hacer. Si vuelve a pasar, avisa al estudio.': 'It could not be done. If it happens again, tell the studio.',
     "Obligatorio": "Required", "Para qué sirve": "What it's for", "%n de %t pasos hechos": "%n of %t steps done", "Volver al ERP": "Back to the ERP", "Asistente de configuración · solo el administrador principal": "Setup assistant · main administrator only", "Configura tu ERP,": "Set up your ERP,", "paso a paso.": "one step at a time.", "Cada módulo hace unas pocas preguntas, una por pantalla. Todo se guarda al momento y puedes cambiarlo después en Ajustes.": "Each module asks a few short questions, one per screen. Everything is saved as you go, and you can change it later in Settings.", "Solo tú, como administrador principal, puedes configurar los módulos. Hasta que termines, tu equipo ve que el módulo aún no está listo.": "Only you, as main administrator, can set up the modules. Until you finish, your team sees that the module is not ready yet.", "Sigue donde lo dejaste": "Continue where you left off", "Módulos encendidos": "Modules turned on", "%m módulos · %p pasos": "%m modules · %p steps", "A medias": "Partly done", "Empezar": "Start", "Continuar": "Continue", "Revisar": "Review", "Se guarda al momento. El asistente abre siempre en el primer paso que falta.": "Saved as you go. The assistant always opens at the first step left.", "Tienes un módulo sin configurar": "You have a module that is not set up", "Tienes %n módulos sin configurar": "You have %n modules that are not set up", "%m está encendido. Todo lo demás sigue funcionando mientras lo configuras.": "%m is switched on. Everything else keeps working while you set it up.", "%lista están encendidos. Todo lo demás sigue funcionando mientras los configuras.": "%lista are switched on. Everything else keeps working while you set them up.", "Configuración completa": "Setup complete", "Lo que has configurado queda en Ajustes: puedes cambiarlo ahí cuando quieras, y cada cambio queda registrado.": "What you set up stays in Settings: you can change it there any time, and every change is logged.", "Revisar en Ajustes": "Review in Settings", "Se fija después": "Locks later", "Este módulo aún no está listo.": "This module is not ready yet.", "Lo está configurando el administrador principal. Aparecerá aquí en cuanto esté listo: no tienes que hacer nada.": "The main administrator is setting it up. It will show up here as soon as it is ready: you do not need to do anything.", "Hay más de una empresa emisora: el impuesto de las reservas se configura cuando quede una sola activa.": "There is more than one issuing company: the booking tax is set up when only one is active.", "La empresa no tiene impuesto por defecto: créalo en Ajustes.": "The company has no default tax: create it in Settings.", "El impuesto por defecto no es de suma, exento ni no sujeto: elige otro en Ajustes.": "The default tax is not an added, exempt or out-of-scope tax: choose another one in Settings.", "Aún no hay ninguna moto con tarifa: añádela en Flota y tarifas.": "There is no motorbike with a rate yet: add one in Fleet and rates.", "Este paso no se ha podido comprobar en la base: avisa al estudio.": "This step could not be checked in the database: tell the studio.", "razón social": "legal name", "domicilio": "address", "identificación fiscal": "tax ID", "empresa activa": "active company", "Para cambiar algo ya guardado hay que escribir el motivo.": "To change something already saved, write the reason.", "Elige sí o no.": "Choose yes or no.", "Este ajuste no se cambia desde aquí.": "This setting is not changed from here.", "Este ERP aún no tiene preparada la configuración por módulos: avisa al estudio.": "This ERP does not have the module setup ready yet: tell the studio."
   };
   var ID = {
-    "Elige una opción": "Pilih salah satu", "Moneda": "Mata uang", "Razón social": "Nama badan usaha", "Domicilio": "Alamat", "Etiqueta fiscal": "Label pajak", "Identificación fiscal": "Identitas pajak", "Representante (opcional)": "Perwakilan (opsional)", "Prefijo": "Prefiks", "Mayúsculas y números, de 2 a 8. Por ejemplo: BBM": "Huruf kapital dan angka, 2 sampai 8. Contoh: BBM", "Las facturas empezarán así: %p-…": "Invoice akan diawali seperti ini: %p-…", "Primero hay que dar de alta la empresa que emite las facturas.": "Daftarkan dulu perusahaan penerbit invoice.", "Sí: es PKP y cobra PPN": "Ya: PKP dan memungut PPN", "No: no es PKP (las reservas van sin PPN)": "Tidak: bukan PKP (booking tanpa PPN)", "El precio de la tarifa ya lleva el impuesto": "Harga di tarif sudah termasuk pajak", "El impuesto se suma al precio de la tarifa": "Pajak ditambahkan ke harga di tarif", "Abrir %pantalla": "Buka %pantalla", "Ya lo hice, comprobar": "Sudah, periksa", "Este paso se hace en otra pantalla. Al terminar, vuelve aquí y pulsa «Ya lo hice, comprobar».": "Langkah ini dikerjakan di layar lain. Setelah selesai, kembali ke sini dan tekan «Sudah, periksa».", "Falta rellenar: %c.": "Masih perlu diisi: %c.", "El prefijo va en mayúsculas y números, de 2 a 8 caracteres.": "Prefiks memakai huruf kapital dan angka, 2 sampai 8 karakter.", "No se podrá cambiar después.": "Tidak bisa diubah nanti.", "Para confirmar, escribe %v": "Untuk konfirmasi, ketik %v", "Lo escrito no coincide.": "Yang diketik tidak sama.", "Fijar la moneda: %v": "Tetapkan mata uang: %v", "Fijar el prefijo: %v": "Tetapkan prefiks: %v", "Fijado": "Ditetapkan", "Comprobando si se guardó…": "Memeriksa apakah sudah tersimpan…", "El ERP dice que no se guardó. Puedes volver a intentarlo.": "ERP menyatakan belum tersimpan. Anda bisa mencoba lagi.", "Guardar y seguir": "Simpan dan lanjut", "Siguiente": "Berikutnya", "Atrás": "Kembali", "Dejar para luego": "Nanti saja", "%m está listo.": "%m sudah siap.", "Paso %n de %t": "Langkah %n dari %t", "Opcional": "Opsional", "Solo el administrador principal puede configurar los módulos.": "Hanya admin utama yang dapat mengatur modul.", "Volver": "Kembali ke halaman sebelumnya", "Configurar %m": "Atur %m", "Cargando…": "Memuat…", "Reintentar": "Coba lagi", "No se ha podido mirar la configuración": "Pengaturan tidak dapat diperiksa", "Este paso necesita el módulo %m: pídelo al estudio.": "Langkah ini memerlukan modul %m: minta ke studio.", "Hecho": "Selesai", "Pendiente": "Belum", "Cambiar": "Ubah", "Todos los módulos están configurados.": "Semua modul sudah diatur.", "Módulos por configurar": "Modul yang perlu diatur", "Configurar módulos": "Penyiapan modul", "Abrir el asistente": "Buka panduan", "Guardar": "Simpan", "Guardado.": "Tersimpan.", "No se guardó: %e": "Tidak tersimpan: %e", "Motivo del cambio": "Alasan perubahan", "Obligatorio al cambiar algo ya guardado: queda en el registro de cambios.": "Wajib saat mengubah yang sudah tersimpan: tercatat di riwayat perubahan.", "Escribe el motivo del cambio (al menos 3 letras).": "Tulis alasan perubahan (minimal 3 huruf).", "Ahora: %v": "Saat ini: %v", "Sin decidir": "Belum ditentukan", "Ir al inicio": "Ke beranda",
+    "Elige una opción": "Pilih salah satu", "Moneda": "Mata uang", "Razón social": "Nama badan usaha", "Domicilio": "Alamat", "Etiqueta fiscal": "Label pajak", "Identificación fiscal": "Identitas pajak", "Representante (opcional)": "Perwakilan (opsional)", "Prefijo": "Prefiks", "Mayúsculas y números, de 2 a 8. Por ejemplo: BBM": "Huruf kapital dan angka, 2 sampai 8. Contoh: BBM", "Las facturas empezarán así: %p-…": "Invoice akan diawali seperti ini: %p-…", "Primero hay que dar de alta la empresa que emite las facturas.": "Daftarkan dulu perusahaan penerbit invoice.", "Sí: es PKP y cobra PPN": "Ya: PKP dan memungut PPN", "No: no es PKP (las reservas van sin PPN)": "Tidak: bukan PKP (booking tanpa PPN)", "El precio de la tarifa ya lleva el impuesto": "Harga di tarif sudah termasuk pajak", "El impuesto se suma al precio de la tarifa": "Pajak ditambahkan ke harga di tarif", "Abrir %pantalla": "Buka %pantalla", "Ya lo hice, comprobar": "Sudah, periksa", "Este paso se hace en otra pantalla. Al terminar, vuelve aquí y pulsa «Ya lo hice, comprobar».": "Langkah ini dikerjakan di layar lain. Setelah selesai, kembali ke sini dan tekan «Sudah, periksa».", "Falta rellenar: %c.": "Masih perlu diisi: %c.", "El prefijo va en mayúsculas y números, de 2 a 8 caracteres.": "Prefiks memakai huruf kapital dan angka, 2 sampai 8 karakter.", "No se podrá cambiar después.": "Tidak bisa diubah nanti.", "Para confirmar, escribe %v": "Untuk konfirmasi, ketik %v", "Lo escrito no coincide.": "Yang diketik tidak sama.", "Fijar la moneda: %v": "Tetapkan mata uang: %v", "Fijar el prefijo: %v": "Tetapkan prefiks: %v", "Fijado": "Ditetapkan", "Comprobando si se guardó…": "Memeriksa apakah sudah tersimpan…", "El ERP dice que no se guardó. Puedes volver a intentarlo.": "ERP menyatakan belum tersimpan. Anda bisa mencoba lagi.", "Guardar y seguir": "Simpan dan lanjut", "Siguiente": "Lanjut", "Atrás": "Kembali", "Dejar para luego": "Nanti saja", "%m está listo.": "%m sudah siap.", "Paso %n de %t": "Langkah %n dari %t", "Opcional": "Opsional", "Solo el administrador principal puede configurar los módulos.": "Hanya admin utama yang dapat mengatur modul.", "Volver": "Kembali ke halaman sebelumnya", "Configurar %m": "Atur %m", "Cargando…": "Memuat…", "Reintentar": "Coba lagi", "No se ha podido mirar la configuración": "Pengaturan tidak dapat diperiksa", "Este paso necesita el módulo %m: pídelo al estudio.": "Langkah ini memerlukan modul %m: minta ke studio.", "Hecho": "Selesai", "Pendiente": "Tertunda", "Cambiar": "Ubah", "Todos los módulos están configurados.": "Semua modul sudah diatur.", "Módulos por configurar": "Modul yang perlu diatur", "Configurar módulos": "Penyiapan modul", "Abrir el asistente": "Buka panduan", "Guardar": "Simpan", "Guardado.": "Tersimpan.", "No se guardó: %e": "Tidak tersimpan: %e", "Motivo del cambio": "Alasan perubahan", "Obligatorio al cambiar algo ya guardado: queda en el registro de cambios.": "Wajib saat mengubah yang sudah tersimpan: tercatat di riwayat perubahan.", "Escribe el motivo del cambio (al menos 3 letras).": "Tulis alasan perubahan (minimal 3 huruf).", "Ahora: %v": "Saat ini: %v", "Sin decidir": "Belum ditentukan", "Ir al inicio": "Ke beranda",
     'Datos generales': 'Pengaturan umum', 'Facturas': 'Invoice', 'Recibos': 'Kuitansi', 'Reservas de producto': 'Booking sewa motor',
     'Sociedades emisoras': 'Perusahaan penerbit', 'Taller': 'Bengkel', 'Vencimientos': 'Jatuh tempo', 'Productos': 'Produk',
     'Sin configurar': 'Belum diatur', 'Configurado': 'Sudah diatur',
@@ -391,7 +400,6 @@
     'Esta pantalla no se ha abierto desde la dirección del ERP.': 'Layar ini tidak dibuka dari alamat ERP.',
     'Los cobros en línea todavía no están disponibles en este ERP.': 'Pembayaran online belum tersedia di ERP ini.',
     'No se sabe si se ha guardado: mira cómo están las claves antes de repetir.': 'Belum diketahui apakah sudah tersimpan: periksa status kunci sebelum mengulang.',
-    'Cobros': 'Pembayaran',
     'Las claves de Xendit con las que el ERP crea el enlace de pago y comprueba los pagos. Se escriben una vez y no se vuelven a enseñar.': 'Kunci Xendit yang dipakai ERP untuk membuat tautan pembayaran dan memeriksa pembayaran. Diketik sekali dan tidak ditampilkan lagi.',
     'Quién procesa los cobros': 'Siapa yang memproses pembayaran', 'Tarjeta, transferencia y monederos electrónicos. Indonesia y el Sudeste Asiático.': 'Kartu, transfer bank, dan dompet digital. Indonesia dan Asia Tenggara.',
     'Modo': 'Mode', 'Modo prueba · sin dinero real': 'Mode uji · tanpa uang sungguhan', 'Modo real': 'Mode live', 'Dinero real': 'Uang sungguhan',
@@ -426,7 +434,10 @@
     'Esta función todavía no está disponible en este ERP.': 'Fungsi ini belum tersedia di ERP ini.',
     'El ERP no ha respondido: prueba otra vez en un rato.': 'ERP tidak merespons: coba lagi sebentar lagi.',
     'El ERP ha devuelto algo inesperado.': 'ERP mengembalikan data yang tidak terduga.',
-    'Configurar': 'Atur', 'Ahora no': 'Nanti saja', 'Paso sin nombre (código: %c)': 'Langkah tanpa nama (kode: %c)', 'No se pudo hacer (código: %c).': 'Tidak bisa dilakukan (kode: %c).',
+    'Configurar': 'Atur', 'Ahora no': 'Nanti saja', 'Pendiente de revisar': 'Perlu ditinjau', 'Otro paso de la configuración': 'Langkah penyiapan lainnya',
+    'Esta pantalla aún no sabe explicar este paso. Si no sabes cómo hacerlo, avisa al estudio.': 'Layar ini belum bisa menjelaskan langkah ini. Jika Anda tidak yakin cara melakukannya, beri tahu studio.',
+    'otro dato': 'data lain', 'Otro módulo': 'Modul lain', 'Falta completar este paso.': 'Langkah ini masih perlu diselesaikan.',
+    'No se ha podido hacer. Si vuelve a pasar, avisa al estudio.': 'Tidak dapat dilakukan. Jika terjadi lagi, beri tahu studio.',
     "Obligatorio": "Wajib", "Para qué sirve": "Fungsinya", "%n de %t pasos hechos": "%n dari %t langkah selesai", "Volver al ERP": "Kembali ke ERP", "Asistente de configuración · solo el administrador principal": "Panduan penyiapan · hanya admin utama", "Configura tu ERP,": "Atur ERP Anda,", "paso a paso.": "langkah demi langkah.", "Cada módulo hace unas pocas preguntas, una por pantalla. Todo se guarda al momento y puedes cambiarlo después en Ajustes.": "Setiap modul mengajukan beberapa pertanyaan singkat, satu per layar. Semuanya langsung tersimpan dan bisa diubah nanti di Pengaturan.", "Solo tú, como administrador principal, puedes configurar los módulos. Hasta que termines, tu equipo ve que el módulo aún no está listo.": "Hanya Anda, sebagai admin utama, yang dapat mengatur modul. Sampai Anda selesai, tim Anda melihat bahwa modul belum siap.", "Sigue donde lo dejaste": "Lanjutkan dari terakhir kali", "Módulos encendidos": "Modul yang aktif", "%m módulos · %p pasos": "%m modul · %p langkah", "A medias": "Sebagian selesai", "Empezar": "Mulai", "Continuar": "Lanjutkan", "Revisar": "Tinjau", "Se guarda al momento. El asistente abre siempre en el primer paso que falta.": "Tersimpan otomatis. Panduan selalu terbuka di langkah pertama yang belum selesai.", "Tienes un módulo sin configurar": "Ada satu modul yang belum diatur", "Tienes %n módulos sin configurar": "Ada %n modul yang belum diatur", "%m está encendido. Todo lo demás sigue funcionando mientras lo configuras.": "%m sudah aktif. Semua yang lain tetap berjalan selama Anda mengaturnya.", "%lista están encendidos. Todo lo demás sigue funcionando mientras los configuras.": "%lista sudah aktif. Semua yang lain tetap berjalan selama Anda mengaturnya.", "Configuración completa": "Penyiapan selesai", "Lo que has configurado queda en Ajustes: puedes cambiarlo ahí cuando quieras, y cada cambio queda registrado.": "Yang sudah Anda atur tersimpan di Pengaturan: bisa diubah kapan saja, dan setiap perubahan tercatat.", "Revisar en Ajustes": "Tinjau di Pengaturan", "Se fija después": "Terkunci nanti", "Este módulo aún no está listo.": "Modul ini belum siap.", "Lo está configurando el administrador principal. Aparecerá aquí en cuanto esté listo: no tienes que hacer nada.": "Admin utama sedang mengaturnya. Modul akan muncul di sini segera setelah siap: Anda tidak perlu melakukan apa pun.", "Hay más de una empresa emisora: el impuesto de las reservas se configura cuando quede una sola activa.": "Ada lebih dari satu perusahaan penerbit: pajak booking diatur jika hanya satu yang aktif.", "La empresa no tiene impuesto por defecto: créalo en Ajustes.": "Perusahaan belum punya pajak bawaan: buat di Pengaturan.", "El impuesto por defecto no es de suma, exento ni no sujeto: elige otro en Ajustes.": "Pajak bawaan bukan pajak tambahan, dibebaskan, atau tidak dikenakan: pilih yang lain di Pengaturan.", "Aún no hay ninguna moto con tarifa: añádela en Flota y tarifas.": "Belum ada motor dengan tarif: tambahkan di Armada dan tarif.", "Este paso no se ha podido comprobar en la base: avisa al estudio.": "Langkah ini tidak dapat diperiksa di database: beri tahu studio.", "razón social": "nama badan usaha", "domicilio": "alamat", "identificación fiscal": "identitas pajak", "empresa activa": "perusahaan aktif", "Para cambiar algo ya guardado hay que escribir el motivo.": "Untuk mengubah yang sudah tersimpan, tulis alasannya.", "Elige sí o no.": "Pilih ya atau tidak.", "Este ajuste no se cambia desde aquí.": "Pengaturan ini tidak diubah dari sini.", "Este ERP aún no tiene preparada la configuración por módulos: avisa al estudio.": "ERP ini belum menyiapkan pengaturan per modul: beri tahu studio."
   };
 
@@ -437,7 +448,21 @@
     return v;
   }
   var desconocidos = [];   // códigos que la base mandó y este mapa no tiene: el test y el arnés los cuentan
-  function apunta(tipo, c) { var k = tipo + ':' + c; if (desconocidos.indexOf(k) < 0) desconocidos.push(k); }
+  function apunta(tipo, c) {
+    var k = tipo + ':' + c;
+    if (desconocidos.indexOf(k) >= 0) return;
+    desconocidos.push(k);
+    try { if (typeof console !== 'undefined' && console.warn) console.warn('[setup] código sin frase (avisar al estudio): ' + k); } catch (e) { /* MUDO A PROPOSITO: sin consola no se avisa */ }
+  }
+  // La frase digna de un código que no está, por tipo (nunca el código)
+  function digna(tipo, parte) {
+    var g = TEXTOS.general;
+    if (tipo === 'paso') return parte ? g.desconocido_paso_d : g.desconocido_paso;
+    if (tipo === 'campo') return g.desconocido_campo;
+    if (tipo === 'modulo') return g.desconocido_modulo;
+    if (tipo === 'falta') return g.desconocido_falta;
+    return g.desconocido;
+  }
 
   /* frase(tipo, código) → la clave en español; texto(...) → ya traducida. Nunca devuelve el código pelado ni una frase de la base. */
   function frase(tipo, codigo, parte) {
@@ -447,21 +472,23 @@
   }
   function texto(tipo, codigo, parte) {
     var f = frase(tipo, codigo, parte);
-    return f == null ? T(TEXTOS.general.desconocido, { c: String(codigo) }) : T(f);
+    return f == null ? T(digna(tipo, parte)) : T(f);
   }
-  function ui(k, huecos) { var f = frase('ui', k); return f == null ? T(TEXTOS.general.desconocido, { c: String(k) }) : T(f, huecos); }
+  function ui(k, huecos) { var f = frase('ui', k); return f == null ? T(digna('ui')) : T(f, huecos); }
   function nombreModulo(m) {
     var f = frase('modulo', m);
     if (f != null) return T(f);
     var n = window.AXW_MAPA_MODULOS && window.AXW_MAPA_MODULOS.n && window.AXW_MAPA_MODULOS.n[m];   // el rótulo del registro (apagados_instancia.js)
-    return n && n[0] ? T(String(n[0])) : T(TEXTOS.general.desconocido, { c: String(m) });
+    if (n && n[0]) return T(String(n[0]));
+    apunta('modulo', m);
+    return T(digna('modulo'));
   }
   // «Falta completar: precio por kilómetro, punto de entrega» — la lista de campos también va por códigos
   function textoFalta(f) {
     if (!f || typeof f !== 'object') return '';
     var campos = (Array.isArray(f.campos) ? f.campos : []).map(function (c) { return texto('campo', c); }).join(', ');
     var fr = frase('falta', f.codigo);
-    if (fr == null) return T(TEXTOS.general.desconocido, { c: String(f.codigo) });
+    if (fr == null) return T(digna('falta'));
     return T(fr, { campos: campos });
   }
 
@@ -527,8 +554,9 @@
     if (h && TEXTOS.hint[h]) return { texto: T(TEXTOS.hint[h]), configurar: null };
     var t = tipoError(e);
     if (t !== 'otro') return { texto: T(TEXTOS.general[t]), configurar: null };
+    apunta('error', (c || '—') + (h ? '/' + h : ''));   // el código va a la consola y a `desconocidos`, nunca a la pantalla
     if (h) apunta('hint', h);
-    return { texto: T(TEXTOS.general.error_codigo, { c: c || h || '—' }), configurar: null };
+    return { texto: T(TEXTOS.general.error_codigo), configurar: null };
   }
 
   // Botones del setup (banda, asistente y Ajustes): a todo lo ancho en el móvil, a su ancho desde 768 px. md:w-auto no está compilado en el

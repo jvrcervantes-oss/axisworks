@@ -105,7 +105,9 @@
     else {
       acciones.appendChild(chip(p.hecho, U(p.hecho ? 'hecho' : 'pendiente')));
       if (comp.externo) {
-        if (/^\/[a-z0-9\-\/]*$/i.test(String(p.donde || ''))) acciones.appendChild(h('a', { href: p.donde, class: BTN2, text: U('abrir', { pantalla: S.texto('paso', p.clave, 0) }) }));
+        // el componente puede dar su sitio exacto (Correo → /ajustes/#correo, Taller → #listas; setup_comun.js); si no, el `donde` de la base
+        var dnd = typeof comp.enlace === 'function' ? String(comp.enlace(p) || '') : String(p.donde || '');
+        if (/^\/[a-z0-9\-\/]*(#[a-z0-9_-]+)?$/i.test(dnd)) acciones.appendChild(h('a', { href: dnd, 'data-pm-externo': p.clave, class: BTN2, text: U('abrir', { pantalla: S.texto('paso', p.clave, 0) }) }));
       } else if (p.irreversible || comp.soloAsistente) {   // la clase (S40) no guarda sola: se elige en el asistente, camino del primer alquiler
         acciones.appendChild(h('a', { href: enlaceAsistente(p.modulo, p.clave), 'data-pm-asistente-paso': p.clave, class: BTN2, text: U('abrir_asistente') }));
       } else {

@@ -1,0 +1,61 @@
+{
+  "_que_es": "DOBLE de los pasos COMUNES del asistente (módulo base), de los idiomas de la instancia, del Taller (Entrega 5, mesa S46 del diseño del owner) y de lo que ve el panel del estudio (AXW-262), para que el front construya mientras Backend lo prueba y lo aplica (bbm-p28-setup-comun, 12-oct-2026). Migración 20261012220000_f3_comun_setup (solo-en bbm). NO es la base: cuando esté aplicada, su prueba por perfil (erp/pruebas/f3_comun_setup.sql) manda sobre este fichero. Códigos de la lista cerrada de erp/modulos.py (SETUP_PASOS, SETUP_FALTAS, SETUP_HINTS); los textos los pone el front con su mapa código → frase (es, en, id).",
+  "pasos_nuevos": {
+    "base": [
+      {"clave": "negocio", "obligatorio": true, "irreversible": false, "donde": "/ajustes/", "guarda": "ajustes_config_guardar('marca', \"…\") y ajustes_config_guardar('zona_horaria', \"Asia/Makassar\")",
+       "falta": {"codigo": "falta_dato", "campos": ["marca", "zona_horaria"]}, "nota": "campos trae SOLO los que faltan (la zona tiene que existir: formato Región/Ciudad)."},
+      {"clave": "idiomas", "obligatorio": false, "irreversible": false, "donde": "/ajustes/", "guarda": "ajustes_config_guardar('idiomas', [\"id\",\"en\"])",
+       "falta": {"codigo": "falta_dato", "campos": ["idiomas"]}, "nota": "Sin guardar, manda el build (window.AXW_IDIOMAS): el paso sale «sin hacer» pero nunca bloquea."},
+      {"clave": "moneda", "obligatorio": true, "irreversible": true, "donde": "/ajustes/", "guarda": "ajustes_config_guardar('moneda', \"IDR\", motivo, p_confirmo)", "nota": "Sin cambios desde S1."},
+      {"clave": "correo", "obligatorio": false, "irreversible": false, "donde": "/ajustes/", "guarda": "edge ajustes-correo (con código); NO hay RPC del navegador",
+       "falta": {"codigo": "sin_correo", "campos": []},
+       "nota": "hecho = hay un servidor de correo propio guardado. «Falta una clave del servidor» (el secreto de edge CORREO_CODIGO_PEPPER, que la base no puede ver) lo dice la EDGE: en {accion:'estado'} viene pide_codigo:false, y cualquier acción con código contesta 503 {error:'codigo_no_disponible'}. Con eso el paso enseña «Falta una clave del servidor: avisa al estudio» en vez de pedir un código que nunca llegará."}
+    ],
+    "orden_en_el_asistente": ["negocio", "idiomas", "moneda", "correo"],
+    "reservas-producto (Taller, mesa S46)": [
+      {"clave": "taller_revisiones", "obligatorio": false, "donde": "/taller/", "guarda": "taller_revision_guarda / taller_lista_basica (pantalla Taller › Listas)",
+       "falta": {"codigo": "sin_lista_revision", "campos": []}, "hecho_si": "cada modelo con motos (no de baja) tiene lista de revisión propia o hay lista común"},
+      {"clave": "taller_recambios", "obligatorio": false, "donde": "/taller/", "guarda": "taller_recambio_guarda + taller_recambio_vincula",
+       "falta": {"codigo": "sin_recambios", "campos": []}, "hecho_si": "al menos una pieza activa vinculada a un modelo o común; solo informa"},
+      {"clave": "taller_mecanicos", "obligatorio": false, "donde": "/usuarios/", "guarda": "Usuarios: dar la herramienta Taller a alguien",
+       "falta": {"codigo": "sin_usuarios", "campos": []}, "hecho_si": "un usuario ACTIVO con la herramienta Taller que no sea super_admin ni la cuenta de pruebas del estudio"}
+    ],
+    "taller_grupo": "Los pasos cuyo código empieza por taller_ son el grupo «Taller» de la mesa S46. Son OPCIONALES para el módulo (no frenan las reservas), pero la puerta del propio Taller (taller_orden_abre, 22023 hint taller_sin_configurar) sigue exigiendo taller_revisiones y taller_mecanicos: enséñalos como «necesarios para abrir el Taller». El Taller sigue cerrado al equipo hasta la prueba del owner en móvil (BBM-62).",
+    "taller_proximos": [
+      {"clave": "taller_proveedores", "fase": "8.T2a", "estado": "sin base todavía: NO lo pintes como paso; si la mesa S46 lo enseña, como «próximamente»"},
+      {"clave": "taller_almacen", "fase": "8.T2a", "estado": "sin base todavía (existencias de recambios): igual que proveedores"}
+    ]
+  },
+  "idiomas": {
+    "guardar": {"rpc": "ajustes_config_guardar", "args": {"p_clave": "idiomas", "p_valor": ["id", "en"]}, "solo": "super_admin",
+                "ok": {"clave": "idiomas", "valor": ["id", "en"], "cambiado": true},
+                "listas_validas": [["es", "en"], ["id", "en"]],
+                "nota": "Una de esas listas EN SU ORDEN; la primera es la de por defecto. Son las que el arranque del front sabe pintar hoy (ajustes.js IDIOMAS_PINTABLES, build.py IDIOMAS_CONOCIDOS). Ampliarlas obliga a tocar a la vez el arranque, el build y la base (_idiomas_erp)."},
+    "errores": [
+      {"code": "42501", "hint": null, "cuando": "no es super_admin (o es la cuenta de pruebas)"},
+      {"code": "22023", "hint": "idiomas_no_validos", "cuando": "cualquier lista que no sea una de las dos (también [\"en\",\"id\"]: el orden cuenta)"}
+    ],
+    "leer_con_sesion": {"rpc": "modulos_activos_datos", "forma": {"activos": ["…"], "moneda": "IDR", "idiomas": {"ofrecidos": ["id", "en"], "defecto": "id"}},
+                        "sin_guardar": {"activos": ["…"], "moneda": "IDR", "idiomas": null}},
+    "sin_sesion": "NO hay lectura anónima (revisión previa #289, Seguridad: rompería el canon 7.t). La pantalla de entrada usa el idioma que guardó el navegador tras la última sesión (localStorage) o el del build; que el build lea la clave al publicar es de ajustes-pG2."
+  },
+  "panel_axw262": {
+    "rpc": "erp_control_estado (rol erp_control, por la edge erp-control; l.cuerpo.r entero)",
+    "por_modulo_nuevo": {
+      "setup": "lo sembrado en erp_modulos.setup tal cual: {estado, herramienta, operativo, pasos:[{clave, obligatorio, irreversible, donde, modulo_requerido}]} · {ninguno: motivo} · null = sin declarar",
+      "setup_estado": "SOLO si el módulo está encendido y tiene pasos: {estado: 'configurado'|'sin_configurar', hechos, total}; null en el resto. total = pasos obligatorios; hechos = cuántos de ellos están hechos. Mismo cálculo que modulos_setup_estado (_modulo_setup_pasos)."
+    },
+    "ejemplo": [
+      {"modulo": "base", "setup": {"estado": "_base_setup_estado", "herramienta": null, "operativo": false, "pasos": [
+        {"clave": "negocio", "obligatorio": true, "irreversible": false, "donde": "/ajustes/", "modulo_requerido": null},
+        {"clave": "idiomas", "obligatorio": false, "irreversible": false, "donde": "/ajustes/", "modulo_requerido": null},
+        {"clave": "moneda", "obligatorio": true, "irreversible": true, "donde": "/ajustes/", "modulo_requerido": null},
+        {"clave": "correo", "obligatorio": false, "irreversible": false, "donde": "/ajustes/", "modulo_requerido": null}]},
+       "setup_estado": {"estado": "configurado", "hechos": 2, "total": 2}},
+      {"modulo": "productos", "setup": {"ninguno": "su setup es el paso «flota» de reservas-producto (Organización #283: flota es un paso, no un módulo)"}, "setup_estado": null},
+      {"modulo": "bancos", "setup": null, "setup_estado": null}
+    ],
+    "nota": "Solo bbm lo devuelve por ahora (la migración es solo-en bbm); en la demo el campo no llega y el panel dice «la base aún no informa», como ya hace."
+  },
+  "_ref": "erp/plan_f3_setup_modulos.md → «Pasos comunes, idiomas, AXW-262 y Taller (bbm-p28)»; migración erp/migraciones/20261012220000_f3_comun_setup.sql; prueba erp/pruebas/f3_comun_setup.sql."
+}

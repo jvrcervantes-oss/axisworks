@@ -1,0 +1,12 @@
+{
+ "_que_es": "Copia fechada de la lista CERRADA de códigos del setup que declara la base (erp/modulos.json → setup, generado de erp/modulos.py SETUP_PASOS / SETUP_FALTAS / SETUP_HINTS) con TODO lo que hay en rama el 12-oct-2026: main + S2 + Cobros (bbm-p23) + E3/E4 (bbm-p26) + pasos comunes y Taller (bbm-p28, copia 1012-2112-p28-prueba-combinada). Más los `campos` que la base manda dentro de falta_dato (medidos en las migraciones de setup de esa copia). La usa setup_frases.test.js ADEMÁS de la lista viva de AXW_AGENCIA_RAIZ: así el gate sigue cazando un código sin frase aunque el clon de la agencia vaya atrasado. Cuando Backend añada un código: va a modulos.py y aquí.",
+ "pasos": ["moneda", "sociedad", "prefijo", "usuarios", "impuesto_pkp", "precio_con_impuesto", "flota", "entrega", "cobros", "clase", "reglas_reserva", "alquileres_previos",
+           "negocio", "idiomas", "correo", "taller_revisiones", "taller_recambios", "taller_mecanicos"],
+ "faltas": ["falta_dato", "sin_sociedad", "varias_sociedades", "sin_prefijo", "sin_impuesto", "impuesto_clase", "sin_flota", "sin_usuarios", "setup_roto", "sin_producto",
+            "previos_sin_revisar", "sin_correo", "sin_lista_revision", "sin_recambios"],
+ "hints": ["sin_prefijo", "prefijo_fijo", "moneda_con_datos", "moneda_no_permitida", "falta_confirmo", "cuenta_pruebas_solo_mira", "modulo_apagado", "setup_sin_sembrar",
+           "live_no_permitido", "idiomas_no_validos"],
+ "campos": ["moneda", "razon", "domicilio", "npwp", "activa", "prefijo_serie", "reservas_sin_impuesto", "precio_incluye_impuesto", "sede", "precio_km", "entrega_activa",
+            "km_max", "recogida", "bloqueo_minutos", "dias_min", "dias_max", "horizonte_dias", "creacion", "lectura", "aviso", "marca", "zona_horaria", "idiomas"],
+ "modulos": ["base", "facturas", "recibos", "reservas-producto", "productos", "taller", "sociedades", "vencimientos"]
+}
