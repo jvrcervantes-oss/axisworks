@@ -8,8 +8,8 @@ dist/demo-erp (lo que se sube), porque un cambio en Lawang o en build.py lo podr
   · ni rastro del modo demo de origen (?demo, demo.js, sus portadas) ni de la marca, la mascota o las imágenes del cliente;
   · 0 campos de contraseña; «Sign now» enganchado por data-accion y sin abrir pestaña nueva;
   · el adaptador nunca entrega un enlace externo (`url`) ni un mapa: Documentos y Proyectos solo enseñan ficheros de muestra;
-  · la marca «DEMO · NOT A VALID DOCUMENT» en el documento de factura (documentoHTML) y en la página de documento de muestra;
-  · las direcciones viejas de la demo en 301 (las instancias siguen en 302, lo fija test_urls_limpias.py).
+  · la marca «DEMO · NOT A VALID DOCUMENT» en el documento de factura (documentoHTML) y en la página de documento de muestra.
+Importes, elección de cliente y escrituras del portal se prueban ejecutándolos en pruebas/base_falsa.harness.cjs (test_base_falsa.py).
 Corre en el control de subida (el gate ejecuta los test_*.py de esta carpeta)."""
 import os
 import re
@@ -61,9 +61,6 @@ ok('DEMO · NOT A VALID DOCUMENT' in doc and doc.count('NOT A VALID DOCUMENT') >
    'documento.js: sello en documentoHTML y marca de agua en documentoPagina')
 ok('NOT A VALID DOCUMENT' in lee('portal', 'demo', 'documento.html'), 'el documento de muestra lleva la marca dentro')
 ok(os.path.isfile(os.path.join(PUBLICADO, 'portal', 'demo', 'isotipo.svg')), 'el isotipo neutro está publicado')
-
-ht = lee('.htaccess')
-ok('R=301,L,QSA' in ht and 'R=302,L,QSA' not in ht, 'direcciones viejas de la demo en 301')
 
 if FALLOS:
     print('\n%d fallo(s)' % len(FALLOS))

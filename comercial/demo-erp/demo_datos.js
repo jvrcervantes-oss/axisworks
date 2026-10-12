@@ -1487,8 +1487,13 @@
       portal_abrir_ticket: function (F, a) {
         var cli = porId(F, 'clients', a.p_client_id); if (!cli) falla('cliente_no_existe', [], 'P0002');
         var texto = txt(a.p_texto); if (!texto) falla('texto_vacio', [], '22023');
+        // Como la base: una consulta solo puede citar una factura o un contrato DE ESE cliente (revisor, 12-oct).
+        var suyos = {};
+        filasDe(F, 'contrato_compradores').forEach(function (x) { if (x.client_id === cli.id) suyos[x.contrato_id] = true; });
         var f = a.p_factura_id ? porId(F, 'facturas', a.p_factura_id) : null;
+        if (a.p_factura_id && (!f || !(f.client_id === cli.id || suyos[f.contrato_id]))) falla('factura_no_existe', [], 'P0002');
         var k = a.p_contrato_id ? porId(F, 'contratos', a.p_contrato_id) : null;
+        if (a.p_contrato_id && (!k || !suyos[k.id])) falla('contrato_no_existe', [], 'P0002');
         var h = inserta(F, 'hilo_soporte', [{ client_id: cli.id, categoria: txt(a.p_categoria) || 'General', estado: 'abierto', actualizado_en: ahora(),
           factura_id: f ? f.id : null, contrato_id: k ? k.id : null, ref_numero: f ? f.numero : (k ? k.numero : null) }])[0];
         inserta(F, 'mensajes_comprador', [{ hilo_id: h.id, client_id: cli.id, de: 'comprador', autor: null, texto: texto }]);

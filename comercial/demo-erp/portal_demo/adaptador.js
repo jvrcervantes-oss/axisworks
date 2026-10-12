@@ -8,15 +8,17 @@
 
    Qué hace:
    - window.supabase.createClient → un cliente del portal: sesión siempre abierta (la demo no tiene contraseña), la llamada
-     portal_situacion construida desde las tablas del doble, y lo que el portal escribe (consultas, mensajes, preferencias) al doble
-     por sb.from(…), de modo que sobrevive a recargar y «Reset demo» lo borra con todo lo demás.
+     portal_situacion construida desde las tablas del doble, y lo que el portal escribe (consultas, mensajes, preferencias) por
+     funciones del doble (sb.rpc → LW_DEMO_RPC_GUARDA de demo_datos.js), de modo que sobrevive a recargar y «Reset demo» lo borra
+     con todo lo demás.
    - Las dos funciones del servidor que pide por fetch (portal-acceso, firma-get) se contestan aquí, por ruta exacta sobre la URL
      falsa de la demo; ninguna otra petición que no sea GET sale (el candado del doble ya corta la red de fuera).
    - Ficheros (documentos, contratos firmados, fotos de obra, portadas): imágenes dibujadas y una página de muestra con la marca
      «DEMO · NOT A VALID DOCUMENT». Nunca una URL externa ni un mapa (revisión previa de Seguridad #279).
 
-   Qué cliente se ve: ?cliente=<id> si casa con un cliente del doble; si no, el comprador del contrato creado más reciente en la
-   pestaña; si no, el primero. Si ?cliente= no casa, un aviso fijo lo dice (nunca se repite lo que trae la dirección). */
+   Qué cliente se ve: ?cliente=<id> si casa con un cliente del doble; si no, el comprador del contrato creado en la pestaña (de
+   las últimas 12 h; la siembra es de días atrás); si no, el cliente de la siembra con más historial. Si ?cliente= no casa, un
+   aviso fijo lo dice (nunca se repite lo que trae la dirección). */
 (function () {
   'use strict';
   if (!window.supabase || !window.LW_AUTH) return;   // sin el doble no hay demo: index.html falla cerrado (AXW_PORTAL_DEMO sin poner)

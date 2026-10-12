@@ -8,7 +8,7 @@
 'use strict';
 const fs = require('fs');
 const vm = require('vm');
-const [GUARD, DINERO, TOTALES] = process.argv.slice(2).map(p => fs.readFileSync(p, 'utf8'));
+const [GUARD, DINERO, TOTALES, ADAPTADOR] = process.argv.slice(2).map(p => fs.readFileSync(p, 'utf8'));
 let fallos = 0;
 const ok = (n, c, extra) => { if (!c) { fallos++; console.log('FALLA  ' + n + (extra !== undefined ? ' → ' + JSON.stringify(extra) : '')); } else console.log('ok     ' + n); };
 
@@ -18,14 +18,15 @@ function almacen(mapa) {
 }
 const RED = [];
 /* Una «página»: contexto nuevo, mismo sessionStorage si es la misma pestaña. */
-function pagina(sesion, local) {
-  const nodo = () => ({ style: {}, setAttribute() {}, appendChild() {}, addEventListener() {}, textContent: '' });
+/* `extra`: código que la página carga después del guard (el adaptador del portal); `busca`: el ?… de la dirección. */
+function pagina(sesion, local, extra, busca) {
+  const nodo = () => ({ style: {}, setAttribute() {}, appendChild() {}, addEventListener() {}, remove() {}, textContent: '' });
   const doc = { documentElement: { style: {} }, head: nodo(), body: nodo(), readyState: 'complete', cookie: '',
     createElement: nodo, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], addEventListener() {} };
   function XHR() {}
   XHR.prototype.open = function (m, u) { RED.push(['xhr', m, u]); };
   XHR.prototype.send = function () {};
-  const w = { document: doc, location: { search: '', pathname: '/', href: 'https://demo.invalid/', origin: 'https://demo.invalid', reload() { w.__recargada = true; } },
+  const w = { document: doc, location: { search: busca || '', pathname: '/', href: 'https://demo.invalid/', origin: 'https://demo.invalid', reload() { w.__recargada = true; } },
     sessionStorage: almacen(sesion), localStorage: almacen(local), navigator: { userAgent: 'node' }, console,
     fetch: (u, i) => { RED.push(['fetch', (i && i.method) || 'GET', String(u)]); return Promise.reject(new Error('sin red')); },
     XMLHttpRequest: XHR, setTimeout, clearTimeout, Intl, Date, Math, JSON, Promise, URLSearchParams, Object, Array, String, Number, Boolean, RegExp, Error, TypeError, BigInt, Proxy };
@@ -36,6 +37,7 @@ function pagina(sesion, local) {
   // las declaraciones de nivel superior quedan en el contexto: la pantalla de facturas las tiene igual
   vm.runInContext('window.calcTotales = calcTotales;', ctx);
   vm.runInContext(GUARD, ctx);
+  if (extra) vm.runInContext(extra, ctx);
   return w;
 }
 const r = (q) => Promise.resolve(q);
@@ -193,6 +195,53 @@ const r = (q) => Promise.resolve(q);
   let m;
   while ((m = g.exec(todo)) && marcas.length < 40) marcas.push(todo.slice(Math.max(0, m.index - 70), m.index + 40));
   ok('los datos de partida no nombran a ningún cliente ni referencia interna', !marcas.length, marcas);
+
+  // ── portal de clientes (fase E1, 12-oct): el adaptador sobre el MISMO doble (revisor, 12-oct: importes y elección de cliente
+  //    con prueba ejecutable, no solo medidos a mano)
+  if (ADAPTADOR) {
+    const sit = async (p) => { const r0 = await r(p.supabase.createClient().rpc('portal_situacion')); if (r0.error) throw new Error(r0.error.message); return r0.data; };
+    const suma = (xs, f) => xs.reduce((s, x) => s + Number(f(x) || 0), 0);
+    const tab = new Map();
+    let p1 = pagina(tab, new Map(), ADAPTADOR);
+    ok('portal: el adaptador sustituye el cliente y falla cerrado si no', p1.AXW_PORTAL_DEMO === true && !!p1.LW_DEMO);
+    let d = await sit(p1);
+    ok('portal: sin nada creado, el cliente de la siembra con más historial (varios contratos firmados)', d.contratos.filter(k => k.firmado).length >= 2, d.nombre);
+    const rec = suma(d.facturas.filter(f => f.tipo === 'recibi'), f => f.total);
+    ok('portal: lo cobrado de los contratos es lo de sus recibís (sin contar dos veces la Carta)', suma(d.contratos, k => k.cobrado) === rec, [suma(d.contratos, k => k.cobrado), rec]);
+    const cartas = d.contratos.filter(k => k.tipo === 'carta_reserva');
+    ok('portal: la Carta que cuelga de un Bloqueo del cliente lleva cobrado 0', cartas.length > 0 && cartas.every(k => k.cobrado === 0), cartas.map(k => k.cobrado));
+    const bloqueo = d.contratos.filter(k => k.tipo === 'reserva_parcela')[0];
+    ok('portal: el Bloqueo suma lo cobrado con su Carta (pagado entero)', bloqueo && bloqueo.cobrado === bloqueo.precio, bloqueo && [bloqueo.cobrado, bloqueo.precio]);
+    ok('portal: ni enlaces externos ni mapa', d.documentos.every(x => !('url' in x)) && d.proyectos.every(x => x.mapa === null));
+    ok('portal: emisor de los documentos = la sociedad de la demo', d.facturas.every(f => f.emisor && f.emisor.label === 'AxisWorks Demo'));
+    // escrituras por las funciones del doble
+    const cp = p1.supabase.createClient();
+    const t0 = d.tickets.length;
+    const idT = await r(cp.rpc('portal_abrir_ticket', { p_categoria: 'Payments', p_texto: 'Can I pay in two transfers?' }));
+    ok('portal: abrir consulta', !idT.error && typeof idT.data === 'string', idT.error);
+    const vacio = await r(cp.rpc('portal_abrir_ticket', { p_categoria: 'Payments', p_texto: '   ' }));
+    ok('portal: consulta vacía, rechazada', !!vacio.error);
+    const ajeno = (await r(p1.LW_SB.from('hilo_soporte').select('*'))).data.filter(h => h.client_id !== d.client_id)[0];
+    const otro = await r(cp.rpc('portal_enviar_mensaje', { p_hilo_id: ajeno.id, p_texto: 'hola' }));
+    ok('portal: no se escribe en la consulta de otro cliente', !!otro.error);
+    const fAjena = (await r(p1.LW_SB.from('facturas').select('*'))).data.filter(f => f.client_id && f.client_id !== d.client_id)[0];
+    const refAjena = await r(cp.rpc('portal_abrir_ticket', { p_categoria: 'Payments', p_texto: 'x', p_factura_id: fAjena.id }));
+    ok('portal: una consulta no puede citar la factura de otro cliente', !!refAjena.error);
+    await r(cp.rpc('portal_set_prefs', { p_pref_email: false, p_pref_sms: true }));
+    // otra página de la misma pestaña (recargar tras firmar): lo escrito sigue
+    let p2 = pagina(tab, new Map(), ADAPTADOR);
+    d = await sit(p2);
+    ok('portal: la consulta y las preferencias sobreviven a recargar', d.tickets.length === t0 + 1 && d.prefs.pref_email === false && d.prefs.pref_sms === true, [d.tickets.length, d.prefs]);
+    // lo creado en la intranet manda: contrato nuevo de cl-4 → el portal enseña a cl-4 con su firma pendiente
+    const u = (await r(p2.LW_SB.from('unidades').select('*'))).data.filter(x => x.estado === 'disponible' && !x.contrato_id)[0];
+    const nuevo = await r(p2.LW_SB.rpc('demo_contrato_crea', { p_client_id: 'cl-4', p_unidad_id: u.id, p_tipo: 'reserva_parcela', p_precio: u.precio_suelo }));
+    d = await sit(pagina(tab, new Map(), ADAPTADOR));
+    ok('portal: enseña al cliente del contrato recién creado, con su firma pendiente', d.client_id === 'cl-4' && d.firma_pendiente.some(f => f.contrato_id === nuevo.data.id), [d.client_id, d.firma_pendiente.length]);
+    d = await sit(pagina(tab, new Map(), ADAPTADOR, '?cliente=cl-15'));
+    ok('portal: ?cliente= que casa manda', d.client_id === 'cl-15', d.client_id);
+    d = await sit(pagina(tab, new Map(), ADAPTADOR, '?cliente=no-existe'));
+    ok('portal: ?cliente= que no casa cae al de la pestaña', d.client_id === 'cl-4', d.client_id);
+  } else ok('portal: el arnés recibe el adaptador (4.º argumento)', false);
 
   console.log(fallos ? '\n' + fallos + ' FALLO(S)' : '\nTODO OK');
   process.exit(fallos ? 1 : 0);

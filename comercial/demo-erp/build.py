@@ -463,7 +463,7 @@ def reraiz(dist):
     return pantallas
 
 
-def legado_htaccess(dist, codigo=302):
+def legado_htaccess(dist):
     """Bloque de .htaccess con el legado: lo de antes no muere (enlaces guardados, correos ya enviados, `?next=`).
     302 y no 301 mientras el mapa no esté verificado en producción (un 301 se guarda para siempre en el navegador);
     pasarán a 301 cuando lo esté. Solo GET/HEAD. Patrones CERRADOS: el primer segmento del destino sale de una lista
@@ -492,11 +492,9 @@ def legado_htaccess(dist, codigo=302):
         # enlaces así (avisos) y cabecera.js ya los traducía al pintar. Detrás de las clásicas, que comparten algún nombre.
         ('^intranet/(' + lista_v3 + ')(?:/(.*))?$', '/$1/$2'),
     ]
-    if codigo not in (301, 302):
-        aborta('legado_htaccess: código de redirección %r (solo 301 o 302)' % codigo)
     return ('# Legado: lo de antes no muere. 302 hasta verificar el mapa en producción; luego 301.\n'
             '<IfModule mod_rewrite.c>\n  RewriteEngine On\n'
-            + ''.join(get + '  RewriteRule %s %s [R=%d,L,QSA]\n' % (p, d, codigo) for p, d in reglas) + '</IfModule>\n')
+            + ''.join(get + '  RewriteRule %s %s [R=302,L,QSA]\n' % (p, d) for p, d in reglas) + '</IfModule>\n')
 
 
 def escribe_instancia(ficha):
@@ -834,8 +832,9 @@ def paginas_propias():
         aviso.format(t='Contract generator', m=AVISO_GENERADOR))
     d = os.path.join(DIST, 'clasico', 'dossier')   # el menú enlaza el constructor de dossier: aviso, no 404
     os.makedirs(d, exist_ok=True)
-    open(os.path.join(d, 'builder.html'), 'w', encoding='utf-8').write(aviso.format(
-        t='Sales brochure', m=AVISO_NO_INCLUIDO + ' the brochure carries each client\'s own brand material.'))
+    for pagina in ('builder.html', 'index.html'):   # index: destino de la dirección vieja /intranet/dossier/ (revisor, 12-oct)
+        open(os.path.join(d, pagina), 'w', encoding='utf-8').write(aviso.format(
+            t='Sales brochure', m=AVISO_NO_INCLUIDO + ' the brochure carries each client\'s own brand material.'))
     d = os.path.join(DIST, 'clasico', 'creatividades')   # está en el menú de la v4; sin esto, 404 en directo
     os.makedirs(d, exist_ok=True)
     open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(aviso.format(
@@ -1199,7 +1198,7 @@ def verifica():
         for f in fichs:
             p = os.path.join(raiz, f)
             r = rel(p)
-            aviso_propio = r in ('/contracts/app.html', '/clasico/dossier/builder.html') and os.path.getsize(p) < 5000 and \
+            aviso_propio = r in ('/contracts/app.html', '/clasico/dossier/builder.html', '/clasico/dossier/index.html') and os.path.getsize(p) < 5000 and \
                 AVISO_NO_INCLUIDO in open(p, encoding='utf-8').read()
             if PROHIBIDO_DIST.search(r) and not aviso_propio:
                 malos.append('prohibido: ' + r)
@@ -1811,6 +1810,7 @@ SECRETOS_DEMO = [
 # datos de nadie. Lista CERRADA y exacta: uno nuevo para el build y se decide aquí, con su porqué (12-oct, primera pasada).
 EJEMPLOS_ADMITIDOS = frozenset((
     'nombre@tudominio.com', 'name@yourdomain.com', 'nombre@dominio.com', 'cliente@email.com', 'ejemplo@ejemplo.com',
+    'name@domain.com',                                           # la traducción del anterior (tanda 2 de idioma, Lawang 4a3eaa0a)
     'tucorreo+portal@gmail.com', 'youraddress+portal@gmail.com',   # cómo usar un alias de Gmail (ayuda de Ajustes)
     '+34 600 000 000',                                           # ejemplo de teléfono en el cuadro del asistente
 ))
@@ -2013,15 +2013,16 @@ def publica():
     # de cliente en demo o la intranet en demo»), no un 302 a la Home. La portada comercial (landing.html) sigue en erp.
     puerta_demo(DESTINO_PUBLICO)
     # Solo se sirve desde demo.axisworks.studio: por axisworks.studio/demo/ las rutas absolutas no casan.
-    # El legado (/intranet/v4/<x>/ → /<x>/) pasa a 301 en la demo: el mapa se verificó en producción con la tanda 1 (curl de las
-    # direcciones viejas, demo-pC-cascara, 12-oct) — decisión por defecto del encargo. Las instancias siguen en 302.
+    # El legado (/intranet/v4/<x>/ → /<x>/) sigue en 302 hasta verificar el mapa en producción (legado_htaccess); pasará a
+    # 301 en una subida aparte, ya verificado (decisión por defecto del 12-oct en el encargo). Antes de eso hay que arreglar
+    # /intranet/dossier → /clasico/dossier/, que no tiene index.html (revisor, 12-oct).
     open(os.path.join(DESTINO_PUBLICO, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(
         '# GENERADO por comercial/demo-erp/build.py --publico — no editar.\n'
         '# demo.axisworks.studio: la demo del ERP. Fuera de ese host, redirige a él.\n'
         '<IfModule mod_rewrite.c>\n  RewriteEngine On\n'
         '  RewriteCond %{HTTP_HOST} !^demo\\.axisworks\\.studio$ [NC]\n'
         '  RewriteRule ^(.*)$ https://demo.axisworks.studio/$1 [R=302,L]\n</IfModule>\n'
-        + legado_htaccess(DESTINO_PUBLICO, 301)
+        + legado_htaccess(DESTINO_PUBLICO)
         + cabeceras_seguridad(
             # Sin cdn.tailwindcss.com desde el 27-sep-2026 (ERP F3 lote 4a): la v4 y la portada van con Tailwind
             # COMPILADO. jsdelivr en estilos y fuentes: los iconos Phosphor del CRM (visto en producción, 25-sep).

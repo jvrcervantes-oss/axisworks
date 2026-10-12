@@ -21,7 +21,8 @@ ruta = os.path.join(d, 'guard.js')
 open(ruta, 'w', encoding='utf-8', newline='').write(guard)
 dinero = os.path.join(build.LAWANG, 'contracts', 'assets', 'dinero.js')
 totales = os.path.join(build.LAWANG, 'intranet', 'facturas', 'totales.js')
-r = subprocess.run(['node', os.path.join(AQUI, 'pruebas', 'base_falsa.harness.cjs'), ruta, dinero, totales],
+adaptador = os.path.join(AQUI, 'portal_demo', 'adaptador.js')   # el portal de clientes sobre el mismo doble (E1, 12-oct)
+r = subprocess.run(['node', os.path.join(AQUI, 'pruebas', 'base_falsa.harness.cjs'), ruta, dinero, totales, adaptador],
                    capture_output=True, text=True, encoding='utf-8')
 print(r.stdout[-6000:])
 if r.returncode:
