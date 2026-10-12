@@ -114,6 +114,7 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   // 1. Recorrido de Facturas desde «sin configurar»: empresa → prefijo (confirmación tecleada) → listo → siguiente módulo
   let b = base('sin_configurar');
   let { p, ctx } = await abre(nav, b);
+  ok('el paso de la empresa no lleva «Revisar en Ajustes»: el formulario de aquí es el sitio (revisor 12-oct)', !(await p.$('[data-axw-accion="abrir-donde"]')));
   ok('abre en el primer paso no hecho (empresa)', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'sociedad');
   ok('«Paso 1 de 2» (la moneda de base ya está hecha: no cuenta)', (await txt(p, '[data-axw-as="progreso"]')) === 'Paso 1 de 2', await txt(p, '[data-axw-as="progreso"]'));
   ok('la URL lleva el paso', (await p.evaluate(() => location.search)).includes('paso=sociedad'));
@@ -162,6 +163,19 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   await p.fill('[data-axw-campo="motivo"]', 'Lo confirmó el gestor'); await clic(p, 'enviar'); await p.waitForTimeout(300);
   ok('con motivo, se guarda el cambio', (llamadas(b, 'ajustes_config_guardar')[2] || [])[1] && llamadas(b, 'ajustes_config_guardar')[2][1].p_motivo === 'Lo confirmó el gestor');
   await ctx.close();
+
+  // 2b. Una falta que el paso no resuelve (la empresa no tiene impuesto) lleva a su pestaña de Ajustes; una que sí, no
+  {
+    const bb = base('sin_configurar');
+    const ip = bb.d.pasos.find(x => x.clave === 'impuesto_pkp');
+    if (ip) {
+      ip.falta = { codigo: 'sin_impuesto', campos: [] };
+      const r = await abre(nav, bb, { url: '/ajustes/configurar/?modulo=' + encodeURIComponent(ip.modulo) + '&paso=impuesto_pkp' });
+      const href = await r.p.getAttribute('[data-axw-accion="abrir-donde"]', 'href').catch(() => null);
+      ok('sin_impuesto: «Revisar en Ajustes» lleva a la pestaña de los impuestos', href === '/ajustes/#reservas', String(href));
+      await r.ctx.close();
+    } else ok('el doble trae el paso impuesto_pkp', false);
+  }
 
   // 3. Máquina de duda: la red se pierde tras guardar → se relee y sigue; la red se pierde sin guardar → «no se guardó», sin reenviar
   for (const guardaAntes of [true, false]) {

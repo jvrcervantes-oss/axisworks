@@ -40,7 +40,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function boton(texto, accion, primario) { return el('button', { type: 'button', 'data-axw-accion': accion, class: primario ? BTN1 : BTN2, style: 'min-height:44px', text: texto }); }
   var RAIZ = location.pathname.replace(/ajustes\/configurar\/.*$/, '');   // «/» en una instancia; «/intranet/v4/» en una copia sin reubicar
   var qs = new URLSearchParams(location.search);
-  var VUELTAS = { home: 'home/', ajustes: 'ajustes/#puesta' };   // lista blanca: «Dejar para luego» nunca lleva a una URL de fuera
+  var VUELTAS = { home: 'home/', ajustes: 'ajustes/#puesta' };
+  var FALTA_FUERA = { sin_impuesto: 'ajustes/#reservas', impuesto_clase: 'ajustes/#reservas', varias_sociedades: 'ajustes/#sociedades' };   // pestaña de Ajustes que lo arregla   // lista blanca: «Dejar para luego» nunca lleva a una URL de fuera
   var vuelta = RAIZ + (VUELTAS[qs.get('vuelta')] || VUELTAS.home);
 
   var sb = null, ctx = null, ocupado = false;
@@ -232,9 +233,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (p.hecho) cab.appendChild(el('span', { class: 'self-start px-3 py-1 rounded-full font-label-md text-[13px] bg-primary-container text-on-primary', 'data-axw-hecho': '1', text: U('hecho') }));
     else if (p.falta) {
       cab.appendChild(el('p', { class: 'font-body-sm text-body-sm text-outline', 'data-axw-falta': p.falta.codigo, text: S.textoFalta(p.falta) }));
-      // dónde se arregla lo que falta (impuesto, flota…): sin esto el paso volvía una y otra vez sin decir a dónde ir (revisor 12-oct)
-      var dnd = String(p.donde || '');
-      if (/^\/[a-z0-9\-\/]*$/i.test(dnd) && dnd.indexOf('/ajustes/configurar') < 0) cab.appendChild(el('a', { href: dnd, 'data-axw-accion': 'abrir-donde', class: BTN2 + ' self-start', style: 'min-height:44px', text: U('abrir', { pantalla: S.texto('paso', p.clave, 0) }) }));
+      // Solo las faltas que el paso NO puede resolver llevan a su pestaña de Ajustes (impuestos en «reservas», varias empresas en «sociedades»);
+      // en el resto el formulario de aquí ya es el sitio, y los pasos de otra pantalla traen su propio botón (revisor 12-oct, 2.ª vuelta)
+      var dnd = FALTA_FUERA[p.falta.codigo];
+      if (dnd && !P.de(p.clave).externo) cab.appendChild(el('a', { href: RAIZ + dnd, 'data-axw-accion': 'abrir-donde', class: BTN2 + ' self-start', style: 'min-height:44px', text: U('revisar_ajustes') }));
     }
     t.appendChild(cab);
     var pie = el('footer', { class: 'flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-outline-variant', 'data-axw-as': 'pie' });
