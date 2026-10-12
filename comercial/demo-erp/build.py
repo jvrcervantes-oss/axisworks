@@ -1418,30 +1418,50 @@ def piel_instancia(nombre):
 # salida (a[data-path="login"], la misma estructura que usa maqueta.js) y la barra es el <header> del contador de avisos
 # ([data-lw="k-avisos"]). Colores medidos sobre el preset, nunca a mano: el build PARA si una pareja baja de 4,5:1.
 MENU_SELECTOR = 'aside:has(a[data-path="login"]),header:has([data-lw="k-avisos"])'
+# `menu: "lateral"` (bbm-p33, 12-oct; owner: «al estándar de axisworks nuevo»): como en el diseño del owner («AxisWorks ERP
+# Dashboard»), SOLO el menú lateral es Night; la barra superior va sobre la zona de trabajo clara. Superficies del menú medidas
+# contra el diseño (Raised #14152A ≈ 4 %, Lifted #1A1C33 ≈ 7 %, Haze #C9CCDB ≈ 18 % de la tinta sobre el fondo), el nombre de
+# la marca en el color del fondo (el wordmark del diseño va en Chalk) y el elemento activo como pastilla del ACENTO con el
+# fondo encima (Ultramarine con texto Chalk), si ese par llega a 4,5:1; si no, el acento aclarado con la tinta encima.
+MENU_LATERAL = 'aside:has(a[data-path="login"])'
 
 
 def menu_oscuro_css(nombre):
-    """La regla CSS del menú oscuro de la instancia, o '' si no lo declara. Requiere piel."""
-    if _instancia_registro(nombre).get('menu') != 'oscuro':
+    """La regla CSS del menú oscuro de la instancia (`menu`: "oscuro" = menú y barra, "lateral" = solo el menú), o '' si no
+    lo declara. Requiere piel."""
+    modo = _instancia_registro(nombre).get('menu')
+    if modo not in ('oscuro', 'lateral'):
         return ''
     p = _piel_preset(nombre)
     if p is None:
-        aborta('menu "oscuro" de %s sin piel: el menú se pinta con los colores de su preset' % nombre)
+        aborta('menu "%s" de %s sin piel: el menú se pinta con los colores de su preset' % (modo, nombre))
     D = _deriva()
     tinta, fondo, acento = tuple(p['on-background']), tuple(p['background']), tuple(p['accent-gold'])
     acento_menu, _p = D.minimo_p(acento, fondo, [tinta])   # el acento, aclarado lo justo para 4,5:1 sobre la tinta
-    m = {'surface-container-low': tinta, 'surface-container': D.mix(tinta, fondo, 0.10),
-         'surface-container-high': D.mix(tinta, fondo, 0.16), 'on-surface': fondo,
-         'on-surface-variant': D.mix(fondo, tinta, 0.12), 'outline': D.mix(fondo, tinta, 0.30),
-         'primary': acento_menu, 'primary-container': acento_menu, 'deep-lagoon': acento_menu, 'on-primary': tinta}
+    if modo == 'oscuro':
+        m = {'surface-container-low': tinta, 'surface-container': D.mix(tinta, fondo, 0.10),
+             'surface-container-high': D.mix(tinta, fondo, 0.16), 'on-surface': fondo,
+             'on-surface-variant': D.mix(fondo, tinta, 0.12), 'outline': D.mix(fondo, tinta, 0.30),
+             'primary': acento_menu, 'primary-container': acento_menu, 'deep-lagoon': acento_menu, 'on-primary': tinta}
+    else:
+        pastilla, sobre_pastilla = (acento, fondo) if D.contraste(fondo, acento) >= 4.5 else (acento_menu, tinta)
+        m = {'surface-container-low': tinta, 'surface-container': D.mix(tinta, fondo, 0.04),
+             'surface-container-high': D.mix(tinta, fondo, 0.07), 'on-surface': fondo,
+             'on-surface-variant': D.mix(fondo, tinta, 0.18), 'outline': D.mix(fondo, tinta, 0.30),
+             'primary': acento_menu, 'primary-container': pastilla, 'deep-lagoon': fondo, 'on-primary': sobre_pastilla}
     parejas = [(t, f) for t in ('on-surface', 'on-surface-variant', 'outline')
                for f in ('surface-container-low', 'surface-container', 'surface-container-high')]
-    parejas += [('deep-lagoon', 'surface-container-low'), ('on-primary', 'primary-container')]
+    parejas += [('deep-lagoon', 'surface-container-low'), ('on-primary', 'primary-container'), ('primary', 'surface-container-low')]
     bajas = ['%s/%s %.2f' % (a, b, D.contraste(m[a], m[b])) for a, b in parejas if D.contraste(m[a], m[b]) < 4.5]
     if bajas:
         aborta('menú oscuro de %s por debajo de 4,5:1: %s' % (nombre, ', '.join(bajas)))
     cuerpo = ';'.join('--tema-%s:%d %d %d' % ((k,) + tuple(v)) for k, v in sorted(m.items()))
-    return '\n%s{%s}\n' % (MENU_SELECTOR, cuerpo)
+    if modo == 'oscuro':
+        return '\n%s{%s}\n' % (MENU_SELECTOR, cuerpo)
+    # el selector de idioma del menú pinta su opción activa con bg-deep-lagoon + text-on-primary: dentro de ESE fondo la marca
+    # pasa a ser la pastilla (como el segmento elegido del diseño), o saldría Chalk sobre Chalk (medido, 12-oct)
+    return '\n%s{%s}\n%s .bg-deep-lagoon{--tema-deep-lagoon:%d %d %d}\n' % (
+        MENU_LATERAL, cuerpo, MENU_LATERAL, *m['primary-container'])
 
 
 # La suite clásica (la puerta /, /crea-contrasena/) no pinta con los tokens --tema-: cada página declara su paleta de Lawang en
@@ -1474,6 +1494,60 @@ CLASICA_FIJOS = (('contracts/assets/axw.css', '#0d5b5f', 'primary-container', 'h
 CLASICA_DESACTIVADO_MIN = 2.1
 CLASICA_CONTRASTE = (('#FFFFFF', '--dl'), ('#FFFFFF', '--tg'), ('#FFFFFF', 'primary-container'), ('#FFFFFF', 'on-background'), ('--sc', '#FFFFFF'),
                      ('--muted', '--paper'), ('--linen', '--dl'), ('--ink', '--rl'))
+
+
+# Colores de Lawang escritos a mano en la cáscara v4 que la piel no alcanza (bbm-p33, 12-oct, medido en captura: la pestaña
+# activa Facturas/Recibos salía verde oliva de Lawang). Reemplazo literal en la copia de DIST, como CLASICA_FIJOS, y PARA si el
+# literal desaparece de la fuente. La pestaña activa va como el segmento elegido del diseño: el acento con el fondo encima si
+# ese par da 4,5:1; si no, el botón de la piel (acción con su «on»).
+V4_FIJOS = (('assets/nav.js', 'background:#485B37;color:#fff', 'pestana', None),        # pestaña activa (herramientas con pestañas)
+            ('assets/nav.js', 'color:#44483f', 'on-surface-variant', 'color'),          # pestaña inactiva
+            # la mascota del asistente (owner vía orquestador, 12-oct: «o va con la piel o se oculta, no a medias»): el personaje
+            # en la tinta y el acento de la piel, con las hojas en el «on» del botón (Volt en bbm, sobre el aro oscuro); su
+            # globo y su campo en las superficies, filete y textos de la piel. Lo de CLASICA_FIJOS (#104C4F…) va aparte.
+            ('assets/mascota.js', 'fill="#314322"', 'on-background', 'fill'),           # cuerpo
+            ('assets/mascota.js', 'fill="#485b37"', 'accent-gold', 'fill'),             # cara
+            ('assets/mascota.js', 'stroke="#485b37"', 'accent-gold', 'stroke'),         # tallo
+            ('assets/mascota.js', 'fill="#b8cea1"', 'on-primary', 'fill'),              # hoja
+            ('assets/mascota.js', 'fill="#d3eabb"', 'on-primary', 'fill'),              # hoja
+            ('assets/mascota.js', '#fbf9f4', 'surface-container-lowest', 'hex'),        # ojos y fondo del campo
+            ('assets/mascota.js', '#E4DCCB', 'filete', 'hex'),                          # borde del globo
+            ('assets/mascota.js', '#f5f4ee', 'surface-container-low', 'hex'),           # hover de botón
+            ('assets/mascota.js', '#efeee8', 'surface-container', 'hex'),               # hover de cerrar
+            ('assets/mascota.js', '#1b1c19', 'on-background', 'hex'),                   # texto y sombra del suelo
+            ('assets/mascota.js', '#44483f', 'on-surface-variant', 'hex'),              # texto del globo
+            ('assets/mascota.js', '#75786e', 'outline', 'hex'),                         # botón cerrar
+            ('assets/mascota.js', '#c5c8bc', 'outline', 'hex'),                         # borde del campo (≥ 3:1)
+            ('assets/mascota.js', '#2E3437', 'on-surface', 'hex'),                      # texto de botón
+            ('assets/mascota.js', 'rgba(27,28,25,', 'on-background', 'rgba'))           # sombra del globo
+
+
+def piel_v4_fijos(dist, nombre):
+    """Aplica V4_FIJOS con los colores de la piel de la instancia. Sin piel no toca nada (Lawang, demo)."""
+    p = _piel_preset(nombre)
+    if p is None:
+        return 0
+    D = _deriva()
+    fondo, acento = tuple(p['background']), tuple(p['accent-gold'])
+    bg, fg = (acento, fondo) if D.contraste(fondo, acento) >= 4.5 else (tuple(p['primary-container']), tuple(p['on-primary']))
+    if D.contraste(bg, fg) < 4.5:
+        aborta('pestaña activa de %s por debajo de 4,5:1 (%.2f)' % (nombre, D.contraste(bg, fg)))
+    h = lambda c: '#%02X%02X%02X' % tuple(c)
+    fmt = {'color': lambda c: 'color:' + h(c), 'fill': lambda c: 'fill="%s"' % h(c), 'stroke': lambda c: 'stroke="%s"' % h(c),
+           'hex': h, 'rgba': lambda c: 'rgba(%d,%d,%d,' % tuple(c)}
+    textos, n = {}, 0
+    for rel_f, literal, tok, f in V4_FIJOS:
+        ruta = os.path.join(dist, rel_f)
+        if rel_f not in textos:
+            textos[rel_f] = open(ruta, encoding='utf-8').read() if os.path.isfile(ruta) else ''
+        if literal not in textos[rel_f]:
+            aborta('piel de la cáscara v4: %s ya no lleva %r (¿cambió Lawang? mirar V4_FIJOS)' % (rel_f, literal))
+        nuevo = 'background:%s;color:%s' % (h(bg), h(fg)) if tok == 'pestana' else fmt[f](p[tok])
+        textos[rel_f] = textos[rel_f].replace(literal, nuevo)
+        n += 1
+    for rel_f, t in textos.items():
+        open(os.path.join(dist, rel_f), 'w', encoding='utf-8', newline='').write(t)
+    return n
 
 
 def _profundidad_llaves(css):
@@ -1789,6 +1863,77 @@ def tipografias_libres():
     sueltas = [os.path.join(r, f) for r, _d, fs in os.walk(DIST) for f in fs if f.lower().endswith('.otf')]
     if sueltas:
         aborta('quedan tipografías .otf en la versión pública: ' + ', '.join(rel(x) for x in sueltas[:5]))
+
+
+# Sistema visual de AxisWorks en una instancia (registro `sistema: "axisworks"`; bbm-p33, 12-oct, owner: «el ERP de BBM es
+# ilegible, necesitamos actualizarlo al estándar de axisworks nuevo»; diseño «AxisWorks ERP Dashboard», página Reservas).
+# Los COLORES van por la piel (presets.json); aquí lo que no es color y la piel no alcanza:
+#   · fuentes: las tres OFL de la portada (fuentes_portada, AUTOALOJADAS: nada a Google) en lugar de Jost/Cormorant de Google
+#     que deja tipografias_libres(). Manrope para lo que se lee o se pulsa, Unbounded para titulares y cifras, IBM Plex Mono
+#     para rótulos. Sin manrope-600: un 600 pedido pinta el 700 (coincidencia de CSS, sin negrita sintética). Los iconos
+#     (Material Symbols de Google) quedan fuera: los comparte con Lawang.
+#   · forma: sin sombras (la profundidad es tarjeta blanca + filete), tarjetas a 20 px, campos con borde visible (≥ 3:1).
+# Todo con `html main`/`html ` delante: fonts.css va ANTES que las hojas de Tailwind, que redefinen estas clases (misma
+# especificidad). Unbounded solo en la zona de trabajo (el nombre del cliente en el menú es suyo, no el wordmark del estudio)
+# y Plex Mono solo en rótulos EN MAYÚSCULAS (`font-label-md` también viste botones y chips: en mono no se leen; medido).
+SISTEMAS_INSTANCIA = {
+    'axisworks': {
+        'familias': (('Jost', 'Manrope'), ('Cormorant Garamond', 'Unbounded'), ('Instrument Sans', 'Manrope')),
+        'css': ('\nhtml main .font-headline-lg,html main .font-headline-md,html main .font-headline-sm,html .font-kpi-number,'
+                'html .lw-cifra{font-family:\'Unbounded\',system-ui,sans-serif;letter-spacing:-.03em}\n'
+                # Plex Mono solo tiene 400/500: un 700 pedido saldría en negrita sintética
+                'html .font-label-md.uppercase{font-family:\'IBM Plex Mono\',ui-monospace,monospace;font-weight:500}\n'
+                # cabecera de tabla del diseño: rótulo mono en mayúsculas
+                'html main th{font-family:\'IBM Plex Mono\',ui-monospace,monospace;font-weight:500!important;font-size:11px;'
+                'letter-spacing:.1em;text-transform:uppercase}\n'
+                'html main .shadow-sm,html main .shadow,html main .shadow-md,html main .shadow-xs,html main .hover\\:shadow-md:hover'
+                '{box-shadow:none}\n'
+                'html main .bg-surface-container-lowest.shadow-sm{border:1px solid rgb(var(--tema-filete))}\n'
+                'html main .bg-surface-container-lowest.rounded-xl.shadow-sm:not(.rounded-full){border-radius:20px}\n'
+                'html main input.shadow-sm,html main select,html main textarea{border-color:rgb(var(--tema-outline))}\n'),
+    },
+}
+GOOGLE_TEXTO = re.compile(r'<link[^>]*fonts\.googleapis\.com/css2\?family=(?:Jost|Cormorant)[^>]*>')
+
+
+def sistema_instancia(nombre):
+    """Pone el sistema del registro (`sistema`): fuentes servidas desde el propio dominio y la forma. Sin `sistema`, nada."""
+    clave = _instancia_registro(nombre).get('sistema')
+    if not clave:
+        return 0
+    if clave not in SISTEMAS_INSTANCIA:
+        aborta('sistema %r de %s no es uno conocido (%s)' % (clave, nombre, ', '.join(sorted(SISTEMAS_INSTANCIA))))
+    if _piel_preset(nombre) is None:
+        aborta('sistema %r de %s sin piel: la forma usa los colores de su preset (--tema-filete, --tema-outline)' % (clave, nombre))
+    juego = SISTEMAS_INSTANCIA[clave]
+    css_caras, ficheros = fuentes_portada()
+    for rel_pub, origen in ficheros:
+        destino = os.path.join(DIST, rel_pub)
+        os.makedirs(os.path.dirname(destino), exist_ok=True)
+        shutil.copy2(origen, destino)
+    fuentes_css = os.path.join(DIST, 'assets', 'fonts', 'fonts.css')
+    if not os.path.isfile(fuentes_css):
+        aborta('sistema de %s: falta assets/fonts/fonts.css en el paquete' % nombre)
+    open(fuentes_css, 'w', encoding='utf-8', newline='\n').write(css_caras.rstrip('\n') + '\n' + juego['css'])
+    cambiados = 0
+    for raiz, _d, fichs in os.walk(DIST):
+        for f in fichs:
+            if not f.endswith(EXT_TEXTO):
+                continue
+            p = os.path.join(raiz, f)
+            t = open(p, encoding='utf-8', errors='replace').read()
+            t2 = GOOGLE_TEXTO.sub('<link rel="stylesheet" href="/assets/fonts/fonts.css">', t) if f.endswith('.html') else t
+            for viejo, nuevo in juego['familias']:
+                t2 = t2.replace(viejo, nuevo)
+            if t2 != t:
+                open(p, 'w', encoding='utf-8', newline='').write(t2)
+                cambiados += 1
+    quedan = [rel(os.path.join(r, f)) for r, _d, fs in os.walk(DIST) for f in fs if f.endswith(EXT_TEXTO)
+              and re.search(r'fonts\.googleapis\.com/css2\?family=(?:Jost|Cormorant)|family=Jost',
+                            open(os.path.join(r, f), encoding='utf-8', errors='replace').read())]
+    if quedan:
+        aborta('sistema de %s: quedan peticiones de texto a Google en %s' % (nombre, ', '.join(quedan[:5])))
+    return cambiados
 
 
 REF_ESTATICO = re.compile(r'''(["'])([^"'\s<>()]+?\.(?:js|css))(\?v=[0-9A-Za-z_-]+)?\1''')
@@ -3619,8 +3764,10 @@ def instancia(nombre):
     logos_instancia(nombre, marca)
     crea_contrasena_pantalla(marca)   # pieza C de I6 (9-oct-2026): «Crea tu contraseña» para el primer administrador invitado
     piel_suite_clasica(DIST, nombre)   # tras el renombrado (axw.css) y tras crea-contrasena; antes de versiona()
+    piel_v4_fijos(DIST, nombre)        # colores de Lawang a mano en la cáscara v4 (antes de versiona())
     puerta_instancia(DIST, idiomas)   # selector de idioma visible, correo neutro, marca centrada (12-oct)
     tipografias_libres()
+    sistema_instancia(nombre)   # tras tipografias_libres (que deja Jost/Cormorant de Google) y antes de versiona()
     neutraliza_ejemplos()   # ejemplos de persona que casan con gente real (pii_maqueta)
     # 2. Portada = la puerta de acceso, que reraiz() ha subido a la raíz (antes /intranet/). Lo que en la demo es un aviso,
     # aquí dice que no está en esta instancia. /entrar/ y /portal/ no tienen pantalla propia: mandan a la puerta.
