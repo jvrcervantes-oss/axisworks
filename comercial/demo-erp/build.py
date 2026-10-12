@@ -1015,11 +1015,12 @@ NOVEDADES_APAGA = 'if (window.__lwNovedades) return;'
 
 
 def comprueba_novedades_apagable():
-    """El pop-up de novedades de la intranet (anuncios internos del cliente) se apaga en la demo poniendo __lwNovedades antes de
-    que cargue: aprovecha su guarda contra doble carga. Si Lawang la cambia, el pop-up volvería sin avisar: el build para."""
+    """El pop-up de novedades de la intranet (anuncios internos de Lawang) se apaga en la demo y en toda instancia poniendo
+    __lwNovedades antes de que cargue: aprovecha su guarda contra doble carga. Si Lawang la cambia, el pop-up volvería sin avisar: el build para."""
     p = os.path.join(DIST, 'assets', 'novedades.js')
-    if os.path.isfile(p) and NOVEDADES_APAGA not in open(p, encoding='utf-8').read():
-        aborta('novedades.js ya no trae %r: la demo no puede apagar el pop-up de novedades (revisa guard_demo)' % NOVEDADES_APAGA)
+    # sin blancos: en una instancia se mira después de limpia_publico.js, que compacta «if (x) return;» a «if(x)return;»
+    if os.path.isfile(p) and re.sub(r'\s', '', NOVEDADES_APAGA) not in re.sub(r'\s', '', open(p, encoding='utf-8').read()):
+        aborta('novedades.js ya no trae %r: ni la demo ni las instancias pueden apagar el pop-up de novedades de Lawang (revisa guard_demo y la cabecera del guard de instancia)' % NOVEDADES_APAGA)
 
 
 def marca_agua_documentos():
@@ -1629,6 +1630,9 @@ MENU_I18N = {
     'Ventas': {'en': 'Sales', 'id': 'Penjualan'},
     'Reservas de producto': {'en': 'Product bookings', 'id': 'Booking sewa motor'},
     'Configurar módulos': {'en': 'Module setup', 'id': 'Penyiapan modul'},
+    # rótulos que whatsapp_bot_pantalla() injerta en el menú (idiomas-pH, 12-oct): el menú los pasa por lwT aunque estén ocultos
+    'Bot de WhatsApp': {'en': 'WhatsApp bot', 'id': 'Bot WhatsApp'},
+    'Bot de WhatsApp · alta': {'en': 'WhatsApp bot · sign-up', 'id': 'Bot WhatsApp · pendaftaran'},
 }
 
 
@@ -3593,9 +3597,13 @@ def instancia(nombre):
     interruptores = (plantilla.replace('__AXW_MAPA__', json.dumps(mapa, ensure_ascii=False, sort_keys=True))
                      .replace('__AXW_NO_INSTALADO__', json.dumps(no_instalado, ensure_ascii=False)) + '\n')
     t = open(g, encoding='utf-8').read()
+    # El pop-up de novedades de la intranet son anuncios de LAWANG para su equipo (parcelas, «Bloqueo», venta de equipo): en una
+    # instancia no sale, como en la demo (idiomas-pH, 12-oct; orquestador: «contenido de un cliente visible en la instancia de otro»).
+    # novedades.js lo carga nav.js por JS, después de guard.js, y vuelve sin pintar nada si encuentra __lwNovedades ya puesto.
+    comprueba_novedades_apagable()
     open(g, 'w', encoding='utf-8', newline='').write(
         '/* GENERADO por AxisWorks/comercial/demo-erp/build.py --instancia %s — no editar. */\n'
-        'window.AXW_NUCLEO_OPERACION = true;\n' % nombre + interruptores + t + setup_para_guard())
+        'window.AXW_NUCLEO_OPERACION = true;\nwindow.__lwNovedades = true;\n' % nombre + interruptores + t + setup_para_guard())
     capa_modulos_hub(interruptores)
     for raiz, dirs, fichs in os.walk(DIST, topdown=False):
         for f in fichs + dirs:
