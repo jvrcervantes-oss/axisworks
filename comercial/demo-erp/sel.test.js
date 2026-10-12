@@ -36,4 +36,48 @@ CAT.leeSel('__proto__,constructor,base');
 assert.strictEqual({}.polluted, undefined, 'prototipo intacto');
 assert.ok(!Object.prototype.hasOwnProperty.call(CAT.leeSel('base'), '__proto__'), 'sin claves raras');
 
+// ── Ida y vuelta desde la PORTADA (C03, 12-oct-2026): el núcleo puro de portada.js, no una copia de su lógica. Lo que
+// la portada marca y manda en ?sel= es exactamente lo que la demo abre con leeSel.
+const P = require('./portada.js').nucleo(CAT);
+const soloModulos = (e) => CAT.MODULOS.map((m) => m[0]).filter((k) => e[k]).sort();
+const idaYVuelta = (e, que) => {
+  const url = P.urlDemo('https://demo.axisworks.studio', 'demo', e);
+  const sel = new URL(url).searchParams.get('sel');
+  assert.deepStrictEqual(soloModulos(CAT.leeSel(sel)), soloModulos(e), 'ida y vuelta: ' + que + ' (' + sel + ')');
+  const tour = new URL(P.urlDemo('', 'tour', e), 'https://x');
+  assert.strictEqual(tour.pathname + '?' + tour.searchParams.get('tour'), '/home/?1', 'el tour abre /home/?tour=1');
+  assert.strictEqual(tour.searchParams.get('sel'), sel, 'el tour lleva la misma selección');
+};
+const todos = CAT.MODULOS.map((m) => m[0]).sort();
+const base = modulosDe('base').sort();
+let p = P.inicial();
+assert.deepStrictEqual(soloModulos(p), todos, 'la portada arranca con todo encendido');
+assert.ok(CAT.CAMINO.every((c) => !p[c[0]]), 'los «en camino» no se encienden solos');
+idaYVuelta(p, 'todo');
+P.soloBase(p);
+assert.deepStrictEqual(soloModulos(p), base, '«Core only» deja solo la base');
+idaYVuelta(p, 'solo la base');
+P.todo(p);
+assert.deepStrictEqual(soloModulos(p), todos, '«All on» lo enciende todo');
+// La base no se toca
+CAT.pack('base')[3].forEach((k) => { assert.strictEqual(P.alterna(p, k), null, 'la base no se apaga: ' + k); assert.ok(p[k]); });
+assert.strictEqual(P.alterna(p, '__proto__'), null, 'un id desconocido no hace nada');
+// Cada módulo, uno a uno, desde todo encendido y desde solo la base: los bloques se mueven enteros, el aviso dice
+// todo lo que se movió además del tocado, y la selección resultante sobrevive a ?sel= sin cambiar.
+CAT.MODULOS.filter((m) => !CAT.pack('base')[3].includes(m[0])).forEach((m) => {
+  for (const desde of ['todo', 'base']) {
+    const e = desde === 'todo' ? P.inicial() : P.soloBase(P.inicial());
+    const antes = Object.assign({}, e);
+    const r = P.alterna(e, m[0]);
+    assert.ok(r && r.k === m[0] && r.on === (desde === 'base'), 'alterna ' + m[0] + ' desde ' + desde);
+    const cambiados = CAT.MODULOS.map((x) => x[0]).filter((k) => antes[k] !== e[k]);
+    assert.deepStrictEqual(cambiados.filter((k) => k !== m[0]).sort(), r.otros.slice().sort(), 'el aviso cuenta todo lo movido: ' + m[0]);
+    const pk = CAT.PACK_DE[m[0]];
+    if (pk && pk !== 'base') assert.ok(CAT.pack(pk)[3].every((k) => e[k] === r.on), 'el bloque de ' + m[0] + ' va entero');
+    idaYVuelta(e, m[0] + ' desde ' + desde);
+  }
+});
+// El tipo de negocio no cambia la rejilla (hoy): devuelve todos los módulos
+['properties', 'bookings', 'services'].forEach((t) => assert.deepStrictEqual(P.modulosDeTipo(t).slice().sort(), todos, 'tipo ' + t));
+
 console.log('ok sel.test.js');

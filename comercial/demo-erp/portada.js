@@ -1,0 +1,240 @@
+/* Portada de erp.axisworks.studio (C03, 12-oct-2026; plan revisado por Legal y Frontend en la revisión previa #286).
+   build.py la publica como /demo/portada.js. Dos partes:
+   1. NÚCLEO PURO (sin DOM): estado de la selección, «All on», «Core only», tocar un módulo respetando los bloques de
+      catalogo.js (PACKS/SUELTOS, ponPack/ponSuelto) y las URLs a la demo. Lo prueba sel.test.js con node (ida y vuelta
+      de ?sel=), así el test mide el código de la página y no una copia.
+   2. PINTADO: rejilla de módulos, tipo de negocio, calculadora (roi.js) y enlaces a la demo. Solo createElement y
+      textContent; se engancha por data-* (data-k, data-tipo, data-accion, data-enlace, data-roi…), nunca por el texto.
+   Sin localStorage ni sessionStorage (Legal #284: la página de cookies dice que no se usan): la selección vive en
+   memoria y viaja a la demo SOLO en ?sel= (codificaSel; la demo la lee con leeSel, su única puerta). No se llama a
+   leeEstado ni a guardaEstado de catalogo.js, que sí usan almacenamiento. */
+(function (raiz) {
+  'use strict';
+
+  function nucleo(CAT) {
+    var BASE = CAT.pack('base')[3];
+    function vacio() {
+      var e = {};
+      CAT.MODULOS.forEach(function (m) { e[m[0]] = false; });
+      CAT.CAMINO.forEach(function (c) { e[c[0]] = false; });
+      BASE.forEach(function (k) { e[k] = true; });
+      return e;
+    }
+    function ponTodo(e, on) {
+      CAT.PACKS.forEach(function (p) { CAT.ponPack(e, p[0], on); });
+      CAT.SUELTOS.forEach(function (s) { CAT.ponSuelto(e, s[0], on); });
+      BASE.forEach(function (k) { e[k] = true; });   // la base no se apaga
+      return e;
+    }
+    /* De partida, todo encendido (como el artboard y como la portada anterior sin nada guardado). */
+    function inicial() { return ponTodo(vacio(), true); }
+    function todo(e) { return ponTodo(e, true); }
+    function soloBase(e) { return ponTodo(e, false); }
+    function esBase(k) { return BASE.indexOf(k) !== -1; }
+    /* Tocar un módulo: si va en un bloque, se mueve el bloque entero (y lo que lo necesita o lo que necesita). Devuelve
+       qué se movió además del módulo tocado, COMPARANDO el antes y el después: ponPack solo informa de otros packs, y
+       apagar «Lead CRM» apaga en silencio el setter y el piloto de campañas, que también hay que decir. */
+    function alterna(e, k) {
+      if (esBase(k) || !CAT.MODULOS.some(function (m) { return m[0] === k; })) return null;   // por lista, nunca como clave
+      var antes = {};
+      Object.keys(e).forEach(function (x) { antes[x] = e[x]; });
+      var on = !e[k];
+      if (CAT.PACK_DE[k]) CAT.ponPack(e, CAT.PACK_DE[k], on);
+      else CAT.ponSuelto(e, k, on);
+      var otros = [];
+      CAT.MODULOS.forEach(function (m) { if (m[0] !== k && antes[m[0]] !== e[m[0]]) otros.push(m[0]); });
+      return { k: k, on: on, otros: otros };
+    }
+    function activos(e) { return CAT.MODULOS.filter(function (m) { return !!e[m[0]]; }).length; }
+    /* Tipo de negocio → módulos. HOY devuelve TODOS: el tipo cambia titular, texto y dibujo, no la rejilla (revisión
+       previa #286, Frontend: los «off» del artboard rompían los PACKS y ?sel= no los llevaría). Cuando el owner decida
+       puntos de partida por tipo, saldrán de UNA fuente (catalogo.js, junto a PACKS) y esta función será la única que
+       la lea; nunca listas por tipo escritas a mano en la página. */
+    function modulosDeTipo(_tipo) { return CAT.MODULOS.map(function (m) { return m[0]; }); }
+    /* URL a la demo con la selección. destino: 'demo' → /home/?sel=…, 'tour' → /home/?tour=1&sel=… */
+    function urlDemo(origen, destino, e) {
+      var sel = encodeURIComponent(CAT.codificaSel(e));
+      return (origen || '') + '/home/' + (destino === 'tour' ? '?tour=1&sel=' : '?sel=') + sel;
+    }
+    return { inicial: inicial, todo: todo, soloBase: soloBase, esBase: esBase, alterna: alterna, activos: activos,
+      modulosDeTipo: modulosDeTipo, urlDemo: urlDemo };
+  }
+
+  /* Textos de cada tipo de negocio. Properties sale del HTML (lo que se pinta de primeras), así no vive en dos sitios. */
+  var TIPOS = {
+    bookings: { head: 'booking businesses.', meta: 'BOOKINGS BY DATE · RATES · AVAILABILITY',
+      text: 'Bookings of a product by dates, with rates, availability and payment, and a WhatsApp assistant (in testing) that answers with your own data.',
+      cards: [['Bookings', 'By date'], ['Rates and availability', 'Per product'], ['Payments', 'Per booking'], ['WhatsApp assistant', 'In testing']] },
+    services: { head: 'service companies.', meta: 'CATALOGUE · INVOICING BY LINE · SUPPORT',
+      text: 'A catalogue of products and services invoiced by line, collections with proof of payment and customer support with its history.',
+      cards: [['Catalogue', 'Products and services'], ['Invoicing', 'By line'], ['Collections', 'With proof of payment'], ['Customer support', 'With its history']] }
+  };
+  /* Módulos que la página marca «In testing» en la rejilla (Legal #286: el asistente de WhatsApp y las respuestas
+     redactadas desde el contrato se dicen en pruebas en todos los sitios donde salen). */
+  var EN_PRUEBAS = { setter: 1, asistente: 1 };
+
+  var api = { nucleo: nucleo, TIPOS: TIPOS, EN_PRUEBAS: EN_PRUEBAS };
+  if (typeof module !== 'undefined' && module.exports) { module.exports = api; return; }
+  raiz.AXW_PORTADA = api;
+  if (typeof document === 'undefined' || !raiz.AXW_CATALOGO) return;
+
+  var CAT = raiz.AXW_CATALOGO, N = nucleo(CAT);
+  var DEMO = typeof raiz.AXW_DEMO_URL === 'string' ? raiz.AXW_DEMO_URL : '';
+  var estado = N.inicial();
+  function q(sel, desde) { return (desde || document).querySelector(sel); }
+  function qq(sel, desde) { return Array.prototype.slice.call((desde || document).querySelectorAll(sel)); }
+  function el(tag, cls, txt) {
+    var x = document.createElement(tag);
+    if (cls) x.className = cls;
+    if (txt != null) x.textContent = txt;
+    return x;
+  }
+
+  /* ── Rejilla de módulos ── */
+  var rejilla = q('[data-rejilla]');
+  CAT.SECCIONES.forEach(function (s) {
+    var caja = el('div', 'secc');
+    caja.setAttribute('data-seccion', s);
+    var cab = el('div', 'secc-cab');
+    var h = el('h3', null, s.toUpperCase());
+    var n = el('span');
+    n.setAttribute('data-cuenta', s);
+    cab.appendChild(h); cab.appendChild(n); caja.appendChild(cab);
+    CAT.MODULOS.filter(function (m) { return m[2] === s; }).forEach(function (m) {
+      var b = el('button', 'mod');
+      b.type = 'button';
+      b.setAttribute('role', 'switch');
+      b.setAttribute('data-k', m[0]);
+      b.appendChild(el('span', 'mod-n', m[1]));
+      var d = el('span', 'mod-d');
+      if (N.esBase(m[0])) { b.setAttribute('aria-disabled', 'true'); d.appendChild(el('span', 'mod-tag', 'INCLUDED')); }
+      else if (EN_PRUEBAS[m[0]]) d.appendChild(el('span', 'mod-tag', 'IN TESTING'));
+      var sw = el('span', 'sw');
+      sw.setAttribute('aria-hidden', 'true');
+      d.appendChild(sw); b.appendChild(d); caja.appendChild(b);
+    });
+    rejilla.appendChild(caja);
+  });
+
+  var total = CAT.MODULOS.length;
+  qq('[data-n="modulos"]').forEach(function (x) { x.textContent = String(total); });
+
+  function pinta() {
+    qq('.mod').forEach(function (b) { b.setAttribute('aria-checked', String(!!estado[b.getAttribute('data-k')])); });
+    CAT.SECCIONES.forEach(function (s) {
+      var ms = CAT.MODULOS.filter(function (m) { return m[2] === s; });
+      var on = ms.filter(function (m) { return estado[m[0]]; }).length;
+      var c = q('[data-cuenta="' + s + '"]');
+      if (c) c.textContent = on + ' / ' + ms.length;
+    });
+    var act = N.activos(estado), pct = Math.round(act / total * 100);
+    qq('[data-n="activos"]').forEach(function (x) { x.textContent = String(act); });
+    qq('[data-n="pct"]').forEach(function (x) { x.textContent = String(pct); });
+    var barra = q('[data-barra]');
+    barra.setAttribute('aria-valuenow', String(pct));
+    barra.firstElementChild.style.width = pct + '%';
+    enlaces();
+  }
+
+  /* El href estático (/home/…) se queda en el HTML (publica_web lo exige y es lo que sirve sin JS); aquí se pone el
+     completo con ?sel= cada vez que cambia la selección, así también vale copiar el enlace o abrirlo en otra pestaña. */
+  function enlaces() {
+    qq('[data-enlace]').forEach(function (a) { a.setAttribute('href', N.urlDemo(DEMO, a.getAttribute('data-enlace'), estado)); });
+  }
+
+  var aviso = q('[data-aviso]'), avisoT;
+  function avisa(txt) {
+    clearTimeout(avisoT);
+    aviso.classList.remove('fuera');
+    aviso.textContent = txt;
+    avisoT = setTimeout(function () {
+      aviso.classList.add('fuera');
+      avisoT = setTimeout(function () { aviso.textContent = ''; aviso.classList.remove('fuera'); }, 400);
+    }, 4200);
+  }
+  function nombres(ks) { return ks.map(CAT.nombre).join(', '); }
+
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest('.mod');
+    if (b) {
+      var r = N.alterna(estado, b.getAttribute('data-k'));
+      if (!r) return;   // la base no se apaga
+      pinta();
+      var txt = CAT.nombre(r.k) + (r.on ? ' switched on.' : ' switched off.');
+      if (r.otros.length) txt += (r.on ? ' They come together, so also on: ' : ' Also off, because they go together: ') + nombres(r.otros) + '.';
+      avisa(txt);
+      return;
+    }
+    var acc = ev.target.closest('[data-accion]');
+    if (acc) {
+      if (acc.getAttribute('data-accion') === 'todo') { N.todo(estado); avisa('All modules switched on.'); }
+      else { N.soloBase(estado); avisa('Only the core is on: dashboard, team and settings.'); }
+      pinta();
+      return;
+    }
+    var m = ev.target.closest('[data-menu] a');
+    if (m) m.closest('[data-menu]').removeAttribute('open');
+  });
+
+  /* ── Tipo de negocio ── */
+  var tituloEl = q('[data-biz="head"]'), textoEl = q('[data-biz="text"]'), metaEl = q('[data-biz="meta"]');
+  var dibujo = q('[data-biz="aria"]'), tarjetas = qq('[data-biz="cards"] .tarj');
+  TIPOS.properties = { head: tituloEl.textContent, text: textoEl.textContent, meta: metaEl.textContent,
+    cards: tarjetas.map(function (t) { return [q('.tarj-n', t).textContent, q('.tarj-s', t).textContent]; }) };
+  var vueltas = 0;
+  function anima(x, base) {
+    x.classList.remove(base + 'A', base + 'B');
+    void x.offsetWidth;   // reinicia la animación de entrada
+    x.classList.add(base + (vueltas % 2 ? 'A' : 'B'));
+  }
+  function ponTipo(tipo) {
+    var t = TIPOS[tipo];
+    if (!t) return;
+    var etiqueta = q('[data-tipo="' + tipo + '"]').parentNode.textContent.trim();
+    vueltas++;
+    tituloEl.textContent = t.head; textoEl.textContent = t.text; metaEl.textContent = t.meta;
+    [tituloEl, textoEl, metaEl].forEach(function (x) { anima(x, 'sw'); });
+    tarjetas.forEach(function (c, i) {
+      q('.tarj-n', c).textContent = t.cards[i][0];
+      q('.tarj-s', c).textContent = t.cards[i][1];
+      anima(c, 'card');
+    });
+    dibujo.setAttribute('aria-label', 'Four ' + etiqueta.toLowerCase() + ' modules plugged into one database at the point of the X: ' +
+      t.cards.map(function (c) { return c[0]; }).join(', '));
+    qq('[data-biz="lower"]').forEach(function (x) { x.textContent = etiqueta.toLowerCase(); });
+    N.modulosDeTipo(tipo);   // hoy, todos: la rejilla no cambia con el tipo (ver nucleo)
+  }
+  qq('[data-tipo]').forEach(function (r) { r.addEventListener('change', function () { if (r.checked) ponTipo(r.getAttribute('data-tipo')); }); });
+
+  /* ── Calculadora (roi.js: horas/semana × 52/12 × % → horas/mes; 160 h = una persona; valor con el coste tecleado).
+     Todo en el navegador, nada se envía ni se guarda. ── */
+  var R = raiz.AXW_ROI, form = q('[data-roi-form]');
+  if (R && form) {
+    var caja = q('[data-roi-tareas]');
+    R.TAREAS.forEach(function (t) {
+      var l = el('label', 'tarea', t[1]);
+      var i = el('input', 'campo');
+      i.type = 'number'; i.min = '0'; i.max = '168'; i.setAttribute('inputmode', 'numeric'); i.placeholder = '0';
+      i.setAttribute('data-roi-h', t[0]);
+      l.appendChild(i); caja.appendChild(l);
+    });
+    var fmt = function (n) { return Math.round(n).toLocaleString('en-US'); };
+    var calcula = function () {
+      var horas = {};
+      qq('[data-roi-h]', form).forEach(function (i) { horas[i.getAttribute('data-roi-h')] = i.value; });
+      var pct = q('[data-roi-in="pct"]', form).value, mon = q('[data-roi-in="moneda"]', form).value;
+      var r = R.calcula(horas, q('[data-roi-in="coste"]', form).value, pct);
+      var semana = r.horasSemanaEquipo;
+      q('[data-roi="pct"]').textContent = String(r.entrada.pct);
+      q('[data-roi="horas"]').textContent = semana > 0 ? fmt(r.horasMes) + ' h' : '—';
+      q('[data-roi="fte"]').textContent = semana > 0 ? r.puestos.toFixed(1) + ' FTE' : '—';
+      q('[data-roi="valor"]').textContent = semana > 0 && r.entrada.coste > 0 ? fmt(r.valorMes) + ' ' + mon : '—';
+    };
+    form.addEventListener('input', calcula);
+    form.addEventListener('change', calcula);
+    form.addEventListener('submit', function (e) { e.preventDefault(); });
+    calcula();
+  }
+
+  pinta();
+})(this);

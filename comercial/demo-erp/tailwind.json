@@ -10,15 +10,8 @@
   "tour.js",
   "roi.js"
  ],
+ "_salida_retirada": "demo/landing.css (la portada, landing.html) dejó de salir de aquí el 12-oct-2026 (C03): su hoja es portada.css, escrita a mano. El tema se sigue llamando «landing» porque lo usa el panel.",
  "salidas": [
-  {
-   "css": "demo/landing.css",
-   "tema": "landing",
-   "plugins": [],
-   "paginas": [
-    "landing.html"
-   ]
-  },
     {"css": "panel/panel.css", "tema": "landing", "plugins": [], "paginas": ["panel_control.html", "panel_pilotos.html", "panel_aprobaciones.html", "_compartido/panel_nav.html"], "_por_que": "panel de control de módulos (28-sep-2026): misma piel Stitch que la portada; solo se compila en la instancia con panel_control"}
  ],
  "temas": {

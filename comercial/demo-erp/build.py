@@ -763,10 +763,10 @@ def panel_nav(pagina, actual):
 
 
 def compila_portada(solo=None):
-    """Tailwind COMPILADO de la portada (ERP F3 lote 4a, 27-sep-2026): landing.html pintaba con el Play CDN, que la CSP
-    de demo.axisworks.studio ya no admite. Su tema (el config que llevaba en línea) vive en tailwind.json, al lado; lo
-    compila la misma herramienta que el de Lawang (tools/empaqueta_css.py de la agencia: binario v3.4.17 verificado
-    por SHA256) a dist/demo/landing.css. Se compila en cada build: nunca se queda atrás de landing.html."""
+    """Tailwind COMPILADO (ERP F3 lote 4a, 27-sep-2026): el Play CDN no lo admite la CSP. Su tema vive en tailwind.json,
+    al lado; lo compila la misma herramienta que el de Lawang (tools/empaqueta_css.py de la agencia: binario v3.4.17
+    verificado por SHA256). Desde el 12-oct-2026 (C03) solo sale panel/panel.css: la portada (landing.html) tiene hoja
+    escrita a mano (portada.css). Se compila en cada build: nunca se queda atrás de sus páginas."""
     sys.path.insert(0, os.path.join(AGENCIA, 'tools'))
     import empaqueta_css
     fuente = json.load(open(os.path.join(AQUI, 'tailwind.json'), encoding='utf-8'))
@@ -806,9 +806,12 @@ def paginas_propias():
     # Portada: la landing de módulos (fuente: landing.html, al lado de este script). Su primer <script> lo pone el
     # build: barrido de sesión sb-* y el origen de la demo ('' = este mismo servidor).
     open(os.path.join(DIST, 'index.html'), 'w', encoding='utf-8', newline='').write(
-        config_portada(open(os.path.join(AQUI, 'landing.html'), encoding='utf-8').read(), ''))
+        banda_startups(config_portada(open(os.path.join(AQUI, 'landing.html'), encoding='utf-8').read(), '')))
     os.makedirs(os.path.join(DIST, 'demo'), exist_ok=True)
-    compila_portada('demo/landing.css')
+    # C03 (12-oct-2026): la portada ya no es Tailwind. Su hoja es portada.css, escrita a mano, y sale con el mismo nombre
+    # de siempre (demo/landing.css); su lógica, portada.js. Las fuentes NO van aquí: las pone publica_web() en erp.
+    shutil.copy2(os.path.join(AQUI, 'portada.css'), os.path.join(DIST, 'demo', 'landing.css'))
+    shutil.copy2(os.path.join(AQUI, 'portada.js'), os.path.join(DIST, 'demo', 'portada.js'))
     shutil.copy2(os.path.join(AQUI, 'tour.js'), os.path.join(DIST, 'demo', 'tour.js'))
     shutil.copy2(os.path.join(AQUI, 'catalogo.js'), os.path.join(DIST, 'demo', 'catalogo.js'))
     shutil.copy2(os.path.join(AQUI, 'roi.js'), os.path.join(DIST, 'demo', 'roi.js'))   # calculadora de la portada (28-sep)
@@ -2106,10 +2109,59 @@ def cabeceras_seguridad(csp):
 # /contracts, /portal, /entrar y los callbacks de auth— lo manda el .htaccess al ERP real (app.). publica_web() aborta si
 # en la carpeta aparece algo fuera de esta lista.
 # Lo que es SOLO de la portada: sale de la demo pública (la demo sigue usando demo/catalogo.js).
-PORTADA_SOLO = ('index.html', 'demo/landing.css', 'demo/roi.js')
-LISTA_WEB = ('index.html', 'demo/landing.css', 'demo/catalogo.js', 'demo/roi.js', 'favicon.png', 'favicon.ico',
-             'robots.txt', '.htaccess')
+PORTADA_SOLO = ('index.html', 'demo/landing.css', 'demo/roi.js', 'demo/portada.js')
+# Fuentes de la portada (C03, 12-oct-2026): Unbounded, Manrope e IBM Plex Mono, OFL, AUTOALOJADAS (Legal 24-sep: nada a
+# Google), los mismos ficheros que la web de axisworks.studio. Fuente única: <raíz del repo>/assets/x/fonts.css; las
+# copia publica_web() desde sus url() (con las licencias OFL al lado) y antepone sus @font-face a demo/landing.css. Mientras
+# no estén en main, AXW_FUENTES_X apunta a otro fonts.css (con la misma estructura assets/x + assets/fonts/x debajo de
+# su raíz) y, si no hay ninguno, el build PARA al publicar: sin fuentes la portada saldría con las del sistema.
+FUENTES_CSS = os.path.abspath(os.environ.get('AXW_FUENTES_X') or os.path.join(AQUI, '..', '..', 'assets', 'x', 'fonts.css'))
+FUENTES_WEB = tuple('assets/fonts/x/' + f for f in (
+    'unbounded-300.woff2', 'unbounded-500.woff2', 'unbounded-600.woff2', 'manrope-400.woff2', 'manrope-500.woff2',
+    'manrope-700.woff2', 'ibm-plex-mono-400.woff2', 'ibm-plex-mono-500.woff2',
+    'OFL-unbounded.txt', 'OFL-manrope.txt', 'OFL-ibm-plex-mono.txt'))
+LISTA_WEB = ('index.html', 'demo/landing.css', 'demo/catalogo.js', 'demo/roi.js', 'demo/portada.js', 'favicon.png',
+             'favicon.ico', 'robots.txt', '.htaccess') + FUENTES_WEB
+# Banda «Claude for Startups» de la portada (owner 12-oct, 10:10: se queda; Legal #286 la quiere apagada sin prueba de
+# membresía, choque llevado al orquestador). ESTE es el único interruptor: False la quita del HTML al construir (no se
+# oculta con CSS: no sale). En landing.html va entre <!--axw:startups--> y <!--/axw:startups-->.
+CLAUDE_STARTUPS = True
+STARTUPS_RE = re.compile(r'<!--axw:startups-->([\s\S]*?)<!--/axw:startups-->')
 CONFIG_PORTADA_RE = re.compile(r'<script id="?axw-config"?>[\s\S]*?</script>')
+
+
+def banda_startups(html_txt, encendida=None):
+    """Deja (sin las marcas) o quita la banda «Claude for Startups» según CLAUDE_STARTUPS. Para si no está una vez."""
+    on = CLAUDE_STARTUPS if encendida is None else encendida
+    nuevo, n = STARTUPS_RE.subn(lambda m: m.group(1) if on else '', html_txt)
+    if n != 1:
+        aborta('la portada no trae (1 vez) la banda <!--axw:startups-->: encontradas %d' % n)
+    return nuevo
+
+
+def fuentes_portada():
+    """(texto de fonts.css, [(ruta publicada, fichero de origen)]) de las url() de fonts.css + sus licencias OFL.
+    PARA con un mensaje claro si falta algo: es bloqueo de la PUBLICACIÓN, no de construir (solo lo llama publica_web)."""
+    if not os.path.isfile(FUENTES_CSS):
+        aborta('faltan las fuentes de la portada de erp.: no existe %s.\n  Están en la rama web-nueva-x (fc9374a) y aún no en '
+               'main. Para publicar antes, AXW_FUENTES_X=<ruta a un assets/x/fonts.css con assets/fonts/x/ al lado>.' % FUENTES_CSS)
+    raiz_f = os.path.dirname(os.path.dirname(os.path.dirname(FUENTES_CSS)))
+    css = open(FUENTES_CSS, encoding='utf-8').read()
+    urls = re.findall(r'''url\(\s*['"]?(/assets/fonts/x/[A-Za-z0-9._-]+\.woff2)['"]?\s*\)''', css)
+    if not urls or len(urls) != len(re.findall(r'url\(', css)):
+        aborta('fonts.css (%s) trae url() fuera de /assets/fonts/x/*.woff2 o ninguna' % FUENTES_CSS)
+    pares = []
+    for u in urls:
+        rel = u.lstrip('/')
+        origen = os.path.join(raiz_f, *rel.split('/'))
+        if not os.path.isfile(origen):
+            aborta('fonts.css pide %s y no está en %s' % (u, origen))
+        pares.append((rel, origen))
+    for carpeta in sorted({os.path.dirname(o) for _r, o in pares}):
+        for f in sorted(os.listdir(carpeta)):
+            if f.startswith('OFL-') and f.endswith('.txt'):
+                pares.append((os.path.relpath(os.path.join(carpeta, f), raiz_f).replace(os.sep, '/'), os.path.join(carpeta, f)))
+    return css, pares
 # Tokens de Supabase en el #fragmento (flujo implícito): el servidor no los ve, así que el .htaccess no puede
 # mandarlos a app.; lo hace el primer script de la página, antes que nada.
 ADELANTA_TOKENS = ("(function(){var h=location.hash||'';if(/(^#|&)(access_token|refresh_token|token_hash|"
@@ -2131,18 +2183,27 @@ def publica_web():
     destino = DESTINO_WEB
     if not PRUEBA_ORIGENES and not destino.endswith(os.path.join('AxisWorks', 'dist', 'erp-web')):
         aborta('destino de la portada inesperado: ' + destino)
+    fuentes_css, fuentes = fuentes_portada()   # antes de vaciar nada: sin fuentes no se publica
     os.makedirs(destino, exist_ok=True)
     for x in os.listdir(destino):
         p = os.path.join(destino, x)
         shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
     for f in LISTA_WEB:
-        if f in ('index.html', 'robots.txt', '.htaccess'):
+        if f in ('index.html', 'robots.txt', '.htaccess') or f in FUENTES_WEB:
             continue
         s = os.path.join(DIST, f.replace('/', os.sep))
         if not os.path.isfile(s):
             aborta('falta en el build lo que la portada necesita: ' + f)
         os.makedirs(os.path.dirname(os.path.join(destino, f.replace('/', os.sep))), exist_ok=True)
         shutil.copy2(s, os.path.join(destino, f.replace('/', os.sep)))
+    # Fuentes (C03): de las url() de fonts.css, a la misma ruta; sus @font-face, delante de la hoja de la portada.
+    for rel, origen in fuentes:
+        d = os.path.join(destino, rel.replace('/', os.sep))
+        os.makedirs(os.path.dirname(d), exist_ok=True)
+        shutil.copy2(origen, d)
+    hoja = os.path.join(destino, 'demo', 'landing.css')
+    propia = open(hoja, encoding='utf-8').read()   # leer ANTES de abrir para escribir (que la vacía)
+    open(hoja, 'w', encoding='utf-8', newline='\n').write(fuentes_css.rstrip('\n') + '\n' + propia)
     t = config_portada(open(os.path.join(DIST, 'index.html'), encoding='utf-8').read(), DEMO_URL, APP_URL)
     # Enlaces a la demo, ABSOLUTOS: en erp. una ruta /home/ la manda el .htaccess al ERP real, no a la demo.
     t, n = re.subn(r'''(href=["']?)/home/''', lambda m: m.group(1) + DEMO_URL + '/home/', t)
@@ -2171,8 +2232,9 @@ def publica_web():
         # que el navegador ignora (visto con curl -I el 28-sep).
         '<IfModule mod_headers.c>\n  Header always set Clear-Site-Data \'"cache"\' env=AXW_ERP_VIEJO\n</IfModule>\n'
         + cabeceras_seguridad(
-            'default-src \'self\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\' '
-            'https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data:; '
+            # Sin Google Fonts desde C03 (12-oct-2026): las fuentes van autoalojadas (fuentes_portada).
+            'default-src \'self\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\'; '
+            'font-src \'self\'; img-src \'self\' data:; '
             'connect-src \'self\'; frame-ancestors \'self\'; base-uri \'self\'; form-action \'self\'; object-src \'none\''))
     versiona(destino)
     # Lista cerrada: ni un fichero más ni uno menos.
@@ -2182,7 +2244,7 @@ def publica_web():
                % (sorted(set(hay) - set(LISTA_WEB)), sorted(set(LISTA_WEB) - set(hay))))
     t = open(os.path.join(destino, 'index.html'), encoding='utf-8').read()
     malos = [x for x in ('href="/home', "href='/home", 'href=/home', '/contracts/', '/portal/', '/entrar/',
-                         'guard.js', '/demo/tour.js', '/demo/modulos.js') if x in t]
+                         'guard.js', '/demo/tour.js', '/demo/modulos.js', 'fonts.googleapis', 'fonts.gstatic') if x in t]
     if DEMO_URL + '/home/' not in t or "window.AXW_DEMO_URL = %s;" % json.dumps(DEMO_URL) not in t:
         malos.append('los enlaces o el origen de la demo no apuntan a ' + DEMO_URL)
     if not PRUEBA_ORIGENES:

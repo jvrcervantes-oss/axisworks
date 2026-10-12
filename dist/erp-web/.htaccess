@@ -7,7 +7,7 @@
   RewriteRule ^(.*)$ https://erp.axisworks.studio/$1 [R=302,L]
   RewriteCond %{QUERY_STRING} (^|&)(code|token_hash|type)= [NC]
   RewriteRule ^$ https://app.axisworks.studio/ [R=302,L]
-  RewriteCond %{REQUEST_URI} !^/(index\.html|demo/landing\.css|demo/catalogo\.js|demo/roi\.js|favicon\.png|favicon\.ico|robots\.txt)?$
+  RewriteCond %{REQUEST_URI} !^/(index\.html|demo/landing\.css|demo/catalogo\.js|demo/roi\.js|demo/portada\.js|favicon\.png|favicon\.ico|robots\.txt|assets/fonts/x/unbounded\-300\.woff2|assets/fonts/x/unbounded\-500\.woff2|assets/fonts/x/unbounded\-600\.woff2|assets/fonts/x/manrope\-400\.woff2|assets/fonts/x/manrope\-500\.woff2|assets/fonts/x/manrope\-700\.woff2|assets/fonts/x/ibm\-plex\-mono\-400\.woff2|assets/fonts/x/ibm\-plex\-mono\-500\.woff2|assets/fonts/x/OFL\-unbounded\.txt|assets/fonts/x/OFL\-manrope\.txt|assets/fonts/x/OFL\-ibm\-plex\-mono\.txt)?$
   RewriteRule ^ https://app.axisworks.studio%{REQUEST_URI} [R=302,L,E=AXW_ERP_VIEJO:1]
 </IfModule>
 <IfModule mod_headers.c>
@@ -20,7 +20,7 @@
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
   <FilesMatch "\.(html|js|css|json)$">
     Header unset Expires
     Header unset Cache-Control
