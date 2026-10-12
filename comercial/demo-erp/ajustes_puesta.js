@@ -77,10 +77,14 @@
     if (!d.modulos.length) { c.appendChild(h('p', { class: 'px-8 py-6 font-body-md text-body-md text-on-surface', text: U('todo_listo') })); return; }
     d.modulos.forEach(function (m) {
       var listo = m.estado === 'configurado';
+      // configurado con opcionales sin hacer: se dice cuántos (y en cada fila, qué pasa sin él); «listo» a secas solo sin nada pendiente (agencia-81, 12-oct)
+      var opc = d.pasos.filter(function (p) { return p.modulo === m.modulo && !p.obligatorio && !p.hecho; });
       var cab = h('div', { class: 'flex flex-col md:flex-row md:items-center justify-between gap-3' }, [
         h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
           h('h3', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', text: S.nombreModulo(m.modulo) }),
-          !listo && m.falta && d.puede_configurar ? h('span', { class: 'font-body-sm text-body-sm text-outline', text: S.texto('paso', m.falta, 0) }) : null]),
+          !listo && m.falta && d.puede_configurar ? h('span', { class: 'font-body-sm text-body-sm text-outline', text: S.texto('paso', m.falta, 0) }) : null,
+          listo && opc.length && d.puede_configurar ? h('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-pm-opcionales': String(opc.length),
+            text: opc.length === 1 ? U('opc_n_uno') : U('opc_n', { n: String(opc.length) }) }) : null]),
         h('div', { class: 'flex items-center gap-3' }, [
           chip(listo, S.texto('estado', m.estado)),
           d.puede_configurar && !listo ? h('a', { href: enlaceAsistente(m.modulo), 'data-pm-asistente': m.modulo, class: BTN1, text: U('abrir_asistente') }) : null])]);
@@ -99,7 +103,8 @@
     var comp = P.de(p.clave);
     var texto = h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
       h('span', { class: 'font-label-md text-label-md text-on-surface', text: S.texto('paso', p.clave, 0) + (p.obligatorio ? '' : ' · ' + U('opcional')) }),
-      h('span', { class: 'font-body-sm text-body-sm text-outline break-words', text: p.hecho ? S.texto('paso', p.clave, 1) : (p.falta ? S.textoFalta(p.falta) : S.texto('paso', p.clave, 1)) })]);
+      h('span', { class: 'font-body-sm text-body-sm text-outline break-words', text: p.hecho ? S.texto('paso', p.clave, 1) : (p.falta ? S.textoFalta(p.falta) : S.texto('paso', p.clave, 1)) }),
+      !p.hecho && !p.obligatorio ? h('span', { class: 'font-body-sm text-body-sm text-on-surface-variant break-words', 'data-pm-consecuencia': p.clave, text: S.consecuencia(p.clave) }) : null]);
     var acciones = h('div', { class: 'flex items-center gap-2' });
     if (p.irreversible && p.hecho) acciones.appendChild(chip(true, U('fijado')));
     else {

@@ -302,7 +302,9 @@ async function rellenaAlquiler(p, o = {}) {
   await clic(p, 'enviar'); await p.waitForTimeout(300);
   const rp = llamadas(b, 'reservas_previas_guarda')[0][1];
   ok('S44 guarda la unidad y las fechas, sin precio, con su motivo', rp.p_lista.length === 1 && rp.p_lista[0].unidad_id === u1 && rp.p_lista[0].hasta === hoy(5) && rp.p_lista[0].cliente_ref === 'Ana López' && !('precio' in rp.p_lista[0]) && letras(rp.p_motivo) >= 3, JSON.stringify(rp));
-  ok('«Reservas de producto está listo» porque la base lo dice', (await txt(p, '[data-axw-estado="listo"]')) === 'Reservas de producto está listo.', await txt(p, '[data-axw-tarjeta]') || await txt(p, '[data-axw-as="tarjeta"]'));
+  // con reglas y entrega (opcionales) sin hacer, «listo» los nombra con su consecuencia (agencia-81, 12-oct); a secas solo sin nada pendiente
+  ok('«Reservas de producto» configurado porque la base lo dice, nombrando lo opcional que queda', (await txt(p, '[data-axw-estado="listo"]')) === 'Reservas de producto ya funciona. Queda por configurar:'
+    && (await p.$$('[data-axw-opcionales="pendientes"] [data-axw-opcional]')).length === 2, await txt(p, '[data-axw-tarjeta]') || await txt(p, '[data-axw-as="tarjeta"]'));
   ok('el listo ofrece los opcionales: reglas y entrega', ((await txt(p, '[data-axw-as="tarjeta"]')) || '').includes('Reglas de las reservas') && ((await txt(p, '[data-axw-as="tarjeta"]')) || '').includes('Entrega a domicilio'));
   await sinErroresJs(p, 'recorrido');
   await ctx.close();
@@ -532,12 +534,13 @@ async function rellenaAlquiler(p, o = {}) {
   ({ p, ctx } = await abre(nav, base(), { idioma: 'id' }));
   const CODIGOS = ['sin_herramienta', 'cuenta_pruebas_solo_mira', 'moneda_no_permitida', 'clase_con_unidades', 'unidad_baja', 'previo_fechas', 'regla_fuera', 'reserva_dias_min', 'reserva_dias_max',
                    'reserva_horizonte', 'falta_motivo', 'unidad_ocupada', 'flota_cambio', 'entrega_cambio', 'entrega_incompleta', 'entrega_apaga_primero', 'datos', 'flota_duplicada'];
-  const sinFrase = await p.evaluate(cs => cs.filter(h => { const t = window.AXW_SETUP.explica({ code: '22023', hint: h }, true).texto; return /código|kode/i.test(t); }), CODIGOS);
+  // sin frase = el código acaba en `desconocidos` (desde bbm-p31 la pantalla ya no enseña «(código: x)», así que no se busca en el texto)
+  const sinFrase = await p.evaluate(cs => cs.filter(h => { window.AXW_SETUP.explica({ code: '22023', hint: h }, true); return window.AXW_SETUP.desconocidos.indexOf('hint:' + h) >= 0; }), CODIGOS);
   ok('cada hint del contrato tiene su frase', sinFrase.length === 0, sinFrase.join(', '));
   const s55 = await p.evaluate(() => window.AXW_SETUP.explica({ code: '55000', hint: 'reservas-producto_sin_configurar' }, true));
   ok('55000 reservas-producto_sin_configurar → enlace al asistente', s55.configurar === 'reservas-producto');
   const faltas = await p.evaluate(() => ['sin_producto', 'previos_sin_revisar'].map(c => window.AXW_SETUP.textoFalta({ codigo: c, campos: [] })));
-  ok('las faltas nuevas tienen frase en indonesio', faltas.every(t => t && !/kode|código/i.test(t) && !/[áéíóúñ¿]/.test(t)), faltas.join(' | '));
+  ok('las faltas nuevas tienen frase en indonesio', faltas.every(t => t && !/[áéíóúñ¿]/.test(t)) && !(await p.evaluate(() => window.AXW_SETUP.desconocidos.some(d => /^falta:/.test(d)))), faltas.join(' | '));
   await ctx.close();
 
   await nav.close();

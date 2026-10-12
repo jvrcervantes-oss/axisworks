@@ -8,5 +8,6 @@
            "live_no_permitido", "idiomas_no_validos"],
  "campos": ["moneda", "razon", "domicilio", "npwp", "activa", "prefijo_serie", "reservas_sin_impuesto", "precio_incluye_impuesto", "sede", "precio_km", "entrega_activa",
             "km_max", "recogida", "bloqueo_minutos", "dias_min", "dias_max", "horizonte_dias", "creacion", "lectura", "aviso", "marca", "zona_horaria", "idiomas"],
+ "opcionales": ["idiomas", "correo", "usuarios", "clase", "reglas_reserva", "entrega", "cobros", "taller_revisiones", "taller_recambios", "taller_mecanicos"],
  "modulos": ["base", "facturas", "recibos", "reservas-producto", "productos", "taller", "sociedades", "vencimientos"]
 }

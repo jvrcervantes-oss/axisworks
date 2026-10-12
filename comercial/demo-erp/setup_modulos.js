@@ -172,7 +172,12 @@
       listo_eyebrow: "Configuración completa",
       listo_lead: "Lo que has configurado queda en Ajustes: puedes cambiarlo ahí cuando quieras, y cada cambio queda registrado.",
       revisar_ajustes: "Revisar en Ajustes",
-      se_fija: "Se fija después"
+      se_fija: "Se fija después",
+      opc_listo: '%m ya funciona. Queda por configurar:',
+      opc_linea: '%p sin configurar. %c',
+      opc_todos: 'Todos los módulos funcionan. Queda por configurar:',
+      opc_n: '%n pasos opcionales sin configurar',
+      opc_n_uno: '1 paso opcional sin configurar'
     },
     general: {
       sin_configurar_admin: '%m aún no está configurado.',
@@ -197,7 +202,22 @@
       desconocido_campo: 'otro dato',
       desconocido_modulo: 'Otro módulo',
       desconocido_falta: 'Falta completar este paso.',
+      desconocido_consecuencia: 'Es opcional: puedes configurarlo cuando quieras.',
       error_codigo: 'No se ha podido hacer. Si vuelve a pasar, avisa al estudio.'
+    },
+    // Qué pasa si un paso OPCIONAL se queda sin hacer (agencia-81, 12-oct, ensayo de Calidad: con Cobros sin configurar el asistente decía «listo» y el bot
+    // no podía cobrar). «Listo» a secas solo cuando no queda nada; si queda algo, se dice qué y su consecuencia en una línea. El texto es del front, no de la base.
+    consecuencia: {
+      idiomas: 'El ERP sigue en los idiomas que fijó el estudio al publicarlo.',
+      correo: 'Los correos salen con la configuración de origen, no desde tu buzón.',
+      usuarios: 'Solo el administrador principal trabaja con este módulo.',
+      clase: 'Se toma la clase del primer producto de alquiler.',
+      reglas_reserva: 'Las reservas usan las reglas por defecto.',
+      entrega: 'No se ofrece entrega a domicilio.',
+      cobros: 'Los clientes no pueden pagar en línea.',
+      taller_revisiones: 'El Taller no se abre al equipo hasta que haya listas de revisión.',
+      taller_recambios: 'Las órdenes del Taller no pueden apuntar piezas de recambio.',
+      taller_mecanicos: 'El Taller no se abre al equipo hasta que haya un mecánico.'
     },
     // Ajustes › Cobros y su paso del asistente (cobros_paso.js). `prueba_*`: el resultado de la prueba contra Xendit de cada clave (`fallo` de la edge).
     cobros: {
@@ -340,7 +360,8 @@
     'Esta función todavía no está disponible en este ERP.': 'This function is not available in this ERP yet.',
     'El ERP no ha respondido: prueba otra vez en un rato.': 'The ERP did not respond: try again in a moment.',
     'El ERP ha devuelto algo inesperado.': 'The ERP returned something unexpected.',
-    'Configurar': 'Set up', 'Ahora no': 'Not now', 'Pendiente de revisar': 'To be checked', 'Otro paso de la configuración': 'Another setup step',
+    'Configurar': 'Set up', 'Ahora no': 'Not now', 'El ERP sigue en los idiomas que fijó el estudio al publicarlo.': 'The ERP keeps the languages the studio set when publishing it.', 'Los correos salen con la configuración de origen, no desde tu buzón.': 'Emails go out with the original setup, not from your mailbox.', 'Solo el administrador principal trabaja con este módulo.': 'Only the main administrator works with this module.', 'Se toma la clase del primer producto de alquiler.': 'The class of the first rental product is used.', 'Las reservas usan las reglas por defecto.': 'Bookings use the default rules.', 'No se ofrece entrega a domicilio.': 'Home delivery is not offered.', 'Los clientes no pueden pagar en línea.': 'Customers cannot pay online.', 'El Taller no se abre al equipo hasta que haya listas de revisión.': 'The Workshop does not open to the team until there are check lists.', 'Las órdenes del Taller no pueden apuntar piezas de recambio.': 'Workshop orders cannot record spare parts.', 'El Taller no se abre al equipo hasta que haya un mecánico.': 'The Workshop does not open to the team until there is a mechanic.', '%m ya funciona. Queda por configurar:': '%m already works. Still to set up:', '%p sin configurar. %c': '%p not set up. %c', 'Todos los módulos funcionan. Queda por configurar:': 'All modules work. Still to set up:', '%n pasos opcionales sin configurar': '%n optional steps not set up', '1 paso opcional sin configurar': '1 optional step not set up', 'Es opcional: puedes configurarlo cuando quieras.': 'It is optional: you can set it up whenever you like.',
+    'Pendiente de revisar': 'To be checked', 'Otro paso de la configuración': 'Another setup step',
     'Esta pantalla aún no sabe explicar este paso. Si no sabes cómo hacerlo, avisa al estudio.': 'This screen cannot explain this step yet. If you are not sure how to do it, tell the studio.',
     'otro dato': 'another detail', 'Otro módulo': 'Another module', 'Falta completar este paso.': 'This step still needs to be completed.',
     'No se ha podido hacer. Si vuelve a pasar, avisa al estudio.': 'It could not be done. If it happens again, tell the studio.',
@@ -434,7 +455,8 @@
     'Esta función todavía no está disponible en este ERP.': 'Fungsi ini belum tersedia di ERP ini.',
     'El ERP no ha respondido: prueba otra vez en un rato.': 'ERP tidak merespons: coba lagi sebentar lagi.',
     'El ERP ha devuelto algo inesperado.': 'ERP mengembalikan data yang tidak terduga.',
-    'Configurar': 'Atur', 'Ahora no': 'Nanti saja', 'Pendiente de revisar': 'Perlu ditinjau', 'Otro paso de la configuración': 'Langkah penyiapan lainnya',
+    'Configurar': 'Atur', 'Ahora no': 'Nanti saja', 'El ERP sigue en los idiomas que fijó el estudio al publicarlo.': 'Bahasa ERP tetap seperti yang ditetapkan studio saat menerbitkannya.', 'Los correos salen con la configuración de origen, no desde tu buzón.': 'Email dikirim dengan pengaturan awal, bukan dari kotak surat Anda.', 'Solo el administrador principal trabaja con este módulo.': 'Hanya admin utama yang bekerja dengan modul ini.', 'Se toma la clase del primer producto de alquiler.': 'Jenis produk sewa pertama yang dipakai.', 'Las reservas usan las reglas por defecto.': 'Booking memakai aturan bawaan.', 'No se ofrece entrega a domicilio.': 'Antar ke alamat tidak ditawarkan.', 'Los clientes no pueden pagar en línea.': 'Pelanggan tidak bisa membayar online.', 'El Taller no se abre al equipo hasta que haya listas de revisión.': 'Bengkel belum dibuka untuk tim sampai ada daftar pemeriksaan.', 'Las órdenes del Taller no pueden apuntar piezas de recambio.': 'Order bengkel tidak bisa mencatat suku cadang.', 'El Taller no se abre al equipo hasta que haya un mecánico.': 'Bengkel belum dibuka untuk tim sampai ada mekanik.', '%m ya funciona. Queda por configurar:': '%m sudah berfungsi. Masih perlu diatur:', '%p sin configurar. %c': '%p belum diatur. %c', 'Todos los módulos funcionan. Queda por configurar:': 'Semua modul sudah berfungsi. Masih perlu diatur:', '%n pasos opcionales sin configurar': '%n langkah opsional belum diatur', '1 paso opcional sin configurar': '1 langkah opsional belum diatur', 'Es opcional: puedes configurarlo cuando quieras.': 'Ini opsional: bisa diatur kapan saja.',
+    'Pendiente de revisar': 'Perlu ditinjau', 'Otro paso de la configuración': 'Langkah penyiapan lainnya',
     'Esta pantalla aún no sabe explicar este paso. Si no sabes cómo hacerlo, avisa al estudio.': 'Layar ini belum bisa menjelaskan langkah ini. Jika Anda tidak yakin cara melakukannya, beri tahu studio.',
     'otro dato': 'data lain', 'Otro módulo': 'Modul lain', 'Falta completar este paso.': 'Langkah ini masih perlu diselesaikan.',
     'No se ha podido hacer. Si vuelve a pasar, avisa al estudio.': 'Tidak dapat dilakukan. Jika terjadi lagi, beri tahu studio.',
@@ -461,6 +483,7 @@
     if (tipo === 'campo') return g.desconocido_campo;
     if (tipo === 'modulo') return g.desconocido_modulo;
     if (tipo === 'falta') return g.desconocido_falta;
+    if (tipo === 'consecuencia') return g.desconocido_consecuencia;
     return g.desconocido;
   }
 
@@ -483,6 +506,9 @@
     apunta('modulo', m);
     return T(digna('modulo'));
   }
+  // Lo que pasa si un paso opcional se queda sin hacer, y la línea entera «<paso> sin configurar: <consecuencia>»
+  function consecuencia(clave) { return texto('consecuencia', clave); }
+  function lineaOpcional(p) { return ui('opc_linea', { p: texto('paso', p.clave, 0), c: consecuencia(p.clave) }); }
   // «Falta completar: precio por kilómetro, punto de entrega» — la lista de campos también va por códigos
   function textoFalta(f) {
     if (!f || typeof f !== 'object') return '';
@@ -577,7 +603,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fusiona);   // i18n.js puede llegar después (defer)
 
   window.AXW_SETUP = {
-    estado: estado, moneda: moneda, explica: explica, texto: texto, ui: ui, nombreModulo: nombreModulo, textoFalta: textoFalta,
+    estado: estado, moneda: moneda, explica: explica, texto: texto, ui: ui, nombreModulo: nombreModulo, textoFalta: textoFalta, consecuencia: consecuencia, lineaOpcional: lineaOpcional,
     formaValida: formaValida, desconocidos: desconocidos, TEXTOS: TEXTOS, EN: EN, ID: ID
   };
 })();

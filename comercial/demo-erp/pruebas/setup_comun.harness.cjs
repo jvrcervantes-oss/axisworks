@@ -151,6 +151,11 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:/i.test(String(t || ''));
   ok('S10 guarda marca y zona, en ese orden, sin motivo ni confirmación', g1.length === 2 && g1[0].p_clave === 'marca' && g1[0].p_valor === 'Bali Best' && g1[1].p_clave === 'zona_horaria' && g1[1].p_valor === 'Asia/Makassar'
     && !('p_motivo' in g1[0]) && !('p_confirmo' in g1[0]), JSON.stringify(g1));
   ok('S10 hecho: Datos generales listo', (await p.$('[data-axw-estado="listo"]')) !== null, await txt(p, '[data-axw-estado]'));
+  // «listo» a secas solo sin opcionales pendientes (agencia-81, 12-oct): aquí quedan idiomas y correo → se dicen, con su consecuencia y su enlace
+  ok('S80 con opcionales sin hacer: no dice «listo» a secas', ((await txt(p, '[data-axw-estado="listo"]')) || '').includes('Queda por configurar'), await txt(p, '[data-axw-estado="listo"]'));
+  const lineas = await p.$$eval('[data-axw-opcionales="pendientes"] [data-axw-opcional]', es => es.map(e => [e.getAttribute('data-axw-opcional'), e.getAttribute('href'), e.textContent]));
+  ok('S80 una línea por opcional pendiente, con su consecuencia y enlace al paso', lineas.length === 2 && lineas.some(l => l[0] === 'correo' && l[1].includes('paso=correo') && l[2].includes('no desde tu buzón'))
+    && lineas.some(l => l[0] === 'idiomas' && l[2].includes('sin configurar')), JSON.stringify(lineas));
   await sinErroresJs(p, 'S10');
   await ctx.close();
 
@@ -246,7 +251,10 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:/i.test(String(t || ''));
   await p.click('[data-pm-fila="negocio"] [data-accion="pm-editar"]'); await p.waitForTimeout(150);
   await p.fill('[data-pm-fila="negocio"] [data-axw-campo="marca"]', 'Bali Best'); await p.fill('[data-pm-fila="negocio"] [data-axw-campo="zona_horaria"]', 'Asia/Makassar');
   await p.click('[data-pm-fila="negocio"] [data-accion="pm-guardar"]'); await p.waitForTimeout(400);
+  ok('Ajustes: la tarjeta de Datos generales cuenta los opcionales sin hacer', (await p.getAttribute('[data-pm-modulo="base"] [data-pm-opcionales]', 'data-pm-opcionales')) === '2' || !(await p.$('[data-pm-modulo="base"] [data-pm-hecho]')));
+  ok('Ajustes: cada opcional sin hacer dice qué pasa sin él', ((await txt(p, '[data-pm-consecuencia="taller_mecanicos"]')) || '').includes('mecánico'));
   ok('Ajustes: negocio se guarda desde aquí y la fila queda «Hecho»', guardados(b).length === 2 && (await p.$('[data-pm-fila="negocio"] [data-pm-hecho="1"]')) !== null, JSON.stringify(guardados(b)));
+  ok('Ajustes: Datos generales configurado con 2 opcionales sin hacer → «2 pasos opcionales sin configurar»', ((await txt(p, '[data-pm-modulo="base"] [data-pm-opcionales]')) || '') === '2 pasos opcionales sin configurar', await txt(p, '[data-pm-modulo="base"] [data-pm-opcionales]'));
   await sinErroresJs(p, 'Ajustes');
   await ctx.close();
 

@@ -26,18 +26,20 @@ function ok(nombre, cond, detalle) {
 }
 
 // ── Los códigos ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-const codigos = { pasos: new Set(), faltas: new Set(), hints: new Set(), campos: new Set(), modulos: new Set() };
+const codigos = { pasos: new Set(), faltas: new Set(), hints: new Set(), campos: new Set(), modulos: new Set(), opcionales: new Set() };
 const origen = {};
 function suma(tipo, lista, de) { (lista || []).forEach(c => { if (typeof c === 'string' && c) { codigos[tipo].add(c); (origen[tipo + ':' + c] = origen[tipo + ':' + c] || []).push(de); } }); }
 
 const snap = JSON.parse(fs.readFileSync(path.join(AQUI, 'pruebas', 'lista_cerrada_setup.json'), 'utf8'));
-['pasos', 'faltas', 'hints', 'campos', 'modulos'].forEach(t => suma(t, snap[t], 'lista_cerrada_setup.json'));
+['pasos', 'faltas', 'hints', 'campos', 'modulos', 'opcionales'].forEach(t => suma(t, snap[t], 'lista_cerrada_setup.json'));
 
 const raiz = process.env.AXW_AGENCIA_RAIZ || path.join(AQUI, '..', '..', '..', '..');
 const mjson = path.join(raiz, 'erp', 'modulos.json'), mpy = path.join(raiz, 'erp', 'modulos.py');
 let viva = false;
 if (fs.existsSync(mjson)) {
   const s = (JSON.parse(fs.readFileSync(mjson, 'utf8')) || {}).setup;
+  // los pasos OPCIONALES de cada módulo: si se quedan sin hacer, «listo» dice su consecuencia (agencia-81, 12-oct)
+  if (s && s.modulos && typeof s.modulos === 'object') Object.values(s.modulos).forEach(m => { if (m && Array.isArray(m.pasos)) suma('opcionales', m.pasos.filter(x => x && x.obligatorio === false).map(x => x.clave), 'modulos.json'); });
   if (s && Array.isArray(s.pasos)) { suma('pasos', s.pasos, 'modulos.json'); suma('faltas', s.faltas, 'modulos.json'); suma('hints', s.hints, 'modulos.json'); suma('modulos', Array.isArray(s.modulos) ? s.modulos : Object.keys(s.modulos || {}), 'modulos.json'); viva = true; }
 }
 if (fs.existsSync(mpy)) {
@@ -111,6 +113,7 @@ function carga(idioma) {
     for (const k of codigos.faltas) mira('falta ' + k, S.textoFalta({ codigo: k, campos: [] }));
     for (const k of codigos.campos) mira('campo ' + k, S.texto('campo', k));
     for (const k of codigos.modulos) mira('módulo ' + k, S.nombreModulo(k));
+    for (const k of codigos.opcionales) mira('consecuencia de ' + k + ' sin hacer', S.lineaOpcional({ clave: k }));
     for (const k of codigos.hints) mira('hint ' + k, S.explica({ code: '22023', hint: k }, true).texto);
     mira('hint <m>_sin_configurar', S.explica({ code: '55000', hint: 'taller_sin_configurar' }, true).texto);
     const desc = S.desconocidos.slice();
