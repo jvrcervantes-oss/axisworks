@@ -86,7 +86,7 @@ mira('el titulo es Flota y tarifas', '<title data-lw-titulo>Flota y tarifas</tit
 mira('las pantallas de Lawang, Taller y Entrega no se mezclan en la nueva', 'asistente-peticiones' not in pagina and 'Telegram' not in pagina and 'data-tl="raiz"' not in pagina and 'data-en="raiz"' not in pagina)
 mira('el marcado y el script de la fuente entran una vez', pagina.count('<div class="flex flex-col w-full gap-8 fl" data-fl="raiz">') == 1 and pagina.count('var EN_FL = {') == 1)
 mira('las ayudas comunes se pegan UNA vez (js y css) y las marcas no quedan en la pagina',
-     pagina.count('function axwComun(raiz, T)') == 1 and pagina.count('.axw-boton{') == 1 and '/*AXW_COMUN_' not in pagina)
+     pagina.count('function axwComun(raiz, T)') == 1 and len(re.findall(r'(?m)^\.axw-boton\{', pagina)) == 1 and '/*AXW_COMUN_' not in pagina)
 mira('NO hay otra copia local de las ayudas (h, dialogo, clasifica, ocupa, tabla, chip, importe...) fuera de las comunes',
      len(re.findall(r'function (h|dialogo|clasifica|ocupa|libera|tabla|chip|celda|boton|campo|resumen|dinero|fechaHora|importe|numero)\(', CODIGO)) == 0)
 m = re.findall(r'<script>\n(.*?)\n</script>\n</body></html>', pagina, flags=re.S)

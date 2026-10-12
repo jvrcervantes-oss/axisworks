@@ -173,14 +173,17 @@ mira('sistema sin piel: PARA', en_dist({}, {'sistema': 'axisworks'}, build.siste
 # cadenas REALES de Lawang tal como llegan tras tipografias_libres (Jost ya en lugar de Neue Kabel; revisor 13-oct)
 GJ = 'https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap'
 GM = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap'
-DOC = '[["lw-doc-fonts","https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=Cormorant+Garamond:wght@400;600"]];x="Jost"'
-(est, n), d = en_dist({'assets/fonts/fonts.css': "@import url('https://fonts.googleapis.com/css2?family=Jost');",
+# el <head> REAL de intranet/facturas/documento.js de Lawang (p37 13-oct: el papel pedía Jost a Google y Manrope no llegaba)
+DOC = ("h = '<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">' +\n"
+       "    '<link href=\"https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=Cormorant+Garamond:wght@400;500;600&display=swap\" rel=\"stylesheet\">' +\n"
+       "    '<link rel=\"stylesheet\" href=\"' + base + '/assets/brand.css\">';")
+PAQ_SIS = {'assets/fonts/fonts.css': "@import url('https://fonts.googleapis.com/css2?family=Jost');",
                        'a/index.html': '<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400&display=swap" rel="stylesheet"><p style="font-family:Jost">',
                        'assets/shell.css': "@import url('%s');.a{font-family:Jost,system-ui,sans-serif}" % GJ,
                        'contracts/assets/piel.js': 'a="%s";b="%s"' % (GJ, GM),
                        'assets/editores.js': 'l.href="%s";x="Cormorant Garamond"' % GJ,
-                       'clasico/facturas/documento.js': DOC},
-                      {'piel': BBM, 'sistema': 'axisworks'}, build.sistema_instancia, 'x')
+                       'clasico/facturas/documento.js': DOC}
+(est, n), d = en_dist(PAQ_SIS, {'piel': BBM, 'sistema': 'axisworks'}, build.sistema_instancia, 'x')
 lee = lambda r: open(os.path.join(d, *r.split('/')), encoding='utf-8').read()
 mira('sistema: fonts.css con @font-face propias (nada a Google) y la forma', est == 'pasa' and 'googleapis' not in lee('assets/fonts/fonts.css')
      and "src:url(/assets/fonts/x/manrope-400.woff2)" in lee('assets/fonts/fonts.css') and 'box-shadow:none' in lee('assets/fonts/fonts.css'))
@@ -190,7 +193,12 @@ mira('sistema: la página carga la hoja propia y usa Manrope; shell.css, piel.js
      and 'family=Jost' not in lee('contracts/assets/piel.js') and 'family=Manrope' not in lee('contracts/assets/piel.js')
      and 'googleapis' not in lee('assets/editores.js') and 'Unbounded' in lee('assets/editores.js'))
 mira('sistema: los iconos (Material Symbols) siguen igual', est == 'pasa' and GM in lee('contracts/assets/piel.js'))
-mira('sistema: el documento imprimible no se toca', est == 'pasa' and lee('clasico/facturas/documento.js') == DOC)
+mira('sistema: el documento imprimible carga la hoja propia (misma base que brand.css) y nada de Google',
+     est == 'pasa' and '<link rel="stylesheet" href="\' + base + \'/assets/fonts/fonts.css">' in lee('clasico/facturas/documento.js')
+     and 'googleapis' not in lee('clasico/facturas/documento.js') and "/assets/brand.css" in lee('clasico/facturas/documento.js'))
+mira('sistema: si el <head> del documento cambia, PARA (no se publica pidiendo a Google)',
+     en_dist(dict(PAQ_SIS, **{'clasico/facturas/documento.js': DOC.replace('family=Jost', 'family=Lato')}),
+             {'piel': BBM, 'sistema': 'axisworks'}, build.sistema_instancia, 'x')[0][0] == 'para')
 mira('sistema: las woff2 están en el paquete', est == 'pasa' and os.path.isfile(os.path.join(d, 'assets', 'fonts', 'x', 'unbounded-600.woff2')))
 
 NAV = 'a.style.cssText=on?"background:#485B37;color:#fff":"color:#44483f"'
