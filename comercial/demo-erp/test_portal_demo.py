@@ -54,6 +54,8 @@ ok(not re.search(r'(?<![\w.])url\s*:', adap), 'el adaptador no entrega `url` (en
 ok(re.search(r'mapa\s*:\s*null', adap) is not None and not re.search(r'mapa\s*:\s*(?!null)', adap), 'el adaptador no entrega mapa')
 ok(re.search(r'''\.from\(["']hilo_soporte["']\)''', adap) is not None and 'sessionStorage' not in adap,'el adaptador lee y escribe por el doble, nunca sessionStorage a pelo')
 
+ok(not re.search(r'\.(insert|update|upsert|delete)\(', adap), 'el adaptador no escribe tablas: lo hace por las funciones del doble (sb.rpc)')
+
 doc = lee('clasico', 'facturas', 'documento.js')
 ok('DEMO · NOT A VALID DOCUMENT' in doc and doc.count('NOT A VALID DOCUMENT') >= 2,
    'documento.js: sello en documentoHTML y marca de agua en documentoPagina')

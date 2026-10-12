@@ -255,38 +255,15 @@
       fases: copia(FASES), obra: obra, kyc: kyc, tickets: tickets };
   }
 
-  /* ── lo que el portal escribe: al doble, para que quede en el diario de la pestaña ── */
-  var ULTIMA = null;   // la última situación servida: de ella salen el cliente y las referencias de una consulta nueva
-  function cambiaPrefs(sb, cambio) {
-    if (!ULTIMA) return Promise.resolve();
-    return sb.from('clients').select('id,portal_prefs').eq('id', ULTIMA.client_id).then(function (r) {
-      var fila = filas(r, 'clients')[0] || {};
-      var p = Object.assign({}, fila.portal_prefs || {}, cambio);
-      return sb.from('clients').update({ portal_prefs: p }).eq('id', ULTIMA.client_id);
-    }).then(function (r) { if (r && r.error) throw new Error(r.error.message || String(r.error)); });
-  }
-  function seq() { return Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); }
-  function abreTicket(sb, a) {
+  /* ── lo que el portal escribe: por las funciones del doble (demo_datos.js → LW_DEMO_RPC_GUARDA), nunca tabla a tabla desde
+     aquí (frontera front/back); quedan en el diario de la pestaña y «Reset demo» las borra. ── */
+  var ULTIMA = null;   // la última situación servida: de ella sale el cliente que el portal está enseñando
+  function escribe(sb, nombre, args) {
     if (!ULTIMA) return Promise.reject(new Error('no client'));
-    var f = a.p_factura_id && ULTIMA.facturas.filter(function (x) { return x.id === a.p_factura_id; })[0];
-    var k = a.p_contrato_id && ULTIMA.contratos.filter(function (x) { return x.id === a.p_contrato_id; })[0];
-    var id = 'h-' + seq(), ahora = new Date().toISOString();
-    return sb.from('hilo_soporte').insert({ id: id, client_id: ULTIMA.client_id, categoria: a.p_categoria, estado: 'abierto', actualizado_en: ahora,
-      factura_id: f ? f.id : null, contrato_id: k ? k.id : null, ref_numero: f ? f.numero : (k ? k.numero : null) })
-      .then(function (r) {
-        if (r && r.error) throw new Error(r.error.message || String(r.error));
-        return sb.from('mensajes_comprador').insert({ id: 'mc-' + seq(), hilo_id: id, client_id: ULTIMA.client_id, de: 'comprador', autor: null, texto: String(a.p_texto || ''), creado_en: ahora });
-      }).then(function (r) { if (r && r.error) throw new Error(r.error.message || String(r.error)); return id; });
-  }
-  function enviaMensaje(sb, a) {
-    if (!ULTIMA) return Promise.reject(new Error('no client'));
-    var ahora = new Date().toISOString();
-    return sb.from('mensajes_comprador').insert({ id: 'mc-' + seq(), hilo_id: a.p_hilo_id, client_id: ULTIMA.client_id, de: 'comprador', autor: null, texto: String(a.p_texto || ''), creado_en: ahora })
-      .then(function (r) {
-        if (r && r.error) throw new Error(r.error.message || String(r.error));
-        // como en la base: un mensaje del comprador reabre el hilo
-        return sb.from('hilo_soporte').update({ estado: 'abierto', actualizado_en: ahora }).eq('id', a.p_hilo_id);
-      }).then(function (r) { if (r && r.error) throw new Error(r.error.message || String(r.error)); return null; });
+    return sb.rpc(nombre, Object.assign({ p_client_id: ULTIMA.client_id }, args)).then(function (r) {
+      if (r && r.error) throw new Error(r.error.message || String(r.error));
+      return r ? r.data : null;
+    });
   }
 
   /* ── el cliente del portal ── */
@@ -312,11 +289,11 @@
         if (n === 'portal_situacion') return lee(sb).then(function (T) { ULTIMA = situacion(T); avisoCliente(); return copia(ULTIMA); });
         if (n === 'sociedades_visibles' || n === 'cuentas_cobro_visibles') return sb.rpc(n, a).then(function (r) { return filas(r, n); });
         if (n === 'portal_get_color_avatar') return (ULTIMA && ULTIMA.color_avatar) || 'petroleo';
-        if (n === 'portal_set_color_avatar') return cambiaPrefs(sb, { color_avatar: a.p_color }).then(function () { return null; });
-        if (n === 'portal_set_prefs') return cambiaPrefs(sb, { pref_email: !!a.p_pref_email, pref_sms: !!a.p_pref_sms }).then(function () { return null; });
-        if (n === 'portal_marcar_notificaciones_leidas') return cambiaPrefs(sb, { notif_visto_hasta: new Date().toISOString() }).then(function () { return null; });
-        if (n === 'portal_abrir_ticket') return abreTicket(sb, a);
-        if (n === 'portal_enviar_mensaje') return enviaMensaje(sb, a);
+        if (n === 'portal_set_color_avatar') return escribe(sb, 'portal_guarda_prefs', { p_color: a.p_color });
+        if (n === 'portal_set_prefs') return escribe(sb, 'portal_guarda_prefs', { p_pref_email: !!a.p_pref_email, p_pref_sms: !!a.p_pref_sms });
+        if (n === 'portal_marcar_notificaciones_leidas') return escribe(sb, 'portal_guarda_prefs', { p_visto: true });
+        if (n === 'portal_abrir_ticket') return escribe(sb, 'portal_abrir_ticket', { p_categoria: a.p_categoria, p_texto: a.p_texto, p_factura_id: a.p_factura_id || null, p_contrato_id: a.p_contrato_id || null });
+        if (n === 'portal_enviar_mensaje') return escribe(sb, 'portal_enviar_mensaje', { p_hilo_id: a.p_hilo_id, p_texto: a.p_texto });
         throw new Error(n + ': not available in the demo');
       }));
     },

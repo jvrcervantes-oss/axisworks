@@ -1479,6 +1479,38 @@
         var u = porId(F, 'unidades', c.unidad_id);
         if (u) actualiza(F, 'unidades', [u], { estado: c.tipo === 'construccion' ? 'vendida' : 'reservada', contrato_id: u.contrato_id || c.id });
         return { id: c.id, numero: c.numero, fecha_firma: hoy };
+      },
+
+      /* Portal de clientes de la demo (fase E1, 12-oct): lo que el comprador escribe desde el portal, en el almacén de la pestaña
+         por aquí y no desde la pantalla (frontera front/back). En el ERP estas funciones sacan al comprador de su sesión; en la
+         demo no hay sesión, así que el portal dice qué cliente está viendo (p_client_id) y aquí se comprueba que existe. */
+      portal_abrir_ticket: function (F, a) {
+        var cli = porId(F, 'clients', a.p_client_id); if (!cli) falla('cliente_no_existe', [], 'P0002');
+        var texto = txt(a.p_texto); if (!texto) falla('texto_vacio', [], '22023');
+        var f = a.p_factura_id ? porId(F, 'facturas', a.p_factura_id) : null;
+        var k = a.p_contrato_id ? porId(F, 'contratos', a.p_contrato_id) : null;
+        var h = inserta(F, 'hilo_soporte', [{ client_id: cli.id, categoria: txt(a.p_categoria) || 'General', estado: 'abierto', actualizado_en: ahora(),
+          factura_id: f ? f.id : null, contrato_id: k ? k.id : null, ref_numero: f ? f.numero : (k ? k.numero : null) }])[0];
+        inserta(F, 'mensajes_comprador', [{ hilo_id: h.id, client_id: cli.id, de: 'comprador', autor: null, texto: texto }]);
+        return h.id;
+      },
+      portal_enviar_mensaje: function (F, a) {
+        var h = porId(F, 'hilo_soporte', a.p_hilo_id);
+        if (!h || h.client_id !== a.p_client_id) falla('hilo_no_existe', [], 'P0002');
+        var texto = txt(a.p_texto); if (!texto) falla('texto_vacio', [], '22023');
+        inserta(F, 'mensajes_comprador', [{ hilo_id: h.id, client_id: h.client_id, de: 'comprador', autor: null, texto: texto }]);
+        actualiza(F, 'hilo_soporte', [h], { estado: 'abierto', actualizado_en: ahora() });   // como en la base: el comprador lo reabre
+        return null;
+      },
+      portal_guarda_prefs: function (F, a) {
+        var cli = porId(F, 'clients', a.p_client_id); if (!cli) falla('cliente_no_existe', [], 'P0002');
+        var p = Object.assign({}, cli.portal_prefs || {});
+        if ('p_pref_email' in a) p.pref_email = !!a.p_pref_email;
+        if ('p_pref_sms' in a) p.pref_sms = !!a.p_pref_sms;
+        if ('p_color' in a) { if (['petroleo', 'selva', 'oliva', 'arena', 'oceano', 'ciruela', 'tinta', 'carbon'].indexOf(a.p_color) === -1) falla('color_no_valido', [], '22023'); p.color_avatar = a.p_color; }
+        if (a.p_visto) p.notif_visto_hasta = ahora();
+        actualiza(F, 'clients', [cli], { portal_prefs: p });
+        return null;
       }
     };
   })();
