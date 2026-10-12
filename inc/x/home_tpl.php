@@ -123,7 +123,7 @@
 <sc-if hint-placeholder-val="{{ false }}" value="{{ nd.isMark }}"><svg aria-hidden="true" height="18" style="flex: none; margin: 3px" viewbox="10 10 80 80" width="18"><polygon fill="#F2F3F7" points="10,10 41,10 90,90 59,90"></polygon><polygon fill="#C8F04A" points="59,10 90,10 41,90 10,90"></polygon><polygon fill="#0B0C1E" points="50,24.7 65.5,50 50,75.3 34.5,50"></polygon></svg></sc-if>
 <sc-if hint-placeholder-val="{{ false }}" value="{{ nd.isHuman }}"><svg aria-hidden="true" fill="none" height="18" stroke="#F2F3F7" stroke-linecap="round" stroke-width="1.75" style="flex: none; margin: 3px" viewbox="0 0 24 24" width="18"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg></sc-if>
 <sc-if hint-placeholder-val="{{ true }}" value="{{ nd.isDot }}"><span aria-hidden="true" style="width: 8px; height: 8px; margin: 0 5px 0 6px; border-radius: 2px; transform: rotate(45deg); background: {{ nd.dotColor }}; flex: none"></span></sc-if>
-<span style="flex: 1; min-width: 0">{{ nd.name }}</span>
+<span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ nd.name }}</span>
 <sc-if hint-placeholder-val="{{ false }}" value="{{ nd.active }}"><span aria-hidden="true" class="pulse" style="width: 6px; height: 6px; border-radius: 50%; background: #C8F04A; flex: none"></span></sc-if>
 </button>
 </sc-for></template>

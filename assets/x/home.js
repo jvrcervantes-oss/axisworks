@@ -167,7 +167,7 @@ var time = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
 if (q % 3 === 2) log.push({ time: time, who: 'Pre-review', what: nameOf[Aq.order[1]].toLowerCase() + ' + ' + nameOf[Aq.order[2]].toLowerCase() + ' on a plan', op: String(1 - (t - q) * 0.13) });
 else log.push({ time: time, who: nameOf[who], what: D.work[who], op: String(1 - (t - q) * 0.13) });
 }
-var layer = function (label, ids) { var c = ids.filter(function (i) { return on[i]; }).length; return { label: label, v: c + '/' + ids.length, w: Math.round(c / ids.length * 100) + '%', title: label + ': ' + c + ' of ' + ids.length + ' active' }; };
+var layer = function (label, ids) { var c = ids.filter(function (i) { return on[i]; }).length; return { label: label, v: c + '/' + ids.length, w: Math.round(c / ids.length * 100) + '%', title: label + ': ' + c + ' of ' + ids.length + ' highlighted' }; };
 var layers = [
 layer('Review', ['seguridad', 'legal', 'administracion', 'organizacion']),
 layer('Build', ['frontend', 'backend', 'bots', 'pilotos']),
