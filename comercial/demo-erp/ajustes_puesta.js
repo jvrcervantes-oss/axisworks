@@ -106,7 +106,7 @@
       acciones.appendChild(chip(p.hecho, U(p.hecho ? 'hecho' : 'pendiente')));
       if (comp.externo) {
         if (/^\/[a-z0-9\-\/]*$/i.test(String(p.donde || ''))) acciones.appendChild(h('a', { href: p.donde, class: BTN2, text: U('abrir', { pantalla: S.texto('paso', p.clave, 0) }) }));
-      } else if (p.irreversible) {
+      } else if (p.irreversible || comp.soloAsistente) {   // la clase (S40) no guarda sola: se elige en el asistente, camino del primer alquiler
         acciones.appendChild(h('a', { href: enlaceAsistente(p.modulo, p.clave), 'data-pm-asistente-paso': p.clave, class: BTN2, text: U('abrir_asistente') }));
       } else {
         acciones.appendChild(h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-editar', 'data-pm-paso': p.clave, 'data-pm-modulo': p.modulo, class: BTN2, text: p.hecho ? U('cambiar') : S.texto('general', 'configurar') }));
