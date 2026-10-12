@@ -1937,6 +1937,28 @@ GOOGLE_TEXTO_URL = re.compile(r'''https://fonts\.googleapis\.com/css2\?family=(?
 SISTEMA_EXCLUIDOS = ('clasico/facturas/documento.js',)
 
 
+DOC_GOOGLE = re.compile(r'''<link rel="preconnect" href="https://fonts\.googleapis\.com">'\s*\+\s*'<link href="https://fonts\.googleapis\.com/css2\?family=Jost[^"]*" rel="stylesheet">''')
+
+
+def sistema_documento_fuentes():
+    """El documento imprimible (factura/recibí: documento.js, que el renombrado no toca) carga brand.css de la instancia, cuyas
+    familias ya son las del sistema (--font-body: 'Manrope'), pero pedía a Google Jost/Cormorant: Manrope no llegaba nunca y el
+    papel salía en la letra de sistema del navegador, distinto de su vista previa (editores.js, que sí carga fonts.css). Medido
+    en el paquete de bbm (p37, 13-oct). Se cambia ese enlace por la hoja propia, con la misma base que brand.css: papel y vista
+    previa con las mismas letras y ninguna petición a Google desde el documento."""
+    p = os.path.join(DIST, 'clasico', 'facturas', 'documento.js')
+    if not os.path.isfile(p):
+        aborta('sistema: falta clasico/facturas/documento.js en el paquete')
+    t = open(p, encoding='utf-8').read()
+    n = len(DOC_GOOGLE.findall(t))
+    if n != 1:
+        aborta('sistema: documento.js tiene %d enlaces a las fuentes de Google con la forma esperada (uno): ¿cambió su <head>?' % n)
+    t = DOC_GOOGLE.sub(lambda _m: '''<link rel="stylesheet" href="' + base + '/assets/fonts/fonts.css">''', t)
+    if 'fonts.googleapis.com' in t:
+        aborta('sistema: documento.js sigue pidiendo fuentes a Google tras el cambio')
+    open(p, 'w', encoding='utf-8', newline='').write(t)
+
+
 def sistema_instancia(nombre):
     """Pone el sistema del registro (`sistema`): fuentes servidas desde el propio dominio y la forma. Sin `sistema`, nada."""
     clave = _instancia_registro(nombre).get('sistema')
@@ -1972,6 +1994,7 @@ def sistema_instancia(nombre):
             if t2 != t:
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
                 cambiados += 1
+    sistema_documento_fuentes()
     quedan = [os.path.relpath(os.path.join(r, f), DIST) for r, _d, fs in os.walk(DIST) for f in fs if f.endswith(EXT_TEXTO)
               and os.path.relpath(os.path.join(r, f), DIST).replace(os.sep, '/') not in SISTEMA_EXCLUIDOS
               and GOOGLE_TEXTO_URL.search(open(os.path.join(r, f), encoding='utf-8', errors='replace').read())]
@@ -3846,6 +3869,8 @@ def instancia(nombre):
             if nuevo != f:
                 os.replace(os.path.join(raiz, f), os.path.join(raiz, nuevo))
     logos_instancia(nombre, marca)
+    # /favicon.ico, como la demo: la Home v4 no lleva <link rel=icon> y el navegador lo pide solo (404 en producción, p33 13-oct)
+    shutil.copy2(os.path.join(DIST, 'favicon.png'), os.path.join(DIST, 'favicon.ico'))
     crea_contrasena_pantalla(marca)   # pieza C de I6 (9-oct-2026): «Crea tu contraseña» para el primer administrador invitado
     piel_suite_clasica(DIST, nombre)   # tras el renombrado (axw.css) y tras crea-contrasena; antes de versiona()
     piel_v4_fijos(DIST, nombre)        # colores de Lawang a mano en la cáscara v4 (antes de versiona())
