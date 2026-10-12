@@ -59,7 +59,11 @@ function h($href, $k = '') {
   if (preg_match('/^#[a-z][a-z0-9-]*$/', $href)) return e($href);          /* ancla dentro de la propia página */
   if ($href === 'ErpLanding.dc.html') return e(ERP_URL);
   if ($href === 'WebAgents.dc.html') return e($lang === 'es' ? AAAS_ES : AAAS_EN);
-  if ($href === 'WebHome.dc.html') return e($X_INICIO);
+  if ($href === 'WebHome.dc.html') {
+    /* desde otra página, el menú de la mesa apunta a las secciones de la portada */
+    $anc = ['what_we_sell' => 'products', 'how_we_work' => 'activity', 'studio' => 'studio', 'tools' => 'tools'];
+    return e($X_INICIO . (isset($anc[$k]) ? '#' . $anc[$k] : ''));
+  }
   if (preg_match('#^https://#', $href)) return e($href);
   if ($href === '#') {
     if (isset($X_LEGAL[$k])) return e($X_LEGAL[$k]);

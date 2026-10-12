@@ -1,0 +1,70 @@
+/* Agents as a Service C04 — CSS de la mesa, tal cual. */
+body{margin:0;background:#0B0C1E}
+a{color:inherit;text-decoration:none}a:hover{color:#C8F04A}
+.navlight a:hover{color:#2E3BEB}.navlight a.navcta:hover,.navlight a.on:hover{color:#C8F04A}
+summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}
+.nl{padding:9px 16px;border-radius:999px;transition:background-color .2s,color .2s}
+.navlight .nl:hover,.navlight .nl.cur{background:#E3E6FD;color:#2E3BEB}
+.menubtn{display:none;position:relative}
+.menubtn[open] summary{background:#0B0C1E;color:#F2F3F7}
+@media (max-width: 1100px){.navlinks{display:none !important}.menubtn{display:block}}
+@media (max-width: 600px){.lang,.navcta{display:none !important}}
+/* brand easing (.2,.8,.2,1) · 200 / 450 / 700 ms */
+.rise{animation:rise .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@supports (animation-timeline: view()){.reveal{animation:rise linear both;animation-timeline:view();animation-range:entry 0% entry 100%}}
+.xbtn .xa,.xbtn .xb{transform-box:fill-box;transform-origin:center;transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.xbtn:hover .xa,.xbtn:focus-visible .xa{transform:rotate(-31.5deg)}
+.xbtn:hover .xb,.xbtn:focus-visible .xb{transform:rotate(58.5deg)}
+.xbtn:hover{color:#0B0C1E}
+.pulse{animation:pulse 1.3s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* hero orbit: the ring turns, the active agent glows, its signal travels to the Captain at the point */
+.orbit{transform-origin:290px 290px;animation:spin 90s linear infinite}
+.orbit2{transform-origin:290px 290px;animation:spin 140s linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.node{transition:border-color .45s cubic-bezier(.2,.8,.2,1),background-color .45s,color .45s}
+.haloA{animation:halo 1.4s ease-out both}.haloB{animation:halo2 1.4s ease-out both}
+@keyframes halo{0%{box-shadow:0 0 0 0 rgba(200,240,74,.55)}100%{box-shadow:0 0 0 24px rgba(200,240,74,0)}}
+@keyframes halo2{0%{box-shadow:0 0 0 0 rgba(200,240,74,.55)}100%{box-shadow:0 0 0 24px rgba(200,240,74,0)}}
+.sig{position:absolute;top:-3px;left:0;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:#C8F04A;opacity:0}
+.spkA{animation:spk 1.1s cubic-bezier(.5,0,.8,.4) .15s both}.spkB{animation:spk2 1.1s cubic-bezier(.5,0,.8,.4) .15s both}
+@keyframes spk{0%{left:0;opacity:0}15%{opacity:1}100%{left:100%;opacity:.2}}
+@keyframes spk2{0%{left:0;opacity:0}15%{opacity:1}100%{left:100%;opacity:.2}}
+.ptA{animation:ptF .8s ease-out 1.2s both}.ptB{animation:ptF2 .8s ease-out 1.2s both}
+@keyframes ptF{0%{fill:#F2F3F7}20%{fill:#C8F04A}100%{fill:#F2F3F7}}
+@keyframes ptF2{0%{fill:#F2F3F7}20%{fill:#C8F04A}100%{fill:#F2F3F7}}
+.bars .ba,.bars .bb{transform-box:fill-box;transform-origin:center}
+.bars .ba{animation:barA .7s cubic-bezier(.2,.8,.2,1) .2s both}.bars .bb{animation:barB .7s cubic-bezier(.2,.8,.2,1) .4s both}
+@keyframes barA{from{transform:translate(-16%,-27%);opacity:0}to{transform:none;opacity:1}}
+@keyframes barB{from{transform:translate(16%,-27%);opacity:0}to{transform:none;opacity:1}}
+.nin{animation:nin .6s cubic-bezier(.2,.8,.2,1) both}
+@keyframes nin{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.rowA{animation:rowIn .45s cubic-bezier(.2,.8,.2,1) both}.rowB{animation:rowIn2 .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rowIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes rowIn2{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.decA{animation:dec .55s cubic-bezier(.2,.8,.2,1) both}.decB{animation:dec2 .55s cubic-bezier(.2,.8,.2,1) both}
+@keyframes dec{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes dec2{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.dbtn{transition:transform .2s cubic-bezier(.2,.8,.2,1),background-color .2s}.dbtn:hover{transform:translateY(-2px)}.dbtn:active{transform:scale(.97)}
+/* pack */
+.lift{transition:transform .45s cubic-bezier(.2,.8,.2,1),border-color .2s}.lift:hover{transform:translateY(-4px);border-color:#2E3BEB}
+/* steps */
+.prog{transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.stepc{transition:background-color .45s cubic-bezier(.2,.8,.2,1),border-color .45s,opacity .45s,transform .45s cubic-bezier(.2,.8,.2,1)}
+.stepc:hover{transform:translateY(-3px)}
+/* hard stops: every attempt bounces off the stop */
+.hitA{animation:hit .7s cubic-bezier(.2,.8,.2,1) both}.hitB{animation:hit2 .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes hit{0%{transform:none}18%{transform:translateX(-7px)}38%{transform:translateX(6px)}58%{transform:translateX(-3px)}100%{transform:none}}
+@keyframes hit2{0%{transform:none}18%{transform:translateX(-7px)}38%{transform:translateX(6px)}58%{transform:translateX(-3px)}100%{transform:none}}
+.stop{transition:background-color .45s cubic-bezier(.2,.8,.2,1),color .45s,border-color .45s}
+.tryA{animation:tryIn 1.1s cubic-bezier(.2,.8,.2,1) both}.tryB{animation:tryIn2 1.1s cubic-bezier(.2,.8,.2,1) both}
+@keyframes tryIn{0%{opacity:0;transform:translateY(8px)}25%{opacity:1;transform:none}80%{opacity:1}100%{opacity:.85}}
+@keyframes tryIn2{0%{opacity:0;transform:translateY(8px)}25%{opacity:1;transform:none}80%{opacity:1}100%{opacity:.85}}
+/* runs on the ERP */
+.flowdot{position:absolute;top:-4px;left:0;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:#2E3BEB;animation:run 1.8s cubic-bezier(.5,0,.5,1) infinite}
+@keyframes run{0%{left:0;opacity:0}12%{opacity:1}88%{opacity:1}100%{left:100%;opacity:0}}
+.stagewrap{position:relative;height:600px}
+.stage{position:absolute;left:50%;top:0;width:580px;height:600px;margin-left:-290px;transform-origin:top center}
+@media (max-width: 660px){.stagewrap{height:400px}.stage{transform:scale(.64)}}
+@media (prefers-reduced-motion: reduce){.rise,.reveal,.orbit,.orbit2,.haloA,.haloB,.spkA,.spkB,.ptA,.ptB,.bars .ba,.bars .bb,.nin,.rowA,.rowB,.decA,.decB,.hitA,.hitB,.tryA,.tryB,.flowdot,.pulse{animation:none}.sig{display:none}}
