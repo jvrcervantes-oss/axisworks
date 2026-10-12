@@ -55,11 +55,11 @@
   }
   function banda(S, d) {
     var tx = textosBanda(S, d);
-    var cierra = h('button', { type: 'button', 'data-axw-aviso': 'ahora-no', class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant text-deep-lagoon font-label-md text-label-md w-full md:w-auto', style: 'min-height:44px', text: S.texto('general', 'ahora_no') });
-    var ir = h('a', { href: d.destino, 'data-axw-aviso': 'configurar', class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md w-full md:w-auto', style: 'min-height:44px', text: S.texto('general', 'configurar') });
-    var circulo = h('span', { class: 'flex-none inline-flex items-center justify-center rounded-full bg-surface-container-high text-deep-lagoon', style: 'width:44px;height:44px', 'aria-hidden': 'true' });
+    var cierra = h('button', { type: 'button', 'data-axw-aviso': 'ahora-no', class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant text-deep-lagoon font-label-md text-label-md axw-btn', style: 'min-height:44px', text: S.texto('general', 'ahora_no') });
+    var ir = h('a', { href: d.destino, 'data-axw-aviso': 'configurar', class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md axw-btn', style: 'min-height:44px', text: S.texto('general', 'configurar') });
+    var circulo = h('span', { class: 'inline-flex items-center justify-center rounded-full bg-surface-container-high text-deep-lagoon', style: 'width:44px;height:44px;flex:none', 'aria-hidden': 'true' });
     circulo.appendChild(icono());
-    var caja = h('section', { role: 'status', 'data-axw-aviso': 'banda', class: 'flex flex-col md:flex-row md:items-center gap-4 rounded-2xl border border-outline-variant bg-surface-container-lowest px-5 py-5 md:px-6' }, [
+    var caja = h('section', { role: 'status', 'data-axw-aviso': 'banda', class: 'flex flex-col md:flex-row md:items-center gap-4 rounded-2xl border border-outline-variant bg-surface-container-lowest px-5 py-5' }, [
       h('div', { class: 'flex items-start md:items-center gap-4 flex-1 min-w-0' }, [circulo,
         h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
           h('h2', { class: 'font-headline-sm text-deep-lagoon', style: 'font-size:16px;line-height:1.3', 'data-axw-aviso': 'titulo', text: tx.titulo }),

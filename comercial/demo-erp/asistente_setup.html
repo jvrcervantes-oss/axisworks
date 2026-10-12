@@ -6,8 +6,9 @@
      modulos_setup_estado; aquí no se guarda progreso (se retoma en el primer paso no hecho). Sin piel propia: la viste Claude Design después. -->
 <!-- Piel del diseño del owner (12-oct, Claude Design «AxisWorks ERP Setup»: S03 inicio, S91 componente de paso, S80 listo): misma lógica y mismos
      enganches data-axw-*; colores solo por token de la piel de la instancia (marca blanca). -->
+<style>[data-axw-setup] .axw-btn{width:100%}@media (min-width:768px){[data-axw-setup] .axw-btn{width:auto}}</style>
 <div class="flex flex-col w-full gap-6" data-axw-setup="asistente">
-<div class="lw-cabecera flex flex-col md:flex-row md:items-end gap-4 md:gap-8 bg-surface-container-lowest p-6 md:p-8 rounded-2xl border border-outline-variant">
+<div class="lw-cabecera flex flex-col md:flex-row md:items-end gap-4 bg-surface-container-lowest p-6 md:p-8 rounded-2xl border border-outline-variant">
 <div class="flex flex-col gap-2 flex-1 min-w-0">
 <span class="font-label-md text-[11px] tracking-[0.14em] uppercase text-outline" data-axw-as="eyebrow"></span>
 <h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-axw-as="titulo"></h1>
@@ -35,8 +36,8 @@ document.addEventListener('DOMContentLoaded', function () {
     return e;
   }
   function vacia(e) { while (e.firstChild) e.removeChild(e.firstChild); return e; }
-  var BTN1 = 'inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md w-full md:w-auto disabled:opacity-50';
-  var BTN2 = 'inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant text-deep-lagoon font-label-md text-label-md w-full md:w-auto';
+  var BTN1 = 'inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md axw-btn disabled:opacity-50';
+  var BTN2 = 'inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant text-deep-lagoon font-label-md text-label-md axw-btn';
   function boton(texto, accion, primario) { return el('button', { type: 'button', 'data-axw-accion': accion, class: primario ? BTN1 : BTN2, style: 'min-height:44px', text: texto }); }
   var RAIZ = location.pathname.replace(/ajustes\/configurar\/.*$/, '');   // «/» en una instancia; «/intranet/v4/» en una copia sin reubicar
   var qs = new URLSearchParams(location.search);
@@ -143,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var Lp = lista(d, primero.modulo), sigP = Lp.obligatorios.filter(function (p) { return !p.hecho; })[0];
     var segs = el('div', { class: 'flex gap-1', 'aria-hidden': 'true' });
     Lp.obligatorios.forEach(function (p) { segs.appendChild(el('i', { class: 'flex-1 rounded-full ' + (p.hecho ? 'bg-primary-container' : p === sigP ? 'bg-primary' : 'bg-surface-container-high'), style: 'height:4px' })); });
-    t.appendChild(el('div', { class: 'flex flex-col gap-3 rounded-2xl bg-surface-container-low p-5 md:p-6' }, [
+    t.appendChild(el('div', { class: 'flex flex-col gap-3 rounded-2xl bg-surface-container-low p-5' }, [
       el('span', { class: 'font-label-md text-[11px] tracking-[0.14em] uppercase text-outline', text: U('sigue_donde') }),
       el('h2', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', text: S.nombreModulo(primero.modulo) + (sigP ? ' · ' + S.texto('paso', sigP.clave, 0) : '') }),
       segs,
@@ -163,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var href = '?modulo=' + encodeURIComponent(m.modulo);
       var accion = listo ? el('a', { href: href, class: BTN2, style: 'min-height:44px', text: U('revisar') })
                          : el('a', { href: href, 'data-axw-modulo': m.modulo, class: medias ? BTN1 : BTN2, style: 'min-height:44px', text: U(medias ? 'continuar' : 'empezar') });
-      ul.appendChild(el('li', { class: 'flex flex-col md:flex-row md:items-center gap-3 px-4 py-4 md:px-5' + (i ? ' border-t border-outline-variant' : '') }, [
+      ul.appendChild(el('li', { class: 'flex flex-col md:flex-row md:items-center gap-3 px-4 py-4' + (i ? ' border-t border-outline-variant' : '') }, [
         el('div', { class: 'flex flex-col gap-0.5 flex-1 min-w-0' }, [
           el('span', { class: 'font-label-md text-label-md text-on-surface', text: S.nombreModulo(m.modulo) }),
           el('span', { class: 'font-body-sm text-body-sm text-outline', text: ob.map(function (p) { return S.texto('paso', p.clave, 0); }).join(' · ') })
@@ -200,10 +201,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var idx = L.obligatorios.indexOf(p);
     var meta = el('div', { class: 'flex flex-wrap items-center gap-2' }, [
       el('span', { class: 'font-label-md text-[11px] tracking-[0.12em] uppercase text-outline',
-                   text: S.nombreModulo(p.modulo) + (idx >= 0 ? ' · ' + U('paso_n', { n: String(idx + 1), t: String(L.obligatorios.length) }) : '') }),
+                   text: S.nombreModulo(p.modulo) }),   // el «Paso n de N» ya va en la cabecera de la página; aquí, los segmentos
       chip(p.obligatorio ? U('obligatorio') : U('opcional'), false)
     ]);
-    var cab = el('header', { class: 'flex flex-col gap-4 pb-5 border-b border-outline-variant' }, [meta]);
+    var cab = el('header', { class: 'flex flex-col gap-4 pb-4 border-b border-outline-variant' }, [meta]);
     if (idx >= 0 && L.obligatorios.length > 1) {
       var segs = el('div', { class: 'flex gap-1', 'aria-hidden': 'true' });
       L.obligatorios.forEach(function (q, k) { segs.appendChild(el('i', { class: 'flex-1 rounded-full ' + (k === idx ? 'bg-primary' : q.hecho ? 'bg-primary-container' : 'bg-surface-container-high'), style: 'height:4px' })); });
@@ -214,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function pintaPaso(p, L) {
     var t = $('tarjeta');
     var cab = cabezaPaso(p, L);
-    var h = el('h2', { tabindex: '-1', class: 'font-headline-md text-deep-lagoon tracking-tight', style: 'font-size:24px;line-height:1.2', 'data-axw-paso': p.clave, text: S.texto('paso', p.clave, 0) });
+    var h = el('h2', { tabindex: '-1', class: 'font-headline-sm text-headline-sm text-deep-lagoon tracking-tight', style: 'font-size:24px;line-height:1.2', 'data-axw-paso': p.clave, text: S.texto('paso', p.clave, 0) });
     cab.appendChild(h);
     cab.appendChild(el('dl', { class: 'flex flex-col gap-1' }, [
       el('dt', { class: 'font-label-md text-[12px] text-outline', text: U('para_que') }),
@@ -223,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (p.hecho) cab.appendChild(el('span', { class: 'self-start px-3 py-1 rounded-full font-label-md text-[13px] bg-primary-container text-on-primary', 'data-axw-hecho': '1', text: U('hecho') }));
     else if (p.falta) cab.appendChild(el('p', { class: 'font-body-sm text-body-sm text-outline', 'data-axw-falta': p.falta.codigo, text: S.textoFalta(p.falta) }));
     t.appendChild(cab);
-    var pie = el('footer', { class: 'flex flex-col-reverse md:flex-row md:items-center md:justify-between gap-3 pt-4 border-t border-outline-variant', 'data-axw-as': 'pie' });
+    var pie = el('footer', { class: 'flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-outline-variant', 'data-axw-as': 'pie' });
     var idx = L.obligatorios.indexOf(p);
     var atras = idx > 0 ? boton(U('atras'), 'atras', false) : null;
     if (p.modulo_requerido && !moduloActivo(p.modulo_requerido)) {
@@ -250,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (ctl && ctl.bloqueado) principal = boton(U('siguiente'), 'siguiente', true);
     else principal = boton(p.irreversible ? U('siguiente') : U('guardar_seguir'), 'enviar', true);
     if (atras) pie.appendChild(atras);
-    var der = el('div', { class: 'flex flex-col md:flex-row gap-3' });
+    var der = el('div', { class: 'axw-btn flex flex-col md:flex-row gap-3', style: 'margin-left:auto' });
     if (!editando && !p.irreversible && !comp.externo) der.appendChild(boton(U('cambiar'), 'cambiar', false));
     der.appendChild(principal);
     pie.appendChild(der);
@@ -259,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function () {
     t._ctl = ctl; t._paso = p; t._motivo = motivo;
     h.focus();
   }
-  function enlaceLuego() { return el('a', { href: vuelta, 'data-axw-accion': 'luego', class: 'self-center font-label-md text-label-md text-on-surface-variant underline px-2 py-2', style: 'min-height:44px', text: U('luego') }); }
+  function enlaceLuego() { return el('a', { href: vuelta, 'data-axw-accion': 'luego', class: 'font-label-md text-label-md text-on-surface-variant underline px-2 py-2', style: 'min-height:44px;align-self:center', text: U('luego') }); }
   function pintaConfirma(p) {
     var t = $('tarjeta'), ctl = P.de(p.clave);
     var r = st.resumen;
@@ -272,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var fijar = boton(r.boton, 'fijar', true);
     fijar.disabled = true;
     inp.addEventListener('input', function () { fijar.disabled = inp.value.trim().toUpperCase() !== String(r.teclea).toUpperCase(); });
-    var pie = el('div', { class: 'flex flex-col-reverse md:flex-row md:items-center md:justify-between gap-3 pt-2' }, [boton(U('atras'), 'confirma-atras', false), fijar]);
+    var pie = el('div', { class: 'flex flex-wrap items-center justify-between gap-3 pt-2' }, [boton(U('atras'), 'confirma-atras', false), fijar]);
     t.appendChild(pie);
     t._paso = p; t._ctlComp = ctl;
     inp.focus();

@@ -150,7 +150,7 @@
       caja.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', text: U('otra_pantalla') }));
       var d = String(ctx.paso.donde || '');
       if (/^\/[a-z0-9\-\/]*$/i.test(d)) {
-        caja.appendChild(el('a', { href: d, 'data-axw-accion': 'abrir-externo', class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant font-label-md text-label-md text-deep-lagoon w-full md:w-auto',
+        caja.appendChild(el('a', { href: d, 'data-axw-accion': 'abrir-externo', class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant font-label-md text-label-md text-deep-lagoon axw-btn',
                                    style: 'min-height:44px', text: U('abrir', { pantalla: S().texto('paso', ctx.paso.clave, 0) }) }));
       }
       return { valores: function () { return { ok: true, v: {} }; } };

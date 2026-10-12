@@ -13,6 +13,8 @@ const DOBLE = JSON.parse(fs.readFileSync(path.join(__dirname, 'doble_modulos_set
 const HTML = fs.readFileSync(path.join(AQUI, 'asistente_setup.html'), 'utf8').split('<!--AXW_SCRIPT-->');
 const NUCLEO = fs.readFileSync(path.join(AQUI, 'setup_modulos.js'), 'utf8');
 const PASOS = fs.readFileSync(path.join(AQUI, 'setup_pasos.js'), 'utf8');
+// AXW_CSS_DIST=<paquete construido>: mete tw.css y shell.css de la instancia para mirar la piel en las capturas (no cambia lo que se mide)
+const CSS_PIEL = process.env.AXW_CSS_DIST ? ['tw.css', 'shell.css'].map(f => fs.readFileSync(path.join(process.env.AXW_CSS_DIST, 'assets', f), 'utf8')).join(' ') : '';
 const SHOT = process.argv[2];
 let fallos = 0;
 const ok = (n, c, x = '') => { if (!c) { fallos++; console.log('FALLA  ' + n + (x ? ' -> ' + x : '')); } else console.log('ok     ' + n); };
@@ -68,7 +70,7 @@ function servidor(b, n, a) {
   return err('42883', null, 'desconocida ' + n);
 }
 const pagina = (idioma, url) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}</style></head><body><main>${HTML[0]}</main>
+<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}</style><style>${CSS_PIEL}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>${HTML[0]}</main>
 <script>
 history.replaceState(null, '', '${url}');
 window.__sinTrad = []; window.__errores = [];
@@ -199,6 +201,24 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
       ok(idioma + ' ' + ancho + ': ninguna frase sin traducir', sin.length === 0, sin.slice(0, 4).join(' | '));
     }
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'paso_' + idioma + '_' + ancho + '.png'), fullPage: true });
+    await ctx.close();
+  }
+
+  // 8. Inicio del asistente sin módulo (diseño del owner S03, 12-oct): lista de módulos encendidos con su estado, «Sigue donde lo dejaste»,
+  //    los pendientes con su enlace de siempre (data-axw-modulo); 390/1440 sin scroll horizontal y sin español en en/id
+  for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
+    b = base('sin_configurar');
+    ({ p, ctx } = await abre(nav, b, { idioma, ancho, url: '/ajustes/configurar/' }));
+    const pend = b.d.modulos.filter(m => m.estado === 'sin_configurar' && b.d.pasos.some(x => x.modulo === m.modulo && x.obligatorio)).length;
+    ok(idioma + ' ' + ancho + ' inicio: un enlace por módulo pendiente y «Sigue donde lo dejaste»', (await p.$$('[data-axw-modulo]')).length === pend && !!(await p.$('[data-axw-accion="seguir"]')),
+       (await p.$$('[data-axw-modulo]')).length + ' de ' + pend);
+    const anchoDoc = await p.evaluate(() => document.documentElement.scrollWidth);
+    ok(idioma + ' ' + ancho + ' inicio: sin scroll horizontal', anchoDoc <= ancho, String(anchoDoc));
+    if (idioma !== 'es') {
+      const sin = await p.evaluate(() => window.__sinTrad.filter(s => !/^(NPWP|IDR|EUR|USD)$/.test(s)));
+      ok(idioma + ' ' + ancho + ' inicio: ninguna frase sin traducir', sin.length === 0, sin.slice(0, 4).join(' | '));
+    }
+    if (SHOT) await p.screenshot({ path: path.join(SHOT, 'inicio_' + idioma + '_' + ancho + '.png'), fullPage: true });
     await ctx.close();
   }
 
