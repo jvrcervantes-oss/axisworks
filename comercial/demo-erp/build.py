@@ -2452,11 +2452,11 @@ def taller_pantalla():
     ancla = "bookings rental fleet unit calendar rate hold return' });" + '\n' + "}"
     h = _una_vez(h, ancla,
                  "bookings rental fleet unit calendar rate hold return' });" + '\n' +
-                 "  /* TALLER (F8 pieza 2, 8-oct-2026): órdenes de trabajo del taller. Permiso propio `taller` (es el que exigen las RPC orden_trabajo_*); sin esta tarjeta la casilla no existiría en Usuarios. */" + '\n' +
+                 "  /* TALLER (F8 pieza 2, 8-oct-2026; asistente por pasos 8.T1, 12-oct-2026): el mecánico revisa cada moto paso a paso. Permiso propio `taller` (es el que exigen las RPC taller_* y orden_trabajo_*); sin esta tarjeta la casilla no existiría en Usuarios, y sin un usuario con ella el Taller sale «sin configurar». */" + '\n' +
                  "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'reservas-producto') + 1, 0," + '\n' +
                  "    { grupo:'Seguimiento', nombre:'Taller', icon:'ph-wrench', href:'/intranet/v4/taller/', herr:'taller'," + '\n' +
-                 "      para:'Las motos que entran al taller y por qué: mientras una orden que bloquea esté abierta, la moto no se puede reservar.'," + '\n' +
-                 "      claves:'taller orden de trabajo moto reparacion mecanico mantenimiento bloquear reservas workshop repair mechanic maintenance work order' });" + '\n' + "}",
+                 "      para:'El mecánico revisa cada moto paso a paso (motivo, km, fotos, revisiones) y la deja lista o en espera; mientras está en el taller no se puede reservar.'," + '\n' +
+                 "      claves:'taller orden de trabajo moto reparacion mecanico mantenimiento revision fotos bloquear reservas bengkel servis workshop repair mechanic maintenance inspection work order' });" + '\n' + "}",
                  'herramientas.js tarjeta Taller')
     open(her, 'w', encoding='utf-8', newline='').write(h)
 
