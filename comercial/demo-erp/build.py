@@ -1643,6 +1643,19 @@ MENU_I18N = {
         'id': 'Yang diterapkan sistem secara otomatis, tanpa perlu mengubah kode: nama dan zona waktu instalasi, email, dan mode pemeliharaan. Perubahan di sini langsung berlaku, dan setiap perubahan tercatat.'},
     'Impuestos': {'en': 'Taxes', 'id': 'Pajak'},
     'Plazos': {'en': 'Time limits', 'id': 'Batas waktu'},
+    # rótulos FIJOS que build.py pone en el HTML de Ajustes (pestañas y cabeceras): su traducción tiene que estar ANTES de que la página traduzca el
+    # HTML; la de setup_modulos.js / ajustes_puesta.js llega tarde (agencia-81, 12-oct: la pestaña «Cobros en línea» salía en español en inglés).
+    # Lo comprueba rotulos_build.test.js. Mismas traducciones que esos ficheros.
+    'Cobros en línea': {'en': 'Online payments', 'id': 'Pembayaran online'},
+    'Las claves de Xendit con las que el ERP crea el enlace de pago y comprueba los pagos. Se escriben una vez y no se vuelven a enseñar.': {
+        'en': 'The Xendit keys the ERP uses to create payment links and check payments. They are typed once and never shown again.',
+        'id': 'Kunci Xendit yang dipakai ERP untuk membuat tautan pembayaran dan memeriksa pembayaran. Diketik sekali dan tidak ditampilkan lagi.'},
+    'Lo que hace falta para que cada módulo funcione': {'en': 'What each module needs in order to work', 'id': 'Yang dibutuhkan setiap modul agar berfungsi'},
+    'Cada módulo encendido, con sus pasos. Se cambian aquí o con el asistente, paso a paso.': {
+        'en': 'Every module that is switched on, with its steps. Change them here or with the wizard, step by step.',
+        'id': 'Setiap modul yang aktif, beserta langkah-langkahnya. Ubah di sini atau dengan panduan, langkah demi langkah.'},
+    'Trayendo la configuración…': {'en': 'Loading the setup…', 'id': 'Memuat pengaturan…'},
+    '¿Eres cliente?': {'en': 'Are you a client?', 'id': 'Anda pelanggan?'},
     'Empresa, correo, impuestos y usuarios del ERP.': {'en': 'Company, email, taxes and users of the ERP.', 'id': 'Perusahaan, email, pajak, dan pengguna ERP.'},
 }
 
