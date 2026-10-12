@@ -57,7 +57,7 @@ body.ax-app{background:var(--aw-chalk);color:var(--aw-night);font-family:var(--a
 #lista-instancias{display:flex;flex-direction:column;gap:2px}
 .ax-inst{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:6px 10px;border:0;border-radius:var(--aw-r-field);background:transparent;color:var(--aw-fog);text-align:left;cursor:pointer;font:inherit}
 .ax-inst:hover{background:var(--aw-raised);color:var(--aw-chalk)}
-.ax-inst[aria-current="true"]{background:var(--aw-raised);color:var(--aw-chalk);box-shadow:inset 3px 0 0 var(--aw-volt)}
+.ax-inst[aria-current="true"]{background:var(--aw-raised);color:var(--aw-chalk)}
 .ax-logo{width:34px;height:34px;flex:none;border-radius:var(--aw-r-chip);display:grid;place-items:center;background:var(--aw-ultra);color:var(--aw-white);font:600 12px/1 var(--aw-f-display);letter-spacing:-.02em}
 .ax-inst .t{display:block;font-weight:700;font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ax-inst .d{display:block;font:400 11.5px/1.3 var(--aw-f-mono);color:var(--aw-dusk);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -130,6 +130,7 @@ body.ax-app{background:var(--aw-chalk);color:var(--aw-night);font-family:var(--a
 .ax-modc.na{background:var(--aw-chalk);border-style:dashed}
 .ax-modc.na .ic{background:var(--aw-line);color:var(--aw-text3)}
 .ax-sw{position:relative;width:46px;height:28px;flex:none;padding:0;border:0;border-radius:999px;background:var(--aw-control);cursor:pointer}
+.ax-sw::before{content:"";position:absolute;inset:-8px -4px}   /* zona de toque de 44 px alrededor del carril de 28 */
 .ax-sw>span{position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:var(--aw-white);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
 .ax-sw[aria-checked="true"]{background:var(--aw-ultra)}
 .ax-sw[aria-checked="true"]>span{transform:translateX(18px)}
