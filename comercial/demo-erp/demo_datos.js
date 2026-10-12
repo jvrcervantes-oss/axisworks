@@ -164,20 +164,26 @@
       return f;
     }
 
-    /* Guion de ventas: [proyecto, parcela, comprador, agente, etapa, días desde el bloqueo]
-       etapa: 'bloqueo_sin_firmar' | 'bloqueo' | 'carta' | 'construccion' | 'construccion_sin_firmar' */
+    /* Guion de ventas: [proyecto, parcela, comprador, agente, etapa, días desde el bloqueo, opciones?]
+       etapa: 'bloqueo_sin_firmar' | 'bloqueo' | 'carta' | 'construccion' | 'construccion_sin_firmar'
+       opciones: { fase: fase de obra que se impone (p. ej. 'entregada'), impagada: la señal se factura y no se cobra (vencida) } */
     var GUION = [
       [0, 1, 0, 0, 'construccion', -210], [0, 2, 1, 1, 'construccion', -160], [0, 4, 2, 2, 'carta', -40],
       [0, 7, 3, 0, 'bloqueo', -12], [0, 9, 4, 3, 'bloqueo_sin_firmar', -2],
       [1, 1, 5, 2, 'construccion', -180], [1, 3, 6, 1, 'construccion_sin_firmar', -25], [1, 6, 7, 3, 'carta', -18],
       [2, 1, 8, 0, 'construccion', -240], [2, 2, 9, 2, 'construccion', -130], [2, 3, 10, 1, 'carta', -27],
       [2, 5, 11, 3, 'carta', -8], [2, 8, 12, 0, 'construccion', -95], [2, 11, 13, 2, 'bloqueo', -5],
-      [2, 13, 14, 1, 'bloqueo_sin_firmar', -1]
+      [2, 13, 14, 1, 'bloqueo_sin_firmar', -1],
+      /* El cliente de ejemplo del portal (Jasper van Duinhoven, 12-oct, orquestador: «el portal se ve pobre al lado del de
+         referencia») tiene varias propiedades en fases distintas, como el modo demo del portal de origen: una entregada y
+         pagada, una con la firma pendiente y una con la señal vencida. Van AL FINAL para no mover la numeración de las de arriba. */
+      [0, 11, 8, 1, 'construccion', -400, { fase: 'entregada' }], [1, 8, 8, 2, 'bloqueo_sin_firmar', -3],
+      [0, 12, 8, 3, 'bloqueo', -45, { impagada: true }]
     ];
     GUION.forEach(function (g, i) {
       var p = PROYECTOS[g[0]];
       var u = unidades.filter(function (x) { return x.proyecto_id === p.id; })[g[1] - 1];
-      var cli = clientes[g[2]], ag = AGENTES[g[3]], etapa = g[4], d0 = g[5];
+      var cli = clientes[g[2]], ag = AGENTES[g[3]], etapa = g[4], d0 = g[5], opc = g[6] || {};
       var firmadoRP = etapa !== 'bloqueo_sin_firmar';
       var rp = contrato('reserva_parcela', u, cli, ag, u.precio_suelo, firmadoRP, d0);
       u.estado = firmadoRP ? 'reservada' : 'disponible'; u.contrato_id = rp.id;
@@ -185,7 +191,10 @@
       /* Bloqueo: señal del 10 % del suelo — proforma y, si está firmado, cobrada. */
       var senal = redondea(u.precio_suelo * 0.1, 100);
       factura('proforma', rp, cli, senal, d0, 'Plot hold deposit ' + u.codigo);
-      if (firmadoRP) {
+      if (firmadoRP && opc.impagada) {
+        // facturada y sin cobrar, vencida hace días: el «Overdue» del portal y un pendiente de cobro en la intranet
+        factura('factura', rp, cli, senal, d0 + 1, 'Plot hold deposit ' + u.codigo, { venc: dia(d0 + 15) });
+      } else if (firmadoRP) {
         var fs = factura('factura', rp, cli, senal, d0 + 1, 'Plot hold deposit ' + u.codigo);
         var rs = factura('recibi', rp, cli, senal, d0 + 3, 'Deposit payment ' + u.codigo);
         aplic.push({ id: 'ra-' + rs.id, recibi_id: rs.id, factura_id: fs.id, importe_aplicado: senal });
@@ -209,12 +218,15 @@
       }
       if (etapa === 'bloqueo') reservas.push({ unidad_id: u.id, codigo: u.codigo, proyecto: u.proyecto, contrato_id: rp.id,
         numero: rp.numero, tipo: 'reserva_parcela', proyecto_id: u.proyecto_id, proyecto_nombre: u.proyecto,
-        comprador_nombre: cli.full_name, vence_el: dia(d0 + 14), n_prorrogas: 0 });
+        // la de la señal impagada lleva una prórroga viva: si no, sería la única reserva vencida de la siembra (revisor, 12-oct)
+        comprador_nombre: cli.full_name, vence_el: dia(opc.impagada ? 9 : d0 + 14), n_prorrogas: opc.impagada ? 1 : 0 });
       if (etapa === 'construccion' || etapa === 'construccion_sin_firmar') {
         var firmadoCC = etapa === 'construccion';
         var k = contrato('construccion', u, cli, ag, u.precio_construccion, firmadoCC, d0 + 20, padre);
         if (firmadoCC) { u.estado = 'vendida'; u.obra_fase = d0 < -150 ? 'estructura' : 'cimentacion';
-          u.obra_fecha_entrega = dia(d0 + 330); u.obra_actualizado = ts(-(i % 9) - 1); }
+          u.obra_fecha_entrega = dia(d0 + 330); u.obra_actualizado = ts(-(i % 9) - 1);
+          // entregada: la entrega, el día del hito «Key handover» (d0 + 320), que ya está cobrado
+          if (opc.fase) { u.obra_fase = opc.fase; if (opc.fase === 'entregada') { u.obra_fecha_entrega = dia(d0 + 320); u.obra_actualizado = ts(d0 + 320); } } }
         /* Calendario por hitos de obra: 30 / 30 / 30 / 10. */
         [['Contract signing', 30, 0], ['Structure complete', 30, 90], ['Roof and enclosure', 30, 180], ['Key handover', 10, 300]]
           .forEach(function (h, j) {
@@ -1469,13 +1481,53 @@
         var c = porId(F, 'contratos', a.p_contrato);
         if (!c) falla('contrato_no_existe', [], 'P0002');
         if (c.bloqueado) falla('ya_firmado');
-        var hoy = dia(0);
+        // El día de HOY del visitante, no el de UTC: en Bali de madrugada salía «firmado el 11» con el contrato del 12
+        // (verificación en vivo, 12-oct; las fechas de la siembra siguen en UTC, son relativas).
+        var ahoraLocal = new Date();
+        var hoy = ahoraLocal.getFullYear() + '-' + String(ahoraLocal.getMonth() + 1).padStart(2, '0') + '-' + String(ahoraLocal.getDate()).padStart(2, '0');
         actualiza(F, 'contratos', [c], { bloqueado: true, fecha_firma: hoy });
         actualiza(F, 'contrato_firmas', filasDe(F, 'contrato_firmas').filter(function (x) { return x.contrato_id === c.id && x.estado === 'pendiente'; }),
           { estado: 'firmado', firmado_en: ahora(), firmante_nombre: txt(a.p_firmante_nombre) || c.comprador_nombre });
         var u = porId(F, 'unidades', c.unidad_id);
         if (u) actualiza(F, 'unidades', [u], { estado: c.tipo === 'construccion' ? 'vendida' : 'reservada', contrato_id: u.contrato_id || c.id });
         return { id: c.id, numero: c.numero, fecha_firma: hoy };
+      },
+
+      /* Portal de clientes de la demo (fase E1, 12-oct): lo que el comprador escribe desde el portal, en el almacén de la pestaña
+         por aquí y no desde la pantalla (frontera front/back). En el ERP estas funciones sacan al comprador de su sesión; en la
+         demo no hay sesión, así que el portal dice qué cliente está viendo (p_client_id) y aquí se comprueba que existe. */
+      portal_abrir_ticket: function (F, a) {
+        var cli = porId(F, 'clients', a.p_client_id); if (!cli) falla('cliente_no_existe', [], 'P0002');
+        var texto = txt(a.p_texto); if (!texto) falla('texto_vacio', [], '22023');
+        // Como la base: una consulta solo puede citar una factura o un contrato DE ESE cliente (revisor, 12-oct).
+        var suyos = {};
+        filasDe(F, 'contrato_compradores').forEach(function (x) { if (x.client_id === cli.id) suyos[x.contrato_id] = true; });
+        var f = a.p_factura_id ? porId(F, 'facturas', a.p_factura_id) : null;
+        if (a.p_factura_id && (!f || !(f.client_id === cli.id || suyos[f.contrato_id]))) falla('factura_no_existe', [], 'P0002');
+        var k = a.p_contrato_id ? porId(F, 'contratos', a.p_contrato_id) : null;
+        if (a.p_contrato_id && (!k || !suyos[k.id])) falla('contrato_no_existe', [], 'P0002');
+        var h = inserta(F, 'hilo_soporte', [{ client_id: cli.id, categoria: txt(a.p_categoria) || 'General', estado: 'abierto', actualizado_en: ahora(),
+          factura_id: f ? f.id : null, contrato_id: k ? k.id : null, ref_numero: f ? f.numero : (k ? k.numero : null) }])[0];
+        inserta(F, 'mensajes_comprador', [{ hilo_id: h.id, client_id: cli.id, de: 'comprador', autor: null, texto: texto }]);
+        return h.id;
+      },
+      portal_enviar_mensaje: function (F, a) {
+        var h = porId(F, 'hilo_soporte', a.p_hilo_id);
+        if (!h || h.client_id !== a.p_client_id) falla('hilo_no_existe', [], 'P0002');
+        var texto = txt(a.p_texto); if (!texto) falla('texto_vacio', [], '22023');
+        inserta(F, 'mensajes_comprador', [{ hilo_id: h.id, client_id: h.client_id, de: 'comprador', autor: null, texto: texto }]);
+        actualiza(F, 'hilo_soporte', [h], { estado: 'abierto', actualizado_en: ahora() });   // como en la base: el comprador lo reabre
+        return null;
+      },
+      portal_guarda_prefs: function (F, a) {
+        var cli = porId(F, 'clients', a.p_client_id); if (!cli) falla('cliente_no_existe', [], 'P0002');
+        var p = Object.assign({}, cli.portal_prefs || {});
+        if ('p_pref_email' in a) p.pref_email = !!a.p_pref_email;
+        if ('p_pref_sms' in a) p.pref_sms = !!a.p_pref_sms;
+        if ('p_color' in a) { if (['petroleo', 'selva', 'oliva', 'arena', 'oceano', 'ciruela', 'tinta', 'carbon'].indexOf(a.p_color) === -1) falla('color_no_valido', [], '22023'); p.color_avatar = a.p_color; }
+        if (a.p_visto) p.notif_visto_hasta = ahora();
+        actualiza(F, 'clients', [cli], { portal_prefs: p });
+        return null;
       }
     };
   })();
