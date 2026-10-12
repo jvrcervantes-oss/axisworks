@@ -1,0 +1,420 @@
+{
+  "_que_es": "DOBLE de modulos_setup_estado() para que bbm-p18-front construya mientras Backend hace la Entrega 1 (bbm-p17-backend, 12-oct-2026). Forma del plan erp/plan_f3_setup_modulos.md (#282 punto 2 y #283). NO es la función: cuando exista, su prueba por perfil manda sobre este fichero. Códigos de paso y de falta de la lista cerrada (se fija en erp/modulos.py SETUP); los textos los pone el front con su mapa código → frase.",
+  "casos": {
+    "sin_configurar": {
+      "puede_configurar": true,
+      "moneda": "IDR",
+      "monedas": [
+        "IDR",
+        "EUR",
+        "USD"
+      ],
+      "modulos": [
+        {
+          "modulo": "base",
+          "estado": "configurado",
+          "falta": null
+        },
+        {
+          "modulo": "facturas",
+          "estado": "sin_configurar",
+          "falta": "sociedad"
+        },
+        {
+          "modulo": "recibos",
+          "estado": "configurado",
+          "falta": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "estado": "sin_configurar",
+          "falta": "impuesto_pkp"
+        }
+      ],
+      "pasos": [
+        {
+          "modulo": "base",
+          "clave": "moneda",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": true,
+          "falta": null,
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "facturas",
+          "clave": "sociedad",
+          "hecho": false,
+          "obligatorio": true,
+          "irreversible": false,
+          "falta": {
+            "codigo": "sin_sociedad",
+            "campos": []
+          },
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "facturas",
+          "clave": "prefijo",
+          "hecho": false,
+          "obligatorio": true,
+          "irreversible": true,
+          "falta": {
+            "codigo": "sin_sociedad",
+            "campos": []
+          },
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "clave": "impuesto_pkp",
+          "hecho": false,
+          "obligatorio": true,
+          "irreversible": false,
+          "falta": {
+            "codigo": "falta_dato",
+            "campos": [
+              "reservas_sin_impuesto"
+            ]
+          },
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "clave": "precio_con_impuesto",
+          "hecho": false,
+          "obligatorio": true,
+          "irreversible": false,
+          "falta": {
+            "codigo": "falta_dato",
+            "campos": [
+              "precio_incluye_impuesto"
+            ]
+          },
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "clave": "flota",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": false,
+          "falta": null,
+          "donde": "/flota/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "clave": "entrega",
+          "hecho": false,
+          "obligatorio": false,
+          "irreversible": false,
+          "falta": {
+            "codigo": "falta_dato",
+            "campos": [
+              "sede",
+              "precio_km"
+            ]
+          },
+          "donde": "/entrega/",
+          "modulo_requerido": null,
+          "ref": null
+        }
+      ]
+    },
+    "a_medias": {
+      "puede_configurar": true,
+      "moneda": "IDR",
+      "monedas": [
+        "IDR",
+        "EUR",
+        "USD"
+      ],
+      "modulos": [
+        {
+          "modulo": "base",
+          "estado": "configurado",
+          "falta": null
+        },
+        {
+          "modulo": "facturas",
+          "estado": "sin_configurar",
+          "falta": "prefijo"
+        },
+        {
+          "modulo": "recibos",
+          "estado": "configurado",
+          "falta": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "estado": "configurado",
+          "falta": null
+        }
+      ],
+      "pasos": [
+        {
+          "modulo": "base",
+          "clave": "moneda",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": true,
+          "falta": null,
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "facturas",
+          "clave": "sociedad",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": false,
+          "falta": null,
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": "prb_bbm"
+        },
+        {
+          "modulo": "facturas",
+          "clave": "prefijo",
+          "hecho": false,
+          "obligatorio": true,
+          "irreversible": true,
+          "falta": {
+            "codigo": "sin_prefijo",
+            "campos": [
+              "prefijo_serie"
+            ]
+          },
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": "prb_bbm"
+        },
+        {
+          "modulo": "reservas-producto",
+          "clave": "impuesto_pkp",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": false,
+          "falta": null,
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "clave": "precio_con_impuesto",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": false,
+          "falta": null,
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "clave": "flota",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": false,
+          "falta": null,
+          "donde": "/flota/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "clave": "entrega",
+          "hecho": false,
+          "obligatorio": false,
+          "irreversible": false,
+          "falta": {
+            "codigo": "falta_dato",
+            "campos": [
+              "sede",
+              "precio_km"
+            ]
+          },
+          "donde": "/entrega/",
+          "modulo_requerido": null,
+          "ref": null
+        }
+      ]
+    },
+    "configurado": {
+      "puede_configurar": true,
+      "moneda": "IDR",
+      "monedas": [
+        "IDR",
+        "EUR",
+        "USD"
+      ],
+      "modulos": [
+        {
+          "modulo": "base",
+          "estado": "configurado",
+          "falta": null
+        },
+        {
+          "modulo": "facturas",
+          "estado": "configurado",
+          "falta": null
+        },
+        {
+          "modulo": "recibos",
+          "estado": "configurado",
+          "falta": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "estado": "configurado",
+          "falta": null
+        }
+      ],
+      "pasos": [
+        {
+          "modulo": "base",
+          "clave": "moneda",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": true,
+          "falta": null,
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "facturas",
+          "clave": "sociedad",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": false,
+          "falta": null,
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": "prb_bbm"
+        },
+        {
+          "modulo": "facturas",
+          "clave": "prefijo",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": true,
+          "falta": null,
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": "prb_bbm"
+        },
+        {
+          "modulo": "reservas-producto",
+          "clave": "impuesto_pkp",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": false,
+          "falta": null,
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "clave": "precio_con_impuesto",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": false,
+          "falta": null,
+          "donde": "/ajustes/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "clave": "flota",
+          "hecho": true,
+          "obligatorio": true,
+          "irreversible": false,
+          "falta": null,
+          "donde": "/flota/",
+          "modulo_requerido": null,
+          "ref": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "clave": "entrega",
+          "hecho": true,
+          "obligatorio": false,
+          "irreversible": false,
+          "falta": null,
+          "donde": "/entrega/",
+          "modulo_requerido": null,
+          "ref": null
+        }
+      ]
+    },
+    "no_configura": {
+      "puede_configurar": false,
+      "moneda": "IDR",
+      "monedas": [
+        "IDR",
+        "EUR",
+        "USD"
+      ],
+      "modulos": [
+        {
+          "modulo": "base",
+          "estado": "configurado",
+          "falta": null
+        },
+        {
+          "modulo": "facturas",
+          "estado": "sin_configurar",
+          "falta": null
+        },
+        {
+          "modulo": "recibos",
+          "estado": "configurado",
+          "falta": null
+        },
+        {
+          "modulo": "reservas-producto",
+          "estado": "sin_configurar",
+          "falta": null
+        }
+      ],
+      "pasos": []
+    }
+  },
+  "errores_de_ejemplo": {
+    "_que_es": "Lo que devuelve una función operativa cuando su módulo no está configurado (code + hint; el front nunca lee el mensaje).",
+    "sin_configurar": {
+      "code": "55000",
+      "hint": "reservas-producto_sin_configurar"
+    },
+    "sin_prefijo": {
+      "code": "55000",
+      "hint": "sin_prefijo"
+    },
+    "cuenta_pruebas": {
+      "code": "42501",
+      "hint": "cuenta_pruebas_solo_mira"
+    },
+    "sin_permiso": {
+      "code": "42501",
+      "hint": null
+    }
+  },
+  "_ref": "ref: clave de la sociedad emisora en los pasos sociedad/prefijo (la única activa); null si no hay ninguna. Decisión por defecto de Backend, 12-oct (respuesta a bbm-p18-front)."
+}
