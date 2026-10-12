@@ -336,6 +336,16 @@
       M.aviso = textoRespuesta(res);
       if (res.d && Array.isArray(res.d.campos)) M.faltan = res.d.campos.filter(function (k) { return CAMPOS.indexOf(k) >= 0; });
       if (res.d && CAMPOS.indexOf(res.d.campo) >= 0) M.faltan = [res.d.campo];
+      // falta_confirmar_live sin que esta página lo esperase: la instancia ya está en real (otro administrador la pasó con esta página abierta).
+      // Se relee estado y se sigue en el modo que dice la base: así sale el campo LIVE (revisor, BAJA 1). Lo tecleado se queda.
+      if (res.codigo === 'falta_confirmar_live' && confirma === null) {
+        llama({ accion: 'estado' }).then(function (r2) {
+          var e2 = r2.d && r2.d.ok === true && r2.d.estado;
+          if (estadoValido(e2) && M) { M.est = e2; if (e2.modo) M.modo = e2.modo; CAMPOS.forEach(function (k) { if (!e2.claves[k].configurada) M.reemplaza[k] = true; }); }
+          if (M) dibuja(raiz);
+        });
+        return;
+      }
       dibuja(raiz);
     });
   }
@@ -393,7 +403,9 @@
       }
       // el código ya no sirve o va atado a otro cambio (también si el modo de la instancia cambió entre pedirlo y usarlo): se vuelve a escribir y a
       // pedir (las claves tecleadas se quedan). falta_confirmar_live: el campo LIVE solo está al escribir, así que también se vuelve ahí.
-      if (res.codigo === 'codigo_no_valido' || res.codigo === 'prueba_caducada' || res.codigo === 'prueba_fallida' || res.codigo === 'demasiados_intentos' || res.codigo === 'falta_confirmar_live') { M.fase = 'editar'; M.mandadas = null; M.confirmaMandada = null; M.correo = ''; M.codigo = ''; }
+      // sin_a_quien_avisar: no se arregla en los 10 minutos del código, y cada reintento volvería a probar contra Xendit y a sumar un intento
+      // hasta demasiados_intentos (revisor, BAJA 3): se vuelve a escribir; el código no se gastó, pero hará falta pedir otro.
+      if (res.codigo === 'codigo_no_valido' || res.codigo === 'prueba_caducada' || res.codigo === 'prueba_fallida' || res.codigo === 'demasiados_intentos' || res.codigo === 'falta_confirmar_live' || res.codigo === 'sin_a_quien_avisar') { M.fase = 'editar'; M.mandadas = null; M.confirmaMandada = null; M.correo = ''; M.codigo = ''; }
       return fallo(res.codigo || 'respuesta_ilegible', textoRespuesta(res));
     });
     function exito(est, avisado) {

@@ -41,7 +41,9 @@ const PROD_C = 'xnd_production_CANARIOprod0123456789abcdefghij';
 const PROD_L = 'xnd_production_CANARIOprodlee0123456789abcdefg';
 const CLAVE_XND = /^xnd_(development|production)_[A-Za-z0-9]{20,150}$/, TOKEN = /^[A-Za-z0-9_-]{16,200}$/;
 const CAMPOS = ['creacion', 'lectura', 'aviso'];
+const EDGE_TS = [process.env.AXW_AGENCIA_RAIZ, 'C:/Users/jvrce/Desktop/ClaudeCode/Agencia'].filter(Boolean).map(r => path.join(r, 'erp', 'funciones', 'ajustes-pagos', 'index.ts')).find(f => fs.existsSync(f));
 // los textos de sin_a_quien_avisar de la edge nueva (index.ts de bbm-p34), copiados tal cual: la pantalla los enseña (y los traduce por su frase exacta)
+// (comprobados contra el index.ts de la agencia en cuanto la edge nueva esté allí: abajo, «textos del servidor»)
 const SQA = {
   correo: 'El servidor de correo ha cambiado hace menos de 24 horas: para cobrar de verdad espera a que pasen y vuelve a intentarlo. No se ha guardado nada.',
   testigo: 'Para cobrar de verdad tiene que haber alguien más a quien avisar desde hace al menos 24 horas: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo) que no haya cambiado en ese tiempo. No se ha guardado nada.'
@@ -168,6 +170,21 @@ const C = '[data-axw-cobros-caja]';
 
 (async () => {
   const nav = await chromium.launch({ executablePath: EXE });
+
+  // 0. textos del servidor (revisor, BAJA 2): los 3 de sin_a_quien_avisar que traducen setup_modulos.js (grupo servidor) y usa este arnés, iguales
+  //    byte a byte a los de la edge. Con la edge de antes (sin sin_a_quien_avisar) se avisa y no cuenta; con la nueva, si cambia un texto, ROJO.
+  {
+    const ts = EDGE_TS ? fs.readFileSync(EDGE_TS, 'utf8') : '';
+    const deEdge = [...ts.matchAll(/no\('sin_a_quien_avisar', '([^']*)', 409\)/g)].map(m => m[1]);
+    const sm = fs.readFileSync(path.join(AQUI, 'setup_modulos.js'), 'utf8');
+    const grupo = (/servidor: \{([\s\S]*?)\n {4}\}/.exec(sm) || [])[1] || '';
+    const deFront = [...grupo.matchAll(/sin_a_quien_avisar_[a-z0-9_]+: '([^']*)'/g)].map(m => m[1]);
+    if (!deEdge.length) console.log('AVISO  textos del servidor: la edge de ' + (EDGE_TS || '(sin agencia)') + ' es la de antes de 20261012233000; se mide al aterrizar bbm-p34');
+    else {
+      ok('textos del servidor: setup_modulos.js trae los de la edge, ni uno más ni uno menos', deFront.length === new Set(deEdge).size && deFront.every(t => deEdge.includes(t)), deFront.length + ' / ' + deEdge.length);
+      ok('textos del servidor: los del arnés están en la edge', Object.values(SQA).every(t => deEdge.includes(t)));
+    }
+  }
 
   // 1. sin configurar → guardando → prueba OK → configurada
   let b = base();
@@ -454,6 +471,7 @@ const C = '[data-axw-cobros-caja]';
     const sin = (await p.evaluate(() => window.__sinTrad)).filter(s => !/^(Xendit|LIVE)$/.test(s));
     ok('409 ' + causa + ' ' + idioma + ': ninguna frase sin traducir', idioma === 'es' || sin.length === 0, sin.slice(0, 3).join(' | '));
     ok('409 ' + causa + ' ' + idioma + ': nada guardado y el pie dice su frase', !b.est.configurado && ((await txt(p, '[data-axw-cobros-host="estado"]')) || '').length > 20);
+    ok('409 ' + causa + ' ' + idioma + ': se vuelve a escribir (no se reintenta contra Xendit con el mismo código)', !!(await p.$('[data-axw-cobros="pedir"]')) && !(await p.$('[data-axw-campo="codigo"]')) && await p.$eval('[data-axw-cobros-host="guardar"]', e => e.hidden));
     ok('409 ' + causa + ' ' + idioma + ' ' + ancho + ': sin scroll horizontal', (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho);
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'cobros_409_' + causa + '_' + idioma + '_' + ancho + '.png'), fullPage: true });
     await ctx.close();
@@ -486,6 +504,18 @@ const C = '[data-axw-cobros-caja]';
   await p.fill('[data-axw-campo="codigo"]', '123456'); await p.fill('[data-axw-campo="contrasena"]', 'buena');
   await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(500);
   ok('falta_confirmar_live: se vuelve a escribir, con el campo LIVE y su frase', !!(await p.$('[data-axw-cobros="pedir"]')) && !!(await p.$('[data-axw-campo="confirma_live"]')) && ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').includes('escribir LIVE'));
+  await ctx.close();
+
+  // 21b. otro administrador pasa la instancia a real con esta página abierta: pedir_codigo da falta_confirmar_live, se relee y sale el campo LIVE
+  b = base({ nuevo: true, conf: { creacion: 1, lectura: 1, aviso: 1 }, modo: 'test' });
+  ({ p, ctx } = await abre(nav, b));
+  await p.click('[data-axw-cobros="reemplazar-aviso"]'); await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
+  b.est.modo = 'live'; b.est.modo_desde = { en: '2026-10-13T03:00:00Z', por: 'otro@balibestmotorcycle.com' };
+  await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(400);
+  ok('cambio de modo por otro: lo dice, relee y enseña el campo LIVE con el token tecleado', ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').includes('escribir LIVE') && !!(await p.$('[data-axw-campo="confirma_live"]'))
+     && (await p.getAttribute('[data-axw-cobros="modo-live"]', 'aria-checked')) === 'true' && (await p.$eval('[data-axw-campo="aviso"]', i => i.value)) === CANARIO_A);
+  await p.fill('[data-axw-campo="confirma_live"]', 'LIVE'); await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
+  ok('cambio de modo por otro: con LIVE ya se pide el código', b.edge.filter(x => x.accion === 'pedir_codigo').length === 2 && !!(await p.$('[data-axw-cobros-enviado]')));
   await ctx.close();
 
   // 22. servidor viejo, sin autorización y la instancia ya en real (caso imposible hoy): no hay botón muerto que pida LIVE sin campo
