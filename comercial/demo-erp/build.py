@@ -1539,6 +1539,31 @@ PUERTA_JS = ('(function(){var d=document.querySelector(\'[data-lw="login-idioma"
              '{window.lwSetIdioma(c);location.reload();}});})(b[i]);d.hidden=false;})();')
 
 
+HUB_CAPA = 'contracts/assets/modulos_hub.js'
+
+
+def capa_modulos_hub(interruptores):
+    """La capa de módulos (apagados_instancia.js) también en el hub de entrada (12-oct-2026, medido por bbm-p17-backend con la cuenta de
+    pruebas: el panel de herramientas lanzaba 403 a crm_leads_resumen, contrato_firmas_equipo ×2 y auditoria_firmas, de módulos apagados).
+    El hub (index.html de la raíz = intranet/index.html de Lawang) NO carga guard.js, que es donde va pegada la capa; él mismo crea el
+    cliente y lo publica en window.LW_SB, que es lo que la capa espera. Se copia la MISMA capa a un fichero propio y se carga antes que
+    instancia.js: así sus llamadas a funciones de un módulo apagado se contestan sin salir a la red, igual que en el resto de pantallas.
+    PARA si el hub cambió de forma (sin su window.LW_SB = sb o sin UNA carga de instancia.js). Lawang no pasa por aquí."""
+    hub = os.path.join(DIST, 'index.html')
+    if not os.path.isfile(hub):
+        return
+    t = open(hub, encoding='utf-8').read()
+    if not re.search(r'window\.LW_SB\s*=\s*sb\b', t):   # limpia_publico ya lo ha compactado: «window.LW_SB=sb»
+        aborta('hub: index.html ya no publica su cliente en window.LW_SB (la capa de módulos no tendría con qué preguntar)')
+    cargas = re.findall(r'<script src="/contracts/assets/instancia\.js[^"]*"></script>', t)
+    if len(cargas) != 1:
+        aborta('hub: index.html no tiene UNA carga de /contracts/assets/instancia.js (la capa de módulos va justo antes)')
+    os.makedirs(os.path.dirname(os.path.join(DIST, HUB_CAPA)), exist_ok=True)
+    open(os.path.join(DIST, HUB_CAPA), 'w', encoding='utf-8', newline='').write(interruptores)
+    t = t.replace(cargas[0], '<script src="/%s"></script>%s' % (HUB_CAPA, cargas[0]))
+    open(hub, 'w', encoding='utf-8', newline='').write(t)
+
+
 def puerta_instancia(dist, idiomas):
     """Selector de idioma visible en la tarjeta de entrada (si hay más de un idioma), correo de ejemplo neutro y marca centrada.
     Devuelve True si puso el selector. PARA si la puerta cambió de forma (sin #loginEmail, #fLogin o su <style> con .lw-login)."""
@@ -3290,6 +3315,7 @@ def instancia(nombre):
     open(g, 'w', encoding='utf-8', newline='').write(
         '/* GENERADO por AxisWorks/comercial/demo-erp/build.py --instancia %s — no editar. */\n'
         'window.AXW_NUCLEO_OPERACION = true;\n' % nombre + interruptores + t + setup_para_guard())
+    capa_modulos_hub(interruptores)
     for raiz, dirs, fichs in os.walk(DIST, topdown=False):
         for f in fichs + dirs:
             nuevo = f

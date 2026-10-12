@@ -265,5 +265,35 @@ mira('instancia() añade los rótulos del menú después de los idiomas', cuerpo
 mira('instancia() pone los logos de la instancia, no los neutros a secas', 'logos_instancia(nombre, marca)' in cuerpo and 'logos_neutros(' not in cuerpo)
 mira('instancia() comprueba la piel antes de dar el paquete por bueno', cuerpo.index('comprueba_piel(DIST, nombre)') < cuerpo.index('comprueba_resultado(DIST)'))
 
+# capa de módulos en el hub de entrada (12-oct-2026: 403 del panel de herramientas a funciones de módulos apagados)
+def hub(html):
+    d = tempfile.mkdtemp()
+    v = build.DIST
+    build.DIST = d
+    try:
+        if html is not None:
+            open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(html)
+        try:
+            build.capa_modulos_hub('/*capa*/window.fetch=window.fetch;')
+            r = 'pasa'
+        except SystemExit:
+            r = 'para'
+        sal = open(os.path.join(d, 'index.html'), encoding='utf-8').read() if html is not None else ''
+        capa = os.path.join(d, *build.HUB_CAPA.split('/'))
+        return r, sal, (open(capa, encoding='utf-8').read() if os.path.isfile(capa) else None)
+    finally:
+        build.DIST = v
+
+HUB = ('<script src="https://cdn/supabase.min.js"></script><script src="/contracts/assets/instancia.js?v=1"></script>'
+       '<script>const sb=window.supabase.createClient(a,b);window.LW_SB=sb;</script>')
+r, sal, capa = hub(HUB)
+mira('hub: la capa va en su fichero y se carga justo antes de instancia.js',
+     r == 'pasa' and capa == '/*capa*/window.fetch=window.fetch;'
+     and '<script src="/%s"></script><script src="/contracts/assets/instancia.js?v=1"></script>' % build.HUB_CAPA in sal)
+mira('hub sin window.LW_SB = sb: PARA', hub(HUB.replace('window.LW_SB=sb;', ''))[0] == 'para')
+mira('hub con dos cargas de instancia.js: PARA', hub(HUB + '<script src="/contracts/assets/instancia.js"></script>')[0] == 'para')
+mira('sin hub en el paquete: nada', hub(None)[0] == 'pasa')
+mira('instancia() pone la capa en el hub justo después de pegarla al guard', cuerpo.index('setup_para_guard())') < cuerpo.index('capa_modulos_hub(interruptores)') < cuerpo.index('\n    versiona(DIST)'))
+
 print('%d/%d' % (casos - len(fallos), casos))
 sys.exit(1 if fallos else 0)
