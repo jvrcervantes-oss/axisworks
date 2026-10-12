@@ -13,6 +13,7 @@
     barra: 'Leave the demo',
     inicio: '← Start',
     reset: 'Reset demo',
+    legal: 'Legal',
     datos: 'Made-up data · don\'t enter real personal data',
     datosCorto: 'Sample data',
     asisTitulo: 'Assistant',
@@ -83,6 +84,10 @@
     b.setAttribute('data-accion', 'demo-restablece');
     b.addEventListener('click', restablece);
     n.appendChild(b);
+    // Las políticas a un clic desde cualquier pantalla de la demo (Legal, 12-oct-2026); viven en axisworks.studio.
+    var lg = el('a', 'color:inherit;text-decoration:none;padding:9px 14px;border-left:1px solid rgba(244,242,236,.25);white-space:nowrap', TEXTOS.legal);
+    lg.href = 'https://axisworks.studio/legal-notice';
+    n.appendChild(lg);
     document.body.appendChild(n);
     // Con el menú lateral fijo a la vista (288 px desde 1024), la barra va a su derecha: encima tapaba «Salir». Se recalcula
     // al cambiar el tamaño de la ventana.

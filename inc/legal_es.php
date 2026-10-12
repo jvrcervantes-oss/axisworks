@@ -4,26 +4,36 @@
  * analítica, sin píxeles, sin almacenamiento en el navegador, fuentes
  * autoalojadas y un único formulario que llega por email y no se guarda en base
  * de datos. Si algo de eso cambia (analítica, vídeos incrustados, un CRM detrás
- * del formulario), estos textos cambian en el mismo commit. */
+ * del formulario), estos textos cambian en el mismo commit.
+ * 12-oct-2026: alcance ampliado a erp.axisworks.studio y demo.axisworks.studio,
+ * comprobado ese día contra los dominios reales (curl + sus scripts): ninguno
+ * pone cookies; erp. no guarda nada (solo borra claves sb-* que hubieran
+ * quedado); demo. guarda axw-demo:* en sessionStorage y axw_idioma_ui en
+ * localStorage; los dos cargan Google Fonts; la CSP de demo. permite además
+ * jsDelivr y cdnjs. Domicilio añadido (owner, 12-oct); el NIB se omite hasta
+ * tenerlo (AXW-18). Si erp./demo. autoalojan sus fuentes o cambian lo que
+ * guardan, estos textos cambian también. */
 
 $LEGAL_ES = [
 
 'aviso-legal' => [
   'url'=>'/es/aviso-legal',
   'title'=>'Aviso legal — AxisWorks',
-  'desc'=>'Quién está detrás de axisworks.studio, cómo contactar, condiciones de uso de la web, propiedad intelectual y ley aplicable.',
+  'desc'=>'Quién está detrás de axisworks.studio, erp.axisworks.studio y demo.axisworks.studio, cómo contactar, condiciones de uso de estas webs, propiedad intelectual y ley aplicable.',
   'h1'=>'Aviso legal',
-  'updated'=>'2026-09-24',
+  'updated'=>'2026-10-12',
   'secciones'=>[
     ['h'=>'Titular de la web','p'=>[
-      '<p>En cumplimiento del artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI), te informamos de que la web axisworks.studio pertenece a <b>PT MAHKOTA PROPERTY GLOBAL</b>, sociedad constituida en la República de Indonesia. AxisWorks es el nombre comercial con el que presta sus servicios.</p>',
-      '<ul><li>Sociedad: PT MAHKOTA PROPERTY GLOBAL</li><li>País: Indonesia</li><li>Email: <a href="mailto:hello@axisworks.studio">hello@axisworks.studio</a></li><li>Web: <a href="https://axisworks.studio">https://axisworks.studio</a></li></ul>',
+      '<p>En cumplimiento del artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI), te informamos de que la web axisworks.studio y sus subdominios erp.axisworks.studio y demo.axisworks.studio pertenecen a <b>PT MAHKOTA PROPERTY GLOBAL</b>, sociedad constituida en la República de Indonesia. AxisWorks es el nombre comercial con el que presta sus servicios. En este aviso, «la web» son las tres.</p>',
+      '<ul><li>Sociedad: PT MAHKOTA PROPERTY GLOBAL</li><li>Domicilio: Kerobokan Kelod, Kuta Utara, Badung, Bali, Indonesia</li><li>Email: <a href="mailto:hello@axisworks.studio">hello@axisworks.studio</a></li><li>Webs: <a href="https://axisworks.studio">https://axisworks.studio</a>, <a href="https://erp.axisworks.studio">https://erp.axisworks.studio</a> y <a href="https://demo.axisworks.studio">https://demo.axisworks.studio</a></li></ul>',
       '<p>Cualquier consulta sobre la web, su contenido o este aviso puede enviarse a ese correo.</p>',
     ]],
     ['h'=>'Condiciones de uso','p'=>[
       '<p>Al navegar por esta web aceptas estas condiciones. Si no las aceptas, no la utilices.</p>',
       '<p>Puedes leer, compartir y enlazar sus páginas. No puedes usarla para infringir la ley, enviar spam o código dañino a través del formulario, intentar acceder a partes del servidor que no son públicas ni copiar su contenido de forma masiva y automatizada para reutilizarlo en otro sitio.</p>',
       '<p>La web describe los servicios del estudio. Nada de lo publicado es una oferta vinculante. Un proyecto empieza solo con un contrato escrito firmado por ambas partes, y ese contrato prevalece sobre lo que diga la web.</p>',
+      '<p>La calculadora de ahorro de erp.axisworks.studio da cifras orientativas a partir de los supuestos que tú introduces. Son una estimación, no una promesa de resultados.</p>',
+      '<p>demo.axisworks.studio es una demostración de nuestro ERP con datos de ejemplo inventados. Está para que pruebes el programa tal cual es: no es un servicio para uso real, y lo que hagas en ella puede reiniciarse en cualquier momento. Por favor, no metas en ella datos personales reales.</p>',
     ]],
     ['h'=>'Propiedad intelectual','p'=>[
       '<p>Los textos, el diseño, el código, las imágenes y los casos de esta web pertenecen a PT MAHKOTA PROPERTY GLOBAL o se usan con permiso de sus titulares. Reproducirlos, distribuirlos o modificarlos exige nuestra autorización previa por escrito, salvo citas breves que indiquen la fuente y enlacen a ella.</p>',
@@ -52,33 +62,37 @@ $LEGAL_ES = [
 'privacidad' => [
   'url'=>'/es/privacidad',
   'title'=>'Política de privacidad — AxisWorks',
-  'desc'=>'Qué datos personales recoge axisworks.studio en su formulario de contacto, para qué, con qué base legal, quién los recibe, cuánto tiempo se guardan y cómo ejercer tus derechos.',
+  'desc'=>'Qué datos personales recogen axisworks.studio, erp.axisworks.studio y demo.axisworks.studio, para qué, con qué base legal, quién los recibe, cuánto tiempo se guardan y cómo ejercer tus derechos.',
   'h1'=>'Política de privacidad',
-  'updated'=>'2026-09-24',
+  'updated'=>'2026-10-12',
   'secciones'=>[
     ['h'=>'En resumen','p'=>[
-      '<ul><li>Solo recogemos lo que escribes en el formulario de contacto, la página desde la que escribes y, si viene en el enlace, la campaña que te trajo.</li><li>Lo usamos para contestarte. Sin newsletter, sin publicidad, sin venta de datos.</li><li>Nos llega por email y no se guarda en ninguna base de datos de la web.</li><li>La web no usa cookies, ni analítica, ni píxeles de seguimiento.</li></ul>',
+      '<ul><li>Esta política cubre axisworks.studio, erp.axisworks.studio y demo.axisworks.studio.</li><li>Solo recogemos lo que escribes en el formulario de contacto o nos mandas por email, la página desde la que escribes y, si viene en el enlace, la campaña que te trajo.</li><li>Lo usamos para contestarte. Sin newsletter, sin publicidad, sin venta de datos.</li><li>Nos llega por email y no se guarda en ninguna base de datos de la web.</li><li>Ninguna de las tres usa cookies, ni analítica, ni píxeles de seguimiento. La demo guarda sus datos de ejemplo y el idioma que elijas en tu propio navegador para poder funcionar; la política de cookies dice qué y durante cuánto tiempo.</li><li>erp.axisworks.studio y la demo cargan fuentes de Google Fonts, así que Google recibe tu IP cuando las abres.</li></ul>',
     ]],
     ['h'=>'Responsable del tratamiento','p'=>[
-      '<p>El responsable es <b>PT MAHKOTA PROPERTY GLOBAL</b>, sociedad constituida en Indonesia que opera con el nombre comercial AxisWorks.</p>',
+      '<p>El responsable es <b>PT MAHKOTA PROPERTY GLOBAL</b>, sociedad constituida en Indonesia que opera con el nombre comercial AxisWorks, con domicilio en Kerobokan Kelod, Kuta Utara, Badung, Bali, Indonesia.</p>',
       '<p>Contacto para todo lo relativo a tus datos: <a href="mailto:hello@axisworks.studio">hello@axisworks.studio</a>.</p>',
     ]],
     ['h'=>'Qué datos recogemos','p'=>[
       '<p>A través del formulario de contacto:</p>',
       '<ul><li>Tu nombre y tu email.</li><li>Tu empresa, si decides indicarla.</li><li>Tu mensaje y lo que incluyas en él.</li><li>La página de la web desde la que enviaste el formulario.</li><li>Si el enlace que seguiste llevaba parámetros de campaña (<code>utm_source</code>, <code>utm_medium</code>, <code>utm_campaign</code> y similares), sus valores. Nos dicen qué canal o campaña te trajo. No te identifican.</li></ul>',
+      '<p>Si nos escribes por email, recibimos lo que nos mandas. Eso incluye el botón «Ask for a quote with these numbers» de erp.axisworks.studio: abre tu propio programa de correo con un mensaje ya escrito con las cifras que pusiste en la calculadora. No nos llega nada hasta que lo envías tú, y lo tratamos igual que un mensaje del formulario.</p>',
+      '<p>La demo (demo.axisworks.studio) no tiene cuentas ni inicio de sesión: entras como un usuario de ejemplo. Las personas, empresas, contratos y cifras que ves en ella están inventados para la demostración y no salen de ninguna base de datos de clientes reales. Lo que escribes en la demo se queda en la pestaña de tu navegador y no se nos envía ni a nosotros ni a nadie. Al cerrar la pestaña o pulsar «Reset demo» se borra. Por favor, no metas datos personales reales.</p>',
+      '<p>Cuando abres erp.axisworks.studio o la demo, tu navegador descarga fuentes e iconos de Google Fonts, un servicio de Google, así que Google recibe tu dirección IP y los datos técnicos que lleva cualquier petición (como tu navegador). Algunas páginas de la demo pueden cargar además librerías de código desde jsDelivr o cdnjs (Cloudflare), que reciben los mismos datos. axisworks.studio sirve sus fuentes desde su propio dominio y no hace esto.</p>',
       '<p>Para frenar el spam, el formulario limita cuántos mensajes pueden enviarse desde una misma dirección IP. Para eso el servidor guarda tu IP solo como un hash combinado con un secreto que cambia cada día, de modo que no puede leerse de vuelta. Ese hash se borra en menos de 24 horas.</p>',
-      '<p>Como cualquier servidor web, el que aloja esta web registra datos técnicos de cada petición (dirección IP, fecha y hora, página pedida, navegador) para mantener el servicio en marcha y seguro.</p>',
+      '<p>Como cualquier servidor web, los que alojan estas webs registran datos técnicos de cada petición (dirección IP, fecha y hora, página pedida, navegador) para mantener el servicio en marcha y seguro.</p>',
       '<p>No pedimos datos de categorías especiales (salud, ideología, origen étnico…). Por favor, no los incluyas en tu mensaje.</p>',
     ]],
     ['h'=>'Para qué los usamos y con qué base legal','p'=>[
-      '<ul><li><b>Responder a una consulta sobre nuestros servicios</b> (presupuesto, proyecto, dudas antes de contratar). Base legal: aplicación de medidas precontractuales a petición tuya (art. 6.1.b del RGPD).</li><li><b>Responder a cualquier otro mensaje</b> (prensa, candidaturas, otras preguntas). Base legal: nuestro interés legítimo en contestar a quien nos escribe (art. 6.1.f del RGPD). Nos escribes para recibir respuesta, así que contestarte es lo que esperas.</li><li><b>Proteger el formulario del spam y el servidor de abusos</b>, incluidos el hash de la IP y los registros del servidor. Base legal: nuestro interés legítimo en mantener la web segura (art. 6.1.f del RGPD).</li></ul>',
+      '<ul><li><b>Responder a una consulta sobre nuestros servicios</b> (presupuesto, proyecto, dudas antes de contratar). Base legal: aplicación de medidas precontractuales a petición tuya (art. 6.1.b del RGPD).</li><li><b>Responder a cualquier otro mensaje</b> (prensa, candidaturas, otras preguntas). Base legal: nuestro interés legítimo en contestar a quien nos escribe (art. 6.1.f del RGPD). Nos escribes para recibir respuesta, así que contestarte es lo que esperas.</li><li><b>Proteger el formulario del spam y el servidor de abusos</b>, incluidos el hash de la IP y los registros del servidor. Base legal: nuestro interés legítimo en mantener la web segura (art. 6.1.f del RGPD).</li><li><b>Mostrar erp.axisworks.studio y la demo con sus fuentes e iconos</b>, que es por lo que tu navegador contacta con Google Fonts y, en algunas páginas de la demo, con jsDelivr o cdnjs. Base legal: nuestro interés legítimo en que esas páginas se vean bien (art. 6.1.f del RGPD). Puedes oponerte escribiéndonos.</li></ul>',
       '<p>El formulario no lleva casilla porque nada de esto se basa en tu consentimiento. No usaremos tus datos para enviarte newsletters ni publicidad.</p>',
       '<p>No tomamos decisiones automatizadas sobre ti.</p>',
     ]],
     ['h'=>'Quién recibe tus datos','p'=>[
       '<p>Nadie fuera del estudio, salvo los proveedores que los tratan por encargo nuestro con un contrato de encargo del tratamiento:</p>',
-      '<ul><li><b>Hostinger</b>, que aloja esta web y nuestro buzón de correo.</li></ul>',
+      '<ul><li><b>Hostinger</b>, que aloja estas webs y nuestro buzón de correo.</li></ul>',
       '<p>No vendemos ni cedemos tus datos a terceros para sus propios fines. Solo los comunicaremos si una ley o una autoridad competente nos obliga.</p>',
+      '<p>Aparte, cuando abres erp.axisworks.studio o la demo, tu navegador envía tu dirección IP directamente a <b>Google</b> (Google Fonts) y, en algunas páginas de la demo, a <b>jsDelivr</b> o <b>cdnjs (Cloudflare)</b>, para descargar fuentes, iconos o código. No son proveedores que trabajen por encargo nuestro: tratan ese dato según sus propias políticas de privacidad, por ejemplo la de Google en <a href="https://policies.google.com/privacy" rel="noopener">policies.google.com/privacy</a>. Esas peticiones pueden atenderse desde fuera de tu país, también desde Estados Unidos.</p>',
     ]],
     ['h'=>'Transferencias internacionales','p'=>[
       '<p>Estamos establecidos en Indonesia. La Comisión Europea no ha adoptado una decisión de adecuación para Indonesia, así que su nivel de protección de datos no está declarado equivalente al de la Unión Europea.</p>',
@@ -97,11 +111,11 @@ $LEGAL_ES = [
       '<p>Como sociedad indonesia, también estamos sujetos a la Ley n.º 27 de 2022 de Protección de Datos Personales de Indonesia (UU PDP), que te reconoce derechos equivalentes. Puedes ejercerlos en el mismo correo.</p>',
     ]],
     ['h'=>'Seguridad','p'=>[
-      '<p>Toda la web funciona sobre HTTPS. Los mensajes del formulario van directos a nuestro buzón y no se guardan en una base de datos del servidor web. Solo pueden leerlos las personas del estudio que tienen que contestarte.</p>',
+      '<p>Las tres webs funcionan sobre HTTPS. Los mensajes del formulario van directos a nuestro buzón y no se guardan en una base de datos del servidor web. Solo pueden leerlos las personas del estudio que tienen que contestarte.</p>',
       '<p>Si un incidente de seguridad afecta a tus datos y pone en riesgo tus derechos, lo notificaremos a la autoridad competente y, cuando corresponda, te avisaremos directamente dentro de los plazos legales.</p>',
     ]],
     ['h'=>'Menores','p'=>[
-      '<p>Esta web se dirige a empresas y profesionales. No está pensada para menores y no recogemos a sabiendas datos de menores de 14 años. Si crees que un menor nos ha escrito, avísanos y borraremos el mensaje.</p>',
+      '<p>Estas webs se dirigen a empresas y profesionales. No está pensada para menores y no recogemos a sabiendas datos de menores de 14 años. Si crees que un menor nos ha escrito, avísanos y borraremos el mensaje.</p>',
     ]],
     ['h'=>'Cambios en esta política','p'=>[
       '<p>Si cambiamos la forma de tratar los datos, actualizaremos esta página antes de que el cambio se aplique. La fecha de arriba indica la versión vigente.</p>',
@@ -112,16 +126,21 @@ $LEGAL_ES = [
 'cookies' => [
   'url'=>'/es/cookies',
   'title'=>'Política de cookies — AxisWorks',
-  'desc'=>'axisworks.studio no usa cookies ni tecnologías similares. Qué significa, por qué no hay banner de cookies y qué cambiaría si algún día se añaden.',
+  'desc'=>'axisworks.studio, erp.axisworks.studio y demo.axisworks.studio no usan cookies. Qué guarda la demo del ERP en tu navegador y durante cuánto tiempo, y por qué no hay banner de cookies.',
   'h1'=>'Política de cookies',
-  'updated'=>'2026-09-24',
+  'updated'=>'2026-10-12',
   'secciones'=>[
     ['h'=>'Esta web no usa cookies','p'=>[
-      '<p>axisworks.studio no instala cookies en tu dispositivo. Tampoco usa tecnologías similares: ni analítica, ni píxeles de publicidad o de redes sociales, ni huella digital del navegador, ni nada guardado en el almacenamiento local o de sesión de tu navegador.</p>',
-      '<p>Las fuentes tipográficas se sirven desde nuestro propio dominio, así que cargar una página no envía tu IP a un proveedor de fuentes. No hay vídeos, mapas ni otros contenidos de terceros incrustados que puedan poner sus propias cookies.</p>',
+      '<p>Esta política cubre axisworks.studio, erp.axisworks.studio y demo.axisworks.studio. Ninguna instala cookies en tu dispositivo, y ninguna usa analítica, píxeles de publicidad o de redes sociales, ni huella digital del navegador.</p>',
+      '<p>axisworks.studio y erp.axisworks.studio tampoco guardan nada en el almacenamiento local o de sesión de tu navegador. erp.axisworks.studio solo borra datos de inicio de sesión que versiones anteriores de nuestro software hubieran podido dejar en tu navegador; no guarda nada nuevo.</p>',
+      '<p>axisworks.studio sirve sus fuentes tipográficas desde nuestro propio dominio, así que cargar una de sus páginas no envía tu IP a un proveedor de fuentes. erp.axisworks.studio y la demo sí cargan fuentes e iconos de Google Fonts, y algunas páginas de la demo pueden cargar código desde jsDelivr o cdnjs. Eso no es una cookie, pero sí envía tu IP a esos proveedores; lo explica la política de privacidad. No hay vídeos, mapas ni otros contenidos de terceros incrustados que puedan poner sus propias cookies.</p>',
+    ]],
+    ['h'=>'Qué guarda la demo en tu navegador','p'=>[
+      '<p>La demo del ERP en demo.axisworks.studio funciona entera dentro de tu navegador, así que guarda ahí dos cosas. Las dos son nuestras, ninguna es una cookie y ninguna se nos envía ni a nosotros ni a nadie:</p>',
+      '<ul><li><code>axw-demo:*</code> (almacenamiento de sesión): los datos de ejemplo y los cambios que haces mientras pruebas la demo, para que se mantengan al pasar de una página a otra. Se borran al cerrar la pestaña o al pulsar «Reset demo».</li><li><code>axw_idioma_ui</code> (almacenamiento local): el idioma que elegiste para las pantallas de la demo. Se guarda cuando eliges idioma, no caduca, y puedes borrarlo limpiando los datos del sitio demo.axisworks.studio en tu navegador.</li></ul>',
     ]],
     ['h'=>'Por qué no hay banner de cookies','p'=>[
-      '<p>El banner de cookies sirve para pedir tu consentimiento antes de guardar o leer información en tu dispositivo. Como esta web no hace ninguna de las dos cosas, no hay nada que consentir, y un banner solo te estorbaría.</p>',
+      '<p>El banner de cookies sirve para pedir tu consentimiento antes de guardar o leer en tu dispositivo información que no sea estrictamente necesaria. axisworks.studio y erp.axisworks.studio no guardan nada. La demo solo guarda lo que necesita para funcionar como tú le pides: la sesión de la demo y el idioma que eliges. La ley no exige consentimiento para eso, así que no hay nada que consentir, y un banner solo te estorbaría.</p>',
     ]],
     ['h'=>'Enlaces a otras webs','p'=>[
       '<p>Algunas páginas enlazan a otras webs. Si sigues esos enlaces, la otra web puede usar sus propias cookies según su propia política, que no controlamos.</p>',

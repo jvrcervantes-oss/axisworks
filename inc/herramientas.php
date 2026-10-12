@@ -8,15 +8,7 @@
  * para nombrar la herramienta. Las que no tienen logotipo en Simple Icons salen
  * con su nombre, sin inventar un icono. El SVG va en línea para teñirlo con
  * currentColor (monocromo, como pide el sistema: un solo acento por pantalla). */
-$HERRAMIENTAS = [
-  ['claude','Claude'], ['openai','ChatGPT'], [null,'Stitch'],
-  ['railway','Railway'], ['supabase','Supabase'], ['postgresql','PostgreSQL'], ['github','GitHub'],
-  ['hostinger','Hostinger'], ['php','PHP'], ['python','Python'], ['greensock','GSAP'],
-  ['threedotjs','Three.js'], ['blender','Blender'], [null,'Remotion'], [null,'Higgsfield'],
-  ['canva','Canva'], ['meta','Meta Ads'], ['whatsapp','WhatsApp Business'], ['telegram','Telegram'],
-  ['stripe','Stripe'], ['googlesheets','Google Sheets'], [null,'GoHighLevel'],
-];
-$herr_t = ['en'=>'Tools we build with','es'=>'Con lo que trabajamos'];
+require __DIR__ . '/herramientas_datos.php';
 
 if (!function_exists('herr_svg')) {
   function herr_svg($slug) {

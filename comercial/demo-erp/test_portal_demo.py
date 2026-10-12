@@ -13,6 +13,7 @@ Importes, elección de cliente y escrituras del portal se prueban ejecutándolos
 Corre en el control de subida (el gate ejecuta los test_*.py de esta carpeta)."""
 import os
 import re
+import subprocess
 import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
@@ -61,6 +62,24 @@ ok('DEMO · NOT A VALID DOCUMENT' in doc and doc.count('NOT A VALID DOCUMENT') >
    'documento.js: sello en documentoHTML y marca de agua en documentoPagina')
 ok('NOT A VALID DOCUMENT' in lee('portal', 'demo', 'documento.html'), 'el documento de muestra lleva la marca dentro')
 ok(os.path.isfile(os.path.join(PUBLICADO, 'portal', 'demo', 'isotipo.svg')), 'el isotipo neutro está publicado')
+
+# Fotos de relleno (12-oct-2026): todas las que nombra el adaptador están publicadas, son webp de verdad y cada una tiene su
+# fila de procedencia en LICENCIAS.txt (que vive en el fuente y no se publica).
+# los pasos de obra son el 3.er campo de cada título (["Excavation",-19,"excavacion"]: el publicado va minificado); las
+# portadas, portada-1..3
+pasos = set(re.findall(r"""\[\s*["'][^"'\]]+["']\s*,\s*[^,\]]+,\s*["']([a-z]+)["']\s*\]""", adap))
+pedidas = {'portada-%d.webp' % n for n in (1, 2, 3)} | {'obra-%s.webp' % p for p in pasos}
+ok(len(pasos) >= 8, 'el adaptador nombra sus fotos de obra por paso (%d)' % len(pasos))
+fotos_dir = os.path.join(PUBLICADO, 'portal', 'demo', 'fotos')
+publicadas = set(os.listdir(fotos_dir)) if os.path.isdir(fotos_dir) else set()
+ok(pedidas <= publicadas, 'las fotos que pide el adaptador están publicadas (%d)' % len(pedidas))
+ok(all(open(os.path.join(fotos_dir, f), 'rb').read(12)[8:12] == b'WEBP' for f in publicadas), 'las fotos publicadas son webp')
+lic = os.path.join(AQUI, 'portal_demo', 'fotos', 'LICENCIAS.txt')
+lic_t = open(lic, encoding='utf-8').read() if os.path.isfile(lic) else ''
+ok(bool(publicadas) and all(f in lic_t for f in publicadas), 'cada foto publicada tiene su procedencia en portal_demo/fotos/LICENCIAS.txt')
+ok(not any(f.startswith('LICENCIAS') for f in publicadas), 'LICENCIAS.txt no se publica')
+# .txt y no .md: el .gitignore del repo ignora *.md y la procedencia no llegaría a otra copia (revisor, 12-oct)
+ok(subprocess.run(['git', '-C', AQUI, 'check-ignore', '-q', lic]).returncode == 1, 'LICENCIAS.txt no lo ignora git')
 
 if FALLOS:
     print('\n%d fallo(s)' % len(FALLOS))

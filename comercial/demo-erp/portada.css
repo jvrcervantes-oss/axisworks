@@ -1,0 +1,239 @@
+/* Portada de erp.axisworks.studio (C03, 12-oct-2026): calco del artboard «ErpLanding» del lienzo del owner (AxisWorks
+   Brand Kit → Website → C03). Hoja escrita a mano, sin Tailwind ni iconos de Google: build.py la publica como
+   demo/landing.css. Las medidas son las del artboard tal cual (sus estilos en línea pasados a clases); las fuentes
+   (Unbounded, Manrope, IBM Plex Mono, OFL, autoalojadas) las antepone build.py al publicar, desde assets/x/fonts.css.
+   Lo que se aparta del artboard (menú a 390, botones de tipo de negocio, X del final en móvil, aviso de arrastre) está
+   marcado con «fuera del artboard» y su porqué. */
+:root{
+  --ink:#0B0C1E;--paper:#F2F3F7;--blue:#2E3BEB;--lime:#C8F04A;--white:#FFFFFF;
+  --line:#DADCE6;--mute:#A9ADC2;--mute2:#C9CCDB;--gray:#4A4E66;--ink2:#2B2E45;
+  --panel:#14152A;--panel-b:#2A2D47;--card:#1A1C33;--rule:#23253D;--soft:#E3E6FD;--lilac:#8C95FF;
+  --gut:clamp(20px,5vw,80px);
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --f-head:Unbounded,sans-serif;--f-body:Manrope,sans-serif;--f-mono:'IBM Plex Mono',monospace;
+}
+/* Sin box-sizing global a propósito: el artboard usa el del navegador (max-width:1280px es el ANCHO DE CONTENIDO, con el
+   margen lateral por fuera). Con border-box todo salía 144 px más estrecho. Solo las tarjetas del dibujo van en border-box,
+   como en el artboard. */
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ink)}
+a{color:inherit;text-decoration:none}
+a:hover{color:var(--lime)}
+.navlight a:hover{color:var(--blue)}
+.navlight a.navcta:hover{color:var(--lime)}
+summary{cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+.claro :focus-visible,.navlight :focus-visible{outline-color:var(--blue)}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.pagina{font-family:var(--f-body);color:var(--paper);background:var(--ink);overflow-x:clip}
+.wrap{max-width:1280px;margin:0 auto;padding-left:var(--gut);padding-right:var(--gut)}
+.mono{font-family:var(--f-mono)}
+.eyebrow{font-family:var(--f-mono);font-size:13px;letter-spacing:.14em;color:var(--mute)}
+.lt{font-weight:300}
+.h2{margin:0;font-family:var(--f-head);font-weight:600;font-size:clamp(30px,3.6vw,52px);line-height:1.04;letter-spacing:-.045em}
+.sec-pad{padding-top:clamp(56px,8vw,112px);padding-bottom:clamp(56px,8vw,112px)}
+.pill{min-height:52px;padding:0 24px;border-radius:999px;display:inline-flex;align-items:center;font-weight:700}
+.pill-lime{background:var(--lime);color:var(--ink)}
+.pill-lime:hover{color:var(--ink);background:#d5f56c}
+.pill-line{border:1.5px solid var(--gray)}
+.xmark{display:block}
+
+/* ── Cabecera ─────────────────────────────────────────────────────────────────────────────── */
+.navlight{background:var(--paper);color:var(--ink);border-bottom:1px solid var(--line)}
+.nav-in{padding-top:14px;padding-bottom:14px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:16px}
+.logo{grid-column:1;justify-self:start;display:inline-flex;align-items:center;gap:10px}
+.logo-w{font-family:var(--f-head);font-size:19px;letter-spacing:-.03em;display:inline-flex;align-items:baseline}
+.logo-w b{font-weight:600}
+.logo-w i{font-style:normal;font-weight:300}
+.logo-w svg{width:.57em;height:.57em;margin:0 .05em}
+.logo-erp{font-family:var(--f-mono);font-size:12px;font-weight:500;letter-spacing:.12em;padding:4px 8px;border-radius:8px;background:var(--blue);color:var(--paper)}
+.navlinks{grid-column:2;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:var(--white);border:1px solid var(--line);font-size:15px;font-weight:600;white-space:nowrap}
+.nl{padding:9px 16px;border-radius:999px;transition:background-color .2s,color .2s}
+.navlight .nl:hover{background:var(--soft);color:var(--blue)}
+.nav-der{grid-column:3;justify-self:end;display:flex;align-items:center;gap:8px}
+.tourlink{font-weight:700;white-space:nowrap}
+.navcta{min-height:44px;padding:0 20px;border-radius:999px;background:var(--ink);color:var(--lime);display:inline-flex;align-items:center;font-weight:700;white-space:nowrap}
+.menubtn{display:none;position:relative}
+.menubtn summary{min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;gap:8px;font-weight:700}
+.menubtn[open] summary{background:var(--ink);color:var(--paper)}
+.menu-nav{position:absolute;right:0;top:calc(100% + 10px);z-index:20;min-width:220px;padding:8px;border-radius:18px;background:var(--white);border:1px solid var(--line);box-shadow:0 18px 40px rgba(11,12,30,.18);display:flex;flex-direction:column;font-weight:600}
+.menu-demo{display:none}
+@media (max-width:1100px){.navlinks{display:none!important}.menubtn{display:block}}
+@media (max-width:600px){.tourlink{display:none!important}}
+/* fuera del artboard: a 390 el botón «Open the demo» tapaba el logotipo (medido en el artboard: «axiswo»). Por debajo
+   de 600 px pasa al menú compacto. */
+@media (max-width:600px){.navcta{display:none}.menu-demo{display:block}}
+
+/* ── Portada ──────────────────────────────────────────────────────────────────────────────── */
+.hero{position:relative;overflow:hidden}
+.hero-in{padding-top:clamp(48px,7vw,88px);padding-bottom:clamp(48px,7vw,88px);display:flex;flex-wrap:wrap;align-items:center;gap:48px}
+.hero-txt{flex:1 1 560px;min-width:0;display:flex;flex-direction:column;gap:24px}
+.h1{margin:0;font-family:var(--f-head);font-weight:600;font-size:clamp(36px,3.9vw,56px);line-height:1.04;letter-spacing:-.05em}
+.h1 span{display:block}
+.biz{margin:0;padding:0;border:0;min-width:0;display:flex;flex-direction:column;gap:10px}
+.biz legend{padding:0;margin-bottom:10px;font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;color:var(--mute)}
+.biz-tabs{align-self:flex-start;display:flex;flex-wrap:wrap;gap:4px;padding:5px;border-radius:999px;background:var(--panel);border:1px solid var(--panel-b)}
+.biz-tab{position:relative;min-height:56px;padding:0 28px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--mute);cursor:pointer;transition:background-color .3s var(--ease),color .3s}
+.biz-tab input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
+.biz-tab:has(input:checked){background:var(--blue);color:var(--paper)}
+.biz-tab:has(input:focus-visible){outline:2px solid var(--lime);outline-offset:3px}
+/* fuera del artboard: a 390 los tres botones partían la pastilla en dos filas. Tres columnas iguales. */
+@media (max-width:600px){.biz-tabs{align-self:stretch;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-radius:28px}.biz-tab{padding:0 6px;font-size:16px}}
+.hero-p{margin:0;min-height:6.6em;font-size:clamp(17px,1.4vw,19px);line-height:1.65;color:var(--mute2);max-width:50ch}
+.hero-cta{display:flex;flex-wrap:wrap;gap:12px}
+.hero-cta .pill{font-size:16px}
+.startups{align-self:flex-start;display:inline-flex;flex-wrap:wrap;align-items:center;border-radius:999px;border:1px solid var(--paper);overflow:hidden;font-family:var(--f-mono);font-size:12px;letter-spacing:.12em}
+.startups span{padding:8px 14px}
+.startups span:first-child{background:var(--paper);color:var(--ink);font-weight:500}
+.startups:hover span:last-child{color:var(--lime)}
+.hero-art{flex:1 1 400px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:18px}
+.dibujo{position:relative;width:100%;max-width:500px;aspect-ratio:1/1}
+.dibujo .lineas{position:absolute;inset:0;width:100%;height:100%}
+.dibujo .xgrande{position:absolute;left:26%;top:26%;width:48%;height:48%}
+.flow{stroke-dasharray:1.2 1.2;animation:flow 1.6s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-4.8}}
+.tarj{position:absolute;width:44%;border-radius:16px;background:var(--card);border:1px solid var(--panel-b);padding:12px 14px;box-sizing:border-box}
+.tarj-n{font-weight:700;font-size:14px}
+.tarj-s{font-family:var(--f-mono);font-size:11px;color:var(--mute);margin-top:4px}
+.tarj:nth-child(1){left:0;top:2%}
+.tarj:nth-child(2){right:0;top:2%;animation-delay:.07s}
+.tarj:nth-child(3){left:0;bottom:2%;animation-delay:.14s}
+.tarj:nth-child(4){right:0;bottom:2%;animation-delay:.21s}
+.tarjetas{position:absolute;inset:0}
+.db{position:absolute;left:50%;top:73%;transform:translateX(-50%);white-space:nowrap;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;padding:5px 10px;border-radius:999px;background:var(--paper);color:var(--ink)}
+.hero-meta{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;color:var(--lilac);text-align:center}
+/* Cambio de tipo de negocio: dos juegos de keyframes iguales que se alternan, así cada cambio repite la entrada */
+.swA{animation:swIn .45s var(--ease) both}.swB{animation:swIn2 .45s var(--ease) both}
+@keyframes swIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes swIn2{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.cardA{animation:cardIn .55s var(--ease) both}.cardB{animation:cardIn2 .55s var(--ease) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes cardIn2{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+.cifras{border-top:1px solid var(--rule)}
+.cifras dl{margin:0 auto;padding-top:28px;padding-bottom:28px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+.cifras dl>div{display:flex;align-items:baseline;gap:12px}
+.cifras dt{font-family:var(--f-head);font-weight:600;font-size:36px;letter-spacing:-.05em}
+.cifras dt.lima{color:var(--lime)}
+.cifras dd{margin:0;font-size:14px;color:var(--mute2)}
+
+/* ── Módulos ──────────────────────────────────────────────────────────────────────────────── */
+.claro{background:var(--paper);color:var(--ink)}
+.mods-in{display:flex;flex-direction:column;gap:32px}
+.mods-cab{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:20px}
+.mods-tit{display:flex;flex-direction:column;gap:12px;max-width:720px}
+.mods-tit .eyebrow,.faq .eyebrow{color:var(--blue)}
+.mods-tit p{margin:0;font-size:16px;line-height:1.6;color:var(--gray)}
+.mods-bot{display:flex;flex-wrap:wrap;gap:8px}
+.bot{min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid var(--ink);background:var(--white);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}
+.bot-2{border-color:var(--mute);background:transparent}
+.mods-cuerpo{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.rejilla{flex:999 1 640px;min-width:0;columns:3 240px;column-gap:20px}
+.secc{break-inside:avoid;margin-bottom:20px;border-radius:20px;background:var(--white);padding:18px;display:flex;flex-direction:column;gap:6px}
+.secc-cab{display:flex;justify-content:space-between;align-items:baseline;padding:0 4px 6px;font-family:var(--f-mono);font-size:11px;color:var(--gray)}
+.secc-cab h3{margin:0;font:inherit;letter-spacing:.12em}
+.mod{min-height:44px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:12px;border:0;background:var(--paper);color:var(--gray);font:inherit;font-size:14px;font-weight:600;text-align:left;cursor:pointer}
+.mod[aria-checked="true"]{background:var(--soft);color:var(--ink)}
+.mod[aria-disabled="true"]{cursor:default}
+.mod-d{display:inline-flex;align-items:center;gap:8px;flex:none}
+.mod-tag{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--gray)}
+.sw{width:34px;height:20px;border-radius:999px;background:var(--mute);position:relative;display:inline-block}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--white);transition:left .25s var(--ease)}
+.mod[aria-checked="true"] .sw{background:var(--blue)}
+.mod[aria-checked="true"] .sw::after{left:17px}
+.vista{flex:1 1 300px;min-width:0;border-radius:24px;background:var(--ink);color:var(--paper);padding:28px;display:flex;flex-direction:column;gap:18px}
+.vista .eyebrow{font-size:12px}
+.vista-n{display:flex;align-items:baseline;gap:10px}
+.vista-n strong{font-family:var(--f-head);font-weight:600;font-size:56px;letter-spacing:-.05em;color:var(--lime)}
+.vista-n span{font-size:15px;color:var(--mute2)}
+.barra{height:10px;border-radius:999px;background:var(--rule);overflow:hidden}
+.barra div{height:100%;width:0;background:var(--lime);transition:width .35s var(--ease)}
+.vista-pct{font-family:var(--f-mono);font-size:12px;color:var(--mute)}
+.vista ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:14px;color:var(--mute2)}
+.vista li{display:flex;gap:10px}
+.vista li svg{flex:none;margin-top:3px}
+.vista .pill{justify-content:center;padding:0}
+.vista-nota{font-size:13px;line-height:1.5;color:var(--mute)}
+/* fuera del artboard: el aviso de lo que se movió de más al tocar un bloque (plan, Frontend #5). */
+.aviso{box-sizing:border-box;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;max-width:min(92vw,560px);padding:12px 18px;border-radius:16px;background:var(--ink);color:var(--paper);border:1px solid var(--panel-b);font-size:14px;line-height:1.5;box-shadow:0 18px 40px rgba(11,12,30,.25);transition:opacity .3s}
+.aviso:empty{display:none}
+.aviso.fuera{opacity:0}
+
+/* ── Calculadora de horas ─────────────────────────────────────────────────────────────────── */
+.roi{background:var(--blue)}
+.roi-in{display:flex;flex-wrap:wrap;gap:40px}
+.roi-txt{flex:1 1 380px;min-width:0;display:flex;flex-direction:column;gap:18px}
+.roi-txt .eyebrow{color:var(--paper)}
+.roi-txt>p{margin:0;font-size:16px;line-height:1.65;color:var(--soft)}
+/* fuera del artboard (Legal #286: «el aviso pegado a la cifra»): el aviso entra en la caja oscura, bajo las tres cifras. */
+.roi-caja{margin-top:8px;border-radius:24px;background:var(--ink);padding:24px;display:flex;flex-direction:column;gap:18px}
+.roi-res{margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:18px}
+.roi-res>div{display:flex;flex-direction:column;gap:6px}
+.roi-res dt{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;color:var(--mute)}
+.roi-res dd{margin:0;font-family:var(--f-head);font-weight:600;font-size:34px;letter-spacing:-.05em;overflow-wrap:anywhere}
+.roi-res dd.lima{color:var(--lime)}
+.roi-txt .roi-nota{margin:0;padding-top:16px;border-top:1px solid var(--rule);font-size:13px;line-height:1.55;color:var(--mute2)}
+.roi-form{flex:1 1 440px;min-width:0;border-radius:24px;background:var(--paper);color:var(--ink);padding:clamp(20px,3vw,32px);display:flex;flex-direction:column;gap:14px}
+.roi-form .cab{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;color:var(--gray)}
+.roi-tareas{display:flex;flex-direction:column;gap:14px}
+.tarea{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:6px 0;border-bottom:1px solid var(--line);font-size:15px;font-weight:600}
+.campo{min-height:44px;border-radius:12px;border:1.5px solid var(--mute);background:var(--white);padding:0 12px;font:inherit;color:var(--ink)}
+.tarea .campo{flex:none;width:88px;font-family:var(--f-mono);text-align:right}
+.roi-fila{display:flex;flex-wrap:wrap;gap:14px}
+.roi-fila label,.roi-pct{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:700}
+.roi-fila label:first-child{flex:2 1 200px}
+.roi-fila label:last-child{flex:1 1 120px}
+.roi-fila .campo{min-height:48px;padding:0 14px}
+.roi-fila label:first-child .campo{font-family:var(--f-mono)}
+.roi-fila select.campo{padding:0 12px}
+.roi-pct{gap:8px}
+.roi-pct input{width:100%;min-height:32px;accent-color:var(--blue)}
+.roi-supuesto{font-size:13px;color:var(--gray)}
+
+/* ── Qué hace ─────────────────────────────────────────────────────────────────────────────── */
+.cap-in{display:flex;flex-direction:column;gap:32px}
+.cap-tit{display:flex;flex-direction:column;gap:12px;max-width:760px}
+.cap-rej{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.cap{border-radius:20px;background:var(--card);padding:26px;display:flex;flex-direction:column;gap:12px}
+.cap h3{margin:0;font-family:var(--f-mono);font-weight:400;font-size:12px;color:var(--lime)}
+.cap ul{margin:0;padding-left:18px;font-size:15px;line-height:1.6;color:var(--mute2)}
+.cap p{margin:0;font-size:15px;line-height:1.6;color:var(--mute2)}
+.cap-claro{background:var(--paper);color:var(--ink)}
+.cap-claro h3{color:var(--blue)}
+.cap-claro p{color:var(--ink2)}
+.integ{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.integ h3{margin:0 8px 0 0;font-family:var(--f-mono);font-weight:400;font-size:12px;letter-spacing:.12em;color:var(--mute)}
+.integ ul{margin:0;padding:0;list-style:none;display:contents}
+.integ li{display:contents}
+.chip{padding:8px 14px;border-radius:999px;border:1px solid var(--panel-b);font-size:14px;font-weight:600}
+.por{color:var(--gray)}
+
+/* ── Preguntas ────────────────────────────────────────────────────────────────────────────── */
+.faq{background:var(--white);color:var(--ink)}
+.faq-in{display:flex;flex-wrap:wrap;gap:40px}
+.faq-tit{flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.faq-tit .h2{font-size:clamp(26px,3vw,40px);line-height:1.08}
+.faq-lista{flex:2 1 560px;min-width:0;border-top:1px solid var(--line)}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{min-height:64px;display:flex;align-items:center;font-weight:700;font-size:18px}
+.faq details p{margin:0 0 22px;font-size:16px;line-height:1.7;color:var(--ink2)}
+
+/* ── Llamada final y pie ──────────────────────────────────────────────────────────────────── */
+.final{position:relative;overflow:hidden}
+.final>svg{position:absolute;right:-120px;top:-80px;width:520px;height:520px}
+.final-in{position:relative;display:flex;flex-direction:column;gap:20px}
+.final .h2{font-size:clamp(30px,4vw,56px);max-width:15ch}
+.final-bot{display:flex;flex-wrap:wrap;gap:12px}
+/* fuera del artboard: a 390 la X grande tapaba el titular y «Open the demo» (medido en el artboard). Se queda en la
+   esquina, más pequeña. */
+@media (max-width:600px){.final>svg{width:220px;height:220px;right:-110px;top:-110px}}
+.pie{border-top:1px solid var(--rule)}
+.pie-in{padding-top:28px;padding-bottom:28px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;color:var(--mute)}
+.pie-in a{text-decoration:underline;text-underline-offset:3px}
+.pie-marcas{flex-basis:100%;margin:0;font-size:11px;color:var(--mute)}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .swA,.swB,.cardA,.cardB,.flow{animation:none}
+  .biz-tab,.sw::after,.barra div,.aviso,.nl{transition:none}
+}

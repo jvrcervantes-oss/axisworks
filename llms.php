@@ -16,7 +16,7 @@ $d = fn($s) => html_entity_decode($s, ENT_QUOTES, 'UTF-8');
 
 > AxisWorks is a two-person studio that builds the software a company runs on
 > (internal tool suites, CRM, WhatsApp AI bots, automations that monitor themselves)
-> and the ad campaigns that bring it leads. English and Spanish.
+> and the ad campaigns that bring it leads.
 
 ## Contact
 - Email: <?= EMAIL ?>
@@ -25,7 +25,6 @@ $d = fn($s) => html_entity_decode($s, ENT_QUOTES, 'UTF-8');
 
 ## Key facts
 - Approach: hand-coded, non-template, design and development in the same hands
-- Languages: English and Spanish (interfaces also in Bahasa Indonesia)
 - Pricing: no published rates. Every project is quoted on its own scope.
 
 ## What we build — the catalogue
@@ -43,8 +42,6 @@ $d = fn($s) => html_entity_decode($s, ENT_QUOTES, 'UTF-8');
 <?php endforeach; endforeach; ?>
 - [EN] Agents as a Service — AI agents that run a business within hard limits (in testing, shadow mode; not yet a running service) — <?= SITE ?>/agents-as-a-service
 - [ES] Agentes como servicio — <?= SITE ?>/es/agentes-como-servicio
-- [EN] Studio activity — a delayed, aggregated record of which AI departments of the studio were launched, no client or project data — <?= SITE ?>/studio-activity
-- [ES] Actividad del estudio — <?= SITE ?>/es/actividad-del-estudio
 
 ## Selected work
 Live and in production:
