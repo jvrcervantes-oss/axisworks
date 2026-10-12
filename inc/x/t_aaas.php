@@ -134,6 +134,7 @@ return [
     'a_decision_waiting_for' => 'A decision waiting for a person',
     'for_example_a_booking' => 'For example: a booking business with two people on WhatsApp all day and ads nobody has time to watch.',
     'footer' => 'Footer',
+    'services_index' => 'Services',
   ],
   'es' => [
     'a' => 'a',
@@ -266,5 +267,6 @@ return [
     'a_decision_waiting_for' => 'Una decisión que espera a una persona',
     'for_example_a_booking' => 'Por ejemplo: un negocio de reservas con dos personas en WhatsApp todo el día y anuncios que nadie tiene tiempo de vigilar.',
     'footer' => 'Pie de página',
+    'services_index' => 'Servicios',
   ],
 ];

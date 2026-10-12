@@ -315,7 +315,7 @@ $HOJAS_EN = [
     ['Can you get us to the first position?','Nobody honest can promise that. We can remove what is holding you back and build pages for what your customers search, and then measure it.'],
     ['How long until we see results?','Organic search is measured in months, not weeks. Paid search starts the day it is switched on, and costs accordingly.'],
     ['What is AI search optimisation?','Making sure assistants like ChatGPT or Perplexity find a clear, correct description of your business when they read your site, and that they are allowed to read it.'],
-    ['Do you write the content?','Yes, in English and Spanish, written for the person searching and not stuffed with keywords.'],
+    ['Do you write the content?','Yes, written for the person searching and not stuffed with keywords.'],
     ['Do we need a new website for this?','Not always. If the current site can be fixed, we fix it. If the platform is what is holding it back, we will say so.'],
   ],
   'asunto'=>'SEO, SEM &amp; AI search — /services/seo-sem',

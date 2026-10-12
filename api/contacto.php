@@ -18,6 +18,7 @@
  *     buzón es manual y va antes de dar esto por bueno.
  */
 declare(strict_types=1);
+ini_set('display_errors', '0');   /* un aviso de PHP no puede romper el JSON ni enseñar nada (Seguridad #287) */
 
 const CT_DESTINO  = 'hello@axisworks.studio';
 /* Hostinger rechaza mail() si el remitente no es un buzón que exista en el
@@ -100,8 +101,10 @@ function ct_smtp_envia(array $c, string $para, string $mime): string {
     [base64_encode((string) $c['clave']), '235'], ['MAIL FROM:<' . $c['usuario'] . '>', '250'], ['RCPT TO:<' . $para . '>', '25'],
     ['DATA', '354'], [rtrim($datos, "\r\n") . "\r\n.", '250']];
   $err = '';
+  $fin = microtime(true) + 25;   /* plazo total: un servidor lento no retiene el proceso más de 25 s (Seguridad #287) */
   foreach ($pasos as $i => [$cmd, $esp]) {
-    if ($cmd !== '') fwrite($s, $cmd . "\r\n");
+    if (microtime(true) > $fin) { $err = 'plazo'; break; }
+    if ($cmd !== '') @fwrite($s, $cmd . "\r\n");
     if (strpos($lee(), $esp) !== 0) { $err = 'paso ' . $i; break; }
   }
   @fwrite($s, "QUIT\r\n");
@@ -146,7 +149,7 @@ try {
   $mensaje = trim(str_replace("\0", '', (string)($P['mensaje'] ?? '')));
   $pagina  = (string)($P['pagina'] ?? '/');
   $lang    = ($P['lang'] ?? 'en') === 'es' ? 'es' : 'en';
-  if (!preg_match('~^/[a-z0-9/_-]*$~', $pagina)) $pagina = '/';
+  if (!preg_match('~^/[a-z0-9/_-]*\z~', $pagina)) $pagina = '/';   /* \z y no $: $ admite un salto final (Seguridad #287) */
   $utm = [];
   foreach (['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as $k) {
     $v = ct_limpio((string)($P[$k] ?? ''), 120);

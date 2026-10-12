@@ -5,6 +5,7 @@
  * mesa trae (Diseño #284: solo esa hoja las conserva). El EN es el literal de la mesa; el ES, corto y natural. */
 return [
 'en' => [
+    'services_index' => 'Services',
   /* barra de la mesa (mismas claves que la portada) */
   'a' => 'a', 'is' => 'is', 'works' => 'works', 'axisworks_home' => 'axisworks home',
   'main' => 'Main', 'main_compact' => 'Main, compact', 'language' => 'Language',
@@ -52,6 +53,7 @@ return [
   'closing_calendar_lead_assignment' => 'Closing calendar, lead assignment and closer ranking',
 ],
 'es' => [
+    'services_index' => 'Servicios',
   'a' => 'a', 'is' => 'is', 'works' => 'works', 'axisworks_home' => 'axisworks, inicio',
   'main' => 'Principal', 'main_compact' => 'Principal, compacto', 'language' => 'Idioma',
   'what_we_sell' => 'Qué vendemos', 'how_we_work' => 'Cómo trabajamos', 'studio' => 'Estudio', 'tools' => 'Herramientas',

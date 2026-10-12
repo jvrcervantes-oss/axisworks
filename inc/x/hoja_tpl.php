@@ -40,21 +40,7 @@ $PILL = "font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 6px 
 $X3 = '<polygon fill="#2E3BEB" points="10,10 41,10 90,90 59,90"></polygon>';
 ?>
 <div style="font-family: Manrope, sans-serif; color: #0B0C1E; background: #F2F3F7; overflow-x: hidden">
-<header class="navlight" style="background: #F2F3F7; border-bottom: 1px solid #DADCE6">
-<div style="max-width: 1280px; margin: 0 auto; padding: 14px clamp(20px, 5vw, 80px); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px">
-<a aria-label="<?= x('axisworks_home') ?>" href="<?= h("WebHome.dc.html", 'a') ?>" style="grid-column: 1; justify-self: start; font-family: Unbounded, sans-serif; font-size: 20px; letter-spacing: -.03em; display: inline-flex; align-items: baseline"><span style="font-weight: 600"><?= x('a') ?></span><svg aria-hidden="true" style="width: .57em; height: .57em; margin: 0 .05em" viewbox="10 10 80 80"><polygon fill="#2E3BEB" points="10,10 41,10 90,90 59,90"></polygon><polygon fill="#C8F04A" points="59,10 90,10 41,90 10,90"></polygon><polygon fill="#0B0C1E" points="50,24.7 65.5,50 50,75.3 34.5,50"></polygon></svg><span style="font-weight: 600"><?= x('is') ?></span><span style="font-weight: 300"><?= x('works') ?></span></a>
-<nav aria-label="<?= x('main') ?>" class="navlinks" style="grid-column: 2; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 999px; background: #FFFFFF; border: 1px solid #DADCE6; font-size: 15px; font-weight: 600; white-space: nowrap">
-<a aria-current="page" class="nl cur" href="<?= h("WebHome.dc.html", 'what_we_sell') ?>"><?= x('what_we_sell') ?></a><a class="nl" href="<?= h("WebHome.dc.html", 'how_we_work') ?>"><?= x('how_we_work') ?></a><a class="nl" href="<?= h("WebHome.dc.html", 'studio') ?>"><?= x('studio') ?></a><a class="nl" href="<?= h("WebHome.dc.html", 'tools') ?>"><?= x('tools') ?></a><a class="nl" href="<?= h("ErpLanding.dc.html", 'erp') ?>"><?= x('erp') ?> <span aria-hidden="true" style="color: #2E3BEB"><?= x('x') ?></span></a>
-</nav>
-<div style="grid-column: 3; justify-self: end; display: flex; align-items: center; gap: 12px">
-<div aria-label="<?= x('language') ?>" class="lang" role="group" style="display: inline-flex; padding: 3px; border-radius: 999px; border: 1px solid #DADCE6; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500"><?php foreach (['en', 'es'] as $lg): ?><a href="<?= e(xlang_url($lg)) ?>" hreflang="<?= $lg ?>" lang="<?= $lg ?>"<?= $lg === $lang ? ' class="on" aria-current="true" style="padding: 6px 10px; border-radius: 999px; background: #0B0C1E; color: #F2F3F7"' : ' style="padding: 6px 10px; border-radius: 999px; color: #4A4E66"' ?>><?= strtoupper($lg) ?></a><?php endforeach; ?></div>
-<a class="navcta" href="<?= h("#cta", 'talk_to_the_studio') ?>" style="min-height: 44px; padding: 0 20px; border-radius: 999px; background: #0B0C1E; color: #C8F04A; display: inline-flex; align-items: center; font-weight: 700; white-space: nowrap"><?= x('talk_to_the_studio') ?></a>
-<details class="menubtn"><summary style="min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid #0B0C1E; display: inline-flex; align-items: center; gap: 8px; font-weight: 700"><?= x('menu') ?><svg aria-hidden="true" height="14" viewbox="10 10 80 80" width="14"><polygon fill="currentColor" points="10,10 41,10 90,90 59,90"></polygon><polygon fill="currentColor" points="59,10 90,10 41,90 10,90"></polygon></svg></summary>
-<nav aria-label="<?= x('main_compact') ?>" style="position: absolute; right: 0; top: calc(100% + 10px); z-index: 20; min-width: 220px; padding: 8px; border-radius: 18px; background: #FFFFFF; border: 1px solid #DADCE6; box-shadow: 0 18px 40px rgba(11,12,30,.18); display: flex; flex-direction: column; font-weight: 600"><a aria-current="page" class="nl cur" href="<?= h("WebHome.dc.html", 'what_we_sell') ?>"><?= x('what_we_sell') ?></a><a class="nl" href="<?= h("WebHome.dc.html", 'how_we_work') ?>"><?= x('how_we_work') ?></a><a class="nl" href="<?= h("WebHome.dc.html", 'studio') ?>"><?= x('studio') ?></a><a class="nl" href="<?= h("WebHome.dc.html", 'tools') ?>"><?= x('tools') ?></a><a class="nl" href="<?= h("ErpLanding.dc.html", 'erp_2') ?>"><?= x('erp_2') ?></a><a class="nl" href="<?= h("#cta", 'talk_to_the_studio') ?>"><?= x('talk_to_the_studio') ?></a><a class="nl" href="<?= h("#", 'es_espanol') ?>"><?= x('es_espanol') ?></a></nav>
-</details>
-</div>
-</div>
-</header>
+<?php $X_CUR = true; $X_CTA = '#cta'; require __DIR__ . '/cabecera.php'; ?>
 <main>
 <section>
 <div style="max-width: 1280px; margin: 0 auto; padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 80px) clamp(56px, 8vw, 104px); display: flex; flex-direction: column; gap: 36px">
@@ -280,9 +266,5 @@ if ($prev): $PH = $HOJAS[$lang][$prev]; ?>
 </div>
 </section>
 </main>
-<footer style="background: #0B0C1E; color: #A9ADC2">
-<div style="max-width: 1280px; margin: 0 auto; padding: 32px clamp(20px, 5vw, 80px); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em">
-<span><?= x('axisworks_built_to_order') ?></span><span><?= x('sheet') ?> <?= e($H['codigo']) ?></span><nav aria-label="<?= x('footer') ?>" style="display: flex; flex-wrap: wrap; gap: 8px 20px"><a href="<?= h("#", 'legal_notice') ?>"><?= x('legal_notice') ?></a><a href="<?= h("#", 'privacy') ?>"><?= x('privacy') ?></a><a href="<?= h("#", 'cookies') ?>"><?= x('cookies') ?></a></nav><span><?= x('2026') ?></span>
-</div>
-</footer>
+<?php require __DIR__ . '/pie.php'; ?>
 </div>

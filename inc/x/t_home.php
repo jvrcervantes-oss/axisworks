@@ -194,6 +194,7 @@ return [
     'control_2' => 'Control',
     'for_example_two_people' => 'For example: two people answer WhatsApp all day and copy every booking into a spreadsheet.',
     'footer' => 'Footer',
+    'services_index' => 'Services',
     'js_highlighted' => 'Highlighted',
     'js_lead' => 'Sample data: {A} of {N} departments highlighted in this frame.',
   ],
@@ -356,5 +357,6 @@ return [
     'footer' => 'Pie de página',
     'js_highlighted' => 'Resaltado',
     'js_lead' => 'Datos de ejemplo: {A} de {N} departamentos resaltados en este fotograma.',
+    'services_index' => 'Servicios',
   ],
 ];
