@@ -17,6 +17,16 @@ const HTML = fs.readFileSync(path.join(AQUI, 'asistente_setup.html'), 'utf8').sp
 // AXW_CSS_DIST=<paquete construido>: mete tw.css y shell.css de la instancia para mirar la piel en las capturas (no cambia lo que se mide)
 const CSS_PIEL = process.env.AXW_CSS_DIST ? ['tw.css', 'shell.css'].map(f => fs.readFileSync(path.join(process.env.AXW_CSS_DIST, 'assets', f), 'utf8')).join(' ') : '';
 const SHOT = process.argv[2];
+// /ajustes/ con el ajustes.js REAL de Lawang (pestañas por hash, panel oculto) y el marcado de la pestaña y el panel SACADO de build.py
+const AJ_LAWANG = [process.env.AXW_LAWANG_RAIZ, 'C:/Users/jvrce/Desktop/ClaudeCode/Agencia/proyectos/Lawang'].filter(Boolean).map(r => path.join(r, 'intranet', 'v4', 'assets', 'ajustes.js')).find(f => fs.existsSync(f));
+const AJ_REAL = AJ_LAWANG ? fs.readFileSync(AJ_LAWANG, 'utf8').replace("'registro'];", "'cobros', 'registro'];") : '';
+const BUILD = fs.readFileSync(path.join(AQUI, 'build.py'), 'utf8');
+function pyCadena(nombre) {   // la constante de build.py, juntando sus trozos entre comillas simples (son marcado HTML, sin escapes raros)
+  const m = new RegExp('^' + nombre + ' = \\(([\\s\\S]*?)\\)\\n', 'm').exec(BUILD);
+  if (!m) throw new Error('build.py sin ' + nombre);
+  return (m[1].match(/'((?:[^'\\]|\\.)*)'/g) || []).map(x => x.slice(1, -1).replace(/\\n/g, '\n')).join('');
+}
+const TAB_COBROS = pyCadena('AJUSTES_COBROS_TAB'), PANEL_COBROS = pyCadena('AJUSTES_COBROS_PANEL');
 let fallos = 0;
 const ok = (n, c, x = '') => { if (!c) { fallos++; console.log('FALLA  ' + n + (x ? ' -> ' + x : '')); } else console.log('ok     ' + n); };
 
@@ -66,6 +76,7 @@ function edge(b, c) {
     if (!CAMPOS.some(k => v[k])) return no(400, 'sin_cambios');
     const mc = v.creacion ? modoDe(v.creacion) : b.est.modo, ml = v.lectura ? modoDe(v.lectura) : b.est.modo;
     if (mc && ml && mc !== ml) return no(400, 'modos_distintos');
+    if (b.est.modo && mc && mc !== b.est.modo && !v.aviso) return no(400, 'faltan_claves', { campos: ['aviso'] });
     if ((mc === 'live' || ml === 'live') && !b.est.live_permitido) return no(403, 'live_no_permitido');
     b.codigoPara = huella;
     return { status: 200, json: { ok: true, codigo: 'codigo_enviado', caduca_en: 600, correo_enmascarado: 'd***@balibestmotorcycle.com' } };
@@ -77,7 +88,7 @@ function edge(b, c) {
     if (b.o.fallo) return no(422, 'prueba_fallida', { fallo: b.o.fallo });
     const promueve = () => { CAMPOS.forEach(k => { if (v[k]) b.est.claves[k] = { configurada: true, puesta_en: '2026-10-12T20:' + String(10 + b.edge.length).slice(-2) + ':00Z', puesta_por: 'owner@balibestmotorcycle.com' }; });
       if (v.creacion) b.est.modo = modoDe(v.creacion); b.est.configurado = CAMPOS.every(k => b.est.claves[k].configurada); b.codigoPara = null; };
-    if (b.o.perdida) { if (b.o.perdida === 'guardada') promueve(); b.o.perdida = null; return { red: true }; }
+    if (b.o.perdida) { if (b.o.perdida === 'guardada') promueve(); b.o.perdida = null; return b.o.gateway ? { status: 504, json: null } : { red: true }; }
     promueve();
     return { status: 200, json: { ok: true, guardado: true, aviso: 'enviado', prueba: { creacion: v.creacion ? 'ok' : 'no_se_prueba', lectura: v.lectura ? 'ok' : 'no_se_prueba', aviso: 'no_se_prueba' }, estado: JSON.parse(JSON.stringify(b.est)) } };
   }
@@ -104,6 +115,15 @@ const ajustes = idioma => `<!doctype html><html><head><meta charset="utf-8"><met
 <section data-lw-panel="cobros"><div id="lw-aj-cobros"></div></section>
 <section data-lw-panel="puesta"><div id="lw-aj-puesta"><p>…</p></div></section></main>
 <script>${comun(idioma)}</script>${JS.map(j => '<script>' + j + '</script>').join('')}</body></html>`;
+const ajustesReal = idioma => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}[hidden]{display:none!important}</style><style>${CSS_PIEL}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>
+<div role="tablist"><button type="button" role="tab" id="lw-tab-empresa" data-lw-tab="empresa" data-lwt>Empresa</button>
+${TAB_COBROS}<button type="button" role="tab" id="lw-tab-registro" data-lw-tab="registro" data-lwt>Registro de cambios</button></div>
+<section id="lw-panel-empresa" data-lw-panel="empresa"><p>empresa</p></section>
+${PANEL_COBROS}<section id="lw-panel-registro" data-lw-panel="registro" hidden><p>registro</p></section></main>
+<script>${comun(idioma)}
+window.lwIdiomaAplicar = function (raiz) { var r = raiz || document; var l = Array.prototype.slice.call(r.querySelectorAll('[data-lwt]')); if (r.hasAttribute && r.hasAttribute('data-lwt')) l.push(r);
+  l.forEach(function (e) { if (!e.__es) e.__es = e.textContent.trim(); e.textContent = window.lwT(e.__es); }); };
+</script><script>${JS[0]}</script><script>${JS[1]}</script><script>${JS[2]}</script><script>${AJ_REAL}</script></body></html>`;
 const asistente = (idioma, url) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}main{padding:16px}</style><style>${CSS_PIEL}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>${HTML[0]}</main>
 <script>history.replaceState(null, '', '${url}');${comun(idioma)}</script><script>${JS[0]}</script><script>${JS[1]}</script><script>${JS[2]}</script>${HTML[1]}</body></html>`;
 
@@ -112,7 +132,7 @@ async function abre(nav, b, { idioma = 'es', ancho = 1440, url = '/ajustes/#cobr
   const p = await ctx.newPage();
   p.__consola = [];
   p.on('console', m => p.__consola.push(m.text()));
-  await p.route('**/*', r => r.fulfill({ status: 200, contentType: 'text/html', body: tipo === 'ajustes' ? ajustes(idioma) : asistente(idioma, url) }));
+  await p.route('**/*', r => r.fulfill({ status: 200, contentType: 'text/html', body: tipo === 'ajustes' ? ajustes(idioma) : tipo === 'real' ? ajustesReal(idioma) : asistente(idioma, url) }));
   await p.exposeFunction('__srv', async (n, a) => { b.rpc.push(n); if (n === 'modulos_setup_estado') return { data: setupEstado(b), error: null }; if (n === 'ajustes_config_datos') return { data: { valores: {} }, error: null }; return { data: null, error: { code: '42883', message: 'x' } }; });
   await p.exposeFunction('__edge', async (u, c) => (u.endsWith('/functions/v1/ajustes-pagos') ? edge(b, c) : { status: 404, json: null }));
   await p.goto('http://local.test' + url); await p.waitForTimeout(500);
@@ -267,6 +287,51 @@ const C = '[data-axw-cobros-caja]';
   b = base({ puede: false });
   ({ p, ctx } = await abre(nav, b, { tipo: 'asistente', url: '/ajustes/configurar/?modulo=reservas-producto&paso=cobros' }));
   ok('asistente, operario: «solo el administrador principal» y sin edge', ((await txt(p, '[data-axw-as="tarjeta"]')) || '').includes('Solo el administrador principal') && b.edge.length === 0);
+  await ctx.close();
+
+  // 13. con el ajustes.js REAL: la pestaña se abre por clic y por la URL; sin paso en la base, #cobros cae en Empresa y nadie llama a la edge
+  if (!AJ_REAL) ok('ajustes.js de Lawang encontrado (AXW_LAWANG_RAIZ)', false);
+  else {
+    b = base();
+    ({ p, ctx } = await abre(nav, b, { tipo: 'real', url: '/ajustes/' }));
+    ok('real: la pestaña sale, el panel sigue oculto y la edge sin tocar', await p.$eval('[data-lw-tab="cobros"]', e => !e.hidden) && await p.$eval('[data-lw-panel="cobros"]', e => e.hidden) && b.edge.length === 0);
+    await p.click('[data-lw-tab="cobros"]'); await p.waitForTimeout(500);
+    ok('real: al pulsar la pestaña se monta el componente con UNA llamada estado', (await p.$$('#lw-aj-cobros input[type="password"]')).length === 3 && b.edge.filter(x => x.accion === 'estado').length === 1, String(b.edge.length));
+    await ctx.close();
+    b = base();
+    ({ p, ctx } = await abre(nav, b, { tipo: 'real', url: '/ajustes/#cobros' }));
+    ok('real: /ajustes/#cobros abre Cobros (aunque la pestaña naciera oculta)', await p.$eval('[data-lw-panel="cobros"]', e => !e.hidden) && (await p.$$('#lw-aj-cobros input[type="password"]')).length === 3);
+    await ctx.close();
+    b = base({ sinPaso: true });
+    ({ p, ctx } = await abre(nav, b, { tipo: 'real', url: '/ajustes/#cobros' }));
+    ok('real, sin paso: #cobros cae en Empresa, pestaña oculta, sin edge', await p.$eval('[data-lw-panel="empresa"]', e => !e.hidden) && await p.$eval('[data-lw-tab="cobros"]', e => e.hidden) && b.edge.length === 0);
+    await ctx.close();
+    b = base();
+    ({ p, ctx } = await abre(nav, b, { tipo: 'real', url: '/ajustes/#cobros', idioma: 'id' }));
+    ok('real, id: los rótulos fijos de build.py salen en indonesio', (await txt(p, '[data-lw-tab="cobros"]')) === 'Pembayaran' && ((await txt(p, '[data-lw-panel="cobros"] h2')) || '') === 'Pembayaran online',
+       (await txt(p, '[data-lw-tab="cobros"]')) + ' / ' + (await txt(p, '[data-lw-panel="cobros"] h2')));
+    ok('real: sin errores de página', (await p.evaluate(() => window.__errores)).length === 0, JSON.stringify(await p.evaluate(() => window.__errores)));
+    await ctx.close();
+  }
+
+  // 14. respuesta del gateway sin JSON de la edge (504) DESPUÉS de promover: se relee y vale; un solo envío
+  b = base({ perdida: 'guardada', gateway: true });
+  ({ p, ctx } = await abre(nav, b));
+  await p.fill('[data-axw-campo="creacion"]', CANARIO_C); await p.fill('[data-axw-campo="lectura"]', CANARIO_L); await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
+  await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
+  await p.fill('[data-axw-campo="codigo"]', '123456'); await p.fill('[data-axw-campo="contrasena"]', 'buena');
+  await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(600);
+  ok('504 tras guardar: se relee y sale configurada, un solo envío', b.edge.filter(x => x.accion === 'probar_y_guardar').length === 1 && (await p.$$('[data-axw-cobros-puesta="1"]')).length === 3);
+  await ctx.close();
+
+  // 15. cambiar de modo con claves puestas obliga a las TRES (Xendit da otro token de avisos en real)
+  b = base({ conf: { creacion: 1, lectura: 1, aviso: 1 }, modo: 'test', live: true });
+  ({ p, ctx } = await abre(nav, b));
+  await p.click('[data-axw-cobros="modo-live"]');
+  ok('cambio de modo: piden las tres claves', (await p.$$eval('#lw-aj-cobros input[type="password"]', l => l.map(i => i.getAttribute('data-axw-campo')).join(','))) === 'creacion,lectura,aviso');
+  await p.fill('[data-axw-campo="creacion"]', PROD_C); await p.fill('[data-axw-campo="lectura"]', PROD_L); await p.fill('[data-axw-campo="confirma_live"]', 'LIVE');
+  await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(200);
+  ok('cambio de modo sin token nuevo: lo pide y no gasta un código', ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').includes('token de avisos') && b.edge.filter(x => x.accion === 'pedir_codigo').length === 0);
   await ctx.close();
 
   // 12. idiomas y anchos: ninguna frase sin traducir, sin scroll horizontal (sin configurar, código pedido y configurada)

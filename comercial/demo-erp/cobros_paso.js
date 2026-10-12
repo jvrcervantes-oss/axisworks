@@ -102,11 +102,12 @@
     CAMPOS.forEach(function (k) { r[k] = !est.claves[k].configurada; });
     return { est: est, pideCodigo: pide, modo: est.modo || 'test', reemplaza: r, valores: {}, fase: 'editar', mandadas: null, correo: '', fallo: null, faltan: [], aviso: '', confirma: '' };
   }
-  // Cambiar de modo (con claves ya puestas) obliga a reemplazar la de creación y la de lectura: el modo SALE de ellas
+  // Cambiar de modo (con claves ya puestas) obliga a reemplazar las TRES: el modo sale de la de creación y la de lectura, y Xendit da un token de
+  // avisos distinto en prueba y en real (con el de prueba, reservas-pago rechazaría los avisos de los pagos reales)
   function fuerzaModo() {
     if (!M.est.modo) return;
     var cambia = M.modo !== M.est.modo;
-    ['creacion', 'lectura'].forEach(function (k) { if (cambia) M.reemplaza[k] = true; });
+    CAMPOS.forEach(function (k) { if (cambia) M.reemplaza[k] = true; });
   }
 
   /* pinta(caja, ctx): lee el estado en la edge y pinta. ctx de setup_pasos.js (no se usa más que para el contrato). */
@@ -239,7 +240,7 @@
       fila.appendChild(el('span', { class: 'font-body-sm text-body-sm text-outline', text: C(k + '_d') + ' ' + C('pega') }));
       if (c.configurada && editar) {
         var d = boton(C('dejar'), 'dejar-' + k, BTN_PEQ + ' self-start');
-        d.addEventListener('click', function () { M.reemplaza[k] = false; M.valores[k] = ''; if (M.est.modo && M.modo !== M.est.modo && k !== 'aviso') { M.modo = M.est.modo; } dibuja(raiz); });
+        d.addEventListener('click', function () { M.reemplaza[k] = false; M.valores[k] = ''; if (M.est.modo && M.modo !== M.est.modo) { M.modo = M.est.modo; } dibuja(raiz); });
         fila.appendChild(d);
       }
     }
@@ -253,7 +254,7 @@
     CAMPOS.forEach(function (k) {
       var x = String(M.valores[k] || '').trim();
       if (x) v[k] = x;
-      else if (!M.est.claves[k].configurada || (M.reemplaza[k] && k !== 'aviso' && M.est.modo && M.modo !== M.est.modo)) faltan.push(k);
+      else if (!M.est.claves[k].configurada || (M.est.modo && M.modo !== M.est.modo)) faltan.push(k);
     });
     return { v: v, faltan: faltan };
   }
@@ -321,7 +322,9 @@
     return llama(cuerpo).then(function (res) {
       cuerpo = null;
       if (res.d && res.d.ok === true && res.d.guardado === true) return exito(res.d.estado, res.d.aviso === 'enviado');
-      if (res.codigo === 'sin_red') {   // ¿llegó? Se relee, nunca se reenvía
+      // ¿llegó? Sin red, o un 5xx/404 del gateway sin respuesta propia de la edge (un tiempo agotado DESPUÉS de promover es el caso típico: dos
+      // pruebas a Xendit de 8 s y el aviso): se relee, nunca se reenvía
+      if (res.codigo === 'sin_red' || res.codigo === 'edge_no_disponible' || res.codigo === 'respuesta_ilegible') {
         return llama({ accion: 'estado' }).then(function (r2) {
           var e2 = r2.d && r2.d.ok === true && r2.d.estado;
           if (!estadoValido(e2)) return fallo('cobros_duda');
@@ -410,9 +413,13 @@
       if (typeof window.lwIdiomaAplicar === 'function') {   // los rótulos fijos (data-lwt) que puso build.py, con las frases de setup_modulos.js
         try { window.lwIdiomaAplicar(tab); window.lwIdiomaAplicar(panel.closest('[data-lw-panel]') || panel); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pestaña */ }
       }
-      monta();
+      // Se monta cuando ajustes.js ENSEÑA el panel (quita hidden), sea por clic, por flechas o por la URL. ajustes.js abrió la página con la pestaña
+      // aún oculta y, con #cobros en la URL, cayó en «empresa»: se le vuelve a pedir ahora que ya se ve (con el hash igual, activa sin recargar).
+      var sec = panel.closest('[data-lw-panel]');
+      if (sec && typeof MutationObserver === 'function') new MutationObserver(monta).observe(sec, { attributes: true, attributeFilter: ['hidden'] });
       window.addEventListener('hashchange', monta);
-      tab.addEventListener('click', function () { setTimeout(monta, 0); });
+      if (location.hash === '#cobros' && sec && sec.hidden) tab.click();
+      monta();
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', anfitrion); else anfitrion();
