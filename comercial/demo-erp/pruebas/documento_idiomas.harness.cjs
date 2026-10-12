@@ -34,8 +34,9 @@ Object.assign(caja.SOCIEDADES, {
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); };
 const texto = h => h.replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
-// Palabras del papel de Lawang en español (y meses): ninguna puede salir en el de la instancia
-const ESPANOL = /\b(Factura|Recib[ií]|Cobro|Conceptos?|Descripci[oó]n|Importe|Impuesto|Notas?|Datos|Cuenta|Titular|Direcci[oó]n|Vencimiento|Contrato|Proyecto|Sin|Facturar|Rectifica|Motivo|Fecha|Banco|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/i;
+// Palabras del papel de Lawang en español, meses y palabras sueltas (de, la, por…), para cazar también un rótulo NUEVO que Lawang añada:
+// ninguna puede salir en el de la instancia (los datos de prueba de abajo no llevan ninguna)
+const ESPANOL = /\b(Factura|Recib[ií]|Cobro|Conceptos?|Descripci[oó]n|Importe|Impuesto|Notas?|Datos|Cuenta|Titular|Direcci[oó]n|Vencimiento|Contrato|Proyecto|Sin|Facturar|Rectifica|Motivo|Fecha|Banco|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|de|del|la|las|el|los|por|para|con|pago|forma)\b/i;
 
 const base = {
   sociedad: 'emisor', moneda: 'IDR', fecha_emision: '2026-10-14', fecha_vencimiento: '2026-10-21',
@@ -77,6 +78,7 @@ for (const [nombre, d, numero] of casos) {
 const ed = fs.readFileSync(path.join(dist, 'assets', 'editores.js'), 'utf8');
 ok(!/Buenos d[ií]as/.test(ed) && !/para su revisi[oó]n/.test(ed), 'correo: el mensaje por defecto sigue en español');
 ok(/Terlampir /.test(ed) && /Please find attached /.test(ed), 'correo: falta el mensaje id + en');
+ok(/["']rectificativa["']/.test(ed), 'correo: el asunto no distingue la rectificativa (tipo real del documento)');
 
 if (fallos.length) { console.error('MAL (' + fallos.length + '):\n  ' + fallos.join('\n  ')); process.exit(1); }
 console.log('TODO BIEN: documento id·en (' + casos.length + ' casos: factura, proforma, recibí, rectificativa, vacío) y correo');

@@ -3590,7 +3590,8 @@ DOC_PARCHES_ID = (
     ('intranet/facturas/documento.js', "  rectificativa: { es:'Factura rectificativa',", "  rectificativa: { id:'%(rectificativa)s', es:'Factura rectificativa',"),
     # en indonesio la factura se llama «Invoice» (como en la interfaz): si el título id y el en coinciden, el subtítulo no se repite
     ('intranet/facturas/documento.js', "      '<h2>' + escDoc(tipo.es) + '</h2>' +\n      '<div class=\"titulo-en\">' + escDoc(tipo.en) + '</div>' +",
-     "      '<h2>' + escDoc(tipo.id) + '</h2>' +\n      (tipo.id !== tipo.en ? '<div class=\"titulo-en\">' + escDoc(tipo.en) + '</div>' : '') +"),
+     # un tipo que Lawang añada sin `id` sale con su título inglés, nunca vacío (revisor, 1.ª vuelta)
+     "      '<h2>' + escDoc(tipo.id || tipo.en) + '</h2>' +\n      ((tipo.id || tipo.en) !== tipo.en ? '<div class=\"titulo-en\">' + escDoc(tipo.en) + '</div>' : '') +"),
     ('intranet/facturas/documento.js', "'Cobro de la factura ' + numero + ' · Payment of invoice ' + numero : 'Cobro · Payment'",
      "'Pembayaran invoice ' + numero + ' · Payment of invoice ' + numero : 'Pembayaran · Payment'"),
     ('intranet/facturas/documento.js', "? (v.es || '') : (v || '')", "? (v.id || v.en || v.es || '') : (v || '')"),
@@ -3619,19 +3620,24 @@ DOC_PARCHES_ID = (
     ('intranet/facturas/documento.js', "'<h3>Notas · Notes</h3>", "'<h3>Catatan · Notes</h3>"),
     ('intranet/facturas/documento.js', "'<!DOCTYPE html><html lang=\"es\">", "'<!DOCTYPE html><html lang=\"id\">"),
     # El correo que acompaña al PDF (lo recibe el cliente): asunto con el título id del documento y mensaje por defecto id + en (editable antes de enviar)
-    ('intranet/v4/assets/editores.js', "TIPOS_DOC[vals.tipo]) || { es: 'Factura' }).es;", "TIPOS_DOC[vals.tipo]) || { id: '%(factura)s' }).id;"),
+    # tipoDocEs conserva su nombre (lo usan el asunto, el mensaje y el título del PDF) pero en la copia devuelve el título id del tipo REAL:
+    # una rectificativa es tipo 'factura' con rectifica_numero, igual que en documentoHTML (revisor, 1.ª vuelta)
+    ('intranet/v4/assets/editores.js', "TIPOS_DOC[vals.tipo]) || { es: 'Factura' }).es;", "TIPOS_DOC[DOC_TIPO_REAL]) || { id: '%(factura)s' }).id;"),
     ('intranet/v4/assets/editores.js',
      "'Buenos días' + (vals.cliente_nombre ? ' ' + vals.cliente_nombre : '') + ',\\n\\n' +\n"
      "        'Adjunto ' + tipo.toLowerCase() + ' ' + saved.numero + ' para su revisión.\\n\\nUn saludo,\\n' + lwMarca('%%firma_correo'));",
      "'Halo' + (vals.cliente_nombre ? ' ' + vals.cliente_nombre : '') + ',\\n\\n' +\n"
      "        'Terlampir ' + tipo.toLowerCase() + ' ' + saved.numero + ' untuk Anda periksa.\\n' +\n"
-     "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[vals.tipo]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n' +\n"
+     "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[DOC_TIPO_REAL]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n' +\n"
      "        'Salam / Kind regards,\\n' + lwMarca('%%firma_correo'));"),
 )
 # Lo que NO puede quedar en el documento.js servido de una instancia en indonesio (comprobación sobre el paquete construido, tras minificar)
 DOC_ESPANOL = ('Factura · ', 'Fecha · Date', 'Vencimiento · ', 'Facturar a', 'Conceptos · ', 'Descripción · ', 'Importe · ', 'Impuesto · ',
                'Notas · ', 'Datos bancarios', 'Titular · ', 'Cuenta · ', 'Dirección · ', 'Nota · Note', 'Cobro de la factura', 'Cobro · Payment',
                'Sin conceptos', 'Proyecto · Project', 'Contrato · Contract', 'Rectifica a', 'Motivo · ', "'es-ES'", '"es-ES"', 'lang="es"')
+
+
+DOC_TIPO_REAL_JS = "(vals.rectifica_numero && vals.tipo !== 'proforma' && vals.tipo !== 'recibi' ? 'rectificativa' : vals.tipo)"
 
 
 def documento_idiomas(idiomas):
@@ -3642,7 +3648,7 @@ def documento_idiomas(idiomas):
     for rel_, viejo, nuevo in DOC_PARCHES_ID:
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
-        t = _una_vez(t, viejo % DOC_TITULOS_ID if '%(' in viejo else viejo.replace('%%', '%'), nuevo % DOC_TITULOS_ID, 'documento ' + rel_)
+        t = _una_vez(t, viejo.replace('%%', '%'), (nuevo % DOC_TITULOS_ID).replace('DOC_TIPO_REAL', DOC_TIPO_REAL_JS), 'documento ' + rel_)
         open(ruta, 'w', encoding='utf-8', newline='').write(t)
     malos = _sintaxis([os.path.join(DIST, *r_.split('/')) for r_ in {x[0] for x in DOC_PARCHES_ID}])
     if malos:
@@ -3651,14 +3657,18 @@ def documento_idiomas(idiomas):
 
 
 def comprueba_documento_idiomas(dist, idiomas):
-    """Sobre el paquete construido: el documento.js servido no lleva ningún rótulo español del papel. Si Lawang añade uno nuevo, se ve en el arnés
-    (pruebas/documento_idiomas.harness.cjs), que pinta los cuatro tipos y busca palabras españolas en el resultado."""
+    """Sobre el paquete construido: el documento.js servido no lleva ningún rótulo español del papel. Además corre el arnés
+    (pruebas/documento_idiomas.harness.cjs), que pinta los cinco casos y busca palabras españolas en el resultado: así para un rótulo NUEVO de Lawang."""
     if not idiomas or idiomas[0] != 'id':
         return
     t = open(os.path.join(dist, 'clasico', 'facturas', 'documento.js'), encoding='utf-8').read()
     restos = [x for x in DOC_ESPANOL if x in t]
     if restos:
         aborta('documento: el papel de la instancia sigue con rótulos en español: ' + ', '.join(restos))
+    # La lista fija solo repite lo que _una_vez ya garantiza: un rótulo NUEVO de Lawang lo caza pintar el papel y buscar español en él (revisor)
+    r = subprocess.run(['node', os.path.join(AQUI, 'pruebas', 'documento_idiomas.harness.cjs'), dist], capture_output=True, text=True, encoding='utf-8')
+    if r.returncode != 0:
+        aborta('documento: el papel de la instancia no sale entero en %s:\n%s' % ('·'.join(idiomas), (r.stdout + r.stderr)[-1500:]))
 
 
 def instancia(nombre):
