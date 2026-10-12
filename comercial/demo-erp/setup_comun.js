@@ -354,7 +354,8 @@
   var correo = {
     externo: true,   // se hace en Ajustes › Correo; el asistente ofrece «Ya lo hice, comprobar»
     enlace: enlaceCorreo,
-    pinta: function (caja) {
+    pinta: function (caja, ctx) {
+      var faltaDicha = !!(ctx && ctx.paso && ctx.paso.falta);   // el anfitrión ya enseña «sin servidor propio» (la falta sin_correo): no se repite
       var zona = el('div', { class: 'flex flex-col gap-3 min-w-0', 'data-axw-co': 'correo', role: 'status', 'aria-live': 'polite' }, [
         el('p', { class: CLS_NOTA, 'data-axw-co-estado': 'cargando', text: U('co_correo_cargando') })]);
       caja.appendChild(zona);
@@ -374,7 +375,7 @@
         if (e.configurado && typeof e.host === 'string') {
           zona.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-co-estado': 'servidor', text: U('co_correo_servidor', { h: e.host.slice(0, 253), u: texto(e.usuario).slice(0, 254) }) }));
           if (e.puesto_en && fecha(e.puesto_en)) zona.appendChild(el('p', { class: CLS_AYUDA, text: U('co_correo_puesto', { f: fecha(e.puesto_en) }) }));
-        } else zona.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-co-estado': 'sin-servidor', text: U('co_correo_sin') }));
+        } else if (!faltaDicha) zona.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-co-estado': 'sin-servidor', text: U('co_correo_sin') }));
         var efectivo = typeof rem.efectivo === 'string' ? rem.efectivo.slice(0, 254) : '';
         if (efectivo && rem.motivo !== 'sin_remitente') zona.appendChild(el('p', { class: CLS_NOTA, 'data-axw-co-estado': 'remitente', text: U('co_correo_remitente', { r: efectivo }) }));
         else zona.appendChild(el('p', { class: CLS_NOTA, 'data-axw-co-estado': 'sin-remitente', text: U('co_correo_sin_remitente') }));

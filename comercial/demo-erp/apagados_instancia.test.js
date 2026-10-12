@@ -23,7 +23,7 @@ const MAPA = {
 const PLANTILLA = fs.readFileSync(path.join(__dirname, 'no_instalado.html'), 'utf8')
   .replace(/<!--[\s\S]*?-->\s*/g, '').replace('{{marca}}', 'Prueba ERP').replace('{{sello}}', '<svg></svg>');
 
-function escenario({ activos, ruta = '/home/', fallaActivos = false }) {
+function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, build, guardado, recargado }) {
   const red = [];
   const clases = new Set();
   const doc = {
@@ -38,7 +38,13 @@ function escenario({ activos, ruta = '/home/', fallaActivos = false }) {
     addEventListener() {},
   };
   global.document = doc;
-  global.location = { pathname: ruta, href: 'https://erp.test' + ruta };
+  const recargas = [];
+  global.location = { pathname: ruta, href: 'https://erp.test' + ruta, reload: () => recargas.push(1) };
+  // almacenamiento de verdad en memoria (idiomas, bbm-p31): lo apuntado tras el login y la marca de «ya recargué»
+  const mem = (ini) => { const m = new Map(Object.entries(ini || {})); return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k), _m: m }; };
+  globalThis.localStorage = mem(guardado !== undefined ? { axw_idiomas_erp: JSON.stringify(guardado) } : {});
+  globalThis.sessionStorage = mem(recargado ? { axw_idiomas_recarga: recargado } : {});
+  if (build) { globalThis.AXW_IDIOMAS_BUILD = build.slice(); globalThis.AXW_IDIOMAS = guardado || build.slice(); } else { delete globalThis.AXW_IDIOMAS_BUILD; delete globalThis.AXW_IDIOMAS; }
   global.MutationObserver = class { observe() {} };
   global.console = Object.assign(Object.create(console), { info() {}, warn() {} });
   global.window = globalThis;
@@ -49,14 +55,14 @@ function escenario({ activos, ruta = '/home/', fallaActivos = false }) {
     red.push(url.replace(SB, ''));
     if (url.includes('/rpc/modulos_activos_datos')) {
       if (fallaActivos) return new Response(JSON.stringify({ message: 'caída' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
-      return new Response(JSON.stringify({ activos }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify(idiomas === undefined ? { activos } : { activos, idiomas }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
     return new Response('[{"id":1}]', { status: 200, headers: { 'Content-Type': 'application/json', 'Content-Range': '0-0/1' } });
   };
   new Function(plantilla.replace('__AXW_MAPA__', JSON.stringify(MAPA)).replace('__AXW_NO_INSTALADO__', JSON.stringify(PLANTILLA)))();
   const sb = createClient(SB, 'sb_publishable_x', { auth: { persistSession: false, autoRefreshToken: false } });
   sb.auth.getSession = async () => ({ data: { session: { access_token: 't' } }, error: null });
-  return { sb, red, clases, doc, publica: () => { globalThis.LW_SB = sb; } };
+  return { sb, red, clases, doc, recargas, publica: () => { globalThis.LW_SB = sb; } };
 }
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -185,6 +191,35 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     F.publica();
     ok(await globalThis.AXW_MODULOS_LISTOS === false, '(c) fallo: la promesa resuelve false, no se queda colgada');
     ok(globalThis.axwModuloActivo('comisiones') === true, '(c) fallo: la guarda no esconde');
+  }
+
+  // 8. Idiomas de la base (bbm-p31, 12-oct): se apuntan tras el login, ganan al build en la página siguiente y recargan UNA vez si cambian lo que se ve
+  {
+    const ls = () => globalThis.localStorage.getItem('axw_idiomas_erp');
+    let E = escenario({ activos: null, build: ['id', 'en'] });   // base sin la 220000: la respuesta no trae `idiomas`
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(ls() === null && E.recargas.length === 0, 'idiomas: sin la clave en la respuesta no se apunta ni se recarga');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['es', 'en'], defecto: 'es' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(ls() === '["es","en"]' && E.recargas.length === 1, 'idiomas: la base dice es+en → se apunta y se recarga una vez');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['en', 'es'], defecto: 'es' }, guardado: ['es', 'en'] });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(ls() === '["es","en"]' && E.recargas.length === 0, 'idiomas: ya aplicado (orden de la base distinto, mismo defecto) → sin recarga');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['es', 'en'], defecto: 'es' }, recargado: 'es,en' });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(E.recargas.length === 0, 'idiomas: ya recargó por este cambio en la sesión → nunca un bucle');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: null, guardado: ['es', 'en'] });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(ls() === null && E.recargas.length === 1, 'idiomas: la base no los tiene guardados → se borra lo apuntado y vuelve el build');
+    E = escenario({ activos: null, build: null, idiomas: { ofrecidos: ['id', 'en'], defecto: 'id' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(ls() === null && E.recargas.length === 0, 'idiomas: paquete sin idiomas del build (sin indonesio) → no se aplica nada');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'es'], defecto: 'id' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(ls() === null && E.recargas.length === 0, 'idiomas: una combinación que el arranque no sabe pintar → manda el build');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'xx' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(ls() === null && E.recargas.length === 0, 'idiomas: forma rara (defecto fuera) → manda el build');
   }
 
   console.log('OK apagados_instancia: ' + n + '/' + n);
