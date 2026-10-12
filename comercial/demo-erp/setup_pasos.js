@@ -107,7 +107,9 @@
         };
       },
       guarda: function (sb, v, ctx, confirmo, motivo) { return guardaAjuste(sb, 'moneda', v.moneda, confirmo, motivo); },
-      comprueba: function (v, ctx) { return !!(ctx.datos && ctx.datos.moneda === v.moneda); }
+      comprueba: function (v, ctx) { return !!(ctx.datos && ctx.datos.moneda === v.moneda); },
+      // valor guardado = la fila de config_instancia, aunque no sea un código válido (entonces «hecho» es false y la base igual pide motivo)
+      guardado: function (ctx) { return !!(ctx.ajustes && ctx.ajustes.moneda != null); }
     },
     sociedad: {
       sinMotivo: true,   // sociedad_guarda no lleva motivo: no se pide lo que no se guarda (revisor 12-oct)
