@@ -1475,7 +1475,9 @@ PALETA_CLASICA = (('--tg', 'territorial-green'), ('--dl', 'deep-lagoon'), ('--be
                   ('--sc', 'soft-canopy'), ('--ss', 'secondary-fixed-dim'), ('--rl', 'raw-linen'), ('--ink', 'on-background'),
                   ('--line', 'warm-border'), ('--line-fuerte', 'outline-variant'), ('--sup-2', 'surface-container-low'),
                   ('--linen', 'background'), ('--paper', 'surface-container-lowest'), ('--stone', 'outline-variant'),
-                  ('--muted', 'on-surface-variant'))
+                  ('--muted', 'on-surface-variant'),
+                  # texto del pie del panel clásico (#6B7072 de Lawang fijo): 4,14:1 sobre --rl, medido en bbm (bbm-p33, 12-oct)
+                  ('--ink-3', 'on-surface-variant'))
 # Lo que la piel no alcanza redefiniendo variables: colores de Lawang escritos a mano. (fichero, literal, token, formato).
 # Reemplazo literal en la copia de DIST; si un literal desaparece de la fuente el build PARA (no se queda verde en silencio).
 CLASICA_FIJOS = (('contracts/assets/axw.css', '#0d5b5f', 'primary-container', 'hex'),          # hover de los botones primarios
@@ -1493,7 +1495,7 @@ CLASICA_FIJOS = (('contracts/assets/axw.css', '#0d5b5f', 'primary-container', 'h
 # Texto del botón desactivado: no se exige 4,5 (WCAG lo exime) pero tampoco peor que en Lawang (blanco sobre #BEB3A5, 2,1:1).
 CLASICA_DESACTIVADO_MIN = 2.1
 CLASICA_CONTRASTE = (('#FFFFFF', '--dl'), ('#FFFFFF', '--tg'), ('#FFFFFF', 'primary-container'), ('#FFFFFF', 'on-background'), ('--sc', '#FFFFFF'),
-                     ('--muted', '--paper'), ('--linen', '--dl'), ('--ink', '--rl'))
+                     ('--muted', '--paper'), ('--linen', '--dl'), ('--ink', '--rl'), ('--ink-3', '--rl'))
 
 
 # Colores de Lawang escritos a mano en la cáscara v4 que la piel no alcanza (bbm-p33, 12-oct, medido en captura: la pestaña
@@ -1914,10 +1916,18 @@ SISTEMAS_INSTANCIA = {
                 '{box-shadow:none}\n'
                 'html main .bg-surface-container-lowest.shadow-sm{border:1px solid rgb(var(--tema-filete))}\n'
                 'html main .bg-surface-container-lowest.rounded-xl.shadow-sm:not(.rounded-full){border-radius:20px}\n'
-                'html main input.shadow-sm,html main select,html main textarea{border-color:rgb(var(--tema-outline))}\n'),
+                # campos: borde visible (≥ 3:1, medido 1,4:1 antes) sin cambiar su tamaño; el buscador en pastilla no tenía borde
+                'html main input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),html main select,'
+                'html main textarea{border-color:rgb(var(--tema-outline))!important}\n'
+                'html main input.shadow-sm.rounded-full{box-shadow:inset 0 0 0 1.5px rgb(var(--tema-outline))}\n'
+                # botón secundario de las pantallas del maestro: el «fantasma» del diseño (contorno de 1,5 px en la tinta) en
+                # vez de gris sobre blanco (1,2:1 como control, medido); el principal, el elegido y el de peligro no cambian
+                'html main .axw-boton:not([data-primario="1"]):not([aria-selected="true"]):not([data-peligro="1"])'
+                '{background:rgb(var(--tema-surface-container-lowest));box-shadow:inset 0 0 0 1.5px rgb(var(--tema-on-surface))}\n'),
     },
 }
 GOOGLE_TEXTO = re.compile(r'<link[^>]*fonts\.googleapis\.com/css2\?family=(?:Jost|Cormorant)[^>]*>')
+GOOGLE_MANROPE_PANEL = 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap'
 
 
 def sistema_instancia(nombre):
@@ -1947,6 +1957,9 @@ def sistema_instancia(nombre):
             p = os.path.join(raiz, f)
             t = open(p, encoding='utf-8', errors='replace').read()
             t2 = GOOGLE_TEXTO.sub('<link rel="stylesheet" href="/assets/fonts/fonts.css">', t) if f.endswith('.html') else t
+            # el panel lateral de los editores (las-css, editores.js) pide Manrope a Google por JS: la sirve la propia hoja.
+            # El documento imprimible (clasico/facturas/documento.js) NO se toca: es el aspecto del documento, no de la interfaz.
+            t2 = t2.replace(GOOGLE_MANROPE_PANEL, '/assets/fonts/fonts.css')
             for viejo, nuevo in juego['familias']:
                 t2 = t2.replace(viejo, nuevo)
             if t2 != t:
