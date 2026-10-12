@@ -29,7 +29,7 @@
  "comunicacion": ["Comunicados", "Comunicación", "mail", "Avisos a todos los compradores de un proyecto o solo a algunos."],
  "soporte": ["Soporte al cliente", "Comunicación", "support_agent", "Consultas de clientes por categoría, con su historial."],
  "proyectos": ["Proyectos y parcelas", "Base de datos", "map", "Cada promoción con sus parcelas, precios y estado, y la documentación de la empresa."],
- "modelos": ["Modelos de vivienda", "Base de datos", "house", "Modelos de vivienda con techos, extras y documentos."],
+ "modelos": ["Modelos de casas", "Base de datos", "house", "Modelos de casas con techos, extras y documentos."],
  "obra": ["Obra", "Base de datos", "construction", "Fase de cada unidad, fecha de entrega y fotos."],
  "compradores": ["Clientes y compradores", "Base de datos", "person_search", "Directorio de compradores e inversores con sus documentos."]
 }
