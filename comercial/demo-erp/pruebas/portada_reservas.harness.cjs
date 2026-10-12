@@ -122,12 +122,16 @@ const TILDES = /[áéíóúñÁÉÍÓÚÑ¿¡]/;
     ok('fila: modelo, matrícula, cliente y pago en texto', e1.includes('Honda <b>"Vario"</b> 160') && e1.includes('DK 1234 AB') && e1.includes("O'Brien") && e1.includes('Pagado'));
     const e2 = await txt(p, '[data-ph="entregas"] li:nth-child(2)');
     ok('pendiente de pago y sin confirmar se dicen con texto', e2.includes('Pendiente de pago') && e2.includes('Sin confirmar'));
-    ok('el tono del chip sale del estado que da la base', (await p.$eval('[data-ph="entregas"] li:nth-child(1) .axw-chip', e => e.getAttribute('data-tono'))) === 'ok'
-       && (await p.$eval('[data-ph="entregas"] li:nth-child(2) .axw-chip', e => e.getAttribute('data-tono'))) === 'mal');
+    // el chip de pago por su enganche (no por su orden); pendiente en naranja como el diseño del owner (13-oct), el rojo es para lo desconocido
+    ok('el tono del chip sale del estado que da la base', (await p.$eval('[data-ph="entregas"] li:nth-child(1) [data-ph="chip-pago"]', e => e.getAttribute('data-tono'))) === 'ok'
+       && (await p.$eval('[data-ph="entregas"] li:nth-child(2) [data-ph="chip-pago"]', e => e.getAttribute('data-tono'))) === 'espera');
     const d1 = await txt(p, '[data-ph="devoluciones"] li');
     ok('devolución: registrado sin confirmar, sin cliente y la hora solo si llega', d1.includes('Pago registrado, sin confirmar') && d1.includes('Sin cliente') && d1.includes('10:30'));
     ok('sin hora no se pinta «Hora»', !e1.includes('Hora'));
-    ok('el título dice Hoy', (await txt(p, '[data-ph="titulo"]')) === 'Hoy');
+    ok('el título dice Hoy y el día que dio la base', /^Hoy, \S+ \d{1,2}\.$/.test(await txt(p, '[data-ph="titulo"]')), await txt(p, '[data-ph="titulo"]'));
+    ok('el botón Hoy está marcado (aria-pressed) el día de hoy', (await p.$eval('[data-accion="ph-hoy"]', e => e.getAttribute('aria-pressed'))) === 'true');
+    ok('cifras: entregas, devoluciones y sin pagar, solo cuentas', (await txt(p, '[data-ph="c-entregas"]')) === '2' && (await txt(p, '[data-ph="c-devoluciones"]')) === '1'
+       && !/[€$]|IDR|EUR/.test(await txt(p, '[data-ph="cifras"]')));
     ok('XSS: nada de lo que viene de la base se interpreta', await sinInyeccion(p));
     // la ficha al tocar
     await p.click('[data-ph="entregas"] li:nth-child(1) button');
@@ -141,9 +145,10 @@ const TILDES = /[áéíóúñÁÉÍÓÚÑ¿¡]/;
     // día siguiente
     await p.click('[data-accion="ph-despues"]');
     await espera(p, () => document.querySelector('[data-ph="estado-entregas"]').textContent.includes('Este día'));
-    ok('día siguiente: pide HOY+1 y dice «Este día no hay entregas.»', base.llamadas[base.llamadas.length - 1][1].p_dia === suma(HOY, 1) && (await txt(p, '[data-ph="titulo"]')) !== 'Hoy');
+    ok('día siguiente: pide HOY+1 y dice «Este día no hay entregas.»', base.llamadas[base.llamadas.length - 1][1].p_dia === suma(HOY, 1) && !/^Hoy/.test(await txt(p, '[data-ph="titulo"]'))
+       && (await p.$eval('[data-accion="ph-hoy"]', e => e.getAttribute('aria-pressed'))) === 'false');
     await p.click('[data-accion="ph-hoy"]');
-    await espera(p, () => document.querySelector('[data-ph="titulo"]').textContent === 'Hoy');
+    await espera(p, () => /^Hoy/.test(document.querySelector('[data-ph="titulo"]').textContent));
     ok('Hoy vuelve a pedir sin día', base.llamadas[base.llamadas.length - 1][1].p_dia === null);
     ok('el navegador no tocó tablas ni fetch, sin errores de script', (await p.evaluate(() => window.__fromLlamado + window.__fetchLlamado)) === 0 && (await p.evaluate(() => window.__errores.length)) === 0);
     await ctx.close();
@@ -193,7 +198,7 @@ const TILDES = /[áéíóúñÁÉÍÓÚÑ¿¡]/;
       await espera(p, () => !!document.querySelector('[data-axw="dialogo"]'));
       const sin = await p.evaluate(() => Array.from(new Set(window.__sinTrad)));
       ok(idioma + ': todo lo que pinta tiene traducción', sin.length === 0, sin.join(' | '));
-      ok(idioma + ': el título ya no está en español', (await txt(p, '[data-ph="titulo"]')) !== 'Hoy');
+      ok(idioma + ': el título ya no está en español', !/^Hoy/.test(await txt(p, '[data-ph="titulo"]')), await txt(p, '[data-ph="titulo"]'));
       await ctx.close();
     }
 

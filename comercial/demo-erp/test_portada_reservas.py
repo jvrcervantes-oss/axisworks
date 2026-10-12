@@ -156,7 +156,8 @@ mira('la portada distingue vacía de no se ha podido mirar, y sin permiso / mód
 mira('Configurar módulos no deduce el hecho: lee modulos_setup_estado y vuelve a leer tras guardar', 'S.estado(true)' in CODIGO_AJ and 'return carga()' in CODIGO_AJ and 'puesta_en_marcha_estado' not in CODIGO_AJ)
 mira('no poder mirar no es «todo configurado»: se dice y se ofrece Reintentar', "U('no_mirar')" in CODIGO_AJ and 'pm-reintentar' in CODIGO_AJ)
 mira('cambiar lo guardado pide motivo y un irreversible sin hacer lleva al asistente', "U('motivo_corto')" in CODIGO_AJ and 'enlaceAsistente(p.modulo, p.clave)' in CODIGO_AJ)
-mira('sin columna de hora vacía: la hora solo se pinta si llega', CODIGO.count('if (x.hora)') == 2)
+mira('la hora no se deduce: se pinta la que llega o «Sin hora» (la columna nunca queda vacía, diseño 13-oct), y en la ficha solo si llega',
+     CODIGO.count('if (x.hora)') == 2 and "T('Sin hora')" in CODIGO)
 acciones = set(re.findall(r'data-accion="(ph-[a-z-]+)"', MARCADO)) | set(re.findall(r"'data-accion': '(ph-[a-z-]+)'", CODIGO))
 mira('todo data-accion de la portada tiene manejador', all(("a === '" + a + "'") in CODIGO for a in acciones))
 mira('enganche por data-*: nada busca por texto', not re.search(r'textContent\s*===|innerText|\.placeholder', CODIGO + CODIGO_AJ))
@@ -175,7 +176,12 @@ def conocida(c):
     return c in claves or ("'" + c.replace("'", "\\'") + "':") in i18n or ('"' + c + '":') in i18n
 pintados = set(re.findall(r"T\('([^']+)'", CODIGO + CODIGO_AJ))
 pintados |= {s.strip() for s in re.findall(r'data-lwt>([^<]+)<', MARCADO + build.AJUSTES_PUESTA_TAB + build.AJUSTES_PUESTA_PANEL)}
-pintados |= set(re.findall(r"\['(Pagado|Pago registrado, sin confirmar|Pendiente de pago|Sin confirmar|Confirmada|En curso|Devuelta)'", CODIGO))
+# los rótulos de los mapas PAGO y ESTADO se leen por el nombre de la variable (Frontend, 13-oct): un rótulo nuevo (fuera_erp…) no se escapa
+for mapa in ('PAGO', 'ESTADO'):
+    bloque = re.search(r'var ' + mapa + r' = \{(.*?)\};', CODIGO, flags=re.S)
+    mira('el mapa %s está en la portada' % mapa, bool(bloque))
+    if bloque:
+        pintados |= set(re.findall(r":\s*\['([^']+)'", bloque.group(1)))
 pintados |= set(re.findall(r"pregunta: '([^']+)'", CODIGO_AJ))
 for par in re.findall(r"\['(?:si|no)', '([^']{4,})'\]", CODIGO_AJ):
     pintados.add(par)
@@ -183,6 +189,10 @@ for k in ('Reserva', 'Modelo', 'Unidad', 'Cliente', 'Fechas', 'Estado', 'Pago', 
     pintados.add(k)
 faltan = sorted(c for c in pintados if not conocida(c))
 mira('todo texto pintado tiene su inglés (' + '; '.join(x[:50] for x in faltan[:8]) + ')', not faltan)
+# el indonesio cubre todo el inglés de la pantalla (si no, en bbm cae al inglés sin avisar: Frontend, 13-oct)
+claves_id = claves_de(SCRIPT[SCRIPT.index('var ID_PH = {'):SCRIPT.index('var T = typeof window.lwT')], 'ID_PH')
+claves_en = claves_de(SCRIPT[SCRIPT.index('var EN_PH = {'):SCRIPT.index('var ID_PH = {')], 'EN_PH')
+mira('ID_PH tiene las mismas claves que EN_PH (' + '; '.join(sorted(claves_en ^ claves_id))[:200] + ')', claves_en == claves_id)
 
 print('%d/%d' % (casos - len(fallos), casos))
 for f in fallos:

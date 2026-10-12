@@ -7,51 +7,131 @@
      por reserva, el modelo, la unidad, el cliente y el estado del pago QUE DA LA BASE (`pago_estado`): la pantalla no calcula ni deduce nada de dinero. Tocar una
      reserva abre su ficha con lo que ya llegó. No escribe nada. Todo texto de la base se pinta con textContent. Se engancha por data-accion / data-ph, nunca por un rótulo.
      Idioma: ES/EN con el diccionario EN_PH de abajo más el de las ayudas comunes (se añaden a window.LW_EN solo si la clave no existe). -->
-<div class="flex flex-col w-full gap-6" data-ph="raiz">
+<div class="flex flex-col w-full gap-6 ph" data-ph="raiz">
 <style>
 /*AXW_COMUN_CSS*/
-.ph-dia{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+/* Composición del diseño «Reservas · Hoy» del owner (lienzo AxisWorks ERP Dashboard, 11-oct-2026; p37, 13-oct). Colores por las variables de la
+   piel; los cinco tonos de estado no tienen token: van aquí con el valor del diseño (no se toca el .axw-chip común, que usan Taller/Entrega/Ventas). */
+.ph{--ph-tinta:var(--tema-on-surface, 27 28 25);--ph-tinta2:var(--tema-on-surface-variant, 68 72 63);--ph-filete:var(--tema-filete, 218 220 230);
+  --ph-acento:var(--tema-burnt-earth, 46 59 235);--ph-noche:var(--tema-primary-container, 11 12 30);--ph-volt:var(--tema-on-primary, 200 240 74);
+  --ph-fondo:var(--tema-surface, 242 243 247);--ph-blanco:var(--tema-surface-container-lowest, 255 255 255)}
 a.axw-boton{text-decoration:none}
-.ph-fecha{font-size:15px;color:rgb(var(--tema-on-surface-variant, 68 72 63))}
-.ph-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
-.ph-fila{width:100%;text-align:left;display:grid;grid-template-columns:1fr auto;gap:6px 16px;align-items:center;padding:14px 16px;border-radius:12px;border:1px solid rgb(var(--tema-outline-variant, 197 200 188));background:rgb(var(--tema-surface-container-lowest, 255 255 255));color:inherit;font:inherit;cursor:pointer}
-.ph-fila:hover,.ph-fila:focus-visible{border-color:rgb(var(--tema-deep-lagoon, 16 76 79))}
-.ph-modelo{font-size:17px;font-weight:600;line-height:1.3;word-break:break-word}
-.ph-sub{font-size:14px;color:rgb(var(--tema-on-surface-variant, 68 72 63));word-break:break-word}
-.ph-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
-.ph-chips .axw-chip{font-size:13px;padding:3px 12px}
-.ph-cuenta{font-size:13px;color:rgb(var(--tema-outline, 117 120 110));font-weight:400}
-@media (max-width:640px){.ph-fila{grid-template-columns:1fr}.ph-chips{justify-content:flex-start}}
+.ph-cab{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px 40px;padding-bottom:8px}
+/* el diseño pone la cabecera sobre el fondo, sin tarjeta: shell.css la convierte en tarjeta con !important para toda la suite */
+.ph .ph-cab.lw-cabecera{background:transparent!important;padding:0 0 8px!important;border-radius:0!important;box-shadow:none!important}
+.ph-dia{align-self:flex-start}
+.ph-cab-txt{flex:1 1 480px;min-width:0}
+.ph-ante{margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:rgb(var(--ph-acento))}
+.ph .ph-h1{margin:16px 0 0;font-weight:600;font-size:clamp(28px,2.7vw,40px);line-height:1.04;letter-spacing:-.05em;color:rgb(var(--ph-tinta));word-break:break-word}
+.ph-h1>span{display:block}
+.ph-h1 .ph-h1-b{font-weight:300}
+.ph-lede{margin:16px 0 0;max-width:54ch;font-size:17px;line-height:1.6;color:rgb(var(--ph-tinta2))}
+.ph-acciones{display:flex;flex-wrap:wrap;gap:12px}
+.ph .axw-boton[data-primario="1"]{min-height:52px;padding:0 24px;font-size:16px;font-weight:700;background:rgb(var(--ph-noche));color:rgb(var(--ph-volt))}
+.ph-dia{display:inline-flex;flex-wrap:wrap;gap:0;padding:4px;border-radius:999px;background:rgb(var(--ph-blanco));border:1px solid rgb(var(--ph-filete))}
+html main .ph .ph-dia .axw-boton.axw-boton{min-height:40px;padding:0 18px;font-size:14px;font-weight:600;background:transparent;box-shadow:none;color:rgb(var(--ph-tinta));white-space:nowrap}
+html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(var(--ph-noche));color:rgb(var(--ph-volt))}
+.ph-cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.ph-cifra{background:rgb(var(--ph-blanco));border:1px solid rgb(var(--ph-filete));border-radius:20px;padding:20px 22px;min-width:0}
+.ph-cifra h2{margin:0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--ph-tinta2))}
+.ph .ph-num{margin-top:12px;font-weight:600;font-size:28px;line-height:1.1;letter-spacing:-.05em;color:rgb(var(--ph-tinta))}
+.ph .ph-num[data-tono="espera"]{color:rgb(var(--tema-aviso, 143 70 0))}
+.ph-num-sub{margin-top:10px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;font-size:13px;color:rgb(var(--ph-tinta2))}
+.ph-cols{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.ph-col{flex:1 1 420px;min-width:0;background:rgb(var(--ph-blanco));border:1px solid rgb(var(--ph-filete));border-radius:24px;padding:24px 28px 8px;display:flex;flex-direction:column}
+.ph-col-cab{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:8px}
+.ph-col-ante{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--ph-acento))}
+.ph-col h2.ph-col-tit{margin:6px 0 0;font-weight:500;font-size:19px;letter-spacing:-.04em;color:rgb(var(--ph-tinta))}
+.ph-cuenta{font-size:13px;font-weight:500;color:rgb(var(--ph-tinta2));white-space:nowrap}
+.ph-col>.axw-vacio,.ph-col>.axw-error{margin:0;padding:16px 0 24px;font-size:15px;color:rgb(var(--ph-tinta2));display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.ph-col>.axw-vacio:empty,.ph-col>.axw-error:empty{display:none}
+.ph-col>.axw-error{color:rgb(var(--tema-error, 163 38 26))}
+.ph-col>.axw-aviso{margin:8px 0 16px}
+.ph-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.ph-lista>li{border-top:1px solid rgb(var(--ph-filete));padding:12px 0 14px}
+.ph-fila{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px 16px;width:calc(100% + 16px);margin:0 -8px;padding:8px;box-sizing:border-box;border:0;border-radius:12px;
+  background:transparent;color:rgb(var(--ph-tinta));font:inherit;text-align:left;cursor:pointer;transition:background-color 200ms}
+.ph-fila:hover{background:rgb(var(--ph-fondo))}
+.ph-fila:focus-visible{outline:2px solid rgb(var(--ph-acento));outline-offset:2px}
+.ph .ph-hora{font-weight:600;font-size:20px;letter-spacing:-.04em;line-height:1.2;white-space:nowrap}
+.ph .ph-hora[data-sin="1"]{font-size:12px;font-weight:400;letter-spacing:.04em;color:rgb(var(--ph-tinta2));padding-top:5px}
+.ph-cuerpo{display:flex;flex-direction:column;gap:8px;min-width:0}
+.ph-linea{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
+.ph-modelo{font-size:15px;font-weight:700;line-height:1.35;word-break:break-word}
+.ph-mat{padding:2px 8px;border-radius:8px;border:1px solid rgb(var(--ph-filete));background:rgb(var(--ph-fondo));font-size:12px;white-space:nowrap}
+.ph-ir{margin-left:auto;font-size:18px;color:rgb(var(--ph-tinta2))}
+.ph-sitio{display:flex;align-items:flex-start;gap:8px;font-size:14px;line-height:1.45;color:rgb(var(--ph-tinta2));word-break:break-word}
+.ph-sitio .material-symbols-outlined{font-size:16px;line-height:1.3}
+.ph-sitio strong{color:rgb(var(--ph-tinta));font-weight:600}
+.ph-chips{display:flex;flex-wrap:wrap;gap:8px}
+/* chips de estado y de pago (texto + icono: el color solo no se lee) */
+.ph .ph-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:8px;border:1px solid transparent;font-size:13px;font-weight:700;line-height:1.35;white-space:normal;max-width:100%}
+.ph .ph-chip .material-symbols-outlined{font-size:14px}
+.ph .ph-chip[data-tono="ok"]{background:#DCF2E3;color:rgb(var(--tema-ok, 29 107 59))}
+.ph .ph-chip[data-tono="espera"]{background:#FFE9D2;color:rgb(var(--tema-aviso, 143 70 0))}
+.ph .ph-chip[data-tono="registrado"]{background:#FFE9D2;color:rgb(var(--tema-aviso, 143 70 0));border:1px dashed rgb(var(--tema-aviso, 143 70 0))}
+.ph .ph-chip[data-tono="mal"]{background:#FDE4E1;color:rgb(var(--tema-error, 163 38 26))}
+.ph .ph-chip[data-tono="confirmada"]{background:#E3E6FD;color:rgb(var(--ph-acento))}
+.ph .ph-chip[data-tono="curso"]{background:rgb(var(--ph-noche));color:rgb(var(--ph-fondo))}
+.ph .ph-chip[data-tono="neutro"]{background:rgb(var(--ph-fondo));color:rgb(var(--ph-tinta2))}
+@media (max-width:640px){
+  .ph-cab{gap:20px}
+  .ph-acciones,.ph-acciones .axw-boton{width:100%}
+  .ph-dia{display:flex;width:100%;box-sizing:border-box;border-radius:20px}
+  html main .ph .ph-dia .axw-boton.axw-boton{flex:1 1 auto;padding:0 12px}
+  .ph-col{padding:20px 18px 6px;border-radius:20px}
+  .ph-fila{grid-template-columns:minmax(0,1fr)}
+  .ph .ph-hora[data-sin="1"]{padding-top:0}
+}
 </style>
 
-<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-4 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
-<div class="flex flex-col gap-2">
-<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-ph="titulo" data-lwt>Hoy</h1>
-<p class="ph-fecha" data-ph="fecha"></p>
+<div class="lw-cabecera ph-cab">
+<div class="ph-cab-txt">
+<p class="ph-ante font-label-md uppercase" data-ph="ante"><span data-lwt>Seguimiento</span></p>
+<h1 class="ph-h1 font-headline-lg"><span data-ph="titulo" data-lwt>Hoy</span><span class="ph-h1-b" data-lwt>Lo que sale y lo que vuelve.</span></h1>
+<p class="ph-lede" data-lwt>Entregas y devoluciones del día, con la dirección y el estado del pago. Pulsa una para ver su ficha.</p>
 </div>
-<div class="ph-dia">
-<button class="axw-boton" type="button" data-accion="ph-antes"><span data-lwt>‹ Día anterior</span></button>
-<button class="axw-boton" type="button" data-accion="ph-hoy"><span data-lwt>Hoy</span></button>
-<button class="axw-boton" type="button" data-accion="ph-despues"><span data-lwt>Día siguiente ›</span></button>
+<div class="ph-acciones">
 <a class="axw-boton axw-oculto" data-primario="1" data-ph="ir-reservas" href="/intranet/v4/reservas-producto/"><span data-lwt>Reservas de producto</span></a>
 </div>
 </div>
 
+<div class="ph-dia" role="group" data-ph="dia">
+<button class="axw-boton" type="button" data-accion="ph-antes"><span data-lwt>‹ Día anterior</span></button>
+<button class="axw-boton" type="button" data-accion="ph-hoy" aria-pressed="false"><span data-lwt>Hoy</span></button>
+<button class="axw-boton" type="button" data-accion="ph-despues"><span data-lwt>Día siguiente ›</span></button>
+</div>
+
 <p class="axw-error axw-oculto" data-ph="error" role="alert"></p>
 
-<section class="bg-surface-container-lowest rounded-xl p-6 shadow-sm flex flex-col gap-3" aria-labelledby="ph-t-entregas">
-<h2 id="ph-t-entregas" class="font-headline-sm text-headline-sm text-deep-lagoon"><span data-lwt>Entregas</span> <span class="ph-cuenta" data-ph="n-entregas"></span></h2>
+<div class="ph-cifras" data-ph="cifras" aria-live="polite">
+<section class="ph-cifra" aria-labelledby="ph-c-entregas"><h2 id="ph-c-entregas" class="font-label-md uppercase" data-lwt>Entregas</h2>
+<div class="ph-num font-headline-sm" data-ph="c-entregas">—</div><div class="ph-num-sub" data-ph="c-entregas-sub"></div></section>
+<section class="ph-cifra" aria-labelledby="ph-c-devoluciones"><h2 id="ph-c-devoluciones" class="font-label-md uppercase" data-lwt>Devoluciones</h2>
+<div class="ph-num font-headline-sm" data-ph="c-devoluciones">—</div><div class="ph-num-sub" data-ph="c-devoluciones-sub"></div></section>
+<section class="ph-cifra" aria-labelledby="ph-c-pago"><h2 id="ph-c-pago" class="font-label-md uppercase" data-lwt>Sin pagar este día</h2>
+<div class="ph-num font-headline-sm" data-ph="c-pago">—</div><div class="ph-num-sub" data-ph="c-pago-sub"></div></section>
+</div>
+
+<div class="ph-cols">
+<section class="ph-col" aria-labelledby="ph-t-entregas">
+<div class="ph-col-cab"><div><div class="ph-col-ante font-label-md uppercase" data-lwt>Salen</div>
+<h2 id="ph-t-entregas" class="ph-col-tit font-headline-sm" data-lwt>Entregas</h2></div>
+<span class="ph-cuenta font-label-md uppercase" data-ph="n-entregas"></span></div>
 <div data-ph="estado-entregas" class="axw-vacio" role="status"></div>
 <ul class="ph-lista" data-ph="entregas"></ul>
 <p class="axw-aviso axw-oculto" data-ph="mas-entregas" role="status"></p>
 </section>
 
-<section class="bg-surface-container-lowest rounded-xl p-6 shadow-sm flex flex-col gap-3" aria-labelledby="ph-t-devoluciones">
-<h2 id="ph-t-devoluciones" class="font-headline-sm text-headline-sm text-deep-lagoon"><span data-lwt>Devoluciones</span> <span class="ph-cuenta" data-ph="n-devoluciones"></span></h2>
+<section class="ph-col" aria-labelledby="ph-t-devoluciones">
+<div class="ph-col-cab"><div><div class="ph-col-ante font-label-md uppercase" data-lwt>Vuelven</div>
+<h2 id="ph-t-devoluciones" class="ph-col-tit font-headline-sm" data-lwt>Devoluciones</h2></div>
+<span class="ph-cuenta font-label-md uppercase" data-ph="n-devoluciones"></span></div>
 <div data-ph="estado-devoluciones" class="axw-vacio" role="status"></div>
 <ul class="ph-lista" data-ph="devoluciones"></ul>
 <p class="axw-aviso axw-oculto" data-ph="mas-devoluciones" role="status"></p>
 </section>
+</div>
 
 </div>
 <!--AXW_SCRIPT-->
@@ -71,6 +151,12 @@ a.axw-boton{text-decoration:none}
     'Reserva': 'Booking', 'Modelo': 'Model', 'Unidad': 'Unit', 'Cliente': 'Customer', 'Fechas': 'Dates', 'Estado': 'Status', 'Pago': 'Payment', 'Precio': 'Price',
     'Dirección de entrega': 'Handover address', 'Dirección de recogida': 'Pick-up address', 'Hora': 'Time',
     'Abrir Reservas de producto': 'Open Product bookings',
+    'Seguimiento': 'Pipeline', 'Lo que sale y lo que vuelve.': 'What goes out and what comes back.', 'Hoy, %dia.': 'Today, %dia.',
+    'Entregas y devoluciones del día, con la dirección y el estado del pago. Pulsa una para ver su ficha.': 'The day\u2019s handovers and returns, with the address and the payment status. Tap one to see its details.',
+    'Sin pagar este día': 'Unpaid on this day', 'Salen': 'Going out', 'Vuelven': 'Coming back', 'Sin hora': 'No time', 'Entrega': 'Handover', 'Recogida': 'Pick-up',
+    'Sin confirmar: %n': 'Not confirmed: %n', 'Ya entregadas: %n': 'Already handed over: %n', 'En curso: %n': 'Ongoing: %n', 'Ya devueltas: %n': 'Already returned: %n',
+    'Pago registrado, sin confirmar: %n': 'Payment recorded, not confirmed: %n', 'Estado del pago desconocido: %n': 'Payment status unknown: %n',
+    'Nada pendiente de pago': 'Nothing pending payment', 'Pulsa para ver la ficha': 'Tap to see the details',
     'No se han podido mirar las reservas': 'The bookings could not be checked',
     'No tienes permiso para ver las reservas. No es que no haya: no se ha podido mirar.': 'You do not have permission to see the bookings. It does not mean there are none: they could not be checked.',
     'El módulo de reservas está apagado en esta instancia: no hay reservas que mirar. Esto NO quiere decir que no haya nada.': 'The bookings module is off in this instance: there are no bookings to check. This does NOT mean there is nothing.'
@@ -89,6 +175,12 @@ a.axw-boton{text-decoration:none}
     'Reserva': 'Booking', 'Modelo': 'Model', 'Unidad': 'Unit', 'Cliente': 'Pelanggan', 'Fechas': 'Tanggal', 'Estado': 'Status', 'Pago': 'Pembayaran', 'Precio': 'Harga',
     'Dirección de entrega': 'Alamat antar', 'Dirección de recogida': 'Alamat jemput', 'Hora': 'Jam',
     'Abrir Reservas de producto': 'Buka daftar booking',
+    'Seguimiento': 'Tindak lanjut', 'Lo que sale y lo que vuelve.': 'Yang keluar dan yang kembali.', 'Hoy, %dia.': 'Hari ini, %dia.',
+    'Entregas y devoluciones del día, con la dirección y el estado del pago. Pulsa una para ver su ficha.': 'Serah terima dan motor kembali hari ini, dengan alamat dan status pembayaran. Ketuk salah satu untuk melihat detailnya.',
+    'Sin pagar este día': 'Belum lunas pada tanggal ini', 'Salen': 'Keluar', 'Vuelven': 'Kembali', 'Sin hora': 'Tanpa jam', 'Entrega': 'Antar', 'Recogida': 'Jemput',
+    'Sin confirmar: %n': 'Belum dikonfirmasi: %n', 'Ya entregadas: %n': 'Sudah diserahkan: %n', 'En curso: %n': 'Sedang disewa: %n', 'Ya devueltas: %n': 'Sudah kembali: %n',
+    'Pago registrado, sin confirmar: %n': 'Pembayaran tercatat, belum dikonfirmasi: %n', 'Estado del pago desconocido: %n': 'Status pembayaran tidak diketahui: %n',
+    'Nada pendiente de pago': 'Tidak ada yang belum dibayar', 'Pulsa para ver la ficha': 'Ketuk untuk melihat detail',
     'No se han podido mirar las reservas': 'Booking tidak dapat diperiksa',
     'No tienes permiso para ver las reservas. No es que no haya: no se ha podido mirar.': 'Anda tidak punya akses untuk melihat booking. Bukan berarti tidak ada booking: datanya tidak dapat diperiksa.',
     'El módulo de reservas está apagado en esta instancia: no hay reservas que mirar. Esto NO quiere decir que no haya nada.': 'Modul booking tidak aktif di sistem ini: tidak ada booking yang bisa diperiksa. Ini BUKAN berarti tidak ada apa-apa.'
@@ -110,8 +202,10 @@ a.axw-boton{text-decoration:none}
   function error(m) { var e = $v('error'); e.textContent = m || ''; oculta(e, !m); }
 
   // El estado del pago lo decide la base (pago_estado); aquí solo se le pone nombre y tono. Texto Y color: el color solo no se lee.
-  var PAGO = { pagado: ['Pagado', 'ok'], registrado: ['Pago registrado, sin confirmar', 'espera'], pendiente: ['Pendiente de pago', 'mal'] };
-  var ESTADO = { bloqueo: ['Sin confirmar', 'espera'], confirmada: ['Confirmada', 'neutro'], en_curso: ['En curso', 'neutro'], devuelta: ['Devuelta', 'neutro'] };
+  // Tono e icono del diseño del owner (13-oct): pendiente en naranja (el rojo queda para lo desconocido); registrado con borde discontinuo («sin confirmar»).
+  // El icono es una ligadura de Material Symbols (la cáscara ya carga la fuente) y va aria-hidden: el texto del chip es el que dice el estado.
+  var PAGO = { pagado: ['Pagado', 'ok', 'check'], registrado: ['Pago registrado, sin confirmar', 'registrado', 'schedule'], pendiente: ['Pendiente de pago', 'espera', 'euro'] };
+  var ESTADO = { bloqueo: ['Sin confirmar', 'espera', 'schedule'], confirmada: ['Confirmada', 'confirmada', 'check'], en_curso: ['En curso', 'curso', 'arrow_forward'], devuelta: ['Devuelta', 'neutro', 'keyboard_return'] };
   var PROPIOS = {
     modulo_apagado: T('El módulo de reservas está apagado en esta instancia: no hay reservas que mirar. Esto NO quiere decir que no haya nada.'),
     sin_permiso: T('No tienes permiso para ver las reservas. No es que no haya: no se ha podido mirar.'), soloLectura: true
@@ -132,12 +226,14 @@ a.axw-boton{text-decoration:none}
   // solo decide si se OFRECE el enlace; quien entra o no a la pantalla lo vuelve a decidir la base
   function tieneReservas(f) { return !!f && (f.rol === 'super_admin' || (Array.isArray(f.herramientas) && f.herramientas.indexOf('reservas-producto') !== -1)); }
   var DIA_RE = /^\d{4}-\d{2}-\d{2}$/;
-  function fechaLarga(s) {
+  function fechaCon(s, op) {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ''));
     if (!m) return '';
-    var d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-    try { return d.toLocaleDateString(C.locale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { /* MUDO A PROPOSITO: sin Intl se enseña la fecha corta */ return C.fechaDia(s); }
+    // sin comas: id-ID da «Selasa, 13» y el titular ya pone la suya
+    try { return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toLocaleDateString(C.locale(), op).replace(/,/g, ''); } catch (e) { /* MUDO A PROPOSITO: sin Intl el titular dice Hoy y el antetítulo queda sin fecha */ return ''; }
   }
+  function diaSemana(s) { return fechaCon(s, { weekday: 'long', day: 'numeric' }); }
+  function mesDia(s) { return fechaCon(s, { day: 'numeric', month: 'long' }); }
   // Mover el día es aritmética de calendario sobre la fecha que dio la base (no se lee el reloj del navegador): mediodía UTC para que ningún cambio de hora salte un día.
   function suma(s, n) {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
@@ -149,21 +245,68 @@ a.axw-boton{text-decoration:none}
     if (x.cliente_oculto) return T('Cliente sin permiso para verlo');
     return x.cliente ? String(x.cliente) : T('Sin cliente');
   }
+  function chipDe(texto, tono, icono, cual) {
+    return h('span', { class: 'axw-chip ph-chip', 'data-tono': tono, 'data-ph': cual }, [h('span', { class: 'material-symbols-outlined', 'aria-hidden': 'true', text: icono }), h('span', { text: texto })]);
+  }
   function chipPago(x) {
     var p = PAGO[x.pago_estado];
-    return p ? chip(T(p[0]), p[1]) : chip(T('Estado del pago desconocido'), 'mal');
+    return p ? chipDe(T(p[0]), p[1], p[2], 'chip-pago') : chipDe(T('Estado del pago desconocido'), 'mal', 'help', 'chip-pago');
   }
-  function fila(x) {
-    var izq = h('div', null, [
-      h('div', { class: 'ph-modelo', text: x.producto ? String(x.producto) : '—' }),
-      h('div', { class: 'ph-sub', text: [x.unidad ? String(x.unidad) : null, quien(x)].filter(Boolean).join(' · ') })
-    ]);
-    if (x.hora) izq.appendChild(h('div', { class: 'ph-sub', text: T('Hora') + ': ' + String(x.hora) }));
-    var chips = h('div', { class: 'ph-chips' }, [chipPago(x)]);
+  // Fila con la forma del diseño: hora (o «Sin hora»: la columna nunca queda vacía ni se deduce), modelo + matrícula, dirección de ESA lista, cliente, estado y pago.
+  function fila(x, clave) {
+    var horaEl;
+    if (x.hora) horaEl = h('span', { class: 'ph-hora font-headline-sm', text: String(x.hora) });
+    else horaEl = h('span', { class: 'ph-hora font-label-md uppercase', 'data-sin': '1', text: T('Sin hora') });
+    var linea = h('span', { class: 'ph-linea' }, [h('span', { class: 'ph-modelo', text: x.producto ? String(x.producto) : '—' })]);
+    if (x.unidad) linea.appendChild(h('span', { class: 'ph-mat font-label-md uppercase', text: String(x.unidad) }));
+    linea.appendChild(h('span', { class: 'ph-ir material-symbols-outlined', 'aria-hidden': 'true', text: 'chevron_right' }));
+    var dir = clave === 'entregas' ? x.entrega_direccion : x.recogida_direccion;
+    var sitio = [];
+    if (dir) sitio.push(h('span', { text: T(clave === 'entregas' ? 'Entrega' : 'Recogida') + ': ' }), h('strong', { text: String(dir) }), ' · ');
+    sitio.push(T('Reserva') + ' ' + (x.numero_reserva ? String(x.numero_reserva) : '—'));
+    var chips = h('span', { class: 'ph-chips' });
     var est = ESTADO[x.estado];
-    if (est && x.estado !== 'confirmada') chips.appendChild(chip(T(est[0]), est[1]));
+    if (est) chips.appendChild(chipDe(T(est[0]), est[1], est[2], 'chip-estado'));
+    chips.appendChild(chipPago(x));
+    var cuerpo = h('span', { class: 'ph-cuerpo' }, [linea,
+      h('span', { class: 'ph-sitio' }, [h('span', { class: 'material-symbols-outlined', 'aria-hidden': 'true', text: dir ? 'location_on' : 'confirmation_number' }), h('span', null, sitio)]),
+      h('span', { class: 'ph-sitio' }, [h('span', { class: 'material-symbols-outlined', 'aria-hidden': 'true', text: 'person' }), h('span', { text: quien(x) })]),
+      chips]);
     E.filas[String(x.id)] = x;
-    return h('li', null, [h('button', { class: 'ph-fila', type: 'button', 'data-accion': 'ph-ver', 'data-reserva-id': String(x.id) }, [izq, chips])]);
+    return h('li', null, [h('button', { class: 'ph-fila', type: 'button', 'data-accion': 'ph-ver', 'data-reserva-id': String(x.id), title: T('Pulsa para ver la ficha') }, [horaEl, cuerpo])]);
+  }
+  // Cifras de arriba: SOLO cuentas sobre las filas del día que dio la base (nada de importes). Lista recortada → «n+»: no es el total, y nunca «nada pendiente».
+  function cuenta(n, recortada) { return String(n) + (recortada ? '+' : ''); }
+  function sub(el, partes) { vacia(el); partes.forEach(function (p) { if (p) el.appendChild(p); }); }
+  function cifras(d) {
+    var me = d.hay_mas_entregas === true, md = d.hay_mas_devoluciones === true;
+    var n = function (lista, f) { return lista.filter(f).length; };
+    $v('c-entregas').textContent = cuenta(d.entregas.length, me);
+    $v('c-devoluciones').textContent = cuenta(d.devoluciones.length, md);
+    var sinConf = n(d.entregas, function (x) { return x.estado === 'bloqueo'; });
+    var hechas = n(d.entregas, function (x) { return x.estado === 'en_curso' || x.estado === 'devuelta'; });
+    sub($v('c-entregas-sub'), [sinConf || me ? chipDe(T('Sin confirmar: %n').replace('%n', cuenta(sinConf, me)), 'espera', 'schedule', 'c-sin-confirmar') : null,
+      h('span', { text: T('Ya entregadas: %n').replace('%n', cuenta(hechas, me)) })]);
+    var fuera = n(d.devoluciones, function (x) { return x.estado === 'en_curso'; });
+    var vueltas = n(d.devoluciones, function (x) { return x.estado === 'devuelta'; });
+    sub($v('c-devoluciones-sub'), [h('span', { text: T('En curso: %n').replace('%n', cuenta(fuera, md)) }), h('span', { text: T('Ya devueltas: %n').replace('%n', cuenta(vueltas, md)) })]);
+    // una reserva que sale y vuelve el mismo día está en las dos listas: se cuenta una vez
+    var vistas = {}, unicas = [];
+    d.entregas.concat(d.devoluciones).forEach(function (x) { var k = String(x.id); if (!vistas[k]) { vistas[k] = 1; unicas.push(x); } });
+    var rec = me || md;
+    var pend = n(unicas, function (x) { return x.pago_estado === 'pendiente'; });
+    var regis = n(unicas, function (x) { return x.pago_estado === 'registrado'; });
+    var desc = n(unicas, function (x) { return !PAGO[x.pago_estado]; });
+    var num = $v('c-pago');
+    num.textContent = cuenta(pend, rec);
+    if (pend) num.setAttribute('data-tono', 'espera'); else num.removeAttribute('data-tono');
+    sub($v('c-pago-sub'), [regis ? chipDe(T('Pago registrado, sin confirmar: %n').replace('%n', cuenta(regis, rec)), 'registrado', 'schedule', 'c-registrado') : null,
+      desc ? chipDe(T('Estado del pago desconocido: %n').replace('%n', cuenta(desc, rec)), 'mal', 'help', 'c-desconocido') : null,
+      !pend && !regis && !desc && !rec ? h('span', { text: T('Nada pendiente de pago') }) : null]);
+  }
+  // Cargando o «no se ha podido mirar»: las cifras dicen «—», nunca 0
+  function cifrasSinDato() {
+    ['c-entregas', 'c-devoluciones', 'c-pago'].forEach(function (k) { $v(k).textContent = '—'; $v(k).removeAttribute('data-tono'); vacia($v(k + '-sub')); });
   }
   function pinta(clave, lista) {
     var ul = $v(clave), est = $v('estado-' + clave), n = $v('n-' + clave);
@@ -173,10 +316,13 @@ a.axw-boton{text-decoration:none}
       est.className = 'axw-vacio';
       var esHoy = E.dia === E.hoy;
       est.textContent = clave === 'entregas' ? T(esHoy ? 'Hoy no hay entregas.' : 'Este día no hay entregas.') : T(esHoy ? 'Hoy no hay devoluciones.' : 'Este día no hay devoluciones.');
+      // vacío con salida (Diseño, 13-oct): el mismo data-accion que «Día siguiente ›» de arriba
+      est.appendChild(document.createTextNode(' '));
+      est.appendChild(h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'ph-despues', text: T('Día siguiente ›') }));
       return;
     }
     est.textContent = '';
-    lista.forEach(function (x) { ul.appendChild(fila(x)); });
+    lista.forEach(function (x) { ul.appendChild(fila(x, clave)); });
   }
   function hayMas(clave, si) {
     var el = $v('mas-' + clave);
@@ -186,6 +332,7 @@ a.axw-boton{text-decoration:none}
     if (E.puedeReservas) el.appendChild(h('a', { href: '/intranet/v4/reservas-producto/', text: T('Ábrelas en Reservas de producto') }));
   }
   function noSeHaPodido(r) {
+    cifrasSinDato();
     var t = r.error ? C.mensaje(r.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
     ['entregas', 'devoluciones'].forEach(function (k) {
       vacia($v(k)); $v('n-' + k).textContent = ''; hayMas(k, false);
@@ -197,6 +344,7 @@ a.axw-boton{text-decoration:none}
     var yo = ++PETICION;
     error('');
     ['entregas', 'devoluciones'].forEach(function (k) { var est = $v('estado-' + k); est.className = 'axw-vacio'; est.textContent = T('Cargando…'); hayMas(k, false); });
+    cifrasSinDato();
     return llama('portada_reservas_dia_datos', { p_dia: dia || null }).then(function (r) {
       if (yo !== PETICION) return;   // llegó tarde: ya se pidió otro día y ese manda
       var d = r.data;
@@ -204,8 +352,13 @@ a.axw-boton{text-decoration:none}
       E.dia = String(d.dia);
       if (!dia) E.hoy = E.dia;   // sin día pedido, la base contesta con HOY en la zona de la instancia
       E.filas = {};
-      $v('titulo').textContent = E.dia === E.hoy ? T('Hoy') : C.fechaDia(E.dia);
-      $v('fecha').textContent = fechaLarga(E.dia);
+      // Titular «Hoy, martes 13.» / otro día «miércoles 14.»; el mes va en el antetítulo. El día es el que dio la base, en el idioma de la página.
+      var semana = diaSemana(E.dia), mes = mesDia(E.dia);
+      $v('titulo').textContent = E.dia === E.hoy ? (semana ? T('Hoy, %dia.').replace('%dia', semana) : T('Hoy')) : (semana ? semana + '.' : C.fechaDia(E.dia));
+      $v('ante').textContent = T('Seguimiento') + (mes ? ' · ' + mes : '');
+      var bh = $v('dia').querySelector('[data-accion="ph-hoy"]');
+      if (bh) bh.setAttribute('aria-pressed', E.dia === E.hoy ? 'true' : 'false');
+      cifras(d);
       pinta('entregas', d.entregas);
       pinta('devoluciones', d.devoluciones);
       hayMas('entregas', d.hay_mas_entregas === true);
