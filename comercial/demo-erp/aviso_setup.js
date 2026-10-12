@@ -13,7 +13,7 @@
 (function () {
   'use strict';
   var CLAVE_OCULTO = 'axw_setup_aviso_oculto';
-  var RUTA_ASISTENTE = '/ajustes/asistente/';
+  var RUTA_ASISTENTE = '/ajustes/configurar/';
 
   // datos = la forma de modulos_setup_estado; moduloPagina = window.AXW_MODULO_PAGINA; ruta = location.pathname; oculto = «Ahora no» ya pulsado
   function decide(datos, moduloPagina, ruta, oculto) {
