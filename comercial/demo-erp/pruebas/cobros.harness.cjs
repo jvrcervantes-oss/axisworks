@@ -5,6 +5,10 @@
 // faltan/modos/live son las de su index.ts). Mide los estados del encargo: sin configurar, guardando, prueba OK, prueba fallida con motivo, configurada,
 // operario; y además a medias, sin código disponible, modo real (no autorizado / confirmación tecleada / prefijo que no casa), respuesta perdida sin
 // reenviar, que la clave NO vuelve al DOM ni a la consola, que pedir_codigo y probar_y_guardar mandan los mismos campos, es/en/id a 390 y 1440 px.
+// Cobros reales «el cliente solo» (bbm-p38-cobros-front, 13-oct): la edge simulada tiene DOS servidores. El VIEJO (por defecto: el que corre en bbm
+// hasta aplicar 20261012233000) trae estado.live_permitido y da live_no_permitido; el NUEVO (o.nuevo; reglas del index.ts de bbm-p34, 411a147b) no lo
+// trae, trae modo_desde, exige confirmar_live='LIVE' con modo final real ANTES de mirar el código, mete el modo final en la huella del código, y en real
+// da 409 sin_a_quien_avisar (dos causas, con el texto real del servidor) o 502 aviso_no_enviado sin guardar ni gastar el código.
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || 'C:/Users/jvrce/AppData/Roaming/npm/node_modules/@playwright/mcp/node_modules/playwright-core');
@@ -37,16 +41,23 @@ const PROD_C = 'xnd_production_CANARIOprod0123456789abcdefghij';
 const PROD_L = 'xnd_production_CANARIOprodlee0123456789abcdefg';
 const CLAVE_XND = /^xnd_(development|production)_[A-Za-z0-9]{20,150}$/, TOKEN = /^[A-Za-z0-9_-]{16,200}$/;
 const CAMPOS = ['creacion', 'lectura', 'aviso'];
+// los textos de sin_a_quien_avisar de la edge nueva (index.ts de bbm-p34), copiados tal cual: la pantalla los enseña (y los traduce por su frase exacta)
+const SQA = {
+  correo: 'El servidor de correo ha cambiado hace menos de 24 horas: para cobrar de verdad espera a que pasen y vuelve a intentarlo. No se ha guardado nada.',
+  testigo: 'Para cobrar de verdad tiene que haber alguien más a quien avisar desde hace al menos 24 horas: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo) que no haya cambiado en ese tiempo. No se ha guardado nada.'
+};
 
 // o: puede (bool), sinPaso, conf ({creacion,lectura,aviso} ya puestas), modo, live, pide, fallo ({lectura:'con_escritura'}), perdida ('guardada'|'no'),
-//    obligatoriosHechos (para llegar al paso opcional del asistente)
+//    obligatoriosHechos (para llegar al paso opcional del asistente); servidor nuevo: nuevo, modoDesde ({en, por}), sinQuien ('correo'|'testigo'),
+//    avisoFalla (n.º de veces que el aviso previo no sale), fcl (la edge contesta falta_confirmar_live en probar_y_guardar una vez)
 function base(o = {}) {
   const d = JSON.parse(JSON.stringify(SETUP.sin_configurar));
   d.puede_configurar = o.puede !== false;
   if (o.obligatoriosHechos) d.pasos.forEach(p => { if (p.obligatorio) { p.hecho = true; p.falta = null; } });
   if (!o.sinPaso) d.pasos.push(JSON.parse(JSON.stringify(COBROS.paso_setup.sin_hacer)));
   const est = JSON.parse(JSON.stringify(COBROS.edge.acciones.estado.respuesta_200.estado));
-  est.live_permitido = !!o.live;
+  if (o.nuevo) { delete est.live_permitido; est.modo_desde = o.modoDesde || null; }
+  else { delete est.modo_desde; est.live_permitido = !!o.live; }
   CAMPOS.forEach(k => { if (o.conf && o.conf[k]) est.claves[k] = { configurada: true, puesta_en: '2026-10-11T09:30:00Z', puesta_por: 'dion@balibestmotorcycle.com' }; });
   est.modo = o.modo || (o.conf && o.conf.creacion ? 'test' : null);
   est.configurado = CAMPOS.every(k => est.claves[k].configurada);
@@ -69,8 +80,12 @@ function edge(b, c) {
   if (!b.pide) return no(503, 'codigo_no_disponible');
   const v = {};
   for (const k of CAMPOS) { const x = c[k] == null ? '' : String(c[k]).trim(); if (x !== '' && !(k === 'aviso' ? TOKEN : CLAVE_XND).test(x)) return no(400, 'clave_no_valida', { campo: k }); v[k] = x; }
-  const huella = JSON.stringify(CAMPOS.map(k => v[k]));
   const modoDe = x => x.startsWith('xnd_production_') ? 'live' : 'test';
+  // modo final (edge nueva): el de la clave de creación o la de lectura que se manda; si no va ninguna, el de la instancia
+  const modoFinal = v.creacion ? modoDe(v.creacion) : v.lectura ? modoDe(v.lectura) : b.est.modo;
+  const huella = JSON.stringify(CAMPOS.map(k => v[k]).concat(b.o.nuevo ? [modoFinal] : []));
+  const confirmado = typeof c.confirmar_live === 'string' && c.confirmar_live.trim() === 'LIVE';
+  if (b.o.nuevo && (c.accion === 'pedir_codigo' || c.accion === 'probar_y_guardar') && modoFinal === 'live' && !confirmado) return no(400, 'falta_confirmar_live');
   if (c.accion === 'pedir_codigo') {
     const faltan = CAMPOS.filter(k => v[k] === '' && !b.est.claves[k].configurada);
     if (faltan.length) return no(400, 'faltan_claves', { campos: faltan });
@@ -78,7 +93,7 @@ function edge(b, c) {
     const mc = v.creacion ? modoDe(v.creacion) : b.est.modo, ml = v.lectura ? modoDe(v.lectura) : b.est.modo;
     if (mc && ml && mc !== ml) return no(400, 'modos_distintos');
     if (b.est.modo && mc && mc !== b.est.modo && !v.aviso) return no(400, 'faltan_claves', { campos: ['aviso'] });
-    if ((mc === 'live' || ml === 'live') && !b.est.live_permitido) return no(403, 'live_no_permitido');
+    if (!b.o.nuevo && (mc === 'live' || ml === 'live') && !b.est.live_permitido) return no(403, 'live_no_permitido');
     b.codigoPara = huella;
     return { status: 200, json: { ok: true, codigo: 'codigo_enviado', caduca_en: 600, correo_enmascarado: 'd***@balibestmotorcycle.com' } };
   }
@@ -86,9 +101,16 @@ function edge(b, c) {
     if (c.codigo !== '123456' || b.codigoPara !== huella) return no(403, 'codigo_no_valido');
     if (!c.contrasena_actual) return no(401, 'reautenticar');
     if (c.contrasena_actual !== 'buena') return no(401, 'clave_actual_incorrecta');
+    if (b.o.fcl) { b.o.fcl = false; return no(400, 'falta_confirmar_live'); }
     if (b.o.fallo) return no(422, 'prueba_fallida', { fallo: b.o.fallo });
+    if (b.o.nuevo && modoFinal === 'live') {   // en real: nadie fiable a quien avisar o aviso que no sale → nada guardado, el código NO se gasta
+      if (b.o.sinQuien) return { status: 409, json: { ok: false, codigo: 'sin_a_quien_avisar', error: SQA[b.o.sinQuien] } };
+      if (b.o.avisoFalla > 0) { b.o.avisoFalla--; return { status: 502, json: { ok: false, codigo: 'aviso_no_enviado', error: 'No se pudo avisar a los demás del cambio a cobros reales: no se ha guardado nada, inténtalo en un rato' } }; }
+    }
     const promueve = () => { CAMPOS.forEach(k => { if (v[k]) b.est.claves[k] = { configurada: true, puesta_en: '2026-10-12T20:' + String(10 + b.edge.length).slice(-2) + ':00Z', puesta_por: 'owner@balibestmotorcycle.com' }; });
-      if (v.creacion) b.est.modo = modoDe(v.creacion); b.est.configurado = CAMPOS.every(k => b.est.claves[k].configurada); b.codigoPara = null; };
+      const antes = b.est.modo;
+      if (v.creacion) b.est.modo = modoDe(v.creacion); b.est.configurado = CAMPOS.every(k => b.est.claves[k].configurada); b.codigoPara = null;
+      if (b.o.nuevo && b.est.modo !== antes) b.est.modo_desde = { en: '2026-10-13T02:00:00Z', por: 'owner@balibestmotorcycle.com' }; };
     if (b.o.perdida) { if (b.o.perdida === 'guardada') promueve(); b.o.perdida = null; return b.o.gateway ? { status: 504, json: null } : b.o.base502 ? { status: 502, json: { ok: false, codigo: 'base_no_responde', error: 'x' } } : { red: true }; }
     promueve();
     return { status: 200, json: { ok: true, guardado: true, aviso: 'enviado', prueba: { creacion: v.creacion ? 'ok' : 'no_se_prueba', lectura: v.lectura ? 'ok' : 'no_se_prueba', aviso: 'no_se_prueba' }, estado: JSON.parse(JSON.stringify(b.est)) } };
@@ -105,7 +127,7 @@ window.lwEdge = function (n) { return 'https://sb.test/functions/v1/' + n; }; wi
 window.fetch = function (url, init) { return window.__edge(String(url), init && init.body ? JSON.parse(init.body) : null).then(function (r) {
   if (r.red) throw new TypeError('Failed to fetch');
   return { ok: r.status >= 200 && r.status < 300, status: r.status, text: function () { return Promise.resolve(JSON.stringify(r.json)); } }; }); };
-window.LW_EN = {}; window.LW_ID = {}; window.__idioma = '${idioma}';
+window.LW_EN = {}; window.LW_ID = {}; window.__idioma = '${idioma}'; window.LW_IDIOMA = '${idioma}';
 window.lwLocale = function () { return window.__idioma === 'id' ? 'id-ID' : window.__idioma === 'en' ? 'en-GB' : 'es-ES'; };
 window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' ? window.LW_EN : window.__idioma === 'id' ? window.LW_ID : null; var v = s;
   if (d) { if (Object.prototype.hasOwnProperty.call(d, s)) v = d[s]; else if (!/^[\\s0-9.:]*$/.test(s)) window.__sinTrad.push(s); }
@@ -154,7 +176,7 @@ const C = '[data-axw-cobros-caja]';
   ok('las claves: ningún gestor de contraseñas (autocomplete off y marcas de los gestores)', await p.$$eval('#lw-aj-cobros input[type="password"]', l => l.length === 3 && l.every(i => i.getAttribute('autocomplete') === 'off' && i.getAttribute('data-lpignore') === 'true' && i.hasAttribute('data-1p-ignore') && i.hasAttribute('data-bwignore'))));
   ok('sin configurar: tres campos secretos, de tipo contraseña', (await p.$$eval('#lw-aj-cobros input[type="password"]', l => l.map(i => i.getAttribute('data-axw-campo')).join(','))) === 'creacion,lectura,aviso');
   ok('proveedor: Xendit, el que da la base', (await p.getAttribute('[data-axw-cobros-proveedor]', 'data-axw-cobros-proveedor')) === 'xendit');
-  ok('modo real no autorizado: botón apagado y lo dice', await p.$eval('[data-axw-cobros="modo-live"]', e => e.disabled) && !!(await p.$('[data-axw-cobros-live="no_permitido"]')));
+  ok('servidor viejo, modo real no autorizado: botón apagado y lo dice, sin mandar al estudio', await p.$eval('[data-axw-cobros="modo-live"]', e => e.disabled) && !!(await p.$('[data-axw-cobros-live="no_permitido"]')) && !/estudio/.test((await txt(p, '[data-axw-cobros-live="no_permitido"]')) || ''));
   ok('sin código pedido: el botón de guardar no se ofrece', await p.$eval('[data-axw-cobros-host="guardar"]', e => e.hidden) && b.edge.filter(x => x.accion !== 'estado').length === 0);
   await p.fill('[data-axw-campo="creacion"]', CANARIO_C);
   await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(200);
@@ -252,8 +274,10 @@ const C = '[data-axw-cobros-caja]';
   ok('modo real: marcado y con su aviso de dinero real', !!(await p.$('[data-axw-cobros-live="aviso"]')) && (await p.getAttribute('[data-axw-cobros="modo-live"]', 'aria-checked')) === 'true');
   await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(200);
   ok('modo real sin teclear LIVE: no se pide el código', b.edge.filter(x => x.accion === 'pedir_codigo').length === 0 && ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').includes('no coincide'));
-  await p.fill('[data-axw-campo="confirma_live"]', 'live'); await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
-  ok('modo real confirmado: se pide el código', b.edge.filter(x => x.accion === 'pedir_codigo').length === 1 && !!(await p.$('[data-axw-cobros-enviado]')));
+  await p.fill('[data-axw-campo="confirma_live"]', 'live'); await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(200);
+  ok('modo real con «live» en minúsculas: no coincide (exacto, decisión por defecto de bbm-p38)', b.edge.filter(x => x.accion === 'pedir_codigo').length === 0);
+  await p.fill('[data-axw-campo="confirma_live"]', 'LIVE'); await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
+  ok('modo real confirmado (servidor viejo autorizado): se pide el código y va confirmar_live', b.edge.filter(x => x.accion === 'pedir_codigo').length === 1 && !!(await p.$('[data-axw-cobros-enviado]')) && b.edge.filter(x => x.accion === 'pedir_codigo')[0].confirmar_live === 'LIVE');
   if (SHOT) await p.screenshot({ path: path.join(SHOT, 'cobros_live_1440.png'), fullPage: true });
   await ctx.close();
 
@@ -365,6 +389,113 @@ const C = '[data-axw-cobros-caja]';
   ok('cambio de modo sin token nuevo: lo pide y no gasta un código', ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').includes('token de avisos') && b.edge.filter(x => x.accion === 'pedir_codigo').length === 0);
   await ctx.close();
 
+  // ── SERVIDOR NUEVO (20261012233000, «el cliente solo») ─────────────────────────────────────────────────────────────────────────────────────
+  // 16. de prueba a real, de punta a punta: botón encendido sin nota del estudio, LIVE tecleado viaja IGUAL en las dos llamadas, modo_desde al volver
+  b = base({ nuevo: true });
+  ({ p, ctx } = await abre(nav, b));
+  ok('nuevo: el botón de real está encendido y no hay nota de «no disponible»', !(await p.$eval('[data-axw-cobros="modo-live"]', e => e.disabled)) && !(await p.$('[data-axw-cobros-live="no_permitido"]')));
+  ok('nuevo: en Cobros no se pide autorizar al estudio', !/estudio|studio/i.test((await txt(p, '#lw-aj-cobros')) || ''));
+  await p.click('[data-axw-cobros="modo-live"]');
+  await p.fill('[data-axw-campo="creacion"]', PROD_C); await p.fill('[data-axw-campo="lectura"]', PROD_L); await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
+  ok('nuevo: el campo LIVE sale con la nota de que nadie del estudio lo revisa', !!(await p.$('[data-axw-campo="confirma_live"]')) && ((await txt(p, `${C}`)) || '').includes('Nadie del estudio lo revisa antes'));
+  await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(200);
+  ok('nuevo: sin LIVE no se pide el código (y no llega a la edge)', b.edge.filter(x => x.accion === 'pedir_codigo').length === 0);
+  await p.fill('[data-axw-campo="confirma_live"]', '  LIVE '); await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
+  const p16 = b.edge.filter(x => x.accion === 'pedir_codigo')[0];
+  ok('nuevo: pedir_codigo lleva confirmar_live = lo tecleado, recortado', !!p16 && p16.confirmar_live === 'LIVE' && !!(await p.$('[data-axw-cobros-enviado]')), JSON.stringify(p16 && p16.confirmar_live));
+  await p.fill('[data-axw-campo="codigo"]', '123456'); await p.fill('[data-axw-campo="contrasena"]', 'buena');
+  await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(700);
+  const g16 = b.edge.filter(x => x.accion === 'probar_y_guardar')[0];
+  ok('nuevo: probar_y_guardar manda el MISMO confirmar_live y los mismos campos (7 claves)', !!g16 && g16.confirmar_live === p16.confirmar_live && CAMPOS.every(k => g16[k] === p16[k]) && Object.keys(g16).length === 7, JSON.stringify(g16 && Object.keys(g16)));
+  ok('nuevo: guardado en real: «Conectado a Xendit · modo real»', ((await txt(p, '[data-axw-cobros-estado="conectado"]')) || '').startsWith('Conectado a Xendit · modo real') && b.est.modo === 'live');
+  ok('nuevo: al releer, «Desde el … puesto por …» (modo_desde)', ((await txt(p, '[data-axw-cobros-modo-desde="live"]')) || '').includes('puesto por owner@balibestmotorcycle.com'));
+  ok('nuevo: la clave no está en el DOM ni en la consola', await sinCanario(p));
+  ok('nuevo: sin errores de página', (await p.evaluate(() => window.__errores)).length === 0, JSON.stringify(await p.evaluate(() => window.__errores)));
+  if (SHOT) await p.screenshot({ path: path.join(SHOT, 'cobros_nuevo_real_1440.png'), fullPage: true });
+  await ctx.close();
+
+  // 17. ya en real, cambiar solo el token de avisos: también pide LIVE (si no, la edge daría falta_confirmar_live)
+  b = base({ nuevo: true, conf: { creacion: 1, lectura: 1, aviso: 1 }, modo: 'live', modoDesde: { en: '2026-10-13T01:00:00Z', por: 'dion@balibestmotorcycle.com' } });
+  ({ p, ctx } = await abre(nav, b));
+  ok('nuevo, en real: dice desde cuándo y quién', ((await txt(p, '[data-axw-cobros-modo-desde="live"]')) || '').includes('dion@balibestmotorcycle.com'));
+  await p.click('[data-axw-cobros="reemplazar-aviso"]');
+  await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
+  ok('nuevo, en real, solo el token: sale el campo LIVE', !!(await p.$('[data-axw-campo="confirma_live"]')));
+  await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(200);
+  ok('nuevo, en real, solo el token, sin LIVE: no se pide el código', b.edge.filter(x => x.accion === 'pedir_codigo').length === 0);
+  await p.fill('[data-axw-campo="confirma_live"]', 'LIVE'); await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
+  const p17 = b.edge.filter(x => x.accion === 'pedir_codigo')[0];
+  ok('nuevo, en real, solo el token: va el token y confirmar_live, nada más', !!p17 && p17.aviso === CANARIO_A && p17.confirmar_live === 'LIVE' && !('creacion' in p17) && !!(await p.$('[data-axw-cobros-enviado]')), JSON.stringify(p17 && Object.keys(p17)));
+  await ctx.close();
+
+  // 18. de real a prueba: no pide LIVE ni manda confirmar_live
+  b = base({ nuevo: true, conf: { creacion: 1, lectura: 1, aviso: 1 }, modo: 'live' });
+  ({ p, ctx } = await abre(nav, b));
+  await p.click('[data-axw-cobros="modo-test"]');
+  ok('nuevo, de real a prueba: tres campos y ningún campo LIVE', (await p.$$('#lw-aj-cobros input[type="password"]')).length === 3 && !(await p.$('[data-axw-campo="confirma_live"]')));
+  await p.fill('[data-axw-campo="creacion"]', CANARIO_C); await p.fill('[data-axw-campo="lectura"]', CANARIO_L); await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
+  await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
+  const p18 = b.edge.filter(x => x.accion === 'pedir_codigo')[0];
+  ok('nuevo, de real a prueba: pedir_codigo sin confirmar_live', !!p18 && !('confirmar_live' in p18) && !!(await p.$('[data-axw-cobros-enviado]')), JSON.stringify(p18 && Object.keys(p18)));
+  await ctx.close();
+
+  // 19. 409 sin_a_quien_avisar: se enseña el texto del SERVIDOR (cada causa el suyo), traducido; nada guardado
+  for (const [causa, idioma, ancho] of [['correo', 'es', 1440], ['testigo', 'es', 390], ['testigo', 'id', 390], ['correo', 'en', 1440]]) {
+    b = base({ nuevo: true, sinQuien: causa });
+    ({ p, ctx } = await abre(nav, b, { idioma, ancho }));
+    await p.click('[data-axw-cobros="modo-live"]');
+    await p.fill('[data-axw-campo="creacion"]', PROD_C); await p.fill('[data-axw-campo="lectura"]', PROD_L); await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
+    await p.fill('[data-axw-campo="confirma_live"]', 'LIVE'); await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
+    await p.fill('[data-axw-campo="codigo"]', '123456'); await p.fill('[data-axw-campo="contrasena"]', 'buena');
+    await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(500);
+    const aviso = (await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '';
+    const esperado = await p.evaluate(t => window.lwT(t), SQA[causa]);
+    ok('409 ' + causa + ' ' + idioma + ': la pantalla enseña el texto del servidor' + (idioma === 'es' ? '' : ', traducido'), aviso === esperado && (idioma === 'es' || esperado !== SQA[causa]), aviso.slice(0, 90));
+    const sin = (await p.evaluate(() => window.__sinTrad)).filter(s => !/^(Xendit|LIVE)$/.test(s));
+    ok('409 ' + causa + ' ' + idioma + ': ninguna frase sin traducir', idioma === 'es' || sin.length === 0, sin.slice(0, 3).join(' | '));
+    ok('409 ' + causa + ' ' + idioma + ': nada guardado y el pie dice su frase', !b.est.configurado && ((await txt(p, '[data-axw-cobros-host="estado"]')) || '').length > 20);
+    ok('409 ' + causa + ' ' + idioma + ' ' + ancho + ': sin scroll horizontal', (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho);
+    if (SHOT) await p.screenshot({ path: path.join(SHOT, 'cobros_409_' + causa + '_' + idioma + '_' + ancho + '.png'), fullPage: true });
+    await ctx.close();
+  }
+
+  // 20. 502 aviso_no_enviado: no se relee como duda, el código sigue valiendo y el reintento guarda con el MISMO código
+  b = base({ nuevo: true, avisoFalla: 1 });
+  ({ p, ctx } = await abre(nav, b));
+  await p.click('[data-axw-cobros="modo-live"]');
+  await p.fill('[data-axw-campo="creacion"]', PROD_C); await p.fill('[data-axw-campo="lectura"]', PROD_L); await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
+  await p.fill('[data-axw-campo="confirma_live"]', 'LIVE'); await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
+  await p.fill('[data-axw-campo="codigo"]', '123456'); await p.fill('[data-axw-campo="contrasena"]', 'buena');
+  const est20 = b.edge.filter(x => x.accion === 'estado').length;
+  await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(500);
+  ok('502 aviso_no_enviado: lo dice en llano (nada guardado, el código sigue valiendo)', ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').includes('El código sigue valiendo') && !b.est.configurado);
+  ok('502 aviso_no_enviado: no se relee estado como si fuera una duda', b.edge.filter(x => x.accion === 'estado').length === est20);
+  ok('502 aviso_no_enviado: sigue en la fase del código, con el código tecleado', (await p.$eval('[data-axw-campo="codigo"]', i => i.value)) === '123456');
+  await p.fill('[data-axw-campo="contrasena"]', 'buena');
+  await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(700);
+  const g20 = b.edge.filter(x => x.accion === 'probar_y_guardar');
+  ok('502 aviso_no_enviado: el reintento guarda con el mismo código y confirmar_live', g20.length === 2 && g20[1].codigo === '123456' && g20[1].confirmar_live === 'LIVE' && b.est.configurado && b.est.modo === 'live');
+  await ctx.close();
+
+  // 21. falta_confirmar_live en probar_y_guardar (no debería pasar): vuelve a escribir, con el campo LIVE a mano y la frase en llano
+  b = base({ nuevo: true, fcl: true });
+  ({ p, ctx } = await abre(nav, b));
+  await p.click('[data-axw-cobros="modo-live"]');
+  await p.fill('[data-axw-campo="creacion"]', PROD_C); await p.fill('[data-axw-campo="lectura"]', PROD_L); await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
+  await p.fill('[data-axw-campo="confirma_live"]', 'LIVE'); await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
+  await p.fill('[data-axw-campo="codigo"]', '123456'); await p.fill('[data-axw-campo="contrasena"]', 'buena');
+  await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(500);
+  ok('falta_confirmar_live: se vuelve a escribir, con el campo LIVE y su frase', !!(await p.$('[data-axw-cobros="pedir"]')) && !!(await p.$('[data-axw-campo="confirma_live"]')) && ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').includes('escribir LIVE'));
+  await ctx.close();
+
+  // 22. servidor viejo, sin autorización y la instancia ya en real (caso imposible hoy): no hay botón muerto que pida LIVE sin campo
+  b = base({ conf: { creacion: 1, lectura: 1, aviso: 1 }, modo: 'live', live: false });
+  ({ p, ctx } = await abre(nav, b));
+  await p.click('[data-axw-cobros="reemplazar-aviso"]'); await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
+  await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(200);
+  ok('viejo sin autorización y en real: lo dice con la frase neutra y no gasta código', b.edge.filter(x => x.accion === 'pedir_codigo').length === 0 && ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').includes('no está disponible'));
+  await ctx.close();
+
   // 12. idiomas y anchos: ninguna frase sin traducir, sin scroll horizontal (sin configurar, código pedido y configurada)
   for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
     b = base({ live: true });
@@ -378,8 +509,9 @@ const C = '[data-axw-cobros-caja]';
     ok(idioma + ' ' + ancho + ': código pedido, ninguna frase sin traducir', idioma === 'es' || sin1.length === 0, sin1.slice(0, 4).join(' | '));
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'cobros_codigo_' + idioma + '_' + ancho + '.png'), fullPage: true });
     await ctx.close();
-    b = base({ conf: { creacion: 1, lectura: 1, aviso: 1 }, modo: 'live', live: true });
+    b = base({ conf: { creacion: 1, lectura: 1, aviso: 1 }, modo: 'live', nuevo: true, modoDesde: { en: '2026-10-13T01:00:00Z', por: 'dion.wijaya.operaciones@balibestmotorcycle.com' } });
     let r2 = await abre(nav, b, { idioma, ancho });
+    await r2.p.click('[data-axw-cobros="reemplazar-aviso"]');   // con el campo LIVE y su nota a la vista
     const w2 = await r2.p.evaluate(() => document.documentElement.scrollWidth);
     const sin = (await r2.p.evaluate(() => window.__sinTrad)).filter(s => !/^(Xendit|LIVE)$/.test(s));
     ok(idioma + ' ' + ancho + ': ninguna frase sin traducir', idioma === 'es' || sin.length === 0, sin.slice(0, 4).join(' | '));

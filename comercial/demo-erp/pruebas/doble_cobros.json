@@ -17,7 +17,7 @@
             "proveedor": "xendit",
             "configurado": false,
             "modo": null,
-            "live_permitido": false,
+            "modo_desde": null,
             "claves": {
               "creacion": {
                 "configurada": false,
@@ -41,14 +41,15 @@
           },
           "pide_codigo": true
         },
-        "_notas": "configurado = las tres claves puestas. modo = 'test' | 'live' | null (sale del prefijo de la clave de creación: xnd_development_ = test, xnd_production_ = live). live_permitido = el owner ya autorizó claves de producción en esta instancia (si es false, una clave xnd_production_ se rechaza con live_no_permitido). pide_codigo=false → la confirmación por código no está disponible en esta instancia: la pantalla dice «no disponible» y no deja guardar (las otras acciones darían 503 codigo_no_disponible)."
+        "_notas": "configurado = las tres claves puestas. modo = 'test' | 'live' | null (sale del prefijo de la clave de creación: xnd_development_ = test, xnd_production_ = live). modo_desde = {en, por} (cuándo y quién puso el modo de ahora; null si no hay claves). DESDE 20261012233000 (owner 12-oct, «el cliente solo») ya NO hay live_permitido: el modo real lo pone el super admin sin autorización del estudio, tecleando LIVE. pide_codigo=false → la confirmación por código no está disponible en esta instancia: la pantalla dice «no disponible» y no deja guardar (las otras acciones darían 503 codigo_no_disponible)."
       },
       "pedir_codigo": {
         "cuerpo": {
           "accion": "pedir_codigo",
           "creacion": "xnd_development_…",
           "lectura": "xnd_development_…",
-          "aviso": "<token de verificación de avisos de Xendit>"
+          "aviso": "<token de verificación de avisos de Xendit>",
+          "confirmar_live": "LIVE (solo si el modo final es real; si no, se omite)"
         },
         "respuesta_200": {
           "ok": true,
@@ -56,7 +57,7 @@
           "caduca_en": 600,
           "correo_enmascarado": "d***@balibestmotorcycle.com"
         },
-        "_notas": "Las tres claves son opcionales por separado (se cambia solo lo que se manda), pero la PRIMERA vez (configurado=false) van las tres: si no, 400 faltan_claves con `campos`. El código va atado a lo que se manda: cambiar cualquier campo después exige otro código. La pantalla manda EXACTAMENTE los mismos campos en probar_y_guardar. ANTES de gastar el código mira el estado de la base y puede devolver 400 faltan_claves / sin_cambios / modos_distintos o 403 live_no_permitido; con los envíos de correo en pausa, 503 envios_pausados (ni el código ni el aviso podrían salir). CAMBIAR DE MODO (prueba ↔ real) exige mandar también un `aviso` nuevo: Xendit tiene un token de avisos por modo; sin él, 400 faltan_claves con campos ['aviso'] (la base lo vuelve a exigir)."
+        "_notas": "Las tres claves son opcionales por separado (se cambia solo lo que se manda), pero la PRIMERA vez (configurado=false) van las tres: si no, 400 faltan_claves con `campos`. El código va atado a lo que se manda: cambiar cualquier campo después exige otro código. La pantalla manda EXACTAMENTE los mismos campos en probar_y_guardar. ANTES de gastar el código mira el estado de la base y puede devolver 400 faltan_claves / sin_cambios / modos_distintos; con los envíos de correo en pausa, 503 envios_pausados (ni el código ni el aviso podrían salir). CAMBIAR DE MODO (prueba ↔ real) exige mandar también un `aviso` nuevo: Xendit tiene un token de avisos por modo; sin él, 400 faltan_claves con campos ['aviso'] (la base lo vuelve a exigir). COBROS REALES (20261012233000): si el modo FINAL es real —las claves de creación/lectura que se mandan son xnd_production_, o no se manda ninguna de las dos y la instancia ya está en real— hace falta confirmar_live = 'LIVE' (exacto; se recortan espacios): si no, 400 falta_confirmar_live ANTES de gastar el código. Vale en TODO cambio con modo final real (también cambiar solo el token de avisos estando en real). Volver a prueba no lo pide. El modo final va dentro de la huella del código: un código pedido mientras la instancia estaba en prueba no vale si al usarlo el modo final es real (403 codigo_no_valido). Con modo final real el asunto del correo empieza por «PASO A COBROS REALES — » (de prueba a real) o «Cobros REALES — » (ya lo era)."
       },
       "probar_y_guardar": {
         "cuerpo": {
@@ -65,7 +66,8 @@
           "lectura": "xnd_development_…",
           "aviso": "…",
           "codigo": "123456",
-          "contrasena_actual": "<contraseña de la cuenta>"
+          "contrasena_actual": "<contraseña de la cuenta>",
+          "confirmar_live": "LIVE (el MISMO que en pedir_codigo, si el modo final es real)"
         },
         "respuesta_200": {
           "ok": true,
@@ -78,7 +80,7 @@
           },
           "estado": "<lo mismo que estado.estado>"
         },
-        "_notas": "SIEMPRE pide contrasena_actual además del código (cambiar la clave de cobro = desviar los cobros futuros: #281.5). Orden en la edge: valida formato → código (sin consumirlo) → contraseña → candidato en Vault → PRUEBA contra Xendit sin crear nada (creación: POST /v2/invoices con cuerpo inválido; lectura: GET /v2/invoices/<id inexistente>) → aviso a los demás super admin y al buzón de sistema → promoción (consume el código). El token de aviso no se puede probar contra Xendit: 'no_se_prueba'. aviso: 'enviado' | 'no_enviado' | 'sin_destinatario' (sin otro admin ni buzón: se permite y queda anotado). La clave de LECTURA se prueba además con POST /v2/invoices {} y tiene que dar 403: si da 400 es una clave que puede crear cobros → 422 con fallo.lectura='con_escritura'. La prueba de otro super admin (candidato_de_otro) sale como 409 prueba_caducada. Si el aviso previo no sale, se guarda igual y queda anotado en el registro."
+        "_notas": "SIEMPRE pide contrasena_actual además del código (cambiar la clave de cobro = desviar los cobros futuros: #281.5). Orden en la edge: valida formato → código (sin consumirlo) → contraseña → candidato en Vault → PRUEBA contra Xendit sin crear nada (creación: POST /v2/invoices con cuerpo inválido; lectura: GET /v2/invoices/<id inexistente>) → aviso a los demás super admin y al buzón de sistema → promoción (consume el código). El token de aviso no se puede probar contra Xendit: 'no_se_prueba'. aviso: 'enviado' | 'no_enviado' | 'sin_destinatario' (sin otro admin ni buzón: se permite y queda anotado). La clave de LECTURA se prueba además con POST /v2/invoices {} y tiene que dar 403: si da 400 es una clave que puede crear cobros → 422 con fallo.lectura='con_escritura'. La prueba de otro super admin (candidato_de_otro) sale como 409 prueba_caducada. En PRUEBA, si el aviso previo no sale, se guarda igual y queda anotado en el registro. En REAL (modo final real), si el aviso previo no sale NO se guarda nada: 502 aviso_no_enviado (se puede reintentar; el código no se gasta). En REAL tampoco pasa sin_destinatario: 409 sin_a_quien_avisar: hace falta alguien FIABLE a quien avisar — otro super admin activo creado hace más de 24 h, o un buzón de avisos de sistema válido que (igual que email_from) no haya cambiado en 24 h; y si el SERVIDOR de correo cambió en 24 h, tampoco (el aviso saldría por él). No se guardó nada. Sin confirmar_live = 'LIVE' con modo final real: 400 falta_confirmar_live (antes de comprobar el código)."
       }
     },
     "errores": {
@@ -89,7 +91,8 @@
         "clave_no_valida (+ campo)",
         "modos_distintos (creación y lectura de modos test/live distintos)",
         "sin_cambios",
-        "sin_correo_usuario"
+        "sin_correo_usuario",
+        "falta_confirmar_live (modo final real sin confirmar_live = 'LIVE')"
       ],
       "401": [
         "sin_sesion",
@@ -100,14 +103,14 @@
         "no_super_admin",
         "origen",
         "codigo_no_valido (siempre el mismo: ausente, malo, de otro cambio, gastado, caducado o anulado)",
-        "cuenta_pruebas_solo_mira",
-        "live_no_permitido (clave xnd_production_ sin autorización del owner)"
+        "cuenta_pruebas_solo_mira"
       ],
       "405": [
         "metodo"
       ],
       "409": [
-        "prueba_caducada (repetir; también si la prueba la empezó otro super admin)"
+        "prueba_caducada (repetir; también si la prueba la empezó otro super admin)",
+        "sin_a_quien_avisar (modo final real y nadie FIABLE a quien avisar: otro super admin de hace más de 24 h o buzón de sistema sin cambios en 24 h; no se guardó nada)"
       ],
       "413": [
         "cuerpo_grande"
@@ -121,7 +124,8 @@
       "502": [
         "base_no_responde",
         "codigo_no_enviado",
-        "proveedor_no_responde"
+        "proveedor_no_responde",
+        "aviso_no_enviado (modo final real y el aviso previo a los demás no salió: no se guardó nada)"
       ],
       "503": [
         "codigo_no_disponible",
@@ -188,7 +192,7 @@
       "aviso"
     ],
     "hints": [
-      "live_no_permitido"
+      "falta_confirmar_live"
     ],
     "errores_edge": [
       "faltan_claves",
@@ -196,7 +200,9 @@
       "modos_distintos",
       "prueba_fallida",
       "proveedor_no_responde",
-      "live_no_permitido"
+      "falta_confirmar_live",
+      "aviso_no_enviado",
+      "sin_a_quien_avisar"
     ],
     "fallos_de_prueba": [
       "no_autorizada",
@@ -204,7 +210,11 @@
       "con_escritura",
       "respuesta_rara",
       "no_se_prueba"
+    ],
+    "retirados_20261012233000": [
+      "live_no_permitido (hint y error de la edge)",
+      "estado.live_permitido"
     ]
   },
-  "_ref": "Plan erp/plan_f3_setup_modulos.md · encargo 20261006_estudio_erp_plan_unico (F3, Entrega 2) · autor bbm-p23-cobros, 12-oct-2026."
+  "_ref": "Plan erp/plan_f3_setup_modulos.md · encargo 20261006_estudio_erp_plan_unico (F3, Entrega 2) · autor bbm-p23-cobros, 12-oct-2026. · Cobros reales «el cliente solo» (20261012233000): bbm-p34-cobros-live, 12-oct-2026."
 }
