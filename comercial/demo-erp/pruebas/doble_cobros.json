@@ -1,0 +1,77 @@
+{
+  "_que_es": "DOBLE del contrato de Ajustes › Cobros (F3, Entrega 2) para que bbm-p22-front construya mientras Backend (bbm-p23-cobros, 12-oct-2026) escribe y prueba la base y las edges en rama. Plan: erp/plan_f3_setup_modulos.md (#281.5, «Decisión del owner 08:25», CORTE DEL BOT camino B). NO es la edge: cuando exista, su prueba (erp/funciones/ajustes-pagos/ajustes_pagos.test.js) manda sobre este fichero. Al navegador solo CÓDIGOS (el front pone las frases con su mapa código → frase, como en el resto del setup). NINGÚN secreto vuelve nunca: ni la clave, ni sus 4 últimos (#281 gana a #282.9): solo «configurada el <fecha> por <correo>».",
+  "edge": {
+    "nombre": "ajustes-pagos",
+    "url": "<SUPABASE_URL>/functions/v1/ajustes-pagos",
+    "metodo": "POST",
+    "cabeceras": "Authorization: Bearer <JWT de la sesión> (o X-Suite-Token) · Content-Type: application/json. CORS solo al origen de config_instancia.url_intranet.",
+    "quien": "solo super_admin ACTIVO (el mismo predicado que puede_configurar de modulos_setup_estado). Cualquier otro: 403 no_super_admin. La cuenta de pruebas: 403 cuenta_pruebas_solo_mira.",
+    "acciones": {
+      "estado": {
+        "cuerpo": {"accion": "estado"},
+        "respuesta_200": {
+          "ok": true,
+          "estado": {
+            "proveedor": "xendit",
+            "configurado": false,
+            "modo": null,
+            "live_permitido": false,
+            "claves": {
+              "creacion": {"configurada": false, "puesta_en": null, "puesta_por": null},
+              "lectura": {"configurada": false, "puesta_en": null, "puesta_por": null},
+              "aviso": {"configurada": false, "puesta_en": null, "puesta_por": null}
+            },
+            "hay_previo": false,
+            "intentos_recientes": 0,
+            "intentos_max": 5
+          },
+          "pide_codigo": true
+        },
+        "_notas": "configurado = las tres claves puestas. modo = 'test' | 'live' | null (sale del prefijo de la clave de creación: xnd_development_ = test, xnd_production_ = live). live_permitido = el owner ya autorizó claves de producción en esta instancia (si es false, una clave xnd_production_ se rechaza con live_no_permitido). pide_codigo=false → la confirmación por código no está disponible en esta instancia: la pantalla dice «no disponible» y no deja guardar (las otras acciones darían 503 codigo_no_disponible)."
+      },
+      "pedir_codigo": {
+        "cuerpo": {"accion": "pedir_codigo", "creacion": "xnd_development_…", "lectura": "xnd_development_…", "aviso": "<token de verificación de avisos de Xendit>"},
+        "respuesta_200": {"ok": true, "codigo": "codigo_enviado", "caduca_en": 600, "correo_enmascarado": "d***@balibestmotorcycle.com"},
+        "_notas": "Las tres claves son opcionales por separado (se cambia solo lo que se manda), pero la PRIMERA vez (configurado=false) van las tres: si no, 400 faltan_claves con `campos`. El código va atado a lo que se manda: cambiar cualquier campo después exige otro código. La pantalla manda EXACTAMENTE los mismos campos en probar_y_guardar."
+      },
+      "probar_y_guardar": {
+        "cuerpo": {"accion": "probar_y_guardar", "creacion": "xnd_development_…", "lectura": "xnd_development_…", "aviso": "…", "codigo": "123456", "contrasena_actual": "<contraseña de la cuenta>"},
+        "respuesta_200": {
+          "ok": true,
+          "guardado": true,
+          "aviso": "enviado",
+          "prueba": {"creacion": "ok", "lectura": "ok", "aviso": "no_se_prueba"},
+          "estado": "<lo mismo que estado.estado>"
+        },
+        "_notas": "SIEMPRE pide contrasena_actual además del código (cambiar la clave de cobro = desviar los cobros futuros: #281.5). Orden en la edge: valida formato → código (sin consumirlo) → contraseña → candidato en Vault → PRUEBA contra Xendit sin crear nada (creación: POST /v2/invoices con cuerpo inválido; lectura: GET /v2/invoices/<id inexistente>) → aviso a los demás super admin y al buzón de sistema → promoción (consume el código). El token de aviso no se puede probar contra Xendit: 'no_se_prueba'. aviso: 'enviado' | 'no_enviado' | 'sin_destinatario' (sin otro admin ni buzón: se permite y queda anotado)."
+      }
+    },
+    "errores": {
+      "400": ["json_no_valido", "accion_no_valida", "faltan_claves (+ campos: ['creacion'|'lectura'|'aviso'])", "clave_no_valida (+ campo)", "modos_distintos (creación y lectura de modos test/live distintos)", "sin_cambios", "sin_correo_usuario"],
+      "401": ["sin_sesion", "reautenticar (falta contrasena_actual)", "clave_actual_incorrecta"],
+      "403": ["no_super_admin", "origen", "codigo_no_valido (siempre el mismo: ausente, malo, de otro cambio, gastado, caducado o anulado)", "cuenta_pruebas_solo_mira", "live_no_permitido (clave xnd_production_ sin autorización del owner)"],
+      "405": ["metodo"],
+      "409": ["prueba_caducada (repetir)"],
+      "413": ["cuerpo_grande"],
+      "422": ["prueba_fallida (+ fallo: {creacion?: 'no_autorizada'|'sin_permiso'|'respuesta_rara', lectura?: 'no_autorizada'|'sin_permiso'|'respuesta_rara'}) — no se guardó nada y siguen las claves anteriores"],
+      "429": ["demasiados_intentos"],
+      "502": ["base_no_responde", "codigo_no_enviado", "proveedor_no_responde"],
+      "503": ["codigo_no_disponible", "envios_pausados"]
+    }
+  },
+  "paso_setup": {
+    "_que_es": "El paso «cobros» dentro de modulos_setup_estado().pasos (módulo reservas-producto). OPCIONAL para el módulo: sin Cobros el equipo sigue creando reservas (cobro en mano); lo que se niega es que el BOT cree reservas (55000, hint reservas-producto_sin_configurar, DETAIL 'cobros'). El aviso de «módulo sin configurar» NO salta por este paso; el asistente sí lo enseña.",
+    "sin_hacer": {"modulo": "reservas-producto", "clave": "cobros", "hecho": false, "obligatorio": false, "irreversible": false, "falta": {"codigo": "falta_dato", "campos": ["creacion", "lectura", "aviso"]}, "donde": "/ajustes/", "modulo_requerido": null, "ref": null},
+    "a_medias": {"modulo": "reservas-producto", "clave": "cobros", "hecho": false, "obligatorio": false, "irreversible": false, "falta": {"codigo": "falta_dato", "campos": ["aviso"]}, "donde": "/ajustes/", "modulo_requerido": null, "ref": null},
+    "hecho": {"modulo": "reservas-producto", "clave": "cobros", "hecho": true, "obligatorio": false, "irreversible": false, "falta": null, "donde": "/ajustes/", "modulo_requerido": null, "ref": "test"},
+    "_ref": "ref = 'test' | 'live' (el modo de las claves puestas) cuando está hecho; null si no. Nunca un dato de la clave."
+  },
+  "codigos_nuevos_para_el_mapa_del_front": {
+    "paso": ["cobros"],
+    "campos_de_falta": ["creacion", "lectura", "aviso"],
+    "hints": ["live_no_permitido"],
+    "errores_edge": ["faltan_claves", "clave_no_valida", "modos_distintos", "prueba_fallida", "proveedor_no_responde", "live_no_permitido"],
+    "fallos_de_prueba": ["no_autorizada", "sin_permiso", "con_escritura (la clave de lectura puede crear cobros: se rechaza)", "respuesta_rara", "no_se_prueba"]
+  },
+  "_ref": "Plan erp/plan_f3_setup_modulos.md · encargo 20261006_estudio_erp_plan_unico (F3, Entrega 2) · autor bbm-p23-cobros, 12-oct-2026."
+}
