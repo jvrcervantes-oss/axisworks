@@ -84,3 +84,8 @@ summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:n
 @media (prefers-reduced-motion: reduce){.ltrack{animation:none;width:auto}.ltrack ul{flex-wrap:wrap}.ltrack ul+ul{display:none}}
 @supports (animation-timeline: view()){.reveal{animation:rise linear both;animation-timeline:view();animation-range:entry 0% entry 100%}}
 @media (prefers-reduced-motion: reduce){.reveal{animation:none}}
+
+/* Menú: la barra choca con el grupo de la derecha por debajo de 1151 px (EN) y 1331 px (ES), medido por Frontend
+ * el 12-oct en la hoja C02 (misma barra): el corte de la mesa (1100) sube. Diferencia admitida 15. */
+@media (max-width: 1160px){.navlinks{display:none !important}.menubtn{display:block}}
+@media (max-width: 1340px){html[lang="es"] .navlinks{display:none !important}html[lang="es"] .menubtn{display:block}}

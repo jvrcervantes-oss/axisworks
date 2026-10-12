@@ -1,0 +1,24 @@
+/* Hoja de servicio C02 — CSS de la mesa, tal cual. */
+body{margin:0;background:#0B0C1E}
+a{color:inherit;text-decoration:none}a:hover{color:#2E3BEB}
+summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}
+.navlight a.navcta:hover,.navlight a.on:hover{color:#C8F04A}
+.nl{padding:9px 16px;border-radius:999px;transition:background-color .2s,color .2s}
+.navlight .nl:hover,.navlight .nl.cur{background:#E3E6FD;color:#2E3BEB}
+.menubtn{display:none;position:relative}
+.menubtn[open] summary{background:#0B0C1E;color:#F2F3F7}
+@media (max-width: 1100px){.navlinks{display:none !important}.menubtn{display:block}}
+@media (max-width: 600px){.lang,.navcta{display:none !important}}
+details[open] .faq-x{transform:rotate(90deg)}
+.faq-x{transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+
+/* Lo que la plantilla de 24 hojas necesita y la mesa (una sola hoja) no (Diseño #284). */
+/* seis pasos: seis columnas fijas desde 1320 px (medido: por debajo «Reservation» se sale de su tarjeta);
+   por debajo, el auto-fit de la mesa */
+@media (min-width: 1320px){.hj-flow6{grid-template-columns:repeat(6,minmax(0,1fr)) !important}}
+/* corte del menú (Diseño #284 permite subirlo): medido el 12-oct, la barra de la mesa choca con el grupo de la
+   derecha por debajo de 1151 px en inglés y de 1331 px en español. La portada y Agents llevan la misma barra. */
+@media (max-width: 1160px){.navlinks{display:none !important}.menubtn{display:block}}
+@media (max-width: 1340px){html[lang="es"] .navlinks{display:none !important}html[lang="es"] .menubtn{display:block}}
+/* titulares en español: palabras de hasta 15 letras en Unbounded; se cortan antes que desbordar */
+html[lang="es"] .hj-h1{overflow-wrap:anywhere;hyphens:auto;-webkit-hyphens:auto}

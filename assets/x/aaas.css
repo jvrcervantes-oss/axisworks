@@ -68,3 +68,8 @@ summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:n
 .stage{position:absolute;left:50%;top:0;width:580px;height:600px;margin-left:-290px;transform-origin:top center}
 @media (max-width: 660px){.stagewrap{height:400px}.stage{transform:scale(.64)}}
 @media (prefers-reduced-motion: reduce){.rise,.reveal,.orbit,.orbit2,.haloA,.haloB,.spkA,.spkB,.ptA,.ptB,.bars .ba,.bars .bb,.nin,.rowA,.rowB,.decA,.decB,.hitA,.hitB,.tryA,.tryB,.flowdot,.pulse{animation:none}.sig{display:none}}
+
+/* Menú: la barra choca con el grupo de la derecha por debajo de 1151 px (EN) y 1331 px (ES), medido por Frontend
+ * el 12-oct en la hoja C02 (misma barra): el corte de la mesa (1100) sube. Diferencia admitida 15. */
+@media (max-width: 1160px){.navlinks{display:none !important}.menubtn{display:block}}
+@media (max-width: 1340px){html[lang="es"] .navlinks{display:none !important}html[lang="es"] .menubtn{display:block}}

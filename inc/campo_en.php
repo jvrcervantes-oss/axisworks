@@ -15,7 +15,7 @@ $CAMPO_EN = [
 
 'custom-business-software' => [
   'regla'=>'One source per fact. A price written in two places will drift, and one day a villa is billed at double.',
-  'panel'=>['pie'=>'Their team&rsquo;s morning: each row is something waiting on someone, and the red ones cannot wait.','tool'=>'LAWANG SUITE // TODAY','th'=>['Ref','Item','Tool','Status','Due'],'rows'=>[
+  'panel'=>['pie'=>'Their team&rsquo;s morning: each row is something waiting on someone, and the volt ones cannot wait.','tool'=>'LAWANG SUITE // TODAY','th'=>['Ref','Item','Tool','Status','Due'],'rows'=>[
     ['CTR-118','Construction contract','Contracts','Awaiting 2nd signature','Today',true],
     ['INV-204','Invoice — land instalment','Invoices','Receipt missing','Overdue',true],
     ['BNK-332','Bank statement line','Banks','Unreconciled','2 days',false],
@@ -33,7 +33,7 @@ $CAMPO_EN = [
 
 'custom-crm' => [
   'regla'=>'A CRM that someone has to copy leads into is a spreadsheet with a slower interface.',
-  'panel'=>['pie'=>'Every lead with where it came from, who has it and what happens next. Red means someone has to act today.','tool'=>'LEADS // PIPELINE','th'=>['Ref','Source','Stage','Owner','Next step'],'rows'=>[
+  'panel'=>['pie'=>'Every lead with where it came from, who has it and what happens next. Volt means someone has to act today.','tool'=>'LEADS // PIPELINE','th'=>['Ref','Source','Stage','Owner','Next step'],'rows'=>[
     ['LED-417','Meta form — campaign B','New','Unassigned','Call today',true],
     ['LED-409','WhatsApp','Qualified','Agent 03','Send brochure',false],
     ['LED-388','Website','Viewing booked','Agent 01','Sat 10:00',false],
@@ -105,7 +105,7 @@ $CAMPO_EN = [
 
 'integrations' => [
   'regla'=>'Every fact has one owner. Copying in both directions is how two systems end up disagreeing.',
-  'panel'=>['pie'=>'Where each piece of data comes from, where it goes and whether the last run worked. Red needs a person.','tool'=>'INTEGRATIONS // RUNS','th'=>['Source','Destination','What','Last run','Status'],'rows'=>[
+  'panel'=>['pie'=>'Where each piece of data comes from, where it goes and whether the last run worked. Volt needs a person.','tool'=>'INTEGRATIONS // RUNS','th'=>['Source','Destination','What','Last run','Status'],'rows'=>[
     ['Meta Lead Ads','CRM','New form leads','08:00','OK',false],
     ['GoHighLevel','CRM','Lead traceability','07:45','OK',false],
     ['Bank CSV','Banks','Statement lines','Yesterday','3 to match',true],
@@ -142,7 +142,7 @@ $CAMPO_EN = [
 'property-developer-software' => [
   'chip'=>'Software for property developers',
   'regla'=>'Each document decides one thing. The reservation letter records what was paid; it never sets the price.',
-  'panel'=>['pie'=>'Each contract type and the one thing it decides. Red is what is waiting today.','tool'=>'CONTRACTS // BY DOCUMENT','th'=>['Doc','Type','Sets','Status','Next'],'rows'=>[
+  'panel'=>['pie'=>'Each contract type and the one thing it decides. Volt is what is waiting today.','tool'=>'CONTRACTS // BY DOCUMENT','th'=>['Doc','Type','Sets','Status','Next'],'rows'=>[
     ['CTR-118','Reservation letter','What was paid','Signed','—',false],
     ['CTR-119','Plot blocking','Land price','Signed','—',false],
     ['CTR-121','Construction','Build price','1 of 2 signatures','Today',true],
