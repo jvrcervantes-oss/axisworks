@@ -148,6 +148,7 @@
     'Fotos': 'Photos', 'Faltan {n} de las 5 fijas.': '{n} of the 5 fixed photos missing.', 'Las 5 fijas están hechas.': 'The 5 fixed photos are done.',
     'Hay fotos sin subir: se suben solas al volver la red.': 'Some photos are not uploaded: they upload by themselves when the network is back.',
     'Quedan fotos sin subir: espera a que suban o pulsa Reintentar.': 'Some photos are not uploaded yet: wait for them or tap Retry.',
+    'Quedan fotos sin subir: pulsa Reintentar o Descartar en las que no suban.': 'Some photos are not uploaded: tap Retry, or Discard the ones that do not upload.',
     'Revisiones': 'Checks', 'Bien': 'Good', 'Atención': 'Needs check', 'Mal': 'Bad', 'Contestadas {n} de {t}': '{n} of {t} answered',
     'Este modelo no tiene revisiones en su lista. Avisa a la administración.': 'This model has no checks in its list. Tell the administration.',
     'Guardando…': 'Saving…', 'Guardado': 'Saved', 'No guardado': 'Not saved', 'Reintentar': 'Retry', 'Guardar nota': 'Save note',
@@ -237,6 +238,7 @@
     'Fotos': 'Foto', 'Faltan {n} de las 5 fijas.': '{n} dari 5 foto wajib belum ada.', 'Las 5 fijas están hechas.': '5 foto wajib sudah lengkap.',
     'Hay fotos sin subir: se suben solas al volver la red.': 'Ada foto yang belum terunggah: akan terunggah sendiri saat sinyal kembali.',
     'Quedan fotos sin subir: espera a que suban o pulsa Reintentar.': 'Masih ada foto yang belum terunggah: tunggu atau ketuk Coba lagi.',
+    'Quedan fotos sin subir: pulsa Reintentar o Descartar en las que no suban.': 'Masih ada foto yang belum terunggah: ketuk Coba lagi, atau Buang yang tidak terunggah.',
     'Revisiones': 'Pemeriksaan', 'Bien': 'Baik', 'Atención': 'Perlu dicek', 'Mal': 'Rusak', 'Contestadas {n} de {t}': '{n} dari {t} sudah diisi',
     'Este modelo no tiene revisiones en su lista. Avisa a la administración.': 'Model ini belum punya daftar pemeriksaan. Beri tahu admin.',
     'Guardando…': 'Menyimpan…', 'Guardado': 'Tersimpan', 'No guardado': 'Belum tersimpan', 'Reintentar': 'Coba lagi', 'Guardar nota': 'Simpan catatan',
@@ -493,7 +495,6 @@
         return;
       }
       var b = h('button', { class: 'tl-fila', type: 'button', 'data-accion': 'tl-continuar', 'data-orden-id': String(o.id) }, [izq, o.estado === 'espera_recambio' ? chip(T('Espera recambio'), 'espera') : chip(T('Continuar'), 'neutro')]);
-      if (!s.listo && o.estado === 'espera_recambio') b.disabled = true;   // retomar una en espera la vuelve a abrir: la base lo niega sin configurar
       ul.appendChild(h('li', null, [b]));
     });
     rej.appendChild(seccion('Órdenes a medias', d.vivas.length ? [ul] : [h('p', { class: 'axw-vacio', text: T('No hay órdenes a medias.') })], 'sec-vivas'));
@@ -727,7 +728,9 @@
     var v = (E.datos ? E.datos.vivas : []).filter(function (o) { return o.id === ordenId; })[0];
     if (v && v.estado === 'espera_recambio') {
       // en espera de recambio: retomarla la vuelve a abrir, y eso lo hace la base (taller_orden_abre devuelve la misma orden)
-      var m = (E.datos.motos || []).filter(function (x) { return x.id === v.unidad_id; })[0] || { id: v.unidad_id, identificador: v.identificador, modelo: v.modelo };
+      // fuera de las 500 motos de la lista, la de respaldo lleva su orden viva: así el paso de la moto ofrece «Continuar» aunque el taller no esté configurado
+      var m = (E.datos.motos || []).filter(function (x) { return x.id === v.unidad_id; })[0]
+        || { id: v.unidad_id, identificador: v.identificador, modelo: v.modelo, orden_viva: { id: v.id, numero: v.numero, paso: v.paso, estado: v.estado, abierta_por_email: v.abierta_por_email } };
       E.moto = m; E.motivo = v.motivo_tipo; E.orden = null;
       ir('moto', true);   // se ve la moto con su orden; si abrir falla, el error queda en ESTE paso y su Siguiente lo vuelve a intentar
       return abre();
@@ -783,7 +786,8 @@
     E.fg = axwFotosGuiadas({ T: T, h: h, caja: caja, orden: E.orden.orden.id, fotos: E.orden.fotos, max_dano: 15, apikey: window.LW_SB_KEY,
       edge: function () { return window.lwEdge('taller-fotos'); }, token: token,
       alCambiar: function (x) {
-        info.textContent = (x.faltan ? TT('Faltan {n} de las 5 fijas.', { n: x.faltan }) : T('Las 5 fijas están hechas.')) + (x.pendientes ? ' ' + T('Hay fotos sin subir: se suben solas al volver la red.') : '');
+        info.textContent = (x.faltan ? TT('Faltan {n} de las 5 fijas.', { n: x.faltan }) : T('Las 5 fijas están hechas.'))
+          + (x.pendientes ? ' ' + (x.tope ? T('Quedan fotos sin subir: pulsa Reintentar o Descartar en las que no suban.') : T('Hay fotos sin subir: se suben solas al volver la red.')) : '');
       } });
     siguiente('Siguiente', false);
   }
@@ -1132,7 +1136,10 @@
       if (E.paso === 'km') return guardaKm(false);
       if (E.paso === 'fotos') {
         // salir del paso cierra la pieza de fotos y con ella sus reintentos: no se sale con fotos a medio subir
-        if (E.fg && E.fg.sinSubir() > 0) { estadoPaso('aviso', T('Quedan fotos sin subir: espera a que suban o pulsa Reintentar.')); return; }
+        // y nunca sin salida: lo que ya se está subiendo se espera; lo pendiente se reintenta o se descarta (botón en cada foto), y el aviso lo dice
+        var su = E.fg ? E.fg.estadoSubida() : { enMarcha: 0, pendientes: 0 };
+        if (su.enMarcha > 0) { estadoPaso('aviso', T('Quedan fotos sin subir: espera a que suban o pulsa Reintentar.')); return; }
+        if (su.pendientes > 0) { estadoPaso('aviso', T('Quedan fotos sin subir: pulsa Reintentar o Descartar en las que no suban.')); return; }
         return pasoGuarda('revisiones');
       }
       if (E.paso === 'revisiones') {
@@ -1183,7 +1190,11 @@
     raiz.addEventListener('input', function (ev) { if (ev.target === $v('buscar')) pintaBusqueda(); });
     raiz.addEventListener('change', function (ev) { if (ev.target === $v('l-modelo')) { E.listaSel = ev.target.value; abreListas(); } });
     window.addEventListener('popstate', alVolver);
-    cargaDatos().then(function () { rutea(true); });
+    cargaDatos().then(function (ok) {
+      // la cola de fotos del móvil se limpia al arrancar (48 h y órdenes que ya no están vivas), SOLO con la lista de vivas leída entera: sin ella no se borra por orden
+      if (ok && E.datos) axwFotosLimpiaCola({ ambito: 'taller', vivas: E.datos.vivas.length < 500 ? E.datos.vivas.map(function (o) { return o.id; }) : null });
+      rutea(true);
+    });
   }
   function arranca() {
     if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { error(T('Sin sesión: recarga la página o vuelve a entrar.')); return; }

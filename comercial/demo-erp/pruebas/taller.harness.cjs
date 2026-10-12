@@ -7,7 +7,9 @@
 // Mide: 390x844 y 1440, id y en, barras de scroll visibles (sin --hide-scrollbars), detector __sinId con el diccionario real (i18n_id.json + los que fusiona la
 // pantalla), latencia 1,5 s con doble toque (una sola orden), sin red en cada paso (no avanza), respuesta cortada tras escribir y reintento (no duplica),
 // goBack() y recarga a mitad (retoma en el paso de la BASE), JPEG grande con GPS (lo subido es webp o jpeg, <= 600 KB, sin Exif) y la rama JPEG (Safari), 429,
-// XSS en matrícula, modelo, revisión y nota, retomar desde otro usuario, orden_vieja_viva, setup sin hacer y el hint taller_sin_configurar.
+// XSS en matrícula, modelo, revisión y nota, retomar desde otro usuario, orden_vieja_viva, setup sin hacer y el hint taller_sin_configurar; y (12-oct, revisor de la pantalla)
+// retomar órdenes vivas con el Taller sin configurar, la vigencia por casilla (vieja en camino, vieja confirmada con respuesta tardía, vieja sin enviar, dos en la
+// cola de una carga anterior), el tope de 10 a medio subir que no se libera solo con Descartar, hints sin clasificar (cuerpo, 404) y la limpieza de la cola.
 // NO prueba: la cámara de verdad ni un móvil de verdad (los hará una persona), ni Postgres (eso es erp/pruebas/f8_taller_pasos.sql), ni la edge real (Deno).
 // En esta PC: PLAYWRIGHT_CORE=C:/Users/jvrce/AppData/Roaming/npm/node_modules/@playwright/mcp/node_modules/playwright-core
 const fs = require('fs');
@@ -72,7 +74,7 @@ const P1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const XSS_MAT = `DK 9 <img src=x onerror="window.__xss=1"> 'q'`, XSS_MOD = `Vario <svg onload="window.__xss=2">`, XSS_REV = `<b>Oli</b> "x" <img src=x onerror="window.__xss=3">`;
 let nid = 0; const uuid = () => { nid++; const h = nid.toString(16).padStart(12, '0'); return `bbbbbbbb-0000-4000-8000-${h}`; };
 function nuevaBase(o = {}) {
-  const B = { o, llamadas: [], subidas: [], latencia: 0, cortaTras: null, setup: o.setup || null, abreSinConfigurar: false, tope429: 0, topePend: 0, seq: 3,
+  const B = { o, llamadas: [], subidas: [], latencia: 0, cortaTras: null, setup: o.setup || null, abreSinConfigurar: false, tope429: 0, reten: null, fuerza: null, seq: 3,
     motos: [{ id: U.m1, numero_unidad: 'UND-1', identificador: 'DK 1234 AB', producto_id: P1, estado: 'taller' },
             { id: U.m2, numero_unidad: 'UND-2', identificador: XSS_MAT, producto_id: P1, estado: 'disponible' },
             { id: U.m3, numero_unidad: 'UND-3', identificador: 'DK 5555 CC', producto_id: P1, estado: 'disponible' },
@@ -126,7 +128,6 @@ function rpc(B, n, a, u) {
       return { st: 200, j: r };
     }
     case 'taller_orden_abre': {
-      if (B.abreSinConfigurar || (B.setup && B.setup.listo === false)) return ERR('22023', 'El taller no está configurado', 'taller_sin_configurar');
       if (!['devolucion', 'revision', 'averia', 'accidente'].includes(a.p_motivo_tipo)) return ERR('22023', 'Elige el motivo', 'motivo_tipo');
       const m = B.motos.find(x => x.id === a.p_unidad);
       if (!m) return ERR('P0002', 'Esa moto no existe: recarga la pantalla', 'moto_no_existe');
@@ -136,6 +137,8 @@ function rpc(B, n, a, u) {
         if (v.estado === 'espera_recambio') { v.estado = 'abierta'; v.resultado = null; }
         return { st: 200, j: { id: v.id, numero: v.numero, retomada: true, estado: 'abierta', paso: v.paso, motivo_tipo: v.motivo_tipo, unidad_estado: m.estado, adopta: v.adopto_unidad } };
       }
+      // como la migración: una orden NUEVA solo con el Taller configurado; retomar una viva (también en espera) sí se puede (revisor 12-oct)
+      if (B.abreSinConfigurar || (B.setup && B.setup.listo === false)) return ERR('22023', 'El taller no está configurado', 'taller_sin_configurar');
       if (m.id === U.m3) return ERR('22023', 'Esa moto tiene 1 reserva(s) pendientes: cámbialas de moto antes de pasarla a taller', 'reservas_vivas', JSON.stringify([{ id: 'r', numero: 'RP-<b>9', estado: 'confirmada', desde: '2026-12-01', hasta: '2026-12-03' }]));
       const o = { id: uuid(), numero: 'OT-' + String(++B.seq).padStart(5, '0'), unidad_id: m.id, estado: 'abierta', paso: 'km', km: null, gasolina: null, motivo_tipo: a.p_motivo_tipo, motivo: a.p_nota,
                   resultado: null, abierta_por: u, abierta_en: Date.now(), adopto_unidad: m.estado === 'taller', movio_unidad: true };
@@ -236,7 +239,7 @@ function tipoBytes(f) {
   if (f.slice(0, 4).toString() === 'RIFF' && f.slice(8, 12).toString() === 'WEBP') return f.includes(Buffer.from('EXIF')) || f.includes(Buffer.from('XMP ')) ? 'webp-exif' : 'image/webp';
   return 'otro';
 }
-function edge(B, req) {
+async function edge(B, req) {
   const h = req.headers();
   if (h.origin !== ORIGEN) return { st: 403, j: { ok: false, hint: 'origen' } };
   const u = (/^Bearer tok-(\w+)$/.exec(h.authorization || '') || [])[1];
@@ -250,15 +253,30 @@ function edge(B, req) {
   if (campos !== 'accion,clave,fichero,orden,ranura') return { st: 400, j: { ok: false, hint: 'campo_no_admitido' } };
   const t = tipoBytes(p.fichero);
   B.subidas.push({ ranura: p.ranura, tipo: t, bytes: p.fichero.length, clave: p.clave, u });
+  if (B.fuerza) { const r = B.fuerza; B.fuerza = null; return r; }   // una respuesta impuesta (hint sin clasificar, 404 sin hint…)
   if (B.tope429 > 0) { B.tope429--; return { st: 429, j: { ok: false, hint: 'tope_minuto', reintenta_en: 1 } }; }
-  if (B.topePend > 0) { B.topePend--; return { st: 422, j: { ok: false, hint: 'fotos_tope_pendientes' } }; }
+  // 1. bytes (antes de reservar la fila, como la edge real)
   if (p.fichero.length > 614400) return { st: 413, j: { ok: false, hint: 'fichero_grande' } };
   if (/exif/.test(t)) return { st: 415, j: { ok: false, hint: 'fichero_exif' } };
   if (t === 'otro') return { st: 415, j: { ok: false, hint: 'fichero_tipo' } };
+  // 2. taller_foto_prepara (la base devuelve 22023 → la edge 409): misma clave = misma fila sin topes; clave nueva en casilla fija caduca la pendiente vieja de esa casilla
   const { o, e } = viva(B, p.orden, u); if (e) return { st: 409, j: { ok: false, hint: e.j.hint } };
   let f = B.fotos.find(x => x.clave === p.clave);
-  if (!f) { if (p.ranura !== 'dano') B.fotos.filter(x => x.orden_id === o.id && x.ranura === p.ranura && x.estado === 'confirmada').forEach(x => { x.estado = 'sustituida'; });
-    f = { id: uuid(), orden_id: o.id, ranura: p.ranura, clave: p.clave, estado: 'confirmada', tipo: t }; B.fotos.push(f); }
+  if (!f) {
+    if (p.ranura !== 'dano') B.fotos.filter(x => x.orden_id === o.id && x.ranura === p.ranura && x.estado === 'pendiente').forEach(x => { x.estado = 'caducada'; });
+    if (B.fotos.filter(x => x.orden_id === o.id && x.estado === 'pendiente').length >= 10) return { st: 409, j: { ok: false, hint: 'fotos_tope_pendientes' } };
+    f = { id: uuid(), orden_id: o.id, ranura: p.ranura, clave: p.clave, estado: 'pendiente', tipo: t }; B.fotos.push(f);
+  }
+  // 3. la subida al almacén, que se puede RETENER para medir carreras (antes de confirmar, o con la respuesta ya confirmada)
+  const ret = B.reten && B.reten.fase === 'antes' ? B.reten : null; if (ret) { B.reten = null; ret.clave = p.clave; await duerme(ret.ms); }
+  // 4. taller_foto_confirma
+  if (f.estado === 'caducada') return { st: 409, j: { ok: false, hint: 'foto_caducada' } };
+  if (f.estado === 'sustituida') return { st: 409, j: { ok: false, hint: 'foto_sustituida' } };
+  if (f.estado === 'pendiente') {
+    if (p.ranura !== 'dano') B.fotos.filter(x => x.orden_id === o.id && x.ranura === p.ranura && x.estado === 'confirmada').forEach(x => { x.estado = 'sustituida'; });
+    f.estado = 'confirmada';
+  }
+  const ret2 = B.reten && B.reten.fase === 'respuesta' ? B.reten : null; if (ret2) { B.reten = null; ret2.clave = p.clave; await duerme(ret2.ms); }
   return { st: 200, j: { ok: true, foto_id: f.id, ranura: f.ranura, estado: 'confirmada' } };
 }
 
@@ -288,7 +306,7 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
         if (B.falla502 === rp[1]) { B.falla502 = null; return route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ message: 'Bad gateway' }) }); }   // escribió y el proxy contesta 502 sin código
         return route.fulfill({ status: r.st, contentType: 'application/json', body: JSON.stringify(r.j) });
       }
-      if (url.pathname === '/functions/v1/taller-fotos') { const r = edge(B, req); return route.fulfill({ status: r.st, contentType: 'application/json', headers: { 'access-control-allow-origin': ORIGEN, vary: 'Origin' }, body: JSON.stringify(r.j) }); }
+      if (url.pathname === '/functions/v1/taller-fotos') { const r = await edge(B, req); return route.fulfill({ status: r.st, contentType: 'application/json', headers: { 'access-control-allow-origin': ORIGEN, vary: 'Origin' }, body: JSON.stringify(r.j) }); }
       const f = /^\/(intranet\/v4\/assets|contracts\/assets)\/([^?]+)$/.exec(url.pathname);
       if (f && fs.existsSync(path.join(LAWANG, ...f[1].split('/'), f[2]))) return route.fulfill({ status: 200, path: path.join(LAWANG, ...f[1].split('/'), f[2]) });
       return route.fulfill({ status: 404, body: '' });
@@ -314,6 +332,19 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.click(ranura === 'dano' ? '[data-accion="fg-dano"]' : `[data-accion="fg-captura"][data-ranura="${ranura}"]`)]);
     await fc.setFiles(fichero);
   };
+  // la cola de fotos del móvil (IndexedDB), leída y sembrada desde la página: lo que mide la limpieza, el Descartar y la vigencia por casilla
+  const colaIdb = p => p.evaluate(() => new Promise(ok => { const r = indexedDB.open('axw-fotos-cola', 1);
+    r.onupgradeneeded = () => { const s = r.result.createObjectStore('cola', { keyPath: 'clave' }); s.createIndex('orden', 'orden'); };
+    r.onsuccess = () => { const q = r.result.transaction('cola').objectStore('cola').getAll(); q.onsuccess = () => { const l = q.result.map(e => ({ clave: e.clave, orden: e.orden, ranura: e.ranura, creado: e.creado })); r.result.close(); ok(l); }; };
+    r.onerror = () => ok(null); }));
+  const ponCola = (p, entradas) => p.evaluate(es => new Promise(ok => { const r = indexedDB.open('axw-fotos-cola', 1);
+    r.onupgradeneeded = () => { const s = r.result.createObjectStore('cola', { keyPath: 'clave' }); s.createIndex('orden', 'orden'); };
+    r.onsuccess = () => { const tx = r.result.transaction('cola', 'readwrite'), s = tx.objectStore('cola');
+      es.forEach(e => { const bin = atob(e.b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+        s.put({ clave: e.clave, orden: e.orden, ranura: e.ranura, creado: e.creado, blob: new Blob([u], { type: 'image/jpeg' }) }); });
+      tx.oncomplete = () => { r.result.close(); ok(true); }; }; }), entradas);
+  const esperaNode = async (fn, ms = 9000) => { const t0 = Date.now(); while (!fn()) { if (Date.now() - t0 > ms) throw new Error('espera en Node agotada'); await duerme(40); } };
+  const casillaFija = (p, r) => p.$eval(`[data-accion="fg-captura"][data-ranura="${r}"]`, b => ({ estado: b.getAttribute('data-estado'), texto: b.textContent, src: (b.querySelector('img.fg-previa') || {}).src || null }));
   const fotoSubida = (p, ranura) => espera(p, r => { const b = document.querySelector(`[data-accion="fg-captura"][data-ranura="${r}"]`); return b && b.getAttribute('data-estado') === 'subida'; }, ranura, 15000);
 
   try {
@@ -426,15 +457,75 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await duerme(1600);
     const de = B.subidas.filter(x => x.ranura === 'derecha'), vig = B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'derecha' && f.estado === 'confirmada');
     ok('repetir una casilla durante la espera del 429: la captura vieja NO se sube después y la vigente es la nueva', de.length === 2 && de[0].clave !== de[1].clave && vig.length === 1 && vig[0].clave === de[1].clave, JSON.stringify(de.map(x => x.clave.slice(0, 8))));
-    B.topePend = 1;
+    const siembra = n => { const l = []; for (let i = 0; i < n; i++) l.push({ id: uuid(), orden_id: orden.id, ranura: 'dano', clave: uuid(), estado: 'pendiente', semilla: true }); B.fotos.push(...l); return l; };
+    let semillas = siembra(10);   // 10 a medio subir (otro móvil): el tope de la base, que llega como 409
     await foto(p, 'cuentakm', PEQ);
-    await espera(p, () => /belum selesai/.test(document.querySelector('[data-ranura="cuentakm"] .fg-estado').textContent + ' ' + (document.querySelector('[data-fg="aviso"]') || { textContent: '' }).textContent + ' ' + document.body.textContent));
-    ok('fotos_tope_pendientes (10 pendientes por orden): lo dice y la foto se queda en la cola, sin darla por perdida', !B.fotos.some(f => f.orden_id === orden.id && f.ranura === 'cuentakm' && f.estado === 'confirmada'));
+    await espera(p, () => !!document.querySelector('[data-fg="tope"]'));
+    const avTope = await p.$eval('[data-fg="tope"]', e => e.textContent);
+    ok('fotos_tope_pendientes (409, 10 a medio subir): la foto se queda en la cola y el aviso dice qué hacer (Coba lagi / Buang)', !B.fotos.some(f => f.orden_id === orden.id && f.ranura === 'cuentakm' && f.estado === 'confirmada')
+       && /Coba lagi/.test(avTope) && /Buang/.test(avTope), avTope);
+    semillas[0].estado = 'confirmada';   // una de las del otro móvil termina: queda un hueco
     await p.click('[data-accion="fg-reintentar"]', { timeout: 3000 }).catch(() => {});
     await fotoSubida(p, 'cuentakm');
+    semillas.forEach(f => { f.estado = 'caducada'; });
     const ck = B.subidas.filter(x => x.ranura === 'cuentakm');
     ok('tras fotos_tope_pendientes, Reintentar sube con la MISMA clave de captura', ck.length === 2 && ck[0].clave === ck[1].clave, JSON.stringify(ck.map(x => x.clave)));
     ok('las 5 fijas confirmadas en la base', ['frente', 'atras', 'izquierda', 'derecha', 'cuentakm'].every(r => B.fotos.some(f => f.orden_id === orden.id && f.ranura === r && f.estado === 'confirmada')));
+    // ── repetir una casilla con la vieja YA EN CAMINO (la base la caduca al preparar la nueva): su foto_caducada no se pinta y la vigente es la nueva ──
+    ctx.__sinRed = true; await ctx.setOffline(true);
+    await foto(p, 'izquierda', PEQ);
+    await espera(p, () => document.querySelector('[data-accion="fg-captura"][data-ranura="izquierda"]').getAttribute('data-estado') === 'pendiente');
+    const [fcI] = await Promise.all([p.waitForEvent('filechooser'), p.click('[data-accion="fg-captura"][data-ranura="izquierda"]')]);
+    const rI = { fase: 'antes', ms: 2500 }; B.reten = rI;
+    ctx.__sinRed = false; await ctx.setOffline(false);   // vuelve la red: la vieja sale sola y la edge la retiene ANTES de confirmar
+    await esperaNode(() => !!rI.clave);
+    await fcI.setFiles(PEQ2);
+    await esperaNode(() => B.fotos.some(f => f.orden_id === orden.id && f.ranura === 'izquierda' && f.estado === 'confirmada' && f.clave !== rI.clave && f.clave !== iz[0].clave), 12000);
+    await duerme(2800);   // llega la respuesta de la vieja: foto_caducada
+    const cI = await casillaFija(p, 'izquierda'), vigI = B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'izquierda' && f.estado === 'confirmada');
+    ok('repetir con la vieja en camino: la base la deja caducada, su foto_caducada NO pinta error y la vigente es la nueva',
+       B.fotos.find(f => f.clave === rI.clave).estado === 'caducada' && vigI.length === 1 && vigI[0].clave !== rI.clave && cI.estado === 'subida' && !/ditolak/.test(cI.texto), JSON.stringify(cI));
+    // ── la vieja la confirma la base ANTES, pero su respuesta llega tarde: no pisa a la nueva en pantalla ──
+    ctx.__sinRed = true; await ctx.setOffline(true);
+    await foto(p, 'derecha', PEQ);
+    await espera(p, () => document.querySelector('[data-accion="fg-captura"][data-ranura="derecha"]').getAttribute('data-estado') === 'pendiente');
+    const [fcD] = await Promise.all([p.waitForEvent('filechooser'), p.click('[data-accion="fg-captura"][data-ranura="derecha"]')]);
+    const rD = { fase: 'respuesta', ms: 2500 }; B.reten = rD;
+    ctx.__sinRed = false; await ctx.setOffline(false);
+    await esperaNode(() => !!rD.clave);   // la vieja ya está confirmada en la base y su respuesta, retenida
+    await fcD.setFiles(PEQ2);
+    await esperaNode(() => B.fotos.some(f => f.orden_id === orden.id && f.ranura === 'derecha' && f.estado === 'confirmada' && f.clave !== rD.clave), 12000);
+    await duerme(2800);   // llega el 200 de la vieja
+    await espera(p, () => document.querySelector('[data-accion="fg-captura"][data-ranura="derecha"]').getAttribute('data-estado') === 'subida');
+    const cD = await casillaFija(p, 'derecha'), vigD = B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'derecha' && f.estado === 'confirmada');
+    // la vista previa ES el blob subido: su tamaño dice de qué captura es (la vieja es PEQ y la nueva PEQ2, re-codificadas a tamaños distintos)
+    const tamPrevia = cD.src ? await p.evaluate(s => fetch(s).then(r => r.blob()).then(b => b.size), cD.src) : -1;
+    const tamNueva = (B.subidas.find(x => vigD[0] && x.clave === vigD[0].clave) || {}).bytes, tamVieja = (B.subidas.find(x => x.clave === rD.clave) || {}).bytes;
+    ok('la vieja confirmada antes con respuesta tardía: no se da por vigente (la casilla enseña la nueva) y en la base manda la nueva',
+       B.fotos.find(f => f.clave === rD.clave).estado === 'sustituida' && vigD.length === 1 && vigD[0].clave !== rD.clave && cD.estado === 'subida'
+       && tamNueva !== tamVieja && tamPrevia === tamNueva, JSON.stringify([tamPrevia, tamNueva, tamVieja, cD.estado]));
+    // ── repetir una casilla con la vieja SIN ENVIAR en la cola (añadido del coordinador): solo sube la nueva ──
+    ctx.__sinRed = true; await ctx.setOffline(true);
+    const nAtras = B.subidas.filter(x => x.ranura === 'atras').length;
+    await foto(p, 'atras', PEQ);
+    await espera(p, () => document.querySelector('[data-accion="fg-captura"][data-ranura="atras"]').getAttribute('data-estado') === 'pendiente');
+    await foto(p, 'atras', PEQ2);
+    await espera(p, () => document.querySelector('[data-accion="fg-captura"][data-ranura="atras"]').getAttribute('data-estado') === 'pendiente');
+    const colaAtras = (await colaIdb(p)).filter(e => e.orden === orden.id && e.ranura === 'atras');
+    ctx.__sinRed = false; await ctx.setOffline(false);
+    await fotoSubida(p, 'atras'); await duerme(600);
+    const subAtras = B.subidas.filter(x => x.ranura === 'atras').slice(nAtras);
+    ok('repetir con la vieja sin enviar: la vieja sale de la cola al quedar lista la nueva y SOLO sube la nueva',
+       colaAtras.length === 1 && subAtras.length === 1 && subAtras[0].clave === colaAtras[0].clave && B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'atras' && f.estado === 'confirmada')[0].clave === colaAtras[0].clave, JSON.stringify([colaAtras, subAtras.map(x => x.clave)]));
+    // ── dos capturas de la misma casilla en la cola de una carga anterior (nunca enviadas): al abrir solo se manda la más nueva ──
+    const b64 = PEQ.buffer.toString('base64'), kVieja = uuid().replace(/^b/, 'c'), kNueva = uuid().replace(/^b/, 'd');
+    await ponCola(p, [{ clave: kVieja, orden: orden.id, ranura: 'frente', creado: Date.now() - 60000, b64 }, { clave: kNueva, orden: orden.id, ranura: 'frente', creado: Date.now() - 30000, b64 }]);
+    const nFrente = B.subidas.filter(x => x.ranura === 'frente').length;
+    await p.reload(); await enPaso(p, 'fotos');
+    await esperaNode(() => B.fotos.some(f => f.clave === kNueva && f.estado === 'confirmada'), 12000); await duerme(600);
+    const subF = B.subidas.filter(x => x.ranura === 'frente').slice(nFrente);
+    ok('al abrir con dos capturas de una casilla en la cola: solo sube la más nueva y la vieja sale de la cola',
+       subF.length === 1 && subF[0].clave === kNueva && !(await colaIdb(p)).some(e => e.clave === kVieja), JSON.stringify(subF.map(x => x.clave)));
     ok('fotos: el aviso dice que están las 5', (await p.$eval('[data-tl="fotos-info"]', e => e.textContent)).includes('5 foto wajib sudah lengkap'));
     ctx.__sinRed = true; await ctx.setOffline(true);
     await foto(p, 'dano', PEQ);
@@ -444,7 +535,37 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     ctx.__sinRed = false; await ctx.setOffline(false);
     await p.click('[data-accion="fg-reintentar"]', { timeout: 1500 }).catch(() => {});   // al volver la red ya sube sola (evento online): el botón puede no llegar a verse
     await espera(p, () => document.querySelector('[data-fg="pendientes"]').classList.contains('axw-oculto'), null, 15000);
-    ok('al volver la red / Reintentar: la foto de daño sube una sola vez', B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'dano').length === 1);
+    ok('al volver la red / Reintentar: la foto de daño sube una sola vez', B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'dano' && !f.semilla).length === 1);
+    // ── respuestas que reintentar no arregla: hint «cuerpo» (400) y un 404 sin hint → definitivas, fuera de la cola, sin reintento ──
+    for (const [nombre, r] of [['hint cuerpo (400)', { st: 400, j: { ok: false, hint: 'cuerpo' } }], ['404 sin hint', { st: 404, j: {} }]]) {
+      const n0 = B.subidas.length; B.fuerza = r;
+      await foto(p, 'dano', PEQ2);
+      await espera(p, () => Array.from(document.querySelectorAll('.fg-celda[data-ranura="dano"] .fg-casilla[data-estado="error"]')).length > 0);
+      await duerme(1500);
+      ok(nombre + ': definitiva (texto genérico, sin reintentos, fuera de la cola) y no bloquea Siguiente',
+         B.subidas.length === n0 + 1 && (await colaIdb(p)).length === 0 && (await p.$eval('[data-fg="pendientes"]', e => e.classList.contains('axw-oculto')))
+         && /ditolak/.test(await p.$eval('.fg-celda[data-ranura="dano"] .fg-casilla[data-estado="error"]', e => e.textContent)));
+      await p.click('.fg-celda[data-ranura="dano"] [data-accion="fg-descartar"]');   // la de daño rechazada también se puede quitar de la vista
+      await espera(p, () => !document.querySelector('.fg-casilla[data-estado="error"]'));
+    }
+    // ── tope que NO se libera solo (10 a medio subir que nunca terminan): una de daño y una fija atascadas; Descartar las saca y el paso puede avanzar ──
+    semillas = siembra(10);
+    const confDano = B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'dano' && f.estado === 'confirmada' && !f.semilla).length;
+    await foto(p, 'dano', PEQ2);
+    await espera(p, () => !!document.querySelector('[data-fg="tope"]') && !!document.querySelector('.fg-celda[data-ranura="dano"] [data-accion="fg-descartar"]'));
+    await foto(p, 'frente', PEQ2);   // repetir una fija con el tope lleno: su clave nueva vuelve a chocar
+    await espera(p, () => document.querySelector('[data-accion="fg-captura"][data-ranura="frente"]').getAttribute('data-estado') === 'pendiente');
+    await sig(p); await espera(p, () => /Buang/.test(document.querySelector('[data-tl="paso-estado"]').textContent));
+    ok('tope que no se libera: Siguiente no avanza y el aviso dice Reintentar o Descartar (no «espera»)', (await paso(p)) === 'fotos' && llamadas(B, 'taller_orden_paso').length === 0
+       && /Coba lagi/.test(await estadoTxt(p)));
+    await p.click('[data-accion="fg-reintentar"]'); await duerme(800);
+    ok('Reintentar con el tope lleno: siguen en la cola, nada nuevo en la base', B.fotos.filter(f => f.orden_id === orden.id && f.estado === 'pendiente' && !f.semilla).length === 0 && (await colaIdb(p)).length === 2);
+    for (let i = 0; i < 5 && await p.$('[data-accion="fg-descartar"]'); i++) { await p.click('[data-accion="fg-descartar"]'); await duerme(150); }
+    await espera(p, () => document.querySelector('[data-fg="pendientes"]').classList.contains('axw-oculto') && !document.querySelector('[data-fg="tope"]'));
+    const cF = await casillaFija(p, 'frente');
+    ok('Descartar: las dos salen de la cola local, la fija vuelve a la foto que ya estaba subida y no se escribe nada en la base',
+       (await colaIdb(p)).length === 0 && cF.estado === 'subida' && B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'dano' && f.estado === 'confirmada' && !f.semilla).length === confDano, JSON.stringify(cF));
+    semillas.forEach(f => { f.estado = 'caducada'; });
     await sinScroll(p, 'paso 4 (390)');
     await shot(p, 'paso4_390_id.png', true);
     ctx.__sinRed = true; await ctx.setOffline(true);
@@ -566,6 +687,20 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     ok('abrir con 502 sin código (pudo abrirse): ofrece Reintentar y no avanza', (await paso(p)) === 'motivo');
     await p.click('[data-accion="tl-reintentar"]'); await enPaso(p, 'km');
     ok('reintentar tras el 502: retoma la MISMA orden (una sola para esa moto)', B.ordenes.filter(o => o.unidad_id === U.m2 && o.estado !== 'cerrada').length === 1);
+    // ── la cola del móvil se limpia al arrancar: más de 48 h y órdenes que ya no están vivas; si taller_datos no contesta, no se borra nada por orden ──
+    const vivaM2 = B.ordenes.find(o => o.unidad_id === U.m2 && o.estado !== 'cerrada').id, b64L = PEQ.buffer.toString('base64');
+    const kVie = uuid().replace(/^b/, 'e'), kMue = uuid().replace(/^b/, 'e'), kViv = uuid().replace(/^b/, 'e'), kMue2 = uuid().replace(/^b/, 'e');
+    await ponCola(p, [{ clave: kVie, orden: vivaM2, ranura: 'dano', creado: Date.now() - 49 * 3600 * 1000, b64: b64L }, { clave: kMue, orden: uuid(), ranura: 'dano', creado: Date.now(), b64: b64L },
+                      { clave: kViv, orden: vivaM2, ranura: 'dano', creado: Date.now(), b64: b64L }]);
+    await p.goto(ORIGEN + '/intranet/v4/taller/'); await espera(p, () => !!document.querySelector('[data-tl="vivas"]') || !!document.querySelector('[data-tl="sec-vivas"]'));
+    await duerme(400);
+    const cola1 = (await colaIdb(p)).map(e => e.clave);
+    ok('limpieza al arrancar: fuera la de más de 48 h y la de una orden que ya no está viva; se queda la de la orden viva', !cola1.includes(kVie) && !cola1.includes(kMue) && cola1.includes(kViv), JSON.stringify(cola1));
+    await ponCola(p, [{ clave: kMue2, orden: uuid(), ranura: 'dano', creado: Date.now(), b64: b64L }]);
+    B.o.datosFalla = true;
+    await p.goto(ORIGEN + '/intranet/v4/taller/'); await espera(p, () => !!document.querySelector('[data-tl="no-mirado"]')); await duerme(400);
+    B.o.datosFalla = false;
+    ok('taller_datos sin contestar: no se borra nada por orden (no he podido mirar ≠ no está viva)', (await colaIdb(p)).map(e => e.clave).includes(kMue2));
     await sinTraducir(p, 'casos raros id');
     await ctx.close();
     B.setup = { listo: false, pasos: [{ clave: 'revisiones', hecho: false, obligatorio: true, detalle: 'Falta X (español de la base)', donde: '/taller/#listas', fase: 1 },
@@ -594,6 +729,24 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     B.o.datosFalla = false;
     ({ p, ctx } = await abre(B, { hash: '#o=%E0%A4&p=km' }));
     ok('URL con un trozo mal codificado: va al inicio sin romperse', (await p.$eval('[data-tl="raiz"]', e => e.getAttribute('data-modo'))) === 'inicio' && !!(await p.$('[data-tl="buscar"]')));
+    await ctx.close();
+
+    // ═══ 3b. Taller sin configurar: retomar una orden viva (en espera o abierta) sí se puede, como en la base (taller_orden_abre devuelve la viva antes de mirar el setup) ═══
+    const B2 = nuevaBase({ setup: { listo: false, pasos: [{ clave: 'mecanico', hecho: false, obligatorio: true, detalle: 'x', donde: '/usuarios/', fase: 1 }] } });
+    const oEsp = { id: uuid(), numero: 'OT-00010', unidad_id: U.m1, estado: 'espera_recambio', paso: 'resultado', km: 6000, gasolina: 3, motivo_tipo: 'averia', resultado: 'espera_recambio', abierta_por: 'mec2', abierta_en: 10, adopto_unidad: true };
+    const oAb = { id: uuid(), numero: 'OT-00011', unidad_id: U.m3, estado: 'abierta', paso: 'revisiones', km: 100, gasolina: 1, motivo_tipo: 'revision', resultado: null, abierta_por: 'mec2', abierta_en: 11, adopto_unidad: false };
+    B2.ordenes.push(oEsp, oAb); B2.motos.find(m => m.id === U.m3).estado = 'taller';
+    ({ p, ctx } = await abre(B2));
+    const bts = await p.$$eval('[data-tl="vivas"] [data-accion="tl-continuar"]', bs => bs.map(b => ({ id: b.getAttribute('data-orden-id'), off: b.disabled })));
+    ok('Taller sin configurar: aviso de setup y las órdenes a medias (en espera y abierta) se ofrecen para retomar', !!(await p.$('[data-tl="setup"]'))
+       && bts.length === 2 && bts.every(b => !b.off) && bts.some(b => b.id === oEsp.id) && bts.some(b => b.id === oAb.id), JSON.stringify(bts));
+    await p.click(`[data-accion="tl-continuar"][data-orden-id="${oEsp.id}"]`); await enPaso(p, 'resultado');
+    ok('Taller sin configurar + orden en espera → se retoma (la base la devuelve abierta, sin abrir otra) y entra en su paso',
+       oEsp.estado === 'abierta' && llamadas(B2, 'taller_orden_abre').length === 1 && B2.ordenes.filter(o => o.unidad_id === U.m1 && o.estado !== 'cerrada').length === 1);
+    await p.goto(ORIGEN + '/intranet/v4/taller/'); await espera(p, () => !!document.querySelector(`[data-tl="vivas"] [data-orden-id]`));
+    await p.click(`[data-accion="tl-continuar"][data-orden-id="${oAb.id}"]`); await enPaso(p, 'revisiones');
+    ok('Taller sin configurar + orden abierta → se retoma en su paso, sin abrir nada', llamadas(B2, 'taller_orden_abre').length === 1);
+    await sinTraducir(p, 'sin configurar id');
     await ctx.close();
 
     // ═══ 4. inglés, 390 y 1440 ═══
