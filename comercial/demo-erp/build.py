@@ -1427,6 +1427,32 @@ def puerta_instancia(dist, idiomas):
     return selector
 
 
+# Rótulos del MENÚ y de pestañas compartidas que pone el maestro (12-oct-2026, owner en bbm en inglés: «Taller», «Entrega» y
+# «Flota y tarifas» seguían en español, y «Puesta en marcha» en la pestaña de Ajustes). Cada pantalla trae su diccionario y lo
+# añade a LW_EN / LW_ID al cargar, así que su rótulo solo se traducía en el menú de SU página. Aquí van una vez, en i18n.js
+# (lo cargan todas), después del núcleo del indonesio (que crea LW_ID); una clave que ya exista no se pisa. Las traducciones son
+# las mismas que ya usan esas pantallas.
+MENU_I18N = {
+    'Taller': {'en': 'Workshop', 'id': 'Bengkel'},
+    'Entrega': {'en': 'Delivery', 'id': 'Antar'},
+    'Flota y tarifas': {'en': 'Fleet and rates', 'id': 'Armada dan tarif'},
+    'Ventas': {'en': 'Sales', 'id': 'Penjualan'},
+    'Reservas de producto': {'en': 'Product bookings', 'id': 'Booking sewa motor'},
+    'Puesta en marcha': {'en': 'Setup', 'id': 'Pengaturan awal'},
+}
+
+
+def menu_i18n():
+    """Añade MENU_I18N a LW_EN y LW_ID al final de i18n.js de la copia (toda instancia; sin indonesio, LW_ID no existe y se salta)."""
+    ruta = os.path.join(DIST, 'contracts', 'assets', 'i18n.js')
+    t = open(ruta, encoding='utf-8').read()
+    if 'window.LW_EN = EN;' not in t:
+        aborta('menu_i18n: i18n.js de Lawang ya no expone window.LW_EN (los rótulos del menú no se podrían traducir)')
+    bloque = ('(function(){var D=%s,E=window.LW_EN,I=window.LW_ID;for(var k in D){if(E&&!Object.prototype.hasOwnProperty.call(E,k))E[k]=D[k].en;'
+              'if(I&&!Object.prototype.hasOwnProperty.call(I,k))I[k]=D[k].id;}})();\n') % json.dumps(MENU_I18N, ensure_ascii=False, sort_keys=True)
+    open(ruta, 'w', encoding='utf-8', newline='').write(t.rstrip() + '\n' + bloque)
+
+
 def mascota_versionada(dist):
     """MASCOTA_V de assets/nav.js = huella de la assets/mascota.js QUE SE PUBLICA (revisor, 12-oct). nav.js la carga con
     `assets/mascota.js?v=" + MASCOTA_V`, una URL que se arma al ejecutarse y que versiona() no ve: con el valor de Lawang, la CDN
@@ -2982,6 +3008,7 @@ def instancia(nombre):
     idiomas = idiomas_de(nombre)
     if idiomas:   # 12-oct-2026: interfaz en los idiomas de la instancia (bbm: indonesio e inglés)
         idiomas_instancia(idiomas)
+    menu_i18n()   # rótulos del menú en en/id en todas las páginas (después del núcleo del indonesio)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]
