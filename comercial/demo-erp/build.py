@@ -2199,7 +2199,8 @@ def banda_startups(html_txt, encendida=None):
 
 def fuentes_portada():
     """(texto de fonts.css, [(ruta publicada, fichero de origen)]) de las url() de fonts.css + sus licencias OFL.
-    PARA con un mensaje claro si falta algo: es bloqueo de la PUBLICACIÓN, no de construir (solo lo llama publica_web)."""
+    PARA con un mensaje claro si falta algo: es bloqueo de la PUBLICACIÓN, no de construir (lo llaman publica_web y, desde el
+    13-oct, fuentes_panel() para el panel de la instancia con panel_control)."""
     if not os.path.isfile(FUENTES_CSS):
         aborta('faltan las fuentes de la portada de erp.: no existe %s.\n  Viven en main (assets/x/fonts.css + '
                'assets/fonts/x/, desde fdcfb73): ¿copia sin actualizar? Para otro origen, AXW_FUENTES_X=<ruta a un '

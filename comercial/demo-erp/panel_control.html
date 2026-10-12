@@ -146,6 +146,7 @@ body.ax-app{background:var(--aw-chalk);color:var(--aw-night);font-family:var(--a
 /* S01: el diálogo de confirmar (encender, apagar, bloqueos) */
 #dlg.ax-dlg{width:min(640px,calc(100vw - 32px));max-width:100%;max-height:calc(100vh - 32px);overflow:auto;border:0;border-radius:var(--aw-r-panel);padding:0;background:var(--aw-night);color:var(--aw-chalk);font-family:var(--aw-f-sans)}
 #dlg.ax-dlg::backdrop{background:rgba(11,12,30,.55)}
+#asis::backdrop{background:rgba(11,28,48,.35)}   /* el asistente «Nuevo ERP» conserva su velo de antes */
 .ax-dlg form{padding:32px;display:flex;flex-direction:column;gap:20px}
 @media (max-width:480px){.ax-dlg form{padding:20px}}
 .ax-eyebrow{font:500 11px/1.4 var(--aw-f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--aw-fog)}
