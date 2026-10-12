@@ -3969,11 +3969,11 @@ def instancia(nombre):
     setup_comun_pasos()   # F3 (12-oct-2026, bbm-p31): pasos negocio/idiomas/correo/taller_* y Ajustes › Idiomas contra la base
     textos_instancia(nombre)   # owner 12-oct («Sí, tal cual»): fuera proyectos, villas y Cartas de Reserva de las pantallas comunes de la instancia
     oculta_por_modulo()   # bbm-p39 (13-oct): columnas, vista y selector de contrato que no tienen sentido con su módulo apagado
-    # F3 E3/E4 (pasos de Reservas de producto, setup_reservas.js): FUERA del paquete hasta que E3/E4 (20261012210000) esté aplicada en bbm (bbm-p35, 13-oct:
-    # a la sesión se le denegó aplicarla; la aplica el owner). Con ellas dentro y sin E3, el contrato front↔base para toda publicación de bbm. Volver a
-    # meterlo = descomentar estas dos líneas EN EL MISMO PASO en que se aplica E3 (relevo de bbm-p35).
-    # if reservas_en_paquete(nombre):
-    #     setup_reservas_pasos()
+    # F3 E3/E4 (pasos de Reservas de producto, setup_reservas.js): en el paquete desde que E3/E4 (20261012210000) está aplicada en bbm (bbm-p35, 13-oct;
+    # sube a main en el mismo paso que la aplicación, por el guion de la mañana). Sin estas dos líneas el paso OBLIGATORIO «alquileres_previos» no tiene
+    # pantalla y bbm no cotiza; con ellas y sin E3, el contrato front↔base para toda publicación de bbm.
+    if reservas_en_paquete(nombre):
+        setup_reservas_pasos()
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
     moneda_documento()   # 13-oct (bbm-p36): factura y recibí nuevos en la moneda de la instancia, no en EUR
