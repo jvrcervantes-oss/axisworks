@@ -77,8 +77,13 @@
       }, function () { return { status: 401, codigo: 'sin_sesion', d: null }; });
     });
   }
-  // El error en la forma que entienden los anfitriones (AXW_SETUP.explica lo lee por code + hint): sin red = «el ERP no ha respondido»
-  function errorDe(codigo) { return codigo === 'sin_red' ? { message: 'Failed to fetch' } : { code: 'axw_edge', hint: codigo, message: '' }; }
+  // El error en la forma que entienden los anfitriones (AXW_SETUP.explica lo lee por code + hint): sin red = «el ERP no ha respondido».
+  // Los códigos de la edge llevan el prefijo cobros_ en el mapa compartido (clave_no_valida o sin_sesion ya significan otra cosa en otros
+  // módulos); live_no_permitido es un hint de la BASE (erp/modulos.py SETUP_HINTS) y va tal cual. Un código sin frase sale «(código: x)».
+  function errorDe(codigo) {
+    if (codigo === 'sin_red') return { message: 'Failed to fetch' };
+    return { code: codigo, hint: codigo === 'live_no_permitido' ? codigo : 'cobros_' + codigo, message: '' };
+  }
   function textoError(codigo) { return S().explica(errorDe(codigo), true).texto; }
 
   // La forma de `estado` (cobros_estado() de la base, sin secretos). Una forma rara es un error, nunca «configurado».
@@ -92,15 +97,22 @@
   // M = {est, pideCodigo, modo, reemplaza: {k: bool}, valores: {k: texto}, fase: 'editar'|'codigo', mandadas, correo, fallo, faltan, aviso, confirma}
   var M = null, ultimo = null, cajas = [], nCaja = 0;
   function limpia() {
-    if (M) { M.valores = {}; M.mandadas = null; }
+    if (M) { M.valores = {}; M.mandadas = null; M.codigo = ''; }
     cajas.forEach(function (c) { c.querySelectorAll('input').forEach(function (i) { if (i.type === 'password' || i.getAttribute('data-axw-campo') === 'codigo') i.value = ''; }); });
   }
-  window.addEventListener('pagehide', function () { limpia(); M = null; });
+  window.addEventListener('pagehide', function () {
+    limpia();
+    if (M) { M.fase = 'editar'; M.correo = ''; M.codigo = ''; M.confirma = ''; }
+  });
+  window.addEventListener('pageshow', function (ev) {   // vuelta desde la caché del navegador: se repinta con lo vaciado
+    if (!ev.persisted || !M || !M.est) return;
+    cajas.forEach(function (c) { if (document.body.contains(c)) dibuja(c); });
+  });
 
   function nuevoM(est, pide) {
     var r = {};
     CAMPOS.forEach(function (k) { r[k] = !est.claves[k].configurada; });
-    return { est: est, pideCodigo: pide, modo: est.modo || 'test', reemplaza: r, valores: {}, fase: 'editar', mandadas: null, correo: '', fallo: null, faltan: [], aviso: '', confirma: '' };
+    return { est: est, pideCodigo: pide, modo: est.modo || 'test', reemplaza: r, valores: {}, fase: 'editar', mandadas: null, correo: '', codigo: '', fallo: null, faltan: [], aviso: '', confirma: '' };
   }
   // Cambiar de modo (con claves ya puestas) obliga a reemplazar las TRES: el modo sale de la de creación y la de lectura, y Xendit da un token de
   // avisos distinto en prueba y en real (con el de prueba, reservas-pago rechazaría los avisos de los pagos reales)
@@ -133,6 +145,7 @@
         var cod = String((raiz.querySelector('[data-axw-campo="codigo"]') || {}).value || '').trim();
         var pass = String((raiz.querySelector('[data-axw-campo="contrasena"]') || {}).value || '');
         if (!/^[0-9]{6}$/.test(cod) || !pass) return { ok: false, error: C('escribe_codigo') };
+        M.raiz = raiz;   // guarda() lee el código y la contraseña de ESTA caja (en /ajustes/ puede haber dos: la pestaña y Configurar módulos)
         return { ok: true, v: {} };   // los secretos NO salen de este fichero: el anfitrión guarda v en su estado
       }
     };
@@ -148,9 +161,9 @@
   function dibuja(raiz) {
     vacia(raiz);
     var est = M.est, editar = M.fase === 'editar';
-    if (!editar) M.raiz = raiz;   // el asistente vuelve a pintar el paso tras un error: el código sigue valiendo en la caja nueva
     if (ultimo) raiz.appendChild(el('p', { role: 'status', class: 'self-start px-3 py-1 rounded-full font-label-md text-[13px] bg-primary-container text-on-primary', 'data-axw-cobros-estado': 'conectado',
-                                          text: C('conectado', { m: nombreModo(ultimo.modo), h: hora(ultimo.hora) }) }));
+                                          text: ultimo.modo === 'test' || ultimo.modo === 'live' ? C('conectado', { m: nombreModo(ultimo.modo), h: hora(ultimo.hora) })
+                                                                                                : C('conectado_sin_modo', { h: hora(ultimo.hora) }) }));
     if (ultimo && ultimo.avisado) raiz.appendChild(el('p', { class: 'font-body-sm text-body-sm text-outline', text: C('avisado') }));
     if (!M.pideCodigo) {   // sin confirmación por código no hay cambio posible: se dice y no se ofrece nada (contrato: pide_codigo=false)
       raiz.appendChild(el('p', { role: 'alert', class: 'font-body-md text-body-md text-error', 'data-axw-cobros-error': 'codigo_no_disponible', text: textoError('codigo_no_disponible') }));
@@ -230,7 +243,8 @@
       fila.appendChild(caja);
     } else {
       fila.appendChild(el('label', { for: id, class: 'font-label-md text-label-md text-on-surface', text: C(k) + (c.configurada ? '' : ' *') }));
-      var inp = el('input', { id: id, type: 'password', autocomplete: 'new-password', spellcheck: 'false', autocapitalize: 'off', maxlength: '220', 'data-axw-campo': k, class: CLS_INPUT,
+      var inp = el('input', { id: id, type: 'password', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'off', maxlength: '220', 'data-axw-campo': k, class: CLS_INPUT,
+                              'data-lpignore': 'true', 'data-1p-ignore': '', 'data-bwignore': '', 'data-form-type': 'other',   // ningún gestor de contraseñas la guarda ni sugiere otra
                               'aria-invalid': (fallo || M.faltan.indexOf(k) >= 0) ? 'true' : null });
       inp.style.maxWidth = '100%';
       inp.value = M.valores[k] || '';   // .value: nunca va al marcado
@@ -280,7 +294,7 @@
     Object.keys(r.v).forEach(function (k) { cuerpo[k] = r.v[k]; });
     llama(cuerpo).then(function (res) {
       if (res.d && res.d.ok === true && res.codigo === 'codigo_enviado') {
-        M.fase = 'codigo'; M.mandadas = r.v; M.raiz = raiz; M.correo = corto(res.d.correo_enmascarado, 120); M.aviso = '';
+        M.fase = 'codigo'; M.mandadas = r.v; M.codigo = ''; M.correo = corto(res.d.correo_enmascarado, 120); M.aviso = '';
         dibuja(raiz);
         var c = raiz.querySelector('[data-axw-campo="codigo"]'); if (c) c.focus();
         return;
@@ -298,13 +312,15 @@
     bloque.appendChild(el('p', { role: 'status', class: 'font-body-md text-body-md text-on-surface', 'data-axw-cobros-enviado': '1', text: C('enviado', { c: M.correo || '—' }) }));
     var cod = el('input', { id: 'axw-cb-codigo-' + n, type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '6', 'data-axw-campo': 'codigo', class: CLS_INPUT });
     cod.style.maxWidth = '12rem';
+    cod.value = M.codigo || '';
+    cod.addEventListener('input', function () { M.codigo = cod.value; });
     bloque.appendChild(el('div', { class: 'flex flex-col gap-1.5' }, [el('label', { for: 'axw-cb-codigo-' + n, class: 'font-label-md text-label-md text-on-surface', text: C('codigo') }), cod]));
     var pass = el('input', { id: 'axw-cb-pass-' + n, type: 'password', autocomplete: 'current-password', 'data-axw-campo': 'contrasena', class: CLS_INPUT });
     pass.style.maxWidth = '100%';
     bloque.appendChild(el('div', { class: 'flex flex-col gap-1.5' }, [el('label', { for: 'axw-cb-pass-' + n, class: 'font-label-md text-label-md text-on-surface', text: C('contrasena') }), pass,
       el('span', { class: 'font-body-sm text-body-sm text-outline', text: C('contrasena_d') })]));
     var otra = boton(C('volver_a_escribir'), 'reescribir', BTN_PEQ + ' self-start');
-    otra.addEventListener('click', function () { M.fase = 'editar'; M.mandadas = null; M.correo = ''; M.aviso = ''; dibuja(raiz); });
+    otra.addEventListener('click', function () { M.fase = 'editar'; M.mandadas = null; M.correo = ''; M.codigo = ''; M.aviso = ''; dibuja(raiz); });
     bloque.appendChild(otra);
     raiz.appendChild(bloque);
   }
@@ -312,8 +328,8 @@
   /* guarda(sb, v, ctx): probar_y_guardar con los MISMOS campos que pidieron el código. Nunca se reenvía solo (el código se gasta al promover):
      si la respuesta se pierde, se mira `estado` y se compara la fecha de cada clave mandada; si no se puede saber, se dice así. */
   function guarda(sb, v, ctx) {
-    var raiz = M && M.raiz;   // la caja donde se pidió el código (en /ajustes/ puede haber dos: la pestaña y Configurar módulos)
-    if (!M || M.fase !== 'codigo' || !M.mandadas || !raiz || !document.body.contains(raiz)) return Promise.resolve({ ok: false, error: errorDe('cobros_duda') });
+    var raiz = M && M.raiz;   // la caja cuyo anfitrión acaba de llamar a valores()
+    if (!M || M.fase !== 'codigo' || !M.mandadas || !raiz || !document.body.contains(raiz)) return Promise.resolve({ ok: false, error: errorDe('duda') });
     var cuerpo = { accion: 'probar_y_guardar' };
     Object.keys(M.mandadas).forEach(function (k) { cuerpo[k] = M.mandadas[k]; });
     cuerpo.codigo = String((raiz.querySelector('[data-axw-campo="codigo"]') || {}).value || '').trim();
@@ -322,13 +338,16 @@
     return llama(cuerpo).then(function (res) {
       cuerpo = null;
       if (res.d && res.d.ok === true && res.d.guardado === true) return exito(res.d.estado, res.d.aviso === 'enviado');
-      // ¿llegó? Sin red, o un 5xx/404 del gateway sin respuesta propia de la edge (un tiempo agotado DESPUÉS de promover es el caso típico: dos
-      // pruebas a Xendit de 8 s y el aviso): se relee, nunca se reenvía
-      if (res.codigo === 'sin_red' || res.codigo === 'edge_no_disponible' || res.codigo === 'respuesta_ilegible') {
+      // ¿llegó? Sin red, un 5xx/404 del gateway sin respuesta propia, o un 5xx de la edge que puede llegar con la promoción ya hecha
+      // (base_no_responde al promover; un tiempo agotado tras dos pruebas a Xendit de 8 s y el aviso): se relee, nunca se reenvía.
+      // Fuera de la duda, los 5xx que la edge da ANTES de guardar nada: proveedor_no_responde (candidato descartado), envíos en pausa, sin código.
+      var seguroNo = { proveedor_no_responde: 1, envios_pausados: 1, codigo_no_disponible: 1, codigo_no_enviado: 1 };
+      if (res.codigo === 'sin_red' || res.codigo === 'edge_no_disponible' || res.codigo === 'respuesta_ilegible' || (res.status >= 500 && !seguroNo[res.codigo])) {
         return llama({ accion: 'estado' }).then(function (r2) {
           var e2 = r2.d && r2.d.ok === true && r2.d.estado;
-          if (!estadoValido(e2)) return fallo('cobros_duda');
-          var cambio = mandadas.every(function (k) { return e2.claves[k].configurada && e2.claves[k].puesta_en && e2.claves[k].puesta_en !== antes.claves[k].puesta_en; });
+          if (!estadoValido(e2)) return fallo('duda');
+          // la promoción es atómica: basta una clave mandada con fecha nueva (la base no renueva la de una clave enviada igual a la guardada)
+          var cambio = mandadas.some(function (k) { return e2.claves[k].configurada && e2.claves[k].puesta_en && e2.claves[k].puesta_en !== antes.claves[k].puesta_en; });
           return cambio ? exito(e2, false) : fallo('sin_red');
         });
       }
@@ -337,7 +356,7 @@
         CAMPOS.forEach(function (k) { var x = res.d.fallo[k]; if (typeof x === 'string' && S().TEXTOS.cobros['prueba_' + x]) M.fallo[k] = x; });
       }
       // el código ya no sirve o va atado a otro cambio: se vuelve a escribir y a pedir (las claves tecleadas se quedan)
-      if (res.codigo === 'codigo_no_valido' || res.codigo === 'prueba_caducada' || res.codigo === 'prueba_fallida' || res.codigo === 'demasiados_intentos') { M.fase = 'editar'; M.mandadas = null; M.correo = ''; }
+      if (res.codigo === 'codigo_no_valido' || res.codigo === 'prueba_caducada' || res.codigo === 'prueba_fallida' || res.codigo === 'demasiados_intentos') { M.fase = 'editar'; M.mandadas = null; M.correo = ''; M.codigo = ''; }
       return fallo(res.codigo || 'respuesta_ilegible');
     });
     function exito(est, avisado) {

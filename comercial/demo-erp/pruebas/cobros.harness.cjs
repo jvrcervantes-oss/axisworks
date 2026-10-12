@@ -88,7 +88,7 @@ function edge(b, c) {
     if (b.o.fallo) return no(422, 'prueba_fallida', { fallo: b.o.fallo });
     const promueve = () => { CAMPOS.forEach(k => { if (v[k]) b.est.claves[k] = { configurada: true, puesta_en: '2026-10-12T20:' + String(10 + b.edge.length).slice(-2) + ':00Z', puesta_por: 'owner@balibestmotorcycle.com' }; });
       if (v.creacion) b.est.modo = modoDe(v.creacion); b.est.configurado = CAMPOS.every(k => b.est.claves[k].configurada); b.codigoPara = null; };
-    if (b.o.perdida) { if (b.o.perdida === 'guardada') promueve(); b.o.perdida = null; return b.o.gateway ? { status: 504, json: null } : { red: true }; }
+    if (b.o.perdida) { if (b.o.perdida === 'guardada') promueve(); b.o.perdida = null; return b.o.gateway ? { status: 504, json: null } : b.o.base502 ? { status: 502, json: { ok: false, codigo: 'base_no_responde', error: 'x' } } : { red: true }; }
     promueve();
     return { status: 200, json: { ok: true, guardado: true, aviso: 'enviado', prueba: { creacion: v.creacion ? 'ok' : 'no_se_prueba', lectura: v.lectura ? 'ok' : 'no_se_prueba', aviso: 'no_se_prueba' }, estado: JSON.parse(JSON.stringify(b.est)) } };
   }
@@ -150,6 +150,7 @@ const C = '[data-axw-cobros-caja]';
   let b = base();
   let { p, ctx } = await abre(nav, b);
   ok('la pestaña Cobros sale porque la base declara el paso', await p.$eval('[data-lw-tab="cobros"]', e => !e.hidden));
+  ok('las claves: ningún gestor de contraseñas (autocomplete off y marcas de los gestores)', await p.$$eval('#lw-aj-cobros input[type="password"]', l => l.length === 3 && l.every(i => i.getAttribute('autocomplete') === 'off' && i.getAttribute('data-lpignore') === 'true' && i.hasAttribute('data-1p-ignore') && i.hasAttribute('data-bwignore'))));
   ok('sin configurar: tres campos secretos, de tipo contraseña', (await p.$$eval('#lw-aj-cobros input[type="password"]', l => l.map(i => i.getAttribute('data-axw-campo')).join(','))) === 'creacion,lectura,aviso');
   ok('proveedor: Xendit, el que da la base', (await p.getAttribute('[data-axw-cobros-proveedor]', 'data-axw-cobros-proveedor')) === 'xendit');
   ok('modo real no autorizado: botón apagado y lo dice', await p.$eval('[data-axw-cobros="modo-live"]', e => e.disabled) && !!(await p.$('[data-axw-cobros-live="no_permitido"]')));
@@ -169,6 +170,7 @@ const C = '[data-axw-cobros-caja]';
   await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(300);
   ok('contraseña mala: lo dice por su código', ((await txt(p, '[data-axw-cobros-host="estado"]')) || '').includes('Esa contraseña no es la de tu cuenta'));
   ok('la contraseña no se vuelve a poner sola', (await p.$eval('[data-axw-campo="contrasena"]', i => i.value)) === '');
+  ok('el código tecleado sigue (todavía vale)', (await p.$eval('[data-axw-campo="codigo"]', i => i.value)) === '123456');
   await p.fill('[data-axw-campo="codigo"]', '123456'); await p.fill('[data-axw-campo="contrasena"]', 'buena');
   await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(600);
   const pyg = b.edge.filter(x => x.accion === 'probar_y_guardar');
@@ -322,6 +324,28 @@ const C = '[data-axw-cobros-caja]';
   await p.fill('[data-axw-campo="codigo"]', '123456'); await p.fill('[data-axw-campo="contrasena"]', 'buena');
   await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(600);
   ok('504 tras guardar: se relee y sale configurada, un solo envío', b.edge.filter(x => x.accion === 'probar_y_guardar').length === 1 && (await p.$$('[data-axw-cobros-puesta="1"]')).length === 3);
+  await ctx.close();
+
+  // 14b. 502 base_no_responde CON JSON de la edge después de promover (cobros_promueve tardó): también es duda; se relee y vale
+  b = base({ perdida: 'guardada', base502: true });
+  ({ p, ctx } = await abre(nav, b));
+  await p.fill('[data-axw-campo="creacion"]', CANARIO_C); await p.fill('[data-axw-campo="lectura"]', CANARIO_L); await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
+  await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
+  await p.fill('[data-axw-campo="codigo"]', '123456'); await p.fill('[data-axw-campo="contrasena"]', 'buena');
+  await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(600);
+  ok('502 base_no_responde tras guardar: se relee y sale configurada, un solo envío', b.edge.filter(x => x.accion === 'probar_y_guardar').length === 1 && (await p.$$('[data-axw-cobros-puesta="1"]')).length === 3);
+  await ctx.close();
+
+  // 14c. dos cajas en /ajustes/ (pestaña y Configurar módulos): guardar desde la pestaña lee SU código aunque la otra se pinte después
+  b = base();
+  ({ p, ctx } = await abre(nav, b));
+  await p.fill('#lw-aj-cobros [data-axw-campo="creacion"]', CANARIO_C); await p.fill('#lw-aj-cobros [data-axw-campo="lectura"]', CANARIO_L); await p.fill('#lw-aj-cobros [data-axw-campo="aviso"]', CANARIO_A);
+  await p.click('#lw-aj-cobros [data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
+  await p.click('[data-pm-fila="cobros"] [data-accion="pm-editar"]'); await p.waitForTimeout(400);
+  await p.fill('#lw-aj-cobros [data-axw-campo="codigo"]', '123456'); await p.fill('#lw-aj-cobros [data-axw-campo="contrasena"]', 'buena');
+  await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(600);
+  const u14 = b.edge.filter(x => x.accion === 'probar_y_guardar')[0];
+  ok('dos cajas: se guarda con el código de la pestaña', !!u14 && u14.codigo === '123456' && b.est.configurado, JSON.stringify(u14 && { codigo: u14.codigo }));
   await ctx.close();
 
   // 15. cambiar de modo con claves puestas obliga a las TRES (Xendit da otro token de avisos en real)
