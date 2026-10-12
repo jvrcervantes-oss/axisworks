@@ -22,39 +22,142 @@
 <script src="/contracts/assets/roles.js"></script>
 <script src="/contracts/assets/guard.js" data-rol="super_admin"></script>
 <style>html,body{margin:0;padding:0;}body{overscroll-behavior:none;}</style>
-<style>
-.tgl:focus-visible,.chip:focus-visible,button:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}
-.nav-pill[aria-current=page]{background:#4f46e5;color:#fff}
-.nav-pill:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}
-.tgl>span{transition:transform .25s cubic-bezier(.2,.8,.2,1)}
-@media (prefers-reduced-motion:reduce){.tgl>span{transition:none}}
-dialog::backdrop{background:rgba(11,28,48,.35)}
-</style>
-<!-- Piel del setup (S00 mapa de la instalación, S01 encender un módulo; diseño del owner 12-oct, sistema AxisWorks): tokens aquí y
-     clases ax-* propias. No va al Tailwind compilado: panel.css lo comparten Pilotos y Aprobaciones y la publicación solo sube esta página. -->
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@300;500;600&display=swap" rel="stylesheet">
+<!-- Piel del panel (13-oct-2026, erp-panel-3): sistema del diseño del owner «AxisWorks ERP Setup» (S00 mapa de la instalación, S01
+     módulos; erp.css + tokens del artifact): marco de noche, zona de trabajo Chalk, Unbounded / Manrope / IBM Plex Mono. Las fuentes van
+     DENTRO de la página (data:, las pone build.py en el hueco de abajo): producción solo sirve /panel/index.html y /panel/panel.css, y nada
+     se pide a Google para la marca. Todo con clases ax-* de aquí: panel.css (Tailwind compilado) lo comparten Pilotos y Aprobaciones y
+     no se vuelve a subir, así que una clase de Tailwind nueva saldría bien en pruebas y no existiría en producción. Tailwind queda solo
+     para el asistente «Nuevo ERP» (#asis) y el aviso flotante, que no cambian. -->
+<style>__AXW_FUENTES__</style>
 <style>
 :root{--aw-ultra:#2E3BEB;--aw-volt:#C8F04A;--aw-night:#0B0C1E;--aw-chalk:#F2F3F7;--aw-panel:#10112A;--aw-raised:#14152A;--aw-edge:#2A2D47;
   --aw-peri:#8C95FF;--aw-haze:#C9CCDB;--aw-fog:#A9ADC2;--aw-dusk:#7D82A3;--aw-ice:#E3E6FD;--aw-slate:#4A4E66;--aw-ink:#2B2E45;--aw-mist:#DADCE6;
   --aw-white:#FFFFFF;--aw-control:#8A8EAB;--aw-caution:#8A5200;--aw-caution-line:#E2B04A;--aw-caution-soft:#FFF3D9;--aw-danger:#FF9AA5;
-  --aw-r-chip:8px;--aw-r-tile:16px;--aw-r-card:24px;--aw-r-panel:28px;
+  --aw-frame-line:#23253D;--aw-text2:#474A66;--aw-text3:#666A88;--aw-line:#DCDFEA;--aw-err:#C42B3C;--aw-err-soft:#FCEBED;
+  --aw-r-chip:8px;--aw-r-field:12px;--aw-r-tile:16px;--aw-r-card:24px;--aw-r-panel:28px;
   --aw-f-display:Unbounded,"Arial Black",system-ui,sans-serif;--aw-f-sans:Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;
   --aw-f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+/* marco: barra lateral de noche (erp.css .side/.nav), barra superior blanca (S01 .menu), zona de trabajo Chalk */
+body.ax-app{background:var(--aw-chalk);color:var(--aw-night);font-family:var(--aw-f-sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.ax-app :focus-visible{outline:2px solid var(--aw-ultra);outline-offset:3px}
+.ax-side :focus-visible,.ax-dlg :focus-visible{outline-color:var(--aw-volt)}
+.ax-ico{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.ax-ico.s16{width:16px;height:16px}
+.ax-mono{font:500 11px/1.4 var(--aw-f-mono);letter-spacing:.11em;text-transform:uppercase}
+.ax-wm{display:inline-flex;align-items:baseline;font-family:var(--aw-f-display);font-weight:600;letter-spacing:-.03em;font-size:24px;line-height:1}
+.ax-wm svg{width:.57em;height:.57em;margin:0 .05em;align-self:center}.ax-wm .w{font-weight:300}
+.ax-xm .b{fill:var(--aw-ultra)}.ax-xm .v{fill:var(--aw-volt)}.ax-xm .p{fill:var(--aw-chalk)}
+.ax-side{display:none}
+@media (min-width:1024px){.ax-side{position:fixed;left:0;top:0;bottom:0;width:288px;z-index:50;display:flex;flex-direction:column;gap:2px;padding:20px 14px 20px;
+  background:var(--aw-night);color:var(--aw-chalk);border-right:1px solid var(--aw-frame-line);overflow-y:auto}
+  .ax-cuerpo-app{padding-left:288px}}
+.ax-side-h{display:flex;flex-direction:column;gap:8px;padding:4px 10px 18px;color:var(--aw-chalk)}
+.ax-side-h .ax-mono{color:var(--aw-fog)}
+.ax-nav-h{padding:16px 12px 6px;color:var(--aw-dusk)}
+#lista-instancias{display:flex;flex-direction:column;gap:2px}
+.ax-inst{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:6px 10px;border:0;border-radius:var(--aw-r-field);background:transparent;color:var(--aw-fog);text-align:left;cursor:pointer;font:inherit}
+.ax-inst:hover{background:var(--aw-raised);color:var(--aw-chalk)}
+.ax-inst[aria-current="true"]{background:var(--aw-raised);color:var(--aw-chalk);box-shadow:inset 3px 0 0 var(--aw-volt)}
+.ax-logo{width:34px;height:34px;flex:none;border-radius:var(--aw-r-chip);display:grid;place-items:center;background:var(--aw-ultra);color:var(--aw-white);font:600 12px/1 var(--aw-f-display);letter-spacing:-.02em}
+.ax-inst .t{display:block;font-weight:700;font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ax-inst .d{display:block;font:400 11.5px/1.3 var(--aw-f-mono);color:var(--aw-dusk);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ax-inst[aria-current="true"] .d{color:var(--aw-fog)}
+.ax-inst .lk{margin-left:auto;color:var(--aw-caution-line)}
+.ax-nuevo{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;margin-top:8px;padding:0 14px;border:1.5px solid var(--aw-slate);border-radius:999px;background:transparent;color:var(--aw-chalk);font:700 14px var(--aw-f-sans);cursor:pointer}
+.ax-nuevo:hover{border-color:var(--aw-fog)}
+.ax-nav-a{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:var(--aw-r-field);color:var(--aw-fog);text-decoration:none;font-weight:700;font-size:14px}
+.ax-nav-a:hover{background:var(--aw-raised);color:var(--aw-chalk)}
+.ax-side-foot{margin-top:auto;padding:14px 10px 0;border-top:1px solid var(--aw-frame-line);display:flex;align-items:center;gap:10px;font:400 12px var(--aw-f-mono);color:var(--aw-fog);min-width:0}
+.ax-side-foot span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ax-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--aw-volt)}
+.ax-top{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px 16px;min-height:68px;padding:10px 16px;background:var(--aw-white);border-bottom:1px solid var(--aw-line)}
+@media (min-width:768px){.ax-top{padding:10px 40px}}
+.ax-top-t{flex:1 1 auto;margin:0;min-width:0;font-family:var(--aw-f-display);font-weight:500;font-size:18px;letter-spacing:-.02em;line-height:1.2;color:var(--aw-night);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ax-top .ax-wm{font-size:20px;color:var(--aw-night);flex:none}
+@media (max-width:639px){.ax-top .ax-wm{display:none}}
+.ax-solo-d{display:none}
+@media (min-width:640px){.ax-solo-d{display:inline}.ax-solo-m{display:none}}
+.ax-movil{display:flex;align-items:center;gap:8px;margin-left:auto;min-width:0;flex:0 1 auto}
+.ax-movil label{min-width:0}
+@media (min-width:1024px){.ax-movil,.ax-top .ax-wm{display:none}}
+.ax-movil select{min-height:44px;width:100%;max-width:44vw;padding:0 36px 0 14px;border:1px solid var(--aw-control);border-radius:999px;background:var(--aw-white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230B0C1E' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center/16px;
+  -webkit-appearance:none;appearance:none;font:700 14px var(--aw-f-sans);color:var(--aw-night)}
+.ax-nuevo-m{width:44px;height:44px;flex:none;border-radius:999px;display:grid;place-items:center;border:0;background:var(--aw-night);color:var(--aw-volt);cursor:pointer}
+.ax-main{padding:24px 16px 64px;max-width:1280px}
+@media (min-width:768px){.ax-main{padding:32px 40px 64px}}
+#vista{display:flex;flex-direction:column;gap:24px}
+#vista.hidden,#mapa.hidden,#estado-carga.hidden,#aviso-instancia.hidden,#ficha.hidden,#mapa-acciones.hidden,.ax-acc .hidden{display:none}
+/* secciones del panel (barra compartida _compartido/panel_nav.html): aquí como control segmentado del sistema (erp.css .seg) */
+.ax-app [data-lw="panel-secciones"]{display:flex;flex-wrap:wrap;gap:4px;width:max-content;max-width:100%;margin:0 0 24px;padding:4px;border-radius:999px;background:var(--aw-white);border:1px solid var(--aw-line)}
+.ax-app [data-lw="panel-secciones"] .nav-pill.nav-pill{min-height:40px;padding:0 16px;border-radius:999px;background:transparent;box-shadow:none;color:var(--aw-text2);font:700 14px var(--aw-f-sans);text-decoration:none}
+.ax-app [data-lw="panel-secciones"] .nav-pill.nav-pill:hover{background:var(--aw-ice);color:var(--aw-night)}
+.ax-app [data-lw="panel-secciones"] .nav-pill.nav-pill[aria-current=page]{background:var(--aw-ultra);color:var(--aw-white)}
+.ax-carga{padding:18px 20px;border-radius:var(--aw-r-tile);background:var(--aw-white);border:1px solid var(--aw-line);color:var(--aw-text2)}
+/* S01 · módulos de una instancia */
+.ax-cab{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px}
+.ax-cab .ceja{color:var(--aw-text3);overflow-wrap:anywhere}
+.ax-cab h2{margin:8px 0 0;font-family:var(--aw-f-display);font-weight:600;font-size:clamp(22px,2.4vw,28px);line-height:1.12;letter-spacing:-.025em;color:var(--aw-night)}
+.ax-cab h2 .l{font-weight:300}
+.ax-cab .estados{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px}
+.ax-pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;border:1px solid transparent}
+.ax-pill.on{background:var(--aw-ice);color:var(--aw-ultra)}
+.ax-pill.off{border:1.5px dashed var(--aw-control);color:var(--aw-text2);background:var(--aw-white)}
+.ax-pill.base{background:var(--aw-white);color:var(--aw-text2);border-color:var(--aw-line)}
+.ax-resumen{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;font-size:14px;color:var(--aw-text2)}
+.ax-callout{display:flex;gap:12px;align-items:flex-start;padding:16px 18px;border-radius:var(--aw-r-tile);font-size:14px;line-height:1.5;background:var(--aw-caution-soft);border:1px solid var(--aw-caution-line);color:var(--aw-night)}
+.ax-callout .ax-ico{color:var(--aw-caution);margin-top:1px}
+.ax-callout button{border:0;background:none;padding:0;font:700 14px var(--aw-f-sans);color:var(--aw-ultra);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.ax-card{background:var(--aw-white);border:1px solid var(--aw-line);border-radius:var(--aw-r-card);padding:24px}
+.ax-kv{display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px 16px;margin:12px 0 0;font-size:14px}
+.ax-kv dt{color:var(--aw-text3)}.ax-kv dd{margin:0;min-width:0;font-weight:700;overflow-wrap:anywhere}
+.ax-kv dd small{display:block;font-weight:500;font-size:13px;color:var(--aw-text3)}
+.ax-err-t{color:var(--aw-err)}
+.ax-h3s{margin:0 0 12px;color:var(--aw-text3)}
+.ax-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.ax-modc{display:flex;flex-direction:column;gap:10px;padding:20px;min-height:168px;border-radius:var(--aw-r-tile);background:var(--aw-white);border:1px solid var(--aw-line)}
+.ax-modc .hd{display:flex;align-items:center;gap:12px;min-width:0}
+.ax-modc .ic{width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--aw-ice);color:var(--aw-ultra)}
+.ax-modc .ic .material-symbols-outlined{font-size:21px}
+.ax-modc h3{margin:0;min-width:0;font-family:var(--aw-f-display);font-weight:500;font-size:16px;line-height:1.25;letter-spacing:-.01em;color:var(--aw-night);overflow-wrap:anywhere}
+.ax-modc p{margin:0;font-size:13px;line-height:1.45;color:var(--aw-text2)}
+.ax-modc .nota{font-size:12.5px;color:var(--aw-text3)}
+.ax-modc .ft{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:700;color:var(--aw-text2)}
+.ax-modc .ft .on{display:inline-flex;align-items:center;gap:6px;color:var(--aw-ultra)}
+.ax-modc.sel{border:2px solid var(--aw-ultra);background:var(--aw-ice);padding:19px}
+.ax-modc.sel .ax-sw{background:var(--aw-text3)}
+.ax-modc.sel .ic{background:var(--aw-ultra);color:var(--aw-white)}
+.ax-modc.dep{border:2px dashed var(--aw-ultra);padding:19px}
+.ax-modc.na{background:var(--aw-chalk);border-style:dashed}
+.ax-modc.na .ic{background:var(--aw-line);color:var(--aw-text3)}
+.ax-sw{position:relative;width:46px;height:28px;flex:none;padding:0;border:0;border-radius:999px;background:var(--aw-control);cursor:pointer}
+.ax-sw>span{position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:var(--aw-white);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.ax-sw[aria-checked="true"]{background:var(--aw-ultra)}
+.ax-sw[aria-checked="true"]>span{transform:translateX(18px)}
+.ax-sw:disabled{cursor:not-allowed;opacity:.55}
+@media (prefers-reduced-motion:reduce){.ax-sw>span{transition:none}}
+.ax-log{display:flex;flex-direction:column;margin:0;padding:0;list-style:none;border:1px solid var(--aw-line);border-radius:var(--aw-r-tile);overflow:hidden;background:var(--aw-white)}
+.ax-log li{padding:12px 16px;border-top:1px solid var(--aw-line);font-size:14px;overflow-wrap:anywhere}
+.ax-log li:first-child{border-top:0}
+.ax-log .cu{display:block;font:400 12px var(--aw-f-mono);letter-spacing:.04em;color:var(--aw-text3)}
+/* S00 → «Nuevo ERP»: fila del estudio encima de la lámina (fuera de #mapa: la lámina es para el cliente, en inglés) */
+.ax-mapa-acc{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:0 0 16px;font-size:14px;color:var(--aw-text2)}
+.ax-btn-dark{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 20px;border:0;border-radius:999px;background:var(--aw-night);color:var(--aw-volt);font:700 15px var(--aw-f-sans);cursor:pointer}
 /* S01: el diálogo de confirmar (encender, apagar, bloqueos) */
 #dlg.ax-dlg{width:min(640px,calc(100vw - 32px));max-width:100%;max-height:calc(100vh - 32px);overflow:auto;border:0;border-radius:var(--aw-r-panel);padding:0;background:var(--aw-night);color:var(--aw-chalk);font-family:var(--aw-f-sans)}
 #dlg.ax-dlg::backdrop{background:rgba(11,12,30,.55)}
 .ax-dlg form{padding:32px;display:flex;flex-direction:column;gap:20px}
 @media (max-width:480px){.ax-dlg form{padding:20px}}
 .ax-eyebrow{font:500 11px/1.4 var(--aw-f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--aw-fog)}
-.ax-h2{margin:0;font-family:var(--aw-f-display);font-weight:600;font-size:clamp(22px,4vw,28px);line-height:1.1;letter-spacing:-.04em;color:var(--aw-chalk)}
+.ax-h2{margin:8px 0 0;font-family:var(--aw-f-display);font-weight:600;font-size:clamp(22px,4vw,28px);line-height:1.12;letter-spacing:-.025em;color:var(--aw-chalk)}
 .ax-cuerpo{display:flex;flex-direction:column;gap:16px;font-size:15px;line-height:1.5;color:var(--aw-haze)}
+.ax-cuerpo p{margin:0}
 .ax-cuerpo b,.ax-cuerpo strong{color:var(--aw-chalk);font-weight:700}
 .ax-cuerpo code{font:12px/1.5 var(--aw-f-mono);overflow-wrap:anywhere;color:var(--aw-chalk)}
 .ax-dep{display:flex;flex-direction:column;gap:14px;padding:18px 20px;border-radius:var(--aw-r-tile);background:var(--aw-ultra);color:var(--aw-chalk)}
 .ax-chips{display:flex;flex-wrap:wrap;gap:8px}
-.ax-chip{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:999px;background:var(--aw-chalk);color:var(--aw-night);font-weight:800;font-size:14px}
-.ax-sub{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:4px}
-.ax-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--aw-edge);font-size:14px}
+.ax-chip{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:999px;background:var(--aw-chalk);color:var(--aw-night);font-weight:700;font-size:14px}
+.ax-sub{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:10px}
+.ax-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--aw-frame-line);font-size:14px}
 .ax-grow{flex:1;min-width:0}
 .ax-md{color:var(--aw-fog);font-size:13px;overflow-wrap:anywhere}
 .ax-tags{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
@@ -63,14 +166,14 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
 .ax-aviso{padding:12px 14px;border-radius:var(--aw-r-tile);border:1px solid var(--aw-caution-line);color:var(--aw-chalk);font-size:14px}
 .ax-error{color:var(--aw-danger)}
 .ax-nota{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--aw-fog)}
+.ax-nota .ax-ico{color:var(--aw-chalk);margin-top:1px}
 .ax-acc{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px;padding-top:4px}
-.ax-btn{min-height:44px;padding:0 20px;border-radius:999px;border:1.5px solid transparent;font:700 15px var(--aw-f-sans);cursor:pointer}
-.ax-btn-ghost{background:transparent;color:var(--aw-chalk);border-color:var(--aw-slate)}
+.ax-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:999px;border:1.5px solid transparent;font:700 15px/1.1 var(--aw-f-sans);cursor:pointer}
+.ax-btn-ghost{background:transparent;color:var(--aw-chalk);border-color:var(--aw-dusk)}
 .ax-btn-sec{background:var(--aw-raised);color:var(--aw-chalk);border-color:var(--aw-edge)}
 .ax-btn-pri{background:var(--aw-volt);color:var(--aw-night)}
-.ax-dlg :focus-visible{outline:2px solid var(--aw-volt);outline-offset:2px}
 /* estado de configuración de cada módulo encendido (lo que dice su base) */
-.ax-st{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;border:1px solid transparent;font:600 12px/1 var(--aw-f-sans);white-space:nowrap}
+.ax-st{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;border:1px solid transparent;font:700 12px/1 var(--aw-f-sans);white-space:nowrap}
 .ax-st.listo{background:var(--aw-ice);color:var(--aw-ultra)}
 .ax-st.medias{background:var(--aw-caution-soft);color:var(--aw-caution)}
 .ax-st.falta{background:var(--aw-white);color:var(--aw-slate);border:1.5px dashed var(--aw-control)}
@@ -78,97 +181,102 @@ dialog::backdrop{background:rgba(11,28,48,.35)}
 /* S00: mapa de la instalación (/panel/#mapa), en inglés: se enseña a un cliente */
 .ax-mapa{font-family:var(--aw-f-sans);color:var(--aw-slate);border-radius:var(--aw-r-panel);overflow:hidden}
 .ax-mapa h1,.ax-mapa h2,.ax-mapa h3,.ax-mapa p{margin:0}
-.ax-sec{padding:clamp(24px,4vw,48px) clamp(16px,4vw,48px);display:flex;flex-direction:column;gap:24px}
+.ax-sec{padding:clamp(28px,4.5vw,56px) clamp(16px,5vw,72px);display:flex;flex-direction:column;gap:28px}
 .ax-night{background:var(--aw-night);color:var(--aw-haze)}
 .ax-ultra{background:var(--aw-ultra);color:var(--aw-chalk)}
 .ax-chalk{background:var(--aw-chalk)}
-.ax-mono{font:500 12px/1.4 var(--aw-f-mono);letter-spacing:.12em;text-transform:uppercase}
+.ax-cabmapa{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;color:var(--aw-chalk)}
+.ax-cabmapa .ax-wm{font-size:28px}
+.ax-heroe{display:flex;flex-wrap:wrap;align-items:center;gap:40px}
+.ax-heroe>div{flex:1 1 560px;min-width:0;display:flex;flex-direction:column;gap:20px}
+.ax-heroe>svg{width:200px;height:200px;flex:none}
+@media (max-width:640px){.ax-heroe>svg{display:none}}
 .ax-h1{font-family:var(--aw-f-display);font-weight:600;font-size:clamp(30px,3.6vw,52px);line-height:1.04;letter-spacing:-.05em;color:var(--aw-chalk)}
 .ax-h1 span,.ax-hh span{display:block}.ax-h1 .l,.ax-hh .l{font-weight:300}
 .ax-hh{font-family:var(--aw-f-display);font-weight:600;font-size:clamp(22px,2.4vw,30px);line-height:1.08;letter-spacing:-.045em;color:inherit}
 .ax-lead{font-size:clamp(16px,1.4vw,19px);line-height:1.6;max-width:56ch;color:var(--aw-fog)}
 .ax-facts{display:flex;flex-wrap:wrap;gap:10px}
-.ax-fact{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;background:var(--aw-edge);color:var(--aw-chalk);font-size:13.5px;font-weight:600}
+.ax-fact{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;background:var(--aw-edge);color:var(--aw-chalk);font-size:13.5px;font-weight:700}
 .ax-fact b{font-family:var(--aw-f-display);font-weight:600}
-.ax-grid4{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
-.ax-fase{display:flex;flex-direction:column;gap:10px;padding:22px;border-radius:var(--aw-r-card);border:1px solid rgba(242,243,247,.45)}
-.ax-fase .n{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--aw-chalk);color:var(--aw-ultra);font:600 15px var(--aw-f-display)}
-.ax-fase h3{font-family:var(--aw-f-display);font-weight:600;font-size:18px;letter-spacing:-.02em;color:var(--aw-chalk)}
+.ax-grid4{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.ax-fase{display:flex;flex-direction:column;gap:12px;padding:24px;border-radius:var(--aw-r-card);border:1px solid rgba(242,243,247,.45)}
+.ax-fase .top{display:flex;align-items:center;gap:12px}
+.ax-fase .n{width:44px;height:44px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--aw-chalk);color:var(--aw-ultra)}
+.ax-fase .arr{margin-left:auto;color:var(--aw-chalk)}
+.ax-fase h3{font-family:var(--aw-f-display);font-weight:600;font-size:19px;letter-spacing:-.02em;color:var(--aw-chalk)}
 .ax-fase p{font-size:14.5px;line-height:1.5}
-.ax-leyenda{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;font-size:13px}
+.ax-leyenda{display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;font-size:13px;color:var(--aw-text2)}
 .ax-leyenda span{display:inline-flex;align-items:center;gap:8px}
-.ax-tabla-caja{background:var(--aw-white);border:1px solid var(--aw-mist);border-radius:var(--aw-r-panel);overflow-x:auto}
+.ax-tabla-caja{background:var(--aw-white);border:1px solid var(--aw-line);border-radius:var(--aw-r-panel);overflow-x:auto}
 .ax-tabla{width:100%;min-width:640px;border-collapse:collapse;font-size:14px}
-.ax-tabla th,.ax-tabla td{padding:0 16px;text-align:left;vertical-align:middle}
-.ax-tabla thead th{padding-top:20px;padding-bottom:18px;border-bottom:1px solid var(--aw-mist);font-weight:500;vertical-align:bottom}
-.ax-tabla tbody td{height:42px;border-bottom:1px solid var(--aw-mist)}
+.ax-tabla th,.ax-tabla td{padding:0 18px;text-align:left;vertical-align:middle}
+.ax-tabla thead th{padding-top:22px;padding-bottom:20px;border-bottom:1px solid var(--aw-line);font-weight:500;vertical-align:bottom;color:var(--aw-text3)}
+.ax-tabla tbody td{height:40px;border-bottom:1px solid var(--aw-line);color:var(--aw-text2)}
 .ax-tabla tbody tr:last-child td{border-bottom:0}
-.ax-tabla .g td{height:34px;background:var(--aw-chalk);color:var(--aw-slate)}
+.ax-tabla .g td{height:36px;background:var(--aw-chalk);color:var(--aw-text3)}
 .ax-tabla .nm{color:var(--aw-night);font-weight:700}
-.ax-tabla th.ty{text-align:center;min-width:170px;background:var(--aw-ice)}
-.ax-tabla .ty b{display:block;font-family:var(--aw-f-display);font-weight:600;font-size:16px;letter-spacing:-.02em;color:var(--aw-night)}
+.ax-tabla th.ty{text-align:center;width:200px;min-width:170px;background:var(--aw-ice);color:var(--aw-text2)}
+.ax-tabla .ty b{display:block;font-family:var(--aw-f-display);font-weight:600;font-size:17px;letter-spacing:-.02em;color:var(--aw-night)}
 .ax-tabla .ty small{display:block;margin-top:4px;font-size:12.5px;line-height:1.35}
 .ax-tabla .cnt{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:999px;background:var(--aw-white);color:var(--aw-ultra);font:500 10.5px var(--aw-f-mono);letter-spacing:.08em}
 .ax-tabla .prep{display:inline-block;margin-top:6px;padding:3px 8px;border-radius:var(--aw-r-chip);border:1px solid var(--aw-caution);color:var(--aw-caution);font:500 10px var(--aw-f-mono);letter-spacing:.08em;text-transform:uppercase}
+.ax-tabla th.ty.dest{background:var(--aw-ultra);color:var(--aw-chalk)}
+.ax-tabla th.ty.dest b{color:var(--aw-white)}
 .ax-tabla td.c{text-align:center}
-.ax-tabla .req{font:500 10.5px var(--aw-f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--aw-slate);white-space:nowrap}
+.ax-tabla td.c.dest{background:var(--aw-ice)}
+.ax-tabla .req{font:500 10.5px var(--aw-f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--aw-text2);white-space:nowrap}
 .m1,.m2,.m0{display:inline-block;vertical-align:middle}
 .m1{width:14px;height:14px;border-radius:50%;background:var(--aw-night)}
 .m2{width:14px;height:14px;border-radius:50%;border:2px solid var(--aw-ultra)}
 .m0{width:14px;height:2px;border-radius:2px;background:var(--aw-control)}
 .ax-lk{display:inline-flex;vertical-align:-3px;margin-left:8px;color:var(--aw-caution)}
-.ax-reglas{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-.ax-reglas p{font-size:14.5px;line-height:1.5}.ax-reglas b{display:block;color:var(--aw-chalk);font-weight:700;margin-bottom:4px}
-.ax-pie{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-top:18px;border-top:1px solid var(--aw-edge);font-size:13px;color:var(--aw-fog)}
+.ax-reglas{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.ax-regla{display:flex;gap:16px;align-items:flex-start;padding:22px 24px;border-radius:var(--aw-r-tile);background:var(--aw-frame-line);font-size:14px;line-height:1.5;color:var(--aw-fog)}
+.ax-regla b{display:block;color:var(--aw-chalk);font-size:15px;margin-bottom:2px}
+.ax-regla .ic{width:44px;height:44px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--aw-ultra);color:var(--aw-chalk)}
+.ax-pie{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-top:20px;border-top:1px solid var(--aw-frame-line);font-size:13px;color:var(--aw-fog)}
 </style>
 <!-- Tailwind COMPILADO (tailwind.json, salida panel/panel.css; F3 lote 4a): la CSP de las instancias ya no admite el Play CDN. Al final del head, donde el CDN inyectaba su hoja -->
 <link rel="stylesheet" href="/panel/panel.css">
 </head>
-<body class="bg-surface font-body-md text-on-surface antialiased">
-<aside class="hidden lg:flex fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex-col shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-<div class="h-16 flex items-center px-gutter gap-space-sm">
-<span class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-container to-secondary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]" aria-hidden="true">deployed_code</span></span>
-<div class="flex flex-col">
-<span class="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface">AxisWorks <span class="text-primary-container">ERP</span></span>
-<span class="font-code-metric text-code-metric text-on-surface-variant leading-none">Panel de control</span>
-</div>
-</div>
-<nav class="flex-1 px-space-md py-space-sm space-y-1 overflow-y-auto" aria-label="Instancias">
-<div class="px-space-sm py-space-xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Instancias</span></div>
-<div id="lista-instancias" class="space-y-1"></div>
-<button type="button" id="nuevo-erp" data-accion="abre-asistente" class="w-full flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-primary hover:bg-surface-container"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">add_circle</span><span class="font-label-md text-label-md">Nuevo ERP</span></button>
-<div class="pt-space-md px-space-sm py-space-xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Este ERP</span></div>
-<a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface" href="/home/"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">login</span><span class="font-label-md text-label-md">Entrar al ERP</span></a>
+<body class="ax-app">
+<aside class="ax-side">
+<div class="ax-side-h"><span class="ax-wm" role="img" aria-label="axisworks">a<svg class="ax-xm" viewBox="10 10 80 80" aria-hidden="true"><polygon class="b" points="10,10 41,10 90,90 59,90"></polygon><polygon class="v" points="59,10 90,10 41,90 10,90"></polygon></svg>is<span class="w">works</span></span><span class="ax-mono">Panel de control · ERP</span></div>
+<nav aria-label="Instancias">
+<div class="ax-mono ax-nav-h">Instancias</div>
+<div id="lista-instancias"></div>
+<button type="button" id="nuevo-erp" data-accion="abre-asistente" class="ax-nuevo"><svg class="ax-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Nuevo ERP</button>
+<div class="ax-mono ax-nav-h">Este ERP</div>
+<a class="ax-nav-a" href="/home/"><svg class="ax-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"></path></svg>Entrar al ERP</a>
 </nav>
-<div class="p-space-md bg-surface-container-low">
-<div class="p-space-sm bg-surface-container-lowest rounded-lg flex items-center gap-space-xs">
-<div class="h-2 w-2 rounded-full bg-secondary"></div>
-<span class="font-code-metric text-code-metric text-on-surface-variant truncate" id="operador">—</span>
-</div>
-</div>
+<div class="ax-side-foot"><span class="ax-dot" aria-hidden="true"></span><span id="operador">—</span></div>
 </aside>
-<div class="lg:pl-72">
-<header class="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/85 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] flex items-center justify-between gap-space-sm px-margin md:px-gutter-lg">
-<div class="min-w-0">
-<h1 class="font-headline-sm text-headline-sm font-bold text-on-surface truncate"><span class="sm:hidden">Módulos</span><span class="hidden sm:inline">Módulos por instancia</span></h1>
+<div class="ax-cuerpo-app">
+<header class="ax-top">
+<span class="ax-wm" role="img" aria-label="axisworks">a<svg class="ax-xm" viewBox="10 10 80 80" aria-hidden="true"><polygon class="b" points="10,10 41,10 90,90 59,90"></polygon><polygon class="v" points="59,10 90,10 41,90 10,90"></polygon></svg>is<span class="w">works</span></span>
+<h1 class="ax-top-t"><span class="ax-solo-m">Módulos</span><span class="ax-solo-d">Módulos por instancia</span></h1>
+<div class="ax-movil">
+<label><span class="sr-only">Instancia</span><select id="sel-instancia"></select></label>
+<button type="button" id="nuevo-erp-m" data-accion="abre-asistente" class="ax-nuevo-m" aria-label="Nuevo ERP"><svg class="ax-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
 </div>
-<label class="lg:hidden min-w-0"><span class="sr-only">Instancia</span>
-<select id="sel-instancia" class="rounded-lg border-0 bg-surface-container-low font-label-md text-label-md py-1 pl-2 pr-8 max-w-[55vw]"></select></label>
-<button type="button" id="nuevo-erp-m" data-accion="abre-asistente" class="lg:hidden shrink-0 w-9 h-9 rounded-lg bg-surface-container-low text-primary flex items-center justify-center" aria-label="Nuevo ERP"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">add</span></button>
 </header>
-<main class="pt-20 pb-16 px-margin md:px-gutter-lg max-w-5xl">
+<main class="ax-main">
 __AXW_PANEL_NAV__
-<div id="estado-carga" class="p-space-md rounded-xl bg-surface-container-lowest text-on-surface-variant">Cargando instancias…</div>
-<section id="vista" class="hidden space-y-space-lg">
-<div id="cabecera-instancia" class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm"></div>
-<div id="aviso-instancia" class="hidden p-space-md rounded-xl bg-surface-container-high text-on-surface"></div>
-<div id="ficha" class="hidden p-space-md rounded-xl bg-surface-container-lowest shadow-sm"></div>
-<div id="modulos" class="space-y-space-lg"></div>
+<div id="estado-carga" class="ax-carga">Cargando instancias…</div>
+<section id="vista" class="hidden" aria-label="Módulos de la instancia">
+<div id="cabecera-instancia"></div>
+<div id="aviso-instancia" class="hidden ax-callout"></div>
+<div id="ficha" class="hidden ax-card"></div>
+<div id="modulos" style="display:flex;flex-direction:column;gap:28px"></div>
 <div>
-<h2 class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-sm">Historial de cambios</h2>
-<ol id="historial" class="space-y-1"></ol>
+<h2 class="ax-mono ax-h3s">Historial de cambios</h2>
+<ol id="historial" class="ax-log"></ol>
 </div>
 </section>
+<!-- S00 → «Nuevo ERP» (y al revés: al guardar una solicitud, el asistente enlaza aquí con su tipo marcado). Fuera de #mapa: la lámina
+     es en inglés y para el cliente; esto es del estudio. -->
+<div id="mapa-acciones" class="hidden ax-mapa-acc"><span>Lámina para enseñar a un cliente: qué configura cada tipo de negocio.</span>
+<button type="button" data-accion="abre-asistente" class="ax-btn-dark"><svg class="ax-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Nuevo ERP</button></div>
 <!-- S00 · Mapa de la instalación (/panel/#mapa): una columna por tipo de negocio de erp/perfiles.json (los da la edge) y los pasos que
      declara cada módulo en el registro (erp/modulos.py → SETUP, por build.py). Nada escrito a mano: un módulo declarado mañana sale solo. -->
 <section id="mapa" data-vista="mapa" class="hidden ax-mapa" lang="en" aria-label="Installation map"></section>
@@ -752,13 +860,26 @@ window.AXW_ASIS = (function () {
      Lo pone build.py desde modulos_rotulos.json (28-sep-2026): la misma tabla que usa la pantalla «Módulo no instalado». */
   var ROTULO = __AXW_ROTULOS__;
   var SECCIONES = ['Seguimiento', 'Documentación', 'Finanzas', 'Comunicación', 'Base de datos', 'Otros'];
-  function rot(k) { return ROTULO[k] || [k, 'Otros', 'extension']; }
+  function rot(k) { return ROTULO[k] || [k, 'Otros', 'extension', '']; }
   function nombre(k) { return rot(k)[0]; }
   function lista(ks) { return ks.map(nombre).join(', '); }
   function listaY(ks) { var n = ks.map(nombre); return n.length > 1 ? n.slice(0, -1).join(', ') + ' y ' + n[n.length - 1] : n.join(''); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function ms(n, c) { return '<span class="material-symbols-outlined ' + (c || '') + '" aria-hidden="true">' + n + '</span>'; }
   function $(id) { return document.getElementById(id); }
+  /* Iconos de trazo del sistema (erp.css .ico): los del marco y de la lámina. Los de cada módulo siguen saliendo de su rótulo (rot(k)[2]). */
+  var TRAZO = { ok: '<path d="M5 12.5l4.5 4.5L19 7.5"></path>', info: '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8v.01"></path>',
+    candado: '<rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path>',
+    nube: '<path d="M7 18a5 5 0 1 1 .9-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 8z"></path><path d="M4 4l16 16"></path>',
+    encender: '<path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"></path>', aviso: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 21h4"></path>',
+    pasos: '<path d="M5 6.5l1.5 1.5L9 5.5M5 12.5l1.5 1.5L9 11.5M12 7h7M12 13h7M12 19h7M5.5 19h2"></path>',
+    ajustes: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle>',
+    flecha: '<path d="M5 12h14M13 6l6 6-6 6"></path>', persona: '<circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path>' };
+  function ico(n, c) { return '<svg class="ax-ico' + (c ? ' ' + c : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + TRAZO[n] + '</svg>'; }
+  function iniciales(t) {
+    var p = String(t || '').trim().split(/\s+/).filter(Boolean);
+    return (p.length > 1 ? p[0][0] + p[1][0] : (p[0] || '?').slice(0, 2)).toUpperCase();
+  }
   /* Setup por módulo (F3, 12-oct-2026, erp-panel-2; owner: «módulo primero y setup después»). Lo pone build.py (setup_para_panel):
      `textos` (título de cada paso en es/en, de setup_modulos.js), `registro` (SETUP de erp/modulos.py: SOLO para el mapa S00) y `en`
      (nombres EN de módulos y tipos). Los pasos y el estado de UNA instancia los da su base por erp_control_estado (forma de Backend,
@@ -826,11 +947,10 @@ window.AXW_ASIS = (function () {
   function pintaLista() {
     $('lista-instancias').innerHTML = instancias.map(function (i) {
       var sel = actual && i.nombre === actual.nombre;
-      return '<button type="button" data-inst="' + esc(i.nombre) + '" class="w-full text-left flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg ' +
-        (sel ? 'bg-primary-container text-on-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface') + '"' +
-        (sel ? ' aria-current="true"' : '') + '>' + ms(i.editable ? 'dns' : 'lock', 'text-[20px]') +
-        '<span class="min-w-0"><span class="block font-label-md text-label-md truncate">' + esc(i.marca) + '</span>' +
-        '<span class="block font-code-metric text-code-metric opacity-80 truncate">' + esc(i.dominio || i.nombre) + '</span></span></button>';
+      return '<button type="button" data-inst="' + esc(i.nombre) + '" class="ax-inst"' + (sel ? ' aria-current="true"' : '') + '>' +
+        '<span class="ax-logo" aria-hidden="true">' + esc(iniciales(i.marca)) + '</span>' +
+        '<span style="min-width:0"><span class="t">' + esc(i.marca) + '</span><span class="d">' + esc(i.dominio || i.nombre) + '</span></span>' +
+        (i.editable ? '' : '<span class="lk" role="img" aria-label="Sin llave de control">' + ico('candado', 's16') + '</span>') + '</button>';
     }).join('');
     $('sel-instancia').innerHTML = instancias.map(function (i) {
       return '<option value="' + esc(i.nombre) + '"' + (actual && i.nombre === actual.nombre ? ' selected' : '') + '>' + esc(i.marca) + '</option>';
@@ -841,8 +961,7 @@ window.AXW_ASIS = (function () {
      (el instalador lo copia a la base) y el de los superadmins, Auth: por eso se cambian con el instalador, no aquí
      (rev. previa #143, Datos #1/#2). Si la base y el registro del mando no dicen lo mismo, se avisa. */
   function fila(et, val, nota) {
-    return '<div class="grid grid-cols-[120px_1fr] gap-space-sm py-1"><dt class="font-label-sm text-label-sm uppercase tracking-wider text-outline">' + et +
-      '</dt><dd class="min-w-0 font-body-sm text-body-sm text-on-surface [overflow-wrap:anywhere]">' + val + (nota ? '<div class="font-code-metric text-code-metric text-on-surface-variant">' + nota + '</div>' : '') + '</dd></div>';
+    return '<dt>' + et + '</dt><dd>' + val + (nota ? '<small>' + nota + '</small>' : '') + '</dd>';
   }
   function pintaFicha(i, e) {
     var caja = $('ficha');
@@ -851,16 +970,16 @@ window.AXW_ASIS = (function () {
     if (f.marca && i.marca && f.marca !== i.marca) avisos.push('El registro del mando dice «' + esc(i.marca) + '»: se igualan al relanzar el paso control.');
     if (f.dominio_web && i.dominio && i.dominio !== f.dominio_web && i.dominio.indexOf(f.dominio_web) === -1) avisos.push('El dominio del ERP en el registro es ' + esc(i.dominio) + '.');
     var admins = (f.super_admins || []).map(function (a) {
-      return esc(a.correo) + (a.confirmado ? '' : ' <span class="text-error">· sin confirmar</span>') +
-        (a.difiere ? ' <span class="text-error">· su ficha de usuario tiene otro correo</span>' : '');
-    }).join('<br>') || '<span class="text-error">Ninguno activo</span>';
+      return esc(a.correo) + (a.confirmado ? '' : ' <span class="ax-err-t">· sin confirmar</span>') +
+        (a.difiere ? ' <span class="ax-err-t">· su ficha de usuario tiene otro correo</span>' : '');
+    }).join('<br>') || '<span class="ax-err-t">Ninguno activo</span>';
     caja.classList.remove('hidden');
-    caja.innerHTML = '<h2 class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs">Ficha</h2><dl>' +
+    caja.innerHTML = '<h2 class="ax-mono" style="margin:0;color:var(--aw-text3)">Ficha</h2><dl class="ax-kv">' +
       fila('Nombre', esc(f.marca || '—'), 'Lo cambia el estudio en el registro y el instalador lo lleva a la base.') +
       fila('Dominio', esc(f.dominio_web || '—'), 'Cambiarlo es DNS y republicar: lo hace el estudio.') +
       fila('Intranet', esc(f.url_intranet || '—'), '') +
       fila('Superadmin', admins, 'Alta: el estudio con el instalador (la cuenta tiene que existir antes).') +
-      '</dl>' + (avisos.length ? '<p class="mt-space-xs font-body-sm text-body-sm text-error">' + avisos.join(' ') + '</p>' : '');
+      '</dl>' + (avisos.length ? '<p class="ax-err-t" style="margin:12px 0 0;font-size:14px">' + avisos.join(' ') + '</p>' : '');
   }
 
   /* Resumen del setup de la instancia (solo lectura, de su base): cuántos encendidos están listos, a medias o sin configurar, y la base
@@ -868,7 +987,7 @@ window.AXW_ASIS = (function () {
   function resumenSetup(e, act) {
     var enc = (e.modulos || []).filter(function (m) { return m.modulo === 'base' || act.indexOf(m.modulo) !== -1; });
     if (!enc.some(function (m) { return tieneCampo(m, 'setup_estado'); }))
-      return '<p class="mt-space-sm font-body-sm text-body-sm text-on-surface-variant" data-setup-resumen="sin_dato">La base de esta instancia aún no informa de la configuración de cada módulo: el estado («listo», «a medias», «sin configurar») saldrá aquí cuando lo haga.</p>';
+      return '<p class="ax-resumen" data-setup-resumen="sin_dato">La base de esta instancia aún no informa de la configuración de cada módulo: el estado («listo», «a medias», «sin configurar») saldrá aquí cuando lo haga.</p>';
     var n = { listo: 0, medias: 0, falta: 0, sin: 0, raro: 0 };
     enc.forEach(function (m) { var st = estadoSetup(m); if (st) n[st.raro ? 'raro' : st.cls]++; });
     var base = enc.filter(function (m) { return m.modulo === 'base'; })[0];
@@ -878,7 +997,7 @@ window.AXW_ASIS = (function () {
     if (n.falta) partes.push(n.falta + ' sin configurar');
     if (n.sin) partes.push(n.sin + ' sin asistente aún');
     if (n.raro) partes.push(n.raro + ' con estado desconocido');
-    return '<div class="mt-space-sm flex flex-wrap items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" data-setup-resumen="ok">' +
+    return '<div class="ax-resumen" data-setup-resumen="ok">' +
       '<span>Configuración en la base: ' + esc(partes.join(' · ') || 'sin módulos encendidos') + '.</span>' +
       (base ? '<span>' + esc(nombre('base')) + ':</span>' + etiquetaEstado(estadoSetup(base)) : '') + '</div>';
   }
@@ -886,21 +1005,23 @@ window.AXW_ASIS = (function () {
   function pintaInstancia() {
     var i = actual, e = i.estado, aviso = $('aviso-instancia');
     var act = activosDe(i);
+    // S01: cabecera del diseño (ceja con la instancia, título partido 600/300, cuentas a la derecha). Las cuentas salen de la base:
+    // encendidos y apagados de los módulos que lista (la base aparte, como en las tarjetas) y los objetos cerrados en su base.
+    var noBase = e ? (e.modulos || []).filter(function (m) { return m.modulo !== 'base'; }) : [];
+    var nOn = noBase.filter(function (m) { return act.indexOf(m.modulo) !== -1; }).length;
     $('cabecera-instancia').innerHTML =
-      '<div class="flex flex-wrap items-center justify-between gap-space-sm">' +
-      '<div class="min-w-0"><div class="font-headline-sm text-headline-sm font-bold text-on-surface">' + esc(i.marca) + '</div>' +
-      '<div class="font-code-metric text-code-metric text-on-surface-variant">' + esc(i.dominio || i.nombre) + '</div></div>' +
-      (e ? '<div class="flex flex-wrap gap-space-xs">' +
-        '<span class="px-space-sm py-[2px] rounded-full bg-secondary-container text-on-secondary-container font-code-metric text-code-metric font-semibold">' + act.length + ' módulos activos</span>' +
-        '<span class="px-space-sm py-[2px] rounded-full bg-surface-container text-on-surface-variant font-code-metric text-code-metric font-semibold">' + (e.apagados || 0) + ' objetos cerrados en la base</span>' +
-        '</div>' : '') + '</div>' + (e ? resumenSetup(e, act) : '');
+      '<div class="ax-cab"><div style="min-width:0"><div class="ax-mono ceja">' + esc(i.marca) + ' · ' + esc(i.dominio || i.nombre) + '</div>' +
+      '<h2>Módulos <span class="l">de este negocio</span></h2></div>' +
+      (e ? '<div class="estados"><span class="ax-pill on">' + ico('ok', 's16') + nOn + (nOn === 1 ? ' encendido' : ' encendidos') + '</span>' +
+        '<span class="ax-pill off">' + (noBase.length - nOn) + (noBase.length - nOn === 1 ? ' apagado' : ' apagados') + '</span>' +
+        '<span class="ax-pill base">' + (e.apagados || 0) + ' objetos cerrados en la base</span></div>' : '') + '</div>' + (e ? resumenSetup(e, act) : '');
     if (!i.editable) {
       aviso.classList.remove('hidden');
-      aviso.innerHTML = ms('lock', 'align-middle text-[20px] mr-1') + '<strong>No se controla desde aquí.</strong> ' + esc(i.motivo || 'Esta instancia no tiene llave de control.');
+      aviso.innerHTML = ico('candado') + '<span><strong>No se controla desde aquí.</strong> ' + esc(i.motivo || 'Esta instancia no tiene llave de control.') + '</span>';
     } else if (!e) {
       aviso.classList.remove('hidden');
-      aviso.innerHTML = ms('cloud_off', 'align-middle text-[20px] mr-1') + esc(i.error || 'La instancia no responde ahora mismo.') +
-        ' <button type="button" id="reintenta" class="underline font-label-md">Reintentar</button>';
+      aviso.innerHTML = ico('nube') + '<span>' + esc(i.error || 'La instancia no responde ahora mismo.') +
+        ' <button type="button" id="reintenta">Reintentar</button></span>';
     } else aviso.classList.add('hidden');
 
     pintaFicha(i, e);
@@ -908,35 +1029,35 @@ window.AXW_ASIS = (function () {
     if (!e) { cont.innerHTML = ''; $('historial').innerHTML = ''; return; }
     var desplegadas = e.edges_desplegadas || [];
     var porSeccion = {};
-    e.modulos.forEach(function (m) {
-      if (m.modulo === 'base') return;
+    noBase.forEach(function (m) {
       var s = rot(m.modulo)[1];
       (porSeccion[s] = porSeccion[s] || []).push(m);
     });
+    // Tarjeta del diseño (S01 .modc): icono, nombre, qué hace, y abajo el estado a la izquierda y el interruptor a la derecha. El estado
+    // de configuración va junto al interruptor (data-setup-estado al lado de data-mod): lo lee así quien mira la tarjeta y las pruebas.
     cont.innerHTML = SECCIONES.filter(function (s) { return porSeccion[s]; }).map(function (s) {
-      return '<div><h2 class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-sm">' + esc(s) + '</h2><div class="grid gap-space-sm sm:grid-cols-2">' +
+      return '<div><h2 class="ax-mono ax-h3s">' + esc(s) + '</h2><div class="ax-grid">' +
         porSeccion[s].sort(function (a, b) { return nombre(a.modulo).localeCompare(nombre(b.modulo), 'es'); }).map(function (m) {
           var on = act.indexOf(m.modulo) !== -1;
           var faltanEdges = (m.edges || []).filter(function (x) { return desplegadas.indexOf(x) === -1; });
           var nota = !m.instalable ? 'No instalado. ' + (m.motivo || 'Este módulo aún no existe como producto para esta instancia.') : (!on && faltanEdges.length ? 'Faltan funciones por desplegar' : (m.depende.length ? 'Necesita: ' + lista(m.depende) : 'Sin dependencias'));
           var bloqueado = !i.editable || (!on && !m.instalable);
-          return '<div class="rounded-xl p-space-md bg-surface-container-lowest shadow-sm flex items-start justify-between gap-space-sm' + (on ? '' : ' opacity-80') + '">' +
-            '<div class="flex items-start gap-space-sm min-w-0"><div class="p-space-xs rounded-lg shrink-0 ' + (on ? 'bg-primary-container text-on-primary' : 'bg-surface-container-low text-on-surface-variant') + '">' + ms(rot(m.modulo)[2], 'text-[22px]') + '</div>' +
-            '<div class="min-w-0"><div class="font-label-md text-label-md text-on-surface">' + esc(nombre(m.modulo)) + '</div>' +
-            '<div class="font-code-metric text-code-metric text-on-surface-variant">' + esc(nota) + '</div>' +
-            (on ? (function (st) { return st ? '<div class="mt-1">' + etiquetaEstado(st) + '</div>' : ''; })(estadoSetup(m)) : '') + '</div></div>' +
-            '<button class="tgl shrink-0 w-12 h-6 rounded-full p-1 flex items-center ' + (on ? 'bg-primary-container' : 'bg-surface-container-highest') + (bloqueado ? ' cursor-not-allowed opacity-50' : '') +
-            '" type="button" role="switch" aria-checked="' + on + '" aria-label="' + (on ? 'Apagar ' : 'Encender ') + esc(nombre(m.modulo)) + '"' +
-            (bloqueado ? ' disabled' : '') + ' data-mod="' + esc(m.modulo) + '"><span class="w-4 h-4 bg-surface-container-lowest rounded-full shadow-sm" style="transform:translateX(' + (on ? '24px' : '0') + ')"></span></button></div>';
+          var st = on ? estadoSetup(m) : null;
+          var izq = on ? (st ? etiquetaEstado(st) : '<span class="on">' + ico('ok', 's16') + 'Encendido</span>') : '<span>' + (m.instalable ? 'Apagado' : 'No instalado') + '</span>';
+          return '<div class="ax-modc' + (!on && !m.instalable ? ' na' : '') + '" data-tarjeta="' + esc(m.modulo) + '">' +
+            '<div class="hd"><span class="ic">' + ms(rot(m.modulo)[2]) + '</span><h3>' + esc(nombre(m.modulo)) + '</h3></div>' +
+            (rot(m.modulo)[3] ? '<p>' + esc(rot(m.modulo)[3]) + '</p>' : '') + '<p class="nota">' + esc(nota) + '</p>' +
+            '<div class="ft">' + izq +
+            '<button class="ax-sw" type="button" role="switch" aria-checked="' + on + '" aria-label="' + (on ? 'Apagar ' : 'Encender ') + esc(nombre(m.modulo)) + '"' +
+            (bloqueado ? ' disabled' : '') + ' data-mod="' + esc(m.modulo) + '"><span></span></button></div></div>';
         }).join('') + '</div></div>';
     }).join('');
     $('historial').innerHTML = (e.log || []).map(function (l) {
       var d = new Date(l.cuando);
-      return '<li class="p-space-sm rounded-lg bg-surface-container-lowest font-body-sm text-body-sm"><span class="font-code-metric text-code-metric text-on-surface-variant">' +
-        esc(d.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })) + ' · ' + esc(l.quien) + '</span><div class="text-on-surface [overflow-wrap:anywhere]">' + esc(String(l.resumen || '').replace(/,/g, ', ')) + '</div></li>';
-    }).join('') || '<li class="font-body-sm text-body-sm text-on-surface-variant">Sin cambios registrados.</li>';
+      return '<li><span class="cu">' + esc(d.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })) + ' · ' + esc(l.quien) + '</span>' +
+        esc(String(l.resumen || '').replace(/,/g, ', ')) + '</li>';
+    }).join('') || '<li style="color:var(--aw-text3)">Sin cambios registrados.</li>';
   }
-
   function elige(nombreInst) {
     for (var k = 0; k < instancias.length; k++) if (instancias[k].nombre === nombreInst) actual = instancias[k];
     pintaLista();
@@ -960,8 +1081,11 @@ window.AXW_ASIS = (function () {
   }
   var ARIA_MARCA = { m1: 'Part of the install', m2: 'Only if that module is on', m0: 'Not used' };
   function celdas(k, tipos) {
-    return tipos.map(function (t) { var c = marca(k, t); return '<td class="c"><span class="' + c + '" role="img" aria-label="' + ARIA_MARCA[c] + '"></span></td>'; }).join('');
+    return tipos.map(function (t) { var c = marca(k, t); return '<td class="c' + (t.tipo === destaca ? ' dest' : '') + '"><span class="' + c + '" role="img" aria-label="' + ARIA_MARCA[c] + '"></span></td>'; }).join('');
   }
+  /* El tipo de negocio que se marca en el mapa: el de la solicitud que el asistente «Nuevo ERP» acaba de guardar (su enlace lleva aquí).
+     Solo presentación; se borra al volver a los módulos. */
+  var destaca = null;
   var CANDADO = '<span class="ax-lk" role="img" aria-label="Confirmed once: no way back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>';
   function pintaMapa() {
     var caja = $('mapa'), tipos = (perfiles && perfiles.tipos) || [];
@@ -994,45 +1118,65 @@ window.AXW_ASIS = (function () {
     var cabeza = tipos.map(function (t, i) {
       var en = SETUP.en.tipos[t.tipo] || [t.nombre || t.tipo, ''];
       var c = cuenta[i];
-      return '<th scope="col" class="ty" data-tipo="' + esc(t.tipo) + '"><b>' + esc(en[0]) + '</b>' + (en[1] ? '<small>' + esc(en[1]) + '</small>' : '') +
+      return '<th scope="col" class="ty' + (t.tipo === destaca ? ' dest' : '') + '" data-tipo="' + esc(t.tipo) + '"><b>' + esc(en[0]) + '</b>' + (en[1] ? '<small>' + esc(en[1]) + '</small>' : '') +
         '<span class="cnt">' + c.si + ' steps' + (c.op ? ' · +' + c.op + ' if on' : '') + '</span>' + (t.comprobado ? '' : '<br><span class="prep">In preparation</span>') + '</th>';
     }).join('');
     var nPasos = conPasos.reduce(function (n, k) { return n + declaracion(k).pasos.length; }, 0);
+    var X = '<polygon class="b" points="10,10 41,10 90,90 59,90"></polygon><polygon class="v" points="59,10 90,10 41,90 10,90"></polygon>';
+    // S00 del diseño del owner (12-oct): cabecera con la marca, entrada con la X grande, cuatro momentos con su icono, la tabla y las reglas
+    // en baldosas. Las cifras y las reglas son las que sostienen los datos (tipos y pasos del registro), no las del boceto.
     caja.innerHTML =
-      '<div class="ax-sec ax-night"><div class="flex flex-wrap items-center justify-between gap-space-sm"><span class="ax-mono" style="color:var(--aw-fog)">AxisWorks ERP · Installation map</span></div>' +
+      '<div class="ax-sec ax-night"><div class="ax-cabmapa"><span class="ax-wm" role="img" aria-label="axisworks">a<svg class="ax-xm" viewBox="10 10 80 80" aria-hidden="true">' + X +
+      '</svg>is<span class="w">works</span></span><span class="ax-mono" style="color:var(--aw-fog)">ERP · Installation map</span></div>' +
+      '<div class="ax-heroe"><div><span class="ax-mono" style="color:var(--aw-fog)">One ERP · ' + tipos.length + ' types of business</span>' +
       '<h1 class="ax-h1"><span>Every step of your install,</span><span class="l">from switch-on to ready.</span></h1>' +
       '<p class="ax-lead">The studio turns on the modules you need. You set each one up in a short assistant, one step per screen. Everything you enter stays in Settings; most of it can be changed later, and steps with a lock are confirmed once.</p>' +
       '<div class="ax-facts"><span class="ax-fact"><b>' + tipos.length + '</b> types of business</span><span class="ax-fact"><b>' + nPasos + '</b> steps listed</span>' +
       '<span class="ax-fact"><b>1</b> step per screen</span></div></div>' +
-      '<div class="ax-sec ax-ultra"><div><span class="ax-mono">How an install runs</span><h2 class="ax-hh"><span>Four moments,</span><span class="l">one assistant.</span></h2></div>' +
-      '<div class="ax-grid4">' + [['We turn on a module', 'Modules that need each other switch on together.'], ['You see what’s missing', 'A notice when you sign in. Nothing else stops.'],
-        ['One step per screen', 'Leave halfway: it reopens at the first step left.'], ['Change it later', 'The same fields stay in Settings.']].map(function (f, i) {
-        return '<div class="ax-fase"><span class="n">0' + (i + 1) + '</span><h3>' + f[0] + '</h3><p>' + f[1] + '</p></div>'; }).join('') + '</div></div>' +
-      '<div class="ax-sec ax-chalk"><div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px"><div><span class="ax-mono">Step by step</span>' +
+      '<svg class="ax-xm" viewBox="10 10 80 80" aria-hidden="true">' + X + '<polygon class="p" points="50,24.7 65.5,50 50,75.3 34.5,50"></polygon></svg></div></div>' +
+      '<div class="ax-sec ax-ultra"><div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px"><div><span class="ax-mono">How an install runs</span>' +
+      '<h2 class="ax-hh"><span>Four moments,</span><span class="l">one assistant.</span></h2></div>' +
+      '<p style="font-size:15px;max-width:46ch">The same order for every module the studio turns on, in any type of business.</p></div>' +
+      '<div class="ax-grid4">' + [['encender', 'Studio', 'We turn on a module', 'Modules that need each other switch on together.'],
+        ['aviso', 'Notice', 'You see what’s missing', 'A notice when you sign in. Nothing else stops.'],
+        ['pasos', 'Assistant', 'One step per screen', 'Leave halfway: it reopens at the first step left.'],
+        ['ajustes', 'Settings', 'Change it later', 'The same fields stay in Settings.']].map(function (f, i, l) {
+        return '<div class="ax-fase"><div class="top"><span class="n">' + ico(f[0]) + '</span><span class="ax-mono">0' + (i + 1) + ' · ' + f[1] + '</span>' +
+          (i < l.length - 1 ? ico('flecha', 'arr') : '') + '</div><h3>' + f[2] + '</h3><p>' + f[3] + '</p></div>'; }).join('') + '</div></div>' +
+      '<div class="ax-sec ax-chalk"><div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px"><div><span class="ax-mono" style="color:var(--aw-text3)">Step by step</span>' +
       '<h2 class="ax-hh" style="color:var(--aw-night)"><span>What each business</span><span class="l">sets up.</span></h2></div>' +
       '<div class="ax-leyenda"><span><span class="m1" aria-hidden="true"></span>Part of the install</span><span><span class="m2" aria-hidden="true"></span>Only if that module is on</span>' +
       '<span><span class="m0" aria-hidden="true"></span>Not used</span><span>' + CANDADO + 'Confirmed once: no way back</span></div></div>' +
       '<div class="ax-tabla-caja"><table class="ax-tabla"><caption class="sr-only">Steps in an install, by type of business</caption><thead><tr>' +
-      '<th scope="col"><span class="ax-mono">Step</span></th><th scope="col"><span class="ax-mono">Needed</span></th>' + cabeza + '</tr></thead><tbody>' + filas.join('') + '</tbody></table></div></div>' +
+      '<th scope="col" style="width:300px"><span class="ax-mono">Step</span></th><th scope="col"><span class="ax-mono">Needed</span></th>' + cabeza + '</tr></thead><tbody>' + filas.join('') + '</tbody></table></div></div>' +
       '<div class="ax-sec ax-night"><span class="ax-mono" style="color:var(--aw-fog)">Rules every install keeps</span><div class="ax-reglas">' +
-      '<p><b>Only the main admin sets things up.</b>Everyone else sees that the module isn’t ready yet, until it is.</p>' +
-      '<p><b>Steps with a lock are confirmed once.</b>The assistant asks you to confirm them before saving.</p>' +
-      '<p><b>Settings keeps it all.</b>What the assistant saves is what you see and change in Settings.</p></div>' +
+      [['persona', 'Only the main admin sets things up.', 'Everyone else sees that the module isn’t ready yet, until it is.'],
+       ['candado', 'Steps with a lock are confirmed once.', 'The assistant asks you to confirm them before saving.'],
+       ['ajustes', 'Settings keeps it all.', 'What the assistant saves is what you see and change in Settings.']].map(function (r) {
+        return '<div class="ax-regla"><span class="ic">' + ico(r[0]) + '</span><p><b>' + r[1] + '</b>' + r[2] + '</p></div>'; }).join('') + '</div>' +
       '<div class="ax-pie"><span class="ax-mono">AxisWorks ERP · Installation map</span><span>Two halves, one axis.</span></div></div>';
   }
   function vistaActual() {
     var mapa = location.hash === '#mapa';
+    if (!mapa) destaca = null;
+    var asisD = $('asis');
+    if (mapa && asisD && asisD.open) asisD.close();   // del asistente al mapa: el borrador se queda en memoria, como al cerrarlo
     $('mapa').classList.toggle('hidden', !mapa);
+    $('mapa-acciones').classList.toggle('hidden', !mapa);
     $('vista').classList.toggle('hidden', mapa || !instancias.length);
     $('estado-carga').classList.toggle('hidden', mapa || instancias.length > 0);
     document.querySelector('main').style.maxWidth = mapa ? 'none' : '';
     var t = document.querySelector('header h1');
-    if (t) t.innerHTML = mapa ? 'Mapa de la instalación' : '<span class="sm:hidden">Módulos</span><span class="hidden sm:inline">Módulos por instancia</span>';
+    if (t) t.innerHTML = mapa ? '<span class="ax-solo-m">Mapa</span><span class="ax-solo-d">Mapa de la instalación</span>' : '<span class="ax-solo-m">Módulos</span><span class="ax-solo-d">Módulos por instancia</span>';
     [].forEach.call(document.querySelectorAll('[data-nav]'), function (a) {
       var es = a.getAttribute('data-nav') === (mapa ? 'mapa' : 'modulos');
       if (a.getAttribute('data-nav') === 'mapa' || a.getAttribute('data-nav') === 'modulos') { if (es) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
     });
-    if (mapa) pintaMapa();
+    if (mapa) {
+      pintaMapa();
+      var th = destaca && document.querySelector('#mapa th[data-tipo="' + CSS.escape(destaca) + '"]');
+      if (th) th.scrollIntoView({ block: 'center' });
+    }
   }
   window.addEventListener('hashchange', vistaActual);
 
@@ -1109,7 +1253,7 @@ window.AXW_ASIS = (function () {
         ': no se pueden enseñar sus pasos. Lo que se enciende con él sí es lo que calcula la base.</p>';
     }
     if (nPasos) {
-      html += '<p class="ax-nota"><span class="material-symbols-outlined text-[20px]" aria-hidden="true">info</span><span>El administrador principal de ' + esc(actual.marca) +
+      html += '<p class="ax-nota">' + ico('info') + '<span>El administrador principal de ' + esc(actual.marca) +
         ' verá un aviso al entrar y un asistente con estos pasos. Hasta entonces el módulo está encendido pero sin configurar; lo que guarde queda en Ajustes.</span></p>';
     }
     return html;
@@ -1124,8 +1268,17 @@ window.AXW_ASIS = (function () {
     if (s.apaga.length) html += '<p><strong>Se apaga:</strong> ' + esc(lista(s.apaga)) + '</p>';
     html += setupDelEncendido(s.enciende, activos);
     var n = s.enciende.length;
+    resalta(mod, otros);
     return dialogo(html, n > 1 ? 'Encender ' + n + ' módulos' : 'Encender ' + nombre(mod), null, 'Encender ' + nombre(mod),
-      'Encender un módulo · ' + actual.marca).then(function (v) { return v === 'ok' ? activos : null; });
+      'Encender un módulo · ' + actual.marca).then(function (v) { resalta(null, []); return v === 'ok' ? activos : null; });
+  }
+  // Mientras se confirma, las tarjetas dicen lo mismo que el diálogo (S01: «sel» el que se enciende, «dep» lo que arrastra). Solo dibujo.
+  function resalta(mod, otros) {
+    [].forEach.call(document.querySelectorAll('#modulos [data-tarjeta]'), function (c) {
+      var k = c.getAttribute('data-tarjeta');
+      c.classList.toggle('sel', k === mod);
+      c.classList.toggle('dep', otros.indexOf(k) !== -1);
+    });
   }
 
   function propone(activos, mod, enciende, vuelta) {
@@ -1201,6 +1354,15 @@ window.AXW_ASIS = (function () {
   function asisPinta() {
     var e = asis.estado(), raiz = $('asis-raiz'), act = document.activeElement, idAct = act && act.id && raiz.contains(act) ? act.id : '';
     raiz.innerHTML = window.AXW_ASIS.vista(e, nombre);
+    // «Nuevo ERP» → mapa (13-oct-2026, decisión por defecto del orquestador): guardada la solicitud, un enlace a su mapa de instalación con
+    // su tipo marcado. Va aquí, fuera de AXW_ASIS: el asistente y su alta no cambian. Sin tipo en el mapa (perfil retirado) solo se abre el mapa.
+    var hecho = e.hecho && $('asis-aviso');
+    if (hecho) {
+      var p = document.createElement('p'), a = document.createElement('a');
+      a.href = '/panel/#mapa'; a.setAttribute('data-mapa-tipo', e.v.tipo || ''); a.className = 'font-label-md text-label-md underline';
+      a.textContent = 'Ver qué tendrá que configurar este negocio (mapa de la instalación) →';
+      p.appendChild(a); hecho.appendChild(p);
+    }
     var cambioPaso = asisPaso !== e.paso;
     asisPaso = e.paso;
     if (cambioPaso || e.hecho) { var t = $('asis-titulo'); if (t) t.focus(); }
@@ -1244,8 +1406,14 @@ window.AXW_ASIS = (function () {
   }
 
   document.addEventListener('click', function (ev) {
-    var t = ev.target.closest && ev.target.closest('[data-accion],[data-mod],[data-inst],#reintenta');
+    var t = ev.target.closest && ev.target.closest('[data-accion],[data-mod],[data-inst],#reintenta,[data-mapa-tipo]');
     if (!t) return;
+    if (t.hasAttribute('data-mapa-tipo')) {   // del asistente al mapa con su tipo marcado (vistaActual cierra el asistente)
+      ev.preventDefault();
+      destaca = t.getAttribute('data-mapa-tipo') || null;
+      if (location.hash === '#mapa') vistaActual(); else location.hash = '#mapa';
+      return;
+    }
     if (t.hasAttribute('data-accion')) { ev.preventDefault(); if (!t.disabled) asisAccion(t); }
     else if (t.id === 'reintenta') carga(true).catch(function (e) { toast(e.message); });
     else if (t.hasAttribute('data-inst')) elige(t.getAttribute('data-inst'));
