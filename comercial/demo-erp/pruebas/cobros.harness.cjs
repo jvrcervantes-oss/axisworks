@@ -181,7 +181,7 @@ const C = '[data-axw-cobros-caja]';
     const deFront = [...grupo.matchAll(/sin_a_quien_avisar_[a-z0-9_]+: '([^']*)'/g)].map(m => m[1]);
     if (!deEdge.length) console.log('AVISO  textos del servidor: la edge de ' + (EDGE_TS || '(sin agencia)') + ' es la de antes de 20261012233000; se mide al aterrizar bbm-p34');
     else {
-      ok('textos del servidor: setup_modulos.js trae los de la edge, ni uno más ni uno menos', deFront.length === new Set(deEdge).size && deFront.every(t => deEdge.includes(t)), deFront.length + ' / ' + deEdge.length);
+      ok('textos del servidor: setup_modulos.js trae los de la edge, ni uno más ni uno menos (en los dos sentidos)', deFront.every(t => deEdge.includes(t)) && deEdge.every(t => deFront.includes(t)), deFront.length + ' / ' + deEdge.length);
       ok('textos del servidor: los del arnés están en la edge', Object.values(SQA).every(t => deEdge.includes(t)));
     }
   }
@@ -435,6 +435,7 @@ const C = '[data-axw-cobros-caja]';
   b = base({ nuevo: true, conf: { creacion: 1, lectura: 1, aviso: 1 }, modo: 'live', modoDesde: { en: '2026-10-13T01:00:00Z', por: 'dion@balibestmotorcycle.com' } });
   ({ p, ctx } = await abre(nav, b));
   ok('nuevo, en real: dice desde cuándo y quién', ((await txt(p, '[data-axw-cobros-modo-desde="live"]')) || '').includes('dion@balibestmotorcycle.com'));
+  ok('nuevo, en real, nada que reemplazar: ni campo LIVE muerto ni «Pedir código»', !(await p.$('[data-axw-campo="confirma_live"]')) && !(await p.$('[data-axw-cobros="pedir"]')));
   await p.click('[data-axw-cobros="reemplazar-aviso"]');
   await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
   ok('nuevo, en real, solo el token: sale el campo LIVE', !!(await p.$('[data-axw-campo="confirma_live"]')));
@@ -512,10 +513,11 @@ const C = '[data-axw-cobros-caja]';
   await p.click('[data-axw-cobros="reemplazar-aviso"]'); await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
   b.est.modo = 'live'; b.est.modo_desde = { en: '2026-10-13T03:00:00Z', por: 'otro@balibestmotorcycle.com' };
   await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(400);
-  ok('cambio de modo por otro: lo dice, relee y enseña el campo LIVE con el token tecleado', ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').includes('escribir LIVE') && !!(await p.$('[data-axw-campo="confirma_live"]'))
-     && (await p.getAttribute('[data-axw-cobros="modo-live"]', 'aria-checked')) === 'true' && (await p.$eval('[data-axw-campo="aviso"]', i => i.value)) === CANARIO_A);
+  ok('cambio de modo por otro: dice que lo cambió otro, relee, pasa a real con el campo LIVE y VACÍA lo tecleado', ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').startsWith('Otro administrador ha cambiado el modo')
+     && (await p.getAttribute('[data-axw-cobros="modo-live"]', 'aria-checked')) === 'true' && (await p.$$('#lw-aj-cobros input[type="password"]')).length === 0 && !(await p.$('[data-axw-campo="confirma_live"]')));
+  await p.click('[data-axw-cobros="reemplazar-aviso"]'); await p.fill('[data-axw-campo="aviso"]', CANARIO_A);
   await p.fill('[data-axw-campo="confirma_live"]', 'LIVE'); await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
-  ok('cambio de modo por otro: con LIVE ya se pide el código', b.edge.filter(x => x.accion === 'pedir_codigo').length === 2 && !!(await p.$('[data-axw-cobros-enviado]')));
+  ok('cambio de modo por otro: tras volver a pegar y teclear LIVE, se pide el código', b.edge.filter(x => x.accion === 'pedir_codigo').length === 2 && !!(await p.$('[data-axw-cobros-enviado]')));
   await ctx.close();
 
   // 22. servidor viejo, sin autorización y la instancia ya en real (caso imposible hoy): no hay botón muerto que pida LIVE sin campo

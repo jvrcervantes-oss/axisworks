@@ -227,7 +227,9 @@
 
     // Confirmación expresa en TODO cambio con modo final real (S90 «No way back»; contrato 20261012233000: también estando ya en real y cambiando solo
     // el token de avisos). Se teclea LIVE y lo tecleado viaja como confirmar_live: la garantía es la edge y la base, que lo vuelven a mirar.
-    if (editar && M.modo === 'live' && !liveCerrado(est)) {
+    var hayCampos = CAMPOS.some(function (k) { return !est.claves[k].configurada || M.reemplaza[k]; });
+    // solo si hay algo que mandar: con todo guardado y nada que reemplazar no hay código que pedir y el campo quedaría muerto
+    if (editar && M.modo === 'live' && !liveCerrado(est) && hayCampos && M.pideCodigo) {
       var idc = 'axw-cb-live-' + raiz.getAttribute('data-axw-cobros-caja');
       var conf = el('input', { id: idc, type: 'text', autocomplete: 'off', spellcheck: 'false', 'data-axw-campo': 'confirma_live', class: CLS_INPUT });
       conf.value = M.confirma || '';
@@ -236,7 +238,6 @@
         el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: C('live_confirma_d') })]));
     }
 
-    var hayCampos = CAMPOS.some(function (k) { return !est.claves[k].configurada || M.reemplaza[k]; });
     if (M.pideCodigo && (hayCampos || !editar)) {   // con todo guardado y nada que reemplazar no hay nada que pedir
       if (editar) {
         var pedir = boton(C('pedir'), 'pedir', BTN2 + ' self-start');
@@ -337,12 +338,22 @@
       if (res.d && Array.isArray(res.d.campos)) M.faltan = res.d.campos.filter(function (k) { return CAMPOS.indexOf(k) >= 0; });
       if (res.d && CAMPOS.indexOf(res.d.campo) >= 0) M.faltan = [res.d.campo];
       // falta_confirmar_live sin que esta página lo esperase: la instancia ya está en real (otro administrador la pasó con esta página abierta).
-      // Se relee estado y se sigue en el modo que dice la base: así sale el campo LIVE (revisor, BAJA 1). Lo tecleado se queda.
+      // Se relee estado y se sigue en el modo que dice la base: así sale el campo LIVE (revisor, BAJA 1). Si el modo cambió, lo tecleado se VACÍA
+      // (un token de avisos de prueba puesto en real haría rechazar los avisos de pago) y se dice qué ha pasado (revisor, 2.ª vuelta).
       if (res.codigo === 'falta_confirmar_live' && confirma === null) {
+        var antes = M.est && M.est.modo;
         llama({ accion: 'estado' }).then(function (r2) {
+          if (!M) return;
           var e2 = r2.d && r2.d.ok === true && r2.d.estado;
-          if (estadoValido(e2) && M) { M.est = e2; if (e2.modo) M.modo = e2.modo; CAMPOS.forEach(function (k) { if (!e2.claves[k].configurada) M.reemplaza[k] = true; }); }
-          if (M) dibuja(raiz);
+          if (!estadoValido(e2)) { M.aviso = textoError(r2.codigo || 'respuesta_ilegible'); dibuja(raiz); return; }
+          M.est = e2;
+          CAMPOS.forEach(function (k) { if (!e2.claves[k].configurada) M.reemplaza[k] = true; });
+          if (e2.modo && e2.modo !== antes) {
+            M.modo = e2.modo; M.valores = {}; M.confirma = ''; M.faltan = [];
+            CAMPOS.forEach(function (k) { M.reemplaza[k] = !e2.claves[k].configurada; });
+            M.aviso = C('modo_cambiado');
+          }
+          dibuja(raiz);
         });
         return;
       }
