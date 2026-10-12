@@ -188,8 +188,11 @@
     guarda: function () { return Promise.resolve({ ok: true, externo: true }); }
   };
   function de(clave) { return PASOS[clave] || EXTERNO; }
+  // Un paso con su componente en otro fichero (cobros_paso.js, setup_reservas.js; F3) se suma con registra(). Solo sustituye al genérico de «otra
+  // pantalla» (flota, entrega); nunca pisa un componente de verdad.
+  function registra(clave, comp) { if ((!PASOS[clave] || PASOS[clave] === EXTERNO) && comp && typeof comp.pinta === 'function' && typeof comp.guarda === 'function') PASOS[clave] = comp; }
   // flota y entrega se hacen fuera aunque se conozcan
   ['flota', 'entrega'].forEach(function (k) { PASOS[k] = EXTERNO; });
 
-  window.AXW_PASOS = { de: de, slug: slug, pideMotivo: pideMotivo, conocidos: Object.keys(PASOS), COLS_SOCIEDAD: COLS_SOCIEDAD };
+  window.AXW_PASOS = { de: de, registra: registra, slug: slug, pideMotivo: pideMotivo, conocidos: Object.keys(PASOS), COLS_SOCIEDAD: COLS_SOCIEDAD };
 })();

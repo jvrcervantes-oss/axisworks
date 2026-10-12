@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (comp.externo) principal = boton(U('comprobar'), 'comprobar', true);
     else if (!editando) principal = boton(U('siguiente'), 'siguiente', true);
     else if (ctl && ctl.bloqueado) principal = boton(U('siguiente'), 'siguiente', true);
-    else principal = boton(p.irreversible ? U('siguiente') : U('guardar_seguir'), 'enviar', true);
+    else principal = boton(ctl && ctl.boton ? ctl.boton : (p.irreversible ? U('siguiente') : U('guardar_seguir')), 'enviar', true);
     if (atras) pie.appendChild(atras);
     var der = el('div', { class: 'axw-btn flex flex-col md:flex-row gap-3', style: 'margin-left:auto' });
     if (!editando && !p.irreversible && !comp.externo) der.appendChild(boton(U('cambiar'), 'cambiar', false));
@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('beforeunload', sinSalir);
     document.querySelectorAll('[data-axw-accion]').forEach(function (b) { if (b.tagName === 'BUTTON') b.disabled = true; });
     P.de(p.clave).guarda(sb, v, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad }, confirmo, motivo).then(function (r) {
-      if (r.ok) return siguiente(p);
+      if (r.ok) return siguiente(p, r.sigue);   // un paso que no guarda por sí solo (la clase, S40) dice cuál va después
       if (!r.sinRespuesta) { termina(); st.error = U('no_se_guardo', { e: S.explica(r.error, true).texto }); st.vista = st.vista === 'confirma' ? 'confirma' : 'paso'; pinta(); return; }
       st.vista = 'duda'; pinta(); comprueba(p);
     });
@@ -327,11 +327,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
   function termina() { ocupado = false; window.removeEventListener('beforeunload', sinSalir); }
-  function siguiente(p) {
+  function siguiente(p, sigue) {
     lee().then(function (bien) {
       termina();
       if (!bien) return;
-      st.error = ''; st.vista = 'paso'; st.cambia = false; st.paso = ''; st.resumen = null;
+      st.error = ''; st.vista = 'paso'; st.cambia = false; st.paso = sigue || ''; st.resumen = null;
       pinta();
     });
   }
@@ -349,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     if (a === 'siguiente') {
-      var L2 = lista(ctx.datos, st.modulo), j = L2.obligatorios.indexOf(p), sig = L2.obligatorios.slice(j + 1).filter(function (x) { return !x.hecho; })[0] || L2.obligatorios[j + 1];
+      var L2 = lista(ctx.datos, st.modulo), j = L2.obligatorios.indexOf(p), sig = j < 0 ? null : (L2.obligatorios.slice(j + 1).filter(function (x) { return !x.hecho; })[0] || L2.obligatorios[j + 1]);   // un opcional (j = -1) vuelve a «listo», no al paso 1
       st.paso = sig ? sig.clave : '__fin'; st.error = ''; st.cambia = false;
       if (!sig) { st.paso = ''; var mod = ctx.datos.modulos.filter(function (x) { return x.modulo === st.modulo; })[0]; vacia(t); pintaListo(mod, L2, ctx.datos.modulos.filter(function (x) { return x.estado === 'sin_configurar'; })); return; }
       pinta(); return;

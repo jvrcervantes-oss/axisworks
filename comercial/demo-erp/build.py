@@ -3151,6 +3151,20 @@ def ajustes_puesta_en_marcha():
     shutil.copy2(os.path.join(AQUI, 'setup_pasos.js'), os.path.join(v4, 'assets', 'setup_pasos.js'))   # el mismo componente por paso que el asistente
 
 
+def setup_reservas_pasos():
+    """Pasos del setup de Reservas de producto (F3 Entregas 3 y 4, bbm-p27, 12-oct-2026): clase, alquiler con unidades, reglas, lo ya alquilado y
+    entrega, en setup_reservas.js. Se suman a los componentes de setup_pasos.js con AXW_PASOS.registra(), así que van DETRÁS de setup_pasos.js y
+    DELANTE del script que los usa, en las dos páginas que comparten componente: el asistente y Ajustes › Configurar módulos. Va después de
+    asistente_setup_pantalla() y ajustes_puesta_en_marcha(); reemplazo literal que para si cambia la etiqueta."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    for pag, pre in ((os.path.join(v4, 'ajustes', 'configurar', 'index.html'), '../../assets/'), (os.path.join(v4, 'ajustes', 'index.html'), '../assets/')):
+        t = open(pag, encoding='utf-8').read()
+        tag = '<script src="%ssetup_pasos.js" defer></script>' % pre
+        t = _una_vez(t, tag, tag + '<script src="%ssetup_reservas.js" defer></script>' % pre, 'setup_reservas_pasos %s' % os.path.relpath(pag, v4))
+        open(pag, 'w', encoding='utf-8', newline='').write(t)
+    shutil.copy2(os.path.join(AQUI, 'setup_reservas.js'), os.path.join(v4, 'assets', 'setup_reservas.js'))
+
+
 # ── Idiomas de la interfaz por instancia (owner, 11-oct-2026: bbm «Añade Indonesio y quita español») ─────────────────────────────────────────
 # Una instancia con `"idiomas": ["id", "en"]` en erp/instancias.json sale en indonesio (el primero, por defecto) e inglés, y el español deja de
 # ofrecerse. Todo con reemplazos literales sobre la COPIA (DIST), nunca en Lawang; si Lawang cambia un trozo, el build para. Sin la clave, nada cambia.
@@ -3326,6 +3340,7 @@ def instancia(nombre):
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
     asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)
     ajustes_puesta_en_marcha()   # F3 (12-oct-2026): Ajustes › Configurar módulos, primera pestaña, en todas las instancias (antes solo las de reservas)
+    setup_reservas_pasos()       # F3 E3/E4 (12-oct-2026): pasos de Reservas de producto (clase, alquiler, reglas, ya alquilado, entrega) en asistente y Ajustes
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
     idiomas = idiomas_de(nombre)
