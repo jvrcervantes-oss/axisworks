@@ -99,6 +99,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     "El módulo de reservas de producto está apagado en esta instancia: no hay flota que editar. Esto NO quiere decir que esté vacía.": "Modul booking produk nonaktif di instance ini: tidak ada armada yang bisa diedit. Ini BUKAN berarti datanya kosong.",
     "Solo la administración puede ver y cambiar la flota y las tarifas. Si necesitas cambiarlas, pídelo a un administrador.": "Hanya administrasi yang dapat melihat dan mengubah armada dan tarif. Jika perlu mengubahnya, minta kepada administrator.",
     "Solo la administración puede cambiar la flota y las tarifas.": "Hanya administrasi yang dapat mengubah armada dan tarif.",
+    "No tienes la herramienta «Flota y tarifas»: pídesela al administrador principal en Usuarios.": "Anda tidak punya alat «Armada dan tarif»: mintalah kepada admin utama di Pengguna.",
     "Activo": "Aktif",
     "Inactivo": "Nonaktif",
     "Listo para reservar": "Siap di-booking",
@@ -209,6 +210,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     'El módulo de reservas de producto está apagado en esta instancia: no hay flota que editar. Esto NO quiere decir que esté vacía.': 'The product bookings module is off in this instance: there is no fleet to edit. This does NOT mean it is empty.',
     'Solo la administración puede ver y cambiar la flota y las tarifas. Si necesitas cambiarlas, pídelo a un administrador.': 'Only the administration can see and change the fleet and the rates. If you need to change them, ask an administrator.',
     'Solo la administración puede cambiar la flota y las tarifas.': 'Only the administration can change the fleet and the rates.',
+    'No tienes la herramienta «Flota y tarifas»: pídesela al administrador principal en Usuarios.': 'You do not have the «Fleet and rates» tool: ask the main administrator for it in Users.',
     'Activo': 'Active', 'Inactivo': 'Inactive', 'Listo para reservar': 'Ready to book', 'No se puede reservar todavía': 'Cannot be booked yet',
     'Sin tarifas: no se podrá cotizar.': 'No rates: it cannot be quoted.',
     'Faltan motos disponibles: no se podrá cotizar.': 'No bikes available: it cannot be quoted.',
@@ -467,6 +469,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       d.conflicto = true;
       return;
     }
+    // un admin sin la herramienta (S2, 12-oct-2026: 42501 / sin_herramienta) sí es administración: decirle lo que de verdad le falta
+    if (c.hint === 'sin_herramienta') { d.error(T('No tienes la herramienta «Flota y tarifas»: pídesela al administrador principal en Usuarios.')); return; }
     if (c.tipo === 'sin_permiso') { d.error(T('Solo la administración puede cambiar la flota y las tarifas.')); return; }
     d.error((prefijo ? prefijo + ' ' : '') + C.mensaje(err, false, PROPIOS));
   }

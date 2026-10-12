@@ -654,6 +654,9 @@ PUERTAS_DEMO = r"""(function () {
   function noDemo(que) { var e = new Error(que + ': no disponible en la demo'); e.clave = 'no_disponible_en_la_demo'; return Promise.reject(e); }
   fija('LW_SB_URL', URL_SB);
   fija('LW_SB_KEY', FICHA.sb_key || 'demo-publishable-key');
+  /* Moneda base (F3 fase E, 12-oct-2026): el guard real la saca de Ajustes vía la capa de módulos, que la demo no lleva. Los
+     datos de la demo son en euros: sin esto la demo, que va con AXW_NUCLEO_OPERACION, pintaría «—» en vez de sus cifras. */
+  fija('lwMonedaBase', function () { return 'EUR'; });
   fija('lwEdge', function (nombre) {
     if (!/^[a-z0-9-]+$/.test(String(nombre))) throw new Error('lwEdge: nombre de edge no válido');
     return URL_SB + '/functions/v1/' + nombre;

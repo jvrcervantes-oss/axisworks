@@ -252,6 +252,9 @@ a.rp-boton{text-decoration:none}
     'Elige en el calendario el día de recogida y el de devolución.': 'Pick the pick-up day and the return day on the calendar.',
     'Mirando precio y disponibilidad…': 'Checking price and availability…', 'Quedan': 'Left', 'No disponible en esas fechas': 'Not available on those dates',
     'Sin precio: falta configurar el impuesto': 'No price: the tax is not set up yet', 'No se ha podido cotizar': 'Could not get a price',
+    'Sin precio: falta configurar el módulo en Ajustes': 'No price: the module is not set up yet in Settings',
+    'Todavía no se puede reservar: falta configurar este módulo en Ajustes. Sin eso no se crea ninguna reserva.': 'Bookings are not possible yet: this module still has to be set up in Settings. No booking is created until then.',
+    'Ir a configurar el módulo': 'Go to module setup',
     'Todavía no se pueden poner precios: falta que el gestor diga en Ajustes cómo va el impuesto. Sin precio no se crea ninguna reserva.': 'Prices cannot be worked out yet: the manager still has to set up the tax in Settings. No booking is created without a price.',
     'Ninguna moto se puede reservar en esas fechas. Lo que dice la base': 'No motorbike can be booked on those dates. What the database says',
     'Cambiar las fechas': 'Change the dates',
@@ -371,6 +374,9 @@ a.rp-boton{text-decoration:none}
     'Elige en el calendario el día de recogida y el de devolución.': 'Pilih tanggal ambil dan tanggal kembali di kalender.',
     'Mirando precio y disponibilidad…': 'Mengecek harga dan ketersediaan…', 'Quedan': 'Sisa', 'No disponible en esas fechas': 'Tidak tersedia di tanggal itu',
     'Sin precio: falta configurar el impuesto': 'Belum ada harga: pajak belum diatur', 'No se ha podido cotizar': 'Harga tidak bisa dihitung',
+    'Sin precio: falta configurar el módulo en Ajustes': 'Belum ada harga: modul belum diatur di Pengaturan',
+    'Todavía no se puede reservar: falta configurar este módulo en Ajustes. Sin eso no se crea ninguna reserva.': 'Belum bisa booking: modul ini belum diatur di Pengaturan. Sebelum itu, booking tidak bisa dibuat.',
+    'Ir a configurar el módulo': 'Buka pengaturan modul',
     'Todavía no se pueden poner precios: falta que el gestor diga en Ajustes cómo va el impuesto. Sin precio no se crea ninguna reserva.': 'Harga belum bisa dihitung: pengelola belum mengatur pajak di Pengaturan. Tanpa harga, booking tidak bisa dibuat.',
     'Ninguna moto se puede reservar en esas fechas. Lo que dice la base': 'Tidak ada motor yang bisa dibooking di tanggal itu. Kata sistem',
     'Cambiar las fechas': 'Ubah tanggal',
@@ -534,6 +540,17 @@ a.rp-boton{text-decoration:none}
     }
     if (!e.code && !hint && (!m || /failed to fetch|network|load failed|timeout|sin respuesta/i.test(m))) return { tipo: 'red', hint: hint, m: m };
     return { tipo: 'regla', hint: hint, m: m };
+  }
+  /* ¿La base dice que falta configurar el módulo? (S2 de F3 en bbm, 12-oct-2026). Antes solo llegaba el alias impuesto_no_configurado;
+     ahora cotizar y crear niegan con SQLSTATE 55000, hint base_sin_configurar o reservas-producto_sin_configurar, y la clave del paso en
+     details (impuesto_pkp, precio_con_impuesto, flota, entrega, moneda…). El alias sigue en la base detrás: se aceptan los dos.
+     null = no es eso; { paso, impuesto } = falta ese paso (impuesto: es el del impuesto, el aviso de siempre). */
+  function faltaConfig(err) {
+    var e = err || {}, hint = e.hint ? String(e.hint) : '';
+    if (hint === 'impuesto_no_configurado') return { paso: 'impuesto_pkp', impuesto: true };
+    if (String(e.code) !== '55000' || !/_sin_configurar$/.test(hint)) return null;
+    var paso = typeof e.details === 'string' ? e.details.trim() : '';
+    return { paso: paso, impuesto: paso === 'impuesto_pkp' || paso === 'precio_con_impuesto' };
   }
   /* Mensaje para la persona. Las reglas de negocio de la base vienen en español y con sus números: se enseñan tal cual (textContent). */
   function mensaje(err, lectura) {
@@ -973,9 +990,11 @@ a.rp-boton{text-decoration:none}
     if (A.cargandoMotos || !ids.length) return null;
     var oks = ids.filter(function (i) { return A.cot[i].estado === 'ok'; });
     if (oks.length) return null;
-    var hints = ids.map(function (i) { return clasifica(A.cot[i].err).hint; });
-    if (hints.every(function (x) { return x === 'impuesto_no_configurado'; }))
+    var faltas = ids.map(function (i) { return faltaConfig(A.cot[i].err); });
+    if (faltas.every(function (x) { return x && x.impuesto; }))
       return T('Todavía no se pueden poner precios: falta que el gestor diga en Ajustes cómo va el impuesto. Sin precio no se crea ninguna reserva.');
+    if (faltas.every(function (x) { return !!x; }))
+      return T('Todavía no se puede reservar: falta configurar este módulo en Ajustes. Sin eso no se crea ninguna reserva.');
     return T('Ninguna moto se puede reservar en esas fechas. Lo que dice la base') + ': ' + mensaje(A.cot[ids[0]].err);
   }
   function unidadesLibres(p) {
@@ -997,8 +1016,8 @@ a.rp-boton{text-decoration:none}
       b.appendChild(h('span', { class: 'rp-vacio', text: libre ? (c.r.disponibles != null ? T('Quedan') + ' ' + c.r.disponibles + ' · ' : '') + c.r.dias + ' ' + T(Number(c.r.dias) === 1 ? 'día' : 'días')
                                                              : T('No disponible en esas fechas') }));
     } else {
-      var hint = clasifica(c.err).hint;
-      b.appendChild(h('span', { class: 'rp-vacio', text: hint === 'impuesto_no_configurado' ? T('Sin precio: falta configurar el impuesto') : T('No se ha podido cotizar') }));
+      var fc = faltaConfig(c.err);
+      b.appendChild(h('span', { class: 'rp-vacio', text: fc ? (fc.impuesto ? T('Sin precio: falta configurar el impuesto') : T('Sin precio: falta configurar el módulo en Ajustes')) : T('No se ha podido cotizar') }));
     }
     var viejo = A.cuerpo.querySelector('[data-rp="as-moto"][data-producto-id="' + p.id + '"]');
     if (viejo) { b.hidden = viejo.hidden; viejo.parentNode.replaceChild(b, viejo); }
@@ -1097,6 +1116,9 @@ a.rp-boton{text-decoration:none}
     if (bloqueo) {
       c.appendChild(h('p', { class: 'rp-error', role: 'alert', 'data-rp': 'as-bloqueo', text: bloqueo }));
       c.appendChild(h('div', { class: 'rp-acciones' }, [boton(T('Cambiar las fechas'), 'rp-modal-as-paso', { 'data-paso': 'fechas' }), boton(T('Reintentar'), 'rp-modal-as-recotiza')]));
+      // si lo que falta es configurar el módulo, el camino para arreglarlo (la página dice quién puede hacerlo)
+      if (Object.keys(A.cot).some(function (i) { return !!faltaConfig(A.cot[i].err); }))
+        c.appendChild(h('p', null, [h('a', { href: '/ajustes/configurar/?modulo=reservas-producto', 'data-rp': 'as-configurar', text: T('Ir a configurar el módulo') })]));
       return;
     }
     if (A.cargandoMotos && !Object.keys(A.cot).length) { c.appendChild(h('p', { class: 'rp-vacio', role: 'status', text: T('Mirando precio y disponibilidad…') })); return; }
@@ -1337,7 +1359,8 @@ a.rp-boton{text-decoration:none}
           A.err.moto = T('Esa moto se acaba de ocupar en esas fechas: elige otra. No se ha creado nada.');
           return asVe('moto');
         }
-        if (c.hint === 'impuesto_no_configurado') { A.cotClave = null; return asVe('moto'); }
+        // falta configurar el módulo (el impuesto u otro paso): se vuelve a cotizar y el paso de la moto dice qué falta y dónde se arregla
+        if (faltaConfig(r.error)) { A.cotClave = null; return asVe('moto'); }
         A.errEnvio = T('No se ha creado la reserva') + ': ' + mensaje(r.error);
         asGuarda(); asPinta(); return;   // la base contestó con un error: no se creó, el borrador deja de llevar la duda
       }

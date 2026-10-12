@@ -47,7 +47,7 @@ function nuevaBase(o = {}) {
     pagos: [{ id: 'g1', reserva_id: 'r2', reserva: 'RSV-2', referencia: 'PAY-X <b>', importe: 300000, moneda: 'IDR', motivo: 'llego tarde', recibido_en: new Date().toISOString(), resuelto_en: null, resuelto_por: null, resolucion: null }]
   };
 }
-const err = (code, message, hint) => ({ data: null, error: { code, message, hint: hint || null } });
+const err = (code, message, hint, details) => ({ data: null, error: { code, message, hint: hint || null, details: details || null } });
 async function servidor(b, nombre, a) {
   b.llamadas.push([nombre, JSON.parse(JSON.stringify(a))]);
   const o = b.o;
@@ -95,6 +95,8 @@ async function servidor(b, nombre, a) {
     }
     case 'reserva_producto_cotiza': {
       if (o.cotizaImpuesto) return err('22023', 'Falta decir si las tarifas llevan el impuesto incluido (precio_incluye_impuesto = si | no): lo fija el gestor', 'impuesto_no_configurado');
+      // S2 de F3 (12-oct-2026): _exige_configurado niega con 55000, hint <modulo>_sin_configurar y la clave del paso en details
+      if (o.cotizaSinConfig) return err('55000', 'El módulo no está configurado', o.cotizaSinConfig === 'moneda' ? 'base_sin_configurar' : 'reservas-producto_sin_configurar', o.cotizaSinConfig);
       if (a.p_desde < mas(0)) return err('22023', 'La recogida no puede ser en el pasado');
       const pr = b.productos.find(x => x.id === a.p_producto_id);
       if (!pr) return err('P0002', 'Ese producto no existe o no está activo');
@@ -379,6 +381,27 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('E11 · Siguiente no avanza y no se crea nada', !!(await p.$('[data-paso="moto"]')) && llamadas(base, 'reserva_producto_crea').length === 0);
     if (SHOT) await p.screenshot({ path: SHOT + '_E11_impuesto.png' });
     await ctx.close();
+  }
+  {
+    // E11b · S2: el impuesto sin declarar llega como 55000 / reservas-producto_sin_configurar / details impuesto_pkp → el mismo aviso de siempre
+    const { base, p, ctx } = await abre({ base: { cotizaSinConfig: 'impuesto_pkp' } });
+    await hastaMoto(p);
+    ok('E11b · 55000 impuesto_pkp: el aviso del impuesto, enlace a configurar y ninguna moto elegible', (await txt(p, '[data-rp="as-bloqueo"]')).includes('falta que el gestor') && !!(await p.$('a[data-rp="as-configurar"][href="/ajustes/configurar/?modulo=reservas-producto"]')) && !(await p.$('[data-accion="rp-modal-as-moto"]')));
+    await sig(p);
+    ok('E11b · no se crea nada', llamadas(base, 'reserva_producto_crea').length === 0);
+    await ctx.close();
+  }
+  {
+    // E11c · S2: falta otro paso (flota) → aviso de módulo sin configurar, con el enlace al asistente; la moneda (base_sin_configurar) igual
+    for (const paso of ['flota', 'moneda']) {
+      const { base, p, ctx } = await abre({ base: { cotizaSinConfig: paso } });
+      await hastaMoto(p);
+      const t = await txt(p, '[data-rp="as-bloqueo"]');
+      ok('E11c · 55000 ' + paso + ': aviso de módulo sin configurar con enlace, sin motos', t.includes('falta configurar este módulo') && !!(await p.$('a[data-rp="as-configurar"]')) && !(await p.$('[data-accion="rp-modal-as-moto"]')), t);
+      ok('E11c · ' + paso + ': no se crea nada', llamadas(base, 'reserva_producto_crea').length === 0);
+      if (SHOT && paso === 'flota') await p.screenshot({ path: SHOT + '_E11c_sin_configurar.png' });
+      await ctx.close();
+    }
   }
   {
     // E12 · la red se cae al confirmar
