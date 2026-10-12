@@ -179,6 +179,10 @@ mira('hay diccionarios ID que revisar (i18n_id.json y al menos los de portada, A
 # -- (5) la comprobación del paquete construido
 if r == 'pasa':
     viejo_aqui = build.AQUI
+    # comprueba_idiomas mira lo que SALE, y lo que sale ya pasó por limpia_publico.js (sin comentarios): un comentario de Lawang que nombra
+    # 'es-ES' no es código (12-oct-2026: Lawang 8d9c76a7 escribió uno en datos.js y esta prueba lo contaba como formato sin id-ID).
+    lp = subprocess.run(['node', os.path.join(build.AQUI, 'limpia_publico.js'), d], capture_output=True, text=True, encoding='utf-8')
+    mira('el paquete de prueba pasa por limpia_publico.js como el de verdad', lp.returncode == 0)
     mira('comprueba_idiomas da por bueno el paquete recién parcheado', (lambda: (build.comprueba_idiomas(d, ['id', 'en']), True)[1])())
     roto = tempfile.mkdtemp(); shutil.rmtree(roto); shutil.copytree(d, roto)
     os.makedirs(os.path.join(roto, 'x'), exist_ok=True)

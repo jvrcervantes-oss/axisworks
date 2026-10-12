@@ -225,6 +225,25 @@ d = paquete({'index.html': PUERTA2.replace('id="loginEmail"', 'id="otro"')})
 mira('puerta: PARA si ya no hay #loginEmail', con_registro({}, build.puerta_instancia, d, ['id', 'en'])[0] == 'para')
 d = paquete({'index.html': PUERTA2.replace('id="fLogin"', 'id="f2"')})
 mira('puerta: PARA si ya no hay #fLogin y hay que poner el selector', con_registro({}, build.puerta_instancia, d, ['id', 'en'])[0] == 'para')
+d = paquete({'index.html': PUERTA2.replace('<style>.lw-login{}</style>', '')})
+mira('puerta: PARA si ya no hay un <style> con .lw-login', con_registro({}, build.puerta_instancia, d, None)[0] == 'para')
+
+# 4g — rótulos del menú en en/id en TODAS las páginas (owner 12-oct en bbm: Taller, Entrega y Flota seguían en español)
+import subprocess
+viejo_dist = build.DIST
+build.DIST = paquete({'contracts/assets/i18n.js': '(function(){var EN={"Hola":"Hello","Ventas":"Ya"};window.LW_EN = EN;})();\nwindow.LW_ID={"Hola":"Halo"};'})
+build.menu_i18n()
+i18n = open(os.path.join(build.DIST, 'contracts', 'assets', 'i18n.js'), encoding='utf-8').read()
+build.DIST = viejo_dist
+r = subprocess.run(['node', '-e', 'var window={};' + i18n + ';console.log(JSON.stringify([window.LW_EN.Taller,window.LW_ID.Taller,window.LW_EN.Ventas,window.LW_ID["Flota y tarifas"],window.LW_EN.Hola]))'],
+                   capture_output=True, text=True, encoding='utf-8')
+mira('menú: Taller/Flota entran en LW_EN y LW_ID y una clave que ya existe no se pisa',
+     r.returncode == 0 and json.loads(r.stdout.strip() or 'null') == ['Workshop', 'Bengkel', 'Ya', 'Armada dan tarif', 'Hello'])
+if r.returncode != 0:
+    print('     node: ' + (r.stdout + r.stderr).strip()[-300:])
+build.DIST = paquete({'contracts/assets/i18n.js': '(function(){})();'})
+mira('menú: PARA si i18n.js ya no expone LW_EN', con_registro({}, build.menu_i18n)[0] == 'para')
+build.DIST = viejo_dist
 
 # 5 — cableado en instancia()
 fuente = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
@@ -241,7 +260,8 @@ mira('instancia() versiona el favicon justo antes de versiona()', 'favicon_versi
      and cuerpo.index('favicon_versionado(DIST)') < cuerpo.index('\n    versiona(DIST)'))
 mira('instancia() pinta la suite clásica tras crea-contraseña y ANTES de versionar (si no, la CDN sirve la hoja vieja)',
      cuerpo.index('crea_contrasena_pantalla(marca)') < cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('\n    versiona(DIST)'))
-mira('instancia() arregla la puerta tras la piel y antes de versionar', cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('puerta_instancia(DIST, idiomas_de(nombre))') < cuerpo.index('\n    versiona(DIST)'))
+mira('instancia() arregla la puerta tras la piel y antes de versionar', cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('puerta_instancia(DIST, idiomas)') < cuerpo.index('\n    versiona(DIST)'))
+mira('instancia() añade los rótulos del menú después de los idiomas', cuerpo.index('idiomas_instancia(idiomas)') < cuerpo.index('menu_i18n()'))
 mira('instancia() pone los logos de la instancia, no los neutros a secas', 'logos_instancia(nombre, marca)' in cuerpo and 'logos_neutros(' not in cuerpo)
 mira('instancia() comprueba la piel antes de dar el paquete por bueno', cuerpo.index('comprueba_piel(DIST, nombre)') < cuerpo.index('comprueba_resultado(DIST)'))
 

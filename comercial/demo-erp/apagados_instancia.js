@@ -205,6 +205,56 @@
       var m = esExtraRuta(ruta) ? '(no portado)' : moduloDeRuta(ruta);
       if (m && !activo(m) && as[i].style.display !== 'none') as[i].style.display = 'none';
     }
+    plegables();
+    secciones();
+  }
+  function rutaDe(a) {
+    try { return new URL(a.getAttribute('href'), location.href).pathname; } catch (e) { return null; }
+  }
+  function vivo(a) {
+    var ruta = rutaDe(a);
+    if (ruta == null) return false;
+    var m = esExtraRuta(ruta) ? '(no portado)' : moduloDeRuta(ruta);
+    return !m || activo(m);
+  }
+  /* Un grupo plegable del menú (nav.js: «Cobros» con Vencimientos, Facturas, Recibos…) lleva como enlace su PRIMERA pestaña
+     visible para el rol, sin mirar los módulos. Si esa pestaña es de un módulo apagado, la línea de arriba oculta la entrada
+     del grupo y con ella todas sus pestañas, aunque otras estén encendidas (12-oct-2026, bbm: super admin con facturas y
+     recibos encendidos y vencimientos apagado → «Cobros» invisible, Facturas y Recibos inalcanzables). Aquí el grupo apunta
+     a su primera pestaña ENCENDIDA y se enseña; sin ninguna encendida, se oculta entero. Enganche: data-lw-plegable,
+     aria-controls y data-lw-pestana (los pone nav.js), nunca el rótulo. */
+  function plegables() {
+    var gs = document.querySelectorAll('a[data-lw-plegable][aria-controls]');
+    for (var i = 0; i < gs.length; i++) {
+      var g = gs[i], sub = document.getElementById(g.getAttribute('aria-controls'));
+      if (!sub) continue;
+      var hijos = sub.querySelectorAll('a[data-lw-pestana]'), primero = null;
+      for (var j = 0; j < hijos.length; j++) if (vivo(hijos[j])) { primero = hijos[j]; break; }
+      if (primero) {
+        if (!vivo(g)) g.setAttribute('href', primero.getAttribute('href'));
+        if (g.style.display === 'none') g.style.display = '';
+      } else {
+        if (g.style.display !== 'none') g.style.display = 'none';
+        if (sub.style.display !== 'none') sub.style.display = 'none';
+      }
+    }
+  }
+  /* Una sección del menú lateral (su rótulo y sus entradas) sin ninguna entrada visible no pinta el rótulo solo (12-oct-2026,
+     bbm: «Documentos», «Comunicación» y «Base de datos» salían como rótulos huérfanos). La sección es el contenedor directo de
+     las entradas `a[data-path]` dentro del <nav> del menú; se mira la visibilidad calculada de esas entradas. */
+  function secciones() {
+    var navs = document.querySelectorAll('aside nav');
+    for (var i = 0; i < navs.length; i++) {
+      var hijos = navs[i].children;
+      for (var j = 0; j < hijos.length; j++) {
+        var s = hijos[j], entradas = s.querySelectorAll(':scope > a[data-path]');
+        if (!entradas.length) continue;
+        var alguna = false;
+        for (var k = 0; k < entradas.length && !alguna; k++) alguna = getComputedStyle(entradas[k]).display !== 'none';
+        var quiere = alguna ? '' : 'none';
+        if (s.style.display !== quiere) s.style.display = quiere;
+      }
+    }
   }
   function pinta() {
     var apagados = Object.keys(M.p).filter(function (p) { return !activo(M.p[p]); }).concat(M.xp || []);
