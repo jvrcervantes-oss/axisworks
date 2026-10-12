@@ -18,7 +18,7 @@
      · DEFINITIVO (sale de la cola, se pide otra foto con su motivo): fichero_tipo, foto_tipo, fichero_exif, fichero_grande, foto_tamano, clave_usada,
        foto_caducada, foto_sustituida, ranura, clave, datos, fotos_tope_dano, fotos_tope_orden, ya_cerrada, orden_vieja, orden_no_existe, foto_no_existe,
        origen, sin_acceso, modulo_apagado, campo_no_admitido, orden, fichero, fichero_vacio (la lista de DEFINITIVOS de la cabecera de la edge, ebaab585, más origen y datos).
-     · REINTENTABLE con LA MISMA clave (se queda en la cola): foto_sin_objeto, almacen, base, sesion_no_comprobada, config, red caída, 5xx, 401/sin_sesion
+     · REINTENTABLE con LA MISMA clave (se queda en la cola): foto_sin_objeto, fotos_tope_pendientes (12-oct, 10 pendientes por orden), almacen, base, sesion_no_comprobada, config, red caída, 5xx, 401/sin_sesion
        (al volver a entrar), y 429/tope_minuto (se reintenta solo pasados `reintenta_en` segundos).
    Reglas de pintado: solo createElement/createElementNS/textContent (nunca innerHTML); se engancha por data-accion / data-ranura / data-clave, nunca por un rótulo.
    Colores solo por var(--tema-*): el CSS de la casilla lo pone la pantalla que la usa.
@@ -33,6 +33,7 @@ function axwFotosDiccionario() {
     'Esta orden ya tiene 40 fotos: no caben más.': 'This order already has 40 photos: no more fit.',
     'No tienes acceso a Taller.': 'You do not have access to the Workshop.',
     'Demasiadas fotos seguidas: se reintenta en {n} s.': 'Too many photos in a row: retrying in {n} s.',
+    'Hay demasiadas fotos sin terminar en esta orden: espera a que suban y pulsa Reintentar.': 'Too many unfinished photos in this order: wait for them to upload and tap Retry.',
     'Frente': 'Front', 'Parte de atrás': 'Back', 'Izquierda': 'Left', 'Derecha': 'Right', 'Cuentakilómetros': 'Odometer', 'Daño': 'Damage',
     'Toca para hacer la foto': 'Tap to take the photo', 'Preparando…': 'Preparing…', 'Subiendo…': 'Uploading…', 'Subida': 'Uploaded',
     'Pendiente de subir': 'Not uploaded yet', 'Repetir': 'Retake', 'Ver': 'View', 'Reintentar': 'Retry', '+ Foto de daño': '+ Damage photo',
@@ -53,6 +54,7 @@ function axwFotosDiccionario() {
     'Esta orden ya tiene 40 fotos: no caben más.': 'Order ini sudah punya 40 foto: tidak bisa tambah lagi.',
     'No tienes acceso a Taller.': 'Anda tidak punya akses ke Bengkel.',
     'Demasiadas fotos seguidas: se reintenta en {n} s.': 'Terlalu banyak foto berturut-turut: dicoba lagi dalam {n} detik.',
+    'Hay demasiadas fotos sin terminar en esta orden: espera a que suban y pulsa Reintentar.': 'Terlalu banyak foto belum selesai di order ini: tunggu sampai terunggah lalu tekan Coba lagi.',
     'Frente': 'Depan', 'Parte de atrás': 'Belakang', 'Izquierda': 'Kiri', 'Derecha': 'Kanan', 'Cuentakilómetros': 'Odometer', 'Daño': 'Kerusakan',
     'Toca para hacer la foto': 'Ketuk untuk foto', 'Preparando…': 'Menyiapkan…', 'Subiendo…': 'Mengunggah…', 'Subida': 'Terunggah',
     'Pendiente de subir': 'Belum terunggah', 'Repetir': 'Ulangi', 'Ver': 'Lihat', 'Reintentar': 'Coba lagi', '+ Foto de daño': '+ Foto kerusakan',
@@ -316,6 +318,10 @@ function axwFotosGuiadas(cfg) {
         var s = Math.min(120, Math.max(1, Math.round(Number(d.reintenta_en) || 10)));
         fin('pendiente', TT('Demasiadas fotos seguidas: se reintenta en {n} s.', { n: s }));
         setTimeout(function () { sube(e); }, s * 1000);   // sube() no hace nada si la casilla se repitió o la pieza se cerró
+        return false;
+      }
+      if (d.hint === 'fotos_tope_pendientes') {   // 8.T1-B3: 10 pendientes vivas por orden; REINTENTABLE con la misma clave (se queda en la cola, sin reintento solo)
+        fin('pendiente', T('Hay demasiadas fotos sin terminar en esta orden: espera a que suban y pulsa Reintentar.'));
         return false;
       }
       if (d.hint && Object.prototype.hasOwnProperty.call(DEFINITIVOS, d.hint)) {

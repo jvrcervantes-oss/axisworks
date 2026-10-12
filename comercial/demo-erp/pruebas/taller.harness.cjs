@@ -72,7 +72,7 @@ const P1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const XSS_MAT = `DK 9 <img src=x onerror="window.__xss=1"> 'q'`, XSS_MOD = `Vario <svg onload="window.__xss=2">`, XSS_REV = `<b>Oli</b> "x" <img src=x onerror="window.__xss=3">`;
 let nid = 0; const uuid = () => { nid++; const h = nid.toString(16).padStart(12, '0'); return `bbbbbbbb-0000-4000-8000-${h}`; };
 function nuevaBase(o = {}) {
-  const B = { o, llamadas: [], subidas: [], latencia: 0, cortaTras: null, setup: o.setup || null, abreSinConfigurar: false, tope429: 0, seq: 3,
+  const B = { o, llamadas: [], subidas: [], latencia: 0, cortaTras: null, setup: o.setup || null, abreSinConfigurar: false, tope429: 0, topePend: 0, seq: 3,
     motos: [{ id: U.m1, numero_unidad: 'UND-1', identificador: 'DK 1234 AB', producto_id: P1, estado: 'taller' },
             { id: U.m2, numero_unidad: 'UND-2', identificador: XSS_MAT, producto_id: P1, estado: 'disponible' },
             { id: U.m3, numero_unidad: 'UND-3', identificador: 'DK 5555 CC', producto_id: P1, estado: 'disponible' },
@@ -251,6 +251,7 @@ function edge(B, req) {
   const t = tipoBytes(p.fichero);
   B.subidas.push({ ranura: p.ranura, tipo: t, bytes: p.fichero.length, clave: p.clave, u });
   if (B.tope429 > 0) { B.tope429--; return { st: 429, j: { ok: false, hint: 'tope_minuto', reintenta_en: 1 } }; }
+  if (B.topePend > 0) { B.topePend--; return { st: 422, j: { ok: false, hint: 'fotos_tope_pendientes' } }; }
   if (p.fichero.length > 614400) return { st: 413, j: { ok: false, hint: 'fichero_grande' } };
   if (/exif/.test(t)) return { st: 415, j: { ok: false, hint: 'fichero_exif' } };
   if (t === 'otro') return { st: 415, j: { ok: false, hint: 'fichero_tipo' } };
@@ -425,7 +426,14 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await duerme(1600);
     const de = B.subidas.filter(x => x.ranura === 'derecha'), vig = B.fotos.filter(f => f.orden_id === orden.id && f.ranura === 'derecha' && f.estado === 'confirmada');
     ok('repetir una casilla durante la espera del 429: la captura vieja NO se sube después y la vigente es la nueva', de.length === 2 && de[0].clave !== de[1].clave && vig.length === 1 && vig[0].clave === de[1].clave, JSON.stringify(de.map(x => x.clave.slice(0, 8))));
-    await foto(p, 'cuentakm', PEQ); await fotoSubida(p, 'cuentakm');
+    B.topePend = 1;
+    await foto(p, 'cuentakm', PEQ);
+    await espera(p, () => /belum selesai/.test(document.querySelector('[data-ranura="cuentakm"] .fg-estado').textContent + ' ' + (document.querySelector('[data-fg="aviso"]') || { textContent: '' }).textContent + ' ' + document.body.textContent));
+    ok('fotos_tope_pendientes (10 pendientes por orden): lo dice y la foto se queda en la cola, sin darla por perdida', !B.fotos.some(f => f.orden_id === orden.id && f.ranura === 'cuentakm' && f.estado === 'confirmada'));
+    await p.click('[data-accion="fg-reintentar"]', { timeout: 3000 }).catch(() => {});
+    await fotoSubida(p, 'cuentakm');
+    const ck = B.subidas.filter(x => x.ranura === 'cuentakm');
+    ok('tras fotos_tope_pendientes, Reintentar sube con la MISMA clave de captura', ck.length === 2 && ck[0].clave === ck[1].clave, JSON.stringify(ck.map(x => x.clave)));
     ok('las 5 fijas confirmadas en la base', ['frente', 'atras', 'izquierda', 'derecha', 'cuentakm'].every(r => B.fotos.some(f => f.orden_id === orden.id && f.ranura === r && f.estado === 'confirmada')));
     ok('fotos: el aviso dice que están las 5', (await p.$eval('[data-tl="fotos-info"]', e => e.textContent)).includes('5 foto wajib sudah lengkap'));
     ctx.__sinRed = true; await ctx.setOffline(true);
