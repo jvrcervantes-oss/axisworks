@@ -132,7 +132,53 @@ for n, e in FORMA['escrituras'].items():
         args |= set(re.findall(r'\b(p_[a-z_]+)\s*:', u))
     mira('%s: manda exactamente los argumentos del contrato %s (manda %s)' % (n, sorted(e['args']), sorted(args)), args == set(e['args']))
 mira('nada de autor, correo, fechas ni uid viaja a la base', not re.search(r'p_(autor|por|email|creado|actualizado|user|uid|fecha|dueno)', CODIGO))
-mira('trabajos y nombres de la nota salen de la forma: los 8 trabajos de agente_forma.json', set(re.findall(r"'([a-z]+)'", CODIGO[CODIGO.index('var TRABAJOS = ['):CODIGO.index('var TRABAJOS = [') + 120])) == set(FORMA['trabajos']))
+mira('los trabajos NO van en una lista fija de la pantalla: el orden sale de trabajos_orden de la base', not re.search(r'var TRABAJOS\s*=', CODIGO) and 'd.trabajos_orden' in CODIGO)
+def mapa(nombre):
+    """{clave: texto} del objeto `var <nombre> = {...};` del código (sin comentarios)."""
+    i = CODIGO.index('var ' + nombre + ' = {')
+    trozo = CODIGO[i:CODIGO.index('};', i)]
+    return dict(re.findall(r"(?:\b|')([a-z0-9_]+)'?:\s*'((?:[^'\\]|\\.)*)'", trozo))
+mira('cada trabajo del catálogo de Reservas (agente_forma.json) tiene su nombre en NOMBRE', set(FORMA['trabajos']) <= set(mapa('NOMBRE')))
+mira('un trabajo sin nombre se enseña tal cual (sin T(), que lo daría por frase sin traducir)', "NOMBRE[t] ? T(NOMBRE[t]) : String(t)" in CODIGO)
+mira('trabajos_orden vacío lo dice', "T('Este ERP aún no tiene trabajos del AaaS para su tipo de negocio.')" in CODIGO)
+
+# -- (3c) ventana de configuración (14-oct): claves LEÍDAS del contrato, no copiadas a mano
+EST = FORMA['lecturas']['agente_panel_estado']['devuelve']
+NO_PINTA = {'nivel_max', 'cupo_dia'}   # la ventana no las enseña (decisión de la pantalla: el cupo y el techo de nivel son de la base)
+sin_leer = sorted(k for k in EST if k not in NO_PINTA and not re.search(r'\bd\.' + k + r'\b', CODIGO))
+mira('la ventana lee cada clave de agente_panel_estado del contrato' + (' (no lee: ' + ', '.join(sin_leer) + ')' if sin_leer else ''), not sin_leer)
+ACC = FORMA['lecturas']['agente_notas_datos']['devuelve']['acciones']
+claves_acc = set(re.findall(r'[\[{,]\s*([a-z_]+):', ACC))
+mira('cada clave de una acción del contrato se lee (%s)' % ', '.join(sorted(k for k in claves_acc if not re.search(r'\.' + k + r'\b', CODIGO))),
+     all(re.search(r'\.' + k + r'\b', CODIGO) for k in claves_acc))
+def opciones(campo, texto):
+    m = re.search(campo + r": ('[a-z_]+'(?: \| '[a-z_]+')*)", texto)
+    return set(re.findall(r"'([a-z_]+)'", m.group(1))) if m else set()
+mira('cada estado de acción del contrato tiene su rótulo (ACC_ESTADO)', opciones('estado', ACC) == set(mapa('ACC_ESTADO')) and opciones('estado', ACC))
+mira('cada motivo de aviso_reserva del contrato tiene su frase (ACC_AVISO)', opciones(r'datos: \{reserva: uuid, motivo', ACC) == set(mapa('ACC_AVISO')) and mapa('ACC_AVISO'))
+mira('cada motivo de una acción decidida tiene su frase (ACC_MOTIVO)', set(re.findall(r"'([a-z]+)'", ACC.split('motivo: null |')[1].split(',')[0])) == set(mapa('ACC_MOTIVO')))
+RES = FORMA['escrituras']['agente_accion_decide']['devuelve']
+mira('cada resultado de agente_accion_decide tiene su frase (ACC_RESULTADO: estados aceptada/rechazada y motivos de anulada/caducada)',
+     set(mapa('ACC_RESULTADO')) == (opciones('estado', RES) - {'anulada'}) | set(re.findall(r"'([a-z]+)'", RES.split('motivo: null |')[1])))
+hints = set(re.findall(r"hint '([a-z_]+)'", json.dumps(FORMA['errores_con_hint'], ensure_ascii=False))) | {'ya_decidida'}
+mira('cada hint del contrato (y ya_decidida) tiene su frase en POR_HINT (' + ', '.join(sorted(hints - set(mapa('POR_HINT')))) + ')', hints <= set(mapa('POR_HINT')))
+mira('modulo_de_pago dice que lo enciende el estudio, y modulo_de_otro_tipo tiene frase propia',
+     'lo enciende el estudio' in mapa('POR_HINT').get('modulo_de_pago', '') and 'tipo de negocio' in mapa('POR_HINT').get('modulo_de_otro_tipo', ''))
+mira('cada nivel 0-3 tiene su nombre', set(mapa('NIVELES')) == {'0', '1', '2', '3'})
+mira('guardar límites manda TODAS las filas de `limites` (nunca limites_fuera) y los topes vacíos no viajan',
+     'd.limites.forEach(function (l)' in CODIGO and 'niveles[l.modulo] = n;' in CODIGO and 'if (!imp.vacio) topes[l.modulo]' in CODIGO
+     and not re.search(r'limites_fuera[^;]*(niveles|topes)\[', CODIGO))
+mira('«Cancelar la subida»: el tope GUARDADO explícito y null en trabajos y nivel; solo con subida pendiente y solo el dueño',
+     "llama('agente_ficha_ajusta', { p_tope_mensual_cent: guardado, p_trabajos: null, p_nivel_ruta: null, p_motivo: m })" in CODIGO
+     and 'var guardado = d.tope_mensual_cent;' in CODIGO and "if (d.soy_dueno && ent(d.tope_propuesto_cent)) acc.appendChild(C.boton(T('Cancelar la subida'), 'ag-cancelar-subida'));" in CODIGO)
+mira('decidir una acción: un solo envío (ocupa + la tarjeta marcada mientras va) y solo el dueño ve los botones',
+     "art.getAttribute('data-enviando') === '1'" in CODIGO and 'C.ocupa(btn)' in CODIGO and '} else if (dueno) {' in CODIGO
+     and "if (E.estado && E.estado.soy_dueno) decideAccion(" in CODIGO)
+mira('límites, contexto y ajustes: el dueño escribe; el resto los ve en solo lectura (fieldset deshabilitado)',
+     all(s in CODIGO for s in ("$a('ajustes').disabled = !d.soy_dueno;", 'form.disabled = !d.soy_dueno;')) and CODIGO.count('form.disabled = !d.soy_dueno;') == 2)
+mira('el nombre de un módulo es un dato (rótulo del registro o su id), nunca pasa por T()', 'window.AXW_MAPA_MODULOS' in CODIGO and not re.search(r'T\(nombreModulo', CODIGO))
+mira('cada bloque nuevo que no puede leer su parte lo dice en su sitio (no mirado ≠ vacío)',
+     all(s in CODIGO for s in ("msg('error-limites', T(NO_MIRADO))", "msg('error-contexto', T(NO_MIRADO))", "msg('error-acciones', T(NO_MIRADO))", "'historial-error'")))
 mira('cada clase de aviso de la forma tiene su frase (RECUENTO, MOTIVO_TARIFA o caso propio)',
      all(("'" + k + "'") in CODIGO or (k + ':') in CODIGO for t, d2 in FORMA['items_por_trabajo'].items() for k in d2 if k != '_sin_tipo')
      and all((k + ':') in CODIGO for k in FORMA['motivos_tarifa']))
@@ -185,7 +231,7 @@ def lit(s):
     return s.replace("\\'", "'")
 for mm in re.finditer(r"\bT\('((?:[^'\\]|\\.)*)'\)|\bTf\('((?:[^'\\]|\\.)*)'", CODIGO):
     textos.add(lit(mm.group(1) or mm.group(2)))
-for nombre in ('NOMBRE', 'SIN_DATOS', 'RECUENTO', 'MOTIVO_TARIFA', 'RESULTADO', 'POR_HINT'):
+for nombre in ('NOMBRE', 'SIN_DATOS', 'RECUENTO', 'MOTIVO_TARIFA', 'RESULTADO', 'POR_HINT', 'NIVELES', 'CAMPO', 'ACC_ESTADO', 'ACC_MOTIVO', 'ACC_AVISO', 'ACC_RESULTADO'):
     i = CODIGO.index('var ' + nombre + ' = {')
     trozo = CODIGO[i:CODIGO.index('};', i)]
     textos |= {lit(x) for x in re.findall(r":\s*'((?:[^'\\]|\\.)*)'", trozo)}
@@ -207,7 +253,10 @@ for nombre_d in ('EN_AG', 'ID_AG'):
     cl = re.findall(r"'((?:[^'\\]|\\.)*)'\s*:\s*'", trozo)
     rep = sorted({c for c in cl if cl.count(c) > 1})
     mira('ninguna clave repetida en %s%s' % (nombre_d, (' (' + ', '.join(rep) + ')') if rep else ''), not rep)
-sal2 = subprocess.run(['node', '-e', bloque + ';console.log(JSON.stringify([EN_AG, ID_AG]))'], capture_output=True, text=True, encoding='utf-8')
+# a fichero y no por `node -e`: los diccionarios ya no caben en una línea de órdenes de Windows (WinError 206, 32 767 caracteres)
+js_dic = os.path.join(tmp, 'd.js')
+open(js_dic, 'w', encoding='utf-8').write(bloque + ';console.log(JSON.stringify([EN_AG, ID_AG]))')
+sal2 = subprocess.run(['node', js_dic], capture_output=True, text=True, encoding='utf-8')
 den, did = json.loads(sal2.stdout)
 malos = [c for c in den if set(re.findall(r'\{[a-z]\}', c)) != set(re.findall(r'\{[a-z]\}', den[c])) or set(re.findall(r'\{[a-z]\}', c)) != set(re.findall(r'\{[a-z]\}', did.get(c, '')))]
 mira('las frases con huecos llevan los mismos huecos en EN e ID' + (' (' + '; '.join(malos[:5]) + ')' if malos else ''), not malos)
