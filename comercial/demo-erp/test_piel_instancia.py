@@ -337,7 +337,7 @@ mira('instancia() versiona el favicon justo antes de versiona()', 'favicon_versi
 mira('instancia() pinta la suite clásica tras crea-contraseña y ANTES de versionar (si no, la CDN sirve la hoja vieja)',
      cuerpo.index('crea_contrasena_pantalla(marca)') < cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('\n    versiona(DIST)'))
 mira('instancia() arregla la puerta tras la piel y antes de versionar', cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('puerta_instancia(DIST, idiomas)') < cuerpo.index('\n    versiona(DIST)'))
-mira('instancia() añade los rótulos del menú después de los idiomas', cuerpo.index('idiomas_instancia(idiomas)') < cuerpo.index('menu_i18n()'))
+mira('instancia() añade los rótulos del menú después de los idiomas', cuerpo.index('idiomas_instancia(idiomas') <cuerpo.index('menu_i18n()'))
 mira('instancia() pone los logos de la instancia, no los neutros a secas', 'logos_instancia(nombre, marca)' in cuerpo and 'logos_neutros(' not in cuerpo)
 mira('instancia() comprueba la piel antes de dar el paquete por bueno', cuerpo.index('comprueba_piel(DIST, nombre)') < cuerpo.index('comprueba_resultado(DIST)'))
 
@@ -373,6 +373,44 @@ mira('instancia() pone el sistema tras tipografias_libres y los colores a mano t
      cuerpo.index('tipografias_libres()') < cuerpo.index('sistema_instancia(nombre)') < cuerpo.index('\n    versiona(DIST)')
      and cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('piel_v4_fijos(DIST, nombre)') < cuerpo.index('\n    versiona(DIST)'))
 mira('instancia() pone la capa en el hub justo después de pegarla al guard', cuerpo.index('setup_para_guard())') < cuerpo.index('capa_modulos_hub(interruptores)') < cuerpo.index('\n    versiona(DIST)'))
+
+# 4c — el ELEGIDO (filtro, pestaña, segmento) en el acento de la piel (bbm-p40 F14, 13-oct)
+DATOS_DEF = 'var ON=cont.getAttribute("data-lw-on")||"bg-volcanic-ash text-x";var OFF=cont.getAttribute("data-lw-off")||"bg-surface-container-low text-y";'
+CHIPS_OK = {'assets/datos.js': DATOS_DEF,
+            'a/index.html': '<div data-lw-chips="tipo" data-lw-on="bg-deep-lagoon text-on-secondary" data-lw-off="bg-surface-container text-z">',
+            'b/index.html': '<div class="f" data-lw-chips="estado">'}   # sin on/off: el defecto de datos.js
+mira('elegido sin piel: nada', con_registro({}, build.seleccion_css, 'x', paquete(CHIPS_OK)) == ('pasa', ''))
+est, css = con_registro({'piel': BBM}, build.seleccion_css, 'x', paquete(CHIPS_OK))
+mira('elegido: chips por su «on» declarado y por el defecto de datos.js', est == 'pasa'
+     and 'html [data-lw-chips] button.bg-deep-lagoon' in css and 'html [data-lw-chips] button.bg-volcanic-ash' in css)
+mira('elegido: lista con nombre, sin el aria-pressed genérico (revisor: Chalk sobre claro en el asistente de reserva)', est == 'pasa'
+     and 'html [aria-pressed="true"]{' not in css and ':not(aside' not in css and all('html ' + s in css for s in build.SELECCION_SELECTORES))
+mira('elegido: la pestaña de subrayado va en raya y texto, no en bloque', est == 'pasa'
+     and re.search(r'html \.fin-tab\[aria-selected="true"\]\{color:#[0-9A-F]{6};border-bottom-color:#[0-9A-F]{6}\}', css or '')
+     and '.fin-tab' not in css.split('\n')[1].replace(':not(.fin-tab)', ''))
+mira('elegido: las tarjetas del asistente de reserva solo cambian el borde (su fondo claro y su texto se quedan)', est == 'pasa'
+     and re.search(r'html \.rp-as-moto\[aria-pressed="true"\],html \.rp-as-opcion\[aria-pressed="true"\]\{border-color:#[0-9A-F]{6}\}', css or ''))
+hexes = re.findall(r'\{background:(#[0-9A-F]{6});color:(#[0-9A-F]{6})', css or '')
+h2 = lambda x: tuple(int(x[i:i + 2], 16) for i in (1, 3, 5))
+mira('elegido: texto ≥ 4,5:1 sobre el elegido y el elegido ≥ 3:1 contra fondo y tarjetas', bool(hexes)
+     and D.contraste(h2(hexes[0][0]), h2(hexes[0][1])) >= 4.5
+     and all(D.contraste(h2(hexes[0][0]), tuple(p_bbm[t])) >= 3 for t in build.SELECCION_ALREDEDOR))
+mira('elegido con el estándar AxisWorks (bbm): Ultramarine con Chalk', BBM != 'bbm' or hexes[0] == ('#2E3BEB', '#F2F3F7'))
+mira('elegido: sin grupos de chips en el paquete: PARA', con_registro({'piel': BBM}, build.seleccion_css, 'x', paquete({'a.js': 'x'}))[0] == 'para')
+mira('elegido: un grupo sin «on» y datos.js sin defecto: PARA',
+     con_registro({'piel': BBM}, build.seleccion_css, 'x', paquete({'b/index.html': '<div data-lw-chips="e">'}))[0] == 'para')
+mira('elegido: el «on» de un grupo es el «off» de otro: PARA', con_registro({'piel': BBM}, build.seleccion_css, 'x', paquete(dict(CHIPS_OK, **{
+    'c/index.html': '<div data-lw-chips="z" data-lw-on="bg-primary text-a" data-lw-off="bg-deep-lagoon text-b">'})))[0] == 'para')
+mira('elegido: un «on» sin fondo propio: PARA', con_registro({'piel': BBM}, build.seleccion_css, 'x', paquete(dict(CHIPS_OK, **{
+    'c/index.html': '<div data-lw-chips="z" data-lw-on="text-a shadow-sm" data-lw-off="bg-surface text-b">'})))[0] == 'para')
+MARCA = ('<button class="px-4 bg-primary-container text-on-primary" data-chip-clave="todas">'
+         '<button class="px-4 bg-surface-container-low text-x" data-chip-clave="a">')
+est, css = con_registro({'piel': BBM}, build.seleccion_css, 'x', paquete(dict(CHIPS_OK, **{'c/index.html': MARCA})))
+mira('elegido: los chips de marcaChip por el fondo de su PRIMER botón', est == 'pasa' and 'html [data-chip-clave].bg-primary-container' in css)
+mira('elegido: un grupo de marcaChip con el mismo fondo en el 1.º y el 2.º: PARA', con_registro({'piel': BBM}, build.seleccion_css, 'x', paquete(dict(CHIPS_OK, **{
+    'c/index.html': MARCA.replace('bg-surface-container-low', 'bg-primary-container')})))[0] == 'para')
+mira('instancia() añade el elegido a assets/shell.css antes de versionar', 'elegido = seleccion_css(nombre, DIST)' in cuerpo
+     and cuerpo.index('elegido = seleccion_css(nombre, DIST)') < cuerpo.index('\n    versiona(DIST)'))
 
 print('%d/%d' % (casos - len(fallos), casos))
 sys.exit(1 if fallos else 0)

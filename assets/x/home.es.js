@@ -21,7 +21,8 @@ var k = h % 10;
 var dx = x - 360, dy = y - 300, d = Math.sqrt(dx * dx + dy * dy);
 var cin = (0.55 + d / 1300).toFixed(2) + 's';
 var cls = k < 3 ? 'c1' : k < 5 ? 'c2' : 'c0';
-cells.push({ x: x, y: y, cls: cls, op: Math.max(0.25, 1 - Math.abs(x - 360) / 420).toFixed(2), delay: cls === 'c0' ? cin : cin + ', -' + ((h % 700) / 100).toFixed(2) + 's' });
+/* delay = entrada de la celda; bd = destello de la ✕ encendida que llevan encima c1 y c2 (ver home.css) */
+cells.push({ x: x, y: y, cls: cls, op: Math.max(0.25, 1 - Math.abs(x - 360) / 420).toFixed(2), delay: cin, lit: cls !== 'c0', bd: '-' + ((h % 700) / 100).toFixed(2) + 's' });
 if (d > 210 && y > 30 && y < 480 && x > 20 && x < 700) spots.push([x, y]);
 }
 }

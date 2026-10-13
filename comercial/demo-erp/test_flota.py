@@ -159,14 +159,17 @@ for nombre, cod in (('la pantalla', CODIGO), ('las ayudas comunes', CODIGO_COMUN
 mira('no nombra claves de servicio', not re.search(r'service_role|sb_secret_', JS + MARCADO + COMUN_JS))
 mira('no trae un rol cableado: la pantalla no decide quien es admin (la base contesta 42501 y se dice DESPUES)',
      not re.search(r"rol\s*===|\.rol\b|es_admin|esAdmin|ficha\.|LW_ROL", CODIGO) and 'sin_permiso' in CODIGO)
-PERMITIDAS = {'producto_flota_datos', 'producto_unidades_alta_lote', 'producto_unidad_guarda', 'producto_tarifa_guarda', 'producto_tarifa_borra'}
+# + seguro y fianza del modelo en el cajón (bbm-p42, 13-oct-2026): las MISMAS del paso «Alquiler con unidades» del asistente (erp/modulos.py las declara con /flota/ de llamador)
+PERMITIDAS = {'producto_flota_datos', 'producto_unidades_alta_lote', 'producto_unidad_guarda', 'producto_tarifa_guarda', 'producto_tarifa_borra',
+              'reservas_setup_datos', 'producto_garantia_guarda', 'producto_seguro_guarda', 'producto_seguro_borra'}
+LECTURAS = {'producto_flota_datos', 'reservas_setup_datos'}
 llamadas = set(re.findall(r"\bllama\('([a-z_]+)'", CODIGO))
 literales = set(re.findall(r"(?:SB\.rpc|window\.lwDatos)\('([a-z_]+)'", CODIGO))
 nombres_envia = set(re.findall(r"\benvia\('([a-z_]+)'", CODIGO))
-mira('cada RPC lleva su nombre LITERAL (para que contrato_front.py la vea) y son exactamente las cinco del contrato (' + ', '.join(sorted(literales ^ PERMITIDAS)) + ')', literales == PERMITIDAS)
+mira('cada RPC lleva su nombre LITERAL (para que contrato_front.py la vea) y son exactamente las nueve del contrato (' + ', '.join(sorted(literales ^ PERMITIDAS)) + ')', literales == PERMITIDAS)
 mira('las RPC que llama (llama/envia) son exactamente las del contrato (' + ', '.join(sorted((llamadas | nombres_envia) ^ PERMITIDAS)) + ')', (llamadas | nombres_envia) == PERMITIDAS)
-mira('lo que lee va por lwDatos y solo producto_flota_datos; lo que escribe va por sb.rpc', set(re.findall(r"window\.lwDatos\('([a-z_]+)'", CODIGO)) == {'producto_flota_datos'}
-     and set(re.findall(r"SB\.rpc\('([a-z_]+)'", CODIGO)) == PERMITIDAS - {'producto_flota_datos'})
+mira('lo que lee va por lwDatos (producto_flota_datos y reservas_setup_datos); lo que escribe va por sb.rpc', set(re.findall(r"window\.lwDatos\('([a-z_]+)'", CODIGO)) == LECTURAS
+     and set(re.findall(r"SB\.rpc\('([a-z_]+)'", CODIGO)) == PERMITIDAS - LECTURAS)
 mira('ninguna lectura por .rpc(...).select() ni encadenada', '.select(' not in CODIGO and not re.search(r"\.rpc\([^)]*\)\s*\.", CODIGO))
 # el navegador pide, no decide: argumentos EXACTOS del contrato; ni autor, ni fechas, ni importes calculados
 mira('alta en lote manda solo producto, identificadores y motivo', "envia('producto_unidades_alta_lote', { p_producto_id: pid, p_identificadores: a.valores, p_motivo: m.v }" in CODIGO)
@@ -175,6 +178,13 @@ mira('guardar una moto manda solo id, {identificador, estado, notas}, motivo y l
 mira('guardar un tramo manda producto, dias, precio, moneda, etiqueta, motivo y la version que vio (null si es nuevo)',
      "p_producto_id: pid, p_dias: r.v.dias, p_precio: r.v.precio, p_moneda: r.v.moneda, p_etiqueta: r.v.etiqueta || null, p_motivo: m.v, p_esperado: visto ? visto.esperado : null" in CODIGO)
 mira('borrar un tramo manda id, motivo y la version que vio', "envia('producto_tarifa_borra', { p_id: tid, p_motivo: m.v, p_esperado: ctx.esperado }" in CODIGO)
+mira('seguro: un tramo manda producto, dias, precio, moneda, motivo y la version que vio (null si es nuevo); borrar, id + motivo + version',
+     "envia('producto_seguro_guarda', { p_producto_id: pid, p_dias: r.v.dias, p_precio: r.v.precio, p_moneda: r.v.moneda, p_motivo: m.v, p_esperado: visto ? visto.esperado : null }" in CODIGO
+     and "envia('producto_seguro_borra', { p_id: sid, p_motivo: m.v, p_esperado: ctx.esperado }" in CODIGO)
+mira('fianza: manda producto, {fianza, seguro_obligatorio, fianza_con_seguro} (lo que se ve), motivo y la version que vio',
+     "envia('producto_garantia_guarda', { p_producto: pid, p_datos: q, p_motivo: m.v, p_esperado: ctx.esperado }" in CODIGO
+     and "var q = { fianza: fz, seguro_obligatorio: oblEl.checked, fianza_con_seguro: conEl.value === 'si' }" in CODIGO)
+mira('«Últimos cambios»: la frase `que` de la base solo se pinta en español (fuera de él, tabla traducida, quien, cuando y motivo)', "var conQue = (window.LW_IDIOMA || 'es') === 'es'" in CODIGO)
 mira('la version (actualizado_en) viaja TAL CUAL la dio la base: nunca pasa por Date ni se reformatea (los microsegundos de timestamptz se perderian y todo guardado daria 40001)',
      'actualizado_en' in CODIGO and not re.search(r'new Date\([^)]*actualizado_en|Date\.parse|\.toISOString\(', CODIGO))
 mira('nada de autor, correo, fechas ni totales viaja a la base', not re.search(r'p_(autor|por|email|creado|actualizado|user|fecha|total)', CODIGO))
@@ -186,7 +196,7 @@ mira('el precio se parsea con la ayuda comun importe() (sin adivinar el separado
 mira('el precio se muestra de vuelta antes de confirmar (eco) con la moneda', "T('Se enviará')" in CODIGO and "'data-fl': 'eco'" in CODIGO)
 mira('la matricula se normaliza como la base (btrim + espacios internos colapsados + mayusculas) con UNA sola funcion para lote y edicion',
      ".replace(/^\\s+|\\s+$/g, '').replace(/\\s+/g, ' ').toUpperCase()" in CODIGO and CODIGO.count('normaMat(') >= 4 and ".replace(/^\\s+|\\s+$/g, '').toUpperCase()" not in CODIGO)
-mira('al cerrar una ventana solo se baja el indicador si sigue siendo la actual (ESC mientras guarda + otra ventana abierta)', 'E.dialogo = d;' in CODIGO and 'if (E.dialogo === d) E.dialogo = false' in CODIGO)
+mira('al cerrar una ventana solo se baja el indicador si sigue siendo la actual (ESC mientras guarda + otra ventana abierta)', 'E.dialogo = d;' in CODIGO and 'if (E.dialogo !== d) { d.quita(); return; }' in CODIGO)
 mira('el lote se rechaza SIN enviar con mas lineas que topes.lote.max y no se quitan repetidas a escondidas (se marcan y se bloquea)',
      'tl.max != null && L.filas.length > tl.max' in CODIGO and "'repetida'" in CODIGO and "'existe'" in CODIGO and 'if (!a.ok)' in CODIGO)
 mira('el lote dice que es todo o nada y, si falla, la base dice cual (su mensaje con textContent)', "T('No se ha añadido ninguna moto: el lote es todo o nada.')" in CODIGO and 'C.mensaje(err, false, PROPIOS)' in CODIGO)

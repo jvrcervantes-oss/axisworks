@@ -33,6 +33,8 @@ Revisión previa (24-sep, Seguridad + Legal), cada regla con su porqué:
 - Se niega a escribir fuera de su `dist/` o dentro de `proyectos/Lawang/`: un
   guard falso escrito ahí lo desplegaría el webhook de Lawang.
 """
+import base64
+import collections
 import hashlib
 import html
 import json
@@ -178,17 +180,22 @@ def rel(p):
     return '/' + os.path.relpath(p, DIST).replace(os.sep, '/')
 
 
+def se_copia(src_abs):
+    """¿Copia el build este fichero de Lawang? Extensión permitida y fuera de PROHIBIDO. Lo usan copia() y el aviso del gate de push
+    de Lawang (lawang_que_lee_el_build): una sola regla."""
+    return src_abs.lower().endswith(EXT_OK) and not PROHIBIDO.search('/' + os.path.relpath(src_abs, LAWANG).replace(os.sep, '/'))
+
+
 def copia(src_abs, dst_abs):
-    if not src_abs.lower().endswith(EXT_OK):
-        return False
-    if PROHIBIDO.search('/' + os.path.relpath(src_abs, LAWANG).replace(os.sep, '/')):
+    if not se_copia(src_abs):
         return False
     os.makedirs(os.path.dirname(dst_abs), exist_ok=True)
     shutil.copy2(src_abs, dst_abs)
     return True
 
 
-def copia_v4():
+def fuentes_v4():
+    """Los ficheros de intranet/v4 de Lawang que recorre copia_v4() (sin FUERA_V4 ni carpetas «_»). También los lee el aviso del gate."""
     base = os.path.join(LAWANG, 'intranet', 'v4')
     for raiz, dirs, fichs in os.walk(base):
         rel_raiz = os.path.relpath(raiz, base)
@@ -196,8 +203,13 @@ def copia_v4():
             dirs[:] = [d for d in dirs if d not in FUERA_V4]
         dirs[:] = [d for d in dirs if not d.startswith('_')]
         for f in fichs:
-            s = os.path.join(raiz, f)
-            copia(s, os.path.join(DIST, 'intranet', 'v4', os.path.relpath(s, base)))
+            yield os.path.join(raiz, f)
+
+
+def copia_v4():
+    base = os.path.join(LAWANG, 'intranet', 'v4')
+    for s in fuentes_v4():
+        copia(s, os.path.join(DIST, 'intranet', 'v4', os.path.relpath(s, base)))
     copia(os.path.join(LAWANG, 'favicon.png'), os.path.join(DIST, 'favicon.png'))
     # El CRM de leads (v3) está en el menú de la v4.
     for f in ('index.html', 'leads.css', 'leads.js'):
@@ -1466,6 +1478,121 @@ def menu_oscuro_css(nombre):
         MENU_LATERAL, cuerpo, MENU_LATERAL, *m['primary-container'])
 
 
+# El filtro, la pestaña o el segmento ELEGIDO (bbm-p40, F14, 13-oct; owner: azul vivo, no Night) va como la sección activa del
+# menú y la pestaña activa de nav.js: el acento con el fondo encima si ese par da 4,5:1 (en bbm, Ultramarine con Chalk); si no,
+# el botón de la piel. Antes cada pantalla lo pintaba a su manera, con tokens que en la piel de bbm son todos Night (deep-lagoon,
+# territorial-green, primary-container) o con el verde de Lawang a mano (.fin-chip). Los botones de ACCIÓN no cambian.
+# Colores explícitos y no tokens redefinidos: --v4-lagoon se resuelve en :root y no seguiría a un token cambiado en el botón.
+# Una LISTA CON NOMBRE, no «todo lo que lleve aria-pressed» (revisor, 13-oct: el genérico dejaba Chalk sobre claro, 1,01:1, en la
+# moto elegida del asistente de reserva, cuya regla de página pone fondo y no color). Cada entrada engancha por el ESTADO
+# (aria-selected / aria-pressed / la clase «active» del filtro / la clase «on» que pone el propio JS), nunca por un rótulo. El
+# `html` delante sube la especificidad en (0,0,1): gana a una regla de página de la MISMA forma (.x[aria-…]); a una más
+# específica no, y por eso Reservas va con su selector entero. Una página nueva con su propio elegido se añade aquí y se mide.
+SELECCION_SELECTORES = (
+    '.filter-btn.active',                                          # Usuarios (rol)
+    '[role="tab"][aria-selected="true"]:not(.fin-tab)',            # Reservas, Ventas, Taller, Gastos, Cuentas, Ajustes (< 1024 px)
+    # Reservas de producto (reservas_producto.html) repinta su pestaña elegida con una regla (0,4,0) en Night+Volt
+    '.rp .rp-tabs .rp-tab[aria-selected="true"]',
+    '[data-lw-vista] button.bg-deep-lagoon',                       # Facturas: «Lista / Por contrato» (datos.js le pone bg-deep-lagoon)
+    '.fin-chip[aria-pressed="true"]',                              # Finanzas y Gastos: el chip (su regla de página, verde de Lawang a mano)
+    '.rp-as-dia[data-sel="ini"]', '.rp-as-dia[data-sel="fin"]',    # asistente de reserva: día de recogida y de devolución
+)
+# Pestañas de SUBRAYADO (.fin-tab de Finanzas): el elegido es la raya y el texto en el acento, no un bloque
+SELECCION_SUBRAYADO = ('.fin-tab[aria-selected="true"]',)
+# Tarjetas elegidas que se marcan con el BORDE sobre fondo claro (asistente de reserva: la moto y la opción): solo el borde
+SELECCION_BORDE = ('.rp-as-moto[aria-pressed="true"]', '.rp-as-opcion[aria-pressed="true"]')
+# Lo que hay alrededor de un elegido: tiene que distinguirse de ello (≥ 3:1, WCAG 1.4.11); el subrayado es texto: ≥ 4,5:1
+SELECCION_ALREDEDOR = ('background', 'surface-container-lowest', 'surface-container', 'surface-container-low', 'surface-container-highest')
+# Los chips de datos.js (chipsReales) no marcan el elegido con un atributo: le ponen las clases de data-lw-on de su contenedor o,
+# si no lo declara (Contratos), las de su defecto en datos.js. El selector de cada grupo sale de ahí, leído del paquete.
+CHIPS_DEFECTO = re.compile(r"""getAttribute\(["']data-lw-(on|off)["']\)\s*\|\|\s*["']([^"']+)["']""")
+
+
+def _chips_del_paquete(dist):
+    """[(on, off)] de cada contenedor data-lw-chips de las páginas del paquete, con el defecto de datos.js si no los declara."""
+    defecto = {}
+    ruta = os.path.join(dist, 'assets', 'datos.js')
+    if os.path.isfile(ruta):
+        defecto = dict(CHIPS_DEFECTO.findall(open(ruta, encoding='utf-8', errors='replace').read()))
+    grupos = []
+    for raiz_, _d, fs in os.walk(dist):
+        for f in fs:
+            if f.endswith('.html'):
+                for tag in re.findall(r'<[^>]*\bdata-lw-chips="[^"]*"[^>]*>', open(os.path.join(raiz_, f), encoding='utf-8', errors='replace').read()):
+                    attr = lambda k: (re.search(r'\bdata-lw-%s="([^"]*)"' % k, tag) or [None, None])[1]
+                    on, off = attr('on') or defecto.get('on'), attr('off') or defecto.get('off')
+                    if not on or not off:
+                        aborta('elegido: un grupo de chips de %s no declara su «on»/«off» y datos.js ya no trae el defecto (mirar CHIPS_DEFECTO)'
+                               % os.path.relpath(os.path.join(raiz_, f), dist))
+                    grupos.append((on, off))
+    return grupos
+
+
+def _chips_marcados(dist):
+    """{atributo: (fondo «on», fondo «off»)} de los grupos data-chip-* de las páginas: marcaChip() de datos.js le pone al elegido
+    la clase del PRIMER botón del grupo y al resto la del segundo (chipClases), así que el «on» es el fondo del primero."""
+    grupos = {}
+    for raiz_, _d, fs in os.walk(dist):
+        for f in fs:
+            if f.endswith('.html'):
+                por = {}
+                for tag in re.findall(r'<button[^>]*\bdata-chip-[a-z]+="[^"]*"[^>]*>', open(os.path.join(raiz_, f), encoding='utf-8', errors='replace').read()):
+                    attr = re.search(r'\b(data-chip-[a-z]+)=', tag).group(1)
+                    clase = (re.search(r'\bclass="([^"]*)"', tag) or [None, ''])[1]
+                    por.setdefault(attr, []).append([c for c in clase.split() if re.fullmatch(r'bg-[a-z-]+', c)])
+                for attr, fondos in por.items():
+                    if len(fondos) < 2 or len(fondos[0]) != 1 or fondos[0] == fondos[1][:1]:
+                        aborta('elegido: el grupo %s de %s no tiene un primer botón con fondo propio (marcaChip copia su clase)'
+                               % (attr, os.path.relpath(os.path.join(raiz_, f), dist)))
+                    grupos.setdefault(attr, set()).add((fondos[0][0], fondos[1][0] if fondos[1] else ''))
+    # el chip de empresa (data-chip-e) lo crea datos.js con las clases del grupo de proyectos (clasesP): mismo «on»
+    if 'data-chip-p' in grupos:
+        grupos['data-chip-e'] = set(grupos['data-chip-p'])
+    return grupos
+
+
+def seleccion_css(nombre, dist):
+    """La regla CSS del elegido en el color de la piel (ver SELECCION_SELECTORES), o '' sin piel (Lawang, demo). PARA si el
+    texto baja de 4,5:1, si el elegido no se distingue de lo que lo rodea (3:1), si no hay grupos de chips, si un grupo no tiene
+    un fondo «on» propio, o si el fondo «on» de un grupo es el «off» de otro (pintaría de elegido a todos los de ese)."""
+    p = _piel_preset(nombre)
+    if p is None:
+        return ''
+    D = _deriva()
+    fondo, acento = tuple(p['background']), tuple(p['accent-gold'])
+    bg, fg = (acento, fondo) if D.contraste(fondo, acento) >= 4.5 else (tuple(p['primary-container']), tuple(p['on-primary']))
+    if D.contraste(bg, fg) < 4.5:
+        aborta('elegido de %s: texto por debajo de 4,5:1 (%.2f)' % (nombre, D.contraste(bg, fg)))
+    bajas = ['%s %.2f' % (t, D.contraste(bg, tuple(p[t]))) for t in SELECCION_ALREDEDOR if D.contraste(bg, tuple(p[t])) < 3]
+    bajas += ['subrayado/%s %.2f' % (t, D.contraste(bg, tuple(p[t]))) for t in SELECCION_ALREDEDOR if D.contraste(bg, tuple(p[t])) < 4.5]
+    if bajas:
+        aborta('elegido de %s: no se distingue de lo que lo rodea: %s' % (nombre, ', '.join(bajas)))
+    grupos = _chips_del_paquete(dist)
+    if not grupos:
+        aborta('elegido de %s: ningún grupo de chips (data-lw-chips) en el paquete' % nombre)
+    ons, offs = set(), set()
+    for on, off in grupos:
+        fondo_on = [c for c in on.split() if re.fullmatch(r'bg-[a-z-]+', c)]
+        if len(fondo_on) != 1:
+            aborta('elegido de %s: el «on» de un grupo de chips no tiene un fondo propio (on=%r)' % (nombre, on))
+        ons.add(fondo_on[0])
+        offs |= set(off.split())
+    if ons & offs:
+        aborta('elegido de %s: el fondo «on» de un grupo de chips es el «off» de otro: %s' % (nombre, ', '.join(sorted(ons & offs))))
+    marcados = []
+    for attr, pares in sorted(_chips_marcados(dist).items()):
+        on_a, off_a = {o for o, _f in pares}, {f for _o, f in pares}
+        if on_a & off_a:   # el mismo atributo en dos páginas, con el «on» de una como «off» de la otra
+            aborta('elegido de %s: en %s el fondo «on» de un grupo es el «off» de otro: %s' % (nombre, attr, ', '.join(sorted(on_a & off_a))))
+        marcados += ['[%s].%s' % (attr, o) for o in sorted(on_a)]
+    h = lambda c: '#%02X%02X%02X' % tuple(c)
+    sel = ','.join('html ' + s for s in ['[data-lw-chips] button.' + o for o in sorted(ons)] + marcados + list(SELECCION_SELECTORES))
+    sub = ','.join('html ' + s for s in SELECCION_SUBRAYADO)
+    borde = ','.join('html ' + s for s in SELECCION_BORDE)
+    return ('\n%s{background:%s;color:%s;border-color:%s}\n%s{color:%s;border-bottom-color:%s}\n%s{border-color:%s}\n'
+            % (sel, h(bg), h(fg), h(bg), sub, h(bg), h(bg), borde, h(bg)))
+
+
 # La suite clásica (la puerta /, /crea-contrasena/) no pinta con los tokens --tema-: cada página declara su paleta de Lawang en
 # un `:root{--dl:#104C4F…}` de su propio <style>, que va DESPUÉS de las hojas y por eso ganaba a cualquier `:root` añadido a
 # axw.css (Calidad, 12-oct: la puerta de bbm salía con el botón y el título verdes; el primer intento, que añadía `:root` a la
@@ -1552,6 +1679,407 @@ def piel_v4_fijos(dist, nombre):
     for rel_f, t in textos.items():
         open(os.path.join(dist, rel_f), 'w', encoding='utf-8', newline='').write(t)
     return n
+
+
+# ── Colores de Lawang escritos a fuego en TODO lo que publica una instancia con piel (bbm-p42b, 13-oct-2026; hallazgo de p40,
+# orquestador agencia-81). Los editores y cajones (Facturas › «Dokumen baru», Gastos › «New supplier»…) y el PAPEL seguían con el
+# crema, el verde azulado y el verde oliva de Lawang: 878 literales en 53 ficheros que V4_FIJOS/CLASICA_FIJOS no alcanzan. El papel
+# (cabecera de la tabla #485B37 en la factura que recibe el cliente) lo pone contracts/assets/brand.css (`--brand-primary:var(--tg)`,
+# `--tg:#485B37`), que el editor carga en v4 y al que no llega el `html:root` de la piel (medido en bbm real: tinta de la sociedad NULL).
+# Regla: cada color de Lawang va al MISMO token en la piel de la instancia (los tokens de Lawang son su propia piel: tw.css de Lawang);
+# los escritos a mano que no son token, por la tabla LAWANG_SUELTOS. Se reemplaza en la copia de DIST, nunca en el repo de Lawang: sin
+# piel (Lawang, demo sin piel) no se toca nada. Un color con DOS significados (el verde de Lawang es marca y es «disponible/hecho/en
+# vivo») no cabe en una tabla color→token: va por CONTEXTO (LAWANG_POR_CONTEXTO: fichero + texto de alrededor + cuántas veces) y el
+# build PARA si encuentra una aparición sin clasificar o si cambia el recuento. Al final, barrido: PARA si queda un color de Lawang en
+# cualquier forma (#rgb, #rrggbb, #rrggbbaa, %23 de un SVG en URL, rgb()/rgba() con comas o espacios). Y PARA si el pase cambia algo
+# que no sea un color (ni un texto, ni un importe, ni un data-*).
+LAWANG_TW = os.path.join('intranet', 'v4', 'assets', 'tw.css')   # la piel de Lawang: sus --tema-* por defecto
+# Colores de Lawang escritos a mano que NO son token de su tw.css → token de la piel. Cremas y grises cálidos de su suite (axw.css,
+# brand.css, documento.css, suite-v3.css…), medidos en el paquete de bbm el 13-oct. Lo que no está aquí ni en tw.css no se considera
+# «de Lawang» (los tonos de estado propios y la cola larga de grises van en una segunda pasada: ver la fila del estudio en pendientes).
+LAWANG_SUELTOS = {'0D5B5F': 'primary-container',        # hover del botón primario (como CLASICA_FIJOS)
+                  '0C3C3E': 'on-background',            # hover del botón de la mascota
+                  '6B7072': 'on-surface-variant',       # texto del pie del panel clásico
+                  'FFFDF8': 'surface-container-lowest',  # --paper de la suite clásica
+                  'FDFCF9': 'surface-container-lowest',
+                  'F7F3E9': 'surface-container-low',
+                  'EDE7D9': 'surface-container',
+                  'F7EEDC': 'surface-container-low',
+                  'EFEADE': 'surface-container',        # --sup-hover
+                  'E8E2D5': 'filete', 'F0EBE0': 'filete',  # filetes del papel (documento.css)
+                  '6B6C66': 'on-surface-variant', '676B63': 'on-surface-variant'}   # --muted
+# La COLA (bbm-p42c, 13-oct; orquestador: «un documento que recibe el cliente no puede llevar tonos de otra marca»): los colores escritos a
+# mano en el código de LAWANG (están en su repo) que no son token ni suelto: sus tonos de estado propios y la cola larga de grises y cremas
+# cálidos, por FAMILIAS. Clasificados por tono y luz (scratchpad familias.py del 13-oct) y revisados a mano: un crema claro es superficie,
+# no aviso; los degradados oscuros de las tarjetas de proyecto (tw-movil-pc) van a la tinta. Los destinos que no son token de la piel se
+# derivan de su token de estado (FAMILIAS_DERIVADAS). El CRM clásico de leads (su verde bosque y su ocre) entra entero por aquí: a
+# medias quedaba con la acción principal en verde Tailwind y sus fondos en la piel (revisor de p42c). FUERA, a propósito y con nombre (orquestador, 13-oct): ver COLORES_AJENOS.
+LAWANG_FAMILIAS = {
+    'accent-gold': ('2F5D9E', '3E6E8E', '5B4B8A', '6B4E9B', '9DB6CF'),
+    'aviso': ('5C4210', '634A00', '662906', '6A4A14', '6A5A3C', '6B5420', '6B5A3A', '78350F', '7A4B14', '7A5200', '8A3B1C', '8A4B00', '8A5A00', '8A6A34', '8C5E10', '92400E', 'B06A3B', 'B45309', 'B8550A', 'C06C47', 'C8791F', 'C9892B', 'CF6312', 'D97706', 'E8741C', 'F59E0B'),
+    'aviso-borde': ('C5A880', 'D8A984', 'E6D7B4', 'E8C27A', 'EBDCB4', 'FDE68A'),
+    'aviso-fondo': ('FBEEE7', 'FBEFBE', 'FBF3E4', 'FDF6F2', 'FEF3C7', 'FFF1D6', 'FFF4E0', 'FFFAF0', 'FFFBEB'),
+    'deep-lagoon': ('0B3638', '0C3A3C', '0E6B70', '0F2E30', '1F4E4A', '4E8386', '7FB3B5', '9AC0C2', 'A9CDCE'),
+    'filete': ('D6CFC2', 'D6D2C8', 'D6D3D1', 'E2DACA', 'E4E0D6', 'E6E1D6', 'E7DDCD', 'E7E1D2', 'E7E3D2', 'E7E4DC', 'EAE4D3', 'EAE5D8', 'ECE4D6'),
+    'inverse-primary': ('CBD6B6',),
+    'ok': ('043C2E', '064E3B', '065F46', '10B981', '1B4332', '1F5130', '2C4A2C', '2E5B3E', '2F5D3A', '354F2C', '3A5231', '3C4D2D', '98BF98'),
+    'ok-fondo': ('A7F3D0', 'DCEBDC', 'E4F0DA', 'E6EFE9', 'E7EFE3', 'ECF6EF', 'ECFDF5', 'EEF3E6', 'EEF3EA', 'EEF3F0', 'F1F7F5', 'FBFDFC'),
+    'on-background': ('0C0A09', '103436', '123E40', '143236', '1A1E20', '1A494D', '1B2B1A', '1C1917', '1C1B17', '1C1C1C', '1E2522', '204944', '21272A', '22282A', '25423F', '273822', '292524', '2C281E', '2D3F27', '344B2A', '3B2B1E', '483A25', '523D2B'),
+    'on-surface-variant': ('3A3A3A', '44403C', '4A4F4A', '4A5052', '57534E', '5A6062', '5C5A52', '5E625A'),
+    'outline': ('6B6B6B', '6E7B5A', '736B5E', '73777F', '78716C', '78786E', '7B7C74', '7C8B7A', '8A9182'),
+    'outline-variant': ('A8A29E', 'B9B2A4', 'B9B5A8', 'BDBDB5', 'C9BCA4', 'C9C3B4', 'D3C8B2'),
+    'peligro': ('842620', '8A2E22', '9E2F26', 'B5462F', 'BE123C', 'C46A62', 'E11D48', 'F43F5E'),
+    'peligro-fondo': ('E0C6C2', 'E9C9C5', 'F5B8B2', 'F6E1DE', 'F8E3E0', 'FBF3F1', 'FDECEA', 'FFF1EF', 'FFF4F2'),
+    'surface-container': ('EAE8E2', 'EDE8DE', 'EFE7D9', 'EFE8DA', 'EFEAE0', 'EFECE4', 'F0EEE9', 'F1EFE9', 'F2EEE3', 'F3F0E8', 'F3F1EA', 'F4ECD8', 'F4EFE3', 'F4F2EC', 'F5EFE6', 'F5F1E8', 'F6F2E7'),
+    'surface-container-low': ('CFE2E2', 'CFE3E3', 'D9ECEC', 'DCEAE7', 'E3ECF5', 'F2F8F8', 'F3F6EE', 'F5F5F4', 'F6FAF2', 'F7F4EA', 'F7F4EC', 'F7F5EF', 'FAF7F0', 'FAF8F3', 'FAFAF9', 'FBF8F2', 'FBF9F3', 'FBFDF7', 'FDFCF8'),
+}
+# Colores que NO son de otra marca y por eso no entran (ni se cambian ni los cuenta el barrido): la ✕ de AxisWorks (la marca del fabricante,
+# en el icono de las herramientas) y los grises y azules por defecto de Tailwind (preflight y forms; el slate del CRM clásico de leads no está
+# en ninguna lista y por eso tampoco se toca). Los TONOS DE ESTADO de Tailwind que Lawang usa (ámbar, esmeralda, rosa, stone; también los
+# chips del CRM) sí entran por su familia: un «aprobado» lleva el verde de estado de la piel, sea de Tailwind o no. Del MAESTRO se quedan
+# solo los dos que ya son del lenguaje de la casa (el tinte azul del chip «confirmada» y el velo del cajón de flota); el resto va por
+# COLORES_MAESTRO, abajo.
+COLORES_AJENOS = {'15181C': 'la ✕ de AxisWorks', 'E2581C': 'la ✕ de AxisWorks', '6B7280': 'Tailwind', '2563EB': 'Tailwind', '3B82F6': 'Tailwind',
+                  '9CA3AF': 'Tailwind', 'E5E7EB': 'Tailwind', 'D1D5DB': 'Tailwind',
+                  'E3E6FD': 'el tinte azul del maestro (chip «confirmada» de la portada y de reservas)',
+                  '0F111E': 'el velo del cajón de flota (tinta azul del maestro, rgba)'}
+# Colores que el MAESTRO escribe a mano en sus propias pantallas (no están en el repo de Lawang) y que hablan el idioma de Lawang —las cajas
+# de aviso de pantalla_comun (oliva, crema, rojo teja), sus rayas y tintas cálidas— o son un fondo de estado: también a la piel, cada uno con
+# su porqué (revisión del 13-oct: un hueco sin nombre no es una exclusión; el barrido los conoce como cualquier color de la cola).
+COLORES_MAESTRO = {
+    '7A1A14': ('peligro', 'texto de la caja de error (pantalla_comun)'),
+    'FDE2E0': ('peligro-fondo', 'fondo de la caja de error (pantalla_comun)'),
+    'FDE4E1': ('peligro-fondo', 'fondo de error (flota, portada de reservas)'),
+    'F3C5BE': ('peligro-fondo', 'borde de la caja de error de flota'),
+    'FFF3E0': ('aviso-fondo', 'fondo de la caja de aviso (pantalla_comun)'),
+    'FFE9D2': ('aviso-fondo', 'chip «en espera» (portada de reservas)'),
+    'E6EFDD': ('ok-fondo', 'fondo oliva de la caja de éxito (pantalla_comun)'),
+    'DCF2E3': ('ok-fondo', 'chip «ok» (portada de reservas)'),
+    '2C3D1F': ('ok', 'texto oliva de la caja de éxito (pantalla_comun)'),
+    'F0EEE8': ('filete', 'raya cálida de las tablas (pantalla_comun)'),
+    'FAF9F5': ('surface-container-low', 'fila al pasar el ratón (ventas, alta del bot)'),
+    '4A4C45': ('on-surface-variant', 'texto secundario cálido (flota, entrega)'),
+    '2B2B25': ('on-background', 'tinta cálida de la página de rescate (contratos, obra)'),
+}
+# destino derivado → (token de la piel, mezcla con el blanco de la hoja). El texto de estado sobre su fondo, ≥ 4,5:1 o PARA.
+FAMILIAS_DERIVADAS = {'aviso-fondo': ('aviso', 0.88), 'aviso-borde': ('aviso', 0.62), 'ok-fondo': ('ok', 0.86), 'peligro-fondo': ('peligro', 0.88)}
+NEUTROS = {(255, 255, 255), (0, 0, 0)}
+# Apariciones de un color de Lawang con más de un significado: (fichero de DIST, texto que tiene que aparecer junto al color —regex sobre
+# 80 caracteres antes y 40 después—, destino, cuántas). Destino None = el token del color (marca); 'ok' = el verde de estado de la piel
+# ('ok' o, si no lo trae, 'fiduciary-green'); 'ok-fondo'/'ok-tinta' = la pareja fondo/texto de una etiqueta «aprobada». Decisión por
+# defecto del orquestador (13-oct): los colores de ESTADO van a los de estado de la piel, nunca al acento de la marca.
+LAWANG_POR_CONTEXTO = {
+    '485B37': (('assets/datos.js', r'(?i)background:#485b37;color:#fff', None, 2),                 # botón
+               ('assets/datos.js', r'DATOS EN VIVO|disponible:|en_venta:|llega\?', 'ok', 4),        # estados
+               ('assets/editores.js', r'focus-visible', None, 1),
+               ('assets/ficha_modelo.js', r'verde:', 'ok', 1),
+               ('whatsapp-bot-alta/index.html', r'data-listo="1"|data-hecho="1"', 'ok', 2),       # pasos hechos
+               ('contracts/index.html', r'', None, 2), ('clasico/obra/index.html', r'', None, 2),  # «Herramienta no incluida»
+               ('index.html', r'', None, 1), ('crea-contrasena/index.html', r'', None, 1),        # --tg de la puerta
+               ('contracts/assets/autoria.js', r'', None, 2), ('contracts/assets/axw.css', r'', None, 20),
+               ('contracts/assets/suite-v3.css', r'', None, 5), ('contracts/assets/brand.css', r'', None, 1)),
+    'D3EABB': (('assets/comisiones-equipo.js', r'aprobada:', 'ok-fondo', 1),),
+    '0F2003': (('assets/comisiones-equipo.js', r'aprobada:', 'ok-tinta', 1),),
+}
+# El PAPEL (decisión por defecto del orquestador, 13-oct): el de una instancia nunca lleva los colores de otro cliente; va en sobrio, el
+# texto en la tinta y el acento de la marca solo donde hoy va el verde (cabecera de la tabla, filetes de total). Se revierte en una línea.
+PAPEL_FIJOS = (('contracts/assets/brand.css', '--brand-primary: var(--tg);', '--brand-primary: %s;', 'accent-gold'),
+               ('contracts/assets/brand.css', '--brand-deep:    var(--dl);', '--brand-deep:    %s;', 'on-background'))
+COLOR_RE = re.compile(r'(#|%23)([0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-zA-Z_])'
+                      r'|(rgba?\(\s*)(\d{1,3})(\s*[, ]\s*)(\d{1,3})(\s*[, ]\s*)(\d{1,3})')
+PIEL_EXT = ('.js', '.css', '.html', '.php', '.svg')   # nada binario ni de datos (.json fuera)
+# Un hex que es TEXTO que lee la persona, no pintura: el ejemplo de un campo de color (Ajustes › sociedad: `ayuda:"#42210B"` bajo «Tinta
+# oscura»). Ni se cambia ni lo cuenta el barrido (revisión de e6d96ed: el pase lo cambiaba y la comprobación de «solo colores» no lo ve,
+# porque el texto también es un hex).
+TEXTO_ANTES_RE = re.compile(r'(?:ayuda:"|placeholder=["\']|placeholder:\s*["\'])$')
+
+
+def _es_texto(m):
+    return bool(TEXTO_ANTES_RE.search(m.string[max(0, m.start() - 20):m.start()]))
+
+
+def _rgb_hex(h):
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def lawang_paleta():
+    """{(r,g,b): [tokens de Lawang]} con los --tema-* por defecto de la tw.css de Lawang + LAWANG_SUELTOS (sin blanco ni negro)."""
+    ruta = os.path.join(LAWANG, LAWANG_TW)
+    if not os.path.isfile(ruta):
+        aborta('colores de Lawang: falta %s (la piel de Lawang)' % ruta)
+    pal = {}
+    for k, r, g, b in re.findall(r'--tema-([a-z0-9-]+):\s*(\d+) (\d+) (\d+)', open(ruta, encoding='utf-8').read()):
+        c = (int(r), int(g), int(b))
+        if c not in NEUTROS and k not in pal.get(c, []):
+            pal.setdefault(c, []).append(k)
+    if len(pal) < 20:
+        aborta('colores de Lawang: %s trae solo %d colores (¿cambió su forma?)' % (LAWANG_TW, len(pal)))
+    for hx, tok in LAWANG_SUELTOS.items():
+        pal.setdefault(_rgb_hex(hx), []).append(tok)
+    for dst, hxs in LAWANG_FAMILIAS.items():
+        for hx in hxs:
+            if hx in COLORES_AJENOS or _rgb_hex(hx) in pal:
+                aborta('colores de Lawang: %s está en LAWANG_FAMILIAS y además es %s' % (hx, COLORES_AJENOS.get(hx) or 'token o suelto de Lawang'))
+            pal[_rgb_hex(hx)] = [dst]
+    for hx, (dst, _porque) in COLORES_MAESTRO.items():
+        if hx in COLORES_AJENOS or _rgb_hex(hx) in pal:
+            aborta('colores de Lawang: %s está en COLORES_MAESTRO y además es %s' % (hx, COLORES_AJENOS.get(hx) or 'de Lawang'))
+        pal[_rgb_hex(hx)] = [dst]
+    return pal
+
+
+def _color_de(m):
+    if m.group(2):
+        h = m.group(2)
+        return _rgb_hex(''.join(c * 2 for c in h[:3]) if len(h) in (3, 4) else h[:6])
+    return tuple(int(m.group(i)) for i in (4, 6, 8))
+
+
+def _pon_color(m, c):
+    """La misma forma con otro color: el prefijo (# o %23), el alfa y los separadores se quedan como estaban."""
+    if m.group(2):
+        h = m.group(2)
+        alfa = h[3] * 2 if len(h) == 4 else (h[6:] if len(h) == 8 else '')
+        return m.group(1) + '%02X%02X%02X' % c + alfa
+    return m.group(3) + str(c[0]) + m.group(5) + str(c[1]) + m.group(7) + str(c[2])
+
+
+def _ajusta_luz(D, tono, origen):
+    """El color con el tono de `tono` y la luminancia de `origen`: mezcla con blanco (para aclarar) o con negro (para oscurecer)."""
+    objetivo = D.lum(origen)
+    hacia = (255, 255, 255) if D.lum(tono) < objetivo else (0, 0, 0)
+    lo, hi = 0.0, 1.0
+    for _ in range(24):
+        medio = (lo + hi) / 2
+        if (D.lum(D.mix(tono, hacia, medio)) < objetivo) == (hacia == (255, 255, 255)):
+            lo = medio
+        else:
+            hi = medio
+    return min((D.mix(tono, hacia, x) for x in (lo, hi)), key=lambda c: abs(D.lum(c) - objetivo))
+
+
+def piel_colores_lawang(dist, nombre):
+    """Pasa a la piel de la instancia todo color de Lawang que quede en lo publicado (.js/.css/.html/.php/.svg). Sin piel no toca
+    nada. PARA si: un color ambiguo aparece sin clasificar o con otro recuento, el token no existe en la piel, el pase cambia algo que no
+    es un color, o al final queda un color de Lawang. Devuelve cuántos colores cambió."""
+    p = _piel_preset(nombre)
+    if p is None:
+        return 0
+    D = _deriva()
+    pal = lawang_paleta()
+    p = dict(p)
+    if 'ok' not in p:
+        p['ok'] = p['fiduciary-green']
+    blanco = tuple(p['surface-container-lowest'])
+    faltan = sorted({t for toks in pal.values() for t in toks} - set(p) - set(FAMILIAS_DERIVADAS)
+                    | {b for b, _m in FAMILIAS_DERIVADAS.values()} - set(p))
+    if faltan:
+        aborta('colores de Lawang: la piel de %s no trae los tokens %s' % (nombre, ', '.join(faltan)))
+    for dst, (base, mezcla) in FAMILIAS_DERIVADAS.items():
+        p[dst] = D.mix(tuple(p[base]), blanco, mezcla)
+    ok = tuple(p['ok'])
+    destino = {'ok': ok, 'ok-fondo': tuple(p['ok-fondo']), 'ok-tinta': ok}
+    bajas = ['%s sobre %s %.2f' % (a, b, D.contraste(tuple(p[a]), tuple(p[b]))) for a, b in
+             (('ok', 'surface-container-lowest'), ('ok', 'ok-fondo'), ('aviso', 'surface-container-lowest'), ('aviso', 'aviso-fondo'),
+              ('peligro', 'surface-container-lowest'), ('peligro', 'peligro-fondo')) if D.contraste(tuple(p[a]), tuple(p[b])) < 4.5]
+    if bajas:
+        aborta('colores de estado de %s por debajo de 4,5:1: %s' % (nombre, ', '.join(bajas)))
+    # un color de Lawang compartido por varios tokens que en la piel valen distinto es ambiguo: sin reglas de contexto, PARA
+    simple, ambiguos = {}, set()
+    for c, toks in pal.items():
+        vals = {tuple(p[t]) for t in toks}
+        if len(vals) == 1:
+            simple[c] = vals.pop()
+        else:
+            ambiguos.add(c)
+    # La COLA (familias y maestro) toma el TONO de su token pero conserva la LUZ que tenía (revisor de p42c, 13-oct: por tono a secas un
+    # tinte claro caía en el token oscuro; en el saldo del contrato «Este documento» se leía como «Cobrado» y los cuatro tramos del panel
+    # de finanzas salían de un color). Misma luminancia = mismo contraste con lo que tenga alrededor, y lo distinto sigue distinto.
+    cola = {_rgb_hex(hx): dst for dst, hxs in LAWANG_FAMILIAS.items() for hx in hxs}
+    cola.update({_rgb_hex(hx): dst for hx, (dst, _porque) in COLORES_MAESTRO.items()})
+    for c, dst in cola.items():
+        simple[c] = _ajusta_luz(D, tuple(p[FAMILIAS_DERIVADAS[dst][0] if dst in FAMILIAS_DERIVADAS else dst]), c)
+        if not 0.93 <= (D.lum(simple[c]) + .05) / (D.lum(c) + .05) <= 1.07:
+            aborta('colores de Lawang: #%02X%02X%02X no se puede llevar al tono de %s con su misma luz' % (c + (dst,)))
+    reglas = {_rgb_hex(hx): r for hx, r in LAWANG_POR_CONTEXTO.items()}
+    sin_regla = sorted('#%02X%02X%02X (%s)' % (c + ('/'.join(pal[c]),)) for c in ambiguos - set(reglas))
+    if sin_regla:
+        aborta('colores de Lawang con dos tokens que en la piel de %s valen distinto, sin reglas en LAWANG_POR_CONTEXTO: %s'
+               % (nombre, ', '.join(sin_regla)))
+    # el papel: el acento sobre la hoja y blanco sobre el acento, ≥ 4,5:1
+    acento, tinta = tuple(p['accent-gold']), tuple(p['on-background'])
+    for a, b, que in ((acento, blanco, 'acento sobre el papel'), ((255, 255, 255), acento, 'blanco sobre la cabecera'), (tinta, blanco, 'tinta sobre el papel')):
+        if D.contraste(a, b) < 4.5:
+            aborta('papel de %s: %s por debajo de 4,5:1 (%.2f)' % (nombre, que, D.contraste(a, b)))
+    h = lambda c: '#%02X%02X%02X' % tuple(c)
+    # Un color que YA es de la piel no se toca, como no lo cuenta el barrido (revisor del merge de p42c, 13-oct): seleccion_css() escribe
+    # los colores de la piel antes de este pase, y una piel con un valor igual a uno de Lawang (un crema de LAWANG_FAMILIAS) vería su
+    # elegido retocado. Los de varios significados (reglas) siguen pasando por su regla: si no, su recuento no cuadraría.
+    de_la_piel = {tuple(v) for v in p.values() if isinstance(v, (list, tuple)) and len(v) == 3}
+    vistos = collections.Counter()
+    n = 0
+    for raiz, _dirs, fs in os.walk(dist):
+        for f in fs:
+            if not f.endswith(PIEL_EXT):
+                continue
+            ruta = os.path.join(raiz, f)
+            rel = os.path.relpath(ruta, dist).replace(os.sep, '/')
+            t = open(ruta, encoding='utf-8', newline='').read()   # newline='': un CRLF se queda CRLF (ni un byte que no sea color)
+            nuevo = t
+            for viejo, plantilla, tok in (x[1:] for x in PAPEL_FIJOS if x[0] == rel):
+                if nuevo.count(viejo) != 1:
+                    aborta('papel: %s ya no lleva UNA vez %r (¿cambió Lawang? mirar PAPEL_FIJOS)' % (rel, viejo))
+                nuevo = nuevo.replace(viejo, plantilla % h(p[tok]))
+            cambios = [0]
+
+            def cambia(m):
+                if _es_texto(m):
+                    return m.group(0)
+                c = _color_de(m)
+                if c in de_la_piel and c not in reglas:
+                    return m.group(0)   # ya es un color de la instancia (p. ej. lo que escribió seleccion_css antes del pase)
+                if c in reglas:
+                    ventana = m.string[max(0, m.start() - 80):m.end() + 40]
+                    for i, (fr, ctx, dst, _n) in enumerate(reglas[c]):
+                        if fr == rel and re.search(ctx, ventana):
+                            vistos[(c, i)] += 1
+                            cambios[0] += 1
+                            return _pon_color(m, destino[dst] if dst else simple.get(c) or tuple(p[pal[c][0]]))
+                    aborta('colores de Lawang: %s lleva %s sin clasificar (ni marca ni estado): «%s» → añadir su regla en LAWANG_POR_CONTEXTO'
+                           % (rel, h(c), ventana.replace('\n', ' ')))
+                if c in simple:
+                    cambios[0] += 1
+                    return _pon_color(m, simple[c])
+                return m.group(0)
+            nuevo = COLOR_RE.sub(cambia, nuevo)
+            if nuevo != t:
+                # ni un texto, ni un importe, ni un data-*: quitando los colores, antes y después son idénticos (el papel, por su línea).
+                # OJO, lo que esta guarda NO ve: un texto con forma de color (el ejemplo «#42210B» de un campo) se quita igual en los dos
+                # lados; eso lo protege _es_texto(), que lo deja fuera del pase y del barrido.
+                antes = COLOR_RE.sub('§', t)
+                for viejo, plantilla, _tok in (x[1:] for x in PAPEL_FIJOS if x[0] == rel):
+                    antes = antes.replace(viejo, plantilla % '§')
+                if COLOR_RE.sub('§', nuevo) != antes:
+                    aborta('colores de Lawang: el pase cambió en %s algo que no es un color' % rel)
+                open(ruta, 'w', encoding='utf-8', newline='').write(nuevo)
+                n += cambios[0]
+    mal = []
+    for c, rs in reglas.items():
+        for i, (fr, ctx, dst, cuantas) in enumerate(rs):
+            # una pantalla que no sale en esta instancia (módulo apagado, poda) no cuenta; la que sale tiene que cuadrar
+            if os.path.isfile(os.path.join(dist, *fr.split('/'))) and vistos[(c, i)] != cuantas:
+                mal.append('%s en %s («%s»): %d, se esperaban %d' % (h(c), fr, ctx or 'el resto', vistos[(c, i)], cuantas))
+    if mal:
+        aborta('colores de Lawang: cambió el recuento de un color ambiguo (¿una aparición nueva de Lawang?):\n  ' + '\n  '.join(mal))
+    quedan = colores_lawang_en(dist, p, set(simple.values()) | set(destino.values()))
+    if quedan:
+        aborta('quedan colores de Lawang en el paquete de %s:\n  %s' % (nombre, '\n  '.join(quedan[:40])))
+    return n
+
+
+def colores_lawang_en(dist, p=None, escritos=()):
+    """Barrido: fichero y color de cada color de Lawang (cualquier forma) que quede en lo publicado. Los que coinciden con un valor de
+    la piel `p` o con uno que el pase acaba de ESCRIBIR (`escritos`: un verde casi blanco llevado al verde de la piel con su misma luz
+    puede salir idéntico, #FBFDFC → #FBFDFC) no cuentan: son de la instancia aunque casen con uno de Lawang."""
+    pal = lawang_paleta()
+    propios = {tuple(v) for v in (p or {}).values()} | {tuple(c) for c in escritos}
+    out = []
+    for raiz, _dirs, fs in os.walk(dist):
+        for f in fs:
+            if not f.endswith(PIEL_EXT):
+                continue
+            ruta = os.path.join(raiz, f)
+            rel = os.path.relpath(ruta, dist).replace(os.sep, '/')
+            for m in COLOR_RE.finditer(open(ruta, encoding='utf-8').read()):
+                c = _color_de(m)
+                if c in pal and c not in propios and not _es_texto(m):
+                    out.append('%s: %s (%s)' % (rel, m.group(0), '/'.join(pal[c])))
+    return out
+
+
+# La parada, ANTES y a quien la causa (orquestador, 13-oct): una sesión de Lawang que añade un color a un fichero que este build copia
+# no sabe que deja parado el siguiente build de las instancias. El gate de push de Lawang (tools/predeploy.py, capa 0) llama a
+# colores_lawang_diff() con su diff: misma tabla, mismas reglas de qué se copia, una sola fuente.
+def lawang_que_lee_el_build():
+    """Rutas de Lawang (relativas, con /) que el build de una instancia copia: la v4 (fuentes_v4(), lo que recorre copia_v4()), el CRM
+    de leads, la puerta, y lo que todo eso referencia (REF_RE, como cierra_referencias()); de todo, solo lo que deja pasar se_copia(),
+    la misma regla que copia() (revisor de p42c: sin ella, un .test.js o contracts/app.html daban un rojo falso al push de Lawang)."""
+    cola = ['intranet/leads/index.html', 'intranet/leads/leads.css', 'intranet/leads/leads.js', 'intranet/index.html']
+    cola += [os.path.relpath(s, LAWANG).replace(os.sep, '/') for s in fuentes_v4()]
+    leidos = set()
+    while cola:
+        rel = cola.pop()
+        ruta = os.path.join(LAWANG, *rel.split('/'))
+        if rel in leidos or not os.path.isfile(ruta) or not se_copia(ruta):
+            continue
+        leidos.add(rel)
+        if rel.endswith(EXT_TEXTO):
+            cola += [m.group(1).lstrip('/') for m in REF_RE.finditer(open(ruta, encoding='utf-8', errors='replace').read())]
+    return leidos
+
+
+def _es_numero_de_referencia(m):
+    """«Seguridad #163», «revisión #197»: un número corto de solo dígitos detrás de una palabra es una referencia en un comentario, no un
+    color (el repaso de 14 días de Lawang dio tres así). Solo lo usa el aviso del gate: el pase de colores solo toca colores de la paleta."""
+    return (m.group(2) or '').isdigit() and len(m.group(2)) in (3, 4) and bool(re.search(r'[^\W\d_]\s$', m.string[max(0, m.start() - 2):m.start()]))
+
+
+def colores_lawang_diff(diff):
+    """[(fichero, línea, color, para, qué hacer)] de cada color que un diff de LAWANG AÑADE en un fichero que este build copia y que el build
+    no sabría llevar a la piel: uno con varios significados (LAWANG_POR_CONTEXTO: su recuento cambia y el build PARA) o uno que no es
+    token, suelto, familia ni del maestro (se quedaría el tono de Lawang en las instancias). Cuenta NETO por fichero y color, como el
+    recuento del build: retocar una línea que ya lo llevaba no avisa; solo una aparición de más. No cuentan blanco/negro, los ajenos con
+    nombre, el texto (ayuda/placeholder) ni una línea con `predeploy-ok: <motivo>`. `para` = True si el build de las instancias PARARÍA
+    (varios significados); False si solo se colaría el tono (aviso)."""
+    lee, pal = lawang_que_lee_el_build(), lawang_paleta()
+    ajenos = {_rgb_hex(h) for h in COLORES_AJENOS}
+    mas, menos = collections.defaultdict(list), collections.Counter()
+    fich, n, viejas, nuevas = None, 0, 0, 0
+    for l in diff.split('\n'):
+        # Dentro de un bloque @@ se cuentan las líneas que le quedan: una línea AÑADIDA que empiece por «++ » no es la cabecera «+++ »
+        # de otro fichero (revisor de p42c). Fuera de un bloque, las cabeceras.
+        if viejas <= 0 and nuevas <= 0:
+            if l.startswith('+++ '):
+                fich = l[6:].strip() if l.startswith('+++ b/') else None
+            elif l.startswith('@@'):
+                m = re.match(r'@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', l)
+                if m:
+                    viejas, n, nuevas = int(m.group(1) or 1), int(m.group(2)) - 1, int(m.group(3) or 1)
+            continue
+        if l.startswith('\\'):   # «\ No newline at end of file»
+            continue
+        if l[:1] == '-':
+            viejas -= 1
+        elif l[:1] == '+':
+            nuevas -= 1
+            n += 1
+        else:
+            viejas -= 1
+            nuevas -= 1
+            n += 1
+        if l[:1] not in ('+', '-') or fich not in lee or not fich.endswith(PIEL_EXT) or 'predeploy-ok' in l:
+            continue
+        for m in COLOR_RE.finditer(l[1:]):
+            c = _color_de(m)
+            if _es_texto(m) or c in NEUTROS or c in ajenos or _es_numero_de_referencia(m):
+                continue
+            hx = '%02X%02X%02X' % c
+            if hx not in LAWANG_POR_CONTEXTO and c in pal:
+                continue
+            if l[0] == '+':
+                mas[(fich, hx)].append((n, m.group(0)))
+            else:
+                menos[(fich, hx)] += 1
+    out = []
+    for (fich, hx), apariciones in sorted(mas.items()):
+        if len(apariciones) <= menos[(fich, hx)]:
+            continue
+        que = ('tiene varios significados (marca o estado) y el build de las instancias cuenta cada aparición: usa el token '
+               '(rgb(var(--tema-…))) o añade su regla en LAWANG_POR_CONTEXTO' if hx in LAWANG_POR_CONTEXTO else
+               'no es token de la tw.css de Lawang ni está en LAWANG_FAMILIAS: en las instancias se quedaría el tono de Lawang. Usa un '
+               'token (rgb(var(--tema-…))) o clasifícalo en LAWANG_FAMILIAS')
+        out += [(fich, ln, col, hx in LAWANG_POR_CONTEXTO, que) for ln, col in apariciones[menos[(fich, hx)]:]]
+    return out
 
 
 def _profundidad_llaves(css):
@@ -1740,6 +2268,35 @@ MENU_I18N = {
     'sin referencia': {'en': 'no reference', 'id': 'tanpa referensi'},
     # corto a propósito: el de Lawang ya se cortaba en el buscador a 1440 (gate impeccable, bbm-p39)
     'Número, cliente, factura o referencia…': {'en': 'Number, client, invoice or reference…', 'id': 'Nomor, pelanggan, invoice, referensi…'},
+    # bbm-p40 (13-oct): la nota del alta de usuario sin el módulo proyectos (el inglés ya está en Lawang; esta línea no lo pisa)
+    'Se crea la cuenta y se le da acceso de inmediato.': {'en': 'The account is created and access granted immediately.', 'id': 'Akun dibuat dan aksesnya langsung diberikan.'},
+    # el formulario «Nuevo usuario» salía en indonesio con trozos en inglés y en español (medido en el paquete de bbm, 13-oct); en inglés, con la
+    # contraseña y las ayudas en español. Una clave que Lawang ya traduce al inglés conserva su inglés (menu_i18n no lo pisa).
+    'Nuevo usuario': {'en': 'New user', 'id': 'Pengguna baru'},
+    'Crear usuario': {'en': 'Create user', 'id': 'Buat pengguna'},
+    'Cerrar panel': {'en': 'Close panel', 'id': 'Tutup panel'},
+    'Datos': {'en': 'Details', 'id': 'Data'},
+    'Opciones': {'en': 'Options', 'id': 'Opsi'},
+    'Campos requeridos': {'en': 'Required fields', 'id': 'Wajib diisi'},
+    'Faltan %n de %m datos obligatorios': {'en': '%n of %m required fields missing', 'id': 'Kurang %n dari %m data wajib'},
+    'Sales manager': {'en': 'Sales manager', 'id': 'Manajer penjualan'},
+    'Project manager': {'en': 'Project manager', 'id': 'Manajer proyek'},
+    'Administrador': {'en': 'Administrator', 'id': 'Administrator'},
+    'CRM de leads': {'en': 'Lead CRM', 'id': 'CRM prospek'},
+    'Herramientas que verá': {'en': 'Tools they will see', 'id': 'Alat yang akan dilihat'},
+    'Contraseña provisional': {'en': 'Temporary password', 'id': 'Kata sandi sementara'},
+    'Permisos de %n': {'en': 'Permissions of %n', 'id': 'Izin %n'},
+    'Guardar permisos': {'en': 'Save permissions', 'id': 'Simpan izin'},
+    'Activo': {'en': 'Active', 'id': 'Aktif'},
+    'Mínimo 10 caracteres. La verá al entrar; que la cambie después. No se puede volver a consultar.': {
+        'en': 'At least 10 characters. They will see it when signing in and should change it afterwards. It cannot be looked up again.',
+        'id': 'Minimal 10 karakter. Akan terlihat saat masuk; minta dia menggantinya setelah itu. Tidak bisa dilihat lagi.'},
+    'Nunca preseleccionada: Leads abre datos de contacto de personas reales y se decide una a una, nunca de regalo con el rol.': {
+        'en': 'Never preselected: Leads opens the contact details of real people, so it is decided one by one, never handed out with the role.',
+        'id': 'Tidak pernah dipilih otomatis: Leads membuka data kontak orang sungguhan, jadi diputuskan satu per satu, tidak ikut otomatis dengan peran.'},
+    'Preselección según el rol elegido arriba — editable. Solo aparecen las herramientas que tienes tú.': {
+        'en': 'Preselected from the role chosen above — editable. Only the tools you have yourself appear.',
+        'id': 'Dipilih otomatis sesuai peran di atas — bisa diubah. Hanya alat yang Anda miliki yang muncul.'},
     'En pausa no sale ningún email: ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.': {
         'en': 'While paused no email goes out: no invitations, no alerts, no announcements. The server blocks it, not this screen. Whatever is queued in Communication waits and goes out by itself on resume. Pause and resume: any admin.',
         'id': 'Saat dijeda, tidak ada email yang terkirim: tidak ada undangan, peringatan, maupun pengumuman. Server yang memblokirnya, bukan layar ini. Yang masuk antrean di Komunikasi akan menunggu dan terkirim otomatis saat dilanjutkan. Menjeda dan melanjutkan: admin mana pun.'},
@@ -1962,8 +2519,9 @@ def sistema_documento_fuentes():
         aborta('sistema: falta clasico/facturas/documento.js en el paquete')
     t = open(p, encoding='utf-8').read()
     n = len(DOC_GOOGLE.findall(t))
-    if n != 1:
-        aborta('sistema: documento.js tiene %d enlaces a las fuentes de Google con la forma esperada (uno): ¿cambió su <head>?' % n)
+    papeles = 2 if 'axwDocId' in t else 1   # BBM-72: la copia de una instancia en indonesio lleva los dos papeles (es·en e id·en)
+    if n != papeles:
+        aborta('sistema: documento.js tiene %d enlaces a las fuentes de Google con la forma esperada (%d): ¿cambió su <head>?' % (n, papeles))
     t = DOC_GOOGLE.sub(lambda _m: '''<link rel="stylesheet" href="' + base + '/assets/fonts/fonts.css">''', t)
     if 'fonts.googleapis.com' in t:
         aborta('sistema: documento.js sigue pidiendo fuentes a Google tras el cambio')
@@ -2397,7 +2955,8 @@ def banda_startups(html_txt, encendida=None):
 
 def fuentes_portada():
     """(texto de fonts.css, [(ruta publicada, fichero de origen)]) de las url() de fonts.css + sus licencias OFL.
-    PARA con un mensaje claro si falta algo: es bloqueo de la PUBLICACIÓN, no de construir (solo lo llama publica_web)."""
+    PARA con un mensaje claro si falta algo: es bloqueo de la PUBLICACIÓN, no de construir (lo llaman publica_web y, desde el
+    13-oct, fuentes_panel() para el panel de la instancia con panel_control)."""
     if not os.path.isfile(FUENTES_CSS):
         aborta('faltan las fuentes de la portada de erp.: no existe %s.\n  Viven en main (assets/x/fonts.css + '
                'assets/fonts/x/, desde fdcfb73): ¿copia sin actualizar? Para otro origen, AXW_FUENTES_X=<ruta a un '
@@ -2419,6 +2978,25 @@ def fuentes_portada():
             if f.startswith('OFL-') and f.endswith('.txt'):
                 pares.append((os.path.relpath(os.path.join(carpeta, f), raiz_f).replace(os.sep, '/'), os.path.join(carpeta, f)))
     return css, pares
+def fuentes_panel():
+    """Las @font-face de fonts.css (la misma fuente única que la portada) con cada woff2 DENTRO, en data: (13-oct-2026, erp-panel-3).
+    Para /panel/index.html: en producción solo se sirven /panel/, /panel/index.html y /panel/panel.css (.htaccess de app.), así que
+    unos woff2 al lado darían 503, y la marca no se pide a Google (Legal, 24-sep). La CSP ya admite `font-src data:`. Unos 180 KB."""
+    css, pares = fuentes_portada()
+    datos = {}
+    for rel, origen in pares:
+        if rel.endswith('.woff2'):
+            datos['/' + rel] = 'data:font/woff2;base64,' + base64.b64encode(open(origen, 'rb').read()).decode('ascii')
+    falta = sorted(set(re.findall(r'(/assets/fonts/x/[A-Za-z0-9._-]+\.woff2)', css)) - set(datos))
+    if falta:
+        aborta('fuentes del panel: fonts.css cita woff2 que no están entre los ficheros de fuentes: %s' % falta)
+    css = re.sub(r'''url\(\s*['"]?(/assets/fonts/x/[A-Za-z0-9._-]+\.woff2)['"]?\s*\)''', lambda m: 'url(%s)' % datos[m.group(1)], css)
+    css = re.sub(r'/\*.*?\*/', '', css, flags=re.S).strip()
+    if 'url(/' in css or '@font-face' not in css:
+        aborta('fuentes del panel: quedan url() locales o no hay @font-face')
+    return css
+
+
 # Tokens de Supabase en el #fragmento (flujo implícito): el servidor no los ve, así que el .htaccess no puede
 # mandarlos a app.; lo hace el primer script de la página, antes que nada.
 ADELANTA_TOKENS = ("(function(){var h=location.hash||'';if(/(^#|&)(access_token|refresh_token|token_hash|"
@@ -2644,13 +3222,19 @@ def rotulos():
     return r
 
 
+# Suman pasos a AXW_SETUP.TEXTOS, en el orden del paquete. cobros_paso.js no: engancha la página al cargarse (getElementById) y la
+# frase de su paso «cobros» ya vive en setup_modulos.js. Un fichero nuevo que sume pasos se añade aquí (si falta, el build aborta).
+SETUP_SUMAN = ('setup_reservas.js', 'setup_comun.js')
+
+
 def setup_para_panel():
     """Lo que el panel de control necesita del REGISTRO para el setup (12-oct-2026, erp-panel-2; owner: «módulo primero y setup
     después»): el hueco __AXW_SETUP__ de panel_control.html. Nada se escribe a mano aquí:
       - `registro`: erp/modulos.json → setup.modulos (lo que declara erp/modulos.py → SETUP). Solo lo usa el mapa de la instalación
         (S00, la lámina por tipo de negocio): los pasos de UNA instancia los da su base (erp_control_estado → setup), nunca esto.
-      - `textos`: los títulos de cada paso y de cada módulo en es y en, sacados de setup_modulos.js (el mismo mapa código → frase del
-        aviso, el asistente y Ajustes; no hay una segunda copia de las frases).
+      - `textos`: los títulos de cada paso y de cada módulo en es y en, sacados de setup_modulos.js y de los ficheros que le suman pasos
+        (SETUP_SUMAN: Reservas de producto y pasos comunes; el mismo mapa código → frase del aviso, el asistente y Ajustes; no hay
+        una segunda copia de las frases).
       - `en`: panel_setup_en.json (nombres EN de módulos y tipos). Aborta si falta un módulo del registro o un tipo de perfiles.json."""
     reg = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))
     perf = json.load(open(os.path.join(AGENCIA, 'erp', 'perfiles.json'), encoding='utf-8'))['perfiles']
@@ -2658,19 +3242,26 @@ def setup_para_panel():
     faltan = sorted(set(reg['modulos']) - set(en['modulos'])) + sorted('tipo ' + t for t in set(perf) - set(en['tipos']))
     if faltan:
         aborta('panel_setup_en.json: sin nombre en inglés para %s' % faltan)
-    prog = ("global.window={};global.document={readyState:'complete'};require(process.argv[1]);var S=window.AXW_SETUP;"
-            "var o={paso:{},modulo:{}};Object.keys(S.TEXTOS.paso).forEach(function(k){var t=S.TEXTOS.paso[k][0];o.paso[k]={es:t,en:S.EN[t]||null};});"
-            "Object.keys(S.TEXTOS.modulo).forEach(function(k){var t=S.TEXTOS.modulo[k];o.modulo[k]={es:t,en:S.EN[t]||null};});"
+    # 13-oct (erp-panel-4): los pasos de Reservas de producto (clase, reglas_reserva, alquileres_previos) y los comunes (negocio, idiomas,
+    # correo, taller_*) suman su frase desde su propio fichero (en S.TEXTOS) y su inglés en LW_EN, no en S.EN. Se cargan detrás, en
+    # el orden en que los sirve el paquete (el de setup_frases.test.js), con AXW_PASOS y addEventListener de mentira (solo registran
+    # pantallas y eventos, que aquí no se pintan): sin ellos, el registro declaraba esos pasos y el build de la instancia del estudio abortaba.
+    prog = ("global.window={LW_EN:{},LW_ID:{},addEventListener:function(){}};global.document={readyState:'complete',addEventListener:function(){}};"
+            "global.location={pathname:'/'};require(process.argv[1]);var S=window.AXW_SETUP;window.AXW_PASOS={registra:function(){}};"
+            "process.argv.slice(2).forEach(function(f){require(f);});var E=function(t){return S.EN[t]||window.LW_EN[t]||null;};"
+            "var o={paso:{},modulo:{}};Object.keys(S.TEXTOS.paso).forEach(function(k){var t=S.TEXTOS.paso[k][0];o.paso[k]={es:t,en:E(t)};});"
+            "Object.keys(S.TEXTOS.modulo).forEach(function(k){var t=S.TEXTOS.modulo[k];o.modulo[k]={es:t,en:E(t)};});"
             "process.stdout.write(JSON.stringify(o));")
-    r = subprocess.run(['node', '-e', prog, os.path.join(AQUI, 'setup_modulos.js')], capture_output=True, text=True, encoding='utf-8')
+    r = subprocess.run(['node', '-e', prog] + [os.path.join(AQUI, f) for f in ('setup_modulos.js',) + SETUP_SUMAN],
+                       capture_output=True, text=True, encoding='utf-8')
     if r.returncode != 0:
-        aborta('setup_modulos.js no se deja leer para el panel: ' + (r.stderr or '')[-400:])
+        aborta('setup_modulos.js / %s no se dejan leer para el panel: ' % ', '.join(SETUP_SUMAN) + (r.stderr or '')[-400:])
     textos = json.loads(r.stdout)
     sin_en = sorted(k for k, v in textos['paso'].items() if not v['en'])
     pasos_decl = sorted({p['clave'] for m in reg['setup']['modulos'].values() if isinstance(m, dict) for p in m.get('pasos', [])})
     sin_texto = [k for k in pasos_decl if k not in textos['paso']]
     if sin_en or sin_texto:
-        aborta('setup_modulos.js: pasos sin frase en inglés %s · pasos declarados sin frase %s' % (sin_en, sin_texto))
+        aborta('setup_modulos.js + %s: pasos sin frase en inglés %s · pasos declarados sin frase %s' % (', '.join(SETUP_SUMAN), sin_en, sin_texto))
     # Lista blanca (revisor, 12-oct): /panel/ es público (sin sesión da 200), así que solo sale lo que el mapa lee — clave, obligatorio,
     # irreversible y si el módulo se declara «ninguno» —, nunca rpc, ajustes, funciones de estado, herramientas ni el motivo interno.
     registro = {}
@@ -3619,6 +4210,11 @@ TEXTOS_OTRA = (   # el resto de instancias: un ejemplo neutro, sin la villa de L
 # fila plantilla del HTML, que plantillaFilas() de datos.js clona con sus atributos: no cambia ningún índice de columna de datos.js. Lawang no pasa por aquí.
 OCULTA_POR_MODULO = (
     # (fichero en DIST, trozo de Lawang, el mismo trozo marcado)
+    # bbm-p40 (13-oct): la columna «Proyectos» de Usuarios (cuántos proyectos tiene cada persona) sin el módulo proyectos
+    ('intranet/v4/usuarios/index.html', '<th class="py-3 px-3" data-lwt>Proyectos</th>',
+     '<th class="py-3 px-3" data-axw-sin="proyectos" data-lwt>Proyectos</th>'),
+    ('intranet/v4/usuarios/index.html', '<td class="py-3.5 px-3 text-on-surface-variant">—</td>\n<td class="py-3.5 px-3"><span class="inline-flex items-center gap-1.5',
+     '<td class="py-3.5 px-3 text-on-surface-variant" data-axw-sin="proyectos">—</td>\n<td class="py-3.5 px-3"><span class="inline-flex items-center gap-1.5'),
     ('intranet/v4/facturas/index.html', '<th class="py-3.5 px-4 font-semibold" data-lwt>Contrato</th>',
      '<th class="py-3.5 px-4 font-semibold" data-axw-sin="contratos operaciones" data-lwt>Contrato</th>'),
     ('intranet/v4/facturas/index.html', '<td class="py-4 px-4 font-medium text-on-surface">—</td>\n<td class="py-4 px-4 font-label-md text-on-surface">—</td>',
@@ -3646,12 +4242,156 @@ EDITOR_SIN_CONTRATO = (
      "          function pasaASinContrato() {\n            // Lo que trajo el contrato anterior se suelta y se vacía: el cliente se elige de nuevo.\n            estadoContrato.id = null; estadoContrato.numero = ''; estadoContrato.clienteId = null; estadoContrato.sinContrato = true;\n            sueltaCamposDoc();\n            ['cliente_nombre', 'cliente_documento', 'cliente_email', 'cliente_domicilio', 'proyecto_nombre'].forEach(function (k) { ponCampoDoc(k, ''); });\n            if (delC) delC.limpia();\n            btnC.textContent = edT('— sin contrato —'); btnCli.textContent = edT('— elige el cliente —');\n            notaC.textContent = edT('El documento irá a nombre del cliente que elijas, sin contrato.');\n            pintaModoContrato(); repintaPreview();\n          }\n"),
 )
 
+# Alta de usuario en una instancia SIN el módulo contratos (bbm-p40, 13-oct-2026). El botón «Nuevo usuario» leía primero el catálogo de tipos
+# de contrato (plantillas_contrato_datos, del módulo contratos) y, si no lo podía leer, NO abría el alta: con contratos apagado no se leía
+# nunca, así que en bbm no se podía dar de alta a nadie. Ahora espera a saber los módulos y, con contratos apagado (dato de la base, no un
+# «no sé»: axwModuloActivo devuelve false solo entonces), abre el alta sin el campo «Contratos que puede hacer» y sin la nota de proyectos
+# si proyectos también está apagado. Lo que se envía es lo de siempre con ese campo vacío: la edge lo filtra y desde el 24-sep un vacío ya no
+# significa «todos» (admin-usuarios, contratos_tipo_permitido). Con contratos encendido, o sin saber, el camino de siempre. Lawang no pasa por aquí.
+ALTA_SIN_CONTRATOS = (
+    ('intranet/v4/assets/editores.js',
+     "        if (!window.AXW_NUCLEO_OPERACION) return abreAlta(tiposCatAlta);\n"
+     "        /* ERP: si el catálogo no se lee, el alta NO se abre. «Contratos que puede hacer» vacío significa TODOS:\n"
+     "           un formulario sin opciones daría acceso a todo sin que nadie lo decidiera. */\n"
+     "        tiposErp().then(function (t) {\n"
+     "          if (!t) return aviso('No se ha podido leer el catálogo de tipos de contrato, o no tiene ninguno activo: recarga la pantalla (o activa un tipo en Plantillas) antes de dar de alta a nadie.', '#9E2F26');\n"
+     "          abreAlta(opcionesTipos(t));\n"
+     "        });\n",
+     "        if (!window.AXW_NUCLEO_OPERACION) return abreAlta(tiposCatAlta);\n"
+     "        /* ERP: si el catálogo no se lee, el alta NO se abre. «Contratos que puede hacer» vacío significa TODOS:\n"
+     "           un formulario sin opciones daría acceso a todo sin que nadie lo decidiera. */\n"
+     "        Promise.resolve(window.AXW_MODULOS_LISTOS).then(function () {\n"
+     "          // Solo las herramientas de módulos encendidos (PERMISOS_POR_MODULO): las listas del alta se rehacen ya sabiendo los módulos.\n"
+     "          herrCrmAlta = herrCrmAlta.filter(function (p) { return window.axwPermisoActivo(p[0]); });\n"
+     "          herrRestoAlta = permisosPorMenu(function (k) { return puedoDarAlta(k) && !esCrmAlta([k]) && window.axwPermisoActivo(k); });\n"
+     "          // Instancia con el módulo contratos APAGADO (bbm-p40): no hay catálogo que leer ni contratos que conceder.\n"
+     "          if (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false) return abreAlta(null);\n"
+     "          tiposErp().then(function (t) {\n"
+     "            if (!t) return aviso('No se ha podido leer el catálogo de tipos de contrato, o no tiene ninguno activo: recarga la pantalla (o activa un tipo en Plantillas) antes de dar de alta a nadie.', '#9E2F26');\n"
+     "            abreAlta(opcionesTipos(t));\n"
+     "          });\n"
+     "        });\n"),
+    ('intranet/v4/assets/editores.js',
+     "          { k: 'tipos_contrato', label: 'Contratos que puede hacer', tipo: 'multicheck', opciones: tiposCatAlta,\n",
+     "          tiposCatAlta === null ? null : { k: 'tipos_contrato', label: 'Contratos que puede hacer', tipo: 'multicheck', opciones: tiposCatAlta,\n"),
+    ('intranet/v4/assets/editores.js',
+     "        ], 'Crear usuario', function (v) {\n",
+     "        ].filter(Boolean), 'Crear usuario', function (v) {\n"),
+    ('intranet/v4/assets/editores.js',
+     "          { tipo: 'nota', label: 'Se crea la cuenta y se le da acceso de inmediato. Nace sin ningún proyecto asignado — se asigna después editando la ficha ya creada.' },\n",
+     "          { tipo: 'nota', label: (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false)\n"
+     "            ? 'Se crea la cuenta y se le da acceso de inmediato.'\n"
+     "            : 'Se crea la cuenta y se le da acceso de inmediato. Nace sin ningún proyecto asignado — se asigna después editando la ficha ya creada.' },\n"),
+)
+
+# Usuarios de una instancia: solo las herramientas de módulos ENCENDIDOS (bbm-p40, 13-oct-2026; owner tras rellenar el asistente de bbm: «la
+# ventana de permisos es la que teníamos en Lawang… aparecen todos los módulos. Deberían aparecer sólo los activos»). Por el camino de la casa:
+# cada casilla sale de su entrada del menú v4 (LW_MENU_V4) → su pantalla → su módulo (mapa de apagados_instancia.js, axwRutaActiva), nunca de
+# una lista escrita a mano ni del nombre del cliente. Aplica al alta, al editor de permisos y a la ficha. Reglas:
+#   · lo que la persona YA tiene de un módulo apagado no se enseña pero VIAJA al guardar (usuario_guarda_permisos sustituye la lista entera:
+#     si no, guardar se lo quitaría en silencio y al volver a encender el módulo la persona habría perdido el acceso);
+#   · «Proyectos en los que trabaja» y «Contratos que puede hacer» no se pintan con su módulo apagado y NO viajan (la base conserva lo que
+#     hay; mandar [] borraría proyectos y un vacío en tipos de contrato bloquea al agente);
+#   · falla abierto: sin saber los módulos (la base no contestó), todo como en Lawang. No es el candado: lo que se concede lo decide el servidor.
+# Lawang no pasa por aquí (0 bytes): estos trozos solo se cambian en la COPIA de la instancia.
+PERMISOS_POR_MODULO = (
+    # la función que dice si una casilla es de un módulo encendido (la usan el alta, el editor y la ficha de datos.js)
+    ('intranet/v4/assets/editores.js',
+     "  window.lwEtiquetaPermiso = function (k) {\n    var o = permisosPorMenu(function (x) { return x === k; }).filter(Array.isArray)[0];\n    return o ? o[1] : k;\n  };\n",
+     "  window.lwEtiquetaPermiso = function (k) {\n    var o = permisosPorMenu(function (x) { return x === k; }).filter(Array.isArray)[0];\n    return o ? o[1] : k;\n  };\n"
+     "  /* Instancia (bbm-p40): ¿la casilla `k` es de un módulo encendido? Por la pantalla de su entrada en LW_MENU_V4 (el mismo recorrido que\n"
+     "     permisosPorMenu) y axwRutaActiva de apagados_instancia.js. Una casilla sin entrada en el menú, o sin saber los módulos: true. */\n"
+     "  var rutaDePermiso = null;\n"
+     "  window.axwPermisoActivo = function (k) {\n"
+     "    if (typeof window.axwRutaActiva !== 'function') return true;\n"
+     "    if (!rutaDePermiso) {\n"
+     "      if (!(window.LW_MENU_V4 || []).length) return true;\n"
+     "      rutaDePermiso = {};\n"
+     "      var pon = function (c, ruta) { if (c && !Object.prototype.hasOwnProperty.call(rutaDePermiso, c)) rutaDePermiso[c] = ruta; };\n"
+     "      window.LW_MENU_V4.forEach(function (sec) {\n"
+     "        sec.entradas.forEach(function (e) {\n"
+     "          if (e.pestanas) e.pestanas.forEach(function (t) { pon(t.clave, t.path); });\n"
+     "          else if (e.claves) e.claves.forEach(function (c) { pon(c.clave, e.path); });\n"
+     "          else if (e.clave) pon(e.clave, e.path);\n"
+     "          (e.extra || []).forEach(function (c) { pon(c.clave, e.path); });\n"
+     "        });\n"
+     "      });\n"
+     "    }\n"
+     "    return !Object.prototype.hasOwnProperty.call(rutaDePermiso, k) || window.axwRutaActiva(rutaDePermiso[k]);\n"
+     "  };\n"),
+    # las filas sin casilla (Resumen, Bot de WhatsApp: «según rol») de un módulo apagado tampoco se pintan
+    ('intranet/v4/assets/editores.js',
+     "        else if (e.path !== 'home') filas.push({ info: nom, nota: T(e.rol === 'super_admin' ? 'solo super admin' : 'según rol') });\n",
+     "        else if (e.path !== 'home' && (typeof window.axwRutaActiva !== 'function' || window.axwRutaActiva(e.path))) filas.push({ info: nom, nota: T(e.rol === 'super_admin' ? 'solo super admin' : 'según rol') });\n"),
+    # alta: el CRM de leads solo si queda alguna casilla
+    ('intranet/v4/assets/editores.js',
+     "          { k: 'herr_crm', label: 'CRM de leads', tipo: 'multicheck', opciones: herrCrmAlta, valor: [],\n",
+     "          !herrCrmAlta.length ? null : { k: 'herr_crm', label: 'CRM de leads', tipo: 'multicheck', opciones: herrCrmAlta, valor: [],\n"),
+    # editor: espera a saber los módulos antes de montar las casillas (un clic rápido al cargar no enseña la lista entera)
+    ('intranet/v4/assets/editores.js',
+     "          (typeof LW_PERMISOS !== 'undefined') ? Promise.resolve({ data: null }) : sb.from('usuarios').select('herramientas'),\n",
+     "          (typeof LW_PERMISOS !== 'undefined') ? Promise.resolve(window.AXW_MODULOS_LISTOS).then(function () { return { data: null }; }) : sb.from('usuarios').select('herramientas'),\n"),
+    ('intranet/v4/assets/editores.js',
+     "          window.AXW_NUCLEO_OPERACION ? tiposErp() : Promise.resolve(undefined),\n",
+     "          window.AXW_NUCLEO_OPERACION ? Promise.resolve(window.AXW_MODULOS_LISTOS).then(function () {\n"
+     "            return (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false) ? undefined : tiposErp();\n"
+     "          }) : Promise.resolve(undefined),\n"),
+    ('intranet/v4/assets/editores.js',
+     "            ops = permisosPorMenu();\n",
+     "            ops = permisosPorMenu(window.axwPermisoActivo);\n"),
+    ('intranet/v4/assets/editores.js',
+     "          var proyectosOk = !rs[1].error;\n",
+     "          var proyectosModulo = !(typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false);\n"
+     "          var proyectosOk = proyectosModulo && !rs[1].error;\n"),
+    ('intranet/v4/assets/editores.js',
+     "          } else {\n            campos.push({ tipo: 'nota', label: 'No se pudo cargar el catálogo de proyectos",
+     "          } else if (proyectosModulo) {\n            campos.push({ tipo: 'nota', label: 'No se pudo cargar el catálogo de proyectos"),
+    ('intranet/v4/assets/editores.js',
+     "          if (!tiposOk) campos.push({ tipo: 'nota', label: 'No se pudo leer el catálogo de tipos de contrato",
+     "          if (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false) tiposOk = false;   // ni se pinta ni viaja\n"
+     "          else if (!tiposOk) campos.push({ tipo: 'nota', label: 'No se pudo leer el catálogo de tipos de contrato"),
+    # sin herramientas.js el editor ofrece las llaves que ya tiene alguien: también solo las de módulos encendidos
+    ('intranet/v4/assets/editores.js',
+     "            ops = Object.keys(todas).sort();\n",
+     "            ops = Object.keys(todas).sort().filter(function (k) { return window.axwPermisoActivo(k); });\n"),
+    # al guardar, lo que la persona ya tiene de módulos apagados viaja tal cual (no se enseña, no se quita) y EN EL ORDEN
+    # GUARDADO: usuarios_bloquea_cambio_rol_herramientas compara la lista con `is distinct from` (cuenta el orden), y un
+    # admin que no es super admin solo pasa si la lista sale idéntica. Primero lo guardado que sigue (apagado o marcado),
+    # luego lo marcado nuevo en el orden del menú.
+    ('intranet/v4/assets/editores.js',
+     "              nombre: v.nombre.trim() || null, herramientas: v.herramientas,\n",
+     "              nombre: v.nombre.trim() || null,\n"
+     "              herramientas: (u.herramientas || []).filter(function (k) { return !window.axwPermisoActivo(k) || v.herramientas.indexOf(k) !== -1; })\n"
+     "                .concat(v.herramientas.filter(function (k) { return (u.herramientas || []).indexOf(k) === -1; })),\n"),
+    # la ficha que se reabre sola por ?u= (tras «Guardar permisos») espera a saber los módulos: sin esto, como falla abierto,
+    # enseñaba un instante lo apagado
+    ('intranet/v4/assets/datos.js',
+     "        if (el) setTimeout(function () { abreFicha(el); }, 0);\n",
+     "        if (el) Promise.resolve(esperaModulos()).then(function () { abreFicha(el); });\n"),
+    # ficha (datos.js): herramientas, proyectos y contratos por la misma regla
+    ('intranet/v4/assets/datos.js',
+     "          var hs = u.herramientas || [], pr = nombresProy(u.proyectos), sup = nombresProy(u.proyectos_supervisados);\n",
+     "          var hs = (u.herramientas || []).filter(function (k) { return !window.axwPermisoActivo || window.axwPermisoActivo(k); }), pr = nombresProy(u.proyectos), sup = nombresProy(u.proyectos_supervisados);\n"
+     "          var modOn = function (m) { return !(typeof window.axwModuloActivo === 'function' && window.axwModuloActivo(m) === false); };   // bbm-p40\n"),
+    ('intranet/v4/assets/datos.js',
+     "            H.seccion(tx('Proyectos en los que trabaja (%n)', { n: pr.length }),\n",
+     "            (modOn('proyectos') ? H.seccion(tx('Proyectos en los que trabaja (%n)', { n: pr.length }),\n"),
+    ('intranet/v4/assets/datos.js',
+     "              sup.length ? H.chips(sup) : H.nota('Ninguno. Es una lista distinta de la de arriba: supervisar es ver y escribir lo del proyecto entero, no solo lo propio.')) +\n"
+     "            H.seccion('Contratos que puede hacer',\n"
+     "              tipos.length ? H.chips(tipos) : H.nota('Sin restricción: vacío = TODOS los tipos (al revés que Proyectos).'));\n",
+     "              sup.length ? H.chips(sup) : H.nota('Ninguno. Es una lista distinta de la de arriba: supervisar es ver y escribir lo del proyecto entero, no solo lo propio.')) : '') +\n"
+     "            (modOn('contratos') ? H.seccion('Contratos que puede hacer',\n"
+     "              tipos.length ? H.chips(tipos) : H.nota('Sin restricción: vacío = TODOS los tipos (al revés que Proyectos).')) : '');\n"),
+)
+
 
 def oculta_por_modulo():
     """Marca en la copia lo que sobra con un módulo apagado (OCULTA_POR_MODULO) y pone en cada página su regla; y el editor de factura sin
-    contrato (EDITOR_SIN_CONTRATO). Cada trozo exactamente una vez o el build para."""
+    contrato (EDITOR_SIN_CONTRATO), el alta de usuario sin contratos (ALTA_SIN_CONTRATOS) y Usuarios solo con las herramientas de módulos
+    encendidos (PERMISOS_POR_MODULO). Cada trozo exactamente una vez o el build para."""
     reglas = {}
-    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO:
+    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO + ALTA_SIN_CONTRATOS + PERMISOS_POR_MODULO:
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
         open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, viejo, nuevo, 'oculta_por_modulo ' + rel_))
@@ -3692,9 +4432,16 @@ IDIOMAS_PARCHES = (
      "  window.AXW_IDIOMAS = (function (b) { var g = null; try { g = JSON.parse(localStorage.getItem('axw_idiomas_erp') || 'null'); } catch (e) { g = null; }\n"
      "    var ok = Array.isArray(g) && [['es', 'en'], ['id', 'en']].some(function (p) { return p.join() === g.join(); }) && (g[0] !== 'id' || b.indexOf('id') >= 0);\n"
      "    return ok ? g : b.slice(); })(window.AXW_IDIOMAS_BUILD);\n"
-     "  window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(v) >= 0) ? v : window.AXW_IDIOMAS[0];"),
+     # bbm-p42 (13-oct, owner «debe ir en inglés»): el idioma de PANTALLA por defecto ya no es a la fuerza el primero de la lista (el primero manda el
+     # orden del papel). Precedencia: lo que eligió esa persona > `idiomas.pantalla` de la base (dato de Ajustes › Idiomas, p36; lo apunta
+     # apagados_instancia.js tras el login) > `idioma_pantalla` del registro (el de la instancia; manda también en la puerta sin sesión, donde la base no se lee) > el primero.
+     "  window.AXW_IDIOMA_GUARDADO = v;\n"
+     "  window.AXW_IDIOMA_PANTALLA_BUILD = __AXW_IDIOMA_PANTALLA__;\n"
+     "  window.AXW_IDIOMA_PANTALLA = (function (l) { var g = null; try { g = localStorage.getItem('axw_idioma_pantalla_erp'); } catch (e) { g = null; }\n"
+     "    if (g && l.indexOf(g) >= 0) return g; var b = window.AXW_IDIOMA_PANTALLA_BUILD; return b && l.indexOf(b) >= 0 ? b : l[0]; })(window.AXW_IDIOMAS);\n"
+     "  window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(v) >= 0) ? v : window.AXW_IDIOMA_PANTALLA;"),
     ('contracts/assets/idioma.js', "    window.LW_IDIOMA = (idioma === 'en') ? 'en' : 'es';",
-     "    window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(idioma) >= 0) ? idioma : window.AXW_IDIOMAS[0];"),
+     "    window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(idioma) >= 0) ? idioma : window.AXW_IDIOMA_PANTALLA;"),
     # el par de botones de la barra lateral se encuentra por su TEXTO («ES»/«EN»): el «ES» pasa a ser «ID» y cada botón dice su idioma en su idioma
     ('intranet/v4/assets/nav.js', "      if (t !== 'ES' && t !== 'EN') return;\n      var destino = t.toLowerCase();",
      "      if (t === 'ES' && window.AXW_IDIOMAS) { t = window.AXW_IDIOMAS[0].toUpperCase(); b.textContent = t; }\n"
@@ -3742,6 +4489,19 @@ def idiomas_de(nombre):
     return list(i)
 
 
+def idioma_pantalla_de(nombre, idiomas):
+    """El idioma en que ABRE la pantalla de la instancia si nadie eligió otro (`idioma_pantalla` del registro), o None (= el primero de `idiomas`, como
+    siempre). bbm-p42, 13-oct-2026 (agencia-81). Con sesión, el dato de la base (`idiomas.pantalla`, Ajustes › Idiomas, p36) va por encima; este se QUEDA:
+    es el idioma de la puerta sin sesión, donde la base no se lee (Seguridad #289). No cambia la lista de idiomas ni el orden del papel. Tiene que ser uno de
+    los idiomas declarados."""
+    p = _instancia_registro(nombre).get('idioma_pantalla')
+    if p is None:
+        return None
+    if not idiomas or p not in idiomas:
+        aborta('erp/instancias.json: %s declara "idioma_pantalla": %r y sus idiomas son %r: tiene que ser uno de ellos' % (nombre, p, idiomas))
+    return p
+
+
 def _sintaxis(rutas):
     """node comprueba la sintaxis de cada .js y de cada <script> en línea de cada .html (un solo proceso). Devuelve los que fallan."""
     if not rutas:
@@ -3757,14 +4517,14 @@ def _sintaxis(rutas):
     return json.loads(r.stdout.strip().splitlines()[-1])
 
 
-def idiomas_instancia(idiomas):
+def idiomas_instancia(idiomas, pantalla=None):
     """Aplica los idiomas de la instancia sobre la copia del front (DIST, ANTES de quitar comentarios y de los reemplazos de marca: así las claves del
     diccionario reciben el mismo trato que el código que las pide). Solo lo copiado, nunca el repo de Lawang."""
     v4 = os.path.join(DIST, 'intranet', 'v4')
     for rel_, viejo, nuevo in IDIOMAS_PARCHES:
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
-        t = _una_vez(t, viejo, nuevo.replace('__AXW_IDIOMAS__', json.dumps(idiomas)), 'idiomas ' + rel_)
+        t = _una_vez(t, viejo, nuevo.replace('__AXW_IDIOMAS__', json.dumps(idiomas)).replace('__AXW_IDIOMA_PANTALLA__', json.dumps(pantalla)), 'idiomas ' + rel_)
         open(ruta, 'w', encoding='utf-8', newline='').write(t)
     # El indonesio: núcleo (envuelve lwT, lwLocale y lwIdiomaAplicar) + diccionario, al FINAL de i18n.js
     if idiomas[0] == 'id':
@@ -3847,10 +4607,10 @@ def comprueba_idiomas(dist, idiomas):
 # ── El DOCUMENTO (factura, proforma, recibí) en el par de idiomas de la instancia (owner, 12-oct-2026, BBM-65: «Indonesio e inglés») ───────────────
 # documento.js de Lawang pinta el papel bilingüe es·en, y de él salen la vista previa, el PDF (window.print del iframe) y el correo (la edge recibe el
 # HTML ya armado). En una instancia con `"idiomas": ["id", ...]` en erp/instancias.json, la COPIA pasa a id·en: rótulos, títulos, concepto del
-# recibí, fecha en id-ID fija (del documento, no de quien mira: por eso documento.js sigue en ES_ES_FIJOS) y lang del HTML. El par sale del BUILD y
-# no de AXW_IDIOMAS/localStorage: dos navegadores no pueden emitir el mismo documento en idiomas distintos (decisión por defecto, encargo
-# estudio_erp_plan_unico; cuando la 220000 deje cambiar los idiomas desde Ajustes se decide si el papel la sigue). Sin `idiomas` o con es primero:
-# no se toca nada (Lawang y la demo siguen es·en byte a byte). Los importes no cambian: lwFormatoImporte ya da «1.500.000 IDR», sin decimales.
+# recibí, fecha en id-ID fija (del documento, no de quien mira: por eso documento.js sigue en ES_ES_FIJOS) y lang del HTML. Desde BBM-72 la copia
+# lleva este papel id·en Y el es·en, y elige al pintar según Ajustes › Idiomas (ver DOC_ENVOLTORIO); nunca según AXW_IDIOMAS/localStorage. Sin
+# `idiomas` o con es primero en el build: no se toca nada (Lawang y la demo siguen es·en byte a byte). Los importes no cambian: lwFormatoImporte
+# ya da «1.500.000 IDR», sin decimales.
 # Términos fiscales en indonesio revisados por Legal (bbm-p36, 13-oct); lo que solo confirma un hablante nativo va a la fila del owner.
 DOC_TITULOS_ID = {'factura': 'Invoice', 'proforma': 'Invoice Proforma', 'recibi': 'Kuitansi', 'rectificativa': 'Invoice Koreksi'}
 DOC_PARCHES_ID = (
@@ -3898,14 +4658,28 @@ DOC_PARCHES_ID = (
      "'Buenos días' + (vals.cliente_nombre ? ' ' + vals.cliente_nombre : '') + ',\\n\\n' +\n"
      "        'Adjunto ' + tipo.toLowerCase() + ' ' + saved.numero + ' para su revisión.\\n\\nUn saludo,\\n' + lwMarca('%%firma_correo'));",
      "'Halo' + (vals.cliente_nombre ? ' ' + vals.cliente_nombre : '') + ',\\n\\n' +\n"
+     # un recibí confirma un pago, no se manda «para revisar» (Legal, 13-oct, BBM-72)
+     "        (DOC_TIPO_REAL === 'recibi' ? 'Terlampir kuitansi ' + saved.numero + ' sebagai bukti pembayaran Anda.\\n' +\n"
+     "        'Please find attached receipt ' + saved.numero + ' confirming your payment.\\n\\n' :\n"
      "        'Terlampir ' + tipo.toLowerCase() + ' ' + saved.numero + ' untuk Anda periksa.\\n' +\n"
-     "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[DOC_TIPO_REAL]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n' +\n"
+     "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[DOC_TIPO_REAL]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n') +\n"
      "        'Salam / Kind regards,\\n' + lwMarca('%%firma_correo'));"),
 )
-# Lo que NO puede quedar en el documento.js servido de una instancia en indonesio (comprobación sobre el paquete construido, tras minificar)
-DOC_ESPANOL = ('Factura · ', 'Fecha · Date', 'Vencimiento · ', 'Facturar a', 'Conceptos · ', 'Descripción · ', 'Importe · ', 'Impuesto · ',
-               'Notas · ', 'Datos bancarios', 'Titular · ', 'Cuenta · ', 'Dirección · ', 'Nota · Note', 'Cobro de la factura', 'Cobro · Payment',
-               'Sin conceptos', 'Proyecto · Project', 'Contrato · Contract', 'Rectifica a', 'Motivo · ', "'es-ES'", '"es-ES"', 'lang="es"')
+# BBM-72: lo que es de la INSTANCIA y no del idioma va también al papel es·en (el que sale con Ajustes es·en); sin esto el papel español de una
+# instancia decía «Proyecto · Project» y, en el recibí, «Facturar a · Bill to» (revisor, 13-oct). Mismo criterio que el id·en (Legal, 13-oct).
+DOC_PARCHES_INSTANCIA_ES = (
+    ("'<h3>Facturar a · Bill to</h3>'",
+     "'<h3>' + (d.tipo === 'recibi' ? 'Recibido de · Received from' : 'Facturar a · Bill to') + '</h3>'"),
+    (">Proyecto · Project: <b>'", ">Referencia · Reference: <b>'"),
+)
+# El correo del papel es·en de una instancia, también en los dos idiomas del papel (en Lawang sigue solo en español: no pasa por aquí)
+DOC_CORREO_ES_EN = (
+    "'Buenos días' + (vals.cliente_nombre ? ' ' + vals.cliente_nombre : '') + ',\\n\\n' +\n"
+    "        (DOC_TIPO_REAL === 'recibi' ? 'Adjunto el recibí ' + saved.numero + ', justificante de su pago.\\n' +\n"
+    "        'Please find attached receipt ' + saved.numero + ' confirming your payment.\\n\\n' :\n"
+    "        'Adjunto ' + tipo.toLowerCase() + ' ' + saved.numero + ' para su revisión.\\n' +\n"
+    "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[DOC_TIPO_REAL]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n') +\n"
+    "        'Un saludo / Kind regards,\\n' + lwMarca('%firma_correo')")
 
 
 # La factura y el recibí NUEVOS nacen en la moneda de la instancia (Ajustes › moneda → lwMonedaBase() de guard.js), no en 'EUR' escrito a mano
@@ -3928,32 +4702,103 @@ def moneda_documento():
 DOC_TIPO_REAL_JS ="(vals.rectifica_numero && vals.tipo !== 'proforma' && vals.tipo !== 'recibi' ? 'rectificativa' : vals.tipo)"
 
 
+# BBM-72 (owner 13-oct, «Sí, un solo sitio»; bbm-p40): el idioma del papel lo decide Ajustes › Idiomas, no el build. El documento.js de la copia lleva
+# los DOS papeles —el es·en de Lawang, intacto, y el id·en de DOC_PARCHES_ID— cada uno en su ámbito, y elige al pintar con `axwDocId()`: lo que la base
+# guardó (modulos_activos_datos().idiomas, apuntado por apagados_instancia.js en window.AXW_IDIOMAS_DOC: el PRIMERO de la lista manda, igual que
+# _doc_idioma() de la base) y, sin fila o sin saberlo aún, el par del build, como hasta hoy. La decisión sale de la BASE (no de localStorage ni de
+# la interfaz de quien mira): dos navegadores no emiten el mismo documento en idiomas distintos. Contrato de la fila: bbm-p36, 13-oct.
+# El correo que acompaña al PDF (editores.js) sigue la misma regla.
+DOC_ENVOLTORIO = """/* ── bbm-p40, BBM-72: los dos papeles de esta instancia; manda Ajustes › Idiomas (window.AXW_IDIOMAS_DOC), y sin él el par del build ── */
+function axwDocId() {
+  var v = (typeof window !== 'undefined') ? window.AXW_IDIOMAS_DOC : null;
+  if (Array.isArray(v) && v[0] === 'es') return false;   // solo «es» primero da el papel español; «id» primero, el indonesio
+  if (Array.isArray(v) && v[0] === 'id') return true;
+  return __DEFECTO_ID__;   // sin fila, o algo que no es uno de los dos pares: el del build
+}
+var __docEs = (function () {
+__ES__
+  return { TIPOS_DOC: TIPOS_DOC, conceptoCobroRecibi: conceptoCobroRecibi, escDoc: escDoc, bancoDocHTML: bancoDocHTML, documentoVars: documentoVars, documentoHTML: documentoHTML, documentoPagina: documentoPagina };
+})();
+var __docId = (function () {
+__ID__
+  return { TIPOS_DOC: TIPOS_DOC, conceptoCobroRecibi: conceptoCobroRecibi, escDoc: escDoc, bancoDocHTML: bancoDocHTML, documentoVars: documentoVars, documentoHTML: documentoHTML, documentoPagina: documentoPagina };
+})();
+function __docPapel() { return axwDocId() ? __docId : __docEs; }
+var TIPOS_DOC = __docId.TIPOS_DOC;   // lleva id, es y en: el correo elige con axwDocId()
+function conceptoCobroRecibi(numero) { return __docPapel().conceptoCobroRecibi(numero); }
+function escDoc(s) { return __docEs.escDoc(s); }
+function bancoDocHTML(d) { return __docPapel().bancoDocHTML(d); }
+function documentoVars(soc) { return __docPapel().documentoVars(soc); }
+function documentoHTML(d, opts) { return __docPapel().documentoHTML(d, opts); }
+function documentoPagina(d, opts) { return __docPapel().documentoPagina(d, opts); }
+if (typeof module !== 'undefined')
+  module.exports = { TIPOS_DOC, conceptoCobroRecibi, escDoc, bancoDocHTML, documentoVars, documentoHTML, documentoPagina, axwDocId };
+"""
+DOC_EXPORTS = ("if(typeof module !== 'undefined')\n"
+               "  module.exports = { TIPOS_DOC, conceptoCobroRecibi, escDoc, bancoDocHTML, documentoVars, documentoHTML, documentoPagina };\n")
+DOC_CORREO_ES = "(typeof axwDocId === 'function' && !axwDocId())"   # el correo en español solo si el papel va en español
+
+
 def documento_idiomas(idiomas):
-    """El papel de factura/proforma/recibí y el correo que lo acompaña, en el par de la instancia (ver DOC_PARCHES_ID). Solo la copia (DIST, antes de
-    reraiz y de quitar comentarios); cada trozo exactamente una vez o el build para."""
+    """El papel de factura/proforma/recibí y el correo que lo acompaña, en el par de la instancia (ver DOC_PARCHES_ID) o en el que guarde Ajustes ›
+    Idiomas (BBM-72, DOC_ENVOLTORIO). Solo la copia (DIST, antes de reraiz y de quitar comentarios); cada trozo exactamente una vez o el build para."""
     if not idiomas or idiomas[0] != 'id':
         return
+    doc = os.path.join(DIST, 'intranet', 'facturas', 'documento.js')
+    es = open(doc, encoding='utf-8').read()
+    ed_ruta = os.path.join(DIST, 'intranet', 'v4', 'assets', 'editores.js')
+    ed = open(ed_ruta, encoding='utf-8').read()
+    idd = es
     for rel_, viejo, nuevo in DOC_PARCHES_ID:
-        ruta = os.path.join(DIST, *rel_.split('/'))
-        t = open(ruta, encoding='utf-8').read()
-        t = _una_vez(t, viejo.replace('%%', '%'), (nuevo % DOC_TITULOS_ID).replace('DOC_TIPO_REAL', DOC_TIPO_REAL_JS), 'documento ' + rel_)
-        open(ruta, 'w', encoding='utf-8', newline='').write(t)
-    malos = _sintaxis([os.path.join(DIST, *r_.split('/')) for r_ in {x[0] for x in DOC_PARCHES_ID}])
+        v_, n_ = viejo.replace('%%', '%'), (nuevo % DOC_TITULOS_ID).replace('DOC_TIPO_REAL', DOC_TIPO_REAL_JS)
+        if rel_ == 'intranet/facturas/documento.js':
+            idd = _una_vez(idd, v_, n_, 'documento ' + rel_)
+        else:
+            # el correo: id·en o es (el de Lawang), según el papel. Cada trozo es el final de una expresión que cierra con «;» o «);»
+            fin = ');' if v_.endswith(');') else ';'
+            if not (v_.endswith(fin) and n_.endswith(fin)):
+                aborta('documento: el trozo del correo no termina como se espera (%r)' % v_[-20:])
+            pre = 'return ' if v_.startswith('TIPOS_DOC') else ''
+            if pre:   # tipoDocEs: se sustituye la línea entera de su return
+                v_ = "return ((typeof TIPOS_DOC !== 'undefined' && " + v_
+                n_ = "return ((typeof TIPOS_DOC !== 'undefined' && " + n_
+            # el mensaje del papel es·en va en español + inglés (DOC_CORREO_ES_EN); el asunto, con el título español del tipo
+            es_ = v_[len(pre):-len(fin)]
+            if es_.startswith("'Buenos días'"):
+                es_ = DOC_CORREO_ES_EN.replace('DOC_TIPO_REAL', DOC_TIPO_REAL_JS)
+            if pre:   # tipoDocEs del papel es·en: también el tipo REAL (una rectificativa no es «Factura» en el asunto ni en el PDF; revisor, 2.ª vuelta)
+                es_ = v_[len(pre):-1]
+                if es_.count('TIPOS_DOC[vals.tipo]') != 1:
+                    aborta('documento: tipoDocEs de Lawang ya no lee TIPOS_DOC[vals.tipo] (mirar documento_idiomas)')
+                es_ = es_.replace('TIPOS_DOC[vals.tipo]', 'TIPOS_DOC[' + DOC_TIPO_REAL_JS + ']')
+            ed = _una_vez(ed, v_, '(%s ? %s : %s)%s' % (DOC_CORREO_ES, es_, n_[len(pre):-len(fin)], fin) if not pre else
+                          'return %s ? %s : %s;' % (DOC_CORREO_ES, es_, n_[len(pre):-1]), 'documento ' + rel_)
+    for viejo, nuevo in DOC_PARCHES_INSTANCIA_ES:   # después de sacar el id·en, que parte del original de Lawang
+        es = _una_vez(es, viejo, nuevo, 'documento: papel es·en de la instancia')
+    es = _una_vez(es, DOC_EXPORTS, '', 'documento: module.exports del papel es')
+    idd = _una_vez(idd, DOC_EXPORTS, '', 'documento: module.exports del papel id')
+    envuelto = (DOC_ENVOLTORIO.replace('__DEFECTO_ID__', 'true')
+                .replace('__ES__', es).replace('__ID__', idd))
+    open(doc, 'w', encoding='utf-8', newline='').write(envuelto)
+    open(ed_ruta, 'w', encoding='utf-8', newline='').write(ed)
+    malos = _sintaxis([doc, ed_ruta])
     if malos:
         aborta('documento: el parche deja JavaScript roto:\n  ' + '\n  '.join(malos))
-    print('documento %s: %d parches (factura, proforma, recibí y correo)' % ('+'.join(idiomas), len(DOC_PARCHES_ID)))
+    print('documento %s (o el de Ajustes › Idiomas): %d parches (factura, proforma, recibí y correo)' % ('+'.join(idiomas), len(DOC_PARCHES_ID)))
 
 
 def comprueba_documento_idiomas(dist, idiomas):
-    """Sobre el paquete construido: el documento.js servido no lleva ningún rótulo español del papel. Además corre el arnés
-    (pruebas/documento_idiomas.harness.cjs), que pinta los cinco casos y busca palabras españolas en el resultado: así para un rótulo NUEVO de Lawang."""
+    """Sobre el paquete construido: el documento.js servido lleva el selector de Ajustes › Idiomas (BBM-72), y el arnés
+    (pruebas/documento_idiomas.harness.cjs) pinta el papel id·en (sin fila y con Ajustes id·en) buscando palabras españolas —así para un rótulo
+    NUEVO de Lawang— y el es·en de la instancia (Ajustes es·en) con sus correcciones de instancia."""
     if not idiomas or idiomas[0] != 'id':
         return
     t = open(os.path.join(dist, 'clasico', 'facturas', 'documento.js'), encoding='utf-8').read()
-    restos = [x for x in DOC_ESPANOL if x in t]
-    if restos:
-        aborta('documento: el papel de la instancia sigue con rótulos en español: ' + ', '.join(restos))
-    # La lista fija solo repite lo que _una_vez ya garantiza: un rótulo NUEVO de Lawang lo caza pintar el papel y buscar español en él (revisor)
+    # BBM-72: el servido lleva los dos papeles (el es·en de Lawang para Ajustes es·en), así que la lista fija ya no se busca en el fichero entero:
+    # se exige el selector y el arnés pinta el papel id·en (sin fila y con Ajustes id·en) y el es·en, y busca español en el id·en
+    if 'axwDocId' not in t or 'AXW_IDIOMAS_DOC' not in t:
+        aborta('documento: el papel servido no lleva el selector de Ajustes › Idiomas (axwDocId)')
+    # Un rótulo NUEVO de Lawang lo caza pintar el papel y buscar español en él (revisor)
     r = subprocess.run(['node', os.path.join(AQUI, 'pruebas', 'documento_idiomas.harness.cjs'), dist], capture_output=True, text=True, encoding='utf-8')
     if r.returncode != 0:
         aborta('documento: el papel de la instancia no sale entero en %s:\n%s' % ('·'.join(idiomas), (r.stdout + r.stderr)[-1500:]))
@@ -3984,8 +4829,9 @@ def instancia(nombre):
         portada_reservas()
     moneda_documento()   # 13-oct (bbm-p36): factura y recibí nuevos en la moneda de la instancia, no en EUR
     idiomas = idiomas_de(nombre)
+    pantalla = idioma_pantalla_de(nombre, idiomas)   # bbm-p42: SIEMPRE, también sin `idiomas` (un idioma_pantalla sin lista aborta, no se ignora: revisor)
     if idiomas:   # 12-oct-2026: interfaz en los idiomas de la instancia (bbm: indonesio e inglés)
-        idiomas_instancia(idiomas)
+        idiomas_instancia(idiomas, pantalla)   # + el idioma de pantalla por defecto (el del registro; también el de la puerta sin sesión)
         documento_idiomas(idiomas)   # BBM-65 (13-oct): el papel de factura/recibí y su correo en el par de la instancia (id·en en bbm)
     menu_i18n()   # rótulos del menú en en/id en todas las páginas (después del núcleo del indonesio)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
@@ -4036,6 +4882,12 @@ def instancia(nombre):
         if not os.path.isfile(hoja):
             aborta('menú oscuro: falta assets/shell.css en el paquete')
         open(hoja, 'a', encoding='utf-8', newline='\n').write(menu)
+    elegido = seleccion_css(nombre, DIST)   # F14 (bbm-p40): filtro, pestaña o segmento elegido en el acento de la piel
+    if elegido:
+        hoja = os.path.join(DIST, 'assets', 'shell.css')
+        if not os.path.isfile(hoja):
+            aborta('elegido: falta assets/shell.css en el paquete')
+        open(hoja, 'a', encoding='utf-8', newline='\n').write(elegido)
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
     # Módulos: el navegador pregunta a la base cuáles están activos al cargar (panel de control, 28-sep-2026). Va en
     # TODA instancia del ERP (antes solo si el registro traía modulos_activos, Des #4).
@@ -4114,11 +4966,12 @@ def instancia(nombre):
         d = os.path.join(DIST, 'panel')
         os.makedirs(d, exist_ok=True)
         panel = open(os.path.join(AQUI, 'panel_control.html'), encoding='utf-8').read()
-        if '__AXW_ROTULOS__' not in panel or '__AXW_SETUP__' not in panel:
-            aborta('panel_control.html sin el hueco __AXW_ROTULOS__ o __AXW_SETUP__')
+        if '__AXW_ROTULOS__' not in panel or '__AXW_SETUP__' not in panel or panel.count('__AXW_FUENTES__') != 1:
+            aborta('panel_control.html sin el hueco __AXW_ROTULOS__, __AXW_SETUP__ o __AXW_FUENTES__ (una vez)')
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8', newline='').write(
             panel_nav(panel, 'modulos').replace('__AXW_ROTULOS__', json.dumps(rotulos(), ensure_ascii=False, sort_keys=True).replace('</', '<\\/'))
-            .replace('__AXW_SETUP__', json.dumps(setup_para_panel(), ensure_ascii=False, sort_keys=True).replace('</', '<\\/')))
+            .replace('__AXW_SETUP__', json.dumps(setup_para_panel(), ensure_ascii=False, sort_keys=True).replace('</', '<\\/'))
+            .replace('__AXW_FUENTES__', fuentes_panel()))
         # La vista «Pilotos» (1-oct-2026, encargos/20261001_panel_pilotos_vista.md): /panel/pilotos/, mismo CSS. Esta página
         # NO lleva su contenido (/panel/ es público): lo pide a la edge erp-control (acción `pilotos`, solo operador).
         d_pil = os.path.join(d, 'pilotos')
@@ -4141,6 +4994,9 @@ def instancia(nombre):
         os.makedirs(os.path.dirname(d), exist_ok=True)
         open(d, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, None, '/' + ruta, herramienta=herr))
     avisos_para_rotos()
+    # bbm-p42b: los colores de Lawang que quedan a fuego (editores, cajones, papel) a la piel; tras TODO lo que escribe páginas
+    # (pagina_no_instalado también lleva el verde) y antes de versiona(), para que el ?v= cambie con ellos
+    print('colores de Lawang a la piel: %d' % piel_colores_lawang(DIST, nombre))
     # ?v= con la huella de lo que SALE de este build, como en la demo pública (28-sep-2026). Sin esto, la v4 llevaba el
     # ?v= del fichero de Lawang (guard.js se reescribe entero aquí: mapa de módulos + ficha) y /panel/ iba sin versión:
     # Hostinger cachea 7 días y el verificador vio el guard.js viejo en /panel/ tras publicar.
