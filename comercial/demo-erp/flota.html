@@ -631,13 +631,13 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   }
 
   /* ── Seguro y fianza del modelo: se leen aparte (reservas_setup_datos, la lectura del asistente) al abrir el cajón y tras cada guardado. Precios tal cual da la base. ── */
-  E.setup = {}; E.setupPide = 0;
+  E.setup = {}; E.setupPide = {};
   function formaSetup(d) { return esObj(d) && Array.isArray(d.garantias) && Array.isArray(d.seguro_tramos); }
   function cargaSetup(pid) {
     E.setup[pid] = { cargando: true };
-    var yo = ++E.setupPide;
+    var yo = E.setupPide[pid] = (E.setupPide[pid] || 0) + 1;   // por modelo: solo una lectura MÁS NUEVA del mismo modelo descarta esta
     return llama('reservas_setup_datos', { p_producto: pid }).then(function (r) {
-      if (yo !== E.setupPide) return E.setup[pid];   // llegó tarde: ya hay otra lectura en marcha o hecha después
+      if (yo !== E.setupPide[pid]) return E.setup[pid];   // llegó tarde: hay otra lectura de este modelo pedida después
       E.setup[pid] = r.error ? { error: r.error } : (formaSetup(r.data) ? { d: r.data } : { error: { message: 'forma' } });
       if (E.cajon && E.cajon.pid === pid) pintaSeguro();
       return E.setup[pid];
@@ -752,7 +752,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   function abreGarantia(pid) {
     var p = prodPorId(pid); if (!p || !setupDe(pid)) return;
     var g0 = garantiaDe(pid), ctx = { esperado: g0 ? g0.actualizado_en : null };
-    var monF = (g0 && g0.moneda) || monedasDe(p)[0] || '';
+    var monF = (g0 && g0.moneda) || '';   // sin fianza guardada no se afirma moneda: la fija la base (_flota_moneda: la de la instancia y, si no, la de las tarifas)
     var fianzaEl = h('input', { type: 'text', id: 'fl-f-fianza', 'data-campo': 'fianza', inputmode: 'decimal', autocomplete: 'off' });
     var oblEl = h('input', { type: 'checkbox', id: 'fl-f-seguro-obligatorio', 'data-campo': 'seguro_obligatorio' });
     var conEl = h('select', { id: 'fl-f-fianza-con-seguro', 'data-campo': 'fianza_con_seguro' }, [h('option', { value: 'no', text: T('No: fianza o seguro') }), h('option', { value: 'si', text: T('Sí: fianza y seguro') })]);

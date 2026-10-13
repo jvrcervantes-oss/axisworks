@@ -69,6 +69,7 @@ async function servidor(s, nombre, a) {
   const o = s.o;
   if (o.lento && nombre !== 'producto_flota_datos') await new Promise(r => setTimeout(r, o.lento));
   if (o.lento && nombre === 'producto_flota_datos' && !s.__leida) { s.__leida = true; await new Promise(r => setTimeout(r, o.lento)); }
+  if (o.setupLento && nombre === 'reservas_setup_datos' && o.setupLento[a.p_producto]) await new Promise(r => setTimeout(r, o.setupLento[a.p_producto]));
   if (o.sinRed && nombre === o.sinRed) return { data: null, error: { message: 'Failed to fetch' } };
   if (o.noDisponible && o.noDisponible.includes(nombre)) return err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
   if (o.moduloApagado) return err('42501', nombre + ': módulo no activo', 'modulo_apagado');
@@ -854,6 +855,20 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
        && /1\.000\.000 IDR/.test(await txt(p, '[data-fl="garantia"]')) && (await txt(p, '[data-fl="garantia"]')).includes('Sí: fianza y seguro'));
     await p.click(accion('fl-seguro-borrar', '[data-seguro-id="' + sid + '"]')); await motivo(p, 'Quito'); await confirmar(p); await esperaCierre(p);
     ok('borrar un tramo del seguro: id, motivo y versión; desaparece del cajón', escritas(base)[3][0] === 'producto_seguro_borra' && escritas(base)[3][1].p_id === sid && /^2026/.test(escritas(base)[3][1].p_esperado) && !!(await p.$('[data-fl="sin-seguro"]')));
+    await ctx.close();
+  }
+  {
+    // carrera (revisor bbm-p42, 2.ª ronda): se abre A, se cierra antes de que llegue su seguro, se abre B; la respuesta tardía de A no puede
+    // dejar A en «Cargando…» para siempre al volver a abrirlo
+    const { p, ctx } = await abre({ base: { setupLento: { p1: 900 } } });
+    const fila = id => p.evaluate(i => document.querySelector('.fl-inv-fila[data-fila-producto="' + i + '"]').click(), id);
+    const cierra = () => p.evaluate(() => document.querySelector('[data-accion="fl-cajon-cerrar"]').click());
+    await fila('p1'); await p.waitForSelector('[data-fl="cajon"]'); await cierra();
+    await fila('p2'); await p.waitForSelector('[data-fl="cajon"] [data-fl="seguro"] [data-accion="fl-garantia-abrir"]');
+    await p.waitForTimeout(1200);   // ya llegó la respuesta tardía de p1
+    await cierra(); await fila('p1');
+    const listo = await p.waitForSelector('[data-fl="cajon"] [data-fl="seguro"] [data-accion="fl-garantia-abrir"]', { timeout: 3000 }).then(() => true, () => false);
+    ok('abrir A, cerrar antes de su seguro, abrir B y volver a A: el seguro de A se ve con sus botones (no se queda en «Cargando…»)', listo, await txt(p, '[data-fl="seguro"]'));
     await ctx.close();
   }
   {
