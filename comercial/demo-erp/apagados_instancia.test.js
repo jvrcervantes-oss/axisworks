@@ -190,11 +190,18 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(typeof globalThis.axwModuloActivo === 'function' && globalThis.AXW_MODULOS_LISTOS && typeof globalThis.AXW_MODULOS_LISTOS.then === 'function', 'el fichero exporta helper y promesa');
     ok(globalThis.axwModuloActivo('comisiones') === true, '(c) cargando: true, no lee «todo apagado»');
     ok(globalThis.axwModuloActivo('base') === true, 'base siempre true');
+    // axwRutaActiva (Usuarios, bbm-p40): por el path del menú v4; sin saber, abierto; una pantalla no instalable (xp), cerrada siempre
+    ok(typeof globalThis.axwRutaActiva === 'function', 'el fichero exporta axwRutaActiva');
+    ok(globalThis.axwRutaActiva('comisiones') === true, 'axwRutaActiva cargando: true (falla abierto)');
+    ok(globalThis.axwRutaActiva('creatividades') === false, 'axwRutaActiva: pantalla no instalable (xp) false aun sin saber');
     E.publica();
     ok(await globalThis.AXW_MODULOS_LISTOS === true, '(c) la promesa de listo resuelve true al saberse');
     // (b) ya sabido: refleja lo realmente activo
     ok(globalThis.axwModuloActivo('facturas') === true && globalThis.axwModuloActivo('comisiones') === false, '(b) activo true / apagado false');
     ok(globalThis.axwModuloActivo('base') === true, '(b) base true');
+    ok(globalThis.axwRutaActiva('facturas') === true && globalThis.axwRutaActiva('comisiones') === false, 'axwRutaActiva: pantalla de módulo encendido true / apagado false');
+    ok(globalThis.axwRutaActiva('usuarios') === true && globalThis.axwRutaActiva('') === true, 'axwRutaActiva: pantalla del núcleo (sin módulo) o sin path, true');
+    ok(globalThis.axwRutaActiva('factura') === true, 'axwRutaActiva: compara la ruta entera (/factura/ no es /facturas/)');
 
     // (b) sin modulos_activos = todo encendido
     const T = escenario({ activos: null });

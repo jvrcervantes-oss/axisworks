@@ -54,6 +54,22 @@
   };
   window.AXW_MODULOS_LISTOS = pListo.then(function () { return !estado.error; });
 
+  /* ¿Es de un módulo encendido la pantalla `path` del menú v4 (el `path` de LW_MENU_V4, sin barras: 'taller', 'leads')? Lo usa Usuarios
+     para ofrecer solo las herramientas de módulos encendidos (bbm-p40, 13-oct-2026: la ventana de permisos enseñaba las de Lawang enteras).
+     Se mira la ruta v4 y la clásica (/clasico/<path>/), donde ruta_limpia deja las herramientas de /intranet/<x>/ (el CRM). Una pantalla
+     que esta instancia no puede encender nunca (xp) es false siempre; una sin módulo (núcleo: usuarios, ajustes) es true; el resto, como
+     axwModuloActivo: falla ABIERTO (sin saber, true). No es un candado: el que decide qué se concede es el servidor. */
+  window.axwRutaActiva = function (path) {
+    if (!path) return true;
+    var rutas = ['/' + path + '/', '/clasico/' + path + '/'];
+    for (var i = 0; i < rutas.length; i++) {
+      if (esExtraRuta(rutas[i])) return false;
+      var m = moduloDeRuta(rutas[i]);
+      if (m) return window.axwModuloActivo(m);
+    }
+    return true;
+  };
+
   // ── la pantalla actual ──────────────────────────────────────────────────────────────────────
   function moduloDeRuta(ruta) {
     var mejor = null, largo = 0;

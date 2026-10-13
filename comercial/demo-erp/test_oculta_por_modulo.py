@@ -43,7 +43,8 @@ def tupla_de_build(nombre):
 
 
 class Tablas(HTMLParser):
-    """Por cada <table>: el marcador de cada <th> del thead y de cada <td> de la 2.ª fila del tbody (la plantilla)."""
+    """Por cada <table>: el marcador de cada <th> del thead y de cada <td> de la fila PLANTILLA del tbody: la que clona plantillaFilas() de
+    datos.js, `tb.rows[Math.min(1, tb.rows.length - 1)]` (la 2.ª, o la única si solo hay una: Usuarios, bbm-p40)."""
     def __init__(self):
         super().__init__()
         self.tablas, self.en_thead, self.en_tbody, self.fila_tbody, self.actual = [], False, False, 0, None
@@ -51,24 +52,27 @@ class Tablas(HTMLParser):
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if tag == 'table':
-            self.actual = {'th': [], 'td': []}
+            self.actual = {'th': [], 'td': [], 'filas': []}
             self.tablas.append(self.actual)
         elif tag == 'thead':
             self.en_thead = True
         elif tag == 'tbody':
             self.en_tbody, self.fila_tbody = True, 0
-        elif tag == 'tr' and self.en_tbody:
+        elif tag == 'tr' and self.en_tbody and self.actual is not None:
             self.fila_tbody += 1
+            self.actual['filas'].append([])
         elif tag == 'th' and self.en_thead and self.actual is not None:
             self.actual['th'].append(a.get('data-axw-sin'))
-        elif tag == 'td' and self.en_tbody and self.fila_tbody == 2 and self.actual is not None:
-            self.actual['td'].append(a.get('data-axw-sin'))
+        elif tag == 'td' and self.en_tbody and self.actual is not None and self.actual['filas']:
+            self.actual['filas'][-1].append(a.get('data-axw-sin'))
 
     def handle_endtag(self, tag):
         if tag == 'thead':
             self.en_thead = False
         elif tag == 'tbody':
             self.en_tbody = False
+            if self.actual is not None and self.actual['filas']:
+                self.actual['td'] = self.actual['filas'][min(1, len(self.actual['filas']) - 1)]
 
 
 OCULTA = tupla_de_build('OCULTA_POR_MODULO')

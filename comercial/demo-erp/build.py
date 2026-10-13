@@ -1757,6 +1757,9 @@ MENU_I18N = {
     'CRM de leads': {'en': 'Lead CRM', 'id': 'CRM prospek'},
     'Herramientas que verá': {'en': 'Tools they will see', 'id': 'Alat yang akan dilihat'},
     'Contraseña provisional': {'en': 'Temporary password', 'id': 'Kata sandi sementara'},
+    'Permisos de %n': {'en': 'Permissions of %n', 'id': 'Izin %n'},
+    'Guardar permisos': {'en': 'Save permissions', 'id': 'Simpan izin'},
+    'Activo': {'en': 'Active', 'id': 'Aktif'},
     'Mínimo 10 caracteres. La verá al entrar; que la cambie después. No se puede volver a consultar.': {
         'en': 'At least 10 characters. They will see it when signing in and should change it afterwards. It cannot be looked up again.',
         'id': 'Minimal 10 karakter. Akan terlihat saat masuk; minta dia menggantinya setelah itu. Tidak bisa dilihat lagi.'},
@@ -3639,6 +3642,11 @@ TEXTOS_OTRA = (   # el resto de instancias: un ejemplo neutro, sin la villa de L
 # fila plantilla del HTML, que plantillaFilas() de datos.js clona con sus atributos: no cambia ningún índice de columna de datos.js. Lawang no pasa por aquí.
 OCULTA_POR_MODULO = (
     # (fichero en DIST, trozo de Lawang, el mismo trozo marcado)
+    # bbm-p40 (13-oct): la columna «Proyectos» de Usuarios (cuántos proyectos tiene cada persona) sin el módulo proyectos
+    ('intranet/v4/usuarios/index.html', '<th class="py-3 px-3" data-lwt>Proyectos</th>',
+     '<th class="py-3 px-3" data-axw-sin="proyectos" data-lwt>Proyectos</th>'),
+    ('intranet/v4/usuarios/index.html', '<td class="py-3.5 px-3 text-on-surface-variant">—</td>\n<td class="py-3.5 px-3"><span class="inline-flex items-center gap-1.5',
+     '<td class="py-3.5 px-3 text-on-surface-variant" data-axw-sin="proyectos">—</td>\n<td class="py-3.5 px-3"><span class="inline-flex items-center gap-1.5'),
     ('intranet/v4/facturas/index.html', '<th class="py-3.5 px-4 font-semibold" data-lwt>Contrato</th>',
      '<th class="py-3.5 px-4 font-semibold" data-axw-sin="contratos operaciones" data-lwt>Contrato</th>'),
     ('intranet/v4/facturas/index.html', '<td class="py-4 px-4 font-medium text-on-surface">—</td>\n<td class="py-4 px-4 font-label-md text-on-surface">—</td>',
@@ -3685,6 +3693,9 @@ ALTA_SIN_CONTRATOS = (
      "        /* ERP: si el catálogo no se lee, el alta NO se abre. «Contratos que puede hacer» vacío significa TODOS:\n"
      "           un formulario sin opciones daría acceso a todo sin que nadie lo decidiera. */\n"
      "        Promise.resolve(window.AXW_MODULOS_LISTOS).then(function () {\n"
+     "          // Solo las herramientas de módulos encendidos (PERMISOS_POR_MODULO): las listas del alta se rehacen ya sabiendo los módulos.\n"
+     "          herrCrmAlta = herrCrmAlta.filter(function (p) { return window.axwPermisoActivo(p[0]); });\n"
+     "          herrRestoAlta = permisosPorMenu(function (k) { return puedoDarAlta(k) && !esCrmAlta([k]) && window.axwPermisoActivo(k); });\n"
      "          // Instancia con el módulo contratos APAGADO (bbm-p40): no hay catálogo que leer ni contratos que conceder.\n"
      "          if (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false) return abreAlta(null);\n"
      "          tiposErp().then(function (t) {\n"
@@ -3705,12 +3716,101 @@ ALTA_SIN_CONTRATOS = (
      "            : 'Se crea la cuenta y se le da acceso de inmediato. Nace sin ningún proyecto asignado — se asigna después editando la ficha ya creada.' },\n"),
 )
 
+# Usuarios de una instancia: solo las herramientas de módulos ENCENDIDOS (bbm-p40, 13-oct-2026; owner tras rellenar el asistente de bbm: «la
+# ventana de permisos es la que teníamos en Lawang… aparecen todos los módulos. Deberían aparecer sólo los activos»). Por el camino de la casa:
+# cada casilla sale de su entrada del menú v4 (LW_MENU_V4) → su pantalla → su módulo (mapa de apagados_instancia.js, axwRutaActiva), nunca de
+# una lista escrita a mano ni del nombre del cliente. Aplica al alta, al editor de permisos y a la ficha. Reglas:
+#   · lo que la persona YA tiene de un módulo apagado no se enseña pero VIAJA al guardar (usuario_guarda_permisos sustituye la lista entera:
+#     si no, guardar se lo quitaría en silencio y al volver a encender el módulo la persona habría perdido el acceso);
+#   · «Proyectos en los que trabaja» y «Contratos que puede hacer» no se pintan con su módulo apagado y NO viajan (la base conserva lo que
+#     hay; mandar [] borraría proyectos y un vacío en tipos de contrato bloquea al agente);
+#   · falla abierto: sin saber los módulos (la base no contestó), todo como en Lawang. No es el candado: lo que se concede lo decide el servidor.
+# Lawang no pasa por aquí (0 bytes): estos trozos solo se cambian en la COPIA de la instancia.
+PERMISOS_POR_MODULO = (
+    # la función que dice si una casilla es de un módulo encendido (la usan el alta, el editor y la ficha de datos.js)
+    ('intranet/v4/assets/editores.js',
+     "  window.lwEtiquetaPermiso = function (k) {\n    var o = permisosPorMenu(function (x) { return x === k; }).filter(Array.isArray)[0];\n    return o ? o[1] : k;\n  };\n",
+     "  window.lwEtiquetaPermiso = function (k) {\n    var o = permisosPorMenu(function (x) { return x === k; }).filter(Array.isArray)[0];\n    return o ? o[1] : k;\n  };\n"
+     "  /* Instancia (bbm-p40): ¿la casilla `k` es de un módulo encendido? Por la pantalla de su entrada en LW_MENU_V4 (el mismo recorrido que\n"
+     "     permisosPorMenu) y axwRutaActiva de apagados_instancia.js. Una casilla sin entrada en el menú, o sin saber los módulos: true. */\n"
+     "  var rutaDePermiso = null;\n"
+     "  window.axwPermisoActivo = function (k) {\n"
+     "    if (typeof window.axwRutaActiva !== 'function') return true;\n"
+     "    if (!rutaDePermiso) {\n"
+     "      if (!(window.LW_MENU_V4 || []).length) return true;\n"
+     "      rutaDePermiso = {};\n"
+     "      var pon = function (c, ruta) { if (c && !Object.prototype.hasOwnProperty.call(rutaDePermiso, c)) rutaDePermiso[c] = ruta; };\n"
+     "      window.LW_MENU_V4.forEach(function (sec) {\n"
+     "        sec.entradas.forEach(function (e) {\n"
+     "          if (e.pestanas) e.pestanas.forEach(function (t) { pon(t.clave, t.path); });\n"
+     "          else if (e.claves) e.claves.forEach(function (c) { pon(c.clave, e.path); });\n"
+     "          else if (e.clave) pon(e.clave, e.path);\n"
+     "          (e.extra || []).forEach(function (c) { pon(c.clave, e.path); });\n"
+     "        });\n"
+     "      });\n"
+     "    }\n"
+     "    return !Object.prototype.hasOwnProperty.call(rutaDePermiso, k) || window.axwRutaActiva(rutaDePermiso[k]);\n"
+     "  };\n"),
+    # las filas sin casilla (Resumen, Bot de WhatsApp: «según rol») de un módulo apagado tampoco se pintan
+    ('intranet/v4/assets/editores.js',
+     "        else if (e.path !== 'home') filas.push({ info: nom, nota: T(e.rol === 'super_admin' ? 'solo super admin' : 'según rol') });\n",
+     "        else if (e.path !== 'home' && (typeof window.axwRutaActiva !== 'function' || window.axwRutaActiva(e.path))) filas.push({ info: nom, nota: T(e.rol === 'super_admin' ? 'solo super admin' : 'según rol') });\n"),
+    # alta: el CRM de leads solo si queda alguna casilla
+    ('intranet/v4/assets/editores.js',
+     "          { k: 'herr_crm', label: 'CRM de leads', tipo: 'multicheck', opciones: herrCrmAlta, valor: [],\n",
+     "          !herrCrmAlta.length ? null : { k: 'herr_crm', label: 'CRM de leads', tipo: 'multicheck', opciones: herrCrmAlta, valor: [],\n"),
+    # editor: espera a saber los módulos antes de montar las casillas (un clic rápido al cargar no enseña la lista entera)
+    ('intranet/v4/assets/editores.js',
+     "          (typeof LW_PERMISOS !== 'undefined') ? Promise.resolve({ data: null }) : sb.from('usuarios').select('herramientas'),\n",
+     "          (typeof LW_PERMISOS !== 'undefined') ? Promise.resolve(window.AXW_MODULOS_LISTOS).then(function () { return { data: null }; }) : sb.from('usuarios').select('herramientas'),\n"),
+    ('intranet/v4/assets/editores.js',
+     "          window.AXW_NUCLEO_OPERACION ? tiposErp() : Promise.resolve(undefined),\n",
+     "          window.AXW_NUCLEO_OPERACION ? Promise.resolve(window.AXW_MODULOS_LISTOS).then(function () {\n"
+     "            return (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false) ? undefined : tiposErp();\n"
+     "          }) : Promise.resolve(undefined),\n"),
+    ('intranet/v4/assets/editores.js',
+     "            ops = permisosPorMenu();\n",
+     "            ops = permisosPorMenu(window.axwPermisoActivo);\n"),
+    ('intranet/v4/assets/editores.js',
+     "          var proyectosOk = !rs[1].error;\n",
+     "          var proyectosModulo = !(typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false);\n"
+     "          var proyectosOk = proyectosModulo && !rs[1].error;\n"),
+    ('intranet/v4/assets/editores.js',
+     "          } else {\n            campos.push({ tipo: 'nota', label: 'No se pudo cargar el catálogo de proyectos",
+     "          } else if (proyectosModulo) {\n            campos.push({ tipo: 'nota', label: 'No se pudo cargar el catálogo de proyectos"),
+    ('intranet/v4/assets/editores.js',
+     "          if (!tiposOk) campos.push({ tipo: 'nota', label: 'No se pudo leer el catálogo de tipos de contrato",
+     "          if (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false) tiposOk = false;   // ni se pinta ni viaja\n"
+     "          else if (!tiposOk) campos.push({ tipo: 'nota', label: 'No se pudo leer el catálogo de tipos de contrato"),
+    # al guardar, lo que la persona ya tiene de módulos apagados viaja tal cual (no se enseña, no se quita)
+    ('intranet/v4/assets/editores.js',
+     "              nombre: v.nombre.trim() || null, herramientas: v.herramientas,\n",
+     "              nombre: v.nombre.trim() || null,\n"
+     "              herramientas: v.herramientas.concat((u.herramientas || []).filter(function (k) { return !window.axwPermisoActivo(k) && v.herramientas.indexOf(k) === -1; })),\n"),
+    # ficha (datos.js): herramientas, proyectos y contratos por la misma regla
+    ('intranet/v4/assets/datos.js',
+     "          var hs = u.herramientas || [], pr = nombresProy(u.proyectos), sup = nombresProy(u.proyectos_supervisados);\n",
+     "          var hs = (u.herramientas || []).filter(function (k) { return !window.axwPermisoActivo || window.axwPermisoActivo(k); }), pr = nombresProy(u.proyectos), sup = nombresProy(u.proyectos_supervisados);\n"
+     "          var modOn = function (m) { return !(typeof window.axwModuloActivo === 'function' && window.axwModuloActivo(m) === false); };   // bbm-p40\n"),
+    ('intranet/v4/assets/datos.js',
+     "            H.seccion(tx('Proyectos en los que trabaja (%n)', { n: pr.length }),\n",
+     "            (modOn('proyectos') ? H.seccion(tx('Proyectos en los que trabaja (%n)', { n: pr.length }),\n"),
+    ('intranet/v4/assets/datos.js',
+     "              sup.length ? H.chips(sup) : H.nota('Ninguno. Es una lista distinta de la de arriba: supervisar es ver y escribir lo del proyecto entero, no solo lo propio.')) +\n"
+     "            H.seccion('Contratos que puede hacer',\n"
+     "              tipos.length ? H.chips(tipos) : H.nota('Sin restricción: vacío = TODOS los tipos (al revés que Proyectos).'));\n",
+     "              sup.length ? H.chips(sup) : H.nota('Ninguno. Es una lista distinta de la de arriba: supervisar es ver y escribir lo del proyecto entero, no solo lo propio.')) : '') +\n"
+     "            (modOn('contratos') ? H.seccion('Contratos que puede hacer',\n"
+     "              tipos.length ? H.chips(tipos) : H.nota('Sin restricción: vacío = TODOS los tipos (al revés que Proyectos).')) : '');\n"),
+)
+
 
 def oculta_por_modulo():
     """Marca en la copia lo que sobra con un módulo apagado (OCULTA_POR_MODULO) y pone en cada página su regla; y el editor de factura sin
-    contrato (EDITOR_SIN_CONTRATO) y el alta de usuario sin contratos (ALTA_SIN_CONTRATOS). Cada trozo exactamente una vez o el build para."""
+    contrato (EDITOR_SIN_CONTRATO), el alta de usuario sin contratos (ALTA_SIN_CONTRATOS) y Usuarios solo con las herramientas de módulos
+    encendidos (PERMISOS_POR_MODULO). Cada trozo exactamente una vez o el build para."""
     reglas = {}
-    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO + ALTA_SIN_CONTRATOS:
+    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO + ALTA_SIN_CONTRATOS + PERMISOS_POR_MODULO:
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
         open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, viejo, nuevo, 'oculta_por_modulo ' + rel_))
