@@ -225,6 +225,23 @@
     plegables();
     secciones();
     gruposHub();
+    rotula();
+  }
+  /* Rótulo por RUTA (erp-front, 14-oct-2026): en una instancia de tipo Reservas /productos/ es «Extras y servicios» (las motos viven en Flota y tarifas).
+     M.r = {ruta limpia: {es, en, id}} lo pone el build. Se busca el enlace por su ruta (identificador estable) y se cambia solo su texto visible: el
+     menú de Lawang (nav.js) no se toca ni se engancha por su rótulo. En una entrada con icono, el texto es el ÚLTIMO <span> que no es la flecha. */
+  function rotula() {
+    var R = M.r || {}, idi = window.LW_IDIOMA || 'es';
+    if (!Object.keys(R).length) return;
+    var as = document.querySelectorAll('aside a[href], nav a[href], header a[href]');
+    for (var i = 0; i < as.length; i++) {
+      var r = R[rutaDe(as[i])];
+      if (!r) continue;
+      var t = r[idi] || r.en || r.es;
+      var sp = as[i].querySelectorAll('span:not([data-lw-flecha])');
+      var dest = sp.length ? sp[sp.length - 1] : (as[i].children.length ? null : as[i]);
+      if (dest && t && dest.textContent !== t) dest.textContent = t;
+    }
   }
   function rutaDe(a) {
     try { return new URL(a.getAttribute('href'), location.href).pathname; } catch (e) { return null; }

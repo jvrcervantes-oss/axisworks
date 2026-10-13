@@ -1,0 +1,350 @@
+<!-- Pantalla «Extras y servicios» del ERP MAESTRO (erp-front, 14-oct-2026; owner 13-oct: «En BBM ¿por qué tenemos Fleets and rates y luego Products? ¿No es lo mismo?»).
+     Solo en las instancias de tipo Reservas: build.py (extras_pantalla) la pone en /intranet/v4/productos/ en lugar de la pantalla Productos de Lawang, así que la entrada del
+     menú, la casilla `productos` de Usuarios y el mapa de módulos siguen enganchados por su ruta y su clave; solo cambia lo que se ve. Lo que se alquila (motos) vive en
+     Flota y tarifas; aquí solo lo que se vende y NO se alquila (clase distinta de 'alquiler': entrega a domicilio, accesorios, servicios).
+     NO es una página entera: build.py la inyecta en la cáscara de /asistente/ de Lawang. Dos partes separadas por la línea «AXW_SCRIPT». Las ayudas comunes las pega build.py.
+     Lee las tablas `productos` e `impuestos` COMO la pantalla de Lawang a la que sustituye (deuda que se mueve, no crece: decisión por defecto de erp-front, pedida a Backend una
+     lectura `_datos` que la retire). Escribe SOLO por producto_guarda, que exige admin y la herramienta en la base; la pantalla no decide el rol: lo dice tras la respuesta.
+     Un alta nace con clase 'servicio' y nunca se manda 'alquiler' desde aquí. Todo texto de la base se pinta con textContent; se engancha por data-accion / data-ex / data-*-id. -->
+<div class="flex flex-col w-full gap-8 ex" data-ex="raiz">
+<style>
+/*AXW_COMUN_CSS*/
+.ex{--ex-tinta:var(--tema-on-surface, 27 28 25);--ex-tinta2:var(--tema-on-surface-variant, 68 72 63);--ex-filete:var(--tema-filete, 218 220 230);
+  --ex-acento:var(--tema-burnt-earth, 46 59 235);--ex-blanco:var(--tema-surface-container-lowest, 255 255 255)}
+.ex .ex-cab.lw-cabecera{background:transparent!important;padding:0 0 8px!important;border-radius:0!important;box-shadow:none!important}
+.ex-ante{margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:rgb(var(--ex-acento))}
+.ex .ex-h1{margin:16px 0 0;font-weight:600;font-size:clamp(28px,2.7vw,40px);line-height:1.04;letter-spacing:-.05em;color:rgb(var(--ex-tinta));word-break:break-word}
+.ex .ex-h1>span{display:block}
+.ex .ex-h1 .ex-h1-b{font-weight:300}
+.ex-lede{margin:16px 0 0;max-width:60ch;font-size:17px;line-height:1.6;color:rgb(var(--ex-tinta2))}
+.ex-barra{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.ex-barra .ex-n{margin-right:auto;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--ex-acento))}
+.ex-lista{margin:0;padding:0;list-style:none;background:rgb(var(--ex-blanco));border:1px solid rgb(var(--ex-filete));border-radius:20px;overflow:hidden}
+.ex-fila{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr) minmax(0,1.3fr) auto auto;gap:8px 16px;align-items:center;padding:14px 20px;border-top:1px solid rgb(var(--ex-filete));min-width:0}
+.ex-fila:first-child{border-top:0}
+.ex-fila[data-activo="0"]{opacity:.7}
+.ex-th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--ex-tinta2));padding-top:12px;padding-bottom:12px}
+.ex-nombre{font-weight:600;word-break:break-word;min-width:0}
+.ex-sub{display:block;font-weight:400;font-size:13px;color:rgb(var(--ex-tinta2));word-break:break-word}
+.ex-dato{font-size:14px;word-break:break-word;min-width:0}
+.ex-et{display:none;margin-right:5px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:rgb(var(--ex-tinta2))}
+.ex-fila .axw-acciones{justify-content:flex-end}
+.ex-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:0 14px}
+.ex-form .axw-campo input,.ex-form .axw-campo select,.ex-form .axw-campo textarea{width:100%;min-width:0;box-sizing:border-box}
+.ex-form .ex-ancho{grid-column:1/-1}
+.ex-form textarea{font-family:inherit;min-height:70px}
+.ex-ayuda{font-size:13px;color:rgb(var(--ex-tinta2));line-height:1.45;margin:0;word-break:break-word}
+.ex-check{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px}
+.ex-check input{width:18px;height:18px;flex:none}
+.axw-campo input[aria-invalid="true"],.axw-campo select[aria-invalid="true"]{border-color:#7a1a14}
+@media (max-width:860px){
+  .ex-fila{grid-template-columns:minmax(0,1fr) auto;padding:14px 16px}
+  .ex-th{display:none}
+  .ex-fila .ex-dato{grid-column:1 / -1}
+  .ex-et{display:inline}
+  .ex-fila .axw-acciones{grid-column:1 / -1;justify-content:flex-start}
+}
+</style>
+
+<div class="lw-cabecera ex-cab">
+<div>
+<p class="ex-ante font-label-md uppercase"><span data-lwt>Catálogo</span> · <span data-lwt>Extras y servicios</span></p>
+<h1 class="ex-h1 font-headline-lg"><span data-lwt>Extras y servicios</span><span class="ex-h1-b" data-lwt>Lo que vendes y no se alquila.</span></h1>
+<p class="ex-lede" data-lwt>Entrega a domicilio, accesorios, servicios: lo que se añade a una reserva o se factura suelto. Las motos y sus precios están en Flota y tarifas.</p>
+</div>
+</div>
+
+<div class="axw-nota"><p><span data-lwt>Las motos se dan de alta y se cambian en</span> <a href="/intranet/v4/flota/" data-ex="ir-flota"><span data-lwt>Flota y tarifas</span></a>.</p></div>
+
+<p class="axw-ok axw-oculto" data-ex="exito" role="status"></p>
+<p class="axw-aviso axw-oculto" data-ex="aviso" role="status"></p>
+<p class="axw-error axw-oculto" data-ex="error" role="alert"></p>
+
+<div data-ex="estado" data-tipo="cargando" class="axw-vacio"></div>
+
+<div class="flex flex-col gap-4 axw-oculto" data-ex="contenido">
+<div class="ex-barra">
+<span class="ex-n font-label-md" data-ex="n"></span>
+<button class="axw-boton" type="button" data-accion="ex-actualizar"><span data-lwt>Actualizar</span></button>
+<button class="axw-boton" type="button" data-accion="ex-nuevo" data-primario="1"><span data-lwt>Nuevo extra</span></button>
+</div>
+<p class="axw-aviso axw-oculto" data-ex="impuestos-no" data-lwt>No se ha podido leer la lista de impuestos: el impuesto de cada extra no se enseña ni se cambia desde aquí. Recarga para verlo.</p>
+<ul class="ex-lista" data-ex="lista"></ul>
+</div>
+</div>
+<!--AXW_SCRIPT-->
+<script>
+(function () {
+  'use strict';
+  var ID_EX = {
+    "Catálogo": "Katalog", "Extras y servicios": "Ekstra dan layanan", "Lo que vendes y no se alquila.": "Yang dijual dan tidak disewakan.",
+    "Entrega a domicilio, accesorios, servicios: lo que se añade a una reserva o se factura suelto. Las motos y sus precios están en Flota y tarifas.": "Antar ke alamat, aksesori, layanan: yang ditambahkan ke booking atau ditagih terpisah. Motor dan harganya ada di Armada dan tarif.",
+    "Las motos se dan de alta y se cambian en": "Motor ditambahkan dan diubah di", "Flota y tarifas": "Armada dan tarif",
+    "Actualizar": "Muat ulang", "Nuevo extra": "Ekstra baru", "Editar extra": "Ubah ekstra", "Extras · %n": "Ekstra · %n",
+    "No se ha podido leer la lista de impuestos: el impuesto de cada extra no se enseña ni se cambia desde aquí. Recarga para verlo.": "Daftar pajak tidak dapat dibaca: pajak setiap ekstra tidak ditampilkan dan tidak diubah dari sini. Muat ulang untuk melihatnya.",
+    "Aún no hay extras: crea el primero (por ejemplo, la entrega a domicilio).": "Belum ada ekstra: buat yang pertama (misalnya, antar ke alamat).",
+    "No se ha podido mirar": "Tidak bisa diperiksa", "Cargando…": "Memuat…",
+    "Nombre": "Nama", "Precio": "Harga", "Impuesto": "Pajak", "Estado": "Status", "Activo": "Aktif", "Desactivado": "Nonaktif",
+    "Editar": "Ubah", "Desactivar": "Nonaktifkan", "Reactivar": "Aktifkan lagi", "por": "per",
+    "Sin impuesto por defecto": "Tanpa pajak bawaan", "Impuesto no encontrado": "Pajak tidak ditemukan", "desactivado": "nonaktif",
+    "Nombre del extra": "Nama ekstra", "Como sale en la línea de la factura.": "Seperti yang tertulis di baris faktur.",
+    "Referencia (opcional)": "Referensi (opsional)", "No se puede repetir en el catálogo.": "Tidak boleh sama dengan yang lain di katalog.",
+    "Unidad": "Satuan", "ud, hora, viaje, km…": "unit, jam, perjalanan, km…", "Precio por unidad": "Harga per satuan", "Sin impuestos: el impuesto se suma en la factura.": "Tanpa pajak: pajak ditambahkan di faktur.",
+    "Moneda (3 letras)": "Mata uang (3 huruf)", "Impuesto por defecto": "Pajak bawaan", "— sin impuesto por defecto —": "— tanpa pajak bawaan —",
+    "Descripción (opcional)": "Deskripsi (opsional)", "Activo: se ofrece al facturar": "Aktif: ditawarkan saat menagih",
+    "Cambiar el precio no altera las facturas ya emitidas.": "Mengubah harga tidak mengubah faktur yang sudah terbit.",
+    "Crear extra": "Buat ekstra", "Guardar cambios": "Simpan perubahan", "Cancelar": "Batalkan",
+    "Falta el nombre.": "Nama belum diisi.", "Falta la unidad.": "Satuan belum diisi.", "Escribe el precio.": "Tulis harganya.",
+    "La moneda va en tres letras.": "Mata uang ditulis dengan tiga huruf.",
+    "El precio no se entiende: escribe solo cifras y, si hace falta, un punto o una coma para los decimales, sin separador de miles.": "Harga tidak dapat dibaca: tulis angka saja dan, bila perlu, titik atau koma untuk desimal, tanpa pemisah ribuan.",
+    "Ese precio es ambiguo (¿miles o decimales?): escríbelo sin separador de miles.": "Harga itu ambigu (ribuan atau desimal?): tulis tanpa pemisah ribuan.",
+    "Esa moneda no admite tantos decimales.": "Mata uang itu tidak menerima desimal sebanyak itu.",
+    "No hay nada que cambiar.": "Tidak ada yang diubah.", "Guardado.": "Tersimpan.", "Extra creado.": "Ekstra dibuat.",
+    "Extra desactivado: deja de ofrecerse al facturar.": "Ekstra dinonaktifkan: tidak lagi ditawarkan saat menagih.", "Extra reactivado.": "Ekstra diaktifkan lagi.",
+    "Se guardó, pero no se pudo volver a leer: recarga la página.": "Tersimpan, tetapi tidak dapat dibaca ulang: muat ulang halaman.",
+    "El catálogo lo cambia un administrador.": "Katalog diubah oleh administrator.",
+    "Esto exige la herramienta «Flota y tarifas»: pídesela al administrador principal en Usuarios.": "Ini memerlukan alat «Armada dan tarif»: mintalah kepada admin utama di Pengguna.",
+    "No tienes permiso para ver el catálogo. No es que esté vacío: no se ha podido mirar.": "Anda tidak punya akses untuk melihat katalog. Bukan berarti kosong: datanya tidak dapat diperiksa."
+  };
+  var EN_EX = {
+    'Catálogo': 'Catalogue', 'Extras y servicios': 'Extras and services', 'Lo que vendes y no se alquila.': 'What you sell and is not rented.',
+    'Entrega a domicilio, accesorios, servicios: lo que se añade a una reserva o se factura suelto. Las motos y sus precios están en Flota y tarifas.': 'Home delivery, accessories, services: what is added to a booking or invoiced on its own. The bikes and their prices are in Fleet and rates.',
+    'Las motos se dan de alta y se cambian en': 'Bikes are added and changed in', 'Flota y tarifas': 'Fleet and rates',
+    'Actualizar': 'Refresh', 'Nuevo extra': 'New extra', 'Editar extra': 'Edit extra', 'Extras · %n': 'Extras · %n',
+    'No se ha podido leer la lista de impuestos: el impuesto de cada extra no se enseña ni se cambia desde aquí. Recarga para verlo.': 'The list of taxes could not be read: the tax of each extra is not shown or changed from here. Reload to see it.',
+    'Aún no hay extras: crea el primero (por ejemplo, la entrega a domicilio).': 'There are no extras yet: create the first one (for example, home delivery).',
+    'No se ha podido mirar': 'It could not be checked', 'Cargando…': 'Loading…',
+    'Nombre': 'Name', 'Precio': 'Price', 'Impuesto': 'Tax', 'Estado': 'Status', 'Activo': 'Active', 'Desactivado': 'Deactivated',
+    'Editar': 'Edit', 'Desactivar': 'Deactivate', 'Reactivar': 'Reactivate', 'por': 'per',
+    'Sin impuesto por defecto': 'No default tax', 'Impuesto no encontrado': 'Tax not found', 'desactivado': 'deactivated',
+    'Nombre del extra': 'Name of the extra', 'Como sale en la línea de la factura.': 'As it appears on the invoice line.',
+    'Referencia (opcional)': 'Reference (optional)', 'No se puede repetir en el catálogo.': 'It cannot be repeated in the catalogue.',
+    'Unidad': 'Unit', 'ud, hora, viaje, km…': 'unit, hour, trip, km…', 'Precio por unidad': 'Price per unit', 'Sin impuestos: el impuesto se suma en la factura.': 'Without taxes: the tax is added on the invoice.',
+    'Moneda (3 letras)': 'Currency (3 letters)', 'Impuesto por defecto': 'Default tax', '— sin impuesto por defecto —': '— no default tax —',
+    'Descripción (opcional)': 'Description (optional)', 'Activo: se ofrece al facturar': 'Active: offered when invoicing',
+    'Cambiar el precio no altera las facturas ya emitidas.': 'Changing the price does not alter invoices already issued.',
+    'Crear extra': 'Create extra', 'Guardar cambios': 'Save changes', 'Cancelar': 'Cancel',
+    'Falta el nombre.': 'The name is missing.', 'Falta la unidad.': 'The unit is missing.', 'Escribe el precio.': 'Write the price.',
+    'La moneda va en tres letras.': 'The currency goes in three letters.',
+    'El precio no se entiende: escribe solo cifras y, si hace falta, un punto o una coma para los decimales, sin separador de miles.': 'The price is not understood: write only digits and, if needed, a dot or a comma for the decimals, with no thousands separator.',
+    'Ese precio es ambiguo (¿miles o decimales?): escríbelo sin separador de miles.': 'That price is ambiguous (thousands or decimals?): write it without a thousands separator.',
+    'Esa moneda no admite tantos decimales.': 'That currency does not allow so many decimals.',
+    'No hay nada que cambiar.': 'There is nothing to change.', 'Guardado.': 'Saved.', 'Extra creado.': 'Extra created.',
+    'Extra desactivado: deja de ofrecerse al facturar.': 'Extra deactivated: it is no longer offered when invoicing.', 'Extra reactivado.': 'Extra reactivated.',
+    'Se guardó, pero no se pudo volver a leer: recarga la página.': 'It was saved, but it could not be read again: reload the page.',
+    'El catálogo lo cambia un administrador.': 'The catalogue is changed by an administrator.',
+    'Esto exige la herramienta «Flota y tarifas»: pídesela al administrador principal en Usuarios.': 'This requires the «Fleet and rates» tool: ask the main administrator for it in Users.',
+    'No tienes permiso para ver el catálogo. No es que esté vacío: no se ha podido mirar.': 'You do not have permission to see the catalogue. It is not empty: it could not be checked.'
+  };
+  var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
+  var traduce = function (r) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(r); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
+  var raiz = document.querySelector('[data-ex="raiz"]');
+  /*AXW_COMUN_JS*/
+  var C = axwComun(raiz, T);
+  if (window.LW_EN && typeof window.LW_EN === 'object') [EN_EX, C.EN].forEach(function (d) { Object.keys(d).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = d[k]; }); });
+  if (window.LW_ID && typeof window.LW_ID === 'object') [ID_EX, C.ID || {}].forEach(function (d) { Object.keys(d).forEach(function (k) { if (!(k in window.LW_ID)) window.LW_ID[k] = d[k]; }); });
+  traduce(raiz);
+  var $v = function (n) { return raiz.querySelector('[data-ex="' + n + '"]'); };
+  var h = C.h, vacia = C.vacia, oculta = C.oculta;
+  function msg(n, m) { var e = $v(n); e.textContent = m || ''; oculta(e, !m); }
+  var exito = function (m) { msg('exito', m); }, aviso = function (m) { msg('aviso', m); }, error = function (m) { msg('error', m); };
+  var SB = null;
+  var E = { filas: null, imps: null };
+  // Decimales por moneda: los de la suite si están (dinero.js), y si no, los mínimos; la base vuelve a comprobarlos.
+  var DEC = (typeof window.LW_DECIMALES === 'object' && window.LW_DECIMALES) ? window.LW_DECIMALES : { IDR: 0, JPY: 0, KRW: 0, VND: 0, CLP: 0 };
+  var decDe = function (m) { return DEC[m] != null ? DEC[m] : 2; };
+  var monedaBase = function () { try { var m = typeof window.lwMonedaBase === 'function' ? window.lwMonedaBase() : null; return /^[A-Z]{3}$/.test(m || '') ? m : ''; } catch (e) { /* MUDO A PROPOSITO: sin moneda base se escribe a mano */ return ''; } };
+  var PROPIOS = { sin_permiso: T('No tienes permiso para ver el catálogo. No es que esté vacío: no se ha podido mirar.') };
+
+  /* ── lo que se lee: las mismas tablas y columnas que la pantalla Productos de Lawang (ver cabecera) ── */
+  function lee(q) { return Promise.resolve(q).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; }, function (e) { return { data: null, error: e }; }); }
+  var PETICION = 0;
+  function carga() {
+    var yo = ++PETICION, est = $v('estado');
+    if (!E.filas) { est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'cargando'); est.textContent = T('Cargando…'); }
+    return Promise.all([
+      lee(SB.from('productos').select('id,numero_producto,nombre,referencia,unidad,precio,moneda,descripcion,impuesto_id,activo,clase').order('nombre').limit(1000)),
+      lee(SB.from('impuestos').select('id,numero_impuesto,nombre,pais,clase,porcentaje,activo').order('pais').order('orden'))
+    ]).then(function (r) {
+      if (yo !== PETICION) return { ok: false, tarde: true };
+      var p = r[0], i = r[1];
+      if (p.error || !Array.isArray(p.data)) {
+        var c = p.error ? C.clasifica(p.error) : null, t = p.error ? C.mensaje(p.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
+        if (E.filas) { error(T('No se ha podido mirar') + ': ' + t); return { ok: false }; }
+        est.className = c && c.tipo === 'sin_permiso' ? 'axw-aviso' : 'axw-error';
+        est.setAttribute('data-tipo', c && c.tipo === 'sin_permiso' ? 'sin_permiso' : 'error');
+        est.textContent = c && c.tipo === 'sin_permiso' ? t : T('No se ha podido mirar') + ': ' + t;
+        oculta($v('contenido'), true);
+        return { ok: false };
+      }
+      // Lo que se alquila va en Flota: aquí solo lo demás (una fila sin clase, de una base anterior a F3-E3, tampoco se enseña: no se sabe qué es)
+      E.filas = p.data.filter(function (x) { return x && typeof x.id === 'string' && typeof x.clase === 'string' && x.clase !== 'alquiler'; })
+        .sort(function (a, b) { return (b.activo ? 1 : 0) - (a.activo ? 1 : 0); });
+      E.imps = !i.error && Array.isArray(i.data) ? i.data : null;
+      pinta();
+      return { ok: true };
+    });
+  }
+  function impuestoDe(x) {
+    if (!x.impuesto_id) return T('Sin impuesto por defecto');
+    if (!E.imps) return '—';
+    var i = E.imps.filter(function (y) { return y.id === x.impuesto_id; })[0];
+    return i ? (i.nombre || '—') + (i.pais ? ' · ' + i.pais : '') + (i.activo ? '' : ' · ' + T('desactivado')) : T('Impuesto no encontrado');
+  }
+  function precioDe(x) {
+    if (x.precio == null) return '—';
+    var n; try { n = new Intl.NumberFormat(C.locale(), { minimumFractionDigits: decDe(x.moneda), maximumFractionDigits: 4 }).format(Number(x.precio)); } catch (e) { /* MUDO A PROPOSITO: sin Intl, el número tal cual */ n = String(x.precio); }
+    return n + (x.moneda ? ' ' + x.moneda : '') + ' ' + T('por') + ' ' + (x.unidad || '—');
+  }
+  function pinta() {
+    var est = $v('estado'), l = vacia($v('lista'));
+    $v('n').textContent = T('Extras · %n').replace('%n', String(E.filas.length));
+    oculta($v('impuestos-no'), !!E.imps);
+    if (!E.filas.length) {
+      vacia(est); est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'vacio');
+      est.appendChild(h('p', { text: T('Aún no hay extras: crea el primero (por ejemplo, la entrega a domicilio).') }));
+    } else { est.textContent = ''; est.className = 'axw-vacio axw-oculto'; est.setAttribute('data-tipo', 'listo'); }
+    if (E.filas.length) l.appendChild(h('li', { class: 'ex-fila ex-th', 'aria-hidden': 'true' }, [h('span', { text: T('Nombre') }), h('span', { text: T('Precio') }), h('span', { text: T('Impuesto') }), h('span', { text: T('Estado') }), h('span')]));
+    E.filas.forEach(function (x) {
+      l.appendChild(h('li', { class: 'ex-fila', 'data-producto-id': x.id, 'data-activo': x.activo ? '1' : '0' }, [
+        h('span', { class: 'ex-nombre', text: x.nombre || '—' }, [h('span', { class: 'ex-sub', text: [x.numero_producto, x.referencia].filter(Boolean).join(' · ') })]),
+        h('span', { class: 'ex-dato' }, [h('span', { class: 'ex-et', text: T('Precio') }), document.createTextNode(precioDe(x))]),
+        h('span', { class: 'ex-dato' }, [h('span', { class: 'ex-et', text: T('Impuesto') }), document.createTextNode(impuestoDe(x))]),
+        h('span', null, [C.chip(T(x.activo ? 'Activo' : 'Desactivado'), x.activo ? 'ok' : 'neutro')]),
+        h('div', { class: 'axw-acciones' }, [C.boton(T('Editar'), 'ex-editar', { 'data-producto-id': x.id }),
+          C.boton(T(x.activo ? 'Desactivar' : 'Reactivar'), 'ex-activo', x.activo ? { 'data-producto-id': x.id, 'data-peligro': '1' } : { 'data-producto-id': x.id })])]));
+    });
+    oculta($v('contenido'), false);
+  }
+  function porId(id) { return (E.filas || []).filter(function (x) { return x.id === id; })[0] || null; }
+
+  /* ── escribir: SOLO producto_guarda (admin + herramienta en la base). El fallo se dice sin borrar lo escrito ── */
+  var RPC = { producto_guarda: function (a) { return SB.rpc('producto_guarda', a); } };
+  function guarda(args) { var p; try { p = RPC.producto_guarda(args); } catch (e) { return Promise.resolve({ data: null, error: e }); } return lee(p); }
+  function fallo(err) {
+    var c = C.clasifica(err);
+    if (c.hint === 'sin_herramienta') return T('Esto exige la herramienta «Flota y tarifas»: pídesela al administrador principal en Usuarios.');
+    if (c.tipo === 'sin_permiso') return T('El catálogo lo cambia un administrador.');
+    return C.mensaje(err, false, {});
+  }
+  var limpia = function (s) { return String(s == null ? '' : s).replace(/^\s+|\s+$/g, ''); };
+  function marca(el, mal) { if (mal) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); }
+  function campo(id, etiqueta, control, ayuda, ancho) {
+    control.id = id;
+    return h('div', { class: 'axw-campo' + (ancho ? ' ex-ancho' : '') }, [h('label', { for: id, text: etiqueta }), control].concat(ayuda ? [h('p', { class: 'ex-ayuda', text: ayuda })] : []));
+  }
+  function abreExtra(id) {
+    var x = id ? porId(id) : null;
+    if (id && !x) return;
+    var nuevo = !x;
+    var f = {
+      nombre: h('input', { type: 'text', 'data-campo': 'nombre', autocomplete: 'off', maxlength: '200' }),
+      referencia: h('input', { type: 'text', 'data-campo': 'referencia', autocomplete: 'off', maxlength: '80' }),
+      unidad: h('input', { type: 'text', 'data-campo': 'unidad', autocomplete: 'off', maxlength: '20' }),
+      precio: h('input', { type: 'text', 'data-campo': 'precio', autocomplete: 'off', inputmode: 'decimal' }),
+      moneda: h('input', { type: 'text', 'data-campo': 'moneda', autocomplete: 'off', maxlength: '3' }),
+      descripcion: h('textarea', { 'data-campo': 'descripcion', maxlength: '1000' })
+    };
+    f.nombre.value = x ? (x.nombre || '') : '';
+    f.referencia.value = x && x.referencia ? x.referencia : '';
+    f.unidad.value = x ? (x.unidad || '') : 'ud';
+    f.precio.value = x && x.precio != null ? String(Number(x.precio)) : '';
+    f.moneda.value = x ? (x.moneda || '') : monedaBase();
+    f.descripcion.value = x && x.descripcion ? x.descripcion : '';
+    var imp = null, impActual = x ? (x.impuesto_id || '') : '';
+    if (E.imps) {
+      var ops = [h('option', { value: '', text: T('— sin impuesto por defecto —') })];
+      E.imps.filter(function (i) { return i && (i.activo || i.id === impActual); }).forEach(function (i) {
+        ops.push(h('option', { value: String(i.id), text: (i.numero_impuesto ? i.numero_impuesto + ' · ' : '') + (i.nombre || '—') + (i.pais ? ' (' + i.pais + ')' : '') + (i.activo ? '' : ' — ' + T('desactivado')) }));
+      });
+      imp = h('select', { 'data-campo': 'impuesto_id' }, ops); imp.value = impActual;
+    }
+    var activo = null;
+    var nodos = [h('div', { class: 'ex-form' }, [
+      campo('ex-f-nombre', T('Nombre del extra'), f.nombre, T('Como sale en la línea de la factura.'), true),
+      campo('ex-f-referencia', T('Referencia (opcional)'), f.referencia, T('No se puede repetir en el catálogo.')),
+      campo('ex-f-unidad', T('Unidad'), f.unidad, T('ud, hora, viaje, km…')),
+      campo('ex-f-precio', T('Precio por unidad'), f.precio, T('Sin impuestos: el impuesto se suma en la factura.')),
+      campo('ex-f-moneda', T('Moneda (3 letras)'), f.moneda)
+    ].concat(imp ? [campo('ex-f-impuesto', T('Impuesto por defecto'), imp, null, true)] : [])
+     .concat([campo('ex-f-descripcion', T('Descripción (opcional)'), f.descripcion, null, true)]))];
+    if (!nuevo) {
+      activo = h('input', { type: 'checkbox', id: 'ex-f-activo', 'data-campo': 'activo' }); activo.checked = !!x.activo;
+      nodos.push(h('label', { class: 'ex-check', for: 'ex-f-activo' }, [activo, h('span', { text: T('Activo: se ofrece al facturar') })]));
+      nodos.push(h('p', { class: 'ex-ayuda', text: T('Cambiar el precio no altera las facturas ya emitidas.') }));
+    }
+    function datos() {
+      Object.keys(f).forEach(function (k) { marca(f[k], false); });
+      var nom = limpia(f.nombre.value), uni = limpia(f.unidad.value), mon = limpia(f.moneda.value).toUpperCase();
+      if (!nom) return { e: T('Falta el nombre.'), el: f.nombre };
+      if (!uni) return { e: T('Falta la unidad.'), el: f.unidad };
+      if (!/^[A-Z]{3}$/.test(mon)) return { e: T('La moneda va en tres letras.'), el: f.moneda };
+      var pr = C.importe(f.precio.value, 4);
+      if (pr.vacio) return { e: T('Escribe el precio.'), el: f.precio };
+      if (pr.e === 'ambiguo') return { e: T('Ese precio es ambiguo (¿miles o decimales?): escríbelo sin separador de miles.'), el: f.precio };
+      if (pr.e) return { e: T('El precio no se entiende: escribe solo cifras y, si hace falta, un punto o una coma para los decimales, sin separador de miles.'), el: f.precio };
+      var esc = Math.pow(10, decDe(mon));
+      if (Math.abs(Math.round(pr.v * esc) - pr.v * esc) > 1e-6) return { e: T('Esa moneda no admite tantos decimales.'), el: f.precio };
+      var v = { nombre: nom, referencia: limpia(f.referencia.value) || null, unidad: uni, precio: pr.v, moneda: mon, descripcion: limpia(f.descripcion.value) || null };
+      if (imp) v.impuesto_id = imp.value || null;
+      if (nuevo) { v.activo = true; v.clase = 'servicio'; if (!v.referencia) delete v.referencia; if (!v.descripcion) delete v.descripcion; if (!v.impuesto_id) delete v.impuesto_id; return { v: v }; }
+      if (activo) v.activo = activo.checked;
+      // editar: solo lo que cambió (y nunca la clase: un extra no pasa a alquiler desde aquí)
+      var q = {};
+      Object.keys(v).forEach(function (k) {
+        var antes = x[k] == null ? null : (k === 'precio' ? Number(x[k]) : x[k]);
+        if (v[k] !== antes) q[k] = v[k];
+      });
+      if (!Object.keys(q).length) return { e: T('No hay nada que cambiar.') };
+      return { v: q };
+    }
+    var d = C.dialogo(nuevo ? T('Nuevo extra') : T('Editar extra'), nodos, [
+      { texto: nuevo ? T('Crear extra') : T('Guardar cambios'), accion: 'ex-modal-confirmar', primario: true, alclic: function (bt, dd) {
+        var r = datos();
+        if (r.e) { if (r.el) marca(r.el, true); dd.error(r.e); return; }
+        if (!C.ocupa(bt)) return;
+        dd.error('');
+        guarda({ p_id: nuevo ? null : x.id, p_datos: r.v }).then(function (res) {
+          if (res.error) { C.libera(bt); dd.error(fallo(res.error)); return; }
+          return carga().then(function (l) {
+            C.libera(bt); dd.cierra();
+            if (l.ok) { error(''); aviso(''); exito(nuevo ? T('Extra creado.') : T('Guardado.')); } else { exito(''); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); }
+          });
+        });
+      } },
+      { texto: T('Cancelar'), accion: 'ex-modal-cerrar', cierra: true }]);
+    try { f.nombre.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ }
+    return d;
+  }
+  function conmuta(btn) {
+    var x = porId(btn.getAttribute('data-producto-id')); if (!x) return;
+    if (!C.ocupa(btn)) return;
+    var activar = !x.activo;
+    guarda({ p_id: x.id, p_datos: { activo: activar } }).then(function (res) {
+      if (res.error) { C.libera(btn); error(fallo(res.error)); return; }
+      return carga().then(function (l) {
+        C.libera(btn);
+        if (l.ok) exito(activar ? T('Extra reactivado.') : T('Extra desactivado: deja de ofrecerse al facturar.')); else error(T('Se guardó, pero no se pudo volver a leer: recarga la página.'));
+      });
+    });
+  }
+  function alClic(ev) {
+    var el = ev.target.closest ? ev.target.closest('[data-accion]') : null;
+    if (!el || !raiz.contains(el)) return;
+    var a = el.getAttribute('data-accion');
+    if (a.indexOf('ex-modal') === 0) return;   // los botones del diálogo llevan su propio manejador
+    error(''); exito(''); aviso('');
+    if (a === 'ex-actualizar') { if (C.ocupa(el)) carga().then(function () { C.libera(el); }, function () { C.libera(el); }); }
+    else if (a === 'ex-nuevo') abreExtra(null);
+    else if (a === 'ex-editar') abreExtra(el.getAttribute('data-producto-id'));
+    else if (a === 'ex-activo') conmuta(el);
+  }
+  function init(aut) { SB = aut.sb; raiz.addEventListener('click', alClic); carga(); }
+  function arranca() {
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { var est = $v('estado'); est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = T('Sin sesión: recarga la página o vuelve a entrar.'); return; }
+    window.LW_AUTH.then(init);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca);
+  else arranca();
+})();
+</script>

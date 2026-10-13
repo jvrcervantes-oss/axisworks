@@ -3398,6 +3398,9 @@ def mapa_modulos(nombre):
                 if isinstance(d, dict) and isinstance(d.get('herramienta'), str) and d['herramienta']}
     # operativos: en ellos el super_admin no cuenta como «quién lo usa» (20261012130000_f3_e1_setup_marco.sql, paso usuarios)
     out['o'] = sorted(k for k, d in ((m.get('setup') or {}).get('modulos') or {}).items() if isinstance(d, dict) and d.get('operativo') is True)
+    # r: rótulos por RUTA (erp-front, 14-oct-2026). En una instancia de tipo Reservas /productos/ es la pantalla «Extras y servicios» (extras_pantalla):
+    # apagados_instancia.js cambia el texto visible de los enlaces a esa ruta. Sin anclas sobre el texto de nav.js de Lawang.
+    out['r'] = ROTULOS_RUTA_RESERVAS if portada_de(nombre) == 'reservas' else {}
     return out
 
 
@@ -3798,6 +3801,21 @@ def flota_pantalla():
                  "  /*AXW_FIN_TARJETA_FLOTA*/" + '\n' + "}",
                  'herramientas.js tarjeta Flota')
     open(her, 'w', encoding='utf-8', newline='').write(h)
+
+
+ROTULOS_RUTA_RESERVAS = {'/productos/': {'es': 'Extras y servicios', 'en': 'Extras and services', 'id': 'Ekstra dan layanan'}}
+
+
+def extras_pantalla():
+    """/productos/ de una instancia de tipo Reservas = «Extras y servicios» (erp-front, 14-oct-2026; owner 13-oct: «¿Fleets and rates y Products no es lo
+    mismo?»). Pantalla PROPIA del maestro (extras.html, sobre la cáscara de /asistente/ como Flota) que sustituye a la de Productos de Lawang SOLO en lo copiado
+    a DIST: misma carpeta, así la entrada del menú, la casilla `productos` de Usuarios y el mapa de módulos siguen enganchados por su ruta y su clave. Lo que se
+    alquila vive en Flota; aquí solo lo demás. datos.js de Lawang arranca REG.productos por el trozo de ruta, pero sin su tabla (#lw-prd-lista) se va sin hacer
+    nada. Se descarta filtrar la pantalla de Lawang desde aquí: serían anclas nuevas sobre su texto (erp-limpieza, 13-oct). Revertir: no llamarla."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    if not os.path.isfile(os.path.join(v4, 'productos', 'index.html')):
+        aborta('extras_pantalla: no está la pantalla Productos copiada de Lawang (intranet/v4/productos/index.html): ¿cambió su sitio?')
+    _pantalla_bot(v4, 'extras.html', 'productos', 'Extras y servicios', puerta='data-herramienta="productos"')
 
 
 AAAS_NUCLEO = ('agente_panel_estado', 'agente_modulo_cambia')   # lo que la ventana del AaaS llama con el módulo apagado
@@ -5041,6 +5059,7 @@ def instancia(nombre):
     clases_setup_en_hoja()   # revisor 13-oct (bbm-p41): ninguna clase del setup sin compilar en la tw.css de la instancia
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
+        extras_pantalla()   # erp-front 14-oct-2026: /productos/ = «Extras y servicios»; las motos solo en Flota
     moneda_documento()   # 13-oct (bbm-p36): factura y recibí nuevos en la moneda de la instancia, no en EUR
     idiomas = idiomas_de(nombre)
     pantalla = idioma_pantalla_de(nombre, idiomas)   # bbm-p42: SIEMPRE, también sin `idiomas` (un idioma_pantalla sin lista aborta, no se ignora: revisor)
