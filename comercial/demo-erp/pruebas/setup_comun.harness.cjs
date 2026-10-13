@@ -22,7 +22,7 @@ const ok = (n, c, x = '') => { if (!c) { fallos++; console.log('FALLA  ' + n + (
 const IDIOMAS_OK = DOBLE.idiomas.guardar.listas_validas.map(l => l.join());
 function base(o = {}) {
   return { o, llamadas: [], edge: [], valores: Object.assign({ moneda: 'IDR' }, o.valores || {}), correo: o.correo || { configurado: false },
-    pideCodigo: o.pideCodigo !== false, falla: Object.assign({}, o.falla || {}), pierde: Object.assign({}, o.pierde || {}), taller: o.taller || {} };
+    pideCodigo: o.pideCodigo !== false, falla: Object.assign({}, o.falla || {}), pierde: Object.assign({}, o.pierde || {}), taller: o.taller || {}, cats: (o.cats || []).map(c => Object.assign({}, c)) };
 }
 const err = (code, hint) => ({ data: null, error: { code, hint: hint || null, message: 'mensaje en español que el front NO lee' } });
 function pasosDe(b) {
@@ -43,11 +43,14 @@ function pasosDe(b) {
     R('taller_recambios', !!t.recambios, '/taller/', { codigo: 'sin_recambios', campos: [] }),
     R('taller_mecanicos', !!t.mecanicos, '/usuarios/', { codigo: 'sin_usuarios', campos: [] })];
   const extra = b.o.pasoRaro ? [B('paso_raro', false, false, false, { codigo: 'falta_rara', campos: ['campo_raro'] })] : [];
-  return comunes.concat(extra, reservas, [R('usuarios', true, '/usuarios/', null)]);
+  // N4: Gastos con su paso obligatorio de categorías (b.o.gastos)
+  const G = (clave, hecho, falta) => ({ modulo: 'gastos', clave, hecho, obligatorio: true, irreversible: false, donde: '/gastos/', modulo_requerido: null, ref: null, falta: hecho ? null : falta });
+  const gastos = b.o.gastos ? [G('categorias_gasto', b.cats.some(c => c.activa), { codigo: 'falta_dato', campos: ['categoria'] })] : [];
+  return comunes.concat(extra, reservas, [R('usuarios', true, '/usuarios/', null)], gastos);
 }
 function estadoSetup(b) {
   const pasos = pasosDe(b);
-  const mods = ['base', 'reservas-producto'].map(m => { const pend = pasos.filter(p => p.modulo === m && p.obligatorio && !p.hecho); return { modulo: m, estado: pend.length ? 'sin_configurar' : 'configurado', falta: pend.length ? pend[0].clave : null }; });
+  const mods = ['base', 'reservas-producto'].concat(b.o.gastos ? ['gastos'] : []).map(m => { const pend = pasos.filter(p => p.modulo === m && p.obligatorio && !p.hecho); return { modulo: m, estado: pend.length ? 'sin_configurar' : 'configurado', falta: pend.length ? pend[0].clave : null }; });
   return { puede_configurar: !b.o.noConfigura, moneda: 'IDR', monedas: ['IDR', 'EUR', 'USD'], modulos: mods, pasos: b.o.noConfigura ? [] : pasos };
 }
 const ZONAS = ['Asia/Makassar', 'Asia/Jakarta', 'Europe/Madrid', 'UTC'];
@@ -75,6 +78,17 @@ function servidor(b, n, a) {
   const pr = b.pierde[clave];
   if (pr) { delete b.pierde[clave]; if (pr === 'despues') guarda(b, a); return { red: true }; }
   if (n === 'ajustes_config_guardar') return guarda(b, a);
+  if (n === 'gastos_panel_datos') return { data: { gastos: [], categorias: b.cats.map(c => Object.assign({}, c)) }, error: null };
+  if (n === 'gasto_categoria_guarda') {   // como 20261014050000: alta con p_clave null; la clave la saca la base del nombre
+    const d = a.p_datos || {}, nom = String(d.nombre || '').trim();
+    if (a.p_clave !== null || Object.keys(d).some(k => !['nombre', 'grupo', 'orden', 'activa'].includes(k))) return err('22023', 'campo_desconocido');
+    if (!nom || nom.length > 80 || /^[=+\-@]/.test(nom)) return err('22023', 'nombre_no_valido');
+    if (!['suelo', 'construccion', 'comercial', 'marketing', 'personal', 'general', 'impuestos', 'financiero'].includes(d.grupo || 'general')) return err('22023', 'grupo_no_valido');
+    if (b.cats.some(c => c.nombre.toLowerCase() === nom.toLowerCase())) return err('23505', 'nombre_repetido');
+    const clave = nom.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'cat';
+    b.cats.push({ clave, nombre: nom, grupo: d.grupo || 'general', orden: 100, activa: true });
+    return { data: clave, error: null };
+  }
   return err('42883');
 }
 function edge(b, cuerpo) {
@@ -282,12 +296,61 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:/i.test(String(t || ''));
   ok('paso desconocido: contado para el estudio', (await p.evaluate(() => window.AXW_SETUP.desconocidos.slice())).includes('paso:paso_raro'));
   await ctx.close();
 
+  // ── 10. N4 · Gastos: categorías de gasto (paso obligatorio de Bali Best) ────────────────────────────────────────────────────────────────
+  const catGuardadas = b => b.llamadas.filter(x => x[0] === 'gasto_categoria_guarda').map(x => x[1]);
+  b = base({ gastos: true, valores: { marca: 'X', zona_horaria: 'Asia/Makassar' } });
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=gastos' }));
+  ok('G abre en «categorias_gasto»', (await pasoActual(p)) === 'categorias_gasto', await pasoActual(p));
+  await p.waitForSelector('[data-axw-n4-cat="ninguna"]', { timeout: 3000 }).catch(() => {});
+  ok('G sin categorías: lo dice (leído por gastos_panel_datos)', (await p.$('[data-axw-n4-cat="ninguna"]')) !== null && b.llamadas.some(x => x[0] === 'gastos_panel_datos'));
+  ok('G sin motivo', !(await p.$('[data-axw-campo="motivo"]')));
+  await clic(p, 'enviar');
+  ok('G sin nombre y sin categorías: lo dice y no llama', catGuardadas(b).length === 0 && ((await errorTxt(p)) || '').includes('primera categoría'), await errorTxt(p));
+  await p.fill('[data-axw-campo="cat_nombre"]', 'Material de oficina'); await p.selectOption('[data-axw-campo="cat_grupo"]', 'personal'); await clic(p, 'enviar'); await p.waitForTimeout(300);
+  const gc = catGuardadas(b);
+  ok('G guarda con gasto_categoria_guarda(null, {nombre, grupo})', gc.length === 1 && gc[0].p_clave === null && gc[0].p_datos.nombre === 'Material de oficina' && gc[0].p_datos.grupo === 'personal'
+    && Object.keys(gc[0]).length === 2, JSON.stringify(gc));
+  ok('G hecho: Gastos listo', (await p.$('[data-axw-estado="listo"]')) !== null, await txt(p, '[data-axw-estado]'));
+  await sinErroresJs(p, 'G');
+  await ctx.close();
+  b = base({ gastos: true, cats: [{ clave: 'oficina', nombre: 'Oficina', grupo: 'general', orden: 1, activa: false }], valores: { marca: 'X', zona_horaria: 'Asia/Makassar' } });
+  ({ p, ctx } = await abre(nav, b, { idioma: 'en', url: '/ajustes/configurar/?modulo=gastos&paso=categorias_gasto' }));
+  await p.waitForSelector('[data-axw-n4-cat-clave="oficina"]', { timeout: 3000 }).catch(() => {});
+  ok('G lista la que hay, marcada como desactivada (en)', ((await txt(p, '[data-axw-n4-cat-clave="oficina"]')) || '').includes('inactive'), await txt(p, '[data-axw-n4-cat-clave="oficina"]'));
+  await p.fill('[data-axw-campo="cat_nombre"]', 'oficina'); await clic(p, 'enviar'); await p.waitForTimeout(300);
+  ok('G nombre repetido: su frase, sin código (en)', ((await errorTxt(p)) || '').includes('already a category') && sinCodigo(await errorTxt(p)), await errorTxt(p));
+  await ctx.close();
+  b = base({ gastos: true, cats: [{ clave: 'oficina', nombre: 'Oficina', grupo: 'general', orden: 1, activa: true }], valores: { marca: 'X', zona_horaria: 'Asia/Makassar' } });
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=gastos&paso=categorias_gasto' }));
+  await clic(p, 'cambiar');   // paso hecho: se entra a cambiarlo
+  await p.waitForSelector('[data-axw-n4-cat="otra"]:not([hidden])', { timeout: 3000 }).catch(() => {});
+  ok('G con una activa: ofrece seguir sin escribir otra', (await p.$('[data-axw-n4-cat="otra"]:not([hidden])')) !== null);
+  await p.fill('[data-axw-campo="cat_nombre"]', '-Otros'); await clic(p, 'enviar');
+  ok('G nombre que empieza por - (CSV): su frase, sin llamar y sin código', catGuardadas(b).length === 0 && ((await errorTxt(p)) || '').includes('= + - @') && sinCodigo(await errorTxt(p)), await errorTxt(p));
+  await ctx.close();
+  // si la base lo rechaza igualmente (otra pantalla, otra versión), sale su frase por hint, no «avisa al estudio»
+  b = base({ gastos: true, falla: { 'gasto_categoria_guarda:': ['22023', 'nombre_no_valido'] }, valores: { marca: 'X', zona_horaria: 'Asia/Makassar' } });
+  ({ p, ctx } = await abre(nav, b, { idioma: 'id', url: '/ajustes/configurar/?modulo=gastos' }));
+  await p.fill('[data-axw-campo="cat_nombre"]', 'Kantor'); await clic(p, 'enviar'); await p.waitForTimeout(300);
+  ok('G nombre_no_valido de la base: su frase (id)', ((await errorTxt(p)) || '').includes('tidak diawali') && (await p.evaluate(() => window.AXW_SETUP.desconocidos.slice())).length === 0, await errorTxt(p));
+  await ctx.close();
+  // la lectura falla por permiso: lo dice con su frase
+  b = base({ gastos: true, valores: { marca: 'X', zona_horaria: 'Asia/Makassar' } });
+  b.falla['gastos_panel_datos:'] = ['42501', null];
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=gastos' }));
+  await p.waitForSelector('[data-axw-n4-cat="error"]', { timeout: 3000 }).catch(() => {});
+  const tLee = (await txt(p, '[data-axw-n4-cat="error"]')) || '';
+  ok('G lectura sin permiso: dice POR QUÉ (frase de sin_permiso), sin código ni objeto', tLee.includes('Tu sesión no tiene permiso para esto.') && !tLee.includes('[object') && sinCodigo(tLee), tLee);
+  await ctx.close();
+
   // ── 9. es/en/id a 390 y 1440: sin scroll horizontal, sin frases sin traducir, sin códigos sin frase ─────────────────────────────────────────
-  const recorridos = [['base', 'negocio'], ['base', 'idiomas'], ['base', 'correo'], ['reservas-producto', 'taller_revisiones'], ['reservas-producto', 'taller_recambios'], ['reservas-producto', 'taller_mecanicos']];
+  const recorridos = [['base', 'negocio'], ['base', 'idiomas'], ['base', 'correo'], ['reservas-producto', 'taller_revisiones'], ['reservas-producto', 'taller_recambios'], ['reservas-producto', 'taller_mecanicos'], ['gastos', 'categorias_gasto']];
   for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) for (const [mod, paso] of recorridos) {
-    b = base({ valores: { marca: 'X', zona_horaria: 'Asia/Makassar' }, pideCodigo: paso === 'correo' && ancho === 390 ? false : true });
+    b = base({ gastos: true, cats: paso === 'categorias_gasto' ? [{ clave: 'suelo_parcelas', nombre: 'Compra de suelo y parcelas en Sumba (escrituras, notaría y tasas)', grupo: 'suelo', orden: 1, activa: true }] : [],
+      valores: { marca: 'X', zona_horaria: 'Asia/Makassar' }, pideCodigo: paso === 'correo' && ancho === 390 ? false : true });
     ({ p, ctx } = await abre(nav, b, { idioma, ancho, url: '/ajustes/configurar/?modulo=' + mod + '&paso=' + paso }));
     if (paso === 'negocio') { await clic(p, 'cambiar'); await p.fill('[data-axw-campo="zona_horaria"]', 'mal'); await clic(p, 'enviar'); }
+    if (paso === 'categorias_gasto') { await clic(p, 'cambiar'); await p.waitForSelector('[data-axw-n4-cat-clave]', { timeout: 4000 }).catch(() => {}); }
     if (paso === 'correo') await p.waitForSelector('[data-axw-accion="abrir-correo"],[data-axw-co-estado="sin-clave"]', { timeout: 4000 }).catch(() => {});
     const anchoDoc = await p.evaluate(() => document.documentElement.scrollWidth);
     ok(paso + ' ' + idioma + ' ' + ancho + ': sin scroll horizontal', anchoDoc <= ancho, String(anchoDoc));
