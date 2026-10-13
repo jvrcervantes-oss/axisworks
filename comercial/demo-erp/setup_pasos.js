@@ -95,6 +95,43 @@
     return b;
   }
 
+  // El número que pone la base al emitir (20261008137000_f8_puerta_emision.sql): prefijo-F<ejercicio>-<5 cifras>
+  function numeroMuestra(pref, n, anio) { return pref + '-F' + anio + '-' + ('0000' + n).slice(-5); }
+  function iniciales(t) {
+    return String(t || '').replace(/^(PT|CV|UD)\.?\s+/i, '').split(/\s+/).filter(Boolean).slice(0, 2)
+      .map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
+  }
+  /* «Así sale impreso · muestra» (diseño S20): lo que se va tecleando, con el logo si la empresa ya tiene uno y el número
+     de la primera factura solo si el prefijo ya está fijado (si no, lo dice: no se inventa uno). */
+  function muestraImpresa(caja, s) {
+    var logo = /^(\/|https:\/\/)/.test(String(s.logo || '')) ? el('img', { src: s.logo, alt: '', style: 'width:52px;height:52px;flex:none;object-fit:contain' })
+      : el('span', { class: 'rounded-xl bg-surface-container-high font-label-md text-label-md text-on-surface', 'aria-hidden': 'true', 'data-axw-muestra': 'iniciales',
+                     style: 'width:52px;height:52px;flex:none;display:grid;place-items:center' });
+    var nom = el('p', { class: 'font-label-md text-label-md text-on-surface', style: 'overflow-wrap:anywhere', 'data-axw-muestra': 'razon' });
+    var dom = el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', style: 'overflow-wrap:anywhere', 'data-axw-muestra': 'domicilio' });
+    var fis = el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', style: 'overflow-wrap:anywhere', 'data-axw-muestra': 'npwp' });
+    var num = s.prefijo_serie
+      ? el('p', { class: 'font-label-md text-label-md text-on-surface', 'data-axw-muestra': 'numero', text: numeroMuestra(s.prefijo_serie, 1, new Date().getFullYear()) })
+      : el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-muestra': 'numero', text: U('num_tras_prefijo') });
+    var fig = el('figure', { class: 'flex flex-col gap-2', 'data-axw-muestra': 'impresa', style: 'margin:0' }, [
+      el('figcaption', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('muestra_impresa') }),
+      el('div', { class: 'flex flex-wrap items-start gap-4 rounded-2xl border border-outline-variant bg-surface-container-lowest', style: 'padding:20px' }, [
+        logo,
+        el('div', { class: 'flex flex-col flex-1 min-w-0', style: 'min-width:12rem;gap:2px' }, [nom, dom, fis]),
+        el('div', { class: 'flex flex-col text-right', style: 'gap:2px;max-width:14rem;margin-left:auto' }, [
+          el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('factura_titulo') }), num])])]);
+    function pinta() {
+      var r = lee(caja, 'razon'), n = lee(caja, 'npwp');
+      nom.textContent = r;
+      fig.style.display = r ? '' : 'none';   // sin razón social no hay nada que enseñar: aparece al escribirla
+      if (logo.tagName === 'SPAN') logo.textContent = iniciales(r);
+      dom.textContent = lee(caja, 'domicilio');
+      fis.textContent = n ? (lee(caja, 'npwp_label') || 'NPWP') + ' ' + n : '';
+    }
+    caja.addEventListener('input', pinta);
+    return { fig: fig, pinta: pinta };
+  }
+
   var PASOS = {
     moneda: {
       pinta: function (caja, ctx) {
@@ -116,11 +153,16 @@
       // Lo mínimo que pide la base; el editor completo (logo, aspecto, NIB…) está en Ajustes › Sociedades emisoras (#285)
       pinta: function (caja, ctx) {
         var s = ctx.sociedad || {};
-        campo(caja, 'razon', U('razon') + ' *', s.razon, { max: 200 });
+        campo(caja, 'razon', U('razon') + ' *', s.razon, { max: 200, ayuda: U('razon_ayuda') });
         campo(caja, 'npwp_label', U('npwp_label'), s.npwp_label || 'NPWP', { max: 20 });
-        campo(caja, 'npwp', U('npwp') + ' *', s.npwp, { max: 40 });
+        // «15 o 16 cifras» es del NPWP indonesio: con otra etiqueta fiscal no se dice
+        campo(caja, 'npwp', U('npwp') + ' *', s.npwp, { max: 40, ayuda: (s.npwp_label || 'NPWP') === 'NPWP' ? U('npwp_ayuda') : null });
         campo(caja, 'domicilio', U('domicilio') + ' *', s.domicilio, { max: 400 });
         campo(caja, 'rep', U('rep'), s.rep, { max: 200 });
+        var mu = muestraImpresa(caja, s);
+        caja.appendChild(mu.fig);
+        mu.pinta();
+        caja.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-nota': 'otra_empresa', text: U('otra_empresa') }));
         return { valores: function () {
           var v = { razon: lee(caja, 'razon'), npwp_label: lee(caja, 'npwp_label') || 'NPWP', npwp: lee(caja, 'npwp'), domicilio: lee(caja, 'domicilio'), rep: lee(caja, 'rep') };
           var faltan = [];
@@ -152,12 +194,21 @@
           return { valores: function () { return { ok: false, error: U('fijado') }; }, bloqueado: true };
         }
         var inp = campo(caja, 'prefijo_serie', U('prefijo'), '', { max: 8, mayus: true, ayuda: U('prefijo_ayuda') });
-        var ej = el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-ejemplo': 'prefijo' });
+        var ej = el('div', { class: 'flex flex-col gap-1', 'data-axw-ejemplo': 'prefijo', 'aria-live': 'polite' });
         caja.appendChild(ej);
-        inp.addEventListener('input', function () { ej.textContent = inp.value ? U('prefijo_ejemplo', { p: inp.value }) : ''; });
+        inp.addEventListener('input', function () {   // solo con un prefijo que la base aceptaría: no se enseña un número que no saldrá
+          while (ej.firstChild) ej.removeChild(ej.firstChild);
+          var pr = inp.value, a = new Date().getFullYear();
+          if (!/^[A-Z0-9]{2,8}$/.test(pr)) return;
+          ej.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('primera_factura') }));
+          ej.appendChild(el('p', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', 'data-axw-ejemplo-num': '1', style: 'overflow-wrap:anywhere', text: numeroMuestra(pr, 1, a) }));
+          ej.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('luego_factura', { s: numeroMuestra(pr, 2, a) }) }));
+          ej.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-ejemplo-anio': '1',
+                                   text: U('reinicio_anio', { a: String(a + 1), s: numeroMuestra(pr, 1, a + 1) }) }));
+        });
         return {
           valores: function () { var v = lee(caja, 'prefijo_serie').toUpperCase(); return /^[A-Z0-9]{2,8}$/.test(v) ? { ok: true, v: { prefijo: v } } : { ok: false, error: U('prefijo_formato') }; },
-          resumen: function (v) { return { grande: v.prefijo + '-…', teclea: v.prefijo, boton: U('fijar_prefijo', { v: v.prefijo }) }; }
+          resumen: function (v) { return { grande: numeroMuestra(v.prefijo, 1, new Date().getFullYear()), teclea: v.prefijo, boton: U('fijar_prefijo', { v: v.prefijo }) }; }
         };
       },
       sinMotivo: true,

@@ -153,15 +153,30 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   ok('la URL lleva el paso', (await p.evaluate(() => location.search)).includes('paso=sociedad'));
   await clic(p, 'enviar');
   ok('vacío: dice qué falta y no envía', (await txt(p, '[data-axw-as="error"]')).includes('Razón social') && llamadas(b, 'sociedad_guarda').length === 0);
+  ok('S20: sin razón social la muestra impresa no se enseña (no inventa datos)', !(await p.isVisible('[data-axw-muestra="impresa"]')));
   await p.fill('[data-axw-campo="razon"]', 'PT Bali Best Motor'); await p.fill('[data-axw-campo="domicilio"]', 'Jl. Raya 1, Denpasar'); await p.fill('[data-axw-campo="npwp"]', '01.234.567.8-901.000');
+  ok('S20: la muestra impresa sigue a lo tecleado (razón, iniciales sin «PT», domicilio, etiqueta fiscal + número)',
+     (await txt(p, '[data-axw-muestra="razon"]')) === 'PT Bali Best Motor' && (await txt(p, '[data-axw-muestra="iniciales"]')) === 'BB'
+     && (await txt(p, '[data-axw-muestra="domicilio"]')) === 'Jl. Raya 1, Denpasar' && (await txt(p, '[data-axw-muestra="npwp"]')) === 'NPWP 01.234.567.8-901.000'
+     && (await p.isVisible('[data-axw-muestra="impresa"]')));
+  ok('S20: sin prefijo fijado no se inventa un número: dice que sale en el paso siguiente', (await txt(p, '[data-axw-muestra="numero"]')) === 'El número sale al fijar el prefijo, en el paso siguiente.');
+  ok('S20: ayudas del diseño y «¿Más de una empresa?»', (await txt(p, '[data-axw-fila="razon"]')).includes('Tal como está registrada.') && (await txt(p, '[data-axw-fila="npwp"]')).includes('15 o 16 cifras.')
+     && !!(await p.$('[data-axw-nota="otra_empresa"]')));
   await clic(p, 'enviar'); await p.waitForTimeout(300);
   const sg = llamadas(b, 'sociedad_guarda')[0];
   ok('alta de empresa: sociedad_guarda con p_nueva y una clave válida', sg && sg[1].p_nueva === true && /^[a-z][a-z0-9_]{2,}$/.test(sg[1].p_clave), JSON.stringify(sg && sg[1]));
   ok('pasa al prefijo, «Paso 2 de 2»', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'prefijo' && (await txt(p, '[data-axw-as="meta"]')) === 'Facturas · Paso 2 de 2');
   await p.fill('[data-axw-campo="prefijo_serie"]', 'bbm');
-  ok('el prefijo se escribe en mayúsculas y enseña el ejemplo', (await p.inputValue('[data-axw-campo="prefijo_serie"]')) === 'BBM' && (await txt(p, '[data-axw-ejemplo="prefijo"]')).includes('BBM-'));
+  const ANIO = new Date().getFullYear();
+  ok('el prefijo se escribe en mayúsculas y enseña la primera factura con el formato de la base', (await p.inputValue('[data-axw-campo="prefijo_serie"]')) === 'BBM'
+     && (await txt(p, '[data-axw-ejemplo-num="1"]')) === 'BBM-F' + ANIO + '-00001', await txt(p, '[data-axw-ejemplo="prefijo"]'));
+  ok('S21: la segunda y el contador que vuelve a empezar el año que viene', (await txt(p, '[data-axw-ejemplo="prefijo"]')).includes('BBM-F' + ANIO + '-00002')
+     && (await txt(p, '[data-axw-ejemplo-anio="1"]')).includes('BBM-F' + (ANIO + 1) + '-00001'));
+  await p.fill('[data-axw-campo="prefijo_serie"]', 'b');
+  ok('S21: con un prefijo que la base no aceptaría no se enseña número', !(await p.$('[data-axw-ejemplo-num]')));
+  await p.fill('[data-axw-campo="prefijo_serie"]', 'bbm');
   await clic(p, 'enviar');
-  ok('irreversible: pantalla de confirmación con el valor en grande', (await txt(p, '[data-axw-confirma="valor"]')) === 'BBM-…');
+  ok('irreversible: pantalla de confirmación con la primera factura en grande', (await txt(p, '[data-axw-confirma="valor"]')) === 'BBM-F' + ANIO + '-00001', await txt(p, '[data-axw-confirma="valor"]'));
   ok('«Fijar» desactivado hasta teclear el prefijo', await p.$eval('[data-axw-accion="fijar"]', e => e.disabled));
   await p.fill('[data-axw-campo="teclea"]', 'BBX');
   ok('lo tecleado distinto no deja fijar', await p.$eval('[data-axw-accion="fijar"]', e => e.disabled));
@@ -269,6 +284,9 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
     b = base('sin_configurar');
     ({ p, ctx } = await abre(nav, b, { idioma, ancho }));
+    // la muestra impresa (S20) solo sale con razón social: se rellena para medirla también, con nombres largos
+    await p.fill('[data-axw-campo="razon"]', 'PT Bali Best Motorcycle Rental Indonesia Sejahtera'); await p.fill('[data-axw-campo="domicilio"]', 'Jl. Raya Uluwatu No. 128, Jimbaran, Kuta Selatan, Badung, Bali 80361');
+    await p.fill('[data-axw-campo="npwp"]', '01.234.567.8-901.000');
     const anchoDoc = await p.evaluate(() => document.documentElement.scrollWidth);
     ok(idioma + ' ' + ancho + ': sin scroll horizontal', anchoDoc <= ancho, String(anchoDoc));
     if (idioma !== 'es') {
@@ -276,6 +294,17 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
       ok(idioma + ' ' + ancho + ': ninguna frase sin traducir', sin.length === 0, sin.slice(0, 4).join(' | '));
     }
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'paso_' + idioma + '_' + ancho + '.png'), fullPage: true });
+    await ctx.close();
+    // S21: el prefijo más largo que admite la base, con su primera factura en grande
+    const bp = base('sin_configurar'); bp.sociedad = { clave: 'bbm', razon: 'PT Bali Best', domicilio: 'Jl. Raya 1', npwp: '01', prefijo_serie: null };
+    const pp = bp.d.pasos.find(x => x.clave === 'sociedad'); if (pp) pp.hecho = true;
+    const pf = bp.d.pasos.find(x => x.clave === 'prefijo'); if (pf) pf.ref = 'bbm';
+    ({ p, ctx } = await abre(nav, bp, { idioma, ancho, url: '/ajustes/configurar/?modulo=facturas&paso=prefijo' }));
+    if (await p.$('[data-axw-campo="prefijo_serie"]')) { await p.fill('[data-axw-campo="prefijo_serie"]', 'BALIBEST'); await p.waitForTimeout(150); }
+    ok('S21 ' + idioma + ' ' + ancho + ': primera factura en grande, sin scroll horizontal ni español',
+       !!(await p.$('[data-axw-ejemplo-num="1"]')) && (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho
+       && (idioma === 'es' || (await p.evaluate(() => window.__sinTrad.filter(s => !/^(NPWP|IDR|EUR|USD)$/.test(s)))).length === 0));
+    if (SHOT) await p.screenshot({ path: path.join(SHOT, 'prefijo_' + idioma + '_' + ancho + '.png'), fullPage: true });
     await ctx.close();
   }
 
