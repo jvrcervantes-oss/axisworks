@@ -45,6 +45,7 @@ function servidor(b, n, a) {
   if (n === 'modulos_setup_estado') return { data: estado(b), error: null };
   if (n === 'ajustes_config_datos') return { data: { valores: {}, puede_escribir: true }, error: null };
   if (n === 'from:tipos_vivienda' && b.o.listaFalla) return err('57014');
+  if (b.o.listaFallaEn === n) return err('57014');
   if (b.o.redEn === n) return { red: true };
   if (n === 'from:tipos_vivienda') return { data: b.tipos.map(t => Object.assign({}, t)), error: null };
   if (n === 'from:obra_fases') return { data: b.fases.map(f => Object.assign({}, f)), error: null };
@@ -186,6 +187,7 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:|22023|42501|55000|23505|P000
   const e2 = await txt(p, '[data-axw-pr-error="tipos"]');
   ok('T2 Desactivar manda {activo:false}', t2.length === 1 && JSON.stringify(t2[0].p_datos) === '{"activo":false}', JSON.stringify(t2));
   ok('T2 42501: «…con el permiso «Unidades»», sin código ni mensaje de la base', !!e2 && e2.includes('con el permiso «Unidades»') && sinCodigo(e2), e2);
+  ok('T2 42501 sin hint (también sesión caducada o candado): dice que recargue y vuelva a entrar, no solo lo del permiso', !!e2 && e2.includes('recarga la página y vuelve a entrar'), e2);
   await ctx.close();
   // puerta de Seguridad (erp-setup-2, 14-oct): con el módulo apagado los escritores dan 42501 / modulo_apagado
   b = base({ tipos: [{ clave: 'parcela', etiqueta: 'Parcela', activo: true }], falla: { tipo_vivienda_guarda: ['42501', 'modulo_apagado'] } });
@@ -256,6 +258,20 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:|22023|42501|55000|23505|P000
   const e4 = await errorTxt(p);
   ok('F4 23505/orden_ocupado: «Ya hay otra fase en ese orden.»', !!e4 && e4.includes('Ya hay otra fase en ese orden') && sinCodigo(e4), e4);
   await ctx.close();
+  b = base({ fases: [{ clave: 'cimentacion', es: 'Cimentación', en: 'Foundations', orden: 1 }], listaFallaEn: 'from:obra_fase_orden_pago' });
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=obra&paso=fases_obra' }));
+  if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
+  ok('F5 lista sin leer: lo dice en la lista', !!(await p.$('[data-axw-pr-lista-error="fases"]')));
+  await p.fill('[data-axw-campo="fo_es"]', 'Cubierta'); await p.fill('[data-axw-campo="fo_en"]', 'Roof'); await clic(p, 'enviar');
+  ok('F5 lista sin leer: no llama y lo dice', de(b, 'obra_fase_guarda').length === 0 && ((await errorTxt(p)) || '').includes('Aún no se ha podido leer la lista'), await errorTxt(p));
+  await ctx.close();
+  b = base({ fases: [{ clave: 'cimentacion', es: 'Cimentación', en: 'Foundations', orden: 1 }], redEn: 'obra_fase_guarda' });
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=obra&paso=fases_obra' }));
+  if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
+  await p.fill('[data-axw-campo="fo_es"]', 'Cubierta'); await p.fill('[data-axw-campo="fo_en"]', 'Roof'); await clic(p, 'enviar'); await p.waitForTimeout(600);
+  const sinRf = await p.evaluate(() => document.body.innerText);
+  ok('F6 sin respuesta en un paso ya hecho: no se da por guardado', de(b, 'obra_fase_guarda').length === 1 && /no se guardó|no sabemos|no ha respondido/i.test(sinRf) && b.fases.length === 1, sinRf.slice(0, 300));
+  await ctx.close();
 
   // ── 4. carta de reserva: tipos por plantillas_contrato_datos, guarda la etapa, avisa de lo irreversible, 55000/tipo_con_contratos ──────────────
   b = base();
@@ -284,6 +300,36 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:|22023|42501|55000|23505|P000
   await p.waitForTimeout(300);
   const e6 = await txt(p, '[data-axw-pr-lista-error="carta"]');
   ok('C3 sin poder leer los tipos (42501): lo dice con la frase de la pieza', !!e6 && e6.includes('No se ha podido leer la lista') && e6.includes('Plantillas') && sinCodigo(e6), e6);
+  if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
+  await clic(p, 'enviar');
+  ok('C3 lista sin leer: al guardar dice que no se ha podido leer (no «Elige el tipo») y no llama', de(b, 'contrato_tipo_etapa_guarda').length === 0 && ((await errorTxt(p)) || '').includes('Aún no se ha podido leer la lista'), await errorTxt(p));
+  await ctx.close();
+  b = base({ tc: [{ clave: 'viejo', nombre: 'Viejo', activo: false, orden: 1 }] });
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas&paso=carta_reserva' }));
+  await p.waitForTimeout(300);
+  if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
+  await clic(p, 'enviar');
+  ok('C4 sin tipos activos: al guardar lleva a Plantillas (no «Elige el tipo») y no llama', de(b, 'contrato_tipo_etapa_guarda').length === 0 && ((await errorTxt(p)) || '').includes('créalos en Plantillas'), await errorTxt(p));
+  await ctx.close();
+  b = base({ etapas: { carta_reserva: 'reserva', compraventa: 'reserva' } });
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas&paso=carta_reserva' }));
+  if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
+  await p.waitForSelector('[data-axw-campo="cr_tipo"]', { timeout: 3000 }).catch(() => {});
+  const varias = await txt(p, '[data-axw-pr="carta-varias"]');
+  ok('C5 dos tipos en «reserva»: lo dice nombrando los dos y no preselecciona uno como si fuera el único', !!varias && varias.includes('Carta de reserva') && varias.includes('Compraventa') && varias.includes('Plantillas') && (await p.inputValue('[data-axw-campo="cr_tipo"]')) === '', varias);
+  await clic(p, 'enviar'); await p.waitForTimeout(300);
+  ok('C5 sin elegir con carta ya puesta: no llama y no da error', de(b, 'contrato_tipo_etapa_guarda').length === 0 && !(await errorTxt(p)), await errorTxt(p));
+  if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
+  await p.waitForSelector('[data-axw-campo="cr_tipo"]', { timeout: 3000 }).catch(() => {});
+  if (await p.$('[data-axw-campo="cr_tipo"]')) { await p.selectOption('[data-axw-campo="cr_tipo"]', 'compraventa'); await clic(p, 'enviar'); await p.waitForTimeout(300); }
+  ok('C5 elegir uno de los que ya son carta de reserva: no llama (ya está) y no da error', de(b, 'contrato_tipo_etapa_guarda').length === 0 && !(await errorTxt(p)), await errorTxt(p));
+  await ctx.close();
+  b = base({ redEn: 'contrato_tipo_etapa_guarda' });
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas&paso=carta_reserva' }));
+  await p.waitForSelector('[data-axw-campo="cr_tipo"]', { timeout: 3000 }).catch(() => {});
+  await p.selectOption('[data-axw-campo="cr_tipo"]', 'carta_reserva'); await clic(p, 'enviar'); await p.waitForTimeout(600);
+  const sinRc = await p.evaluate(() => document.body.innerText);
+  ok('C6 sin respuesta: no se da por guardado', de(b, 'contrato_tipo_etapa_guarda').length === 1 && /no se guardó|no sabemos|no ha respondido/i.test(sinRc) && !b.etapas.carta_reserva, sinRc.slice(0, 300));
   await ctx.close();
 
   // ── 5. el MISMO componente en Ajustes › Configurar módulos ───────────────────────────────────────────────────────────────────────────────
@@ -338,6 +384,7 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:|22023|42501|55000|23505|P000
   await p.click('[data-axw-campo="recalculo_auto"]'); await p.click('[data-axw-pr-accion="comisiones-guardar"]'); await p.waitForTimeout(300);
   const e7 = await txt(p, '[data-axw-pr="comisiones-estado"]');
   ok('I3 42501: «Solo el administrador principal cambia estos interruptores.», sin código', !!e7 && e7.includes('Solo el administrador principal') && sinCodigo(e7), e7);
+  ok('I3 42501 sin hint: también dice que recargue y vuelva a entrar (sesión caducada)', !!e7 && e7.includes('recarga la página y vuelve a entrar'), e7);
   await ctx.close();
   b = base({ intPierde: true });
   ({ p, ctx } = await abre(nav, b, { pag: 'comisiones' }));

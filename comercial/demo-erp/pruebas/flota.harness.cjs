@@ -89,6 +89,7 @@ async function servidor(s, nombre, a) {
       if (o.datosRaros) return { data: { productos: 'nada' }, error: null };
       if (o.sinTopes) { const d = datos(s); delete d.topes; return { data: d, error: null }; }
       if (o.fallaLecturaTrasGuardar && s.llamadas.some(x => x[0] !== 'producto_flota_datos' && x[0] !== 'productos_catalogo_datos')) return { data: null, error: { message: 'Failed to fetch' } };
+      if (o.quitaP2TrasGuardar && s.llamadas.some(x => x[0] === 'producto_guarda')) s.productos = s.productos.filter(x => x.id !== 'p2');   // otra persona lo quitó entre medias
       return { data: datos(s), error: null };
     // seguro y fianza (bbm-p42): mismas RPC que el paso «Alquiler con unidades» del asistente (forma de reservas_setup_datos: FORMAS_DATOS de erp/modulos.py)
     case 'reservas_setup_datos':
@@ -396,6 +397,22 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('AXW-290: sin el catálogo, «Editar modelo» sigue como antes (nombre y activo, sin referencia ni impuesto)', !(await p.$(campo('referencia'))) && !(await p.$(campo('impuesto_id'))));
     await p.fill(campo('nombre'), 'Vario 160 nueva'); await confirmar(p); await esperaCierre(p); await p.waitForTimeout(300);
     ok('AXW-290: guardar con el catálogo caído NO borra su aviso (revisor erp-front-catalogo, BAJA 3)', ((await p.evaluate(() => document.body.innerText)) || '').includes('No se ha podido saber qué productos son de alquiler'));
+    await ctx.close();
+  }
+  {
+    // erp-front-2 (BAJA del relevo): un clic cualquiera ya no borra el aviso del catálogo caído hasta la siguiente lectura
+    const { p, ctx } = await abre({ base: { extrasEnFlota: true, sinCatalogo: true } });
+    await p.click(accion('fl-cajon-abrir', '[data-fila-producto="p1"]')); await p.waitForSelector('[data-fl="cajon"]');
+    ok('BAJA Flota: tras un clic (abrir el cajón) el aviso del catálogo caído sigue a la vista', await visible(p, '[data-fl="aviso-cat"]') && (await txt(p, '[data-fl="aviso-cat"]')).includes('No se ha podido saber qué productos son de alquiler'));
+    await ctx.close();
+  }
+  {
+    // erp-front-2 (BAJA del relevo): «Ese modelo ya no está…» lo pone el repintado del cajón al releer; antes el guardado lo borraba justo después
+    const { p, ctx } = await abre({ base: { quitaP2TrasGuardar: true } });
+    await p.click(accion('fl-modelo-editar', '[data-producto-id="p2"]'));
+    await p.waitForSelector('[data-axw="dialogo"] ' + campo('nombre'));
+    await p.fill(campo('nombre'), 'Vario 160 ABS'); await confirmar(p); await esperaCierre(p); await p.waitForTimeout(300);
+    ok('BAJA Flota: guardar un modelo que otra persona quitó entre medias deja a la vista «Ese modelo ya no está en la lista»', !(await p.$('[data-fl="cajon"]')) && (await visible(p, '[data-fl="aviso"]')) && (await txt(p, '[data-fl="aviso"]')).includes('Ese modelo ya no está en la lista'));
     await ctx.close();
   }
   {

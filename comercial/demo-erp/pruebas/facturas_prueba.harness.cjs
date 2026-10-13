@@ -193,6 +193,39 @@ window.abrePagina = function (numero) { return usa('documentoPagina', numero); }
     ok(nombre + ': la franja dice «no se pudo marcar el papel como prueba» y la fila P también', f.includes('No se pudo marcar el papel como prueba') && c.length === 1 && c[0].includes('No se pudo marcar'), f + ' · ' + JSON.stringify(c));
     await ctx.close();
   }
+  // 8. BAJA de AXW-291 (revisor erp-front-cobros): fuera de las cinco pantallas con cifras también se avisa cuando el papel puede salir sin marca
+  for (const [nombre, o] of [['documento.js sin las dos funciones', { docTipo: 'sin' }], ['documento.js que no carga', { docFalla: true }]]) {
+    const { p, ctx } = await abre(Object.assign({ resp: { data: BIEN, error: null }, ruta: '/contratos/' }, o));
+    await p.evaluate(() => window.abrePapel('x').catch(() => null));
+    await p.waitForTimeout(300);
+    ok('/contratos/ con ' + nombre + ': la franja dice «no se pudo marcar el papel como prueba» (no solo en las pantallas con cifras)', ((await franja(p)) || '').includes('No se pudo marcar el papel como prueba'), String(await franja(p)));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ resp: { data: null, error: { code: '500', message: 'x' } }, ruta: '/contratos/' });
+    ok('/contratos/ con la lectura caída y sin abrir ningún papel: sin franja', (await franja(p)) === null);
+    const rp = await p.evaluate(n => window.abrePagina(n), REAL1);
+    await p.waitForTimeout(200);
+    const f = (await franja(p)) || '';
+    ok('/contratos/ con la lectura caída, un papel sin serie P (p. ej. el recibo de una P): la franja dice que no se ha podido comprobar y que se recargue', f.includes('No se ha podido comprobar si este documento es de prueba') && f.includes('Recarga la página'), f);
+    ok('y ese papel sale limpio (nunca un aviso dentro del PDF de una factura real)', !rp.includes('data-axw-prueba'));
+    const antes = await p.evaluate(() => window.__pedidas);
+    for (let i = 0; i < 4; i++) await p.evaluate(n => window.abrePapel(n), REAL1);
+    await p.waitForTimeout(200);
+    const despues = await p.evaluate(() => window.__pedidas);
+    ok('con la lectura caída, repintar el MISMO papel no la vuelve a pedir cada vez', despues - antes === 0, antes + ' -> ' + despues);
+    await p.evaluate(n => window.abrePapel(n), P1);
+    await p.waitForTimeout(200);
+    ok('y abrir OTRO documento sí la vuelve a pedir', (await p.evaluate(() => window.__pedidas)) === despues + 1, String(await p.evaluate(() => window.__pedidas)));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ resp: [{ data: null, error: { code: '503', message: 'x' } }, { data: BIEN, error: null }], ruta: '/contratos/' });
+    await p.evaluate(n => window.abrePagina(n), REAL1);
+    await p.waitForTimeout(300);
+    ok('/contratos/: si la lectura vuelve, el aviso de «no se ha podido comprobar» se va', (await franja(p)) === null, String(await franja(p)));
+    await ctx.close();
+  }
   await nav.close();
   console.log(fallos ? `\n${fallos} de ${total} FALLAN` : `\nTODO BIEN (${total})`);
   process.exit(fallos ? 1 : 0);
