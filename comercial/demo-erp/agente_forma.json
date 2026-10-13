@@ -40,6 +40,7 @@
     "trabajos": "{<trabajo>: bool} con los 8",
     "nivel_ruta": "entero 0-1",
     "nivel_max": "entero",
+    "tope_techo_cent": "entero >= 0: el techo del tope mensual que fija el estudio (agente_techos); la ventana lo dice antes de guardar, el servidor lo hace cumplir (23514)",
     "cupo_dia": "entero",
     "notas_hoy": "entero",
     "trabajos_orden": "[trabajo]: los trabajos del CATÁLOGO de esta instancia, en su orden (la ventana pinta en este orden; vacío sin paquete de su tipo)",

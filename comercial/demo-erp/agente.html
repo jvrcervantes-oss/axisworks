@@ -130,6 +130,7 @@
 <dt data-lwt>Lo hace, sin pasar del tope</dt><dd data-lwt>La hace sin preguntar mientras no gaste más que el tope de ese módulo.</dd>
 <dt data-lwt>Lo hace solo</dt><dd data-lwt>La hace sin preguntar.</dd>
 </dl>
+<p class="ag-sub" data-ag="limites-orientativo" data-lwt>Hoy las acciones del AaaS no gastan dinero: el tope de cada módulo es orientativo. Lo que frena el gasto es el tope del mes.</p>
 <p class="ag-sub axw-oculto" data-ag="motivo-limites"></p>
 <p class="axw-error axw-oculto" data-ag="error-limites" role="alert"></p>
 <fieldset class="flex flex-col gap-3" data-ag="limites-form" style="border:0;padding:0;margin:0;min-width:0">
@@ -197,7 +198,10 @@
     'Más adelante': 'Later', 'Clave de IA': 'AI key', 'Aún no se usa': 'Not used yet',
     'Sus trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'Its jobs do not call the AI: the system itself does the counting.',
     'Avisos por Telegram': 'Telegram alerts', 'Los avisos están en este panel.': 'Alerts are on this panel.',
-    'Módulo': 'Module', 'Encendido': 'On', 'Apagado': 'Off', 'Trabajo': 'Work', 'Trabajando': 'Working', 'En pausa': 'Paused', 'Sin configurar': 'Not set up',
+    'Módulo': 'Module', 'Encendido': 'On', 'Apagado': 'Off', 'Trabajo': 'Work', 'Trabajando': 'Working', 'En pausa': 'Paused',
+    'El AaaS es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.': 'The AaaS is a paid service: turning it on means hiring it on the terms agreed with the studio.',
+    'Hoy las acciones del AaaS no gastan dinero: el tope de cada módulo es orientativo. Lo que frena el gasto es el tope del mes.': "Today the AaaS actions don't spend money: each module's cap is a guide. What stops spending is the monthly cap.",
+    'Como mucho {x}: es el máximo que ha fijado el estudio.': 'At most {x}: the maximum set by the studio.', 'Sin configurar': 'Not set up',
     'El AaaS no trabaja hasta tener su configuración completa.': 'The AaaS does not work until its setup is complete.',
     'Le falta el tope mensual.': 'The monthly cap is missing.', 'Le falta el contexto del negocio: quién es.': 'The business context is missing: who the business is.',
     'Le faltan los límites por módulo.': 'The limits per module are missing.',
@@ -365,7 +369,10 @@
     'Más adelante': 'Nanti', 'Clave de IA': 'Kunci AI', 'Aún no se usa': 'Belum digunakan',
     'Sus trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'Tugas-tugasnya tidak memanggil AI: perhitungannya dilakukan oleh sistem sendiri.',
     'Avisos por Telegram': 'Peringatan lewat Telegram', 'Los avisos están en este panel.': 'Peringatan ada di panel ini.',
-    'Módulo': 'Modul', 'Encendido': 'Aktif', 'Apagado': 'Nonaktif', 'Trabajo': 'Kerja', 'Trabajando': 'Bekerja', 'En pausa': 'Dijeda', 'Sin configurar': 'Belum diatur',
+    'Módulo': 'Modul', 'Encendido': 'Aktif', 'Apagado': 'Nonaktif', 'Trabajo': 'Kerja', 'Trabajando': 'Bekerja', 'En pausa': 'Dijeda',
+    'El AaaS es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.': 'AaaS adalah layanan berbayar: menyalakannya berarti menggunakannya sesuai kesepakatan dengan studio.',
+    'Hoy las acciones del AaaS no gastan dinero: el tope de cada módulo es orientativo. Lo que frena el gasto es el tope del mes.': 'Saat ini tindakan AaaS tidak mengeluarkan uang: batas tiap modul hanya panduan. Yang menahan pengeluaran adalah batas bulanan.',
+    'Como mucho {x}: es el máximo que ha fijado el estudio.': 'Paling banyak {x}: batas maksimum dari studio.', 'Sin configurar': 'Belum diatur',
     'El AaaS no trabaja hasta tener su configuración completa.': 'AaaS tidak bekerja sampai pengaturannya lengkap.',
     'Le falta el tope mensual.': 'Batas bulanan belum diisi.', 'Le falta el contexto del negocio: quién es.': 'Konteks bisnis belum diisi: siapa bisnisnya.',
     'Le faltan los límites por módulo.': 'Batas per modul belum diisi.',
@@ -813,6 +820,7 @@
     var ayuda = T('Subir el tope tarda 24 h en entrar; bajarlo es inmediato.');
     if (ent(d.tope_propuesto_cent)) ayuda += ' ' + Tf('Hay una subida pendiente a {x}: bajar el tope ahora la cancela.', { x: eur(d.tope_propuesto_cent, d) });
     if (typeof d.usd_por_eur === 'number' && d.usd_por_eur > 0) ayuda += ' ' + Tf('Unos {u} USD al cambio de hoy.', { u: Math.round(d.tope_mensual_cent / 100 * d.usd_por_eur) });
+    if (ent(d.tope_techo_cent)) ayuda += ' ' + Tf('Como mucho {x}: es el máximo que ha fijado el estudio.', { x: eur(d.tope_techo_cent, d) });
     $a('tope-ayuda').textContent = ayuda;
     /* «Cancelar la subida»: solo con una subida pendiente y solo el dueño. Manda el tope GUARDADO (no null): pedir el mismo tope la cancela sin bajarlo. */
     var acc = $a('acciones-ajustes'), viejo = acc.querySelector('[data-accion="ag-cancelar-subida"]');
@@ -1143,7 +1151,7 @@
     else if (a === 'ag-acc-aceptar' || a === 'ag-acc-rechazar') { if (E.estado && E.estado.soy_dueno) decideAccion(el, id, a === 'ag-acc-aceptar'); }
     else if (a === 'ag-apagar' || a === 'ag-encender') {
       var enc = a === 'ag-encender';
-      conMotivo(T(enc ? 'Encender el AaaS' : 'Apagar el AaaS'), T(enc ? 'Al encenderlo, vuelve a mirar el negocio dos veces al día y a dejar avisos aquí. No toca nada.' : 'Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.'),
+      conMotivo(T(enc ? 'Encender el AaaS' : 'Apagar el AaaS'), (enc ? T('Al encenderlo, vuelve a mirar el negocio dos veces al día y a dejar avisos aquí. No toca nada.') + ' ' + T('El AaaS es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.') : T('Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.')),
         !enc, function (m) { return llama('agente_modulo_cambia', { p_encender: enc, p_motivo: m }).then(function (r) { if (!r.error && esObj(r.data)) exito(T(enc ? 'AaaS encendido.' : 'AaaS apagado.')); return r; }); });
     } else if (a === 'ag-prop-aceptar' || a === 'ag-prop-rechazar') {
       var acepta = a === 'ag-prop-aceptar';

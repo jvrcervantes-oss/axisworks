@@ -109,7 +109,7 @@ function estado(s) {
   return { encendido: true, parado: s.parado, soy_dueno: dueno, puedo_decidir: decide && !o.pruebas, falta_configurar: o.falta || null,
     ultima_pasada: o.sinNotas ? null : { dia: HOY, pasada: 'tarde', en: iso(18), resultado: s.parado ? 'en_pausa' : 'hecha' },
     tope_mensual_cent: s.tope, tope_propuesto_cent: s.propuesto, tope_propuesto_desde: s.propuesto != null ? iso(20) : null,
-    gastado_mes_cent: 0, moneda: o.sinMoneda ? undefined : 'EUR', usd_por_eur: 1.08, trabajos: Object.assign({}, s.trabajos), nivel_ruta: s.nivel, nivel_max: 1, cupo_dia: 24, notas_hoy: o.sinNotas ? 0 : 9,
+    gastado_mes_cent: 0, moneda: o.sinMoneda ? undefined : 'EUR', usd_por_eur: 1.08, trabajos: Object.assign({}, s.trabajos), nivel_ruta: s.nivel, nivel_max: 1, tope_techo_cent: 4000, cupo_dia: 24, notas_hoy: o.sinNotas ? 0 : 9,
     trabajos_orden: s.orden.slice(), limites: o.limitesRaros ? 'x' : clon(s.limites), limites_fuera: clon(s.fuera), contexto: o.sinContexto ? null : clon(s.contexto),
     historial: o.sinHistorial ? null : clon(s.historial.slice(0, 10)),
     acciones_pendientes: s.acciones.filter(x => x.estado === 'pendiente' && Date.parse(x.expira_en) > Date.now()).length };
@@ -311,6 +311,9 @@ const MUESTRA = (() => {
     ok('el dueño ve Parar y Apagar, no Encender', (await hay(p, '[data-accion="ag-parar"]')) === 1 && (await hay(p, '[data-accion="ag-apagar"]')) === 1 && (await hay(p, '[data-accion="ag-encender"]')) === 0);
     ok('ajustes: 8 casillas marcadas, nivel 1, tope 37 y su equivalente en USD', (await p.$$eval('[data-ag="trabajos"] input:checked', e => e.length)) === 8 && (await p.$eval('[data-campo="nivel_ruta"]', e => e.value)) === '1'
        && (await p.$eval('[data-campo="tope"]', e => e.value)) === '37' && (await txt(p, '[data-ag="tope-ayuda"]')).includes('40 USD'));
+    // Administración (aaas-2): el techo del estudio se dice antes de guardar, y el tope por módulo se rotula orientativo
+    ok('tope: dice el máximo que fijó el estudio (tope_techo_cent)', (await txt(p, '[data-ag="tope-ayuda"]')).includes('Como mucho') && (await txt(p, '[data-ag="tope-ayuda"]')).includes('40'));
+    ok('límites: el tope por módulo se rotula orientativo', (await visible(p, '[data-ag="limites-orientativo"]')) && (await txt(p, '[data-ag="limites-orientativo"]')).includes('orientativo'));
     // decidir un aviso
     await p.click('[data-trabajo="salidas"] [data-accion="ag-nota-hecha"]');
     await hasta(() => llamadas(base, 'agente_nota_decide').length === 1);
@@ -352,6 +355,9 @@ const MUESTRA = (() => {
     await hasta(() => llamadas(base, 'agente_modulo_cambia').length === 1);
     ok('apagar manda p_encender false y el motivo', J(llamadas(base, 'agente_modulo_cambia')[0][1]) === J({ p_encender: false, p_motivo: 'Prueba de apagado' }));
     await p.waitForSelector('[data-accion="ag-encender"]');
+    await p.click('[data-accion="ag-encender"]');
+    ok('encender: el diálogo dice que es un servicio de pago (Administración)', (await p.$eval('.axw-modal', e => e.textContent)).includes('servicio de pago'));
+    await p.keyboard.press('Escape');
     ok('apagado: sale Encender y se esconden hoy/propuestas/ajustes', (await hay(p, '[data-accion="ag-encender"]')) === 1 && !(await visible(p, '[data-ag="bloque-hoy"]')) && !(await visible(p, '[data-ag="bloque-ajustes"]')));
     ok('sin errores de JS, sin fetch y sin .from()', await sinErrores(p));
     await ctx.close();
