@@ -2258,6 +2258,7 @@ MENU_I18N = {
     'Ventas': {'en': 'Sales', 'id': 'Penjualan'},
     'Reservas de producto': {'en': 'Product bookings', 'id': 'Booking sewa motor'},
     'Configurar módulos': {'en': 'Module setup', 'id': 'Penyiapan modul'},
+    'Interruptores de comisiones': {'en': 'Commission switches', 'id': 'Sakelar komisi'},
     # rótulos que whatsapp_bot_pantalla() injerta en el menú (idiomas-pH, 12-oct): el menú los pasa por lwT aunque estén ocultos
     'Bot de WhatsApp': {'en': 'WhatsApp bot', 'id': 'Bot WhatsApp'},
     'Bot de WhatsApp · alta': {'en': 'WhatsApp bot · sign-up', 'id': 'Bot WhatsApp · pendaftaran'},
@@ -4444,7 +4445,7 @@ def propiedades_en_paquete(nombre):
     erp-setup)? Sí solo si en la agencia hay una migración que da `grant execute … to authenticated` a sus cuatro escritores y una lectura y esa migración va a la
     instancia (abanico.va_a: su `tipo:` y su `solo-en:`). Sin el grant, la pantalla llamaría a una función cerrada (42501 a todo el mundo) y el
     contrato front↔base saldría rojo; con el grant y sin la pantalla, una función abierta sin llamador (§1.ter). Una migración que abra solo
-    algunos de los tres no vale: aborta, porque los tres pasos son un mismo componente."""
+    algunas de esas funciones no vale: aborta, porque los pasos y la pestaña son un mismo componente."""
     sys.path.insert(0, os.path.join(AGENCIA, 'erp'))
     from abanico import va_a
     d = os.path.join(AGENCIA, 'erp', 'migraciones')
