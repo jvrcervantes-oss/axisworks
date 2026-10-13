@@ -1790,6 +1790,9 @@ NEUTROS = {(255, 255, 255), (0, 0, 0)}
 # 80 caracteres antes y 40 después—, destino, cuántas). Destino None = el token del color (marca); 'ok' = el verde de estado de la piel
 # ('ok' o, si no lo trae, 'fiduciary-green'); 'ok-fondo'/'ok-tinta' = la pareja fondo/texto de una etiqueta «aprobada». Decisión por
 # defecto del orquestador (13-oct): los colores de ESTADO van a los de estado de la piel, nunca al acento de la marca.
+# Rutas retiradas por tipo que el paquete NO traía y que instancia() rellena con «Pantalla no incluida» (14-oct, /clasico/obra/ de bbm): para el
+# recuento de LAWANG_POR_CONTEXTO siguen siendo «una pantalla que no sale» (antes el fichero no existía y la regla no contaba).
+AVISOS_SIN_PANTALLA = set()
 LAWANG_POR_CONTEXTO = {
     '485B37': (('assets/datos.js', r'(?i)background:#485b37;color:#fff', None, 2),                 # botón
                ('assets/datos.js', r'DATOS EN VIVO|disponible:|en_venta:|llega\?', 'ok', 4),        # estados
@@ -1989,7 +1992,7 @@ def piel_colores_lawang(dist, nombre):
     for c, rs in reglas.items():
         for i, (fr, ctx, dst, cuantas) in enumerate(rs):
             # una pantalla que no sale en esta instancia (módulo apagado, poda) no cuenta; la que sale tiene que cuadrar
-            if os.path.isfile(os.path.join(dist, *fr.split('/'))) and vistos[(c, i)] != cuantas:
+            if os.path.isfile(os.path.join(dist, *fr.split('/'))) and fr not in AVISOS_SIN_PANTALLA and vistos[(c, i)] != cuantas:
                 mal.append('%s en %s («%s»): %d, se esperaban %d' % (h(c), fr, ctx or 'el resto', vistos[(c, i)], cuantas))
     if mal:
         aborta('colores de Lawang: cambió el recuento de un color ambiguo (¿una aparición nueva de Lawang?):\n  ' + '\n  '.join(mal))
@@ -2258,6 +2261,7 @@ MENU_I18N = {
     'Ventas': {'en': 'Sales', 'id': 'Penjualan'},
     'Reservas de producto': {'en': 'Product bookings', 'id': 'Booking sewa motor'},
     'Configurar módulos': {'en': 'Module setup', 'id': 'Penyiapan modul'},
+    'Interruptores de comisiones': {'en': 'Commission switches', 'id': 'Sakelar komisi'},
     # rótulos que whatsapp_bot_pantalla() injerta en el menú (idiomas-pH, 12-oct): el menú los pasa por lwT aunque estén ocultos
     'Bot de WhatsApp': {'en': 'WhatsApp bot', 'id': 'Bot WhatsApp'},
     'Bot de WhatsApp · alta': {'en': 'WhatsApp bot · sign-up', 'id': 'Bot WhatsApp · pendaftaran'},
@@ -4311,7 +4315,7 @@ def ajustes_puesta_en_marcha():
 # Revisor 13-oct (bbm-p41): la tw.css de la instancia es la de Lawang, purgada con las páginas de Lawang. Una clase que solo usan los ficheros del
 # setup (que no son de Lawang) no se compila y la pantalla sale sin ese estilo, en silencio: p-3, gap-x-5 y tracking-[0.08em] en S44/S45. Estos
 # ficheros pintan /ajustes/configurar/ y /ajustes/, que cargan esa tw.css; las axw-* las define el propio fichero en su <style>.
-SETUP_CLASES = ('asistente_setup.html', 'setup_pasos.js', 'setup_reservas.js', 'setup_comun.js', 'ajustes_puesta.js', 'cobros_paso.js')
+SETUP_CLASES = ('asistente_setup.html', 'setup_pasos.js', 'setup_reservas.js', 'setup_comun.js', 'ajustes_puesta.js', 'cobros_paso.js', 'setup_propiedades.js')
 # Dónde empieza una lista de clases: `class:` y `className =`/`+=` (se lee la expresión ENTERA: ternarios y concatenaciones), las constantes
 # BTN*/CLS_* y el atributo class="…" del HTML.
 RE_CLASES_INICIO = re.compile(r"""\bclass\s*:|\bclassName\s*\+?=(?!=)|\bvar\s+(?:BTN\w*|CLS_\w*)\s*=|\bclass="([^"\n]*)\"""")
@@ -4419,6 +4423,82 @@ def setup_reservas_pasos():
         t = _una_vez(t, tag, tag + '<script src="%ssetup_reservas.js" defer></script>' % pre, 'setup_reservas_pasos %s' % os.path.relpath(pag, v4))
         open(pag, 'w', encoding='utf-8', newline='').write(t)
     shutil.copy2(os.path.join(AQUI, 'setup_reservas.js'), os.path.join(v4, 'assets', 'setup_reservas.js'))
+
+
+# Los escritores de setup_propiedades.js (N4, 20261014051000) nacen CERRADOS: ninguno tiene EXECUTE hasta que llega la pantalla (agencia-81, opción A).
+# La migración que los abre llega en el MISMO aterrizaje que este script; el script entra solo en la instancia a la que va esa migración.
+PROPIEDADES_ESCRITORES = ('tipo_vivienda_guarda', 'obra_fase_guarda', 'contrato_tipo_etapa_guarda', 'comisiones_interruptor_guarda')
+# la lectura de Ajustes › Comisiones (erp-setup la escribe en la MISMA migración que abre el grant de los cuatro)
+PROPIEDADES_LECTURAS = ('comisiones_interruptor_datos',)
+AJUSTES_COMISIONES_TAB = ('<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors"'
+                          ' role="tab" type="button" id="lw-tab-comisiones" aria-controls="lw-panel-comisiones" aria-selected="false" tabindex="-1" data-lw-tab="comisiones" data-lwt hidden>'
+                          'Comisiones</button>\n')
+AJUSTES_COMISIONES_PANEL = (
+    '<section id="lw-panel-comisiones" role="tabpanel" aria-labelledby="lw-tab-comisiones" data-lw-panel="comisiones" class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden" hidden>\n'
+    '<div class="px-8 pt-8 pb-4 flex flex-col gap-1 border-b border-outline-variant/40">\n'
+    '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Ajustes</span>\n'
+    '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Interruptores de comisiones</h2>\n'
+    '</div>\n'
+    '<div id="lw-aj-comisiones"></div>\n'
+    '</section>\n\n')
+
+
+def propiedades_en_paquete(nombre):
+    """¿Lleva esta instancia los pasos de Propiedades (setup_propiedades.js, erp-front 14-oct-2026; contrato encargo_front_pasos_propiedades.md de
+    erp-setup)? Sí solo si en la agencia hay una migración que da `grant execute … to authenticated` a sus cuatro escritores y una lectura y esa migración va a la
+    instancia (abanico.va_a: su `tipo:` y su `solo-en:`). Sin el grant, la pantalla llamaría a una función cerrada (42501 a todo el mundo) y el
+    contrato front↔base saldría rojo; con el grant y sin la pantalla, una función abierta sin llamador (§1.ter). Una migración que abra solo
+    algunas de esas funciones no vale: aborta, porque los pasos y la pestaña son un mismo componente."""
+    sys.path.insert(0, os.path.join(AGENCIA, 'erp'))
+    from abanico import va_a
+    d = os.path.join(AGENCIA, 'erp', 'migraciones')
+    tipo = (_instancia_registro(nombre).get('config') or {}).get('tipo_erp')
+    for n in sorted(os.listdir(d)):
+        if not n.endswith('.sql'):
+            continue
+        texto = open(os.path.join(d, n), encoding='utf-8').read()
+        abre = [f for f in PROPIEDADES_ESCRITORES + PROPIEDADES_LECTURAS
+                if re.search(r'grant\s+execute\s+on\s+function\s+public\.%s\s*\([^)]*\)\s+to\s+authenticated' % f, texto, re.I)]
+        if not abre:
+            continue
+        if len(abre) != len(PROPIEDADES_ESCRITORES + PROPIEDADES_LECTURAS):
+            aborta('%s abre solo %s de las funciones de Propiedades %s: setup_propiedades.js las llama todas' % (n, abre, list(PROPIEDADES_ESCRITORES + PROPIEDADES_LECTURAS)))
+        return bool(va_a(texto, nombre, tipo))
+    return False
+
+
+def setup_propiedades_pasos():
+    """Pasos del setup de Propiedades (tipos_vivienda, fases_obra, carta_reserva) en setup_propiedades.js. Como setup_reservas_pasos(): se suman con
+    AXW_PASOS.registra(), DETRÁS de setup_pasos.js, en las dos páginas que comparten componente (el asistente y Ajustes › Configurar módulos)."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    for pag, pre in ((os.path.join(v4, 'ajustes', 'configurar', 'index.html'), '../../assets/'), (os.path.join(v4, 'ajustes', 'index.html'), '../assets/')):
+        s = open(pag, encoding='utf-8').read()
+        tag = '<script src="%ssetup_pasos.js" defer></script>' % pre
+        s = _una_vez(s, tag, tag + '<script src="%ssetup_propiedades.js" defer></script>' % pre, 'setup_propiedades_pasos %s' % os.path.relpath(pag, v4))
+        open(pag, 'w', encoding='utf-8', newline='').write(s)
+    js = open(os.path.join(AQUI, 'setup_propiedades.js'), encoding='utf-8').read()
+    for f in PROPIEDADES_ESCRITORES:   # contrato_front busca el nombre LITERAL de la función en el paquete
+        if "sb.rpc('%s'" % f not in js:
+            aborta('setup_propiedades.js ya no llama a %s por su nombre literal' % f)
+    for f in PROPIEDADES_LECTURAS:
+        if "datos('%s')" % f not in js:
+            aborta('setup_propiedades.js ya no lee %s por su nombre literal' % f)
+    # Ajustes › Comisiones (pieza 4): la pestaña OCULTA y su panel; setup_propiedades.js la enseña solo al administrador principal. Mismas anclas que
+    # Cobros (antes de la pestaña y del panel de Registro) y la pestaña se añade al FINAL de la lista cerrada de ajustes.js.
+    pag = os.path.join(v4, 'ajustes', 'index.html')
+    s = open(pag, encoding='utf-8').read()
+    s = _una_vez(s, AJUSTES_COBROS_TAB_ANCLA, AJUSTES_COMISIONES_TAB + AJUSTES_COBROS_TAB_ANCLA, 'ajustes/index.html pestaña Comisiones')
+    s = _una_vez(s, AJUSTES_COBROS_PANEL_ANCLA, AJUSTES_COMISIONES_PANEL + AJUSTES_COBROS_PANEL_ANCLA, 'ajustes/index.html panel Comisiones')
+    open(pag, 'w', encoding='utf-8', newline='').write(s)
+    aj = os.path.join(v4, 'assets', 'ajustes.js')
+    a = open(aj, encoding='utf-8').read()
+    lista = AJUSTES_COBROS_PESTANAS.findall(a)
+    if len(lista) != 1 or "'comisiones'" in lista[0]:
+        aborta('ajustes.js: esperaba UNA lista `var PESTANAS = [...];` sin comisiones y hay %d%s' % (len(lista), quien_cambio_lawang('ajustes.js')))
+    a = AJUSTES_COBROS_PESTANAS.sub(lambda m: m.group(1) + ", 'comisiones'];", a, count=1)
+    open(aj, 'w', encoding='utf-8', newline='').write(a)
+    shutil.copy2(os.path.join(AQUI, 'setup_propiedades.js'), os.path.join(v4, 'assets', 'setup_propiedades.js'))
+    print('pasos de Propiedades: setup_propiedades.js en el asistente y en Ajustes')
 
 
 # ── Ajustes › Cobros (F3 Entrega 2, bbm-p24-cobros-front, 12-oct-2026) ─────────────────────────────────────────────────────────────────────
@@ -5219,6 +5299,8 @@ def instancia(nombre):
     # pantalla y bbm no cotiza; con ellas y sin E3, el contrato front↔base para toda publicación de bbm.
     if reservas_en_paquete(nombre):
         setup_reservas_pasos()
+    if propiedades_en_paquete(nombre):   # erp-front 14-oct: tipos de vivienda, fases de obra y carta de reserva, donde va el grant de sus escritores
+        setup_propiedades_pasos()
     clases_setup_en_hoja()   # revisor 13-oct (bbm-p41): ninguna clase del setup sin compilar en la tw.css de la instancia
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
@@ -5347,8 +5429,15 @@ def instancia(nombre):
     fuera |= set(pantallas_por_tipo(nombre))   # N6.3: lo de otro tipo sale como «Pantalla no incluida» y se lleva sus ficheros, como apagados_extra.p
     rotulos_fuera = {ruta_limpia(u): r for u, r in (extra_p.get('p_rotulos') or {}).items()}
     cargaban = set()   # ficheros que cargaban las pantallas que salen del paquete: candidatos a salir con ellas
+    AVISOS_SIN_PANTALLA.clear()
     for u in mapa['xp']:
         f = os.path.join(DIST, *u.strip('/').split('/'), 'index.html')
+        if u in fuera and not os.path.isfile(f):
+            AVISOS_SIN_PANTALLA.add(u.strip('/') + '/index.html')
+            # Una pantalla retirada que el paquete ni siquiera trae (la /clasico/obra/ de bbm, 14-oct): sin su aviso, el servidor daba 403 (carpeta vacía
+            # que dejó la publicación anterior) o 404 a quien la tenía guardada. Lleva el mismo «Pantalla no incluida» que las demás.
+            os.makedirs(os.path.dirname(f), exist_ok=True)
+            open(f, 'w', encoding='utf-8').write('')
         if os.path.isfile(f):
             if u in fuera:
                 # Declarada en apagados_extra.p («pantalla no incluida en esta instancia»): no nombra un módulo (taller cuelga de

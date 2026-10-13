@@ -163,14 +163,16 @@ mira('no trae un rol cableado: la pantalla no decide quien es admin (la base con
 PERMITIDAS = {'producto_flota_datos', 'producto_unidades_alta_lote', 'producto_unidad_guarda', 'producto_tarifa_guarda', 'producto_tarifa_borra',
               'reservas_setup_datos', 'producto_garantia_guarda', 'producto_seguro_guarda', 'producto_seguro_borra',
               # + el MODELO (erp-front, 14-oct-2026: Flota = único sitio de las motos; crear con clase 'alquiler', cambiar nombre y activo)
-              'producto_guarda'}
-LECTURAS = {'producto_flota_datos', 'reservas_setup_datos'}
+              'producto_guarda',
+              # + la clase, la referencia y el impuesto de cada producto (AXW-290, bbm-backend 052000)
+              'productos_catalogo_datos'}
+LECTURAS = {'producto_flota_datos', 'reservas_setup_datos', 'productos_catalogo_datos'}
 llamadas = set(re.findall(r"\bllama\('([a-z_]+)'", CODIGO))
 literales = set(re.findall(r"(?:SB\.rpc|window\.lwDatos)\('([a-z_]+)'", CODIGO))
 nombres_envia = set(re.findall(r"\benvia\('([a-z_]+)'", CODIGO))
 mira('cada RPC lleva su nombre LITERAL (para que contrato_front.py la vea) y son exactamente las nueve del contrato (' + ', '.join(sorted(literales ^ PERMITIDAS)) + ')', literales == PERMITIDAS)
 mira('las RPC que llama (llama/envia) son exactamente las del contrato (' + ', '.join(sorted((llamadas | nombres_envia) ^ PERMITIDAS)) + ')', (llamadas | nombres_envia) == PERMITIDAS)
-mira('lo que lee va por lwDatos (producto_flota_datos y reservas_setup_datos); lo que escribe va por sb.rpc', set(re.findall(r"window\.lwDatos\('([a-z_]+)'", CODIGO)) == LECTURAS
+mira('lo que lee va por lwDatos (producto_flota_datos, reservas_setup_datos y productos_catalogo_datos); lo que escribe va por sb.rpc', set(re.findall(r"window\.lwDatos\('([a-z_]+)'", CODIGO)) == LECTURAS
      and set(re.findall(r"SB\.rpc\('([a-z_]+)'", CODIGO)) == PERMITIDAS - LECTURAS)
 mira('ninguna lectura por .rpc(...).select() ni encadenada', '.select(' not in CODIGO and not re.search(r"\.rpc\([^)]*\)\s*\.", CODIGO))
 # el navegador pide, no decide: argumentos EXACTOS del contrato; ni autor, ni fechas, ni importes calculados
@@ -217,7 +219,7 @@ mira('el modelo se crea con clase alquiler por producto_guarda (p_id null) y se 
      "clase: 'alquiler'" in CODIGO and "llama('producto_guarda', { p_id: pid || null, p_datos: q })" in CODIGO and "'fl-modelo-editar'" in CODIGO
      and "if (!Object.keys(q).length) return { e: T('No hay nada que cambiar.') }" in CODIGO)
 mira('una base sin clase de producto: el alta se repite SIN el campo clase y solo por ese error (campo_no_admitido)', "hint === 'campo_no_admitido' && /clase/.test(" in CODIGO and "if (k !== 'clase') q2[k] = r.v[k]" in CODIGO)
-_modelo = CODIGO[CODIGO.index('function abreModelo('):CODIGO.index('function abreModelo(') + 4000]
+_modelo = CODIGO[CODIGO.index('function abreModelo('):CODIGO.index('function abreMoto(')]
 mira('abreModelo: si la recarga tras guardar falla, suelta el botón y lo dice (como envia(); revisor 14-oct)',
      "}, function () { C.libera(bt); d.cierra(); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); });" in _modelo)
 mira('lista recortada (recortado) avisa sin escribir el numero', "d.recortado !== true" in CODIGO and 'data-fl="recortado"' in MARCADO and not re.search(r'recortada a los primeros', MARCADO))
@@ -270,6 +272,14 @@ open(js_id, 'w', encoding='utf-8').write(JS[JS.index('var ID_FL = {'):JS.index('
 _id, _en = json.loads(subprocess.run(['node', js_id], capture_output=True, text=True, encoding='utf-8').stdout or '[[],[]]')
 faltan_id = sorted(set(_en) - set(_id))
 mira('ID_FL tiene indonesio para toda clave de EN_FL' + (' (faltan: ' + '; '.join(c[:50] for c in faltan_id[:6]) + ')' if faltan_id else ''), bool(_en) and not faltan_id)
+
+
+# -- AXW-290: el catálogo filtra por clase y «Editar modelo» lleva referencia e impuesto
+_cat = CODIGO[CODIGO.index('function catalogo('):CODIGO.index('function catalogo(') + 1200]
+mira('AXW-290: Flota se queda solo con lo de alquiler (clase null o fuera del catálogo = no se sabe, se queda)', "return !x || x.clase == null || x.clase === 'alquiler';" in _cat)
+mira('AXW-290: si el catálogo no llega, Flota no se cae: lista sin filtrar y lo dice', "E.catFallo = !bien;" in _cat and "else if (E.avisoEsCat) aviso('');" in CODIGO and "E.avisoEsCat = false; msg('aviso', m);" in CODIGO
+     and CODIGO.count('avisoCat();') >= 3)   # carga() y los dos guardados: guardar no borra el aviso del catálogo caído
+mira('AXW-290: Editar modelo manda referencia e impuesto solo si cambian (vacío = null)', "q.referencia = rf || null" in _modelo and "q.impuesto_id = im" in _modelo)
 
 if fallos:
     print('FALLOS (%d de %d):\n  ' % (len(fallos), casos) + '\n  '.join(fallos))

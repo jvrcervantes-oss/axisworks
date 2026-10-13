@@ -46,6 +46,9 @@ function nuevaBase(o = {}) {
     if (o.mezcla) s.productos.push({ id: 'p4', numero: 'P-4', nombre: 'Mixta', activo: true, unidades: [u('u9', 'DK 9999 MM')], tarifas: [t('t41', 1, 100000, 'IDR'), t('t42', 2, 20, 'EUR')] });
     if (o.unaTarifa) s.productos.push({ id: 'p5', numero: 'P-5', nombre: 'Una sola', activo: true, unidades: [u('u10', 'DK 1010 UN')], tarifas: [t('t51', 1, 120000, 'IDR')] });
     if (o.solaTarifaIDR) { s.productos = s.productos.filter(x => x.id !== 'p1'); }
+    // AXW-290: un extra de «Extras y servicios» que producto_flota_datos también devuelve (no da la clase): Flota lo tiene que dejar fuera
+    if (o.extrasEnFlota) s.productos.push({ id: 'e1', numero: 'P-9', nombre: 'Casco extra', activo: true, unidades: [], tarifas: [], clase: 'servicio' });
+    if (o.conRef) Object.assign(s.productos.find(x => x.id === 'p2'), { referencia: 'VAR-160', impuesto_id: 'i2' });
   }
   s.versiones = o.vacio ? [] : [{ cuando: marca(), quien: o.xss ? XSS_QUIEN : 'admin@x.com', motivo: o.xss ? XSS_MOTIVO : 'Alta inicial', tabla: 'producto_unidades', que: 'alta' }];
   return s;
@@ -75,10 +78,17 @@ async function servidor(s, nombre, a) {
   if (o.moduloApagado) return err('42501', nombre + ': módulo no activo', 'modulo_apagado');
   if (o.noAdmin && (nombre !== 'producto_flota_datos' || !o.noAdminSoloEscribe)) return err('42501', 'La flota la ve y la edita un admin');
   switch (nombre) {
+    // AXW-290 (bbm-backend 052000): el catálogo entero con su clase (null en una base sin la columna), referencia e impuesto, y los impuestos (activos e inactivos)
+    case 'productos_catalogo_datos':
+      if (o.sinCatalogo) return err('PGRST202', 'Could not find the function public.productos_catalogo_datos in the schema cache');
+      return { data: { productos: s.productos.map(x => ({ id: x.id, numero: x.numero, nombre: x.nombre, referencia: x.referencia || null, clase: o.sinClase ? null : (x.clase || 'alquiler'), impuesto_id: x.impuesto_id || null,
+        precio: 0, moneda: 'IDR', unidad: 'día', descripcion: null, activo: x.activo })),
+        impuestos: [{ id: 'i1', numero_impuesto: 'IMP-1', nombre: 'PPN', pais: 'ID', porcentaje: 11, activo: true }, { id: 'i2', numero_impuesto: 'IMP-2', nombre: 'Viejo', pais: 'ID', porcentaje: 10, activo: false }],
+        recortado: false }, error: null };
     case 'producto_flota_datos':
       if (o.datosRaros) return { data: { productos: 'nada' }, error: null };
       if (o.sinTopes) { const d = datos(s); delete d.topes; return { data: d, error: null }; }
-      if (o.fallaLecturaTrasGuardar && s.llamadas.some(x => x[0] !== 'producto_flota_datos')) return { data: null, error: { message: 'Failed to fetch' } };
+      if (o.fallaLecturaTrasGuardar && s.llamadas.some(x => x[0] !== 'producto_flota_datos' && x[0] !== 'productos_catalogo_datos')) return { data: null, error: { message: 'Failed to fetch' } };
       return { data: datos(s), error: null };
     // seguro y fianza (bbm-p42): mismas RPC que el paso «Alquiler con unidades» del asistente (forma de reservas_setup_datos: FORMAS_DATOS de erp/modulos.py)
     case 'reservas_setup_datos':
@@ -226,7 +236,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   }
   const txt = (p, sel) => p.$eval(sel, e => e.textContent);
   const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
-  const escritas = b => b.llamadas.filter(x => x[0] !== 'producto_flota_datos' && x[0] !== 'reservas_setup_datos');
+  const escritas = b => b.llamadas.filter(x => x[0] !== 'producto_flota_datos' && x[0] !== 'reservas_setup_datos' && x[0] !== 'productos_catalogo_datos');
   const espera = (p, fn, arg) => p.waitForFunction(fn, arg, { timeout: 5000 });
   const hasta = async f => { for (let i = 0; i < 100; i++) { if (f()) return true; await new Promise(r => setTimeout(r, 50)); } return false; };
   const campo = n => '[data-campo="' + n + '"]';
@@ -274,7 +284,8 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('mientras lee dice «Cargando…» y NO enseña el contenido ni dice nada del rol', (await txt(p, '[data-fl="estado"]')).includes('Cargando') && !(await visible(p, '[data-fl="contenido"]')) && !(await txt(p, '[data-fl="estado"]')).includes('administra'));
     await espera(p, () => document.querySelector('[data-fl="estado"]').getAttribute('data-tipo') === 'listo');
     ok('al llegar la lectura enseña los productos y oculta el estado', (await visible(p, '[data-fl="contenido"]')) && !(await visible(p, '[data-fl="estado"]')) && (await p.$$('.fl-inv-fila[data-fila-producto]')).length === 2 && !(await p.$('[data-fl="cajon"]')));   // paso 1: una fila por modelo en el inventario; el cajón, cerrado
-    ok('arranca pidiendo SOLO la lectura, sin argumentos', base.llamadas.length === 1 && base.llamadas[0][0] === 'producto_flota_datos' && J(base.llamadas[0][1]) === '{}', J(base.llamadas));
+    ok('arranca pidiendo SOLO las dos lecturas (flota y catálogo, AXW-290), sin argumentos', base.llamadas.length === 2 && J(base.llamadas.map(x => x[0]).sort()) === J(['producto_flota_datos', 'productos_catalogo_datos'])
+       && base.llamadas.every(x => J(x[1]) === '{}'), J(base.llamadas));
     await ctx.close();
   }
   {
@@ -367,6 +378,41 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('relee y el cajón enseña el nombre nuevo y «Inactivo»', (await txt(p, '#fl-cajon-tit')).includes('Vario 160 ABS') && (await cuerpo(p, 'p2')).includes('Inactivo'));
     await ctx.close();
   }
+  // AXW-290: Flota es de lo que se alquila; el catálogo da la clase
+  {
+    const { p, ctx } = await abre({ base: { extrasEnFlota: true } });
+    const filas = await p.$$eval('.fl-inv-fila[data-fila-producto]', fs => fs.map(f => f.getAttribute('data-fila-producto')));
+    ok('AXW-290: un extra (clase servicio) NO sale en Flota; los modelos de alquiler sí', !filas.includes('e1') && filas.includes('p1') && filas.includes('p2'), J(filas));
+    ok('AXW-290: con el catálogo leído, sin aviso', !((await p.evaluate(() => document.body.innerText)) || '').includes('qué productos son de alquiler'));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { extrasEnFlota: true, sinCatalogo: true } });
+    const filas = await p.$$eval('.fl-inv-fila[data-fila-producto]', fs => fs.map(f => f.getAttribute('data-fila-producto')));
+    ok('AXW-290: sin el catálogo, Flota no se cae: lista como antes y AVISA de que puede salir algún extra', filas.includes('e1') && filas.includes('p1')
+       && ((await p.evaluate(() => document.body.innerText)) || '').includes('No se ha podido saber qué productos son de alquiler'), J(filas));
+    await p.click(accion('fl-modelo-editar', '[data-producto-id="p2"]'));
+    await p.waitForSelector('[data-axw="dialogo"] ' + campo('nombre'));
+    ok('AXW-290: sin el catálogo, «Editar modelo» sigue como antes (nombre y activo, sin referencia ni impuesto)', !(await p.$(campo('referencia'))) && !(await p.$(campo('impuesto_id'))));
+    await p.fill(campo('nombre'), 'Vario 160 nueva'); await confirmar(p); await esperaCierre(p); await p.waitForTimeout(300);
+    ok('AXW-290: guardar con el catálogo caído NO borra su aviso (revisor erp-front-catalogo, BAJA 3)', ((await p.evaluate(() => document.body.innerText)) || '').includes('No se ha podido saber qué productos son de alquiler'));
+    await ctx.close();
+  }
+  {
+    const { base, p, ctx } = await abre({ base: { conRef: true } });
+    await p.click(accion('fl-modelo-editar', '[data-producto-id="p2"]'));
+    await p.waitForSelector('[data-axw="dialogo"] ' + campo('referencia'));
+    const ops = await p.$$eval(campo('impuesto_id') + ' option', os => os.map(o => [o.value, o.selected, o.textContent]));
+    ok('AXW-290: «Editar modelo» trae la referencia y el impuesto del catálogo (el desactivado que ya tiene sale marcado)', (await p.$eval(campo('referencia'), e => e.value)) === 'VAR-160'
+       && ops.some(o => o[0] === 'i2' && o[1] && /Desactivado/.test(o[2])) && ops.some(o => o[0] === 'i1'), J(ops));
+    await confirmar(p);
+    ok('AXW-290: sin cambios, nada que mandar', (await dlgError(p)).includes('No hay nada que cambiar') && llamadas(base, 'producto_guarda').length === 0);
+    await p.fill(campo('referencia'), ''); await p.selectOption(campo('impuesto_id'), 'i1'); await confirmar(p);
+    await esperaCierre(p);
+    const g = llamadas(base, 'producto_guarda');
+    ok('AXW-290: manda SOLO referencia (vaciada = null) e impuesto nuevo', g.length === 1 && g[0][1].p_id === 'p2' && J(g[0][1].p_datos) === J({ referencia: null, impuesto_id: 'i1' }), J(g));
+    await ctx.close();
+  }
   for (const [nombre, base, esperado] of [
     ['modulo apagado', { moduloApagado: true }, 'apagado'], ['funcion no disponible', { noDisponible: ['producto_flota_datos'] }, 'todavía no está disponible'],
     ['sin red', { sinRed: 'producto_flota_datos' }, 'no ha respondido'], ['forma inesperada', { datosRaros: true }, 'inesperado'], ['sin topes (contrato incompleto)', { sinTopes: true }, 'inesperado']]) {
@@ -380,7 +426,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const { base, p, ctx } = await abre({ base: { noAdmin: true } });
     const t = await txt(p, '[data-fl="estado"]');
     ok('42501 de la base: DESPUES de la respuesta dice que es solo de la administracion (tipo sin_permiso) y no hay contenido', (await tipo(p)) === 'sin_permiso' && t.includes('Solo la administración') && !t.includes('No se ha podido mirar') && !(await visible(p, '[data-fl="contenido"]')), t);
-    ok('la pantalla no mira el rol del usuario para decidirlo: lee y espera', base.llamadas.length === 1);
+    ok('la pantalla no mira el rol del usuario para decidirlo: lee y espera (solo sus dos lecturas)', J(base.llamadas.map(x => x[0]).sort()) === J(['producto_flota_datos', 'productos_catalogo_datos']));
     await ctx.close();
   }
   {
@@ -518,6 +564,9 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const w = escritas(base);
     const nuevo = base.productos[0].unidades.find(x => x.id === 'u2');
     ok('el segundo intento manda la version NUEVA (no la que vio al abrir) y la base lo acepta', w.length === 2 && w[1][1].p_esperado !== visto && w[1][1].p_esperado !== w[0][1].p_esperado && nuevo.notas === 'Mi nota tecleada', J(w.map(x => x[1].p_esperado)));
+    await p.waitForTimeout(300);
+    const av = await p.$eval('[data-fl="aviso"]', e => e.classList.contains('axw-oculto') ? '' : e.textContent);
+    ok('tras guardar, «Recargado…» ya no se queda en pantalla junto a «Guardado.» (revisor erp-front-catalogo, 3.ª vuelta)', !av.includes('Recargado'), av);
     await ctx.close();
   }
   {

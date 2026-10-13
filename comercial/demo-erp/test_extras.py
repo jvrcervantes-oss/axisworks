@@ -2,7 +2,7 @@
 # Products no es lo mismo?»): python test_extras.py
 # Parte de los ficheros REALES de Lawang (el sha fijado, solo lectura) copiados a una carpeta temporal. Mira que (1) /productos/ de una instancia de tipo Reservas
 # pasa a ser la pantalla propia del maestro, con la puerta `productos` y SIN la tabla de Lawang, y el build PARA si falta la pantalla de Lawang; (2) la pantalla cumple
-# las reglas del front (sin innerHTML, escribe SOLO por producto_guarda, un alta nace 'servicio' y nunca se manda 'alquiler', lee solo productos e impuestos, sin
+# las reglas del front (sin innerHTML, escribe SOLO por producto_guarda, un alta nace 'servicio' y nunca se manda 'alquiler', lee solo por productos_catalogo_datos (AXW-290), sin
 # 'EUR' a mano); (3) todo texto que pinta tiene inglés e indonesio; (4) el rótulo del menú se cambia por la RUTA en apagados_instancia.js, no por el texto de nav.js.
 # El comportamiento en un navegador lo miden pruebas/extras.harness.cjs y pruebas/menu_instancia.harness.cjs (sobre el paquete construido). No escribe en erp/despliegues/.
 import json, os, re, shutil, subprocess, sys, tempfile
@@ -66,7 +66,8 @@ mira('sin la pantalla Productos de Lawang el build PARA (no crea una carpeta nue
 mira('sin innerHTML ni esc() de Lawang', not re.search(r'innerHTML|\besc\(', CODIGO))
 mira('escribe SOLO por producto_guarda (sb.rpc), sin insert/update/upsert/delete', set(re.findall(r"SB\.rpc\('([a-z_]+)'", CODIGO)) == {'producto_guarda'}
      and not re.search(r'\.(insert|update|upsert|delete)\(', CODIGO))
-mira('lee solo las tablas productos e impuestos (las de la pantalla a la que sustituye)', set(re.findall(r"SB\.from\('([a-z_]+)'\)", CODIGO)) == {'productos', 'impuestos'})
+mira('lee SOLO por el lector del servidor productos_catalogo_datos, sin tablas (AXW-290)', 'SB.from(' not in CODIGO and '.from(' not in CODIGO
+     and set(re.findall(r"window\.lwDatos\('([a-z_]+)'", CODIGO)) == {'productos_catalogo_datos'})
 mira("un alta nace clase 'servicio' y nunca se manda 'alquiler'", "v.clase = 'servicio'" in CODIGO and "'alquiler'" in CODIGO and not re.search(r"clase\s*[:=]\s*'alquiler'", CODIGO))
 mira("lo que se alquila no se enseña (filtro por la clase de la fila)", "x.clase !== 'alquiler'" in CODIGO)
 mira("ninguna 'EUR' escrita a mano (trinquete eur_literal de contrato_front)", not re.search(r"""['"]EUR['"]""", SCRIPT))
