@@ -564,6 +564,9 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const w = escritas(base);
     const nuevo = base.productos[0].unidades.find(x => x.id === 'u2');
     ok('el segundo intento manda la version NUEVA (no la que vio al abrir) y la base lo acepta', w.length === 2 && w[1][1].p_esperado !== visto && w[1][1].p_esperado !== w[0][1].p_esperado && nuevo.notas === 'Mi nota tecleada', J(w.map(x => x[1].p_esperado)));
+    await p.waitForTimeout(300);
+    const av = await p.$eval('[data-fl="aviso"]', e => e.classList.contains('axw-oculto') ? '' : e.textContent);
+    ok('tras guardar, «Recargado…» ya no se queda en pantalla junto a «Guardado.» (revisor erp-front-catalogo, 3.ª vuelta)', !av.includes('Recargado'), av);
     await ctx.close();
   }
   {

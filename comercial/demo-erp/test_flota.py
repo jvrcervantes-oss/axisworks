@@ -277,7 +277,7 @@ mira('ID_FL tiene indonesio para toda clave de EN_FL' + (' (faltan: ' + '; '.joi
 # -- AXW-290: el catálogo filtra por clase y «Editar modelo» lleva referencia e impuesto
 _cat = CODIGO[CODIGO.index('function catalogo('):CODIGO.index('function catalogo(') + 1200]
 mira('AXW-290: Flota se queda solo con lo de alquiler (clase null o fuera del catálogo = no se sabe, se queda)', "return !x || x.clase == null || x.clase === 'alquiler';" in _cat)
-mira('AXW-290: si el catálogo no llega, Flota no se cae: lista sin filtrar y lo dice', "E.catFallo = !bien;" in _cat and "if (E.catFallo) aviso(m); else if (e && e.textContent === m) aviso('');" in CODIGO
+mira('AXW-290: si el catálogo no llega, Flota no se cae: lista sin filtrar y lo dice', "E.catFallo = !bien;" in _cat and "else if (E.avisoEsCat) aviso('');" in CODIGO and "E.avisoEsCat = false; msg('aviso', m);" in CODIGO
      and CODIGO.count('avisoCat();') >= 3)   # carga() y los dos guardados: guardar no borra el aviso del catálogo caído
 mira('AXW-290: Editar modelo manda referencia e impuesto solo si cambian (vacío = null)', "q.referencia = rf || null" in _modelo and "q.impuesto_id = im" in _modelo)
 
