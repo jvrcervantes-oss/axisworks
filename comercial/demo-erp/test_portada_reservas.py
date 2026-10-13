@@ -147,8 +147,8 @@ mira('Configurar módulos lee ajustes_config_datos (lwDatos) y no llama a la bas
 # S14 «Quién lo usa» (bbm-p41, 13-oct): usuario_guarda_permisos, que en la base exige super_admin para tocar herramientas (revisión previa de Seguridad #296)
 mira('los pasos solo escriben por ajustes_config_guardar, sociedad_guarda y usuario_guarda_permisos',
      set(re.findall(r"\.rpc\('([a-z_]+)'", PASOS_JS)) == {'ajustes_config_guardar', 'sociedad_guarda', 'usuario_guarda_permisos'})
-mira('setup_pasos.js solo LEE de tablas (sociedades y usuarios), nunca escribe en ellas',
-     set(re.findall(r"\.from\('([a-z_]+)'\)", PASOS_JS)) <= {'sociedades', 'usuarios'} and not re.search(r'\.insert\(|\.update\(|\.upsert\(|\.delete\(', PASOS_JS))
+mira('setup_pasos.js solo LEE una tabla (usuarios, para «Quién lo usa»; la empresa la lee la página), nunca escribe en ella',
+     set(re.findall(r"\.from\('([a-z_]+)'\)", PASOS_JS)) == {'usuarios'} and not re.search(r'\.insert\(|\.update\(|\.upsert\(|\.delete\(', PASOS_JS))
 mira('los ajustes que guardan los pasos son una lista cerrada (moneda y los dos sí/no, con valor si|no)',
      set(re.findall(r"opcionUnica\('([a-z_]+)'", PASOS_JS)) == {'precio_incluye_impuesto', 'reservas_sin_impuesto'}
      and set(re.findall(r"guardaAjuste\(sb, '([a-z_]+)'", PASOS_JS)) == {'moneda'} and "v === 'si' || v === 'no'" in PASOS_JS)

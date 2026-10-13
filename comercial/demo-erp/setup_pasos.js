@@ -288,10 +288,11 @@
               + lista.querySelectorAll('input[data-axw-quien-usuario]:checked').length;
         cuenta.textContent = n === 1 ? U('quien_uno', { m: m }) : U('quien_n', { n: String(n), m: m });
       }
-      cliente().then(function (sb) {
+      function carga() { return cliente().then(function (sb) {
         if (!sb) return { error: { code: '42501' } };
         return new Promise(function (ok) { ok(sb.from('usuarios').select(COLS_USUARIO).eq('activo', true)); });
       }).then(function (r) {
+        st.lista = null; st.error = null;
         while (lista.firstChild) lista.removeChild(lista.firstChild);
         lista.setAttribute('aria-busy', 'false');
         if (!r || r.error || !Array.isArray(r.data)) {
@@ -318,9 +319,10 @@
         });
         if (!st.lista.some(function (u) { return u.rol !== 'super_admin'; }))
           lista.appendChild(el('li', { class: 'px-4 py-3 border-t border-outline-variant font-body-md text-body-md text-on-surface-variant', 'data-axw-quien': 'solo-tu', text: U('quien_solo_tu') }));
-        lista.addEventListener('change', recuenta);
         recuenta();
-      });
+      }); }
+      lista.addEventListener('change', recuenta);
+      carga();
       return {
         valores: function () {
           if (st.error) return { ok: false, error: U('no_mirar') + ': ' + st.error };
@@ -332,7 +334,7 @@
             if (u && i.checked !== antes) cambios.push({ user_id: u.user_id, poner: i.checked });
           });
           if (!cambios.length && !ctx.paso.hecho) return { ok: false, error: U('quien_sin_cambios', { m: m }) };
-          return { ok: true, v: { herr: herr, cambios: cambios } };
+          return { ok: true, v: { herr: herr, cambios: cambios, recarga: carga } };
         }
       };
     },
@@ -341,21 +343,24 @@
       var i = 0;
       function fila(id) { return resultado(sb.from('usuarios').select('user_id,herramientas').eq('user_id', id).maybeSingle()); }
       function tiene(d) { return !!(d && Array.isArray(d.herramientas) && d.herramientas.indexOf(v.herr) >= 0); }
+      // a medias (alguien guardado y otro no): la lista se relee para que los interruptores digan lo que quedó en la base
+      function corta(r) { if (i > 1 && typeof v.recarga === 'function') v.recarga(); return r; }
       function sigue() {
         if (i >= v.cambios.length) return Promise.resolve({ ok: true });
         var c = v.cambios[i++];
         return fila(c.user_id).then(function (r) {
-          if (!r.ok) return r;
-          if (!r.data) return faltaFila();
+          if (!r.ok) return corta(r);
+          if (!r.data) return faltaFila().then(corta);
           var hs = (Array.isArray(r.data.herramientas) ? r.data.herramientas : []).filter(function (h) { return h !== v.herr; });
           if (c.poner) hs.push(v.herr);
           return resultado(sb.rpc('usuario_guarda_permisos', { p_user_id: c.user_id, p_cambios: { herramientas: hs } })).then(function (r2) {
             if (r2.ok) return sigue();
-            if (!r2.sinRespuesta) return r2;
+            if (!r2.sinRespuesta) return corta(r2);
             // sin respuesta: se relee ESA fila y manda lo que tiene la base (revisor 13-oct: nunca «guardado» porque el paso ya esté hecho)
             return fila(c.user_id).then(function (r3) {
-              if (!r3.ok) return r2;   // tampoco se puede mirar: duda; comprueba() dice «no se guardó» y repetir es seguro (relee y pone/quita)
-              return tiene(r3.data) === c.poner ? sigue() : faltaFila();
+              // no se pudo mirar, o se miró y no se aplicó: duda → comprueba() = false → «El ERP dice que no se guardó» (repetir es seguro)
+              if (!r3.ok || tiene(r3.data) !== c.poner) return corta(r2);
+              return sigue();
             });
           });
         });

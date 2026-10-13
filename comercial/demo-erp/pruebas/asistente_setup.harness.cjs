@@ -54,6 +54,7 @@ function servidor(b, n, a) {
   if (n === 'usuario_guarda_permisos') {   // la RPC REEMPLAZA el array entero (como la de verdad)
     const u = (b.usuarios || []).find(x => x.user_id === a.p_user_id);
     if (!u) return err('P0002', null);
+    if (b.permMal === a.p_user_id) return err('42501', null);
     if (b.permRed && b.permRed.veces > 0) { b.permRed.veces--; if (b.permRed.aplica) u.herramientas = a.p_cambios.herramientas.slice(); return { red: true }; }
     u.herramientas = a.p_cambios.herramientas.slice();
     const pu = b.d.pasos.find(x => x.clave === 'usuarios' && x.modulo === 'reservas-producto');
@@ -456,8 +457,23 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
       await clic(p, 'enviar'); await p.waitForTimeout(700);
       const putu = bd.usuarios.find(u => u.user_id === 'u-putu');
       const err = (await txt(p, '[data-axw-as="error"]')) || '';
-      if (!aplica) ok('S14 red caída sin aplicar: dice que no se guardó (nunca «guardado» porque el paso ya esté hecho)', putu.herramientas.includes('reservas-producto') && /no se guard/i.test(err), err);
+      if (!aplica) ok('S14 red caída sin aplicar: «El ERP dice que no se guardó» (nunca «guardado» porque el paso ya esté hecho)', putu.herramientas.includes('reservas-producto')
+                      && err === 'El ERP dice que no se guardó. Puedes volver a intentarlo.', err);
       else ok('S14 red caída pero aplicado: lo da por guardado al releer la fila', !putu.herramientas.includes('reservas-producto') && !/no se guard/i.test(err), err);
+      await ctx.close();
+    }
+    // revisor 13-oct: a medias (Kadek se guarda, Putu no): lo dice y los interruptores enseñan lo que quedó en la base
+    {
+      const bm = base('sin_configurar'); bm.d.pasos.push(Object.assign({}, pasoU)); bm.usuarios = equipo(); bm.permMal = 'u-putu';
+      ({ p, ctx } = await abre(nav, bm, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+      await p.waitForSelector('[data-axw-quien-usuario="u-putu"]', { timeout: 8000 }).catch(() => {});
+      await p.click('[data-axw-quien-usuario="u-kadek"]', { force: true }); await p.click('[data-axw-quien-usuario="u-putu"]', { force: true });
+      await clic(p, 'enviar'); await p.waitForTimeout(900);
+      await p.waitForSelector('[data-axw-quien-usuario="u-putu"]', { timeout: 8000 }).catch(() => {});
+      const err = (await txt(p, '[data-axw-as="error"]')) || '';
+      ok('S14 a medias: dice que no se guardó y la lista enseña lo que quedó (Kadek encendido, Putu como estaba)',
+         /no se guard/i.test(err) && (await p.$eval('[data-axw-quien-usuario="u-kadek"]', e => e.checked)) && (await p.$eval('[data-axw-quien-usuario="u-putu"]', e => e.checked))
+         && bm.usuarios.find(u => u.user_id === 'u-kadek').herramientas.includes('reservas-producto'), err);
       await ctx.close();
     }
     for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
