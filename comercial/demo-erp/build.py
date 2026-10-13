@@ -3766,12 +3766,24 @@ def flota_pantalla():
     open(her, 'w', encoding='utf-8', newline='').write(h)
 
 
+AAAS_NUCLEO = ('agente_panel_estado', 'agente_modulo_cambia')   # lo que la ventana del AaaS llama con el módulo apagado
+
+
 def aaas_en_paquete(nombre):
     """¿Lleva esta instancia la ventana del AaaS (/agente/)? Solo si su registro lo declara (`"aaas": true` en erp/instancias.json de la agencia).
     Revisor 13-oct (ALTA): sus funciones (agente_panel_estado, agente_notas_datos…) no existen en una base hasta que se le aplican las migraciones
     20261013180000/183000/190000; con la pantalla en el paquete y sin ellas, el contrato front↔base para la publicación de esa instancia. La marca se
     pone EN EL MISMO PASO que se aplican (precedente: setup_reservas_pasos y E3 en bbm). Sin la marca, la instancia sale como hoy: sin menú ni tarjeta."""
-    return _instancia_registro(nombre).get('aaas') is True
+    if _instancia_registro(nombre).get('aaas') is not True:
+        return False
+    # Revisor 13-oct (ALTA 2): con el módulo `agente` apagado, apagados_instancia.js contesta null a sus funciones sin salir a la red. Leer el estado y
+    # encender tienen que estar en el NÚCLEO del registro o el botón Encender no llegaría nunca a la base. Sin eso, no hay ventana: se para el build.
+    funcs = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))['objetos']['funciones']
+    malas = [f for f in AAAS_NUCLEO if (funcs.get(f) or {}).get('clase') != 'nucleo']
+    if malas:
+        aborta('instancia %s con "aaas": true y %s fuera del núcleo en erp/modulos.json (clase %s): con el módulo apagado no se podría encender. '
+               'Regístralas en el núcleo (erp/modulos.py) antes de poner la marca' % (nombre, ', '.join(malas), ', '.join(str((funcs.get(f) or {}).get('clase')) for f in malas)))
+    return True
 
 
 def agente_pantalla():

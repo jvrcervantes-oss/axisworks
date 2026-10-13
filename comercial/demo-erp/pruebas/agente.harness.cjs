@@ -129,7 +129,14 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
 
 // MUESTRA=<json> (opcional): lo que devolvieron agente_panel_estado y agente_notas_datos de una base REAL (el AaaS corrido de punta a punta en Postgres local,
 // agencia erp/pruebas/agente_panel_muestra.json: {"estado": {...}, "notas": {...}}). Con él, el arnés solo pinta esa respuesta tal cual, comprueba la forma y saca capturas.
-const MUESTRA = process.env.MUESTRA ? JSON.parse(fs.readFileSync(process.env.MUESTRA, 'utf8')) : null;
+const MUESTRA = (() => {
+  if (!process.env.MUESTRA) return null;
+  const m = JSON.parse(fs.readFileSync(process.env.MUESTRA, 'utf8'));
+  // la muestra de la agencia guarda cada respuesta con el nombre de su función; también vale {estado, notas}
+  const r = { estado: m.estado || m.agente_panel_estado, notas: m.notas || m.agente_notas_datos };
+  if (!r.estado || !r.notas) throw new Error('MUESTRA sin agente_panel_estado/agente_notas_datos (ni estado/notas)');
+  return r;
+})();
 (async () => {
   const exe = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
   const nav = await chromium.launch({ executablePath: fs.existsSync(exe) ? exe : undefined });

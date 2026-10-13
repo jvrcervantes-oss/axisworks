@@ -1,5 +1,5 @@
 {
- "_que": "Contrato del panel del AaaS (/intranet/v4/agente/, agente.html) con la base (migraciones 20261013183000 y 20261013190000 del maestro). Fuente ÚNICA de la forma: la lee el doble del panel (pruebas/agente.harness.cjs, test_agente.py) y la prueba SQL de la agencia (erp/pruebas/agente_panel_forma.py). Si la base cambia una clave, cambia aquí y fallan los dos lados. 13-oct-2026, sesión pilotos-panel.",
+ "_que": "Contrato del panel del AaaS (/intranet/v4/agente/, agente.html) con la base (migraciones 20261013183000 y 20261013190000 del maestro). Fuente ÚNICA de la forma: la lee el doble del panel (pruebas/agente.harness.cjs, test_agente.py) y la prueba con conexiones reales de la agencia (erp/pruebas/agente_piloto_local.py, casos F1/F2, contra el Postgres local de pg_local.py; no corre en ningún gate porque necesita ese Postgres: se corre antes de aplicar las migraciones en una instancia y antes de poner su marca «aaas»). Si la base cambia una clave, cambia aquí y fallan los dos lados. 13-oct-2026, sesión pilotos-panel.",
  "trabajos": [
   "flota",
   "salidas",

@@ -148,7 +148,24 @@ mira('toda accion tiene manejador (' + ', '.join(sorted(a for a in acciones if (
 BUILD = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
 mira('la ventana solo entra en el paquete de una instancia con `"aaas": true` (sin sus migraciones, el contrato front-base pararía la publicación)',
      BUILD.count('    if aaas_en_paquete(nombre):\n        agente_pantalla()') == 1 and BUILD.count('agente_pantalla()') == 2
-     and "return _instancia_registro(nombre).get('aaas') is True" in BUILD)
+     and "if _instancia_registro(nombre).get('aaas') is not True:" in BUILD)
+def aaas_con(clases, marca=True):
+    """aaas_en_paquete() con un registro de módulos hecho a mano: True, False o 'para' (aborta)."""
+    tmp = tempfile.mkdtemp()
+    os.makedirs(os.path.join(tmp, 'erp'))
+    json.dump({'objetos': {'funciones': {f: {'clase': c} for f, c in clases.items()}}}, open(os.path.join(tmp, 'erp', 'modulos.json'), 'w', encoding='utf-8'))
+    viejo_ag, viejo_reg = build.AGENCIA, build._instancia_registro
+    build.AGENCIA, build._instancia_registro = tmp, (lambda n: {'aaas': True} if marca else {})
+    try:
+        return build.aaas_en_paquete('x')
+    except SystemExit:
+        return 'para'
+    finally:
+        build.AGENCIA, build._instancia_registro = viejo_ag, viejo_reg
+mira('sin la marca no hay ventana (aunque el registro esté bien)', aaas_con({'agente_panel_estado': 'nucleo', 'agente_modulo_cambia': 'nucleo'}, marca=False) is False)
+mira('con la marca y las dos funciones en el núcleo, sí', aaas_con({'agente_panel_estado': 'nucleo', 'agente_modulo_cambia': 'nucleo'}) is True)
+mira('con la marca y leer el estado en el módulo agente: el build PARA (Encender quedaría muerto)', aaas_con({'agente_panel_estado': 'modulo', 'agente_modulo_cambia': 'nucleo'}) == 'para')
+mira('con la marca y encender sin registrar: el build PARA', aaas_con({'agente_panel_estado': 'nucleo'}) == 'para')
 mira('ninguna moneda escrita en la pantalla: la da la base (trinquete eur_literal)', not re.search(r"'EUR'|\"EUR\"", CODIGO))
 mira('con el módulo encendido, sin moneda o sin tope entero la respuesta es de forma mala', "ent(d.tope_mensual_cent)" in CODIGO and "/^[A-Z]{3}$/.test(d.moneda)" in CODIGO)
 mira('nunca «Sin tope»: un tope ausente vale 0 en la base', 'Sin tope' not in CODIGO and "T('tope 0: no puede gastar')" in CODIGO)
