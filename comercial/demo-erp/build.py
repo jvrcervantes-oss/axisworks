@@ -3,7 +3,7 @@
 """
 Demo del ERP (intranet v4 de Lawang) para enseñar a prospectos SIN darles acceso — 24-sep-2026.
 
-    python build.py            # genera dist/ desde proyectos/Lawang (en disco, tal cual esté hoy)
+    python build.py            # genera dist/ desde Lawang en el sha de lawang.json (E3.9, 13-oct-2026; antes: el disco)
     presentar.cmd              # lo sirve en http://127.0.0.1:8977/ y abre el navegador
 
 Qué hace: copia la v4 y los assets compartidos que usa, y en el sitio de
@@ -49,13 +49,21 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 # AXW_AGENCIA_RAIZ: raíz de la AGENCIA (donde viven erp/, tools/, private/ y proyectos/Lawang) cuando se construye desde una copia de
 # sesión de AxisWorks, que vive en _sesiones/<id>/AxisWorks y no cuatro niveles bajo la agencia: apunta a la copia de sesión de la agencia.
 AGENCIA = os.path.abspath(os.environ.get('AXW_AGENCIA_RAIZ') or os.path.join(AQUI, '..', '..', '..', '..'))
-# AXW_LAWANG_RAIZ: construir desde una copia de sesión (tools/sesion.py) en vez del clon principal, para probar un
-# cambio del núcleo ANTES de aterrizarlo (26-sep-2026, F3 lote 2b).
-LAWANG = os.path.abspath(os.environ.get('AXW_LAWANG_RAIZ') or os.path.join(AGENCIA, 'proyectos', 'Lawang'))
-# El doble de QA está gitignorado: no viaja a las copias de sesión. Se lee del clon principal (solo lectura).
-DOBLE_QA = next((d for d in (os.path.join(LAWANG, '_qa_double_guard.js'),
-                             os.path.join(AGENCIA, 'proyectos', 'Lawang', '_qa_double_guard.js')) if os.path.isfile(d)),
-                os.path.join(LAWANG, '_qa_double_guard.js'))
+# LAWANG = Lawang en el sha FIJADO de lawang.json, nunca el disco del clon principal (E3.9, owner 13-oct-2026: «Separar ya
+# el ERP de Lawang»; 6 builds/gates en rojo en 3 días por leer el Lawang vivo). Ver lawang_fijado.py.
+# AXW_LAWANG_RAIZ: construir desde OTRO árbol de Lawang (una copia de sesión o un sha candidato) para probar un cambio del núcleo
+# ANTES de fijarlo (26-sep-2026, F3 lote 2b). publica_instancia.py se niega a publicar con ella puesta.
+import lawang_fijado  # noqa: E402
+if os.environ.get('AXW_LAWANG_RAIZ'):
+    LAWANG = os.path.abspath(os.environ['AXW_LAWANG_RAIZ'])
+    # `prueba`/`sube` pasan el almacén y el sha candidato para que la pista de quien_cambio_lawang diga el commit
+    LAWANG_GIT, LAWANG_REV = os.environ.get('AXW_LAWANG_GIT') or LAWANG, os.environ.get('AXW_LAWANG_REV') or 'HEAD'
+else:
+    LAWANG = lawang_fijado.raiz()
+    LAWANG_GIT, LAWANG_REV = lawang_fijado.almacen(), lawang_fijado.lee_fijado()['sha']
+# El doble de QA está gitignorado (no viaja en ningún sha ni en las copias de sesión): del clon principal, SOLO si su sha256 es el
+# de lawang.json, sea cual sea el árbol de Lawang (un solo camino, revisor 13-oct).
+DOBLE_QA = lawang_fijado.doble_qa()
 DIST = os.path.join(AQUI, 'dist')
 
 SB_URL = 'https://vtulllundrfennhjddhc.supabase.co'
@@ -105,6 +113,16 @@ if PRUEBA_ORIGENES:
             or os.path.normcase(_salida).startswith(_repo):
         print('ABORTA: --prueba-origenes pide AXW_PRUEBA_DEMO y AXW_PRUEBA_WEB (http://127.0.0.1:N o http://localhost:N) '
               'y AXW_PRUEBA_SALIDA fuera del repo AxisWorks')
+        sys.exit(1)
+    DESTINO_PUBLICO, DESTINO_WEB = os.path.join(_salida, 'demo-erp'), os.path.join(_salida, 'erp-web')
+# AXW_PRUEBA_PUBLICO (E3.9, 13-oct-2026): `lawang_fijado.py prueba/sube` construyen `--publico` con el Lawang CANDIDATO; con las URLs
+# reales pero escribiendo FUERA del repo, para no dejar dist/demo-erp y dist/erp-web (que van en git y los publica el push) construidos
+# con un Lawang que aún no se ha fijado (revisor, 13-oct).
+PRUEBA_PUBLICO = bool(os.environ.get('AXW_PRUEBA_PUBLICO')) and not PRUEBA_ORIGENES
+if PRUEBA_PUBLICO:
+    _salida = os.path.abspath(os.environ['AXW_PRUEBA_PUBLICO'])
+    if os.path.normcase(_salida).startswith(os.path.normcase(os.path.abspath(os.path.join(AQUI, '..', '..'))) + os.sep):
+        print('ABORTA: AXW_PRUEBA_PUBLICO tiene que estar fuera del repo AxisWorks: ' + _salida)
         sys.exit(1)
     DESTINO_PUBLICO, DESTINO_WEB = os.path.join(_salida, 'demo-erp'), os.path.join(_salida, 'erp-web')
 # Dónde vuelve la demo al configurador («← Modules», el aviso de módulo apagado, el final del tour): la portada, que en
@@ -169,8 +187,8 @@ def comprueba_salida():
     d = os.path.normcase(os.path.realpath(DIST))
     if not d.endswith(os.path.normcase(os.path.join('AxisWorks', 'comercial', 'demo-erp', 'dist'))):
         aborta('la salida no es comercial/demo-erp/dist: ' + d)
-    if os.path.normcase(os.path.realpath(LAWANG)) in d:
-        aborta('la salida cae dentro de proyectos/Lawang')
+    if any(os.path.normcase(os.path.realpath(x)) in d for x in (LAWANG, lawang_fijado.almacen())):
+        aborta('la salida cae dentro de proyectos/Lawang (o de la caché del sha fijado)')
     r = subprocess.run(['git', 'check-ignore', '-q', os.path.join(DIST, 'x.html')], cwd=AQUI)
     if r.returncode != 0:
         aborta('dist/ no está en .gitignore del repo AxisWorks: el webhook lo publicaría')
@@ -2840,7 +2858,7 @@ def publica():
         aborta('quedan rastros de Lawang, no se publica:\n  ' + '\n  '.join(restos[:40]))
     versiona(DIST)
     # Copia a dist/demo-erp/: se vacía por dentro (la carpeta es del repo) y se rellena con lo comprobado.
-    if not PRUEBA_ORIGENES and not DESTINO_PUBLICO.endswith(os.path.join('AxisWorks', 'dist', 'demo-erp')):
+    if not PRUEBA_ORIGENES and not PRUEBA_PUBLICO and not DESTINO_PUBLICO.endswith(os.path.join('AxisWorks', 'dist', 'demo-erp')):
         aborta('destino público inesperado: ' + DESTINO_PUBLICO)
     os.makedirs(DESTINO_PUBLICO, exist_ok=True)
     for x in os.listdir(DESTINO_PUBLICO):
@@ -3018,7 +3036,7 @@ def config_portada(html_txt, demo_url, app_url=None):
 def publica_web():
     """dist/erp-web/: la portada sola, con los enlaces a la demo absolutos. Sale de lo ya comprobado en DIST."""
     destino = DESTINO_WEB
-    if not PRUEBA_ORIGENES and not destino.endswith(os.path.join('AxisWorks', 'dist', 'erp-web')):
+    if not PRUEBA_ORIGENES and not PRUEBA_PUBLICO and not destino.endswith(os.path.join('AxisWorks', 'dist', 'erp-web')):
         aborta('destino de la portada inesperado: ' + destino)
     fuentes_css, fuentes = fuentes_portada()   # antes de vaciar nada: sin fuentes no se publica
     os.makedirs(destino, exist_ok=True)
@@ -3392,7 +3410,7 @@ def quien_cambio_lawang(donde):
     if not rel_:
         return ''
     try:
-        r = subprocess.run(['git', '-C', LAWANG, '--no-optional-locks', 'log', '-1', '--date=short', '--format=%h %ad %s', '--', rel_],
+        r = subprocess.run(['git', '-C', LAWANG_GIT, '--no-optional-locks', 'log', '-1', '--date=short', '--format=%h %ad %s', LAWANG_REV, '--', rel_],
                            capture_output=True, text=True, encoding='utf-8', timeout=20)
         return (' · último cambio de Lawang en %s: %s' % (rel_, r.stdout.strip()[:160])) if r.returncode == 0 and r.stdout.strip() else ''
     except Exception:   # MUDO A PROPOSITO: es solo una pista para el mensaje; el build ya está parando
