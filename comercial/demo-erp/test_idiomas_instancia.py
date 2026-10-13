@@ -64,7 +64,7 @@ mira('los parches entran sobre los ficheros de Lawang de hoy', r == 'pasa')
 mira('Lawang no se tocó', all(open(os.path.join(build.LAWANG, *f.split('/')), encoding='utf-8').read() == ORIGINAL[f] for f in FICHEROS))
 if r == 'pasa':
     for f, viejo, nuevo in build.IDIOMAS_PARCHES:
-        mira('%s: el parche entró' % f, nuevo.replace('__AXW_IDIOMAS__', '["id", "en"]') in lee(d, f))
+        mira('%s: el parche entró' % f, nuevo.replace('__AXW_IDIOMAS__', '["id", "en"]').replace('__AXW_IDIOMA_PANTALLA__', 'null') in lee(d, f))
     fp = lee(d, 'intranet/v4/assets/fechas_prueba.js')
     mira("'es-ES' escrito a mano pasa a depender del idioma (comillas simples y dobles)", fp.count("'id-ID'") == 2 and fp.count('"id-ID"') == 1 and fp.count('es-ES') == fp.count('id-ID'))
     i18n = lee(d, 'contracts/assets/i18n.js')
@@ -87,10 +87,30 @@ try:
         combo = 'para'
     build._instancia_registro = lambda n: {}
     sin = build.idiomas_de('x')
+    # bbm-p42: el idioma de pantalla por defecto (puente del registro) tiene que ser uno de los idiomas declarados
+    build._instancia_registro = lambda n: {'idiomas': ['id', 'en'], 'idioma_pantalla': 'es'}
+    try:
+        build.idioma_pantalla_de('x', ['id', 'en']); pant_mala = 'pasa'
+    except SystemExit:
+        pant_mala = 'para'
+    build._instancia_registro = lambda n: {'idiomas': ['id', 'en'], 'idioma_pantalla': 'en'}
+    pant_buena = build.idioma_pantalla_de('x', ['id', 'en'])
+    build._instancia_registro = lambda n: {'idiomas': ['id', 'en']}
+    pant_sin = build.idioma_pantalla_de('x', ['id', 'en'])
+    build._instancia_registro = lambda n: {'idioma_pantalla': 'en'}   # revisor bbm-p42: sin lista de idiomas tampoco se ignora
+    try:
+        build.idioma_pantalla_de('x', None); pant_sola = 'pasa'
+    except SystemExit:
+        pant_sola = 'para'
 finally:
     build._instancia_registro = viejo_reg
 mira('una combinación de idiomas desconocida PARA el build', combo == 'para')
 mira('sin la clave, la instancia sigue como siempre (None)', sin is None)
+mira('idioma_pantalla fuera de sus idiomas PARA el build; dentro, se devuelve; sin la clave, None (= el primero, como siempre)', pant_mala == 'para' and pant_buena == 'en' and pant_sin is None)
+mira('idioma_pantalla SIN lista de idiomas PARA el build (no se ignora en silencio)', pant_sola == 'para')
+_cuerpo = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
+_cuerpo = _cuerpo[_cuerpo.index('\ndef instancia('):]
+mira('instancia() llama a idioma_pantalla_de FUERA del «if idiomas»', 'pantalla = idioma_pantalla_de(nombre, idiomas)' in _cuerpo and _cuerpo.index('pantalla = idioma_pantalla_de(nombre, idiomas)') < _cuerpo.index('    if idiomas:'))
 
 # -- (3) el lwT REAL parcheado, en node (con un documento mínimo)
 if r == 'pasa':
@@ -121,6 +141,20 @@ console.log(JSON.stringify(r));'''
             mira('en id: locale id-ID y <html lang="id">', o['locale'] == 'id-ID' and o['lang'] == 'id')
             mira('pedir español lleva al indonesio; inglés sigue funcionando', o['tras_es'] == 'id' and o['tras_en'] == 'en')
             mira('en inglés, el lwT de siempre (no el indonesio) y locale en-GB', o['en_t'] != o['id'][2] and o['en_locale'] == 'en-GB')
+    # bbm-p42: con el puente del registro (idioma_pantalla = en) la pantalla ABRE en inglés si nadie eligió; lo elegido manda; la base, por encima del puente
+    hueco = 'window.AXW_IDIOMA_PANTALLA_BUILD = null;'
+    mira('el idioma.js parcheado lleva el hueco del idioma de pantalla (null sin la clave)', hueco in prueba)
+    con_puente = prueba.replace(hueco, 'window.AXW_IDIOMA_PANTALLA_BUILD = "en";', 1)
+    for guardado, base, esperado in (('null', None, 'en'), ("'basura'", None, 'en'), ("'id'", None, 'id'), ("'es'", None, 'en'), ('null', 'id', 'id')):
+        p_ = con_puente if base is None else con_puente.replace("almacen['lawang_idioma_ui']", "almacen['axw_idioma_pantalla_erp'] = '%s'; almacen['lawang_idioma_ui']" % base, 1)
+        out = node(p_.replace('__GUARDADO__', guardado, 1))
+        try:
+            o = json.loads(out)
+        except Exception:
+            o = None
+        mira('puente en · guardado %s · base %s → arranca en %s (nunca español)' % (guardado, base, esperado), bool(o) and o['idioma'] == esperado)
+        if guardado == 'null' and base is None and o:
+            mira('puente en: pedir un idioma que no existe cae al de pantalla (en), no al primero', o['tras_es'] == 'en')
 
 # -- (4) diccionarios: sin vacíos, sin iguales a la clave, sin prohibidos, con el glosario
 G = json.load(open(os.path.join(AQUI, 'glosario_id.json'), encoding='utf-8'))
