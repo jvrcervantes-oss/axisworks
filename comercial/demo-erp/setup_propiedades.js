@@ -32,6 +32,7 @@
     'Cuidado: si ese tipo ya tiene contratos, su etapa no se puede cambiar después.': 'Careful: if that type already has contracts, its stage cannot be changed later.',
     'Aún no hay tipos de contrato activos: créalos en Plantillas.': 'There are no active contract types yet: create them in Templates.',
     'Elige el tipo que es la carta de reserva.': 'Choose the type that is the reservation letter.',
+    'Se añadirá como carta de reserva; los que ya lo son lo siguen siendo (su etapa se cambia en Plantillas).': 'It will be added as a reservation letter; the ones that already are stay so (their stage is changed in Templates).',
     'Hay %n tipos marcados como carta de reserva: %l. Ya está configurado; la etapa de cada tipo se cambia en Plantillas.': 'There are %n types marked as the reservation letter: %l. It is already set up; each type\'s stage is changed in Templates.',
     'Esto lo cambia un administrador con el permiso «Unidades» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.': 'This requires an administrator with the «Units» permission and an open session. If you are one, reload the page and sign in again; if nothing changes, ask the main administrator.',
     'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.': 'This module is switched off in this ERP: nothing can be saved here until it is switched on.',
@@ -81,6 +82,7 @@
     'Cuidado: si ese tipo ya tiene contratos, su etapa no se puede cambiar después.': 'Hati-hati: jika jenis itu sudah memiliki kontrak, tahapnya tidak dapat diubah nanti.',
     'Aún no hay tipos de contrato activos: créalos en Plantillas.': 'Belum ada jenis kontrak aktif: buat di Templat.',
     'Elige el tipo que es la carta de reserva.': 'Pilih jenis yang merupakan surat booking.',
+    'Se añadirá como carta de reserva; los que ya lo son lo siguen siendo (su etapa se cambia en Plantillas).': 'Akan ditambahkan sebagai surat booking; yang sudah menjadi surat booking tetap begitu (tahapnya diubah di Templat).',
     'Hay %n tipos marcados como carta de reserva: %l. Ya está configurado; la etapa de cada tipo se cambia en Plantillas.': 'Ada %n jenis yang ditandai sebagai surat booking: %l. Sudah dikonfigurasi; tahap setiap jenis diubah di Templat.',
     'Esto lo cambia un administrador con el permiso «Unidades» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.': 'Ini memerlukan administrator dengan izin «Unit» dan sesi yang aktif. Jika Anda administrator, muat ulang halaman dan masuk lagi; jika tetap sama, mintalah ke administrator utama.',
     'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.': 'Modul ini dimatikan di ERP ini: tidak ada yang bisa disimpan di sini sampai modul dinyalakan.',
@@ -445,6 +447,11 @@
           cont.appendChild(el('p', { class: CLS_AYUDA, 'data-axw-pr': 'carta-varias', role: 'note', text: T('Hay %n tipos marcados como carta de reserva: %l. Ya está configurado; la etapa de cada tipo se cambia en Plantillas.', { n: String(st.reservas.length), l: nombres }) }));
         }
         sel = campo(cont, 'cr_tipo', T('¿Cuál es la carta de reserva?'), BORRADOR.carta || st.actual || '', { opciones: [['', '—']].concat(st.tipos.map(function (t) { return [t.clave, texto(t.nombre).slice(0, 80)]; })) });
+        // la base admite varias en «reserva»: elegir otro AÑADE, no sustituye; se dice antes de guardar (revisor erp-front-2, BAJA 4)
+        var anade = el('p', { class: CLS_AYUDA, 'data-axw-pr': 'carta-anade', role: 'note', text: T('Se añadirá como carta de reserva; los que ya lo son lo siguen siendo (su etapa se cambia en Plantillas).') });
+        cont.appendChild(anade);
+        var mira = function () { anade.hidden = !(st.reservas.length && sel.value && st.reservas.indexOf(sel.value) === -1); };
+        sel.addEventListener('change', mira); mira();
       });
       return {
         valores: function () {
