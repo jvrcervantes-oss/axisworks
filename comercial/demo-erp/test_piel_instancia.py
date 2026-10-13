@@ -337,7 +337,7 @@ mira('instancia() versiona el favicon justo antes de versiona()', 'favicon_versi
 mira('instancia() pinta la suite clásica tras crea-contraseña y ANTES de versionar (si no, la CDN sirve la hoja vieja)',
      cuerpo.index('crea_contrasena_pantalla(marca)') < cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('\n    versiona(DIST)'))
 mira('instancia() arregla la puerta tras la piel y antes de versionar', cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('puerta_instancia(DIST, idiomas)') < cuerpo.index('\n    versiona(DIST)'))
-mira('instancia() añade los rótulos del menú después de los idiomas', cuerpo.index('idiomas_instancia(idiomas)') < cuerpo.index('menu_i18n()'))
+mira('instancia() añade los rótulos del menú después de los idiomas', cuerpo.index('idiomas_instancia(idiomas') <cuerpo.index('menu_i18n()'))
 mira('instancia() pone los logos de la instancia, no los neutros a secas', 'logos_instancia(nombre, marca)' in cuerpo and 'logos_neutros(' not in cuerpo)
 mira('instancia() comprueba la piel antes de dar el paquete por bueno', cuerpo.index('comprueba_piel(DIST, nombre)') < cuerpo.index('comprueba_resultado(DIST)'))
 
