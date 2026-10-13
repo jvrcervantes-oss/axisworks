@@ -33,6 +33,7 @@ Revisión previa (24-sep, Seguridad + Legal), cada regla con su porqué:
 - Se niega a escribir fuera de su `dist/` o dentro de `proyectos/Lawang/`: un
   guard falso escrito ahí lo desplegaría el webhook de Lawang.
 """
+import base64
 import hashlib
 import html
 import json
@@ -2397,7 +2398,8 @@ def banda_startups(html_txt, encendida=None):
 
 def fuentes_portada():
     """(texto de fonts.css, [(ruta publicada, fichero de origen)]) de las url() de fonts.css + sus licencias OFL.
-    PARA con un mensaje claro si falta algo: es bloqueo de la PUBLICACIÓN, no de construir (solo lo llama publica_web)."""
+    PARA con un mensaje claro si falta algo: es bloqueo de la PUBLICACIÓN, no de construir (lo llaman publica_web y, desde el
+    13-oct, fuentes_panel() para el panel de la instancia con panel_control)."""
     if not os.path.isfile(FUENTES_CSS):
         aborta('faltan las fuentes de la portada de erp.: no existe %s.\n  Viven en main (assets/x/fonts.css + '
                'assets/fonts/x/, desde fdcfb73): ¿copia sin actualizar? Para otro origen, AXW_FUENTES_X=<ruta a un '
@@ -2419,6 +2421,22 @@ def fuentes_portada():
             if f.startswith('OFL-') and f.endswith('.txt'):
                 pares.append((os.path.relpath(os.path.join(carpeta, f), raiz_f).replace(os.sep, '/'), os.path.join(carpeta, f)))
     return css, pares
+def fuentes_panel():
+    """Las @font-face de fonts.css (la misma fuente única que la portada) con cada woff2 DENTRO, en data: (13-oct-2026, erp-panel-3).
+    Para /panel/index.html: en producción solo se sirven /panel/, /panel/index.html y /panel/panel.css (.htaccess de app.), así que
+    unos woff2 al lado darían 503, y la marca no se pide a Google (Legal, 24-sep). La CSP ya admite `font-src data:`. Unos 180 KB."""
+    css, pares = fuentes_portada()
+    datos = {}
+    for rel, origen in pares:
+        if rel.endswith('.woff2'):
+            datos['/' + rel] = 'data:font/woff2;base64,' + base64.b64encode(open(origen, 'rb').read()).decode('ascii')
+    css = re.sub(r'''url\(\s*['"]?(/assets/fonts/x/[A-Za-z0-9._-]+\.woff2)['"]?\s*\)''', lambda m: 'url(%s)' % datos[m.group(1)], css)
+    css = re.sub(r'/\*.*?\*/', '', css, flags=re.S).strip()
+    if 'url(/' in css or '@font-face' not in css:
+        aborta('fuentes del panel: quedan url() locales o no hay @font-face')
+    return css
+
+
 # Tokens de Supabase en el #fragmento (flujo implícito): el servidor no los ve, así que el .htaccess no puede
 # mandarlos a app.; lo hace el primer script de la página, antes que nada.
 ADELANTA_TOKENS = ("(function(){var h=location.hash||'';if(/(^#|&)(access_token|refresh_token|token_hash|"
@@ -4108,11 +4126,12 @@ def instancia(nombre):
         d = os.path.join(DIST, 'panel')
         os.makedirs(d, exist_ok=True)
         panel = open(os.path.join(AQUI, 'panel_control.html'), encoding='utf-8').read()
-        if '__AXW_ROTULOS__' not in panel or '__AXW_SETUP__' not in panel:
-            aborta('panel_control.html sin el hueco __AXW_ROTULOS__ o __AXW_SETUP__')
+        if '__AXW_ROTULOS__' not in panel or '__AXW_SETUP__' not in panel or panel.count('__AXW_FUENTES__') != 1:
+            aborta('panel_control.html sin el hueco __AXW_ROTULOS__, __AXW_SETUP__ o __AXW_FUENTES__ (una vez)')
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8', newline='').write(
             panel_nav(panel, 'modulos').replace('__AXW_ROTULOS__', json.dumps(rotulos(), ensure_ascii=False, sort_keys=True).replace('</', '<\\/'))
-            .replace('__AXW_SETUP__', json.dumps(setup_para_panel(), ensure_ascii=False, sort_keys=True).replace('</', '<\\/')))
+            .replace('__AXW_SETUP__', json.dumps(setup_para_panel(), ensure_ascii=False, sort_keys=True).replace('</', '<\\/'))
+            .replace('__AXW_FUENTES__', fuentes_panel()))
         # La vista «Pilotos» (1-oct-2026, encargos/20261001_panel_pilotos_vista.md): /panel/pilotos/, mismo CSS. Esta página
         # NO lleva su contenido (/panel/ es público): lo pide a la edge erp-control (acción `pilotos`, solo operador).
         d_pil = os.path.join(d, 'pilotos')
