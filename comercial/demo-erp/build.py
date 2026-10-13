@@ -4277,7 +4277,7 @@ def ajustes_puesta_en_marcha():
 # Revisor 13-oct (bbm-p41): la tw.css de la instancia es la de Lawang, purgada con las páginas de Lawang. Una clase que solo usan los ficheros del
 # setup (que no son de Lawang) no se compila y la pantalla sale sin ese estilo, en silencio: p-3, gap-x-5 y tracking-[0.08em] en S44/S45. Estos
 # ficheros pintan /ajustes/configurar/ y /ajustes/, que cargan esa tw.css; las axw-* las define el propio fichero en su <style>.
-SETUP_CLASES = ('asistente_setup.html', 'setup_pasos.js', 'setup_reservas.js', 'setup_comun.js', 'ajustes_puesta.js', 'cobros_paso.js')
+SETUP_CLASES = ('asistente_setup.html', 'setup_pasos.js', 'setup_reservas.js', 'setup_comun.js', 'ajustes_puesta.js', 'cobros_paso.js', 'setup_propiedades.js')
 # Dónde empieza una lista de clases: `class:` y `className =`/`+=` (se lee la expresión ENTERA: ternarios y concatenaciones), las constantes
 # BTN*/CLS_* y el atributo class="…" del HTML.
 RE_CLASES_INICIO = re.compile(r"""\bclass\s*:|\bclassName\s*\+?=(?!=)|\bvar\s+(?:BTN\w*|CLS_\w*)\s*=|\bclass="([^"\n]*)\"""")
@@ -4385,6 +4385,52 @@ def setup_reservas_pasos():
         t = _una_vez(t, tag, tag + '<script src="%ssetup_reservas.js" defer></script>' % pre, 'setup_reservas_pasos %s' % os.path.relpath(pag, v4))
         open(pag, 'w', encoding='utf-8', newline='').write(t)
     shutil.copy2(os.path.join(AQUI, 'setup_reservas.js'), os.path.join(v4, 'assets', 'setup_reservas.js'))
+
+
+# Los escritores de setup_propiedades.js (N4, 20261014051000) nacen CERRADOS: ninguno tiene EXECUTE hasta que llega la pantalla (agencia-81, opción A).
+# La migración que los abre llega en el MISMO aterrizaje que este script; el script entra solo en la instancia a la que va esa migración.
+PROPIEDADES_ESCRITORES = ('tipo_vivienda_guarda', 'obra_fase_guarda', 'contrato_tipo_etapa_guarda')
+
+
+def propiedades_en_paquete(nombre):
+    """¿Lleva esta instancia los pasos de Propiedades (setup_propiedades.js, erp-front 14-oct-2026; contrato encargo_front_pasos_propiedades.md de
+    erp-setup)? Sí solo si en la agencia hay una migración que da `grant execute … to authenticated` a sus tres escritores y esa migración va a la
+    instancia (abanico.va_a: su `tipo:` y su `solo-en:`). Sin el grant, la pantalla llamaría a una función cerrada (42501 a todo el mundo) y el
+    contrato front↔base saldría rojo; con el grant y sin la pantalla, una función abierta sin llamador (§1.ter). Una migración que abra solo
+    algunos de los tres no vale: aborta, porque los tres pasos son un mismo componente."""
+    sys.path.insert(0, os.path.join(AGENCIA, 'erp'))
+    from abanico import va_a
+    d = os.path.join(AGENCIA, 'erp', 'migraciones')
+    tipo = (_instancia_registro(nombre).get('config') or {}).get('tipo_erp')
+    for n in sorted(os.listdir(d)):
+        if not n.endswith('.sql'):
+            continue
+        texto = open(os.path.join(d, n), encoding='utf-8').read()
+        abre = [f for f in PROPIEDADES_ESCRITORES
+                if re.search(r'grant\s+execute\s+on\s+function\s+public\.%s\s*\([^)]*\)\s+to\s+authenticated' % f, texto, re.I)]
+        if not abre:
+            continue
+        if len(abre) != len(PROPIEDADES_ESCRITORES):
+            aborta('%s abre solo %s de los escritores de Propiedades %s: setup_propiedades.js los llama a los tres' % (n, abre, list(PROPIEDADES_ESCRITORES)))
+        return bool(va_a(texto, nombre, tipo))
+    return False
+
+
+def setup_propiedades_pasos():
+    """Pasos del setup de Propiedades (tipos_vivienda, fases_obra, carta_reserva) en setup_propiedades.js. Como setup_reservas_pasos(): se suman con
+    AXW_PASOS.registra(), DETRÁS de setup_pasos.js, en las dos páginas que comparten componente (el asistente y Ajustes › Configurar módulos)."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    for pag, pre in ((os.path.join(v4, 'ajustes', 'configurar', 'index.html'), '../../assets/'), (os.path.join(v4, 'ajustes', 'index.html'), '../assets/')):
+        s = open(pag, encoding='utf-8').read()
+        tag = '<script src="%ssetup_pasos.js" defer></script>' % pre
+        s = _una_vez(s, tag, tag + '<script src="%ssetup_propiedades.js" defer></script>' % pre, 'setup_propiedades_pasos %s' % os.path.relpath(pag, v4))
+        open(pag, 'w', encoding='utf-8', newline='').write(s)
+    js = open(os.path.join(AQUI, 'setup_propiedades.js'), encoding='utf-8').read()
+    for f in PROPIEDADES_ESCRITORES:   # contrato_front busca el nombre LITERAL de la función en el paquete
+        if "sb.rpc('%s'" % f not in js:
+            aborta('setup_propiedades.js ya no llama a %s por su nombre literal' % f)
+    shutil.copy2(os.path.join(AQUI, 'setup_propiedades.js'), os.path.join(v4, 'assets', 'setup_propiedades.js'))
+    print('pasos de Propiedades: setup_propiedades.js en el asistente y en Ajustes')
 
 
 # ── Ajustes › Cobros (F3 Entrega 2, bbm-p24-cobros-front, 12-oct-2026) ─────────────────────────────────────────────────────────────────────
@@ -5185,6 +5231,8 @@ def instancia(nombre):
     # pantalla y bbm no cotiza; con ellas y sin E3, el contrato front↔base para toda publicación de bbm.
     if reservas_en_paquete(nombre):
         setup_reservas_pasos()
+    if propiedades_en_paquete(nombre):   # erp-front 14-oct: tipos de vivienda, fases de obra y carta de reserva, donde va el grant de sus escritores
+        setup_propiedades_pasos()
     clases_setup_en_hoja()   # revisor 13-oct (bbm-p41): ninguna clase del setup sin compilar en la tw.css de la instancia
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()

@@ -16,8 +16,10 @@ const vm = require('vm');
 
 const AQUI = __dirname;
 // el orden en que los sirve el paquete (medido en el build de bbm): setup_modulos (dentro de guard.js) → setup_pasos → setup_reservas → setup_comun →
-// cobros_paso. Cuenta para los choques: fusiona() no pisa, así que entre dos ficheros gana el que carga antes.
-const ORDEN = ['setup_modulos.js', 'setup_pasos.js', 'setup_reservas.js', 'setup_comun.js', 'cobros_paso.js'];
+// cobros_paso. Cuenta para los choques: fusiona() no pisa, así que entre dos ficheros gana el que carga antes. setup_propiedades.js (erp-front, 14-oct)
+// solo va en las instancias de Propiedades, justo detrás de setup_pasos.js (build.py mete cada script ahí y el último en meterse queda delante); se
+// carga siempre aquí para que una frase suya con otra traducción en otro fichero salga como choque.
+const ORDEN = ['setup_modulos.js', 'setup_pasos.js', 'setup_propiedades.js', 'setup_reservas.js', 'setup_comun.js', 'cobros_paso.js'];
 const FUENTES = ORDEN.map(f => [f, fs.readFileSync(path.join(AQUI, f), 'utf8')]);
 // ¿Mete build.py setup_reservas.js (pasos de E3/E4) en el paquete de la instancia? En la rama setup-sin-e3 la llamada va comentada (revisor, 12-oct:
 // el test medía un paquete que no sale). Se lee de build.py, no se supone: la llamada viva es `setup_reservas_pasos()` dentro de instancia().
