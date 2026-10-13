@@ -480,8 +480,9 @@
     caja.hidden = true;
     sec.appendChild(caja);
     function lee() {
-      // null = esta instancia no tiene el ajuste (no se enseña nada); {fallo} = no se pudo leer (se dice)
+      // null = esta instancia no tiene el ajuste, o quien mira no es administrador (42501: recargar no lo arregla); {fallo} = no se pudo leer (se dice)
       return window.lwDatos('ajustes_config_datos').then(function (r) {
+        if (r && r.error && r.error.code === '42501') return null;
         var d = r && !r.error ? r.data : null;
         if (!d || typeof d !== 'object') return { fallo: true };
         if (!Array.isArray(d.editables) || d.editables.indexOf('cobros_comision_pct') === -1) return null;
