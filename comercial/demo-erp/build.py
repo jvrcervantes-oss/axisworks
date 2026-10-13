@@ -3766,8 +3766,16 @@ def flota_pantalla():
     open(her, 'w', encoding='utf-8', newline='').write(h)
 
 
+def aaas_en_paquete(nombre):
+    """¿Lleva esta instancia la ventana del AaaS (/agente/)? Solo si su registro lo declara (`"aaas": true` en erp/instancias.json de la agencia).
+    Revisor 13-oct (ALTA): sus funciones (agente_panel_estado, agente_notas_datos…) no existen en una base hasta que se le aplican las migraciones
+    20261013180000/183000/190000; con la pantalla en el paquete y sin ellas, el contrato front↔base para la publicación de esa instancia. La marca se
+    pone EN EL MISMO PASO que se aplican (precedente: setup_reservas_pasos y E3 en bbm). Sin la marca, la instancia sale como hoy: sin menú ni tarjeta."""
+    return _instancia_registro(nombre).get('aaas') is True
+
+
 def agente_pantalla():
-    """Pantalla /agente/ del ERP maestro: el PANEL DEL PILOTO (EP.5, 13-oct-2026; agencia encargos/20261013_pilotos_bbm/panel.md, revisión previa #313). Herramienta propia `agente`
+    """Pantalla /agente/ del ERP maestro: la VENTANA DEL AaaS (EP.5, 13-oct-2026; agencia encargos/20261013_pilotos_bbm/panel.md, revisión previa #313). Herramienta propia `agente`
     (la que exige la base en agente_notas_datos y en las decisiones; el dueño de la ficha entra además por su uid). La crea el build clonando la CÁSCARA de /asistente/ con `agente.html`
     y las ayudas comunes de _compartido/. Lleva además, todo con reemplazo literal que aborta si una pantalla anterior de la cadena cambia el trozo:
       · nav.js: entrada de menú en Seguimiento (tras Flota y tarifas), injerto de sidebar y casilla en CLAVE_MENU (sin esa línea puedeVer() la enseñaría a todos);
@@ -3775,15 +3783,15 @@ def agente_pantalla():
     Va DESPUÉS de flota_pantalla(): sus anclas son las líneas que esa deja. No añade ningún ancla nueva sobre texto de Lawang. Solo se toca lo copiado en DIST.
     La pantalla NO se declara pantalla del módulo `agente` en el mapa de apagados: con el módulo apagado tiene que verse para poder encenderlo (la base decide quién)."""
     v4 = os.path.join(DIST, 'intranet', 'v4')
-    _pantalla_bot(v4, 'agente.html', 'agente', 'Piloto', puerta='data-herramienta="agente"')
+    _pantalla_bot(v4, 'agente.html', 'agente', 'AaaS', puerta='data-herramienta="agente"')
     nav = os.path.join(v4, 'assets', 'nav.js')
     n = open(nav, encoding='utf-8').read()
     n = _una_vez(n, "      { path: 'flota', texto: 'Flota y tarifas', clave: 'flota', nucleo: true }] },",
                  "      { path: 'flota', texto: 'Flota y tarifas', clave: 'flota', nucleo: true }," + '\n' +
-                 "      { path: 'agente', texto: 'Piloto', clave: 'agente', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (agente)')
+                 "      { path: 'agente', texto: 'AaaS', clave: 'agente', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (agente)')
     n = _una_vez(n, "    { path: 'flota', tras: 'entrega', icono: 'two_wheeler', texto: 'Flota y tarifas', nucleo: true },",
                  "    { path: 'flota', tras: 'entrega', icono: 'two_wheeler', texto: 'Flota y tarifas', nucleo: true }," + '\n' +
-                 "    { path: 'agente', tras: 'flota', icono: 'smart_toy', texto: 'Piloto', nucleo: true },", 'nav.js INJERTOS agente')
+                 "    { path: 'agente', tras: 'flota', icono: 'smart_toy', texto: 'AaaS', nucleo: true },", 'nav.js INJERTOS agente')
     n = _una_vez(n, "    flota: 'flota',",
                  "    flota: 'flota'," + '\n' + "    agente: 'agente',", 'nav.js CLAVE_MENU agente')
     open(nav, 'w', encoding='utf-8', newline='').write(n)
@@ -3792,13 +3800,13 @@ def agente_pantalla():
     ancla = "  /*AXW_FIN_TARJETA_FLOTA*/" + '\n' + "}"
     h = _una_vez(h, ancla,
                  "  /*AXW_FIN_TARJETA_FLOTA*/" + '\n' +
-                 "  /* PILOTO (EP.5, 13-oct-2026): el panel del piloto de operaciones. Permiso propio `agente`; sin esta tarjeta la casilla no existiría en Usuarios. Encender, apagar, el tope y los trabajos los exige además la base al dueño de la ficha. */" + '\n' +
+                 "  /* AaaS (EP.5, 13-oct-2026): el panel del AaaS de operaciones. Permiso propio `agente`; sin esta tarjeta la casilla no existiría en Usuarios. Encender, apagar, el tope y los trabajos los exige además la base al dueño de la ficha. */" + '\n' +
                  "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'flota') + 1, 0," + '\n' +
-                 "    { grupo:'Seguimiento', nombre:'Piloto', icon:'ph-robot', href:'/intranet/v4/agente/', herr:'agente'," + '\n' +
+                 "    { grupo:'Seguimiento', nombre:'AaaS', icon:'ph-robot', href:'/intranet/v4/agente/', herr:'agente'," + '\n' +
                  "      para:'Dos veces al día mira el negocio y deja avisos con su prueba: motos paradas en el taller, salidas sin moto, reservas que caducan. No toca nada; las personas deciden.'," + '\n' +
-                 "      claves:'piloto agente autonomo avisos operaciones pasada encender apagar pausa tope trabajos propuestas pilot agent alerts operations pause cap jobs proposals' });" + '\n' +
+                 "      claves:'AaaS agente autonomo avisos operaciones pasada encender apagar pausa tope trabajos propuestas AaaS agent alerts operations pause cap jobs proposals' });" + '\n' +
                  "  /*AXW_FIN_TARJETA_AGENTE*/" + '\n' + "}",
-                 'herramientas.js tarjeta Piloto')
+                 'herramientas.js tarjeta AaaS')
     open(her, 'w', encoding='utf-8', newline='').write(h)
 
 
@@ -4967,7 +4975,8 @@ def instancia(nombre):
     taller_pantalla()   # F8 pieza 2 (8-oct-2026): Taller — órdenes de trabajo ligeras (tras reservas de producto: sus anclas de nav.js)
     entrega_pantalla()   # F8 pieza 8 (10-oct-2026): Entrega — sede, tarifa por km y límites (tras taller: sus anclas de nav.js y herramientas.js)
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
-    agente_pantalla()   # EP.5 (13-oct-2026): Piloto — el panel del piloto de operaciones (tras flota: sus anclas de nav.js y la marca de herramientas.js)
+    if aaas_en_paquete(nombre):
+        agente_pantalla()   # EP.5 (13-oct-2026): AaaS — su ventana (tras flota: sus anclas de nav.js y la marca de herramientas.js)
     asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)
     ajustes_puesta_en_marcha()   # F3 (12-oct-2026): Ajustes › Configurar módulos, primera pestaña, en todas las instancias (antes solo las de reservas)
     ajustes_cobros()   # F3 E2 (12-oct-2026): Ajustes › Cobros y el paso «cobros» (oculto hasta que la base declare el paso)

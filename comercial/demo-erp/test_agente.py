@@ -1,6 +1,6 @@
-# Prueba de build.py:agente_pantalla() + agente.html (panel del piloto, EP.5, 13-oct-2026): python test_agente.py
+# Prueba de build.py:agente_pantalla() + agente.html (panel del AaaS, EP.5, 13-oct-2026): python test_agente.py
 # Igual que test_entrega.py: parte de los ficheros REALES de Lawang (solo lectura) copiados a una carpeta temporal y corre la CADENA entera de overlays hasta Flota y
-# Piloto. Mira que (1) la pantalla entra con las ayudas comunes pegadas UNA vez y todo el JS compila, (2) si algo cambia (la cadena, una marca, un fichero común) el build
+# AaaS. Mira que (1) la pantalla entra con las ayudas comunes pegadas UNA vez y todo el JS compila, (2) si algo cambia (la cadena, una marca, un fichero común) el build
 # PARA, (3) la pantalla cumple las reglas de seguridad del front (sin innerHTML, solo las RPC de agente_forma.json, nada de .from(), ningún rol cableado) y (4) todo texto
 # que pinta está en los diccionarios EN e ID. El comportamiento en un navegador lo mide pruebas/agente.harness.cjs (contra el doble de agente_forma.json).
 # NO ejecuta build.instancia(): no escribe nada en erp/despliegues/.
@@ -71,12 +71,12 @@ def mira(nombre, ok):
 
 # -- (1) la cadena entera entra y compila
 r, d = corre()
-mira('la cadena de overlays (hasta Flota y Piloto) entra sobre los ficheros de Lawang de hoy', r == 'pasa')
+mira('la cadena de overlays (hasta Flota y AaaS) entra sobre los ficheros de Lawang de hoy', r == 'pasa')
 pagina = lee(d, 'intranet/v4/agente/index.html') if r == 'pasa' else ''
 nav = lee(d, 'intranet/v4/assets/nav.js') if r == 'pasa' else ''
 her = lee(d, 'contracts/assets/herramientas.js') if r == 'pasa' else ''
 mira('la pagina lleva la puerta de la herramienta agente y ya no la del asistente', 'data-herramienta="agente"' in pagina and 'data-herramienta="asistente"' not in pagina)
-mira('el titulo es Piloto', '<title data-lw-titulo>Piloto</title>' in pagina)
+mira('el titulo es AaaS', '<title data-lw-titulo>AaaS</title>' in pagina)
 mira('el marcado y el script de la fuente entran una vez', pagina.count('<div class="flex flex-col w-full gap-8" data-ag="raiz">') == 1 and pagina.count('var EN_AG = {') == 1 and pagina.count('var ID_AG = {') == 1)
 mira('las ayudas comunes se pegan UNA vez (js y css) y las marcas no quedan en la pagina',
      pagina.count('function axwComun(raiz, T)') == 1 and pagina.count('.axw-boton{') == 1 and '/*AXW_COMUN_' not in pagina)
@@ -88,9 +88,9 @@ if r == 'pasa':
     for nombre, cod in (('nav.js', nav), ('herramientas.js', her)):
         c2 = compila(cod, nombre)
         mira('el %s resultante compila%s' % (nombre, (': ' + c2.stderr.strip()[:300]) if c2.returncode else ''), c2.returncode == 0)
-    mira('nav.js: entrada de menu, injerto y casilla del Piloto, una vez cada uno',
-         nav.count("{ path: 'agente', texto: 'Piloto', clave: 'agente', nucleo: true }") == 1 and nav.count("{ path: 'agente', tras: 'flota'") == 1 and nav.count("agente: 'agente',") == 1)
-    mira('el injerto del Piloto viene DESPUES del de Flota', nav.index("path: 'flota', tras: 'entrega'") < nav.index("path: 'agente', tras: 'flota'"))
+    mira('nav.js: entrada de menu, injerto y casilla del AaaS, una vez cada uno',
+         nav.count("{ path: 'agente', texto: 'AaaS', clave: 'agente', nucleo: true }") == 1 and nav.count("{ path: 'agente', tras: 'flota'") == 1 and nav.count("agente: 'agente',") == 1)
+    mira('el injerto del AaaS viene DESPUES del de Flota', nav.index("path: 'flota', tras: 'entrega'") < nav.index("path: 'agente', tras: 'flota'"))
     mira('puedeVer no deja pasar sin la casilla: CLAVE_MENU de agente existe antes de la linea que la usa', nav.index("agente: 'agente',") < nav.index('var k = CLAVE_MENU[path];'))
     mira('herramientas.js: la tarjeta agente esta UNA vez, tras la de Flota, entre las dos marcas',
          her.count("herr:'agente'") == 1 and her.index("herr:'agente'") > her.index("herr:'flota'")
@@ -104,7 +104,7 @@ if r == 'pasa':
         tarj = json.loads(sal.stdout.strip().splitlines()[-1]) if sal.stdout.strip() else None
     except Exception:
         tarj = None
-    mira('el catalogo de herramientas trae la tarjeta del Piloto (Seguimiento, /intranet/v4/agente/)', tarj == [['Seguimiento', '/intranet/v4/agente/']])
+    mira('el catalogo de herramientas trae la tarjeta del AaaS (Seguimiento, /intranet/v4/agente/)', tarj == [['Seguimiento', '/intranet/v4/agente/']])
 
 # -- (2) si algo cambia, el build PARA
 ORIGINAL = {f: open(os.path.join(build.LAWANG, *f.split('/')), encoding='utf-8').read() for f in FICHEROS}
@@ -138,11 +138,23 @@ mira('cada clase de aviso de la forma tiene su frase (RECUENTO, MOTIVO_TARIFA o 
      and all((k + ':') in CODIGO for k in FORMA['motivos_tarifa']))
 mira('un aviso desconocido NO se calla: tiene frase propia', 'Aviso de un tipo que esta pantalla aún no conoce.' in CODIGO)
 mira('un trabajo sin nota hoy lo dice («Sin pasada todavía hoy.») y uno sin datos también', 'Sin pasada todavía hoy.' in CODIGO and 'Sin reservas en este sistema todavía.' in CODIGO)
-mira('apagar y encender piden motivo y confirmacion en un dialogo', "conMotivo(T(enc ? 'Encender el piloto' : 'Apagar el piloto')" in CODIGO and "accion: 'ag-modal-confirmar'" in CODIGO)
+mira('apagar y encender piden motivo y confirmacion en un dialogo', "conMotivo(T(enc ? 'Encender el AaaS' : 'Apagar el AaaS')" in CODIGO and "accion: 'ag-modal-confirmar'" in CODIGO)
 mira('doble clic: un solo envio a la vez (ocupa/libera)', 'C.ocupa(btn)' in CODIGO and 'C.libera(btn)' in CODIGO)
 mira('enganche por data-accion/data-ag/data-campo; ningun texto de boton se usa para encontrar nada', not re.search(r'textContent\s*===|innerText|\.placeholder', CODIGO))
 acciones = set(re.findall(r"C\.boton\([^;]*?, '(ag-[a-z-]+)'", CODIGO)) | set(re.findall(r'data-accion="(ag-[a-z-]+)"', MARCADO))
 mira('toda accion tiene manejador (' + ', '.join(sorted(a for a in acciones if ("a === '" + a + "'") not in CODIGO)) + ')', all(("a === '" + a + "'") in CODIGO for a in acciones))
+
+# -- (3b) revisor 13-oct: paquete solo con la marca de la instancia, dinero sin moneda inventada, tope que no viaja si no cambió, Parar con permiso
+BUILD = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
+mira('la ventana solo entra en el paquete de una instancia con `"aaas": true` (sin sus migraciones, el contrato front-base pararía la publicación)',
+     BUILD.count('    if aaas_en_paquete(nombre):\n        agente_pantalla()') == 1 and BUILD.count('agente_pantalla()') == 2
+     and "return _instancia_registro(nombre).get('aaas') is True" in BUILD)
+mira('ninguna moneda escrita en la pantalla: la da la base (trinquete eur_literal)', not re.search(r"'EUR'|\"EUR\"", CODIGO))
+mira('con el módulo encendido, sin moneda o sin tope entero la respuesta es de forma mala', "ent(d.tope_mensual_cent)" in CODIGO and "/^[A-Z]{3}$/.test(d.moneda)" in CODIGO)
+mira('nunca «Sin tope»: un tope ausente vale 0 en la base', 'Sin tope' not in CODIGO and "T('tope 0: no puede gastar')" in CODIGO)
+mira('el tope solo viaja si el dueño lo cambió (null = no cambia)', "p_tope_mensual_cent: Math.round(imp.v * 100) === d.tope_mensual_cent ? null : Math.round(imp.v * 100)" in CODIGO)
+mira('«Parar» solo con puedo_decidir (la cuenta de pruebas no lo ve)', "if (!d.parado && d.puedo_decidir) acc.appendChild(C.boton(T('Parar'), 'ag-parar'));" in CODIGO)
+mira('nada visible dice «piloto»: se llama AaaS (owner, 13-oct)', not re.search(r"(?<![\w_])[Pp]iloto(?![\w_])|(?<![\w_])[Pp]ilot(?![\w_])", re.sub(r'<!--.*?-->|/\*.*?\*/', '', JS + MARCADO, flags=re.S)))
 
 # -- (4) diccionarios EN e ID: todo texto pintable está en los dos
 bloque = JS[JS.index('var EN_AG = {'):JS.index('var T = typeof window.lwT')]

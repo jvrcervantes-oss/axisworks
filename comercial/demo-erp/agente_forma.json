@@ -1,5 +1,5 @@
 {
- "_que": "Contrato del panel del piloto (/intranet/v4/agente/, agente.html) con la base (migraciones 20261013183000 y 20261013190000 del maestro). Fuente ÚNICA de la forma: la lee el doble del panel (pruebas/agente.harness.cjs, test_agente.py) y la prueba SQL de la agencia (erp/pruebas/agente_panel_forma.py). Si la base cambia una clave, cambia aquí y fallan los dos lados. 13-oct-2026, sesión pilotos-panel.",
+ "_que": "Contrato del panel del AaaS (/intranet/v4/agente/, agente.html) con la base (migraciones 20261013183000 y 20261013190000 del maestro). Fuente ÚNICA de la forma: la lee el doble del panel (pruebas/agente.harness.cjs, test_agente.py) y la prueba SQL de la agencia (erp/pruebas/agente_panel_forma.py). Si la base cambia una clave, cambia aquí y fallan los dos lados. 13-oct-2026, sesión pilotos-panel.",
  "trabajos": [
   "flota",
   "salidas",
@@ -30,9 +30,11 @@
     "soy_dueno": "bool",
     "puedo_decidir": "bool",
     "ultima_pasada": "null | {dia: fecha, pasada: pasada, en: instante, resultado: enum(hecha, en_pausa, apagadas, parado, cupo, otro)}",
-    "tope_mensual_cent": "entero | null",
+    "tope_mensual_cent": "entero >= 0: el tope VIGENTE (sin tope guardado, 0 = no puede gastar; nunca null: revisor 13-oct)",
+    "tope_propuesto_cent": "entero | null: una subida pendiente (entra a las 24 h); null = ninguna",
+    "tope_propuesto_desde": "instante | null: cuándo entra esa subida",
     "gastado_mes_cent": "entero",
-    "moneda": "texto de 3 letras (la ficha cuenta en EUR)",
+    "moneda": "texto de 3 letras, SIEMPRE con el módulo encendido (la ficha cuenta en EUR; la pantalla no pone una moneda por su cuenta)",
     "usd_por_eur": "número | null",
     "trabajos": "{<trabajo>: bool} con los 8",
     "nivel_ruta": "entero 0-1",
@@ -78,7 +80,7 @@
     "p_nota": "texto 0-500 | null"
    },
    "devuelve": "{ok: true, estado}",
-   "quien": "owner de la ficha (una propuesta con toca_guarda cambia los límites del piloto; #313)"
+   "quien": "owner de la ficha (una propuesta con toca_guarda cambia los límites del AaaS; #313)"
   },
   "agente_para": {
    "args": {},
@@ -92,7 +94,7 @@
   },
   "agente_ficha_ajusta": {
    "args": {
-    "p_tope_mensual_cent": "entero >= 0",
+    "p_tope_mensual_cent": "entero >= 0 | null: null = el tope NO cambia (la pantalla solo lo manda si el dueño lo cambió: bajarlo cancela una subida pendiente, revisor 13-oct)",
     "p_trabajos": "texto[] (subconjunto de los 8; los 8 = todos)",
     "p_nivel_ruta": "0 | 1",
     "p_motivo": "texto 3-300"

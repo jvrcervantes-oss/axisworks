@@ -1,6 +1,6 @@
-<!-- Pantalla /agente/ del ERP MAESTRO: el PANEL DEL PILOTO (EP.5, 13-oct-2026; agencia: encargos/20261013_pilotos_bbm/panel.md, revisión previa #313, y contrato_sql.md §S5).
+<!-- Pantalla /agente/ del ERP MAESTRO: la VENTANA DEL AaaS (EP.5, 13-oct-2026; agencia: encargos/20261013_pilotos_bbm/panel.md, revisión previa #313, y contrato_sql.md §S5).
      NO es una página entera: build.py (agente_pantalla) la inyecta en la cáscara de /asistente/ de Lawang, como taller y entrega. Dos partes separadas por la línea «AXW_SCRIPT».
-     Qué hace, en llano: el piloto de operaciones mira el negocio dos veces al día y deja NOTAS (datos estructurados, nunca texto libre: decisión D12). Aquí se ve si está encendido
+     Qué hace, en llano: el AaaS de operaciones mira el negocio dos veces al día y deja NOTAS (datos estructurados, nunca texto libre: decisión D12). Aquí se ve si está encendido
      y trabajando, cuándo fue su última pasada, qué avisó hoy (una tarjeta por trabajo) y sus propuestas de cambio; se para, se reanuda, se enciende, se apaga, se eligen los trabajos
      y se fija el tope de gasto.
      Quién: la ve quien tiene la herramienta `agente` (y el dueño de la ficha). Parar y marcar un aviso como hecho o descartado: cualquiera con la herramienta. Reanudar, encender,
@@ -42,7 +42,7 @@
 
 <div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
 <div class="flex flex-col gap-2 max-w-3xl">
-<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Piloto</h1>
+<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>AaaS</h1>
 <p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Dos veces al día mira el negocio y deja aquí avisos con su prueba. No toca nada ni habla con nadie: las personas deciden.</p>
 </div>
 </div>
@@ -66,7 +66,7 @@
 
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-propuestas">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Propuestas de cambio</h2>
-<p class="ag-sub" data-lwt>Cambios que el piloto propone para el sistema. Los acepta o los rechaza el dueño de la ficha.</p>
+<p class="ag-sub" data-lwt>Cambios que el AaaS propone para el sistema. Los acepta o los rechaza el dueño de la ficha.</p>
 <div class="flex flex-col gap-3" data-ag="propuestas"></div>
 </section>
 
@@ -98,10 +98,10 @@
 (function () {
   'use strict';
   var EN_AG = {
-    'Piloto': 'Pilot',
+    'AaaS': 'AaaS',
     'Dos veces al día mira el negocio y deja aquí avisos con su prueba. No toca nada ni habla con nadie: las personas deciden.': 'Twice a day it looks at the business and leaves alerts here with their evidence. It changes nothing and talks to no one: people decide.',
     'Estado': 'Status', 'Hoy': 'Today', 'Propuestas de cambio': 'Proposed changes',
-    'Cambios que el piloto propone para el sistema. Los acepta o los rechaza el dueño de la ficha.': 'Changes the pilot proposes for the system. The owner of the pilot settings accepts or rejects them.',
+    'Cambios que el AaaS propone para el sistema. Los acepta o los rechaza el dueño de la ficha.': 'Changes the AaaS proposes for the system. The owner of the AaaS settings accepts or rejects them.',
     'Trabajos y tope': 'Jobs and spending cap', 'Qué trabajos hace': 'Which jobs it does', 'Nivel de Ruta': 'Ruta level',
     '0 · No hace la pasada': '0 · Does not run', '1 · Mira y avisa': '1 · Looks and alerts',
     'Tope de gasto al mes': 'Monthly spending cap', 'Motivo del cambio (obligatorio)': 'Reason for the change (required)', 'Guardar': 'Save',
@@ -109,24 +109,27 @@
     'Los ocho trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'The eight jobs do not call the AI: the system itself does the counting.',
     'Avisos por Telegram': 'Telegram alerts', 'Los avisos están en este panel.': 'Alerts are on this panel.',
     'Módulo': 'Module', 'Encendido': 'On', 'Apagado': 'Off', 'Trabajo': 'Work', 'Trabajando': 'Working', 'En pausa': 'Paused',
-    'Última pasada': 'Last run', 'Todavía no ha hecho ninguna pasada.': 'It has not run yet.', 'Gastado este mes': 'Spent this month', 'Tope': 'Cap', 'Sin tope': 'No cap',
+    'Última pasada': 'Last run', 'Todavía no ha hecho ninguna pasada.': 'It has not run yet.', 'Gastado este mes': 'Spent this month', 'Tope': 'Cap',
+    'tope 0: no puede gastar': 'cap 0: it cannot spend', 'Subida de tope pendiente': 'Pending cap increase', '{x}, entra {f}': '{x}, applies {f}',
+    'Hay una subida pendiente a {x}: bajar el tope ahora la cancela.': 'There is a pending increase to {x}: lowering the cap now cancels it.',
+    'Escribe el tope (0 si no puede gastar).': 'Enter the cap (0 if it cannot spend).',
     'Avisos de hoy': "Today's alerts", 'Pasada de la mañana': 'Morning run', 'Pasada de la tarde': 'Evening run',
     'hecha': 'done', 'en pausa': 'paused', 'sin trabajos encendidos': 'no jobs switched on', 'parada por la pausa': 'stopped by the pause',
     'cortada por el cupo del día': "cut by the day's quota", 'con errores': 'with errors',
-    'Parar': 'Pause', 'Reanudar': 'Resume', 'Encender el piloto': 'Switch the pilot on', 'Apagar el piloto': 'Switch the pilot off',
-    'El piloto está apagado: no mira nada ni escribe nada.': 'The pilot is off: it reads nothing and writes nothing.',
-    'Lo enciende el dueño de la ficha del piloto.': 'The owner of the pilot settings switches it on.',
-    'Reanudar, encender, apagar, los trabajos y el tope son del dueño de la ficha del piloto.': 'Resuming, switching on and off, the jobs and the cap belong to the owner of the pilot settings.',
-    'Solo lo cambia el dueño de la ficha del piloto.': 'Only the owner of the pilot settings can change this.',
-    'Marcar avisos como hechos o descartarlos necesita la herramienta «Piloto» sin ser la cuenta de pruebas.': 'Marking alerts as done or dismissing them needs the “Pilot” tool and cannot be done from the test account.',
-    'Apagar el piloto deja de verlo y de escribir en el acto. Sus notas se quedan aquí.': 'Switching the pilot off stops it reading and writing at once. Its notes stay here.',
+    'Parar': 'Pause', 'Reanudar': 'Resume', 'Encender el AaaS': 'Switch the AaaS on', 'Apagar el AaaS': 'Switch the AaaS off',
+    'El AaaS está apagado: no mira nada ni escribe nada.': 'The AaaS is off: it reads nothing and writes nothing.',
+    'Lo enciende el dueño de la ficha del AaaS.': 'The owner of the AaaS settings switches it on.',
+    'Reanudar, encender, apagar, los trabajos y el tope son del dueño de la ficha del AaaS.': 'Resuming, switching on and off, the jobs and the cap belong to the owner of the AaaS settings.',
+    'Solo lo cambia el dueño de la ficha del AaaS.': 'Only the owner of the AaaS settings can change this.',
+    'Marcar avisos como hechos o descartarlos necesita la herramienta «AaaS» sin ser la cuenta de pruebas.': 'Marking alerts as done or dismissing them needs the “AaaS” tool and cannot be done from the test account.',
+    'Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.': 'Switching the AaaS off stops it reading and writing at once. Its notes stay here.',
     'Al encenderlo, vuelve a mirar el negocio dos veces al día y a dejar avisos aquí. No toca nada.': 'Once on, it looks at the business twice a day again and leaves alerts here. It changes nothing.',
     'Motivo': 'Reason', 'Escribe el motivo (entre 3 y 300 caracteres).': 'Write the reason (3 to 300 characters).',
     'Confirmar': 'Confirm', 'Hecho': 'Done', 'Descartar': 'Dismiss', 'Aceptar': 'Accept', 'Rechazar': 'Reject',
     'Hecho por': 'Done by', 'Descartado por': 'Dismissed by', 'Aceptada por': 'Accepted by', 'Rechazada por': 'Rejected by', 'el': 'on',
     'Pendiente': 'Pending', 'Aceptada': 'Accepted', 'Rechazada': 'Rejected',
     'Problema': 'Problem', 'Prueba': 'Evidence', 'Cambio': 'Change', 'Riesgo': 'Risk', 'Nota': 'Note', 'Nota (opcional)': 'Note (optional)',
-    'El piloto no ha hecho propuestas de cambio.': 'The pilot has made no proposed changes.',
+    'El AaaS no ha hecho propuestas de cambio.': 'The AaaS has made no proposed changes.',
     'Sin pasada todavía hoy.': 'No run yet today.', 'Todo en orden.': 'All in order.',
     'Sin reservas en este sistema todavía.': 'No bookings in this system yet.', 'Sin motos en este sistema todavía.': 'No bikes in this system yet.',
     'Sin reservas ni pagos en este sistema todavía.': 'No bookings or payments in this system yet.',
@@ -155,21 +158,21 @@
     'Elige al menos un trabajo, o pon el nivel de Ruta a 0.': 'Choose at least one job, or set the Ruta level to 0.',
     'Subir el tope tarda 24 h en entrar; bajarlo es inmediato.': 'Raising the cap takes 24 h to apply; lowering it is immediate.',
     'Unos {u} USD al cambio de hoy.': 'About {u} USD at today’s rate.',
-    'Guardado.': 'Saved.', 'Parado: el piloto no hará nada hasta que se reanude.': 'Paused: the pilot will do nothing until it is resumed.', 'Reanudado.': 'Resumed.',
-    'Piloto encendido.': 'Pilot switched on.', 'Piloto apagado.': 'Pilot switched off.',
+    'Guardado.': 'Saved.', 'Parado: el AaaS no hará nada hasta que se reanude.': 'Paused: the AaaS will do nothing until it is resumed.', 'Reanudado.': 'Resumed.',
+    'AaaS encendido.': 'AaaS switched on.', 'AaaS apagado.': 'AaaS switched off.',
     'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).': 'Too many changes in a row: wait a minute (at most 10 a day).',
-    'Esto solo lo puede hacer el dueño de la ficha del piloto.': 'Only the owner of the pilot settings can do this.',
+    'Esto solo lo puede hacer el dueño de la ficha del AaaS.': 'Only the owner of the AaaS settings can do this.',
     'La cuenta de pruebas no puede cambiar nada aquí.': 'The test account cannot change anything here.',
-    'No tienes la herramienta «Piloto»: pídesela al administrador principal en Usuarios.': 'You do not have the “Pilot” tool: ask the main administrator for it in Users.',
-    'El piloto está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'The pilot is off: its alerts cannot be read until it is switched on. This does NOT mean there are none.',
+    'No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.': 'You do not have the “AaaS” tool: ask the main administrator for it in Users.',
+    'El AaaS está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'The AaaS is off: its alerts cannot be read until it is switched on. This does NOT mean there are none.',
     'La base no confirmó el cambio: recarga antes de repetir.': 'The database did not confirm the change: reload before trying again.',
     'Hecho: marcado.': 'Done: marked.', 'Descartado.': 'Dismissed.', 'Propuesta aceptada.': 'Proposal accepted.', 'Propuesta rechazada.': 'Proposal rejected.'
   };
   var ID_AG = {
-    'Piloto': 'Pilot',
+    'AaaS': 'AaaS',
     'Dos veces al día mira el negocio y deja aquí avisos con su prueba. No toca nada ni habla con nadie: las personas deciden.': 'Dua kali sehari memeriksa usaha dan meninggalkan peringatan di sini beserta buktinya. Tidak mengubah apa pun dan tidak berbicara dengan siapa pun: manusia yang memutuskan.',
     'Estado': 'Status', 'Hoy': 'Hari ini', 'Propuestas de cambio': 'Usulan perubahan',
-    'Cambios que el piloto propone para el sistema. Los acepta o los rechaza el dueño de la ficha.': 'Perubahan yang diusulkan pilot untuk sistem. Pemilik pengaturan pilot yang menerima atau menolaknya.',
+    'Cambios que el AaaS propone para el sistema. Los acepta o los rechaza el dueño de la ficha.': 'Perubahan yang diusulkan AaaS untuk sistem. Pemilik pengaturan AaaS yang menerima atau menolaknya.',
     'Trabajos y tope': 'Tugas dan batas biaya', 'Qué trabajos hace': 'Tugas yang dikerjakan', 'Nivel de Ruta': 'Level Ruta',
     '0 · No hace la pasada': '0 · Tidak berjalan', '1 · Mira y avisa': '1 · Memeriksa dan memberi peringatan',
     'Tope de gasto al mes': 'Batas biaya per bulan', 'Motivo del cambio (obligatorio)': 'Alasan perubahan (wajib)', 'Guardar': 'Simpan',
@@ -177,24 +180,27 @@
     'Los ocho trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'Delapan tugas ini tidak memanggil AI: perhitungannya dilakukan oleh sistem sendiri.',
     'Avisos por Telegram': 'Peringatan lewat Telegram', 'Los avisos están en este panel.': 'Peringatan ada di panel ini.',
     'Módulo': 'Modul', 'Encendido': 'Aktif', 'Apagado': 'Nonaktif', 'Trabajo': 'Kerja', 'Trabajando': 'Bekerja', 'En pausa': 'Dijeda',
-    'Última pasada': 'Pemeriksaan terakhir', 'Todavía no ha hecho ninguna pasada.': 'Belum pernah berjalan.', 'Gastado este mes': 'Terpakai bulan ini', 'Tope': 'Batas', 'Sin tope': 'Tanpa batas',
+    'Última pasada': 'Pemeriksaan terakhir', 'Todavía no ha hecho ninguna pasada.': 'Belum pernah berjalan.', 'Gastado este mes': 'Terpakai bulan ini', 'Tope': 'Batas',
+    'tope 0: no puede gastar': 'batas 0: tidak bisa membelanjakan', 'Subida de tope pendiente': 'Kenaikan batas tertunda', '{x}, entra {f}': '{x}, berlaku {f}',
+    'Hay una subida pendiente a {x}: bajar el tope ahora la cancela.': 'Ada kenaikan tertunda ke {x}: menurunkan batas sekarang membatalkannya.',
+    'Escribe el tope (0 si no puede gastar).': 'Isi batasnya (0 jika tidak boleh membelanjakan).',
     'Avisos de hoy': 'Peringatan hari ini', 'Pasada de la mañana': 'Pemeriksaan pagi', 'Pasada de la tarde': 'Pemeriksaan sore',
     'hecha': 'selesai', 'en pausa': 'dijeda', 'sin trabajos encendidos': 'tidak ada tugas aktif', 'parada por la pausa': 'berhenti karena jeda',
     'cortada por el cupo del día': 'terpotong oleh kuota harian', 'con errores': 'ada kesalahan',
-    'Parar': 'Jeda', 'Reanudar': 'Lanjutkan', 'Encender el piloto': 'Aktifkan pilot', 'Apagar el piloto': 'Matikan pilot',
-    'El piloto está apagado: no mira nada ni escribe nada.': 'Pilot nonaktif: tidak membaca dan tidak menulis apa pun.',
-    'Lo enciende el dueño de la ficha del piloto.': 'Yang mengaktifkannya adalah pemilik pengaturan pilot.',
-    'Reanudar, encender, apagar, los trabajos y el tope son del dueño de la ficha del piloto.': 'Melanjutkan, mengaktifkan, mematikan, tugas, dan batas biaya adalah hak pemilik pengaturan pilot.',
-    'Solo lo cambia el dueño de la ficha del piloto.': 'Hanya pemilik pengaturan pilot yang dapat mengubahnya.',
-    'Marcar avisos como hechos o descartarlos necesita la herramienta «Piloto» sin ser la cuenta de pruebas.': 'Menandai peringatan selesai atau mengabaikannya memerlukan alat «Pilot» dan tidak bisa dari akun uji coba.',
-    'Apagar el piloto deja de verlo y de escribir en el acto. Sus notas se quedan aquí.': 'Mematikan pilot langsung menghentikannya membaca dan menulis. Catatannya tetap di sini.',
-    'Al encenderlo, vuelve a mirar el negocio dos veces al día y a dejar avisos aquí. No toca nada.': 'Setelah aktif, pilot kembali memeriksa usaha dua kali sehari dan meninggalkan peringatan di sini. Tidak mengubah apa pun.',
+    'Parar': 'Jeda', 'Reanudar': 'Lanjutkan', 'Encender el AaaS': 'Aktifkan AaaS', 'Apagar el AaaS': 'Matikan AaaS',
+    'El AaaS está apagado: no mira nada ni escribe nada.': 'AaaS nonaktif: tidak membaca dan tidak menulis apa pun.',
+    'Lo enciende el dueño de la ficha del AaaS.': 'Yang mengaktifkannya adalah pemilik pengaturan AaaS.',
+    'Reanudar, encender, apagar, los trabajos y el tope son del dueño de la ficha del AaaS.': 'Melanjutkan, mengaktifkan, mematikan, tugas, dan batas biaya adalah hak pemilik pengaturan AaaS.',
+    'Solo lo cambia el dueño de la ficha del AaaS.': 'Hanya pemilik pengaturan AaaS yang dapat mengubahnya.',
+    'Marcar avisos como hechos o descartarlos necesita la herramienta «AaaS» sin ser la cuenta de pruebas.': 'Menandai peringatan selesai atau mengabaikannya memerlukan alat «AaaS» dan tidak bisa dari akun uji coba.',
+    'Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.': 'Mematikan AaaS langsung menghentikannya membaca dan menulis. Catatannya tetap di sini.',
+    'Al encenderlo, vuelve a mirar el negocio dos veces al día y a dejar avisos aquí. No toca nada.': 'Setelah aktif, AaaS kembali memeriksa usaha dua kali sehari dan meninggalkan peringatan di sini. Tidak mengubah apa pun.',
     'Motivo': 'Alasan', 'Escribe el motivo (entre 3 y 300 caracteres).': 'Tulis alasannya (3 sampai 300 karakter).',
     'Confirmar': 'Konfirmasi', 'Hecho': 'Selesai', 'Descartar': 'Buang', 'Aceptar': 'Terima', 'Rechazar': 'Tolak',
     'Hecho por': 'Diselesaikan oleh', 'Descartado por': 'Diabaikan oleh', 'Aceptada por': 'Diterima oleh', 'Rechazada por': 'Ditolak oleh', 'el': 'pada',
     'Pendiente': 'Tertunda', 'Aceptada': 'Diterima', 'Rechazada': 'Ditolak',
     'Problema': 'Masalah', 'Prueba': 'Bukti', 'Cambio': 'Perubahan', 'Riesgo': 'Risiko', 'Nota': 'Catatan', 'Nota (opcional)': 'Catatan (opsional)',
-    'El piloto no ha hecho propuestas de cambio.': 'Pilot belum mengusulkan perubahan.',
+    'El AaaS no ha hecho propuestas de cambio.': 'AaaS belum mengusulkan perubahan.',
     'Sin pasada todavía hoy.': 'Belum ada pemeriksaan hari ini.', 'Todo en orden.': 'Semua beres.',
     'Sin reservas en este sistema todavía.': 'Belum ada booking di sistem ini.', 'Sin motos en este sistema todavía.': 'Belum ada motor di sistem ini.',
     'Sin reservas ni pagos en este sistema todavía.': 'Belum ada booking maupun pembayaran di sistem ini.',
@@ -223,13 +229,13 @@
     'Elige al menos un trabajo, o pon el nivel de Ruta a 0.': 'Pilih setidaknya satu tugas, atau atur level Ruta ke 0.',
     'Subir el tope tarda 24 h en entrar; bajarlo es inmediato.': 'Menaikkan batas berlaku setelah 24 jam; menurunkannya langsung berlaku.',
     'Unos {u} USD al cambio de hoy.': 'Sekitar {u} USD dengan kurs hari ini.',
-    'Guardado.': 'Tersimpan.', 'Parado: el piloto no hará nada hasta que se reanude.': 'Dijeda: pilot tidak akan melakukan apa pun sampai dilanjutkan.', 'Reanudado.': 'Dilanjutkan.',
-    'Piloto encendido.': 'Pilot aktif.', 'Piloto apagado.': 'Pilot dimatikan.',
+    'Guardado.': 'Tersimpan.', 'Parado: el AaaS no hará nada hasta que se reanude.': 'Dijeda: AaaS tidak akan melakukan apa pun sampai dilanjutkan.', 'Reanudado.': 'Dilanjutkan.',
+    'AaaS encendido.': 'AaaS aktif.', 'AaaS apagado.': 'AaaS dimatikan.',
     'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).': 'Terlalu banyak perubahan berturut-turut: tunggu satu menit (maksimal 10 per hari).',
-    'Esto solo lo puede hacer el dueño de la ficha del piloto.': 'Ini hanya bisa dilakukan oleh pemilik pengaturan pilot.',
+    'Esto solo lo puede hacer el dueño de la ficha del AaaS.': 'Ini hanya bisa dilakukan oleh pemilik pengaturan AaaS.',
     'La cuenta de pruebas no puede cambiar nada aquí.': 'Akun uji coba tidak dapat mengubah apa pun di sini.',
-    'No tienes la herramienta «Piloto»: pídesela al administrador principal en Usuarios.': 'Anda tidak punya alat «Pilot»: mintalah kepada admin utama di Pengguna.',
-    'El piloto está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'Pilot nonaktif: peringatannya tidak bisa dibaca sampai diaktifkan. Ini BUKAN berarti tidak ada.',
+    'No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.': 'Anda tidak punya alat «AaaS»: mintalah kepada admin utama di Pengguna.',
+    'El AaaS está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'AaaS nonaktif: peringatannya tidak bisa dibaca sampai diaktifkan. Ini BUKAN berarti tidak ada.',
     'La base no confirmó el cambio: recarga antes de repetir.': 'Database tidak mengonfirmasi perubahan: muat ulang sebelum mengulang.',
     'Hecho: marcado.': 'Selesai: sudah ditandai.', 'Descartado.': 'Diabaikan.', 'Propuesta aceptada.': 'Usulan diterima.', 'Propuesta rechazada.': 'Usulan ditolak.'
   };
@@ -259,7 +265,7 @@
   var SIN_DATOS = { flota: 'Sin motos en este sistema todavía.', cobros: 'Sin reservas ni pagos en este sistema todavía.' };
   var PANTALLA = { taller: ['/intranet/v4/taller/', 'Ver en Taller'], flota: ['/intranet/v4/flota/', 'Ver en Flota y tarifas'], hoy: ['/intranet/v4/home/', 'Ver en Hoy'],
                    reservas: ['/intranet/v4/reservas-producto/', 'Ver en Reservas de producto'] };
-  /* Dónde enseña el ERP «cuáles son» (con la sesión de quien mira: el piloto solo vio totales, D14). */
+  /* Dónde enseña el ERP «cuáles son» (con la sesión de quien mira: el AaaS solo vio totales, D14). */
   var ENLACES = { salidas: ['hoy'], vueltas: ['hoy'], cierre: ['hoy'], bloqueos: ['reservas'], cobros: ['reservas'], ocupacion: ['reservas'], taller: ['taller'] };
   var RECUENTO = {
     sin_unidad: 'Salidas de mañana sin moto asignada: {n}', unidad_en_taller: 'Salidas de mañana con la moto en el taller: {n}', unidad_de_baja: 'Salidas de mañana con la moto de baja: {n}',
@@ -271,10 +277,10 @@
   var MOTIVO_TARIFA = { largo_mas_caro_por_dia: 'un tramo largo sale más caro por día que uno corto', tramo_sin_precio: 'hay un tramo sin precio', precio_cero: 'hay un precio a cero' };
   var RESULTADO = { hecha: 'hecha', en_pausa: 'en pausa', apagadas: 'sin trabajos encendidos', parado: 'parada por la pausa', cupo: 'cortada por el cupo del día', otro: 'con errores' };
   var PROPIOS = {
-    sin_permiso: T('No tienes la herramienta «Piloto»: pídesela al administrador principal en Usuarios.'),
-    modulo_apagado: T('El piloto está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.')
+    sin_permiso: T('No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.'),
+    modulo_apagado: T('El AaaS está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.')
   };
-  var POR_HINT = { agente_freno: 'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).', agente_solo_owner: 'Esto solo lo puede hacer el dueño de la ficha del piloto.',
+  var POR_HINT = { agente_freno: 'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).', agente_solo_owner: 'Esto solo lo puede hacer el dueño de la ficha del AaaS.',
                    cuenta_pruebas: 'La cuenta de pruebas no puede cambiar nada aquí.' };
 
   var SB = null;
@@ -310,7 +316,8 @@
   function estadoOk(d) {
     if (!esObj(d) || typeof d.encendido !== 'boolean') return false;
     if (!d.encendido) return true;   // apagado: la base solo da {encendido, soy_dueno, puedo_decidir} (#313)
-    return typeof d.parado === 'boolean' && esObj(d.trabajos) && ent(d.gastado_mes_cent) && (d.ultima_pasada == null || esObj(d.ultima_pasada));
+    return typeof d.parado === 'boolean' && esObj(d.trabajos) && ent(d.gastado_mes_cent) && ent(d.tope_mensual_cent) && d.tope_mensual_cent >= 0
+      && typeof d.moneda === 'string' && /^[A-Z]{3}$/.test(d.moneda) && (d.ultima_pasada == null || esObj(d.ultima_pasada));
   }
   function notasOk(d) { return esObj(d) && Array.isArray(d.notas) && Array.isArray(d.propuestas) && esObj(d.nombres) && typeof d.dia === 'string'; }
 
@@ -318,26 +325,28 @@
   function dato(etq, valor, chip) {
     return h('div', { class: 'ag-dato' }, [h('span', { text: T(etq) }), chip || h('strong', { text: valor })]);
   }
-  function eur(cent, d) { return cent == null ? T('Sin tope') : C.dinero(cent / 100, d.moneda || 'EUR'); }
+  function eur(cent, d) { return C.dinero(cent / 100, d.moneda); }
   function pintaEstado(d) {
     var caja = vacia($a('estado')), acc = vacia($a('acciones-estado'));
     oculta($a('bloque-estado'), false);
     caja.appendChild(dato('Módulo', null, C.chip(T(d.encendido ? 'Encendido' : 'Apagado'), d.encendido ? 'ok' : 'neutro')));
     var motivo = '';
     if (!d.encendido) {
-      motivo = T('El piloto está apagado: no mira nada ni escribe nada.') + (d.soy_dueno === true ? '' : ' ' + T('Lo enciende el dueño de la ficha del piloto.'));
-      if (d.soy_dueno !== false) acc.appendChild(C.boton(T('Encender el piloto'), 'ag-encender', { 'data-primario': '1' }));
+      motivo = T('El AaaS está apagado: no mira nada ni escribe nada.') + (d.soy_dueno === true ? '' : ' ' + T('Lo enciende el dueño de la ficha del AaaS.'));
+      if (d.soy_dueno !== false) acc.appendChild(C.boton(T('Encender el AaaS'), 'ag-encender', { 'data-primario': '1' }));
     } else {
       caja.appendChild(dato('Trabajo', null, C.chip(T(d.parado ? 'En pausa' : 'Trabajando'), d.parado ? 'espera' : 'ok')));
       var u = d.ultima_pasada;
       caja.appendChild(dato('Última pasada', u ? C.fechaDia(u.dia) + ' · ' + T(u.pasada === 'tarde' ? 'Pasada de la tarde' : 'Pasada de la mañana') + ' · ' + T(RESULTADO[u.resultado] || 'con errores')
                                              : T('Todavía no ha hecho ninguna pasada.')));
       caja.appendChild(dato('Avisos de hoy', String(ent(d.notas_hoy) ? d.notas_hoy : 0)));
-      caja.appendChild(dato('Gastado este mes', eur(d.gastado_mes_cent, d) + ' / ' + eur(d.tope_mensual_cent, d)));
-      if (!d.parado) acc.appendChild(C.boton(T('Parar'), 'ag-parar'));
+      caja.appendChild(dato('Gastado este mes', eur(d.gastado_mes_cent, d) + ' / ' + eur(d.tope_mensual_cent, d)
+        + (d.tope_mensual_cent === 0 ? ' · ' + T('tope 0: no puede gastar') : '')));
+      if (ent(d.tope_propuesto_cent)) caja.appendChild(dato('Subida de tope pendiente', Tf('{x}, entra {f}', { x: eur(d.tope_propuesto_cent, d), f: d.tope_propuesto_desde ? C.fechaHora(d.tope_propuesto_desde) : '—' })));
+      if (!d.parado && d.puedo_decidir) acc.appendChild(C.boton(T('Parar'), 'ag-parar'));
       if (d.parado && d.soy_dueno) acc.appendChild(C.boton(T('Reanudar'), 'ag-reanudar', { 'data-primario': '1' }));
-      if (d.soy_dueno) acc.appendChild(C.boton(T('Apagar el piloto'), 'ag-apagar', { 'data-peligro': '1' }));
-      if (!d.soy_dueno) motivo = T('Reanudar, encender, apagar, los trabajos y el tope son del dueño de la ficha del piloto.');
+      if (d.soy_dueno) acc.appendChild(C.boton(T('Apagar el AaaS'), 'ag-apagar', { 'data-peligro': '1' }));
+      if (!d.soy_dueno) motivo = T('Reanudar, encender, apagar, los trabajos y el tope son del dueño de la ficha del AaaS.');
     }
     msg('motivo-estado', motivo);
   }
@@ -427,7 +436,7 @@
   function pintaPropuestas(d) {
     oculta($a('bloque-propuestas'), false);
     var caja = vacia($a('propuestas'));
-    if (!d.propuestas.length) { caja.appendChild(h('p', { class: 'axw-vacio', 'data-ag': 'sin-propuestas', text: T('El piloto no ha hecho propuestas de cambio.') })); return; }
+    if (!d.propuestas.length) { caja.appendChild(h('p', { class: 'axw-vacio', 'data-ag': 'sin-propuestas', text: T('El AaaS no ha hecho propuestas de cambio.') })); return; }
     d.propuestas.forEach(function (p) {
       if (!esObj(p)) return;
       var tono = p.estado === 'aceptada' ? 'ok' : (p.estado === 'rechazada' ? 'mal' : 'espera');
@@ -453,13 +462,14 @@
       cj.appendChild(h('label', { class: 'ag-check', for: id }, [cb, h('span', { text: T(NOMBRE[tr]) })]));
     });
     F('nivel_ruta').value = d.nivel_ruta === 1 ? '1' : '0';
-    var etq = $a('tope-etiqueta'); etq.textContent = T('Tope de gasto al mes') + ' (' + (d.moneda || 'EUR') + ')';
-    F('tope').value = d.tope_mensual_cent == null ? '' : String(d.tope_mensual_cent / 100);
+    var etq = $a('tope-etiqueta'); etq.textContent = T('Tope de gasto al mes') + ' (' + d.moneda + ')';
+    F('tope').value = String(d.tope_mensual_cent / 100);
     var ayuda = T('Subir el tope tarda 24 h en entrar; bajarlo es inmediato.');
-    if (typeof d.usd_por_eur === 'number' && d.usd_por_eur > 0 && d.tope_mensual_cent != null) ayuda += ' ' + Tf('Unos {u} USD al cambio de hoy.', { u: Math.round(d.tope_mensual_cent / 100 * d.usd_por_eur) });
+    if (ent(d.tope_propuesto_cent)) ayuda += ' ' + Tf('Hay una subida pendiente a {x}: bajar el tope ahora la cancela.', { x: eur(d.tope_propuesto_cent, d) });
+    if (typeof d.usd_por_eur === 'number' && d.usd_por_eur > 0) ayuda += ' ' + Tf('Unos {u} USD al cambio de hoy.', { u: Math.round(d.tope_mensual_cent / 100 * d.usd_por_eur) });
     $a('tope-ayuda').textContent = ayuda;
     $a('ajustes').disabled = !d.soy_dueno;
-    msg('motivo-ajustes', d.soy_dueno ? '' : T('Solo lo cambia el dueño de la ficha del piloto.'));
+    msg('motivo-ajustes', d.soy_dueno ? '' : T('Solo lo cambia el dueño de la ficha del AaaS.'));
   }
 
   /* ── cargar ── */
@@ -468,8 +478,9 @@
     est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'cargando'); est.textContent = T('Cargando…'); oculta(est, false);
     return llama('agente_panel_estado').then(function (r) {
       if (r.error) { est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = textoError(r.error, true); return; }
-      /* null: el interruptor del navegador (apagados_instancia.js) contesta null a una función de un módulo apagado. Se trata como «apagado», sin saber quién mira:
-         el botón Encender sale y la base decide. */
+      /* null: solo si agente_panel_estado quedara registrada en el módulo `agente` (apagados_instancia.js contesta null a las funciones de un módulo apagado).
+         NO es lo esperado: esa función y agente_modulo_cambia van al núcleo (erp/modulos.py, con su prueba), si no Encender nunca llegaría a la base.
+         Defensa: se pinta «apagado» y una escritura sin respuesta se dice «no confirmada». */
       var d = r.data == null ? { encendido: false, soy_dueno: null, puedo_decidir: false } : r.data;
       if (!estadoOk(d)) { est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'); return; }
       E.estado = d;
@@ -529,10 +540,11 @@
     var nivel = F('nivel_ruta').value === '1' ? 1 : 0;
     var imp = C.importe(F('tope').value, 2);
     var m = F('motivo').value.trim();
+    if (imp.vacio) { error(T('Escribe el tope (0 si no puede gastar).')); return; }
     if (imp.e) { error(T(imp.e === 'ambiguo' ? 'Ese número es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 37 o 37.50.' : 'Escribe un importe con cifras y, si hace falta, un punto o una coma para los céntimos.')); return; }
     if (nivel === 1 && !trabajos.length) { error(T('Elige al menos un trabajo, o pon el nivel de Ruta a 0.')); return; }
     if (m.length < 3 || m.length > 300) { error(T('Escribe el motivo (entre 3 y 300 caracteres).')); return; }
-    hazYRecarga(btn, 'agente_ficha_ajusta', { p_tope_mensual_cent: imp.vacio ? 0 : Math.round(imp.v * 100), p_trabajos: trabajos, p_nivel_ruta: nivel, p_motivo: m }, T('Guardado.'))
+    hazYRecarga(btn, 'agente_ficha_ajusta', { p_tope_mensual_cent: Math.round(imp.v * 100) === d.tope_mensual_cent ? null : Math.round(imp.v * 100), p_trabajos: trabajos, p_nivel_ruta: nivel, p_motivo: m }, T('Guardado.'))
       .then(function (ok) { if (ok) F('motivo').value = ''; });
   }
   function alClic(ev) {
@@ -541,15 +553,15 @@
     var a = el.getAttribute('data-accion');
     if (a.indexOf('ag-modal') === 0) return;
     var id = el.hasAttribute('data-id') ? Number(el.getAttribute('data-id')) : null;
-    if (a === 'ag-parar') hazYRecarga(el, 'agente_para', {}, T('Parado: el piloto no hará nada hasta que se reanude.'));
+    if (a === 'ag-parar') hazYRecarga(el, 'agente_para', {}, T('Parado: el AaaS no hará nada hasta que se reanude.'));
     else if (a === 'ag-reanudar') hazYRecarga(el, 'agente_reanuda', {}, T('Reanudado.'));
     else if (a === 'ag-nota-hecha') hazYRecarga(el, 'agente_nota_decide', { p_id: id, p_decision: 'hecha' }, T('Hecho: marcado.'));
     else if (a === 'ag-nota-descartar') hazYRecarga(el, 'agente_nota_decide', { p_id: id, p_decision: 'descartada' }, T('Descartado.'));
     else if (a === 'ag-guardar') alGuardar(el);
     else if (a === 'ag-apagar' || a === 'ag-encender') {
       var enc = a === 'ag-encender';
-      conMotivo(T(enc ? 'Encender el piloto' : 'Apagar el piloto'), T(enc ? 'Al encenderlo, vuelve a mirar el negocio dos veces al día y a dejar avisos aquí. No toca nada.' : 'Apagar el piloto deja de verlo y de escribir en el acto. Sus notas se quedan aquí.'),
-        !enc, function (m) { return llama('agente_modulo_cambia', { p_encender: enc, p_motivo: m }).then(function (r) { if (!r.error && esObj(r.data)) exito(T(enc ? 'Piloto encendido.' : 'Piloto apagado.')); return r; }); });
+      conMotivo(T(enc ? 'Encender el AaaS' : 'Apagar el AaaS'), T(enc ? 'Al encenderlo, vuelve a mirar el negocio dos veces al día y a dejar avisos aquí. No toca nada.' : 'Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.'),
+        !enc, function (m) { return llama('agente_modulo_cambia', { p_encender: enc, p_motivo: m }).then(function (r) { if (!r.error && esObj(r.data)) exito(T(enc ? 'AaaS encendido.' : 'AaaS apagado.')); return r; }); });
     } else if (a === 'ag-prop-aceptar' || a === 'ag-prop-rechazar') {
       var acepta = a === 'ag-prop-aceptar';
       conMotivo(T(acepta ? 'Aceptar' : 'Rechazar'), '', !acepta, function (m) {

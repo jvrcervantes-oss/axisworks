@@ -1,5 +1,5 @@
 // node comercial/demo-erp/pruebas/agente.harness.cjs [captura_prefijo]
-// Harness del PANEL DEL PILOTO (EP.5, 13-oct-2026): el agente.html REAL (marcado + script, con las ayudas comunes pegadas como hace build.py) en Chromium, con la base y la sesión
+// Harness de la VENTANA DEL AaaS (EP.5, 13-oct-2026): el agente.html REAL (marcado + script, con las ayudas comunes pegadas como hace build.py) en Chromium, con la base y la sesión
 // SIMULADAS (page.exposeFunction): una base en memoria que imita el CONTRATO de agente_forma.json (la misma forma que valida la prueba SQL de la agencia). Mide el COMPORTAMIENTO:
 // qué pide y con qué argumentos, qué pinta con cada respuesta y para cada quien (dueño, con la herramienta, sin ella, módulo apagado, respuesta null del interruptor), que nunca
 // calla un trabajo (sin datos / sin pasada), XSS en nombres y propuestas, idiomas es/en/id sin cadenas sin traducir, y que a 390 y 1440 px no hay scroll horizontal.
@@ -28,7 +28,7 @@ const iso = h => '2026-10-14T' + String(h).padStart(2, '0') + ':05:00+08:00';
 /* Una base con la forma de agente_forma.json. o: dueno, herramienta, apagado, nulo (el interruptor del navegador contesta null), sinDatos, xss, pausa, sinNotas, freno */
 function nuevaBase(o = {}) {
   const trabajos = {}; FORMA.trabajos.forEach(t => { trabajos[t] = true; });
-  const s = { o, llamadas: [], encendido: !o.apagado, parado: !!o.pausa, nivel: 1, tope: 3700, trabajos, decisiones: {}, propDec: {} };
+  const s = { o, llamadas: [], encendido: !o.apagado, parado: !!o.pausa, nivel: 1, tope: o.tope0 ? 0 : 3700, trabajos, decisiones: {}, propDec: {} };
   return s;
 }
 function notas(s) {
@@ -72,7 +72,8 @@ function estado(s) {
   if (!s.encendido) return { encendido: false, soy_dueno: dueno, puedo_decidir: decide };
   return { encendido: true, parado: s.parado, soy_dueno: dueno, puedo_decidir: decide && !o.pruebas,
     ultima_pasada: o.sinNotas ? null : { dia: HOY, pasada: 'tarde', en: iso(18), resultado: s.parado ? 'en_pausa' : 'hecha' },
-    tope_mensual_cent: s.tope, gastado_mes_cent: 0, moneda: 'EUR', usd_por_eur: 1.08, trabajos: Object.assign({}, s.trabajos), nivel_ruta: s.nivel, nivel_max: 1, cupo_dia: 24, notas_hoy: o.sinNotas ? 0 : 9 };
+    tope_mensual_cent: s.tope, tope_propuesto_cent: o.propuesto ? 5000 : null, tope_propuesto_desde: o.propuesto ? iso(20) : null,
+    gastado_mes_cent: 0, moneda: o.sinMoneda ? undefined : 'EUR', usd_por_eur: 1.08, trabajos: Object.assign({}, s.trabajos), nivel_ruta: s.nivel, nivel_max: 1, cupo_dia: 24, notas_hoy: o.sinNotas ? 0 : 9 };
 }
 async function servidor(s, nombre, a) {
   s.llamadas.push([nombre, JSON.parse(JSON.stringify(a || {}))]);
@@ -97,7 +98,7 @@ async function servidor(s, nombre, a) {
       const e = soloDueno(); if (e) return e;
       if (a.p_trabajos.some(t => !FORMA.trabajos.includes(t))) return err('22023', 'trabajo desconocido', 'datos');
       s.trabajos = {}; FORMA.trabajos.forEach(t => { s.trabajos[t] = a.p_trabajos.includes(t); });
-      s.nivel = a.p_nivel_ruta; s.tope = a.p_tope_mensual_cent;
+      s.nivel = a.p_nivel_ruta; if (a.p_tope_mensual_cent !== null) s.tope = a.p_tope_mensual_cent;   // null = el tope no cambia (forma)
       return { data: estado(s), error: null };
     }
     case 'agente_modulo_cambia': { const e = soloDueno(); if (e) return e; if (o.cambiaNulo) return { data: null, error: null }; s.encendido = !!a.p_encender; return { data: { encendido: s.encendido }, error: null }; }
@@ -126,7 +127,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
 </script>
 <script>${SCRIPT.replace(/<\/?script>/g, '')}</script></body></html>`;
 
-// MUESTRA=<json> (opcional): lo que devolvieron agente_panel_estado y agente_notas_datos de una base REAL (el piloto corrido de punta a punta en Postgres local,
+// MUESTRA=<json> (opcional): lo que devolvieron agente_panel_estado y agente_notas_datos de una base REAL (el AaaS corrido de punta a punta en Postgres local,
 // agencia erp/pruebas/agente_panel_muestra.json: {"estado": {...}, "notas": {...}}). Con él, el arnés solo pinta esa respuesta tal cual, comprueba la forma y saca capturas.
 const MUESTRA = process.env.MUESTRA ? JSON.parse(fs.readFileSync(process.env.MUESTRA, 'utf8')) : null;
 (async () => {
@@ -173,7 +174,7 @@ const MUESTRA = process.env.MUESTRA ? JSON.parse(fs.readFileSync(process.env.MUE
     console.log(fallos ? '\n' + fallos + ' FALLO(S)' : '\nTODO EN VERDE');
     process.exit(fallos ? 1 : 0);
   }
-  // 1. el dueño con el piloto encendido: todo a la vista
+  // 1. el dueño con el AaaS encendido: todo a la vista
   {
     const { p, base, ctx } = await abre({ base: { dueno: true } });
     ok('dueño: estado, hoy, propuestas, ajustes y «más adelante» visibles', (await visible(p, '[data-ag="bloque-estado"]')) && (await visible(p, '[data-ag="bloque-hoy"]')) && (await visible(p, '[data-ag="bloque-propuestas"]')) && (await visible(p, '[data-ag="bloque-ajustes"]')) && (await visible(p, '[data-ag="bloque-mas"]')));
@@ -209,6 +210,16 @@ const MUESTRA = process.env.MUESTRA ? JSON.parse(fs.readFileSync(process.env.MUE
     await p.fill('[data-campo="tope"]', '1.500'); await p.fill('[data-campo="motivo"]', 'Otro');
     await p.click('[data-accion="ag-guardar"]');
     ok('un tope ambiguo («1.500») no se manda', (await txt(p, '[data-ag="error"]')).includes('ambiguo') && llamadas(base, 'agente_ficha_ajusta').length === 1);
+    // revisor 13-oct (MEDIA): cambiar solo una casilla NO reenvía el tope (bajarlo cancelaría una subida pendiente del dueño)
+    await p.fill('[data-campo="tope"]', '30'); await p.uncheck('[data-trabajo="cierre"][type="checkbox"]'); await p.fill('[data-campo="motivo"]', 'Solo una casilla');
+    await p.click('[data-accion="ag-guardar"]');
+    await hasta(() => llamadas(base, 'agente_ficha_ajusta').length === 2);
+    ok('tope sin cambiar: viaja null (la base no lo toca)', llamadas(base, 'agente_ficha_ajusta')[1][1].p_tope_mensual_cent === null, J(llamadas(base, 'agente_ficha_ajusta')[1][1]));
+    await p.waitForSelector('[data-ag="exito"]:not(.axw-oculto)');
+    await p.fill('[data-campo="tope"]', ''); await p.fill('[data-campo="motivo"]', 'Vacío');
+    await p.click('[data-accion="ag-guardar"]');
+    ok('tope vacío: no se manda (no se convierte en 0 en silencio)', (await txt(p, '[data-ag="error"]')).includes('0 si no puede gastar') && llamadas(base, 'agente_ficha_ajusta').length === 2);
+    await p.fill('[data-campo="tope"]', '30');
     // propuesta
     await p.click('[data-accion="ag-prop-aceptar"]');
     await p.fill('[data-campo="dialogo-motivo"]', 'De acuerdo');
@@ -242,6 +253,24 @@ const MUESTRA = process.env.MUESTRA ? JSON.parse(fs.readFileSync(process.env.MUE
     ok('en pausa, el no dueño no tiene «Reanudar»', (await hay(p, '[data-accion="ag-reanudar"]')) === 0);
     await ctx.close();
   }
+  // 2b. revisor 13-oct: la cuenta de pruebas no ve «Parar»; tope 0 y subida pendiente se dicen; sin moneda de la base no se inventa una
+  {
+    const { p, ctx } = await abre({ base: { herramienta: true, pruebas: true } });
+    ok('cuenta de pruebas (puedo_decidir false): sin «Parar»', (await hay(p, '[data-accion="ag-parar"]')) === 0);
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, tope0: true, propuesto: true } });
+    const est = await txt(p, '[data-ag="estado"]');
+    ok('tope 0 se dice «no puede gastar» (nunca «sin tope»)', est.includes('tope 0: no puede gastar') && !/sin tope/i.test(est), est);
+    ok('la subida pendiente se ve en el estado y en la ayuda del tope', est.includes('Subida de tope pendiente') && (await txt(p, '[data-ag="tope-ayuda"]')).includes('subida pendiente'));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, sinMoneda: true } });
+    ok('sin moneda en la respuesta: error de forma, no un «EUR» puesto por la pantalla', (await txt(p, '[data-ag="carga"]')).includes('algo inesperado') && !(await visible(p, '[data-ag="bloque-estado"]')));
+    await ctx.close();
+  }
   // 3. sin herramienta · módulo apagado (no dueño) · null del interruptor · notas raras · sin datos · freno
   {
     const { p, ctx } = await abre({ base: {} });
@@ -256,7 +285,7 @@ const MUESTRA = process.env.MUESTRA ? JSON.parse(fs.readFileSync(process.env.MUE
   }
   {
     const { p, ctx } = await abre({ base: { dueno: true, nulo: true } });
-    ok('null del interruptor = apagado, con Encender (la base decide)', (await txt(p, '[data-ag="estado"]')).includes('Apagado') && (await hay(p, '[data-accion="ag-encender"]')) === 1);
+    ok('null del interruptor (defensa: esa función va al núcleo) = apagado, con Encender', (await txt(p, '[data-ag="estado"]')).includes('Apagado') && (await hay(p, '[data-accion="ag-encender"]')) === 1);
     await ctx.close();
   }
   {
@@ -310,7 +339,7 @@ const MUESTRA = process.env.MUESTRA ? JSON.parse(fs.readFileSync(process.env.MUE
       if (nombre === 'dueño') { await p.click('[data-accion="ag-apagar"]'); await p.click('[data-accion="ag-modal-confirmar"]'); }
       const sin = await p.evaluate(() => window.__sinTr);
       ok(idioma + ' · ' + nombre + ': ninguna cadena sin traducir', sin.length === 0, J(sin.slice(0, 6)));
-      if (nombre === 'dueño') ok(idioma + ' · el título traducido', (await txt(p, 'h1')) === 'Pilot');
+      if (nombre === 'dueño') ok(idioma + ' · el título traducido', (await txt(p, 'h1')) === 'AaaS');
       await ctx.close();
     }
   }
