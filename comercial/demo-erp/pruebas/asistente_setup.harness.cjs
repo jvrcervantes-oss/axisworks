@@ -105,6 +105,7 @@ var sb = { rpc: function (n, a) { return window.__srv(n, a || {}); }, from: cade
 window.LW_AUTH = Promise.resolve({ sb: sb });
 window.lwDatos = function (n, a) { return sb.rpc(n, a); };
 window.LW_EN = {}; window.LW_ID = {}; window.__idioma = '${idioma}';
+window.lwLocale = function () { return ({ es: 'es-ES', en: 'en-GB', id: 'id-ID' })[window.__idioma]; };   // como i18n_id_nucleo.js
 window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' ? window.LW_EN : window.__idioma === 'id' ? window.LW_ID : null; var v = s;
   if (d) { if (Object.prototype.hasOwnProperty.call(d, s)) v = d[s]; else if (!/^[\\s0-9.:]*$/.test(s)) window.__sinTrad.push(s); }
   if (hu) for (var k in hu) v = v.split('%' + k).join(hu[k]); return v; };
@@ -161,7 +162,11 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
      (await txt(p, '[data-axw-muestra="razon"]')) === 'PT Bali Best Motor' && (await txt(p, '[data-axw-muestra="iniciales"]')) === 'BB'
      && (await txt(p, '[data-axw-muestra="domicilio"]')) === 'Jl. Raya 1, Denpasar' && (await txt(p, '[data-axw-muestra="npwp"]')) === 'NPWP 01.234.567.8-901.000'
      && (await p.isVisible('[data-axw-muestra="impresa"]')));
-  ok('S20: sin prefijo fijado no se inventa un número: dice que sale en el paso siguiente', (await txt(p, '[data-axw-muestra="numero"]')) === 'El número sale al fijar el prefijo, en el paso siguiente.');
+  ok('S20: sin prefijo fijado no se inventa un número: dice que sale al fijarlo', (await txt(p, '[data-axw-muestra="numero"]')) === 'El número sale al fijar el prefijo de la numeración.');
+  await p.fill('[data-axw-campo="npwp_label"]', 'NIF');
+  ok('S20: «15 o 16 cifras» es del NPWP: con otra etiqueta fiscal se esconde', !(await p.isVisible('[data-axw-fila="npwp"] span')));
+  await p.fill('[data-axw-campo="npwp_label"]', 'NPWP');
+  ok('S20: y vuelve con NPWP', await p.isVisible('[data-axw-fila="npwp"] span'));
   ok('S20: ayudas del diseño y «¿Más de una empresa?»', (await txt(p, '[data-axw-fila="razon"]')).includes('Tal como está registrada.') && (await txt(p, '[data-axw-fila="npwp"]')).includes('15 o 16 cifras.')
      && !!(await p.$('[data-axw-nota="otra_empresa"]')));
   await clic(p, 'enviar'); await p.waitForTimeout(300);
@@ -203,12 +208,12 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   const mo = llamadas(b, 'ajustes_config_guardar')[0];
   ok('moneda: ajustes_config_guardar con p_confirmo y sin motivo (primer valor)', mo && mo[1].p_clave === 'moneda' && mo[1].p_valor === 'IDR' && mo[1].p_confirmo === true && !('p_motivo' in mo[1]), JSON.stringify(mo && mo[1]));
   ok('después, el sí/no del impuesto', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'impuesto_pkp');
-  await p.selectOption('[data-axw-campo="reservas_sin_impuesto"]', 'no'); await clic(p, 'enviar'); await p.waitForTimeout(300);
+  await p.check('[data-axw-campo="reservas_sin_impuesto"] input[value="no"]'); await clic(p, 'enviar'); await p.waitForTimeout(300);
   const pk = llamadas(b, 'ajustes_config_guardar')[1];
   ok('«Sí, es PKP» guarda reservas_sin_impuesto = no, sin motivo ni p_confirmo', pk && pk[1].p_clave === 'reservas_sin_impuesto' && pk[1].p_valor === 'no' && !pk[1].p_confirmo && !pk[1].p_motivo, JSON.stringify(pk && pk[1]));
   await clic(p, 'atras');
   ok('Atrás vuelve al paso hecho y enseña «Hecho» y «Cambiar»', (await p.$('[data-axw-hecho]')) && (await p.$('[data-axw-accion="cambiar"]')));
-  await clic(p, 'cambiar'); await p.selectOption('[data-axw-campo="reservas_sin_impuesto"]', 'si'); await clic(p, 'enviar');
+  await clic(p, 'cambiar'); await p.check('[data-axw-campo="reservas_sin_impuesto"] input[value="si"]'); await clic(p, 'enviar');
   ok('cambiar un valor guardado pide motivo antes de enviar', (await txt(p, '[data-axw-as="error"]')).includes('motivo') && llamadas(b, 'ajustes_config_guardar').length === 2);
   await p.fill('[data-axw-campo="motivo"]', 'Lo confirmó el gestor'); await clic(p, 'enviar'); await p.waitForTimeout(300);
   ok('con motivo, se guarda el cambio', (llamadas(b, 'ajustes_config_guardar')[2] || [])[1] && llamadas(b, 'ajustes_config_guardar')[2][1].p_motivo === 'Lo confirmó el gestor');
@@ -223,7 +228,7 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     ({ p: pm, ctx: cm } = await abre(nav, bm, { url: '/ajustes/configurar/?modulo=reservas-producto' }));
     await pm.waitForSelector('[data-axw-paso="impuesto_pkp"]', { timeout: 8000 }).catch(() => {});
     ok('valor guardado y paso sin hecho: sale el campo del motivo', !!(await pm.$('[data-axw-campo="motivo"]')));
-    await pm.selectOption('[data-axw-campo="reservas_sin_impuesto"]', 'si');
+    await pm.check('[data-axw-campo="reservas_sin_impuesto"] input[value="si"]');
     await pm.fill('[data-axw-campo="motivo"]', 'Ya no es PKP'); await clic(pm, 'enviar'); await pm.waitForTimeout(300);
     const g = llamadas(bm, 'ajustes_config_guardar')[0];
     ok('y con el motivo se guarda el cambio', g && g[1].p_valor === 'si' && g[1].p_motivo === 'Ya no es PKP', JSON.stringify(g && g[1]));
@@ -307,6 +312,18 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
        !!(await p.$('[data-axw-ejemplo-num="1"]')) && (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho
        && (idioma === 'es' || (await p.evaluate(() => window.__sinTrad.filter(s => !/^(NPWP|IDR|EUR|USD)$/.test(s)))).length === 0));
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'prefijo_' + idioma + '_' + ancho + '.png'), fullPage: true });
+    await ctx.close();
+    // S22: dentro o fuera, en dos tarjetas, con el ejemplo en la moneda de la instancia (sin inventar el tipo)
+    const bi2 = base('sin_configurar');
+    ({ p, ctx } = await abre(nav, bi2, { idioma, ancho, url: '/ajustes/configurar/?modulo=reservas-producto&paso=precio_con_impuesto' }));
+    await p.waitForTimeout(300);
+    const tarj = await p.$$eval('[data-axw-campo="precio_incluye_impuesto"] .axw-op', ls => ls.map(l => l.getBoundingClientRect().height));
+    const ejem = await p.$$eval('[data-axw-ejemplo-opcion]', ls => ls.map(l => l.textContent));
+    ok('S22 ' + idioma + ' ' + ancho + ': dos tarjetas de ≥ 44 px con su ejemplo, sin scroll horizontal ni español',
+       tarj.length === 2 && tarj.every(h => h >= 44) && ejem.length === 2 && ejem.every(t => (idioma === 'en' ? /1,000,000/ : /1\.000\.000/).test(t))
+       && (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho
+       && (idioma === 'es' || (await p.evaluate(() => window.__sinTrad.filter(s => !/^(NPWP|IDR|EUR|USD)$/.test(s)))).length === 0), JSON.stringify(ejem));
+    if (SHOT) await p.screenshot({ path: path.join(SHOT, 'impuestos_' + idioma + '_' + ancho + '.png'), fullPage: true });
     await ctx.close();
   }
 

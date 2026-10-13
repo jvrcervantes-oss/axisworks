@@ -85,13 +85,13 @@ const txt = async (p, sel) => (await p.$(sel)) ? (await p.$eval(sel, e => e.text
   ok('flota (otra pantalla): enlace a /flota/', !!(await p.$('[data-pm-fila="flota"] a[href="/flota/"]')));
   await p.click('[data-pm-fila="impuesto_pkp"] [data-accion="pm-editar"]');
   ok('el paso se edita con el MISMO componente del asistente', !!(await p.$('[data-pm-fila="impuesto_pkp"] [data-axw-campo="reservas_sin_impuesto"]')));
-  await p.selectOption('[data-axw-campo="reservas_sin_impuesto"]', 'no');
+  await p.check('[data-axw-campo="reservas_sin_impuesto"] input[value="no"]');
   await p.click('[data-pm-fila="impuesto_pkp"] [data-accion="pm-guardar"]'); await p.waitForTimeout(400);
   const g1 = b.llamadas.filter(x => x[0] === 'ajustes_config_guardar')[0];
   ok('primer valor: se guarda sin motivo', g1 && g1[1].p_clave === 'reservas_sin_impuesto' && g1[1].p_valor === 'no' && !g1[1].p_motivo, JSON.stringify(g1 && g1[1]));
   ok('se relee y el paso sale «Hecho»', (await txt(p, '[data-pm-fila="impuesto_pkp"] [data-pm-hecho]')) === 'Hecho');
   await p.click('[data-pm-fila="impuesto_pkp"] [data-accion="pm-editar"]');
-  await p.selectOption('[data-axw-campo="reservas_sin_impuesto"]', 'si');
+  await p.check('[data-axw-campo="reservas_sin_impuesto"] input[value="si"]');
   await p.click('[data-pm-fila="impuesto_pkp"] [data-accion="pm-guardar"]'); await p.waitForTimeout(200);
   ok('cambiar lo guardado sin motivo: lo dice y no envía', ((await txt(p, '[data-pm-estado="impuesto_pkp"]')) || '').includes('motivo') && b.llamadas.filter(x => x[0] === 'ajustes_config_guardar').length === 1);
   await p.fill('[data-pm-fila="impuesto_pkp"] [data-pm="motivo"]', 'Lo confirmó el gestor');
@@ -105,7 +105,7 @@ const txt = async (p, sel) => (await p.$(sel)) ? (await p.$eval(sel, e => e.text
   b = base('sin_configurar', { perdidas: 1 });
   ({ p, ctx } = await abre(nav, b));
   await p.click('[data-pm-fila="precio_con_impuesto"] [data-accion="pm-editar"]');
-  await p.selectOption('[data-axw-campo="precio_incluye_impuesto"]', 'si');
+  await p.check('[data-axw-campo="precio_incluye_impuesto"] input[value="si"]');
   await p.click('[data-pm-fila="precio_con_impuesto"] [data-accion="pm-guardar"]'); await p.waitForTimeout(500);
   ok('red perdida sin guardar: «no se guardó» tras releer, un solo envío', (await txt(p, '[data-pm-estado="precio_con_impuesto"]')) === 'El ERP dice que no se guardó. Puedes volver a intentarlo.' && b.llamadas.filter(x => x[0] === 'ajustes_config_guardar').length === 1);
   await ctx.close();

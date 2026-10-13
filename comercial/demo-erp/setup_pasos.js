@@ -57,13 +57,38 @@
     if (confirmo) args.p_confirmo = true;
     return resultado(sb.rpc('ajustes_config_guardar', args));
   }
-  function opcionUnica(clave, opciones) {   // los sí/no de impuestos: el valor que guarda la base ('si' | 'no') y lo que significa
+  (function () {   // las tarjetas de una opción (S22): solo tokens de la piel; elegida = borde del color del texto (≥ 3:1)
+    if (typeof document === 'undefined' || !document.head || document.getElementById('axw-opcion-estilo')) return;
+    var st = document.createElement('style');
+    st.id = 'axw-opcion-estilo';
+    st.textContent = '.axw-op{display:flex;gap:12px;align-items:flex-start;padding:16px;min-height:44px;cursor:pointer;border-radius:12px;' +
+      'border:1px solid rgb(var(--tema-outline));background:rgb(var(--tema-surface-container-lowest))}' +
+      '.axw-op:has(input:checked){border-color:rgb(var(--tema-on-surface));box-shadow:inset 0 0 0 1px rgb(var(--tema-on-surface))}' +
+      '.axw-op input{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:rgb(var(--tema-on-surface));cursor:pointer}' +
+      '.axw-op input:focus-visible{outline:2px solid rgb(var(--tema-burnt-earth));outline-offset:2px}';
+    document.head.appendChild(st);
+  })();
+  /* Los sí/no de impuestos: el valor que guarda la base ('si' | 'no') y lo que significa, en dos tarjetas (diseño S22).
+     `ejemplo(valor, ctx)` da, si hace falta, una línea debajo de cada opción. */
+  function opcionUnica(clave, opciones, ejemplo) {
     return {
       pinta: function (caja, ctx) {
         var actual = ctx.ajustes && ctx.ajustes[clave] != null ? String(ctx.ajustes[clave]) : '';
-        campo(caja, clave, S().texto('paso', ctx.paso.clave, 0), ['si', 'no'].indexOf(actual) >= 0 ? actual : '',
-              { opciones: opciones.map(function (o) { return [o[0], U(o[1])]; }) });
-        return { valores: function () { var v = lee(caja, clave); return v === 'si' || v === 'no' ? { ok: true, v: { valor: v } } : { ok: false, error: U('elige') }; } };
+        var grupo = el('fieldset', { 'data-axw-campo': clave, class: 'flex flex-col gap-3', style: 'border:0;margin:0;padding:0;min-width:0' }, [
+          el('legend', { class: 'font-label-md text-label-md text-on-surface', style: 'padding:0;margin-bottom:12px', text: S().texto('paso', ctx.paso.clave, 0) })]);
+        opciones.forEach(function (o) {
+          var id = 'axw-o-' + clave + '-' + o[0], sub = ejemplo ? ejemplo(o[0], ctx) : '';
+          grupo.appendChild(el('label', { for: id, class: 'axw-op', 'data-axw-opcion': o[0] }, [
+            el('input', { type: 'radio', name: 'axw-o-' + clave, id: id, value: o[0], checked: actual === o[0] ? '' : null }),
+            el('span', { class: 'flex flex-col min-w-0', style: 'gap:4px' }, [
+              el('span', { class: 'font-label-md text-label-md text-on-surface', text: U(o[1]) }),
+              sub ? el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-ejemplo-opcion': o[0], text: sub }) : null])]));
+        });
+        caja.appendChild(grupo);
+        return { valores: function () {
+          var c = grupo.querySelector('input:checked'), v = c ? c.value : '';
+          return v === 'si' || v === 'no' ? { ok: true, v: { valor: v } } : { ok: false, error: U('elige') };
+        } };
       },
       guarda: function (sb, v, ctx, confirmo, motivo) { return guardaAjuste(sb, clave, v.valor, false, motivo); },
       comprueba: function (v, ctx) { return !!(ctx.ajustes && String(ctx.ajustes[clave]) === v.valor); },
@@ -97,13 +122,18 @@
 
   // El número que pone la base al emitir (20261008137000_f8_puerta_emision.sql): prefijo-F<ejercicio>-<5 cifras>
   function numeroMuestra(pref, n, anio) { return pref + '-F' + anio + '-' + ('0000' + n).slice(-5); }
+  function anioFiscal(ctx) {   // el ejercicio con la zona horaria de la instancia (Ajustes › zona_horaria); sin ella, el del navegador
+    var zh = ctx && ctx.ajustes && ctx.ajustes.zona_horaria;
+    if (zh) { try { return Number(new Intl.DateTimeFormat('en', { timeZone: String(zh), year: 'numeric' }).format(new Date())); } catch (e) { /* MUDO A PROPOSITO: zona no válida; va la del navegador */ } }
+    return new Date().getFullYear();
+  }
   function iniciales(t) {
     return String(t || '').replace(/^(PT|CV|UD)\.?\s+/i, '').split(/\s+/).filter(Boolean).slice(0, 2)
       .map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
   }
   /* «Así sale impreso · muestra» (diseño S20): lo que se va tecleando, con el logo si la empresa ya tiene uno y el número
      de la primera factura solo si el prefijo ya está fijado (si no, lo dice: no se inventa uno). */
-  function muestraImpresa(caja, s) {
+  function muestraImpresa(caja, s, ctx) {
     var logo = /^(\/|https:\/\/)/.test(String(s.logo || '')) ? el('img', { src: s.logo, alt: '', style: 'width:52px;height:52px;flex:none;object-fit:contain' })
       : el('span', { class: 'rounded-xl bg-surface-container-high font-label-md text-label-md text-on-surface', 'aria-hidden': 'true', 'data-axw-muestra': 'iniciales',
                      style: 'width:52px;height:52px;flex:none;display:grid;place-items:center' });
@@ -111,7 +141,7 @@
     var dom = el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', style: 'overflow-wrap:anywhere', 'data-axw-muestra': 'domicilio' });
     var fis = el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', style: 'overflow-wrap:anywhere', 'data-axw-muestra': 'npwp' });
     var num = s.prefijo_serie
-      ? el('p', { class: 'font-label-md text-label-md text-on-surface', 'data-axw-muestra': 'numero', text: numeroMuestra(s.prefijo_serie, 1, new Date().getFullYear()) })
+      ? el('p', { class: 'font-label-md text-label-md text-on-surface', 'data-axw-muestra': 'numero', text: numeroMuestra(s.prefijo_serie, 1, anioFiscal(ctx)) })
       : el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-muestra': 'numero', text: U('num_tras_prefijo') });
     var fig = el('figure', { class: 'flex flex-col gap-2', 'data-axw-muestra': 'impresa', style: 'margin:0' }, [
       el('figcaption', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('muestra_impresa') }),
@@ -156,10 +186,14 @@
         campo(caja, 'razon', U('razon') + ' *', s.razon, { max: 200, ayuda: U('razon_ayuda') });
         campo(caja, 'npwp_label', U('npwp_label'), s.npwp_label || 'NPWP', { max: 20 });
         // «15 o 16 cifras» es del NPWP indonesio: con otra etiqueta fiscal no se dice
-        campo(caja, 'npwp', U('npwp') + ' *', s.npwp, { max: 40, ayuda: (s.npwp_label || 'NPWP') === 'NPWP' ? U('npwp_ayuda') : null });
+        campo(caja, 'npwp', U('npwp') + ' *', s.npwp, { max: 40, ayuda: U('npwp_ayuda') });
+        var ayudaNpwp = caja.querySelector('[data-axw-fila="npwp"] span');
+        function ayudaFiscal() { if (ayudaNpwp) ayudaNpwp.style.display = (lee(caja, 'npwp_label') || 'NPWP').toUpperCase() === 'NPWP' ? '' : 'none'; }
+        caja.querySelector('[data-axw-campo="npwp_label"]').addEventListener('input', ayudaFiscal);
+        ayudaFiscal();
         campo(caja, 'domicilio', U('domicilio') + ' *', s.domicilio, { max: 400 });
         campo(caja, 'rep', U('rep'), s.rep, { max: 200 });
-        var mu = muestraImpresa(caja, s);
+        var mu = muestraImpresa(caja, s, ctx);
         caja.appendChild(mu.fig);
         mu.pinta();
         caja.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-nota': 'otra_empresa', text: U('otra_empresa') }));
@@ -198,7 +232,7 @@
         caja.appendChild(ej);
         inp.addEventListener('input', function () {   // solo con un prefijo que la base aceptaría: no se enseña un número que no saldrá
           while (ej.firstChild) ej.removeChild(ej.firstChild);
-          var pr = inp.value, a = new Date().getFullYear();
+          var pr = inp.value, a = anioFiscal(ctx);
           if (!/^[A-Z0-9]{2,8}$/.test(pr)) return;
           ej.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('primera_factura') }));
           ej.appendChild(el('p', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', 'data-axw-ejemplo-num': '1', style: 'overflow-wrap:anywhere', text: numeroMuestra(pr, 1, a) }));
@@ -208,7 +242,7 @@
         });
         return {
           valores: function () { var v = lee(caja, 'prefijo_serie').toUpperCase(); return /^[A-Z0-9]{2,8}$/.test(v) ? { ok: true, v: { prefijo: v } } : { ok: false, error: U('prefijo_formato') }; },
-          resumen: function (v) { return { grande: numeroMuestra(v.prefijo, 1, new Date().getFullYear()), teclea: v.prefijo, boton: U('fijar_prefijo', { v: v.prefijo }) }; }
+          resumen: function (v) { return { grande: numeroMuestra(v.prefijo, 1, anioFiscal(ctx)), teclea: v.prefijo, boton: U('fijar_prefijo', { v: v.prefijo }) }; }
         };
       },
       sinMotivo: true,
@@ -222,7 +256,12 @@
     },
     // reservas_sin_impuesto = 'si' quiere decir que NO es PKP: por eso «Sí, es PKP» guarda 'no' (igual que la Puesta en marcha de antes)
     impuesto_pkp: opcionUnica('reservas_sin_impuesto', [['no', 'si_pkp'], ['si', 'no_pkp']]),
-    precio_con_impuesto: opcionUnica('precio_incluye_impuesto', [['si', 'dentro'], ['no', 'fuera']])
+    precio_con_impuesto: opcionUnica('precio_incluye_impuesto', [['si', 'dentro'], ['no', 'fuera']], function (v, ctx) {
+      var n = '1000000';
+      try { n = new Intl.NumberFormat(typeof window.lwLocale === 'function' ? window.lwLocale() : (document.documentElement.lang || 'es')).format(1000000); } catch (e) { /* MUDO A PROPOSITO: navegador sin Intl; va la cifra sin separar */ }
+      var mon = ctx.datos && ctx.datos.moneda ? ' ' + ctx.datos.moneda : '';
+      return U(v === 'si' ? 'ejemplo_dentro' : 'ejemplo_fuera', { v: n + mon });
+    })
   };
   // Pasos que se hacen en otra pantalla (Flota, Entrega) y cualquier clave que esta pantalla no conozca todavía
   var EXTERNO = {
