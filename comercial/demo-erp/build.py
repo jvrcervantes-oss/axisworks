@@ -4071,8 +4071,11 @@ DOC_PARCHES_ID = (
      "'Buenos días' + (vals.cliente_nombre ? ' ' + vals.cliente_nombre : '') + ',\\n\\n' +\n"
      "        'Adjunto ' + tipo.toLowerCase() + ' ' + saved.numero + ' para su revisión.\\n\\nUn saludo,\\n' + lwMarca('%%firma_correo'));",
      "'Halo' + (vals.cliente_nombre ? ' ' + vals.cliente_nombre : '') + ',\\n\\n' +\n"
+     # un recibí confirma un pago, no se manda «para revisar» (Legal, 13-oct, BBM-72)
+     "        (DOC_TIPO_REAL === 'recibi' ? 'Terlampir kuitansi ' + saved.numero + ' sebagai bukti pembayaran Anda.\\n' +\n"
+     "        'Please find attached receipt ' + saved.numero + ' confirming your payment.\\n\\n' :\n"
      "        'Terlampir ' + tipo.toLowerCase() + ' ' + saved.numero + ' untuk Anda periksa.\\n' +\n"
-     "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[DOC_TIPO_REAL]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n' +\n"
+     "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[DOC_TIPO_REAL]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n') +\n"
      "        'Salam / Kind regards,\\n' + lwMarca('%%firma_correo'));"),
 )
 # BBM-72: lo que es de la INSTANCIA y no del idioma va también al papel es·en (el que sale con Ajustes es·en); sin esto el papel español de una
@@ -4085,8 +4088,10 @@ DOC_PARCHES_INSTANCIA_ES = (
 # El correo del papel es·en de una instancia, también en los dos idiomas del papel (en Lawang sigue solo en español: no pasa por aquí)
 DOC_CORREO_ES_EN = (
     "'Buenos días' + (vals.cliente_nombre ? ' ' + vals.cliente_nombre : '') + ',\\n\\n' +\n"
+    "        (DOC_TIPO_REAL === 'recibi' ? 'Adjunto el recibí ' + saved.numero + ', justificante de su pago.\\n' +\n"
+    "        'Please find attached receipt ' + saved.numero + ' confirming your payment.\\n\\n' :\n"
     "        'Adjunto ' + tipo.toLowerCase() + ' ' + saved.numero + ' para su revisión.\\n' +\n"
-    "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[DOC_TIPO_REAL]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n' +\n"
+    "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[DOC_TIPO_REAL]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n') +\n"
     "        'Un saludo / Kind regards,\\n' + lwMarca('%firma_correo')")
 
 

@@ -119,6 +119,9 @@ const ed = fs.readFileSync(path.join(dist, 'assets', 'editores.js'), 'utf8');
 ok((ed.match(/typeof axwDocId\s*===?\s*["']function["']\s*&&\s*!axwDocId\(\)\s*\?/g) || []).length >= 2 && /Buenos d[ií]as/.test(ed),
   'correo: asunto y mensaje no eligen con axwDocId()');
 ok(/Terlampir /.test(ed) && (ed.match(/Please find attached /g) || []).length >= 2, 'correo: falta el mensaje id + en o el es + en');
+// un recibí confirma un pago: su correo no lo manda «para revisar» (Legal, 13-oct), ni en id·en ni en es·en
+ok(/sebagai bukti pembayaran Anda/.test(ed) && /justificante de su pago/.test(ed) && (ed.match(/confirming your payment/g) || []).length >= 2,
+  'correo: el recibí no tiene su propio mensaje (justificante de pago) en las dos ramas');
 ok(/Un saludo \/ Kind regards/.test(ed) && /Salam \/ Kind regards/.test(ed), 'correo: la despedida no va en los dos idiomas del papel');
 ok((ed.match(/f0\.moneda\s*\|\|\s*lwMonedaBase\(\)\s*\|\|/g) || []).length === 2, 'factura y recibí nuevos: no nacen en la moneda de la instancia (lwMonedaBase)');
 ok(/["']rectificativa["']/.test(ed),'correo: el asunto no distingue la rectificativa (tipo real del documento)');
