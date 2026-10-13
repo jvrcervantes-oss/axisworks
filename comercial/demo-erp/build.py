@@ -4188,6 +4188,32 @@ def portada_reservas():
 SETUP_GUARD = ('setup_modulos.js', 'aviso_setup.js')
 
 
+def capa_facturas_prueba(nombre):
+    """facturas_prueba.js (erp-front, 14-oct-2026; contrato bbm_bot_al_erp_13oct.md §3b, opción A de agencia-81; PROVISIONAL, AXW-291): marca las
+    facturas de prueba en la lista y en el papel de Lawang sin tocarlos. Va pegada al final de guard.js SOLO en la instancia a la que va la migración
+    que crea `facturas_prueba_datos()` (abanico.va_a: su `tipo:` y su `solo-en:`); donde no va, llamar a la lectura dejaría el contrato front↔base en
+    rojo. Sin esa migración en la agencia, en ninguna. '' = nada que pegar."""
+    sys.path.insert(0, os.path.join(AGENCIA, 'erp'))
+    from abanico import va_a
+    d = os.path.join(AGENCIA, 'erp', 'migraciones')
+    crea = [n for n in sorted(os.listdir(d)) if n.endswith('.sql')
+            and re.search(r'create\s+(or\s+replace\s+)?function\s+public\.facturas_prueba_datos\s*\(', open(os.path.join(d, n), encoding='utf-8').read(), re.I)]
+    if not crea:
+        return ''
+    texto = open(os.path.join(d, crea[0]), encoding='utf-8').read()
+    tipo = (_instancia_registro(nombre).get('config') or {}).get('tipo_erp')
+    if not va_a(texto, nombre, tipo):
+        return ''
+    js = open(os.path.join(AQUI, 'facturas_prueba.js'), encoding='utf-8').read()
+    if "window.lwDatos('facturas_prueba_datos')" not in js:
+        aborta('facturas_prueba.js ya no llama a facturas_prueba_datos por lwDatos (contrato_front no la vería)')
+    # sin sus comentarios, como apagados_instancia.js: va DESPUÉS de limpia_publico.js y son notas internas del estudio
+    js = re.sub(r'/\*.*?\*/', '', js, flags=re.S)
+    js = re.sub(r'^\s*//[^\n]*\n', '', js, flags=re.M)
+    print('facturas de prueba: capa pegada a guard.js (%s)' % crea[0])
+    return '\n' + js
+
+
 def setup_para_guard():
     """El núcleo y el aviso, sin comentarios (son notas internas del estudio), para pegarlos detrás del guard.js de la instancia."""
     trozos = []
@@ -5249,7 +5275,7 @@ def instancia(nombre):
     comprueba_novedades_apagable()
     open(g, 'w', encoding='utf-8', newline='').write(
         '/* GENERADO por AxisWorks/comercial/demo-erp/build.py --instancia %s — no editar. */\n'
-        'window.AXW_NUCLEO_OPERACION = true;\nwindow.__lwNovedades = true;\n' % nombre + interruptores + t + setup_para_guard())
+        'window.AXW_NUCLEO_OPERACION = true;\nwindow.__lwNovedades = true;\n' % nombre + interruptores + t + setup_para_guard() + capa_facturas_prueba(nombre))
     capa_modulos_hub(interruptores)
     for raiz, dirs, fichs in os.walk(DIST, topdown=False):
         for f in fichs + dirs:
