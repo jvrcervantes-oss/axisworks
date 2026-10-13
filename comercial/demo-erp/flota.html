@@ -1197,7 +1197,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
           error(''); aviso('');
           if (nuevo && cajonAbre(nuevo, null)) { cajonOk(T('Modelo creado: ahora pon sus tarifas y sus motos.')); return; }
           exito(T('Guardado.')); if (E.cajon) cajonOk(T('Guardado.'));
-        });
+        }, function () { C.libera(bt); d.cierra(); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); });   // como envia()
       }, function (e) { d.guardando = false; C.libera(bt); fallo(e, d); });
     }
     var b = [{ texto: pid ? T('Confirmar y guardar') : T('Crear modelo'), accion: 'fl-modal-confirmar', primario: true, alclic: guarda },

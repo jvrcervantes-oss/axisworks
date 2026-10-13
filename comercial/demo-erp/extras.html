@@ -69,6 +69,7 @@
 <button class="axw-boton" type="button" data-accion="ex-nuevo" data-primario="1"><span data-lwt>Nuevo extra</span></button>
 </div>
 <p class="axw-aviso axw-oculto" data-ex="impuestos-no" data-lwt>No se ha podido leer la lista de impuestos: el impuesto de cada extra no se enseña ni se cambia desde aquí. Recarga para verlo.</p>
+<p class="axw-aviso axw-oculto" data-ex="recortado" data-lwt>Se enseñan los 1000 primeros extras por nombre: hay más en la base.</p>
 <ul class="ex-lista" data-ex="lista"></ul>
 </div>
 </div>
@@ -82,6 +83,7 @@
     "Las motos se dan de alta y se cambian en": "Motor ditambahkan dan diubah di", "Flota y tarifas": "Armada dan tarif",
     "Actualizar": "Muat ulang", "Nuevo extra": "Ekstra baru", "Editar extra": "Ubah ekstra", "Extras · %n": "Ekstra · %n",
     "No se ha podido leer la lista de impuestos: el impuesto de cada extra no se enseña ni se cambia desde aquí. Recarga para verlo.": "Daftar pajak tidak dapat dibaca: pajak setiap ekstra tidak ditampilkan dan tidak diubah dari sini. Muat ulang untuk melihatnya.",
+    "Se enseñan los 1000 primeros extras por nombre: hay más en la base.": "Ditampilkan 1000 ekstra pertama menurut nama: masih ada lagi di basis data.",
     "Aún no hay extras: crea el primero (por ejemplo, la entrega a domicilio).": "Belum ada ekstra: buat yang pertama (misalnya, antar ke alamat).",
     "No se ha podido mirar": "Tidak bisa diperiksa", "Cargando…": "Memuat…",
     "Nombre": "Nama", "Precio": "Harga", "Impuesto": "Pajak", "Estado": "Status", "Activo": "Aktif", "Desactivado": "Nonaktif",
@@ -112,6 +114,7 @@
     'Las motos se dan de alta y se cambian en': 'Bikes are added and changed in', 'Flota y tarifas': 'Fleet and rates',
     'Actualizar': 'Refresh', 'Nuevo extra': 'New extra', 'Editar extra': 'Edit extra', 'Extras · %n': 'Extras · %n',
     'No se ha podido leer la lista de impuestos: el impuesto de cada extra no se enseña ni se cambia desde aquí. Recarga para verlo.': 'The list of taxes could not be read: the tax of each extra is not shown or changed from here. Reload to see it.',
+    'Se enseñan los 1000 primeros extras por nombre: hay más en la base.': 'Showing the first 1000 extras by name: there are more in the database.',
     'Aún no hay extras: crea el primero (por ejemplo, la entrega a domicilio).': 'There are no extras yet: create the first one (for example, home delivery).',
     'No se ha podido mirar': 'It could not be checked', 'Cargando…': 'Loading…',
     'Nombre': 'Name', 'Precio': 'Price', 'Impuesto': 'Tax', 'Estado': 'Status', 'Activo': 'Active', 'Desactivado': 'Deactivated',
@@ -159,11 +162,12 @@
   /* ── lo que se lee: las mismas tablas y columnas que la pantalla Productos de Lawang (ver cabecera) ── */
   function lee(q) { return Promise.resolve(q).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; }, function (e) { return { data: null, error: e }; }); }
   var PETICION = 0;
+  var TOPE = 1000;   // con más, se avisa: la lista no está entera
   function carga() {
     var yo = ++PETICION, est = $v('estado');
     if (!E.filas) { est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'cargando'); est.textContent = T('Cargando…'); }
     return Promise.all([
-      lee(SB.from('productos').select('id,numero_producto,nombre,referencia,unidad,precio,moneda,descripcion,impuesto_id,activo,clase').order('nombre').limit(1000)),
+      lee(SB.from('productos').select('id,numero_producto,nombre,referencia,unidad,precio,moneda,descripcion,impuesto_id,activo,clase').neq('clase', 'alquiler').order('nombre').limit(TOPE)),
       lee(SB.from('impuestos').select('id,numero_impuesto,nombre,pais,clase,porcentaje,activo').order('pais').order('orden'))
     ]).then(function (r) {
       if (yo !== PETICION) return { ok: false, tarde: true };
@@ -177,10 +181,11 @@
         oculta($v('contenido'), true);
         return { ok: false };
       }
-      // Lo que se alquila va en Flota: aquí solo lo demás (una fila sin clase, de una base anterior a F3-E3, tampoco se enseña: no se sabe qué es)
+      // Lo que se alquila va en Flota: aquí solo lo demás; la consulta ya lo filtra (neq) para que el tope no lo gasten las motos, y se vuelve a mirar aquí (una fila sin clase, de una base anterior a F3-E3, tampoco se enseña: no se sabe qué es)
       E.filas = p.data.filter(function (x) { return x && typeof x.id === 'string' && typeof x.clase === 'string' && x.clase !== 'alquiler'; })
         .sort(function (a, b) { return (b.activo ? 1 : 0) - (a.activo ? 1 : 0); });
       E.imps = !i.error && Array.isArray(i.data) ? i.data : null;
+      E.recortado = p.data.length >= TOPE;
       pinta();
       return { ok: true };
     });
@@ -200,6 +205,7 @@
     var est = $v('estado'), l = vacia($v('lista'));
     $v('n').textContent = T('Extras · %n').replace('%n', String(E.filas.length));
     oculta($v('impuestos-no'), !!E.imps);
+    oculta($v('recortado'), !E.recortado);
     if (!E.filas.length) {
       vacia(est); est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'vacio');
       est.appendChild(h('p', { text: T('Aún no hay extras: crea el primero (por ejemplo, la entrega a domicilio).') }));

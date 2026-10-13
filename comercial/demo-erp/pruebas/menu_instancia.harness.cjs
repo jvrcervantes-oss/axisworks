@@ -58,8 +58,10 @@ const MIDE = () => {
   const exe = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
   const nav = await chromium.launch({ executablePath: fs.existsSync(exe) ? exe : undefined });
   const ctx = await nav.newContext({ viewport: { width: 1440, height: 900 } });
-  await ctx.route('**/*', route => {
+  let retrasaNav = 0;   // ms: retrasa assets/nav.js (defer) para que modulos_activos_datos conteste ANTES de que recablee los href="#"
+  await ctx.route('**/*', async route => {
     const url = route.request().url();
+    if (retrasaNav && /\/assets\/nav\.js/.test(url)) await new Promise(r => setTimeout(r, retrasaNav));
     if (/supabase-js/.test(url)) return route.fulfill({ status: 200, contentType: 'application/javascript', body: FALSO });
     if (/fonts\.(googleapis|gstatic)\.com|@phosphor-icons/.test(url)) return route.continue();
     if (!url.startsWith(ORIGEN)) return route.abort();
@@ -131,6 +133,17 @@ const MIDE = () => {
   ok('/productos/ es la pantalla «Extras y servicios» (sin la tabla de Lawang) y su menú dice lo mismo', ex.raiz && !ex.lawang && /Ekstra dan layanan/.test(ex.tit)
      && ex.menu.length > 0 && ex.menu.every(x => x.indexOf('Ekstra dan layanan') !== -1), JSON.stringify(ex));
   if (SHOT) await p.screenshot({ path: `${SHOT}_1440_productos_id.png` });
+  // revisor 14-oct: con caché fría nav.js (defer) llega DESPUÉS de modulos_activos_datos y todas las entradas siguen en href="#" (= la página
+  // actual). El rótulo va por data-path / data-lw-pestana, así que en /productos/ solo la entrada de productos pasa a «Extras y servicios»
+  retrasaNav = 1500;
+  await p.goto(ORIGEN + '/productos/', { waitUntil: 'load' });
+  await p.waitForTimeout(3500);
+  retrasaNav = 0;
+  const tarde = await p.evaluate(() => [...document.querySelectorAll('aside a[data-path], a[data-lw-pestana]')]
+    .map(a => ({ id: a.getAttribute('data-lw-pestana') || a.getAttribute('data-path'), plegable: a.hasAttribute('data-lw-plegable'), t: a.textContent.replace(/\s+/g, ' ').trim() })));
+  const mal = tarde.filter(x => (x.id !== 'productos' || x.plegable) && x.t.indexOf('Ekstra dan layanan') !== -1);
+  ok('nav.js tarde en /productos/: ninguna otra entrada (ni la cabecera de un grupo) pasa a «Extras y servicios»', tarde.length > 5 && mal.length === 0, JSON.stringify(mal.slice(0, 5)));
+  ok('nav.js tarde en /productos/: la entrada de productos sí dice «Ekstra dan layanan»', tarde.some(x => x.id === 'productos' && !x.plegable && x.t.indexOf('Ekstra dan layanan') !== -1), JSON.stringify(tarde.filter(x => x.id === 'productos')));
   ok('0 errores de consola', errores.length === 0, errores.slice(0, 4).join(' | '));
   await nav.close();
   console.log(fallos ? `\n${fallos} de ${total} FALLAN` : `\nTODO BIEN (${total})`);

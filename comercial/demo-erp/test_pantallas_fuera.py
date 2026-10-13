@@ -122,6 +122,32 @@ try:
 except Exception as e:  # noqa: BLE001
     fallos.append('pagina_no_instalado falló: %s' % e)
 
+# el aviso en los idiomas de la instancia (erp-front 14-oct; agencia-81: bbm solo ofrece id y en, y el aviso salía en español)
+try:
+    plantilla2 = plantilla + '|' + '|'.join(build.FRASES_PLANTILLA_NO_INSTALADO)
+    build.AVISO_IDIOMAS = (['id', 'en'], 'en')
+    pag = build.pagina_no_instalado(plantilla2, marca, None, '/contratos/', herramienta='Contratos', modulo='contratos')
+    mod = build.pagina_no_instalado(plantilla2, marca, ('Gastos', 'Qué hace en español'), '/gastos/', modulo='gastos')
+    sin = build.pagina_no_instalado(plantilla2, marca, None, '/x/', herramienta='Algo sin traducir')
+    if not ('<html lang="en">' in pag and '<div data-axw-idioma="id" lang="id" hidden>' in pag and '<div data-axw-idioma="en" lang="en">' in pag
+            and '«Contracts» is not included in this instance.' in pag and '«Kontrak» tidak termasuk dalam ERP ini.' in pag
+            and '<title>Screen not included · AxisWorks</title>' in pag and 'axw_idioma_ui' in pag):
+        fallos.append('el aviso de bbm (id+en, abre en en) debe llevar las dos variantes con el nombre traducido y abrir en inglés')
+    if any(es in x for x in (pag, mod, sin) for es in ('no se incluye', 'no está activo', 'Volver al inicio', 'Reintentar', 'Cómo activarlo',
+                                                       'Este ERP lo construye', 'Qué hace en español')):
+        fallos.append('una instancia sin español no puede llevar ni una frase en español en el aviso')
+    if 'This screen is not included in this instance.' not in sin or 'Layar ini tidak termasuk dalam ERP ini.' not in sin or 'Algo sin traducir' in sin:
+        fallos.append('sin nombre traducido el aviso usa la frase sin nombre (nunca el nombre en español dentro de otro idioma)')
+    if 'Module not installed' not in mod or 'Modul belum dipasang' not in mod:
+        fallos.append('«Módulo no instalado» también sale en id y en')
+    build.AVISO_IDIOMAS = None
+    if build.pagina_no_instalado(plantilla2, marca, None, '/taller/', herramienta='Taller').count('data-axw-idioma') != 0:
+        fallos.append('sin idiomas en la ficha el aviso sigue siendo el de siempre, en español y sin variantes')
+except Exception as e:  # noqa: BLE001
+    fallos.append('pagina_no_instalado con idiomas falló: %s' % e)
+finally:
+    build.AVISO_IDIOMAS = None
+
 if fallos:
     print('FALLO test_pantallas_fuera.py:\n  ' + '\n  '.join(fallos))
     sys.exit(1)

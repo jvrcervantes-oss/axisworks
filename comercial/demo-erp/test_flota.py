@@ -217,6 +217,9 @@ mira('el modelo se crea con clase alquiler por producto_guarda (p_id null) y se 
      "clase: 'alquiler'" in CODIGO and "llama('producto_guarda', { p_id: pid || null, p_datos: q })" in CODIGO and "'fl-modelo-editar'" in CODIGO
      and "if (!Object.keys(q).length) return { e: T('No hay nada que cambiar.') }" in CODIGO)
 mira('una base sin clase de producto: el alta se repite SIN el campo clase y solo por ese error (campo_no_admitido)', "hint === 'campo_no_admitido' && /clase/.test(" in CODIGO and "if (k !== 'clase') q2[k] = r.v[k]" in CODIGO)
+_modelo = CODIGO[CODIGO.index('function abreModelo('):CODIGO.index('function abreModelo(') + 4000]
+mira('abreModelo: si la recarga tras guardar falla, suelta el botón y lo dice (como envia(); revisor 14-oct)',
+     "}, function () { C.libera(bt); d.cierra(); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); });" in _modelo)
 mira('lista recortada (recortado) avisa sin escribir el numero', "d.recortado !== true" in CODIGO and 'data-fl="recortado"' in MARCADO and not re.search(r'recortada a los primeros', MARCADO))
 mira('el aviso fijo de reservas ya hechas y el texto de cuando llega al bot (constantes BOT_LLEGA_ES/EN, parametrizables) estan', 'Las reservas ya hechas no cambian de precio; el cambio vale para lo que se cotice desde ahora.' in MARCADO and 'var BOT_LLEGA_ES =' in JS and 'var BOT_LLEGA_EN =' in JS and 'un cambio le llega en 5 minutos como máximo' in JS)
 mira('enganche por data-accion/data-campo/data-*-id; ningun texto de boton se usa para encontrar nada', not re.search(r'textContent\s*===|innerText|\.placeholder|querySelector\([^)]*placeholder|querySelector\(\'\[data-accion=', CODIGO))

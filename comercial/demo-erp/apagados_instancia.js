@@ -228,14 +228,19 @@
     rotula();
   }
   /* Rótulo por RUTA (erp-front, 14-oct-2026): en una instancia de tipo Reservas /productos/ es «Extras y servicios» (las motos viven en Flota y tarifas).
-     M.r = {ruta limpia: {es, en, id}} lo pone el build. Se busca el enlace por su ruta (identificador estable) y se cambia solo su texto visible: el
-     menú de Lawang (nav.js) no se toca ni se engancha por su rótulo. En una entrada con icono, el texto es el ÚLTIMO <span> que no es la flecha. */
+     M.r = {ruta limpia: {es, en, id}} lo pone el build. Se busca la entrada por su identificador (data-lw-pestana o data-path, que nav.js pone en
+     el marcado y vale '/'+id+'/' como ruta) y se cambia solo su texto visible: el menú de Lawang no se toca ni se engancha por su rótulo. NO por el
+     href (revisor, 14-oct): hasta que nav.js (defer) recablea, todas las entradas llevan href="#", que es la página actual, y en /productos/ todo el
+     menú se llamaría «Extras y servicios». La cabecera plegable de un grupo (data-lw-plegable) tampoco: es el grupo, no la pestaña.
+     En una entrada con icono, el texto es el ÚLTIMO <span> que no es la flecha. */
   function rotula() {
     var R = M.r || {}, idi = window.LW_IDIOMA || 'es';
     if (!Object.keys(R).length) return;
-    var as = document.querySelectorAll('aside a[href], nav a[href], header a[href]');
+    // + la barra de pestañas de un grupo (nav#lw-pestanas-<grupo>): sus enlaces no llevan identificador, pero nav.js la crea ya con el href real
+    var as = document.querySelectorAll('aside a[data-path]:not([data-lw-plegable]), a[data-lw-pestana], nav[id^="lw-pestanas-"] a[href]');
     for (var i = 0; i < as.length; i++) {
-      var r = R[rutaDe(as[i])];
+      var id = as[i].getAttribute('data-lw-pestana') || as[i].getAttribute('data-path');
+      var r = R[id ? '/' + id + '/' : rutaDe(as[i])];
       if (!r) continue;
       var t = r[idi] || r.en || r.es;
       var sp = as[i].querySelectorAll('span:not([data-lw-flecha])');

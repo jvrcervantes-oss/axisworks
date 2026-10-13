@@ -95,7 +95,9 @@ mira('las frases en indonesio no llevan el rastro «balian» (el build abortarí
 
 # -- (4) rótulo del menú por RUTA
 mira('ROTULOS_RUTA_RESERVAS: /productos/ con es, en e id', build.ROTULOS_RUTA_RESERVAS.get('/productos/', {}).keys() >= {'es', 'en', 'id'})
-mira('apagados_instancia.js cambia el texto por la ruta del enlace (M.r + rutaDe), nunca por su rótulo', 'function rotula()' in APAGADOS and 'R[rutaDe(as[i])]' in APAGADOS
+mira('apagados_instancia.js cambia el texto por el identificador de la entrada (data-lw-pestana / data-path), nunca por su rótulo ni por su href',
+     'function rotula()' in APAGADOS and """aside a[data-path]:not([data-lw-plegable]), a[data-lw-pestana], nav[id^="lw-pestanas-"] a[href]""" in APAGADOS
+     and "R[id ? '/' + id + '/' : rutaDe(as[i])]" in APAGADOS
      and 'rotula();' in APAGADOS and not re.search(r"textContent\s*===\s*'Productos'", APAGADOS))
 src = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
 mira("el mapa lleva los rótulos SOLO en las instancias de tipo Reservas", "out['r'] = ROTULOS_RUTA_RESERVAS if portada_de(nombre) == 'reservas' else {}" in src)

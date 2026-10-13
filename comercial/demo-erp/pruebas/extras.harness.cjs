@@ -25,6 +25,7 @@ function nuevaBase(o = {}) {
     { id: 'm1', numero_producto: 'P-1', nombre: 'Honda Beat', referencia: null, unidad: 'día', precio: 0, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'alquiler' },
     { id: 's1', numero_producto: 'P-2', nombre: o.xss ? XSS : 'Entrega y recogida a domicilio', referencia: 'DEL', unidad: 'viaje', precio: 50000, moneda: 'IDR', descripcion: null, impuesto_id: 'i1', activo: false, clase: 'servicio' },
     { id: 's2', numero_producto: 'P-3', nombre: 'Casco extra', referencia: null, unidad: 'ud', precio: 25000, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'servicio' }];
+  if (o.mil) for (let k = 0; k < 1001; k++) prods.push({ id: 'x' + k, numero_producto: 'P-X' + k, nombre: 'Extra ' + k, referencia: null, unidad: 'ud', precio: 1000, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'servicio' });
   if (o.largo) prods.push({ id: 's3', numero_producto: 'P-4', nombre: 'W'.repeat(120), referencia: 'R'.repeat(60), unidad: 'ud', precio: 123456789, moneda: 'IDR', descripcion: null, impuesto_id: 'i2', activo: true, clase: 'servicio' });
   return { o, llamadas: [], n: 10, prods, imps: [{ id: 'i1', numero_impuesto: 'IMP-1', nombre: 'PPN 11 %', pais: 'ID', clase: 'suma', porcentaje: 11, activo: true },
     { id: 'i2', numero_impuesto: 'IMP-2', nombre: 'Viejo', pais: 'ID', clase: 'suma', porcentaje: 10, activo: false }] };
@@ -36,7 +37,13 @@ function servidor(s, tipo, nombre, a) {
     if (nombre === 'productos') {
       if (o.sinPermiso) return err('42501', 'permission denied for table productos');
       if (o.sinRed) return { data: null, error: { message: 'Failed to fetch' } };
-      return { data: JSON.parse(JSON.stringify(s.prods)), error: null };
+      // como PostgREST: neq deja fuera también el null; limit corta después del filtro
+      let d = JSON.parse(JSON.stringify(s.prods));
+      for (const c of (a && a.cad) || []) {
+        if (c[0] === 'neq') d = d.filter(x => x[c[1]] != null && x[c[1]] !== c[2]);
+        if (c[0] === 'limit') d = d.slice(0, c[1]);
+      }
+      return { data: d, error: null };
     }
     if (nombre === 'impuestos') return o.sinImpuestos ? err('42501', 'permission denied for table impuestos') : { data: JSON.parse(JSON.stringify(s.imps)), error: null };
     return err('42P01', 'tabla desconocida');
@@ -55,7 +62,7 @@ ${MARCADO}
 <script>
 window.__xss = undefined; window.__errores = []; window.__sinT = [];
 window.fetch = function () { return Promise.reject(new Error('fetch')); };
-function q(tabla) { var o = { then: function (f, g) { return window.__srv('from', tabla, {}).then(f, g); } }; ['select', 'order', 'limit', 'eq'].forEach(function (m) { o[m] = function () { return o; }; }); return o; }
+function q(tabla) { var cad = []; var o = { then: function (f, g) { return window.__srv('from', tabla, { cad: cad }).then(f, g); } }; ['select', 'order', 'limit', 'eq', 'neq'].forEach(function (m) { o[m] = function () { cad.push([m].concat([].slice.call(arguments))); return o; }; }); return o; }
 var sb = { rpc: function (n, a) { return { then: function (f, g) { return window.__srv('rpc', n, a || {}).then(f, g); } }; }, from: q };
 window.LW_AUTH = Promise.resolve({ sb: sb, ficha: { rol: 'admin' } });
 window.lwMonedaBase = function () { return 'IDR'; };
@@ -98,6 +105,16 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('el impuesto sale con su nombre; el desactivado se marca', (await txt(p, '[data-producto-id="s1"]')).includes('PPN 11 %') && (await txt(p, '[data-producto-id="s1"]')).includes('Desactivado'));
     ok('enlaza a Flota para las motos (por la ruta)', (await p.$$('a[data-ex="ir-flota"][href="/intranet/v4/flota/"]')).length === 1);
     ok('XSS del nombre se pinta como texto', await limpio(p));
+    const cad = (base.llamadas.find(x => x[1] === 'productos') || [])[2];
+    ok('la consulta filtra la clase en la base (neq clase alquiler) ANTES del tope de 1000 (revisor 14-oct)', !!cad && J(cad.cad.filter(c => c[0] !== 'select')) === J([['neq', 'clase', 'alquiler'], ['order', 'nombre'], ['limit', 1000]]), J(cad));
+    ok('con menos de 1000 extras no sale el aviso de lista recortada', await p.$eval('[data-ex="recortado"]', e => e.classList.contains('axw-oculto')));
+    await ctx.close();
+  }
+  // 1b. más de 1000 extras: se enseñan 1000 y se avisa (las motos no gastan el tope)
+  {
+    const { p, ctx } = await abre({ base: { mil: true }, idioma: 'id' });
+    const n = await p.$$eval('.ex-fila[data-producto-id]', fs => fs.length);
+    ok('con 1001 extras + motos: 1000 filas y el aviso de lista recortada, en indonesio', n === 1000 && await p.$eval('[data-ex="recortado"]', e => !e.classList.contains('axw-oculto') && /Ditampilkan 1000 ekstra/.test(e.textContent)), String(n));
     await ctx.close();
   }
   // 2. vacío ≠ error ≠ sin permiso
