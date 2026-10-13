@@ -158,6 +158,16 @@ try:
     mira('un color que con la luz conservada sale IGUAL que otro de Lawang (#FBFDFC) no hace parar el barrido final',
          not para(lambda: build.piel_colores_lawang(d2, 'x')))
     shutil.rmtree(d2)
+    d2 = tempfile.mkdtemp()
+    escribe(d2, 'a/elegido.css', '.sel{border-color:#CBD6B6}')   # #CBD6B6 es de LAWANG_FAMILIAS (inverse-primary) y aquí también el outline de la piel
+    build._piel_preset = lambda n: dict(BBM, outline=[0xCB, 0xD6, 0xB6])
+    try:
+        build.piel_colores_lawang(d2, 'x')
+    finally:
+        build._piel_preset = lambda n: BBM
+    mira('un color que YA es de la piel (lo que pinta seleccion_css antes del pase) no se retoca aunque coincida con uno de Lawang',
+         '#CBD6B6' in open(os.path.join(d2, 'a', 'elegido.css'), encoding='utf-8').read())
+    shutil.rmtree(d2)
     sin_ec = {k: v for k, v in BBM.items() if k != 'error-container'}
     build._piel_preset = lambda n: sin_ec
     escribe(d, 'a/y.css', 'a{background:#FDECEA}')

@@ -1911,6 +1911,10 @@ def piel_colores_lawang(dist, nombre):
         if D.contraste(a, b) < 4.5:
             aborta('papel de %s: %s por debajo de 4,5:1 (%.2f)' % (nombre, que, D.contraste(a, b)))
     h = lambda c: '#%02X%02X%02X' % tuple(c)
+    # Un color que YA es de la piel no se toca, como no lo cuenta el barrido (revisor del merge de p42c, 13-oct): seleccion_css() escribe
+    # los colores de la piel antes de este pase, y una piel con un valor igual a uno de Lawang (un crema de LAWANG_FAMILIAS) vería su
+    # elegido retocado. Los de varios significados (reglas) siguen pasando por su regla: si no, su recuento no cuadraría.
+    de_la_piel = {tuple(v) for v in p.values() if isinstance(v, (list, tuple)) and len(v) == 3}
     vistos = collections.Counter()
     n = 0
     for raiz, _dirs, fs in os.walk(dist):
@@ -1931,6 +1935,8 @@ def piel_colores_lawang(dist, nombre):
                 if _es_texto(m):
                     return m.group(0)
                 c = _color_de(m)
+                if c in de_la_piel and c not in reglas:
+                    return m.group(0)   # ya es un color de la instancia (p. ej. lo que escribió seleccion_css antes del pase)
                 if c in reglas:
                     ventana = m.string[max(0, m.start() - 80):m.end() + 40]
                     for i, (fr, ctx, dst, _n) in enumerate(reglas[c]):
