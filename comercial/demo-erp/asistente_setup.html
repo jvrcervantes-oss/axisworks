@@ -152,7 +152,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var ob = d.pasos.filter(function (p) { return p.obligatorio; }), hechos = ob.filter(function (p) { return p.hecho; }).length;
     $('eyebrow').textContent = U('as_eyebrow');
     var t = vacia($('titulo'));
-    t.appendChild(el('span', { text: U('as_titulo') + ' ' }));
+    // diseño S03: «Set up Sample Rentals, one step at a time.» — el nombre del negocio de Ajustes › marca (lo guarda el paso S10); sin él, «tu ERP»
+    var marca = ctx && ctx.ajustes && typeof ctx.ajustes.marca === 'string' ? ctx.ajustes.marca.trim() : '';
+    t.appendChild(el('span', { 'data-axw-titulo-marca': marca ? '1' : '0', text: (marca ? U('as_titulo_marca', { m: marca }) : U('as_titulo')) + ' ' }));
     t.appendChild(el('span', { style: 'font-weight:300', text: U('as_titulo2') }));
     $('lead').textContent = U('as_lead'); $('lead').hidden = false;
     $('progreso').textContent = ob.length ? U('pasos_hechos', { n: String(hechos), t: String(ob.length) }) : '';

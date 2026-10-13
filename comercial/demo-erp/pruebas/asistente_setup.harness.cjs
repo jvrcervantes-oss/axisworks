@@ -343,7 +343,9 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     ok(idioma + ' ' + ancho + ' inicio: «Paso n de N en módulo» y la nota antes de la lista', /\d+\D+\d+/.test(sigueTxt) && notaAntes, sigueTxt + ' · nota antes: ' + notaAntes);
     if (idioma === 'es' && ancho === 1440) {
       const mod = new URLSearchParams((await p.getAttribute('[data-axw-accion="seguir"]', 'href')) || '').get('modulo');
-      const L = b.d.pasos.filter(x => x.modulo === mod && x.obligatorio), n = L.findIndex(x => !x.hecho) + 1;
+      // el mismo recuento que la pantalla (lista()): delante, los obligatorios pendientes de «base»; después, los del módulo (revisor 64a7013)
+      const L = (mod === 'base' ? [] : b.d.pasos.filter(x => x.modulo === 'base' && x.obligatorio && !x.hecho)).concat(b.d.pasos.filter(x => x.modulo === mod && x.obligatorio)),
+            n = L.findIndex(x => !x.hecho) + 1;
       ok('S03: el número del paso es el del primer obligatorio pendiente de ese módulo', n > 0 && sigueTxt.startsWith('Paso ' + n + ' de ' + L.length + ' en '), mod + ': ' + sigueTxt);
     }
     const anchoDoc = await p.evaluate(() => document.documentElement.scrollWidth);
@@ -355,6 +357,16 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'inicio_' + idioma + '_' + ancho + '.png'), fullPage: true });
     await ctx.close();
   }
+  // S03 (13-oct): el título lleva el nombre del negocio (Ajustes › marca) en los tres idiomas; sin él, «tu ERP»
+  for (const [idioma, esperado] of [['es', 'Configura Bali Best,'], ['en', 'Set up Bali Best,'], ['id', 'Atur Bali Best,']]) {
+    ({ p, ctx } = await abre(nav, base('sin_configurar', { valores: { marca: 'Bali Best' } }), { idioma, url: '/ajustes/configurar/' }));
+    const tit = (await txt(p, '[data-axw-titulo-marca="1"]')) || '';
+    ok('S03 ' + idioma + ': el título lleva el nombre del negocio', tit.trim() === esperado, tit);
+    await ctx.close();
+  }
+  ({ p, ctx } = await abre(nav, base('sin_configurar', { valores: { marca: '   ' } }), { url: '/ajustes/configurar/' }));
+  ok('S03: con la marca vacía, «Configura tu ERP,»', ((await txt(p, '[data-axw-titulo-marca="0"]')) || '').trim() === 'Configura tu ERP,', await txt(p, '[data-axw-titulo-marca]'));
+  await ctx.close();
 
   // 9. Diseño del owner S10-S60 / S91 (bbm-p41, 13-oct): carril «Tu configuración» desde 1024 px, cabeza «Módulo · Paso n de N», las dos líneas
   //    «Para qué sirve / Si lo saltas», «Saltar este paso» en un opcional (no guarda nada) y, con la piel real (AXW_CSS_DIST), contraste medido.
