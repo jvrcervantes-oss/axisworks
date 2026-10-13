@@ -3760,8 +3760,45 @@ def flota_pantalla():
                  "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'entrega') + 1, 0," + '\n' +
                  "    { grupo:'Seguimiento', nombre:'Flota y tarifas', icon:'ph-motorcycle', href:'/intranet/v4/flota/', herr:'flota'," + '\n' +
                  "      para:'Las motos de cada producto y lo que cuesta alquilarlas según los días: lo que cambies es lo que el bot cotiza y cobra.'," + '\n' +
-                 "      claves:'flota motos moto matricula unidades tarifa tarifas precio dias tramo alquiler fleet bikes bike plate units rate rates price days tier rental' });" + '\n' + "}",
+                 "      claves:'flota motos moto matricula unidades tarifa tarifas precio dias tramo alquiler fleet bikes bike plate units rate rates price days tier rental' });" + '\n' +
+                 "  /*AXW_FIN_TARJETA_FLOTA*/" + '\n' + "}",
                  'herramientas.js tarjeta Flota')
+    open(her, 'w', encoding='utf-8', newline='').write(h)
+
+
+def agente_pantalla():
+    """Pantalla /agente/ del ERP maestro: el PANEL DEL PILOTO (EP.5, 13-oct-2026; agencia encargos/20261013_pilotos_bbm/panel.md, revisión previa #313). Herramienta propia `agente`
+    (la que exige la base en agente_notas_datos y en las decisiones; el dueño de la ficha entra además por su uid). La crea el build clonando la CÁSCARA de /asistente/ con `agente.html`
+    y las ayudas comunes de _compartido/. Lleva además, todo con reemplazo literal que aborta si una pantalla anterior de la cadena cambia el trozo:
+      · nav.js: entrada de menú en Seguimiento (tras Flota y tarifas), injerto de sidebar y casilla en CLAVE_MENU (sin esa línea puedeVer() la enseñaría a todos);
+      · herramientas.js: la tarjeta `agente` tras la de Flota, enganchada a la MARCA que deja flota_pantalla() (AXW_FIN_TARJETA_FLOTA), no al texto de sus claves.
+    Va DESPUÉS de flota_pantalla(): sus anclas son las líneas que esa deja. No añade ningún ancla nueva sobre texto de Lawang. Solo se toca lo copiado en DIST.
+    La pantalla NO se declara pantalla del módulo `agente` en el mapa de apagados: con el módulo apagado tiene que verse para poder encenderlo (la base decide quién)."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    _pantalla_bot(v4, 'agente.html', 'agente', 'Piloto', puerta='data-herramienta="agente"')
+    nav = os.path.join(v4, 'assets', 'nav.js')
+    n = open(nav, encoding='utf-8').read()
+    n = _una_vez(n, "      { path: 'flota', texto: 'Flota y tarifas', clave: 'flota', nucleo: true }] },",
+                 "      { path: 'flota', texto: 'Flota y tarifas', clave: 'flota', nucleo: true }," + '\n' +
+                 "      { path: 'agente', texto: 'Piloto', clave: 'agente', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (agente)')
+    n = _una_vez(n, "    { path: 'flota', tras: 'entrega', icono: 'two_wheeler', texto: 'Flota y tarifas', nucleo: true },",
+                 "    { path: 'flota', tras: 'entrega', icono: 'two_wheeler', texto: 'Flota y tarifas', nucleo: true }," + '\n' +
+                 "    { path: 'agente', tras: 'flota', icono: 'smart_toy', texto: 'Piloto', nucleo: true },", 'nav.js INJERTOS agente')
+    n = _una_vez(n, "    flota: 'flota',",
+                 "    flota: 'flota'," + '\n' + "    agente: 'agente',", 'nav.js CLAVE_MENU agente')
+    open(nav, 'w', encoding='utf-8', newline='').write(n)
+    her = os.path.join(DIST, 'contracts', 'assets', 'herramientas.js')
+    h = open(her, encoding='utf-8').read()
+    ancla = "  /*AXW_FIN_TARJETA_FLOTA*/" + '\n' + "}"
+    h = _una_vez(h, ancla,
+                 "  /*AXW_FIN_TARJETA_FLOTA*/" + '\n' +
+                 "  /* PILOTO (EP.5, 13-oct-2026): el panel del piloto de operaciones. Permiso propio `agente`; sin esta tarjeta la casilla no existiría en Usuarios. Encender, apagar, el tope y los trabajos los exige además la base al dueño de la ficha. */" + '\n' +
+                 "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'flota') + 1, 0," + '\n' +
+                 "    { grupo:'Seguimiento', nombre:'Piloto', icon:'ph-robot', href:'/intranet/v4/agente/', herr:'agente'," + '\n' +
+                 "      para:'Dos veces al día mira el negocio y deja avisos con su prueba: motos paradas en el taller, salidas sin moto, reservas que caducan. No toca nada; las personas deciden.'," + '\n' +
+                 "      claves:'piloto agente autonomo avisos operaciones pasada encender apagar pausa tope trabajos propuestas pilot agent alerts operations pause cap jobs proposals' });" + '\n' +
+                 "  /*AXW_FIN_TARJETA_AGENTE*/" + '\n' + "}",
+                 'herramientas.js tarjeta Piloto')
     open(her, 'w', encoding='utf-8', newline='').write(h)
 
 
@@ -4930,6 +4967,7 @@ def instancia(nombre):
     taller_pantalla()   # F8 pieza 2 (8-oct-2026): Taller — órdenes de trabajo ligeras (tras reservas de producto: sus anclas de nav.js)
     entrega_pantalla()   # F8 pieza 8 (10-oct-2026): Entrega — sede, tarifa por km y límites (tras taller: sus anclas de nav.js y herramientas.js)
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
+    agente_pantalla()   # EP.5 (13-oct-2026): Piloto — el panel del piloto de operaciones (tras flota: sus anclas de nav.js y la marca de herramientas.js)
     asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)
     ajustes_puesta_en_marcha()   # F3 (12-oct-2026): Ajustes › Configurar módulos, primera pestaña, en todas las instancias (antes solo las de reservas)
     ajustes_cobros()   # F3 E2 (12-oct-2026): Ajustes › Cobros y el paso «cobros» (oculto hasta que la base declare el paso)

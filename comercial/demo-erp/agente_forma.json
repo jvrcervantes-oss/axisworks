@@ -1,0 +1,203 @@
+{
+ "_que": "Contrato del panel del piloto (/intranet/v4/agente/, agente.html) con la base (migraciones 20261013183000 y 20261013190000 del maestro). Fuente ÚNICA de la forma: la lee el doble del panel (pruebas/agente.harness.cjs, test_agente.py) y la prueba SQL de la agencia (erp/pruebas/agente_panel_forma.py). Si la base cambia una clave, cambia aquí y fallan los dos lados. 13-oct-2026, sesión pilotos-panel.",
+ "trabajos": [
+  "flota",
+  "salidas",
+  "vueltas",
+  "bloqueos",
+  "cobros",
+  "taller",
+  "ocupacion",
+  "cierre"
+ ],
+ "pasadas": [
+  "manana",
+  "tarde"
+ ],
+ "estados_nota": [
+  "avisos",
+  "nada",
+  "sin_datos",
+  "resumen"
+ ],
+ "lecturas": {
+  "agente_panel_estado": {
+   "transporte": "sb.rpc (no es *_datos: la dueña es postgres porque responde también con el módulo APAGADO)",
+   "args": {},
+   "devuelve": {
+    "encendido": "bool",
+    "parado": "bool",
+    "soy_dueno": "bool",
+    "puedo_decidir": "bool",
+    "ultima_pasada": "null | {dia: fecha, pasada: pasada, en: instante, resultado: enum(hecha, en_pausa, apagadas, parado, cupo, otro)}",
+    "tope_mensual_cent": "entero | null",
+    "gastado_mes_cent": "entero",
+    "moneda": "texto de 3 letras (la ficha cuenta en EUR)",
+    "usd_por_eur": "número | null",
+    "trabajos": "{<trabajo>: bool} con los 8",
+    "nivel_ruta": "entero 0-1",
+    "nivel_max": "entero",
+    "cupo_dia": "entero",
+    "notas_hoy": "entero"
+   },
+   "errores": {
+    "42501": "sin la herramienta agente y sin ser el owner de la ficha"
+   },
+   "con_modulo_apagado": "SOLO {encendido:false, soy_dueno, puedo_decidir} (revisión previa #313: tope y gasto son cifras de dinero)"
+  },
+  "agente_notas_datos": {
+   "transporte": "lwDatos (dueña erp_lector; dentro de la lista del sincronizador: con el módulo apagado no hay EXECUTE)",
+   "args": {
+    "p_dia": "fecha | null (null = hoy de la instancia, _entrega_hoy())"
+   },
+   "devuelve": {
+    "dia": "fecha",
+    "hoy": "fecha",
+    "notas": "[{id: entero, trabajo: trabajo, pasada: pasada, estado: estado_nota, cifras: {clave: entero}, items: [{clave: entero | enum | uuid}], mas: entero, creada_en: instante, decision: null | 'hecha' | 'descartada', decidida_en: instante | null, decidida_por: texto | null}]",
+    "propuestas": "[{id: entero, problema: texto, evidencia: texto, cambio: texto, riesgo: texto, estado: 'pendiente' | 'aceptada' | 'rechazada', creada_en: instante, decidida_en: instante | null, decidida_por: texto | null, nota: texto | null}]",
+    "nombres": "{uuid: texto} solo de los uuid que aparecen en las notas devueltas (matrícula de la moto, nombre del modelo), resuelto con la sesión de quien mira"
+   },
+   "errores": {
+    "42501": "módulo apagado o sin la herramienta agente"
+   }
+  }
+ },
+ "escrituras": {
+  "agente_nota_decide": {
+   "args": {
+    "p_id": "entero",
+    "p_decision": "'hecha' | 'descartada'"
+   },
+   "devuelve": "{ok: true, decision}",
+   "quien": "herramienta agente, sin la cuenta de pruebas"
+  },
+  "agente_propuesta_decide": {
+   "args": {
+    "p_id": "entero",
+    "p_decision": "'aceptada' | 'rechazada'",
+    "p_nota": "texto 0-500 | null"
+   },
+   "devuelve": "{ok: true, estado}",
+   "quien": "owner de la ficha (una propuesta con toca_guarda cambia los límites del piloto; #313)"
+  },
+  "agente_para": {
+   "args": {},
+   "devuelve": "{parado: true}",
+   "quien": "herramienta agente; freno 1/min y 10/día"
+  },
+  "agente_reanuda": {
+   "args": {},
+   "devuelve": "{parado: false}",
+   "quien": "owner de la ficha (activo); freno 1/min y 10/día"
+  },
+  "agente_ficha_ajusta": {
+   "args": {
+    "p_tope_mensual_cent": "entero >= 0",
+    "p_trabajos": "texto[] (subconjunto de los 8; los 8 = todos)",
+    "p_nivel_ruta": "0 | 1",
+    "p_motivo": "texto 3-300"
+   },
+   "devuelve": "lo mismo que agente_panel_estado",
+   "quien": "owner de la ficha, módulo encendido"
+  },
+  "agente_modulo_cambia": {
+   "args": {
+    "p_encender": "bool",
+    "p_motivo": "texto 3-300"
+   },
+   "devuelve": "{encendido: bool}",
+   "quien": "owner de la ficha (activo), funciona con el módulo apagado; solo cambia `agente` (aborta si cambia otro); freno 1/min y 10/día"
+  }
+ },
+ "items_por_trabajo": {
+  "flota": {
+   "taller_sin_orden": [
+    "unidad"
+   ],
+   "taller_largo": [
+    "unidad",
+    "dias"
+   ],
+   "tarifa": [
+    "modelo",
+    "motivo"
+   ]
+  },
+  "salidas": {
+   "sin_unidad": [
+    "n"
+   ],
+   "unidad_en_taller": [
+    "n"
+   ],
+   "unidad_de_baja": [
+    "n"
+   ],
+   "unidad_doble": [
+    "n"
+   ],
+   "entrega_sin_km": [
+    "n"
+   ]
+  },
+  "vueltas": {
+   "tarde": [
+    "n"
+   ],
+   "salida_sin_registrar": [
+    "n"
+   ]
+  },
+  "bloqueos": {
+   "caducan_ultima_libre": [
+    "n"
+   ],
+   "caducan_24h": [
+    "n"
+   ]
+  },
+  "cobros": {
+   "pagos_revisar": [
+    "n"
+   ],
+   "pagado_sin_factura": [
+    "n"
+   ],
+   "confirmada_sin_pago": [
+    "n"
+   ]
+  },
+  "taller": {
+   "_sin_tipo": [
+    "modelo",
+    "en_taller",
+    "libres",
+    "reservas_7d",
+    "falta"
+   ]
+  },
+  "ocupacion": {
+   "llena": [
+    "modelo",
+    "ocupacion_pct",
+    "semanas"
+   ],
+   "vacia": [
+    "modelo",
+    "ocupacion_pct",
+    "semanas"
+   ]
+  },
+  "cierre": {}
+ },
+ "motivos_tarifa": [
+  "largo_mas_caro_por_dia",
+  "tramo_sin_precio",
+  "precio_cero"
+ ],
+ "errores_con_hint": {
+  "freno": "hint 'agente_freno' (demasiados cambios seguidos)",
+  "sin_owner": "42501 hint 'agente_solo_owner'",
+  "cuenta_pruebas": "42501 hint 'cuenta_pruebas'"
+ }
+}

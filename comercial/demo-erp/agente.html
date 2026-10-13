@@ -1,0 +1,568 @@
+<!-- Pantalla /agente/ del ERP MAESTRO: el PANEL DEL PILOTO (EP.5, 13-oct-2026; agencia: encargos/20261013_pilotos_bbm/panel.md, revisión previa #313, y contrato_sql.md §S5).
+     NO es una página entera: build.py (agente_pantalla) la inyecta en la cáscara de /asistente/ de Lawang, como taller y entrega. Dos partes separadas por la línea «AXW_SCRIPT».
+     Qué hace, en llano: el piloto de operaciones mira el negocio dos veces al día y deja NOTAS (datos estructurados, nunca texto libre: decisión D12). Aquí se ve si está encendido
+     y trabajando, cuándo fue su última pasada, qué avisó hoy (una tarjeta por trabajo) y sus propuestas de cambio; se para, se reanuda, se enciende, se apaga, se eligen los trabajos
+     y se fija el tope de gasto.
+     Quién: la ve quien tiene la herramienta `agente` (y el dueño de la ficha). Parar y marcar un aviso como hecho o descartado: cualquiera con la herramienta. Reanudar, encender,
+     apagar, trabajos, nivel, tope y decidir propuestas: SOLO el dueño de la ficha. La pantalla no lo adivina: pinta lo que dice `agente_panel_estado` (soy_dueno, puedo_decidir) y la
+     base lo vuelve a exigir en cada RPC (42501).
+     Forma de lo que lee y escribe: agente_forma.json (fuente única; la usan el doble de pruebas/agente.harness.cjs y la prueba SQL de la agencia).
+     Las frases de cada aviso las pinta ESTE CÓDIGO desde `trabajo`, `estado`, `cifras` e `items` (en es, en e id). Una moto o un modelo llegan por su uuid y el nombre sale del
+     mapa `nombres` que resuelve la base con la sesión de quien mira. Un trabajo sin datos lo DICE («sin reservas en este sistema todavía»); un trabajo sin nota hoy también («sin
+     pasada todavía hoy»): nunca se calla ni se inventa.
+     Todo dato de la base se pinta con textContent (ayudas comunes, sin innerHTML). Enganche por data-accion / data-ag, nunca por un rótulo. Colores por var(--tema-*). -->
+<div class="flex flex-col w-full gap-8" data-ag="raiz">
+<style>
+/*AXW_COMUN_CSS*/
+.ag-rejilla{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px;align-items:start}
+.ag-tarjeta{background:rgb(var(--tema-surface-container-lowest, 255 255 255));border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.ag-tarjeta[data-estado="avisos"]{border-left:4px solid rgb(var(--tema-accent-gold, 200 155 92))}
+.ag-tarjeta[data-estado="nada"],.ag-tarjeta[data-estado="resumen"]{border-left:4px solid rgb(var(--tema-primary-container, 72 91 55))}
+.ag-tarjeta[data-estado="sin_datos"],.ag-tarjeta[data-estado="sin_nota"]{border-left:4px solid rgb(var(--tema-outline-variant, 197 200 188))}
+.ag-tarjeta h3{font-size:16px;line-height:1.3;margin:0;font-weight:600;word-break:break-word}
+.ag-cab{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px}
+.ag-lineas{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.45}
+.ag-lineas li{word-break:break-word}
+.ag-sub{font-size:13px;color:rgb(var(--tema-on-surface-variant, 68 72 63));line-height:1.45;margin:0;word-break:break-word}
+.ag-estado{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+.ag-dato{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.ag-dato span:first-child{font-size:12px;color:rgb(var(--tema-outline, 117 120 110))}
+.ag-dato strong{font-size:16px;font-weight:600;word-break:break-word}
+.ag-trabajos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:8px 16px}
+.ag-check{display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.4}
+.ag-check input{margin-top:3px}
+.ag-enlace{font-size:14px;font-weight:600;color:rgb(var(--tema-deep-lagoon, 16 76 79));text-decoration:underline;text-underline-offset:3px}
+.ag-enlaces{display:flex;flex-wrap:wrap;gap:6px 16px}
+.ag-propuesta{border:1px solid rgb(var(--tema-outline-variant, 197 200 188));border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.ag-propuesta h3{font-size:16px;margin:0;font-weight:600;word-break:break-word}
+.ag-apagado{opacity:.6}
+.ag-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:4px 16px}
+.ag-campos .axw-campo input,.ag-campos .axw-campo select{width:100%;min-width:0;box-sizing:border-box}
+</style>
+
+<div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<div class="flex flex-col gap-2 max-w-3xl">
+<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Piloto</h1>
+<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Dos veces al día mira el negocio y deja aquí avisos con su prueba. No toca nada ni habla con nadie: las personas deciden.</p>
+</div>
+</div>
+
+<p class="axw-ok axw-oculto" data-ag="exito" role="status"></p>
+<p class="axw-error axw-oculto" data-ag="error" role="alert"></p>
+<div data-ag="carga" data-tipo="cargando" class="axw-vacio"></div>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-estado">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Estado</h2>
+<div class="ag-estado" data-ag="estado"></div>
+<p class="ag-sub axw-oculto" data-ag="motivo-estado"></p>
+<div class="axw-acciones" data-ag="acciones-estado"></div>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-hoy">
+<div class="ag-cab"><h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Hoy</h2><span class="ag-sub" data-ag="dia"></span></div>
+<p class="axw-error axw-oculto" data-ag="error-hoy" role="alert"></p>
+<div class="ag-rejilla" data-ag="hoy"></div>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-propuestas">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Propuestas de cambio</h2>
+<p class="ag-sub" data-lwt>Cambios que el piloto propone para el sistema. Los acepta o los rechaza el dueño de la ficha.</p>
+<div class="flex flex-col gap-3" data-ag="propuestas"></div>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-ajustes">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Trabajos y tope</h2>
+<p class="ag-sub axw-oculto" data-ag="motivo-ajustes"></p>
+<fieldset class="flex flex-col gap-3" data-ag="ajustes" style="border:0;padding:0;margin:0;min-width:0">
+<legend class="font-body-md" style="font-weight:600;padding:0;margin-bottom:6px" data-lwt>Qué trabajos hace</legend>
+<div class="ag-trabajos" data-ag="trabajos"></div>
+<div class="ag-campos">
+<div class="axw-campo"><label for="ag-f-nivel" data-lwt>Nivel de Ruta</label><select id="ag-f-nivel" data-campo="nivel_ruta"><option value="0" data-lwt>0 · No hace la pasada</option><option value="1" data-lwt>1 · Mira y avisa</option></select></div>
+<div class="axw-campo"><label for="ag-f-tope" data-ag="tope-etiqueta">Tope de gasto al mes</label><input id="ag-f-tope" type="text" inputmode="decimal" autocomplete="off" data-campo="tope"><p class="ag-sub" data-ag="tope-ayuda"></p></div>
+<div class="axw-campo"><label for="ag-f-motivo" data-lwt>Motivo del cambio (obligatorio)</label><input id="ag-f-motivo" type="text" autocomplete="off" maxlength="300" data-campo="motivo"></div>
+</div>
+<div class="axw-acciones"><button class="axw-boton" type="button" data-accion="ag-guardar" data-primario="1"><span data-lwt>Guardar</span></button></div>
+</fieldset>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-mas">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Más adelante</h2>
+<div class="ag-estado">
+<div class="ag-dato ag-apagado"><span data-lwt>Clave de IA</span><strong data-lwt>Aún no se usa</strong><span class="ag-sub" data-lwt>Los ocho trabajos no llaman a la IA: las cuentas las hace el propio sistema.</span></div>
+<div class="ag-dato ag-apagado"><span data-lwt>Avisos por Telegram</span><strong data-lwt>Aún no se usa</strong><span class="ag-sub" data-lwt>Los avisos están en este panel.</span></div>
+</div>
+</section>
+</div>
+<!--AXW_SCRIPT-->
+<script>
+(function () {
+  'use strict';
+  var EN_AG = {
+    'Piloto': 'Pilot',
+    'Dos veces al día mira el negocio y deja aquí avisos con su prueba. No toca nada ni habla con nadie: las personas deciden.': 'Twice a day it looks at the business and leaves alerts here with their evidence. It changes nothing and talks to no one: people decide.',
+    'Estado': 'Status', 'Hoy': 'Today', 'Propuestas de cambio': 'Proposed changes',
+    'Cambios que el piloto propone para el sistema. Los acepta o los rechaza el dueño de la ficha.': 'Changes the pilot proposes for the system. The owner of the pilot settings accepts or rejects them.',
+    'Trabajos y tope': 'Jobs and spending cap', 'Qué trabajos hace': 'Which jobs it does', 'Nivel de Ruta': 'Ruta level',
+    '0 · No hace la pasada': '0 · Does not run', '1 · Mira y avisa': '1 · Looks and alerts',
+    'Tope de gasto al mes': 'Monthly spending cap', 'Motivo del cambio (obligatorio)': 'Reason for the change (required)', 'Guardar': 'Save',
+    'Más adelante': 'Later', 'Clave de IA': 'AI key', 'Aún no se usa': 'Not used yet',
+    'Los ocho trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'The eight jobs do not call the AI: the system itself does the counting.',
+    'Avisos por Telegram': 'Telegram alerts', 'Los avisos están en este panel.': 'Alerts are on this panel.',
+    'Módulo': 'Module', 'Encendido': 'On', 'Apagado': 'Off', 'Trabajo': 'Work', 'Trabajando': 'Working', 'En pausa': 'Paused',
+    'Última pasada': 'Last run', 'Todavía no ha hecho ninguna pasada.': 'It has not run yet.', 'Gastado este mes': 'Spent this month', 'Tope': 'Cap', 'Sin tope': 'No cap',
+    'Avisos de hoy': "Today's alerts", 'mañana': 'morning', 'tarde': 'evening',
+    'hecha': 'done', 'en pausa': 'paused', 'sin trabajos encendidos': 'no jobs switched on', 'parada por la pausa': 'stopped by the pause',
+    'cortada por el cupo del día': "cut by the day's quota", 'con errores': 'with errors',
+    'Parar': 'Pause', 'Reanudar': 'Resume', 'Encender el piloto': 'Switch the pilot on', 'Apagar el piloto': 'Switch the pilot off',
+    'El piloto está apagado: no mira nada ni escribe nada.': 'The pilot is off: it reads nothing and writes nothing.',
+    'Lo enciende el dueño de la ficha del piloto.': 'The owner of the pilot settings switches it on.',
+    'Reanudar, encender, apagar, los trabajos y el tope son del dueño de la ficha del piloto.': 'Resuming, switching on and off, the jobs and the cap belong to the owner of the pilot settings.',
+    'Solo lo cambia el dueño de la ficha del piloto.': 'Only the owner of the pilot settings can change this.',
+    'Marcar avisos como hechos o descartarlos necesita la herramienta «Piloto» sin ser la cuenta de pruebas.': 'Marking alerts as done or dismissing them needs the “Pilot” tool and cannot be done from the test account.',
+    'Apagar el piloto deja de verlo y de escribir en el acto. Sus notas se quedan aquí.': 'Switching the pilot off stops it reading and writing at once. Its notes stay here.',
+    'Al encenderlo, vuelve a mirar el negocio dos veces al día y a dejar avisos aquí. No toca nada.': 'Once on, it looks at the business twice a day again and leaves alerts here. It changes nothing.',
+    'Motivo': 'Reason', 'Escribe el motivo (entre 3 y 300 caracteres).': 'Write the reason (3 to 300 characters).',
+    'Confirmar': 'Confirm', 'Hecho': 'Done', 'Descartar': 'Dismiss', 'Aceptar': 'Accept', 'Rechazar': 'Reject',
+    'Hecho por': 'Done by', 'Descartado por': 'Dismissed by', 'Aceptada por': 'Accepted by', 'Rechazada por': 'Rejected by', 'el': 'on',
+    'Pendiente': 'Pending', 'Aceptada': 'Accepted', 'Rechazada': 'Rejected',
+    'Problema': 'Problem', 'Prueba': 'Evidence', 'Cambio': 'Change', 'Riesgo': 'Risk', 'Nota': 'Note', 'Nota (opcional)': 'Note (optional)',
+    'El piloto no ha hecho propuestas de cambio.': 'The pilot has made no proposed changes.',
+    'Sin pasada todavía hoy.': 'No run yet today.', 'Todo en orden.': 'All in order.',
+    'Sin reservas en este sistema todavía.': 'No bookings in this system yet.', 'Sin motos en este sistema todavía.': 'No bikes in this system yet.',
+    'Sin reservas ni pagos en este sistema todavía.': 'No bookings or payments in this system yet.',
+    'Flota y taller': 'Fleet and workshop', 'Salidas y recogidas de mañana': "Tomorrow's handovers and pick-ups", 'Motos que no han vuelto': 'Bikes not back yet',
+    'Reservas sin pagar que caducan': 'Unpaid bookings about to expire', 'Cobros por cuadrar': 'Payments to reconcile', 'Qué sacar primero del taller': 'What to get out of the workshop first',
+    'Modelos siempre llenos o vacíos': 'Models always full or empty', 'Cierre del día': 'Day close',
+    'Ver en Taller': 'See in Workshop', 'Ver en Flota y tarifas': 'See in Fleet and rates', 'Ver en Hoy': 'See in Today', 'Ver en Reservas de producto': 'See in Product bookings',
+    'Motos': 'Bikes', 'disponibles': 'available', 'en el taller': 'in the workshop', 'de baja': 'retired',
+    'en el taller sin orden de trabajo': 'in the workshop with no work order', '{d} días en el taller': '{d} days in the workshop',
+    'un tramo largo sale más caro por día que uno corto': 'a longer tier costs more per day than a shorter one', 'hay un tramo sin precio': 'a tier has no price', 'hay un precio a cero': 'a price is zero',
+    'Salidas de mañana sin moto asignada: {n}': "Tomorrow's handovers with no bike assigned: {n}", 'Salidas de mañana con la moto en el taller: {n}': "Tomorrow's handovers with the bike in the workshop: {n}",
+    'Salidas de mañana con la moto de baja: {n}': "Tomorrow's handovers with a retired bike: {n}", 'Motos asignadas a dos salidas a la vez: {n}': 'Bikes assigned to two handovers at once: {n}',
+    'Entregas a domicilio sin distancia calculada: {n}': 'Home deliveries with no distance worked out: {n}',
+    'Motos que debían volver y no consta: {n}': 'Bikes due back with no return recorded: {n}', 'La más atrasada lleva {d} días.': 'The latest one is {d} days overdue.',
+    'Salidas pasadas sin registrar: {n}': 'Past handovers not recorded: {n}',
+    'Caducan en 24 h y son la última moto libre de su modelo: {n}': 'Expire within 24 h and are the last free bike of their model: {n}',
+    'Reservas sin pagar que caducan en 24 h: {n}': 'Unpaid bookings expiring within 24 h: {n}',
+    'Pagos por revisar: {n}': 'Payments to review: {n}', 'Pagos sin factura emitida: {n}': 'Payments with no invoice issued: {n}', 'Reservas confirmadas sin pago: {n}': 'Confirmed bookings with no payment: {n}',
+    '{r} reservas en 7 días, {l} libres y {t} en el taller': '{r} bookings in 7 days, {l} free and {t} in the workshop',
+    'lleno {s} semanas seguidas ({p} % de ocupación)': 'full {s} weeks in a row ({p} % occupancy)', 'vacío {s} semanas seguidas ({p} % de ocupación)': 'empty {s} weeks in a row ({p} % occupancy)',
+    'Salidas hoy': 'Handovers today', 'Vueltas hoy': 'Returns today', 'Cobros hoy': 'Payments today', 'Reservas con cobro pendiente': 'Bookings with payment pending',
+    'Y {n} más.': 'And {n} more.', 'Moto sin nombre en este sistema': 'Bike with no name in this system', 'Modelo sin nombre en este sistema': 'Model with no name in this system',
+    'Aviso de un tipo que esta pantalla aún no conoce.': 'An alert of a kind this screen does not know yet.',
+    'Escribe un importe con cifras y, si hace falta, un punto o una coma para los céntimos.': 'Write an amount in figures, with a dot or a comma for cents if needed.',
+    'Ese número es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 37 o 37.50.': 'That number is ambiguous (thousands or decimals?): write it without a thousands separator, for example 37 or 37.50.',
+    'Elige al menos un trabajo, o pon el nivel de Ruta a 0.': 'Choose at least one job, or set the Ruta level to 0.',
+    'Subir el tope tarda 24 h en entrar; bajarlo es inmediato.': 'Raising the cap takes 24 h to apply; lowering it is immediate.',
+    'Unos {u} USD al cambio de hoy.': 'About {u} USD at today’s rate.',
+    'Guardado.': 'Saved.', 'Parado: el piloto no hará nada hasta que se reanude.': 'Paused: the pilot will do nothing until it is resumed.', 'Reanudado.': 'Resumed.',
+    'Piloto encendido.': 'Pilot switched on.', 'Piloto apagado.': 'Pilot switched off.',
+    'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).': 'Too many changes in a row: wait a minute (at most 10 a day).',
+    'Esto solo lo puede hacer el dueño de la ficha del piloto.': 'Only the owner of the pilot settings can do this.',
+    'La cuenta de pruebas no puede cambiar nada aquí.': 'The test account cannot change anything here.',
+    'No tienes la herramienta «Piloto»: pídesela al administrador principal en Usuarios.': 'You do not have the “Pilot” tool: ask the main administrator for it in Users.',
+    'El piloto está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'The pilot is off: its alerts cannot be read until it is switched on. This does NOT mean there are none.',
+    'Hecho: marcado.': 'Done: marked.', 'Descartado.': 'Dismissed.', 'Propuesta aceptada.': 'Proposal accepted.', 'Propuesta rechazada.': 'Proposal rejected.'
+  };
+  var ID_AG = {
+    'Piloto': 'Pilot',
+    'Dos veces al día mira el negocio y deja aquí avisos con su prueba. No toca nada ni habla con nadie: las personas deciden.': 'Dua kali sehari memeriksa usaha dan meninggalkan peringatan di sini beserta buktinya. Tidak mengubah apa pun dan tidak berbicara dengan siapa pun: manusia yang memutuskan.',
+    'Estado': 'Status', 'Hoy': 'Hari ini', 'Propuestas de cambio': 'Usulan perubahan',
+    'Cambios que el piloto propone para el sistema. Los acepta o los rechaza el dueño de la ficha.': 'Perubahan yang diusulkan pilot untuk sistem. Pemilik pengaturan pilot yang menerima atau menolaknya.',
+    'Trabajos y tope': 'Tugas dan batas biaya', 'Qué trabajos hace': 'Tugas yang dikerjakan', 'Nivel de Ruta': 'Level Ruta',
+    '0 · No hace la pasada': '0 · Tidak berjalan', '1 · Mira y avisa': '1 · Memeriksa dan memberi peringatan',
+    'Tope de gasto al mes': 'Batas biaya per bulan', 'Motivo del cambio (obligatorio)': 'Alasan perubahan (wajib)', 'Guardar': 'Simpan',
+    'Más adelante': 'Nanti', 'Clave de IA': 'Kunci AI', 'Aún no se usa': 'Belum digunakan',
+    'Los ocho trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'Delapan tugas ini tidak memanggil AI: perhitungannya dilakukan oleh sistem sendiri.',
+    'Avisos por Telegram': 'Peringatan lewat Telegram', 'Los avisos están en este panel.': 'Peringatan ada di panel ini.',
+    'Módulo': 'Modul', 'Encendido': 'Aktif', 'Apagado': 'Nonaktif', 'Trabajo': 'Kerja', 'Trabajando': 'Bekerja', 'En pausa': 'Dijeda',
+    'Última pasada': 'Pemeriksaan terakhir', 'Todavía no ha hecho ninguna pasada.': 'Belum pernah berjalan.', 'Gastado este mes': 'Terpakai bulan ini', 'Tope': 'Batas', 'Sin tope': 'Tanpa batas',
+    'Avisos de hoy': 'Peringatan hari ini', 'mañana': 'pagi', 'tarde': 'sore',
+    'hecha': 'selesai', 'en pausa': 'dijeda', 'sin trabajos encendidos': 'tidak ada tugas aktif', 'parada por la pausa': 'berhenti karena jeda',
+    'cortada por el cupo del día': 'terpotong oleh kuota harian', 'con errores': 'ada kesalahan',
+    'Parar': 'Jeda', 'Reanudar': 'Lanjutkan', 'Encender el piloto': 'Aktifkan pilot', 'Apagar el piloto': 'Matikan pilot',
+    'El piloto está apagado: no mira nada ni escribe nada.': 'Pilot nonaktif: tidak membaca dan tidak menulis apa pun.',
+    'Lo enciende el dueño de la ficha del piloto.': 'Yang mengaktifkannya adalah pemilik pengaturan pilot.',
+    'Reanudar, encender, apagar, los trabajos y el tope son del dueño de la ficha del piloto.': 'Melanjutkan, mengaktifkan, mematikan, tugas, dan batas biaya adalah hak pemilik pengaturan pilot.',
+    'Solo lo cambia el dueño de la ficha del piloto.': 'Hanya pemilik pengaturan pilot yang dapat mengubahnya.',
+    'Marcar avisos como hechos o descartarlos necesita la herramienta «Piloto» sin ser la cuenta de pruebas.': 'Menandai peringatan selesai atau mengabaikannya memerlukan alat «Pilot» dan tidak bisa dari akun uji coba.',
+    'Apagar el piloto deja de verlo y de escribir en el acto. Sus notas se quedan aquí.': 'Mematikan pilot langsung menghentikannya membaca dan menulis. Catatannya tetap di sini.',
+    'Al encenderlo, vuelve a mirar el negocio dos veces al día y a dejar avisos aquí. No toca nada.': 'Setelah aktif, pilot kembali memeriksa usaha dua kali sehari dan meninggalkan peringatan di sini. Tidak mengubah apa pun.',
+    'Motivo': 'Alasan', 'Escribe el motivo (entre 3 y 300 caracteres).': 'Tulis alasannya (3 sampai 300 karakter).',
+    'Confirmar': 'Konfirmasi', 'Hecho': 'Selesai', 'Descartar': 'Buang', 'Aceptar': 'Terima', 'Rechazar': 'Tolak',
+    'Hecho por': 'Diselesaikan oleh', 'Descartado por': 'Diabaikan oleh', 'Aceptada por': 'Diterima oleh', 'Rechazada por': 'Ditolak oleh', 'el': 'pada',
+    'Pendiente': 'Menunggu', 'Aceptada': 'Diterima', 'Rechazada': 'Ditolak',
+    'Problema': 'Masalah', 'Prueba': 'Bukti', 'Cambio': 'Perubahan', 'Riesgo': 'Risiko', 'Nota': 'Catatan', 'Nota (opcional)': 'Catatan (opsional)',
+    'El piloto no ha hecho propuestas de cambio.': 'Pilot belum mengusulkan perubahan.',
+    'Sin pasada todavía hoy.': 'Belum ada pemeriksaan hari ini.', 'Todo en orden.': 'Semua beres.',
+    'Sin reservas en este sistema todavía.': 'Belum ada booking di sistem ini.', 'Sin motos en este sistema todavía.': 'Belum ada motor di sistem ini.',
+    'Sin reservas ni pagos en este sistema todavía.': 'Belum ada booking maupun pembayaran di sistem ini.',
+    'Flota y taller': 'Armada dan bengkel', 'Salidas y recogidas de mañana': 'Serah terima dan penjemputan besok', 'Motos que no han vuelto': 'Motor yang belum kembali',
+    'Reservas sin pagar que caducan': 'Booking belum dibayar yang akan kedaluwarsa', 'Cobros por cuadrar': 'Pembayaran yang perlu dicocokkan', 'Qué sacar primero del taller': 'Yang perlu dikeluarkan dulu dari bengkel',
+    'Modelos siempre llenos o vacíos': 'Model yang selalu penuh atau kosong', 'Cierre del día': 'Tutup hari',
+    'Ver en Taller': 'Lihat di Bengkel', 'Ver en Flota y tarifas': 'Lihat di Armada dan tarif', 'Ver en Hoy': 'Lihat di Hari ini', 'Ver en Reservas de producto': 'Lihat di Booking produk',
+    'Motos': 'Motor', 'disponibles': 'tersedia', 'en el taller': 'di bengkel', 'de baja': 'tidak dipakai',
+    'en el taller sin orden de trabajo': 'di bengkel tanpa perintah kerja', '{d} días en el taller': '{d} hari di bengkel',
+    'un tramo largo sale más caro por día que uno corto': 'tarif periode panjang lebih mahal per hari daripada yang pendek', 'hay un tramo sin precio': 'ada periode tanpa harga', 'hay un precio a cero': 'ada harga nol',
+    'Salidas de mañana sin moto asignada: {n}': 'Serah terima besok tanpa motor: {n}', 'Salidas de mañana con la moto en el taller: {n}': 'Serah terima besok dengan motor di bengkel: {n}',
+    'Salidas de mañana con la moto de baja: {n}': 'Serah terima besok dengan motor tidak dipakai: {n}', 'Motos asignadas a dos salidas a la vez: {n}': 'Motor yang dijadwalkan untuk dua serah terima sekaligus: {n}',
+    'Entregas a domicilio sin distancia calculada: {n}': 'Antar ke alamat tanpa jarak terhitung: {n}',
+    'Motos que debían volver y no consta: {n}': 'Motor yang seharusnya kembali tetapi belum tercatat: {n}', 'La más atrasada lleva {d} días.': 'Yang paling terlambat sudah {d} hari.',
+    'Salidas pasadas sin registrar: {n}': 'Serah terima lampau yang belum dicatat: {n}',
+    'Caducan en 24 h y son la última moto libre de su modelo: {n}': 'Kedaluwarsa dalam 24 jam dan merupakan motor terakhir yang tersedia untuk modelnya: {n}',
+    'Reservas sin pagar que caducan en 24 h: {n}': 'Booking belum dibayar yang kedaluwarsa dalam 24 jam: {n}',
+    'Pagos por revisar: {n}': 'Pembayaran yang perlu diperiksa: {n}', 'Pagos sin factura emitida: {n}': 'Pembayaran tanpa faktur: {n}', 'Reservas confirmadas sin pago: {n}': 'Booking terkonfirmasi tanpa pembayaran: {n}',
+    '{r} reservas en 7 días, {l} libres y {t} en el taller': '{r} booking dalam 7 hari, {l} tersedia dan {t} di bengkel',
+    'lleno {s} semanas seguidas ({p} % de ocupación)': 'penuh {s} minggu berturut-turut (okupansi {p} %)', 'vacío {s} semanas seguidas ({p} % de ocupación)': 'kosong {s} minggu berturut-turut (okupansi {p} %)',
+    'Salidas hoy': 'Serah terima hari ini', 'Vueltas hoy': 'Pengembalian hari ini', 'Cobros hoy': 'Pembayaran hari ini', 'Reservas con cobro pendiente': 'Booking dengan pembayaran tertunda',
+    'Y {n} más.': 'Dan {n} lagi.', 'Moto sin nombre en este sistema': 'Motor tanpa nama di sistem ini', 'Modelo sin nombre en este sistema': 'Model tanpa nama di sistem ini',
+    'Aviso de un tipo que esta pantalla aún no conoce.': 'Peringatan jenis yang belum dikenal layar ini.',
+    'Escribe un importe con cifras y, si hace falta, un punto o una coma para los céntimos.': 'Tulis jumlah berupa angka, dengan titik atau koma untuk sen bila perlu.',
+    'Ese número es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 37 o 37.50.': 'Angka itu ambigu (ribuan atau desimal?): tulis tanpa pemisah ribuan, misalnya 37 atau 37.50.',
+    'Elige al menos un trabajo, o pon el nivel de Ruta a 0.': 'Pilih setidaknya satu tugas, atau atur level Ruta ke 0.',
+    'Subir el tope tarda 24 h en entrar; bajarlo es inmediato.': 'Menaikkan batas berlaku setelah 24 jam; menurunkannya langsung berlaku.',
+    'Unos {u} USD al cambio de hoy.': 'Sekitar {u} USD dengan kurs hari ini.',
+    'Guardado.': 'Tersimpan.', 'Parado: el piloto no hará nada hasta que se reanude.': 'Dijeda: pilot tidak akan melakukan apa pun sampai dilanjutkan.', 'Reanudado.': 'Dilanjutkan.',
+    'Piloto encendido.': 'Pilot aktif.', 'Piloto apagado.': 'Pilot dimatikan.',
+    'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).': 'Terlalu banyak perubahan berturut-turut: tunggu satu menit (maksimal 10 per hari).',
+    'Esto solo lo puede hacer el dueño de la ficha del piloto.': 'Ini hanya bisa dilakukan oleh pemilik pengaturan pilot.',
+    'La cuenta de pruebas no puede cambiar nada aquí.': 'Akun uji coba tidak dapat mengubah apa pun di sini.',
+    'No tienes la herramienta «Piloto»: pídesela al administrador principal en Usuarios.': 'Anda tidak punya alat «Pilot»: mintalah kepada admin utama di Pengguna.',
+    'El piloto está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'Pilot nonaktif: peringatannya tidak bisa dibaca sampai diaktifkan. Ini BUKAN berarti tidak ada.',
+    'Hecho: marcado.': 'Selesai: sudah ditandai.', 'Descartado.': 'Diabaikan.', 'Propuesta aceptada.': 'Usulan diterima.', 'Propuesta rechazada.': 'Usulan ditolak.'
+  };
+  var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
+  var traduce = function (r) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(r); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
+  var raiz = document.querySelector('[data-ag="raiz"]');
+  /*AXW_COMUN_JS*/
+  var C = axwComun(raiz, T);
+  if (window.LW_EN && typeof window.LW_EN === 'object') {
+    [EN_AG, C.EN].forEach(function (d) { Object.keys(d).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = d[k]; }); });
+  }
+  if (window.LW_ID && typeof window.LW_ID === 'object') {
+    [ID_AG, C.ID || {}].forEach(function (d) { Object.keys(d).forEach(function (k) { if (!(k in window.LW_ID)) window.LW_ID[k] = d[k]; }); });
+  }
+  traduce(raiz);
+  var $a = function (n) { return raiz.querySelector('[data-ag="' + n + '"]'); };
+  var F = function (n) { return raiz.querySelector('[data-campo="' + n + '"]'); };
+  var h = C.h, vacia = C.vacia, oculta = C.oculta;
+  /* Una frase con huecos {x}: se traduce la plantilla ENTERA (es la clave del diccionario) y luego se rellenan los números. */
+  function Tf(clave, vals) { var s = T(clave); Object.keys(vals || {}).forEach(function (k) { s = s.split('{' + k + '}').join(String(vals[k])); }); return s; }
+  function msg(n, m) { var e = $a(n); e.textContent = m || ''; oculta(e, !m); }
+  var exito = function (m) { msg('exito', m); }, error = function (m) { msg('error', m); };
+
+  var TRABAJOS = ['flota', 'salidas', 'vueltas', 'bloqueos', 'cobros', 'taller', 'ocupacion', 'cierre'];
+  var NOMBRE = { flota: 'Flota y taller', salidas: 'Salidas y recogidas de mañana', vueltas: 'Motos que no han vuelto', bloqueos: 'Reservas sin pagar que caducan',
+                 cobros: 'Cobros por cuadrar', taller: 'Qué sacar primero del taller', ocupacion: 'Modelos siempre llenos o vacíos', cierre: 'Cierre del día' };
+  var SIN_DATOS = { flota: 'Sin motos en este sistema todavía.', cobros: 'Sin reservas ni pagos en este sistema todavía.' };
+  var PANTALLA = { taller: ['/intranet/v4/taller/', 'Ver en Taller'], flota: ['/intranet/v4/flota/', 'Ver en Flota y tarifas'], hoy: ['/intranet/v4/home/', 'Ver en Hoy'],
+                   reservas: ['/intranet/v4/reservas-producto/', 'Ver en Reservas de producto'] };
+  /* Dónde enseña el ERP «cuáles son» (con la sesión de quien mira: el piloto solo vio totales, D14). */
+  var ENLACES = { salidas: ['hoy'], vueltas: ['hoy'], cierre: ['hoy'], bloqueos: ['reservas'], cobros: ['reservas'], ocupacion: ['reservas'], taller: ['taller'] };
+  var RECUENTO = {
+    sin_unidad: 'Salidas de mañana sin moto asignada: {n}', unidad_en_taller: 'Salidas de mañana con la moto en el taller: {n}', unidad_de_baja: 'Salidas de mañana con la moto de baja: {n}',
+    unidad_doble: 'Motos asignadas a dos salidas a la vez: {n}', entrega_sin_km: 'Entregas a domicilio sin distancia calculada: {n}',
+    tarde: 'Motos que debían volver y no consta: {n}', salida_sin_registrar: 'Salidas pasadas sin registrar: {n}',
+    caducan_ultima_libre: 'Caducan en 24 h y son la última moto libre de su modelo: {n}', caducan_24h: 'Reservas sin pagar que caducan en 24 h: {n}',
+    pagos_revisar: 'Pagos por revisar: {n}', pagado_sin_factura: 'Pagos sin factura emitida: {n}', confirmada_sin_pago: 'Reservas confirmadas sin pago: {n}'
+  };
+  var MOTIVO_TARIFA = { largo_mas_caro_por_dia: 'un tramo largo sale más caro por día que uno corto', tramo_sin_precio: 'hay un tramo sin precio', precio_cero: 'hay un precio a cero' };
+  var RESULTADO = { hecha: 'hecha', en_pausa: 'en pausa', apagadas: 'sin trabajos encendidos', parado: 'parada por la pausa', cupo: 'cortada por el cupo del día', otro: 'con errores' };
+  var PROPIOS = {
+    sin_permiso: T('No tienes la herramienta «Piloto»: pídesela al administrador principal en Usuarios.'),
+    modulo_apagado: T('El piloto está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.')
+  };
+  var POR_HINT = { agente_freno: 'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).', agente_solo_owner: 'Esto solo lo puede hacer el dueño de la ficha del piloto.',
+                   cuenta_pruebas: 'La cuenta de pruebas no puede cambiar nada aquí.' };
+
+  var SB = null;
+  var E = { estado: null, notas: null };
+
+  /* Una entrada por RPC, con el nombre LITERAL (erp/contrato_front.py extrae `.rpc('x')` y `lwDatos('x')`). agente_notas_datos es *_datos (dueña erp_lector) y va por lwDatos;
+     agente_panel_estado NO lo es (dueña postgres: responde con el módulo apagado) y va por sb.rpc, igual que las que escriben. */
+  var RPC = {
+    agente_panel_estado: function () { return SB.rpc('agente_panel_estado', {}); },
+    agente_notas_datos: function (a) { return window.lwDatos('agente_notas_datos', a); },
+    agente_nota_decide: function (a) { return SB.rpc('agente_nota_decide', a); },
+    agente_propuesta_decide: function (a) { return SB.rpc('agente_propuesta_decide', a); },
+    agente_para: function () { return SB.rpc('agente_para', {}); },
+    agente_reanuda: function () { return SB.rpc('agente_reanuda', {}); },
+    agente_ficha_ajusta: function (a) { return SB.rpc('agente_ficha_ajusta', a); },
+    agente_modulo_cambia: function (a) { return SB.rpc('agente_modulo_cambia', a); }
+  };
+  function llama(nombre, args) {
+    var p;
+    try { p = RPC[nombre](args || {}); } catch (e) { return Promise.resolve({ data: null, error: e }); }
+    return Promise.resolve(p).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; },
+                                   function (e) { return { data: null, error: e }; });
+  }
+  function textoError(err, lectura) {
+    var hint = err && err.hint ? String(err.hint) : '';
+    if (POR_HINT[hint]) return T(POR_HINT[hint]);
+    return C.mensaje(err, lectura, PROPIOS);
+  }
+
+  /* ── forma ── */
+  function esObj(x) { return x != null && typeof x === 'object' && !Array.isArray(x); }
+  function ent(x) { return typeof x === 'number' && isFinite(x) && Math.floor(x) === x; }
+  function estadoOk(d) {
+    if (!esObj(d) || typeof d.encendido !== 'boolean') return false;
+    if (!d.encendido) return true;   // apagado: la base solo da {encendido, soy_dueno, puedo_decidir} (#313)
+    return typeof d.parado === 'boolean' && esObj(d.trabajos) && ent(d.gastado_mes_cent) && (d.ultima_pasada == null || esObj(d.ultima_pasada));
+  }
+  function notasOk(d) { return esObj(d) && Array.isArray(d.notas) && Array.isArray(d.propuestas) && esObj(d.nombres) && typeof d.dia === 'string'; }
+
+  /* ── pintar: estado ── */
+  function dato(etq, valor, chip) {
+    return h('div', { class: 'ag-dato' }, [h('span', { text: T(etq) }), chip || h('strong', { text: valor })]);
+  }
+  function eur(cent, d) { return cent == null ? T('Sin tope') : C.dinero(cent / 100, d.moneda || 'EUR'); }
+  function pintaEstado(d) {
+    var caja = vacia($a('estado')), acc = vacia($a('acciones-estado'));
+    oculta($a('bloque-estado'), false);
+    caja.appendChild(dato('Módulo', null, C.chip(T(d.encendido ? 'Encendido' : 'Apagado'), d.encendido ? 'ok' : 'neutro')));
+    var motivo = '';
+    if (!d.encendido) {
+      motivo = T('El piloto está apagado: no mira nada ni escribe nada.') + (d.soy_dueno === true ? '' : ' ' + T('Lo enciende el dueño de la ficha del piloto.'));
+      if (d.soy_dueno !== false) acc.appendChild(C.boton(T('Encender el piloto'), 'ag-encender', { 'data-primario': '1' }));
+    } else {
+      caja.appendChild(dato('Trabajo', null, C.chip(T(d.parado ? 'En pausa' : 'Trabajando'), d.parado ? 'espera' : 'ok')));
+      var u = d.ultima_pasada;
+      caja.appendChild(dato('Última pasada', u ? C.fechaDia(u.dia) + ' · ' + T(u.pasada === 'tarde' ? 'tarde' : 'mañana') + ' · ' + T(RESULTADO[u.resultado] || 'con errores')
+                                             : T('Todavía no ha hecho ninguna pasada.')));
+      caja.appendChild(dato('Avisos de hoy', String(ent(d.notas_hoy) ? d.notas_hoy : 0)));
+      caja.appendChild(dato('Gastado este mes', eur(d.gastado_mes_cent, d) + ' / ' + eur(d.tope_mensual_cent, d)));
+      if (!d.parado) acc.appendChild(C.boton(T('Parar'), 'ag-parar'));
+      if (d.parado && d.soy_dueno) acc.appendChild(C.boton(T('Reanudar'), 'ag-reanudar', { 'data-primario': '1' }));
+      if (d.soy_dueno) acc.appendChild(C.boton(T('Apagar el piloto'), 'ag-apagar', { 'data-peligro': '1' }));
+      if (!d.soy_dueno) motivo = T('Reanudar, encender, apagar, los trabajos y el tope son del dueño de la ficha del piloto.');
+    }
+    msg('motivo-estado', motivo);
+  }
+
+  /* ── pintar: una nota ── */
+  function nombre(uuid, tipo) {
+    var n = E.notas && E.notas.nombres ? E.notas.nombres[uuid] : null;
+    return typeof n === 'string' && n ? n : T(tipo === 'modelo' ? 'Modelo sin nombre en este sistema' : 'Moto sin nombre en este sistema');
+  }
+  function lineaItem(trabajo, it, cifras) {
+    if (!esObj(it)) return T('Aviso de un tipo que esta pantalla aún no conoce.');
+    if (trabajo === 'flota') {
+      if (it.tipo === 'taller_sin_orden') return nombre(it.unidad, 'moto') + ' · ' + T('en el taller sin orden de trabajo');
+      if (it.tipo === 'taller_largo') return nombre(it.unidad, 'moto') + ' · ' + Tf('{d} días en el taller', { d: it.dias });
+      if (it.tipo === 'tarifa' && MOTIVO_TARIFA[it.motivo]) return nombre(it.modelo, 'modelo') + ' · ' + T(MOTIVO_TARIFA[it.motivo]);
+    } else if (trabajo === 'taller') {
+      if (it.modelo && ent(it.reservas_7d)) return nombre(it.modelo, 'modelo') + ' · ' + Tf('{r} reservas en 7 días, {l} libres y {t} en el taller', { r: it.reservas_7d, l: it.libres, t: it.en_taller });
+    } else if (trabajo === 'ocupacion') {
+      if (it.tipo === 'llena' || it.tipo === 'vacia') return nombre(it.modelo, 'modelo') + ' · ' + Tf(it.tipo === 'llena' ? 'lleno {s} semanas seguidas ({p} % de ocupación)' : 'vacío {s} semanas seguidas ({p} % de ocupación)', { s: it.semanas, p: it.ocupacion_pct });
+    } else if (RECUENTO[it.tipo] && ent(it.n)) {
+      var s = Tf(RECUENTO[it.tipo], { n: it.n });
+      if (it.tipo === 'tarde' && cifras && ent(cifras.tarde_max_dias) && cifras.tarde_max_dias > 0) s += ' ' + Tf('La más atrasada lleva {d} días.', { d: cifras.tarde_max_dias });
+      return s;
+    }
+    return T('Aviso de un tipo que esta pantalla aún no conoce.');
+  }
+  function enlacesDe(n) {
+    var claves = ENLACES[n.trabajo] ? ENLACES[n.trabajo].slice() : [];
+    if (n.trabajo === 'flota') {
+      (n.items || []).forEach(function (it) {
+        var k = it && it.tipo === 'tarifa' ? 'flota' : 'taller';
+        if (claves.indexOf(k) < 0) claves.push(k);
+      });
+    }
+    return claves;
+  }
+  function tarjeta(trabajo, n) {
+    var est = n ? n.estado : 'sin_nota';
+    var t = h('article', { class: 'ag-tarjeta', 'data-ag': 'nota', 'data-trabajo': trabajo, 'data-estado': est });
+    var cab = h('div', { class: 'ag-cab' }, [h('h3', { text: T(NOMBRE[trabajo]) })]);
+    if (n) cab.appendChild(C.chip(T(n.pasada === 'tarde' ? 'tarde' : 'mañana')));
+    t.appendChild(cab);
+    if (!n) { t.appendChild(h('p', { class: 'ag-sub', text: T('Sin pasada todavía hoy.') })); return t; }
+    if (est === 'sin_datos') { t.appendChild(h('p', { class: 'ag-sub', text: T(SIN_DATOS[trabajo] || 'Sin reservas en este sistema todavía.') })); return t; }
+    if (trabajo === 'flota' && esObj(n.cifras) && ent(n.cifras.unidades)) {
+      t.appendChild(h('p', { class: 'ag-sub', text: T('Motos') + ': ' + n.cifras.unidades + ' · ' + T('disponibles') + ' ' + n.cifras.disponibles + ' · ' + T('en el taller') + ' ' + n.cifras.en_taller + ' · ' + T('de baja') + ' ' + n.cifras.de_baja }));
+    }
+    if (est === 'resumen') {
+      var c = n.cifras || {};
+      t.appendChild(C.resumen([['Salidas hoy', c.salidas_hoy], ['Vueltas hoy', c.vueltas_hoy], ['Cobros hoy', c.cobros_hoy], ['Reservas con cobro pendiente', c.pendientes_cobro]]));
+    } else if (est === 'nada' || !(n.items || []).length) {
+      t.appendChild(h('p', { class: 'ag-sub', text: T('Todo en orden.') }));
+    } else {
+      var ul = h('ul', { class: 'ag-lineas' });
+      n.items.forEach(function (it) { ul.appendChild(h('li', { text: lineaItem(trabajo, it, n.cifras) })); });
+      if (ent(n.mas) && n.mas > 0) ul.appendChild(h('li', { class: 'ag-sub', text: Tf('Y {n} más.', { n: n.mas }) }));
+      t.appendChild(ul);
+    }
+    var en = enlacesDe(n);
+    if (en.length && est !== 'nada') {
+      var ce = h('div', { class: 'ag-enlaces' });
+      en.forEach(function (k) { ce.appendChild(h('a', { class: 'ag-enlace', href: PANTALLA[k][0], 'data-ag': 'ver-' + k, text: T(PANTALLA[k][1]) })); });
+      t.appendChild(ce);
+    }
+    if (est === 'avisos') {
+      if (n.decision === 'hecha' || n.decision === 'descartada') {
+        t.appendChild(h('p', { class: 'ag-sub', 'data-ag': 'decidida', text: T(n.decision === 'hecha' ? 'Hecho por' : 'Descartado por') + ' ' + (n.decidida_por || '—') + ' ' + T('el') + ' ' + C.fechaHora(n.decidida_en) }));
+      } else if (E.estado && E.estado.puedo_decidir) {
+        t.appendChild(h('div', { class: 'axw-acciones' }, [C.boton(T('Hecho'), 'ag-nota-hecha', { 'data-id': n.id }), C.boton(T('Descartar'), 'ag-nota-descartar', { 'data-id': n.id })]));
+      }
+    }
+    return t;
+  }
+  function pintaHoy(d) {
+    oculta($a('bloque-hoy'), false);
+    $a('dia').textContent = C.fechaDia(d.dia);
+    var caja = vacia($a('hoy'));
+    /* la nota más reciente de cada trabajo (la de la tarde manda sobre la de la mañana) */
+    var ult = {};
+    d.notas.forEach(function (n) {
+      if (!esObj(n) || TRABAJOS.indexOf(n.trabajo) < 0) return;
+      var prev = ult[n.trabajo];
+      if (!prev || (n.pasada === 'tarde' && prev.pasada !== 'tarde') || (n.pasada === prev.pasada && String(n.creada_en) > String(prev.creada_en))) ult[n.trabajo] = n;
+    });
+    TRABAJOS.forEach(function (tr) { caja.appendChild(tarjeta(tr, ult[tr] || null)); });
+  }
+  function pintaPropuestas(d) {
+    oculta($a('bloque-propuestas'), false);
+    var caja = vacia($a('propuestas'));
+    if (!d.propuestas.length) { caja.appendChild(h('p', { class: 'axw-vacio', 'data-ag': 'sin-propuestas', text: T('El piloto no ha hecho propuestas de cambio.') })); return; }
+    d.propuestas.forEach(function (p) {
+      if (!esObj(p)) return;
+      var tono = p.estado === 'aceptada' ? 'ok' : (p.estado === 'rechazada' ? 'mal' : 'espera');
+      var b = h('article', { class: 'ag-propuesta', 'data-ag': 'propuesta', 'data-id': p.id }, [
+        h('div', { class: 'ag-cab' }, [h('h3', { text: String(p.problema == null ? '' : p.problema) }), C.chip(T(p.estado === 'aceptada' ? 'Aceptada' : (p.estado === 'rechazada' ? 'Rechazada' : 'Pendiente')), tono)]),
+        C.resumen([['Prueba', p.evidencia], ['Cambio', p.cambio], ['Riesgo', p.riesgo]].concat(p.nota ? [['Nota', p.nota]] : []))]);
+      if (p.estado !== 'pendiente') {
+        b.appendChild(h('p', { class: 'ag-sub', text: T(p.estado === 'aceptada' ? 'Aceptada por' : 'Rechazada por') + ' ' + (p.decidida_por || '—') + ' ' + T('el') + ' ' + C.fechaHora(p.decidida_en) }));
+      } else if (E.estado && E.estado.soy_dueno) {
+        b.appendChild(h('div', { class: 'axw-acciones' }, [C.boton(T('Aceptar'), 'ag-prop-aceptar', { 'data-id': p.id, 'data-primario': '1' }), C.boton(T('Rechazar'), 'ag-prop-rechazar', { 'data-id': p.id })]));
+      }
+      caja.appendChild(b);
+    });
+  }
+  function pintaAjustes(d) {
+    oculta($a('bloque-ajustes'), false);
+    oculta($a('bloque-mas'), false);
+    var cj = vacia($a('trabajos'));
+    TRABAJOS.forEach(function (tr) {
+      var id = 'ag-t-' + tr;
+      var cb = h('input', { type: 'checkbox', id: id, 'data-trabajo': tr });
+      cb.checked = d.trabajos[tr] === true;
+      cj.appendChild(h('label', { class: 'ag-check', for: id }, [cb, h('span', { text: T(NOMBRE[tr]) })]));
+    });
+    F('nivel_ruta').value = d.nivel_ruta === 1 ? '1' : '0';
+    var etq = $a('tope-etiqueta'); etq.textContent = T('Tope de gasto al mes') + ' (' + (d.moneda || 'EUR') + ')';
+    F('tope').value = d.tope_mensual_cent == null ? '' : String(d.tope_mensual_cent / 100);
+    var ayuda = T('Subir el tope tarda 24 h en entrar; bajarlo es inmediato.');
+    if (typeof d.usd_por_eur === 'number' && d.usd_por_eur > 0 && d.tope_mensual_cent != null) ayuda += ' ' + Tf('Unos {u} USD al cambio de hoy.', { u: Math.round(d.tope_mensual_cent / 100 * d.usd_por_eur) });
+    $a('tope-ayuda').textContent = ayuda;
+    $a('ajustes').disabled = !d.soy_dueno;
+    msg('motivo-ajustes', d.soy_dueno ? '' : T('Solo lo cambia el dueño de la ficha del piloto.'));
+  }
+
+  /* ── cargar ── */
+  function carga() {
+    var est = $a('carga');
+    est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'cargando'); est.textContent = T('Cargando…'); oculta(est, false);
+    return llama('agente_panel_estado').then(function (r) {
+      if (r.error) { est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = textoError(r.error, true); return; }
+      /* null: el interruptor del navegador (apagados_instancia.js) contesta null a una función de un módulo apagado. Se trata como «apagado», sin saber quién mira:
+         el botón Encender sale y la base decide. */
+      var d = r.data == null ? { encendido: false, soy_dueno: null, puedo_decidir: false } : r.data;
+      if (!estadoOk(d)) { est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'); return; }
+      E.estado = d;
+      oculta(est, true); est.setAttribute('data-tipo', 'listo');
+      pintaEstado(d);
+      ['bloque-hoy', 'bloque-propuestas', 'bloque-ajustes', 'bloque-mas'].forEach(function (b) { oculta($a(b), true); });
+      if (!d.encendido) return;
+      pintaAjustes(d);
+      return llama('agente_notas_datos', { p_dia: null }).then(function (rn) {
+        msg('error-hoy', '');
+        if (rn.error || !notasOk(rn.data)) {
+          oculta($a('bloque-hoy'), false); vacia($a('hoy'));
+          msg('error-hoy', rn.error ? textoError(rn.error, true) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'));
+          return;
+        }
+        E.notas = rn.data;
+        pintaHoy(rn.data);
+        pintaPropuestas(rn.data);
+      });
+    });
+  }
+
+  /* ── escribir ── */
+  function hazYRecarga(btn, nombre, args, ok) {
+    if (!C.ocupa(btn)) return Promise.resolve(false);
+    error(''); exito('');
+    return llama(nombre, args).then(function (r) {
+      C.libera(btn);
+      if (r.error) { error(textoError(r.error, false)); return false; }
+      return carga().then(function () { exito(ok); return true; });
+    });
+  }
+  function conMotivo(titulo, explica, peligro, alConfirmar, opcional) {
+    var inp = h('input', { type: 'text', maxlength: '300', 'data-campo': 'dialogo-motivo', autocomplete: 'off' });
+    var d = C.dialogo(titulo, [h('p', { class: 'ag-sub', text: explica }), C.campo(opcional ? 'Nota (opcional)' : 'Motivo', inp)], [
+      { texto: T('Confirmar'), accion: 'ag-modal-confirmar', primario: !peligro, peligro: peligro, alclic: function (bt, dlg) {
+        var m = inp.value.trim();
+        if (!opcional && (m.length < 3 || m.length > 300)) { dlg.error(T('Escribe el motivo (entre 3 y 300 caracteres).')); return; }
+        if (!C.ocupa(bt)) return;
+        dlg.error('');
+        alConfirmar(m).then(function (r) {
+          C.libera(bt);
+          if (r.error) { dlg.error(textoError(r.error, false)); return; }
+          dlg.cierra();
+          carga();
+        });
+      } },
+      { texto: T('Cancelar'), accion: 'ag-modal-cerrar', cierra: true }
+    ]);
+    return d;
+  }
+  function alGuardar(btn) {
+    var d = E.estado; if (!d || !d.soy_dueno) return;
+    var trabajos = TRABAJOS.filter(function (tr) { var c = raiz.querySelector('[data-trabajo="' + tr + '"][type="checkbox"]'); return c && c.checked; });
+    var nivel = F('nivel_ruta').value === '1' ? 1 : 0;
+    var imp = C.importe(F('tope').value, 2);
+    var m = F('motivo').value.trim();
+    if (imp.e) { error(T(imp.e === 'ambiguo' ? 'Ese número es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 37 o 37.50.' : 'Escribe un importe con cifras y, si hace falta, un punto o una coma para los céntimos.')); return; }
+    if (nivel === 1 && !trabajos.length) { error(T('Elige al menos un trabajo, o pon el nivel de Ruta a 0.')); return; }
+    if (m.length < 3 || m.length > 300) { error(T('Escribe el motivo (entre 3 y 300 caracteres).')); return; }
+    hazYRecarga(btn, 'agente_ficha_ajusta', { p_tope_mensual_cent: imp.vacio ? 0 : Math.round(imp.v * 100), p_trabajos: trabajos, p_nivel_ruta: nivel, p_motivo: m }, T('Guardado.'))
+      .then(function (ok) { if (ok) F('motivo').value = ''; });
+  }
+  function alClic(ev) {
+    var el = ev.target.closest ? ev.target.closest('[data-accion]') : null;
+    if (!el || !raiz.contains(el)) return;
+    var a = el.getAttribute('data-accion');
+    if (a.indexOf('ag-modal') === 0) return;
+    var id = el.hasAttribute('data-id') ? Number(el.getAttribute('data-id')) : null;
+    if (a === 'ag-parar') hazYRecarga(el, 'agente_para', {}, T('Parado: el piloto no hará nada hasta que se reanude.'));
+    else if (a === 'ag-reanudar') hazYRecarga(el, 'agente_reanuda', {}, T('Reanudado.'));
+    else if (a === 'ag-nota-hecha') hazYRecarga(el, 'agente_nota_decide', { p_id: id, p_decision: 'hecha' }, T('Hecho: marcado.'));
+    else if (a === 'ag-nota-descartar') hazYRecarga(el, 'agente_nota_decide', { p_id: id, p_decision: 'descartada' }, T('Descartado.'));
+    else if (a === 'ag-guardar') alGuardar(el);
+    else if (a === 'ag-apagar' || a === 'ag-encender') {
+      var enc = a === 'ag-encender';
+      conMotivo(T(enc ? 'Encender el piloto' : 'Apagar el piloto'), T(enc ? 'Al encenderlo, vuelve a mirar el negocio dos veces al día y a dejar avisos aquí. No toca nada.' : 'Apagar el piloto deja de verlo y de escribir en el acto. Sus notas se quedan aquí.'),
+        !enc, function (m) { return llama('agente_modulo_cambia', { p_encender: enc, p_motivo: m }).then(function (r) { if (!r.error) exito(T(enc ? 'Piloto encendido.' : 'Piloto apagado.')); return r; }); });
+    } else if (a === 'ag-prop-aceptar' || a === 'ag-prop-rechazar') {
+      var acepta = a === 'ag-prop-aceptar';
+      conMotivo(T(acepta ? 'Aceptar' : 'Rechazar'), '', !acepta, function (m) {
+        return llama('agente_propuesta_decide', { p_id: id, p_decision: acepta ? 'aceptada' : 'rechazada', p_nota: m || null }).then(function (r) { if (!r.error) exito(T(acepta ? 'Propuesta aceptada.' : 'Propuesta rechazada.')); return r; });
+      }, true);
+    }
+  }
+  function init(aut) {
+    SB = aut.sb;
+    raiz.addEventListener('click', alClic);
+    carga();
+  }
+  function arranca() {
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { var est = $a('carga'); est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = T('Sin sesión: recarga la página o vuelve a entrar.'); return; }
+    window.LW_AUTH.then(init);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca);
+  else arranca();
+})();
+</script>
