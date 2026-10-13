@@ -182,6 +182,16 @@
     });
   }
   function pantalla(error) {
+    // En otro idioma de la instancia (M.ni lo pone el build, erp-front 14-oct): la misma pantalla con su plantilla y frases traducidas; el «qué hace»
+    // del módulo solo existe en español y no sale; sin nombre traducido, la frase sin nombre.
+    var L = (M.ni || {})[window.LW_IDIOMA];
+    if (L) {
+      var mod = moduloDeRuta(RUTA), nl = error ? null : (L.n || {})[mod];
+      var w = error ? { titulo: L.et, texto: L.ex, que_hace: '', asunto: '', oculta_que_hace: 'hidden', oculta_contacto: 'hidden', oculta_reintenta: '' }
+        : { titulo: L.tit, texto: nl ? L.an.replace('%s', nl) : L.a0, que_hace: '', asunto: encodeURIComponent(L.as + (nl || RUTA)),
+            oculta_que_hace: 'hidden', oculta_contacto: '', oculta_reintenta: 'hidden' };
+      return { titulo: w.titulo, html: L.p.replace(/\{\{([a-z_]+)\}\}/g, function (_, k) { return esc(w[k]); }) };
+    }
     var f = error ? null : (M.n || {})[moduloDeRuta(RUTA)];
     var v = error ? {
       titulo: 'No se pudo comprobar los módulos',

@@ -162,12 +162,12 @@
   /* ── lo que se lee: las mismas tablas y columnas que la pantalla Productos de Lawang (ver cabecera) ── */
   function lee(q) { return Promise.resolve(q).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; }, function (e) { return { data: null, error: e }; }); }
   var PETICION = 0;
-  var TOPE = 1000;   // con más, se avisa: la lista no está entera
+  var TOPE = 1000;   // se piden TOPE+1: si llegan más de TOPE, se enseñan TOPE y se avisa (con exactamente 1000 no hay aviso falso; revisor)
   function carga() {
     var yo = ++PETICION, est = $v('estado');
     if (!E.filas) { est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'cargando'); est.textContent = T('Cargando…'); }
     return Promise.all([
-      lee(SB.from('productos').select('id,numero_producto,nombre,referencia,unidad,precio,moneda,descripcion,impuesto_id,activo,clase').neq('clase', 'alquiler').order('nombre').limit(TOPE)),
+      lee(SB.from('productos').select('id,numero_producto,nombre,referencia,unidad,precio,moneda,descripcion,impuesto_id,activo,clase').neq('clase', 'alquiler').order('nombre').limit(TOPE + 1)),
       lee(SB.from('impuestos').select('id,numero_impuesto,nombre,pais,clase,porcentaje,activo').order('pais').order('orden'))
     ]).then(function (r) {
       if (yo !== PETICION) return { ok: false, tarde: true };
@@ -182,10 +182,10 @@
         return { ok: false };
       }
       // Lo que se alquila va en Flota: aquí solo lo demás; la consulta ya lo filtra (neq) para que el tope no lo gasten las motos, y se vuelve a mirar aquí (una fila sin clase, de una base anterior a F3-E3, tampoco se enseña: no se sabe qué es)
-      E.filas = p.data.filter(function (x) { return x && typeof x.id === 'string' && typeof x.clase === 'string' && x.clase !== 'alquiler'; })
+      E.filas = p.data.slice(0, TOPE).filter(function (x) { return x && typeof x.id === 'string' && typeof x.clase === 'string' && x.clase !== 'alquiler'; })
         .sort(function (a, b) { return (b.activo ? 1 : 0) - (a.activo ? 1 : 0); });
       E.imps = !i.error && Array.isArray(i.data) ? i.data : null;
-      E.recortado = p.data.length >= TOPE;
+      E.recortado = p.data.length > TOPE;
       pinta();
       return { ok: true };
     });

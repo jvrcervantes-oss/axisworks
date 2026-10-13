@@ -3326,11 +3326,13 @@ AVISO_I18N = {
     'en': {'incluida': 'Screen not included', 'instalado': 'Module not installed',
            'incluida_n': '«%s» is not included in this instance.', 'incluida_0': 'This screen is not included in this instance.',
            'activo_n': '«%s» is not active in this instance.', 'activo_0': 'This module is not active in this instance.', 'asunto': 'Activate module: ',
+           'error_t': 'Could not check the modules', 'error_x': "We couldn't ask the database which modules this instance has. It isn't missing: try again.",
            'plantilla': ('aria-label="How to activate it"', 'This ERP is built and maintained by AxisWorks. To activate this module for your company, '
                          'write to us and we will go through it with you.', '>Retry<', '>Back to home<')},
     'id': {'incluida': 'Layar tidak tersedia', 'instalado': 'Modul belum dipasang',
            'incluida_n': '«%s» tidak termasuk dalam ERP ini.', 'incluida_0': 'Layar ini tidak termasuk dalam ERP ini.',
            'activo_n': '«%s» belum aktif di ERP ini.', 'activo_0': 'Modul ini belum aktif di ERP ini.', 'asunto': 'Aktifkan modul: ',
+           'error_t': 'Modul tidak dapat diperiksa', 'error_x': 'Kami tidak dapat menanyakan ke basis data modul apa saja yang dimiliki ERP ini. Bukan berarti tidak ada: coba lagi.',
            'plantilla': ('aria-label="Cara mengaktifkannya"', 'ERP ini dibangun dan dikelola oleh AxisWorks. Untuk mengaktifkan modul ini di perusahaan '
                          'Anda, kirimi kami pesan dan kami akan membahasnya bersama Anda.', '>Coba lagi<', '>Kembali ke beranda<')},
 }
@@ -3341,8 +3343,14 @@ def _nombre_en(nombre_es, modulo, idioma):
     módulo · id: i18n_id.json (el diccionario de la interfaz), por el nombre en español."""
     if not nombre_es:
         return None
+    menu = (MENU_I18N.get(nombre_es) or {}).get(idioma)
+    if menu:
+        return menu
     if idioma == 'en':
-        return json.load(open(os.path.join(AQUI, 'panel_setup_en.json'), encoding='utf-8'))['modulos'].get(modulo) if modulo else None
+        # el nombre del MÓDULO en inglés solo si lo que se nombra es el módulo (no una pantalla suya: «Generador de contratos» no es «Contracts»)
+        if not modulo or (rotulos().get(modulo) or [None])[0] != nombre_es:
+            return None
+        return json.load(open(os.path.join(AQUI, 'panel_setup_en.json'), encoding='utf-8'))['modulos'].get(modulo)
     return json.load(open(os.path.join(AQUI, 'i18n_id.json'), encoding='utf-8')).get(nombre_es)
 
 
@@ -3369,7 +3377,30 @@ def _valores_no_instalado(ficha, ruta, herramienta, modulo, idioma):
     n = _nombre_en(nombre, modulo, idioma)
     # el «qué hace» del módulo solo existe en español (modulos_rotulos.json): en otro idioma no sale
     return {'titulo': tr['instalado'], 'texto': tr['activo_n'] % n if n else tr['activo_0'], 'que_hace': '',
-            'asunto': quote(tr['asunto'] + (n or nombre or ruta), safe=''), 'oculta_que_hace': 'hidden', 'oculta_contacto': '', 'oculta_reintenta': 'hidden'}
+            'asunto': quote(tr['asunto'] + (n or ruta), safe=''), 'oculta_que_hace': 'hidden', 'oculta_contacto': '', 'oculta_reintenta': 'hidden'}
+
+
+def aviso_i18n_js(base, mapa):
+    """Lo que necesita pantalla() de apagados_instancia.js para pintar «Módulo no instalado» en otro idioma (revisor 14-oct, 2.ª vuelta: el aviso
+    que sale al vuelo seguía solo en español): por idioma de la instancia que no es el español, la plantilla traducida y las frases, y el nombre de
+    cada módulo en ese idioma cuando se sabe. Vacío sin AVISO_IDIOMAS (el de siempre)."""
+    if not AVISO_IDIOMAS:
+        return {}
+    out = {}
+    for l in AVISO_IDIOMAS[0]:
+        if l == 'es':
+            continue
+        tr = AVISO_I18N.get(l)
+        if not tr:
+            aborta('aviso de pantalla no incluida: no hay frases en %r (AVISO_I18N de build.py)' % l)
+        nombres = {}
+        for mod, ficha in (mapa.get('n') or {}).items():
+            n = _nombre_en(ficha[0] if ficha else None, mod, l)
+            if n:
+                nombres[mod] = n
+        out[l] = {'p': _plantilla_en(base, l), 'tit': tr['instalado'], 'an': tr['activo_n'], 'a0': tr['activo_0'], 'as': tr['asunto'],
+                  'et': tr['error_t'], 'ex': tr['error_x'], 'n': nombres}
+    return out
 
 
 def _plantilla_en(base, idioma):
@@ -5240,6 +5271,7 @@ def instancia(nombre):
         aborta('apagados_instancia.js sin el hueco __AXW_NO_INSTALADO__')
     # la pantalla se inyecta DESPUÉS de quitar comentarios (sus URL llevan «//») y como literal de cadena JS
     no_instalado = no_instalado_base(marca)
+    mapa['ni'] = aviso_i18n_js(no_instalado, mapa)   # erp-front 14-oct: «Módulo no instalado» al vuelo en los idiomas de la instancia
     interruptores = (plantilla.replace('__AXW_MAPA__', json.dumps(mapa, ensure_ascii=False, sort_keys=True))
                      .replace('__AXW_NO_INSTALADO__', json.dumps(no_instalado, ensure_ascii=False)) + '\n')
     t = open(g, encoding='utf-8').read()
