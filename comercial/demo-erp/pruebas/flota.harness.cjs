@@ -34,7 +34,7 @@ const err = (code, message, hint, details) => ({ data: null, error: { code, mess
 const J = x => JSON.stringify(x);
 
 function nuevaBase(o = {}) {
-  const s = { llamadas: [], o, n: 100, topes: o.topes || TOPES, productos: [], versiones: [] };
+  const s = { llamadas: [], o, n: 100, topes: o.topes || TOPES, productos: [], versiones: [], garantias: [], seguros: [] };
   const u = (id, ident, estado, notas) => ({ id, numero: id.toUpperCase(), identificador: ident, estado: estado || 'disponible', notas: notas == null ? null : notas, actualizado_en: marca() });
   const t = (id, dias, precio, moneda, etiqueta) => ({ id, dias, precio, moneda: moneda || 'IDR', etiqueta: etiqueta || null, actualizado_en: marca() });
   if (!o.vacio) {
@@ -79,6 +79,33 @@ async function servidor(s, nombre, a) {
       if (o.sinTopes) { const d = datos(s); delete d.topes; return { data: d, error: null }; }
       if (o.fallaLecturaTrasGuardar && s.llamadas.some(x => x[0] !== 'producto_flota_datos')) return { data: null, error: { message: 'Failed to fetch' } };
       return { data: datos(s), error: null };
+    // seguro y fianza (bbm-p42): mismas RPC que el paso «Alquiler con unidades» del asistente (forma de reservas_setup_datos: FORMAS_DATOS de erp/modulos.py)
+    case 'reservas_setup_datos':
+      if (o.setupRaro) return { data: { garantias: 'x' }, error: null };
+      return { data: { clases: [], reglas: {}, reglas_defecto: {}, previos: [], previos_revisado: null, topes: {}, garantias: JSON.parse(JSON.stringify(s.garantias.filter(g => !a.p_producto || g.producto_id === a.p_producto))),
+        seguro_tramos: JSON.parse(JSON.stringify(s.seguros.filter(g => !a.p_producto || g.producto_id === a.p_producto))) }, error: null };
+    case 'producto_seguro_guarda': {
+      const m = vermotivo(s, a.p_motivo); if (m) return m;
+      const ex = s.seguros.find(y => y.producto_id === a.p_producto_id && y.dias === a.p_dias);
+      if (ex) { if (ex.actualizado_en !== a.p_esperado) return err('40001', 'Otra persona cambió este tramo', 'flota_cambio'); Object.assign(ex, { precio: a.p_precio, moneda: a.p_moneda, actualizado_en: marca() }); }
+      else { if (a.p_esperado != null) return err('40001', 'El tramo cambió', 'flota_cambio'); s.seguros.push({ id: 'sg' + (s.n++), producto_id: a.p_producto_id, dias: a.p_dias, precio: a.p_precio, moneda: a.p_moneda, actualizado_en: marca() }); }
+      apunta(s, 'producto_seguros', 'seguro ' + a.p_dias, a.p_motivo); return { data: 'ok', error: null };
+    }
+    case 'producto_seguro_borra': {
+      const m = vermotivo(s, a.p_motivo); if (m) return m;
+      const i = s.seguros.findIndex(y => y.id === a.p_id); if (i < 0) return err('22023', 'El tramo no existe', 'datos');
+      if (s.seguros[i].actualizado_en !== a.p_esperado) return err('40001', 'Otra persona cambió este tramo', 'flota_cambio');
+      s.seguros.splice(i, 1); apunta(s, 'producto_seguros', 'borra seguro', a.p_motivo); return { data: true, error: null };
+    }
+    case 'producto_garantia_guarda': {
+      const m = vermotivo(s, a.p_motivo); if (m) return m;
+      const extra = Object.keys(a.p_datos || {}).filter(k => !['fianza', 'seguro_obligatorio', 'fianza_con_seguro'].includes(k));
+      if (extra.length) return err('22023', 'Campo no admitido: ' + extra.join(', '), 'campo_no_admitido');
+      let g = s.garantias.find(y => y.producto_id === a.p_producto);
+      if (g && g.actualizado_en !== a.p_esperado) return err('40001', 'Otra persona cambió la fianza', 'flota_cambio');
+      if (!g) { if (a.p_esperado != null) return err('40001', 'cambió', 'flota_cambio'); g = { producto_id: a.p_producto, moneda: 'IDR' }; s.garantias.push(g); }
+      Object.assign(g, a.p_datos, { actualizado_en: marca() }); apunta(s, 'producto_garantias', 'fianza', a.p_motivo); return { data: { actualizado_en: g.actualizado_en }, error: null };
+    }
     case 'producto_unidades_alta_lote': {
       const m = vermotivo(s, a.p_motivo); if (m) return m;
       const p = s.productos.find(x => x.id === a.p_producto_id);
@@ -168,11 +195,21 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.exposeFunction('__srv', (n, a) => servidor(base, n, a));
     await p.setContent(pagina(opts.idioma || 'es'), { waitUntil: 'load' });
     if (!opts.sinEspera) await p.waitForFunction(() => document.querySelector('[data-fl="estado"]').getAttribute('data-tipo') !== 'cargando', null, { timeout: 5000 });
+    // bbm-p42: lo editable vive en el cajón del modelo. p.click abre antes el cajón de ESE modelo si lo pulsado no está a la vista, y un «Cancelar» con algo
+    // tecleado contesta «Descartar cambios» (la pregunta tiene su prueba propia en el bloque 12). Así las pruebas de siempre miden lo mismo con el cajón.
+    const clic = p.click.bind(p);
+    p.click = async (sel, o2) => {
+      await cajonPara(p, base, sel);
+      const r = await clic(sel, o2);
+      if (/fl-modal-cerrar/.test(sel) && await p.$('[data-fl="descartar"]')) await clic('[data-accion="fl-modal-descartar-si"]');
+      return r;
+    };
+    p.__base = base;
     return { base, p, ctx };
   }
   const txt = (p, sel) => p.$eval(sel, e => e.textContent);
   const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
-  const escritas = b => b.llamadas.filter(x => x[0] !== 'producto_flota_datos');
+  const escritas = b => b.llamadas.filter(x => x[0] !== 'producto_flota_datos' && x[0] !== 'reservas_setup_datos');
   const espera = (p, fn, arg) => p.waitForFunction(fn, arg, { timeout: 5000 });
   const hasta = async f => { for (let i = 0; i < 100; i++) { if (f()) return true; await new Promise(r => setTimeout(r, 50)); } return false; };
   const campo = n => '[data-campo="' + n + '"]';
@@ -185,13 +222,33 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   const msgOk = p => txt(p, '[data-fl="exito"]');
   const confirmar = p => p.click(accion('fl-modal-confirmar'));
   const esperaCierre = p => espera(p, () => !document.querySelector('[data-axw="dialogo"]'));
-  const sinInyeccion = async p => (await p.$$('[data-fl="raiz"] img, [data-fl="raiz"] svg, [data-fl="raiz"] script')).length === 0 && (await p.evaluate(() => window.__xss)) === undefined;
+  const sinInyeccion = async p => (await p.$$('[data-fl="raiz"] img, [data-fl="raiz"] svg, [data-fl="raiz"] script, [data-fl="cajon"] img, [data-fl="cajon"] svg, [data-fl="cajon"] script')).length === 0 && (await p.evaluate(() => window.__xss)) === undefined;
   const sinErrores = async p => (await p.evaluate(() => window.__errores)).length === 0 && (await p.evaluate(() => window.__fromLlamado + window.__fetchLlamado)) === 0;
   const desborde = p => p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
   const motivo = (p, v = 'Motivo de prueba') => p.fill(campo('motivo'), v);
   const prod = id => '[data-producto-id="' + id + '"]';
   const nLineas = n => Array.from({ length: n }, (_, i) => '  dk ' + String(1000 + i) + ' ab  ').join('\n');
-  const cuerpo = (p, id) => p.$eval('section' + prod(id), e => e.textContent);
+  async function cajonPara(p, base, sel) {
+    const ya = await p.$(sel);
+    if (ya) {   // algo de la página de debajo (versiones, Actualizar…) con el cajón abierto: se cierra antes, como haría la persona
+      if (await p.$('[data-fl="cajon"]') && !(await ya.evaluate(e => !!e.closest('[data-fl="cajon"]'))) && !(await p.$('[data-axw="dialogo"]'))) await p.evaluate(() => document.querySelector('[data-accion="fl-cajon-cerrar"]').click());
+      return;
+    }
+    let pid = (sel.match(/data-producto-id="([^"]+)"/) || [])[1];
+    const u = (sel.match(/data-unidad-id="([^"]+)"/) || [])[1], t = (sel.match(/data-tarifa-id="([^"]+)"/) || [])[1], sg = (sel.match(/data-seguro-id="([^"]+)"/) || [])[1];
+    if (!pid && u) pid = (base.productos.find(x => x.unidades.some(y => y.id === u)) || {}).id;
+    if (!pid && t) pid = (base.productos.find(x => x.tarifas.some(y => y.id === t)) || {}).id;
+    if (!pid && sg) pid = (base.seguros.find(y => y.id === sg) || {}).producto_id;
+    if (!pid) return;
+    if (await p.$('[data-fl="cajon"]') && !(await p.$('[data-fl="cajon"] section[data-producto-id="' + pid + '"]'))) {
+      if (await p.$('[data-axw="dialogo"]')) return;   // hay una ventana abierta: la prueba sabrá por qué
+      await p.evaluate(() => document.querySelector('[data-accion="fl-cajon-cerrar"]').click());
+    }
+    if (!(await p.$('[data-fl="cajon"]'))) await p.evaluate(id => document.querySelector('.fl-inv-fila[data-fila-producto="' + id + '"][data-accion="fl-cajon-abrir"]').click(), pid);
+    await p.waitForSelector('[data-fl="cajon"] section[data-producto-id="' + pid + '"]', { timeout: 5000 }).catch(() => {});
+    if (sg || /fl-seguro|fl-garantia/.test(sel)) await p.waitForSelector('[data-fl="cajon"] [data-fl="seguro"] .fl-bloque-cab .axw-boton', { timeout: 5000 }).catch(() => {});
+  }
+  const cuerpo = async (p, id) => { await cajonPara(p, p.__base, '[data-producto-id="' + id + '"] .no-existe'); return p.$eval('section' + prod(id), e => e.textContent); };
 
   // 1. cargando · listo · estructura
   {
@@ -199,7 +256,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await espera(p, () => document.querySelector('[data-fl="estado"]').getAttribute('data-tipo') === 'cargando');
     ok('mientras lee dice «Cargando…» y NO enseña el contenido ni dice nada del rol', (await txt(p, '[data-fl="estado"]')).includes('Cargando') && !(await visible(p, '[data-fl="contenido"]')) && !(await txt(p, '[data-fl="estado"]')).includes('administra'));
     await espera(p, () => document.querySelector('[data-fl="estado"]').getAttribute('data-tipo') === 'listo');
-    ok('al llegar la lectura enseña los productos y oculta el estado', (await visible(p, '[data-fl="contenido"]')) && !(await visible(p, '[data-fl="estado"]')) && (await p.$$('section[data-producto-id]')).length === 2);
+    ok('al llegar la lectura enseña los productos y oculta el estado', (await visible(p, '[data-fl="contenido"]')) && !(await visible(p, '[data-fl="estado"]')) && (await p.$$('.fl-inv-fila[data-fila-producto]')).length === 2 && !(await p.$('[data-fl="cajon"]')));   // paso 1: una fila por modelo en el inventario; el cajón, cerrado
     ok('arranca pidiendo SOLO la lectura, sin argumentos', base.llamadas.length === 1 && base.llamadas[0][0] === 'producto_flota_datos' && J(base.llamadas[0][1]) === '{}', J(base.llamadas));
     await ctx.close();
   }
@@ -272,7 +329,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   {
     const { base, p, ctx } = await abre();
     await p.click(accion('fl-lote-abrir', prod('p1')));
-    ok('abre la ventana de alta y un segundo clic no abre otra', (await dlg(p)) === 1 && await p.evaluate(() => { document.querySelector('[data-accion="fl-lote-abrir"]').click(); return document.querySelectorAll('[data-axw="dialogo"]').length === 1; }));
+    ok('abre la ventana de alta y un segundo clic no abre otra', (await dlg(p)) === 1 && await p.evaluate(() => { const b = document.querySelector('[data-accion="fl-lote-abrir"]'); if (b) b.click(); return document.querySelectorAll('[data-axw="dialogo"]').length === 1; }));
     const lista = nLineas(98).split('\n').concat(['', '   ', '\t', ' DK 1000 AB ', 'xy 55 zz']).join('\n');
     await p.fill(campo('lista'), lista);
     const res = await txt(p, '[data-fl="previa-resumen"]');
@@ -464,7 +521,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('se puede abrir otra ventana (la de otra moto)', (await dlg(p)) === 1 && (await p.$eval('[data-axw="dialogo"]', e => e.textContent)).includes('Editar moto'));
     await espera(p, () => document.querySelector('[data-fl="exito"]').textContent !== '');
     ok('el guardado termino (una escritura, lista releida)', escritas(base).length === 1 && llamadas(base, 'producto_flota_datos').length === 2);
-    await p.evaluate(() => document.querySelector('[data-accion="fl-lote-abrir"]').click());   // la ventana tapa el boton: se dispara el clic directo, como un doble clic
+    await p.evaluate(() => { const b = document.querySelector('[data-accion="fl-lote-abrir"]'); if (b) b.click(); });   // la ventana tapa el boton: se dispara el clic directo, como un doble clic
     ok('al terminar el guardado la ventana nueva sigue siendo la unica: el cierre tardio no bajo el indicador (un clic mas no abre una segunda)', (await dlg(p)) === 1 && (await p.$eval('[data-axw="dialogo"]', e => e.textContent)).includes('Editar moto'));
     await p.click(accion('fl-modal-cerrar'));
     await p.click(accion('fl-lote-abrir', prod('p1')));
@@ -586,7 +643,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const { base, p, ctx } = await abre({ base: { soloUno: true } });
     base.productos[0].tarifas = base.productos[0].tarifas.slice(0, 1);
     await p.click(accion('fl-actualizar'));
-    await espera(p, () => document.querySelectorAll('.fl-fila[data-tarifa-id]').length === 1);
+    await hasta(() => llamadas(base, 'producto_flota_datos').length === 2); await p.waitForTimeout(100);
     await p.click(accion('fl-tarifa-borrar', '[data-tarifa-id="t1"]'));
     ok('borrar el ULTIMO tramo: aviso fuerte «el producto deja de cotizarse»', (await visible(p, '[data-fl="aviso-ultimo"]')) && (await txt(p, '[data-fl="aviso-ultimo"]')).includes('el producto deja de cotizarse'));
     await motivo(p, 'Quito todo'); await confirmar(p); await esperaCierre(p);
@@ -614,7 +671,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   // 8. XSS en todos los campos que pintan datos de la base y los que escribe el usuario
   {
     const { base, p, ctx } = await abre({ base: { xss: true } });
-    ok('nombre de producto, identificador, notas, etiqueta, motivo y quien con etiquetas salen como TEXTO (nada se ejecuta)', (await cuerpo(p, 'p1')).includes(XSS_NOMBRE) && (await txt(p, '[data-unidad-id="u1"]')).includes(XSS_ID) && (await txt(p, '[data-unidad-id="u1"]')).includes(XSS_NOTAS) && (await txt(p, '[data-tarifa-id="t1"]')).includes(XSS_ETQ) && await sinInyeccion(p));
+    ok('nombre de producto, identificador, notas, etiqueta, motivo y quien con etiquetas salen como TEXTO (nada se ejecuta)', (await txt(p, '.fl-inv-fila[data-fila-producto="p1"]')).includes(XSS_NOMBRE) && (await cuerpo(p, 'p1')) !== null && (await txt(p, '#fl-cajon-tit')).includes(XSS_NOMBRE) && (await txt(p, '[data-unidad-id="u1"]')).includes(XSS_ID) && (await txt(p, '[data-unidad-id="u1"]')).includes(XSS_NOTAS) && (await txt(p, '[data-tarifa-id="t1"]')).includes(XSS_ETQ) && await sinInyeccion(p));
     await p.click('[data-fl="detalle-versiones"] summary');
     ok('el quien y el motivo de la lista de versiones tambien son texto', (await txt(p, '[data-fl="versiones"]')).includes(XSS_QUIEN) && (await txt(p, '[data-fl="versiones"]')).includes(XSS_MOTIVO) && await sinInyeccion(p));
     await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]'));
@@ -686,18 +743,18 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     m = await desborde(p); ok(ancho + ' px · con las versiones abiertas no desborda', m.sw <= m.cw, J(m));
     await p.click(accion('fl-lote-abrir', prod('p1')));
     await p.fill(campo('lista'), nLineas(60) + '\n' + XSS_ID + '\ndk 1000 ab\nab\n' + 'W'.repeat(60));
-    const d1 = await p.$eval('[data-axw="dialogo"] .axw-modal', e => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, w: window.innerWidth, sw: e.scrollWidth, cw: e.clientWidth }; });
+    const d1 = await p.$eval('[data-fl="cajon"]', e => { const r = e.getBoundingClientRect(), c = e.querySelector('[data-fl="cajon-cuerpo"]'); return { l: r.left, r: r.right, w: window.innerWidth, sw: c.scrollWidth, cw: c.clientWidth }; });
     ok(ancho + ' px · la ventana del lote (con vista previa larga) cabe en pantalla', d1.l >= 0 && d1.r <= d1.w + 1 && d1.sw <= d1.cw + 1, J(d1));
     if (SHOT) await p.screenshot({ path: SHOT + '_' + ancho + '_lote.png' });
     await p.click(accion('fl-modal-cerrar'));
     await p.click(accion('fl-tarifa-abrir', prod('p4')));
     await p.fill(campo('dias'), '1'); await p.fill(campo('precio'), '1.500');
-    const d2 = await p.$eval('[data-axw="dialogo"] .axw-modal', e => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, w: window.innerWidth, sw: e.scrollWidth, cw: e.clientWidth }; });
+    const d2 = await p.$eval('[data-fl="cajon"]', e => { const r = e.getBoundingClientRect(), c = e.querySelector('[data-fl="cajon-cuerpo"]'); return { l: r.left, r: r.right, w: window.innerWidth, sw: c.scrollWidth, cw: c.clientWidth }; });
     ok(ancho + ' px · la ventana del tramo (con errores y nota de moneda) cabe en pantalla', d2.l >= 0 && d2.r <= d2.w + 1 && d2.sw <= d2.cw + 1, J(d2));
     if (SHOT) await p.screenshot({ path: SHOT + '_' + ancho + '_tramo.png' });
     await p.click(accion('fl-modal-cerrar'));
     await p.click(accion('fl-moto-editar', '[data-unidad-id="u1"]'));
-    const d3 = await p.$eval('[data-axw="dialogo"] .axw-modal', e => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, w: window.innerWidth, sw: e.scrollWidth, cw: e.clientWidth }; });
+    const d3 = await p.$eval('[data-fl="cajon"]', e => { const r = e.getBoundingClientRect(), c = e.querySelector('[data-fl="cajon-cuerpo"]'); return { l: r.left, r: r.right, w: window.innerWidth, sw: c.scrollWidth, cw: c.clientWidth }; });
     ok(ancho + ' px · la ventana de editar moto cabe en pantalla', d3.l >= 0 && d3.r <= d3.w + 1 && d3.sw <= d3.cw + 1, J(d3));
     if (SHOT) await p.screenshot({ path: SHOT + '_' + ancho + '_moto.png' });
     await ctx.close();
@@ -714,7 +771,105 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   {
     // las motos en tarjetas en movil: ninguna tabla con scroll horizontal dentro de la lista de productos
     const { p, ctx } = await abre({ ancho: 390 });
+    await cuerpo(p, 'p1');   // con el cajón del modelo abierto (a 390 ocupa la pantalla entera)
+    ok('390 px · el cajón ocupa todo el ancho', await p.$eval('[data-fl="cajon"]', e => Math.abs(e.getBoundingClientRect().width - window.innerWidth) <= 1));
     ok('390 px · las motos y los tramos son tarjetas (no tablas) y cada fila cabe en el ancho', (await p.$$('section[data-producto-id] table')).length === 0 && await p.$$eval('section[data-producto-id] .fl-fila', fs => fs.every(f => f.getBoundingClientRect().right <= window.innerWidth + 1)));
+    await ctx.close();
+  }
+
+  // 12. paso 1 (inventario: buscar, filtrar, ordenar, vista por moto) y paso 2 (cajón: abrir, Esc, clic fuera, foco, cambios sin guardar, repintar sin recargar)
+  {
+    const { base, p, ctx } = await abre({ base: { sinAmbos: true, mezcla: true } });
+    const filas = () => p.$$eval('.fl-inv-fila[data-fila-producto]', fs => fs.map(f => f.getAttribute('data-fila-producto')));
+    ok('inventario: una fila por modelo, con motos, disponibles, taller y las tarifas de 1 y 30 días tal cual (o «—»)', (await filas()).length === 4
+       && /Honda Beat[\s\S]*P-1/.test(await txt(p, '.fl-inv-fila[data-fila-producto="p1"]')) && (await txt(p, '.fl-inv-fila[data-fila-producto="p1"]')).includes('150.000 IDR') && (await txt(p, '.fl-inv-fila[data-fila-producto="p1"]')).includes('—'));
+    ok('inventario: el modelo sin tarifas ni motos dice «No se puede cotizar» y por qué, sin abrir nada', /No se puede cotizar[\s\S]*Sin tarifas[\s\S]*Sin motos disponibles/.test(await txt(p, '.fl-inv-fila[data-fila-producto="p3"]')));
+    await p.fill('[data-fl="buscar"]', 'dk 7777');
+    ok('buscar por matrícula encuentra su modelo (espacios y mayúsculas como la base)', J(await filas()) === J(['p2']));
+    await p.fill('[data-fl="buscar"]', '');
+    await p.selectOption('[data-fl="f-tarifa"]', 'sin');
+    ok('filtro «sin tarifas»', J(await filas()) === J(['p3']));
+    await p.selectOption('[data-fl="f-tarifa"]', ''); await p.selectOption('[data-fl="f-motos"]', 'taller');
+    ok('filtro «con motos en taller»', J(await filas()) === J(['p1']));
+    await p.selectOption('[data-fl="f-motos"]', ''); await p.selectOption('[data-fl="f-estado"]', 'listo');
+    ok('filtro «listo para reservar» (y el contador lo dice)', J(await filas()) === J(['p1', 'p4', 'p2']) && (await txt(p, '[data-fl="n-visibles"]')).includes('3 de 4'));
+    await p.selectOption('[data-fl="f-estado"]', ''); await p.selectOption('[data-fl="orden"]', 'motos');
+    ok('orden «más motos»', (await filas())[0] === 'p1');
+    await p.click('[data-accion="fl-vista"][data-vista="motos"]');
+    ok('vista por moto: una fila por moto con su modelo', (await p.$$('.fl-inv-fila[data-fila-unidad]')).length === 5 && (await p.$eval('[data-accion="fl-vista"][data-vista="motos"]', b => b.getAttribute('aria-pressed'))) === 'true');
+    await p.selectOption('[data-fl="f-moto-estado"]', 'taller');
+    ok('vista por moto: filtro por estado', J(await p.$$eval('.fl-inv-fila[data-fila-unidad]', fs => fs.map(f => f.getAttribute('data-fila-unidad')))) === J(['u3']));
+    await p.click('.fl-inv-fila[data-fila-unidad="u3"]');
+    ok('pulsar una moto abre el cajón de su modelo con esa moto ya en edición (un clic)', !!(await p.$('[data-fl="cajon"] section[data-producto-id="p1"]')) && (await dlgTxt(p)).includes('Editar moto') && (await p.$eval(campo('identificador'), e => e.value)) === 'B 1234 XY');
+    await p.fill(campo('notas'), 'tecleado');
+    await p.keyboard.press('Escape');
+    ok('Esc con algo tecleado NO cierra: pregunta «Descartar cambios / Seguir editando»', !!(await p.$('[data-fl="cajon"]')) && !!(await p.$('[data-fl="descartar"]')));
+    await p.click('[data-accion="fl-modal-descartar-no"]');
+    ok('«Seguir editando» conserva lo tecleado', !(await p.$('[data-fl="descartar"]')) && (await p.$eval(campo('notas'), e => e.value)) === 'tecleado');
+    await p.mouse.click(10, 10);   // clic fuera (sobre el fondo)
+    ok('clic fuera con algo tecleado también pregunta', !!(await p.$('[data-fl="descartar"]')));
+    await p.click('[data-accion="fl-modal-descartar-si"]');
+    ok('«Descartar cambios» cierra el cajón sin escribir nada y el foco vuelve a la fila', !(await p.$('[data-fl="cajon"]')) && escritas(base).length === 0 && (await p.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-fila-unidad'))) === 'u3');
+    await p.click('[data-accion="fl-vista"][data-vista="modelos"]');
+    await p.selectOption('[data-fl="orden"]', 'nombre');
+    await p.click('.fl-inv-fila[data-fila-producto="p2"]');
+    ok('pulsar una fila abre el cajón a la derecha con TODO lo editable del modelo (tramos, seguro y fianza, motos)', !!(await p.$('[data-fl="cajon"] section[data-producto-id="p2"] [data-fl="tarifas"]')) && !!(await p.$('[data-fl="cajon"] [data-fl="motos"]')) && !!(await p.$('[data-fl="cajon"] [data-fl="seguro"]'))
+       && (await p.$eval('[data-fl="cajon"]', e => e.getAttribute('role') === 'dialog' && e.getAttribute('aria-modal') === 'true')) && (await p.evaluate(() => document.activeElement.getAttribute('data-accion'))) === 'fl-cajon-cerrar');
+    // foco atrapado: Tab desde el último vuelve al primero
+    await p.evaluate(() => { const l = [...document.querySelectorAll('[data-fl="cajon"] button')].filter(b => b.offsetParent !== null); l[l.length - 1].focus(); });
+    await p.keyboard.press('Tab');
+    ok('el foco queda atrapado dentro del cajón (Tab desde el último vuelve al primero)', await p.evaluate(() => !!document.activeElement.closest('[data-fl="cajon"]')));
+    await p.keyboard.press('Escape');
+    ok('Esc sin nada tecleado cierra el cajón y devuelve el foco a la fila', !(await p.$('[data-fl="cajon"]')) && (await p.evaluate(() => document.activeElement.getAttribute('data-fila-producto'))) === 'p2');
+    // guardar repinta la fila del inventario y el cajón sin recargar la página
+    await p.click(accion('fl-tarifa-cambiar', '[data-tarifa-id="t21"]'));
+    await p.fill(campo('precio'), '210000'); await motivo(p, 'Sube'); await confirmar(p); await esperaCierre(p);
+    ok('al guardar, la fila del inventario y el cajón enseñan lo nuevo sin recargar, y el cajón dice «Guardado.»', (await txt(p, '.fl-inv-fila[data-fila-producto="p2"]')).includes('210.000') && (await txt(p, '[data-fl="cajon"] [data-tarifa-id="t21"]')).includes('210.000')
+       && (await txt(p, '[data-fl="cajon-ok"]')) === 'Guardado.' && !!(await p.$('[data-fl="cajon"]')));
+    ok('sin XSS ni errores', await sinInyeccion(p) && await sinErrores(p));
+    await ctx.close();
+  }
+  // 13. seguro y fianza del modelo en el cajón (owner 13-oct: los mete el equipo del cliente solo)
+  {
+    const { base, p, ctx } = await abre();
+    await p.click(accion('fl-seguro-abrir', prod('p1')));
+    ok('el cajón lee el seguro y la fianza de ESE modelo (reservas_setup_datos con p_producto)', llamadas(base, 'reservas_setup_datos').some(x => x[1].p_producto === 'p1'));
+    await p.fill(campo('dias'), '30'); await p.fill(campo('precio'), '1.500');
+    await confirmar(p);
+    ok('precio ambiguo del seguro: se rechaza sin enviar', escritas(base).length === 0 && (await dlgError(p)).includes('ambiguo'));
+    await p.fill(campo('precio'), '150000'); await confirmar(p);
+    ok('sin motivo no se envía', escritas(base).length === 0 && (await dlgError(p)).includes('motivo'));
+    await motivo(p, 'Seguro mensual'); await confirmar(p); await esperaCierre(p);
+    const sgEsc = escritas(base)[0];
+    ok('seguro: manda producto, días, precio, moneda, motivo y versión null (nuevo); se relee y sale en el cajón', sgEsc && sgEsc[0] === 'producto_seguro_guarda' && J(Object.keys(sgEsc[1]).sort()) === J(['p_dias', 'p_esperado', 'p_moneda', 'p_motivo', 'p_precio', 'p_producto_id'])
+       && sgEsc[1].p_dias === 30 && sgEsc[1].p_precio === 150000 && sgEsc[1].p_esperado === null && /30 días[\s\S]*150\.000 IDR/.test(await txt(p, '[data-fl="cajon"] [data-fl="seguro"]')));
+    const sid = base.seguros[0].id;
+    await p.click(accion('fl-seguro-cambiar', '[data-seguro-id="' + sid + '"]'));
+    await p.fill(campo('precio'), '160000'); await motivo(p, 'Sube'); await confirmar(p); await esperaCierre(p);
+    ok('cambiar un tramo del seguro manda la versión que vio', /^2026/.test(escritas(base)[1][1].p_esperado) && base.seguros[0].precio === 160000);
+    await p.click(accion('fl-garantia-abrir', prod('p1')));
+    await p.fill(campo('fianza'), '1000000'); await p.check(campo('seguro_obligatorio')); await p.selectOption(campo('fianza_con_seguro'), 'si'); await motivo(p, 'Fianza nueva'); await confirmar(p); await esperaCierre(p);
+    const g = escritas(base)[2];
+    ok('fianza: manda producto, {fianza, seguro_obligatorio, fianza_con_seguro}, motivo y versión; se relee y se ve', g[0] === 'producto_garantia_guarda' && J(g[1].p_datos) === J({ fianza: 1000000, seguro_obligatorio: true, fianza_con_seguro: true }) && g[1].p_producto === 'p1' && g[1].p_esperado === null
+       && /1\.000\.000 IDR/.test(await txt(p, '[data-fl="garantia"]')) && (await txt(p, '[data-fl="garantia"]')).includes('Sí: fianza y seguro'));
+    await p.click(accion('fl-seguro-borrar', '[data-seguro-id="' + sid + '"]')); await motivo(p, 'Quito'); await confirmar(p); await esperaCierre(p);
+    ok('borrar un tramo del seguro: id, motivo y versión; desaparece del cajón', escritas(base)[3][0] === 'producto_seguro_borra' && escritas(base)[3][1].p_id === sid && /^2026/.test(escritas(base)[3][1].p_esperado) && !!(await p.$('[data-fl="sin-seguro"]')));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ idioma: 'en', base: { noDisponible: ['reservas_setup_datos'] } });
+    await cuerpo(p, 'p1');
+    await p.waitForSelector('[data-fl="seguro"] [data-tipo="error"]');
+    ok('base sin el seguro (PGRST202): el bloque lo dice y el resto del cajón funciona', (await txt(p, '[data-fl="seguro"]')).includes('not available on this database yet') && !!(await p.$('[data-fl="cajon"] [data-accion="fl-tarifa-abrir"]')));
+    ok('en inglés el inventario, el cajón y el bloque de seguro no dejan nada sin traducir', (await p.evaluate(() => window.__sinEn)).length === 0, J(await p.evaluate(() => window.__sinEn)));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ idioma: 'en' });
+    await p.click(accion('fl-seguro-abrir', prod('p1'))); await p.click(accion('fl-modal-cerrar'));
+    await p.click(accion('fl-garantia-abrir', prod('p1'))); await p.click(accion('fl-modal-cerrar'));
+    await p.click('[data-accion="fl-vista"][data-vista="motos"]'); await p.fill('[data-fl="buscar"]', 'zzzz');
+    ok('en inglés las ventanas del seguro y la fianza, la vista por moto y «nada coincide» tampoco dejan nada sin traducir', (await p.evaluate(() => window.__sinEn)).length === 0, J(await p.evaluate(() => window.__sinEn)));
     await ctx.close();
   }
 

@@ -3688,7 +3688,7 @@ IDIOMAS_PARCHES = (
      "    return ok ? g : b.slice(); })(window.AXW_IDIOMAS_BUILD);\n"
      # bbm-p42 (13-oct, owner «debe ir en inglés»): el idioma de PANTALLA por defecto ya no es a la fuerza el primero de la lista (el primero manda el
      # orden del papel). Precedencia: lo que eligió esa persona > `idiomas.pantalla` de la base (dato de Ajustes › Idiomas, p36; lo apunta
-     # apagados_instancia.js tras el login) > `idioma_pantalla` del registro (PUENTE hasta que la base lo guarde; se retira entonces) > el primero.
+     # apagados_instancia.js tras el login) > `idioma_pantalla` del registro (el de la instancia; manda también en la puerta sin sesión, donde la base no se lee) > el primero.
      "  window.AXW_IDIOMA_GUARDADO = v;\n"
      "  window.AXW_IDIOMA_PANTALLA_BUILD = __AXW_IDIOMA_PANTALLA__;\n"
      "  window.AXW_IDIOMA_PANTALLA = (function (l) { var g = null; try { g = localStorage.getItem('axw_idioma_pantalla_erp'); } catch (e) { g = null; }\n"
@@ -3745,8 +3745,9 @@ def idiomas_de(nombre):
 
 def idioma_pantalla_de(nombre, idiomas):
     """El idioma en que ABRE la pantalla de la instancia si nadie eligió otro (`idioma_pantalla` del registro), o None (= el primero de `idiomas`, como
-    siempre). PUENTE (bbm-p42, 13-oct-2026; agencia-81): cuando la base guarde el suyo (`idiomas.pantalla`, Ajustes › Idiomas, p36) ese manda y este se
-    retira (fila del estudio en contexto/pendientes.md). No cambia la lista de idiomas ni el orden del papel. Tiene que ser uno de los idiomas declarados."""
+    siempre). bbm-p42, 13-oct-2026 (agencia-81). Con sesión, el dato de la base (`idiomas.pantalla`, Ajustes › Idiomas, p36) va por encima; este se QUEDA:
+    es el idioma de la puerta sin sesión, donde la base no se lee (Seguridad #289). No cambia la lista de idiomas ni el orden del papel. Tiene que ser uno de
+    los idiomas declarados."""
     p = _instancia_registro(nombre).get('idioma_pantalla')
     if p is None:
         return None
