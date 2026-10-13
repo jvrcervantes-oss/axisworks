@@ -74,6 +74,44 @@ for _n in sorted(_reg):
     if '/textos-contrato/' not in set(build.mapa_modulos(_n)['xp']):
         fallos.append('%s: /textos-contrato/ debería salir del paquete (apagados_extra.p de erp/instancias.json): es la Plantillas de Lawang' % _n)
 
+# N6.3 (erp-front, 14-oct-2026; agencia-81: «por TIPO, no por encendido»): lo que una instancia no puede encender nunca por su tipo de ERP no viaja
+# como pantalla real. bbm es de tipo Reservas: fuera lo de Propiedades y lo «fuera» (solo Lawang); dentro el núcleo, Ajustes, lo de todos los tipos y
+# Reservas de producto, aunque esté apagado (se enciende desde el panel sin republicar).
+sys.path.insert(0, os.path.join(build.AGENCIA, 'erp'))
+from modulos import TIPO_MODULO
+_bbm = build.pantallas_por_tipo('bbm')
+_fuera_esperadas = {'/proyectos/', '/modelos/', '/contratos/', '/emitir/', '/obra/', '/comisiones/', '/reparto/', '/soporte/', '/comision-admin/'}
+if not _fuera_esperadas <= set(_bbm):
+    fallos.append('bbm (Reservas): faltan fuera %s' % sorted(_fuera_esperadas - set(_bbm)))
+_mods_fuera = set(_bbm.values())
+_malos = sorted(m for m in _mods_fuera if TIPO_MODULO[m].get('clase') != 'fuera' and ('todos' in TIPO_MODULO[m]['tipos'] or 'reservas' in TIPO_MODULO[m]['tipos']))
+if _malos:
+    fallos.append('bbm: saca pantallas de módulos que SÍ valen para Reservas: %s' % _malos)
+for _m in ('base', 'facturas', 'recibos', 'gastos', 'productos', 'reservas-producto', 'compradores', 'finanzas', 'sociedades', 'cuentas', 'whatsapp-bot', 'agente'):
+    if _m in _mods_fuera:
+        fallos.append('bbm: %s es núcleo, ajuste, de todos los tipos o de Reservas y no puede salir del paquete' % _m)
+if not set(_bbm) <= set(build.mapa_modulos('bbm')['xp']):
+    fallos.append('bbm: las pantallas de otro tipo tienen que ir en xp (el menú las oculta siempre)')
+_viejo = build._instancia_registro
+try:
+    build._instancia_registro = lambda n: {'config': {}}
+    if build.pantallas_por_tipo('x') != {}:
+        fallos.append('sin tipo_erp en el registro la instancia sale como hasta hoy (nada fuera por tipo)')
+    build._instancia_registro = lambda n: {'config': {'tipo_erp': 'propiedades'}}
+    _prop = build.pantallas_por_tipo('x')
+    if '/proyectos/' in _prop or '/contratos/' in _prop:
+        fallos.append('tipo propiedades: sus propias pantallas no pueden salir')
+    if '/comision-admin/' not in _prop:
+        fallos.append('tipo propiedades: lo «fuera» (solo Lawang) sale igual')
+    build._instancia_registro = lambda n: {'config': {'tipo_erp': 'inventado'}}
+    try:
+        build.pantallas_por_tipo('x')
+        fallos.append('un tipo_erp desconocido tiene que PARAR el build (una errata no puede vaciar el paquete)')
+    except SystemExit:
+        pass
+finally:
+    build._instancia_registro = _viejo
+
 # el texto de la pantalla de taller no miente: no dice que «Reservas de producto» no esté activo
 marca = 'AxisWorks'
 try:
@@ -83,6 +121,32 @@ try:
         fallos.append('la pantalla de taller debe decir «Taller» no se incluye, sin nombrar Reservas de producto')
 except Exception as e:  # noqa: BLE001
     fallos.append('pagina_no_instalado falló: %s' % e)
+
+# el aviso en los idiomas de la instancia (erp-front 14-oct; agencia-81: bbm solo ofrece id y en, y el aviso salía en español)
+try:
+    plantilla2 = plantilla + '|' + '|'.join(build.FRASES_PLANTILLA_NO_INSTALADO)
+    build.AVISO_IDIOMAS = (['id', 'en'], 'en')
+    pag = build.pagina_no_instalado(plantilla2, marca, None, '/contratos/', herramienta='Contratos', modulo='contratos')
+    mod = build.pagina_no_instalado(plantilla2, marca, ('Gastos', 'Qué hace en español'), '/gastos/', modulo='gastos')
+    sin = build.pagina_no_instalado(plantilla2, marca, None, '/x/', herramienta='Algo sin traducir')
+    if not ('<html lang="en">' in pag and '<div data-axw-idioma="id" lang="id" hidden>' in pag and '<div data-axw-idioma="en" lang="en">' in pag
+            and '«Contracts» is not included in this instance.' in pag and '«Kontrak» tidak termasuk dalam ERP ini.' in pag
+            and '<title>Screen not included · AxisWorks</title>' in pag and 'axw_idioma_ui' in pag):
+        fallos.append('el aviso de bbm (id+en, abre en en) debe llevar las dos variantes con el nombre traducido y abrir en inglés')
+    if any(es in x for x in (pag, mod, sin) for es in ('no se incluye', 'no está activo', 'Volver al inicio', 'Reintentar', 'Cómo activarlo',
+                                                       'Este ERP lo construye', 'Qué hace en español')):
+        fallos.append('una instancia sin español no puede llevar ni una frase en español en el aviso')
+    if 'This screen is not included in this instance.' not in sin or 'Layar ini tidak termasuk dalam ERP ini.' not in sin or 'Algo sin traducir' in sin:
+        fallos.append('sin nombre traducido el aviso usa la frase sin nombre (nunca el nombre en español dentro de otro idioma)')
+    if 'Module not installed' not in mod or 'Modul belum dipasang' not in mod:
+        fallos.append('«Módulo no instalado» también sale en id y en')
+    build.AVISO_IDIOMAS = None
+    if build.pagina_no_instalado(plantilla2, marca, None, '/taller/', herramienta='Taller').count('data-axw-idioma') != 0:
+        fallos.append('sin idiomas en la ficha el aviso sigue siendo el de siempre, en español y sin variantes')
+except Exception as e:  # noqa: BLE001
+    fallos.append('pagina_no_instalado con idiomas falló: %s' % e)
+finally:
+    build.AVISO_IDIOMAS = None
 
 if fallos:
     print('FALLO test_pantallas_fuera.py:\n  ' + '\n  '.join(fallos))

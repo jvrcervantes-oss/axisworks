@@ -153,6 +153,22 @@ async function servidor(s, nombre, a) {
       apunta(s, 'producto_tarifas', 'tramo ' + a.p_dias, a.p_motivo);
       return { data: 'ok', error: null };
     }
+    // el MODELO (erp-front, 14-oct-2026): forma de producto_guarda (20260928060000 + F3-E3 'clase'): lista blanca, devuelve el id; sinClase = base anterior a F3-E3
+    case 'producto_guarda': {
+      const permitidas = ['nombre', 'referencia', 'unidad', 'precio', 'moneda', 'descripcion', 'impuesto_id', 'activo'].concat(o.sinClase ? [] : ['clase']);
+      const extra = Object.keys(a.p_datos || {}).filter(k => !permitidas.includes(k));
+      if (extra.length) return err('22023', 'Campo no admitido: ' + extra.join(', '), 'campo_no_admitido');
+      if ('nombre' in a.p_datos && !String(a.p_datos.nombre || '').trim()) return err('22023', 'Falta el nombre.');
+      if (a.p_id == null) {
+        const id = 'pn' + (s.n++);
+        s.productos.push({ id, numero: 'P-' + s.n, nombre: a.p_datos.nombre, activo: a.p_datos.activo !== false, unidades: [], tarifas: [], clase: a.p_datos.clase || 'servicio' });
+        return { data: id, error: null };
+      }
+      const pr = s.productos.find(x => x.id === a.p_id);
+      if (!pr) return err('P0002', 'Ese producto ya no existe (otra persona lo ha cambiado): recarga la pantalla');
+      Object.assign(pr, a.p_datos);
+      return { data: pr.id, error: null };
+    }
     case 'producto_tarifa_borra': {
       const m = vermotivo(s, a.p_motivo); if (m) return m;
       let hallado = null; s.productos.forEach(p => { const i = p.tarifas.findIndex(y => y.id === a.p_id); if (i >= 0) hallado = [p, i]; });
@@ -293,7 +309,62 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   // 3. vacio ≠ error de lectura ≠ sin permiso
   {
     const { p, ctx } = await abre({ base: { vacio: true } });
-    ok('sin productos: estado propio «vacio» con enlace a Productos (no «error»)', (await tipo(p)) === 'vacio' && (await txt(p, '[data-fl="estado"]')).includes('Aún no hay productos') && (await p.$$('[data-fl="estado"] a[href="/intranet/v4/productos/"]')).length === 1 && (await p.$$('section[data-producto-id]')).length === 0);
+    ok('sin modelos: estado propio «vacio» con el botón «Nuevo modelo» y NINGÚN enlace a Productos (no «error»)', (await tipo(p)) === 'vacio' && (await txt(p, '[data-fl="estado"]')).includes('Aún no hay modelos')
+       && (await p.$$('[data-fl="estado"] [data-accion="fl-modelo-nuevo"]')).length === 1 && (await p.$$('a[href*="/productos/"]')).length === 0 && (await p.$$('section[data-producto-id]')).length === 0);
+    await ctx.close();
+  }
+  // 3b. el MODELO se crea y se edita en Flota (erp-front, 14-oct-2026: Flota = único sitio de las motos)
+  {
+    const { base, p, ctx } = await abre({ base: { vacio: true } });
+    await p.click('[data-fl="estado"] ' + accion('fl-modelo-nuevo'));
+    await p.waitForSelector('[data-axw="dialogo"] ' + campo('nombre'));
+    await confirmar(p);
+    ok('nuevo modelo sin nombre: lo dice y NO llama a la base', (await dlgError(p)).includes('Falta el nombre') && llamadas(base, 'producto_guarda').length === 0);
+    await p.fill(campo('nombre'), '  Honda PCX 160  '); await p.fill(campo('referencia'), 'PCX');
+    await confirmar(p);
+    await p.waitForSelector('[data-fl="cajon"] section[data-producto-id]', { timeout: 5000 }).catch(() => {});
+    const g = llamadas(base, 'producto_guarda');
+    ok('crea con producto_guarda(p_id null) clase alquiler, unidad día, activo, sin precio ni autor', g.length === 1 && g[0][1].p_id === null
+       && J(g[0][1].p_datos) === J({ nombre: 'Honda PCX 160', clase: 'alquiler', unidad: 'día', activo: true, referencia: 'PCX' }), J(g));
+    ok('tras crear relee la base y abre el cajón del modelo nuevo para poner tarifas y motos', (await p.$$('[data-fl="cajon"] section[data-producto-id^="pn"]')).length === 1
+       && (await txt(p, '[data-fl="cajon-ok"]')).includes('Modelo creado') && !(await p.$('.axw-fondo[data-axw="dialogo"]')) && llamadas(base, 'producto_flota_datos').length === 2);
+    ok('sin errores de JS y sin tocar la base ni fetch', await sinErrores(p));
+    await ctx.close();
+  }
+  {
+    const { base, p, ctx } = await abre({ base: { sinClase: true } });
+    await p.click(accion('fl-modelo-nuevo'));
+    await p.waitForSelector('[data-axw="dialogo"] ' + campo('nombre'));
+    await p.fill(campo('nombre'), 'Scoopy'); await confirmar(p);
+    await p.waitForSelector('[data-fl="cajon"]', { timeout: 5000 }).catch(() => {});
+    const g = llamadas(base, 'producto_guarda');
+    ok('base sin clase de producto: el alta se repite UNA vez sin «clase» (y solo eso cambia)', g.length === 2 && 'clase' in g[0][1].p_datos && !('clase' in g[1][1].p_datos)
+       && g[1][1].p_datos.nombre === 'Scoopy' && !!(await p.$('[data-fl="cajon"]')), J(g));
+    await ctx.close();
+  }
+  {
+    const { base, p, ctx } = await abre({ base: { noAdmin: true, noAdminSoloEscribe: true } });
+    await p.click(accion('fl-modelo-nuevo'));
+    await p.waitForSelector('[data-axw="dialogo"] ' + campo('nombre'));
+    await p.fill(campo('nombre'), 'Vespa'); await confirmar(p);
+    await espera(p, () => !document.querySelector('[data-axw="dialogo"] .axw-error').classList.contains('axw-oculto'));
+    ok('42501 al crear: lo dice DESPUÉS (solo la administración), la ventana sigue con lo escrito y no se repite', (await dlgError(p)).includes('Solo la administración') && llamadas(base, 'producto_guarda').length === 1
+       && (await p.$eval(campo('nombre'), e => e.value)) === 'Vespa');
+    await ctx.close();
+  }
+  {
+    const { base, p, ctx } = await abre();
+    await p.click(accion('fl-modelo-editar', '[data-producto-id="p2"]'));
+    await p.waitForSelector('[data-axw="dialogo"] ' + campo('nombre'));
+    ok('editar modelo: dentro del cajón, con el nombre y «activo» de la base', (await p.$eval(campo('nombre'), e => e.value)) === 'Vario 160' && (await p.$eval(campo('activo'), e => e.checked)) === true
+       && !!(await p.$('[data-fl="cajon"] [data-axw="dialogo"]')));
+    await confirmar(p);
+    ok('sin cambios: «No hay nada que cambiar» y no se llama a la base', (await dlgError(p)).includes('No hay nada que cambiar') && llamadas(base, 'producto_guarda').length === 0);
+    await p.fill(campo('nombre'), 'Vario 160 ABS'); await p.click(campo('activo')); await confirmar(p);
+    await esperaCierre(p);
+    const g = llamadas(base, 'producto_guarda');
+    ok('manda SOLO lo que cambió (nombre y activo) con el id del modelo; ni clase ni precio', g.length === 1 && g[0][1].p_id === 'p2' && J(g[0][1].p_datos) === J({ nombre: 'Vario 160 ABS', activo: false }), J(g));
+    ok('relee y el cajón enseña el nombre nuevo y «Inactivo»', (await txt(p, '#fl-cajon-tit')).includes('Vario 160 ABS') && (await cuerpo(p, 'p2')).includes('Inactivo'));
     await ctx.close();
   }
   for (const [nombre, base, esperado] of [
@@ -754,6 +825,11 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok(ancho + ' px · la ventana del tramo (con errores y nota de moneda) cabe en pantalla', d2.l >= 0 && d2.r <= d2.w + 1 && d2.sw <= d2.cw + 1, J(d2));
     if (SHOT) await p.screenshot({ path: SHOT + '_' + ancho + '_tramo.png' });
     await p.click(accion('fl-modal-cerrar'));
+    await p.click(accion('fl-modelo-editar', prod('p1')));
+    const d4 = await p.$eval('[data-fl="cajon"]', e => { const r = e.getBoundingClientRect(), c = e.querySelector('[data-fl="cajon-cuerpo"]'); return { l: r.left, r: r.right, w: window.innerWidth, sw: c.scrollWidth, cw: c.clientWidth }; });
+    ok(ancho + ' px · la ventana de editar modelo (nombre con XSS largo) cabe en pantalla', d4.l >= 0 && d4.r <= d4.w + 1 && d4.sw <= d4.cw + 1, J(d4));
+    if (SHOT) await p.screenshot({ path: SHOT + '_' + ancho + '_modelo.png' });
+    await p.click(accion('fl-modal-cerrar'));
     await p.click(accion('fl-moto-editar', '[data-unidad-id="u1"]'));
     const d3 = await p.$eval('[data-fl="cajon"]', e => { const r = e.getBoundingClientRect(), c = e.querySelector('[data-fl="cajon-cuerpo"]'); return { l: r.left, r: r.right, w: window.innerWidth, sw: c.scrollWidth, cw: c.clientWidth }; });
     ok(ancho + ' px · la ventana de editar moto cabe en pantalla', d3.l >= 0 && d3.r <= d3.w + 1 && d3.sw <= d3.cw + 1, J(d3));
@@ -764,6 +840,13 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const { p, ctx } = await abre({ ancho, base: { vacio: true } });
     const m = await desborde(p); ok(ancho + ' px · el estado vacio no desborda', m.sw <= m.cw, J(m));
     if (SHOT) await p.screenshot({ path: SHOT + '_' + ancho + '_vacio.png', fullPage: true });
+    // el diálogo «Nuevo modelo» (erp-front, 14-oct) cabe en pantalla, también con su error
+    await p.click('[data-fl="estado"] ' + accion('fl-modelo-nuevo'));
+    await p.waitForSelector('[data-axw="dialogo"] ' + campo('nombre'));
+    await confirmar(p);
+    const dn = await p.$eval('.axw-fondo[data-axw="dialogo"] .axw-modal', e => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, w: window.innerWidth, sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }; });
+    ok(ancho + ' px · el diálogo «Nuevo modelo» (con su error) cabe en pantalla', dn.l >= 0 && dn.r <= dn.w + 1 && dn.sw <= dn.cw, J(dn));
+    if (SHOT) await p.screenshot({ path: SHOT + '_' + ancho + '_nuevo_modelo.png' });
     await ctx.close();
     const b = await abre({ ancho, base: { noAdmin: true } });
     const m2 = await desborde(b.p); ok(ancho + ' px · el aviso «solo administracion» no desborda', m2.sw <= m2.cw, J(m2));

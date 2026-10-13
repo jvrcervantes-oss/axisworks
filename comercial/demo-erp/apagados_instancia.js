@@ -182,6 +182,16 @@
     });
   }
   function pantalla(error) {
+    // En otro idioma de la instancia (M.ni lo pone el build, erp-front 14-oct): la misma pantalla con su plantilla y frases traducidas; el «qué hace»
+    // del módulo solo existe en español y no sale; sin nombre traducido, la frase sin nombre.
+    var L = (M.ni || {})[window.LW_IDIOMA];
+    if (L) {
+      var mod = moduloDeRuta(RUTA), nl = error ? null : (L.n || {})[mod];
+      var w = error ? { titulo: L.et, texto: L.ex, que_hace: '', asunto: '', oculta_que_hace: 'hidden', oculta_contacto: 'hidden', oculta_reintenta: '' }
+        : { titulo: L.tit, texto: nl ? L.an.replace('%s', nl) : L.a0, que_hace: '', asunto: encodeURIComponent(L.as + (nl || RUTA)),
+            oculta_que_hace: 'hidden', oculta_contacto: '', oculta_reintenta: 'hidden' };
+      return { titulo: w.titulo, html: L.p.replace(/\{\{([a-z_]+)\}\}/g, function (_, k) { return esc(w[k]); }) };
+    }
     var f = error ? null : (M.n || {})[moduloDeRuta(RUTA)];
     var v = error ? {
       titulo: 'No se pudo comprobar los módulos',
@@ -225,6 +235,28 @@
     plegables();
     secciones();
     gruposHub();
+    rotula();
+  }
+  /* Rótulo por RUTA (erp-front, 14-oct-2026): en una instancia de tipo Reservas /productos/ es «Extras y servicios» (las motos viven en Flota y tarifas).
+     M.r = {ruta limpia: {es, en, id}} lo pone el build. Se busca la entrada por su identificador (data-lw-pestana o data-path, que nav.js pone en
+     el marcado y vale '/'+id+'/' como ruta) y se cambia solo su texto visible: el menú de Lawang no se toca ni se engancha por su rótulo. NO por el
+     href (revisor, 14-oct): hasta que nav.js (defer) recablea, todas las entradas llevan href="#", que es la página actual, y en /productos/ todo el
+     menú se llamaría «Extras y servicios». La cabecera plegable de un grupo (data-lw-plegable) tampoco: es el grupo, no la pestaña.
+     En una entrada con icono, el texto es el ÚLTIMO <span> que no es la flecha. */
+  function rotula() {
+    var R = M.r || {}, idi = window.LW_IDIOMA || 'es';
+    if (!Object.keys(R).length) return;
+    // + la barra de pestañas de un grupo (nav#lw-pestanas-<grupo>): sus enlaces no llevan identificador, pero nav.js la crea ya con el href real
+    var as = document.querySelectorAll('aside a[data-path]:not([data-lw-plegable]), a[data-lw-pestana], nav[id^="lw-pestanas-"] a[href]');
+    for (var i = 0; i < as.length; i++) {
+      var id = as[i].getAttribute('data-lw-pestana') || as[i].getAttribute('data-path');
+      var r = R[id ? '/' + id + '/' : rutaDe(as[i])];
+      if (!r) continue;
+      var t = r[idi] || r.en || r.es;
+      var sp = as[i].querySelectorAll('span:not([data-lw-flecha])');
+      var dest = sp.length ? sp[sp.length - 1] : (as[i].children.length ? null : as[i]);
+      if (dest && t && dest.textContent !== t) dest.textContent = t;
+    }
   }
   function rutaDe(a) {
     try { return new URL(a.getAttribute('href'), location.href).pathname; } catch (e) { return null; }

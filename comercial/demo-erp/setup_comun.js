@@ -169,6 +169,135 @@
   fusiona();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fusiona);
 
+  // ── N4 «el cliente se configura solo» (erp-setup, 14-oct-2026): textos de los pasos y módulos que el registro declara desde N4 (erp/modulos.py → SETUP).
+  // Contrato: erp_setup_n4_14oct.md (e). Mismo molde que TX: se suman sin pisar; EN e ID indexados por la frase en español. Los pasos sin componente propio
+  // los pinta EXTERNO (setup_pasos.js): «se hace en otra pantalla» + enlace a su `donde`. tipos_vivienda, fases_obra y carta_reserva llevan frase aunque hoy
+  // no se siembran (PASOS_PANTALLA_PENDIENTE: su función nace cerrada hasta su pantalla, encargo de erp-front): la base ya los conoce (SETUP_PASOS).
+  var TX_N4 = {
+    paso: {
+      categorias_gasto: ['Categorías de gasto', 'Cada gasto se apunta en una categoría: sin ninguna no se puede registrar un gasto.'],
+      cuenta_propia: ['Cuenta bancaria propia', 'La cuenta (no escrow) contra la que se importan los extractos del banco.'],
+      cuenta_cobro: ['Cuenta de cobro', 'La cuenta que sale en facturas, proformas y contratos para que te paguen.'],
+      proyecto: ['Primer proyecto', 'Las unidades a la venta cuelgan de un proyecto.'],
+      tipos_vivienda: ['Tipos de unidad', 'Cada unidad es de un tipo (por ejemplo, parcela o villa).'],
+      unidades: ['Unidades a la venta', 'Lo que se reserva, se contrata y se factura.'],
+      fases_obra: ['Fases de obra', 'Las fases de la construcción y qué pago dispara cada una.'],
+      plantilla_contrato: ['Plantilla de contrato activa', 'El texto con el que se generan los contratos. Una plantilla activada ya no se edita: se crea una versión nueva.'],
+      carta_reserva: ['Carta de reserva', 'Qué tipo de contrato es la carta de reserva: vence y libera la unidad sola.'],
+      condicion_comision: ['Comisión estándar', 'Sin condición estándar no se calcula ninguna comisión.']
+    },
+    modulo: {
+      gastos: 'Gastos', bancos: 'Bancos', proyectos: 'Proyectos y unidades', modelos: 'Modelos', contratos: 'Contratos', reservas: 'Reservas',
+      'textos-contrato': 'Textos de contrato', 'copias-firmadas': 'Copias firmadas', comisiones: 'Comisiones', obra: 'Obra', portal: 'Portal del cliente',
+      soporte: 'Soporte', cuentas: 'Cuentas bancarias', compradores: 'Clientes', finanzas: 'Resumen financiero', operaciones: 'Operaciones',
+      'whatsapp-bot': 'Bot de WhatsApp'
+    },
+    campo: {
+      categoria: 'una categoría', cuenta_propia: 'una cuenta propia', cuenta_cobro: 'una cuenta de cobro', proyecto: 'un proyecto', tipo_vivienda: 'un tipo de unidad',
+      unidad: 'una unidad', fase: 'una fase de obra', plantilla: 'una plantilla activa', tipo_carta: 'el tipo de la carta de reserva', condicion: 'una condición de comisión'
+    },
+    consecuencia: { cuenta_cobro: 'Es opcional: sin ella, las facturas salen sin datos de pago.' },
+    hint: {
+      nombre_repetido: 'Ya hay una categoría con ese nombre.',
+      nombre_no_valido: 'El nombre va de 1 a 80 caracteres y no empieza por = + - @.',
+      grupo_no_valido: 'Elige uno de los grupos de la lista.',
+      grupo_en_uso: 'Ya hay gastos en esta categoría: su grupo no se cambia.',
+      orden_no_valido: 'El orden no es válido.',
+      modulo_sin_declarar: 'Este módulo aún no se puede encender: le falta su configuración.'
+    },
+    ui: {
+      n4_cat_lista: 'Categorías que ya tienes',
+      n4_cat_ninguna: 'Aún no hay ninguna categoría.',
+      n4_cat_inactiva: 'desactivada',
+      n4_cat_nueva: 'Nueva categoría',
+      n4_cat_nombre: 'Nombre',
+      n4_cat_nombre_ayuda: 'Por ejemplo: Material de oficina. De 1 a 80 caracteres; no empieza por = + - @.',
+      n4_cat_nombre_mal: 'El nombre va de 1 a 80 caracteres y no empieza por = + - @.',
+      n4_cat_falta: 'Escribe el nombre de la primera categoría.',
+      n4_cat_grupo: 'Grupo',
+      n4_cat_grupo_ayuda: 'Agrupa los gastos en el resumen. No se cambia cuando ya hay gastos en la categoría.',
+      n4_cat_cargando: 'Cargando las categorías…',
+      n4_cat_no_carga: 'No se han podido leer las categorías.',
+      n4_cat_otra: 'Si ya tienes las que necesitas, deja el nombre vacío y sigue.',
+      n4_g_general: 'General', n4_g_suelo: 'Suelo', n4_g_construccion: 'Construcción', n4_g_comercial: 'Comercial', n4_g_marketing: 'Marketing',
+      n4_g_personal: 'Personal', n4_g_impuestos: 'Impuestos', n4_g_financiero: 'Financiero'
+    }
+  };
+  var EN_N4 = {
+    'Categorías de gasto': 'Expense categories', 'Cada gasto se apunta en una categoría: sin ninguna no se puede registrar un gasto.': 'Every expense goes into a category: without one no expense can be recorded.',
+    'Cuenta bancaria propia': 'Your own bank account', 'La cuenta (no escrow) contra la que se importan los extractos del banco.': 'The (non-escrow) account bank statements are imported against.',
+    'Cuenta de cobro': 'Payment account', 'La cuenta que sale en facturas, proformas y contratos para que te paguen.': 'The account shown on invoices, proformas and contracts so you get paid.',
+    'Primer proyecto': 'First project', 'Las unidades a la venta cuelgan de un proyecto.': 'Units for sale belong to a project.',
+    'Tipos de unidad': 'Unit types', 'Cada unidad es de un tipo (por ejemplo, parcela o villa).': 'Each unit has a type (for example, plot or villa).',
+    'Unidades a la venta': 'Units for sale', 'Lo que se reserva, se contrata y se factura.': 'What gets reserved, contracted and invoiced.',
+    'Fases de obra': 'Construction stages', 'Las fases de la construcción y qué pago dispara cada una.': 'The construction stages and which payment each one triggers.',
+    'Plantilla de contrato activa': 'Active contract template',
+    'El texto con el que se generan los contratos. Una plantilla activada ya no se edita: se crea una versión nueva.': 'The text contracts are generated from. An activated template can\'t be edited: you create a new version.',
+    'Carta de reserva': 'Reservation letter', 'Qué tipo de contrato es la carta de reserva: vence y libera la unidad sola.': 'Which contract type is the reservation letter: it expires and releases the unit on its own.',
+    'Comisión estándar': 'Standard commission', 'Sin condición estándar no se calcula ninguna comisión.': 'Without a standard condition no commission is calculated.',
+    'Gastos': 'Expenses', 'Bancos': 'Banks', 'Proyectos y unidades': 'Projects and units', 'Modelos': 'Models', 'Contratos': 'Contracts', 'Reservas': 'Reservations',
+    'Textos de contrato': 'Contract texts', 'Copias firmadas': 'Signed copies', 'Comisiones': 'Commissions', 'Obra': 'Construction', 'Portal del cliente': 'Client portal',
+    'Soporte': 'Support', 'Cuentas bancarias': 'Bank accounts', 'Clientes': 'Clients', 'Resumen financiero': 'Financial summary', 'Operaciones': 'Operations',
+    'Bot de WhatsApp': 'WhatsApp bot',
+    'una categoría': 'a category', 'una cuenta propia': 'an own account', 'una cuenta de cobro': 'a payment account', 'un proyecto': 'a project',
+    'un tipo de unidad': 'a unit type', 'una unidad': 'a unit', 'una fase de obra': 'a construction stage', 'una plantilla activa': 'an active template',
+    'el tipo de la carta de reserva': 'the reservation letter type', 'una condición de comisión': 'a commission condition',
+    'Es opcional: sin ella, las facturas salen sin datos de pago.': 'Optional: without it, invoices go out without payment details.',
+    'Ya hay una categoría con ese nombre.': 'There is already a category with that name.', 'Elige uno de los grupos de la lista.': 'Choose one of the groups in the list.',
+    'Ya hay gastos en esta categoría: su grupo no se cambia.': 'This category already has expenses: its group can\'t change.', 'El orden no es válido.': 'The order is not valid.',
+    'Este módulo aún no se puede encender: le falta su configuración.': 'This module can\'t be turned on yet: its setup isn\'t defined.',
+    'Categorías que ya tienes': 'Categories you already have', 'Aún no hay ninguna categoría.': 'There are no categories yet.', 'desactivada': 'inactive',
+    'Nueva categoría': 'New category', 'Nombre': 'Name', 'Por ejemplo: Material de oficina. De 1 a 80 caracteres; no empieza por = + - @.': 'For example: Office supplies. 1 to 80 characters; it can\'t start with = + - @.',
+    'El nombre va de 1 a 80 caracteres y no empieza por = + - @.': 'The name must be 1 to 80 characters and can\'t start with = + - @.', 'Escribe el nombre de la primera categoría.': 'Write the name of the first category.',
+    'Grupo': 'Group', 'Agrupa los gastos en el resumen. No se cambia cuando ya hay gastos en la categoría.': 'Groups expenses in the summary. It can\'t change once the category has expenses.',
+    'Cargando las categorías…': 'Loading categories…', 'No se han podido leer las categorías.': 'The categories could not be loaded.',
+    'Si ya tienes las que necesitas, deja el nombre vacío y sigue.': 'If you already have the ones you need, leave the name empty and continue.',
+    'General': 'General', 'Suelo': 'Land', 'Construcción': 'Construction', 'Comercial': 'Sales', 'Marketing': 'Marketing', 'Personal': 'Staff',
+    'Impuestos': 'Taxes', 'Financiero': 'Financial'
+  };
+  var ID_N4 = {
+    'Categorías de gasto': 'Kategori pengeluaran', 'Cada gasto se apunta en una categoría: sin ninguna no se puede registrar un gasto.': 'Setiap pengeluaran masuk ke satu kategori: tanpa kategori, pengeluaran tidak bisa dicatat.',
+    'Cuenta bancaria propia': 'Rekening bank sendiri', 'La cuenta (no escrow) contra la que se importan los extractos del banco.': 'Rekening (bukan escrow) tempat mutasi bank diimpor.',
+    'Cuenta de cobro': 'Rekening penerimaan', 'La cuenta que sale en facturas, proformas y contratos para que te paguen.': 'Rekening yang tercantum di invoice, proforma, dan kontrak untuk menerima pembayaran.',
+    'Primer proyecto': 'Proyek pertama', 'Las unidades a la venta cuelgan de un proyecto.': 'Unit yang dijual berada di bawah satu proyek.',
+    'Tipos de unidad': 'Jenis unit', 'Cada unidad es de un tipo (por ejemplo, parcela o villa).': 'Setiap unit punya jenis (misalnya kavling atau vila).',
+    'Unidades a la venta': 'Unit yang dijual', 'Lo que se reserva, se contrata y se factura.': 'Yang dipesan, dikontrakkan, dan ditagih.',
+    'Fases de obra': 'Tahap pembangunan', 'Las fases de la construcción y qué pago dispara cada una.': 'Tahap pembangunan dan pembayaran yang dipicu tiap tahap.',
+    'Plantilla de contrato activa': 'Templat kontrak aktif',
+    'El texto con el que se generan los contratos. Una plantilla activada ya no se edita: se crea una versión nueva.': 'Teks untuk membuat kontrak. Templat yang sudah aktif tidak bisa diubah: buat versi baru.',
+    'Carta de reserva': 'Surat pemesanan', 'Qué tipo de contrato es la carta de reserva: vence y libera la unidad sola.': 'Jenis kontrak yang menjadi surat pemesanan: kedaluwarsa dan melepas unit secara otomatis.',
+    'Comisión estándar': 'Komisi standar', 'Sin condición estándar no se calcula ninguna comisión.': 'Tanpa ketentuan standar, komisi tidak dihitung.',
+    'Gastos': 'Pengeluaran', 'Bancos': 'Bank', 'Proyectos y unidades': 'Proyek dan unit', 'Contratos': 'Kontrak',
+    'Textos de contrato': 'Teks kontrak', 'Copias firmadas': 'Salinan bertanda tangan', 'Comisiones': 'Komisi', 'Portal del cliente': 'Portal klien',
+    'Soporte': 'Dukungan', 'Cuentas bancarias': 'Rekening bank', 'Resumen financiero': 'Ringkasan keuangan',
+    'Bot de WhatsApp': 'Bot WhatsApp',
+    'una categoría': 'satu kategori', 'una cuenta propia': 'satu rekening sendiri', 'una cuenta de cobro': 'satu rekening penerimaan', 'un proyecto': 'satu proyek',
+    'un tipo de unidad': 'satu jenis unit', 'una unidad': 'satu unit', 'una fase de obra': 'satu tahap pembangunan', 'una plantilla activa': 'satu templat aktif',
+    'el tipo de la carta de reserva': 'jenis surat pemesanan', 'una condición de comisión': 'satu ketentuan komisi',
+    'Es opcional: sin ella, las facturas salen sin datos de pago.': 'Opsional: tanpa ini, invoice keluar tanpa data pembayaran.',
+    'Ya hay una categoría con ese nombre.': 'Sudah ada kategori dengan nama itu.', 'Elige uno de los grupos de la lista.': 'Pilih salah satu grup di daftar.',
+    'Ya hay gastos en esta categoría: su grupo no se cambia.': 'Kategori ini sudah punya pengeluaran: grupnya tidak bisa diubah.', 'El orden no es válido.': 'Urutannya tidak valid.',
+    'Este módulo aún no se puede encender: le falta su configuración.': 'Modul ini belum bisa diaktifkan: pengaturannya belum ditentukan.',
+    'Categorías que ya tienes': 'Kategori yang sudah ada', 'Aún no hay ninguna categoría.': 'Belum ada kategori.', 'desactivada': 'nonaktif',
+    'Nueva categoría': 'Kategori baru', 'Nombre': 'Nama', 'Por ejemplo: Material de oficina. De 1 a 80 caracteres; no empieza por = + - @.': 'Contoh: Alat tulis kantor. 1 sampai 80 karakter; tidak diawali = + - @.',
+    'El nombre va de 1 a 80 caracteres y no empieza por = + - @.': 'Nama harus 1 sampai 80 karakter dan tidak diawali = + - @.', 'Escribe el nombre de la primera categoría.': 'Tulis nama kategori pertama.',
+    'Grupo': 'Grup', 'Agrupa los gastos en el resumen. No se cambia cuando ya hay gastos en la categoría.': 'Mengelompokkan pengeluaran di ringkasan. Tidak bisa diubah setelah kategori punya pengeluaran.',
+    'Cargando las categorías…': 'Memuat kategori…', 'No se han podido leer las categorías.': 'Kategori tidak dapat dimuat.',
+    'Si ya tienes las que necesitas, deja el nombre vacío y sigue.': 'Jika kategori yang dibutuhkan sudah ada, kosongkan nama dan lanjutkan.',
+    'General': 'Umum', 'Suelo': 'Tanah', 'Construcción': 'Konstruksi', 'Comercial': 'Penjualan', 'Marketing': 'Pemasaran', 'Personal': 'Karyawan',
+    'Impuestos': 'Pajak', 'Financiero': 'Keuangan'
+  };
+  Object.keys(TX_N4).forEach(function (g) {
+    var dst = S.TEXTOS[g] || (S.TEXTOS[g] = {});
+    Object.keys(TX_N4[g]).forEach(function (k) { if (!(k in dst)) dst[k] = TX_N4[g][k]; });
+  });
+  function fusionaN4() {
+    if (window.LW_EN && typeof window.LW_EN === 'object') Object.keys(EN_N4).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_N4[k]; });
+    if (window.LW_ID && typeof window.LW_ID === 'object') Object.keys(ID_N4).forEach(function (k) { if (!(k in window.LW_ID)) window.LW_ID[k] = ID_N4[k]; });
+  }
+  fusionaN4();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fusionaN4);
+
   // ── Ayudas ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   function U(k, h) { return S.ui(k, h); }
   function el(tag, attrs, hijos) {
@@ -424,10 +553,77 @@
     };
   }
 
+  // ── N4 · Gastos: categorías de gasto (erp-setup, 14-oct-2026; agencia-81, opción A: el paso obligatorio de Bali Best tiene que poder hacerse) ──────
+  // Lee las categorías con gastos_panel_datos (la lectura de la pantalla de Gastos: admin con la herramienta Gastos; p_limit 1, solo para las
+  // categorías) y da de alta UNA por guardado con gasto_categoria_guarda(null, {nombre, grupo}): la clave la saca la base del nombre. Errores por
+  // code + hint (nombre_repetido, nombre_no_valido, grupo_no_valido, 42501). Editar o desactivar sigue en la pantalla de Gastos.
+  var GRUPOS_GASTO = ['general', 'suelo', 'construccion', 'comercial', 'marketing', 'personal', 'impuestos', 'financiero'];
+  var BORRADOR_CAT = null;
+  var categoriasGasto = {
+    sinMotivo: true,   // gasto_categoria_guarda no pide motivo (deja rastro en ajustes_log)
+    pinta: function (caja, ctx) {
+      var bc = BORRADOR_CAT, st = { hay: null };
+      var z = el('div', { class: 'flex flex-col gap-4 min-w-0', 'data-axw-co': 'categorias_gasto' });
+      var lista = el('ul', { class: 'flex flex-col gap-2', role: 'list', 'data-axw-n4-cat': 'lista', 'aria-busy': 'true' },
+                     [el('li', { class: CLS_NOTA, text: U('n4_cat_cargando') })]);
+      z.appendChild(el('p', { class: CLS_ETQ, text: U('n4_cat_lista') }));
+      z.appendChild(lista);
+      z.appendChild(el('p', { class: CLS_ETQ, text: U('n4_cat_nueva') }));
+      campo(z, 'cat_nombre', U('n4_cat_nombre'), bc ? bc.nombre : '', { max: 80, ayuda: U('n4_cat_nombre_ayuda') });
+      var sel = el('select', { id: 'axw-co-cat_grupo', 'data-axw-campo': 'cat_grupo', class: CLS_IN, style: ALTO });
+      GRUPOS_GASTO.forEach(function (g) { var o = el('option', { value: g, text: U('n4_g_' + g) }); if ((bc ? bc.grupo : 'general') === g) o.selected = true; sel.appendChild(o); });
+      z.appendChild(el('div', { class: 'flex flex-col gap-1.5 min-w-0', 'data-axw-fila': 'cat_grupo' }, [
+        el('label', { for: 'axw-co-cat_grupo', class: CLS_ETQ, text: U('n4_cat_grupo') }), sel, el('span', { class: CLS_AYUDA, text: U('n4_cat_grupo_ayuda') })]));
+      var otra = el('p', { class: CLS_AYUDA, 'data-axw-n4-cat': 'otra', hidden: true, text: U('n4_cat_otra') });
+      z.appendChild(otra);
+      caja.appendChild(z);
+      sesion().then(function (sb) {
+        return sb ? resultado(sb.rpc('gastos_panel_datos', { p_limit: 1 })) : { ok: false };
+      }).then(function (r) {
+        vacia(lista);
+        lista.removeAttribute('aria-busy');
+        var cats = r && r.ok && r.data && Array.isArray(r.data.categorias) ? r.data.categorias : null;
+        if (!cats) {   // dice POR QUÉ (p. ej. sin la herramienta Gastos) con la frase de la base por code + hint, nunca su mensaje
+          var por = r && r.error && (r.error.code || r.error.hint) ? S.explica(r.error, true).texto : '';   // explica() da {texto, configurar}
+          lista.appendChild(el('li', { class: 'font-body-sm text-body-sm text-error', 'data-axw-n4-cat': 'error', text: U('n4_cat_no_carga') + (por ? ' ' + por : '') }));
+          return;
+        }
+        st.hay = cats.some(function (c) { return c && c.activa === true; });
+        if (!cats.length) lista.appendChild(el('li', { class: CLS_NOTA, 'data-axw-n4-cat': 'ninguna', text: U('n4_cat_ninguna') }));
+        cats.slice(0, 200).forEach(function (c) {
+          var g = GRUPOS_GASTO.indexOf(texto(c.grupo)) >= 0 ? U('n4_g_' + c.grupo) : texto(c.grupo);
+          lista.appendChild(el('li', { class: 'flex flex-wrap items-center gap-2 rounded-xl border border-outline-variant px-4 py-3 min-w-0', 'data-axw-n4-cat-clave': texto(c.clave).slice(0, 80) }, [
+            el('span', { class: 'font-body-md text-body-md text-on-surface min-w-0', style: 'overflow-wrap:anywhere', text: texto(c.nombre).slice(0, 80) }),
+            el('span', { class: CLS_CHIP, text: g.slice(0, 40) }),
+            c.activa === true ? null : el('span', { class: CLS_CHIP, text: U('n4_cat_inactiva') })]));
+        });
+        if (st.hay) otra.hidden = false;
+      });
+      return {
+        valores: function () {
+          var n = val(z, 'cat_nombre'), g = String(sel.value || 'general');
+          BORRADOR_CAT = { nombre: n, grupo: g };
+          if (!n) return st.hay ? { ok: true, v: {} } : { ok: false, error: U('n4_cat_falta') };
+          // la misma regla que la base (20261014050000: contra la inyección en CSV), antes de llamar
+          if (n.length > 80 || /^[=+\-@]/.test(n)) return { ok: false, error: U('n4_cat_nombre_mal') };
+          return { ok: true, v: { nombre: n, grupo: GRUPOS_GASTO.indexOf(g) >= 0 ? g : 'general' } };
+        }
+      };
+    },
+    guarda: function (sb, v) {
+      if (!v || !v.nombre) return Promise.resolve({ ok: true });   // ya había categorías y no se escribió otra: nada que guardar
+      return resultado(sb.rpc('gasto_categoria_guarda', { p_clave: null, p_datos: { nombre: v.nombre, grupo: v.grupo } })).then(function (r) {
+        if (r.ok) BORRADOR_CAT = null;
+        return conHint(r);
+      });
+    }
+  };
+
   PS.registra('negocio', negocio);
   PS.registra('idiomas', idiomas);
   PS.registra('correo', correo);
   PS.registra('taller_revisiones', pasoTaller('taller_revisiones', 'taller/#listas', 'co_taller_listas', 'co_abrir_taller', false));
   PS.registra('taller_recambios', pasoTaller('taller_recambios', 'taller/#listas', 'co_taller_listas', 'co_abrir_taller', true));
   PS.registra('taller_mecanicos', pasoTaller('taller_mecanicos', 'usuarios/', 'co_taller_usuarios', 'co_abrir_usuarios', false));
+  PS.registra('categorias_gasto', categoriasGasto);
 })();

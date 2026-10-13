@@ -161,7 +161,9 @@ mira('no trae un rol cableado: la pantalla no decide quien es admin (la base con
      not re.search(r"rol\s*===|\.rol\b|es_admin|esAdmin|ficha\.|LW_ROL", CODIGO) and 'sin_permiso' in CODIGO)
 # + seguro y fianza del modelo en el cajón (bbm-p42, 13-oct-2026): las MISMAS del paso «Alquiler con unidades» del asistente (erp/modulos.py las declara con /flota/ de llamador)
 PERMITIDAS = {'producto_flota_datos', 'producto_unidades_alta_lote', 'producto_unidad_guarda', 'producto_tarifa_guarda', 'producto_tarifa_borra',
-              'reservas_setup_datos', 'producto_garantia_guarda', 'producto_seguro_guarda', 'producto_seguro_borra'}
+              'reservas_setup_datos', 'producto_garantia_guarda', 'producto_seguro_guarda', 'producto_seguro_borra',
+              # + el MODELO (erp-front, 14-oct-2026: Flota = único sitio de las motos; crear con clase 'alquiler', cambiar nombre y activo)
+              'producto_guarda'}
 LECTURAS = {'producto_flota_datos', 'reservas_setup_datos'}
 llamadas = set(re.findall(r"\bllama\('([a-z_]+)'", CODIGO))
 literales = set(re.findall(r"(?:SB\.rpc|window\.lwDatos)\('([a-z_]+)'", CODIGO))
@@ -208,7 +210,16 @@ mira('motivo obligatorio con el rango de topes.motivo (sin numeros escritos)', '
 mira('doble clic: un solo envio a la vez (ocupa/libera) y una sola ventana (E.dialogo)', 'C.ocupa(btn)' in CODIGO and 'C.libera(btn)' in CODIGO and 'E.dialogo' in CODIGO and 'function ocupa' in CODIGO_COMUN)
 mira('tras escribir se RELEE de la base (carga()) y no hay estado optimista: nada se pinta antes de la respuesta', re.search(r"function envia\([\s\S]{0,900}return carga\(\)", CODIGO) is not None and not re.search(r'E\.d\.productos\.push|\.unidades\.push|\.tarifas\.push|splice\(', CODIGO))
 mira('si se guarda pero no se puede releer lo dice (no «Guardado» a ciegas)', "T('Se guardó, pero no se pudo volver a leer: recarga la página.')" in CODIGO)
-mira('estado vacio guiado hacia Productos, distinto de «no se ha podido mirar»', "'vacio'" in CODIGO and "T('Aún no hay productos: créalos en Productos.')" in CODIGO and '/intranet/v4/productos/' in CODIGO and "T('No se ha podido mirar') + ': '" in CODIGO)
+mira('estado vacio: se crea el primer modelo AQUI (fl-modelo-nuevo), distinto de «no se ha podido mirar»', "'vacio'" in CODIGO and "'fl-modelo-nuevo'" in CODIGO and "T('No se ha podido mirar') + ': '" in CODIGO)
+# Flota = único sitio de las motos (owner 13-oct, erp-limpieza): ningún enlace de Flota manda a Productos, y el modelo se crea y se edita aquí
+mira('ningun enlace de Flota lleva a /productos/', '/intranet/v4/productos/' not in FUENTE and "'Ir a Productos'" not in FUENTE)
+mira('el modelo se crea con clase alquiler por producto_guarda (p_id null) y se edita aqui (fl-modelo-editar), solo con lo que cambio',
+     "clase: 'alquiler'" in CODIGO and "llama('producto_guarda', { p_id: pid || null, p_datos: q })" in CODIGO and "'fl-modelo-editar'" in CODIGO
+     and "if (!Object.keys(q).length) return { e: T('No hay nada que cambiar.') }" in CODIGO)
+mira('una base sin clase de producto: el alta se repite SIN el campo clase y solo por ese error (campo_no_admitido)', "hint === 'campo_no_admitido' && /clase/.test(" in CODIGO and "if (k !== 'clase') q2[k] = r.v[k]" in CODIGO)
+_modelo = CODIGO[CODIGO.index('function abreModelo('):CODIGO.index('function abreModelo(') + 4000]
+mira('abreModelo: si la recarga tras guardar falla, suelta el botón y lo dice (como envia(); revisor 14-oct)',
+     "}, function () { C.libera(bt); d.cierra(); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); });" in _modelo)
 mira('lista recortada (recortado) avisa sin escribir el numero', "d.recortado !== true" in CODIGO and 'data-fl="recortado"' in MARCADO and not re.search(r'recortada a los primeros', MARCADO))
 mira('el aviso fijo de reservas ya hechas y el texto de cuando llega al bot (constantes BOT_LLEGA_ES/EN, parametrizables) estan', 'Las reservas ya hechas no cambian de precio; el cambio vale para lo que se cotice desde ahora.' in MARCADO and 'var BOT_LLEGA_ES =' in JS and 'var BOT_LLEGA_EN =' in JS and 'un cambio le llega en 5 minutos como máximo' in JS)
 mira('enganche por data-accion/data-campo/data-*-id; ningun texto de boton se usa para encontrar nada', not re.search(r'textContent\s*===|innerText|\.placeholder|querySelector\([^)]*placeholder|querySelector\(\'\[data-accion=', CODIGO))

@@ -58,8 +58,10 @@ const MIDE = () => {
   const exe = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
   const nav = await chromium.launch({ executablePath: fs.existsSync(exe) ? exe : undefined });
   const ctx = await nav.newContext({ viewport: { width: 1440, height: 900 } });
-  await ctx.route('**/*', route => {
+  let sinNav = false;   // sirve assets/nav.js VACÍO: los href del menú se quedan en «#» (= la página actual), el estado que el revisor vio posible
+  await ctx.route('**/*', async route => {
     const url = route.request().url();
+    if (sinNav && /\/assets\/nav\.js/.test(url)) return route.fulfill({ status: 200, contentType: 'application/javascript', body: '' });
     if (/supabase-js/.test(url)) return route.fulfill({ status: 200, contentType: 'application/javascript', body: FALSO });
     if (/fonts\.(googleapis|gstatic)\.com|@phosphor-icons/.test(url)) return route.continue();
     if (!url.startsWith(ORIGEN)) return route.abort();
@@ -101,6 +103,10 @@ const MIDE = () => {
       const g = document.querySelector('aside a[data-path="cobros"]'); const s = g && document.getElementById(g.getAttribute('aria-controls'));
       return s ? [...s.querySelectorAll('a[data-lw-pestana]')].filter(vis).map(a => a.getAttribute('data-lw-pestana')) : null; });
     ok(lengua + ': al abrir «Cobros» salen Facturas y Recibos y no Vencimientos', !!sub && sub.indexOf('facturas') !== -1 && sub.indexOf('recibos') !== -1 && sub.indexOf('vencimientos') === -1, JSON.stringify(sub));
+    // tipo Reservas (erp-front, 14-oct): /productos/ es «Extras y servicios» en todo enlace del menú, cambiado por la RUTA (no por el rótulo de nav.js)
+    const EXTRAS = { id: 'Ekstra dan layanan', en: 'Extras and services' }[lengua];
+    const prodTxt = await p.evaluate(() => [...document.querySelectorAll('aside a[href], nav a[href]')].filter(a => new URL(a.href).pathname === '/productos/').map(a => a.textContent.replace(/\s+/g, ' ').trim()));
+    ok(lengua + ': todo enlace del menú a /productos/ dice «' + EXTRAS + '» y ninguno «Products/Produk»', prodTxt.length > 0 && prodTxt.every(x => x.indexOf(EXTRAS) !== -1 && !/Products|Produk|Productos/.test(x)), JSON.stringify(prodTxt));
     if (SHOT) await p.screenshot({ path: `${SHOT}_1440_${lengua}.png` });
   }
   // DENTRO de una pestaña del grupo (orquestador 12-oct en /facturas/ de bbm: «Collections» salía plegado y vacío): el grupo
@@ -119,6 +125,26 @@ const MIDE = () => {
     ok('dentro de /' + ruta + '/: «Cobros» abierto con Facturas y Recibos (sin Vencimientos)', r.abierto && r.visibles.indexOf('facturas') !== -1
        && r.visibles.indexOf('recibos') !== -1 && r.visibles.indexOf('vencimientos') === -1, JSON.stringify(r));
   }
+  // la propia /productos/: la pantalla «Extras y servicios» del maestro, no la de Lawang (sin su tabla de productos)
+  await p.goto(ORIGEN + '/productos/', { waitUntil: 'load' });
+  await p.waitForTimeout(2500);
+  const ex = await p.evaluate(() => ({ raiz: !!document.querySelector('[data-ex="raiz"]'), lawang: !!document.getElementById('lw-prd-lista'),
+    tit: (document.querySelector('.ex-h1') || {}).textContent || '', menu: [...document.querySelectorAll('aside a[href], nav a[href]')].filter(a => new URL(a.href).pathname === '/productos/').map(a => a.textContent.replace(/\s+/g, ' ').trim()) }));
+  ok('/productos/ es la pantalla «Extras y servicios» (sin la tabla de Lawang) y su menú dice lo mismo', ex.raiz && !ex.lawang && /Ekstra dan layanan/.test(ex.tit)
+     && ex.menu.length > 0 && ex.menu.every(x => x.indexOf('Ekstra dan layanan') !== -1), JSON.stringify(ex));
+  if (SHOT) await p.screenshot({ path: `${SHOT}_1440_productos_id.png` });
+  // revisor 14-oct: si modulos_activos_datos contesta ANTES de que nav.js recablee, todas las entradas siguen en href="#" (= la página actual).
+  // Se fuerza ese estado sirviendo nav.js vacío: el rótulo va por data-path / data-lw-pestana, así que ninguna otra entrada pasa a «Extras y
+  // servicios» (con el rótulo por href, todas lo harían). Sin nav.js no se injerta la entrada de productos: aquí solo se mira que no contagie.
+  sinNav = true;
+  await p.goto(ORIGEN + '/productos/', { waitUntil: 'load' });
+  await p.waitForTimeout(2500);
+  sinNav = false;
+  const tarde = await p.evaluate(() => [...document.querySelectorAll('aside a[data-path], a[data-lw-pestana]')]
+    .map(a => ({ id: a.getAttribute('data-lw-pestana') || a.getAttribute('data-path'), plegable: a.hasAttribute('data-lw-plegable'), t: a.textContent.replace(/\s+/g, ' ').trim() })));
+  const mal = tarde.filter(x => (x.id !== 'productos' || x.plegable) && x.t.indexOf('Ekstra dan layanan') !== -1);
+  const almohadilla = await p.evaluate(() => [...document.querySelectorAll('aside a[data-path]')].filter(a => a.getAttribute('href') === '#').length);
+  ok('sin nav.js (href="#") en /productos/: ninguna otra entrada (ni la cabecera de un grupo) pasa a «Extras y servicios»', almohadilla > 5 && tarde.length > 5 && mal.length === 0, almohadilla + ' · ' + JSON.stringify(mal.slice(0, 5)));
   ok('0 errores de consola', errores.length === 0, errores.slice(0, 4).join(' | '));
   await nav.close();
   console.log(fallos ? `\n${fallos} de ${total} FALLAN` : `\nTODO BIEN (${total})`);

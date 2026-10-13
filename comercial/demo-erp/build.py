@@ -3315,28 +3315,135 @@ TEXTOS_NO_INSTALADO = ('Módulo no instalado', ' no está activo en esta instanc
                        'Este módulo no está activo en esta instancia.', 'Activar módulo: ')
 
 
-def pagina_no_instalado(base, marca, ficha, ruta, herramienta=None):
+# El aviso estático en los idiomas de la instancia (erp-front, 14-oct-2026; agencia-81: «Bali Best es un cliente indonesio: el aviso tiene que salir en
+# los idiomas de la instancia»). instancia() pone aquí (idiomas, idioma de pantalla por defecto) de la ficha; None = el de siempre, solo en español.
+AVISO_IDIOMAS = None
+# Frases del aviso por idioma. Las de la plantilla son el español EXACTO de no_instalado.html (si una cambia, el build aborta: saldría a medias).
+# «%s» = el nombre de la pantalla o del módulo; sin nombre en ese idioma, la frase sin nombre (nunca español dentro de otro idioma).
+FRASES_PLANTILLA_NO_INSTALADO = ('aria-label="Cómo activarlo"', 'Este ERP lo construye y mantiene AxisWorks. Para activar este módulo en tu empresa, '
+                                 'escríbenos y lo vemos contigo.', '>Reintentar<', '>Volver al inicio<')
+AVISO_I18N = {
+    'en': {'incluida': 'Screen not included', 'instalado': 'Module not installed',
+           'incluida_n': '«%s» is not included in this instance.', 'incluida_0': 'This screen is not included in this instance.',
+           'activo_n': '«%s» is not active in this instance.', 'activo_0': 'This module is not active in this instance.', 'asunto': 'Activate module: ',
+           'error_t': 'Could not check the modules', 'error_x': "We couldn't ask the database which modules this instance has. It isn't missing: try again.",
+           'plantilla': ('aria-label="How to activate it"', 'This ERP is built and maintained by AxisWorks. To activate this module for your company, '
+                         'write to us and we will go through it with you.', '>Retry<', '>Back to home<')},
+    'id': {'incluida': 'Layar tidak tersedia', 'instalado': 'Modul belum dipasang',
+           'incluida_n': '«%s» tidak termasuk dalam ERP ini.', 'incluida_0': 'Layar ini tidak termasuk dalam ERP ini.',
+           'activo_n': '«%s» belum aktif di ERP ini.', 'activo_0': 'Modul ini belum aktif di ERP ini.', 'asunto': 'Aktifkan modul: ',
+           'error_t': 'Modul tidak dapat diperiksa', 'error_x': 'Kami tidak dapat menanyakan ke basis data modul apa saja yang dimiliki ERP ini. Bukan berarti tidak ada: coba lagi.',
+           'plantilla': ('aria-label="Cara mengaktifkannya"', 'ERP ini dibangun dan dikelola oleh AxisWorks. Untuk mengaktifkan modul ini di perusahaan '
+                         'Anda, kirimi kami pesan dan kami akan membahasnya bersama Anda.', '>Coba lagi<', '>Kembali ke beranda<')},
+}
+
+
+def _nombre_en(nombre_es, modulo, idioma):
+    """El nombre de la pantalla o del módulo en `idioma`, o None si no se sabe. en: panel_setup_en.json (el del panel de módulos), por clave de
+    módulo · id: i18n_id.json (el diccionario de la interfaz), por el nombre en español."""
+    if not nombre_es:
+        return None
+    menu = (MENU_I18N.get(nombre_es) or {}).get(idioma)
+    if menu:
+        return menu
+    if idioma == 'en':
+        # el nombre del MÓDULO en inglés solo si lo que se nombra es el módulo (no una pantalla suya: «Generador de contratos» no es «Contracts»)
+        if not modulo or (rotulos().get(modulo) or [None])[0] != nombre_es:
+            return None
+        return json.load(open(os.path.join(AQUI, 'panel_setup_en.json'), encoding='utf-8'))['modulos'].get(modulo)
+    return json.load(open(os.path.join(AQUI, 'i18n_id.json'), encoding='utf-8')).get(nombre_es)
+
+
+def _valores_no_instalado(ficha, ruta, herramienta, modulo, idioma):
+    from urllib.parse import quote
+    if idioma == 'es':
+        if herramienta:
+            return {'titulo': 'Pantalla no incluida', 'texto': '«%s» no se incluye en esta instancia.' % herramienta,
+                    'que_hace': '', 'asunto': '', 'oculta_que_hace': 'hidden', 'oculta_contacto': 'hidden',
+                    'oculta_reintenta': 'hidden'}
+        nombre, que_hace = ficha or (None, None)
+        return {'titulo': TEXTOS_NO_INSTALADO[0],
+                'texto': ('«%s»%s' % (nombre, TEXTOS_NO_INSTALADO[1])) if nombre else TEXTOS_NO_INSTALADO[2],
+                'que_hace': que_hace or '', 'asunto': quote(TEXTOS_NO_INSTALADO[3] + (nombre or ruta), safe=''),
+                'oculta_que_hace': '' if que_hace else 'hidden', 'oculta_contacto': '', 'oculta_reintenta': 'hidden'}
+    tr = AVISO_I18N.get(idioma)
+    if not tr:
+        aborta('aviso de pantalla no incluida: no hay frases en %r (AVISO_I18N de build.py)' % idioma)
+    if herramienta:
+        n = _nombre_en(herramienta, modulo, idioma)
+        return {'titulo': tr['incluida'], 'texto': tr['incluida_n'] % n if n else tr['incluida_0'], 'que_hace': '', 'asunto': '',
+                'oculta_que_hace': 'hidden', 'oculta_contacto': 'hidden', 'oculta_reintenta': 'hidden'}
+    nombre = (ficha or (None, None))[0]
+    n = _nombre_en(nombre, modulo, idioma)
+    # el «qué hace» del módulo solo existe en español (modulos_rotulos.json): en otro idioma no sale
+    return {'titulo': tr['instalado'], 'texto': tr['activo_n'] % n if n else tr['activo_0'], 'que_hace': '',
+            'asunto': quote(tr['asunto'] + (n or ruta), safe=''), 'oculta_que_hace': 'hidden', 'oculta_contacto': '', 'oculta_reintenta': 'hidden'}
+
+
+def aviso_i18n_js(base, mapa):
+    """Lo que necesita pantalla() de apagados_instancia.js para pintar «Módulo no instalado» en otro idioma (revisor 14-oct, 2.ª vuelta: el aviso
+    que sale al vuelo seguía solo en español): por idioma de la instancia que no es el español, la plantilla traducida y las frases, y el nombre de
+    cada módulo en ese idioma cuando se sabe. Vacío sin AVISO_IDIOMAS (el de siempre)."""
+    if not AVISO_IDIOMAS:
+        return {}
+    out = {}
+    for l in AVISO_IDIOMAS[0]:
+        if l == 'es':
+            continue
+        tr = AVISO_I18N.get(l)
+        if not tr:
+            aborta('aviso de pantalla no incluida: no hay frases en %r (AVISO_I18N de build.py)' % l)
+        nombres = {}
+        for mod, ficha in (mapa.get('n') or {}).items():
+            n = _nombre_en(ficha[0] if ficha else None, mod, l)
+            if n:
+                nombres[mod] = n
+        out[l] = {'p': _plantilla_en(base, l), 'tit': tr['instalado'], 'an': tr['activo_n'], 'a0': tr['activo_0'], 'as': tr['asunto'],
+                  'et': tr['error_t'], 'ex': tr['error_x'], 'n': nombres}
+    return out
+
+
+def _plantilla_en(base, idioma):
+    if idioma == 'es':
+        return base
+    for es, otro in zip(FRASES_PLANTILLA_NO_INSTALADO, AVISO_I18N[idioma]['plantilla']):
+        if es not in base:
+            aborta('no_instalado.html ya no dice %r: el aviso en %s saldría a medias (FRASES_PLANTILLA_NO_INSTALADO de build.py)' % (es, idioma))
+        base = base.replace(es, otro)
+    return base
+
+
+def pagina_no_instalado(base, marca, ficha, ruta, herramienta=None, modulo=None):
     """La pantalla estática: mismos textos que pantalla() de apagados_instancia.js. `herramienta` (nombre): una pantalla
     que esta instancia no trae aunque su módulo esté encendido (el generador de contratos, el portal clásico…): es
-    estática y no sabe qué está activo, así que no nombra el módulo ni invita a contratarlo (revisor, 28-sep)."""
-    from urllib.parse import quote
-    if herramienta:
-        v = {'titulo': 'Pantalla no incluida', 'texto': '«%s» no se incluye en esta instancia.' % herramienta,
-             'que_hace': '', 'asunto': '', 'oculta_que_hace': 'hidden', 'oculta_contacto': 'hidden',
-             'oculta_reintenta': 'hidden'}
+    estática y no sabe qué está activo, así que no nombra el módulo ni invita a contratarlo (revisor, 28-sep).
+    Con AVISO_IDIOMAS (instancia con `idiomas`) lleva una variante por idioma en <div data-axw-idioma>: se ve la del idioma de pantalla de la
+    ficha y una línea de guion cambia a la que eligió esa persona (axw_idioma_ui, la clave de idioma.js) o a la de la base
+    (axw_idioma_pantalla_erp), si la instancia la ofrece. `modulo` (clave) da el nombre en inglés."""
+    rellena = lambda t, v: re.sub(r'\{\{([a-z_]+)\}\}', lambda m: html.escape(v[m.group(1)]), t)
+    if not AVISO_IDIOMAS:
+        v = _valores_no_instalado(ficha, ruta, herramienta, modulo, 'es')
+        lengua, titulo, cuerpo = 'es', v['titulo'], rellena(base, v)
     else:
-        nombre, que_hace = ficha or (None, None)
-        v = {'titulo': TEXTOS_NO_INSTALADO[0],
-             'texto': ('«%s»%s' % (nombre, TEXTOS_NO_INSTALADO[1])) if nombre else TEXTOS_NO_INSTALADO[2],
-             'que_hace': que_hace or '', 'asunto': quote(TEXTOS_NO_INSTALADO[3] + (nombre or ruta), safe=''),
-             'oculta_que_hace': '' if que_hace else 'hidden', 'oculta_contacto': '', 'oculta_reintenta': 'hidden'}
-    cuerpo = re.sub(r'\{\{([a-z_]+)\}\}', lambda m: html.escape(v[m.group(1)]), base)
-    return ('<!doctype html>\n<html lang="es"><head><meta charset="utf-8">'
+        idiomas, lengua = AVISO_IDIOMAS
+        lengua = lengua if lengua in idiomas else idiomas[0]
+        partes, titulos = [], {}
+        for l in idiomas:
+            v = _valores_no_instalado(ficha, ruta, herramienta, modulo, l)
+            titulos[l] = v['titulo'] + ' · ' + marca
+            partes.append('<div data-axw-idioma="%s" lang="%s"%s>%s</div>' % (l, l, '' if l == lengua else ' hidden', rellena(_plantilla_en(base, l), v)))
+        titulo = titulos[lengua][:-len(' · ' + marca)]
+        cuerpo = ''.join(partes) + (
+            '<script>(function(){var l=%s,d=%s,t=%s,g=null,b=null;try{g=localStorage.getItem("axw_idioma_ui");b=localStorage.getItem("axw_idioma_pantalla_erp");}'
+            'catch(e){}var x=l.indexOf(g)>=0?g:(l.indexOf(b)>=0?b:d);if(x===d)return;var v=document.querySelectorAll("[data-axw-idioma]");'
+            'for(var i=0;i<v.length;i++)v[i].hidden=v[i].getAttribute("data-axw-idioma")!==x;document.documentElement.lang=x;document.title=t[x];})();</script>'
+            % (json.dumps(idiomas), json.dumps(lengua), json.dumps(titulos, ensure_ascii=False).replace('<', '\\u003c')))
+    return ('<!doctype html>\n<html lang="%s"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">'
             '<title>%s · %s</title><link rel="icon" href="/favicon.png">'
             '<link href="/assets/fonts/fonts.css" rel="stylesheet">'
             '<link href="/assets/tw-base.css" rel="stylesheet"></head>\n<body>%s</body></html>\n'
-            % (html.escape(v['titulo']), html.escape(marca), cuerpo))
+            % (lengua, html.escape(titulo), html.escape(marca), cuerpo))
 
 
 def ruta_limpia(u):
@@ -3347,6 +3454,32 @@ def ruta_limpia(u):
     if not re.fullmatch(r'/[a-z0-9-]+/(?:[a-z0-9-]+/)?', n):
         aborta('pantalla de módulo sin ruta limpia válida: %s → %s' % (u, n))
     return n
+
+
+def pantallas_por_tipo(nombre):
+    """{ruta limpia: módulo} de las pantallas que esta instancia NO puede encender nunca por su TIPO de ERP, más las de los módulos «fuera» (solo Lawang).
+    N6.3 del plan ajustado (erp-front, 14-oct-2026; owner 13-oct: «las instalaciones del ERP MAESTRO deben estar limpias»; agencia-81: «por TIPO, no por
+    encendido»): el paquete lleva el núcleo, Ajustes y TODAS las pantallas de los módulos de su tipo, encendidos o no, porque un módulo se enciende desde el
+    panel sin volver a publicar (apagados_instancia.js lo decide en el navegador). Lo de otro tipo no se puede encender ahí, así que su pantalla sale como
+    «Pantalla no incluida» y los ficheros que solo ella cargaba salen del paquete (como apagados_extra.p). El tipo es `config.tipo_erp` del registro de
+    instancias (A12) y el de cada módulo, TIPO_MODULO de erp/modulos.py (E3.1): una sola fuente, la misma que usa el servidor (A13). Sin tipo en el registro,
+    nada cambia (la instancia sale como hasta hoy). Revertir: devolver {} aquí."""
+    tipo = (_instancia_registro(nombre).get('config') or {}).get('tipo_erp')
+    if tipo is None:
+        return {}
+    sys.path.insert(0, os.path.join(AGENCIA, 'erp'))
+    from modulos import TIPO_MODULO, TIPOS_ERP
+    if tipo not in TIPOS_ERP:
+        aborta('erp/instancias.json: %s declara tipo_erp %r y solo se conocen %s' % (nombre, tipo, ', '.join(TIPOS_ERP)))
+    m = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))
+    out = {}
+    for mod, d in sorted(TIPO_MODULO.items()):
+        if mod == 'base' or ((d.get('clase') != 'fuera') and ('todos' in d['tipos'] or tipo in d['tipos'])):
+            continue
+        for u in (m['modulos'].get(mod) or {}).get('pantallas') or []:
+            if u.startswith('/intranet/'):
+                out[ruta_limpia(u)] = mod
+    return out
 
 
 def mapa_modulos(nombre):
@@ -3389,6 +3522,7 @@ def mapa_modulos(nombre):
     xp = {ruta_limpia(u) for u in extra.get('p') or []}
     for mod in nunca:
         xp |= {ruta_limpia(u) for u in (m['modulos'].get(mod) or {}).get('pantallas') or [] if u.startswith('/intranet/')}
+    xp |= set(pantallas_por_tipo(nombre))   # N6.3 (14-oct-2026): lo de otro tipo, también oculto en el menú
     out['xp'] = sorted(xp)
     # n: nombre y «qué hace» de cada módulo, para la pantalla «Módulo no instalado» (28-sep-2026)
     out['n'] = {k: [v[0], v[3]] for k, v in rotulos().items() if k != 'base'}
@@ -3398,6 +3532,9 @@ def mapa_modulos(nombre):
                 if isinstance(d, dict) and isinstance(d.get('herramienta'), str) and d['herramienta']}
     # operativos: en ellos el super_admin no cuenta como «quién lo usa» (20261012130000_f3_e1_setup_marco.sql, paso usuarios)
     out['o'] = sorted(k for k, d in ((m.get('setup') or {}).get('modulos') or {}).items() if isinstance(d, dict) and d.get('operativo') is True)
+    # r: rótulos por RUTA (erp-front, 14-oct-2026). En una instancia de tipo Reservas /productos/ es la pantalla «Extras y servicios» (extras_pantalla):
+    # apagados_instancia.js cambia el texto visible de los enlaces a esa ruta. Sin anclas sobre el texto de nav.js de Lawang.
+    out['r'] = ROTULOS_RUTA_RESERVAS if portada_de(nombre) == 'reservas' else {}
     return out
 
 
@@ -3798,6 +3935,21 @@ def flota_pantalla():
                  "  /*AXW_FIN_TARJETA_FLOTA*/" + '\n' + "}",
                  'herramientas.js tarjeta Flota')
     open(her, 'w', encoding='utf-8', newline='').write(h)
+
+
+ROTULOS_RUTA_RESERVAS = {'/productos/': {'es': 'Extras y servicios', 'en': 'Extras and services', 'id': 'Ekstra dan layanan'}}
+
+
+def extras_pantalla():
+    """/productos/ de una instancia de tipo Reservas = «Extras y servicios» (erp-front, 14-oct-2026; owner 13-oct: «¿Fleets and rates y Products no es lo
+    mismo?»). Pantalla PROPIA del maestro (extras.html, sobre la cáscara de /asistente/ como Flota) que sustituye a la de Productos de Lawang SOLO en lo copiado
+    a DIST: misma carpeta, así la entrada del menú, la casilla `productos` de Usuarios y el mapa de módulos siguen enganchados por su ruta y su clave. Lo que se
+    alquila vive en Flota; aquí solo lo demás. datos.js de Lawang arranca REG.productos por el trozo de ruta, pero sin su tabla (#lw-prd-lista) se va sin hacer
+    nada. Se descarta filtrar la pantalla de Lawang desde aquí: serían anclas nuevas sobre su texto (erp-limpieza, 13-oct). Revertir: no llamarla."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    if not os.path.isfile(os.path.join(v4, 'productos', 'index.html')):
+        aborta('extras_pantalla: no está la pantalla Productos copiada de Lawang (intranet/v4/productos/index.html): ¿cambió su sitio?')
+    _pantalla_bot(v4, 'extras.html', 'productos', 'Extras y servicios', puerta='data-herramienta="productos"')
 
 
 AAAS_NUCLEO = ('agente_panel_estado', 'agente_modulo_cambia')   # lo que la ventana del AaaS llama con el módulo apagado
@@ -5041,9 +5193,12 @@ def instancia(nombre):
     clases_setup_en_hoja()   # revisor 13-oct (bbm-p41): ninguna clase del setup sin compilar en la tw.css de la instancia
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
+        extras_pantalla()   # erp-front 14-oct-2026: /productos/ = «Extras y servicios»; las motos solo en Flota
     moneda_documento()   # 13-oct (bbm-p36): factura y recibí nuevos en la moneda de la instancia, no en EUR
     idiomas = idiomas_de(nombre)
     pantalla = idioma_pantalla_de(nombre, idiomas)   # bbm-p42: SIEMPRE, también sin `idiomas` (un idioma_pantalla sin lista aborta, no se ignora: revisor)
+    global AVISO_IDIOMAS
+    AVISO_IDIOMAS = (idiomas, pantalla) if idiomas else None   # erp-front 14-oct: los avisos de pantalla no incluida, en los idiomas de la instancia
     if idiomas:   # 12-oct-2026: interfaz en los idiomas de la instancia (bbm: indonesio e inglés)
         idiomas_instancia(idiomas, pantalla)   # + el idioma de pantalla por defecto (el del registro; también el de la puerta sin sesión)
         documento_idiomas(idiomas)   # BBM-65 (13-oct): el papel de factura/recibí y su correo en el par de la instancia (id·en en bbm)
@@ -5116,6 +5271,7 @@ def instancia(nombre):
         aborta('apagados_instancia.js sin el hueco __AXW_NO_INSTALADO__')
     # la pantalla se inyecta DESPUÉS de quitar comentarios (sus URL llevan «//») y como literal de cadena JS
     no_instalado = no_instalado_base(marca)
+    mapa['ni'] = aviso_i18n_js(no_instalado, mapa)   # erp-front 14-oct: «Módulo no instalado» al vuelo en los idiomas de la instancia
     interruptores = (plantilla.replace('__AXW_MAPA__', json.dumps(mapa, ensure_ascii=False, sort_keys=True))
                      .replace('__AXW_NO_INSTALADO__', json.dumps(no_instalado, ensure_ascii=False)) + '\n')
     t = open(g, encoding='utf-8').read()
@@ -5159,6 +5315,7 @@ def instancia(nombre):
     # se sirve la pantalla y apagados_instancia.js la cambia por «Módulo no instalado» si su módulo está apagado.
     extra_p = _instancia_registro(nombre).get('apagados_extra') or {}
     fuera = {ruta_limpia(u) for u in extra_p.get('p') or []}
+    fuera |= set(pantallas_por_tipo(nombre))   # N6.3: lo de otro tipo sale como «Pantalla no incluida» y se lleva sus ficheros, como apagados_extra.p
     rotulos_fuera = {ruta_limpia(u): r for u, r in (extra_p.get('p_rotulos') or {}).items()}
     cargaban = set()   # ficheros que cargaban las pantallas que salen del paquete: candidatos a salir con ellas
     for u in mapa['xp']:
@@ -5169,9 +5326,9 @@ def instancia(nombre):
                 # reservas-producto, que SÍ se enciende: decir «Reservas de producto no está activo» sería mentir) y sus ficheros salen con ella.
                 cargaban |= ficheros_cargados(f, DIST)
                 open(f, 'w', encoding='utf-8').write(pagina_no_instalado(
-                    no_instalado, marca, None, u, herramienta=rotulos_fuera.get(u) or mapa['n'].get(mapa['p'].get(u), [u])[0]))
+                    no_instalado, marca, None, u, herramienta=rotulos_fuera.get(u) or mapa['n'].get(mapa['p'].get(u), [u])[0], modulo=mapa['p'].get(u)))
             else:
-                open(f, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, mapa['n'].get(mapa['p'].get(u)), u))
+                open(f, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, mapa['n'].get(mapa['p'].get(u)), u, modulo=mapa['p'].get(u)))
     quitados = poda_ficheros_sin_pantalla(DIST, cargaban)
     if quitados:
         print('pantallas fuera del paquete: %d fichero(s) que solo ellas cargaban, fuera: %s' % (len(quitados), ', '.join(quitados)))
