@@ -339,7 +339,8 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:/i.test(String(t || ''));
   b.falla['gastos_panel_datos:'] = ['42501', null];
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=gastos' }));
   await p.waitForSelector('[data-axw-n4-cat="error"]', { timeout: 3000 }).catch(() => {});
-  ok('G lectura sin permiso: lo dice, sin código', ((await txt(p, '[data-axw-n4-cat="error"]')) || '').length > 40 && sinCodigo(await txt(p, '[data-axw-n4-cat="error"]')), await txt(p, '[data-axw-n4-cat="error"]'));
+  const tLee = (await txt(p, '[data-axw-n4-cat="error"]')) || '';
+  ok('G lectura sin permiso: dice POR QUÉ (frase de sin_permiso), sin código ni objeto', tLee.includes('Tu sesión no tiene permiso para esto.') && !tLee.includes('[object') && sinCodigo(tLee), tLee);
   await ctx.close();
 
   // ── 9. es/en/id a 390 y 1440: sin scroll horizontal, sin frases sin traducir, sin códigos sin frase ─────────────────────────────────────────

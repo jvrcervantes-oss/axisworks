@@ -584,7 +584,7 @@
         lista.removeAttribute('aria-busy');
         var cats = r && r.ok && r.data && Array.isArray(r.data.categorias) ? r.data.categorias : null;
         if (!cats) {   // dice POR QUÉ (p. ej. sin la herramienta Gastos) con la frase de la base por code + hint, nunca su mensaje
-          var por = r && r.error && (r.error.code || r.error.hint) ? S.explica(r.error) : '';
+          var por = r && r.error && (r.error.code || r.error.hint) ? S.explica(r.error, true).texto : '';   // explica() da {texto, configurar}
           lista.appendChild(el('li', { class: 'font-body-sm text-body-sm text-error', 'data-axw-n4-cat': 'error', text: U('n4_cat_no_carga') + (por ? ' ' + por : '') }));
           return;
         }
