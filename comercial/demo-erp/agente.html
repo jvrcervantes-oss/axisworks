@@ -110,7 +110,7 @@
     'Avisos por Telegram': 'Telegram alerts', 'Los avisos están en este panel.': 'Alerts are on this panel.',
     'Módulo': 'Module', 'Encendido': 'On', 'Apagado': 'Off', 'Trabajo': 'Work', 'Trabajando': 'Working', 'En pausa': 'Paused',
     'Última pasada': 'Last run', 'Todavía no ha hecho ninguna pasada.': 'It has not run yet.', 'Gastado este mes': 'Spent this month', 'Tope': 'Cap', 'Sin tope': 'No cap',
-    'Avisos de hoy': "Today's alerts", 'mañana': 'morning', 'tarde': 'evening',
+    'Avisos de hoy': "Today's alerts", 'Pasada de la mañana': 'Morning run', 'Pasada de la tarde': 'Evening run',
     'hecha': 'done', 'en pausa': 'paused', 'sin trabajos encendidos': 'no jobs switched on', 'parada por la pausa': 'stopped by the pause',
     'cortada por el cupo del día': "cut by the day's quota", 'con errores': 'with errors',
     'Parar': 'Pause', 'Reanudar': 'Resume', 'Encender el piloto': 'Switch the pilot on', 'Apagar el piloto': 'Switch the pilot off',
@@ -162,6 +162,7 @@
     'La cuenta de pruebas no puede cambiar nada aquí.': 'The test account cannot change anything here.',
     'No tienes la herramienta «Piloto»: pídesela al administrador principal en Usuarios.': 'You do not have the “Pilot” tool: ask the main administrator for it in Users.',
     'El piloto está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'The pilot is off: its alerts cannot be read until it is switched on. This does NOT mean there are none.',
+    'La base no confirmó el cambio: recarga antes de repetir.': 'The database did not confirm the change: reload before trying again.',
     'Hecho: marcado.': 'Done: marked.', 'Descartado.': 'Dismissed.', 'Propuesta aceptada.': 'Proposal accepted.', 'Propuesta rechazada.': 'Proposal rejected.'
   };
   var ID_AG = {
@@ -177,7 +178,7 @@
     'Avisos por Telegram': 'Peringatan lewat Telegram', 'Los avisos están en este panel.': 'Peringatan ada di panel ini.',
     'Módulo': 'Modul', 'Encendido': 'Aktif', 'Apagado': 'Nonaktif', 'Trabajo': 'Kerja', 'Trabajando': 'Bekerja', 'En pausa': 'Dijeda',
     'Última pasada': 'Pemeriksaan terakhir', 'Todavía no ha hecho ninguna pasada.': 'Belum pernah berjalan.', 'Gastado este mes': 'Terpakai bulan ini', 'Tope': 'Batas', 'Sin tope': 'Tanpa batas',
-    'Avisos de hoy': 'Peringatan hari ini', 'mañana': 'pagi', 'tarde': 'sore',
+    'Avisos de hoy': 'Peringatan hari ini', 'Pasada de la mañana': 'Pemeriksaan pagi', 'Pasada de la tarde': 'Pemeriksaan sore',
     'hecha': 'selesai', 'en pausa': 'dijeda', 'sin trabajos encendidos': 'tidak ada tugas aktif', 'parada por la pausa': 'berhenti karena jeda',
     'cortada por el cupo del día': 'terpotong oleh kuota harian', 'con errores': 'ada kesalahan',
     'Parar': 'Jeda', 'Reanudar': 'Lanjutkan', 'Encender el piloto': 'Aktifkan pilot', 'Apagar el piloto': 'Matikan pilot',
@@ -191,7 +192,7 @@
     'Motivo': 'Alasan', 'Escribe el motivo (entre 3 y 300 caracteres).': 'Tulis alasannya (3 sampai 300 karakter).',
     'Confirmar': 'Konfirmasi', 'Hecho': 'Selesai', 'Descartar': 'Buang', 'Aceptar': 'Terima', 'Rechazar': 'Tolak',
     'Hecho por': 'Diselesaikan oleh', 'Descartado por': 'Diabaikan oleh', 'Aceptada por': 'Diterima oleh', 'Rechazada por': 'Ditolak oleh', 'el': 'pada',
-    'Pendiente': 'Menunggu', 'Aceptada': 'Diterima', 'Rechazada': 'Ditolak',
+    'Pendiente': 'Tertunda', 'Aceptada': 'Diterima', 'Rechazada': 'Ditolak',
     'Problema': 'Masalah', 'Prueba': 'Bukti', 'Cambio': 'Perubahan', 'Riesgo': 'Risiko', 'Nota': 'Catatan', 'Nota (opcional)': 'Catatan (opsional)',
     'El piloto no ha hecho propuestas de cambio.': 'Pilot belum mengusulkan perubahan.',
     'Sin pasada todavía hoy.': 'Belum ada pemeriksaan hari ini.', 'Todo en orden.': 'Semua beres.',
@@ -211,10 +212,10 @@
     'Salidas pasadas sin registrar: {n}': 'Serah terima lampau yang belum dicatat: {n}',
     'Caducan en 24 h y son la última moto libre de su modelo: {n}': 'Kedaluwarsa dalam 24 jam dan merupakan motor terakhir yang tersedia untuk modelnya: {n}',
     'Reservas sin pagar que caducan en 24 h: {n}': 'Booking belum dibayar yang kedaluwarsa dalam 24 jam: {n}',
-    'Pagos por revisar: {n}': 'Pembayaran yang perlu diperiksa: {n}', 'Pagos sin factura emitida: {n}': 'Pembayaran tanpa faktur: {n}', 'Reservas confirmadas sin pago: {n}': 'Booking terkonfirmasi tanpa pembayaran: {n}',
+    'Pagos por revisar: {n}': 'Pembayaran yang perlu diperiksa: {n}', 'Pagos sin factura emitida: {n}': 'Pembayaran tanpa invoice: {n}', 'Reservas confirmadas sin pago: {n}': 'Booking terkonfirmasi tanpa pembayaran: {n}',
     '{r} reservas en 7 días, {l} libres y {t} en el taller': '{r} booking dalam 7 hari, {l} tersedia dan {t} di bengkel',
     'lleno {s} semanas seguidas ({p} % de ocupación)': 'penuh {s} minggu berturut-turut (okupansi {p} %)', 'vacío {s} semanas seguidas ({p} % de ocupación)': 'kosong {s} minggu berturut-turut (okupansi {p} %)',
-    'Salidas hoy': 'Serah terima hari ini', 'Vueltas hoy': 'Pengembalian hari ini', 'Cobros hoy': 'Pembayaran hari ini', 'Reservas con cobro pendiente': 'Booking dengan pembayaran tertunda',
+    'Salidas hoy': 'Serah terima hari ini', 'Vueltas hoy': 'Motor kembali hari ini', 'Cobros hoy': 'Pembayaran hari ini', 'Reservas con cobro pendiente': 'Booking dengan pembayaran tertunda',
     'Y {n} más.': 'Dan {n} lagi.', 'Moto sin nombre en este sistema': 'Motor tanpa nama di sistem ini', 'Modelo sin nombre en este sistema': 'Model tanpa nama di sistem ini',
     'Aviso de un tipo que esta pantalla aún no conoce.': 'Peringatan jenis yang belum dikenal layar ini.',
     'Escribe un importe con cifras y, si hace falta, un punto o una coma para los céntimos.': 'Tulis jumlah berupa angka, dengan titik atau koma untuk sen bila perlu.',
@@ -229,6 +230,7 @@
     'La cuenta de pruebas no puede cambiar nada aquí.': 'Akun uji coba tidak dapat mengubah apa pun di sini.',
     'No tienes la herramienta «Piloto»: pídesela al administrador principal en Usuarios.': 'Anda tidak punya alat «Pilot»: mintalah kepada admin utama di Pengguna.',
     'El piloto está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'Pilot nonaktif: peringatannya tidak bisa dibaca sampai diaktifkan. Ini BUKAN berarti tidak ada.',
+    'La base no confirmó el cambio: recarga antes de repetir.': 'Database tidak mengonfirmasi perubahan: muat ulang sebelum mengulang.',
     'Hecho: marcado.': 'Selesai: sudah ditandai.', 'Descartado.': 'Diabaikan.', 'Propuesta aceptada.': 'Usulan diterima.', 'Propuesta rechazada.': 'Usulan ditolak.'
   };
   var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
@@ -328,7 +330,7 @@
     } else {
       caja.appendChild(dato('Trabajo', null, C.chip(T(d.parado ? 'En pausa' : 'Trabajando'), d.parado ? 'espera' : 'ok')));
       var u = d.ultima_pasada;
-      caja.appendChild(dato('Última pasada', u ? C.fechaDia(u.dia) + ' · ' + T(u.pasada === 'tarde' ? 'tarde' : 'mañana') + ' · ' + T(RESULTADO[u.resultado] || 'con errores')
+      caja.appendChild(dato('Última pasada', u ? C.fechaDia(u.dia) + ' · ' + T(u.pasada === 'tarde' ? 'Pasada de la tarde' : 'Pasada de la mañana') + ' · ' + T(RESULTADO[u.resultado] || 'con errores')
                                              : T('Todavía no ha hecho ninguna pasada.')));
       caja.appendChild(dato('Avisos de hoy', String(ent(d.notas_hoy) ? d.notas_hoy : 0)));
       caja.appendChild(dato('Gastado este mes', eur(d.gastado_mes_cent, d) + ' / ' + eur(d.tope_mensual_cent, d)));
@@ -376,7 +378,7 @@
     var est = n ? n.estado : 'sin_nota';
     var t = h('article', { class: 'ag-tarjeta', 'data-ag': 'nota', 'data-trabajo': trabajo, 'data-estado': est });
     var cab = h('div', { class: 'ag-cab' }, [h('h3', { text: T(NOMBRE[trabajo]) })]);
-    if (n) cab.appendChild(C.chip(T(n.pasada === 'tarde' ? 'tarde' : 'mañana')));
+    if (n) cab.appendChild(C.chip(T(n.pasada === 'tarde' ? 'Pasada de la tarde' : 'Pasada de la mañana')));
     t.appendChild(cab);
     if (!n) { t.appendChild(h('p', { class: 'ag-sub', text: T('Sin pasada todavía hoy.') })); return t; }
     if (est === 'sin_datos') { t.appendChild(h('p', { class: 'ag-sub', text: T(SIN_DATOS[trabajo] || 'Sin reservas en este sistema todavía.') })); return t; }
@@ -497,6 +499,7 @@
     return llama(nombre, args).then(function (r) {
       C.libera(btn);
       if (r.error) { error(textoError(r.error, false)); return false; }
+      if (!esObj(r.data)) { error(T('La base no confirmó el cambio: recarga antes de repetir.')); return false; }
       return carga().then(function () { exito(ok); return true; });
     });
   }
@@ -511,6 +514,7 @@
         alConfirmar(m).then(function (r) {
           C.libera(bt);
           if (r.error) { dlg.error(textoError(r.error, false)); return; }
+          if (!esObj(r.data)) { dlg.error(T('La base no confirmó el cambio: recarga antes de repetir.')); return; }
           dlg.cierra();
           carga();
         });
@@ -545,11 +549,11 @@
     else if (a === 'ag-apagar' || a === 'ag-encender') {
       var enc = a === 'ag-encender';
       conMotivo(T(enc ? 'Encender el piloto' : 'Apagar el piloto'), T(enc ? 'Al encenderlo, vuelve a mirar el negocio dos veces al día y a dejar avisos aquí. No toca nada.' : 'Apagar el piloto deja de verlo y de escribir en el acto. Sus notas se quedan aquí.'),
-        !enc, function (m) { return llama('agente_modulo_cambia', { p_encender: enc, p_motivo: m }).then(function (r) { if (!r.error) exito(T(enc ? 'Piloto encendido.' : 'Piloto apagado.')); return r; }); });
+        !enc, function (m) { return llama('agente_modulo_cambia', { p_encender: enc, p_motivo: m }).then(function (r) { if (!r.error && esObj(r.data)) exito(T(enc ? 'Piloto encendido.' : 'Piloto apagado.')); return r; }); });
     } else if (a === 'ag-prop-aceptar' || a === 'ag-prop-rechazar') {
       var acepta = a === 'ag-prop-aceptar';
       conMotivo(T(acepta ? 'Aceptar' : 'Rechazar'), '', !acepta, function (m) {
-        return llama('agente_propuesta_decide', { p_id: id, p_decision: acepta ? 'aceptada' : 'rechazada', p_nota: m || null }).then(function (r) { if (!r.error) exito(T(acepta ? 'Propuesta aceptada.' : 'Propuesta rechazada.')); return r; });
+        return llama('agente_propuesta_decide', { p_id: id, p_decision: acepta ? 'aceptada' : 'rechazada', p_nota: m || null }).then(function (r) { if (!r.error && esObj(r.data)) exito(T(acepta ? 'Propuesta aceptada.' : 'Propuesta rechazada.')); return r; });
       }, true);
     }
   }

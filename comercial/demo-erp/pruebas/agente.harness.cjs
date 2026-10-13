@@ -100,7 +100,7 @@ async function servidor(s, nombre, a) {
       s.nivel = a.p_nivel_ruta; s.tope = a.p_tope_mensual_cent;
       return { data: estado(s), error: null };
     }
-    case 'agente_modulo_cambia': { const e = soloDueno(); if (e) return e; s.encendido = !!a.p_encender; return { data: { encendido: s.encendido }, error: null }; }
+    case 'agente_modulo_cambia': { const e = soloDueno(); if (e) return e; if (o.cambiaNulo) return { data: null, error: null }; s.encendido = !!a.p_encender; return { data: { encendido: s.encendido }, error: null }; }
   }
   return err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
 }
@@ -164,7 +164,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('bloqueos sin avisos: «Todo en orden.»', (await tarjeta(p, 'bloqueos')).includes('Todo en orden.'));
     ok('taller y ocupación: modelo + cifras', (await tarjeta(p, 'taller')).includes('Honda Scoopy · 5 reservas en 7 días, 0 libres y 2 en el taller') && (await tarjeta(p, 'ocupacion')).includes('lleno 4 semanas seguidas (95 % de ocupación)'));
     ok('un aviso de un tipo desconocido NO se calla', (await tarjeta(p, 'ocupacion')).includes('Aviso de un tipo que esta pantalla aún no conoce.'));
-    ok('cierre: manda la nota de la tarde sobre la de la mañana', (await tarjeta(p, 'cierre')).includes('tarde') && (await p.$eval('[data-trabajo="cierre"] dl', e => e.textContent)).includes('5'));
+    ok('cierre: manda la nota de la tarde sobre la de la mañana', (await tarjeta(p, 'cierre')).includes('Pasada de la tarde') && (await p.$eval('[data-trabajo="cierre"] dl', e => e.textContent)).includes('5'));
     ok('estado: encendido, trabajando, última pasada, gasto/tope', (await txt(p, '[data-ag="estado"]')).includes('Encendido') && (await txt(p, '[data-ag="estado"]')).includes('Trabajando') && (await txt(p, '[data-ag="estado"]')).includes('hecha'));
     ok('el dueño ve Parar y Apagar, no Encender', (await hay(p, '[data-accion="ag-parar"]')) === 1 && (await hay(p, '[data-accion="ag-apagar"]')) === 1 && (await hay(p, '[data-accion="ag-encender"]')) === 0);
     ok('ajustes: 8 casillas marcadas, nivel 1, tope 37 y su equivalente en USD', (await p.$$eval('[data-ag="trabajos"] input:checked', e => e.length)) === 8 && (await p.$eval('[data-campo="nivel_ruta"]', e => e.value)) === '1'
@@ -251,6 +251,14 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   {
     const { p, ctx } = await abre({ base: { dueno: true, sinNotas: true } });
     ok('sin pasada todavía: 8 tarjetas «Sin pasada todavía hoy.» y la última pasada lo dice', (await p.$$eval('[data-estado="sin_nota"]', e => e.length)) === 8 && (await txt(p, '[data-ag="estado"]')).includes('Todavía no ha hecho ninguna pasada.'));
+    await ctx.close();
+  }
+  {
+    const { p, base, ctx } = await abre({ base: { dueno: true, nulo: true, cambiaNulo: true } });
+    await p.click('[data-accion="ag-encender"]'); await p.fill('[data-campo="dialogo-motivo"]', 'Encender'); await p.click('[data-accion="ag-modal-confirmar"]');
+    await hasta(() => llamadas(base, 'agente_modulo_cambia').length === 1);
+    await p.waitForSelector('.axw-modal .axw-error:not(.axw-oculto)');
+    ok('encender con respuesta null (interruptor del navegador) NO se da por hecho: lo dice en el diálogo', (await txt(p, '.axw-modal .axw-error')).includes('no confirmó') && !(await visible(p, '[data-ag="exito"]')));
     await ctx.close();
   }
   {
