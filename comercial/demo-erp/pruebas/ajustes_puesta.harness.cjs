@@ -25,6 +25,19 @@ function servidor(b, n, a) {
     b.d.pasos.forEach(p => { if (p.hecho) p.falta = null; });
     return { data: JSON.parse(JSON.stringify(b.d)), error: null };
   }
+  if (n.startsWith('from:usuarios')) {   // «Quién lo usa» (S14) también se edita aquí, en línea
+    if (n.endsWith(':lista')) return { data: JSON.parse(JSON.stringify((b.usuarios || []).filter(u => a.activo === undefined || u.activo === a.activo))), error: null };
+    const u = (b.usuarios || []).find(x => x.user_id === a.user_id);
+    return { data: u ? JSON.parse(JSON.stringify(u)) : null, error: null };
+  }
+  if (n.startsWith('from:')) return { data: null, error: null };
+  if (n === 'usuario_guarda_permisos') {
+    const u = (b.usuarios || []).find(x => x.user_id === a.p_user_id);
+    if (!u) return err('P0002');
+    u.herramientas = a.p_cambios.herramientas.slice();
+    const pu = b.d.pasos.find(x => x.clave === 'usuarios'); if (pu) pu.hecho = b.usuarios.some(x => x.activo && x.rol !== 'super_admin' && x.herramientas.includes('reservas-producto'));
+    return { data: null, error: null };
+  }
   if (n === 'ajustes_config_datos') return { data: { valores: Object.assign({}, b.valores), puede_escribir: true }, error: null };
   if (n === 'ajustes_config_guardar') {
     if (b.perdidas > 0) { b.perdidas--; return { red: true }; }
@@ -39,7 +52,9 @@ const pagina = idioma => `<!doctype html><html><head><meta charset="utf-8"><meta
 <main><section data-lw-panel="puesta"><div id="lw-aj-puesta"><p>…</p></div></section></main>
 <script>
 window.__sinTrad = []; window.__errores = []; window.addEventListener('error', function (e) { window.__errores.push(String(e.message)); });
-function cadena() { var q = { select: function () { return q; }, eq: function () { return q; }, maybeSingle: function () { return Promise.resolve({ data: null, error: null }); } }; return q; }
+function cadena(t) { var f = {}; var q = { select: function () { return q; }, eq: function (c, v) { f[c] = v; return q; }, maybeSingle: function () { return window.__srv('from:' + t, f); },
+  then: function (a, b) { return window.__srv('from:' + t + ':lista', f).then(a, b); } }; return q; }
+window.AXW_MAPA_MODULOS = { h: { facturas: 'facturas', recibos: 'recibos', 'reservas-producto': 'reservas-producto' }, o: ['reservas-producto'] };
 var sb = { rpc: function (n, a) { return window.__srv(n, a || {}); }, from: cadena };
 window.LW_AUTH = Promise.resolve({ sb: sb }); window.lwDatos = function (n, a) { return sb.rpc(n, a); };
 window.LW_EN = {}; window.LW_ID = {}; window.__idioma = '${idioma}';
@@ -110,6 +125,29 @@ const txt = async (p, sel) => (await p.$(sel)) ? (await p.$eval(sel, e => e.text
     const w = await p.evaluate(() => document.documentElement.scrollWidth);
     ok(idioma + ' ' + ancho + ': sin scroll horizontal', w <= ancho, String(w));
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'ajustes_' + idioma + '_' + ancho + '.png'), fullPage: true });
+    await ctx.close();
+  }
+  // «Quién lo usa» (S14, revisor 13-oct): en Ajustes el mismo componente se edita en línea; guarda la lista entera de la persona releída
+  {
+    const bq = base('sin_configurar');
+    bq.d.pasos.push({ modulo: 'reservas-producto', clave: 'usuarios', obligatorio: true, irreversible: false, hecho: false, donde: '/usuarios/', falta: { codigo: 'sin_usuarios', campos: [] } });
+    bq.usuarios = [
+      { user_id: 'u-dion', nombre: 'Dion', email: 'd@x.test', rol: 'super_admin', activo: true, herramientas: [], creado_por: null },
+      { user_id: 'u-kadek', nombre: 'Kadek', email: 'k@x.test', rol: 'agente', activo: true, herramientas: ['facturas'], creado_por: 'dion' },
+      { user_id: 'u-prueba', nombre: 'Pruebas', email: 'p@x.test', rol: 'admin', activo: true, herramientas: [], creado_por: 'estudio:cuenta-pruebas' }];
+    ({ p, ctx } = await abre(nav, bq));
+    await p.click('[data-pm-fila="usuarios"] [data-accion="pm-editar"]');
+    await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
+    ok('S14 en Ajustes: la lista sin la cuenta de pruebas y una casilla por persona', (await p.$$('[data-axw-quien-usuario]')).length === 1 && !(await p.$('[data-axw-quien-usuario="u-prueba"]')));
+    await p.click('[data-pm-fila="usuarios"] [data-accion="pm-guardar"]'); await p.waitForTimeout(300);
+    ok('S14 en Ajustes: sin cambios dice qué hacer y no escribe', /Enciende a alguien/.test((await txt(p, '[data-pm-estado="usuarios"]')) || '')
+       && !bq.llamadas.some(x => x[0] === 'usuario_guarda_permisos'));
+    await p.click('[data-axw-quien-usuario="u-kadek"]', { force: true });
+    await p.click('[data-pm-fila="usuarios"] [data-accion="pm-guardar"]'); await p.waitForTimeout(500);
+    const g = bq.llamadas.filter(x => x[0] === 'usuario_guarda_permisos');
+    ok('S14 en Ajustes: una llamada con el array entero de Kadek más esta herramienta', g.length === 1 && JSON.stringify(g[0][1].p_cambios.herramientas) === '["facturas","reservas-producto"]', JSON.stringify(g));
+    ok('S14 en Ajustes: tras guardar, la fila dice Hecho (lo dice la base)', /Hecho/.test((await txt(p, '[data-pm-fila="usuarios"]')) || ''));
+    ok('S14 en Ajustes: sin errores de página', (await p.evaluate(() => window.__errores)).length === 0, JSON.stringify(await p.evaluate(() => window.__errores)));
     await ctx.close();
   }
   await nav.close();

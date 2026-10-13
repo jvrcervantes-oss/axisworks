@@ -100,7 +100,7 @@
     if (!d.puede_configurar) c.appendChild(h('p', { class: 'px-8 py-4 font-body-sm text-body-sm text-outline', text: U('solo_admin') }));
   }
   function filaPaso(p) {
-    var comp = P.de(p.clave);
+    var comp = P.de(p.clave, p);
     var texto = h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
       h('span', { class: 'font-label-md text-label-md text-on-surface', text: S.texto('paso', p.clave, 0) + (p.obligatorio ? '' : ' · ' + U('opcional')) }),
       h('span', { class: 'font-body-sm text-body-sm text-outline break-words', text: p.hecho ? S.texto('paso', p.clave, 1) : (p.falta ? S.textoFalta(p.falta) : S.texto('paso', p.clave, 1)) }),
@@ -125,7 +125,7 @@
     return li;
   }
   function editor(li) {
-    var p = li._paso, comp = P.de(p.clave);
+    var p = li._paso, comp = P.de(p.clave, p);
     var viejo = li.querySelector('[data-pm-editor]'); if (viejo) { li.removeChild(viejo); return; }
     var caja = h('div', { class: 'flex flex-col gap-3', 'data-pm-editor': p.clave });
     var ctl = comp.pinta(caja, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: p.hecho });
@@ -153,7 +153,7 @@
     if (caja._motivo && (motivo.match(/\p{L}/gu) || []).length < 3) { di(U('motivo_corto'), true); caja._motivo.focus(); return; }
     ocupado = true; di(U('cargando'), false);
     caja.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
-    P.de(p.clave).guarda(sb, r.v, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad }, false, motivo || null).then(function (res) {
+    P.de(p.clave, p).guarda(sb, r.v, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad }, false, motivo || null).then(function (res) {
       if (res.ok) { ocupado = false; return carga(); }
       if (!res.sinRespuesta) {   // con código de la base: «no se guardó», y por qué
         ocupado = false; caja.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
@@ -163,7 +163,7 @@
       // la duda se resuelve mirando el VALOR releído, no solo «hecho» (un paso ya hecho sigue hecho aunque no se guardara; revisor 12-oct)
       return relee().then(function (rr) {
         ocupado = false;
-        var comp = P.de(p.clave);
+        var comp = P.de(p.clave, p);
         var ahora = rr.ok && rr.ctx.datos.pasos.filter(function (x) { return x.clave === p.clave && x.modulo === p.modulo; })[0];
         var guardado = rr.ok && (comp.comprueba ? comp.comprueba(r.v, rr.ctx) : !!(ahora && ahora.hecho && !p.hecho));
         if (guardado) { ctx = rr.ctx; pinta(); return; }

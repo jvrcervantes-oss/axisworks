@@ -15,6 +15,15 @@ const NUCLEO = fs.readFileSync(path.join(AQUI, 'setup_modulos.js'), 'utf8');
 const PASOS = fs.readFileSync(path.join(AQUI, 'setup_pasos.js'), 'utf8');
 // AXW_CSS_DIST=<paquete construido>: mete tw.css y shell.css de la instancia para mirar la piel en las capturas (no cambia lo que se mide)
 const CSS_PIEL = process.env.AXW_CSS_DIST ? ['tw.css', 'shell.css'].map(f => fs.readFileSync(path.join(process.env.AXW_CSS_DIST, 'assets', f), 'utf8')).join(' ') : '';
+// …y la piel de la instancia tal como la pone instancia.js (--tema-*) más sus letras (fonts.css y sus woff2), para medir contraste sobre lo que
+// ve el cliente (bbm-p41, 13-oct). Un paquete sin piel propia (Lawang, demo) no trae el objeto: se queda con los colores de tw.css.
+const DIST = process.env.AXW_CSS_DIST || '';
+const PIEL_VARS = (() => {
+  if (!DIST) return '';
+  const m = /\bp=(\{[^}]*\});for\(var k in p\)s\.setProperty\("--tema-"\+k/.exec(fs.readFileSync(path.join(DIST, 'contracts', 'assets', 'instancia.js'), 'utf8'));
+  return m ? ':root{' + Object.entries(JSON.parse(m[1])).map(([k, v]) => '--tema-' + k + ':' + v).join(';') + '}' : '';
+})();
+const FUENTES = DIST && fs.existsSync(path.join(DIST, 'assets', 'fonts', 'fonts.css')) ? fs.readFileSync(path.join(DIST, 'assets', 'fonts', 'fonts.css'), 'utf8') : '';
 const SHOT = process.argv[2];
 let fallos = 0;
 const ok = (n, c, x = '') => { if (!c) { fallos++; console.log('FALLA  ' + n + (x ? ' -> ' + x : '')); } else console.log('ok     ' + n); };
@@ -42,6 +51,16 @@ function servidor(b, n, a) {
     return { data: JSON.parse(JSON.stringify(b.d)), error: null };
   }
   if (n === 'ajustes_config_datos') return { data: { valores: Object.assign({}, b.valores), puede_escribir: true }, error: null };
+  if (n === 'usuario_guarda_permisos') {   // la RPC REEMPLAZA el array entero (como la de verdad)
+    const u = (b.usuarios || []).find(x => x.user_id === a.p_user_id);
+    if (!u) return err('P0002', null);
+    if (b.permMal === a.p_user_id) return err('42501', null);
+    if (b.permRed && b.permRed.veces > 0) { b.permRed.veces--; if (b.permRed.aplica) u.herramientas = a.p_cambios.herramientas.slice(); return { red: true }; }
+    u.herramientas = a.p_cambios.herramientas.slice();
+    const pu = b.d.pasos.find(x => x.clave === 'usuarios' && x.modulo === 'reservas-producto');
+    if (pu) pu.hecho = b.usuarios.some(x => x.activo && x.rol !== 'super_admin' && x.creado_por !== 'estudio:cuenta-pruebas' && x.herramientas.includes('reservas-producto'));
+    return { data: null, error: null };
+  }
   const guarda = () => {
     if (b.perdidas > 0) { b.perdidas--; return { perdida: true }; }   // la red se pierde DESPUÉS de que la base guardó (o.guardaAntes) o antes
     return null;
@@ -74,12 +93,14 @@ function servidor(b, n, a) {
   return err('42883', null, 'desconocida ' + n);
 }
 const pagina = (idioma, url) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}</style><style>${CSS_PIEL}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>${HTML[0]}</main>
+<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}</style><style>${CSS_PIEL}</style><style>${FUENTES}${PIEL_VARS}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>${HTML[0]}</main>
 <script>
 history.replaceState(null, '', '${url}');
 window.__sinTrad = []; window.__errores = [];
 window.addEventListener('error', function (e) { window.__errores.push(String(e.message)); });
-function cadena(t) { var f = {}; var q = { select: function () { return q; }, eq: function (c, v) { f[c] = v; return q; }, maybeSingle: function () { return window.__srv('from:' + t, f); } }; return q; }
+function cadena(t) { var f = {}; var q = { select: function () { return q; }, eq: function (c, v) { f[c] = v; return q; }, maybeSingle: function () { return window.__srv('from:' + t, f); },
+  then: function (a, b) { return window.__srv('from:' + t + ':lista', f).then(a, b); } }; return q; }
+window.AXW_MAPA_MODULOS = { h: { facturas: 'facturas', recibos: 'recibos', 'reservas-producto': 'reservas-producto' }, o: ['reservas-producto'] };
 var sb = { rpc: function (n, a) { return window.__srv(n, a || {}); }, from: cadena };
 window.LW_AUTH = Promise.resolve({ sb: sb });
 window.lwDatos = function (n, a) { return sb.rpc(n, a); };
@@ -93,8 +114,21 @@ window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' 
 async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=facturas', ancho = 1440 } = {}) {
   const ctx = await nav.newContext({ viewport: { width: ancho, height: 900 } });
   const p = await ctx.newPage();
-  await p.route('**/*', r => r.fulfill({ status: 200, contentType: 'text/html', body: pagina(idioma, url) }));
+  await p.route('**/*', r => {
+    const u = new URL(r.request().url());
+    if (DIST && u.pathname.startsWith('/assets/fonts/')) {
+      const f = path.join(DIST, u.pathname);
+      return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'font/woff2', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: '' });
+    }
+    return r.fulfill({ status: 200, contentType: 'text/html', body: pagina(idioma, url) });
+  });
   await p.exposeFunction('__srv', async (n, a) => {
+    if (n.startsWith('from:usuarios')) {   // «Quién lo usa» (S14): la tabla usuarios del doble, con estado
+      b.llamadas.push([n, a]);
+      if (n.endsWith(':lista')) return { data: JSON.parse(JSON.stringify((b.usuarios || []).filter(u => a.activo === undefined || u.activo === a.activo))), error: null };
+      const u = (b.usuarios || []).find(x => x.user_id === a.user_id);
+      return { data: u ? JSON.parse(JSON.stringify(u)) : null, error: null };
+    }
     if (n.startsWith('from:')) return { data: b.sociedad ? Object.assign({}, b.sociedad) : null, error: null };
     const r = servidor(b, n, a);
     if (r && r.red) throw Object.assign(new Error('Failed to fetch'));
@@ -116,19 +150,35 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   let { p, ctx } = await abre(nav, b);
   ok('el paso de la empresa no lleva «Revisar en Ajustes»: el formulario de aquí es el sitio (revisor 12-oct)', !(await p.$('[data-axw-accion="abrir-donde"]')));
   ok('abre en el primer paso no hecho (empresa)', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'sociedad');
-  ok('«Paso 1 de 2» (la moneda de base ya está hecha: no cuenta)', (await txt(p, '[data-axw-as="progreso"]')) === 'Paso 1 de 2', await txt(p, '[data-axw-as="progreso"]'));
+  ok('«Facturas · Paso 1 de 2» en la cabeza del paso (la moneda de base ya está hecha: no cuenta)', (await txt(p, '[data-axw-as="meta"]')) === 'Facturas · Paso 1 de 2', await txt(p, '[data-axw-as="meta"]'));
+  ok('arriba, el total de pasos hechos de todos los módulos (barra del diseño S10-S60)', (await txt(p, '[data-axw-as="progreso"]')) === '2 de 6 pasos hechos', await txt(p, '[data-axw-as="progreso"]'));
   ok('la URL lleva el paso', (await p.evaluate(() => location.search)).includes('paso=sociedad'));
   await clic(p, 'enviar');
   ok('vacío: dice qué falta y no envía', (await txt(p, '[data-axw-as="error"]')).includes('Razón social') && llamadas(b, 'sociedad_guarda').length === 0);
+  ok('S20: sin razón social la muestra impresa no se enseña (no inventa datos)', !(await p.isVisible('[data-axw-muestra="impresa"]')));
   await p.fill('[data-axw-campo="razon"]', 'PT Bali Best Motor'); await p.fill('[data-axw-campo="domicilio"]', 'Jl. Raya 1, Denpasar'); await p.fill('[data-axw-campo="npwp"]', '01.234.567.8-901.000');
+  ok('S20: la muestra impresa sigue a lo tecleado (razón, iniciales sin «PT», domicilio, etiqueta fiscal + número)',
+     (await txt(p, '[data-axw-muestra="razon"]')) === 'PT Bali Best Motor' && (await txt(p, '[data-axw-muestra="iniciales"]')) === 'BB'
+     && (await txt(p, '[data-axw-muestra="domicilio"]')) === 'Jl. Raya 1, Denpasar' && (await txt(p, '[data-axw-muestra="npwp"]')) === 'NPWP 01.234.567.8-901.000'
+     && (await p.isVisible('[data-axw-muestra="impresa"]')));
+  ok('S20: sin prefijo fijado no se inventa un número: dice que sale en el paso siguiente', (await txt(p, '[data-axw-muestra="numero"]')) === 'El número sale al fijar el prefijo, en el paso siguiente.');
+  ok('S20: ayudas del diseño y «¿Más de una empresa?»', (await txt(p, '[data-axw-fila="razon"]')).includes('Tal como está registrada.') && (await txt(p, '[data-axw-fila="npwp"]')).includes('15 o 16 cifras.')
+     && !!(await p.$('[data-axw-nota="otra_empresa"]')));
   await clic(p, 'enviar'); await p.waitForTimeout(300);
   const sg = llamadas(b, 'sociedad_guarda')[0];
   ok('alta de empresa: sociedad_guarda con p_nueva y una clave válida', sg && sg[1].p_nueva === true && /^[a-z][a-z0-9_]{2,}$/.test(sg[1].p_clave), JSON.stringify(sg && sg[1]));
-  ok('pasa al prefijo, «Paso 2 de 2»', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'prefijo' && (await txt(p, '[data-axw-as="progreso"]')) === 'Paso 2 de 2');
+  ok('pasa al prefijo, «Paso 2 de 2»', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'prefijo' && (await txt(p, '[data-axw-as="meta"]')) === 'Facturas · Paso 2 de 2');
   await p.fill('[data-axw-campo="prefijo_serie"]', 'bbm');
-  ok('el prefijo se escribe en mayúsculas y enseña el ejemplo', (await p.inputValue('[data-axw-campo="prefijo_serie"]')) === 'BBM' && (await txt(p, '[data-axw-ejemplo="prefijo"]')).includes('BBM-'));
+  const ANIO = new Date().getFullYear();
+  ok('el prefijo se escribe en mayúsculas y enseña la primera factura con el formato de la base', (await p.inputValue('[data-axw-campo="prefijo_serie"]')) === 'BBM'
+     && (await txt(p, '[data-axw-ejemplo-num="1"]')) === 'BBM-F' + ANIO + '-00001', await txt(p, '[data-axw-ejemplo="prefijo"]'));
+  ok('S21: la segunda y el contador que vuelve a empezar el año que viene', (await txt(p, '[data-axw-ejemplo="prefijo"]')).includes('BBM-F' + ANIO + '-00002')
+     && (await txt(p, '[data-axw-ejemplo-anio="1"]')).includes('BBM-F' + (ANIO + 1) + '-00001'));
+  await p.fill('[data-axw-campo="prefijo_serie"]', 'b');
+  ok('S21: con un prefijo que la base no aceptaría no se enseña número', !(await p.$('[data-axw-ejemplo-num]')));
+  await p.fill('[data-axw-campo="prefijo_serie"]', 'bbm');
   await clic(p, 'enviar');
-  ok('irreversible: pantalla de confirmación con el valor en grande', (await txt(p, '[data-axw-confirma="valor"]')) === 'BBM-…');
+  ok('irreversible: pantalla de confirmación con la primera factura en grande', (await txt(p, '[data-axw-confirma="valor"]')) === 'BBM-F' + ANIO + '-00001', await txt(p, '[data-axw-confirma="valor"]'));
   ok('«Fijar» desactivado hasta teclear el prefijo', await p.$eval('[data-axw-accion="fijar"]', e => e.disabled));
   await p.fill('[data-axw-campo="teclea"]', 'BBX');
   ok('lo tecleado distinto no deja fijar', await p.$eval('[data-axw-accion="fijar"]', e => e.disabled));
@@ -146,7 +196,7 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   // 2. La moneda de «base» va delante si falta, sin valor elegido; reservas: el primer sí/no se guarda sin motivo
   b = base('sin_configurar'); b.d.pasos.find(x => x.clave === 'moneda').hecho = false;
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto' }));
-  ok('moneda de base delante: «Paso 1 de 4»', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'moneda' && (await txt(p, '[data-axw-as="progreso"]')) === 'Paso 1 de 4', await txt(p, '[data-axw-as="progreso"]'));
+  ok('moneda de base delante: «Reservas de producto · Paso 1 de 4»', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'moneda' && (await txt(p, '[data-axw-as="meta"]')) === 'Reservas de producto · Paso 1 de 4', await txt(p, '[data-axw-as="meta"]'));
   ok('la moneda empieza sin valor elegido', (await p.inputValue('[data-axw-campo="moneda"]')) === '');
   await p.selectOption('[data-axw-campo="moneda"]', 'IDR'); await clic(p, 'enviar');
   await p.fill('[data-axw-campo="teclea"]', 'IDR'); await clic(p, 'fijar'); await p.waitForTimeout(300);
@@ -236,6 +286,9 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
     b = base('sin_configurar');
     ({ p, ctx } = await abre(nav, b, { idioma, ancho }));
+    // la muestra impresa (S20) solo sale con razón social: se rellena para medirla también, con nombres largos
+    await p.fill('[data-axw-campo="razon"]', 'PT Bali Best Motorcycle Rental Indonesia Sejahtera'); await p.fill('[data-axw-campo="domicilio"]', 'Jl. Raya Uluwatu No. 128, Jimbaran, Kuta Selatan, Badung, Bali 80361');
+    await p.fill('[data-axw-campo="npwp"]', '01.234.567.8-901.000');
     const anchoDoc = await p.evaluate(() => document.documentElement.scrollWidth);
     ok(idioma + ' ' + ancho + ': sin scroll horizontal', anchoDoc <= ancho, String(anchoDoc));
     if (idioma !== 'es') {
@@ -243,6 +296,17 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
       ok(idioma + ' ' + ancho + ': ninguna frase sin traducir', sin.length === 0, sin.slice(0, 4).join(' | '));
     }
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'paso_' + idioma + '_' + ancho + '.png'), fullPage: true });
+    await ctx.close();
+    // S21: el prefijo más largo que admite la base, con su primera factura en grande
+    const bp = base('sin_configurar'); bp.sociedad = { clave: 'bbm', razon: 'PT Bali Best', domicilio: 'Jl. Raya 1', npwp: '01', prefijo_serie: null };
+    const pp = bp.d.pasos.find(x => x.clave === 'sociedad'); if (pp) pp.hecho = true;
+    const pf = bp.d.pasos.find(x => x.clave === 'prefijo'); if (pf) pf.ref = 'bbm';
+    ({ p, ctx } = await abre(nav, bp, { idioma, ancho, url: '/ajustes/configurar/?modulo=facturas&paso=prefijo' }));
+    if (await p.$('[data-axw-campo="prefijo_serie"]')) { await p.fill('[data-axw-campo="prefijo_serie"]', 'BALIBEST'); await p.waitForTimeout(150); }
+    ok('S21 ' + idioma + ' ' + ancho + ': primera factura en grande, sin scroll horizontal ni español',
+       !!(await p.$('[data-axw-ejemplo-num="1"]')) && (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho
+       && (idioma === 'es' || (await p.evaluate(() => window.__sinTrad.filter(s => !/^(NPWP|IDR|EUR|USD)$/.test(s)))).length === 0));
+    if (SHOT) await p.screenshot({ path: path.join(SHOT, 'prefijo_' + idioma + '_' + ancho + '.png'), fullPage: true });
     await ctx.close();
   }
 
@@ -262,6 +326,166 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     }
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'inicio_' + idioma + '_' + ancho + '.png'), fullPage: true });
     await ctx.close();
+  }
+
+  // 9. Diseño del owner S10-S60 / S91 (bbm-p41, 13-oct): carril «Tu configuración» desde 1024 px, cabeza «Módulo · Paso n de N», las dos líneas
+  //    «Para qué sirve / Si lo saltas», «Saltar este paso» en un opcional (no guarda nada) y, con la piel real (AXW_CSS_DIST), contraste medido.
+  {
+    b = base('sin_configurar');
+    ({ p, ctx } = await abre(nav, b));
+    const carril = await p.$eval('[data-axw-as="carril"]', e => ({ visible: getComputedStyle(e).display !== 'none', mods: [...e.querySelectorAll('[data-axw-carril-modulo]')].map(a => a.getAttribute('data-axw-carril-modulo')),
+      abierto: (e.querySelector('[data-abierto="1"]') || {}).textContent || '', actual: (e.querySelector('[aria-current="step"]') || {}).getAttribute ? e.querySelector('[aria-current="step"]').getAttribute('data-axw-carril-paso') : null,
+      href: (e.querySelector('[data-axw-carril-paso="prefijo"]') || {}).getAttribute ? e.querySelector('[data-axw-carril-paso="prefijo"]').getAttribute('href') : null }));
+    const conPasos = b.d.modulos.filter(m => b.d.pasos.some(x => x.modulo === m.modulo)).map(m => m.modulo);
+    ok('1440: el carril se ve, con un enlace por módulo con pasos', carril.visible && JSON.stringify(carril.mods) === JSON.stringify(conPasos), JSON.stringify(carril));
+    ok('carril: Facturas abierto con su n/m y el paso actual marcado (aria-current)', /Facturas\s*0\/2/.test(carril.abierto) && carril.actual === 'sociedad', JSON.stringify(carril));
+    ok('carril: cada paso enlaza con la URL de siempre', carril.href === '?modulo=facturas&paso=prefijo', String(carril.href));
+    ok('«Si lo saltas» de un obligatorio: el módulo no queda listo', ((await txt(p, '[data-axw-salta="obligatorio"] dd')) || '').startsWith('Facturas no queda listo'), await txt(p, '[data-axw-salta="obligatorio"] dd'));
+    ok('un obligatorio no ofrece «Saltar este paso»', !(await p.$('[data-axw-accion="saltar"]')));
+    ok('«Dejar para luego» arriba, a la vuelta de siempre', (await p.getAttribute('[data-axw-as="salir"]', 'href')) === '/home/' && (await p.$eval('[data-axw-as="salir"]', e => getComputedStyle(e).display !== 'none')));
+    await ctx.close();
+    ({ p, ctx } = await abre(nav, base('sin_configurar'), { ancho: 390 }));
+    ok('390: sin carril (las mesas móviles no lo llevan)', await p.$eval('[data-axw-as="carril"]', e => getComputedStyle(e).display === 'none'));
+    await ctx.close();
+    // un opcional: su consecuencia y «Saltar este paso», que vuelve al cierre del módulo sin llamar a nada que guarde
+    const bo = base('sin_configurar');
+    const opc = bo.d.pasos.find(x => !x.obligatorio && !x.hecho);
+    if (opc) {
+      ({ p, ctx } = await abre(nav, bo, { url: '/ajustes/configurar/?modulo=' + encodeURIComponent(opc.modulo) + '&paso=' + encodeURIComponent(opc.clave) }));
+      await p.waitForSelector('[data-axw-paso="' + opc.clave + '"]', { timeout: 8000 }).catch(() => {});
+      ok('opcional: etiqueta «Opcional» y su consecuencia en «Si lo saltas»', !!(await p.$('[data-tag="opcional"]')) && !!(await txt(p, '[data-axw-salta="opcional"] dd')), opc.clave);
+      const antes = bo.llamadas.filter(x => x[0] !== 'modulos_setup_estado' && x[0] !== 'ajustes_config_datos').length;
+      await clic(p, 'saltar'); await p.waitForTimeout(300);
+      ok('«Saltar este paso» no guarda nada y sale del paso', bo.llamadas.filter(x => x[0] !== 'modulos_setup_estado' && x[0] !== 'ajustes_config_datos').length === antes && !(await p.$('[data-axw-paso="' + opc.clave + '"]')));
+      await ctx.close();
+    } else ok('el doble trae un paso opcional sin hacer', false);
+    // Contraste sobre lo pintado con la piel de la instancia: texto ≥ 4,5:1 (≥ 3:1 si es grande), en paso e inicio, 1440 y 390, es/en/id
+    if (DIST) for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) for (const url of ['/ajustes/configurar/?modulo=facturas', '/ajustes/configurar/']) {
+      ({ p, ctx } = await abre(nav, base('sin_configurar'), { idioma, ancho, url }));
+      await p.evaluate(() => document.fonts && document.fonts.ready);
+      const malos = await p.evaluate(() => {
+        const rgb = s => { const m = /rgba?\(([^)]+)\)/.exec(s); if (!m) return null; const v = m[1].split(/[ ,/]+/).filter(Boolean).map(Number); return { r: v[0], g: v[1], b: v[2], a: v.length > 3 ? v[3] : 1 }; };
+        const mezcla = (c, f) => ({ r: c.r * c.a + f.r * (1 - c.a), g: c.g * c.a + f.g * (1 - c.a), b: c.b * c.a + f.b * (1 - c.a), a: 1 });
+        const fondo = e => { const capas = []; for (let n = e; n; n = n.parentElement) { const c = rgb(getComputedStyle(n).backgroundColor); if (c && c.a > 0) { capas.push(c); if (c.a >= 1) break; } }
+          let f = { r: 255, g: 255, b: 255, a: 1 }; for (let i = capas.length - 1; i >= 0; i--) f = mezcla(capas[i], f); return f; };
+        const lum = c => { const l = x => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }; return 0.2126 * l(c.r) + 0.7152 * l(c.g) + 0.0722 * l(c.b); };
+        const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+        const out = [];
+        document.querySelectorAll('[data-axw-setup="asistente"] *').forEach(e => {
+          if (![...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+          const cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden' || e.closest('.sr-only') || !e.getClientRects().length) return;
+          const f = fondo(e), c = mezcla(rgb(cs.color), f), r = ratio(c, f), px = parseFloat(cs.fontSize), grande = px >= 24 || (px >= 18.66 && +cs.fontWeight >= 700);
+          if (r < (grande ? 3 : 4.5)) out.push(e.textContent.trim().slice(0, 30) + ' ' + r.toFixed(2));
+        });
+        return out;
+      });
+      ok('piel real ' + idioma + ' ' + ancho + ' ' + (url.includes('modulo') ? 'paso' : 'inicio') + ': texto con contraste suficiente', malos.length === 0, malos.slice(0, 4).join(' | '));
+      await ctx.close();
+    }
+  }
+
+  // 10. «Quién lo usa» en el propio paso (S14, bbm-p41): el equipo con UNA casilla (la herramienta de este módulo), sin la cuenta de pruebas,
+  //     el administrador principal sin casilla; al guardar se relee y se manda el array ENTERO de esa persona con solo esta herramienta cambiada.
+  {
+    const pasoU = { modulo: 'reservas-producto', clave: 'usuarios', obligatorio: true, irreversible: false, hecho: false, donde: '/usuarios/', falta: { codigo: 'sin_usuarios', campos: [] } };
+    const equipo = () => [
+      { user_id: 'u-dion', nombre: 'Dion', email: 'dion@x.test', rol: 'super_admin', activo: true, herramientas: [], creado_por: null },
+      { user_id: 'u-kadek', nombre: 'Kadek', email: 'kadek@x.test', rol: 'agente', activo: true, herramientas: ['facturas', 'recibos'], creado_por: 'dion' },
+      { user_id: 'u-putu', nombre: 'Putu', email: 'putu@x.test', rol: 'agente', activo: true, herramientas: ['reservas-producto', 'taller'], creado_por: 'dion' },
+      { user_id: 'u-prueba', nombre: 'Cuenta de pruebas', email: 'p@x.test', rol: 'admin', activo: true, herramientas: [], creado_por: 'estudio:cuenta-pruebas' },
+      { user_id: 'u-baja', nombre: 'Baja', email: 'b@x.test', rol: 'agente', activo: false, herramientas: [], creado_por: 'dion' }];
+    const bq = base('sin_configurar');
+    bq.d.pasos.push(Object.assign({}, pasoU)); bq.usuarios = equipo();
+    ({ p, ctx } = await abre(nav, bq, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
+    const filas = await p.$$eval('[data-axw-quien="lista"] li', ls => ls.map(l => l.textContent));
+    ok('S14: el equipo activo, sin la cuenta de pruebas ni las bajas', filas.length === 3 && !filas.some(t => /pruebas|Baja/.test(t)), JSON.stringify(filas));
+    ok('S14: una sola casilla por persona y ninguna para el administrador principal', (await p.$$('[data-axw-quien-usuario]')).length === 2 && !(await p.$('[data-axw-quien-usuario="u-dion"]')));
+    ok('S14: la casilla dice qué hace («Kadek usa Reservas de producto») y refleja la herramienta', (await p.getAttribute('[data-axw-quien-usuario="u-kadek"]', 'aria-label')) === 'Kadek usa Reservas de producto'
+       && !(await p.$eval('[data-axw-quien-usuario="u-kadek"]', e => e.checked)) && (await p.$eval('[data-axw-quien-usuario="u-putu"]', e => e.checked)));
+    ok('S14: recuento con la regla de la base (módulo operativo: el administrador principal no cuenta)', (await txt(p, '[data-axw-quien="cuenta"]')) === '1 persona usa Reservas de producto', await txt(p, '[data-axw-quien="cuenta"]'));
+    ok('S14: «Invitar a alguien» lleva al alta de Usuarios', (await p.getAttribute('[data-axw-quien="invitar"]', 'href')) === '/usuarios/');
+    await p.click('[data-axw-quien-usuario="u-kadek"]', { force: true });
+    ok('S14: el recuento sigue a la casilla', (await txt(p, '[data-axw-quien="cuenta"]')) === '2 personas usan Reservas de producto');
+    bq.usuarios.find(u => u.user_id === 'u-kadek').herramientas.push('otra-de-otra-sesion');   // otra sesión le da algo a Kadek mientras tanto
+    await clic(p, 'enviar'); await p.waitForTimeout(400);
+    const g = llamadas(bq, 'usuario_guarda_permisos');
+    ok('S14: una sola llamada, a la persona cambiada, con su array ENTERO releído más esta herramienta (conserva lo de la otra sesión)',
+       g.length === 1 && g[0][1].p_user_id === 'u-kadek' && JSON.stringify(Object.keys(g[0][1].p_cambios)) === '["herramientas"]'
+       && JSON.stringify(g[0][1].p_cambios.herramientas.slice().sort()) === JSON.stringify(['facturas', 'otra-de-otra-sesion', 'recibos', 'reservas-producto'].sort()), JSON.stringify(g));
+    ok('S14: tras guardar, el «hecho» lo dice la base (el paso sale del recorrido)', !(await p.$('[data-axw-paso="usuarios"]')));
+    ok('S14: sin errores de página', (await p.evaluate(() => window.__errores)).length === 0, JSON.stringify(await p.evaluate(() => window.__errores)));
+    await ctx.close();
+    // quitar: el array de esa persona sin esta herramienta y con todo lo demás
+    const bx = base('sin_configurar'); bx.d.pasos.push(Object.assign({}, pasoU));
+    bx.usuarios = [{ user_id: 'u-putu', nombre: 'Putu', email: 'putu@x.test', rol: 'agente', activo: true, herramientas: ['reservas-producto', 'taller'], creado_por: 'dion' }];
+    ({ p, ctx } = await abre(nav, bx, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
+    await p.click('[data-axw-quien-usuario="u-putu"]', { force: true }); await clic(p, 'enviar'); await p.waitForTimeout(400);
+    const q = llamadas(bx, 'usuario_guarda_permisos');
+    ok('S14: quitar manda el resto de herramientas intacto', q.length === 1 && JSON.stringify(q[0][1].p_cambios.herramientas) === '["taller"]', JSON.stringify(q));
+    await ctx.close();
+    // sin nadie más que el administrador principal: el aviso para invitar
+    const bv = base('sin_configurar'); bv.d.pasos.push(Object.assign({}, pasoU)); bv.usuarios = [equipo()[0]];
+    ({ p, ctx } = await abre(nav, bv, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien="solo-tu"]', { timeout: 8000 }).catch(() => {});
+    ok('S14: solo el administrador principal: invita a alguien', !!(await p.$('[data-axw-quien="solo-tu"]')));
+    await clic(p, 'enviar'); await p.waitForTimeout(300);
+    ok('S14: guardar sin cambios no llama a nada que escriba y dice qué hacer', llamadas(bv, 'usuario_guarda_permisos').length === 0
+       && ((await txt(p, '[data-axw-as="error"]')) || '').includes('Enciende a alguien para que use Reservas de producto'), await txt(p, '[data-axw-as="error"]'));
+    await ctx.close();
+    // revisor 13-oct: en un módulo administrativo (Facturas) el administrador principal sí cuenta
+    const bf = base('sin_configurar'); bf.d.pasos.push(Object.assign({}, pasoU, { modulo: 'facturas', obligatorio: false })); bf.usuarios = equipo();
+    ({ p, ctx } = await abre(nav, bf, { url: '/ajustes/configurar/?modulo=facturas&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
+    ok('S14: en Facturas (administrativo) el administrador principal cuenta', (await txt(p, '[data-axw-quien="cuenta"]')) === '2 personas usan Facturas', await txt(p, '[data-axw-quien="cuenta"]'));
+    await ctx.close();
+    // revisor 13-oct: sin herramienta para el módulo en el mapa, el paso es «otra pantalla» de verdad (y guardar no se cuelga)
+    const bt = base('sin_configurar'); bt.d.modulos.push({ modulo: 'taller', estado: 'sin_configurar', falta: 'usuarios' }); bt.d.pasos.push(Object.assign({}, pasoU, { modulo: 'taller' })); bt.usuarios = equipo();
+    ({ p, ctx } = await abre(nav, bt, { url: '/ajustes/configurar/?modulo=taller&paso=usuarios' }));
+    await p.waitForTimeout(500);
+    ok('S14: módulo sin herramienta en el mapa: «Ya lo hice, comprobar», sin interruptores', !!(await p.$('[data-axw-accion="comprobar"]')) && !(await p.$('[data-axw-quien-usuario]')));
+    await ctx.close();
+    // revisor 13-oct: la red se cae al escribir. Si la base NO lo aplicó: «no se guardó» y el paso sigue; si SÍ: sigue sin duda
+    for (const aplica of [false, true]) {
+      const bd = base('sin_configurar'); bd.d.pasos.push(Object.assign({}, pasoU, { hecho: true, falta: null })); bd.usuarios = equipo(); bd.permRed = { veces: 1, aplica };
+      ({ p, ctx } = await abre(nav, bd, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+      await p.waitForSelector('[data-axw-quien-usuario="u-putu"]', { timeout: 8000 }).catch(() => {});
+      if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
+      await p.waitForSelector('[data-axw-quien-usuario="u-putu"]', { timeout: 8000 }).catch(() => {});
+      await p.click('[data-axw-quien-usuario="u-putu"]', { force: true });   // quitarle la herramienta a Putu (el paso ya estaba hecho por él)
+      await clic(p, 'enviar'); await p.waitForTimeout(700);
+      const putu = bd.usuarios.find(u => u.user_id === 'u-putu');
+      const err = (await txt(p, '[data-axw-as="error"]')) || '';
+      if (!aplica) ok('S14 red caída sin aplicar: «El ERP dice que no se guardó» (nunca «guardado» porque el paso ya esté hecho)', putu.herramientas.includes('reservas-producto')
+                      && err === 'El ERP dice que no se guardó. Puedes volver a intentarlo.', err);
+      else ok('S14 red caída pero aplicado: lo da por guardado al releer la fila', !putu.herramientas.includes('reservas-producto') && !/no se guard/i.test(err), err);
+      await ctx.close();
+    }
+    // revisor 13-oct: a medias (Kadek se guarda, Putu no): lo dice y los interruptores enseñan lo que quedó en la base
+    {
+      const bm = base('sin_configurar'); bm.d.pasos.push(Object.assign({}, pasoU)); bm.usuarios = equipo(); bm.permMal = 'u-putu';
+      ({ p, ctx } = await abre(nav, bm, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+      await p.waitForSelector('[data-axw-quien-usuario="u-putu"]', { timeout: 8000 }).catch(() => {});
+      await p.click('[data-axw-quien-usuario="u-kadek"]', { force: true }); await p.click('[data-axw-quien-usuario="u-putu"]', { force: true });
+      await clic(p, 'enviar'); await p.waitForTimeout(900);
+      await p.waitForSelector('[data-axw-quien-usuario="u-putu"]', { timeout: 8000 }).catch(() => {});
+      const err = (await txt(p, '[data-axw-as="error"]')) || '';
+      ok('S14 a medias: dice que no se guardó y la lista enseña lo que quedó (Kadek encendido, Putu como estaba)',
+         /no se guard/i.test(err) && (await p.$eval('[data-axw-quien-usuario="u-kadek"]', e => e.checked)) && (await p.$eval('[data-axw-quien-usuario="u-putu"]', e => e.checked))
+         && bm.usuarios.find(u => u.user_id === 'u-kadek').herramientas.includes('reservas-producto'), err);
+      await ctx.close();
+    }
+    for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
+      // coherente con «nadie lo tiene» (falta sin_usuarios): Putu aún sin esta herramienta, para que la captura no se contradiga
+      const bi = base('sin_configurar'); bi.d.pasos.push(Object.assign({}, pasoU)); bi.usuarios = equipo().map(u => u.user_id === 'u-putu' ? Object.assign(u, { herramientas: ['taller'] }) : u);
+      ({ p, ctx } = await abre(nav, bi, { idioma, ancho, url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+      await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
+      const sin = await p.evaluate(() => window.__sinTrad.filter(s => !/^(NPWP|IDR|EUR|USD)$/.test(s)));
+      ok('S14 ' + idioma + ' ' + ancho + ': sin español y sin scroll horizontal', sin.length === 0 && (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho, sin.slice(0, 4).join(' | '));
+      if (SHOT) await p.screenshot({ path: path.join(SHOT, 'quien_' + idioma + '_' + ancho + '.png'), fullPage: true });
+      await ctx.close();
+    }
   }
 
   await nav.close();
