@@ -120,6 +120,31 @@ c = L._candado()
 ok(aborta(L.sube, 'main', 'test', 'a la vez', sin_red=True), 'con otro `sube` en marcha (candado) → se niega')
 os.remove(c)
 
+# La poda (axw-cola, 14-oct-2026, BAJA del revisor): CONSERVA carpetas en total, con la fijada y la recién usada, también cuando
+# la recién usada ES la fijada (antes se guardaban CONSERVA - 1).
+import time as _t  # noqa: E402
+fij = json.load(open(L.FICHERO))['sha']
+carpetas = lambda: [n for n in os.listdir(L.cache()) if len(n) == 40 and os.path.isdir(os.path.join(L.cache(), n))]
+
+
+def falsas(n):
+    os.makedirs(os.path.join(L.cache(), fij), exist_ok=True)   # la fijada, extraída (aquí `sube` no la extrae: su prueba es falsa)
+    for k in range(n):
+        d = os.path.join(L.cache(), '%040x' % (k + 1))
+        os.makedirs(d, exist_ok=True)
+        os.utime(d, (_t.time() - 100 * (k + 1),) * 2)
+
+
+falsas(8)
+L.poda(fij)
+q = carpetas()
+ok(len(q) == L.CONSERVA and fij in q, 'la poda deja %d carpetas con la fijada aunque sea la recién usada (%d)' % (L.CONSERVA, len(q)))
+falsas(8)
+otra = '%040x' % 8   # la más vieja de las falsas: solo sobrevive por ser la recién usada
+L.poda(otra)
+q = carpetas()
+ok(len(q) == L.CONSERVA and fij in q and otra in q, 'la poda deja %d carpetas con la fijada y la recién usada (%d)' % (L.CONSERVA, len(q)))
+
 import shutil  # noqa: E402
 shutil.rmtree(tmp, ignore_errors=True)   # solo la carpeta temporal de esta prueba
 print('\n%d fallo(s)' % len(fallos))

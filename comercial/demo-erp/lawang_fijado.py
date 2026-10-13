@@ -244,7 +244,10 @@ TOPE_DIFF = 4000
 CANDADO_VIEJO = 3600
 
 
-def comprobaciones():
+PRUEBAN_PUBLICADO = ('test_demo_publicado.py', 'test_portal_demo.py')   # miran la demo pública: se les da la carpeta recién construida
+
+
+def comprobaciones(publico=None):
     """[(nombre, comando)]: las 3 salidas que se publican + todas las pruebas de demo-erp. En serie: comparten dist/."""
     py = sys.executable
     cs = [('build --instancia bbm', [py, 'build.py', '--instancia', 'bbm']),
@@ -253,7 +256,8 @@ def comprobaciones():
           ('build --publico', [py, 'build.py', '--publico'])]
     for n in sorted(os.listdir(AQUI)):
         if n.startswith('test_') and n.endswith('.py'):
-            cs.append((n, [py, n] + (['--sin-navegador'] if n == 'test_crea_contrasena.py' else [])))
+            cs.append((n, [py, n] + (['--sin-navegador'] if n == 'test_crea_contrasena.py' else [])
+                       + (['--publicado', publico] if publico and n in PRUEBAN_PUBLICADO else [])))
         elif n.endswith('.test.js'):
             cs.append((n, ['node', n]))
     return cs
@@ -299,7 +303,7 @@ def prueba(sha):
                    AXW_PRUEBA_PUBLICO=os.path.join(destino, 'publico'), AXW_LAWANG_GIT=almacen(), AXW_LAWANG_REV=sha)
     rojos = []
     t0 = time.time()
-    cs = comprobaciones()
+    cs = comprobaciones(os.path.join(destino, 'publico'))
     try:
         for nombre, cmd in cs:
             try:

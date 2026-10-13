@@ -17,10 +17,12 @@ import subprocess
 import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
-# Con AXW_PRUEBA_PUBLICO (lawang_fijado.py prueba/sube, 14-oct-2026) se mira lo que ACABA de construir `build.py --publico` fuera
-# del repo, no el dist/ que hay en git: si no, el `sube` daba por buena la demo publicada vieja (axw-cola).
-PUBLICADO = (os.path.join(os.path.abspath(os.environ['AXW_PRUEBA_PUBLICO']), 'demo-erp') if os.environ.get('AXW_PRUEBA_PUBLICO')
+# `--publicado <carpeta>` (lo pasa lawang_fijado.py prueba/sube, 14-oct-2026): se mira lo que ACABA de construir `build.py --publico`
+# fuera del repo, no el dist/ de git; si no, el `sube` daba por buena la demo publicada vieja (axw-cola). Por ARGUMENTO y no por
+# la variable AXW_PRUEBA_PUBLICO: heredada en el control de subida haría que se comprobara otra carpeta que la que sube (revisor).
+PUBLICADO = (os.path.join(os.path.abspath(sys.argv[sys.argv.index('--publicado') + 1]), 'demo-erp') if '--publicado' in sys.argv
              else os.path.abspath(os.path.join(AQUI, '..', '..', 'dist', 'demo-erp')))
+print('Comprobando la demo publicada en %s' % PUBLICADO)
 FALLOS = []
 
 
@@ -89,6 +91,9 @@ ok(len(pasos) >= 8, '%s nombra sus fotos de obra por paso (%d)'
 if nuevo:
     ok('demo-obra-' in guard and '/portal/demo/fotos/obra-' in guard,
        'el portal y Obra resuelven las fotos de obra por el mismo nombre (demo-obra-<escena> → /portal/demo/fotos/obra-<escena>.webp)')
+else:
+    ok('FOTOS_POR_FASE' not in guard and 'demo-obra-' not in guard,
+       'forma vieja entera: con las fotos en el adaptador, guard.js no siembra fotos de obra (nunca mezcladas)')
 fotos_dir = os.path.join(PUBLICADO, 'portal', 'demo', 'fotos')
 publicadas = set(os.listdir(fotos_dir)) if os.path.isdir(fotos_dir) else set()
 ok(pedidas <= publicadas, 'las fotos que pide el adaptador están publicadas (%d)' % len(pedidas))
