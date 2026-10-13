@@ -3686,9 +3686,16 @@ IDIOMAS_PARCHES = (
      "  window.AXW_IDIOMAS = (function (b) { var g = null; try { g = JSON.parse(localStorage.getItem('axw_idiomas_erp') || 'null'); } catch (e) { g = null; }\n"
      "    var ok = Array.isArray(g) && [['es', 'en'], ['id', 'en']].some(function (p) { return p.join() === g.join(); }) && (g[0] !== 'id' || b.indexOf('id') >= 0);\n"
      "    return ok ? g : b.slice(); })(window.AXW_IDIOMAS_BUILD);\n"
-     "  window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(v) >= 0) ? v : window.AXW_IDIOMAS[0];"),
+     # bbm-p42 (13-oct, owner «debe ir en inglés»): el idioma de PANTALLA por defecto ya no es a la fuerza el primero de la lista (el primero manda el
+     # orden del papel). Precedencia: lo que eligió esa persona > `idiomas.pantalla` de la base (dato de Ajustes › Idiomas, p36; lo apunta
+     # apagados_instancia.js tras el login) > `idioma_pantalla` del registro (PUENTE hasta que la base lo guarde; se retira entonces) > el primero.
+     "  window.AXW_IDIOMA_GUARDADO = v;\n"
+     "  window.AXW_IDIOMA_PANTALLA_BUILD = __AXW_IDIOMA_PANTALLA__;\n"
+     "  window.AXW_IDIOMA_PANTALLA = (function (l) { var g = null; try { g = localStorage.getItem('axw_idioma_pantalla_erp'); } catch (e) { g = null; }\n"
+     "    if (g && l.indexOf(g) >= 0) return g; var b = window.AXW_IDIOMA_PANTALLA_BUILD; return b && l.indexOf(b) >= 0 ? b : l[0]; })(window.AXW_IDIOMAS);\n"
+     "  window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(v) >= 0) ? v : window.AXW_IDIOMA_PANTALLA;"),
     ('contracts/assets/idioma.js', "    window.LW_IDIOMA = (idioma === 'en') ? 'en' : 'es';",
-     "    window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(idioma) >= 0) ? idioma : window.AXW_IDIOMAS[0];"),
+     "    window.LW_IDIOMA = (window.AXW_IDIOMAS.indexOf(idioma) >= 0) ? idioma : window.AXW_IDIOMA_PANTALLA;"),
     # el par de botones de la barra lateral se encuentra por su TEXTO («ES»/«EN»): el «ES» pasa a ser «ID» y cada botón dice su idioma en su idioma
     ('intranet/v4/assets/nav.js', "      if (t !== 'ES' && t !== 'EN') return;\n      var destino = t.toLowerCase();",
      "      if (t === 'ES' && window.AXW_IDIOMAS) { t = window.AXW_IDIOMAS[0].toUpperCase(); b.textContent = t; }\n"
@@ -3736,6 +3743,18 @@ def idiomas_de(nombre):
     return list(i)
 
 
+def idioma_pantalla_de(nombre, idiomas):
+    """El idioma en que ABRE la pantalla de la instancia si nadie eligió otro (`idioma_pantalla` del registro), o None (= el primero de `idiomas`, como
+    siempre). PUENTE (bbm-p42, 13-oct-2026; agencia-81): cuando la base guarde el suyo (`idiomas.pantalla`, Ajustes › Idiomas, p36) ese manda y este se
+    retira (fila del estudio en contexto/pendientes.md). No cambia la lista de idiomas ni el orden del papel. Tiene que ser uno de los idiomas declarados."""
+    p = _instancia_registro(nombre).get('idioma_pantalla')
+    if p is None:
+        return None
+    if not idiomas or p not in idiomas:
+        aborta('erp/instancias.json: %s declara "idioma_pantalla": %r y sus idiomas son %r: tiene que ser uno de ellos' % (nombre, p, idiomas))
+    return p
+
+
 def _sintaxis(rutas):
     """node comprueba la sintaxis de cada .js y de cada <script> en línea de cada .html (un solo proceso). Devuelve los que fallan."""
     if not rutas:
@@ -3751,14 +3770,14 @@ def _sintaxis(rutas):
     return json.loads(r.stdout.strip().splitlines()[-1])
 
 
-def idiomas_instancia(idiomas):
+def idiomas_instancia(idiomas, pantalla=None):
     """Aplica los idiomas de la instancia sobre la copia del front (DIST, ANTES de quitar comentarios y de los reemplazos de marca: así las claves del
     diccionario reciben el mismo trato que el código que las pide). Solo lo copiado, nunca el repo de Lawang."""
     v4 = os.path.join(DIST, 'intranet', 'v4')
     for rel_, viejo, nuevo in IDIOMAS_PARCHES:
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
-        t = _una_vez(t, viejo, nuevo.replace('__AXW_IDIOMAS__', json.dumps(idiomas)), 'idiomas ' + rel_)
+        t = _una_vez(t, viejo, nuevo.replace('__AXW_IDIOMAS__', json.dumps(idiomas)).replace('__AXW_IDIOMA_PANTALLA__', json.dumps(pantalla)), 'idiomas ' + rel_)
         open(ruta, 'w', encoding='utf-8', newline='').write(t)
     # El indonesio: núcleo (envuelve lwT, lwLocale y lwIdiomaAplicar) + diccionario, al FINAL de i18n.js
     if idiomas[0] == 'id':
@@ -3979,7 +3998,7 @@ def instancia(nombre):
     moneda_documento()   # 13-oct (bbm-p36): factura y recibí nuevos en la moneda de la instancia, no en EUR
     idiomas = idiomas_de(nombre)
     if idiomas:   # 12-oct-2026: interfaz en los idiomas de la instancia (bbm: indonesio e inglés)
-        idiomas_instancia(idiomas)
+        idiomas_instancia(idiomas, idioma_pantalla_de(nombre, idiomas))   # bbm-p42: + el idioma de pantalla por defecto (puente del registro)
         documento_idiomas(idiomas)   # BBM-65 (13-oct): el papel de factura/recibí y su correo en el par de la instancia (id·en en bbm)
     menu_i18n()   # rótulos del menú en en/id en todas las páginas (después del núcleo del indonesio)
     if not _PRIV or not REEMPLAZOS_PUBLICO:

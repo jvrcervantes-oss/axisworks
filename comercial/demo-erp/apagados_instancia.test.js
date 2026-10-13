@@ -23,7 +23,7 @@ const MAPA = {
 const PLANTILLA = fs.readFileSync(path.join(__dirname, 'no_instalado.html'), 'utf8')
   .replace(/<!--[\s\S]*?-->\s*/g, '').replace('{{marca}}', 'Prueba ERP').replace('{{sello}}', '<svg></svg>');
 
-function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, build, guardado, recargado }) {
+function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, build, guardado, recargado, viendo, elegido, puente }) {
   const red = [];
   const clases = new Set();
   const doc = {
@@ -45,6 +45,10 @@ function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, bu
   globalThis.localStorage = mem(guardado !== undefined ? { axw_idiomas_erp: JSON.stringify(guardado) } : {});
   globalThis.sessionStorage = mem(recargado ? { axw_idiomas_recarga: recargado } : {});
   if (build) { globalThis.AXW_IDIOMAS_BUILD = build.slice(); globalThis.AXW_IDIOMAS = guardado || build.slice(); } else { delete globalThis.AXW_IDIOMAS_BUILD; delete globalThis.AXW_IDIOMAS; }
+  // bbm-p42: lo que se ve ahora (LW_IDIOMA), lo que eligió la persona (AXW_IDIOMA_GUARDADO) y el puente del registro (AXW_IDIOMA_PANTALLA_BUILD)
+  if (viendo) globalThis.LW_IDIOMA = viendo; else delete globalThis.LW_IDIOMA;
+  if (elegido) globalThis.AXW_IDIOMA_GUARDADO = elegido; else delete globalThis.AXW_IDIOMA_GUARDADO;
+  if (puente) globalThis.AXW_IDIOMA_PANTALLA_BUILD = puente; else delete globalThis.AXW_IDIOMA_PANTALLA_BUILD;
   global.MutationObserver = class { observe() {} };
   global.console = Object.assign(Object.create(console), { info() {}, warn() {} });
   global.window = globalThis;
@@ -221,9 +225,26 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['en', 'es'], defecto: 'es' }, guardado: ['es', 'en'] });
     E.publica(); await globalThis.AXW_MODULOS_LISTOS;
     ok(ls() === '["es","en"]' && E.recargas.length === 0, 'idiomas: ya aplicado (orden de la base distinto, mismo defecto) → sin recarga');
-    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['es', 'en'], defecto: 'es' }, recargado: 'es,en' });
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['es', 'en'], defecto: 'es' }, recargado: 'es,en|es' });
     E.publica(); await globalThis.AXW_MODULOS_LISTOS;
     ok(E.recargas.length === 0, 'idiomas: ya recargó por este cambio en la sesión → nunca un bucle');
+    // idioma de PANTALLA por defecto (bbm-p42 + p36): `idiomas.pantalla` de la base, separado del orden del papel
+    const lp = () => globalThis.localStorage.getItem('axw_idioma_pantalla_erp');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'id', pantalla: 'en' }, viendo: 'id' });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(lp() === 'en' && E.recargas.length === 1, 'pantalla: la base dice en y se ve id (nadie eligió) → se apunta la cadena cruda y se recarga una vez');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'id', pantalla: 'en' }, viendo: 'id', elegido: 'id' });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(lp() === 'en' && E.recargas.length === 0, 'pantalla: si la persona eligió id, se apunta pero NO se recarga (su elección manda)');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'id', pantalla: 'es' }, viendo: 'id' });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(lp() === null && E.recargas.length === 0, 'pantalla: un idioma que no se ofrece se ignora (y se quita lo apuntado)');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'id' }, viendo: 'en', puente: 'en' });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(lp() === null && E.recargas.length === 0, 'pantalla: sin dato de la base manda el puente del registro (en) y ya se ve en → sin recarga');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'id', pantalla: 'en' }, viendo: 'id', recargado: 'id,en|en' });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(E.recargas.length === 0, 'pantalla: ya recargó por este cambio en la sesión → nunca un bucle');
     E = escenario({ activos: null, build: ['id', 'en'], idiomas: null, guardado: ['es', 'en'] });
     E.publica(); await globalThis.AXW_MODULOS_LISTOS;
     ok(ls() === null && E.recargas.length === 1, 'idiomas: la base no los tiene guardados → se borra lo apuntado y vuelve el build');

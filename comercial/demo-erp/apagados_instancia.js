@@ -320,7 +320,7 @@
      no puede preguntarlos (sin lectura anónima, Seguridad #289), así que se APUNTAN aquí, tras el login, y el arranque de cada página (parche de idioma.js
      en build.py) los lee antes que lo que fijó el build. Solo si este paquete sabe pintarlos (id+en necesita el núcleo indonesio del build). Si lo apuntado
      cambia lo que ya se está viendo, UNA recarga por cambio (marca en sessionStorage: nunca un bucle). Sin idiomas en el build no hay nada que aplicar. */
-  var CLAVE_IDIOMAS = 'axw_idiomas_erp';
+  var CLAVE_IDIOMAS = 'axw_idiomas_erp', CLAVE_PANTALLA = 'axw_idioma_pantalla_erp';
   function idiomasDeLaBase(v) {
     var b = window.AXW_IDIOMAS_BUILD;
     if (!Array.isArray(b) || !b.length) return;
@@ -330,15 +330,21 @@
     }
     var pintable = !!lista && [['es', 'en'], ['id', 'en']].some(function (p) { return p.join() === lista.join(); }) && (lista[0] !== 'id' || b.indexOf('id') >= 0);
     var nueva = pintable ? lista : b;   // null (sin guardar) o algo que este paquete no sabe pintar: manda el build
+    // bbm-p42 (13-oct): el idioma de PANTALLA por defecto, dato propio de la base (`idiomas.pantalla`, p36), separado del orden del papel; solo si se ofrece
+    var pant = v && typeof v === 'object' && typeof v.pantalla === 'string' && nueva.indexOf(v.pantalla) >= 0 ? v.pantalla : null;
     try {
       if (pintable) localStorage.setItem(CLAVE_IDIOMAS, JSON.stringify(lista)); else localStorage.removeItem(CLAVE_IDIOMAS);
+      if (pant) localStorage.setItem(CLAVE_PANTALLA, pant); else localStorage.removeItem(CLAVE_PANTALLA);
       if ((localStorage.getItem(CLAVE_IDIOMAS) || '') !== (pintable ? JSON.stringify(lista) : '')) return;   // sin almacenamiento, recargar no cambiaría nada
     } catch (e) { return; }
     var actual = Array.isArray(window.AXW_IDIOMAS) ? window.AXW_IDIOMAS : b;
-    if (nueva.join() === actual.join()) return;
+    // lo que saldría con lo apuntado: la elección de esa persona > el dato de la base > el puente del build > el primero (mismo orden que idioma.js)
+    var pb = window.AXW_IDIOMA_PANTALLA_BUILD, g = window.AXW_IDIOMA_GUARDADO;
+    var vera = nueva.indexOf(g) >= 0 ? g : (pant || (pb && nueva.indexOf(pb) >= 0 ? pb : nueva[0]));
+    if (nueva.join() === actual.join() && (!window.LW_IDIOMA || vera === window.LW_IDIOMA)) return;
     try {
-      if (sessionStorage.getItem('axw_idiomas_recarga') === nueva.join()) return;
-      sessionStorage.setItem('axw_idiomas_recarga', nueva.join());
+      if (sessionStorage.getItem('axw_idiomas_recarga') === nueva.join() + '|' + vera) return;
+      sessionStorage.setItem('axw_idiomas_recarga', nueva.join() + '|' + vera);
     } catch (e) { return; }
     location.reload();
   }
