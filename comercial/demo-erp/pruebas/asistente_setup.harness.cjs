@@ -403,7 +403,8 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     ok('S14: guardar sin cambios no llama a nada que escriba', llamadas(bv, 'usuario_guarda_permisos').length === 0);
     await ctx.close();
     for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
-      const bi = base('sin_configurar'); bi.d.pasos.push(Object.assign({}, pasoU)); bi.usuarios = equipo();
+      // coherente con «nadie lo tiene» (falta sin_usuarios): Putu aún sin esta herramienta, para que la captura no se contradiga
+      const bi = base('sin_configurar'); bi.d.pasos.push(Object.assign({}, pasoU)); bi.usuarios = equipo().map(u => u.user_id === 'u-putu' ? Object.assign(u, { herramientas: ['taller'] }) : u);
       ({ p, ctx } = await abre(nav, bi, { idioma, ancho, url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
       await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
       const sin = await p.evaluate(() => window.__sinTrad.filter(s => !/^(NPWP|IDR|EUR|USD)$/.test(s)));
