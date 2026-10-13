@@ -1586,16 +1586,17 @@ LAWANG_SUELTOS = {'0D5B5F': 'primary-container',        # hover del botón prima
 # mano en el código de LAWANG (están en su repo) que no son token ni suelto: sus tonos de estado propios y la cola larga de grises y cremas
 # cálidos, por FAMILIAS. Clasificados por tono y luz (scratchpad familias.py del 13-oct) y revisados a mano: un crema claro es superficie,
 # no aviso; los degradados oscuros de las tarjetas de proyecto (tw-movil-pc) van a la tinta. Los destinos que no son token de la piel se
-# derivan de su token de estado (FAMILIAS_DERIVADAS). FUERA, a propósito y con nombre (orquestador, 13-oct): ver COLORES_AJENOS.
+# derivan de su token de estado (FAMILIAS_DERIVADAS). El CRM clásico de leads (su verde bosque y su ocre) entra entero por aquí: a
+# medias quedaba con la acción principal en verde Tailwind y sus fondos en la piel (revisor de p42c). FUERA, a propósito y con nombre (orquestador, 13-oct): ver COLORES_AJENOS.
 LAWANG_FAMILIAS = {
     'accent-gold': ('2F5D9E', '3E6E8E', '5B4B8A', '6B4E9B', '9DB6CF'),
-    'aviso': ('5C4210', '634A00', '662906', '6A4A14', '6A5A3C', '6B5420', '6B5A3A', '78350F', '7A4B14', '7A5200', '8A3B1C', '8A4B00', '8A5A00', '8A6A34', '8C5E10', '92400E', 'B06A3B', 'B45309', 'B8550A', 'C06C47', 'C8791F', 'C9892B', 'CF6312', 'E8741C', 'F59E0B'),
+    'aviso': ('5C4210', '634A00', '662906', '6A4A14', '6A5A3C', '6B5420', '6B5A3A', '78350F', '7A4B14', '7A5200', '8A3B1C', '8A4B00', '8A5A00', '8A6A34', '8C5E10', '92400E', 'B06A3B', 'B45309', 'B8550A', 'C06C47', 'C8791F', 'C9892B', 'CF6312', 'D97706', 'E8741C', 'F59E0B'),
     'aviso-borde': ('C5A880', 'D8A984', 'E6D7B4', 'E8C27A', 'EBDCB4', 'FDE68A'),
     'aviso-fondo': ('FBEEE7', 'FBEFBE', 'FBF3E4', 'FDF6F2', 'FEF3C7', 'FFF1D6', 'FFF4E0', 'FFFAF0', 'FFFBEB'),
     'deep-lagoon': ('0B3638', '0C3A3C', '0E6B70', '0F2E30', '1F4E4A', '4E8386', '7FB3B5', '9AC0C2', 'A9CDCE'),
     'filete': ('D6CFC2', 'D6D2C8', 'D6D3D1', 'E2DACA', 'E4E0D6', 'E6E1D6', 'E7DDCD', 'E7E1D2', 'E7E3D2', 'E7E4DC', 'EAE4D3', 'EAE5D8', 'ECE4D6'),
     'inverse-primary': ('CBD6B6',),
-    'ok': ('065F46', '10B981', '1B4332', '1F5130', '2C4A2C', '2E5B3E', '2F5D3A', '354F2C', '3A5231', '3C4D2D', '98BF98'),
+    'ok': ('043C2E', '064E3B', '065F46', '10B981', '1B4332', '1F5130', '2C4A2C', '2E5B3E', '2F5D3A', '354F2C', '3A5231', '3C4D2D', '98BF98'),
     'ok-fondo': ('A7F3D0', 'DCEBDC', 'E4F0DA', 'E6EFE9', 'E7EFE3', 'ECF6EF', 'ECFDF5', 'EEF3E6', 'EEF3EA', 'EEF3F0', 'F1F7F5', 'FBFDFC'),
     'on-background': ('0C0A09', '103436', '123E40', '143236', '1A1E20', '1A494D', '1B2B1A', '1C1917', '1C1B17', '1C1C1C', '1E2522', '204944', '21272A', '22282A', '25423F', '273822', '292524', '2C281E', '2D3F27', '344B2A', '3B2B1E', '483A25', '523D2B'),
     'on-surface-variant': ('3A3A3A', '44403C', '4A4F4A', '4A5052', '57534E', '5A6062', '5C5A52', '5E625A'),
@@ -1635,7 +1636,7 @@ COLORES_MAESTRO = {
     '2B2B25': ('on-background', 'tinta cálida de la página de rescate (contratos, obra)'),
 }
 # destino derivado → (token de la piel, mezcla con el blanco de la hoja). El texto de estado sobre su fondo, ≥ 4,5:1 o PARA.
-FAMILIAS_DERIVADAS = {'aviso-fondo': ('aviso', 0.88), 'aviso-borde': ('aviso', 0.62), 'ok-fondo': ('ok', 0.86)}
+FAMILIAS_DERIVADAS = {'aviso-fondo': ('aviso', 0.88), 'aviso-borde': ('aviso', 0.62), 'ok-fondo': ('ok', 0.86), 'peligro-fondo': ('peligro', 0.88)}
 NEUTROS = {(255, 255, 255), (0, 0, 0)}
 # Apariciones de un color de Lawang con más de un significado: (fichero de DIST, texto que tiene que aparecer junto al color —regex sobre
 # 80 caracteres antes y 40 después—, destino, cuántas). Destino None = el token del color (marca); 'ok' = el verde de estado de la piel
@@ -1717,6 +1718,20 @@ def _pon_color(m, c):
     return m.group(3) + str(c[0]) + m.group(5) + str(c[1]) + m.group(7) + str(c[2])
 
 
+def _ajusta_luz(D, tono, origen):
+    """El color con el tono de `tono` y la luminancia de `origen`: mezcla con blanco (para aclarar) o con negro (para oscurecer)."""
+    objetivo = D.lum(origen)
+    hacia = (255, 255, 255) if D.lum(tono) < objetivo else (0, 0, 0)
+    lo, hi = 0.0, 1.0
+    for _ in range(24):
+        medio = (lo + hi) / 2
+        if (D.lum(D.mix(tono, hacia, medio)) < objetivo) == (hacia == (255, 255, 255)):
+            lo = medio
+        else:
+            hi = medio
+    return min((D.mix(tono, hacia, x) for x in (lo, hi)), key=lambda c: abs(D.lum(c) - objetivo))
+
+
 def piel_colores_lawang(dist, nombre):
     """Pasa a la piel de la instancia todo color de Lawang que quede en lo publicado (.js/.css/.html/.php/.svg). Sin piel no toca
     nada. PARA si: un color ambiguo aparece sin clasificar o con otro recuento, el token no existe en la piel, el pase cambia algo que no
@@ -1730,11 +1745,10 @@ def piel_colores_lawang(dist, nombre):
     if 'ok' not in p:
         p['ok'] = p['fiduciary-green']
     blanco = tuple(p['surface-container-lowest'])
-    faltan = sorted({t for toks in pal.values() for t in toks} - set(p) - set(FAMILIAS_DERIVADAS) - {'peligro-fondo'}
+    faltan = sorted({t for toks in pal.values() for t in toks} - set(p) - set(FAMILIAS_DERIVADAS)
                     | {b for b, _m in FAMILIAS_DERIVADAS.values()} - set(p))
     if faltan:
         aborta('colores de Lawang: la piel de %s no trae los tokens %s' % (nombre, ', '.join(faltan)))
-    p['peligro-fondo'] = p.get('error-container')
     for dst, (base, mezcla) in FAMILIAS_DERIVADAS.items():
         p[dst] = D.mix(tuple(p[base]), blanco, mezcla)
     ok = tuple(p['ok'])
@@ -1752,6 +1766,15 @@ def piel_colores_lawang(dist, nombre):
             simple[c] = vals.pop()
         else:
             ambiguos.add(c)
+    # La COLA (familias y maestro) toma el TONO de su token pero conserva la LUZ que tenía (revisor de p42c, 13-oct: por tono a secas un
+    # tinte claro caía en el token oscuro; en el saldo del contrato «Este documento» se leía como «Cobrado» y los cuatro tramos del panel
+    # de finanzas salían de un color). Misma luminancia = mismo contraste con lo que tenga alrededor, y lo distinto sigue distinto.
+    cola = {_rgb_hex(hx): dst for dst, hxs in LAWANG_FAMILIAS.items() for hx in hxs}
+    cola.update({_rgb_hex(hx): dst for hx, (dst, _porque) in COLORES_MAESTRO.items()})
+    for c, dst in cola.items():
+        simple[c] = _ajusta_luz(D, tuple(p[FAMILIAS_DERIVADAS[dst][0] if dst in FAMILIAS_DERIVADAS else dst]), c)
+        if not 0.93 <= (D.lum(simple[c]) + .05) / (D.lum(c) + .05) <= 1.07:
+            aborta('colores de Lawang: #%02X%02X%02X no se puede llevar al tono de %s con su misma luz' % (c + (dst,)))
     reglas = {_rgb_hex(hx): r for hx, r in LAWANG_POR_CONTEXTO.items()}
     sin_regla = sorted('#%02X%02X%02X (%s)' % (c + ('/'.join(pal[c]),)) for c in ambiguos - set(reglas))
     if sin_regla:
@@ -1816,17 +1839,18 @@ def piel_colores_lawang(dist, nombre):
                 mal.append('%s en %s («%s»): %d, se esperaban %d' % (h(c), fr, ctx or 'el resto', vistos[(c, i)], cuantas))
     if mal:
         aborta('colores de Lawang: cambió el recuento de un color ambiguo (¿una aparición nueva de Lawang?):\n  ' + '\n  '.join(mal))
-    quedan = colores_lawang_en(dist, p)
+    quedan = colores_lawang_en(dist, p, set(simple.values()) | set(destino.values()))
     if quedan:
         aborta('quedan colores de Lawang en el paquete de %s:\n  %s' % (nombre, '\n  '.join(quedan[:40])))
     return n
 
 
-def colores_lawang_en(dist, p=None):
+def colores_lawang_en(dist, p=None, escritos=()):
     """Barrido: fichero y color de cada color de Lawang (cualquier forma) que quede en lo publicado. Los que coinciden con un valor de
-    la piel `p` no cuentan (son de la instancia aunque casen con uno de Lawang)."""
+    la piel `p` o con uno que el pase acaba de ESCRIBIR (`escritos`: un verde casi blanco llevado al verde de la piel con su misma luz
+    puede salir idéntico, #FBFDFC → #FBFDFC) no cuentan: son de la instancia aunque casen con uno de Lawang."""
     pal = lawang_paleta()
-    propios = {tuple(v) for v in (p or {}).values()}
+    propios = {tuple(v) for v in (p or {}).values()} | {tuple(c) for c in escritos}
     out = []
     for raiz, _dirs, fs in os.walk(dist):
         for f in fs:
@@ -1838,6 +1862,86 @@ def colores_lawang_en(dist, p=None):
                 c = _color_de(m)
                 if c in pal and c not in propios and not _es_texto(m):
                     out.append('%s: %s (%s)' % (rel, m.group(0), '/'.join(pal[c])))
+    return out
+
+
+# La parada, ANTES y a quien la causa (orquestador, 13-oct): una sesión de Lawang que añade un color a un fichero que este build copia
+# no sabe que deja parado el siguiente build de las instancias. El gate de push de Lawang (tools/predeploy.py, capa 0) llama a
+# colores_lawang_diff() con su diff: misma tabla, mismas reglas de qué se copia, una sola fuente.
+def lawang_que_lee_el_build():
+    """Rutas de Lawang (relativas, con /) que el build de una instancia copia: la v4 con las reglas de copia_v4(), el CRM de leads, la
+    puerta, y lo que todo eso referencia (REF_RE, como cierra_referencias())."""
+    base = os.path.join(LAWANG, 'intranet', 'v4')
+    cola = ['intranet/leads/index.html', 'intranet/leads/leads.css', 'intranet/leads/leads.js', 'intranet/index.html']
+    for raiz, dirs, fichs in os.walk(base):
+        if os.path.relpath(raiz, base) == '.':
+            dirs[:] = [d for d in dirs if d not in FUERA_V4]
+        dirs[:] = [d for d in dirs if not d.startswith('_')]
+        cola += [os.path.relpath(os.path.join(raiz, f), LAWANG).replace(os.sep, '/') for f in fichs]
+    leidos = set()
+    while cola:
+        rel = cola.pop()
+        ruta = os.path.join(LAWANG, *rel.split('/'))
+        if rel in leidos or not os.path.isfile(ruta):
+            continue
+        leidos.add(rel)
+        if rel.endswith(EXT_TEXTO):
+            cola += [m.group(1).lstrip('/') for m in REF_RE.finditer(open(ruta, encoding='utf-8', errors='replace').read())]
+    return leidos
+
+
+def _es_numero_de_referencia(m):
+    """«Seguridad #163», «revisión #197»: un número corto de solo dígitos detrás de una palabra es una referencia en un comentario, no un
+    color (el repaso de 14 días de Lawang dio tres así). Solo lo usa el aviso del gate: el pase de colores solo toca colores de la paleta."""
+    return (m.group(2) or '').isdigit() and len(m.group(2)) in (3, 4) and bool(re.search(r'[^\W\d_]\s$', m.string[max(0, m.start() - 2):m.start()]))
+
+
+def colores_lawang_diff(diff):
+    """[(fichero, línea, color, para, qué hacer)] de cada color que un diff de LAWANG AÑADE en un fichero que este build copia y que el build
+    no sabría llevar a la piel: uno con varios significados (LAWANG_POR_CONTEXTO: su recuento cambia y el build PARA) o uno que no es
+    token, suelto, familia ni del maestro (se quedaría el tono de Lawang en las instancias). Cuenta NETO por fichero y color, como el
+    recuento del build: retocar una línea que ya lo llevaba no avisa; solo una aparición de más. No cuentan blanco/negro, los ajenos con
+    nombre, el texto (ayuda/placeholder) ni una línea con `predeploy-ok: <motivo>`. `para` = True si el build de las instancias PARARÍA
+    (varios significados); False si solo se colaría el tono (aviso)."""
+    lee, pal = lawang_que_lee_el_build(), lawang_paleta()
+    ajenos = {_rgb_hex(h) for h in COLORES_AJENOS}
+    mas, menos = collections.defaultdict(list), collections.Counter()
+    fich, n = None, 0
+    for l in diff.split('\n'):
+        if l.startswith('+++ ') or l.startswith('--- '):
+            if l.startswith('+++ '):
+                fich = l[6:].strip() if l.startswith('+++ b/') else None
+            continue
+        if l.startswith('@@'):
+            m = re.search(r'\+(\d+)', l)
+            n = int(m.group(1)) - 1 if m else 0
+            continue
+        if l[:1] not in ('+', '-', ' '):   # «\ No newline at end of file», cabeceras diff/index de git
+            continue
+        if l[0] != '-':
+            n += 1
+        if l[:1] not in ('+', '-') or fich not in lee or not fich.endswith(PIEL_EXT) or 'predeploy-ok' in l:
+            continue
+        for m in COLOR_RE.finditer(l[1:]):
+            c = _color_de(m)
+            if _es_texto(m) or c in NEUTROS or c in ajenos or _es_numero_de_referencia(m):
+                continue
+            hx = '%02X%02X%02X' % c
+            if hx not in LAWANG_POR_CONTEXTO and c in pal:
+                continue
+            if l[0] == '+':
+                mas[(fich, hx)].append((n, m.group(0)))
+            else:
+                menos[(fich, hx)] += 1
+    out = []
+    for (fich, hx), apariciones in sorted(mas.items()):
+        if len(apariciones) <= menos[(fich, hx)]:
+            continue
+        que = ('tiene varios significados (marca o estado) y el build de las instancias cuenta cada aparición: usa el token '
+               '(rgb(var(--tema-…))) o añade su regla en LAWANG_POR_CONTEXTO' if hx in LAWANG_POR_CONTEXTO else
+               'no es token de la tw.css de Lawang ni está en LAWANG_FAMILIAS: en las instancias se quedaría el tono de Lawang. Usa un '
+               'token (rgb(var(--tema-…))) o clasifícalo en LAWANG_FAMILIAS')
+        out += [(fich, ln, col, hx in LAWANG_POR_CONTEXTO, que) for ln, col in apariciones[menos[(fich, hx)]:]]
     return out
 
 

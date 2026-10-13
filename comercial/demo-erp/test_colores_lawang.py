@@ -114,29 +114,55 @@ try:
     finally:
         build._pon_color = viejo_pon
     shutil.rmtree(d)
-    # (8) la cola por familias (bbm-p42c): un tono de estado propio de Lawang va al de estado de la piel (o a su fondo derivado), un gris
-    # cálido a su superficie; lo ajeno con nombre (Tailwind gris/azul, la ✕ de AxisWorks, el azul del maestro) se queda; la caja oliva del maestro va a ok; el ejemplo de un campo, también
+    # (8) la cola por familias (bbm-p42c): cada color toma el TONO de su token de la piel y conserva su LUZ (misma luminancia: mismo
+    # contraste con lo de alrededor, y lo distinto sigue distinto); lo ajeno con nombre (Tailwind gris/azul, la ✕ de AxisWorks, el azul del
+    # maestro) se queda; los del maestro con tono de Lawang (COLORES_MAESTRO) también a la piel; el ejemplo de un campo se queda
     D_ = build._deriva()
-    blanco = tuple(BBM['surface-container-lowest'])
-    av_fondo = '%02X%02X%02X' % D_.mix(tuple(BBM['aviso']), blanco, 0.88)
+    tono = lambda tok, hx: '%02X%02X%02X' % build._ajusta_luz(D_, tuple(BBM[tok]), build._rgb_hex(hx))
+    OK = 'ok' if 'ok' in BBM else 'fiduciary-green'
     d = tempfile.mkdtemp()
     escribe(d, 'a/cola.css', '.av{color:#8A5A00;background:#FBF3E4;border-color:#D6CFC2}.ok{color:#2F5D3A}.mal{color:#9E2F26;background:#FDECEA}'
                              '.tw{color:#6B7280;border:1px solid #E5E7EB}.x{fill:#E2581C}.maestro{color:#7A1A14;background:#E6EFDD}.azul{background:#E3E6FD}')
     escribe(d, 'a/campo.js', 'var C=[{k:"aviso",ayuda:"#662906"},{k:"filete",ayuda:"#E7E3D2"}];')
+    # lo que se lee en barras y leyendas de Lawang (panel-finanzas.js:189 y saldo_contrato.js:92-142): tras el pase, lo distinto sigue distinto
+    escribe(d, 'a/barras.js', "var COLOR={pagado:'#B06A3B',cobrado:'#104C4F',d90:'#4E8386',mas90:'#9AC0C2',sinFecha:'#BEB3A5'};"
+                              "var S='repeating-linear-gradient(45deg,#7FB3B5,#7FB3B5 4px,#A9CDCE 4px,#A9CDCE 8px)',F='#C9892B',B='#E8741C',BH='#CF6312';")
     build.piel_colores_lawang(d, 'x')
     cola = open(os.path.join(d, 'a', 'cola.css'), encoding='utf-8').read().upper()
-    mira('familia: un tono de aviso propio de Lawang pasa al aviso de la piel; su crema, al fondo de aviso derivado; su filete, al de la piel',
-         'COLOR:#%s;' % H('aviso') in cola and 'BACKGROUND:#%s;' % av_fondo in cola and 'BORDER-COLOR:#%s}' % H('filete') in cola)
-    mira('familia: verde y rojo de estado de Lawang pasan a ok / peligro de la piel, y el fondo rojo al error-container',
-         '.OK{COLOR:#%s}' % H('ok' if 'ok' in BBM else 'fiduciary-green') in cola and '.MAL{COLOR:#%s;BACKGROUND:#%s}' % (H('peligro'), H('error-container')) in cola)
+    mira('familia: el tono de aviso, su crema y su filete toman el tono de la piel con su misma luz',
+         'COLOR:#%s;' % tono('aviso', '8A5A00') in cola and 'BACKGROUND:#%s;' % tono('aviso', 'FBF3E4') in cola
+         and 'BORDER-COLOR:#%s}' % tono('filete', 'D6CFC2') in cola)
+    mira('familia: verde y rojo de estado de Lawang (y el fondo rojo) toman ok / peligro de la piel con su misma luz',
+         '.OK{COLOR:#%s}' % tono(OK, '2F5D3A') in cola and '.MAL{COLOR:#%s;BACKGROUND:#%s}' % (tono('peligro', '9E2F26'), tono('peligro', 'FDECEA')) in cola)
     mira('ajenos con nombre (Tailwind gris, la ✕ de AxisWorks, el tinte azul del maestro) NO se tocan',
          '#6B7280' in cola and '#E5E7EB' in cola and '#E2581C' in cola and '#E3E6FD' in cola)
-    ok_fondo = '%02X%02X%02X' % D_.mix(tuple(BBM['ok' if 'ok' in BBM else 'fiduciary-green']), blanco, 0.86)
-    mira('del maestro (COLORES_MAESTRO): el rojo teja y el fondo oliva de sus cajas pasan a peligro y al fondo de ok de la piel',
-         '.MAESTRO{COLOR:#%s;BACKGROUND:#%s}' % (H('peligro'), ok_fondo) in cola)
+    mira('del maestro (COLORES_MAESTRO): el rojo teja y el fondo oliva de sus cajas pasan a peligro y a ok de la piel con su misma luz',
+         '.MAESTRO{COLOR:#%s;BACKGROUND:#%s}' % (tono('peligro', '7A1A14'), tono(OK, 'E6EFDD')) in cola)
+    b = open(os.path.join(d, 'a', 'barras.js'), encoding='utf-8').read().upper()
+    tramos = re.findall(r"(?:COBRADO|D90|MAS90|SINFECHA|PAGADO):'#([0-9A-F]{6})'", b)
+    rayas = re.findall(r'#([0-9A-F]{6})', b[b.index('GRADIENT'):b.index("',F=")])
+    mira('panel de finanzas: los cinco tramos de la barra siguen siendo cinco colores distintos', len(tramos) == 5 and len(set(tramos)) == 5)
+    mira('saldo del contrato: el rayado de «Este documento» sigue teniendo dos colores, y ninguno es el de «Cobrado»',
+         len(set(rayas)) == 2 and H('deep-lagoon') not in rayas)
+    mira('el botón de reparto y su hover (#E8741C / #CF6312) siguen distintos', len(set(re.findall(r"B[H]?='#([0-9A-F]{6})'", b))) == 2)
+    lum = lambda hx: D_.lum(build._rgb_hex(hx))
+    origen = {'7FB3B5', 'A9CDCE', '4E8386', '9AC0C2', 'B06A3B', 'C9892B', 'E8741C', 'CF6312', 'BEB3A5'}
+    mira('cada color de la cola conserva su luz (luminancia ±7 %): el contraste con lo de alrededor no cambia',
+         all(0.93 <= (D_.lum(build._ajusta_luz(D_, tuple(BBM[t]), build._rgb_hex(hx))) + .05) / (lum(hx) + .05) <= 1.07
+             for t in ('deep-lagoon', 'aviso', OK, 'peligro', 'accent-gold', 'outline-variant') for hx in origen))
     cj = open(os.path.join(d, 'a', 'campo.js'), encoding='utf-8').read()
     mira('el ejemplo de un campo que es color de la cola (ayuda:"#662906", "#E7E3D2") se queda', 'ayuda:"#662906"' in cj and 'ayuda:"#E7E3D2"' in cj)
     mira('tras el pase, el barrido no encuentra ni un color de la cola', build.colores_lawang_en(d, BBM) == [])
+    d2 = tempfile.mkdtemp()
+    escribe(d2, 'a/casi.css', '.x{background:#FBFDFC}.y{background:#E6EFE9}')
+    mira('un color que con la luz conservada sale IGUAL que otro de Lawang (#FBFDFC) no hace parar el barrido final',
+         not para(lambda: build.piel_colores_lawang(d2, 'x')))
+    shutil.rmtree(d2)
+    sin_ec = {k: v for k, v in BBM.items() if k != 'error-container'}
+    build._piel_preset = lambda n: sin_ec
+    escribe(d, 'a/y.css', 'a{background:#FDECEA}')
+    mira('una piel sin error-container PARA con su mensaje (antes: TypeError de Python)', para(lambda: build.piel_colores_lawang(d, 'x')))
+    build._piel_preset = lambda n: BBM
     shutil.rmtree(d)
     # un aviso de piel que no se lee (≈ gris claro): PARA antes de tocar nada; y un ajeno metido por error en una familia, PARA
     d = tempfile.mkdtemp()
@@ -151,6 +177,24 @@ try:
     finally:
         build.LAWANG_FAMILIAS = viejo_fam
     shutil.rmtree(d)
+    # (9) el aviso del gate de push de LAWANG (colores_lawang_diff): contra el Lawang real, sobre un fichero que el build copia
+    lee = build.lawang_que_lee_el_build()
+    mira('el build lee la v4, el CRM de leads y lo que referencian (contracts/assets/brand.css), no la web pública',
+         'intranet/v4/assets/datos.js' in lee and 'intranet/leads/leads.css' in lee and 'contracts/assets/brand.css' in lee and 'index.html' not in lee)
+    dif = lambda *ls: chr(10).join(['diff --git a/intranet/v4/assets/datos.js b/intranet/v4/assets/datos.js', '--- a/intranet/v4/assets/datos.js',
+                                  '+++ b/intranet/v4/assets/datos.js', '@@ -10,3 +10,4 @@'] + list(ls))
+    r = build.colores_lawang_diff(dif(' a', '+var V="#485B37";', ' b'))
+    mira('gate: un #485B37 de más (varios significados) PARA, con su línea', [(x[1], x[3]) for x in r] == [(11, True)])
+    r = build.colores_lawang_diff(dif('+var V="#123456";'))
+    mira('gate: un color sin token ni familia AVISA (no para): se colaría el tono', [(x[2], x[3]) for x in r] == [('#123456', False)])
+    mira('gate: un token de Lawang (#104C4F), blanco, un ajeno con nombre o un texto de ayuda no avisan',
+         build.colores_lawang_diff(dif('+a{color:#104C4F;background:#fff;fill:#E2581C}', '+{ayuda:"#123456"}')) == [])
+    mira('gate: retocar una línea que YA llevaba el color no avisa (cuenta neto, como el build)',
+         build.colores_lawang_diff(dif('-var V="#485B37";', '+var V = "#485B37";', '-x="#123456"', '+x = "#123456"')) == [])
+    mira('gate: «Seguridad #163» en un comentario no es un color; una línea con predeploy-ok tampoco avisa',
+         build.colores_lawang_diff(dif('+// Seguridad #163: la misma fórmula', '+x="#123456" // predeploy-ok: muestra')) == [])
+    mira('gate: un fichero que el build no copia (la web pública) no avisa',
+         build.colores_lawang_diff(dif('+x="#485B37"').replace('intranet/v4/assets/datos.js', 'index.html')) == [])
     # (6) el papel
     d = tempfile.mkdtemp()
     escribe(d, 'contracts/assets/brand.css', ':root{\n  --brand-primary: var(--tg);\n}')
