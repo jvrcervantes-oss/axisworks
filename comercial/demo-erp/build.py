@@ -4020,23 +4020,62 @@ def ajustes_puesta_en_marcha():
 # setup (que no son de Lawang) no se compila y la pantalla sale sin ese estilo, en silencio: p-3, gap-x-5 y tracking-[0.08em] en S44/S45. Estos
 # ficheros pintan /ajustes/configurar/ y /ajustes/, que cargan esa tw.css; las axw-* las define el propio fichero en su <style>.
 SETUP_CLASES = ('asistente_setup.html', 'setup_pasos.js', 'setup_reservas.js', 'setup_comun.js', 'ajustes_puesta.js', 'cobros_paso.js')
-RE_CLASES = re.compile(r"""\bclass\s*:\s*'([^'\n]*)'|\bclass="([^"\n]*)"|\bvar\s+(?:BTN\w*|CLS_\w*)\s*=\s*'([^'\n]*)'""")
+# Dónde empieza una lista de clases: `class:` y `className =`/`+=` (se lee la expresión ENTERA: ternarios y concatenaciones), las constantes
+# BTN*/CLS_* y el atributo class="…" del HTML.
+RE_CLASES_INICIO = re.compile(r"""\bclass\s*:|\bclassName\s*\+?=|\bvar\s+(?:BTN\w*|CLS_\w*)\s*=|\bclass="([^"\n]*)\"""")
+
+
+def _literales(t, i):
+    """Los literales '…'/"…" de la expresión que empieza en t[i:], hasta , ; ) ] } de nivel 0 (o fin de línea). Los que se comparan
+    (== / !=) no son clases: `tipo === 'error' ? …`."""
+    out, nivel, j, n = [], 0, i, len(t)
+    while j < n:
+        c = t[j]
+        if c in '\'"':
+            k = j + 1
+            while k < n and t[k] != c:
+                k += 2 if t[k] == '\\' else 1
+            if not (t[:j].rstrip().endswith(('==', '!=')) or t[k + 1:].lstrip().startswith(('==', '!='))):
+                out.append(t[j + 1:k])
+            j = k + 1
+            continue
+        if c in '([{':
+            nivel += 1
+        elif c in ')]}':
+            if nivel == 0:
+                break
+            nivel -= 1
+        elif c in ',;' and nivel == 0:
+            break
+        elif c == '\n' and nivel == 0 and t[i:j].strip():
+            break
+        j += 1
+    return out
+
+
+def _selector_tw(c):
+    """El selector con el que Tailwind escribe la clase: puntuación con barra invertida, la coma como \\2c y un dígito inicial como \\3N."""
+    pre = ''
+    if c[0].isdigit():
+        pre, c = '\\3' + c[0] + ' ', c[1:]
+    return '.' + pre + ''.join(ch if ch.isalnum() or ch in '-_' else ('\\2c ' if ch == ',' else '\\' + ch) for ch in c)
 
 
 def clases_setup_en_hoja():
     """Aborta si un fichero del setup usa una clase que la tw.css de la instancia no trae (como no_instalado_base() con la suya). Las lw-* de la
-    cáscara vienen de shell.css, que las dos páginas también cargan."""
+    cáscara vienen de shell.css, que las dos páginas también cargan; las axw-* las define cada fichero en su <style>. Una pieza que no tiene
+    forma de clase también para: o es una clase rara que hay que mirar, o el chequeo está leyendo algo que no es una clase."""
     hoja = ''.join(open(os.path.join(DIST, 'intranet', 'v4', 'assets', f), encoding='utf-8').read() for f in ('tw.css', 'shell.css'))
     faltan = []
     for f in SETUP_CLASES:
         t = open(os.path.join(AQUI, f), encoding='utf-8').read()
-        for m in RE_CLASES.finditer(t):
-            for c in (m.group(1) or m.group(2) or m.group(3) or '').split():
-                if c.startswith('axw-') or not re.fullmatch(r'[\w:/.\[\]%#-]+', c):
-                    continue
-                sel = '.' + ''.join(ch if ch.isalnum() or ch in '-_' else '\\' + ch for ch in c)
-                if not re.search(re.escape(sel) + r'[\s{,:]', hoja):
-                    faltan.append('%s:%d %s' % (f, t.count('\n', 0, m.start()) + 1, c))
+        for m in RE_CLASES_INICIO.finditer(t):
+            for lit in ([m.group(1)] if m.group(1) is not None else _literales(t, m.end())):
+                for c in lit.split():
+                    if c.startswith('axw-'):
+                        continue
+                    if not re.fullmatch(r'[\w:/.\[\]%#(),!-]+', c) or not re.search(re.escape(_selector_tw(c)) + r'[\s{,:]', hoja):
+                        faltan.append('%s:%d %s' % (f, t.count('\n', 0, m.start()) + 1, c))
     if faltan:
         aborta('clases del setup que la tw.css (ni shell.css) de la instancia no trae (saldrían sin estilo; usa una que exista o estilo en línea): '
                + ', '.join(faltan))

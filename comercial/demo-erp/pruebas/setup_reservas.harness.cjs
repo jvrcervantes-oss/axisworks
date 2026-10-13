@@ -301,6 +301,11 @@ async function rellenaAlquiler(p, o = {}) {
   await p.click('[data-axw-sr-fila="1"] [data-axw-sr-accion="quitar-unidad"]');
   const claves = await p.$$eval('[data-axw-sr-filas="unidades"] input', ls => ls.map(l => l.getAttribute('data-axw-campo') + '=' + l.value + '@' + document.querySelector('label[for="' + l.id + '"]').textContent));
   ok('S41 quitar una fila renumera: claves seguidas, sin repetir, etiqueta y número al día', JSON.stringify(claves) === JSON.stringify(['mat_0=DK 1234 AB@Matrícula de la unidad 1', 'mat_1=DK 9999 ZZ@Matrícula de la unidad 2']) && JSON.stringify(await nums()) === '["1","2"]' && (await txt(p, '[data-axw-sr-cuenta="unidades"]')) === '2 unidades', JSON.stringify(claves));
+  // el fallo exacto: quitar y DESPUÉS añadir. Antes la nueva salía como mat_1 otra vez (clave repetida)
+  await p.click('[data-axw-sr-accion="anadir-unidad"]');
+  const tras = await p.$$eval('[data-axw-sr-filas="unidades"] input', ls => ls.map(l => l.getAttribute('data-axw-campo')));
+  ok('S41 quitar y luego añadir: la nueva es mat_2, sin repetir', JSON.stringify(tras) === '["mat_0","mat_1","mat_2"]', JSON.stringify(tras));
+  await p.click('[data-axw-sr-fila="2"] [data-axw-sr-accion="quitar-unidad"]');
   await p.fill('[data-axw-campo="mat_1"]', 'DK 5678 CD');
   await clic(p, 'enviar'); await p.waitForTimeout(400);
   const orden = escrituras(b).map(x => x[0] + (x[1].p_dias ? ':' + x[1].p_dias : ''));
