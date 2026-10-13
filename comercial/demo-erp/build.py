@@ -121,7 +121,9 @@ if PRUEBA_ORIGENES:
 PRUEBA_PUBLICO = bool(os.environ.get('AXW_PRUEBA_PUBLICO')) and not PRUEBA_ORIGENES
 if PRUEBA_PUBLICO:
     _salida = os.path.abspath(os.environ['AXW_PRUEBA_PUBLICO'])
-    if os.path.normcase(_salida).startswith(os.path.normcase(os.path.abspath(os.path.join(AQUI, '..', '..'))) + os.sep):
+    # La raíz del repo justa también cuenta como dentro (BAJA del revisor de S1): `startswith(repo + sep)` solo no la veía.
+    _repo = os.path.normcase(os.path.abspath(os.path.join(AQUI, '..', '..')))
+    if os.path.normcase(_salida) == _repo or os.path.normcase(_salida).startswith(_repo + os.sep):
         print('ABORTA: AXW_PRUEBA_PUBLICO tiene que estar fuera del repo AxisWorks: ' + _salida)
         sys.exit(1)
     DESTINO_PUBLICO, DESTINO_WEB = os.path.join(_salida, 'demo-erp'), os.path.join(_salida, 'erp-web')

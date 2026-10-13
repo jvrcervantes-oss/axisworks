@@ -217,7 +217,9 @@ def poda(recien):
             _borra(h)
     shas = sorted((h for h in hijos if len(os.path.basename(h)) == 40 and os.path.basename(h) not in (fijado, recien) and os.path.isdir(h)),
                   key=os.path.getmtime, reverse=True)
-    for h in shas[CONSERVA - 2:]:
+    # CONSERVA en total: la fijada, la recién usada (si es otra) y las más recientes hasta completar (BAJA del revisor de S1: con
+    # `CONSERVA - 2` a secas, si la recién usada ERA la fijada se guardaban 5).
+    for h in shas[CONSERVA - (1 if recien == fijado else 2):]:
         _borra(h)
 
 

@@ -105,8 +105,12 @@ ok(L.doble_qa().endswith('_qa_double_guard.js'), 'doble de QA con su huella → 
 L.prueba = lambda sha: [('build --instancia bbm', 'ABORTA: ancla')]
 ok(L.sube(dos, 'test', 'rojo', sin_red=True) == 1, '`sube` en rojo devuelve 1')
 ok(json.load(open(L.FICHERO))['sha'] == uno and not os.path.exists(L.INFORME), '`sube` en rojo NO toca lawang.json ni deja informe')
-L.prueba = lambda sha: []
+cerrojo = os.path.join(L.cache(), '.sube.lock')
+vio = []
+L.prueba = lambda sha: vio.append(os.path.exists(cerrojo)) or []
 ok(L.sube(dos, 'test', 'verde', sin_red=True) == 0, '`sube` en verde devuelve 0')
+# El candado: puesto MIENTRAS corre la prueba y quitado al acabar por el propio `sube` (BAJA del revisor de S1: antes lo borraba el test).
+ok(vio == [True] and not os.path.exists(cerrojo), 'el candado está puesto durante `sube` y lo suelta él al acabar')
 f = json.load(open(L.FICHERO))
 ok(f['sha'] == dos and f['doble_qa_sha256'] == doble and f['por'] == 'test', '`sube` en verde fija el sha nuevo y conserva la huella del doble')
 ok(os.path.isfile(L.INFORME) and 'Commits que tocan' in open(L.INFORME, encoding='utf-8').read(), '`sube` en verde deja lawang_sube.txt')
@@ -115,7 +119,6 @@ ok(aborta(L.sube, suelta, 'test', 'sin subir', sin_red=True), '`sube` a un sha f
 c = L._candado()
 ok(aborta(L.sube, 'main', 'test', 'a la vez', sin_red=True), 'con otro `sube` en marcha (candado) → se niega')
 os.remove(c)
-ok(not os.path.exists(os.path.join(L.cache(), '.sube.lock')), 'el candado se suelta')
 
 import shutil  # noqa: E402
 shutil.rmtree(tmp, ignore_errors=True)   # solo la carpeta temporal de esta prueba
