@@ -817,7 +817,7 @@
       });
       var lista = el('div', { class: 'flex flex-col gap-2', 'data-axw-sr-filas': 'unidades' });
       gu.appendChild(lista);
-      // Tras quitar una fila se renumera TODO: el número que se ve, la etiqueta y la clave (mat_0…mat_n-1). Sin esto, quitar y añadir dejaba
+      // Tras quitar una fila se renumera todo (el número que se ve, la etiqueta y la clave, mat_0…mat_n-1). Sin esto, quitar y añadir dejaba
       // dos filas con la misma clave y, al redibujar tras un fallo, las dos recibían la misma matrícula.
       function renumera() {
         var fs = lista.querySelectorAll('[data-axw-sr-fila]');
