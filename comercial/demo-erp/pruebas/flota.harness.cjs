@@ -394,6 +394,8 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.click(accion('fl-modelo-editar', '[data-producto-id="p2"]'));
     await p.waitForSelector('[data-axw="dialogo"] ' + campo('nombre'));
     ok('AXW-290: sin el catálogo, «Editar modelo» sigue como antes (nombre y activo, sin referencia ni impuesto)', !(await p.$(campo('referencia'))) && !(await p.$(campo('impuesto_id'))));
+    await p.fill(campo('nombre'), 'Vario 160 nueva'); await confirmar(p); await esperaCierre(p); await p.waitForTimeout(300);
+    ok('AXW-290: guardar con el catálogo caído NO borra su aviso (revisor erp-front-catalogo, BAJA 3)', ((await p.evaluate(() => document.body.innerText)) || '').includes('No se ha podido saber qué productos son de alquiler'));
     await ctx.close();
   }
   {

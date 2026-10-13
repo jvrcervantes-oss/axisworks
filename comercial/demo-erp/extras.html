@@ -86,7 +86,7 @@
     "El catálogo es más largo de lo que se puede enseñar aquí: puede faltar algún extra o impuesto.": "Katalognya lebih panjang daripada yang bisa ditampilkan di sini: mungkin ada ekstra atau pajak yang tidak muncul.",
     "Aún no hay extras: crea el primero (por ejemplo, la entrega a domicilio).": "Belum ada ekstra: buat yang pertama (misalnya, antar ke alamat).",
     "No se ha podido mirar": "Tidak bisa diperiksa", "Cargando…": "Memuat…",
-    "Nombre": "Nama", "Precio": "Harga", "Impuesto": "Pajak", "Estado": "Status", "Activo": "Aktif", "Desactivado": "Nonaktif",
+    "Nombre": "Nama", "Precio": "Harga", "Impuesto": "Pajak", "Estado": "Status", "Activo": "Aktif", "Desactivado": "Nonaktif", "Impuesto que ya no está en la lista": "Pajak yang sudah tidak ada di daftar",
     "Editar": "Ubah", "Desactivar": "Nonaktifkan", "Reactivar": "Aktifkan kembali",
     "Sin impuesto por defecto": "Tanpa pajak bawaan", "Impuesto no encontrado": "Pajak tidak ditemukan", "desactivado": "nonaktif",
     "Nombre del extra": "Nama ekstra", "Como sale en la línea de la factura.": "Seperti yang tertulis di baris invoice.",
@@ -117,7 +117,7 @@
     'El catálogo es más largo de lo que se puede enseñar aquí: puede faltar algún extra o impuesto.': 'The catalogue is longer than what can be shown here: an extra or a tax may be missing.',
     'Aún no hay extras: crea el primero (por ejemplo, la entrega a domicilio).': 'There are no extras yet: create the first one (for example, home delivery).',
     'No se ha podido mirar': 'It could not be checked', 'Cargando…': 'Loading…',
-    'Nombre': 'Name', 'Precio': 'Price', 'Impuesto': 'Tax', 'Estado': 'Status', 'Activo': 'Active', 'Desactivado': 'Deactivated',
+    'Nombre': 'Name', 'Precio': 'Price', 'Impuesto': 'Tax', 'Estado': 'Status', 'Activo': 'Active', 'Desactivado': 'Deactivated', 'Impuesto que ya no está en la lista': 'Tax no longer on the list',
     'Editar': 'Edit', 'Desactivar': 'Deactivate', 'Reactivar': 'Reactivate',
     'Sin impuesto por defecto': 'No default tax', 'Impuesto no encontrado': 'Tax not found', 'desactivado': 'deactivated',
     'Nombre del extra': 'Name of the extra', 'Como sale en la línea de la factura.': 'As it appears on the invoice line.',
@@ -261,6 +261,8 @@
       E.imps.filter(function (i) { return i && (i.activo || i.id === impActual); }).forEach(function (i) {
         ops.push(h('option', { value: String(i.id), text: (i.numero_impuesto ? i.numero_impuesto + ' · ' : '') + (i.nombre || '—') + (i.pais ? ' (' + i.pais + ')' : '') + (i.activo ? '' : ' — ' + T('desactivado')) }));
       });
+      if (impActual && !E.imps.some(function (i) { return i && String(i.id) === String(impActual); }))
+        ops.push(h('option', { value: String(impActual), text: T('Impuesto que ya no está en la lista') }));   // como Flota: se conserva, no se manda null
       imp = h('select', { 'data-campo': 'impuesto_id' }, ops); imp.value = impActual;
     }
     var activo = null;

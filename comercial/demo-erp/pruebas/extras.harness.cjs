@@ -26,6 +26,7 @@ function nuevaBase(o = {}) {
     { id: 's1', numero: 'P-2', nombre: o.xss ? XSS : 'Entrega y recogida a domicilio', referencia: 'DEL', unidad: 'viaje', precio: 50000, moneda: 'IDR', descripcion: null, impuesto_id: 'i1', activo: false, clase: 'servicio' },
     { id: 's2', numero: 'P-3', nombre: 'Casco extra', referencia: null, unidad: 'ud', precio: 25000, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'servicio' }];
   if (o.mil) for (let k = 0; k < (o.mil === 'justo' ? 997 : 1001); k++) prods.push({ id: 'x' + k, numero: 'P-X' + k, nombre: 'Extra ' + k, referencia: null, unidad: 'ud', precio: 1000, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'servicio' });
+  if (o.impFuera) prods[1].impuesto_id = 'iZ';   // un impuesto que el lector no trae (lista recortada a 500)
   if (o.largo) prods.push({ id: 's3', numero: 'P-4', nombre: 'W'.repeat(120), referencia: 'R'.repeat(60), unidad: 'ud', precio: 123456789, moneda: 'IDR', descripcion: null, impuesto_id: 'i2', activo: true, clase: 'servicio' });
   return { o, llamadas: [], n: 10, prods, imps: [{ id: 'i1', numero_impuesto: 'IMP-1', nombre: 'PPN 11 %', pais: 'ID', clase: 'suma', porcentaje: 11, activo: true },
     { id: 'i2', numero_impuesto: 'IMP-2', nombre: 'Viejo', pais: 'ID', clase: 'suma', porcentaje: 10, activo: false }] };
@@ -166,6 +167,17 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.click('[data-accion="ex-activo"][data-producto-id="s2"]');
     await p.waitForFunction(() => document.querySelector('[data-ex="exito"]').textContent.includes('desactivado'), null, { timeout: 5000 });
     ok('Desactivar manda solo {activo:false}', J(guardas(base)[1][2]) === J({ p_id: 's2', p_datos: { activo: false } }));
+    await ctx.close();
+  }
+  // 4b. el impuesto que ya no está en la lista se enseña y se conserva: cambiar otro campo no lo pone a null (revisor erp-front-catalogo, BAJA 1)
+  {
+    const { base, p, ctx } = await abre({ base: { impFuera: true } });
+    await p.click('[data-accion="ex-editar"][data-producto-id="s1"]');
+    const sel = await p.$eval(campo('impuesto_id'), e => [e.value, e.options[e.selectedIndex] ? e.options[e.selectedIndex].textContent : '']);
+    ok('impuesto fuera de la lista: sale seleccionado como «Impuesto que ya no está en la lista»', sel[0] === 'iZ' && sel[1].includes('ya no está en la lista'), J(sel));
+    await p.fill(campo('precio'), '60000'); await confirmar(p); await cerrado(p);
+    const g = guardas(base);
+    ok('cambiar el precio NO manda impuesto_id (no se pierde el impuesto)', g.length === 1 && J(g[0][2].p_datos) === J({ precio: 60000 }), J(g));
     await ctx.close();
   }
   // 5. errores de la base al escribir
