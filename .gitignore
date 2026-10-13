@@ -15,6 +15,8 @@ comercial/previews/
 
 # Demo del ERP (bundle generado por comercial/demo-erp/build.py) — nunca al webroot publico
 comercial/demo-erp/dist/
+# dist/ propio de cada build del gate (test_builds_instancias.py, 13-oct): nunca el dist/ que usa publica_instancia.py
+comercial/demo-erp/dist_gate/
 
 # Herramientas del build publico de la demo del ERP
 comercial/demo-erp/node_modules/
