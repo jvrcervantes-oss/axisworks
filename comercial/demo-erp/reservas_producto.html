@@ -354,7 +354,16 @@ a.rp-boton{text-decoration:none}
     'La reserva no aparece en la lista. No la repitas desde aquí (una reserva confirmada podría quedar doble): pulsa «Comprobar de nuevo» en un momento y, si sigue sin salir y tampoco está en la pestaña Reservas, empieza de cero.': 'The booking is not in the list. Do not repeat it from here (a confirmed booking could end up twice): press “Check again” in a moment and, if it still does not show and is not in the Bookings tab either, start again.',
     'La conexión se cortó y el apartado no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez: la base no duplica un apartado con la misma clave.': 'The connection dropped and the hold is not in the list (checked a few seconds later). You can try again: the database does not duplicate a hold with the same key.',
     'Esta reserva se envió y no sabemos si se creó. Pulsa «Comprobar de nuevo» antes de hacer nada.': 'This booking was sent and we do not know whether it was created. Press “Check again” before doing anything.',
-    'En la lista hay una reserva igual, pero no se puede saber si es esta o una anterior. Mírala en la pestaña Reservas antes de hacer nada; no la repitas.': 'There is an identical booking in the list, but we cannot tell whether it is this one or an earlier one. Look at it in the Bookings tab before doing anything; do not repeat it.'
+    'En la lista hay una reserva igual, pero no se puede saber si es esta o una anterior. Mírala en la pestaña Reservas antes de hacer nada; no la repitas.': 'There is an identical booking in the list, but we cannot tell whether it is this one or an earlier one. Look at it in the Bookings tab before doing anything; do not repeat it.',
+    'Avisos del AaaS': 'AaaS alerts',
+    'No se han podido mirar los avisos del AaaS': 'Could not check the AaaS alerts',
+    'La moto asignada está en el taller y la reserva sale mañana.': 'The assigned bike is in the workshop and the booking starts tomorrow.',
+    'La moto asignada está de baja y la reserva sale mañana.': 'The assigned bike is retired and the booking starts tomorrow.',
+    'La moto asignada sigue fuera en otra reserva que no ha vuelto, y esta sale mañana.': 'The assigned bike is still out on another booking that has not come back, and this one starts tomorrow.',
+    'Aviso de un tipo que esta pantalla aún no conoce.': 'An alert of a type this screen does not know yet.',
+    'Avisado': 'Flagged', 'Marcar resuelto': 'Mark resolved', 'Aviso marcado como resuelto.': 'Alert marked as resolved.',
+    'La cuenta de pruebas solo mira: no marca avisos.': 'The test account can only look: it does not mark alerts.',
+    'La base no confirmó el aviso: recarga y comprueba.': 'The database did not confirm the alert: reload and check.'
   };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
     Object.keys(EN_RP).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_RP[k]; });
@@ -478,7 +487,16 @@ a.rp-boton{text-decoration:none}
     'La reserva no aparece en la lista. No la repitas desde aquí (una reserva confirmada podría quedar doble): pulsa «Comprobar de nuevo» en un momento y, si sigue sin salir y tampoco está en la pestaña Reservas, empieza de cero.': 'Booking tidak ada di daftar. Jangan diulang dari sini (booking yang dikonfirmasi bisa jadi dobel): tekan «Cek lagi» sebentar lagi dan, jika tetap tidak muncul dan juga tidak ada di tab Booking, mulai dari awal.',
     'La conexión se cortó y el apartado no aparece en la lista (mirada unos segundos después). Puedes intentarlo otra vez: la base no duplica un apartado con la misma clave.': 'Koneksi terputus dan booking yang ditahan tidak ada di daftar (dicek beberapa detik kemudian). Anda boleh mencoba lagi: sistem tidak menggandakan booking tahan dengan kunci yang sama.',
     'Esta reserva se envió y no sabemos si se creó. Pulsa «Comprobar de nuevo» antes de hacer nada.': 'Booking ini sudah dikirim dan belum diketahui apakah sudah dibuat. Tekan «Cek lagi» sebelum melakukan apa pun.',
-    'En la lista hay una reserva igual, pero no se puede saber si es esta o una anterior. Mírala en la pestaña Reservas antes de hacer nada; no la repitas.': 'Di daftar ada booking yang sama, tapi tidak bisa dipastikan apakah ini booking yang baru atau yang lama. Cek di tab Booking sebelum melakukan apa pun; jangan diulang.'
+    'En la lista hay una reserva igual, pero no se puede saber si es esta o una anterior. Mírala en la pestaña Reservas antes de hacer nada; no la repitas.': 'Di daftar ada booking yang sama, tapi tidak bisa dipastikan apakah ini booking yang baru atau yang lama. Cek di tab Booking sebelum melakukan apa pun; jangan diulang.',
+    'Avisos del AaaS': 'Peringatan AaaS',
+    'No se han podido mirar los avisos del AaaS': 'Peringatan AaaS tidak dapat diperiksa',
+    'La moto asignada está en el taller y la reserva sale mañana.': 'Motor yang ditugaskan sedang di bengkel dan booking mulai besok.',
+    'La moto asignada está de baja y la reserva sale mañana.': 'Motor yang ditugaskan sudah nonaktif dan booking mulai besok.',
+    'La moto asignada sigue fuera en otra reserva que no ha vuelto, y esta sale mañana.': 'Motor yang ditugaskan masih dipakai di booking lain yang belum kembali, dan booking ini mulai besok.',
+    'Aviso de un tipo que esta pantalla aún no conoce.': 'Peringatan dengan jenis yang belum dikenal layar ini.',
+    'Avisado': 'Ditandai', 'Marcar resuelto': 'Tandai selesai', 'Aviso marcado como resuelto.': 'Peringatan ditandai selesai.',
+    'La cuenta de pruebas solo mira: no marca avisos.': 'Akun uji coba hanya bisa melihat: tidak bisa menandai peringatan.',
+    'La base no confirmó el aviso: recarga y comprueba.': 'Basis data tidak mengonfirmasi peringatan: muat ulang dan periksa.'
   };
   if (window.LW_ID && typeof window.LW_ID === 'object') {
     Object.keys(ID_RP).forEach(function (k) { if (!(k in window.LW_ID)) window.LW_ID[k] = ID_RP[k]; });
@@ -568,7 +586,9 @@ a.rp-boton{text-decoration:none}
     reserva_producto_crea: function (a) { return SB.rpc('reserva_producto_crea', a); },
     reserva_producto_estado: function (a) { return SB.rpc('reserva_producto_estado', a); },
     reserva_cancela_con_devolucion: function (a) { return SB.rpc('reserva_cancela_con_devolucion', a); },
-    reserva_producto_cambia_unidad: function (a) { return SB.rpc('reserva_producto_cambia_unidad', a); }
+    reserva_producto_cambia_unidad: function (a) { return SB.rpc('reserva_producto_cambia_unidad', a); },
+    reservas_producto_avisos_datos: function (a) { return window.lwDatos('reservas_producto_avisos_datos', a); },
+    reservas_producto_aviso_resuelve: function (a) { return SB.rpc('reservas_producto_aviso_resuelve', a); }
   };
   function llama(nombre, args) {
     var p;
@@ -758,7 +778,70 @@ a.rp-boton{text-decoration:none}
       ['Notas', x.notas], ['Creada', fechaHora(x.creado_en) + (x.creado_por ? ' · ' + T('por') + ' ' + x.creado_por : '')]])],
       [{ texto: T('Cerrar'), accion: 'rp-modal-cerrar', cierra: true }]);
     d.cuerpo.querySelector('.rp-resumen').style.whiteSpace = 'pre-line';
+    avisosDe(x, d);
     return d;
+  }
+
+  /* ── avisos del AaaS sobre esta reserva (aaas-2, 14-oct-2026). Los escribe el AaaS por su puerta (la base vuelve a mirar la moto antes de
+     escribir); aquí el equipo los ve y los marca resueltos. Sin avisos, el bloque no sale (son excepcionales: un «sin avisos» en cada ficha sería
+     ruido, también donde el AaaS no está encendido). Si la instancia no tiene la lectura (sin AaaS) o aún no se le ha concedido, tampoco sale:
+     no hay nada que enseñar y no es un fallo de la reserva. Cualquier otro fallo se dice: nunca se confunde con «no hay avisos». */
+  var AVISO = { unidad_en_taller: 'La moto asignada está en el taller y la reserva sale mañana.', unidad_de_baja: 'La moto asignada está de baja y la reserva sale mañana.',
+                unidad_doble: 'La moto asignada sigue fuera en otra reserva que no ha vuelto, y esta sale mañana.' };
+  function sinAaas(err) {
+    var c = clasifica(err);
+    // solo la falta de permiso sobre ESTA lectura es «sin AaaS»: si falta el de una función que ella llama (puede, modulo_activo…) es un fallo
+    // de la instancia y se dice (Seguridad, consulta de aaas-2)
+    return c.tipo === 'no_disponible' || (c.tipo === 'sin_permiso' && /permission denied for function (public\.)?reservas_producto_avisos_datos\b/i.test(c.m));
+  }
+  function avisosDe(x, d) {
+    var caja = d.cuerpo.querySelector('[data-rp="avisos"]');
+    if (!caja) {
+      caja = h('section', { class: 'rp-avisos rp-oculto', 'data-rp': 'avisos', 'aria-label': T('Avisos del AaaS') });
+      d.cuerpo.insertBefore(caja, d.cuerpo.querySelector('.rp-error'));
+    }
+    return llama('reservas_producto_avisos_datos', { p_reserva: x.id }).then(function (r) {
+      vacia(caja);
+      if (r.error && sinAaas(r.error)) { oculta(caja, true); return; }
+      if (!vaListaDe(r, 'avisos')) {
+        caja.appendChild(h('p', { class: 'rp-error', role: 'alert', text: T('No se han podido mirar los avisos del AaaS') + ': ' + mensaje(r.error || {}, true) }));
+        oculta(caja, false);
+        return;
+      }
+      var lista = r.data.avisos;
+      oculta(caja, lista.length === 0);
+      if (!lista.length) return;
+      caja.appendChild(h('h4', { text: T('Avisos del AaaS') }));
+      var ul = h('ul', { class: 'rp-avisos-lista' });
+      lista.forEach(function (a) {
+        var li = h('li', { 'data-rp': 'aviso', 'data-aviso-id': a.id }, [
+          h('p', { text: T(AVISO[a.motivo] || 'Aviso de un tipo que esta pantalla aún no conoce.') }),
+          h('p', { class: 'rp-nota', text: T('Avisado') + ' · ' + fechaDia(a.dia) })]);
+        if (a.resuelto_en) {
+          li.appendChild(chip(T('Resuelto') + ' · ' + fechaHora(a.resuelto_en) + (a.resuelto_por ? ' · ' + T('por') + ' ' + a.resuelto_por : ''), 'ok'));
+        } else {
+          var bt = boton(T('Marcar resuelto'), 'rp-modal-aviso-resuelve', { 'data-aviso-id': a.id });
+          bt.addEventListener('click', function () { resuelveAviso(x, d, a.id, bt); });
+          li.appendChild(bt);
+        }
+        ul.appendChild(li);
+      });
+      caja.appendChild(ul);
+    });
+  }
+  function resuelveAviso(x, d, id, bt) {
+    if (!ocupa(bt)) return;
+    d.error('');
+    llama('reservas_producto_aviso_resuelve', { p_id: id }).then(function (r) {
+      libera(bt);
+      if (r.error) {
+        d.error(r.error.hint === 'cuenta_pruebas' ? T('La cuenta de pruebas solo mira: no marca avisos.') : mensaje(r.error));
+        return;
+      }
+      if (!r.data || r.data.ok !== true) { d.error(T('La base no confirmó el aviso: recarga y comprueba.')); return; }
+      exito(T('Aviso marcado como resuelto.'));
+      return avisosDe(x, d);
+    });
   }
 
   /* ── cambiar de estado: confirmar · entregar · devuelta · cancelar (sin cobro) ── */

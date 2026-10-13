@@ -60,6 +60,22 @@ async function servidor(b, nombre, a) {
   if (o.noDisponible && o.noDisponible.includes(nombre)) return err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
   if (o.moduloApagado && nombre.endsWith('_datos')) return err('42501', 'Modulo no activo', null);
   switch (nombre) {
+    // avisos del AaaS (20261014061000/061500, aaas-2): forma de reservas_producto_avisos_datos y del resuelve, con sus errores
+    case 'reservas_producto_avisos_datos': {
+      if (o.avisosNoDisp) return err('PGRST202', 'Could not find the function public.reservas_producto_avisos_datos(p_reserva) in the schema cache');
+      if (o.avisosSinGrant) return err('42501', 'permission denied for function reservas_producto_avisos_datos');
+      if (o.avisosFalla) return err('42501', 'reservas_producto_avisos_datos: sin acceso');
+      if (o.avisosSinGrantDentro) return err('42501', 'permission denied for function puede');
+      return { data: { reserva: a.p_reserva, avisos: (b.avisos || []).filter(x => x.reserva === a.p_reserva).map(x => ({ id: x.id, motivo: x.motivo, dia: x.dia,
+        creado_en: x.creado_en, resuelto_en: x.resuelto_en, resuelto_por: x.resuelto_por })) }, error: null };
+    }
+    case 'reservas_producto_aviso_resuelve': {
+      if (o.pruebas) return err('42501', 'reservas_producto_aviso_resuelve: la cuenta de pruebas solo mira', 'cuenta_pruebas');
+      const x = (b.avisos || []).find(v => v.id === a.p_id);
+      if (!x) return err('P0002', 'reservas_producto_aviso_resuelve: no existe ese aviso');
+      if (!x.resuelto_en) { x.resuelto_en = new Date().toISOString(); x.resuelto_por = 'USR-00007'; }
+      return { data: { ok: true }, error: null };
+    }
     case 'reservas_producto_datos': {
       if (o.buscaFalla && !a.p_desde) return { data: null, error: { message: 'Failed to fetch' } };
       let l = b.reservas;
@@ -208,6 +224,90 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('nada escribio por .from ni por fetch', (await p.evaluate(() => window.__fromLlamado + window.__fetchLlamado)) === 0);
     ok('ningun error de JS', (await p.evaluate(() => window.__errores)).length === 0);
     await ctx.close();
+  }
+
+  // 1a. avisos del AaaS en el detalle de la reserva (aaas-2, 14-oct): sin avisos no sale nada; con avisos, el texto de cada motivo y «Marcar
+  // resuelto»; sin AaaS (función no existe o sin permiso de función) no sale; otro fallo se dice; la cuenta de pruebas no marca
+  {
+    const conAvisos = () => [{ id: 41, reserva: 'r1', motivo: 'unidad_en_taller', dia: mas(0), creado_en: new Date().toISOString(), resuelto_en: null, resuelto_por: null },
+                             { id: 42, reserva: 'r1', motivo: 'unidad_doble', dia: mas(-1), creado_en: new Date().toISOString(), resuelto_en: new Date().toISOString(), resuelto_por: 'USR-00003' },
+                             { id: 43, reserva: 'r1', motivo: 'motivo_futuro', dia: mas(0), creado_en: new Date().toISOString(), resuelto_en: null, resuelto_por: null }];
+    const avisos = p => p.$$eval('[data-rp="dialogo"] [data-rp="aviso"]', l => l.map(e => e.getAttribute('data-aviso-id') + ':' + e.textContent));
+    const visible = (p, sel) => p.$eval(sel, e => !e.classList.contains('rp-oculto')).catch(() => false);
+    {
+      const { base, p, ctx } = await abre();
+      await p.click('[data-reserva-id="r2"] [data-accion="rp-detalle"]');
+      for (let i = 0; i < 50 && llamadas(base, 'reservas_producto_avisos_datos').length === 0; i++) await p.waitForTimeout(50);
+      await p.waitForTimeout(100);
+      ok('avisos: abrir el detalle pide los avisos de ESA reserva', JSON.stringify(llamadas(base, 'reservas_producto_avisos_datos').map(x => x[1])) === JSON.stringify([{ p_reserva: 'r2' }]));
+      ok('avisos: sin avisos el bloque no sale', !(await visible(p, '[data-rp="dialogo"] [data-rp="avisos"]')));
+      await ctx.close();
+    }
+    for (const opt of ['avisosNoDisp', 'avisosSinGrant']) {
+      const { p, ctx } = await abre({ base: { [opt]: true } });
+      await p.click('[data-reserva-id="r1"] [data-accion="rp-detalle"]'); await p.waitForTimeout(200);
+      ok('avisos: ' + opt + ' (instancia sin AaaS o sin la concesión) → el bloque no sale y no hay error', !(await visible(p, '[data-rp="dialogo"] [data-rp="avisos"]'))
+         && (await p.evaluate(() => window.__errores)).length === 0);
+      await ctx.close();
+    }
+    {
+      // le falta el permiso a una función que la lectura llama por dentro: no es «sin AaaS», es un fallo de la instancia (Seguridad, aaas-2)
+      const { p, ctx } = await abre({ base: { avisosSinGrantDentro: true } });
+      await p.click('[data-reserva-id="r1"] [data-accion="rp-detalle"]'); await p.waitForTimeout(200);
+      ok('avisos: «permission denied» de OTRA función (puede) se DICE, no se oculta como «sin AaaS»', (await visible(p, '[data-rp="dialogo"] [data-rp="avisos"]'))
+         && (await txt(p, '[data-rp="dialogo"] [data-rp="avisos"]')).includes('No se han podido mirar los avisos del AaaS'));
+      await ctx.close();
+    }
+    {
+      const { p, ctx } = await abre({ base: { avisosFalla: true } });
+      await p.click('[data-reserva-id="r1"] [data-accion="rp-detalle"]'); await p.waitForTimeout(200);
+      ok('avisos: otro fallo se DICE (nunca pasa por «sin avisos»)', (await visible(p, '[data-rp="dialogo"] [data-rp="avisos"]'))
+         && (await txt(p, '[data-rp="dialogo"] [data-rp="avisos"]')).includes('No se han podido mirar los avisos del AaaS'));
+      await ctx.close();
+    }
+    {
+      const { base, p, ctx } = await abre();
+      base.avisos = conAvisos();
+      await p.click('[data-reserva-id="r1"] [data-accion="rp-detalle"]');
+      await espera(p, () => document.querySelectorAll('[data-rp="dialogo"] [data-rp="aviso"]').length === 3);
+      const l = await avisos(p);
+      ok('avisos: cada motivo con su texto; el desconocido no se calla', l[0].includes('está en el taller') && l[1].includes('sigue fuera en otra reserva') && l[2].includes('aún no conoce'), JSON.stringify(l));
+      ok('avisos: el resuelto dice quién; solo los pendientes llevan «Marcar resuelto»', l[1].includes('Resuelto') && l[1].includes('USR-00003')
+         && JSON.stringify(await p.$$eval('[data-rp="dialogo"] [data-accion="rp-modal-aviso-resuelve"]', bs => bs.map(b => b.getAttribute('data-aviso-id')))) === JSON.stringify(['41', '43']));
+      await p.click('[data-accion="rp-modal-aviso-resuelve"][data-aviso-id="41"]');
+      await espera(p, () => !document.querySelector('[data-accion="rp-modal-aviso-resuelve"][data-aviso-id="41"]'));
+      ok('avisos: marcar resuelto llama con el id, vuelve a leer y lo pinta resuelto', JSON.stringify(llamadas(base, 'reservas_producto_aviso_resuelve').map(x => x[1])) === JSON.stringify([{ p_id: 41 }])
+         && llamadas(base, 'reservas_producto_avisos_datos').length === 2 && (await avisos(p))[0].includes('USR-00007') && (await txt(p, '[data-rp="exito"]')).includes('resuelto'));
+      ok('avisos: nada escribio por .from ni por fetch; ningun error de JS', (await p.evaluate(() => window.__fromLlamado + window.__fetchLlamado)) === 0
+         && (await p.evaluate(() => window.__errores)).length === 0);
+      await ctx.close();
+    }
+    {
+      const { base, p, ctx } = await abre({ base: { pruebas: true } });
+      base.avisos = conAvisos();
+      await p.click('[data-reserva-id="r1"] [data-accion="rp-detalle"]');
+      await espera(p, () => document.querySelectorAll('[data-rp="dialogo"] [data-rp="aviso"]').length === 3);
+      await p.click('[data-accion="rp-modal-aviso-resuelve"][data-aviso-id="41"]'); await p.waitForTimeout(200);
+      ok('avisos: la cuenta de pruebas no marca (y se le dice por qué)', (await txt(p, '[data-rp="dialogo"] .rp-modal > .rp-error')).includes('solo mira')
+         && !!(await p.$('[data-accion="rp-modal-aviso-resuelve"][data-aviso-id="41"]')));
+      await ctx.close();
+    }
+    // en/id: todos los textos del bloque en su diccionario; 390 y 1440 sin scroll horizontal, con barras visibles
+    for (const idioma of ['es', 'en', 'id']) {
+      for (const ancho of [1440, 390]) {
+        const { base, p, ctx } = await abre({ idioma, ancho, alto: ancho === 390 ? 844 : 900 });
+        base.avisos = conAvisos();
+        await p.click('[data-reserva-id="r1"] [data-accion="rp-detalle"]');
+        await espera(p, () => document.querySelectorAll('[data-rp="dialogo"] [data-rp="aviso"]').length === 3);
+        const sin = idioma === 'es' ? [] : await p.evaluate(x => x === 'id' ? window.__sinId : window.__sinEn, idioma);
+        const m = await p.evaluate(() => { const md = document.querySelector('[data-rp="dialogo"] .rp-modal'), r = md.getBoundingClientRect();
+          return { sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, msw: md.scrollWidth, mcw: md.clientWidth, l: r.left, r: r.right, w: window.innerWidth }; });
+        ok('avisos ' + idioma + ' ' + ancho + ': sin textos fuera del diccionario y sin scroll horizontal', sin.length === 0 && m.sw <= m.cw && m.msw <= m.mcw + 1 && m.l >= 0 && m.r <= m.w + 1,
+           JSON.stringify({ sin, m }));
+        if (SHOT) { await p.$eval('[data-rp="dialogo"] [data-rp="avisos"]', e => e.scrollIntoView()); await p.screenshot({ path: SHOT + '_avisos_' + ancho + '_' + idioma + '.png' }); }
+        await ctx.close();
+      }
+    }
   }
 
   // 1p. alquiler previo (F3-E3, revisor 13-oct): se cobró fuera del ERP; ni «Sin pago» ni «0 IDR», y ningún botón de dinero

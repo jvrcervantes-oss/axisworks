@@ -136,7 +136,9 @@ mira('ningun console.log', 'console.log' not in CODIGO)
 mira('no nombra claves de servicio', not re.search(r'service_role|sb_secret_', JS + MARCADO))
 mira('el navegador no escribe ni lee tablas: ni .from( ni insert/update/upsert/delete', not re.search(r'\.from\(|\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.storage\b', CODIGO))
 PERMITIDAS = {'reservas_producto_datos', 'producto_flota_datos', 'reserva_producto_pagos_datos', 'clientes_datos', 'reserva_producto_cotiza',
-              'reserva_producto_crea', 'reserva_producto_estado', 'reserva_cancela_con_devolucion', 'reserva_producto_cambia_unidad'}
+              'reserva_producto_crea', 'reserva_producto_estado', 'reserva_cancela_con_devolucion', 'reserva_producto_cambia_unidad',
+              # avisos del AaaS en el detalle de la reserva (aaas-2, 14-oct; agencia 20261014061000 + 061500, que las abre a authenticated)
+              'reservas_producto_avisos_datos', 'reservas_producto_aviso_resuelve'}
 llamadas = set(re.findall(r"\bllama\('([a-z_]+)'", CODIGO))
 literales = set(re.findall(r"(?:SB\.rpc|window\.lwDatos)\('([a-z_]+)'", CODIGO))
 mira('cada RPC lleva su nombre LITERAL (para que contrato_front.py la vea) y son exactamente las del plan (' + ', '.join(sorted(literales ^ PERMITIDAS)) + ')', literales == PERMITIDAS)

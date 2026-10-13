@@ -197,7 +197,12 @@
     'Más adelante': 'Later', 'Clave de IA': 'AI key', 'Aún no se usa': 'Not used yet',
     'Sus trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'Its jobs do not call the AI: the system itself does the counting.',
     'Avisos por Telegram': 'Telegram alerts', 'Los avisos están en este panel.': 'Alerts are on this panel.',
-    'Módulo': 'Module', 'Encendido': 'On', 'Apagado': 'Off', 'Trabajo': 'Work', 'Trabajando': 'Working', 'En pausa': 'Paused',
+    'Módulo': 'Module', 'Encendido': 'On', 'Apagado': 'Off', 'Trabajo': 'Work', 'Trabajando': 'Working', 'En pausa': 'Paused', 'Sin configurar': 'Not set up',
+    'El AaaS no trabaja hasta tener su configuración completa.': 'The AaaS does not work until its setup is complete.',
+    'Le falta el tope mensual.': 'The monthly cap is missing.', 'Le falta el contexto del negocio: quién es.': 'The business context is missing: who the business is.',
+    'Le faltan los límites por módulo.': 'The limits per module are missing.',
+    'Esta instancia aún no trae la configuración del AaaS: la pone el estudio.': 'This instance does not have the AaaS setup yet: the studio adds it.',
+    'Le falta un paso de la configuración del ERP ({x}).': 'A step of the ERP setup is missing ({x}).',
     'Última pasada': 'Last run', 'Todavía no ha hecho ninguna pasada.': 'It has not run yet.', 'Gastado este mes': 'Spent this month', 'Tope': 'Cap',
     'tope 0: no puede gastar': 'cap 0: it cannot spend', 'Subida de tope pendiente': 'Pending cap increase', '{x}, entra {f}': '{x}, applies {f}',
     'Hay una subida pendiente a {x}: bajar el tope ahora la cancela.': 'There is a pending increase to {x}: lowering the cap now cancels it.',
@@ -359,7 +364,12 @@
     'Más adelante': 'Nanti', 'Clave de IA': 'Kunci AI', 'Aún no se usa': 'Belum digunakan',
     'Sus trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'Tugas-tugasnya tidak memanggil AI: perhitungannya dilakukan oleh sistem sendiri.',
     'Avisos por Telegram': 'Peringatan lewat Telegram', 'Los avisos están en este panel.': 'Peringatan ada di panel ini.',
-    'Módulo': 'Modul', 'Encendido': 'Aktif', 'Apagado': 'Nonaktif', 'Trabajo': 'Kerja', 'Trabajando': 'Bekerja', 'En pausa': 'Dijeda',
+    'Módulo': 'Modul', 'Encendido': 'Aktif', 'Apagado': 'Nonaktif', 'Trabajo': 'Kerja', 'Trabajando': 'Bekerja', 'En pausa': 'Dijeda', 'Sin configurar': 'Belum diatur',
+    'El AaaS no trabaja hasta tener su configuración completa.': 'AaaS tidak bekerja sampai pengaturannya lengkap.',
+    'Le falta el tope mensual.': 'Batas bulanan belum diisi.', 'Le falta el contexto del negocio: quién es.': 'Konteks bisnis belum diisi: siapa bisnisnya.',
+    'Le faltan los límites por módulo.': 'Batas per modul belum diisi.',
+    'Esta instancia aún no trae la configuración del AaaS: la pone el estudio.': 'Instans ini belum punya pengaturan AaaS: studio yang menambahkannya.',
+    'Le falta un paso de la configuración del ERP ({x}).': 'Ada langkah pengaturan ERP yang belum selesai ({x}).',
     'Última pasada': 'Pemeriksaan terakhir', 'Todavía no ha hecho ninguna pasada.': 'Belum pernah berjalan.', 'Gastado este mes': 'Terpakai bulan ini', 'Tope': 'Batas',
     'tope 0: no puede gastar': 'batas 0: tidak bisa membelanjakan', 'Subida de tope pendiente': 'Kenaikan batas tertunda', '{x}, entra {f}': '{x}, berlaku {f}',
     'Hay una subida pendiente a {x}: bajar el tope ahora la cancela.': 'Ada kenaikan tertunda ke {x}: menurunkan batas sekarang membatalkannya.',
@@ -614,7 +624,8 @@
     if (!esObj(d) || typeof d.encendido !== 'boolean') return false;
     if (!d.encendido) return true;   // apagado: la base solo da {encendido, soy_dueno, puedo_decidir} (#313)
     return typeof d.parado === 'boolean' && esObj(d.trabajos) && ent(d.gastado_mes_cent) && ent(d.tope_mensual_cent) && d.tope_mensual_cent >= 0
-      && typeof d.moneda === 'string' && /^[A-Z]{3}$/.test(d.moneda) && (d.ultima_pasada == null || esObj(d.ultima_pasada));
+      && typeof d.moneda === 'string' && /^[A-Z]{3}$/.test(d.moneda) && (d.ultima_pasada == null || esObj(d.ultima_pasada))
+      && (d.falta_configurar == null || typeof d.falta_configurar === 'string');
   }
   function notasOk(d) { return esObj(d) && Array.isArray(d.notas) && Array.isArray(d.propuestas) && esObj(d.nombres) && typeof d.dia === 'string'; }
   /* Cada bloque nuevo mira su propia parte de la respuesta: una clave que falta se dice en SU bloque («no se ha podido mirar»), no deja la página en blanco. */
@@ -635,6 +646,15 @@
     return h('div', { class: 'ag-dato' }, [h('span', { text: T(etq) }), chip || h('strong', { text: valor })]);
   }
   function eur(cent, d) { return C.dinero(cent / 100, d.moneda); }
+  /* Lo que le falta al AaaS para trabajar (falta_configurar, aaas-2 paso 5): la base da la clave del primer paso obligatorio sin hacer. Uno que
+     esta pantalla no conoce (un paso de la base del ERP) se dice con su clave, nunca se calla. */
+  function textoFalta(k) {
+    if (k === 'tope_aaas') return T('Le falta el tope mensual.');
+    if (k === 'contexto_aaas') return T('Le falta el contexto del negocio: quién es.');
+    if (k === 'limites_aaas') return T('Le faltan los límites por módulo.');
+    if (k === 'setup_sin_sembrar') return T('Esta instancia aún no trae la configuración del AaaS: la pone el estudio.');
+    return Tf('Le falta un paso de la configuración del ERP ({x}).', { x: String(k) });
+  }
   function pintaEstado(d) {
     var caja = vacia($a('estado')), acc = vacia($a('acciones-estado'));
     oculta($a('bloque-estado'), false);
@@ -644,7 +664,9 @@
       motivo = T('El AaaS está apagado: no mira nada ni escribe nada.') + (d.soy_dueno === true ? '' : ' ' + T('Lo enciende el dueño de la ficha del AaaS.'));
       if (d.soy_dueno !== false) acc.appendChild(C.boton(T('Encender el AaaS'), 'ag-encender', { 'data-primario': '1' }));
     } else {
-      caja.appendChild(dato('Trabajo', null, C.chip(T(d.parado ? 'En pausa' : 'Trabajando'), d.parado ? 'espera' : 'ok')));
+      var falta = typeof d.falta_configurar === 'string' && d.falta_configurar ? d.falta_configurar : null;
+      caja.appendChild(dato('Trabajo', null, C.chip(T(d.parado ? 'En pausa' : falta ? 'Sin configurar' : 'Trabajando'), d.parado || falta ? 'espera' : 'ok')));
+      if (falta) motivo = T('El AaaS no trabaja hasta tener su configuración completa.') + ' ' + textoFalta(falta);
       var u = d.ultima_pasada;
       caja.appendChild(dato('Última pasada', u ? C.fechaDia(u.dia) + ' · ' + T(u.pasada === 'tarde' ? 'Pasada de la tarde' : 'Pasada de la mañana') + ' · ' + T(RESULTADO[u.resultado] || 'con errores')
                                              : T('Todavía no ha hecho ninguna pasada.')));
@@ -655,7 +677,7 @@
       if (!d.parado && d.puedo_decidir) acc.appendChild(C.boton(T('Parar'), 'ag-parar'));
       if (d.parado && d.soy_dueno) acc.appendChild(C.boton(T('Reanudar'), 'ag-reanudar', { 'data-primario': '1' }));
       if (d.soy_dueno) acc.appendChild(C.boton(T('Apagar el AaaS'), 'ag-apagar', { 'data-peligro': '1' }));
-      if (!d.soy_dueno) motivo = T('Reanudar, encender, apagar, los trabajos, el tope, los límites y el contexto son del dueño de la ficha del AaaS.');
+      if (!d.soy_dueno) motivo = (motivo ? motivo + ' ' : '') + T('Reanudar, encender, apagar, los trabajos, el tope, los límites y el contexto son del dueño de la ficha del AaaS.');
     }
     msg('motivo-estado', motivo);
   }

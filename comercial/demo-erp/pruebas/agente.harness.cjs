@@ -106,7 +106,7 @@ const err = (code, message, hint) => ({ data: null, error: { code, message, hint
 function estado(s) {
   const o = s.o, dueno = !!o.dueno, decide = !!o.herramienta || dueno;
   if (!s.encendido) return { encendido: false, soy_dueno: dueno, puedo_decidir: decide };
-  return { encendido: true, parado: s.parado, soy_dueno: dueno, puedo_decidir: decide && !o.pruebas,
+  return { encendido: true, parado: s.parado, soy_dueno: dueno, puedo_decidir: decide && !o.pruebas, falta_configurar: o.falta || null,
     ultima_pasada: o.sinNotas ? null : { dia: HOY, pasada: 'tarde', en: iso(18), resultado: s.parado ? 'en_pausa' : 'hecha' },
     tope_mensual_cent: s.tope, tope_propuesto_cent: s.propuesto, tope_propuesto_desde: s.propuesto != null ? iso(20) : null,
     gastado_mes_cent: 0, moneda: o.sinMoneda ? undefined : 'EUR', usd_por_eur: 1.08, trabajos: Object.assign({}, s.trabajos), nivel_ruta: s.nivel, nivel_max: 1, cupo_dia: 24, notas_hoy: o.sinNotas ? 0 : 9,
@@ -380,6 +380,24 @@ const MUESTRA = (() => {
     const est = await txt(p, '[data-ag="estado"]');
     ok('tope 0 se dice «no puede gastar» (nunca «sin tope»)', est.includes('tope 0: no puede gastar') && !/sin tope/i.test(est), est);
     ok('la subida pendiente se ve en el estado y en la ayuda del tope', est.includes('Subida de tope pendiente') && (await txt(p, '[data-ag="tope-ayuda"]')).includes('subida pendiente'));
+    await ctx.close();
+  }
+  // 2c. paso 5 de aaas-2: con un paso obligatorio sin hacer el AaaS no trabaja aunque la pausa esté quitada; la pantalla lo dice y nunca «Trabajando»
+  for (const [falta, frase, idioma, ancho] of [['contexto_aaas', 'Le falta el contexto del negocio', 'es', 1440], ['limites_aaas', 'The limits per module are missing', 'en', 390],
+                                               ['tope_aaas', 'Batas bulanan belum diisi', 'id', 390], ['setup_sin_sembrar', 'la pone el estudio', 'es', 390],
+                                               ['moneda', 'Le falta un paso de la configuración del ERP (moneda)', 'es', 1440]]) {
+    const { p, ctx } = await abre({ base: { dueno: true, falta }, idioma, ancho });
+    const est = await txt(p, '[data-ag="estado"]'), mot = await txt(p, '[data-ag="motivo-estado"]');
+    ok('sin configurar (' + falta + ', ' + idioma + ' ' + ancho + '): no dice «trabajando» y explica qué falta', !/Trabajando|Working|Bekerja/.test(est) && /Sin configurar|Not set up|Belum diatur/.test(est)
+       && mot.includes(frase), est + ' | ' + mot);
+    ok('sin configurar (' + falta + '): sigue pudiendo Parar (la pausa es otra cosa) y sin desbordar', (await hay(p, '[data-accion="ag-parar"]')) === 1
+       && (await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { herramienta: true, falta: 'contexto_aaas' } });
+    const mot = await txt(p, '[data-ag="motivo-estado"]');
+    ok('sin configurar y no dueño: dice qué falta Y que es del dueño', mot.includes('Le falta el contexto del negocio') && mot.includes('dueño de la ficha'), mot);
     await ctx.close();
   }
   {
