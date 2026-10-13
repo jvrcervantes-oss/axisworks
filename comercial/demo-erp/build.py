@@ -33,6 +33,7 @@ Revisión previa (24-sep, Seguridad + Legal), cada regla con su porqué:
 - Se niega a escribir fuera de su `dist/` o dentro de `proyectos/Lawang/`: un
   guard falso escrito ahí lo desplegaría el webhook de Lawang.
 """
+import base64
 import collections
 import hashlib
 import html
@@ -2948,7 +2949,8 @@ def banda_startups(html_txt, encendida=None):
 
 def fuentes_portada():
     """(texto de fonts.css, [(ruta publicada, fichero de origen)]) de las url() de fonts.css + sus licencias OFL.
-    PARA con un mensaje claro si falta algo: es bloqueo de la PUBLICACIÓN, no de construir (solo lo llama publica_web)."""
+    PARA con un mensaje claro si falta algo: es bloqueo de la PUBLICACIÓN, no de construir (lo llaman publica_web y, desde el
+    13-oct, fuentes_panel() para el panel de la instancia con panel_control)."""
     if not os.path.isfile(FUENTES_CSS):
         aborta('faltan las fuentes de la portada de erp.: no existe %s.\n  Viven en main (assets/x/fonts.css + '
                'assets/fonts/x/, desde fdcfb73): ¿copia sin actualizar? Para otro origen, AXW_FUENTES_X=<ruta a un '
@@ -2970,6 +2972,25 @@ def fuentes_portada():
             if f.startswith('OFL-') and f.endswith('.txt'):
                 pares.append((os.path.relpath(os.path.join(carpeta, f), raiz_f).replace(os.sep, '/'), os.path.join(carpeta, f)))
     return css, pares
+def fuentes_panel():
+    """Las @font-face de fonts.css (la misma fuente única que la portada) con cada woff2 DENTRO, en data: (13-oct-2026, erp-panel-3).
+    Para /panel/index.html: en producción solo se sirven /panel/, /panel/index.html y /panel/panel.css (.htaccess de app.), así que
+    unos woff2 al lado darían 503, y la marca no se pide a Google (Legal, 24-sep). La CSP ya admite `font-src data:`. Unos 180 KB."""
+    css, pares = fuentes_portada()
+    datos = {}
+    for rel, origen in pares:
+        if rel.endswith('.woff2'):
+            datos['/' + rel] = 'data:font/woff2;base64,' + base64.b64encode(open(origen, 'rb').read()).decode('ascii')
+    falta = sorted(set(re.findall(r'(/assets/fonts/x/[A-Za-z0-9._-]+\.woff2)', css)) - set(datos))
+    if falta:
+        aborta('fuentes del panel: fonts.css cita woff2 que no están entre los ficheros de fuentes: %s' % falta)
+    css = re.sub(r'''url\(\s*['"]?(/assets/fonts/x/[A-Za-z0-9._-]+\.woff2)['"]?\s*\)''', lambda m: 'url(%s)' % datos[m.group(1)], css)
+    css = re.sub(r'/\*.*?\*/', '', css, flags=re.S).strip()
+    if 'url(/' in css or '@font-face' not in css:
+        aborta('fuentes del panel: quedan url() locales o no hay @font-face')
+    return css
+
+
 # Tokens de Supabase en el #fragmento (flujo implícito): el servidor no los ve, así que el .htaccess no puede
 # mandarlos a app.; lo hace el primer script de la página, antes que nada.
 ADELANTA_TOKENS = ("(function(){var h=location.hash||'';if(/(^#|&)(access_token|refresh_token|token_hash|"
@@ -3195,13 +3216,19 @@ def rotulos():
     return r
 
 
+# Suman pasos a AXW_SETUP.TEXTOS, en el orden del paquete. cobros_paso.js no: engancha la página al cargarse (getElementById) y la
+# frase de su paso «cobros» ya vive en setup_modulos.js. Un fichero nuevo que sume pasos se añade aquí (si falta, el build aborta).
+SETUP_SUMAN = ('setup_reservas.js', 'setup_comun.js')
+
+
 def setup_para_panel():
     """Lo que el panel de control necesita del REGISTRO para el setup (12-oct-2026, erp-panel-2; owner: «módulo primero y setup
     después»): el hueco __AXW_SETUP__ de panel_control.html. Nada se escribe a mano aquí:
       - `registro`: erp/modulos.json → setup.modulos (lo que declara erp/modulos.py → SETUP). Solo lo usa el mapa de la instalación
         (S00, la lámina por tipo de negocio): los pasos de UNA instancia los da su base (erp_control_estado → setup), nunca esto.
-      - `textos`: los títulos de cada paso y de cada módulo en es y en, sacados de setup_modulos.js (el mismo mapa código → frase del
-        aviso, el asistente y Ajustes; no hay una segunda copia de las frases).
+      - `textos`: los títulos de cada paso y de cada módulo en es y en, sacados de setup_modulos.js y de los ficheros que le suman pasos
+        (SETUP_SUMAN: Reservas de producto y pasos comunes; el mismo mapa código → frase del aviso, el asistente y Ajustes; no hay
+        una segunda copia de las frases).
       - `en`: panel_setup_en.json (nombres EN de módulos y tipos). Aborta si falta un módulo del registro o un tipo de perfiles.json."""
     reg = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))
     perf = json.load(open(os.path.join(AGENCIA, 'erp', 'perfiles.json'), encoding='utf-8'))['perfiles']
@@ -3209,19 +3236,26 @@ def setup_para_panel():
     faltan = sorted(set(reg['modulos']) - set(en['modulos'])) + sorted('tipo ' + t for t in set(perf) - set(en['tipos']))
     if faltan:
         aborta('panel_setup_en.json: sin nombre en inglés para %s' % faltan)
-    prog = ("global.window={};global.document={readyState:'complete'};require(process.argv[1]);var S=window.AXW_SETUP;"
-            "var o={paso:{},modulo:{}};Object.keys(S.TEXTOS.paso).forEach(function(k){var t=S.TEXTOS.paso[k][0];o.paso[k]={es:t,en:S.EN[t]||null};});"
-            "Object.keys(S.TEXTOS.modulo).forEach(function(k){var t=S.TEXTOS.modulo[k];o.modulo[k]={es:t,en:S.EN[t]||null};});"
+    # 13-oct (erp-panel-4): los pasos de Reservas de producto (clase, reglas_reserva, alquileres_previos) y los comunes (negocio, idiomas,
+    # correo, taller_*) suman su frase desde su propio fichero (en S.TEXTOS) y su inglés en LW_EN, no en S.EN. Se cargan detrás, en
+    # el orden en que los sirve el paquete (el de setup_frases.test.js), con AXW_PASOS y addEventListener de mentira (solo registran
+    # pantallas y eventos, que aquí no se pintan): sin ellos, el registro declaraba esos pasos y el build de la instancia del estudio abortaba.
+    prog = ("global.window={LW_EN:{},LW_ID:{},addEventListener:function(){}};global.document={readyState:'complete',addEventListener:function(){}};"
+            "global.location={pathname:'/'};require(process.argv[1]);var S=window.AXW_SETUP;window.AXW_PASOS={registra:function(){}};"
+            "process.argv.slice(2).forEach(function(f){require(f);});var E=function(t){return S.EN[t]||window.LW_EN[t]||null;};"
+            "var o={paso:{},modulo:{}};Object.keys(S.TEXTOS.paso).forEach(function(k){var t=S.TEXTOS.paso[k][0];o.paso[k]={es:t,en:E(t)};});"
+            "Object.keys(S.TEXTOS.modulo).forEach(function(k){var t=S.TEXTOS.modulo[k];o.modulo[k]={es:t,en:E(t)};});"
             "process.stdout.write(JSON.stringify(o));")
-    r = subprocess.run(['node', '-e', prog, os.path.join(AQUI, 'setup_modulos.js')], capture_output=True, text=True, encoding='utf-8')
+    r = subprocess.run(['node', '-e', prog] + [os.path.join(AQUI, f) for f in ('setup_modulos.js',) + SETUP_SUMAN],
+                       capture_output=True, text=True, encoding='utf-8')
     if r.returncode != 0:
-        aborta('setup_modulos.js no se deja leer para el panel: ' + (r.stderr or '')[-400:])
+        aborta('setup_modulos.js / %s no se dejan leer para el panel: ' % ', '.join(SETUP_SUMAN) + (r.stderr or '')[-400:])
     textos = json.loads(r.stdout)
     sin_en = sorted(k for k, v in textos['paso'].items() if not v['en'])
     pasos_decl = sorted({p['clave'] for m in reg['setup']['modulos'].values() if isinstance(m, dict) for p in m.get('pasos', [])})
     sin_texto = [k for k in pasos_decl if k not in textos['paso']]
     if sin_en or sin_texto:
-        aborta('setup_modulos.js: pasos sin frase en inglés %s · pasos declarados sin frase %s' % (sin_en, sin_texto))
+        aborta('setup_modulos.js + %s: pasos sin frase en inglés %s · pasos declarados sin frase %s' % (', '.join(SETUP_SUMAN), sin_en, sin_texto))
     # Lista blanca (revisor, 12-oct): /panel/ es público (sin sesión da 200), así que solo sale lo que el mapa lee — clave, obligatorio,
     # irreversible y si el módulo se declara «ninguno» —, nunca rpc, ajustes, funciones de estado, herramientas ni el motivo interno.
     registro = {}
@@ -4926,11 +4960,12 @@ def instancia(nombre):
         d = os.path.join(DIST, 'panel')
         os.makedirs(d, exist_ok=True)
         panel = open(os.path.join(AQUI, 'panel_control.html'), encoding='utf-8').read()
-        if '__AXW_ROTULOS__' not in panel or '__AXW_SETUP__' not in panel:
-            aborta('panel_control.html sin el hueco __AXW_ROTULOS__ o __AXW_SETUP__')
+        if '__AXW_ROTULOS__' not in panel or '__AXW_SETUP__' not in panel or panel.count('__AXW_FUENTES__') != 1:
+            aborta('panel_control.html sin el hueco __AXW_ROTULOS__, __AXW_SETUP__ o __AXW_FUENTES__ (una vez)')
         open(os.path.join(d, 'index.html'), 'w', encoding='utf-8', newline='').write(
             panel_nav(panel, 'modulos').replace('__AXW_ROTULOS__', json.dumps(rotulos(), ensure_ascii=False, sort_keys=True).replace('</', '<\\/'))
-            .replace('__AXW_SETUP__', json.dumps(setup_para_panel(), ensure_ascii=False, sort_keys=True).replace('</', '<\\/')))
+            .replace('__AXW_SETUP__', json.dumps(setup_para_panel(), ensure_ascii=False, sort_keys=True).replace('</', '<\\/'))
+            .replace('__AXW_FUENTES__', fuentes_panel()))
         # La vista «Pilotos» (1-oct-2026, encargos/20261001_panel_pilotos_vista.md): /panel/pilotos/, mismo CSS. Esta página
         # NO lleva su contenido (/panel/ es público): lo pide a la edge erp-control (acción `pilotos`, solo operador).
         d_pil = os.path.join(d, 'pilotos')

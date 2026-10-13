@@ -23,9 +23,12 @@ const ORIGEN = 'https://app.prueba.test';
 const TIPOS = { '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json', '.woff2': 'font/woff2' };
 
 const REG = JSON.parse(fs.readFileSync(path.join(AGENCIA, 'erp', 'modulos.json'), 'utf8'));
-const PERF = JSON.parse(fs.readFileSync(path.join(AGENCIA, 'erp', 'perfiles.json'), 'utf8')).perfiles;
+const PAQ = JSON.parse(fs.readFileSync(path.join(AGENCIA, 'erp', 'perfiles.json'), 'utf8'));
+const PERF = PAQ.perfiles;
+const sinPorQue = o => Object.fromEntries(Object.entries(o).filter(([k]) => k !== '_por_que'));
 const PERFILES = { tipos: Object.entries(PERF).map(([tipo, p]) => ({ tipo, nombre: p.nombre, descripcion: p.descripcion, modulos: p.modulos,
-  modulos_opcionales: p.modulos_opcionales, comprobado: p.comprobado, motivo_bloqueo: p.comprobado ? null : (p.motivo_bloqueo ?? null) })) };
+  modulos_opcionales: p.modulos_opcionales, comprobado: p.comprobado, motivo_bloqueo: p.comprobado ? null : (p.motivo_bloqueo ?? null) })),
+  ajustes: sinPorQue(PAQ.ajustes_permitidos), ajustes_reglas: sinPorQue(PAQ.ajustes_reglas), tope_modulos: PAQ.tope_modulos };
 // setup tal como lo siembra erp_modulos.setup (sin rpc ni ajustes, como dice el plan): pasos o {ninguno}
 const sembrado = k => { const d = REG.setup.modulos[k]; if (d == null) return null; if (typeof d === 'string') return { ninguno: d.replace(/^ninguno:?\s*/, '') };
   return { estado: d.estado, pasos: d.pasos.map(p => ({ clave: p.clave, obligatorio: p.obligatorio, irreversible: p.irreversible, donde: p.donde, modulo_requerido: p.modulo_requerido })) }; };
@@ -61,6 +64,7 @@ function edge(cuerpo) {
     { nombre: 'old-base', marca: 'Old Base', dominio: 'erp.old.test', editable: true, motivo: null, estado: estadoInst(ACT0, false) }],
     perfiles: PERFILES };
   if (cuerpo.accion === 'simula') return { simulacion: simula(ACT0, cuerpo.activos) };
+  if (cuerpo.accion === 'alta') return { solicitud: 7 };
   if (cuerpo.accion === 'cambia') return { aplicado: { enciende: cuerpo.activos.filter(k => ACT0.indexOf(k) === -1), apaga: [] } };
   return { error: 'accion' };
 }
@@ -86,7 +90,7 @@ function fichero(url) {
   const f = path.join(RAIZ, p);
   return f.startsWith(RAIZ) && fs.existsSync(f) && fs.statSync(f).isFile() ? f : null;
 }
-const ajena = [];
+const ajena = [], marcaGoogle = [];
 (async () => {
   if (!fs.existsSync(path.join(RAIZ, 'panel', 'index.html'))) { console.log('NO SE HA PODIDO MIRAR: falta panel/index.html en ' + RAIZ); process.exit(2); }
   const exe = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
@@ -100,7 +104,7 @@ const ajena = [];
       return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(edge(JSON.parse(req.postData() || '{}'))) });
     }
     if (/supabase\.co/.test(url)) { ajena.push(url); return route.abort(); }
-    if (/fonts\.(googleapis|gstatic)\.com/.test(url)) return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com/.test(url)) { if (/Unbounded|Manrope|IBM\+Plex/i.test(url)) marcaGoogle.push(url); return route.continue(); }
     if (!url.startsWith(ORIGEN)) return route.abort();
     const f = fichero(url);
     if (!f) return route.fulfill({ status: 404, body: '' });
@@ -112,13 +116,55 @@ const ajena = [];
   const p = await ctx.newPage();
   p.on('pageerror', e => errores.push(e.message));
   p.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|Failed to load resource/.test(m.text())) errores.push(m.text()); });
+  const anchos = () => p.evaluate(() => ({ sw: document.scrollingElement.scrollWidth, w: innerWidth,
+    fuera: [...document.querySelectorAll('body *')].filter(e => { const r = e.getBoundingClientRect(); return r.width && r.right > innerWidth + 1 && !e.closest('.ax-tabla-caja,dialog:not([open])'); })
+      .slice(0, 4).map(e => e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + '.' + String(e.className).split(' ')[0] + ' ' + Math.round(e.getBoundingClientRect().right)) }));
+  // la captura de página entera arriba del todo y sin el aviso flotante de la prueba anterior (el «goto» a #mapa no recarga: conserva el scroll)
+  const limpiaParaCaptura = () => p.evaluate(() => { scrollTo(0, 0); document.getElementById('toast').classList.add('hidden'); });
   const html = fs.readFileSync(path.join(RAIZ, 'panel', 'index.html'), 'utf8');
   const fuga = (html.match(/_[a-z_]+_setup_estado|sociedad_guarda|ajustes_config_guardar|producto_guarda|#283|"rpc"|"ajustes"|"herramienta"|"operativo"/) || [])[0];
   ok('/panel/ es público: no lleva rpc, ajustes, funciones de estado ni motivos internos del registro', !fuga, fuga);
   await p.goto(ORIGEN + '/panel/', { waitUntil: 'load' });
   await p.waitForSelector('#modulos [data-mod]', { timeout: 15000 });
+  // ── fuentes de la marca DENTRO de la página (producción solo sirve /panel/index.html y panel.css) ─────────────────────────────
+  const fu = await p.evaluate(async () => { const r = {}; for (const f of ['600 16px Unbounded', '300 16px Unbounded', '700 15px Manrope', '500 11px "IBM Plex Mono"']) {
+    const l = await document.fonts.load(f); r[f] = l.length > 0 && l.every(x => x.status === 'loaded'); } return r; });
+  ok('fuentes: Unbounded, Manrope e IBM Plex Mono cargadas desde la propia página', Object.values(fu).every(Boolean), JSON.stringify(fu));
+  ok('fuentes: el HTML no enlaza /assets/fonts ni pide la marca a Google', !/\/assets\/fonts\//.test(html) && !/family=(Unbounded|Manrope|IBM\+Plex)/.test(html));
+  await p.waitForTimeout(300);
+  if (SHOT) await p.screenshot({ path: SHOT + '_s01mods_1440.png' });
 
   // ── estado por instancia ──────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  // Contraste medido sobre lo pintado: cada texto visible contra su fondo efectivo (capas con transparencia mezcladas), ≥ 4,5:1; el carril
+  // de cada interruptor activo contra su tarjeta, ≥ 3:1. Fuera: el asistente y el aviso flotante (no cambian) y los controles deshabilitados.
+  const contraste = () => p.evaluate(() => {
+    const rgb = s => { const m = s.match(/[\d.]+/g); return m ? m.map(Number) : [0, 0, 0, 0]; };
+    const lum = c => { const a = c.slice(0, 3).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2]; };
+    const mezcla = (arr, fondo) => { const a = arr[3] === undefined ? 1 : arr[3]; return [0, 1, 2].map(i => arr[i] * a + fondo[i] * (1 - a)); };
+    const fondoDe = el => { const capas = []; for (let e = el; e; e = e.parentElement) { const c = rgb(getComputedStyle(e).backgroundColor); if (c[3] === undefined || c[3] > 0) capas.push(c); if (c[3] === undefined || c[3] === 1) break; }
+      let f = [255, 255, 255]; for (let i = capas.length - 1; i >= 0; i--) f = mezcla(capas[i], f); return f; };
+    const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    const malos = [], vistos = new Set();
+    const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = tw.nextNode(); n; n = tw.nextNode()) {
+      const el = n.parentElement;
+      if (!n.textContent.trim() || !el || vistos.has(el)) continue;
+      vistos.add(el);
+      if (el.closest('#asis,#toast,.sr-only,.hidden,button:disabled') || el.closest('dialog:not([open])')) continue;
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height || getComputedStyle(el).visibility === 'hidden') continue;
+      if (document.querySelector('dialog[open]') && !el.closest('dialog[open]')) continue;   // con un diálogo abierto, lo de detrás está velado
+      const fondo = fondoDe(el), color = mezcla(rgb(getComputedStyle(el).color), fondo), q = ratio(color, fondo);
+      if (q < 4.5) malos.push(q.toFixed(2) + ' «' + n.textContent.trim().slice(0, 30) + '»');
+    }
+    for (const sw of document.querySelectorAll('.ax-sw:not(:disabled)')) {
+      const q = ratio(rgb(getComputedStyle(sw).backgroundColor), fondoDe(sw.parentElement));
+      if (q < 3) malos.push('interruptor ' + sw.getAttribute('data-mod') + ' ' + q.toFixed(2));
+    }
+    return malos;
+  });
+  { const c1 = await contraste(); ok('contraste S01 a 1440: texto ≥ 4,5:1 e interruptores ≥ 3:1', c1.length === 0, c1.join(' | ')); }
   const etiqueta = k => p.evaluate(k => { const b = document.querySelector('#modulos [data-mod="' + k + '"]'); const c = b && b.parentElement;
     const e = c && c.querySelector('[data-setup-estado]'); return e ? e.textContent.trim() : null; }, k);
   ok('estado: reservas-producto a medias (1 de 4)', (await etiqueta('reservas-producto')) === 'A medias · 1 de 4', await etiqueta('reservas-producto'));
@@ -152,8 +198,14 @@ const ajena = [];
   ok('S01: con la base al día no sale el aviso de «aún no informa»', !d.sinDato);
   ok('S01: un solo botón enciende los 3', d.ok === 'Encender 3 módulos', d.ok);
   if (SHOT) await p.screenshot({ path: SHOT + '_s01_1440.png' });
+  { const cd = await contraste(); ok('contraste del diálogo de encender', cd.length === 0, cd.join(' | ')); }
+  const res = await p.evaluate(() => ({ sel: [...document.querySelectorAll('#modulos [data-tarjeta].sel')].map(e => e.getAttribute('data-tarjeta')),
+    dep: [...document.querySelectorAll('#modulos [data-tarjeta].dep')].map(e => e.getAttribute('data-tarjeta')).sort() }));
+  ok('S01: mientras se confirma, la tarjeta que se enciende y las que arrastra se marcan', JSON.stringify(res) === JSON.stringify({ sel: ['facturas'], dep: ['recibos', 'sociedades'] }), JSON.stringify(res));
   await p.click('#dlg button[value="no"]');
   await p.waitForTimeout(300);
+  ok('S01: al cancelar no queda ninguna marcada', await p.evaluate(() => !document.querySelector('#modulos .sel,#modulos .dep')));
+  ok('S01: cancelado, el interruptor sigue apagado', await p.evaluate(() => document.querySelector('#modulos [data-mod="facturas"]').getAttribute('aria-checked') === 'false'));
   ok('S01: Cancelar no aplica nada', !llamadas.some(c => c.accion === 'cambia'));
   await p.click('#modulos [data-mod="facturas"]');
   await p.waitForSelector('#dlg[open]');
@@ -190,10 +242,15 @@ const ajena = [];
   await p.waitForTimeout(300);
   await p.click('#modulos [data-mod="facturas"]');
   await p.waitForSelector('#dlg[open]');
+  const c390 = await anchos();
+  ok('S01 a 390: la página no se desborda', c390.sw <= c390.w, JSON.stringify(c390));
   const m390 = await p.evaluate(() => { const r = document.getElementById('dlg').getBoundingClientRect(); return { izq: r.left, der: r.right, w: innerWidth }; });
   ok('390: el diálogo cabe en la pantalla', m390.izq >= 0 && m390.der <= m390.w, JSON.stringify(m390));
   if (SHOT) await p.screenshot({ path: SHOT + '_s01_390.png' });
   await p.click('#dlg button[value="no"]');
+  await p.waitForTimeout(200);
+  { const c2 = await contraste(); ok('contraste S01 a 390', c2.length === 0, c2.join(' | ')); }
+  if (SHOT) await p.screenshot({ path: SHOT + '_s01mods_390.png', fullPage: true });
 
   // ── S00: mapa de la instalación ───────────────────────────────────────────────────────────────────────────────────────────────
   await p.setViewportSize({ width: 1440, height: 1000 });
@@ -215,12 +272,36 @@ const ajena = [];
   ok('S00: los módulos de algún tipo sin declaración salen como «no assistant yet» (' + sinDecl.length + ')', s0.sinAsis.length === sinDecl.length && sinDecl.every(k => s0.sinAsis.indexOf(k) !== -1), JSON.stringify(s0.sinAsis));
   ok('S00: en inglés', s0.lang === 'en' && /Every step of your install/.test(s0.texto) && !/Facturación|Obligatorio|Sin asistente/.test(s0.texto));
   ok('S00: sin nombres de clientes reales', !/BBM|Bali|Lawang|Dion|Sumba|Komodo|Sandalwood|Palmfield/i.test(s0.texto), (s0.texto.match(/BBM|Bali|Lawang|Dion|Sumba|Komodo|Sandalwood|Palmfield/i) || [])[0]);
-  if (SHOT) await p.screenshot({ path: SHOT + '_s00_1440.png', fullPage: true });
+  if (SHOT) { await limpiaParaCaptura(); await p.screenshot({ path: SHOT + '_s00_1440.png', fullPage: true }); }
+  { const c3 = await contraste(); ok('contraste S00 a 1440', c3.length === 0, c3.join(' | ')); }
   await p.setViewportSize({ width: 390, height: 844 });
   await p.waitForTimeout(300);
-  const des = await p.evaluate(() => ({ sw: document.scrollingElement.scrollWidth, w: innerWidth }));
+  const des = await anchos();
   ok('S00 a 390: la página no se desborda (la tabla se desplaza dentro de su caja)', des.sw <= des.w, JSON.stringify(des));
-  if (SHOT) await p.screenshot({ path: SHOT + '_s00_390.png', fullPage: true });
+  if (SHOT) { await limpiaParaCaptura(); await p.screenshot({ path: SHOT + '_s00_390.png', fullPage: true }); }
+  { const c4 = await contraste(); ok('contraste S00 a 390', c4.length === 0, c4.join(' | ')); }
+  // ── «Nuevo ERP» ↔ mapa (13-oct-2026): del mapa al asistente y, guardada la solicitud, del asistente a su mapa con su tipo marcado ──────
+  await p.setViewportSize({ width: 1440, height: 1000 });
+  ok('mapa → Nuevo ERP: botón del estudio fuera de la lámina', await p.evaluate(() => { const b = document.querySelector('#mapa-acciones [data-accion="abre-asistente"]');
+    return !!b && !document.getElementById('mapa-acciones').classList.contains('hidden') && !document.getElementById('mapa').contains(b); }));
+  await p.click('#mapa-acciones [data-accion="abre-asistente"]');
+  await p.waitForSelector('#asis[open]');
+  for (const [c, v] of [['instancia', 'cliente-nuevo'], ['marca', 'Cliente Nuevo'], ['dominio', 'erp.cliente.test'], ['correo_admin', 'admin@cliente.test']]) await p.fill('#asis [data-campo="' + c + '"]', v);
+  await p.check('#asis input[name="tipo"][value="inmobiliario"]');
+  await p.click('#asis [data-accion="avanza"]');
+  await p.click('#asis [data-accion="avanza"]');
+  await p.check('#asis input[data-campo="aj:impuestos_aplica"][value="no"]');
+  await p.click('#asis [data-accion="avanza"]');
+  await p.click('#asis [data-accion="envia"]');
+  await p.waitForSelector('#asis [data-mapa-tipo]', { timeout: 8000 });
+  ok('Nuevo ERP: el alta manda lo mismo que antes (accion alta con el tipo elegido)', llamadas.some(c => c.accion === 'alta' && c.tipo === 'inmobiliario' && c.instancia === 'cliente-nuevo'));
+  await p.click('#asis [data-mapa-tipo]');
+  await p.waitForTimeout(300);
+  const vm = await p.evaluate(() => ({ asis: document.getElementById('asis').open, mapa: !document.getElementById('mapa').classList.contains('hidden'),
+    dest: [...document.querySelectorAll('#mapa th.ty.dest')].map(e => e.getAttribute('data-tipo')) }));
+  ok('Nuevo ERP → mapa: cierra el asistente y marca su tipo', !vm.asis && vm.mapa && JSON.stringify(vm.dest) === '["inmobiliario"]', JSON.stringify(vm));
+  if (SHOT) await p.screenshot({ path: SHOT + '_nuevo_erp_a_mapa_1440.png' });
+  ok('fuentes: ninguna petición de la marca a Google', marcaGoogle.length === 0, marcaGoogle.join(', '));
   // vuelta a módulos sin recargar
   await p.evaluate(() => { location.hash = ''; });
   await p.waitForTimeout(300);
