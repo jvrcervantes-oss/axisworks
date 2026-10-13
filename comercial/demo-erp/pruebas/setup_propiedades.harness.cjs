@@ -316,9 +316,13 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:|22023|42501|55000|23505|P000
   if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
   await p.waitForSelector('[data-axw-campo="cr_tipo"]', { timeout: 3000 }).catch(() => {});
   const varias = await txt(p, '[data-axw-pr="carta-varias"]');
-  ok('C5 dos tipos en «reserva»: lo dice nombrando los dos y no preselecciona uno como si fuera el único', !!varias && varias.includes('Carta de reserva') && varias.includes('Compraventa') && (await p.inputValue('[data-axw-campo="cr_tipo"]')) === '', varias);
+  ok('C5 dos tipos en «reserva»: lo dice nombrando los dos y no preselecciona uno como si fuera el único', !!varias && varias.includes('Carta de reserva') && varias.includes('Compraventa') && varias.includes('Plantillas') && (await p.inputValue('[data-axw-campo="cr_tipo"]')) === '', varias);
   await clic(p, 'enviar'); await p.waitForTimeout(300);
   ok('C5 sin elegir con carta ya puesta: no llama y no da error', de(b, 'contrato_tipo_etapa_guarda').length === 0 && !(await errorTxt(p)), await errorTxt(p));
+  if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
+  await p.waitForSelector('[data-axw-campo="cr_tipo"]', { timeout: 3000 }).catch(() => {});
+  if (await p.$('[data-axw-campo="cr_tipo"]')) { await p.selectOption('[data-axw-campo="cr_tipo"]', 'compraventa'); await clic(p, 'enviar'); await p.waitForTimeout(300); }
+  ok('C5 elegir uno de los que ya son carta de reserva: no llama (ya está) y no da error', de(b, 'contrato_tipo_etapa_guarda').length === 0 && !(await errorTxt(p)), await errorTxt(p));
   await ctx.close();
   b = base({ redEn: 'contrato_tipo_etapa_guarda' });
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas&paso=carta_reserva' }));

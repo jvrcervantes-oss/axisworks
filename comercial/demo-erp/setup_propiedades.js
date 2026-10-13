@@ -32,7 +32,7 @@
     'Cuidado: si ese tipo ya tiene contratos, su etapa no se puede cambiar después.': 'Careful: if that type already has contracts, its stage cannot be changed later.',
     'Aún no hay tipos de contrato activos: créalos en Plantillas.': 'There are no active contract types yet: create them in Templates.',
     'Elige el tipo que es la carta de reserva.': 'Choose the type that is the reservation letter.',
-    'Hay %n tipos marcados como carta de reserva: %l. Puedes dejarlos así o elegir uno para confirmarlo.': 'There are %n types marked as the reservation letter: %l. You can leave them as they are or choose one to confirm it.',
+    'Hay %n tipos marcados como carta de reserva: %l. Ya está configurado; la etapa de cada tipo se cambia en Plantillas.': 'There are %n types marked as the reservation letter: %l. It is already set up; each type\'s stage is changed in Templates.',
     'Esto lo cambia un administrador con el permiso «Unidades» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.': 'This requires an administrator with the «Units» permission and an open session. If you are one, reload the page and sign in again; if nothing changes, ask the main administrator.',
     'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.': 'This module is switched off in this ERP: nothing can be saved here until it is switched on.',
     'La clave va en minúsculas, números y guion bajo (2 a 40).': 'The key uses lowercase letters, numbers and underscores (2 to 40).',
@@ -81,7 +81,7 @@
     'Cuidado: si ese tipo ya tiene contratos, su etapa no se puede cambiar después.': 'Hati-hati: jika jenis itu sudah memiliki kontrak, tahapnya tidak dapat diubah nanti.',
     'Aún no hay tipos de contrato activos: créalos en Plantillas.': 'Belum ada jenis kontrak aktif: buat di Templat.',
     'Elige el tipo que es la carta de reserva.': 'Pilih jenis yang merupakan surat booking.',
-    'Hay %n tipos marcados como carta de reserva: %l. Puedes dejarlos así o elegir uno para confirmarlo.': 'Ada %n jenis yang ditandai sebagai surat booking: %l. Anda bisa membiarkannya atau memilih satu untuk mengonfirmasinya.',
+    'Hay %n tipos marcados como carta de reserva: %l. Ya está configurado; la etapa de cada tipo se cambia en Plantillas.': 'Ada %n jenis yang ditandai sebagai surat booking: %l. Sudah dikonfigurasi; tahap setiap jenis diubah di Templat.',
     'Esto lo cambia un administrador con el permiso «Unidades» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.': 'Ini memerlukan administrator dengan izin «Unit» dan sesi yang aktif. Jika Anda administrator, muat ulang halaman dan masuk lagi; jika tetap sama, mintalah ke administrator utama.',
     'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.': 'Modul ini dimatikan di ERP ini: tidak ada yang bisa disimpan di sini sampai modul dinyalakan.',
     'La clave va en minúsculas, números y guion bajo (2 a 40).': 'Kunci memakai huruf kecil, angka, dan garis bawah (2 sampai 40).',
@@ -442,7 +442,7 @@
         if (st.reservas.length === 1) st.actual = st.reservas[0];
         if (st.reservas.length > 1) {
           var nombres = st.tipos.filter(function (t) { return st.reservas.indexOf(t.clave) >= 0; }).map(function (t) { return texto(t.nombre).slice(0, 80); }).join(', ');
-          cont.appendChild(el('p', { class: CLS_AYUDA, 'data-axw-pr': 'carta-varias', role: 'note', text: T('Hay %n tipos marcados como carta de reserva: %l. Puedes dejarlos así o elegir uno para confirmarlo.', { n: String(st.reservas.length), l: nombres }) }));
+          cont.appendChild(el('p', { class: CLS_AYUDA, 'data-axw-pr': 'carta-varias', role: 'note', text: T('Hay %n tipos marcados como carta de reserva: %l. Ya está configurado; la etapa de cada tipo se cambia en Plantillas.', { n: String(st.reservas.length), l: nombres }) }));
         }
         sel = campo(cont, 'cr_tipo', T('¿Cuál es la carta de reserva?'), BORRADOR.carta || st.actual || '', { opciones: [['', '—']].concat(st.tipos.map(function (t) { return [t.clave, texto(t.nombre).slice(0, 80)]; })) });
       });
