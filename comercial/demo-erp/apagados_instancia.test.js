@@ -23,7 +23,7 @@ const MAPA = {
 const PLANTILLA = fs.readFileSync(path.join(__dirname, 'no_instalado.html'), 'utf8')
   .replace(/<!--[\s\S]*?-->\s*/g, '').replace('{{marca}}', 'Prueba ERP').replace('{{sello}}', '<svg></svg>');
 
-function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, build, guardado, recargado }) {
+function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, build, guardado, recargado, viendo, elegido, puente }) {
   const red = [];
   const clases = new Set();
   const doc = {
@@ -45,6 +45,10 @@ function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, bu
   globalThis.localStorage = mem(guardado !== undefined ? { axw_idiomas_erp: JSON.stringify(guardado) } : {});
   globalThis.sessionStorage = mem(recargado ? { axw_idiomas_recarga: recargado } : {});
   if (build) { globalThis.AXW_IDIOMAS_BUILD = build.slice(); globalThis.AXW_IDIOMAS = guardado || build.slice(); } else { delete globalThis.AXW_IDIOMAS_BUILD; delete globalThis.AXW_IDIOMAS; }
+  // bbm-p42: lo que se ve ahora (LW_IDIOMA), lo que eligió la persona (AXW_IDIOMA_GUARDADO) y el puente del registro (AXW_IDIOMA_PANTALLA_BUILD)
+  if (viendo) globalThis.LW_IDIOMA = viendo; else delete globalThis.LW_IDIOMA;
+  if (elegido) globalThis.AXW_IDIOMA_GUARDADO = elegido; else delete globalThis.AXW_IDIOMA_GUARDADO;
+  if (puente) globalThis.AXW_IDIOMA_PANTALLA_BUILD = puente; else delete globalThis.AXW_IDIOMA_PANTALLA_BUILD;
   global.MutationObserver = class { observe() {} };
   global.console = Object.assign(Object.create(console), { info() {}, warn() {} });
   global.window = globalThis;
@@ -190,11 +194,18 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(typeof globalThis.axwModuloActivo === 'function' && globalThis.AXW_MODULOS_LISTOS && typeof globalThis.AXW_MODULOS_LISTOS.then === 'function', 'el fichero exporta helper y promesa');
     ok(globalThis.axwModuloActivo('comisiones') === true, '(c) cargando: true, no lee «todo apagado»');
     ok(globalThis.axwModuloActivo('base') === true, 'base siempre true');
+    // axwRutaActiva (Usuarios, bbm-p40): por el path del menú v4; sin saber, abierto; una pantalla no instalable (xp), cerrada siempre
+    ok(typeof globalThis.axwRutaActiva === 'function', 'el fichero exporta axwRutaActiva');
+    ok(globalThis.axwRutaActiva('comisiones') === true, 'axwRutaActiva cargando: true (falla abierto)');
+    ok(globalThis.axwRutaActiva('creatividades') === false, 'axwRutaActiva: pantalla no instalable (xp) false aun sin saber');
     E.publica();
     ok(await globalThis.AXW_MODULOS_LISTOS === true, '(c) la promesa de listo resuelve true al saberse');
     // (b) ya sabido: refleja lo realmente activo
     ok(globalThis.axwModuloActivo('facturas') === true && globalThis.axwModuloActivo('comisiones') === false, '(b) activo true / apagado false');
     ok(globalThis.axwModuloActivo('base') === true, '(b) base true');
+    ok(globalThis.axwRutaActiva('facturas') === true && globalThis.axwRutaActiva('comisiones') === false, 'axwRutaActiva: pantalla de módulo encendido true / apagado false');
+    ok(globalThis.axwRutaActiva('usuarios') === true && globalThis.axwRutaActiva('') === true, 'axwRutaActiva: pantalla del núcleo (sin módulo) o sin path, true');
+    ok(globalThis.axwRutaActiva('factura') === true, 'axwRutaActiva: compara la ruta entera (/factura/ no es /facturas/)');
 
     // (b) sin modulos_activos = todo encendido
     const T = escenario({ activos: null });
@@ -221,9 +232,26 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['en', 'es'], defecto: 'es' }, guardado: ['es', 'en'] });
     E.publica(); await globalThis.AXW_MODULOS_LISTOS;
     ok(ls() === '["es","en"]' && E.recargas.length === 0, 'idiomas: ya aplicado (orden de la base distinto, mismo defecto) → sin recarga');
-    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['es', 'en'], defecto: 'es' }, recargado: 'es,en' });
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['es', 'en'], defecto: 'es' }, recargado: 'es,en|es' });
     E.publica(); await globalThis.AXW_MODULOS_LISTOS;
     ok(E.recargas.length === 0, 'idiomas: ya recargó por este cambio en la sesión → nunca un bucle');
+    // idioma de PANTALLA por defecto (bbm-p42 + p36): `idiomas.pantalla` de la base, separado del orden del papel
+    const lp = () => globalThis.localStorage.getItem('axw_idioma_pantalla_erp');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'id', pantalla: 'en' }, viendo: 'id' });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(lp() === 'en' && E.recargas.length === 1, 'pantalla: la base dice en y se ve id (nadie eligió) → se apunta la cadena cruda y se recarga una vez');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'id', pantalla: 'en' }, viendo: 'id', elegido: 'id' });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(lp() === 'en' && E.recargas.length === 0, 'pantalla: si la persona eligió id, se apunta pero NO se recarga (su elección manda)');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'id', pantalla: 'es' }, viendo: 'id' });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(lp() === null && E.recargas.length === 0, 'pantalla: un idioma que no se ofrece se ignora (y se quita lo apuntado)');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'id' }, viendo: 'en', puente: 'en' });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(lp() === null && E.recargas.length === 0, 'pantalla: sin dato de la base manda el puente del registro (en) y ya se ve en → sin recarga');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'id', pantalla: 'en' }, viendo: 'id', recargado: 'id,en|en' });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(E.recargas.length === 0, 'pantalla: ya recargó por este cambio en la sesión → nunca un bucle');
     E = escenario({ activos: null, build: ['id', 'en'], idiomas: null, guardado: ['es', 'en'] });
     E.publica(); await globalThis.AXW_MODULOS_LISTOS;
     ok(ls() === null && E.recargas.length === 1, 'idiomas: la base no los tiene guardados → se borra lo apuntado y vuelve el build');
@@ -236,6 +264,30 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'xx' } });
     E.publica(); await globalThis.AXW_MODULOS_LISTOS;
     ok(ls() === null && E.recargas.length === 0, 'idiomas: forma rara (defecto fuera) → manda el build');
+  }
+
+  // 9. El papel (BBM-72, bbm-p40, 13-oct): window.AXW_IDIOMAS_DOC = el par que guardó la base, el primero el defecto; null si no es uno de los dos
+  //    pares. No depende de localStorage ni de que el paquete sepa pintar la interfaz en ese par (el papel lleva los dos en la copia)
+  {
+    const doc = () => JSON.stringify(globalThis.AXW_IDIOMAS_DOC);
+    let E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['en', 'es'], defecto: 'es' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(doc() === '["es","en"]', 'papel: Ajustes es·en (en otro orden) → ["es","en"]');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'id' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(doc() === '["id","en"]', 'papel: Ajustes id·en → ["id","en"]');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: null, guardado: ['es', 'en'] });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(doc() === 'null', 'papel: sin fila → null (manda el build), aunque el navegador tuviera es·en guardado');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'es'], defecto: 'id' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(doc() === 'null', 'papel: un par que no es de los dos → null');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'xx' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(doc() === 'null', 'papel: forma rara (defecto fuera) → null');
+    E = escenario({ activos: null, build: null, idiomas: { ofrecidos: ['es', 'en'], defecto: 'es' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(doc() === '["es","en"]', 'papel: también se apunta en un paquete sin idiomas del build (el selector solo existe si el build lo puso)');
   }
 
   console.log('OK apagados_instancia: ' + n + '/' + n);

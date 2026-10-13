@@ -54,6 +54,22 @@
   };
   window.AXW_MODULOS_LISTOS = pListo.then(function () { return !estado.error; });
 
+  /* ¿Es de un módulo encendido la pantalla `path` del menú v4 (el `path` de LW_MENU_V4, sin barras: 'taller', 'leads')? Lo usa Usuarios
+     para ofrecer solo las herramientas de módulos encendidos (bbm-p40, 13-oct-2026: la ventana de permisos enseñaba las de Lawang enteras).
+     Se mira la ruta v4 y la clásica (/clasico/<path>/), donde ruta_limpia deja las herramientas de /intranet/<x>/ (el CRM). Una pantalla
+     que esta instancia no puede encender nunca (xp) es false siempre; una sin módulo (núcleo: usuarios, ajustes) es true; el resto, como
+     axwModuloActivo: falla ABIERTO (sin saber, true). No es un candado: el que decide qué se concede es el servidor. */
+  window.axwRutaActiva = function (path) {
+    if (!path) return true;
+    var rutas = ['/' + path + '/', '/clasico/' + path + '/'];
+    for (var i = 0; i < rutas.length; i++) {
+      if (esExtraRuta(rutas[i])) return false;
+      var m = moduloDeRuta(rutas[i]);
+      if (m) return window.axwModuloActivo(m);
+    }
+    return true;
+  };
+
   // ── la pantalla actual ──────────────────────────────────────────────────────────────────────
   function moduloDeRuta(ruta) {
     var mejor = null, largo = 0;
@@ -320,25 +336,34 @@
      no puede preguntarlos (sin lectura anónima, Seguridad #289), así que se APUNTAN aquí, tras el login, y el arranque de cada página (parche de idioma.js
      en build.py) los lee antes que lo que fijó el build. Solo si este paquete sabe pintarlos (id+en necesita el núcleo indonesio del build). Si lo apuntado
      cambia lo que ya se está viendo, UNA recarga por cambio (marca en sessionStorage: nunca un bucle). Sin idiomas en el build no hay nada que aplicar. */
-  var CLAVE_IDIOMAS = 'axw_idiomas_erp';
+  var CLAVE_IDIOMAS = 'axw_idiomas_erp', CLAVE_PANTALLA = 'axw_idioma_pantalla_erp';
   function idiomasDeLaBase(v) {
-    var b = window.AXW_IDIOMAS_BUILD;
-    if (!Array.isArray(b) || !b.length) return;
     var lista = null;
     if (v && typeof v === 'object' && Array.isArray(v.ofrecidos) && typeof v.defecto === 'string' && v.ofrecidos.indexOf(v.defecto) >= 0) {
       lista = [v.defecto].concat(v.ofrecidos.filter(function (c) { return c !== v.defecto; }));
     }
+    /* BBM-72 (bbm-p40, 13-oct): el PAPEL (factura, recibí y su correo) sigue a lo que la base guardó, sin pasar por localStorage: documento.js lo lee
+       con axwDocId() al pintar (el primero manda, como _doc_idioma() de la base). Sin fila o con algo que no es uno de los dos pares, null = el build. */
+    window.AXW_IDIOMAS_DOC = (lista && [['es', 'en'], ['id', 'en']].some(function (p) { return p.join() === lista.join(); })) ? lista : null;
+    var b = window.AXW_IDIOMAS_BUILD;
+    if (!Array.isArray(b) || !b.length) return;
     var pintable = !!lista && [['es', 'en'], ['id', 'en']].some(function (p) { return p.join() === lista.join(); }) && (lista[0] !== 'id' || b.indexOf('id') >= 0);
     var nueva = pintable ? lista : b;   // null (sin guardar) o algo que este paquete no sabe pintar: manda el build
+    // bbm-p42 (13-oct): el idioma de PANTALLA por defecto, dato propio de la base (`idiomas.pantalla`, p36), separado del orden del papel; solo si se ofrece
+    var pant = v && typeof v === 'object' && typeof v.pantalla === 'string' && nueva.indexOf(v.pantalla) >= 0 ? v.pantalla : null;
     try {
       if (pintable) localStorage.setItem(CLAVE_IDIOMAS, JSON.stringify(lista)); else localStorage.removeItem(CLAVE_IDIOMAS);
+      if (pant) localStorage.setItem(CLAVE_PANTALLA, pant); else localStorage.removeItem(CLAVE_PANTALLA);
       if ((localStorage.getItem(CLAVE_IDIOMAS) || '') !== (pintable ? JSON.stringify(lista) : '')) return;   // sin almacenamiento, recargar no cambiaría nada
     } catch (e) { return; }
     var actual = Array.isArray(window.AXW_IDIOMAS) ? window.AXW_IDIOMAS : b;
-    if (nueva.join() === actual.join()) return;
+    // lo que saldría con lo apuntado: la elección de esa persona > el dato de la base > el puente del build > el primero (mismo orden que idioma.js)
+    var pb = window.AXW_IDIOMA_PANTALLA_BUILD, g = window.AXW_IDIOMA_GUARDADO;
+    var vera = nueva.indexOf(g) >= 0 ? g : (pant || (pb && nueva.indexOf(pb) >= 0 ? pb : nueva[0]));
+    if (nueva.join() === actual.join() && (!window.LW_IDIOMA || vera === window.LW_IDIOMA)) return;
     try {
-      if (sessionStorage.getItem('axw_idiomas_recarga') === nueva.join()) return;
-      sessionStorage.setItem('axw_idiomas_recarga', nueva.join());
+      if (sessionStorage.getItem('axw_idiomas_recarga') === nueva.join() + '|' + vera) return;
+      sessionStorage.setItem('axw_idiomas_recarga', nueva.join() + '|' + vera);
     } catch (e) { return; }
     location.reload();
   }
