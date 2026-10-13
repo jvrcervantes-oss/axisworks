@@ -210,6 +210,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
 
 <p class="axw-ok axw-oculto" data-fl="exito" role="status"></p>
 <p class="axw-aviso axw-oculto" data-fl="aviso" role="status"></p>
+<p class="axw-aviso axw-oculto" data-fl="aviso-cat" role="status"></p>
 <p class="axw-error axw-oculto" data-fl="error" role="alert"></p>
 
 <div data-fl="estado" data-tipo="cargando" class="axw-vacio"></div>
@@ -518,7 +519,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   var $v = function (n) { return raiz.querySelector('[data-fl="' + n + '"]'); };
   var h = C.h, vacia = C.vacia, oculta = C.oculta;
   function msg(clase, m) { var e = $v(clase); e.textContent = m || ''; oculta(e, !m); }
-  var exito = function (m) { msg('exito', m); }, aviso = function (m) { E.avisoEsCat = false; msg('aviso', m); }, error = function (m) { msg('error', m); };
+  var exito = function (m) { msg('exito', m); }, aviso = function (m) { msg('aviso', m); }, error = function (m) { msg('error', m); };
   $v('bot').textContent = T(BOT_LLEGA_ES);
 
   var SB = null;
@@ -957,8 +958,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   /* AXW-290: Flota es de lo que se alquila. Un producto con clase distinta de 'alquiler' (un extra de «Extras y servicios») sale de la lista: si no, se le podía
      poner una moto o una tarifa y el disparador _producto_unidad_clase lo pasaba en silencio a alquiler. Clase null (base anterior a F3-E3) o un producto que el
      catálogo no trae (recortado a 1000): se queda, no se sabe qué es. */
-  function avisoCat() {   // el aviso del catálogo caído se queda mientras siga caído; avisoCat solo quita el SUYO (E.avisoEsCat), nunca el de otro
-    if (E.catFallo) { aviso(T('No se ha podido saber qué productos son de alquiler: puede que en la lista salga algún extra.')); E.avisoEsCat = true; } else if (E.avisoEsCat) aviso('');
+  function avisoCat() {   // el aviso del catálogo caído va en SU línea (data-fl="aviso-cat"): sale mientras siga caído y nada más lo borra (ni un clic ni otro aviso)
+    msg('aviso-cat', E.catFallo ? T('No se ha podido saber qué productos son de alquiler: puede que en la lista salga algún extra.') : '');
   }
   function catalogo(d, c) {
     var bien = c && !c.error && esObj(c.data) && Array.isArray(c.data.productos) && Array.isArray(c.data.impuestos);
@@ -1134,9 +1135,10 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     return llama(nombre, args).then(function (r) {
       if (r.error) { d.guardando = false; C.libera(btn); fallo(r.error, d, prefijo); return; }
       E.setup = {};   // salió: el seguro y la fianza se vuelven a leer al repintar el cajón (lo que se ve es lo que la base devuelve)
+      error(''); aviso('');   // ANTES de releer: si al releer el modelo ya no está, cajonPinta deja su aviso y no se borra después
       return carga().then(function (l) {
         C.libera(btn); d.cierra();
-        if (l.ok) { error(''); aviso(''); avisoCat(); exito(T('Guardado.')); mira(); } else { exito(''); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); if (E.cajon) cajonOk(''); }
+        if (l.ok) { exito(T('Guardado.')); mira(); } else { exito(''); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); if (E.cajon) cajonOk(''); }
       }, function () { C.libera(btn); d.cierra(); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); });
     }, function (e) { d.guardando = false; C.libera(btn); fallo(e, d, prefijo); });
   }
@@ -1237,10 +1239,10 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       }).then(function (x) {
         if (x.error) { d.guardando = false; C.libera(bt); fallo(x.error, d); return; }
         var nuevo = !pid && typeof x.data === 'string' ? x.data : null;
+        error(''); aviso('');   // antes de releer, como envia()
         return carga().then(function (l) {
           C.libera(bt); d.cierra();
           if (!l.ok) { exito(''); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); return; }
-          error(''); aviso(''); avisoCat();
           if (nuevo && cajonAbre(nuevo, null)) { cajonOk(T('Modelo creado: ahora pon sus tarifas y sus motos.')); return; }
           exito(T('Guardado.')); if (E.cajon) cajonOk(T('Guardado.'));
         }, function () { C.libera(bt); d.cierra(); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); });   // como envia()
