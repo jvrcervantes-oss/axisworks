@@ -600,7 +600,9 @@ def guard_demo():
         ("data: (paths || []).map(function (p) { return { path: p, signedUrl: 'about:blank#qa-' + p, error: null }; }),",
          "data: (paths || []).map(function (p) { return { path: p, signedUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E', error: null }; }),"),
         ("createSignedUrl: function (path) { return Promise.resolve({ data: { signedUrl: 'about:blank#qa-' + path }, error: null }); },",
-         "createSignedUrl: function (path) { return Promise.resolve({ data: { signedUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E' }, error: null }); },"),
+         # Fotos de obra de muestra (13-oct-2026): demo_datos.js las nombra «…/demo-obra-<escena>.webp» y aquí se sirven con la foto
+         # libre de /portal/demo/fotos/ (la misma que enseña el portal), para que Obra en la intranet las vea; el resto, la tesela.
+         "createSignedUrl: function (path) { var m = bucket === 'obra' && /[/]demo-obra-([a-z]+)[.]webp$/.exec(String(path)); return Promise.resolve({ data: { signedUrl: m ? '/portal/demo/fotos/obra-' + m[1] + '.webp' : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E' }, error: null }); },"),
         # Lo mismo para las fotos PÚBLICAS (getPublicUrl: fotos de modelo en /v4/modelos/ y lwFotoUrls): revisor, 28-sep.
         ("getPublicUrl: function (path) { return { data: { publicUrl: 'about:blank#qa-' + path } }; },",
          "getPublicUrl: function (path) { return { data: { publicUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E' } }; },"),
@@ -3044,6 +3046,10 @@ def publica_web():
     t, n = re.subn(r'''(href=["']?)/home/''', lambda m: m.group(1) + DEMO_URL + '/home/', t)
     if not n:
         aborta('la portada no enlaza la demo (/home/): ¿ha cambiado landing.html?')
+    # «Open the demo» va a la PORTADA de dos puertas (owner, 13-oct-2026), por su data-enlace y no por el rótulo.
+    t, n = re.subn(r'''href="/"(\s+data-enlace="demo")''', lambda m: 'href="' + DEMO_URL + '/"' + m.group(1), t)
+    if not n:
+        aborta('la portada no enlaza la portada de la demo (href="/" data-enlace="demo"): ¿ha cambiado landing.html?')
     open(os.path.join(destino, 'index.html'), 'w', encoding='utf-8', newline='').write(t)
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     permitidas = '|'.join(re.escape(f) for f in LISTA_WEB if f != '.htaccess' and f != 'index.html')

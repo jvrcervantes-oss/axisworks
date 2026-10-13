@@ -27,6 +27,54 @@
 
   var DOMINIO = '@example.com';
 
+  /* ── Plan de pagos por hitos (13-oct-2026, demo en inglés: «no se pueden poner los porcentajes de los hitos») ──────────
+     Un solo dueño de cuatro cosas: el plan por defecto (el de los contratos de obra sembrados, 30/30/30/10), el lector del
+     porcentaje, la validación y el reparto del precio. Lo usan la siembra, demo_contrato_crea (que valida OTRA VEZ: no se cree
+     lo que manda la pantalla) y el asistente «New contract» por window.LW_DEMO_PLAN, así que pantalla, doble y portal cuentan
+     igual. Como en el ERP real (generador de contratos): cada contrato lleva sus hitos {concepto, %}, se editan, se añaden y
+     se quitan, y suman 100. */
+  var PLAN_DEFECTO = [['Contract signing', '30', 0], ['Structure complete', '30', 90], ['Roof and enclosure', '30', 180], ['Key handover', '10', 300]];
+  var PLAN_MAX = 8, PLAN_CONCEPTO_MAX = 80;
+  // «30», «30.5», «30,5» → centésimas de punto (3050). null si no es un número > 0 y ≤ 100 con 2 decimales como mucho.
+  function leePct(v) {
+    var s = String(v == null ? '' : v).trim().replace(',', '.');
+    if (!/^[0-9]{1,3}([.][0-9]{1,2})?$/.test(s)) return null;
+    var c = Math.round(Number(s) * 100);
+    return c > 0 && c <= 10000 ? c : null;
+  }
+  function pctTexto(c) { return c % 100 ? (c / 100).toFixed(2).replace(/0$/, '') : String(c / 100); }
+  // [{descripcion, pct}] → {ok: true, hitos: [{descripcion, pct (texto normalizado), c}]} o {ok: false, error, n?, suma?}
+  function validaPlan(hitos) {
+    if (!Array.isArray(hitos) || !hitos.length || hitos.length > PLAN_MAX) return { ok: false, error: 'plan_n' };
+    var out = [], suma = 0;
+    for (var i = 0; i < hitos.length; i++) {
+      var h = hitos[i] || {};
+      var d = typeof h.descripcion === 'string' ? h.descripcion.replace(/[ ]+/g, ' ').trim() : '';
+      if (!d || d.length > PLAN_CONCEPTO_MAX) return { ok: false, error: 'plan_concepto', n: i + 1 };
+      var c = leePct(h.pct);
+      if (c == null) return { ok: false, error: 'plan_pct', n: i + 1 };
+      suma += c;
+      out.push({ descripcion: d, pct: pctTexto(c), c: c });
+    }
+    if (suma !== 10000) return { ok: false, error: 'plan_suma', suma: pctTexto(suma) };
+    return { ok: true, hitos: out };
+  }
+  // El precio repartido en céntimos: cada hito su parte redondeada y el ÚLTIMO la diferencia, así la suma da el precio exacto.
+  function repartePlan(precio, hitos) {
+    var total = Math.round(Number(precio) * 100), hecho = 0;
+    return hitos.map(function (h, i) {
+      var m = i === hitos.length - 1 ? total - hecho : Math.round(total * h.c / 10000);
+      hecho += m;
+      return m / 100;
+    });
+  }
+  // El día de HOY del visitante, no el de UTC (lección del 12-oct: en Bali de madrugada salía el día anterior).
+  function hoyLocal() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  window.LW_DEMO_PLAN = Object.freeze({
+    defecto: function () { return PLAN_DEFECTO.map(function (h) { return { descripcion: h[0], pct: h[1] }; }); },
+    max: PLAN_MAX, conceptoMax: PLAN_CONCEPTO_MAX, leePct: leePct, pctTexto: pctTexto, valida: validaPlan, reparte: repartePlan
+  });
+
   /* Equipo — el usuario que presenta es la directora comercial. */
   var EQUIPO = [
     { user_id: 'd-u-1', email: 'direccion' + DOMINIO, nombre: 'Clara Montesinos', rol: 'super_admin' },
@@ -228,12 +276,12 @@
           // entregada: la entrega, el día del hito «Key handover» (d0 + 320), que ya está cobrado
           if (opc.fase) { u.obra_fase = opc.fase; if (opc.fase === 'entregada') { u.obra_fecha_entrega = dia(d0 + 320); u.obra_actualizado = ts(d0 + 320); } } }
         /* Calendario por hitos de obra: 30 / 30 / 30 / 10. */
-        [['Contract signing', 30, 0], ['Structure complete', 30, 90], ['Roof and enclosure', 30, 180], ['Key handover', 10, 300]]
+        PLAN_DEFECTO
           .forEach(function (h, j) {
             var fecha = d0 + 20 + h[2], monto = redondea(u.precio_construccion * h[1] / 100, 100);
             var vc = fila({ id: 'cv-' + k.id + '-' + j, contrato_id: k.id, orden: j + 1, descripcion: h[0], pct: String(h[1]),
               monto: null, fecha: dia(fecha), ajustado: false, nota: null, actualizado_por: null, actualizado_en: null,
-              creado_en: ts(d0 + 20), factura_id: null, no_facturar: false, contratos: { id: k.id, bloqueado: firmadoCC } });
+              creado_en: ts(d0 + 20), factura_id: null, no_facturar: false, contratos: { id: k.id, numero: k.numero, bloqueado: firmadoCC, liberado_en: null } });
             vencs.push(vc);
             if (firmadoCC && fecha <= 3) {
               var fh = factura('factura', k, cli, monto, fecha, h[0] + ' — ' + u.codigo, { venc: dia(fecha + 15) });
@@ -302,6 +350,33 @@
       delete r._p; return fila(r);
     }));
     ctx.VENTAS.length = 0; ventas.forEach(function (v) { ctx.VENTAS.push(v); });
+
+    /* ── Obra: fases y fotos de muestra (13-oct-2026, demo en inglés) ────────
+       Un solo dueño: antes el portal se inventaba sus fotos en portal_demo/adaptador.js y la intranet contaba `obra_fotos`
+       (vacía), así que la misma villa salía con «0 photos» en Obra y con 4 fotos en el portal. Ahora las dos leen estas
+       filas. Las fases, con su `es`/`en`, como las de la base (el doble de QA solo traía dos). La foto se nombra
+       `…/demo-obra-<escena>.webp`: el storage del doble la sirve desde /portal/demo/fotos/ (build.py, createSignedUrl) y el
+       portal la resuelve igual. Fechas en días desde hoy; las de la entregada cuelgan de su fecha de entrega. */
+    tabla('obra_fases', [['preparacion', 'Preparación del terreno', 'Site preparation'], ['cimentacion', 'Cimentación', 'Foundations'],
+      ['estructura', 'Estructura', 'Structure'], ['cubierta', 'Cubierta', 'Roofing'], ['instalaciones', 'Instalaciones', 'Utilities & MEP'],
+      ['acabados', 'Acabados', 'Finishes'], ['entregada', 'Entregada', 'Handed over']]
+      .map(function (f, i) { return fila({ orden: i + 1, clave: f[0], es: f[1], en: f[2] }); }));
+    var FOTOS_POR_FASE = {
+      cimentacion: [['Foundation pour', -6, 'hormigonado'], ['Excavation', -19, 'excavacion'], ['Site set-out', -33, 'replanteo']],
+      estructura: [['Columns, north side', -4, 'pilares'], ['Slab formwork', -12, 'encofrado'], ['Foundations finished', -30, 'cimentacion'], ['Excavation', -52, 'excavacion']],
+      entregada: [['Key handover', 0, 'llaves'], ['Interior finishes', -30, 'interior'], ['Roof completed', -90, 'cubierta']]
+    };
+    var fotosObra = [];
+    unidades.forEach(function (u) {
+      if (!u.obra_fase) return;
+      var desde = 0;
+      if (u.obra_fase === 'entregada' && u.obra_fecha_entrega) desde = Math.round((Date.parse(u.obra_fecha_entrega + 'T00:00:00Z') - Date.parse(dia(0) + 'T00:00:00Z')) / 864e5);
+      (FOTOS_POR_FASE[u.obra_fase] || [['Site progress', -7, 'pilares'], ['Site progress', -21, 'cimentacion']]).forEach(function (f, i) {
+        fotosObra.push(fila({ id: 'of-' + u.id + '-' + i, unidad_id: u.id, path: u.id + '/' + i + '/demo-obra-' + f[2] + '.webp', titulo: f[0],
+          tomada_en: dia(desde + f[1]), visible: true, creado_en: ts(desde + f[1]), creado_por: SESION_EMAIL }));
+      });
+    });
+    tabla('obra_fotos', fotosObra);
 
     /* ── Comisiones (cifras inventadas: 5 % agente, 1 % manager) ───────── */
     var sps = [], devs = [];
@@ -527,6 +602,10 @@
         }), plantillas: [], puede_editar: false };
       },
       plantilla_version_datos: function () { return null; },
+      /* Servicios de AxisWorks (Lawang 980451272, 13-oct-2026): pestaña de Ajustes solo para el super administrador de Lawang;
+         ajustes-servicios.js no la arranca con AXW_NUCLEO_OPERACION, así que la demo nunca la pide. Si algo la pidiera, falla
+         diciéndolo (42501, como la base a quien no es super admin) en vez de inventar márgenes, topes o un extracto de gasto. */
+      servicios_axisworks_datos: function () { falla('servicios_axisworks_datos: no existe en la demo', '42501'); },
       contrato_plantilla_texto_datos: function () { return { numero: null, texto: null, texto_sha256: null }; },
       comunicacion_datos: function (F, a) {
         var pg = pagina(filas(F, 'comunicados'), 'actualizado_en', tope(a.p_limit, 100), a.p_despues);
@@ -776,7 +855,12 @@
     ya_firmado: { es: '', en: 'This contract is already signed.' },
     unidad_ocupada: { es: '', en: 'That unit is not available.' },
     precio_cero: { es: '', en: 'The contract needs a price greater than zero.' },
-    cliente_no_existe: { es: '', en: 'That client does not exist.' }
+    cliente_no_existe: { es: '', en: 'That client does not exist.' },
+    // plan de pagos de «New contract» (13-oct-2026): los mismos casos que avisa la pantalla, por si llega algo que ella no paró
+    plan_n: { es: '', en: 'A payment plan has between 1 and % milestones.' },
+    plan_concepto: { es: '', en: 'Milestone % needs a name (up to % characters).' },
+    plan_pct: { es: '', en: 'Milestone %: the percentage has to be a number above 0, with up to 2 decimals.' },
+    plan_suma: { es: '', en: 'The payment plan has to add up to exactly 100 percent (now % percent).' }
   };
   function falla(clave, args, code) {
     var r = REGLAS[clave], txt = r ? r.en : (TEXTOS[clave] || String(clave)), i = 0;
@@ -1457,6 +1541,10 @@
         var u = porId(F, 'unidades', a.p_unidad_id); if (!u) falla('unidad_ocupada');
         if (tipo === 'reserva_parcela' && (u.estado !== 'disponible' || u.contrato_id)) falla('unidad_ocupada');
         var precio = Number(a.p_precio); if (!(precio > 0)) falla('precio_cero');
+        // El plan de pagos se valida AQUÍ otra vez (la pantalla ya lo hizo con la misma función, pero no se le cree). Sin
+        // p_hitos, el de por defecto: los llamadores de antes siguen igual.
+        var plan = validaPlan(a.p_hitos == null ? window.LW_DEMO_PLAN.defecto() : a.p_hitos);
+        if (!plan.ok) falla(plan.error, plan.error === 'plan_n' ? [PLAN_MAX] : plan.error === 'plan_concepto' ? [plan.n, PLAN_CONCEPTO_MAX] : plan.error === 'plan_pct' ? [plan.n] : [plan.suma]);
         var padre = a.p_padre_id ? porId(F, 'contratos', a.p_padre_id) : null;
         if (a.p_padre_id && !padre) falla('contrato_no_existe', [], 'P0002');
         var pro = porId(F, 'proyectos', u.proyecto_id) || {};
@@ -1472,7 +1560,8 @@
           precio_total: precio, moneda: a.p_moneda || u.moneda || 'EUR', fecha_firma: null, bloqueado: false, pdf_firmado_path: null, creado_por: SESION_EMAIL, cobrado: 0,
           datos: { fields: Object.assign(tipo === 'construccion' ? {} : { parcela_codigo: u.codigo }, { adq1_nombre: cli.full_name, adq1_pasaporte: cli.passport_number, adq1_email: cli.email,
             adq1_domicilio: cli.address || null, proyecto_nombre: pro.nombre || u.proyecto || null, moneda: a.p_moneda || u.moneda || 'EUR', precio_total: precio, sociedad_firmante: SOC_DEMO }),
-            hitos: [], adq1_client_id: cli.id, texto_sha256: a.p_texto_sha || null },
+            hitos: plan.hitos.map(function (h) { return { pct: h.pct, monto: '', timing: '', es: h.descripcion, en: h.descripcion, id: '' }; }),
+            adq1_client_id: cli.id, texto_sha256: a.p_texto_sha || null },
           compradores: [{ client_id: cli.id, rol: 'adquiriente_1', clients: { id: cli.id, full_name: cli.full_name, email: cli.email } }],
           contrato_padre_id: padre ? raizDe(F, padre) : null, proyecto_id: u.proyecto_id, unidad_id: u.id, nombre_contrato: TIPO_NOMBRE[tipo],
           parcela_codigo: u.codigo, soc: SOC_DEMO, operacion_id: opId, created_at: t0 })])[0];
@@ -1482,6 +1571,16 @@
         inserta(F, 'contrato_firmas', [{ contrato_id: c.id, estado: 'pendiente', firmante_nombre: cli.full_name,
           expira_en: new Date(Date.now() + 7 * 864e5).toISOString(), contratos: { numero: numero, creado_por: SESION_EMAIL } }]);
         if (tipo === 'reserva_parcela') actualiza(F, 'unidades', [u], { contrato_id: c.id });
+        /* Su calendario, con la forma de los sembrados: el portal («Payment plan») y Vencimientos lo leen de aquí. El importe va
+           guardado (el reparto de arriba, que cuadra al céntimo) para que nadie lo recalcule con otro redondeo. La fecha solo
+           en el primero (a la firma): los demás son hitos de obra, no fechas. `contratos` es la copia del contrato que el doble
+           guarda en la fila porque no hace joins; la firma la pone al día. */
+        var montos = repartePlan(precio, plan.hitos), hoy0 = hoyLocal();
+        inserta(F, 'contrato_vencimientos', plan.hitos.map(function (h, j) {
+          return { id: 'cv-' + c.id + '-' + j, contrato_id: c.id, orden: j + 1, descripcion: h.descripcion, pct: h.pct, monto: montos[j],
+            fecha: j === 0 ? hoy0 : null, ajustado: false, nota: null, actualizado_por: null, actualizado_en: null, creado_en: t0,
+            factura_id: null, no_facturar: false, contratos: { id: c.id, numero: numero, bloqueado: false, liberado_en: null } };
+        }));
         return { id: c.id, numero: numero, operacion_id: opId };
       },
       demo_contrato_firma: function (F, a) {
@@ -1493,6 +1592,9 @@
         var ahoraLocal = new Date();
         var hoy = ahoraLocal.getFullYear() + '-' + String(ahoraLocal.getMonth() + 1).padStart(2, '0') + '-' + String(ahoraLocal.getDate()).padStart(2, '0');
         actualiza(F, 'contratos', [c], { bloqueado: true, fecha_firma: hoy });
+        // la copia del contrato que llevan sus hitos (el doble no hace joins): firmado también ahí, o Vencimientos lo vería sin firmar
+        actualiza(F, 'contrato_vencimientos', filasDe(F, 'contrato_vencimientos').filter(function (v) { return v.contrato_id === c.id; }),
+          { contratos: { id: c.id, numero: c.numero, bloqueado: true, liberado_en: null } });
         actualiza(F, 'contrato_firmas', filasDe(F, 'contrato_firmas').filter(function (x) { return x.contrato_id === c.id && x.estado === 'pendiente'; }),
           { estado: 'firmado', firmado_en: ahora(), firmante_nombre: txt(a.p_firmante_nombre) || c.comprador_nombre });
         var u = porId(F, 'unidades', c.unidad_id);

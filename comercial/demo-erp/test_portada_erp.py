@@ -69,7 +69,9 @@ ok('cdn.' not in HTML and 'googleapis' not in HTML and 'gstatic' not in HTML and
    'landing.html pide algo de fuera (CDN, Google)')
 ok('url(' not in CSS or not re.search(r'url\(\s*["\']?https?:', CSS), 'portada.css pide algo de fuera')
 # Enlaces estáticos a la demo (publica_web los hace absolutos) y su versión con ?sel= por data-enlace
-ok(HTML.count('href="/home/"') >= 2 and HTML.count('href="/home/?tour=1"') >= 3, 'faltan los enlaces estáticos a /home/')
+# «Open the demo» → la portada de dos puertas (owner, 13-oct-2026); «Take the tour» sigue entrando a /home/?tour=1
+ok(HTML.count('href="/" data-enlace="demo"') >= 3 and HTML.count('href="/home/?tour=1"') >= 3, 'faltan los enlaces estáticos a la demo')
+ok('href="/home/" data-enlace="demo"' not in HTML, '«Open the demo» lleva todavía dentro de la intranet')
 ok(all('data-enlace=' in a for a in re.findall(r'<a [^>]*href="/home/[^>]*>', HTML)), 'un enlace a /home/ sin data-enlace')
 # La demo vuelve a «#configurador» (tour.js al acabar, modulos_demo.js en «Choose modules»): ese id no se puede perder
 # aunque la sección se llame #modules (revisor C03, 12-oct), y tiene que caer DENTRO de la sección de módulos.
@@ -202,6 +204,7 @@ if res == 'pasa':
     ok(hoja.lstrip().startswith('/*') and hoja.index('@font-face') < hoja.index(':root'), 'las @font-face no van delante de la hoja')
     idx = open(os.path.join(destino, 'index.html'), encoding='utf-8').read()
     ok(build.DEMO_URL + '/home/' in idx and 'href="/home' not in idx, 'enlaces a la demo no absolutos')
+    ok(idx.count('href="' + build.DEMO_URL + '/" data-enlace="demo"') >= 3 and 'href="/" data-enlace' not in idx, '«Open the demo» no va absoluto a la portada de la demo')
     ok('googleapis' not in idx and 'gstatic' not in idx, 'el index publicado pide Google')
     ok('CLAUDE FOR STARTUPS' in idx, 'la banda Startups no sale con el interruptor encendido')
 res2, _d = publica(os.path.join(tempfile.mkdtemp(), 'assets', 'x', 'fonts.css'))

@@ -42,6 +42,8 @@ const P = require('./portada.js').nucleo(CAT);
 const soloModulos = (e) => CAT.MODULOS.map((m) => m[0]).filter((k) => e[k]).sort();
 const idaYVuelta = (e, que) => {
   const url = P.urlDemo('https://demo.axisworks.studio', 'demo', e);
+  // «Open the demo» abre la PORTADA de dos puertas (13-oct-2026), que reenvía ?sel= a su puerta de la intranet
+  assert.strictEqual(new URL(url).pathname, '/', '«Open the demo» va a la portada, no dentro de la intranet');
   const sel = new URL(url).searchParams.get('sel');
   assert.deepStrictEqual(soloModulos(CAT.leeSel(sel)), soloModulos(e), 'ida y vuelta: ' + que + ' (' + sel + ')');
   const tour = new URL(P.urlDemo('', 'tour', e), 'https://x');

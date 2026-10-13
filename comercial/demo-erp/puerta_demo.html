@@ -398,7 +398,7 @@ img,svg{display:block}
               <span class="step-num" aria-hidden="true">1</span>
               <span class="side label"><svg viewBox="10 10 80 80" aria-hidden="true"><polygon points="10,10 41,10 90,90 59,90" fill="#2E3BEB"></polygon></svg>Intranet</span>
             </div>
-            <p class="step-text"><a href="/home/">Open the intranet</a> and add a client</p>
+            <p class="step-text"><a href="/home/" data-puerta="intranet">Open the intranet</a> and add a client</p>
           </li>
           <li class="step">
             <div class="step-top">
@@ -460,6 +460,17 @@ img,svg{display:block}
      Comentario HTML y no de JS a propósito: puerta_demo() quita los comentarios HTML y la portada no pasa por el limpiador
      de comentarios del resto del paquete. Dentro de un comentario nunca se escribe su marca de cierre. -->
 <script>
+/* La selección de módulos que trae la web (erp.axisworks.studio → «Open the demo» → /?sel=…, 13-oct-2026) sigue a la intranet:
+   se copia en cada enlace [data-puerta="intranet"]. Solo ids del catálogo (letras, cifras, guion, guion bajo y comas) y con
+   tope; lo demás se ignora. Quien la valida de verdad es la intranet (CAT.leeSel en modulos_demo.js). */
+(function () {
+  var sel = null;
+  try { sel = new URLSearchParams(location.search).get('sel'); } catch (e) { sel = null; /* MUDO A PROPOSITO: sin URLSearchParams la intranet abre con todo */ }
+  if (!sel || sel.length > 2048 || !/^[a-z0-9_,-]+$/i.test(sel)) return;
+  Array.prototype.forEach.call(document.querySelectorAll('a[data-puerta="intranet"]'), function (a) {
+    a.setAttribute('href', '/home/?sel=' + encodeURIComponent(sel));
+  });
+})();
 (function () {
   var b = document.querySelector('[data-accion="demo-restablece"]');
   var hueco = document.querySelector('.toast-slot');
