@@ -185,17 +185,22 @@
       plantilla_contrato: ['Plantilla de contrato activa', 'El texto con el que se generan los contratos. Una plantilla activada ya no se edita: se crea una versión nueva.'],
       carta_reserva: ['Carta de reserva', 'Qué tipo de contrato es la carta de reserva: vence y libera la unidad sola.'],
       condicion_comision: ['Comisión estándar', 'Sin condición estándar no se calcula ninguna comisión.'],
-      facturable: ['Qué vas a facturar', 'Crea al menos un producto o servicio con precio para poder facturar.']   // paso opcional de Facturación (erp-setup-2, 14-oct)
+      facturable: ['Qué vas a facturar', 'Crea al menos un producto o servicio con precio para poder facturar.'],   // paso opcional de Facturación (erp-setup-2, 14-oct)
+      // N5 (aaas-2, 14-oct): los tres pasos del AaaS, en su ventana (/agente/). Mientras falte uno, el AaaS está encendido pero no trabaja
+      tope_aaas: ['Tope mensual del AaaS', 'Lo máximo que el AaaS puede gastar en un mes. Con 0 no gasta nada.'],
+      contexto_aaas: ['Quién es el negocio', 'Unas líneas sobre el negocio para que el AaaS sepa con quién trabaja.'],
+      limites_aaas: ['Límites por módulo', 'Qué puede hacer el AaaS en cada parte del ERP: nunca, proponer, hacer con tope o hacer solo.']
     },
     modulo: {
       gastos: 'Gastos', bancos: 'Bancos', proyectos: 'Proyectos y unidades', modelos: 'Modelos', contratos: 'Contratos', reservas: 'Reservas',
       'textos-contrato': 'Textos de contrato', 'copias-firmadas': 'Copias firmadas', comisiones: 'Comisiones', obra: 'Obra', portal: 'Portal del cliente',
       soporte: 'Soporte', cuentas: 'Cuentas bancarias', compradores: 'Clientes', finanzas: 'Resumen financiero', operaciones: 'Operaciones',
-      'whatsapp-bot': 'Bot de WhatsApp'
+      'whatsapp-bot': 'Bot de WhatsApp', agente: 'AaaS'
     },
     campo: {
       categoria: 'una categoría', cuenta_propia: 'una cuenta propia', cuenta_cobro: 'una cuenta de cobro', proyecto: 'un proyecto', tipo_vivienda: 'un tipo de unidad',
-      unidad: 'una unidad', producto: 'un producto o servicio con precio', fase: 'una fase de obra', plantilla: 'una plantilla activa', tipo_carta: 'el tipo de la carta de reserva', condicion: 'una condición de comisión'
+      unidad: 'una unidad', producto: 'un producto o servicio con precio', fase: 'una fase de obra', plantilla: 'una plantilla activa', tipo_carta: 'el tipo de la carta de reserva', condicion: 'una condición de comisión',
+      tope_aaas: 'el tope mensual del AaaS', contexto_aaas: 'quién es el negocio', limites_aaas: 'los límites por módulo'   // N5 (aaas-2)
     },
     consecuencia: { cuenta_cobro: 'Es opcional: sin ella, las facturas salen sin datos de pago.', facturable: 'Es opcional para terminar la configuración, pero sin ningún producto o servicio con precio no podrás facturar.' },
     hint: {
@@ -225,6 +230,10 @@
     }
   };
   var EN_N4 = {
+    'Tope mensual del AaaS': 'AaaS monthly cap', 'Lo máximo que el AaaS puede gastar en un mes. Con 0 no gasta nada.': 'The most the AaaS can spend in a month. With 0 it spends nothing.',
+    'Quién es el negocio': 'Who the business is', 'Unas líneas sobre el negocio para que el AaaS sepa con quién trabaja.': 'A few lines about the business so the AaaS knows who it works for.',
+    'Límites por módulo': 'Limits per module', 'Qué puede hacer el AaaS en cada parte del ERP: nunca, proponer, hacer con tope o hacer solo.': 'What the AaaS may do in each part of the ERP: never, propose, act within a cap or act on its own.',
+    'el tope mensual del AaaS': 'the AaaS monthly cap', 'quién es el negocio': 'who the business is', 'los límites por módulo': 'the limits per module', 'AaaS': 'AaaS',
     'Categorías de gasto': 'Expense categories', 'Cada gasto se apunta en una categoría: sin ninguna no se puede registrar un gasto.': 'Every expense goes into a category: without one no expense can be recorded.',
     'Cuenta bancaria propia': 'Your own bank account', 'La cuenta (no escrow) contra la que se importan los extractos del banco.': 'The (non-escrow) account bank statements are imported against.',
     'Cuenta de cobro': 'Payment account', 'La cuenta que sale en facturas, proformas y contratos para que te paguen.': 'The account shown on invoices, proformas and contracts so you get paid.',
@@ -260,6 +269,10 @@
     'Impuestos': 'Taxes', 'Financiero': 'Financial'
   };
   var ID_N4 = {
+    'Tope mensual del AaaS': 'Batas bulanan AaaS', 'Lo máximo que el AaaS puede gastar en un mes. Con 0 no gasta nada.': 'Jumlah maksimum yang boleh dibelanjakan AaaS dalam sebulan. Dengan 0 tidak ada pengeluaran.',
+    'Quién es el negocio': 'Siapa bisnisnya', 'Unas líneas sobre el negocio para que el AaaS sepa con quién trabaja.': 'Beberapa baris tentang bisnis agar AaaS tahu untuk siapa ia bekerja.',
+    'Límites por módulo': 'Batas per modul', 'Qué puede hacer el AaaS en cada parte del ERP: nunca, proponer, hacer con tope o hacer solo.': 'Apa yang boleh dilakukan AaaS di setiap bagian ERP: tidak pernah, mengusulkan, bertindak dengan batas, atau bertindak sendiri.',
+    'el tope mensual del AaaS': 'batas bulanan AaaS', 'quién es el negocio': 'siapa bisnisnya', 'los límites por módulo': 'batas per modul', 'AaaS': 'AaaS',
     'Categorías de gasto': 'Kategori pengeluaran', 'Cada gasto se apunta en una categoría: sin ninguna no se puede registrar un gasto.': 'Setiap pengeluaran masuk ke satu kategori: tanpa kategori, pengeluaran tidak bisa dicatat.',
     'Cuenta bancaria propia': 'Rekening bank sendiri', 'La cuenta (no escrow) contra la que se importan los extractos del banco.': 'Rekening (bukan escrow) tempat mutasi bank diimpor.',
     'Cuenta de cobro': 'Rekening penerimaan', 'La cuenta que sale en facturas, proformas y contratos para que te paguen.': 'Rekening yang tercantum di invoice, proforma, dan kontrak untuk menerima pembayaran.',
