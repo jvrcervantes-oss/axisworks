@@ -126,6 +126,9 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
 </script>
 <script>${SCRIPT.replace(/<\/?script>/g, '')}</script></body></html>`;
 
+// MUESTRA=<json> (opcional): lo que devolvieron agente_panel_estado y agente_notas_datos de una base REAL (el piloto corrido de punta a punta en Postgres local,
+// agencia erp/pruebas/agente_panel_muestra.json: {"estado": {...}, "notas": {...}}). Con él, el arnés solo pinta esa respuesta tal cual, comprueba la forma y saca capturas.
+const MUESTRA = process.env.MUESTRA ? JSON.parse(fs.readFileSync(process.env.MUESTRA, 'utf8')) : null;
 (async () => {
   const exe = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
   const nav = await chromium.launch({ executablePath: fs.existsSync(exe) ? exe : undefined });
@@ -148,6 +151,28 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   const sinErrores = async p => (await p.evaluate(() => window.__errores)).length === 0 && (await p.evaluate(() => window.__fromLlamado + window.__fetchLlamado)) === 0;
   const tarjeta = (p, t) => txt(p, '[data-ag="nota"][data-trabajo="' + t + '"]');
 
+  if (MUESTRA) {
+    for (const [idioma, ancho] of [['es', 1440], ['es', 390], ['id', 1440], ['id', 390], ['en', 1440]]) {
+      const base = nuevaBase({ dueno: true });
+      const ctx = await nav.newContext({ viewport: { width: ancho, height: 1000 } });
+      const p = await ctx.newPage();
+      await p.exposeFunction('__srv', async (n, a) => { base.llamadas.push([n, a]); return n === 'agente_panel_estado' ? { data: MUESTRA.estado, error: null } : (n === 'agente_notas_datos' ? { data: MUESTRA.notas, error: null } : err('42501', 'solo lectura en la muestra')); });
+      await p.setContent(pagina(idioma), { waitUntil: 'load' });
+      await p.waitForFunction(() => document.querySelector('[data-ag="carga"]').getAttribute('data-tipo') !== 'cargando', null, { timeout: 5000 });
+      await p.waitForTimeout(150);
+      ok('muestra ' + idioma + ' ' + ancho + ' · la respuesta real se pinta sin error de forma', (await p.$eval('[data-ag="carga"]', e => e.getAttribute('data-tipo'))) === 'listo' && !(await visible(p, '[data-ag="error-hoy"]')));
+      ok('muestra ' + idioma + ' ' + ancho + ' · 8 tarjetas', (await p.$$('[data-ag="nota"]')).length === 8);
+      const sin = await p.evaluate(() => window.__sinTr);
+      ok('muestra ' + idioma + ' ' + ancho + ' · nada sin traducir y ningún uuid en crudo', sin.length === 0 && !/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-/.test(await txt(p, '[data-ag="hoy"]')), J(sin.slice(0, 4)));
+      const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
+      ok('muestra ' + idioma + ' ' + ancho + ' · no desborda', m.sw <= m.cw, J(m));
+      if (SHOT) await p.screenshot({ path: SHOT + '_muestra_' + idioma + '_' + ancho + '.png', fullPage: true });
+      await ctx.close();
+    }
+    await nav.close();
+    console.log(fallos ? '\n' + fallos + ' FALLO(S)' : '\nTODO EN VERDE');
+    process.exit(fallos ? 1 : 0);
+  }
   // 1. el dueño con el piloto encendido: todo a la vista
   {
     const { p, base, ctx } = await abre({ base: { dueno: true } });
