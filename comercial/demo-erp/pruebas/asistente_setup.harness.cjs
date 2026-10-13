@@ -15,6 +15,15 @@ const NUCLEO = fs.readFileSync(path.join(AQUI, 'setup_modulos.js'), 'utf8');
 const PASOS = fs.readFileSync(path.join(AQUI, 'setup_pasos.js'), 'utf8');
 // AXW_CSS_DIST=<paquete construido>: mete tw.css y shell.css de la instancia para mirar la piel en las capturas (no cambia lo que se mide)
 const CSS_PIEL = process.env.AXW_CSS_DIST ? ['tw.css', 'shell.css'].map(f => fs.readFileSync(path.join(process.env.AXW_CSS_DIST, 'assets', f), 'utf8')).join(' ') : '';
+// …y la piel de la instancia tal como la pone instancia.js (--tema-*) más sus letras (fonts.css y sus woff2), para medir contraste sobre lo que
+// ve el cliente (bbm-p41, 13-oct). Un paquete sin piel propia (Lawang, demo) no trae el objeto: se queda con los colores de tw.css.
+const DIST = process.env.AXW_CSS_DIST || '';
+const PIEL_VARS = (() => {
+  if (!DIST) return '';
+  const m = /\bp=(\{[^}]*\});for\(var k in p\)s\.setProperty\("--tema-"\+k/.exec(fs.readFileSync(path.join(DIST, 'contracts', 'assets', 'instancia.js'), 'utf8'));
+  return m ? ':root{' + Object.entries(JSON.parse(m[1])).map(([k, v]) => '--tema-' + k + ':' + v).join(';') + '}' : '';
+})();
+const FUENTES = DIST && fs.existsSync(path.join(DIST, 'assets', 'fonts', 'fonts.css')) ? fs.readFileSync(path.join(DIST, 'assets', 'fonts', 'fonts.css'), 'utf8') : '';
 const SHOT = process.argv[2];
 let fallos = 0;
 const ok = (n, c, x = '') => { if (!c) { fallos++; console.log('FALLA  ' + n + (x ? ' -> ' + x : '')); } else console.log('ok     ' + n); };
@@ -74,7 +83,7 @@ function servidor(b, n, a) {
   return err('42883', null, 'desconocida ' + n);
 }
 const pagina = (idioma, url) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}</style><style>${CSS_PIEL}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>${HTML[0]}</main>
+<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}</style><style>${CSS_PIEL}</style><style>${FUENTES}${PIEL_VARS}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>${HTML[0]}</main>
 <script>
 history.replaceState(null, '', '${url}');
 window.__sinTrad = []; window.__errores = [];
@@ -93,7 +102,14 @@ window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' 
 async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=facturas', ancho = 1440 } = {}) {
   const ctx = await nav.newContext({ viewport: { width: ancho, height: 900 } });
   const p = await ctx.newPage();
-  await p.route('**/*', r => r.fulfill({ status: 200, contentType: 'text/html', body: pagina(idioma, url) }));
+  await p.route('**/*', r => {
+    const u = new URL(r.request().url());
+    if (DIST && u.pathname.startsWith('/assets/fonts/')) {
+      const f = path.join(DIST, u.pathname);
+      return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'font/woff2', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: '' });
+    }
+    return r.fulfill({ status: 200, contentType: 'text/html', body: pagina(idioma, url) });
+  });
   await p.exposeFunction('__srv', async (n, a) => {
     if (n.startsWith('from:')) return { data: b.sociedad ? Object.assign({}, b.sociedad) : null, error: null };
     const r = servidor(b, n, a);
@@ -116,7 +132,8 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   let { p, ctx } = await abre(nav, b);
   ok('el paso de la empresa no lleva «Revisar en Ajustes»: el formulario de aquí es el sitio (revisor 12-oct)', !(await p.$('[data-axw-accion="abrir-donde"]')));
   ok('abre en el primer paso no hecho (empresa)', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'sociedad');
-  ok('«Paso 1 de 2» (la moneda de base ya está hecha: no cuenta)', (await txt(p, '[data-axw-as="progreso"]')) === 'Paso 1 de 2', await txt(p, '[data-axw-as="progreso"]'));
+  ok('«Facturas · Paso 1 de 2» en la cabeza del paso (la moneda de base ya está hecha: no cuenta)', (await txt(p, '[data-axw-as="meta"]')) === 'Facturas · Paso 1 de 2', await txt(p, '[data-axw-as="meta"]'));
+  ok('arriba, el total de pasos hechos de todos los módulos (barra del diseño S10-S60)', (await txt(p, '[data-axw-as="progreso"]')) === '2 de 6 pasos hechos', await txt(p, '[data-axw-as="progreso"]'));
   ok('la URL lleva el paso', (await p.evaluate(() => location.search)).includes('paso=sociedad'));
   await clic(p, 'enviar');
   ok('vacío: dice qué falta y no envía', (await txt(p, '[data-axw-as="error"]')).includes('Razón social') && llamadas(b, 'sociedad_guarda').length === 0);
@@ -124,7 +141,7 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   await clic(p, 'enviar'); await p.waitForTimeout(300);
   const sg = llamadas(b, 'sociedad_guarda')[0];
   ok('alta de empresa: sociedad_guarda con p_nueva y una clave válida', sg && sg[1].p_nueva === true && /^[a-z][a-z0-9_]{2,}$/.test(sg[1].p_clave), JSON.stringify(sg && sg[1]));
-  ok('pasa al prefijo, «Paso 2 de 2»', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'prefijo' && (await txt(p, '[data-axw-as="progreso"]')) === 'Paso 2 de 2');
+  ok('pasa al prefijo, «Paso 2 de 2»', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'prefijo' && (await txt(p, '[data-axw-as="meta"]')) === 'Facturas · Paso 2 de 2');
   await p.fill('[data-axw-campo="prefijo_serie"]', 'bbm');
   ok('el prefijo se escribe en mayúsculas y enseña el ejemplo', (await p.inputValue('[data-axw-campo="prefijo_serie"]')) === 'BBM' && (await txt(p, '[data-axw-ejemplo="prefijo"]')).includes('BBM-'));
   await clic(p, 'enviar');
@@ -146,7 +163,7 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   // 2. La moneda de «base» va delante si falta, sin valor elegido; reservas: el primer sí/no se guarda sin motivo
   b = base('sin_configurar'); b.d.pasos.find(x => x.clave === 'moneda').hecho = false;
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto' }));
-  ok('moneda de base delante: «Paso 1 de 4»', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'moneda' && (await txt(p, '[data-axw-as="progreso"]')) === 'Paso 1 de 4', await txt(p, '[data-axw-as="progreso"]'));
+  ok('moneda de base delante: «Reservas de producto · Paso 1 de 4»', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'moneda' && (await txt(p, '[data-axw-as="meta"]')) === 'Reservas de producto · Paso 1 de 4', await txt(p, '[data-axw-as="meta"]'));
   ok('la moneda empieza sin valor elegido', (await p.inputValue('[data-axw-campo="moneda"]')) === '');
   await p.selectOption('[data-axw-campo="moneda"]', 'IDR'); await clic(p, 'enviar');
   await p.fill('[data-axw-campo="teclea"]', 'IDR'); await clic(p, 'fijar'); await p.waitForTimeout(300);
@@ -262,6 +279,62 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     }
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'inicio_' + idioma + '_' + ancho + '.png'), fullPage: true });
     await ctx.close();
+  }
+
+  // 9. Diseño del owner S10-S60 / S91 (bbm-p41, 13-oct): carril «Tu configuración» desde 1024 px, cabeza «Módulo · Paso n de N», las dos líneas
+  //    «Para qué sirve / Si lo saltas», «Saltar este paso» en un opcional (no guarda nada) y, con la piel real (AXW_CSS_DIST), contraste medido.
+  {
+    b = base('sin_configurar');
+    ({ p, ctx } = await abre(nav, b));
+    const carril = await p.$eval('[data-axw-as="carril"]', e => ({ visible: getComputedStyle(e).display !== 'none', mods: [...e.querySelectorAll('[data-axw-carril-modulo]')].map(a => a.getAttribute('data-axw-carril-modulo')),
+      abierto: (e.querySelector('[data-abierto="1"]') || {}).textContent || '', actual: (e.querySelector('[aria-current="step"]') || {}).getAttribute ? e.querySelector('[aria-current="step"]').getAttribute('data-axw-carril-paso') : null,
+      href: (e.querySelector('[data-axw-carril-paso="prefijo"]') || {}).getAttribute ? e.querySelector('[data-axw-carril-paso="prefijo"]').getAttribute('href') : null }));
+    const conPasos = b.d.modulos.filter(m => b.d.pasos.some(x => x.modulo === m.modulo)).map(m => m.modulo);
+    ok('1440: el carril se ve, con un enlace por módulo con pasos', carril.visible && JSON.stringify(carril.mods) === JSON.stringify(conPasos), JSON.stringify(carril));
+    ok('carril: Facturas abierto con su n/m y el paso actual marcado (aria-current)', /Facturas\s*0\/2/.test(carril.abierto) && carril.actual === 'sociedad', JSON.stringify(carril));
+    ok('carril: cada paso enlaza con la URL de siempre', carril.href === '?modulo=facturas&paso=prefijo', String(carril.href));
+    ok('«Si lo saltas» de un obligatorio: el módulo no queda listo', ((await txt(p, '[data-axw-salta="obligatorio"] dd')) || '').startsWith('Facturas no queda listo'), await txt(p, '[data-axw-salta="obligatorio"] dd'));
+    ok('un obligatorio no ofrece «Saltar este paso»', !(await p.$('[data-axw-accion="saltar"]')));
+    ok('«Dejar para luego» arriba, a la vuelta de siempre', (await p.getAttribute('[data-axw-as="salir"]', 'href')) === '/home/' && (await p.$eval('[data-axw-as="salir"]', e => getComputedStyle(e).display !== 'none')));
+    await ctx.close();
+    ({ p, ctx } = await abre(nav, base('sin_configurar'), { ancho: 390 }));
+    ok('390: sin carril (las mesas móviles no lo llevan)', await p.$eval('[data-axw-as="carril"]', e => getComputedStyle(e).display === 'none'));
+    await ctx.close();
+    // un opcional: su consecuencia y «Saltar este paso», que vuelve al cierre del módulo sin llamar a nada que guarde
+    const bo = base('sin_configurar');
+    const opc = bo.d.pasos.find(x => !x.obligatorio && !x.hecho);
+    if (opc) {
+      ({ p, ctx } = await abre(nav, bo, { url: '/ajustes/configurar/?modulo=' + encodeURIComponent(opc.modulo) + '&paso=' + encodeURIComponent(opc.clave) }));
+      await p.waitForSelector('[data-axw-paso="' + opc.clave + '"]', { timeout: 8000 }).catch(() => {});
+      ok('opcional: etiqueta «Opcional» y su consecuencia en «Si lo saltas»', !!(await p.$('[data-tag="opcional"]')) && !!(await txt(p, '[data-axw-salta="opcional"] dd')), opc.clave);
+      const antes = bo.llamadas.filter(x => x[0] !== 'modulos_setup_estado' && x[0] !== 'ajustes_config_datos').length;
+      await clic(p, 'saltar'); await p.waitForTimeout(300);
+      ok('«Saltar este paso» no guarda nada y sale del paso', bo.llamadas.filter(x => x[0] !== 'modulos_setup_estado' && x[0] !== 'ajustes_config_datos').length === antes && !(await p.$('[data-axw-paso="' + opc.clave + '"]')));
+      await ctx.close();
+    } else ok('el doble trae un paso opcional sin hacer', false);
+    // Contraste sobre lo pintado con la piel de la instancia: texto ≥ 4,5:1 (≥ 3:1 si es grande), en paso e inicio, 1440 y 390, es/en/id
+    if (DIST) for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) for (const url of ['/ajustes/configurar/?modulo=facturas', '/ajustes/configurar/']) {
+      ({ p, ctx } = await abre(nav, base('sin_configurar'), { idioma, ancho, url }));
+      await p.evaluate(() => document.fonts && document.fonts.ready);
+      const malos = await p.evaluate(() => {
+        const rgb = s => { const m = /rgba?\(([^)]+)\)/.exec(s); if (!m) return null; const v = m[1].split(/[ ,/]+/).filter(Boolean).map(Number); return { r: v[0], g: v[1], b: v[2], a: v.length > 3 ? v[3] : 1 }; };
+        const mezcla = (c, f) => ({ r: c.r * c.a + f.r * (1 - c.a), g: c.g * c.a + f.g * (1 - c.a), b: c.b * c.a + f.b * (1 - c.a), a: 1 });
+        const fondo = e => { const capas = []; for (let n = e; n; n = n.parentElement) { const c = rgb(getComputedStyle(n).backgroundColor); if (c && c.a > 0) { capas.push(c); if (c.a >= 1) break; } }
+          let f = { r: 255, g: 255, b: 255, a: 1 }; for (let i = capas.length - 1; i >= 0; i--) f = mezcla(capas[i], f); return f; };
+        const lum = c => { const l = x => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }; return 0.2126 * l(c.r) + 0.7152 * l(c.g) + 0.0722 * l(c.b); };
+        const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+        const out = [];
+        document.querySelectorAll('[data-axw-setup="asistente"] *').forEach(e => {
+          if (![...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+          const cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden' || e.closest('.sr-only') || !e.getClientRects().length) return;
+          const f = fondo(e), c = mezcla(rgb(cs.color), f), r = ratio(c, f), px = parseFloat(cs.fontSize), grande = px >= 24 || (px >= 18.66 && +cs.fontWeight >= 700);
+          if (r < (grande ? 3 : 4.5)) out.push(e.textContent.trim().slice(0, 30) + ' ' + r.toFixed(2));
+        });
+        return out;
+      });
+      ok('piel real ' + idioma + ' ' + ancho + ' ' + (url.includes('modulo') ? 'paso' : 'inicio') + ': texto con contraste suficiente', malos.length === 0, malos.slice(0, 4).join(' | '));
+      await ctx.close();
+    }
   }
 
   await nav.close();

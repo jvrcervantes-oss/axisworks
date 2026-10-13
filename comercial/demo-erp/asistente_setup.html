@@ -6,6 +6,45 @@
      modulos_setup_estado; aquí no se guarda progreso (se retoma en el primer paso no hecho). Sin piel propia: la viste Claude Design después. -->
 <!-- Piel del diseño del owner (12-oct, Claude Design «AxisWorks ERP Setup»: S03 inicio, S91 componente de paso, S80 listo): misma lógica y mismos
      enganches data-axw-*; colores solo por token de la piel de la instancia (marca blanca). -->
+<!-- Carril «Tu configuración» y paso S91 (bbm-p41, 13-oct, mesas S10-S60 del diseño): el carril es el marco oscuro del diseño (--frame-bg = el fondo
+     de marca de la piel, --tema-deep-lagoon; el actual, --tema-burnt-earth = el acento) y solo sale desde 1024 px (las mesas móviles no lo llevan). -->
+<style>
+.axw-wz{display:flex;align-items:flex-start;gap:24px;width:100%}
+.axw-carril{display:none;flex:0 0 300px;position:sticky;top:16px;flex-direction:column;gap:2px;padding:24px 16px;border-radius:24px;background:rgb(var(--tema-deep-lagoon));color:rgb(var(--tema-background))}
+@media (min-width:1024px){.axw-wz[data-carril="1"] .axw-carril{display:flex}}
+.axw-carril a{color:inherit;text-decoration:none}
+.axw-carril-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:0 8px;padding:0 8px 10px 12px;color:rgb(var(--tema-background) / .78)}
+.axw-carril-h>*{white-space:nowrap}
+.axw-carril-h a{font-size:13px;font-weight:600;color:rgb(var(--tema-background));min-height:44px;display:inline-flex;align-items:center}
+[data-axw-paso]:focus:not(:focus-visible),[data-axw-paso][tabindex="-1"]:focus{outline:none}
+.axw-mod{display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 12px;border-radius:12px;font-weight:600;font-size:14px;color:rgb(var(--tema-background) / .78)}
+.axw-mod:hover,.axw-mod[data-abierto="1"]{background:rgb(var(--tema-background) / .08);color:rgb(var(--tema-background))}
+.axw-mod .axw-n{margin-left:auto;font-size:12px;font-variant-numeric:tabular-nums;letter-spacing:.06em;color:rgb(var(--tema-background) / .72)}
+.axw-mk{width:22px;height:22px;flex:none;border-radius:50%;border:1.5px solid rgb(var(--tema-background) / .6)}
+.axw-mk[data-mk="hecho"]{background:rgb(var(--tema-background));border-color:rgb(var(--tema-background))}
+.axw-mk[data-mk="medias"]{border-color:rgb(var(--tema-background));background:linear-gradient(90deg,rgb(var(--tema-background)) 50%,transparent 50%)}
+.axw-mk[data-mk="actual"]{border-color:rgb(var(--tema-burnt-earth));background:rgb(var(--tema-burnt-earth))}
+.axw-pasos{display:flex;flex-direction:column;gap:2px;margin:2px 0 8px 22px;padding-left:12px;border-left:1px solid rgb(var(--tema-background) / .16)}
+.axw-st{display:flex;align-items:center;gap:10px;min-height:40px;padding:6px 10px;border-radius:10px;font-size:13.5px;color:rgb(var(--tema-background) / .78)}
+.axw-st:hover{background:rgb(var(--tema-background) / .08)}
+.axw-st .axw-dot{width:16px;height:16px;flex:none;border-radius:50%;border:1.5px solid rgb(var(--tema-background) / .6)}
+.axw-st[data-st="hecho"] .axw-dot{background:rgb(var(--tema-background));border-color:rgb(var(--tema-background))}
+.axw-st[aria-current="step"]{background:rgb(var(--tema-background) / .14);color:rgb(var(--tema-background));font-weight:700}
+.axw-st[aria-current="step"] .axw-dot{border:4px solid rgb(var(--tema-burnt-earth));background:rgb(var(--tema-background))}
+.axw-st .axw-opt{margin-left:auto;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--tema-background) / .72)}
+.axw-carril-pie{margin-top:16px;padding:16px 12px 0;border-top:1px solid rgb(var(--tema-background) / .16);font-size:13px;display:flex;flex-direction:column;gap:6px;color:rgb(var(--tema-background) / .78)}
+.axw-carril-pie b{color:rgb(var(--tema-background));font-weight:600}
+.axw-tag{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;border:1px solid rgb(var(--tema-outline));color:rgb(var(--tema-on-surface-variant));background:rgb(var(--tema-surface-container-lowest))}
+.axw-tag[data-tag="obligatorio"]{background:rgb(var(--tema-on-surface));border-color:rgb(var(--tema-on-surface));color:rgb(var(--tema-surface-container-lowest))}
+.axw-tag[data-tag="opcional"]{border-style:dashed}
+.axw-segs{display:flex;gap:4px}.axw-segs i{display:block;flex:1 1 0;height:4px;border-radius:999px;background:rgb(var(--tema-outline-variant))}
+.axw-segs i[data-seg="hecho"]{background:rgb(var(--tema-on-surface))}.axw-segs i[data-seg="actual"]{background:rgb(var(--tema-burnt-earth))}
+.axw-why{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:0}
+@media (min-width:768px){.axw-why{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.axw-why>div{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:16px;background:rgb(var(--tema-background));font-size:14px;line-height:1.45}
+.axw-why dt{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:rgb(var(--tema-on-surface-variant));margin-bottom:3px}
+.axw-why dd{margin:0;color:rgb(var(--tema-on-surface))}
+</style>
 <div class="flex flex-col w-full gap-6" data-axw-setup="asistente">
 <div class="lw-cabecera flex flex-col md:flex-row md:items-end gap-4 bg-surface-container-lowest p-6 md:p-8 rounded-2xl border border-outline-variant">
 <div class="flex flex-col gap-2 flex-1 min-w-0">
@@ -16,9 +55,13 @@
 <div class="flex flex-col gap-2 md:items-end" style="min-width:12rem">
 <p class="font-label-md text-[13px] text-on-surface-variant" data-axw-as="progreso"></p>
 <div class="w-full rounded-full bg-surface-container-high" style="height:4px;min-width:12rem" aria-hidden="true"><div class="rounded-full bg-primary-container" style="height:4px;width:0" data-axw-as="barra"></div></div>
+<a class="inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant text-deep-lagoon font-label-md text-label-md" style="min-height:44px;display:none" data-axw-accion="luego" data-axw-as="salir"></a>
 </div>
 </div>
-<section class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 md:p-8 flex flex-col gap-5" style="max-width:44rem;width:100%" data-axw-as="tarjeta" aria-live="polite" aria-busy="true"></section>
+<div class="axw-wz" data-axw-as="cuerpo-asistente">
+<nav class="axw-carril" data-axw-as="carril"></nav>
+<section class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 md:p-8 flex flex-col gap-5" style="max-width:47.5rem;width:100%;min-width:0" data-axw-as="tarjeta" aria-live="polite" aria-busy="true"></section>
+</div>
 </div>
 <!--AXW_SCRIPT-->
 <script>
@@ -54,14 +97,54 @@ document.addEventListener('DOMContentLoaded', function () {
     t.appendChild(el('div', { role: 'alert', class: 'rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-error', text: texto }));
     if (reintento) { var b = boton(U('reintentar'), reintento, true); b.className += ' self-start'; t.appendChild(b); }
   }
-  function cabecera(titulo, n, total) {
+  // Cabecera de una vista de módulo (paso, confirmación, listo). Arriba, como la barra del diseño (S10-S60): el total de pasos hechos de todos los
+  // módulos y «Dejar para luego» (su «Save and exit»: lo hecho ya está guardado). El «Paso n de N» va en la cabeza del propio paso (S91).
+  function cabecera(titulo, conSalir) {
     $('eyebrow').textContent = U('configurar_modulos');
     $('titulo').textContent = titulo;
     $('lead').hidden = true; $('lead').textContent = '';
-    $('progreso').textContent = total ? U('paso_n', { n: String(n), t: String(total) }) : '';
-    $('barra').style.width = total ? Math.round(100 * Math.min(n, total) / total) + '%' : '0';
+    var ob = ctx ? ctx.datos.pasos.filter(function (p) { return p.obligatorio; }) : [], hechos = ob.filter(function (p) { return p.hecho; }).length;
+    $('progreso').textContent = ob.length ? U('pasos_hechos', { n: String(hechos), t: String(ob.length) }) : '';
+    $('barra').style.width = ob.length ? Math.round(100 * hechos / ob.length) + '%' : '0';
+    var sal = $('salir');
+    sal.style.display = conSalir ? '' : 'none'; sal.textContent = U('luego'); sal.setAttribute('href', vuelta);
     document.title = titulo;
-    $('tarjeta').style.maxWidth = '44rem';
+    $('tarjeta').style.maxWidth = '47.5rem';
+  }
+  function sinCarril() { $('cuerpo-asistente').removeAttribute('data-carril'); vacia($('carril')); }
+  // Carril «Tu configuración» (S10-S60): los módulos con pasos y su n/m de obligatorios; el abierto, con sus pasos (hecho · actual · pendiente,
+  // y «Opcional»). Todo sale de modulos_setup_estado ya leído: ni una lectura más. Enlaces con las mismas URL de siempre (?modulo=&paso=).
+  function pintaCarril(actual) {
+    var nav = vacia($('carril')), d = ctx.datos;
+    $('cuerpo-asistente').setAttribute('data-carril', '1');
+    nav.setAttribute('aria-label', U('tu_config'));
+    nav.appendChild(el('div', { class: 'axw-carril-h' }, [
+      el('span', { class: 'font-label-md uppercase', style: 'font-size:11px;letter-spacing:.1em', text: U('tu_config') }),
+      el('a', { href: location.pathname, 'data-axw-carril': 'todos', text: U('todos_modulos') })
+    ]));
+    d.modulos.filter(function (m) { return d.pasos.some(function (p) { return p.modulo === m.modulo; }); }).forEach(function (m) {
+      var ob = d.pasos.filter(function (p) { return p.modulo === m.modulo && p.obligatorio; }), hechos = ob.filter(function (p) { return p.hecho; }).length;
+      var abierto = m.modulo === st.modulo;
+      var mk = abierto ? 'actual' : m.estado === 'configurado' ? 'hecho' : hechos ? 'medias' : 'nada';
+      nav.appendChild(el('a', { class: 'axw-mod', href: '?modulo=' + encodeURIComponent(m.modulo), 'data-axw-carril-modulo': m.modulo, 'data-abierto': abierto ? '1' : null }, [
+        el('span', { class: 'axw-mk', 'data-mk': mk, 'aria-hidden': 'true' }),
+        el('span', { text: S.nombreModulo(m.modulo) }),
+        ob.length ? el('span', { class: 'axw-n', text: hechos + '/' + ob.length }) : null
+      ]));
+      if (!abierto) return;
+      var L = lista(d, m.modulo), caja = el('div', { class: 'axw-pasos', role: 'list', 'aria-label': U('pasos_modulo', { m: S.nombreModulo(m.modulo) }) });
+      L.obligatorios.concat(L.opcionales).forEach(function (p) {
+        caja.appendChild(el('a', { class: 'axw-st', role: 'listitem', href: '?modulo=' + encodeURIComponent(m.modulo) + '&paso=' + encodeURIComponent(p.clave),
+                                   'data-axw-carril-paso': p.clave, 'data-st': p.hecho ? 'hecho' : null, 'aria-current': actual && p === actual ? 'step' : null }, [
+          el('span', { class: 'axw-dot', 'aria-hidden': 'true' }),
+          el('span', { text: S.texto('paso', p.clave, 0) }),
+          p.hecho ? el('span', { class: 'sr-only', text: ' · ' + U('hecho') }) : null,   // el punto lleno no es la única señal
+          p.obligatorio ? null : el('span', { class: 'axw-opt font-label-md', text: U('opcional') })
+        ]));
+      });
+      nav.appendChild(caja);
+    });
+    nav.appendChild(el('div', { class: 'axw-carril-pie' }, [el('b', { text: U('carril_pie') }), el('span', { text: U('carril_pie2') })]));
   }
   // Cabecera del inicio (S03): titular en dos tiempos, entradilla y el total de pasos hechos de todos los módulos encendidos
   function cabeceraInicio(d) {
@@ -74,6 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
     $('progreso').textContent = ob.length ? U('pasos_hechos', { n: String(hechos), t: String(ob.length) }) : '';
     $('barra').style.width = ob.length ? Math.round(100 * hechos / ob.length) + '%' : '0';
     document.title = U('configurar_modulos');
+    $('salir').style.display = 'none';
     $('tarjeta').style.maxWidth = 'none';
   }
   // Los pasos de este módulo en el orden de la base: delante, los obligatorios pendientes de «base» (la moneda); después, los del módulo
@@ -108,8 +192,9 @@ document.addEventListener('DOMContentLoaded', function () {
   function pinta() {
     var t = $('tarjeta'); t.setAttribute('aria-busy', 'false'); vacia(t);
     var d = ctx.datos;
+    sinCarril();
     if (!d.puede_configurar) {
-      cabecera(U('configurar_modulos'), 0, 0);
+      cabecera(U('configurar_modulos'), false);
       t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', text: U('solo_admin') }));
       t.appendChild(el('a', { href: vuelta, class: BTN2, style: 'min-height:44px', text: U('volver') }));
       return;
@@ -122,8 +207,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!actual) actual = L.obligatorios.filter(function (p) { return !p.hecho; })[0] || null;
     if (!actual) return pintaListo(mod, L, pendientes);
     st.paso = actual.clave; apuntaUrl();
-    var i = L.obligatorios.indexOf(actual);
-    cabecera(U('configurar_m', { m: S.nombreModulo(st.modulo) }), i >= 0 ? i + 1 : L.obligatorios.length, L.obligatorios.length);
+    cabecera(U('configurar_m', { m: S.nombreModulo(st.modulo) }), true);
+    pintaCarril(actual);
     if (st.vista === 'confirma') return pintaConfirma(actual);
     if (st.vista === 'duda') return pintaDuda();
     pintaPaso(actual, L);
@@ -185,7 +270,8 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function pintaListo(mod, L, pendientes) {
     var t = $('tarjeta');
-    cabecera(U('configurar_m', { m: S.nombreModulo(st.modulo) }), L.obligatorios.length, L.obligatorios.length);
+    sinCarril();
+    cabecera(U('configurar_m', { m: S.nombreModulo(st.modulo) }), false);
     st.paso = ''; apuntaUrl();
     // «listo» solo si la base dice configurado; si no (un paso que la base aún ve pendiente), se dice que falta algo
     var faltanOpc = L.opcionales.filter(function (p) { return !p.hecho; });
@@ -220,31 +306,41 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function moduloActivo(m) { return !m || !window.axwModuloActivo || window.axwModuloActivo(m); }
   // Componente de paso (S91): cabeza (módulo · paso n de N, obligatorio u opcional, segmentos), título, «para qué sirve», campos y pie
+  // S91: «Módulo · Paso n de N» y, a la derecha, sus etiquetas (Obligatorio/Opcional, Se fija después); debajo, un segmento por paso obligatorio
+  function etiqueta(texto, tipo) { return el('span', { class: 'axw-tag font-label-md', 'data-tag': tipo, text: texto }); }
   function cabezaPaso(p, L) {
     var idx = L.obligatorios.indexOf(p);
+    var t1 = p.obligatorio ? etiqueta(U('obligatorio'), 'obligatorio') : etiqueta(U('opcional'), 'opcional');
+    t1.style.marginLeft = 'auto';
     var meta = el('div', { class: 'flex flex-wrap items-center gap-2' }, [
-      el('span', { class: 'font-label-md text-[11px] tracking-[0.12em] uppercase text-outline',
-                   text: S.nombreModulo(p.modulo) }),   // el «Paso n de N» ya va en la cabecera de la página; aquí, los segmentos
-      chip(p.obligatorio ? U('obligatorio') : U('opcional'), false),
-      p.irreversible && !p.hecho ? chip(U('se_fija'), false) : null
+      el('span', { class: 'font-label-md text-[11px] tracking-[0.12em] uppercase text-on-surface-variant', 'data-axw-as': 'meta',
+                   text: idx >= 0 ? U('paso_de', { m: S.nombreModulo(st.modulo), n: String(idx + 1), t: String(L.obligatorios.length) }) : S.nombreModulo(p.modulo) }),
+      t1,
+      p.irreversible && !p.hecho ? etiqueta(U('se_fija'), 'se-fija') : null
     ]);
-    var cab = el('header', { class: 'flex flex-col gap-4 pb-4 border-b border-outline-variant' }, [meta]);
-    if (idx >= 0 && L.obligatorios.length > 1) {
-      var segs = el('div', { class: 'flex gap-1', 'aria-hidden': 'true' });
-      L.obligatorios.forEach(function (q, k) { segs.appendChild(el('i', { class: 'flex-1 rounded-full ' + (k === idx ? 'bg-primary' : q.hecho ? 'bg-primary-container' : 'bg-surface-container-high'), style: 'height:4px' })); });
+    var cab = el('header', { class: 'flex flex-col gap-4 pb-5 border-b border-outline-variant' }, [meta]);
+    if (idx >= 0) {
+      var segs = el('div', { class: 'axw-segs', 'aria-hidden': 'true' });
+      L.obligatorios.forEach(function (q, k) { segs.appendChild(el('i', { 'data-seg': k === idx ? 'actual' : q.hecho ? 'hecho' : null })); });
       cab.appendChild(segs);
     }
     return cab;
   }
+  // Las dos líneas del diseño: para qué sirve y qué pasa si se salta. Un opcional dice su consecuencia (la del cierre); un obligatorio, que el
+  // módulo no queda listo (es lo que hace la base: el estado del módulo sale de sus obligatorios). Nada que la base no sostenga.
+  function porQue(p) {
+    return el('dl', { class: 'axw-why' }, [
+      el('div', {}, [el('dt', { class: 'font-label-md', text: U('para_que') }), el('dd', { text: S.texto('paso', p.clave, 1) })]),
+      el('div', { 'data-axw-salta': p.obligatorio ? 'obligatorio' : 'opcional' }, [el('dt', { class: 'font-label-md', text: U('si_saltas') }),
+        el('dd', { text: p.obligatorio ? U('salta_obligatorio', { m: S.nombreModulo(p.modulo) }) : S.consecuencia(p.clave) })])
+    ]);
+  }
   function pintaPaso(p, L) {
     var t = $('tarjeta');
     var cab = cabezaPaso(p, L);
-    var h = el('h2', { tabindex: '-1', class: 'font-headline-sm text-headline-sm text-deep-lagoon tracking-tight', style: 'font-size:24px;line-height:1.2', 'data-axw-paso': p.clave, text: S.texto('paso', p.clave, 0) });
+    var h = el('h2', { tabindex: '-1', class: 'font-headline-sm text-headline-sm text-deep-lagoon tracking-tight', style: 'font-size:28px;line-height:1.15', 'data-axw-paso': p.clave, text: S.texto('paso', p.clave, 0) });
     cab.appendChild(h);
-    cab.appendChild(el('dl', { class: 'flex flex-col gap-1' }, [
-      el('dt', { class: 'font-label-md text-[12px] text-outline', text: U('para_que') }),
-      el('dd', { class: 'font-body-md text-body-md text-on-surface-variant', text: S.texto('paso', p.clave, 1) })
-    ]));
+    cab.appendChild(porQue(p));
     if (p.hecho) cab.appendChild(el('span', { class: 'self-start px-3 py-1 rounded-full font-label-md text-[13px] bg-primary-container text-on-primary', 'data-axw-hecho': '1', text: U('hecho') }));
     else if (p.falta) {
       cab.appendChild(el('p', { class: 'font-body-sm text-body-sm text-outline', 'data-axw-falta': p.falta.codigo, text: S.textoFalta(p.falta) }));
@@ -260,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (p.modulo_requerido && !moduloActivo(p.modulo_requerido)) {
       t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-requiere': p.modulo_requerido, text: U('requiere', { m: S.nombreModulo(p.modulo_requerido) }) }));
       if (atras) pie.appendChild(atras);
-      t.appendChild(pie); t.appendChild(enlaceLuego()); h.focus(); return;
+      t.appendChild(pie); h.focus(); return;
     }
     var comp = P.de(p.clave), cuerpo = el('div', { class: 'flex flex-col gap-4', 'data-axw-as': 'cuerpo' });
     var editando = !p.hecho || st.cambia;
@@ -284,14 +380,13 @@ document.addEventListener('DOMContentLoaded', function () {
     if (atras) pie.appendChild(atras);
     var der = el('div', { class: 'axw-btn flex flex-col md:flex-row gap-3', style: 'margin-left:auto' });
     if (!editando && !p.irreversible && !comp.externo) der.appendChild(boton(U('cambiar'), 'cambiar', false));
+    if (!p.obligatorio && !p.hecho) der.appendChild(boton(U('saltar'), 'saltar', false));   // S42/S45: «Saltar este paso» en los opcionales; no guarda nada
     der.appendChild(principal);
     pie.appendChild(der);
     t.appendChild(pie);
-    t.appendChild(enlaceLuego());
     t._ctl = ctl; t._paso = p; t._motivo = motivo;
     h.focus();
   }
-  function enlaceLuego() { return el('a', { href: vuelta, 'data-axw-accion': 'luego', class: 'font-label-md text-label-md text-on-surface-variant underline px-2 py-2', style: 'min-height:44px;align-self:center', text: U('luego') }); }
   function pintaConfirma(p) {
     var t = $('tarjeta'), ctl = P.de(p.clave);
     var r = st.resumen;
@@ -363,7 +458,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (i > 0) { st.paso = L.obligatorios[i - 1].clave; st.error = ''; st.cambia = false; pinta(); }
       return;
     }
-    if (a === 'siguiente') {
+    if (a === 'siguiente' || a === 'saltar') {
       var L2 = lista(ctx.datos, st.modulo), j = L2.obligatorios.indexOf(p), sig = j < 0 ? null : (L2.obligatorios.slice(j + 1).filter(function (x) { return !x.hecho; })[0] || L2.obligatorios[j + 1]);   // un opcional (j = -1) vuelve a «listo», no al paso 1
       st.paso = sig ? sig.clave : '__fin'; st.error = ''; st.cambia = false;
       if (!sig) { st.paso = ''; var mod = ctx.datos.modulos.filter(function (x) { return x.modulo === st.modulo; })[0]; vacia(t); pintaListo(mod, L2, ctx.datos.modulos.filter(function (x) { return x.estado === 'sin_configurar'; })); return; }
