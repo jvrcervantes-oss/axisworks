@@ -32,11 +32,12 @@
     'Cuidado: si ese tipo ya tiene contratos, su etapa no se puede cambiar después.': 'Careful: if that type already has contracts, its stage cannot be changed later.',
     'Aún no hay tipos de contrato activos: créalos en Plantillas.': 'There are no active contract types yet: create them in Templates.',
     'Elige el tipo que es la carta de reserva.': 'Choose the type that is the reservation letter.',
-    'Solo un administrador puede cambiar los tipos de vivienda.': 'Only an administrator can change the property types.',
+    'Esto lo cambia un administrador con el permiso «Unidades».': 'This requires an administrator with the «Units» permission.',
+    'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.': 'This module is switched off in this ERP: nothing can be saved here until it is switched on.',
     'La clave va en minúsculas, números y guion bajo (2 a 40).': 'The key uses lowercase letters, numbers and underscores (2 to 40).',
     'El nombre va de 1 a 60 caracteres.': 'The name must be 1 to 60 characters.',
     'Ese dato no se puede guardar aquí.': "That field can't be saved here.",
-    'Solo un administrador puede cambiar las fases de obra.': 'Only an administrator can change the construction stages.',
+    'Esto lo cambia un administrador con el permiso «Obra».': 'This requires an administrator with the «Construction» permission.',
     'El nombre de la fase va de 1 a 60 caracteres.': 'The stage name must be 1 to 60 characters.',
     'El orden es un número de 1 a 1000.': 'The order is a number from 1 to 1000.',
     'El pago que dispara va del 1 al 5.': 'The payment it triggers goes from 1 to 5.',
@@ -77,11 +78,12 @@
     'Cuidado: si ese tipo ya tiene contratos, su etapa no se puede cambiar después.': 'Hati-hati: jika jenis itu sudah memiliki kontrak, tahapnya tidak dapat diubah nanti.',
     'Aún no hay tipos de contrato activos: créalos en Plantillas.': 'Belum ada jenis kontrak aktif: buat di Templat.',
     'Elige el tipo que es la carta de reserva.': 'Pilih jenis yang merupakan surat booking.',
-    'Solo un administrador puede cambiar los tipos de vivienda.': 'Hanya administrator yang dapat mengubah tipe properti.',
+    'Esto lo cambia un administrador con el permiso «Unidades».': 'Ini memerlukan administrator dengan izin «Unit».',
+    'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.': 'Modul ini dimatikan di ERP ini: tidak ada yang bisa disimpan di sini sampai modul dinyalakan.',
     'La clave va en minúsculas, números y guion bajo (2 a 40).': 'Kunci memakai huruf kecil, angka, dan garis bawah (2 sampai 40).',
     'El nombre va de 1 a 60 caracteres.': 'Nama harus 1 sampai 60 karakter.',
     'Ese dato no se puede guardar aquí.': 'Data itu tidak dapat disimpan di sini.',
-    'Solo un administrador puede cambiar las fases de obra.': 'Hanya administrator yang dapat mengubah tahap konstruksi.',
+    'Esto lo cambia un administrador con el permiso «Obra».': 'Ini memerlukan administrator dengan izin «Konstruksi».',
     'El nombre de la fase va de 1 a 60 caracteres.': 'Nama tahap harus 1 sampai 60 karakter.',
     'El orden es un número de 1 a 1000.': 'Urutan adalah angka 1 sampai 1000.',
     'El pago que dispara va del 1 al 5.': 'Pembayaran yang dipicu antara 1 sampai 5.',
@@ -190,7 +192,8 @@
 
   // ── 1 · Tipos de vivienda (módulo proyectos, obligatorio) ─────────────────────────────────────────────────────────────────────────────────
   var ERR_TIPO = {
-    '42501': 'Solo un administrador puede cambiar los tipos de vivienda.',
+    '42501': 'Esto lo cambia un administrador con el permiso «Unidades».',   // es_admin + herramienta Unidades (puerta de Seguridad, 14-oct)
+    '42501/modulo_apagado': 'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.',
     '22023/clave_no_valida': 'La clave va en minúsculas, números y guion bajo (2 a 40).',
     '22023/nombre_no_valido': 'El nombre va de 1 a 60 caracteres.',
     '22023/campo_desconocido': 'Ese dato no se puede guardar aquí.'
@@ -281,7 +284,8 @@
 
   // ── 2 · Fases de obra (módulo obra, obligatorio) ──────────────────────────────────────────────────────────────────────────────────────────
   var ERR_FASE = {
-    '42501': 'Solo un administrador puede cambiar las fases de obra.',
+    '42501': 'Esto lo cambia un administrador con el permiso «Obra».',   // es_admin + herramienta Obra (puerta de Seguridad, 14-oct)
+    '42501/modulo_apagado': 'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.',
     '22023/clave_no_valida': 'La clave va en minúsculas, números y guion bajo (2 a 40).',
     '22023/nombre_no_valido': 'El nombre de la fase va de 1 a 60 caracteres.',
     '22023/orden_no_valido': 'El orden es un número de 1 a 1000.',
@@ -375,6 +379,7 @@
   // ── 3 · Carta de reserva (módulo reservas, obligatorio): qué tipo de contrato es la reserva ───────────────────────────────────────────────
   var ERR_CARTA = {
     '42501': 'Esto lo cambia un administrador con el permiso «Plantillas».',
+    '42501/modulo_apagado': 'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.',
     '22023/etapa_no_valida': 'La etapa es reserva, contrato o ninguna.',
     'P0002': 'Ese tipo de contrato ya no existe.',
     '55000/tipo_con_contratos': 'Ese tipo ya tiene contratos: su etapa no se cambia (crea otro tipo).'
@@ -441,6 +446,7 @@
   // (es_super_admin): a nadie más le sirve una pantalla de dos interruptores que no puede tocar. Se guarda SOLO lo que cambia.
   var ERR_INT = {
     '42501': 'Solo el administrador principal cambia estos interruptores.',
+    '42501/modulo_apagado': 'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.',
     '22023/campo_desconocido': 'Los interruptores son sí o no.'
   };
   var INTERRUPTORES = [['recalculo_auto', 'Recalcular solas las comisiones cuando cambia un contrato'], ['modo_obligatorio', 'Al emitir un contrato, exigir que se diga quién cerró la venta']];

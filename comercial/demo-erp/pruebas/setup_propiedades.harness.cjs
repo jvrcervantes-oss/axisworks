@@ -183,7 +183,15 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:|22023|42501|55000|23505|P000
   t2 = de(b, 'tipo_vivienda_guarda');
   const e2 = await txt(p, '[data-axw-pr-error="tipos"]');
   ok('T2 Desactivar manda {activo:false}', t2.length === 1 && JSON.stringify(t2[0].p_datos) === '{"activo":false}', JSON.stringify(t2));
-  ok('T2 42501: «Solo un administrador…», sin código ni mensaje de la base', !!e2 && e2.includes('Solo un administrador puede cambiar los tipos de vivienda') && sinCodigo(e2), e2);
+  ok('T2 42501: «…con el permiso «Unidades»», sin código ni mensaje de la base', !!e2 && e2.includes('con el permiso «Unidades»') && sinCodigo(e2), e2);
+  await ctx.close();
+  // puerta de Seguridad (erp-setup-2, 14-oct): con el módulo apagado los escritores dan 42501 / modulo_apagado
+  b = base({ tipos: [{ clave: 'parcela', etiqueta: 'Parcela', activo: true }], falla: { tipo_vivienda_guarda: ['42501', 'modulo_apagado'] } });
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=proyectos&paso=tipos_vivienda' }));
+  if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
+  await p.click('[data-axw-pr-accion="tipo-desactivar"][data-axw-pr-clave="parcela"]'); await p.waitForTimeout(300);
+  const e2b = await txt(p, '[data-axw-pr-error="tipos"]');
+  ok('T2 42501/modulo_apagado: «Este módulo está apagado…», no la del permiso', !!e2b && e2b.includes('Este módulo está apagado') && !e2b.includes('permiso') && sinCodigo(e2b), e2b);
   await ctx.close();
 
   // ── 3. fases de obra: alta con su pago, clave repetida con sufijo, errores 55000 / 23505 por hint ───────────────────────────────────────────
@@ -298,6 +306,13 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:|22023|42501|55000|23505|P000
   await p.click('[data-axw-pr-accion="comisiones-guardar"]'); await p.waitForTimeout(150);
   ok('I2 tras guardar, lo guardado es lo de partida (no se reenvía)', de(b, 'comisiones_interruptor_guarda').length === 1);
   await sinErroresJs(p, 'I2');
+  await ctx.close();
+  b = base({ int: { cambiado_por: null, cambiado_en: null } });   // sin fila todavía (erp-setup-2: los dos a null)
+  ({ p, ctx } = await abre(nav, b, { pag: 'comisiones' }));
+  await entraCom(p);
+  ok('I2b sin fila: casillas sin marcar, sin «Último cambio» y sin errores', !(await p.$eval('[data-lw-tab="comisiones"]', e => e.hidden))
+     && !(await p.$eval('[data-axw-campo="recalculo_auto"]', e => e.checked)) && !(await p.$('[data-axw-pr="comisiones-ultimo"]')));
+  await sinErroresJs(p, 'I2b');
   await ctx.close();
   b = base({ intNoPrincipal: true });
   ({ p, ctx } = await abre(nav, b, { pag: 'comisiones' }));
