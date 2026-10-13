@@ -105,7 +105,7 @@
       h('span', { class: 'font-label-md text-label-md text-on-surface', text: S.texto('paso', p.clave, 0) + (p.obligatorio ? '' : ' · ' + U('opcional')) }),
       h('span', { class: 'font-body-sm text-body-sm text-outline break-words', text: p.hecho ? S.texto('paso', p.clave, 1) : (p.falta ? S.textoFalta(p.falta) : S.texto('paso', p.clave, 1)) }),
       !p.hecho && !p.obligatorio ? h('span', { class: 'font-body-sm text-body-sm text-on-surface-variant break-words', 'data-pm-consecuencia': p.clave, text: S.consecuencia(p.clave) }) : null]);
-    var acciones = h('div', { class: 'flex items-center gap-2' });
+    var acciones = h('div', { class: 'self-start flex items-center gap-2' });   // arriba, junto al título (md:items-start no está compilado)
     if (p.irreversible && p.hecho) acciones.appendChild(chip(true, U('fijado')));
     else {
       acciones.appendChild(chip(p.hecho, U(p.hecho ? 'hecho' : 'pendiente')));
@@ -120,7 +120,7 @@
       }
     }
     var li = h('li', { class: 'py-3 flex flex-col gap-3 border-t border-outline-variant/20', 'data-pm-fila': p.clave }, [
-      h('div', { class: 'flex flex-col md:flex-row md:items-start justify-between gap-3' }, [texto, acciones])]);
+      h('div', { class: 'flex flex-col md:flex-row justify-between gap-3' }, [texto, acciones])]);
     li._paso = p;
     return li;
   }

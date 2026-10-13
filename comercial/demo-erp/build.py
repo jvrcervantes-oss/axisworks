@@ -4016,6 +4016,32 @@ def ajustes_puesta_en_marcha():
     shutil.copy2(os.path.join(AQUI, 'setup_pasos.js'), os.path.join(v4, 'assets', 'setup_pasos.js'))   # el mismo componente por paso que el asistente
 
 
+# Revisor 13-oct (bbm-p41): la tw.css de la instancia es la de Lawang, purgada con las páginas de Lawang. Una clase que solo usan los ficheros del
+# setup (que no son de Lawang) no se compila y la pantalla sale sin ese estilo, en silencio: p-3, gap-x-5 y tracking-[0.08em] en S44/S45. Estos
+# ficheros pintan /ajustes/configurar/ y /ajustes/, que cargan esa tw.css; las axw-* las define el propio fichero en su <style>.
+SETUP_CLASES = ('asistente_setup.html', 'setup_pasos.js', 'setup_reservas.js', 'setup_comun.js', 'ajustes_puesta.js', 'cobros_paso.js')
+RE_CLASES = re.compile(r"""\bclass\s*:\s*'([^'\n]*)'|\bclass="([^"\n]*)"|\bvar\s+(?:BTN\w*|CLS_\w*)\s*=\s*'([^'\n]*)'""")
+
+
+def clases_setup_en_hoja():
+    """Aborta si un fichero del setup usa una clase que la tw.css de la instancia no trae (como no_instalado_base() con la suya). Las lw-* de la
+    cáscara vienen de shell.css, que las dos páginas también cargan."""
+    hoja = ''.join(open(os.path.join(DIST, 'intranet', 'v4', 'assets', f), encoding='utf-8').read() for f in ('tw.css', 'shell.css'))
+    faltan = []
+    for f in SETUP_CLASES:
+        t = open(os.path.join(AQUI, f), encoding='utf-8').read()
+        for m in RE_CLASES.finditer(t):
+            for c in (m.group(1) or m.group(2) or m.group(3) or '').split():
+                if c.startswith('axw-') or not re.fullmatch(r'[\w:/.\[\]%#-]+', c):
+                    continue
+                sel = '.' + ''.join(ch if ch.isalnum() or ch in '-_' else '\\' + ch for ch in c)
+                if not re.search(re.escape(sel) + r'[\s{,:]', hoja):
+                    faltan.append('%s:%d %s' % (f, t.count('\n', 0, m.start()) + 1, c))
+    if faltan:
+        aborta('clases del setup que la tw.css (ni shell.css) de la instancia no trae (saldrían sin estilo; usa una que exista o estilo en línea): '
+               + ', '.join(faltan))
+
+
 def reservas_en_paquete(nombre):
     """¿Lleva esta instancia la pantalla de Reservas de producto? No si su registro la saca del paquete (apagados_extra.p): axisworks-demo tiene el
     módulo APAGADO a propósito (owner, 10-oct) y sacó /flota/ y /entrega/ por sus RPC; los pasos de setup_reservas.js las llamarían desde Ajustes y
@@ -4825,6 +4851,7 @@ def instancia(nombre):
     # pantalla y bbm no cotiza; con ellas y sin E3, el contrato front↔base para toda publicación de bbm.
     if reservas_en_paquete(nombre):
         setup_reservas_pasos()
+    clases_setup_en_hoja()   # revisor 13-oct (bbm-p41): ninguna clase del setup sin compilar en la tw.css de la instancia
     if portada_de(nombre) == 'reservas':   # 11-oct-2026: la Home de las reservas del día y Ajustes › Puesta en marcha (solo instancias de tipo Reservas)
         portada_reservas()
     moneda_documento()   # 13-oct (bbm-p36): factura y recibí nuevos en la moneda de la instancia, no en EUR

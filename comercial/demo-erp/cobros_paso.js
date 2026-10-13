@@ -212,7 +212,7 @@
     });
     modo.appendChild(seg);
     if (liveCerrado(est)) modo.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-cobros-live': 'no_permitido', text: textoError('live_no_permitido') }));
-    if (M.modo === 'live') modo.appendChild(el('p', { role: 'note', class: 'rounded-xl border border-error bg-error-container text-on-error-container px-4 py-3 font-body-md text-body-md', 'data-axw-cobros-live': 'aviso', text: C('live_aviso') }));
+    if (M.modo === 'live') modo.appendChild(el('p', { role: 'note', class: 'rounded-xl border bg-error-container text-on-error-container px-4 py-3 font-body-md text-body-md', style: 'border-color:rgb(var(--tema-error))', 'data-axw-cobros-live': 'aviso', text: C('live_aviso') }));
     if (est.modo) modo.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-cobros-modo-guardado': est.modo, text: C('modo_guardado', { m: nombreModo(est.modo) }) }));
     // cuándo y quién puso el modo de ahora (servidor nuevo: estado.modo_desde {en, por}); con el viejo no viene y no se pinta
     var md = est.modo && est.modo_desde && typeof est.modo_desde === 'object' ? est.modo_desde : null;
