@@ -24,9 +24,9 @@ summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:n
 @keyframes draw{from{stroke-dashoffset:1100}to{stroke-dashoffset:0}}
 /* swarm */
 .xm{position:absolute;width:10px;height:12px;margin:-6px 0 0 -5px;color:#272A47}
-.xm::before,.xm::after{content:"";position:absolute;left:4px;top:0;width:2.5px;height:12px;background:currentColor;border-radius:1px}
-.xm::before{transform:rotate(-31.5deg)}
-.xm::after{transform:rotate(31.5deg)}
+.xm::before,.xm::after,.xm>i::before,.xm>i::after{content:"";position:absolute;left:4px;top:0;width:2.5px;height:12px;background:currentColor;border-radius:1px}
+.xm::before,.xm>i::before{transform:rotate(-31.5deg)}
+.xm::after,.xm>i::after{transform:rotate(31.5deg)}
 .c0{animation:cin .5s cubic-bezier(.2,.8,.2,1) both}
 .c1,.c2{animation:cin .5s cubic-bezier(.2,.8,.2,1) both}
 @keyframes cin{from{transform:scale(0)}to{transform:scale(1)}}
@@ -36,9 +36,6 @@ summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:n
 .xm>i{position:absolute;inset:0;z-index:1;opacity:0;animation:b1 5s linear infinite}
 .c1>i{color:#C8F04A}
 .c2>i{color:#6F79F5;animation-name:b2;animation-duration:7s}
-.xm>i::before,.xm>i::after{content:"";position:absolute;left:4px;top:0;width:2.5px;height:12px;background:currentColor;border-radius:1px}
-.xm>i::before{transform:rotate(-31.5deg)}
-.xm>i::after{transform:rotate(31.5deg)}
 @keyframes b1{0%,80%,100%{opacity:0}85%,91%{opacity:1}}
 @keyframes b2{0%,78%,100%{opacity:0}84%,92%{opacity:1}}
 /* pop-ups: two identical keyframe sets, alternated so each new task replays its entrance */
