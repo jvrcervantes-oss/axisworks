@@ -32,18 +32,19 @@
     'Cuidado: si ese tipo ya tiene contratos, su etapa no se puede cambiar después.': 'Careful: if that type already has contracts, its stage cannot be changed later.',
     'Aún no hay tipos de contrato activos: créalos en Plantillas.': 'There are no active contract types yet: create them in Templates.',
     'Elige el tipo que es la carta de reserva.': 'Choose the type that is the reservation letter.',
-    'Esto lo cambia un administrador con el permiso «Unidades».': 'This requires an administrator with the «Units» permission.',
+    'Hay %n tipos marcados como carta de reserva: %l. Puedes dejarlos así o elegir uno para confirmarlo.': 'There are %n types marked as the reservation letter: %l. You can leave them as they are or choose one to confirm it.',
+    'Esto lo cambia un administrador con el permiso «Unidades» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.': 'This requires an administrator with the «Units» permission and an open session. If you are one, reload the page and sign in again; if nothing changes, ask the main administrator.',
     'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.': 'This module is switched off in this ERP: nothing can be saved here until it is switched on.',
     'La clave va en minúsculas, números y guion bajo (2 a 40).': 'The key uses lowercase letters, numbers and underscores (2 to 40).',
     'El nombre va de 1 a 60 caracteres.': 'The name must be 1 to 60 characters.',
     'Ese dato no se puede guardar aquí.': "That field can't be saved here.",
-    'Esto lo cambia un administrador con el permiso «Obra».': 'This requires an administrator with the «Construction» permission.',
+    'Esto lo cambia un administrador con el permiso «Obra» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.': 'This requires an administrator with the «Construction» permission and an open session. If you are one, reload the page and sign in again; if nothing changes, ask the main administrator.',
     'El nombre de la fase va de 1 a 60 caracteres.': 'The stage name must be 1 to 60 characters.',
     'El orden es un número de 1 a 1000.': 'The order is a number from 1 to 1000.',
     'El pago que dispara va del 1 al 5.': 'The payment it triggers goes from 1 to 5.',
     'Ya hay otra fase en ese orden.': 'Another stage already has that order.',
     'Hay unidades en esta fase o más adelante: su orden y el pago que dispara ya no se cambian.': 'Some units are at this stage or later: its order and the payment it triggers can no longer change.',
-    'Esto lo cambia un administrador con el permiso «Plantillas».': 'This requires an administrator with the «Templates» permission.',
+    'Esto lo cambia un administrador con el permiso «Plantillas» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.': 'This requires an administrator with the «Templates» permission and an open session. If you are one, reload the page and sign in again; if nothing changes, ask the main administrator.',
     'La etapa es reserva, contrato o ninguna.': 'The stage is reservation, contract or none.',
     'Ese tipo de contrato ya no existe.': 'That contract type no longer exists.',
     'Ese tipo ya tiene contratos: su etapa no se cambia (crea otro tipo).': "That type already has contracts: its stage can't change (create another type).",
@@ -60,7 +61,7 @@
     'No se ha enviado nada: tu sesión no está activa. Recarga la página y vuelve a entrar.': 'Nothing was sent: your session is not active. Reload the page and sign in again.',
     'No se ha podido leer cómo están los interruptores: recarga la página.': "We couldn't read how the switches are set: reload the page.",
     'La base no ha respondido: no sabemos si se guardó. Recarga la página para verlo.': "The database didn't answer: we don't know if it was saved. Reload the page to see it.",
-    'Solo el administrador principal cambia estos interruptores.': 'Only the main administrator can change these switches.',
+    'Solo el administrador principal cambia estos interruptores, con la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar.': 'Only the main administrator can change these switches, with an open session. If you are, reload the page and sign in again.',
     'Los interruptores son sí o no.': 'The switches are yes or no.'
   };
   var ID = {
@@ -80,18 +81,19 @@
     'Cuidado: si ese tipo ya tiene contratos, su etapa no se puede cambiar después.': 'Hati-hati: jika jenis itu sudah memiliki kontrak, tahapnya tidak dapat diubah nanti.',
     'Aún no hay tipos de contrato activos: créalos en Plantillas.': 'Belum ada jenis kontrak aktif: buat di Templat.',
     'Elige el tipo que es la carta de reserva.': 'Pilih jenis yang merupakan surat booking.',
-    'Esto lo cambia un administrador con el permiso «Unidades».': 'Ini memerlukan administrator dengan izin «Unit».',
+    'Hay %n tipos marcados como carta de reserva: %l. Puedes dejarlos así o elegir uno para confirmarlo.': 'Ada %n jenis yang ditandai sebagai surat booking: %l. Anda bisa membiarkannya atau memilih satu untuk mengonfirmasinya.',
+    'Esto lo cambia un administrador con el permiso «Unidades» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.': 'Ini memerlukan administrator dengan izin «Unit» dan sesi yang aktif. Jika Anda administrator, muat ulang halaman dan masuk lagi; jika tetap sama, mintalah ke administrator utama.',
     'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.': 'Modul ini dimatikan di ERP ini: tidak ada yang bisa disimpan di sini sampai modul dinyalakan.',
     'La clave va en minúsculas, números y guion bajo (2 a 40).': 'Kunci memakai huruf kecil, angka, dan garis bawah (2 sampai 40).',
     'El nombre va de 1 a 60 caracteres.': 'Nama harus 1 sampai 60 karakter.',
     'Ese dato no se puede guardar aquí.': 'Data itu tidak dapat disimpan di sini.',
-    'Esto lo cambia un administrador con el permiso «Obra».': 'Ini memerlukan administrator dengan izin «Konstruksi».',
+    'Esto lo cambia un administrador con el permiso «Obra» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.': 'Ini memerlukan administrator dengan izin «Konstruksi» dan sesi yang aktif. Jika Anda administrator, muat ulang halaman dan masuk lagi; jika tetap sama, mintalah ke administrator utama.',
     'El nombre de la fase va de 1 a 60 caracteres.': 'Nama tahap harus 1 sampai 60 karakter.',
     'El orden es un número de 1 a 1000.': 'Urutan adalah angka 1 sampai 1000.',
     'El pago que dispara va del 1 al 5.': 'Pembayaran yang dipicu antara 1 sampai 5.',
     'Ya hay otra fase en ese orden.': 'Sudah ada tahap lain dengan urutan itu.',
     'Hay unidades en esta fase o más adelante: su orden y el pago que dispara ya no se cambian.': 'Ada unit di tahap ini atau setelahnya: urutan dan pembayaran yang dipicu tidak dapat diubah lagi.',
-    'Esto lo cambia un administrador con el permiso «Plantillas».': 'Ini memerlukan administrator dengan izin «Templat».',
+    'Esto lo cambia un administrador con el permiso «Plantillas» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.': 'Ini memerlukan administrator dengan izin «Templat» dan sesi yang aktif. Jika Anda administrator, muat ulang halaman dan masuk lagi; jika tetap sama, mintalah ke administrator utama.',
     'La etapa es reserva, contrato o ninguna.': 'Tahapnya booking, kontrak, atau tidak ada.',
     'Ese tipo de contrato ya no existe.': 'Jenis kontrak itu sudah tidak ada.',
     'Ese tipo ya tiene contratos: su etapa no se cambia (crea otro tipo).': 'Jenis itu sudah memiliki kontrak: tahapnya tidak dapat diubah (buat jenis lain).',
@@ -108,7 +110,7 @@
     'No se ha enviado nada: tu sesión no está activa. Recarga la página y vuelve a entrar.': 'Tidak ada yang dikirim: sesi Anda tidak aktif. Muat ulang halaman dan masuk lagi.',
     'No se ha podido leer cómo están los interruptores: recarga la página.': 'Status sakelar tidak dapat dibaca: muat ulang halaman.',
     'La base no ha respondido: no sabemos si se guardó. Recarga la página para verlo.': 'Basis data tidak menjawab: kami tidak tahu apakah sudah tersimpan. Muat ulang halaman untuk melihatnya.',
-    'Solo el administrador principal cambia estos interruptores.': 'Hanya administrator utama yang dapat mengubah sakelar ini.',
+    'Solo el administrador principal cambia estos interruptores, con la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar.': 'Hanya administrator utama yang dapat mengubah sakelar ini, dengan sesi yang aktif. Jika Anda administrator utama, muat ulang halaman dan masuk lagi.',
     'Los interruptores son sí o no.': 'Sakelar hanya ya atau tidak.'
   };
   function fusiona() {
@@ -196,7 +198,7 @@
 
   // ── 1 · Tipos de vivienda (módulo proyectos, obligatorio) ─────────────────────────────────────────────────────────────────────────────────
   var ERR_TIPO = {
-    '42501': 'Esto lo cambia un administrador con el permiso «Unidades».',   // es_admin + herramienta Unidades (puerta de Seguridad, 14-oct)
+    '42501': 'Esto lo cambia un administrador con el permiso «Unidades» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.',   // es_admin + herramienta Unidades (puerta de Seguridad, 14-oct)
     '42501/modulo_apagado': 'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.',
     '22023/clave_no_valida': 'La clave va en minúsculas, números y guion bajo (2 a 40).',
     '22023/nombre_no_valido': 'El nombre va de 1 a 60 caracteres.',
@@ -292,7 +294,7 @@
 
   // ── 2 · Fases de obra (módulo obra, obligatorio) ──────────────────────────────────────────────────────────────────────────────────────────
   var ERR_FASE = {
-    '42501': 'Esto lo cambia un administrador con el permiso «Obra».',   // es_admin + herramienta Obra (puerta de Seguridad, 14-oct)
+    '42501': 'Esto lo cambia un administrador con el permiso «Obra» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.',   // es_admin + herramienta Obra (puerta de Seguridad, 14-oct)
     '42501/modulo_apagado': 'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.',
     '22023/clave_no_valida': 'La clave va en minúsculas, números y guion bajo (2 a 40).',
     '22023/nombre_no_valido': 'El nombre de la fase va de 1 a 60 caracteres.',
@@ -390,7 +392,7 @@
 
   // ── 3 · Carta de reserva (módulo reservas, obligatorio): qué tipo de contrato es la reserva ───────────────────────────────────────────────
   var ERR_CARTA = {
-    '42501': 'Esto lo cambia un administrador con el permiso «Plantillas».',
+    '42501': 'Esto lo cambia un administrador con el permiso «Plantillas» y la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar; si sigue igual, pídeselo al administrador principal.',
     '42501/modulo_apagado': 'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.',
     '22023/etapa_no_valida': 'La etapa es reserva, contrato o ninguna.',
     'P0002': 'Ese tipo de contrato ya no existe.',
@@ -400,7 +402,7 @@
   var cartaReserva = {
     sinMotivo: true,
     pinta: function (caja, ctx) {
-      var st = { tipos: null, actual: null };
+      var st = { tipos: null, actual: null, reservas: [], leido: false };
       var z = el('div', { class: 'flex flex-col gap-4 min-w-0', 'data-axw-pr': 'carta_reserva' });
       var lista = el('ul', { class: 'flex flex-col gap-2', role: 'list', 'data-axw-pr-lista': 'carta', 'aria-busy': 'true' }, [el('li', { class: CLS_AYUDA, text: T('Cargando…') })]);
       z.appendChild(el('p', { class: CLS_ETQ, text: T('Tipos de contrato') }));
@@ -427,22 +429,31 @@
         var etapa = {};
         b.data.forEach(function (x) { if (x && typeof x.tipo === 'string') etapa[x.tipo] = x.etapa; });
         st.tipos = a.data.filter(function (t) { return t && typeof t.clave === 'string'; });
+        st.leido = true;
         if (!st.tipos.length) { lista.appendChild(el('li', { class: CLS_AYUDA, 'data-axw-pr-lista-vacia': 'carta', text: T('Aún no hay tipos de contrato activos: créalos en Plantillas.') })); return; }
         st.tipos.forEach(function (t) {
           var e = etapa[t.clave] || 'ninguna';
-          if (e === 'reserva' && !st.actual) st.actual = t.clave;
+          if (e === 'reserva') st.reservas.push(t.clave);
           lista.appendChild(el('li', { class: CLS_FILA, 'data-axw-pr-carta': t.clave.slice(0, 48) }, [
             el('span', { class: 'font-body-md text-body-md text-on-surface min-w-0', style: 'overflow-wrap:anywhere', text: texto(t.nombre).slice(0, 80) }),
             el('span', { class: CLS_CHIP, text: T('Etapa: %e', { e: T(ETAPA[e] || ETAPA.ninguna) }) })]));
         });
+        // con UNA en «reserva» se preselecciona; con varias no se marca ninguna como si fuera la única: se dice cuáles son (revisor erp-front-propiedades, BAJA)
+        if (st.reservas.length === 1) st.actual = st.reservas[0];
+        if (st.reservas.length > 1) {
+          var nombres = st.tipos.filter(function (t) { return st.reservas.indexOf(t.clave) >= 0; }).map(function (t) { return texto(t.nombre).slice(0, 80); }).join(', ');
+          cont.appendChild(el('p', { class: CLS_AYUDA, 'data-axw-pr': 'carta-varias', role: 'note', text: T('Hay %n tipos marcados como carta de reserva: %l. Puedes dejarlos así o elegir uno para confirmarlo.', { n: String(st.reservas.length), l: nombres }) }));
+        }
         sel = campo(cont, 'cr_tipo', T('¿Cuál es la carta de reserva?'), BORRADOR.carta || st.actual || '', { opciones: [['', '—']].concat(st.tipos.map(function (t) { return [t.clave, texto(t.nombre).slice(0, 80)]; })) });
       });
       return {
         valores: function () {
+          if (!st.leido) return { ok: false, error: T('Aún no se ha podido leer la lista: hasta que se lea no se guarda nada aquí. Si no aparece, recarga la página.') };
+          if (!st.tipos.length) return { ok: false, error: T('Aún no hay tipos de contrato activos: créalos en Plantillas.') };
           var k = sel ? String(sel.value || '') : '';
           if (sel) BORRADOR.carta = k;
-          if (!k) return { ok: false, error: T('Elige el tipo que es la carta de reserva.') };
-          if (k === st.actual) return { ok: true, v: {} };   // ya es la carta de reserva: nada que guardar
+          if (!k) return st.reservas.length ? { ok: true, v: {} } : { ok: false, error: T('Elige el tipo que es la carta de reserva.') };   // ya hay carta de reserva: nada que guardar
+          if (st.reservas.indexOf(k) >= 0) return { ok: true, v: {} };   // ese ya es carta de reserva: nada que guardar
           return { ok: true, v: { tipo: k } };
         }
       };
@@ -459,7 +470,7 @@
   // build.py pone la pestaña data-lw-tab="comisiones" OCULTA y su panel #lw-aj-comisiones. Se enseña solo si la base dice puede_editar
   // (es_super_admin): a nadie más le sirve una pantalla de dos interruptores que no puede tocar. Se guarda SOLO lo que cambia.
   var ERR_INT = {
-    '42501': 'Solo el administrador principal cambia estos interruptores.',
+    '42501': 'Solo el administrador principal cambia estos interruptores, con la sesión abierta. Si ya lo eres, recarga la página y vuelve a entrar.',
     '42501/modulo_apagado': 'Este módulo está apagado en este ERP: hasta que se encienda no se puede guardar aquí.',
     '22023/campo_desconocido': 'Los interruptores son sí o no.'
   };
