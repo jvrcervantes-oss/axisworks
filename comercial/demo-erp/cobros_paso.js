@@ -446,17 +446,20 @@
     'Se suma a lo que el cliente paga por enlace (moto, extras y entrega; nunca la fianza ni el seguro). 0 = sin comisión. Solo cambia las cotizaciones nuevas.',
     'Escribe por qué lo cambias (por ejemplo, la tarifa de la pasarela).', 'Motivo del cambio', 'Guardar comisión',
     'Un número de 0 a 10, con hasta 2 decimales (por ejemplo, 3 o 2,5).', 'No has cambiado la cifra.', 'Comisión guardada.',
-    'La base no ha respondido: no sabemos si se guardó. Recarga la página para verlo.', 'No se guardó: ', 'Solo la cambia el administrador principal.'];
+    'La base no ha respondido: no sabemos si se guardó. Recarga la página para verlo.', 'No se guardó: ', 'Solo la cambia el administrador principal.',
+    'Comisión guardada, pero no se pudo volver a leer: recarga la página para verla.', 'No se ha podido leer la comisión de pago en línea: recarga la página.'];
   var EN_COM = ['Online payment fee (%)',
     'Added to what customers pay by payment link (bike, extras and delivery; never the deposit or insurance). 0 = no fee. Changes only new quotes.',
     "Write why you change it (for example, the gateway's rate).", 'Reason for the change', 'Save fee',
     'A number from 0 to 10, with up to 2 decimals (for example, 3 or 2.5).', "You haven't changed the figure.", 'Fee saved.',
-    "The database didn't answer: we don't know if it was saved. Reload the page to see it.", 'Not saved: ', 'Only the main administrator can change it.'];
+    "The database didn't answer: we don't know if it was saved. Reload the page to see it.", 'Not saved: ', 'Only the main administrator can change it.',
+    "Fee saved, but it couldn't be read back: reload the page to see it.", "The online payment fee couldn't be read: reload the page."];
   var ID_COM = ['Biaya pembayaran online (%)',
     'Ditambahkan ke yang dibayar pelanggan lewat link pembayaran (motor, tambahan dan antar; tidak termasuk deposit atau asuransi). 0 = tanpa biaya. Hanya berlaku untuk penawaran baru.',
     'Tulis alasan perubahannya (misalnya, tarif gateway).', 'Alasan perubahan', 'Simpan biaya',
     'Angka 0 sampai 10, paling banyak 2 desimal (misalnya, 3 atau 2,5).', 'Angkanya belum Anda ubah.', 'Biaya tersimpan.',
-    'Basis data tidak menjawab: kami tidak tahu apakah sudah tersimpan. Muat ulang halaman untuk melihatnya.', 'Tidak tersimpan: ', 'Hanya administrator utama yang dapat mengubahnya.'];
+    'Basis data tidak menjawab: kami tidak tahu apakah sudah tersimpan. Muat ulang halaman untuk melihatnya.', 'Tidak tersimpan: ', 'Hanya administrator utama yang dapat mengubahnya.',
+    'Biaya tersimpan, tetapi tidak bisa dibaca kembali: muat ulang halaman untuk melihatnya.', 'Biaya pembayaran online tidak dapat dibaca: muat ulang halaman.'];
   (function () {
     ES_COM.forEach(function (k, i) {
       if (window.LW_EN && typeof window.LW_EN === 'object' && !(k in window.LW_EN)) window.LW_EN[k] = EN_COM[i];
@@ -477,16 +480,20 @@
     caja.hidden = true;
     sec.appendChild(caja);
     function lee() {
+      // null = esta instancia no tiene el ajuste, o quien mira no es administrador (42501: recargar no lo arregla); {fallo} = no se pudo leer (se dice)
       return window.lwDatos('ajustes_config_datos').then(function (r) {
+        if (r && r.error && r.error.code === '42501') return null;
         var d = r && !r.error ? r.data : null;
-        if (!d || !Array.isArray(d.editables) || d.editables.indexOf('cobros_comision_pct') === -1) return null;
+        if (!d || typeof d !== 'object') return { fallo: true };
+        if (!Array.isArray(d.editables) || d.editables.indexOf('cobros_comision_pct') === -1) return null;
         return { v: d.valores ? d.valores.cobros_comision_pct : null, escribe: d.puede_escribir === true };
-      }, function () { return null; });
+      }, function () { return { fallo: true }; });
     }
     function pintaCom(x) {
       vacia(caja);
       if (!x) { caja.hidden = true; return; }
       caja.hidden = false;
+      if (x.fallo) { caja.appendChild(el('p', { class: 'font-body-sm text-body-sm text-error', role: 'alert', 'data-axw-comision': 'no-leida', text: T(ES_COM[12]) })); return; }
       var tiene = typeof x.v === 'number';
       var entrada = el('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', id: 'axw-comision-pct', 'data-axw-comision': 'pct', class: CLS_INPUT, style: 'max-width:10rem' });
       entrada.value = tiene ? pctTexto(x.v) : '';
@@ -515,7 +522,13 @@
         try { p = window.LW_SB.rpc('ajustes_config_guardar', args); } catch (e) { p = Promise.reject(e); }
         Promise.resolve(p).then(function (r) {
           g.disabled = false;
-          if (r && !r.error) { lee().then(function (y) { pintaCom(y); var e2 = caja.querySelector('[data-axw-comision="estado"]'); if (e2) { e2.textContent = T(ES_COM[7]); } }); return; }
+          if (r && !r.error) {
+            lee().then(function (y) {
+              if (!y || y.fallo) { tiene = true; x.v = n; dice(T(ES_COM[11]), false); return; }   // guardado: el bloque se queda y lo dice
+              pintaCom(y); var e2 = caja.querySelector('[data-axw-comision="estado"]'); if (e2) { e2.textContent = T(ES_COM[7]); }
+            });
+            return;
+          }
           var e = (r && r.error) || {};
           if (!e.code) { dice(T(ES_COM[8]), true); return; }
           if (e.hint === 'comision_no_valida') { dice(T(ES_COM[5]), true); entrada.focus(); return; }

@@ -4231,7 +4231,8 @@ def capa_facturas_prueba(nombre):
             and re.search(r'create\s+(or\s+replace\s+)?function\s+public\.facturas_prueba_datos\s*\(', open(os.path.join(d, n), encoding='utf-8').read(), re.I)]
     if not crea:
         return ''
-    texto = open(os.path.join(d, crea[0]), encoding='utf-8').read()
+    # la ÚLTIMA que la crea manda (una posterior puede recrearla con otro `solo-en:`; revisor, 1.ª vuelta de erp-front-cobros)
+    texto = open(os.path.join(d, crea[-1]), encoding='utf-8').read()
     tipo = (_instancia_registro(nombre).get('config') or {}).get('tipo_erp')
     if not va_a(texto, nombre, tipo):
         return ''
@@ -4241,7 +4242,9 @@ def capa_facturas_prueba(nombre):
     # sin sus comentarios, como apagados_instancia.js: va DESPUÉS de limpia_publico.js y son notas internas del estudio
     js = re.sub(r'/\*.*?\*/', '', js, flags=re.S)
     js = re.sub(r'^\s*//[^\n]*\n', '', js, flags=re.M)
-    print('facturas de prueba: capa pegada a guard.js (%s)' % crea[0])
+    if re.search(r'\S[ \t]+//', js):
+        aborta('facturas_prueba.js: un comentario al final de una línea de código saldría en el guard.js público (ponlo en su propia línea)')
+    print('facturas de prueba: capa pegada a guard.js (%s)' % crea[-1])
     return '\n' + js
 
 

@@ -3,7 +3,7 @@
 # rojo. Mira que va SOLO donde va la migración que la crea (su `tipo:` y su `solo-en:`, abanico.va_a) y en ninguna si esa migración aún no está, y que
 # la capa sale sin comentarios (notas internas que se pegan después de la limpieza pública). El comportamiento en el navegador lo mide
 # pruebas/facturas_prueba.harness.cjs. No escribe en erp/despliegues/.
-import os, shutil, sys, tempfile
+import os, re, shutil, sys, tempfile
 AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AQUI)
 import build
@@ -31,6 +31,9 @@ try:
     mira('con la migración (solo-en: bbm), la capa va a bbm', "lwDatos('facturas_prueba_datos')" in js)
     mira('y no a otra instancia del mismo tipo ni a la demo', build.capa_facturas_prueba('otra') == '' and build.capa_facturas_prueba('demo') == '')
     mira('la capa pegada va sin comentarios (ni «Lawang» ni notas internas)', '/*' not in js and 'Lawang' not in js and 'PROVISIONAL' not in js)
+    mira('ni comentarios al final de una línea (los // que la limpieza no quita)', not re.search(r'\S[ \t]+//', js))
+    open(os.path.join(d, 'erp', 'migraciones', '20261014200000_e110a_recrea.sql'), 'w', encoding='utf-8').write(MIG.replace('-- solo-en: bbm', '-- solo-en: otra'))
+    mira('si una migración posterior la recrea con otro solo-en, manda la última', build.capa_facturas_prueba('otra') != '' and build.capa_facturas_prueba('bbm') == '')
 finally:
     build.AGENCIA, build._instancia_registro = viejo_ag, viejo_reg
     sys.modules.pop('abanico', None)

@@ -158,7 +158,7 @@ async function abre(nav, b, { idioma = 'es', ancho = 1440, url = '/ajustes/#cobr
   p.__consola = [];
   p.on('console', m => p.__consola.push(m.text()));
   await p.route('**/*', r => r.fulfill({ status: 200, contentType: 'text/html', body: tipo === 'ajustes' ? ajustes(idioma) : tipo === 'real' ? ajustesReal(idioma) : asistente(idioma, url) }));
-  await p.exposeFunction('__srv', async (n, a) => { b.rpc.push(n); if (n === 'modulos_setup_estado') return { data: setupEstado(b), error: null }; if (n === 'ajustes_config_datos') return { data: b.ajustes ? JSON.parse(JSON.stringify(b.ajustes)) : { valores: {} }, error: null }; if (n === 'ajustes_config_guardar' && b.guarda) { b.guardados = (b.guardados || []).concat([a]); return b.guarda(a); } return { data: null, error: { code: '42883', message: 'x' } }; });
+  await p.exposeFunction('__srv', async (n, a) => { b.rpc.push(n); if (n === 'modulos_setup_estado') return { data: setupEstado(b), error: null }; if (n === 'ajustes_config_datos') { const f = b.leeFalla && b.leeFalla.length && b.leeFalla.shift(); if (f || (b.leeFallaTrasGuardar && (b.guardados || []).length)) return { data: null, error: { code: typeof f === 'string' ? f : '57014', message: 'x' } }; return { data: b.ajustes ? JSON.parse(JSON.stringify(b.ajustes)) : { valores: {} }, error: null }; } if (n === 'ajustes_config_guardar' && b.guarda) { b.guardados = (b.guardados || []).concat([a]); return b.guarda(a); } return { data: null, error: { code: '42883', message: 'x' } }; });
   await p.exposeFunction('__edge', async (u, c) => (u.endsWith('/functions/v1/ajustes-pagos') ? edge(b, c) : { status: 404, json: null }));
   await p.goto('http://local.test' + url); await p.waitForTimeout(500);
   return { p, ctx };
@@ -606,6 +606,22 @@ const C = '[data-axw-cobros-caja]';
     // quien no puede escribir: ve la cifra, sin botón ni motivo
     b = conCom({ escribe: false }); ({ p, ctx } = await abre(nav, b));
     ok('comisión: sin puede_escribir se ve la cifra en solo lectura, sin guardar', await p.$eval('[data-axw-comision="pct"]', e => e.disabled && e.value === '3') && !(await p.$('[data-axw-comision="guardar"]')) && !!(await p.$('[data-axw-comision="solo-lectura"]')));
+    await ctx.close();
+    // la primera lectura falla: el bloque lo DICE (antes no salía y nadie lo decía; revisor, 1.ª vuelta de erp-front-cobros)
+    b = conCom(); b.leeFalla = [true]; ({ p, ctx } = await abre(nav, b));
+    ok('comisión: si no se puede leer, el bloque sale y dice «recarga la página»', ((await txt(p, '[data-axw-comision="no-leida"]')) || '').includes('recarga la página') && !(await p.$('[data-axw-comision="guardar"]')));
+    await ctx.close();
+    // quien no es administrador entra por la URL: 42501 no es un fallo que se arregle recargando; el bloque no sale (revisor, 2.ª vuelta, BAJA 3)
+    b = conCom(); b.leeFalla = ['42501']; ({ p, ctx } = await abre(nav, b));
+    ok('comisión: 42501 al leer (no administrador): ni bloque ni «recarga la página»', !(await p.$('[data-axw-comision="no-leida"]')) && !(await p.$('[data-axw-comision="bloque"]:not([hidden])')));
+    await ctx.close();
+    // se guarda y la relectura falla: el bloque se queda y lo dice (antes se escondía y se perdía «Comisión guardada»)
+    b = conCom(); b.leeFallaTrasGuardar = true; ({ p, ctx } = await abre(nav, b));
+    await p.fill('[data-axw-comision="pct"]', '2'); await p.fill('[data-axw-comision="motivo"]', 'tarifa nueva'); await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(300);
+    ok('comisión: guardada y sin relectura, el bloque sigue y dice «guardada, recarga para verla»', b.ajustes.valores.cobros_comision_pct === 2 && !!(await p.$(C2 + ':not([hidden])'))
+       && ((await txt(p, '[data-axw-comision="estado"]')) || '').startsWith('Comisión guardada, pero no se pudo volver a leer'));
+    await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(150);
+    ok('comisión: y volver a pulsar con la misma cifra no la manda otra vez', (b.guardados || []).length === 1);
     await ctx.close();
     // primera vez (sin fila): se guarda sin motivo
     b = conCom({ sinValor: true }); ({ p, ctx } = await abre(nav, b));
