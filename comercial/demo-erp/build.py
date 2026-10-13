@@ -3782,11 +3782,24 @@ PERMISOS_POR_MODULO = (
      "          if (!tiposOk) campos.push({ tipo: 'nota', label: 'No se pudo leer el catálogo de tipos de contrato",
      "          if (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false) tiposOk = false;   // ni se pinta ni viaja\n"
      "          else if (!tiposOk) campos.push({ tipo: 'nota', label: 'No se pudo leer el catálogo de tipos de contrato"),
-    # al guardar, lo que la persona ya tiene de módulos apagados viaja tal cual (no se enseña, no se quita)
+    # sin herramientas.js el editor ofrece las llaves que ya tiene alguien: también solo las de módulos encendidos
+    ('intranet/v4/assets/editores.js',
+     "            ops = Object.keys(todas).sort();\n",
+     "            ops = Object.keys(todas).sort().filter(function (k) { return window.axwPermisoActivo(k); });\n"),
+    # al guardar, lo que la persona ya tiene de módulos apagados viaja tal cual (no se enseña, no se quita) y EN EL ORDEN
+    # GUARDADO: usuarios_bloquea_cambio_rol_herramientas compara la lista con `is distinct from` (cuenta el orden), y un
+    # admin que no es super admin solo pasa si la lista sale idéntica. Primero lo guardado que sigue (apagado o marcado),
+    # luego lo marcado nuevo en el orden del menú.
     ('intranet/v4/assets/editores.js',
      "              nombre: v.nombre.trim() || null, herramientas: v.herramientas,\n",
      "              nombre: v.nombre.trim() || null,\n"
-     "              herramientas: v.herramientas.concat((u.herramientas || []).filter(function (k) { return !window.axwPermisoActivo(k) && v.herramientas.indexOf(k) === -1; })),\n"),
+     "              herramientas: (u.herramientas || []).filter(function (k) { return !window.axwPermisoActivo(k) || v.herramientas.indexOf(k) !== -1; })\n"
+     "                .concat(v.herramientas.filter(function (k) { return (u.herramientas || []).indexOf(k) === -1; })),\n"),
+    # la ficha que se reabre sola por ?u= (tras «Guardar permisos») espera a saber los módulos: sin esto, como falla abierto,
+    # enseñaba un instante lo apagado
+    ('intranet/v4/assets/datos.js',
+     "        if (el) setTimeout(function () { abreFicha(el); }, 0);\n",
+     "        if (el) Promise.resolve(esperaModulos()).then(function () { abreFicha(el); });\n"),
     # ficha (datos.js): herramientas, proyectos y contratos por la misma regla
     ('intranet/v4/assets/datos.js',
      "          var hs = u.herramientas || [], pr = nombresProy(u.proyectos), sup = nombresProy(u.proyectos_supervisados);\n",

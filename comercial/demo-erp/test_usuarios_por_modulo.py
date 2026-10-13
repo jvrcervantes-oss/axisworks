@@ -145,22 +145,32 @@ const P = { taller: 'reservas-producto', flota: 'reservas-producto', entrega: 'r
   facturas: 'facturas', recibos: 'recibos', productos: 'productos', gastos: 'gastos', contratos: 'contratos', emitir: 'contratos', compradores: 'compradores',
   proyectos: 'proyectos', cuentas: 'cuentas', vencimientos: 'vencimientos', operaciones: 'operaciones' };
 const ACT = ['base', 'facturas', 'gastos', 'productos', 'recibos', 'reservas-producto'];
-function mundo(conRuta) {
-  const window = { LW_MENU_V4: MENU };
-  if (conRuta) window.axwRutaActiva = (p) => (p === 'leads' ? false : !P[p] || ACT.indexOf(P[p]) !== -1);
+// el menú de la COPIA de bbm lleva además Reservas de producto, Taller, Entrega y Flota (los injerta el build en nav.js); sin
+// ellas estas claves pasarían solo por «fuera del menú» (revisor A2, 13-oct)
+const MENU_BBM = MENU.concat([{ entradas: ['reservas-producto', 'taller', 'entrega', 'flota'].map((k) => ({ path: k, texto: k, clave: k, nucleo: true })) }]);
+function mundo(conRuta, menu, act) {
+  const window = { LW_MENU_V4: menu || MENU };
+  if (conRuta) window.axwRutaActiva = (p) => (p === 'leads' ? false : !P[p] || (act || ACT).indexOf(P[p]) !== -1);
   new Function('window', helper)(window);
   return window;
 }
-const w = mundo(true), law = mundo(false);
+const w = mundo(true, MENU_BBM), law = mundo(false);
+const sinRP = mundo(true, MENU_BBM, ACT.filter((m) => m !== 'reservas-producto'));
+const rpApagado = ['taller', 'entrega', 'flota', 'reservas-producto'].map((k) => sinRP.axwPermisoActivo(k));
 const claves = ['taller', 'flota', 'entrega', 'reservas-producto', 'facturas', 'recibos', 'productos', 'gastos', 'usuarios', 'ajustes',
   'contratos', 'compradores', 'unidades', 'leads', 'bot_conversaciones_ver', 'cuentas', 'vencimientos', 'no_esta_en_el_menu'];
 const r = {}; claves.forEach((k) => { r[k] = w.axwPermisoActivo(k); });
 const lawang = claves.every((k) => law.axwPermisoActivo(k) === true);
-// el guardado: lo de módulos apagados viaja aunque no se enseñe; lo de encendidos, lo marcado
+// el guardado: lo de módulos apagados viaja aunque no se enseñe; lo de encendidos, lo marcado; y en el ORDEN GUARDADO
+// (usuarios_bloquea_cambio_rol_herramientas compara con `is distinct from`: otro orden = cambio = 42501 para un admin)
+const guarda = (u, v) => new Function('window', 'u', 'v', 'return ' + guardaNuevo)(w, u, v);
 const u = { herramientas: ['compradores', 'taller', 'flota', 'contratos'] }, v = { herramientas: ['taller', 'facturas'] };
-const nuevo = new Function('window', 'u', 'v', 'return ' + guardaNuevo)(w, u, v);
+const nuevo = guarda(u, v);
 const viejo = v.herramientas;
-console.log(JSON.stringify({ r, lawang, nuevo, viejo }));
+// sin tocar nada: lo marcado es lo encendido de lo guardado, en el orden del menú (distinto del guardado)
+const u2 = { herramientas: ['leads', 'facturas', 'contratos', 'taller', 'compradores'] };
+const intacto = guarda(u2, { herramientas: ['taller', 'facturas'] });
+console.log(JSON.stringify({ r, lawang, nuevo, viejo, intacto, rpApagado }));
 """
 r3 = subprocess.run(['node', '-e', NODE3], input=json.dumps([menu, helper, guarda_nuevo]), capture_output=True, text=True, encoding='utf-8')
 ok('axwPermisoActivo se evalúa en Node con el menú real de Lawang', r3.returncode == 0, (r3.stderr or '')[-400:])
@@ -171,8 +181,12 @@ if r3.returncode == 0:
     ok('módulos encendidos de bbm (y el núcleo): se ofrecen', all(x['r'][k] is True for k in enc), str({k: x['r'][k] for k in enc}))
     ok('módulos apagados de bbm (contratos, clientes, proyectos, CRM…): no se ofrecen', all(x['r'][k] is False for k in apa), str({k: x['r'][k] for k in apa}))
     ok('sin axwRutaActiva (Lawang): todas se ofrecen', x['lawang'] is True)
-    ok('guardar conserva lo de módulos APAGADOS (compradores, contratos) y quita lo encendido desmarcado (flota)',
-       sorted(x['nuevo']) == ['compradores', 'contratos', 'facturas', 'taller'], str(x['nuevo']))
+    ok('guardar conserva lo de módulos APAGADOS (compradores, contratos), quita lo encendido desmarcado (flota) y añade lo nuevo al final',
+       x['nuevo'] == ['compradores', 'taller', 'contratos', 'facturas'], str(x['nuevo']))
+    ok('guardar sin tocar nada manda la lista IDÉNTICA a la guardada (orden incluido, con lo apagado en medio)',
+       x['intacto'] == ['leads', 'facturas', 'contratos', 'taller', 'compradores'], str(x['intacto']))
+    ok('taller, entrega, flota y reservas-producto siguen al módulo reservas-producto (apagado → no se ofrecen)',
+       x['rpApagado'] == [False, False, False, False], str(x['rpApagado']))
     ok('CONTRAPRUEBA: el guardado viejo perdía lo de módulos apagados', 'compradores' not in x['viejo'])
 
 if fallos:
