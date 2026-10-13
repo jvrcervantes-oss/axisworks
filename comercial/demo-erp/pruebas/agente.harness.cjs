@@ -384,7 +384,7 @@ const MUESTRA = (() => {
   }
   // 2c. paso 5 de aaas-2: con un paso obligatorio sin hacer el AaaS no trabaja aunque la pausa esté quitada; la pantalla lo dice y nunca «Trabajando»
   for (const [falta, frase, idioma, ancho] of [['contexto_aaas', 'Le falta el contexto del negocio', 'es', 1440], ['limites_aaas', 'The limits per module are missing', 'en', 390],
-                                               ['tope_aaas', 'Batas bulanan belum diisi', 'id', 390], ['setup_sin_sembrar', 'la pone el estudio', 'es', 390],
+                                               ['tope_aaas', 'Batas bulanan belum diisi', 'id', 390], ['setup_sin_sembrar', 'la pone el estudio', 'es', 390], ['setup_roto', 'No se ha podido leer la configuración del AaaS', 'es', 1440],
                                                ['moneda', 'Le falta un paso de la configuración del ERP (moneda)', 'es', 1440]]) {
     const { p, ctx } = await abre({ base: { dueno: true, falta }, idioma, ancho });
     const est = await txt(p, '[data-ag="estado"]'), mot = await txt(p, '[data-ag="motivo-estado"]');
