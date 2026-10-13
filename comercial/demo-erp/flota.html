@@ -258,6 +258,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   // Indonesio (instancias con "idiomas": ["id", "en"], hoy bbm; owner 11-oct-2026). Misma clave en español; se fusiona en window.LW_ID solo si existe.
   var ID_FL = {
     "Flota y tarifas": "Armada dan tarif",
+    "Sin impuesto por defecto": "Tanpa pajak bawaan", "Impuesto por defecto": "Pajak bawaan", "Desactivado": "Nonaktif", "Impuesto que ya no está en la lista": "Pajak yang sudah tidak ada di daftar",
+    "No se ha podido saber qué productos son de alquiler: puede que en la lista salga algún extra.": "Tidak dapat diketahui produk mana yang disewakan: mungkin ada ekstra yang muncul di daftar.",
     "Seguimiento": "Tindak lanjut", "Lo que el bot puede alquilar.": "Yang bisa disewakan bot.", "No están en taller ni de baja": "Tidak di bengkel dan tidak dinonaktifkan",
     "De %n motos en total": "Dari %n motor seluruhnya", "Modelos · %n": "Model · %n", "%n motos": "%n motor", "1 moto": "1 motor", "Matrícula": "Plat nomor",
     "Sin tarifas: no se podrá cotizar. Pon los precios para que el bot pueda ofrecerla.": "Belum ada tarif: belum bisa dikutip. Isi harganya agar bot bisa menawarkannya.",
@@ -402,6 +404,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   };
   var EN_FL = {
     'Flota y tarifas': 'Fleet and rates',
+    'Sin impuesto por defecto': 'No default tax', 'Impuesto por defecto': 'Default tax', 'Desactivado': 'Deactivated', 'Impuesto que ya no está en la lista': 'Tax no longer on the list',
+    'No se ha podido saber qué productos son de alquiler: puede que en la lista salga algún extra.': "We couldn't tell which products are for rent: an extra may show up in the list.",
     'Seguimiento': 'Pipeline', 'Lo que el bot puede alquilar.': 'What the bot can rent out.', 'No están en taller ni de baja': 'Not in the workshop or retired',
     'De %n motos en total': 'Out of %n bikes in total', 'Modelos · %n': 'Models · %n', '%n motos': '%n bikes', '1 moto': '1 bike', 'Matrícula': 'Plate',
     'Sin tarifas: no se podrá cotizar. Pon los precios para que el bot pueda ofrecerla.': 'No rates: it cannot be quoted. Set the prices so the bot can offer it.',
@@ -529,6 +533,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   /* Una entrada por RPC, con el nombre LITERAL: así erp/contrato_front.py ve cada llamada (extrae `.rpc('x')` y `lwDatos('x')`). La lectura va por lwDatos; las que escriben, por sb.rpc. */
   var RPC = {
     producto_flota_datos: function (a) { return window.lwDatos('producto_flota_datos', a); },
+    // la clase, la referencia y el impuesto de cada producto, y los impuestos (AXW-290; bbm-backend 052000): producto_flota_datos no los da
+    productos_catalogo_datos: function (a) { return window.lwDatos('productos_catalogo_datos', a); },
     // el MODELO (nombre, referencia, impuesto, activo; clase 'alquiler' al crearlo): la misma RPC que Productos, con su puerta de admin y de herramienta en la base
     producto_guarda: function (a) { return SB.rpc('producto_guarda', a); },
     producto_unidades_alta_lote: function (a) { return SB.rpc('producto_unidades_alta_lote', a); },
@@ -927,7 +933,10 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   function carga() {
     var yo = ++PETICION, est = $v('estado');
     if (!E.d) { est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'cargando'); est.textContent = T('Cargando…'); }
-    return llama('producto_flota_datos', {}).then(function (r) {
+    // las dos lecturas a la vez; el catálogo no tumba Flota: si no llega, la lista sale sin filtrar (como antes) y lo dice
+    var cat = llama('productos_catalogo_datos', {}).then(function (x) { return x; }, function (e) { return { error: e || {} }; });
+    return Promise.all([llama('producto_flota_datos', {}), cat]).then(function (rs) {
+      var r = rs[0], c = rs[1];
       if (yo !== PETICION) return { ok: false, tarde: true };   // llegó tarde: ya se pidió otra lectura y esa manda
       if (r.error || !formaOk(r.data)) {
         var c = r.error ? C.clasifica(r.error) : null;
@@ -939,9 +948,23 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
         oculta($v('contenido'), true);
         return { ok: false };
       }
+      catalogo(r.data, c);
       pinta(r.data);
+      if (E.catFallo) aviso(T('No se ha podido saber qué productos son de alquiler: puede que en la lista salga algún extra.'));
       return { ok: true };
     });
+  }
+  /* AXW-290: Flota es de lo que se alquila. Un producto con clase distinta de 'alquiler' (un extra de «Extras y servicios») sale de la lista: si no, se le podía
+     poner una moto o una tarifa y el disparador _producto_unidad_clase lo pasaba en silencio a alquiler. Clase null (base anterior a F3-E3) o un producto que el
+     catálogo no trae (recortado a 1000): se queda, no se sabe qué es. */
+  function catalogo(d, c) {
+    var bien = c && !c.error && esObj(c.data) && Array.isArray(c.data.productos) && Array.isArray(c.data.impuestos);
+    E.cat = null; E.imps = null; E.catFallo = !bien;
+    if (!bien) return;
+    E.cat = {};
+    c.data.productos.forEach(function (x) { if (esObj(x) && typeof x.id === 'string') E.cat[x.id] = x; });
+    E.imps = c.data.impuestos.filter(esObj);
+    d.productos = d.productos.filter(function (p) { var x = E.cat[p.id]; return !x || x.clase == null || x.clase === 'alquiler'; });
   }
 
   /* ── ayudas de las ventanas de edición ── */
@@ -1142,13 +1165,14 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   /* ── el MODELO: crearlo sin salir de Flota y cambiarle el nombre o si está activo (erp-front, 14-oct-2026; owner 13-oct: «¿Fleets and rates y Products no es lo mismo?») ──
      Crear manda clase 'alquiler' (como el asistente, S41); una base sin clase de producto no admite el campo y se repite sin él (la base lo pasa a alquiler con la primera
      moto). El precio de un alquiler son sus tramos: aquí no se pide. Editar manda solo lo que cambió. La referencia y el impuesto de un modelo YA creado no se leen todavía
-     (producto_flota_datos no los da y esta pantalla no lee tablas, revisión previa #256): se editarán aquí cuando la base dé su lectura. Lo decide la base (admin + herramienta). */
+     (producto_flota_datos no los da y esta pantalla no lee tablas, revisión previa #256) los da productos_catalogo_datos (AXW-290): sin esa lectura, solo nombre y activo.
+     Lo decide la base (admin + herramienta). */
   function abreModelo(pid) {
     var p = pid ? prodPorId(pid) : null;
     if (pid && !p) return;
     var limpia = function (s) { return String(s == null ? '' : s).replace(/^\s+|\s+$/g, ''); };
     var nombreEl = h('input', { type: 'text', id: 'fl-f-nombre', 'data-campo': 'nombre', autocomplete: 'off', maxlength: '200' });
-    var refEl = null, activoEl = null;
+    var refEl = null, activoEl = null, impEl = null, cx = pid && E.cat ? E.cat[pid] || null : null;
     nombreEl.value = p && p.nombre != null ? String(p.nombre) : '';
     var nodos = [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-nombre', text: T('Nombre del modelo') }), nombreEl,
       h('p', { class: 'fl-ayuda', text: T('Como lo verá el cliente en la reserva y en la factura.') })])];
@@ -1156,6 +1180,23 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       refEl = h('input', { type: 'text', id: 'fl-f-referencia', 'data-campo': 'referencia', autocomplete: 'off', maxlength: '80' });
       nodos.push(h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-referencia', text: T('Referencia (opcional)') }), refEl, h('p', { class: 'fl-ayuda', text: T('No se puede repetir en el catálogo.') })]));
     } else {
+      if (cx) {   // la referencia y el impuesto del modelo ya creado, por el catálogo (AXW-290); sin él, como antes: solo nombre y activo
+        refEl = h('input', { type: 'text', id: 'fl-f-referencia', 'data-campo': 'referencia', autocomplete: 'off', maxlength: '80' });
+        refEl.value = cx.referencia != null ? String(cx.referencia) : '';
+        nodos.push(h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-referencia', text: T('Referencia (opcional)') }), refEl, h('p', { class: 'fl-ayuda', text: T('No se puede repetir en el catálogo.') })]));
+        impEl = h('select', { id: 'fl-f-impuesto', 'data-campo': 'impuesto_id' });
+        impEl.appendChild(h('option', { value: '', text: T('Sin impuesto por defecto') }));
+        (E.imps || []).forEach(function (i) {
+          if (i.activo === false && i.id !== cx.impuesto_id) return;   // uno desactivado solo sale si es el que ya tiene puesto (y se marca)
+          var o = h('option', { value: String(i.id), text: String(i.nombre || '—') + (i.porcentaje != null ? ' · ' + i.porcentaje + ' %' : '') + (i.activo === false ? ' · ' + T('Desactivado') : '') });
+          if (i.id === cx.impuesto_id) o.selected = true;
+          impEl.appendChild(o);
+        });
+        if (cx.impuesto_id && !(E.imps || []).some(function (i) { return i.id === cx.impuesto_id; })) {
+          var o2 = h('option', { value: String(cx.impuesto_id), text: T('Impuesto que ya no está en la lista') }); o2.selected = true; impEl.appendChild(o2);
+        }
+        nodos.push(h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-impuesto', text: T('Impuesto por defecto') }), impEl]));
+      }
       activoEl = h('input', { type: 'checkbox', id: 'fl-f-activo', 'data-campo': 'activo' });
       activoEl.checked = p.activo !== false;
       nodos.push(h('label', { class: 'fl-check', for: 'fl-f-activo' }, [activoEl, h('span', { text: T('Activo: se puede reservar') })]));
@@ -1172,6 +1213,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       }
       if (nom !== limpia(p.nombre)) q.nombre = nom;
       if (activoEl.checked !== (p.activo !== false)) q.activo = activoEl.checked;
+      if (cx && refEl) { var rf = limpia(refEl.value); if (rf !== limpia(cx.referencia)) q.referencia = rf || null; }
+      if (cx && impEl) { var im = impEl.value || null; if (im !== (cx.impuesto_id || null)) q.impuesto_id = im; }
       if (!Object.keys(q).length) return { e: T('No hay nada que cambiar.') };
       return { v: q };
     }

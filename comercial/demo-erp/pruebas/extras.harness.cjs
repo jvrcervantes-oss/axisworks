@@ -22,38 +22,34 @@ const err = (code, message, hint) => ({ data: null, error: { code, message, hint
 
 function nuevaBase(o = {}) {
   const prods = o.vacio ? [] : [
-    { id: 'm1', numero_producto: 'P-1', nombre: 'Honda Beat', referencia: null, unidad: 'día', precio: 0, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'alquiler' },
-    { id: 's1', numero_producto: 'P-2', nombre: o.xss ? XSS : 'Entrega y recogida a domicilio', referencia: 'DEL', unidad: 'viaje', precio: 50000, moneda: 'IDR', descripcion: null, impuesto_id: 'i1', activo: false, clase: 'servicio' },
-    { id: 's2', numero_producto: 'P-3', nombre: 'Casco extra', referencia: null, unidad: 'ud', precio: 25000, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'servicio' }];
-  if (o.mil) for (let k = 0; k < (o.mil === 'justo' ? 998 : 1001); k++) prods.push({ id: 'x' + k, numero_producto: 'P-X' + k, nombre: 'Extra ' + k, referencia: null, unidad: 'ud', precio: 1000, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'servicio' });
-  if (o.largo) prods.push({ id: 's3', numero_producto: 'P-4', nombre: 'W'.repeat(120), referencia: 'R'.repeat(60), unidad: 'ud', precio: 123456789, moneda: 'IDR', descripcion: null, impuesto_id: 'i2', activo: true, clase: 'servicio' });
+    { id: 'm1', numero: 'P-1', nombre: 'Honda Beat', referencia: null, unidad: 'día', precio: 0, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'alquiler' },
+    { id: 's1', numero: 'P-2', nombre: o.xss ? XSS : 'Entrega y recogida a domicilio', referencia: 'DEL', unidad: 'viaje', precio: 50000, moneda: 'IDR', descripcion: null, impuesto_id: 'i1', activo: false, clase: 'servicio' },
+    { id: 's2', numero: 'P-3', nombre: 'Casco extra', referencia: null, unidad: 'ud', precio: 25000, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'servicio' }];
+  if (o.mil) for (let k = 0; k < (o.mil === 'justo' ? 997 : 1001); k++) prods.push({ id: 'x' + k, numero: 'P-X' + k, nombre: 'Extra ' + k, referencia: null, unidad: 'ud', precio: 1000, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'servicio' });
+  if (o.largo) prods.push({ id: 's3', numero: 'P-4', nombre: 'W'.repeat(120), referencia: 'R'.repeat(60), unidad: 'ud', precio: 123456789, moneda: 'IDR', descripcion: null, impuesto_id: 'i2', activo: true, clase: 'servicio' });
   return { o, llamadas: [], n: 10, prods, imps: [{ id: 'i1', numero_impuesto: 'IMP-1', nombre: 'PPN 11 %', pais: 'ID', clase: 'suma', porcentaje: 11, activo: true },
     { id: 'i2', numero_impuesto: 'IMP-2', nombre: 'Viejo', pais: 'ID', clase: 'suma', porcentaje: 10, activo: false }] };
 }
 function servidor(s, tipo, nombre, a) {
   s.llamadas.push([tipo, nombre, JSON.parse(JSON.stringify(a || {}))]);
   const o = s.o;
-  if (tipo === 'from') {
-    if (nombre === 'productos') {
-      if (o.sinPermiso) return err('42501', 'permission denied for table productos');
-      if (o.sinRed) return { data: null, error: { message: 'Failed to fetch' } };
-      // como PostgREST: neq deja fuera también el null; limit corta después del filtro
-      let d = JSON.parse(JSON.stringify(s.prods));
-      for (const c of (a && a.cad) || []) {
-        if (c[0] === 'neq') d = d.filter(x => x[c[1]] != null && x[c[1]] !== c[2]);
-        if (c[0] === 'limit') d = d.slice(0, c[1]);
-      }
-      return { data: d, error: null };
-    }
-    if (nombre === 'impuestos') return o.sinImpuestos ? err('42501', 'permission denied for table impuestos') : { data: JSON.parse(JSON.stringify(s.imps)), error: null };
-    return err('42P01', 'tabla desconocida');
+  if (tipo === 'from') return err('42P01', 'el navegador ya no lee tablas aquí (AXW-290)');
+  if (tipo === 'datos') {
+    if (nombre !== 'productos_catalogo_datos') return err('42883', 'funcion desconocida ' + nombre);
+    // como 20261014052000 (bbm-backend): TODO el catálogo (motos incluidas) por nombre, 1000 como mucho; impuestos 500; recortado si hay más
+    if (o.sinPermiso) return err('42501', 'productos_catalogo_datos: sin acceso', 'sin_acceso');
+    if (o.sinRed) return { data: null, error: { message: 'Failed to fetch' } };
+    const todos = JSON.parse(JSON.stringify(s.prods)).sort((x, y) => String(x.nombre).toLowerCase() < String(y.nombre).toLowerCase() ? -1 : 1);
+    const d = { productos: todos.slice(0, 1000), impuestos: JSON.parse(JSON.stringify(s.imps)), recortado: todos.length > 1000 || s.imps.length > 500 };
+    if (o.sinImpuestos) delete d.impuestos;
+    return { data: d, error: null };
   }
   if (nombre !== 'producto_guarda') return err('42883', 'funcion desconocida ' + nombre);
   if (o.noAdmin) return err('42501', 'El catálogo de productos lo cambia un admin');
   if (o.sinFlota) return err('42501', 'Esto exige la herramienta «flota»: la asigna el administrador principal en Usuarios.', 'sin_herramienta');
   const extra = Object.keys(a.p_datos).filter(k => !['nombre', 'referencia', 'unidad', 'precio', 'moneda', 'descripcion', 'impuesto_id', 'activo', 'clase'].includes(k));
   if (extra.length) return err('22023', 'Campo no admitido: ' + extra.join(', '), 'campo_no_admitido');
-  if (a.p_id == null) { const id = 'n' + (s.n++); s.prods.push(Object.assign({ id, numero_producto: 'P-' + s.n, referencia: null, descripcion: null, impuesto_id: null, clase: 'servicio' }, a.p_datos)); return { data: id, error: null }; }
+  if (a.p_id == null) { const id = 'n' + (s.n++); s.prods.push(Object.assign({ id, numero: 'P-' + s.n, referencia: null, descripcion: null, impuesto_id: null, clase: 'servicio' }, a.p_datos)); return { data: id, error: null }; }
   const p = s.prods.find(x => x.id === a.p_id); if (!p) return err('P0002', 'Ese producto ya no existe');
   Object.assign(p, a.p_datos); return { data: p.id, error: null };
 }
@@ -64,6 +60,7 @@ window.__xss = undefined; window.__errores = []; window.__sinT = [];
 window.fetch = function () { return Promise.reject(new Error('fetch')); };
 function q(tabla) { var cad = []; var o = { then: function (f, g) { return window.__srv('from', tabla, { cad: cad }).then(f, g); } }; ['select', 'order', 'limit', 'eq', 'neq'].forEach(function (m) { o[m] = function () { cad.push([m].concat([].slice.call(arguments))); return o; }; }); return o; }
 var sb = { rpc: function (n, a) { return { then: function (f, g) { return window.__srv('rpc', n, a || {}).then(f, g); } }; }, from: q };
+window.lwDatos = function (n, a) { return window.__srv('datos', n, a || {}); };
 window.LW_AUTH = Promise.resolve({ sb: sb, ficha: { rol: 'admin' } });
 window.lwMonedaBase = function () { return 'IDR'; };
 window.LW_IDIOMA = '${idioma}'; window.LW_EN = {}; window.LW_ID = {};
@@ -101,27 +98,25 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const { base, p, ctx } = await abre({ base: { xss: true } });
     const ids = await p.$$eval('.ex-fila[data-producto-id]', fs => fs.map(f => f.getAttribute('data-producto-id')));
     ok('solo enseña lo que NO es de alquiler (las motos viven en Flota), activos primero', J(ids) === J(['s2', 's1']), J(ids));
-    ok('lee las tablas productos e impuestos (lo mismo que la pantalla a la que sustituye) y no escribe nada', J(base.llamadas.map(x => x[0] + ':' + x[1]).sort()) === J(['from:impuestos', 'from:productos']));
+    ok('lee SOLO productos_catalogo_datos (AXW-290: sin tablas) y no escribe nada', J(base.llamadas.map(x => x[0] + ':' + x[1])) === J(['datos:productos_catalogo_datos']));
     ok('el impuesto sale con su nombre; el desactivado se marca', (await txt(p, '[data-producto-id="s1"]')).includes('PPN 11 %') && (await txt(p, '[data-producto-id="s1"]')).includes('Desactivado'));
     ok('enlaza a Flota para las motos (por la ruta)', (await p.$$('a[data-ex="ir-flota"][href="/intranet/v4/flota/"]')).length === 1);
     ok('XSS del nombre se pinta como texto', await limpio(p));
-    const cad = (base.llamadas.find(x => x[1] === 'productos') || [])[2];
-    ok('la consulta filtra la clase en la base (neq clase alquiler) ANTES del tope de 1000 (revisor 14-oct)', !!cad && J(cad.cad.filter(c => c[0] !== 'select')) === J([['neq', 'clase', 'alquiler'], ['order', 'nombre'], ['limit', 1001]]), J(cad));
     ok('con menos de 1000 extras no sale el aviso de lista recortada', await p.$eval('[data-ex="recortado"]', e => e.classList.contains('axw-oculto')));
     await ctx.close();
   }
-  // 1c. exactamente 1000 extras (998 + los 2 de siempre): sin aviso falso
+  // 1c. catálogo de exactamente 1000 productos (997 extras + los 3 de siempre, una moto incluida): el servidor no dice recortado y no hay aviso falso
   {
     const { p, ctx } = await abre({ base: { mil: 'justo' } });
     const n = await p.$$eval('.ex-fila[data-producto-id]', fs => fs.length);
-    ok('con exactamente 1000 extras: las 1000 filas y SIN aviso de lista recortada', n === 1000 && await p.$eval('[data-ex="recortado"]', e => e.classList.contains('axw-oculto')), String(n));
+    ok('catálogo de exactamente 1000 productos (motos incluidas): todos los extras y SIN aviso de lista recortada', n === 999 && await p.$eval('[data-ex="recortado"]', e => e.classList.contains('axw-oculto')), String(n));
     await ctx.close();
   }
-  // 1b. más de 1000 extras: se enseñan 1000 y se avisa (las motos no gastan el tope)
+  // 1b. más de 1000 productos: el servidor dice recortado y la pantalla lo avisa, en indonesio
   {
     const { p, ctx } = await abre({ base: { mil: true }, idioma: 'id' });
     const n = await p.$$eval('.ex-fila[data-producto-id]', fs => fs.length);
-    ok('con más de 1000 extras + motos: 1000 filas y el aviso de lista recortada, en indonesio', n === 1000 && await p.$eval('[data-ex="recortado"]', e => !e.classList.contains('axw-oculto') && /Ditampilkan 1000 ekstra/.test(e.textContent)), String(n));
+    ok('con más de 1000 productos: el aviso de catálogo recortado, en indonesio', n <= 1000 && await p.$eval('[data-ex="recortado"]', e => !e.classList.contains('axw-oculto') && /Katalognya lebih panjang/.test(e.textContent)), String(n));
     await ctx.close();
   }
   // 2. vacío ≠ error ≠ sin permiso
@@ -136,9 +131,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('42501 al leer: tipo sin_permiso con su frase, no «vacío»', (await tipo(c.p)) === 'sin_permiso' && (await txt(c.p, '[data-ex="estado"]')).includes('No tienes permiso'));
     await c.ctx.close();
     const d = await abre({ base: { sinImpuestos: true } });
-    ok('sin la lista de impuestos: lo avisa, no inventa el nombre y el formulario no ofrece el impuesto', !(await d.p.$eval('[data-ex="impuestos-no"]', e => e.classList.contains('axw-oculto'))) && !(await txt(d.p, '[data-producto-id="s1"]')).includes('PPN'));
-    await d.p.click('[data-accion="ex-editar"][data-producto-id="s1"]');
-    ok('…y al editar no se toca el impuesto (no hay campo)', !(await d.p.$(campo('impuesto_id'))));
+    ok('el lector llega sin la lista de impuestos (forma rara): «no se ha podido mirar», no una lista a medias', (await tipo(d.p)) === 'error' && (await txt(d.p, '[data-ex="estado"]')).includes('No se ha podido mirar') && !(await d.p.$('.ex-fila')));
     await d.ctx.close();
   }
   // 3. alta
