@@ -33,6 +33,7 @@ Revisión previa (24-sep, Seguridad + Legal), cada regla con su porqué:
 - Se niega a escribir fuera de su `dist/` o dentro de `proyectos/Lawang/`: un
   guard falso escrito ahí lo desplegaría el webhook de Lawang.
 """
+import collections
 import hashlib
 import html
 import json
@@ -1552,6 +1553,208 @@ def piel_v4_fijos(dist, nombre):
     for rel_f, t in textos.items():
         open(os.path.join(dist, rel_f), 'w', encoding='utf-8', newline='').write(t)
     return n
+
+
+# ── Colores de Lawang escritos a fuego en TODO lo que publica una instancia con piel (bbm-p42b, 13-oct-2026; hallazgo de p40,
+# orquestador agencia-81). Los editores y cajones (Facturas › «Dokumen baru», Gastos › «New supplier»…) y el PAPEL seguían con el
+# crema, el verde azulado y el verde oliva de Lawang: 878 literales en 53 ficheros que V4_FIJOS/CLASICA_FIJOS no alcanzan. El papel
+# (cabecera de la tabla #485B37 en la factura que recibe el cliente) lo pone contracts/assets/brand.css (`--brand-primary:var(--tg)`,
+# `--tg:#485B37`), que el editor carga en v4 y al que no llega el `html:root` de la piel (medido en bbm real: tinta de la sociedad NULL).
+# Regla: cada color de Lawang va al MISMO token en la piel de la instancia (los tokens de Lawang son su propia piel: tw.css de Lawang);
+# los escritos a mano que no son token, por la tabla LAWANG_SUELTOS. Se reemplaza en la copia de DIST, nunca en el repo de Lawang: sin
+# piel (Lawang, demo sin piel) no se toca nada. Un color con DOS significados (el verde de Lawang es marca y es «disponible/hecho/en
+# vivo») no cabe en una tabla color→token: va por CONTEXTO (LAWANG_POR_CONTEXTO: fichero + texto de alrededor + cuántas veces) y el
+# build PARA si encuentra una aparición sin clasificar o si cambia el recuento. Al final, barrido: PARA si queda un color de Lawang en
+# cualquier forma (#rgb, #rrggbb, #rrggbbaa, %23 de un SVG en URL, rgb()/rgba() con comas o espacios). Y PARA si el pase cambia algo
+# que no sea un color (ni un texto, ni un importe, ni un data-*).
+LAWANG_TW = os.path.join('intranet', 'v4', 'assets', 'tw.css')   # la piel de Lawang: sus --tema-* por defecto
+# Colores de Lawang escritos a mano que NO son token de su tw.css → token de la piel. Cremas y grises cálidos de su suite (axw.css,
+# brand.css, documento.css, suite-v3.css…), medidos en el paquete de bbm el 13-oct. Lo que no está aquí ni en tw.css no se considera
+# «de Lawang» (los tonos de estado propios y la cola larga de grises van en una segunda pasada: ver la fila del estudio en pendientes).
+LAWANG_SUELTOS = {'0D5B5F': 'primary-container',        # hover del botón primario (como CLASICA_FIJOS)
+                  '0C3C3E': 'on-background',            # hover del botón de la mascota
+                  '6B7072': 'on-surface-variant',       # texto del pie del panel clásico
+                  'FFFDF8': 'surface-container-lowest',  # --paper de la suite clásica
+                  'FDFCF9': 'surface-container-lowest',
+                  'F7F3E9': 'surface-container-low',
+                  'EDE7D9': 'surface-container',
+                  'F7EEDC': 'surface-container-low',
+                  'EFEADE': 'surface-container',        # --sup-hover
+                  'E8E2D5': 'filete', 'F0EBE0': 'filete',  # filetes del papel (documento.css)
+                  '6B6C66': 'on-surface-variant', '676B63': 'on-surface-variant'}   # --muted
+NEUTROS = {(255, 255, 255), (0, 0, 0)}
+# Apariciones de un color de Lawang con más de un significado: (fichero de DIST, texto que tiene que aparecer junto al color —regex sobre
+# 80 caracteres antes y 40 después—, destino, cuántas). Destino None = el token del color (marca); 'ok' = el verde de estado de la piel
+# ('ok' o, si no lo trae, 'fiduciary-green'); 'ok-fondo'/'ok-tinta' = la pareja fondo/texto de una etiqueta «aprobada». Decisión por
+# defecto del orquestador (13-oct): los colores de ESTADO van a los de estado de la piel, nunca al acento de la marca.
+LAWANG_POR_CONTEXTO = {
+    '485B37': (('assets/datos.js', r'(?i)background:#485b37;color:#fff', None, 2),                 # botón
+               ('assets/datos.js', r'DATOS EN VIVO|disponible:|en_venta:|llega\?', 'ok', 4),        # estados
+               ('assets/editores.js', r'focus-visible', None, 1),
+               ('assets/ficha_modelo.js', r'verde:', 'ok', 1),
+               ('whatsapp-bot-alta/index.html', r'data-listo="1"|data-hecho="1"', 'ok', 2),       # pasos hechos
+               ('contracts/index.html', r'', None, 2), ('clasico/obra/index.html', r'', None, 2),  # «Herramienta no incluida»
+               ('index.html', r'', None, 1), ('crea-contrasena/index.html', r'', None, 1),        # --tg de la puerta
+               ('contracts/assets/autoria.js', r'', None, 2), ('contracts/assets/axw.css', r'', None, 20),
+               ('contracts/assets/suite-v3.css', r'', None, 5), ('contracts/assets/brand.css', r'', None, 1)),
+    'D3EABB': (('assets/comisiones-equipo.js', r'aprobada:', 'ok-fondo', 1),),
+    '0F2003': (('assets/comisiones-equipo.js', r'aprobada:', 'ok-tinta', 1),),
+}
+# El PAPEL (decisión por defecto del orquestador, 13-oct): el de una instancia nunca lleva los colores de otro cliente; va en sobrio, el
+# texto en la tinta y el acento de la marca solo donde hoy va el verde (cabecera de la tabla, filetes de total). Se revierte en una línea.
+PAPEL_FIJOS = (('contracts/assets/brand.css', '--brand-primary: var(--tg);', '--brand-primary: %s;', 'accent-gold'),
+               ('contracts/assets/brand.css', '--brand-deep:    var(--dl);', '--brand-deep:    %s;', 'on-background'))
+COLOR_RE = re.compile(r'(#|%23)([0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-zA-Z_])'
+                      r'|(rgba?\(\s*)(\d{1,3})(\s*[, ]\s*)(\d{1,3})(\s*[, ]\s*)(\d{1,3})')
+PIEL_EXT = ('.js', '.css', '.html', '.php', '.svg')   # nada binario ni de datos (.json fuera)
+
+
+def _rgb_hex(h):
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def lawang_paleta():
+    """{(r,g,b): [tokens de Lawang]} con los --tema-* por defecto de la tw.css de Lawang + LAWANG_SUELTOS (sin blanco ni negro)."""
+    ruta = os.path.join(LAWANG, LAWANG_TW)
+    if not os.path.isfile(ruta):
+        aborta('colores de Lawang: falta %s (la piel de Lawang)' % ruta)
+    pal = {}
+    for k, r, g, b in re.findall(r'--tema-([a-z0-9-]+):\s*(\d+) (\d+) (\d+)', open(ruta, encoding='utf-8').read()):
+        c = (int(r), int(g), int(b))
+        if c not in NEUTROS and k not in pal.get(c, []):
+            pal.setdefault(c, []).append(k)
+    if len(pal) < 20:
+        aborta('colores de Lawang: %s trae solo %d colores (¿cambió su forma?)' % (LAWANG_TW, len(pal)))
+    for hx, tok in LAWANG_SUELTOS.items():
+        pal.setdefault(_rgb_hex(hx), []).append(tok)
+    return pal
+
+
+def _color_de(m):
+    if m.group(2):
+        h = m.group(2)
+        return _rgb_hex(''.join(c * 2 for c in h[:3]) if len(h) in (3, 4) else h[:6])
+    return tuple(int(m.group(i)) for i in (4, 6, 8))
+
+
+def _pon_color(m, c):
+    """La misma forma con otro color: el prefijo (# o %23), el alfa y los separadores se quedan como estaban."""
+    if m.group(2):
+        h = m.group(2)
+        alfa = h[3] * 2 if len(h) == 4 else (h[6:] if len(h) == 8 else '')
+        return m.group(1) + '%02X%02X%02X' % c + alfa
+    return m.group(3) + str(c[0]) + m.group(5) + str(c[1]) + m.group(7) + str(c[2])
+
+
+def piel_colores_lawang(dist, nombre):
+    """Pasa a la piel de la instancia todo color de Lawang que quede en lo publicado (.js/.css/.html/.php/.svg). Sin piel no toca
+    nada. PARA si: un color ambiguo aparece sin clasificar o con otro recuento, el token no existe en la piel, el pase cambia algo que no
+    es un color, o al final queda un color de Lawang. Devuelve cuántos colores cambió."""
+    p = _piel_preset(nombre)
+    if p is None:
+        return 0
+    D = _deriva()
+    pal = lawang_paleta()
+    faltan = sorted({t for toks in pal.values() for t in toks} - set(p))
+    if faltan:
+        aborta('colores de Lawang: la piel de %s no trae los tokens %s' % (nombre, ', '.join(faltan)))
+    ok = tuple(p['ok'] if 'ok' in p else p['fiduciary-green'])
+    blanco = tuple(p['surface-container-lowest'])
+    destino = {'ok': ok, 'ok-fondo': D.mix(ok, blanco, 0.86), 'ok-tinta': ok}
+    if D.contraste(destino['ok-tinta'], destino['ok-fondo']) < 4.5 or D.contraste(ok, blanco) < 4.5:
+        aborta('colores de estado de %s por debajo de 4,5:1 (ok %.2f sobre blanco, %.2f sobre su fondo)'
+               % (nombre, D.contraste(ok, blanco), D.contraste(destino['ok-tinta'], destino['ok-fondo'])))
+    # un color de Lawang compartido por varios tokens que en la piel valen distinto es ambiguo: sin reglas de contexto, PARA
+    simple, ambiguos = {}, set()
+    for c, toks in pal.items():
+        vals = {tuple(p[t]) for t in toks}
+        if len(vals) == 1:
+            simple[c] = vals.pop()
+        else:
+            ambiguos.add(c)
+    reglas = {_rgb_hex(hx): r for hx, r in LAWANG_POR_CONTEXTO.items()}
+    sin_regla = sorted('#%02X%02X%02X (%s)' % (c + ('/'.join(pal[c]),)) for c in ambiguos - set(reglas))
+    if sin_regla:
+        aborta('colores de Lawang con dos tokens que en la piel de %s valen distinto, sin reglas en LAWANG_POR_CONTEXTO: %s'
+               % (nombre, ', '.join(sin_regla)))
+    # el papel: el acento sobre la hoja y blanco sobre el acento, ≥ 4,5:1
+    acento, tinta = tuple(p['accent-gold']), tuple(p['on-background'])
+    for a, b, que in ((acento, blanco, 'acento sobre el papel'), ((255, 255, 255), acento, 'blanco sobre la cabecera'), (tinta, blanco, 'tinta sobre el papel')):
+        if D.contraste(a, b) < 4.5:
+            aborta('papel de %s: %s por debajo de 4,5:1 (%.2f)' % (nombre, que, D.contraste(a, b)))
+    h = lambda c: '#%02X%02X%02X' % tuple(c)
+    vistos = collections.Counter()
+    n = 0
+    for raiz, _dirs, fs in os.walk(dist):
+        for f in fs:
+            if not f.endswith(PIEL_EXT):
+                continue
+            ruta = os.path.join(raiz, f)
+            rel = os.path.relpath(ruta, dist).replace(os.sep, '/')
+            t = open(ruta, encoding='utf-8').read()
+            nuevo = t
+            for viejo, plantilla, tok in (x[1:] for x in PAPEL_FIJOS if x[0] == rel):
+                if nuevo.count(viejo) != 1:
+                    aborta('papel: %s ya no lleva UNA vez %r (¿cambió Lawang? mirar PAPEL_FIJOS)' % (rel, viejo))
+                nuevo = nuevo.replace(viejo, plantilla % h(p[tok]))
+            cambios = [0]
+
+            def cambia(m):
+                c = _color_de(m)
+                if c in reglas:
+                    ventana = m.string[max(0, m.start() - 80):m.end() + 40]
+                    for i, (fr, ctx, dst, _n) in enumerate(reglas[c]):
+                        if fr == rel and re.search(ctx, ventana):
+                            vistos[(c, i)] += 1
+                            cambios[0] += 1
+                            return _pon_color(m, destino[dst] if dst else simple.get(c) or tuple(p[pal[c][0]]))
+                    aborta('colores de Lawang: %s lleva %s sin clasificar (ni marca ni estado): «%s» → añadir su regla en LAWANG_POR_CONTEXTO'
+                           % (rel, h(c), ventana.replace('\n', ' ')))
+                if c in simple:
+                    cambios[0] += 1
+                    return _pon_color(m, simple[c])
+                return m.group(0)
+            nuevo = COLOR_RE.sub(cambia, nuevo)
+            if nuevo != t:
+                # ni un texto, ni un importe, ni un data-*: quitando los colores, antes y después son idénticos (el papel, por su línea)
+                antes = COLOR_RE.sub('§', t)
+                for viejo, plantilla, _tok in (x[1:] for x in PAPEL_FIJOS if x[0] == rel):
+                    antes = antes.replace(viejo, plantilla % '§')
+                if COLOR_RE.sub('§', nuevo) != antes:
+                    aborta('colores de Lawang: el pase cambió en %s algo que no es un color' % rel)
+                open(ruta, 'w', encoding='utf-8', newline='').write(nuevo)
+                n += cambios[0]
+    mal = []
+    for c, rs in reglas.items():
+        for i, (fr, ctx, dst, cuantas) in enumerate(rs):
+            # una pantalla que no sale en esta instancia (módulo apagado, poda) no cuenta; la que sale tiene que cuadrar
+            if os.path.isfile(os.path.join(dist, *fr.split('/'))) and vistos[(c, i)] != cuantas:
+                mal.append('%s en %s («%s»): %d, se esperaban %d' % (h(c), fr, ctx or 'el resto', vistos[(c, i)], cuantas))
+    if mal:
+        aborta('colores de Lawang: cambió el recuento de un color ambiguo (¿una aparición nueva de Lawang?):\n  ' + '\n  '.join(mal))
+    quedan = colores_lawang_en(dist, p)
+    if quedan:
+        aborta('quedan colores de Lawang en el paquete de %s:\n  %s' % (nombre, '\n  '.join(quedan[:40])))
+    return n
+
+
+def colores_lawang_en(dist, p=None):
+    """Barrido: fichero y color de cada color de Lawang (cualquier forma) que quede en lo publicado. Los que coinciden con un valor de
+    la piel `p` no cuentan (son de la instancia aunque casen con uno de Lawang)."""
+    pal = lawang_paleta()
+    propios = {tuple(v) for v in (p or {}).values()}
+    out = []
+    for raiz, _dirs, fs in os.walk(dist):
+        for f in fs:
+            if not f.endswith(PIEL_EXT):
+                continue
+            ruta = os.path.join(raiz, f)
+            rel = os.path.relpath(ruta, dist).replace(os.sep, '/')
+            for m in COLOR_RE.finditer(open(ruta, encoding='utf-8').read()):
+                c = _color_de(m)
+                if c in pal and c not in propios:
+                    out.append('%s: %s (%s)' % (rel, m.group(0), '/'.join(pal[c])))
+    return out
 
 
 def _profundidad_llaves(css):
@@ -4221,6 +4424,9 @@ def instancia(nombre):
         os.makedirs(os.path.dirname(d), exist_ok=True)
         open(d, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, None, '/' + ruta, herramienta=herr))
     avisos_para_rotos()
+    # bbm-p42b: los colores de Lawang que quedan a fuego (editores, cajones, papel) a la piel; tras TODO lo que escribe páginas
+    # (pagina_no_instalado también lleva el verde) y antes de versiona(), para que el ?v= cambie con ellos
+    print('colores de Lawang a la piel: %d' % piel_colores_lawang(DIST, nombre))
     # ?v= con la huella de lo que SALE de este build, como en la demo pública (28-sep-2026). Sin esto, la v4 llevaba el
     # ?v= del fichero de Lawang (guard.js se reescribe entero aquí: mapa de módulos + ficha) y /panel/ iba sin versión:
     # Hostinger cachea 7 días y el verificador vio el guard.js viejo en /panel/ tras publicar.
