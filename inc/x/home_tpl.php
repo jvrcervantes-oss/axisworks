@@ -36,7 +36,7 @@
 <svg aria-hidden="true" height="720" style="position: absolute; inset: 0" viewbox="0 0 720 720" width="720"><g stroke="#A9ADC2" stroke-opacity=".2" stroke-width="1"><line class="axis" x1="176.3" x2="617.2" y1="0" y2="720"></line><line class="axis" x1="543.7" x2="102.8" y1="0" y2="720"></line></g></svg>
 <div aria-hidden="true">
 <template data-fija data-r="2"><sc-for as="c" hint-placeholder-count="40" list="{{ cells }}">
-<span class="xm {{ c.cls }}" style="left: {{ c.x }}px; top: {{ c.y }}px; opacity: {{ c.op }}; animation-delay: {{ c.delay }}"></span>
+<span class="xm {{ c.cls }}" style="left: {{ c.x }}px; top: {{ c.y }}px; opacity: {{ c.op }}; animation-delay: {{ c.delay }}"><sc-if value="{{ c.lit }}"><i style="animation-delay: {{ c.bd }}"></i></sc-if></span>
 </sc-for></template>
 </div>
 <div aria-hidden="true">
@@ -115,7 +115,7 @@
 <span style="position: absolute; left: 0; top: {{ rl.top }}; transform: translateY(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .12em; color: #7D82A3">{{ rl.label }}</span>
 </sc-for></template>
 <template data-r="8"><sc-for as="ed" hint-placeholder-count="30" list="{{ edges }}">
-<div aria-hidden="true" style="position: absolute; left: {{ ed.left }}; top: {{ ed.top }}; width: {{ ed.width }}; height: 1px; background: {{ ed.line }}; transform-origin: 0 50%; transform: rotate({{ ed.angle }}deg)"><span class="ept" style="background: {{ ed.dot }}; animation-delay: {{ ed.delay }}"></span></div>
+<div aria-hidden="true" class="edge" style="position: absolute; left: {{ ed.left }}; top: {{ ed.top }}; width: {{ ed.width }}; height: 1px; background: {{ ed.line }}; transform-origin: 0 50%; transform: rotate({{ ed.angle }}deg)"><span class="ept" style="background: {{ ed.dot }}; animation-delay: {{ ed.delay }}"></span></div>
 </sc-for></template>
 <template data-r="9"><sc-for as="nd" hint-placeholder-count="32" list="{{ nodes }}">
 <button aria-pressed="{{ nd.pressed }}" class="node" onclick="{{ nd.pick }}" style="position: absolute; left: {{ nd.left }}; top: {{ nd.top }}; transform: translate(-50%, -50%); width: {{ nd.width }}; min-height: 36px; box-sizing: border-box; display: flex; align-items: center; gap: 7px; padding: 5px 8px 5px 5px; border-radius: 12px; border: 1.5px solid {{ nd.border }}; background: {{ nd.bg }}; color: {{ nd.fg }}; box-shadow: {{ nd.shadow }}; font: inherit; font-size: 12px; font-weight: 700; line-height: 1.15; text-align: left; cursor: pointer" type="button">

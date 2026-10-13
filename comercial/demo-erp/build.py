@@ -1740,6 +1740,32 @@ MENU_I18N = {
     'sin referencia': {'en': 'no reference', 'id': 'tanpa referensi'},
     # corto a propósito: el de Lawang ya se cortaba en el buscador a 1440 (gate impeccable, bbm-p39)
     'Número, cliente, factura o referencia…': {'en': 'Number, client, invoice or reference…', 'id': 'Nomor, pelanggan, invoice, referensi…'},
+    # bbm-p40 (13-oct): la nota del alta de usuario sin el módulo proyectos (el inglés ya está en Lawang; esta línea no lo pisa)
+    'Se crea la cuenta y se le da acceso de inmediato.': {'en': 'The account is created and access granted immediately.', 'id': 'Akun dibuat dan aksesnya langsung diberikan.'},
+    # el formulario «Nuevo usuario» salía en indonesio con trozos en inglés y en español (medido en el paquete de bbm, 13-oct); en inglés, con la
+    # contraseña y las ayudas en español. Una clave que Lawang ya traduce al inglés conserva su inglés (menu_i18n no lo pisa).
+    'Nuevo usuario': {'en': 'New user', 'id': 'Pengguna baru'},
+    'Crear usuario': {'en': 'Create user', 'id': 'Buat pengguna'},
+    'Cerrar panel': {'en': 'Close panel', 'id': 'Tutup panel'},
+    'Datos': {'en': 'Details', 'id': 'Data'},
+    'Opciones': {'en': 'Options', 'id': 'Opsi'},
+    'Campos requeridos': {'en': 'Required fields', 'id': 'Wajib diisi'},
+    'Faltan %n de %m datos obligatorios': {'en': '%n of %m required fields missing', 'id': 'Kurang %n dari %m data wajib'},
+    'Sales manager': {'en': 'Sales manager', 'id': 'Manajer penjualan'},
+    'Project manager': {'en': 'Project manager', 'id': 'Manajer proyek'},
+    'Administrador': {'en': 'Administrator', 'id': 'Administrator'},
+    'CRM de leads': {'en': 'Lead CRM', 'id': 'CRM prospek'},
+    'Herramientas que verá': {'en': 'Tools they will see', 'id': 'Alat yang akan dilihat'},
+    'Contraseña provisional': {'en': 'Temporary password', 'id': 'Kata sandi sementara'},
+    'Mínimo 10 caracteres. La verá al entrar; que la cambie después. No se puede volver a consultar.': {
+        'en': 'At least 10 characters. They will see it when signing in and should change it afterwards. It cannot be looked up again.',
+        'id': 'Minimal 10 karakter. Akan terlihat saat masuk; minta dia menggantinya setelah itu. Tidak bisa dilihat lagi.'},
+    'Nunca preseleccionada: Leads abre datos de contacto de personas reales y se decide una a una, nunca de regalo con el rol.': {
+        'en': 'Never preselected: Leads opens the contact details of real people, so it is decided one by one, never handed out with the role.',
+        'id': 'Tidak pernah dipilih otomatis: Leads membuka data kontak orang sungguhan, jadi diputuskan satu per satu, tidak ikut otomatis dengan peran.'},
+    'Preselección según el rol elegido arriba — editable. Solo aparecen las herramientas que tienes tú.': {
+        'en': 'Preselected from the role chosen above — editable. Only the tools you have yourself appear.',
+        'id': 'Dipilih otomatis sesuai peran di atas — bisa diubah. Hanya alat yang Anda miliki yang muncul.'},
     'En pausa no sale ningún email: ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.': {
         'en': 'While paused no email goes out: no invitations, no alerts, no announcements. The server blocks it, not this screen. Whatever is queued in Communication waits and goes out by itself on resume. Pause and resume: any admin.',
         'id': 'Saat dijeda, tidak ada email yang terkirim: tidak ada undangan, peringatan, maupun pengumuman. Server yang memblokirnya, bukan layar ini. Yang masuk antrean di Komunikasi akan menunggu dan terkirim otomatis saat dilanjutkan. Menjeda dan melanjutkan: admin mana pun.'},
@@ -3640,12 +3666,51 @@ EDITOR_SIN_CONTRATO = (
      "          function pasaASinContrato() {\n            // Lo que trajo el contrato anterior se suelta y se vacía: el cliente se elige de nuevo.\n            estadoContrato.id = null; estadoContrato.numero = ''; estadoContrato.clienteId = null; estadoContrato.sinContrato = true;\n            sueltaCamposDoc();\n            ['cliente_nombre', 'cliente_documento', 'cliente_email', 'cliente_domicilio', 'proyecto_nombre'].forEach(function (k) { ponCampoDoc(k, ''); });\n            if (delC) delC.limpia();\n            btnC.textContent = edT('— sin contrato —'); btnCli.textContent = edT('— elige el cliente —');\n            notaC.textContent = edT('El documento irá a nombre del cliente que elijas, sin contrato.');\n            pintaModoContrato(); repintaPreview();\n          }\n"),
 )
 
+# Alta de usuario en una instancia SIN el módulo contratos (bbm-p40, 13-oct-2026). El botón «Nuevo usuario» leía primero el catálogo de tipos
+# de contrato (plantillas_contrato_datos, del módulo contratos) y, si no lo podía leer, NO abría el alta: con contratos apagado no se leía
+# nunca, así que en bbm no se podía dar de alta a nadie. Ahora espera a saber los módulos y, con contratos apagado (dato de la base, no un
+# «no sé»: axwModuloActivo devuelve false solo entonces), abre el alta sin el campo «Contratos que puede hacer» y sin la nota de proyectos
+# si proyectos también está apagado. Lo que se envía es lo de siempre con ese campo vacío: la edge lo filtra y desde el 24-sep un vacío ya no
+# significa «todos» (admin-usuarios, contratos_tipo_permitido). Con contratos encendido, o sin saber, el camino de siempre. Lawang no pasa por aquí.
+ALTA_SIN_CONTRATOS = (
+    ('intranet/v4/assets/editores.js',
+     "        if (!window.AXW_NUCLEO_OPERACION) return abreAlta(tiposCatAlta);\n"
+     "        /* ERP: si el catálogo no se lee, el alta NO se abre. «Contratos que puede hacer» vacío significa TODOS:\n"
+     "           un formulario sin opciones daría acceso a todo sin que nadie lo decidiera. */\n"
+     "        tiposErp().then(function (t) {\n"
+     "          if (!t) return aviso('No se ha podido leer el catálogo de tipos de contrato, o no tiene ninguno activo: recarga la pantalla (o activa un tipo en Plantillas) antes de dar de alta a nadie.', '#9E2F26');\n"
+     "          abreAlta(opcionesTipos(t));\n"
+     "        });\n",
+     "        if (!window.AXW_NUCLEO_OPERACION) return abreAlta(tiposCatAlta);\n"
+     "        /* ERP: si el catálogo no se lee, el alta NO se abre. «Contratos que puede hacer» vacío significa TODOS:\n"
+     "           un formulario sin opciones daría acceso a todo sin que nadie lo decidiera. */\n"
+     "        Promise.resolve(window.AXW_MODULOS_LISTOS).then(function () {\n"
+     "          // Instancia con el módulo contratos APAGADO (bbm-p40): no hay catálogo que leer ni contratos que conceder.\n"
+     "          if (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false) return abreAlta(null);\n"
+     "          tiposErp().then(function (t) {\n"
+     "            if (!t) return aviso('No se ha podido leer el catálogo de tipos de contrato, o no tiene ninguno activo: recarga la pantalla (o activa un tipo en Plantillas) antes de dar de alta a nadie.', '#9E2F26');\n"
+     "            abreAlta(opcionesTipos(t));\n"
+     "          });\n"
+     "        });\n"),
+    ('intranet/v4/assets/editores.js',
+     "          { k: 'tipos_contrato', label: 'Contratos que puede hacer', tipo: 'multicheck', opciones: tiposCatAlta,\n",
+     "          tiposCatAlta === null ? null : { k: 'tipos_contrato', label: 'Contratos que puede hacer', tipo: 'multicheck', opciones: tiposCatAlta,\n"),
+    ('intranet/v4/assets/editores.js',
+     "        ], 'Crear usuario', function (v) {\n",
+     "        ].filter(Boolean), 'Crear usuario', function (v) {\n"),
+    ('intranet/v4/assets/editores.js',
+     "          { tipo: 'nota', label: 'Se crea la cuenta y se le da acceso de inmediato. Nace sin ningún proyecto asignado — se asigna después editando la ficha ya creada.' },\n",
+     "          { tipo: 'nota', label: (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false)\n"
+     "            ? 'Se crea la cuenta y se le da acceso de inmediato.'\n"
+     "            : 'Se crea la cuenta y se le da acceso de inmediato. Nace sin ningún proyecto asignado — se asigna después editando la ficha ya creada.' },\n"),
+)
+
 
 def oculta_por_modulo():
     """Marca en la copia lo que sobra con un módulo apagado (OCULTA_POR_MODULO) y pone en cada página su regla; y el editor de factura sin
-    contrato (EDITOR_SIN_CONTRATO). Cada trozo exactamente una vez o el build para."""
+    contrato (EDITOR_SIN_CONTRATO) y el alta de usuario sin contratos (ALTA_SIN_CONTRATOS). Cada trozo exactamente una vez o el build para."""
     reglas = {}
-    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO:
+    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO + ALTA_SIN_CONTRATOS:
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
         open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, viejo, nuevo, 'oculta_por_modulo ' + rel_))
