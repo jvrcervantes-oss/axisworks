@@ -4063,8 +4063,9 @@ def instancia(nombre):
         portada_reservas()
     moneda_documento()   # 13-oct (bbm-p36): factura y recibí nuevos en la moneda de la instancia, no en EUR
     idiomas = idiomas_de(nombre)
+    pantalla = idioma_pantalla_de(nombre, idiomas)   # bbm-p42: SIEMPRE, también sin `idiomas` (un idioma_pantalla sin lista aborta, no se ignora: revisor)
     if idiomas:   # 12-oct-2026: interfaz en los idiomas de la instancia (bbm: indonesio e inglés)
-        idiomas_instancia(idiomas, idioma_pantalla_de(nombre, idiomas))   # bbm-p42: + el idioma de pantalla por defecto (puente del registro)
+        idiomas_instancia(idiomas, pantalla)   # + el idioma de pantalla por defecto (el del registro; también el de la puerta sin sesión)
         documento_idiomas(idiomas)   # BBM-65 (13-oct): el papel de factura/recibí y su correo en el par de la instancia (id·en en bbm)
     menu_i18n()   # rótulos del menú en en/id en todas las páginas (después del núcleo del indonesio)
     if not _PRIV or not REEMPLAZOS_PUBLICO:

@@ -97,11 +97,20 @@ try:
     pant_buena = build.idioma_pantalla_de('x', ['id', 'en'])
     build._instancia_registro = lambda n: {'idiomas': ['id', 'en']}
     pant_sin = build.idioma_pantalla_de('x', ['id', 'en'])
+    build._instancia_registro = lambda n: {'idioma_pantalla': 'en'}   # revisor bbm-p42: sin lista de idiomas tampoco se ignora
+    try:
+        build.idioma_pantalla_de('x', None); pant_sola = 'pasa'
+    except SystemExit:
+        pant_sola = 'para'
 finally:
     build._instancia_registro = viejo_reg
 mira('una combinación de idiomas desconocida PARA el build', combo == 'para')
 mira('sin la clave, la instancia sigue como siempre (None)', sin is None)
 mira('idioma_pantalla fuera de sus idiomas PARA el build; dentro, se devuelve; sin la clave, None (= el primero, como siempre)', pant_mala == 'para' and pant_buena == 'en' and pant_sin is None)
+mira('idioma_pantalla SIN lista de idiomas PARA el build (no se ignora en silencio)', pant_sola == 'para')
+_cuerpo = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
+_cuerpo = _cuerpo[_cuerpo.index('\ndef instancia('):]
+mira('instancia() llama a idioma_pantalla_de FUERA del «if idiomas»', 'pantalla = idioma_pantalla_de(nombre, idiomas)' in _cuerpo and _cuerpo.index('pantalla = idioma_pantalla_de(nombre, idiomas)') < _cuerpo.index('    if idiomas:'))
 
 # -- (3) el lwT REAL parcheado, en node (con un documento mínimo)
 if r == 'pasa':

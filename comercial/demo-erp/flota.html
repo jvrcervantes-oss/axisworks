@@ -361,6 +361,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     "El precio no se entiende: escribe solo cifras y, si hace falta, un punto o una coma para los decimales, sin separador de miles.": "Harga tidak dapat dibaca: tulis hanya angka dan, jika perlu, titik atau koma untuk desimal, tanpa pemisah ribuan.",
     "Ese precio es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 600000.": "Harga itu ambigu (ribuan atau desimal?): tulis tanpa pemisah ribuan, misalnya 600000.",
     "Se enviará": "Akan dikirim",
+    "Los demás tramos del seguro están en esta moneda: todos usan la misma.": "Tingkat asuransi lainnya memakai mata uang ini: semuanya memakai yang sama.",
     "No se puede enviar todavía": "Belum bisa dikirim",
     "Moneda no admitida": "Mata uang tidak didukung",
     "La moneda no se puede cambiar con 2 o más tramos: para cambiarla borra los tramos y créalos de nuevo en la otra moneda.": "Mata uang tidak bisa diubah jika ada 2 tingkat atau lebih: untuk mengubahnya, hapus tingkat lalu buat lagi dalam mata uang lain.",
@@ -454,7 +455,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     'Escribe el precio.': 'Write the price.',
     'El precio no se entiende: escribe solo cifras y, si hace falta, un punto o una coma para los decimales, sin separador de miles.': 'The price is not understood: write only digits and, if needed, a dot or a comma for the decimals, with no thousands separator.',
     'Ese precio es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 600000.': 'That price is ambiguous (thousands or decimals?): write it without a thousands separator, for example 600000.',
-    'Se enviará': 'It will be sent', 'No se puede enviar todavía': 'It cannot be sent yet', 'Moneda no admitida': 'Currency not allowed',
+    'Se enviará': 'It will be sent', 'Los demás tramos del seguro están en esta moneda: todos usan la misma.': 'The other insurance tiers use this currency: they all use the same one.', 'No se puede enviar todavía': 'It cannot be sent yet', 'Moneda no admitida': 'Currency not allowed',
     'La moneda no se puede cambiar con 2 o más tramos: para cambiarla borra los tramos y créalos de nuevo en la otra moneda.': 'The currency cannot be changed with 2 or more tiers: to change it, delete the tiers and create them again in the other currency.',
     'Los demás tramos del producto están en esta moneda: un tramo nuevo tiene que usar la misma.': 'The other tiers of the product use this currency: a new tier has to use the same one.',
     'Este producto mezcla monedas en sus tramos. Déjalos todos en la misma moneda.': 'This product mixes currencies across its tiers. Leave them all in the same currency.',
@@ -630,11 +631,13 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   }
 
   /* ── Seguro y fianza del modelo: se leen aparte (reservas_setup_datos, la lectura del asistente) al abrir el cajón y tras cada guardado. Precios tal cual da la base. ── */
-  E.setup = {};
+  E.setup = {}; E.setupPide = 0;
   function formaSetup(d) { return esObj(d) && Array.isArray(d.garantias) && Array.isArray(d.seguro_tramos); }
   function cargaSetup(pid) {
     E.setup[pid] = { cargando: true };
+    var yo = ++E.setupPide;
     return llama('reservas_setup_datos', { p_producto: pid }).then(function (r) {
+      if (yo !== E.setupPide) return E.setup[pid];   // llegó tarde: ya hay otra lectura en marcha o hecha después
       E.setup[pid] = r.error ? { error: r.error } : (formaSetup(r.data) ? { d: r.data } : { error: { message: 'forma' } });
       if (E.cajon && E.cajon.pid === pid) pintaSeguro();
       return E.setup[pid];
@@ -687,12 +690,15 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     var usada = previo ? previo.moneda : ((segurosDe(pid)[0] || p.tarifas[0] || {}).moneda);
     if (usada && monedas.indexOf(usada) === -1) monEl.appendChild(h('option', { value: usada, text: usada }));
     if (usada) monEl.value = usada;
+    var notaMonS = h('p', { class: 'fl-ayuda', 'data-fl': 'nota-moneda' });
+    if (segurosDe(pid).length) { monEl.value = segurosDe(pid)[0].moneda; monEl.disabled = true; notaMonS.textContent = T('Los demás tramos del seguro están en esta moneda: todos usan la misma.'); }
+    oculta(notaMonS, !notaMonS.textContent);
     if (previo) { diasEl.value = String(previo.dias); diasEl.readOnly = true; precioEl.value = String(previo.precio); }
     var modo = h('p', { class: 'fl-ayuda', 'data-fl': 'modo' }), eco = h('div', { class: 'fl-eco', 'data-fl': 'eco', 'data-tipo': 'neutro' });
     var motEl = campoMotivo();
     var form = h('div', { class: 'fl-form' }, [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-dias', text: T('Días del tramo') }), diasEl]),
       h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-precio', text: T('Precio del seguro') }), precioEl]),
-      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-moneda', text: T('Moneda') }), monEl]), h('div', { class: 'fl-ancho' }, [motEl])]);
+      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-moneda', text: T('Moneda') }), monEl, notaMonS]), h('div', { class: 'fl-ancho' }, [motEl])]);
     function lee() {
       var er = {}, v = {}, td = tope('dias'), dtxt = diasEl.value.replace(/\s+/g, '');
       if (!/^\d+$/.test(dtxt)) er.dias = T('Los días son un número entero.');
@@ -746,19 +752,25 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   function abreGarantia(pid) {
     var p = prodPorId(pid); if (!p || !setupDe(pid)) return;
     var g0 = garantiaDe(pid), ctx = { esperado: g0 ? g0.actualizado_en : null };
+    var monF = (g0 && g0.moneda) || monedasDe(p)[0] || '';
     var fianzaEl = h('input', { type: 'text', id: 'fl-f-fianza', 'data-campo': 'fianza', inputmode: 'decimal', autocomplete: 'off' });
     var oblEl = h('input', { type: 'checkbox', id: 'fl-f-seguro-obligatorio', 'data-campo': 'seguro_obligatorio' });
     var conEl = h('select', { id: 'fl-f-fianza-con-seguro', 'data-campo': 'fianza_con_seguro' }, [h('option', { value: 'no', text: T('No: fianza o seguro') }), h('option', { value: 'si', text: T('Sí: fianza y seguro') })]);
     if (g0 && g0.fianza != null) fianzaEl.value = String(g0.fianza);
     oblEl.checked = !!(g0 && g0.seguro_obligatorio === true); conEl.value = g0 && g0.fianza_con_seguro === true ? 'si' : 'no';
     var motEl = campoMotivo();
-    var form = h('div', { class: 'fl-form' }, [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-fianza', text: T('Fianza') + (g0 && g0.moneda ? ' (' + g0.moneda + ')' : '') }), fianzaEl, h('span', { class: 'fl-ayuda', text: T('Vacía = sin fianza. Se retiene al recoger y se devuelve al entregar.') })]),
+    var form = h('div', { class: 'fl-form' }, [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-fianza', text: T('Fianza') + (monF ? ' (' + monF + ')' : '') }), fianzaEl, h('span', { class: 'fl-ayuda', text: T('Vacía = sin fianza. Se retiene al recoger y se devuelve al entregar.') })]),
       h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-fianza-con-seguro', text: T('Con seguro, ¿se cobra también la fianza?') }), conEl]),
       h('div', { class: 'axw-campo fl-ancho' }, [h('label', { for: 'fl-f-seguro-obligatorio', style: 'display:flex;align-items:center;gap:8px;font-weight:600' }, [oblEl, document.createTextNode(T('Toda reserva lleva seguro'))])]),
       h('div', { class: 'fl-ancho' }, [motEl])]);
-    var nota = h('p', { class: 'fl-ayuda', 'data-fl': 'nota-obligatorio' });
-    function refresca() { nota.textContent = oblEl.checked && !segurosDe(pid).length ? T('Para que toda reserva lleve seguro, pon el precio del seguro.') : ''; oculta(nota, !nota.textContent); }
-    var d = abre(T('Fianza y reglas del seguro') + ' · ' + (p.nombre || '—'), [form, nota, h('p', { class: 'axw-nota', text: T('Esto cambia lo que cotiza y cobra el bot desde ya.') })],
+    var nota = h('p', { class: 'fl-ayuda', 'data-fl': 'nota-obligatorio' }), eco = h('div', { class: 'fl-eco', 'data-fl': 'eco', 'data-tipo': 'neutro' });
+    function refresca() {
+      nota.textContent = oblEl.checked && !segurosDe(pid).length ? T('Para que toda reserva lleve seguro, pon el precio del seguro.') : ''; oculta(nota, !nota.textContent);
+      var txt = fianzaEl.value.replace(/\s+/g, ''), im = txt ? C.importe(fianzaEl.value, 4) : null;
+      if (im && im.e) { eco.setAttribute('data-tipo', 'mal'); eco.textContent = T('No se puede enviar todavía') + ': ' + (im.e === 'ambiguo' ? T('Ese precio es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 600000.') : T('El precio no se entiende: escribe solo cifras y, si hace falta, un punto o una coma para los decimales, sin separador de miles.')); }
+      else { eco.setAttribute('data-tipo', 'neutro'); eco.textContent = T('Se enviará') + ': ' + T('Fianza') + ' · ' + (im ? (monF ? precioTal(im.v, monF) : String(im.v)) : T('Sin fianza')); }
+    }
+    var d = abre(T('Fianza y reglas del seguro') + ' · ' + (p.nombre || '—'), [form, nota, eco, h('p', { class: 'axw-nota', text: T('Esto cambia lo que cotiza y cobra el bot desde ya.') })],
       botonesBase(function (bt, dd) {
         var fz = null;
         if (fianzaEl.value.replace(/\s+/g, '') !== '') {
@@ -776,7 +788,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
         envia('producto_garantia_guarda', { p_producto: pid, p_datos: q, p_motivo: m.v, p_esperado: ctx.esperado }, bt, dd);
       }));
     if (!d) return;
-    oblEl.addEventListener('change', refresca); refresca();
+    oblEl.addEventListener('change', refresca); fianzaEl.addEventListener('input', refresca); refresca();
     recargaConserva(d, function () { if (!prodPorId(pid)) return false; var g = garantiaDe(pid); ctx.esperado = g ? g.actualizado_en : null; refresca(); return true; });
   }
 
@@ -1072,10 +1084,10 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   function envia(nombre, args, btn, d, prefijo) {
     if (!C.ocupa(btn)) return Promise.resolve();
     d.error(''); d.guardando = true;
-    E.setup = {};   // el seguro y la fianza se vuelven a leer al repintar el cajón (lo que se ve es lo que la base devuelve)
     var mira = function () { if (E.cajon) cajonOk(T('Guardado.')); };
     return llama(nombre, args).then(function (r) {
       if (r.error) { d.guardando = false; C.libera(btn); fallo(r.error, d, prefijo); return; }
+      E.setup = {};   // salió: el seguro y la fianza se vuelven a leer al repintar el cajón (lo que se ve es lo que la base devuelve)
       return carga().then(function (l) {
         C.libera(btn); d.cierra();
         if (l.ok) { error(''); aviso(''); exito(T('Guardado.')); mira(); } else { exito(''); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); if (E.cajon) cajonOk(''); }
