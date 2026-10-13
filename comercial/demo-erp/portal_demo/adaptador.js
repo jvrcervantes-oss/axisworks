@@ -61,10 +61,13 @@
       sb.from('unidades').select('id,codigo,proyecto_id,obra_fase,obra_fecha_entrega,obra_actualizado'),
       sb.from('hilo_soporte').select('id,client_id,categoria,estado,actualizado_en,contrato_id,factura_id,ref_numero'),
       sb.from('mensajes_comprador').select('id,hilo_id,client_id,de,autor,texto,creado_en'),
-      sb.rpc('sociedades_visibles')
+      sb.rpc('sociedades_visibles'),
+      // fases y fotos de obra: las MISMAS filas que cuenta la intranet (demo_datos.js), no una lista propia (13-oct-2026)
+      sb.from('obra_fases').select('orden,clave,es,en'),
+      sb.from('obra_fotos').select('id,unidad_id,path,titulo,tomada_en,visible')
     ]).then(function (rs) {
       var n = ['clients', 'contratos', 'contrato_compradores', 'facturas', 'recibi_aplicaciones', 'contrato_firmas', 'contrato_vencimientos',
-        'unidades', 'hilo_soporte', 'mensajes_comprador', 'sociedades_visibles'];
+        'unidades', 'hilo_soporte', 'mensajes_comprador', 'sociedades_visibles', 'obra_fases', 'obra_fotos'];
       var T = {};
       rs.forEach(function (r, i) { T[n[i]] = filas(r, n[i]); });
       return T;
@@ -102,10 +105,9 @@
     return c || null;
   }
 
-  var FASES = [{ orden: 1, clave: 'preparacion', es: 'Preparación del terreno', en: 'Site preparation' }, { orden: 2, clave: 'cimentacion', es: 'Cimentación', en: 'Foundations' },
-    { orden: 3, clave: 'estructura', es: 'Estructura', en: 'Structure' }, { orden: 4, clave: 'cubierta', es: 'Cubierta', en: 'Roofing' },
-    { orden: 5, clave: 'instalaciones', es: 'Instalaciones', en: 'Utilities & MEP' }, { orden: 6, clave: 'acabados', es: 'Acabados', en: 'Finishes' },
-    { orden: 7, clave: 'entregada', es: 'Entregada', en: 'Handed over' }];
+  // Las fases de obra salen del doble (T.obra_fases), con su es/en, igual que en la intranet.
+  // La escena de una foto de muestra va en su nombre: «…/demo-obra-<escena>.webp» (demo_datos.js) → /portal/demo/fotos/obra-<escena>.webp
+  function fotoDe(path) { var m = /[/]demo-obra-([a-z]+)[.]webp$/.exec(String(path || '')); return m ? foto(m[1]) : null; }
   var ZONAS = ['North Coast', 'Highlands', 'River Valley'];   // ubicación de ejemplo de cada proyecto (el doble no la trae)
 
   /* portal_situacion: la misma forma que devuelve la base del ERP (la del modo demo de origen), construida desde el doble. */
@@ -208,17 +210,12 @@
       var kk = mios.filter(function (x) { return x.id === k.id; })[0];
       var u = kk && uPorId[kk.unidad_id];
       if (k.tipo !== 'construccion' || !k.firmado || !u || !u.obra_fase) return;
-      // Fotos de ejemplo según la fase de la unidad; las fechas de la entregada cuelgan de su fecha de entrega.
-      var entrega = u.obra_fecha_entrega ? Math.round((new Date(soloDia(u.obra_fecha_entrega) + 'T12:00:00').getTime() - hoyMs()) / DIA) : -20;
-      var TITULOS = {
-        cimentacion: [['Foundation pour', -6, 'hormigonado'], ['Excavation', -19, 'excavacion'], ['Site set-out', -33, 'replanteo']],
-        estructura: [['Columns, north side', -4, 'pilares'], ['Slab formwork', -12, 'encofrado'], ['Foundations finished', -30, 'cimentacion'], ['Excavation', -52, 'excavacion']],
-        entregada: [['Key handover', entrega, 'llaves'], ['Interior finishes', entrega - 30, 'interior'], ['Roof completed', entrega - 90, 'cubierta']]
-      };
-      var titulos = TITULOS[u.obra_fase] || [['Site progress', -7, 'pilares'], ['Site progress', -21, 'cimentacion']];
+      // Las fotos de la unidad en el doble (las mismas que cuenta Obra en la intranet), visibles, la más reciente primero.
+      var fotos = T.obra_fotos.filter(function (f) { return f.unidad_id === u.id && f.visible !== false && fotoDe(f.path); })
+        .sort(function (a, b) { return String(b.tomada_en || '').localeCompare(String(a.tomada_en || '')); });
       obra.push({ unidad: u.codigo, proyecto: k.proyecto, contrato_numero: k.numero, fase: u.obra_fase, fecha_entrega: soloDia(u.obra_fecha_entrega),
         actualizado: soloDia(u.obra_actualizado) || dia(-4),
-        fotos: titulos.map(function (t, i) { return { path: img('obra/' + u.codigo + '/' + i, foto(t[2])), titulo: t[0], fecha: dia(t[1]) }; }) });
+        fotos: fotos.map(function (f) { return { path: img(f.path, fotoDe(f.path)), titulo: f.titulo, fecha: soloDia(f.tomada_en) }; }) });
     });
 
     var documentos = [];
@@ -248,7 +245,7 @@
       prefs: { pref_email: prefs.pref_email !== false, pref_sms: !!prefs.pref_sms, notif_visto_hasta: prefs.notif_visto_hasta || iso(-40) },
       color_avatar: prefs.color_avatar || null,
       proyectos: proyectos, contratos: contratos, documentos: documentos, facturas: facturas, firma_pendiente: firma_pendiente,
-      fases: copia(FASES), obra: obra, kyc: kyc, tickets: tickets };
+      fases: copia(T.obra_fases).sort(function (a, b) { return a.orden - b.orden; }), obra: obra, kyc: kyc, tickets: tickets };
   }
 
   /* ── lo que el portal escribe: por las funciones del doble (demo_datos.js → LW_DEMO_RPC_GUARDA), nunca tabla a tabla desde

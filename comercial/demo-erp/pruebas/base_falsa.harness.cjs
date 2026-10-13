@@ -89,6 +89,13 @@ const r = (q) => Promise.resolve(q);
   const u1 = (await r(sb.from('unidades').select('*').eq('id', libre.id).maybeSingle())).data;
   ok('la parcela queda reservada', u1.estado === 'reservada' && u1.contrato_id === k.data.id, u1);
 
+  // ── plan de pagos por hitos (13-oct-2026): sin p_hitos, el de por defecto; con p_hitos, el suyo, validado por el doble
+  const vk = (await r(sb.from('contrato_vencimientos').select('*').eq('contrato_id', k.data.id))).data.sort((a, b) => a.orden - b.orden);
+  ok('sin p_hitos: el plan por defecto 30/30/30/10', vk.map(v => v.pct).join('/') === '30/30/30/10' && vk.map(v => v.monto).join('/') === '18000/18000/18000/6000', vk.map(v => [v.pct, v.monto]));
+  ok('la firma pasa a los hitos (copia del contrato firmada, con número)', vk.every(v => v.contratos && v.contratos.bloqueado === true && v.contratos.numero === k.data.numero), vk.map(v => v.contratos));
+  const P = w.LW_DEMO_PLAN;
+  ok('el plan por defecto sale del doble', P && P.defecto().map(h => h.pct).join('/') === '30/30/30/10');
+
   // ── factura desde el contrato
   const lineas = [{ descripcion: 'Plot hold deposit', importe: 6000 }];
   const pf = (tot, extra) => Object.assign({ tipo: 'factura', sociedad: 'tepi_sungai', cliente_nombre: 'TESTA PROBELLI', contrato_id: k.data.id, client_id: cli,
@@ -161,8 +168,51 @@ const r = (q) => Promise.resolve(q);
   const bo = await r(sb.rpc('borrar_operacion', { p_contrato_id: k.data.id }));
   ok('borrar operación: 1 contrato y sus 3 documentos anulados', !bo.error && bo.data.contratos_borrados === 1 && bo.data.facturas_anuladas === 3, bo);
   ok('borrar operación: el resto de contratos sigue', (await r(sb.from('contratos').select('*'))).data.length === F0.data.length, null);
+
   const u2 = (await r(sb.from('unidades').select('*').eq('id', libre.id).maybeSingle())).data;
   ok('borrar operación: la parcela vuelve a estar libre', u2.estado === 'disponible' && !u2.contrato_id, u2);
+
+  // (después de los recuentos de arriba: estos casos crean contratos)
+  const libres = (await r(sb.from('unidades').select('*').eq('estado', 'disponible'))).data.filter(u => !u.contrato_id);
+  const h = (...pares) => pares.map(([d, p]) => ({ descripcion: d, pct: p }));
+  const malos = [
+    ['suma 99,99', h(['A', '33.33'], ['B', '33.33'], ['C', '33.33']), /exactly 100 percent \(now 99\.99/],
+    ['suma 100,01', h(['A', '50.01'], ['B', '50']), /exactly 100 percent \(now 100\.01/],
+    ['un 0', h(['A', '0'], ['B', '100']), /Milestone 1: the percentage/],
+    ['tres decimales', h(['A', '30.555'], ['B', '69.445']), /Milestone 1: the percentage/],
+    ['concepto vacío', h(['A', '50'], ['  ', '50']), /Milestone 2 needs a name/],
+    ['nueve hitos', h(...Array.from({ length: 9 }, (_, i) => ['H' + i, i < 8 ? '11' : '12'])), /between 1 and 8/],
+    ['ninguno', [], /between 1 and 8/]
+  ];
+  for (const [que, hitos, re] of malos) {
+    const x = await r(sb.rpc('demo_contrato_crea', { p_client_id: cli, p_unidad_id: libres[0].id, p_tipo: 'reserva_parcela', p_precio: 100000, p_hitos: hitos }));
+    ok('el doble rechaza el plan: ' + que, x.error && re.test(x.error.message), x.error || x.data);
+  }
+  const libres2 = (await r(sb.from('unidades').select('*').eq('estado', 'disponible'))).data.filter(u => !u.contrato_id);
+  ok('un plan rechazado no ocupa la parcela', libres2.some(u => u.id === libres[0].id));
+  const kp = await r(sb.rpc('demo_contrato_crea', { p_client_id: cli, p_unidad_id: libres[0].id, p_tipo: 'reserva_parcela', p_precio: 100000,
+    p_hitos: h(['On signing', '30'], ['Structure', '40'], ['Roof', '25'], ['Keys', '5']) }));
+  const vp = (await r(sb.from('contrato_vencimientos').select('*').eq('contrato_id', kp.data && kp.data.id))).data.sort((a, b) => a.orden - b.orden);
+  ok('30/40/25/5 aceptado y guardado con sus importes', !kp.error && vp.map(v => v.descripcion + ':' + v.pct + ':' + v.monto).join('|') === 'On signing:30:30000|Structure:40:40000|Roof:25:25000|Keys:5:5000', vp.map(v => [v.descripcion, v.pct, v.monto]));
+  ok('solo el primer hito lleva fecha', vp[0].fecha && vp.slice(1).every(v => v.fecha == null), vp.map(v => v.fecha));
+  const kc3 = await r(sb.rpc('demo_contrato_crea', { p_client_id: cli, p_unidad_id: libres[1].id, p_tipo: 'reserva_parcela', p_precio: 100000,
+    p_hitos: h(['A', '33,33'], ['B', '33.33'], ['C', '33.34']) }));
+  const vc = (await r(sb.from('contrato_vencimientos').select('*').eq('contrato_id', kc3.data && kc3.data.id))).data.sort((a, b) => a.orden - b.orden);
+  ok('33,33/33,33/33,34: coma leída y los importes suman el precio exacto', !kc3.error && vc.map(v => v.pct).join('/') === '33.33/33.33/33.34' &&
+    Math.round(vc.reduce((s, v) => s + v.monto, 0) * 100) === 10000000, vc.map(v => [v.pct, v.monto]));
+  const rep3 = P.reparte(1000.01, P.valida(h(['A', '33.33'], ['B', '33.33'], ['C', '33.34'])).hitos);
+  ok('reparto acumulado: 1000,01 a 33,33/33,33/33,34 suma exacto', JSON.stringify(rep3) === '[333.3,333.31,333.4]', rep3);
+  const rep4 = P.reparte(0.02, P.valida(h(['A', '25'], ['B', '25'], ['C', '25'], ['D', '25'])).hitos);
+  ok('reparto: ningún hito negativo con un precio mínimo (0,02 a 25×4)', rep4.every(m => m >= 0) && Math.round(rep4.reduce((x, m) => x + m, 0) * 100) === 2, rep4);
+
+  // ── fotos de obra: las mismas filas para la intranet y el portal (13-oct-2026)
+  const fases = (await r(sb.from('obra_fases').select('*'))).data;
+  ok('siete fases de obra con su inglés', fases.length === 7 && fases.every(f => f.en && f.es), fases.map(f => f.clave));
+  const enObra = (await r(sb.from('unidades').select('*'))).data.filter(u => u.obra_fase);
+  const fotos = (await r(sb.from('obra_fotos').select('*'))).data;
+  ok('cada unidad en obra tiene sus fotos de muestra', enObra.length > 0 && enObra.every(u => fotos.some(f => f.unidad_id === u.id && /[/]demo-obra-[a-z]+[.]webp$/.test(f.path))),
+    enObra.filter(u => !fotos.some(f => f.unidad_id === u.id)).map(u => u.codigo));
+
 
   // ── «Reset demo»: vuelve al inicio
   ok('Reset demo devuelve true y recarga', w.LW_DEMO_RESTABLECE() === true && w.__recargada === true);
