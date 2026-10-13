@@ -179,17 +179,22 @@ def rel(p):
     return '/' + os.path.relpath(p, DIST).replace(os.sep, '/')
 
 
+def se_copia(src_abs):
+    """¿Copia el build este fichero de Lawang? Extensión permitida y fuera de PROHIBIDO. Lo usan copia() y el aviso del gate de push
+    de Lawang (lawang_que_lee_el_build): una sola regla."""
+    return src_abs.lower().endswith(EXT_OK) and not PROHIBIDO.search('/' + os.path.relpath(src_abs, LAWANG).replace(os.sep, '/'))
+
+
 def copia(src_abs, dst_abs):
-    if not src_abs.lower().endswith(EXT_OK):
-        return False
-    if PROHIBIDO.search('/' + os.path.relpath(src_abs, LAWANG).replace(os.sep, '/')):
+    if not se_copia(src_abs):
         return False
     os.makedirs(os.path.dirname(dst_abs), exist_ok=True)
     shutil.copy2(src_abs, dst_abs)
     return True
 
 
-def copia_v4():
+def fuentes_v4():
+    """Los ficheros de intranet/v4 de Lawang que recorre copia_v4() (sin FUERA_V4 ni carpetas «_»). También los lee el aviso del gate."""
     base = os.path.join(LAWANG, 'intranet', 'v4')
     for raiz, dirs, fichs in os.walk(base):
         rel_raiz = os.path.relpath(raiz, base)
@@ -197,8 +202,13 @@ def copia_v4():
             dirs[:] = [d for d in dirs if d not in FUERA_V4]
         dirs[:] = [d for d in dirs if not d.startswith('_')]
         for f in fichs:
-            s = os.path.join(raiz, f)
-            copia(s, os.path.join(DIST, 'intranet', 'v4', os.path.relpath(s, base)))
+            yield os.path.join(raiz, f)
+
+
+def copia_v4():
+    base = os.path.join(LAWANG, 'intranet', 'v4')
+    for s in fuentes_v4():
+        copia(s, os.path.join(DIST, 'intranet', 'v4', os.path.relpath(s, base)))
     copia(os.path.join(LAWANG, 'favicon.png'), os.path.join(DIST, 'favicon.png'))
     # El CRM de leads (v3) está en el menú de la v4.
     for f in ('index.html', 'leads.css', 'leads.js'):
@@ -1869,20 +1879,16 @@ def colores_lawang_en(dist, p=None, escritos=()):
 # no sabe que deja parado el siguiente build de las instancias. El gate de push de Lawang (tools/predeploy.py, capa 0) llama a
 # colores_lawang_diff() con su diff: misma tabla, mismas reglas de qué se copia, una sola fuente.
 def lawang_que_lee_el_build():
-    """Rutas de Lawang (relativas, con /) que el build de una instancia copia: la v4 con las reglas de copia_v4(), el CRM de leads, la
-    puerta, y lo que todo eso referencia (REF_RE, como cierra_referencias())."""
-    base = os.path.join(LAWANG, 'intranet', 'v4')
+    """Rutas de Lawang (relativas, con /) que el build de una instancia copia: la v4 (fuentes_v4(), lo que recorre copia_v4()), el CRM
+    de leads, la puerta, y lo que todo eso referencia (REF_RE, como cierra_referencias()); de todo, solo lo que deja pasar se_copia(),
+    la misma regla que copia() (revisor de p42c: sin ella, un .test.js o contracts/app.html daban un rojo falso al push de Lawang)."""
     cola = ['intranet/leads/index.html', 'intranet/leads/leads.css', 'intranet/leads/leads.js', 'intranet/index.html']
-    for raiz, dirs, fichs in os.walk(base):
-        if os.path.relpath(raiz, base) == '.':
-            dirs[:] = [d for d in dirs if d not in FUERA_V4]
-        dirs[:] = [d for d in dirs if not d.startswith('_')]
-        cola += [os.path.relpath(os.path.join(raiz, f), LAWANG).replace(os.sep, '/') for f in fichs]
+    cola += [os.path.relpath(s, LAWANG).replace(os.sep, '/') for s in fuentes_v4()]
     leidos = set()
     while cola:
         rel = cola.pop()
         ruta = os.path.join(LAWANG, *rel.split('/'))
-        if rel in leidos or not os.path.isfile(ruta):
+        if rel in leidos or not os.path.isfile(ruta) or not se_copia(ruta):
             continue
         leidos.add(rel)
         if rel.endswith(EXT_TEXTO):
@@ -1906,19 +1912,28 @@ def colores_lawang_diff(diff):
     lee, pal = lawang_que_lee_el_build(), lawang_paleta()
     ajenos = {_rgb_hex(h) for h in COLORES_AJENOS}
     mas, menos = collections.defaultdict(list), collections.Counter()
-    fich, n = None, 0
+    fich, n, viejas, nuevas = None, 0, 0, 0
     for l in diff.split('\n'):
-        if l.startswith('+++ ') or l.startswith('--- '):
+        # Dentro de un bloque @@ se cuentan las líneas que le quedan: una línea AÑADIDA que empiece por «++ » no es la cabecera «+++ »
+        # de otro fichero (revisor de p42c). Fuera de un bloque, las cabeceras.
+        if viejas <= 0 and nuevas <= 0:
             if l.startswith('+++ '):
                 fich = l[6:].strip() if l.startswith('+++ b/') else None
+            elif l.startswith('@@'):
+                m = re.match(r'@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', l)
+                if m:
+                    viejas, n, nuevas = int(m.group(1) or 1), int(m.group(2)) - 1, int(m.group(3) or 1)
             continue
-        if l.startswith('@@'):
-            m = re.search(r'\+(\d+)', l)
-            n = int(m.group(1)) - 1 if m else 0
+        if l.startswith('\\'):   # «\ No newline at end of file»
             continue
-        if l[:1] not in ('+', '-', ' '):   # «\ No newline at end of file», cabeceras diff/index de git
-            continue
-        if l[0] != '-':
+        if l[:1] == '-':
+            viejas -= 1
+        elif l[:1] == '+':
+            nuevas -= 1
+            n += 1
+        else:
+            viejas -= 1
+            nuevas -= 1
             n += 1
         if l[:1] not in ('+', '-') or fich not in lee or not fich.endswith(PIEL_EXT) or 'predeploy-ok' in l:
             continue

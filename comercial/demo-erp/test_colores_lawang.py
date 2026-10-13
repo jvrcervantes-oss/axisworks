@@ -181,8 +181,9 @@ try:
     lee = build.lawang_que_lee_el_build()
     mira('el build lee la v4, el CRM de leads y lo que referencian (contracts/assets/brand.css), no la web pública',
          'intranet/v4/assets/datos.js' in lee and 'intranet/leads/leads.css' in lee and 'contracts/assets/brand.css' in lee and 'index.html' not in lee)
-    dif = lambda *ls: chr(10).join(['diff --git a/intranet/v4/assets/datos.js b/intranet/v4/assets/datos.js', '--- a/intranet/v4/assets/datos.js',
-                                  '+++ b/intranet/v4/assets/datos.js', '@@ -10,3 +10,4 @@'] + list(ls))
+    def dif(*ls, f='intranet/v4/assets/datos.js'):
+        viejas, nuevas = sum(1 for x in ls if x[:1] in ' -'), sum(1 for x in ls if x[:1] in ' +')
+        return chr(10).join(['diff --git a/%s b/%s' % (f, f), '--- a/' + f, '+++ b/' + f, '@@ -10,%d +10,%d @@' % (viejas, nuevas)] + list(ls))
     r = build.colores_lawang_diff(dif(' a', '+var V="#485B37";', ' b'))
     mira('gate: un #485B37 de más (varios significados) PARA, con su línea', [(x[1], x[3]) for x in r] == [(11, True)])
     r = build.colores_lawang_diff(dif('+var V="#123456";'))
@@ -194,7 +195,12 @@ try:
     mira('gate: «Seguridad #163» en un comentario no es un color; una línea con predeploy-ok tampoco avisa',
          build.colores_lawang_diff(dif('+// Seguridad #163: la misma fórmula', '+x="#123456" // predeploy-ok: muestra')) == [])
     mira('gate: un fichero que el build no copia (la web pública) no avisa',
-         build.colores_lawang_diff(dif('+x="#485B37"').replace('intranet/v4/assets/datos.js', 'index.html')) == [])
+         build.colores_lawang_diff(dif('+x="#485B37"', f='index.html')) == [])
+    mira('gate: lo que copia() deja fuera (un .test.js, la v4/index.html de maqueta, contracts/app.html) no avisa: misma regla, se_copia()',
+         all(build.colores_lawang_diff(dif('+x="#485B37"', f=x)) == [] for x in
+             ('intranet/v4/assets/ficha_publica.test.js', 'intranet/v4/index.html', 'contracts/app.html')))
+    mira('gate: una línea AÑADIDA que empieza por «++ » no se toma por la cabecera de otro fichero: lo de después se sigue mirando',
+         [x[1] for x in build.colores_lawang_diff(dif('+++ x', '+var V="#485B37";'))] == [11])
     # (6) el papel
     d = tempfile.mkdtemp()
     escribe(d, 'contracts/assets/brand.css', ':root{\n  --brand-primary: var(--tg);\n}')
