@@ -4544,7 +4544,10 @@ def textos_instancia(nombre):
 # quede en español se cuenta aparte (LW_T_ESPANOL) para que la prueba pueda ponerse roja.
 IDIOMAS_CONOCIDOS = (('id', 'en'),)
 # Palabras que en indonesio se escriben igual que en español (Diseño, 12-oct): las únicas traducciones que pueden ser iguales a su clave.
-IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis', 'Panel', 'Bot')
+IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis', 'Panel', 'Bot',
+                 # 13-oct (editores.js al indonesio): «Closer» y «Setter» son los nombres de los roles de venta, que el equipo usa tal
+                 # cual en indonesio
+                 'Closer', 'Setter')
 # Lo que hay que tocar en el front copiado: (fichero en DIST, trozo de Lawang, sustituto). Cada trozo tiene que aparecer EXACTAMENTE una vez.
 IDIOMAS_PARCHES = (
     ('contracts/assets/idioma.js', "  window.LW_IDIOMA = (v === 'en') ? 'en' : 'es';",

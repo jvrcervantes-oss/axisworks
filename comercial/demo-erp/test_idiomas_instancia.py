@@ -210,6 +210,48 @@ for nombre, dic in dics.items():
 mira('los pares que deben distinguirse llevan traducciones distintas (%s)' % '; '.join(iguales), not iguales)
 mira('hay diccionarios ID que revisar (i18n_id.json y al menos los de portada, Ajustes y ayudas comunes)', len(dics) >= 3 and len(dics['i18n_id.json']) > 100)
 
+# -- (4b) cobertura (13-oct, agencia-81 + revisor): lo que el equipo de bbm toca cada día no cae al inglés ni sale en español.
+# Dónde PARA cada cosa (revisor, 13-oct: «que pare donde nace la frase»):
+#  · una frase SIN INGLÉS sale en español en cualquier idioma → la para el push de Lawang (tools/predeploy.py, capa 0,
+#    tools/i18n_lawang.py --diff), solo por lo que ese push añade;
+#  · una frase sin indonesio cae al inglés (tolerado mientras se traduce, LW_T_CAIDA_EN) → aquí AVISA con la lista, no para: una
+#    frase nueva de Lawang no debe poner rojo el gate de AxisWorks a todos (familia de test_ajustes_correo, 12-oct).
+# Solo cuenta el diccionario GLOBAL (i18n_id.json): los ID_xx de una pantalla del maestro solo entran en LW_ID en esa pantalla
+# («Bloqueo» = «Ditahan» en Reservas de producto no traduce la píldora de Lawang; revisor, 13-oct).
+# PARA solo si no mide nada (el extractor o la ruta de editores.js cambiaron): entonces este aviso estaría mintiendo.
+# Arreglo de un aviso (2 min): añade la frase a comercial/demo-erp/i18n_id.json.
+import html as _html, pathlib
+sys.path.insert(0, os.path.join(build.AGENCIA, 'tools'))
+import i18n_lawang
+_EN = set(json.loads(node('var window = {}; var document = {documentElement: {}, addEventListener: function () {}};\n' +
+                          ORIGINAL['contracts/assets/i18n.js'] + '\nconsole.log(JSON.stringify(Object.keys(window.LW_EN)));')))
+_ID = set(dics['i18n_id.json'])
+def _es_frase(k):
+    # la regla de tools/i18n_lawang.es_frase (agencia, 13-oct), aquí también por si el clon de la agencia aún no la trae:
+    # frase para la persona, no un literal de comparación dentro del lwT(…) (pending, proforma, <b>…)
+    k = k.strip()
+    if not k or k in {'EUR', 'IDR', 'USD', '<b>', '</b>', '&lt;', '<'} or not re.search(r'[A-Za-zÀ-ÿ]', k) or re.fullmatch(r'</?[a-z]+[^>]*>', k):
+        return False
+    return ' ' in k or k[0].isupper() or bool(re.search(r'[À-ÿ]', k))
+def _claves(rel):
+    ks = {_html.unescape(k) for k in i18n_lawang.claves_de(pathlib.Path(build.LAWANG, *rel.split('/')))}
+    return {k for k in ks if getattr(i18n_lawang, 'es_frase', _es_frase)(k)}
+def _tiene(dic, k):
+    return k in dic or k.strip() in dic
+COBERTURA = ('intranet/v4/assets/editores.js', 'contracts/assets/cierre.js', 'intranet/v4/assets/mantenimiento.js', 'contracts/assets/operaciones-cuentas.js')
+_falta = []
+for rel in COBERTURA + ('intranet/v4/assets/datos.js',):
+    for k in sorted(_claves(rel)):
+        for idioma, dic in (('id', _ID), ('en', _EN)):
+            if not _tiene(dic, k) and (rel in COBERTURA or idioma == 'en'):
+                _falta.append('%s [%s] «%s»' % (rel.split('/')[-1], idioma, k[:50]))
+_n_editores = len(_claves('intranet/v4/assets/editores.js'))
+mira('la cobertura mide algo (editores.js pide más de 200 frases; pide %d)' % _n_editores, _n_editores > 200)
+_al_ingles = sum(1 for k in _claves('intranet/v4/assets/datos.js') if not _tiene(_ID, k))
+print('AVISO (no para): %d frase(s) de editores/mantenimiento/cierre/operaciones-cuentas sin indonesio o sin inglés%s'
+      % (len(_falta), (': ' + '; '.join(_falta[:8])) if _falta else ''))
+print('AVISO (no para): datos.js — %d frases caen al inglés en indonesio (criba planificada en el relevo de bbm-p42)' % _al_ingles)
+
 # -- (5) la comprobación del paquete construido
 if r == 'pasa':
     viejo_aqui = build.AQUI
