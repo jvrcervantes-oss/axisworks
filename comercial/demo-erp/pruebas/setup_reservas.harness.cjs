@@ -13,6 +13,16 @@ const EXE = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwri
 const AQUI = path.join(__dirname, '..');
 const HTML = fs.readFileSync(path.join(AQUI, 'asistente_setup.html'), 'utf8').split('<!--AXW_SCRIPT-->');
 const JS = f => fs.readFileSync(path.join(AQUI, f), 'utf8');
+// AXW_CSS_DIST=<paquete construido>: la piel de la instancia (tw.css, shell.css, --tema-* de instancia.js y sus letras) para las capturas
+// y el contraste, como asistente_setup.harness.cjs (bbm-p41, 13-oct). Sin ella no cambia nada de lo que se mide.
+const DIST = process.env.AXW_CSS_DIST || '';
+const CSS_PIEL = DIST ? ['tw.css', 'shell.css'].map(f => fs.readFileSync(path.join(DIST, 'assets', f), 'utf8')).join(' ') : '';
+const PIEL_VARS = (() => {
+  if (!DIST) return '';
+  const m = /\bp=(\{[^}]*\});for\(var k in p\)s\.setProperty\("--tema-"\+k/.exec(fs.readFileSync(path.join(DIST, 'contracts', 'assets', 'instancia.js'), 'utf8'));
+  return m ? ':root{' + Object.entries(JSON.parse(m[1])).map(([k, v]) => '--tema-' + k + ':' + v).join(';') + '}' : '';
+})();
+const FUENTES = DIST && fs.existsSync(path.join(DIST, 'assets', 'fonts', 'fonts.css')) ? fs.readFileSync(path.join(DIST, 'assets', 'fonts', 'fonts.css'), 'utf8') : '';
 const NUCLEO = JS('setup_modulos.js'), PASOS = JS('setup_pasos.js'), RESERVAS = JS('setup_reservas.js'), PUESTA = JS('ajustes_puesta.js');
 const SHOT = process.argv[2];
 let fallos = 0;
@@ -210,7 +220,7 @@ function servidor(b, n, a) {
 
 // ── las páginas: el asistente y Ajustes › Configurar módulos, con la sesión y el idioma simulados ─────────────────────────────────────────────
 const cabeza = (idioma) => `<!doctype html><html lang="${idioma}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}[hidden]{display:none!important}</style></head><body>`;
+<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}[hidden]{display:none!important}</style><style>${CSS_PIEL}</style><style>${FUENTES}${PIEL_VARS}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}">`;
 const sesion = (idioma, url) => `<script>
 history.replaceState(null, '', '${url}');
 window.__sinTrad = []; window.__errores = [];
@@ -220,6 +230,7 @@ var sb = { rpc: function (n, a) { return window.__srv(n, a || {}); }, from: cade
 window.LW_AUTH = Promise.resolve({ sb: sb });
 window.lwDatos = function (n, a) { return sb.rpc(n, a); };
 window.LW_EN = {}; window.LW_ID = {}; window.__idioma = '${idioma}';
+window.lwLocale = function () { return ({ es: 'es-ES', en: 'en-GB', id: 'id-ID' })[window.__idioma]; };
 window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' ? window.LW_EN : window.__idioma === 'id' ? window.LW_ID : null; var v = s;
   if (d) { if (Object.prototype.hasOwnProperty.call(d, s)) v = d[s]; else if (!/^[\\s0-9.:]*$/.test(s)) window.__sinTrad.push(s); }
   if (hu) for (var k in hu) v = v.split('%' + k).join(hu[k]); return v; };
@@ -232,7 +243,14 @@ async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=
   const ctx = await nav.newContext({ viewport: { width: ancho, height: 900 } });
   const p = await ctx.newPage();
   const body = pag === 'ajustes' ? ajustes(idioma) : asistente(idioma, url);
-  await p.route('**/*', r => r.fulfill({ status: 200, contentType: 'text/html', body }));
+  await p.route('**/*', r => {
+    const u = new URL(r.request().url());
+    if (DIST && u.pathname.startsWith('/assets/fonts/')) {
+      const f = path.join(DIST, u.pathname);
+      return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'font/woff2', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: '' });
+    }
+    return r.fulfill({ status: 200, contentType: 'text/html', body });
+  });
   await p.exposeFunction('__srv', async (n, a) => { const r = servidor(b, n, a); if (r && r.red) throw new Error('Failed to fetch'); return r; });
   await p.goto('http://local.test' + (pag === 'ajustes' ? '/ajustes/' : url));
   await p.waitForTimeout(450);
