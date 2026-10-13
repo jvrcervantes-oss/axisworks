@@ -58,10 +58,10 @@ const MIDE = () => {
   const exe = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
   const nav = await chromium.launch({ executablePath: fs.existsSync(exe) ? exe : undefined });
   const ctx = await nav.newContext({ viewport: { width: 1440, height: 900 } });
-  let retrasaNav = 0;   // ms: retrasa assets/nav.js (defer) para que modulos_activos_datos conteste ANTES de que recablee los href="#"
+  let sinNav = false;   // sirve assets/nav.js VACÍO: los href del menú se quedan en «#» (= la página actual), el estado que el revisor vio posible
   await ctx.route('**/*', async route => {
     const url = route.request().url();
-    if (retrasaNav && /\/assets\/nav\.js/.test(url)) await new Promise(r => setTimeout(r, retrasaNav));
+    if (sinNav && /\/assets\/nav\.js/.test(url)) return route.fulfill({ status: 200, contentType: 'application/javascript', body: '' });
     if (/supabase-js/.test(url)) return route.fulfill({ status: 200, contentType: 'application/javascript', body: FALSO });
     if (/fonts\.(googleapis|gstatic)\.com|@phosphor-icons/.test(url)) return route.continue();
     if (!url.startsWith(ORIGEN)) return route.abort();
@@ -133,17 +133,18 @@ const MIDE = () => {
   ok('/productos/ es la pantalla «Extras y servicios» (sin la tabla de Lawang) y su menú dice lo mismo', ex.raiz && !ex.lawang && /Ekstra dan layanan/.test(ex.tit)
      && ex.menu.length > 0 && ex.menu.every(x => x.indexOf('Ekstra dan layanan') !== -1), JSON.stringify(ex));
   if (SHOT) await p.screenshot({ path: `${SHOT}_1440_productos_id.png` });
-  // revisor 14-oct: con caché fría nav.js (defer) llega DESPUÉS de modulos_activos_datos y todas las entradas siguen en href="#" (= la página
-  // actual). El rótulo va por data-path / data-lw-pestana, así que en /productos/ solo la entrada de productos pasa a «Extras y servicios»
-  retrasaNav = 1500;
+  // revisor 14-oct: si modulos_activos_datos contesta ANTES de que nav.js recablee, todas las entradas siguen en href="#" (= la página actual).
+  // Se fuerza ese estado sirviendo nav.js vacío: el rótulo va por data-path / data-lw-pestana, así que ninguna otra entrada pasa a «Extras y
+  // servicios» (con el rótulo por href, todas lo harían). Sin nav.js no se injerta la entrada de productos: aquí solo se mira que no contagie.
+  sinNav = true;
   await p.goto(ORIGEN + '/productos/', { waitUntil: 'load' });
-  await p.waitForTimeout(3500);
-  retrasaNav = 0;
+  await p.waitForTimeout(2500);
+  sinNav = false;
   const tarde = await p.evaluate(() => [...document.querySelectorAll('aside a[data-path], a[data-lw-pestana]')]
     .map(a => ({ id: a.getAttribute('data-lw-pestana') || a.getAttribute('data-path'), plegable: a.hasAttribute('data-lw-plegable'), t: a.textContent.replace(/\s+/g, ' ').trim() })));
   const mal = tarde.filter(x => (x.id !== 'productos' || x.plegable) && x.t.indexOf('Ekstra dan layanan') !== -1);
-  ok('nav.js tarde en /productos/: ninguna otra entrada (ni la cabecera de un grupo) pasa a «Extras y servicios»', tarde.length > 5 && mal.length === 0, JSON.stringify(mal.slice(0, 5)));
-  ok('nav.js tarde en /productos/: la entrada de productos sí dice «Ekstra dan layanan»', tarde.some(x => x.id === 'productos' && !x.plegable && x.t.indexOf('Ekstra dan layanan') !== -1), JSON.stringify(tarde.filter(x => x.id === 'productos')));
+  const almohadilla = await p.evaluate(() => [...document.querySelectorAll('aside a[data-path]')].filter(a => a.getAttribute('href') === '#').length);
+  ok('sin nav.js (href="#") en /productos/: ninguna otra entrada (ni la cabecera de un grupo) pasa a «Extras y servicios»', almohadilla > 5 && tarde.length > 5 && mal.length === 0, almohadilla + ' · ' + JSON.stringify(mal.slice(0, 5)));
   ok('0 errores de consola', errores.length === 0, errores.slice(0, 4).join(' | '));
   await nav.close();
   console.log(fallos ? `\n${fallos} de ${total} FALLAN` : `\nTODO BIEN (${total})`);

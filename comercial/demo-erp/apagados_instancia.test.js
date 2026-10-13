@@ -23,7 +23,7 @@ const MAPA = {
 const PLANTILLA = fs.readFileSync(path.join(__dirname, 'no_instalado.html'), 'utf8')
   .replace(/<!--[\s\S]*?-->\s*/g, '').replace('{{marca}}', 'Prueba ERP').replace('{{sello}}', '<svg></svg>');
 
-function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, build, guardado, recargado, viendo, elegido, puente }) {
+function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, build, guardado, recargado, viendo, elegido, puente, mapa }) {
   const red = [];
   const clases = new Set();
   const doc = {
@@ -63,7 +63,7 @@ function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, bu
     }
     return new Response('[{"id":1}]', { status: 200, headers: { 'Content-Type': 'application/json', 'Content-Range': '0-0/1' } });
   };
-  new Function(plantilla.replace('__AXW_MAPA__', JSON.stringify(MAPA)).replace('__AXW_NO_INSTALADO__', JSON.stringify(PLANTILLA)))();
+  new Function(plantilla.replace('__AXW_MAPA__', JSON.stringify(mapa || MAPA)).replace('__AXW_NO_INSTALADO__', JSON.stringify(PLANTILLA)))();
   const sb = createClient(SB, 'sb_publishable_x', { auth: { persistSession: false, autoRefreshToken: false } });
   sb.auth.getSession = async () => ({ data: { session: { access_token: 't' } }, error: null });
   return { sb, red, clases, doc, recargas, publica: () => { globalThis.LW_SB = sb; } };
@@ -131,6 +131,25 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(b.includes('mailto:hello@axisworks.studio?subject=Activar%20m%C3%B3dulo%3A%20Comisiones') && b.includes('https://axisworks.studio'),
       'bloque de AxisWorks con correo (asunto por módulo) y web');
     ok(!/\{\{/.test(b) && /<span\s+hidden><button type="button" id="axw-reintenta"/.test(b) && E.doc.title === 'Módulo no instalado', 'sin huecos sin rellenar; sin «Reintentar»');
+  }
+
+  // 3b. en otro idioma de la instancia (M.ni, erp-front 14-oct): la misma pantalla traducida, sin el «qué hace» en español
+  {
+    const ni = { id: { p: PLANTILLA.replace('Volver al inicio', 'Kembali ke beranda'), tit: 'Modul belum dipasang', an: '«%s» belum aktif di ERP ini.',
+      a0: 'Modul ini belum aktif di ERP ini.', as: 'Aktifkan modul: ', et: 'Modul tidak dapat diperiksa', ex: 'Coba lagi.', n: { comisiones: 'Komisi' } } };
+    const E = escenario({ activos: ['facturas'], ruta: '/comisiones/', viendo: 'id', mapa: Object.assign({}, MAPA, { ni }) });
+    globalThis.LW_AUTH = Promise.resolve({ sb: E.sb });
+    E.publica();
+    await espera(50);
+    const b = E.doc.body.innerHTML;
+    ok(b.includes('«Komisi» belum aktif di ERP ini.') && b.includes('Kembali ke beranda') && E.doc.title === 'Modul belum dipasang'
+       && !b.includes('no está activo') && !b.includes('Lo que se debe a cada comercial.') && b.includes('subject=Aktifkan%20modul%3A%20Komisi'),
+       'en indonesio: «Modul belum dipasang» con el nombre traducido, sin frases en español');
+    const E2 = escenario({ activos: ['facturas'], ruta: '/comisiones/', viendo: 'en', mapa: Object.assign({}, MAPA, { ni }) });
+    globalThis.LW_AUTH = Promise.resolve({ sb: E2.sb });
+    E2.publica();
+    await espera(50);
+    ok(E2.doc.body.innerHTML.includes('no está activo'), 'un idioma sin entrada en M.ni sigue con la pantalla en español (la de siempre)');
   }
 
   // 4. pantalla de un módulo encendido: arranca después de saber
