@@ -2682,6 +2682,12 @@ EJEMPLOS_ADMITIDOS = frozenset((
 
 
 REF_INTERNA = re.compile(r'\s*\((?:LAW|AXW|BBM|EST)-\d+\)|(?:LAW|AXW|BBM|EST)-\d+')
+# El proveedor de IA nombrado ENTRE PARÉNTESIS en un texto de ayuda («…a un proveedor externo de IA (Anthropic) para…», aviso de
+# privacidad del editor de contratos de Lawang, E10, 13-oct-2026): fuera, como las referencias internas; la frase sigue siendo
+# verdad sin el nombre. Por forma y no por la frase de Lawang (no se engancha a su texto), y la misma en i18n.js y en la
+# pantalla, así la clave sigue casando. Una llamada de verdad (api.anthropic.com, una clave) no va entre paréntesis: la sigue
+# parando comprueba_sin_secretos().
+PROVEEDOR_IA = re.compile(r'\s*\((?i:anthropic)\)')
 QA_ID = re.compile(r'(?<![A-Za-z0-9_$])(qa|QA)(?=[._-])')
 QA_PALABRA = re.compile(r'(?<![A-Za-z0-9_$])QA(?![A-Za-z0-9_$])')
 # Lo visible del doble de QA que se cambia por algo de demo ANTES del renombrado genérico (cada uno debe aparecer: si el doble
@@ -2713,6 +2719,8 @@ def limpia_internos(dist):
             p = os.path.join(raiz, f)
             t = open(p, encoding='utf-8', errors='replace').read()
             t2, n = REF_INTERNA.subn('', t)
+            t2, n_ia = PROVEEDOR_IA.subn('', t2)
+            n += n_ia
             if n:
                 refs += n
                 open(p, 'w', encoding='utf-8', newline='').write(t2)

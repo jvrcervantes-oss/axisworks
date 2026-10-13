@@ -16,7 +16,10 @@ _argv, sys.argv = sys.argv, ['build.py']
 import build  # noqa: E402
 sys.argv = _argv
 
-PUBLICADO = os.path.abspath(os.path.join(AQUI, '..', '..', 'dist', 'demo-erp'))
+# Con AXW_PRUEBA_PUBLICO (lawang_fijado.py prueba/sube, 14-oct-2026) se mira lo que ACABA de construir `build.py --publico` fuera
+# del repo, no el dist/ que hay en git: si no, el `sube` daba por buena la demo publicada vieja (axw-cola).
+PUBLICADO = (os.path.join(os.path.abspath(os.environ['AXW_PRUEBA_PUBLICO']), 'demo-erp') if os.environ.get('AXW_PRUEBA_PUBLICO')
+             else os.path.abspath(os.path.join(AQUI, '..', '..', 'dist', 'demo-erp')))
 FALLOS = []
 
 
