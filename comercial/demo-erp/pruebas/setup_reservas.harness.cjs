@@ -294,6 +294,14 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S41 vacío: dice qué falta y no envía', ((await errorTxt(p)) || '').includes('nombre del producto') && escrituras(b).length === 0, await errorTxt(p));
   await rellenaAlquiler(p);
   ok('S41 la matrícula se escribe en mayúsculas', (await p.inputValue('[data-axw-campo="mat_0"]')) === 'DK 1234 AB');
+  // Diseño S41: tabla «# · Matrícula · Quitar» con la cuenta arriba; quitar una fila renumera (número, etiqueta y clave)
+  const nums = () => p.$$eval('[data-axw-sr-filas="unidades"] [data-axw-sr-num]', ls => ls.map(l => l.textContent));
+  ok('S41 tabla: filas numeradas y la cuenta arriba', JSON.stringify(await nums()) === '["1","2"]' && (await txt(p, '[data-axw-sr-cuenta="unidades"]')) === '2 unidades', JSON.stringify(await nums()));
+  await p.click('[data-axw-sr-accion="anadir-unidad"]'); await p.fill('[data-axw-campo="mat_2"]', 'DK 9999 ZZ');
+  await p.click('[data-axw-sr-fila="1"] [data-axw-sr-accion="quitar-unidad"]');
+  const claves = await p.$$eval('[data-axw-sr-filas="unidades"] input', ls => ls.map(l => l.getAttribute('data-axw-campo') + '=' + l.value + '@' + document.querySelector('label[for="' + l.id + '"]').textContent));
+  ok('S41 quitar una fila renumera: claves seguidas, sin repetir, etiqueta y número al día', JSON.stringify(claves) === JSON.stringify(['mat_0=DK 1234 AB@Matrícula de la unidad 1', 'mat_1=DK 9999 ZZ@Matrícula de la unidad 2']) && JSON.stringify(await nums()) === '["1","2"]' && (await txt(p, '[data-axw-sr-cuenta="unidades"]')) === '2 unidades', JSON.stringify(claves));
+  await p.fill('[data-axw-campo="mat_1"]', 'DK 5678 CD');
   await clic(p, 'enviar'); await p.waitForTimeout(400);
   const orden = escrituras(b).map(x => x[0] + (x[1].p_dias ? ':' + x[1].p_dias : ''));
   ok('S41 orden: producto, 3 tarifas, garantía, 3 seguros, lote de unidades', JSON.stringify(orden) === JSON.stringify(['producto_guarda', 'producto_tarifa_guarda:1', 'producto_tarifa_guarda:7', 'producto_tarifa_guarda:30', 'producto_garantia_guarda', 'producto_seguro_guarda:1', 'producto_seguro_guarda:30', 'producto_seguro_guarda:365', 'producto_unidades_alta_lote']), JSON.stringify(orden));
@@ -378,7 +386,15 @@ async function rellenaAlquiler(p, o = {}) {
   b = base({ conProducto: true });
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=flota' }));
   await clic(p, 'cambiar'); await p.waitForSelector('[data-axw-sr="flota"] [data-axw-campo="nombre"]');
-  await p.click('[data-axw-sr-accion="anadir-unidad"]'); await p.fill('[data-axw-campo="mat_0"]', 'DK 4444 DD'); await clic(p, 'enviar'); await p.waitForTimeout(400);
+  {
+    const ya = await p.$$eval('[data-axw-sr-ya]', ls => ls.map(l => l.textContent));
+    const nya = ya.length;
+    await p.click('[data-axw-sr-accion="anadir-unidad"]');
+    const num0 = await txt(p, '[data-axw-sr-fila="0"] [data-axw-sr-num]');
+    ok('S41 con unidades: las de antes, numeradas en la tabla; la nueva sigue la cuenta', nya > 0 && ya[0].startsWith('1') && num0 === String(nya + 1)
+       && (await txt(p, '[data-axw-sr-cuenta="unidades"]')) === (nya + 1) + ' unidades', JSON.stringify(ya) + ' ' + num0);
+  }
+  await p.fill('[data-axw-campo="mat_0"]', 'DK 4444 DD'); await clic(p, 'enviar'); await p.waitForTimeout(400);
   const lt = llamadas(b, 'producto_unidades_alta_lote')[0];
   ok('S41 añadir unidades a lo existente: solo el lote, con «Añadido desde el asistente»', escrituras(b).length === 1 && lt && lt[1].p_motivo === 'Añadido desde el asistente de configuración' && JSON.stringify(lt[1].p_identificadores) === '["DK 4444 DD"]', JSON.stringify(escrituras(b)));
   await ctx.close();
@@ -538,7 +554,13 @@ async function rellenaAlquiler(p, o = {}) {
     if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
     await p.waitForSelector('[data-axw-sr="' + paso + '"] [data-axw-campo]', { timeout: 5000 }).catch(() => {});
     if (paso === 'alquileres_previos') { await p.check('[data-axw-campo="fuera"][value="si"]'); await p.waitForTimeout(80); }
+    // flota sin cambios guardaba y pasaba al siguiente: se medía OTRA pantalla. Con una fila nueva y un precio que no vale, se queda aquí
+    if (paso === 'flota') { await p.click('[data-axw-sr-accion="anadir-unidad"]'); await p.fill('[data-axw-campo="tarifa_1"]', 'x'); }
+    if (paso === 'clase') await p.check('[data-axw-campo="clase"][value="servicio"]');   // «servicio» no avanza: lleva a Productos con su aviso
+    if (paso === 'reglas_reserva') await p.fill('[data-axw-campo="dias_min"]', '0');   // type=number: no admite letras; 0 está por debajo del mínimo
+    if (paso === 'entrega') await p.fill('[data-axw-campo="precio_km"]', 'x');
     await clic(p, 'enviar');   // que también salga el texto de error
+    ok(paso + ' ' + idioma + ' ' + ancho + ': se mide esta pantalla (no la siguiente)', !!(await p.$('[data-axw-sr="' + paso + '"]')));
     const anchoDoc = await p.evaluate(() => document.documentElement.scrollWidth);
     ok(paso + ' ' + idioma + ' ' + ancho + ': sin scroll horizontal', anchoDoc <= ancho, String(anchoDoc));
     if (idioma !== 'es') {

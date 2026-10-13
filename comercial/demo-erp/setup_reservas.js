@@ -109,6 +109,9 @@
       sr_unidades: 'Unidades',
       sr_unidades_ayuda: 'Cada unidad se reserva por separado. Escribe su matrícula.',
       sr_ya_hay: 'Ya dadas de alta: %n',
+      sr_unidades_n: '%n unidades',
+      sr_unidades_1: '1 unidad',
+      sr_col_matricula: 'Matrícula',
       sr_matricula_n: 'Matrícula de la unidad %n',
       sr_anadir_unidad: 'Añadir una unidad',
       sr_matricula_repe: 'La matrícula %m está repetida.',
@@ -267,7 +270,7 @@
     'Para que toda reserva lleve seguro, pon el precio del seguro.': 'For every rental to include insurance, enter the insurance price.',
     'Con seguro, ¿se cobra también la fianza?': 'With insurance, is the deposit also charged?', 'No: fianza o seguro': 'No: deposit or insurance', 'Sí: fianza y seguro': 'Yes: deposit and insurance',
     'Unidades': 'Units', 'Cada unidad se reserva por separado. Escribe su matrícula.': 'Each unit is booked on its own. Write its plate.',
-    'Ya dadas de alta: %n': 'Already added: %n', 'Matrícula de la unidad %n': 'Plate of unit %n', 'Añadir una unidad': 'Add a unit',
+    'Ya dadas de alta: %n': 'Already added: %n', '%n unidades': '%n units', '1 unidad': '1 unit', 'Matrícula': 'Plate', 'Matrícula de la unidad %n': 'Plate of unit %n', 'Añadir una unidad': 'Add a unit',
     'La matrícula %m está repetida.': 'The plate %m is repeated.', 'La matrícula %m es demasiado corta o demasiado larga.': 'The plate %m is too short or too long.',
     'Añade al menos una unidad.': 'Add at least one unit.',
     '¿Más alquileres? Añádelos después en Flota y tarifas.': 'More rentals? Add them later in Fleet and rates.',
@@ -375,7 +378,7 @@
     'Para que toda reserva lleve seguro, pon el precio del seguro.': 'Agar setiap booking memakai asuransi, isi harga asuransinya.',
     'Con seguro, ¿se cobra también la fianza?': 'Jika pakai asuransi, apakah deposit tetap ditagih?', 'No: fianza o seguro': 'Tidak: deposit atau asuransi', 'Sí: fianza y seguro': 'Ya: deposit dan asuransi',
     'Unidades': 'Unit', 'Cada unidad se reserva por separado. Escribe su matrícula.': 'Setiap unit di-booking terpisah. Tulis nomor polisinya.',
-    'Ya dadas de alta: %n': 'Sudah terdaftar: %n', 'Matrícula de la unidad %n': 'Nomor polisi unit %n', 'Añadir una unidad': 'Tambah unit',
+    'Ya dadas de alta: %n': 'Sudah terdaftar: %n', '%n unidades': '%n unit', '1 unidad': '1 unit', 'Matrícula': 'Nomor polisi', 'Matrícula de la unidad %n': 'Nomor polisi unit %n', 'Añadir una unidad': 'Tambah unit',
     'La matrícula %m está repetida.': 'Nomor polisi %m tertulis dua kali.', 'La matrícula %m es demasiado corta o demasiado larga.': 'Nomor polisi %m terlalu pendek atau terlalu panjang.',
     'Añade al menos una unidad.': 'Tambahkan minimal satu unit.',
     '¿Más alquileres? Añádelos después en Flota y tarifas.': 'Ada produk sewa lain? Tambahkan nanti di Armada dan tarif.',
@@ -801,26 +804,51 @@
       interruptor(gs, 'seguro_obligatorio', U('sr_seguro_oblig'), g0 && g0.seguro_obligatorio === true);
       campo(zona, 'fianza', U('sr_fianza'), g0 && g0.fianza != null ? fmt(g0.fianza) : '', { modo: 'decimal', antes: mon, max: 20, ayuda: U('sr_fianza_ayuda') });
       seg(zona, 'fianza_con_seguro', U('sr_fianza_o'), [['no', U('sr_fianza_o_no')], ['si', U('sr_fianza_o_si')]], g0 ? (g0.fianza_con_seguro ? 'si' : 'no') : 'no');
-      // Unidades: las que ya hay, fijas; las nuevas, una fila por matrícula
+      // Unidades (diseño S41): una tabla «# · Matrícula · Quitar». Las que ya hay, fijas y numeradas; las nuevas, una fila por matrícula.
+      // La cuenta de la cabecera sigue a las filas. El color de la unidad del diseño no se pinta: la base no lo guarda.
       var gu = grupo(zona, U('sr_unidades'), U('sr_unidades_ayuda'));
       var ya = p ? p.unidades : [];
-      if (ya.length) gu.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface', 'data-axw-sr-ya': String(ya.length), text: U('sr_ya_hay', { n: ya.map(function (u) { return u.identificador; }).join(', ') }) }));
+      var COLS = 'display:grid;grid-template-columns:2.5rem minmax(0,1fr) 44px;gap:8px;align-items:center';
+      var cuenta = el('p', { class: 'font-label-md text-label-md text-on-surface-variant', 'data-axw-sr-cuenta': 'unidades' });
+      gu.appendChild(cuenta);
+      gu.appendChild(el('div', { class: 'font-label-md text-label-md text-outline', style: COLS, 'aria-hidden': 'true' }, [el('span', { text: '#' }), el('span', { text: U('sr_col_matricula') }), el('span')]));
+      ya.forEach(function (u, i) {
+        gu.appendChild(el('div', { class: 'font-body-md text-body-md text-on-surface', style: COLS + ';min-height:44px', 'data-axw-sr-ya': String(i + 1) }, [
+          el('span', { class: 'text-outline', text: String(i + 1) }), el('span', { style: 'overflow-wrap:anywhere', text: u.identificador }), el('span')]));
+      });
       var lista = el('div', { class: 'flex flex-col gap-2', 'data-axw-sr-filas': 'unidades' });
       gu.appendChild(lista);
+      // Tras quitar una fila se renumera TODO: el número que se ve, la etiqueta y la clave (mat_0…mat_n-1). Sin esto, quitar y añadir dejaba
+      // dos filas con la misma clave y, al redibujar tras un fallo, las dos recibían la misma matrícula.
+      function renumera() {
+        var fs = lista.querySelectorAll('[data-axw-sr-fila]');
+        for (var j = 0; j < fs.length; j++) {
+          var inp = fs[j].querySelector('input'), lab = fs[j].querySelector('label'), nn = String(ya.length + j + 1);
+          fs[j].setAttribute('data-axw-sr-fila', String(j));
+          inp.id = 'axw-sr-mat-' + j; inp.setAttribute('data-axw-campo', 'mat_' + j);
+          lab.setAttribute('for', inp.id); lab.textContent = U('sr_matricula_n', { n: nn });
+          fs[j].querySelector('[data-axw-sr-num]').textContent = nn;
+        }
+        var t = ya.length + fs.length;
+        cuenta.textContent = t === 1 ? U('sr_unidades_1') : U('sr_unidades_n', { n: String(t) });
+      }
       function fila() {
         var n = lista.querySelectorAll('[data-axw-sr-fila]').length;
-        var id = 'axw-sr-mat-' + n;
         var tid = d.flota.topes && d.flota.topes.identificador, mx = esObj(tid) && num(tid.max) ? String(num(tid.max)) : null;   // el tope lo da la base (hoy 40)
-        var inp = el('input', { id: id, type: 'text', 'data-axw-campo': 'mat_' + n, maxlength: mx, autocomplete: 'off', class: CLS_IN, style: 'min-width:0' });
+        var inp = el('input', { type: 'text', maxlength: mx, autocomplete: 'off', class: CLS_IN, style: 'min-width:0' });
         inp.addEventListener('input', function () { var c = inp.selectionStart; inp.value = inp.value.toUpperCase(); try { inp.setSelectionRange(c, c); } catch (e) { /* MUDO A PROPOSITO: navegador sin cursor */ } });
-        var quita = el('button', { type: 'button', 'data-axw-sr-accion': 'quitar-unidad', 'aria-label': U('sr_quitar_fila'), class: CLS_BTN2, style: ALTO + ';min-width:44px', text: '×' });
-        var f = el('div', { class: 'flex items-center gap-2', 'data-axw-sr-fila': String(n) }, [el('label', { for: id, style: OCULTO, text: U('sr_matricula_n', { n: String(ya.length + n + 1) }) }), inp, quita]);
-        quita.addEventListener('click', function () { lista.removeChild(f); });
+        var quita = el('button', { type: 'button', 'data-axw-sr-accion': 'quitar-unidad', 'aria-label': U('sr_quitar_fila'), class: CLS_BTN2, style: ALTO + ';min-width:44px;padding:0', text: '×' });
+        var f = el('div', { style: COLS, 'data-axw-sr-fila': String(n) }, [
+          el('span', { class: 'font-body-md text-body-md text-outline', 'data-axw-sr-num': '', 'aria-hidden': 'true' }),
+          el('div', { style: 'min-width:0' }, [el('label', { style: OCULTO }), inp]), quita]);
+        quita.addEventListener('click', function () { lista.removeChild(f); renumera(); });
         lista.appendChild(f);
+        renumera();
         return inp;
       }
       var n0 = st.filas.unidades != null ? st.filas.unidades : (ya.length ? 0 : 1);
       for (var i = 0; i < n0; i++) fila();
+      renumera();
       var mas = el('button', { type: 'button', 'data-axw-sr-accion': 'anadir-unidad', class: CLS_BTN2 + ' self-start', style: ALTO, text: '+ ' + U('sr_anadir_unidad') });
       mas.addEventListener('click', function () { fila().focus(); });
       gu.appendChild(mas);
