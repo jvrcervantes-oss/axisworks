@@ -336,6 +336,16 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     const pend = b.d.modulos.filter(m => m.estado === 'sin_configurar' && b.d.pasos.some(x => x.modulo === m.modulo && x.obligatorio)).length;
     ok(idioma + ' ' + ancho + ' inicio: un enlace por módulo pendiente y «Sigue donde lo dejaste»', (await p.$$('[data-axw-modulo]')).length === pend && !!(await p.$('[data-axw-accion="seguir"]')),
        (await p.$$('[data-axw-modulo]')).length + ' de ' + pend);
+    // diseño S03 (13-oct): «Paso n de N en <módulo>.» en la tarjeta de seguir, y la nota de solo-administrador ANTES de la lista
+    const sigueTxt = (await txt(p, '[data-axw-sigue-paso]')) || '';
+    const notaAntes = await p.evaluate(() => { const n = document.querySelector('[data-axw-solo-tu]'), l = document.querySelector('ul[role="list"]');
+      return !!(n && l && (n.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING)); });
+    ok(idioma + ' ' + ancho + ' inicio: «Paso n de N en módulo» y la nota antes de la lista', /\d+\D+\d+/.test(sigueTxt) && notaAntes, sigueTxt + ' · nota antes: ' + notaAntes);
+    if (idioma === 'es' && ancho === 1440) {
+      const mod = new URLSearchParams((await p.getAttribute('[data-axw-accion="seguir"]', 'href')) || '').get('modulo');
+      const L = b.d.pasos.filter(x => x.modulo === mod && x.obligatorio), n = L.findIndex(x => !x.hecho) + 1;
+      ok('S03: el número del paso es el del primer obligatorio pendiente de ese módulo', n > 0 && sigueTxt.startsWith('Paso ' + n + ' de ' + L.length + ' en '), mod + ': ' + sigueTxt);
+    }
     const anchoDoc = await p.evaluate(() => document.documentElement.scrollWidth);
     ok(idioma + ' ' + ancho + ' inicio: sin scroll horizontal', anchoDoc <= ancho, String(anchoDoc));
     if (idioma !== 'es') {

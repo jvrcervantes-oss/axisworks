@@ -236,9 +236,13 @@ document.addEventListener('DOMContentLoaded', function () {
     t.appendChild(el('div', { class: 'flex flex-col gap-3 rounded-2xl bg-surface-container-low p-5' }, [
       el('span', { class: 'font-label-md text-[11px] tracking-[0.14em] uppercase text-outline', text: U('sigue_donde') }),
       el('h2', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', text: S.nombreModulo(primero.modulo) + (sigP ? ' · ' + S.texto('paso', sigP.clave, 0) : '') }),
+      // diseño S03: «Paso 3 de 4 en Facturas.» (el «guardado hoy a las 10:42 por Maya» no lo da la base: lista de Backend)
+      sigP ? el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-sigue-paso': '', text: U('paso_de_en', { n: String(Lp.obligatorios.indexOf(sigP) + 1), t: String(Lp.obligatorios.length), m: S.nombreModulo(primero.modulo) }) }) : null,
       segs,
       el('a', { href: '?modulo=' + encodeURIComponent(primero.modulo), 'data-axw-accion': 'seguir', class: BTN1 + ' self-start', style: 'min-height:44px', text: U('continuar') })
     ]));
+    // diseño S03: la nota «solo tú, como administrador principal…» va ANTES de la lista, justo bajo «Sigue donde lo dejaste»
+    t.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant rounded-xl border border-outline-variant px-4 py-3', 'data-axw-solo-tu': '', text: U('solo_tu') }));
     // Lista de los módulos encendidos con su estado y sus pasos (S03). Solo los pendientes llevan data-axw-modulo (el enganche de siempre).
     var conPasos = d.modulos.filter(function (m) { return d.pasos.some(function (p) { return p.modulo === m.modulo && p.obligatorio; }); });
     var nPasos = d.pasos.filter(function (p) { return p.obligatorio; }).length;
@@ -266,7 +270,6 @@ document.addEventListener('DOMContentLoaded', function () {
       ]));
     });
     t.appendChild(ul);
-    t.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant rounded-xl border border-outline-variant px-4 py-3', text: U('solo_tu') }));
     t.appendChild(el('p', { class: 'font-body-sm text-body-sm text-outline', text: U('se_guarda') }));
   }
   function pintaListo(mod, L, pendientes) {
