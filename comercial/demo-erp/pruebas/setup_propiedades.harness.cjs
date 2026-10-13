@@ -321,7 +321,9 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:|22023|42501|55000|23505|P000
   ok('C5 sin elegir con carta ya puesta: no llama y no da error', de(b, 'contrato_tipo_etapa_guarda').length === 0 && !(await errorTxt(p)), await errorTxt(p));
   if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
   await p.waitForSelector('[data-axw-campo="cr_tipo"]', { timeout: 3000 }).catch(() => {});
-  if (await p.$('[data-axw-campo="cr_tipo"]')) { await p.selectOption('[data-axw-campo="cr_tipo"]', 'compraventa'); await clic(p, 'enviar'); await p.waitForTimeout(300); }
+  const hayCr = !!(await p.$('[data-axw-campo="cr_tipo"]'));
+  ok('C5 el selector de la carta sigue a la vista tras «enviar» sin elegir', hayCr);
+  if (hayCr) { await p.selectOption('[data-axw-campo="cr_tipo"]', 'compraventa'); await clic(p, 'enviar'); await p.waitForTimeout(300); }
   ok('C5 elegir uno de los que ya son carta de reserva: no llama (ya está) y no da error', de(b, 'contrato_tipo_etapa_guarda').length === 0 && !(await errorTxt(p)), await errorTxt(p));
   await ctx.close();
   b = base({ redEn: 'contrato_tipo_etapa_guarda' });

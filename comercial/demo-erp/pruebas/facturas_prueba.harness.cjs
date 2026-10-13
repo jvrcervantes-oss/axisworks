@@ -226,6 +226,27 @@ window.abrePagina = function (numero) { return usa('documentoPagina', numero); }
     ok('/contratos/: si la lectura vuelve, el aviso de «no se ha podido comprobar» se va', (await franja(p)) === null, String(await franja(p)));
     await ctx.close();
   }
+  // 9. revisor erp-front-2 (BAJA 1-2): un papel sin número no levanta la duda; si al volver la lectura el papel pintado sin mirar era una P, pide reabrirlo
+  {
+    const { p, ctx } = await abre({ resp: { data: null, error: { code: '500', message: 'x' } }, ruta: '/contratos/' });
+    await p.evaluate(() => window.abrePagina(''));
+    await p.waitForTimeout(200);
+    ok('con la lectura caída, un papel SIN número no pone la franja de «no se ha podido comprobar»', (await franja(p)) === null, String(await franja(p)));
+    await ctx.close();
+  }
+  {
+    const RECIBO_P = 'REC-2026-00042';
+    const BIEN2 = Object.assign({}, BIEN, { numeros: BIEN.numeros.concat([RECIBO_P]) });
+    const { p, ctx } = await abre({ resp: [{ data: null, error: { code: '503', message: 'x' } }, { data: BIEN2, error: null }], ruta: '/contratos/' });
+    const h = await p.evaluate(n => window.abrePagina(n), RECIBO_P);
+    await p.waitForTimeout(300);
+    const f = (await franja(p)) || '';
+    ok('el recibo de una P pintado con la lectura caída sale sin marca, y al volver la lectura la franja pide cerrarlo y reabrirlo', !h.includes('data-axw-prueba') && f.includes('vuelve a abrirlo'), f);
+    const h2 = await p.evaluate(n => window.abrePagina(n), RECIBO_P);
+    await p.waitForTimeout(200);
+    ok('y al reabrirlo sale marcado y el aviso de reabrir se va', h2.includes(MARCA) && !((await franja(p)) || '').includes('vuelve a abrirlo'), String(await franja(p)));
+    await ctx.close();
+  }
   await nav.close();
   console.log(fallos ? `\n${fallos} de ${total} FALLAN` : `\nTODO BIEN (${total})`);
   process.exit(fallos ? 1 : 0);

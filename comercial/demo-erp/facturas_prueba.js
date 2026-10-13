@@ -17,7 +17,9 @@
  *    las dos funciones o cambió su firma, la franja y cada fila de prueba dicen «no se pudo marcar el papel como prueba; no la imprimas»,
  *    en CUALQUIER pantalla (también /contratos/ y las que no suman). Y si se pinta un papel sin serie P con la lectura caída (un recibo de
  *    una P solo se reconoce por la lectura), la franja lo dice allí mismo. Con la lectura caída, repintar el mismo papel no la vuelve a
- *    pedir: otro documento o 10 s después, sí (revisor erp-front-cobros, BAJA de AXW-291).
+ *    pedir: otro documento o 10 s después, sí (revisor erp-front-cobros, BAJA de AXW-291). Un papel sin número no levanta la duda
+ *    (nunca está en la lista); si al volver la lectura uno de los pintados sin mirar resulta ser de prueba, la franja pide reabrirlo
+ *    (la capa no puede repintar el papel del anfitrión; revisor erp-front-2, BAJA 1-2).
  * Enganches: data-lw-id, data-axw-prueba="…", los nombres de las funciones y la ruta del script. Nunca un rótulo de Lawang.
  * Sin comentarios al final de una línea de código: build.py quita los de línea entera y los de bloque, y lo que quedara saldría en el guard.js público.
  */
@@ -28,23 +30,27 @@
           suman: 'Facturas de prueba: %t.', recortado: 'Solo se han podido mirar los 500 más recientes: puede haber más.',
           fallo: 'No se ha podido comprobar qué facturas son de prueba: las cifras de esta pantalla pueden contarlas. Recarga la página para volver a intentarlo.',
           roto: 'No se pudo marcar el papel como prueba: no imprimas ni envíes ninguna factura de prueba.',
-          dudoso: 'No se ha podido comprobar si este documento es de prueba: si lo es, su papel puede salir sin la marca. Recarga la página antes de imprimirlo o enviarlo.' },
+          dudoso: 'No se ha podido comprobar si este documento es de prueba: si lo es, su papel puede salir sin la marca. Recarga la página antes de imprimirlo o enviarlo.',
+          reabrir: 'Un documento que abriste sin poder comprobarlo es de PRUEBA: ciérralo y vuelve a abrirlo para verlo marcado.' },
     en: { chip: 'TEST', papel: 'TEST — not a tax invoice', hay: 'There are %n TEST documents (P series). They are not real and the figures on this screen still count them.',
           suman: 'Test invoices: %t.', recortado: 'Only the latest 500 could be checked: there may be more.',
           fallo: 'We could not check which invoices are tests: the figures on this screen may count them. Reload the page to try again.',
           roto: 'The document could not be marked as a test: do not print or send any test invoice.',
-          dudoso: 'We could not check whether this document is a test: if it is, it may come out without its mark. Reload the page before printing or sending it.' },
+          dudoso: 'We could not check whether this document is a test: if it is, it may come out without its mark. Reload the page before printing or sending it.',
+          reabrir: 'A document you opened before it could be checked is a TEST: close it and open it again to see it marked.' },
     id: { chip: 'UJI COBA', papel: 'UJI COBA — tidak berlaku sebagai faktur pajak', hay: 'Ada %n dokumen UJI COBA (seri P). Dokumen ini tidak nyata dan angka di layar ini masih menghitungnya.',
           suman: 'Invoice uji coba: %t.', recortado: 'Hanya 500 terbaru yang dapat diperiksa: mungkin masih ada lagi.',
           fallo: 'Tidak dapat memeriksa invoice mana yang uji coba: angka di layar ini mungkin menghitungnya. Muat ulang halaman untuk mencoba lagi.',
           roto: 'Dokumen tidak dapat ditandai sebagai uji coba: jangan cetak atau kirim invoice uji coba.',
-          dudoso: 'Tidak dapat memeriksa apakah dokumen ini uji coba: jika ya, dokumen bisa keluar tanpa tandanya. Muat ulang halaman sebelum mencetak atau mengirimnya.' }
+          dudoso: 'Tidak dapat memeriksa apakah dokumen ini uji coba: jika ya, dokumen bisa keluar tanpa tandanya. Muat ulang halaman sebelum mencetak atau mengirimnya.',
+          reabrir: 'Dokumen yang Anda buka sebelum dapat diperiksa adalah UJI COBA: tutup dan buka lagi untuk melihat tandanya.' }
   };
   var SERIE_P = /-PR?\d{4}-\d+$/;
   var FUNCIONES = ['documentoHTML', 'documentoPagina'];
   function lengua() { var l = window.LW_IDIOMA || 'es'; return TX[l] ? l : 'en'; }
   function t(k, n, tot) { return TX[lengua()][k].replace('%n', String(n)).replace('%t', tot || ''); }
-  var D = null, pedida = null, roto = false, dudoso = false, falloEn = 0, numReintento = null;
+  var D = null, pedida = null, roto = false, dudoso = false, falloEn = 0, numReintento = null, sinMirar = {}, porReabrir = {};
+  function reabrir() { return Object.keys(porReabrir).length > 0; }
 
   // La lectura del servidor. Un fallo no se queda: la siguiente llamada vuelve a pedir.
   function lee() {
@@ -61,7 +67,11 @@
       var bien = d && Array.isArray(d.ids) && Array.isArray(d.numeros) && Array.isArray(d.totales) && typeof d.recortado === 'boolean';
       return bien ? { ids: d.ids, numeros: d.numeros, totales: d.totales, recortado: d.recortado } : null;
     }, function () { return null; }).then(function (x) {
-      if (x) { D = x; dudoso = false; }
+      if (x) {
+        D = x; dudoso = false;
+        Object.keys(sinMirar).forEach(function (n) { if (D.numeros.indexOf(n) !== -1) porReabrir[n] = 1; });
+        sinMirar = {};
+      }
       else { D = { fallo: true, ids: [], numeros: [], totales: [] }; pedida = null; falloEn = Date.now(); }
       pinta();
       return D;
@@ -88,7 +98,7 @@
   }
   // La franja: arriba del contenido principal; si alguien la quita, vuelve (no se cierra mientras haya alguna prueba o un fallo).
   function franja() {
-    var cifras = conCifras(), hay = cifras && D.ids.length > 0, fallo = cifras && D.fallo, avisa = hay || fallo || roto || dudoso;
+    var cifras = conCifras(), hay = cifras && D.ids.length > 0, fallo = cifras && D.fallo, avisa = hay || fallo || roto || dudoso || reabrir();
     var f = document.querySelector('[data-axw-prueba="franja"]');
     if (!avisa) { if (f) f.parentNode.removeChild(f); return; }
     var main = document.querySelector('main') || document.body;
@@ -101,6 +111,7 @@
     var partes = [];
     if (fallo) partes.push(t('fallo'));
     if (dudoso) partes.push(t('dudoso'));
+    if (reabrir()) partes.push(t('reabrir'));
     if (hay) partes.push(t('hay', D.ids.length));
     if (hay && enFacturas() && D.totales.length) partes.push(t('suman', 0, D.totales.map(importe).join(' · ')));
     if (cifras && D.recortado) partes.push(t('recortado'));
@@ -161,8 +172,9 @@
         var num = opts && typeof opts.numero === 'string' ? opts.numero : '';
         if (D && D.fallo) {
           if (num !== numReintento || Date.now() - falloEn > 10000) { numReintento = num; lee(); }
-          if (!esPrueba(num) && !dudoso) { dudoso = true; pinta(); }
+          if (num && !esPrueba(num)) { sinMirar[num] = 1; if (!dudoso) { dudoso = true; pinta(); } }
         }
+        if (porReabrir[num] && esPrueba(num)) { delete porReabrir[num]; pinta(); }
         return esPrueba(num) ? pon(html, franjaPapel(textoPapel())) : html;
       };
       envuelta.__axwPrueba = true;
