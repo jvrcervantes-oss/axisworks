@@ -28,11 +28,19 @@ summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:n
 .xm::before{transform:rotate(-31.5deg)}
 .xm::after{transform:rotate(31.5deg)}
 .c0{animation:cin .5s cubic-bezier(.2,.8,.2,1) both}
-.c1{animation:cin .5s cubic-bezier(.2,.8,.2,1) both,b1 5s linear infinite}
-.c2{animation:cin .5s cubic-bezier(.2,.8,.2,1) both,b2 7s linear infinite}
+.c1,.c2{animation:cin .5s cubic-bezier(.2,.8,.2,1) both}
 @keyframes cin{from{transform:scale(0)}to{transform:scale(1)}}
-@keyframes b1{0%,80%,100%{color:#272A47}85%,91%{color:#C8F04A}}
-@keyframes b2{0%,78%,100%{color:#272A47}84%,92%{color:#6F79F5}}
+/* El destello de c1/c2 es una ✕ encendida ENCIMA (<i>) a la que solo se le anima la opacidad: fundir una capa opaca
+ * sobre la oscura da el mismo color que interpolar color, pero la anima la GPU. Animar `color` en 173 ✕ obligaba a
+ * recalcular estilos en cada fotograma (11-32 ms, la portada iba a 39 fps; medido 13-oct-2026). */
+.xm>i{position:absolute;inset:0;z-index:1;opacity:0;animation:b1 5s linear infinite}
+.c1>i{color:#C8F04A}
+.c2>i{color:#6F79F5;animation-name:b2;animation-duration:7s}
+.xm>i::before,.xm>i::after{content:"";position:absolute;left:4px;top:0;width:2.5px;height:12px;background:currentColor;border-radius:1px}
+.xm>i::before{transform:rotate(-31.5deg)}
+.xm>i::after{transform:rotate(31.5deg)}
+@keyframes b1{0%,80%,100%{opacity:0}85%,91%{opacity:1}}
+@keyframes b2{0%,78%,100%{opacity:0}84%,92%{opacity:1}}
 /* pop-ups: two identical keyframe sets, alternated so each new task replays its entrance */
 .pop{transition:opacity .5s ease}
 .dotA{animation:dotIn .45s cubic-bezier(.2,.8,.2,1) both}.dotB{animation:dotIn2 .45s cubic-bezier(.2,.8,.2,1) both}
@@ -44,8 +52,11 @@ summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:n
 .tagA{animation:tagIn .35s cubic-bezier(.2,.8,.2,1) .12s both}.tagB{animation:tagIn2 .35s cubic-bezier(.2,.8,.2,1) .12s both}
 @keyframes tagIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @keyframes tagIn2{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* Los puntos que recorren una línea van con transform y no con `left` (left recalcula el layout en cada fotograma):
+ * la línea es contenedor y 100cqw es su largo. */
+.lineA,.lineB,.edge{container-type:inline-size}
 .pt{position:absolute;top:-3px;left:0;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:#C8F04A;animation:run 1.3s cubic-bezier(.5,0,.8,.4) .3s infinite}
-@keyframes run{0%{left:0;opacity:0}15%{opacity:1}100%{left:100%;opacity:.2}}
+@keyframes run{0%{transform:translateX(0);opacity:0}15%{opacity:1}100%{transform:translateX(100cqw);opacity:.2}}
 .ring{position:absolute;left:360px;top:300px;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;border:2px solid #C8F04A;animation:ring 1.3s ease-out 1.2s infinite both}
 @keyframes ring{0%{transform:scale(.25);opacity:.8}100%{transform:scale(1.4);opacity:0}}
 .pulse{animation:pulse 1.3s ease-in-out infinite}
@@ -62,9 +73,9 @@ summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:n
 .xbtn:hover .xa,.xbtn:focus-visible .xa{transform:rotate(-31.5deg)}
 .xbtn:hover .xb,.xbtn:focus-visible .xb{transform:rotate(58.5deg)}
 .xbtn:hover{color:#0B0C1E}
-@media (prefers-reduced-motion: reduce){.rise,.barA,.barB,.ptIn,.axis,.c0,.c1,.c2,.dotA,.dotB,.lineA,.lineB,.tagA,.tagB,.pt,.ring,.pulse,.rowA,.rowB,.numA,.numB{animation:none}}
+@media (prefers-reduced-motion: reduce){.rise,.barA,.barB,.ptIn,.axis,.c0,.c1,.c2,.xm>i,.dotA,.dotB,.lineA,.lineB,.tagA,.tagB,.pt,.ring,.pulse,.rowA,.rowB,.numA,.numB{animation:none}}
 .ept{position:absolute;top:-3px;left:0;width:6px;height:6px;margin-left:-3px;border-radius:50%;animation:ptrun 2.4s linear infinite}
-@keyframes ptrun{0%{left:0;opacity:0}12%{opacity:1}88%{opacity:1}100%{left:100%;opacity:0}}
+@keyframes ptrun{0%{transform:translateX(0);opacity:0}12%{opacity:1}88%{opacity:1}100%{transform:translateX(100cqw);opacity:0}}
 .node{transition:border-color .4s,background-color .4s,box-shadow .4s}
 .node:hover{border-color:#F2F3F7}
 .seal{animation:spin 24s linear infinite;transform-origin:50% 50%}
