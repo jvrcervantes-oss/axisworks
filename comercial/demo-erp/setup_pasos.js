@@ -95,6 +95,43 @@
     return b;
   }
 
+  // El número que pone la base al emitir (20261008137000_f8_puerta_emision.sql): prefijo-F<ejercicio>-<5 cifras>
+  function numeroMuestra(pref, n, anio) { return pref + '-F' + anio + '-' + ('0000' + n).slice(-5); }
+  function iniciales(t) {
+    return String(t || '').replace(/^(PT|CV|UD)\.?\s+/i, '').split(/\s+/).filter(Boolean).slice(0, 2)
+      .map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
+  }
+  /* «Así sale impreso · muestra» (diseño S20): lo que se va tecleando, con el logo si la empresa ya tiene uno y el número
+     de la primera factura solo si el prefijo ya está fijado (si no, lo dice: no se inventa uno). */
+  function muestraImpresa(caja, s) {
+    var logo = /^(\/|https:\/\/)/.test(String(s.logo || '')) ? el('img', { src: s.logo, alt: '', style: 'width:52px;height:52px;flex:none;object-fit:contain' })
+      : el('span', { class: 'rounded-xl bg-surface-container-high font-label-md text-label-md text-on-surface', 'aria-hidden': 'true', 'data-axw-muestra': 'iniciales',
+                     style: 'width:52px;height:52px;flex:none;display:grid;place-items:center' });
+    var nom = el('p', { class: 'font-label-md text-label-md text-on-surface', style: 'overflow-wrap:anywhere', 'data-axw-muestra': 'razon' });
+    var dom = el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', style: 'overflow-wrap:anywhere', 'data-axw-muestra': 'domicilio' });
+    var fis = el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', style: 'overflow-wrap:anywhere', 'data-axw-muestra': 'npwp' });
+    var num = s.prefijo_serie
+      ? el('p', { class: 'font-label-md text-label-md text-on-surface', 'data-axw-muestra': 'numero', text: numeroMuestra(s.prefijo_serie, 1, new Date().getFullYear()) })
+      : el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-muestra': 'numero', text: U('num_tras_prefijo') });
+    var fig = el('figure', { class: 'flex flex-col gap-2', 'data-axw-muestra': 'impresa', style: 'margin:0' }, [
+      el('figcaption', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('muestra_impresa') }),
+      el('div', { class: 'flex flex-wrap items-start gap-4 rounded-2xl border border-outline-variant bg-surface-container-lowest', style: 'padding:20px' }, [
+        logo,
+        el('div', { class: 'flex flex-col flex-1 min-w-0', style: 'min-width:12rem;gap:2px' }, [nom, dom, fis]),
+        el('div', { class: 'flex flex-col text-right', style: 'gap:2px;max-width:14rem;margin-left:auto' }, [
+          el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('factura_titulo') }), num])])]);
+    function pinta() {
+      var r = lee(caja, 'razon'), n = lee(caja, 'npwp');
+      nom.textContent = r;
+      fig.style.display = r ? '' : 'none';   // sin razón social no hay nada que enseñar: aparece al escribirla
+      if (logo.tagName === 'SPAN') logo.textContent = iniciales(r);
+      dom.textContent = lee(caja, 'domicilio');
+      fis.textContent = n ? (lee(caja, 'npwp_label') || 'NPWP') + ' ' + n : '';
+    }
+    caja.addEventListener('input', pinta);
+    return { fig: fig, pinta: pinta };
+  }
+
   var PASOS = {
     moneda: {
       pinta: function (caja, ctx) {
@@ -116,11 +153,16 @@
       // Lo mínimo que pide la base; el editor completo (logo, aspecto, NIB…) está en Ajustes › Sociedades emisoras (#285)
       pinta: function (caja, ctx) {
         var s = ctx.sociedad || {};
-        campo(caja, 'razon', U('razon') + ' *', s.razon, { max: 200 });
+        campo(caja, 'razon', U('razon') + ' *', s.razon, { max: 200, ayuda: U('razon_ayuda') });
         campo(caja, 'npwp_label', U('npwp_label'), s.npwp_label || 'NPWP', { max: 20 });
-        campo(caja, 'npwp', U('npwp') + ' *', s.npwp, { max: 40 });
+        // «15 o 16 cifras» es del NPWP indonesio: con otra etiqueta fiscal no se dice
+        campo(caja, 'npwp', U('npwp') + ' *', s.npwp, { max: 40, ayuda: (s.npwp_label || 'NPWP') === 'NPWP' ? U('npwp_ayuda') : null });
         campo(caja, 'domicilio', U('domicilio') + ' *', s.domicilio, { max: 400 });
         campo(caja, 'rep', U('rep'), s.rep, { max: 200 });
+        var mu = muestraImpresa(caja, s);
+        caja.appendChild(mu.fig);
+        mu.pinta();
+        caja.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-nota': 'otra_empresa', text: U('otra_empresa') }));
         return { valores: function () {
           var v = { razon: lee(caja, 'razon'), npwp_label: lee(caja, 'npwp_label') || 'NPWP', npwp: lee(caja, 'npwp'), domicilio: lee(caja, 'domicilio'), rep: lee(caja, 'rep') };
           var faltan = [];
@@ -152,12 +194,21 @@
           return { valores: function () { return { ok: false, error: U('fijado') }; }, bloqueado: true };
         }
         var inp = campo(caja, 'prefijo_serie', U('prefijo'), '', { max: 8, mayus: true, ayuda: U('prefijo_ayuda') });
-        var ej = el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-ejemplo': 'prefijo' });
+        var ej = el('div', { class: 'flex flex-col gap-1', 'data-axw-ejemplo': 'prefijo', 'aria-live': 'polite' });
         caja.appendChild(ej);
-        inp.addEventListener('input', function () { ej.textContent = inp.value ? U('prefijo_ejemplo', { p: inp.value }) : ''; });
+        inp.addEventListener('input', function () {   // solo con un prefijo que la base aceptaría: no se enseña un número que no saldrá
+          while (ej.firstChild) ej.removeChild(ej.firstChild);
+          var pr = inp.value, a = new Date().getFullYear();
+          if (!/^[A-Z0-9]{2,8}$/.test(pr)) return;
+          ej.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('primera_factura') }));
+          ej.appendChild(el('p', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', 'data-axw-ejemplo-num': '1', style: 'overflow-wrap:anywhere', text: numeroMuestra(pr, 1, a) }));
+          ej.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('luego_factura', { s: numeroMuestra(pr, 2, a) }) }));
+          ej.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-ejemplo-anio': '1',
+                                   text: U('reinicio_anio', { a: String(a + 1), s: numeroMuestra(pr, 1, a + 1) }) }));
+        });
         return {
           valores: function () { var v = lee(caja, 'prefijo_serie').toUpperCase(); return /^[A-Z0-9]{2,8}$/.test(v) ? { ok: true, v: { prefijo: v } } : { ok: false, error: U('prefijo_formato') }; },
-          resumen: function (v) { return { grande: v.prefijo + '-…', teclea: v.prefijo, boton: U('fijar_prefijo', { v: v.prefijo }) }; }
+          resumen: function (v) { return { grande: numeroMuestra(v.prefijo, 1, new Date().getFullYear()), teclea: v.prefijo, boton: U('fijar_prefijo', { v: v.prefijo }) }; }
         };
       },
       sinMotivo: true,
@@ -187,7 +238,144 @@
     },
     guarda: function () { return Promise.resolve({ ok: true, externo: true }); }
   };
-  function de(clave) { return PASOS[clave] || EXTERNO; }
+  /* «Quién lo usa» en el propio paso (mesa S14 del diseño del owner; bbm-p41, 13-oct). Owner, 09:15: «la ventana de permisos es la que teníamos
+   * en Lawang… aparecen todos los módulos». Aquí solo sale el equipo y UNA casilla por persona: la herramienta de ESTE módulo, la misma con la que
+   * la base decide el paso (window.AXW_MAPA_MODULOS.h, del registro). Sin herramienta en el registro → el paso de siempre, en Usuarios.
+   *  · Lee la tabla `usuarios` como /usuarios/ (misma RLS). Activos, sin la cuenta de pruebas (la base tampoco la cuenta); el administrador
+   *    principal (super_admin) va con «acceso total», sin casilla.
+   *  · Guarda con usuario_guarda_permisos, la RPC de la ficha de Usuarios, que REEMPLAZA el array entero: por eso relee el `herramientas` de
+   *    cada persona justo antes y manda ESE array con solo esta herramienta puesta o quitada (nunca el leído al pintar ni una lista filtrada).
+   *  · «Puede crear / solo ver» del diseño no se pinta: la base no tiene niveles por herramienta (lista de Backend). Invitar = alta de Usuarios. */
+  var COLS_USUARIO = 'user_id,nombre,email,rol,activo,herramientas,creado_por';
+  function herramientaDe(modulo) { var M = window.AXW_MAPA_MODULOS, h = M && M.h && M.h[modulo]; return typeof h === 'string' && h ? h : null; }
+  function operativo(modulo) { var o = window.AXW_MAPA_MODULOS && window.AXW_MAPA_MODULOS.o; return Array.isArray(o) && o.indexOf(modulo) >= 0; }
+  function cliente() {
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') return Promise.resolve(null);
+    return window.LW_AUTH.then(function (a) { return a && a.sb ? a.sb : null; }, function () { return null; });
+  }
+  (function () {   // el interruptor: solo tokens de la piel (marca blanca); ≥ 3:1 como control encendido y apagado sobre la tarjeta
+    if (typeof document === 'undefined' || !document.head || document.getElementById('axw-quien-estilo')) return;
+    var st = document.createElement('style');
+    st.id = 'axw-quien-estilo';
+    st.textContent = '.axw-sw{position:relative;display:inline-flex;align-items:center;min-height:44px;min-width:52px;cursor:pointer}' +
+      '.axw-sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}' +
+      '.axw-sw i{display:block;width:44px;height:26px;border-radius:999px;background:rgb(var(--tema-outline));transition:background .15s}' +
+      '.axw-sw i::after{content:"";display:block;width:20px;height:20px;margin:3px;border-radius:50%;background:rgb(var(--tema-surface-container-lowest));transition:transform .15s}' +
+      '.axw-sw input:checked+i{background:rgb(var(--tema-on-surface))}.axw-sw input:checked+i::after{transform:translateX(18px)}' +
+      '.axw-sw input:focus-visible+i{outline:2px solid rgb(var(--tema-burnt-earth));outline-offset:2px}' +
+      '@media (prefers-reduced-motion:reduce){.axw-sw i,.axw-sw i::after{transition:none}}';
+    document.head.appendChild(st);
+  })();
+  var QUIEN = {
+    sinMotivo: true,   // usuario_guarda_permisos no pide motivo
+    pinta: function (caja, ctx) {
+      var herr = herramientaDe(ctx.paso.modulo), m = S().nombreModulo(ctx.paso.modulo);
+      if (!herr) return EXTERNO.pinta(caja, ctx);
+      var st = { lista: null, error: null };
+      var lista = el('ul', { class: 'flex flex-col rounded-2xl border border-outline-variant', role: 'list', 'data-axw-quien': 'lista', 'aria-busy': 'true' },
+                     [el('li', { class: 'px-4 py-3 font-body-md text-body-md text-on-surface-variant', text: U('cargando') })]);
+      var cuenta = el('p', { class: 'font-label-md text-label-md text-on-surface', 'data-axw-quien': 'cuenta', 'aria-live': 'polite' });
+      var d = String(ctx.paso.donde || '');
+      var invitar = /^\/[a-z0-9\-\/]*$/i.test(d) ? el('a', { href: d, 'data-axw-quien': 'invitar', style: 'min-height:44px',
+        class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant font-label-md text-label-md text-deep-lagoon self-start', text: U('invitar') }) : null;
+      caja.appendChild(lista);
+      caja.appendChild(el('div', { class: 'flex flex-wrap items-center justify-between gap-3' }, [invitar, cuenta]));
+      caja.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('quien_nota') }));
+      function recuenta() {
+        if (!st.lista) return;
+        // la regla de la base: en un módulo operativo el administrador principal no cuenta; en uno administrativo, sí
+        var n = (operativo(ctx.paso.modulo) ? 0 : st.lista.filter(function (u) { return u.rol === 'super_admin'; }).length)
+              + lista.querySelectorAll('input[data-axw-quien-usuario]:checked').length;
+        cuenta.textContent = n === 1 ? U('quien_uno', { m: m }) : U('quien_n', { n: String(n), m: m });
+      }
+      function carga() { return cliente().then(function (sb) {
+        if (!sb) return { error: { code: '42501' } };
+        return new Promise(function (ok) { ok(sb.from('usuarios').select(COLS_USUARIO).eq('activo', true)); });
+      }).then(function (r) {
+        st.lista = null; st.error = null;
+        while (lista.firstChild) lista.removeChild(lista.firstChild);
+        lista.setAttribute('aria-busy', 'false');
+        if (!r || r.error || !Array.isArray(r.data)) {
+          st.error = S().explica((r && r.error) || {}, true).texto;
+          lista.appendChild(el('li', { role: 'alert', class: 'px-4 py-3 font-body-md text-body-md text-error', text: U('no_mirar') + ': ' + st.error }));
+          return;
+        }
+        st.lista = r.data.filter(function (u) { return u && u.user_id && u.activo !== false && String(u.creado_por || '') !== 'estudio:cuenta-pruebas'; })
+          .sort(function (a, b) { return (b.rol === 'super_admin') - (a.rol === 'super_admin') || String(a.nombre || a.email || '').localeCompare(String(b.nombre || b.email || '')); });
+        st.lista.forEach(function (u, i) {
+          var nombre = String(u.nombre || u.email || '—'), principal = u.rol === 'super_admin';
+          var tiene = Array.isArray(u.herramientas) && u.herramientas.indexOf(herr) >= 0;
+          var der = principal ? el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('quien_total') })
+            : el('label', { class: 'axw-sw' }, [
+                el('input', { type: 'checkbox', role: 'switch', 'data-axw-quien-usuario': u.user_id, 'aria-label': U('quien_usa', { p: nombre, m: m }), checked: tiene ? '' : null }),
+                el('i', { 'aria-hidden': 'true' })]);
+          lista.appendChild(el('li', { class: 'flex items-center gap-3 px-4 py-3' + (i ? ' border-t border-outline-variant' : '') }, [
+            el('span', { class: 'rounded-full bg-surface-container-high font-label-md text-label-md text-on-surface', 'aria-hidden': 'true',   // grid/place-items no están compilados en la instancia
+                         style: 'width:40px;height:40px;flex:none;display:grid;place-items:center', text: nombre.trim().charAt(0).toUpperCase() }),
+            el('div', { class: 'flex flex-col min-w-0 flex-1' }, [
+              el('span', { class: 'font-label-md text-label-md text-on-surface', style: 'overflow-wrap:anywhere', text: nombre }),
+              el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', style: 'overflow-wrap:anywhere', text: principal ? U('quien_principal') : String(u.email || '') })]),
+            der]));
+        });
+        if (!st.lista.some(function (u) { return u.rol !== 'super_admin'; }))
+          lista.appendChild(el('li', { class: 'px-4 py-3 border-t border-outline-variant font-body-md text-body-md text-on-surface-variant', 'data-axw-quien': 'solo-tu', text: U('quien_solo_tu') }));
+        recuenta();
+      }); }
+      lista.addEventListener('change', recuenta);
+      carga();
+      return {
+        valores: function () {
+          if (st.error) return { ok: false, error: U('no_mirar') + ': ' + st.error };
+          if (!st.lista) return { ok: false, error: U('cargando') };
+          var cambios = [];
+          lista.querySelectorAll('input[data-axw-quien-usuario]').forEach(function (i) {
+            var u = st.lista.filter(function (x) { return x.user_id === i.getAttribute('data-axw-quien-usuario'); })[0];
+            var antes = !!(u && Array.isArray(u.herramientas) && u.herramientas.indexOf(herr) >= 0);
+            if (u && i.checked !== antes) cambios.push({ user_id: u.user_id, poner: i.checked });
+          });
+          if (!cambios.length && !ctx.paso.hecho) return { ok: false, error: U('quien_sin_cambios', { m: m }) };
+          return { ok: true, v: { herr: herr, cambios: cambios, recarga: carga } };
+        }
+      };
+    },
+    guarda: function (sb, v) {
+      if (!v || !v.herr || !Array.isArray(v.cambios)) return faltaFila();
+      var i = 0;
+      function fila(id) { return resultado(sb.from('usuarios').select('user_id,herramientas').eq('user_id', id).maybeSingle()); }
+      function tiene(d) { return !!(d && Array.isArray(d.herramientas) && d.herramientas.indexOf(v.herr) >= 0); }
+      // a medias (alguien guardado y otro no): la lista se relee para que los interruptores digan lo que quedó en la base
+      function corta(r) { if (i > 1 && typeof v.recarga === 'function') v.recarga(); return r; }
+      function sigue() {
+        if (i >= v.cambios.length) return Promise.resolve({ ok: true });
+        var c = v.cambios[i++];
+        return fila(c.user_id).then(function (r) {
+          if (!r.ok) return corta(r);
+          if (!r.data) return faltaFila().then(corta);
+          var hs = (Array.isArray(r.data.herramientas) ? r.data.herramientas : []).filter(function (h) { return h !== v.herr; });
+          if (c.poner) hs.push(v.herr);
+          return resultado(sb.rpc('usuario_guarda_permisos', { p_user_id: c.user_id, p_cambios: { herramientas: hs } })).then(function (r2) {
+            if (r2.ok) return sigue();
+            if (!r2.sinRespuesta) return corta(r2);
+            // sin respuesta: se relee ESA fila y manda lo que tiene la base (revisor 13-oct: nunca «guardado» porque el paso ya esté hecho)
+            return fila(c.user_id).then(function (r3) {
+              // no se pudo mirar, o se miró y no se aplicó: duda → comprueba() = false → «El ERP dice que no se guardó» (repetir es seguro)
+              if (!r3.ok || tiene(r3.data) !== c.poner) return corta(r2);
+              return sigue();
+            });
+          });
+        });
+      }
+      return sigue();
+    },
+    // si la duda llega a la pantalla es que ni se pudo releer la fila: no se da por guardado; repetir es seguro
+    comprueba: function () { return false; }
+  };
+  PASOS.usuarios = QUIEN;
+  function de(clave, paso) {
+    // «quién lo usa» sin herramienta para ese módulo en el mapa del build (base y build desfasados): el paso se hace en Usuarios
+    if (clave === 'usuarios' && paso && !herramientaDe(paso.modulo)) return EXTERNO;
+    return PASOS[clave] || EXTERNO;
+  }
   // Un paso con su componente en otro fichero (cobros_paso.js, setup_reservas.js; F3) se suma con registra(). Solo sustituye al genérico de «otra
   // pantalla» (flota, entrega); nunca pisa un componente de verdad.
   function registra(clave, comp) { if ((!PASOS[clave] || PASOS[clave] === EXTERNO) && comp && typeof comp.pinta === 'function' && typeof comp.guarda === 'function') PASOS[clave] = comp; }

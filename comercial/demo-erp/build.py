@@ -3352,6 +3352,12 @@ def mapa_modulos(nombre):
     out['xp'] = sorted(xp)
     # n: nombre y «qué hace» de cada módulo, para la pantalla «Módulo no instalado» (28-sep-2026)
     out['n'] = {k: [v[0], v[3]] for k, v in rotulos().items() if k != 'base'}
+    # h: la herramienta de cada módulo con setup, la MISMA con la que la base decide el paso «Quién lo usa» (setup.modulos[m].herramienta,
+    # sembrada desde este registro). El paso del asistente da o quita solo esa herramienta (bbm-p41, 13-oct, mesa S14 del diseño del owner).
+    out['h'] = {k: d['herramienta'] for k, d in ((m.get('setup') or {}).get('modulos') or {}).items()
+                if isinstance(d, dict) and isinstance(d.get('herramienta'), str) and d['herramienta']}
+    # operativos: en ellos el super_admin no cuenta como «quién lo usa» (20261012130000_f3_e1_setup_marco.sql, paso usuarios)
+    out['o'] = sorted(k for k, d in ((m.get('setup') or {}).get('modulos') or {}).items() if isinstance(d, dict) and d.get('operativo') is True)
     return out
 
 
