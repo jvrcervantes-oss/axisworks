@@ -122,10 +122,12 @@
 
   // El número que pone la base al emitir (20261008137000_f8_puerta_emision.sql): prefijo-F<ejercicio>-<5 cifras>
   function numeroMuestra(pref, n, anio) { return pref + '-F' + anio + '-' + ('0000' + n).slice(-5); }
-  function anioFiscal(ctx) {   // el ejercicio con la zona horaria de la instancia (Ajustes › zona_horaria); sin ella, el del navegador
+  // El ejercicio como lo pone la base (_hoy_fiscal(): la zona de Ajustes › zona_horaria y, sin ella, UTC), no el reloj del navegador
+  function anioFiscal(ctx) {
     var zh = ctx && ctx.ajustes && ctx.ajustes.zona_horaria;
-    if (zh) { try { return Number(new Intl.DateTimeFormat('en', { timeZone: String(zh), year: 'numeric' }).format(new Date())); } catch (e) { /* MUDO A PROPOSITO: zona no válida; va la del navegador */ } }
-    return new Date().getFullYear();
+    zh = zh ? String(zh).trim() : '';
+    if (zh) { try { return Number(new Intl.DateTimeFormat('en', { timeZone: zh, year: 'numeric' }).format(new Date())); } catch (e) { /* MUDO A PROPOSITO: zona que el navegador no conoce; va UTC */ } }
+    return new Date().getUTCFullYear();
   }
   function iniciales(t) {
     return String(t || '').replace(/^(PT|CV|UD)\.?\s+/i, '').split(/\s+/).filter(Boolean).slice(0, 2)
@@ -257,8 +259,10 @@
     // reservas_sin_impuesto = 'si' quiere decir que NO es PKP: por eso «Sí, es PKP» guarda 'no' (igual que la Puesta en marcha de antes)
     impuesto_pkp: opcionUnica('reservas_sin_impuesto', [['no', 'si_pkp'], ['si', 'no_pkp']]),
     precio_con_impuesto: opcionUnica('precio_incluye_impuesto', [['si', 'dentro'], ['no', 'fuera']], function (v, ctx) {
-      var n = '1000000';
-      try { n = new Intl.NumberFormat(typeof window.lwLocale === 'function' ? window.lwLocale() : (document.documentElement.lang || 'es')).format(1000000); } catch (e) { /* MUDO A PROPOSITO: navegador sin Intl; va la cifra sin separar */ }
+      // una tarifa redonda que tenga sentido en la moneda: un millón de rupias (o de dong), cien en las demás
+      var mon0 = ctx.datos && ctx.datos.moneda ? String(ctx.datos.moneda) : '', cifra = /^(IDR|VND)$/.test(mon0) || !mon0 ? 1000000 : 100;
+      var n = String(cifra);
+      try { n = new Intl.NumberFormat(typeof window.lwLocale === 'function' ? window.lwLocale() : (document.documentElement.lang || 'es')).format(cifra); } catch (e) { /* MUDO A PROPOSITO: navegador sin Intl; va la cifra sin separar */ }
       var mon = ctx.datos && ctx.datos.moneda ? ' ' + ctx.datos.moneda : '';
       return U(v === 'si' ? 'ejemplo_dentro' : 'ejemplo_fuera', { v: n + mon });
     })

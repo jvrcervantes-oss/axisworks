@@ -112,9 +112,10 @@ window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' 
 </script>
 <script>${NUCLEO}</script><script>${PASOS}</script>${HTML[1]}</body></html>`;
 
-async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=facturas', ancho = 1440 } = {}) {
+async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=facturas', ancho = 1440, reloj = null } = {}) {
   const ctx = await nav.newContext({ viewport: { width: ancho, height: 900 } });
   const p = await ctx.newPage();
+  if (reloj) await p.clock.install({ time: new Date(reloj) });   // la hora del navegador fijada (año fiscal en Nochevieja)
   await p.route('**/*', r => {
     const u = new URL(r.request().url());
     if (DIST && u.pathname.startsWith('/assets/fonts/')) {
@@ -174,7 +175,7 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   ok('alta de empresa: sociedad_guarda con p_nueva y una clave válida', sg && sg[1].p_nueva === true && /^[a-z][a-z0-9_]{2,}$/.test(sg[1].p_clave), JSON.stringify(sg && sg[1]));
   ok('pasa al prefijo, «Paso 2 de 2»', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'prefijo' && (await txt(p, '[data-axw-as="meta"]')) === 'Facturas · Paso 2 de 2');
   await p.fill('[data-axw-campo="prefijo_serie"]', 'bbm');
-  const ANIO = new Date().getFullYear();
+  const ANIO = new Date().getUTCFullYear();   // sin zona_horaria la base numera en UTC
   ok('el prefijo se escribe en mayúsculas y enseña la primera factura con el formato de la base', (await p.inputValue('[data-axw-campo="prefijo_serie"]')) === 'BBM'
      && (await txt(p, '[data-axw-ejemplo-num="1"]')) === 'BBM-F' + ANIO + '-00001', await txt(p, '[data-axw-ejemplo="prefijo"]'));
   ok('S21: la segunda y el contador que vuelve a empezar el año que viene', (await txt(p, '[data-axw-ejemplo="prefijo"]')).includes('BBM-F' + ANIO + '-00002')
@@ -505,6 +506,25 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     }
   }
 
+  // Revisor 13-oct, S22: el año de la primera factura es el de la base. Con la zona de la instancia (Bali, UTC+8) el 31-dic a las
+  // 20:00 UTC ya es 2027; sin zona, la base usa UTC (2026). Y la tarifa del ejemplo tiene sentido en la moneda (100 EUR, no 1.000.000).
+  for (const [zona, esperado] of [['Asia/Makassar', 'BBM-F2027-00001'], ['America/Los_Angeles', 'BBM-F2026-00001'], ['', 'BBM-F2026-00001']]) {   // Los Ángeles: distinto del reloj de esta máquina (UTC+8)
+    const bz = base('sin_configurar', { valores: zona ? { zona_horaria: zona } : {} });
+    bz.sociedad = { clave: 'bbm', razon: 'PT Bali Best', domicilio: 'Jl. Raya 1', npwp: '01', prefijo_serie: null };
+    ({ p, ctx } = await abre(nav, bz, { url: '/ajustes/configurar/?modulo=facturas&paso=prefijo', reloj: '2026-12-31T20:00:00Z' }));
+    await p.waitForSelector('[data-axw-campo="prefijo_serie"]', { timeout: 8000 }).catch(() => {});
+    await p.fill('[data-axw-campo="prefijo_serie"]', 'BBM'); await p.waitForTimeout(150);
+    ok('S21: año de la primera factura como la base (' + (zona || 'sin zona: UTC') + ')', (await txt(p, '[data-axw-ejemplo-num="1"]')) === esperado, await txt(p, '[data-axw-ejemplo-num="1"]'));
+    await ctx.close();
+  }
+  {
+    const be = base('sin_configurar'); be.d.moneda = 'EUR';
+    ({ p, ctx } = await abre(nav, be, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=precio_con_impuesto' }));
+    await p.waitForTimeout(300);
+    const ej = await p.$$eval('[data-axw-ejemplo-opcion]', ls => ls.map(l => l.textContent));
+    ok('S22: en EUR la tarifa del ejemplo es 100 EUR', ej.length === 2 && ej.every(t => t.includes('100 EUR') && !t.includes('000')), JSON.stringify(ej));
+    await ctx.close();
+  }
   await nav.close();
   console.log(fallos ? 'FALLAN ' + fallos : 'TODO BIEN — asistente_setup.harness.cjs');
   process.exit(fallos ? 1 : 0);
