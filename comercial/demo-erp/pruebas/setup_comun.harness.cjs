@@ -82,7 +82,7 @@ function servidor(b, n, a) {
   if (n === 'gasto_categoria_guarda') {   // como 20261014050000: alta con p_clave null; la clave la saca la base del nombre
     const d = a.p_datos || {}, nom = String(d.nombre || '').trim();
     if (a.p_clave !== null || Object.keys(d).some(k => !['nombre', 'grupo', 'orden', 'activa'].includes(k))) return err('22023', 'campo_desconocido');
-    if (!nom || nom.length > 80) return err('22023', 'nombre_no_valido');
+    if (!nom || nom.length > 80 || /^[=+\-@]/.test(nom)) return err('22023', 'nombre_no_valido');
     if (!['suelo', 'construccion', 'comercial', 'marketing', 'personal', 'general', 'impuestos', 'financiero'].includes(d.grupo || 'general')) return err('22023', 'grupo_no_valido');
     if (b.cats.some(c => c.nombre.toLowerCase() === nom.toLowerCase())) return err('23505', 'nombre_repetido');
     const clave = nom.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'cat';
@@ -325,6 +325,21 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:/i.test(String(t || ''));
   await clic(p, 'cambiar');   // paso hecho: se entra a cambiarlo
   await p.waitForSelector('[data-axw-n4-cat="otra"]:not([hidden])', { timeout: 3000 }).catch(() => {});
   ok('G con una activa: ofrece seguir sin escribir otra', (await p.$('[data-axw-n4-cat="otra"]:not([hidden])')) !== null);
+  await p.fill('[data-axw-campo="cat_nombre"]', '-Otros'); await clic(p, 'enviar');
+  ok('G nombre que empieza por - (CSV): su frase, sin llamar y sin código', catGuardadas(b).length === 0 && ((await errorTxt(p)) || '').includes('= + - @') && sinCodigo(await errorTxt(p)), await errorTxt(p));
+  await ctx.close();
+  // si la base lo rechaza igualmente (otra pantalla, otra versión), sale su frase por hint, no «avisa al estudio»
+  b = base({ gastos: true, falla: { 'gasto_categoria_guarda:': ['22023', 'nombre_no_valido'] }, valores: { marca: 'X', zona_horaria: 'Asia/Makassar' } });
+  ({ p, ctx } = await abre(nav, b, { idioma: 'id', url: '/ajustes/configurar/?modulo=gastos' }));
+  await p.fill('[data-axw-campo="cat_nombre"]', 'Kantor'); await clic(p, 'enviar'); await p.waitForTimeout(300);
+  ok('G nombre_no_valido de la base: su frase (id)', ((await errorTxt(p)) || '').includes('tidak diawali') && (await p.evaluate(() => window.AXW_SETUP.desconocidos.slice())).length === 0, await errorTxt(p));
+  await ctx.close();
+  // la lectura falla por permiso: lo dice con su frase
+  b = base({ gastos: true, valores: { marca: 'X', zona_horaria: 'Asia/Makassar' } });
+  b.falla['gastos_panel_datos:'] = ['42501', null];
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=gastos' }));
+  await p.waitForSelector('[data-axw-n4-cat="error"]', { timeout: 3000 }).catch(() => {});
+  ok('G lectura sin permiso: lo dice, sin código', ((await txt(p, '[data-axw-n4-cat="error"]')) || '').length > 40 && sinCodigo(await txt(p, '[data-axw-n4-cat="error"]')), await txt(p, '[data-axw-n4-cat="error"]'));
   await ctx.close();
 
   // ── 9. es/en/id a 390 y 1440: sin scroll horizontal, sin frases sin traducir, sin códigos sin frase ─────────────────────────────────────────

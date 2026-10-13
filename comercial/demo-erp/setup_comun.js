@@ -199,6 +199,7 @@
     consecuencia: { cuenta_cobro: 'Es opcional: sin ella, las facturas salen sin datos de pago.' },
     hint: {
       nombre_repetido: 'Ya hay una categoría con ese nombre.',
+      nombre_no_valido: 'El nombre va de 1 a 80 caracteres y no empieza por = + - @.',
       grupo_no_valido: 'Elige uno de los grupos de la lista.',
       grupo_en_uso: 'Ya hay gastos en esta categoría: su grupo no se cambia.',
       orden_no_valido: 'El orden no es válido.',
@@ -210,8 +211,8 @@
       n4_cat_inactiva: 'desactivada',
       n4_cat_nueva: 'Nueva categoría',
       n4_cat_nombre: 'Nombre',
-      n4_cat_nombre_ayuda: 'Por ejemplo: Material de oficina. De 1 a 80 caracteres.',
-      n4_cat_nombre_mal: 'El nombre va de 1 a 80 caracteres.',
+      n4_cat_nombre_ayuda: 'Por ejemplo: Material de oficina. De 1 a 80 caracteres; no empieza por = + - @.',
+      n4_cat_nombre_mal: 'El nombre va de 1 a 80 caracteres y no empieza por = + - @.',
       n4_cat_falta: 'Escribe el nombre de la primera categoría.',
       n4_cat_grupo: 'Grupo',
       n4_cat_grupo_ayuda: 'Agrupa los gastos en el resumen. No se cambia cuando ya hay gastos en la categoría.',
@@ -246,8 +247,8 @@
     'Ya hay gastos en esta categoría: su grupo no se cambia.': 'This category already has expenses: its group can\'t change.', 'El orden no es válido.': 'The order is not valid.',
     'Este módulo aún no se puede encender: le falta su configuración.': 'This module can\'t be turned on yet: its setup isn\'t defined.',
     'Categorías que ya tienes': 'Categories you already have', 'Aún no hay ninguna categoría.': 'There are no categories yet.', 'desactivada': 'inactive',
-    'Nueva categoría': 'New category', 'Nombre': 'Name', 'Por ejemplo: Material de oficina. De 1 a 80 caracteres.': 'For example: Office supplies. 1 to 80 characters.',
-    'El nombre va de 1 a 80 caracteres.': 'The name must be 1 to 80 characters.', 'Escribe el nombre de la primera categoría.': 'Write the name of the first category.',
+    'Nueva categoría': 'New category', 'Nombre': 'Name', 'Por ejemplo: Material de oficina. De 1 a 80 caracteres; no empieza por = + - @.': 'For example: Office supplies. 1 to 80 characters; it can\'t start with = + - @.',
+    'El nombre va de 1 a 80 caracteres y no empieza por = + - @.': 'The name must be 1 to 80 characters and can\'t start with = + - @.', 'Escribe el nombre de la primera categoría.': 'Write the name of the first category.',
     'Grupo': 'Group', 'Agrupa los gastos en el resumen. No se cambia cuando ya hay gastos en la categoría.': 'Groups expenses in the summary. It can\'t change once the category has expenses.',
     'Cargando las categorías…': 'Loading categories…', 'No se han podido leer las categorías.': 'The categories could not be loaded.',
     'Si ya tienes las que necesitas, deja el nombre vacío y sigue.': 'If you already have the ones you need, leave the name empty and continue.',
@@ -278,8 +279,8 @@
     'Ya hay gastos en esta categoría: su grupo no se cambia.': 'Kategori ini sudah punya pengeluaran: grupnya tidak bisa diubah.', 'El orden no es válido.': 'Urutannya tidak valid.',
     'Este módulo aún no se puede encender: le falta su configuración.': 'Modul ini belum bisa diaktifkan: pengaturannya belum ditentukan.',
     'Categorías que ya tienes': 'Kategori yang sudah ada', 'Aún no hay ninguna categoría.': 'Belum ada kategori.', 'desactivada': 'nonaktif',
-    'Nueva categoría': 'Kategori baru', 'Nombre': 'Nama', 'Por ejemplo: Material de oficina. De 1 a 80 caracteres.': 'Contoh: Alat tulis kantor. 1 sampai 80 karakter.',
-    'El nombre va de 1 a 80 caracteres.': 'Nama harus 1 sampai 80 karakter.', 'Escribe el nombre de la primera categoría.': 'Tulis nama kategori pertama.',
+    'Nueva categoría': 'Kategori baru', 'Nombre': 'Nama', 'Por ejemplo: Material de oficina. De 1 a 80 caracteres; no empieza por = + - @.': 'Contoh: Alat tulis kantor. 1 sampai 80 karakter; tidak diawali = + - @.',
+    'El nombre va de 1 a 80 caracteres y no empieza por = + - @.': 'Nama harus 1 sampai 80 karakter dan tidak diawali = + - @.', 'Escribe el nombre de la primera categoría.': 'Tulis nama kategori pertama.',
     'Grupo': 'Grup', 'Agrupa los gastos en el resumen. No se cambia cuando ya hay gastos en la categoría.': 'Mengelompokkan pengeluaran di ringkasan. Tidak bisa diubah setelah kategori punya pengeluaran.',
     'Cargando las categorías…': 'Memuat kategori…', 'No se han podido leer las categorías.': 'Kategori tidak dapat dimuat.',
     'Si ya tienes las que necesitas, deja el nombre vacío y sigue.': 'Jika kategori yang dibutuhkan sudah ada, kosongkan nama dan lanjutkan.',
@@ -582,7 +583,11 @@
         vacia(lista);
         lista.removeAttribute('aria-busy');
         var cats = r && r.ok && r.data && Array.isArray(r.data.categorias) ? r.data.categorias : null;
-        if (!cats) { lista.appendChild(el('li', { class: 'font-body-sm text-body-sm text-error', 'data-axw-n4-cat': 'error', text: U('n4_cat_no_carga') })); return; }
+        if (!cats) {   // dice POR QUÉ (p. ej. sin la herramienta Gastos) con la frase de la base por code + hint, nunca su mensaje
+          var por = r && r.error && (r.error.code || r.error.hint) ? S.explica(r.error) : '';
+          lista.appendChild(el('li', { class: 'font-body-sm text-body-sm text-error', 'data-axw-n4-cat': 'error', text: U('n4_cat_no_carga') + (por ? ' ' + por : '') }));
+          return;
+        }
         st.hay = cats.some(function (c) { return c && c.activa === true; });
         if (!cats.length) lista.appendChild(el('li', { class: CLS_NOTA, 'data-axw-n4-cat': 'ninguna', text: U('n4_cat_ninguna') }));
         cats.slice(0, 200).forEach(function (c) {
@@ -599,7 +604,8 @@
           var n = val(z, 'cat_nombre'), g = String(sel.value || 'general');
           BORRADOR_CAT = { nombre: n, grupo: g };
           if (!n) return st.hay ? { ok: true, v: {} } : { ok: false, error: U('n4_cat_falta') };
-          if (n.length > 80) return { ok: false, error: U('n4_cat_nombre_mal') };
+          // la misma regla que la base (20261014050000: contra la inyección en CSV), antes de llamar
+          if (n.length > 80 || /^[=+\-@]/.test(n)) return { ok: false, error: U('n4_cat_nombre_mal') };
           return { ok: true, v: { nombre: n, grupo: GRUPOS_GASTO.indexOf(g) >= 0 ? g : 'general' } };
         }
       };
