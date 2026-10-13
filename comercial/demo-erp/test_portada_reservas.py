@@ -107,9 +107,10 @@ mira('para si la pestaña Empresa de Ajustes cambia de forma',
 mira('para si la lista de pestañas de ajustes.js ya no empieza por empresa',
      corre({'intranet/v4/assets/ajustes.js': lambda t: t.replace("var PESTANAS = ['empresa',", "var PESTANAS = ['correo', 'empresa',", 1)})[0] == 'para')
 # 12-oct-2026: Lawang añade pestañas a la lista (Sociedades emisoras tras Empresa); el build sigue y 'puesta' entra la primera
-r_otra = corre({'intranet/v4/assets/ajustes.js': lambda t: t.replace("'reservas', 'registro'];", "'reservas', 'registro', 'otra'];", 1)})
+# (13-oct: el ancla era el final exacto de la lista y se rompió cuando Lawang añadió 'servicios'; ahora se añade al final de la que haya)
+r_otra = corre({'intranet/v4/assets/ajustes.js': lambda t: re.sub(r"(var PESTANAS = \[[^\]]*)\];", r"\1, 'otra'];", t, count=1)})
 mira('sigue si Lawang añade una pestaña a la lista, con puesta la primera',
-     r_otra[0] == 'pasa' and "var PESTANAS = ['puesta', 'empresa'," in lee(r_otra[1], 'intranet/v4/assets/ajustes.js') and "'registro', 'otra'];" in lee(r_otra[1], 'intranet/v4/assets/ajustes.js'))
+     r_otra[0] == 'pasa' and "var PESTANAS = ['puesta', 'empresa'," in lee(r_otra[1], 'intranet/v4/assets/ajustes.js') and "'otra'];" in lee(r_otra[1], 'intranet/v4/assets/ajustes.js'))
 mira('para si falta la Home copiada de Lawang', corre(pasos=(lambda: os.remove(os.path.join(build.DIST, 'intranet', 'v4', 'home', 'index.html')), build.portada_reservas))[0] == 'para')
 viejo_reg = build._instancia_registro
 try:

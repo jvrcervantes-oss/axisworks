@@ -3373,11 +3373,25 @@ MSG_CAMPO_NO_PEDIBLE = 'Ese dato (nacionalidad, pasaporte / NPWP o estado KYC) n
 NOTA_EDITOR = 'Nacionalidad, pasaporte / NPWP y estado KYC no se piden por aquí: envía una petición libre desde Asistente.'
 
 
+def quien_cambio_lawang(donde):
+    """Para el mensaje de un ancla que ya no casa: el último commit de Lawang que tocó el fichero nombrado en `donde` (si es de Lawang).
+    Así el aviso dice QUÉ aterrizaje de Lawang lo rompió, no solo que algo cambió (13-oct: dos veces en dos días). Nunca tapa el aborto."""
+    m = re.search(r'((?:intranet|contracts|assets)/[\w./-]+\.(?:js|html|css))', donde)
+    if not m or not os.path.isfile(os.path.join(LAWANG, *m.group(1).split('/'))):
+        return ''
+    try:
+        r = subprocess.run(['git', '-C', LAWANG, '--no-optional-locks', 'log', '-1', '--date=short', '--format=%h %ad %s', '--', m.group(1)],
+                           capture_output=True, text=True, encoding='utf-8', timeout=20)
+        return (' · último cambio de Lawang en %s: %s' % (m.group(1), r.stdout.strip()[:160])) if r.returncode == 0 and r.stdout.strip() else ''
+    except Exception:   # MUDO A PROPOSITO: es solo una pista para el mensaje; el build ya está parando
+        return ''
+
+
 def _una_vez(texto, viejo, nuevo, donde):
     """Reemplazo LITERAL de algo que tiene que aparecer exactamente una vez: si Lawang cambia ese trozo, el build para (nunca
     un reemplazo que no encuentra nada y deja el permiso o el menú a medias, sin un solo error)."""
     if texto.count(viejo) != 1:
-        aborta('%s: esperaba exactamente 1 vez %r y hay %d (¿cambió el fichero de Lawang?)' % (donde, viejo[:90], texto.count(viejo)))
+        aborta('%s: esperaba exactamente 1 vez %r y hay %d (¿cambió el fichero de Lawang?)%s' % (donde, viejo[:90], texto.count(viejo), quien_cambio_lawang(donde)))
     return texto.replace(viejo, nuevo)
 
 
@@ -4314,15 +4328,15 @@ EDITOR_SIN_CONTRATO = (
 # si proyectos también está apagado. Lo que se envía es lo de siempre con ese campo vacío: la edge lo filtra y desde el 24-sep un vacío ya no
 # significa «todos» (admin-usuarios, contratos_tipo_permitido). Con contratos encendido, o sin saber, el camino de siempre. Lawang no pasa por aquí.
 ALTA_SIN_CONTRATOS = (
+    # Ancla SOLO en la rama del ERP (desde su comentario «ERP: si el catálogo…»): la línea de antes es la rama de Lawang, que Lawang retoca
+    # cuando quiere (13-oct, d17d5df2a «Contratos propios» la convirtió en un bloque y dejó rojo el build de todas las instancias).
     ('intranet/v4/assets/editores.js',
-     "        if (!window.AXW_NUCLEO_OPERACION) return abreAlta(tiposCatAlta);\n"
      "        /* ERP: si el catálogo no se lee, el alta NO se abre. «Contratos que puede hacer» vacío significa TODOS:\n"
      "           un formulario sin opciones daría acceso a todo sin que nadie lo decidiera. */\n"
      "        tiposErp().then(function (t) {\n"
      "          if (!t) return aviso('No se ha podido leer el catálogo de tipos de contrato, o no tiene ninguno activo: recarga la pantalla (o activa un tipo en Plantillas) antes de dar de alta a nadie.', '#9E2F26');\n"
      "          abreAlta(opcionesTipos(t));\n"
      "        });\n",
-     "        if (!window.AXW_NUCLEO_OPERACION) return abreAlta(tiposCatAlta);\n"
      "        /* ERP: si el catálogo no se lee, el alta NO se abre. «Contratos que puede hacer» vacío significa TODOS:\n"
      "           un formulario sin opciones daría acceso a todo sin que nadie lo decidiera. */\n"
      "        Promise.resolve(window.AXW_MODULOS_LISTOS).then(function () {\n"
@@ -4476,7 +4490,7 @@ def textos_instancia(nombre):
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
         if t.count(viejo) != veces:
-            aborta('textos_instancia: %s: esperaba %d vez/veces %r y hay %d (¿cambió el fichero de Lawang?)' % (rel_, veces, viejo[:70], t.count(viejo)))
+            aborta('textos_instancia: %s: esperaba %d vez/veces %r y hay %d (¿cambió el fichero de Lawang?)%s' % (rel_, veces, viejo[:70], t.count(viejo), quien_cambio_lawang(rel_)))
         open(ruta, 'w', encoding='utf-8', newline='').write(t.replace(viejo, nuevo))
 
 

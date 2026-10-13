@@ -44,6 +44,13 @@ def tupla_de_build(nombre):
 
 ALTA = tupla_de_build('ALTA_SIN_CONTRATOS')
 ed = open(os.path.join(lawang(), 'intranet', 'v4', 'assets', 'editores.js'), encoding='utf-8').read()
+# 13-oct: el ancla es SOLO la rama del ERP; la de Lawang (justo antes) es de Lawang y cambia (d17d5df2a la hizo bloque). Lo que sí tiene que
+# seguir siendo verdad: dentro del manejador del alta, Lawang sale con su propia rama ANTES de llegar al código del ERP.
+_i_alta = ed.find("ata('invitar-miembro'")
+_i_erp = ed.find(ALTA[0][1][:60], _i_alta)
+_tramo = ed[_i_alta:_i_erp] if 0 <= _i_alta < _i_erp else ''
+ok('el alta: la rama de Lawang (sin AXW_NUCLEO_OPERACION) vuelve antes del código del ERP',
+   'if (!window.AXW_NUCLEO_OPERACION)' in _tramo and 'return ' in _tramo[_tramo.find('if (!window.AXW_NUCLEO_OPERACION)'):], 'tramo de %d caracteres' % len(_tramo))
 for rel_, viejo, nuevo in ALTA:
     ok('editores.js trae una vez el trozo «%s…»' % viejo.strip()[:50], ed.count(viejo) == 1, 'aparece %d veces' % ed.count(viejo))
     ed = ed.replace(viejo, nuevo)
@@ -68,8 +75,10 @@ function corre(cuerpo, caso) {
   const listas = "var herrCrmAlta = [['leads', 'CRM']], herrRestoAlta = ['sin', 'rehacer'];"
     + "var permisosPorMenu = function (f) { return ['taller', 'contratos'].filter(f); }; var puedoDarAlta = function () { return true; };"
     + "var esCrmAlta = function (p) { return p[0] === 'leads'; };";
+  // la rama de Lawang va FUERA del ancla (es de Lawang); aquí, su forma mínima: sin la bandera, abre con su lista y no sigue
+  const guardaLawang = 'if (!window.AXW_NUCLEO_OPERACION) return abreAlta(tiposCatAlta);\n';
   new Function('window', 'abreAlta', 'tiposErp', 'aviso', 'opcionesTipos', 'tiposCatAlta',
-    listas + cuerpo + ';window.__listas = function () { return [herrCrmAlta.length, herrRestoAlta.join()]; };')(window, abreAlta, tiposErp, aviso, opcionesTipos, tiposCatAlta);
+    listas + guardaLawang + cuerpo +';window.__listas = function () { return [herrCrmAlta.length, herrRestoAlta.join()]; };')(window, abreAlta, tiposErp, aviso, opcionesTipos, tiposCatAlta);
   return new Promise((r) => setTimeout(() => r(traza.join(' ') + (caso.listas ? ' listas:' + JSON.stringify(window.__listas()) : '')), 20));
 }
 const casos = {

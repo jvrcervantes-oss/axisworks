@@ -377,7 +377,7 @@
     'Para que toda reserva lleve seguro, pon el precio del seguro.': 'Agar setiap booking memakai asuransi, isi harga asuransinya.',
     'Con seguro, ¿se cobra también la fianza?': 'Jika pakai asuransi, apakah deposit tetap ditagih?', 'No: fianza o seguro': 'Tidak: deposit atau asuransi', 'Sí: fianza y seguro': 'Ya: deposit dan asuransi',
     'Unidades': 'Unit', 'Cada unidad se reserva por separado. Escribe su matrícula.': 'Setiap unit di-booking terpisah. Tulis nomor polisinya.',
-    '%n unidades': '%n unit', '1 unidad': '1 unit', 'Matrícula': 'Nomor polisi', 'Matrícula de la unidad %n': 'Nomor polisi unit %n', 'Añadir una unidad': 'Tambah unit',
+    '%n unidades': '%n unit', '1 unidad': '1 unit', 'Matrícula': 'Plat nomor', 'Matrícula de la unidad %n': 'Nomor polisi unit %n', 'Añadir una unidad': 'Tambah unit',
     'La matrícula %m está repetida.': 'Nomor polisi %m tertulis dua kali.', 'La matrícula %m es demasiado corta o demasiado larga.': 'Nomor polisi %m terlalu pendek atau terlalu panjang.',
     'Añade al menos una unidad.': 'Tambahkan minimal satu unit.',
     '¿Más alquileres? Añádelos después en Flota y tarifas.': 'Ada produk sewa lain? Tambahkan nanti di Armada dan tarif.',
