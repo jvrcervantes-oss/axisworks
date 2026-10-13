@@ -1466,6 +1466,61 @@ def menu_oscuro_css(nombre):
         MENU_LATERAL, cuerpo, MENU_LATERAL, *m['primary-container'])
 
 
+# El filtro, la pestaña o el segmento ELEGIDO (bbm-p40, F14, 13-oct; owner: azul vivo, no Night) va como la sección activa del
+# menú y la pestaña activa de nav.js: el acento con el fondo encima si ese par da 4,5:1 (en bbm, Ultramarine con Chalk); si no,
+# el botón de la piel. Antes cada pantalla lo pintaba a su manera, con tokens que en la piel de bbm son todos Night (deep-lagoon,
+# territorial-green, primary-container) o con el verde de Lawang a mano (.fin-chip de Gastos). Los botones de ACCIÓN no cambian.
+# Colores explícitos y no tokens redefinidos: --v4-lagoon se resuelve en :root y no seguiría a un token cambiado en el botón.
+# Enganche por el ESTADO (aria-selected / aria-pressed / la clase «active» que pone el propio filtro / la clase «on» que declara
+# el contenedor en data-lw-on), nunca por un rótulo. `html` delante: gana a la <style> propia de cada página, que va después.
+# Los chips de datos.js (Facturas, Recibos, Operaciones…) no marcan el elegido con un atributo: le ponen las clases que su
+# contenedor declara en data-lw-on. El selector de cada uno sale de ESA declaración, leída del paquete (seleccion_css).
+SELECCION_SELECTORES = (
+    '.filter-btn.active',                                          # Usuarios (rol)
+    '[role="tab"][aria-selected="true"]:not(.lw-tab-btn)',         # Reservas, Ventas, Taller, Gastos (Ajustes va en blanco, otro estilo)
+    # Reservas de producto (reservas_producto.html) repinta su pestaña elegida con una regla más específica (0,4,0) en Night+Volt:
+    # se iguala aquí su especificidad para que en una instancia con piel gane el elegido (la demo, sin piel, no cambia)
+    '.rp .rp-tabs .rp-tab[aria-selected="true"]',
+    '[aria-pressed="true"]:not(aside *)',                          # interruptores (Gastos); el menú lleva su regla
+)
+# Lo que hay alrededor de un elegido: tiene que distinguirse de ello (≥ 3:1, WCAG 1.4.11)
+SELECCION_ALREDEDOR = ('background', 'surface-container-lowest', 'surface-container', 'surface-container-low', 'surface-container-highest')
+
+
+def seleccion_css(nombre, dist):
+    """La regla CSS del elegido en el color de la piel (ver SELECCION_SELECTORES), o '' sin piel (Lawang, demo). PARA si el
+    texto baja de 4,5:1, si el elegido no se distingue de lo que lo rodea (3:1), si no encuentra ningún grupo de chips o si el
+    fondo «on» de un grupo no es único (también está en su «off»: pintaría de elegido a todos)."""
+    p = _piel_preset(nombre)
+    if p is None:
+        return ''
+    D = _deriva()
+    fondo, acento = tuple(p['background']), tuple(p['accent-gold'])
+    bg, fg = (acento, fondo) if D.contraste(fondo, acento) >= 4.5 else (tuple(p['primary-container']), tuple(p['on-primary']))
+    if D.contraste(bg, fg) < 4.5:
+        aborta('elegido de %s: texto por debajo de 4,5:1 (%.2f)' % (nombre, D.contraste(bg, fg)))
+    bajas = ['%s %.2f' % (t, D.contraste(bg, tuple(p[t]))) for t in SELECCION_ALREDEDOR if D.contraste(bg, tuple(p[t])) < 3]
+    if bajas:
+        aborta('elegido de %s: no se distingue de lo que lo rodea (< 3:1): %s' % (nombre, ', '.join(bajas)))
+    grupos = set()   # (clases «on», clases «off») de cada grupo de chips del paquete
+    patron = re.compile(r'data-lw-chips="[^"]*"[^>]*?data-lw-on="([^"]*)"[^>]*?data-lw-off="([^"]*)"')
+    for raiz_, _d, fs in os.walk(dist):
+        for f in fs:
+            if f.endswith(('.html', '.js')):
+                grupos |= set(patron.findall(open(os.path.join(raiz_, f), encoding='utf-8', errors='replace').read()))
+    if not grupos:
+        aborta('elegido de %s: ningún grupo de chips (data-lw-chips con data-lw-on y data-lw-off) en el paquete' % nombre)
+    chips = set()
+    for on, off in sorted(grupos):
+        fondo_on = [c for c in on.split() if re.fullmatch(r'bg-[a-z-]+', c)]
+        if len(fondo_on) != 1 or fondo_on[0] in off.split():
+            aborta('elegido de %s: el «on» de un grupo de chips no tiene un fondo propio (on=%r, off=%r)' % (nombre, on, off))
+        chips.add('[data-lw-chips] button.' + fondo_on[0])
+    h = lambda c: '#%02X%02X%02X' % tuple(c)
+    sel = ','.join('html ' + s for s in sorted(chips) + list(SELECCION_SELECTORES))
+    return '\n%s{background:%s;color:%s;border-color:%s}\n' % (sel, h(bg), h(fg), h(bg))
+
+
 # La suite clásica (la puerta /, /crea-contrasena/) no pinta con los tokens --tema-: cada página declara su paleta de Lawang en
 # un `:root{--dl:#104C4F…}` de su propio <style>, que va DESPUÉS de las hojas y por eso ganaba a cualquier `:root` añadido a
 # axw.css (Calidad, 12-oct: la puerta de bbm salía con el botón y el título verdes; el primer intento, que añadía `:root` a la
@@ -4095,6 +4150,12 @@ def instancia(nombre):
         if not os.path.isfile(hoja):
             aborta('menú oscuro: falta assets/shell.css en el paquete')
         open(hoja, 'a', encoding='utf-8', newline='\n').write(menu)
+    elegido = seleccion_css(nombre, DIST)   # F14 (bbm-p40): filtro, pestaña o segmento elegido en el acento de la piel
+    if elegido:
+        hoja = os.path.join(DIST, 'assets', 'shell.css')
+        if not os.path.isfile(hoja):
+            aborta('elegido: falta assets/shell.css en el paquete')
+        open(hoja, 'a', encoding='utf-8', newline='\n').write(elegido)
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
     # Módulos: el navegador pregunta a la base cuáles están activos al cargar (panel de control, 28-sep-2026). Va en
     # TODA instancia del ERP (antes solo si el registro traía modulos_activos, Des #4).
