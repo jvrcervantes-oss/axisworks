@@ -210,6 +210,51 @@ for nombre, dic in dics.items():
 mira('los pares que deben distinguirse llevan traducciones distintas (%s)' % '; '.join(iguales), not iguales)
 mira('hay diccionarios ID que revisar (i18n_id.json y al menos los de portada, Ajustes y ayudas comunes)', len(dics) >= 3 and len(dics['i18n_id.json']) > 100)
 
+# -- (4b) cobertura (13-oct, agencia-81): lo que el equipo de bbm toca cada día no cae al inglés ni sale en español.
+# PARA si una frase de los editores (factura, recibí, ajustes), de los avisos de mantenimiento/cierre o de operaciones-cuentas
+# no tiene indonesio Y inglés, o si una de las frases del panel de Cartas de Reserva que salían en español pierde su entrada.
+# El resto de datos.js (457 frases, mucho de herramientas que bbm no tiene) solo AVISA: una frase nueva de Lawang no debe
+# poner rojo el gate de AxisWorks a todos (la criba de datos.js está planificada en el relevo de bbm-p42).
+# Arreglo cuando para (2 min): añade la frase a comercial/demo-erp/i18n_id.json y, si falta el inglés, al bloque EN de
+# contracts/assets/i18n.js de Lawang.
+import html as _html, pathlib
+sys.path.insert(0, os.path.join(build.AGENCIA, 'tools'))
+import i18n_lawang
+_EN = set(json.loads(node('var window = {}; var document = {documentElement: {}, addEventListener: function () {}};\n' +
+                          ORIGINAL['contracts/assets/i18n.js'] + '\nconsole.log(JSON.stringify(Object.keys(window.LW_EN)));')))
+_ID = set().union(*[set(x) for x in dics.values()])
+RUIDO_CLAVES = {'</b>', '<b>', '&lt;', 'EUR', 'desistida', 'pending', 'proforma', 'recibi', 'no_valido', 'modulo', 'ui', 'error'}   # literales de comparación o HTML dentro de un lwT(…), no frases
+def _claves(rel):
+    ks = {_html.unescape(k) for k in i18n_lawang.claves_de(pathlib.Path(build.LAWANG, *rel.split('/')))}
+    return {k for k in ks if re.search(r'[A-Za-zÀ-ÿ]', k) and k.strip() not in RUIDO_CLAVES}
+def _tiene(dic, k):
+    return k in dic or k.strip() in dic
+COBERTURA = ('intranet/v4/assets/editores.js', 'contracts/assets/cierre.js', 'intranet/v4/assets/mantenimiento.js', 'contracts/assets/operaciones-cuentas.js')
+RESERVAS_ES = ('Bloqueo creado · no visible para ti', 'Bloqueo: no leído', 'Liberada', 'Mías', 'No hay Cartas de Reserva vivas pendientes de Bloqueo.',
+               'Operación en borrador: falta el cliente principal', 'Parcelas', 'Prórroga', 'Se libera en la próxima pasada del sistema', 'Se libera sola el',
+               'Sin Bloqueo', 'Sin autor', 'Tras vencer, el sistema espera', 'Vence mañana', 'Venció hace',
+               'días (margen interno, no es plazo del cliente) antes de liberar la parcela. Prorrogar o liberar: pulsa la reserva y se abre su ficha.',
+               'la 3ª solo admin', 'no comunicada al cliente', 'prórroga', 'prórrogas', 'vence', 'vence y ya lleva 2 prórrogas', 'Bloqueo')
+_falta = []
+for rel in COBERTURA:
+    for k in sorted(_claves(rel)):
+        for idioma, dic in (('id', _ID), ('en', _EN)):
+            if not _tiene(dic, k):
+                _falta.append('%s [%s] «%s»' % (rel.split('/')[-1], idioma, k[:50]))
+_datos = _claves('intranet/v4/assets/datos.js')
+for k in RESERVAS_ES:
+    mira('la frase de Reservas «%s» sigue pidiéndose en datos.js (si cambió, actualiza RESERVAS_ES)' % k[:40], k in _datos)
+    for idioma, dic in (('id', _ID), ('en', _EN)):
+        if not _tiene(dic, k):
+            _falta.append('datos.js [%s] «%s»' % (idioma, k[:50]))
+mira('cobertura id+en de editores, mantenimiento, cierre, operaciones-cuentas y Reservas (%d sin entrada: %s) — añade la frase a i18n_id.json '
+     '(y el inglés al EN de i18n.js de Lawang)' % (len(_falta), '; '.join(_falta[:6])), not _falta)
+mira('la cobertura mide algo (editores.js pide más de 200 frases)', len(_claves('intranet/v4/assets/editores.js')) > 200)
+_sin_nada = sorted(k for k in _datos if not _tiene(_ID, k) and not _tiene(_EN, k))
+_al_ingles = sum(1 for k in _datos if not _tiene(_ID, k) and _tiene(_EN, k))
+print('AVISO (no para): datos.js — %d frases caen al inglés en indonesio, %d sin indonesio ni inglés%s'
+      % (_al_ingles, len(_sin_nada), (': ' + '; '.join(x[:30] for x in _sin_nada[:5])) if _sin_nada else ''))
+
 # -- (5) la comprobación del paquete construido
 if r == 'pasa':
     viejo_aqui = build.AQUI
