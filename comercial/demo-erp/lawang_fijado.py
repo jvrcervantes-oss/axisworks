@@ -164,7 +164,14 @@ def extrae(sha, blobs, destino):
 
 def raiz(sha=None):
     """Carpeta con Lawang en `sha` (por defecto el de lawang.json), verificada fichero a fichero contra el almacén."""
-    sha = sha or lee_fijado()['sha']
+    if sha is None:
+        sha = lee_fijado()['sha']
+        esperado(sha)   # existe en el almacén (si no, aborta con el remedio)
+        # Publicado: un lawang.json editado a mano con un sha de una copia de sesión (comparten objetos) no construye (revisor 13-oct).
+        # Sin red: contra la referencia local origin/main; si va por detrás, el remedio es el mismo fetch.
+        if git('merge-base', '--is-ancestor', sha, 'refs/remotes/origin/main') is None:
+            sale('el sha fijado %s no está en origin/main de Lawang (según este clon). Solo se fija lo publicado: '
+                 'git -C "%s" fetch origin, y si sigue, lawang.json apunta a un commit sin subir.' % (sha[:12], almacen()))
     blobs = esperado(sha)
     final = os.path.join(cache(), sha)
     if os.path.isdir(final) and os.path.isfile(os.path.join(final, '.completa')):
@@ -193,19 +200,24 @@ def raiz(sha=None):
     return final
 
 
-def poda(fijado):
-    """Deja la carpeta fijada y las CONSERVA-1 más recientes; restos de extracciones muertas (.tmp-*) de más de 1 h fuera."""
+def poda(recien):
+    """Deja la carpeta del sha de lawang.json, la recién usada y las más recientes hasta CONSERVA; restos de extracciones muertas
+    (.tmp-*, .sube-*) de más de 1 h fuera. La fijada nunca: otro worktree puede estar construyendo con ella."""
+    try:
+        fijado = lee_fijado()['sha']
+    except SystemExit:
+        fijado = recien
     try:
         hijos = [os.path.join(cache(), n) for n in os.listdir(cache())]
     except OSError:
         return
     ahora = time.time()
     for h in hijos:
-        if os.path.basename(h).startswith('.tmp-') and ahora - os.path.getmtime(h) > 3600:
+        if os.path.basename(h).startswith(('.tmp-', '.sube-')) and os.path.isdir(h) and ahora - os.path.getmtime(h) > 3600:
             _borra(h)
-    shas = sorted((h for h in hijos if len(os.path.basename(h)) == 40 and os.path.basename(h) != fijado and os.path.isdir(h)),
+    shas = sorted((h for h in hijos if len(os.path.basename(h)) == 40 and os.path.basename(h) not in (fijado, recien) and os.path.isdir(h)),
                   key=os.path.getmtime, reverse=True)
-    for h in shas[CONSERVA - 1:]:
+    for h in shas[CONSERVA - 2:]:
         _borra(h)
 
 
@@ -222,16 +234,10 @@ def doble_qa():
     return ruta
 
 
-def ultimo_commit(rel, sha=None):
-    """«<sha corto> <fecha> <asunto>» del último commit HASTA `sha` que tocó `rel` (pista para los mensajes de build.py)."""
-    s = git('log', '-1', '--date=short', '--format=%h %ad %s', sha or lee_fijado()['sha'], '--', rel)
-    return (s or '').strip()
-
-
 # ── sube: traer una versión nueva de Lawang al ERP, A PROPÓSITO y probada en el mismo paso (S2) ──────────────────────────
 # Lo que se mira con lupa en el informe (Seguridad, revisión previa nº 311): permisos, dinero, el canon del correo y el servidor.
 SENSIBLES = ('contracts/assets/guard.js', 'contracts/assets/dinero.js', 'contracts/edge', 'supabase/functions', 'supabase/migrations')
-INFORME = os.path.join(AQUI, 'lawang_sube.md')   # va en el MISMO commit que lawang.json: es lo que lee el revisor
+INFORME = os.path.join(AQUI, 'lawang_sube.txt')   # va en el MISMO commit que lawang.json: es lo que lee el revisor (.md no: lo ignora el .gitignore)
 TOPE_DIFF = 4000
 CANDADO_VIEJO = 3600
 
@@ -284,8 +290,11 @@ def prueba(sha):
     doble_qa()
     # AXW_PRUEBA_DESPLIEGUE fuera de la agencia: sin ella `build.py --instancia` pisa erp/despliegues/<inst> del clon principal
     # (incidente del revisor, 13-oct), que es lo que compara quien publica.
-    destino = os.path.join(cache(), '.sube-despliegue-%d' % os.getpid())
-    entorno = dict(os.environ, AXW_LAWANG_RAIZ=carpeta, AXW_PRUEBA_DESPLIEGUE=destino)
+    # AXW_PRUEBA_PUBLICO: `--publico` escribe fuera del repo; si no, dist/demo-erp y dist/erp-web (en git, los publica el push) quedarían
+    # construidos con el Lawang candidato aunque salga rojo (revisor 13-oct). AXW_LAWANG_GIT/REV: la pista de quien_cambio_lawang.
+    destino = os.path.join(cache(), '.sube-%d' % os.getpid())
+    entorno = dict(os.environ, AXW_LAWANG_RAIZ=carpeta, AXW_PRUEBA_DESPLIEGUE=os.path.join(destino, 'paquete'),
+                   AXW_PRUEBA_PUBLICO=os.path.join(destino, 'publico'), AXW_LAWANG_GIT=almacen(), AXW_LAWANG_REV=sha)
     rojos = []
     t0 = time.time()
     cs = comprobaciones()
@@ -353,7 +362,7 @@ def sube(destino, por, motivo, sin_red=False):
             % (viejo, nuevo, len(comprobaciones()), log.strip(), stat_.strip(), ', '.join(SENSIBLES), cuerpo or '(nada)'))
         nuevo_f = dict(fijado, sha=nuevo, fecha=time.strftime('%Y-%m-%d'), por=por, motivo=motivo)
         open(FICHERO, 'w', encoding='utf-8', newline='\n').write(json.dumps(nuevo_f, ensure_ascii=False, indent=2) + '\n')
-        print('\nVERDE: lawang.json → %s. Commit de lawang.json + lawang_sube.md (+ tus arreglos) y al revisor.' % nuevo[:12])
+        print('\nVERDE: lawang.json → %s. Commit de lawang.json + lawang_sube.txt (+ tus arreglos) y al revisor.' % nuevo[:12])
         return 0
     finally:
         try:

@@ -47,6 +47,7 @@ for idioma in ('es', 'en'):
     igual(etiquetas(r, idioma), etiquetas(FALSO, idioma), 'etiquetas %s intactas' % idioma)
 
 real = os.path.join(build.LAWANG, 'contracts', 'tokens.json')   # el sha fijado (E3.9), o AXW_LAWANG_RAIZ
+igual(os.path.isfile(real), True, 'el tokens.json real de Lawang está (sin él esta parte no prueba nada)')
 if os.path.isfile(real):
     t = open(real, encoding='utf-8').read()
     r = corre(t)

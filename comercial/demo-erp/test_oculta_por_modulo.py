@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """python test_oculta_por_modulo.py — lo que build.py oculta POR MÓDULO en la copia de una instancia (OCULTA_POR_MODULO, bbm-p39, 13-oct-2026).
 
-Aplica las marcas sobre el HTML REAL de Lawang (AXW_LAWANG_RAIZ o <agencia>/proyectos/Lawang) y comprueba:
+Aplica las marcas sobre el HTML REAL de Lawang (el sha de lawang.json, o AXW_LAWANG_RAIZ) y comprueba:
   · cada trozo de Lawang está exactamente una vez (si Lawang lo cambia, esto y el build se ponen rojos a la vez);
   · en cada tabla, la cabecera marcada y la celda marcada de la fila PLANTILLA (la que clona plantillaFilas() de datos.js: la 2.ª del tbody)
     están en la MISMA posición y con el mismo marcador: si no, se ocultaría la cabecera de una columna y la celda de otra;
