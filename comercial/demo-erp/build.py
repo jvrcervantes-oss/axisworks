@@ -1466,6 +1466,121 @@ def menu_oscuro_css(nombre):
         MENU_LATERAL, cuerpo, MENU_LATERAL, *m['primary-container'])
 
 
+# El filtro, la pestaña o el segmento ELEGIDO (bbm-p40, F14, 13-oct; owner: azul vivo, no Night) va como la sección activa del
+# menú y la pestaña activa de nav.js: el acento con el fondo encima si ese par da 4,5:1 (en bbm, Ultramarine con Chalk); si no,
+# el botón de la piel. Antes cada pantalla lo pintaba a su manera, con tokens que en la piel de bbm son todos Night (deep-lagoon,
+# territorial-green, primary-container) o con el verde de Lawang a mano (.fin-chip). Los botones de ACCIÓN no cambian.
+# Colores explícitos y no tokens redefinidos: --v4-lagoon se resuelve en :root y no seguiría a un token cambiado en el botón.
+# Una LISTA CON NOMBRE, no «todo lo que lleve aria-pressed» (revisor, 13-oct: el genérico dejaba Chalk sobre claro, 1,01:1, en la
+# moto elegida del asistente de reserva, cuya regla de página pone fondo y no color). Cada entrada engancha por el ESTADO
+# (aria-selected / aria-pressed / la clase «active» del filtro / la clase «on» que pone el propio JS), nunca por un rótulo. El
+# `html` delante sube la especificidad en (0,0,1): gana a una regla de página de la MISMA forma (.x[aria-…]); a una más
+# específica no, y por eso Reservas va con su selector entero. Una página nueva con su propio elegido se añade aquí y se mide.
+SELECCION_SELECTORES = (
+    '.filter-btn.active',                                          # Usuarios (rol)
+    '[role="tab"][aria-selected="true"]:not(.fin-tab)',            # Reservas, Ventas, Taller, Gastos, Cuentas, Ajustes (< 1024 px)
+    # Reservas de producto (reservas_producto.html) repinta su pestaña elegida con una regla (0,4,0) en Night+Volt
+    '.rp .rp-tabs .rp-tab[aria-selected="true"]',
+    '[data-lw-vista] button.bg-deep-lagoon',                       # Facturas: «Lista / Por contrato» (datos.js le pone bg-deep-lagoon)
+    '.fin-chip[aria-pressed="true"]',                              # Finanzas y Gastos: el chip (su regla de página, verde de Lawang a mano)
+    '.rp-as-dia[data-sel="ini"]', '.rp-as-dia[data-sel="fin"]',    # asistente de reserva: día de recogida y de devolución
+)
+# Pestañas de SUBRAYADO (.fin-tab de Finanzas): el elegido es la raya y el texto en el acento, no un bloque
+SELECCION_SUBRAYADO = ('.fin-tab[aria-selected="true"]',)
+# Tarjetas elegidas que se marcan con el BORDE sobre fondo claro (asistente de reserva: la moto y la opción): solo el borde
+SELECCION_BORDE = ('.rp-as-moto[aria-pressed="true"]', '.rp-as-opcion[aria-pressed="true"]')
+# Lo que hay alrededor de un elegido: tiene que distinguirse de ello (≥ 3:1, WCAG 1.4.11); el subrayado es texto: ≥ 4,5:1
+SELECCION_ALREDEDOR = ('background', 'surface-container-lowest', 'surface-container', 'surface-container-low', 'surface-container-highest')
+# Los chips de datos.js (chipsReales) no marcan el elegido con un atributo: le ponen las clases de data-lw-on de su contenedor o,
+# si no lo declara (Contratos), las de su defecto en datos.js. El selector de cada grupo sale de ahí, leído del paquete.
+CHIPS_DEFECTO = re.compile(r"""getAttribute\(["']data-lw-(on|off)["']\)\s*\|\|\s*["']([^"']+)["']""")
+
+
+def _chips_del_paquete(dist):
+    """[(on, off)] de cada contenedor data-lw-chips de las páginas del paquete, con el defecto de datos.js si no los declara."""
+    defecto = {}
+    ruta = os.path.join(dist, 'assets', 'datos.js')
+    if os.path.isfile(ruta):
+        defecto = dict(CHIPS_DEFECTO.findall(open(ruta, encoding='utf-8', errors='replace').read()))
+    grupos = []
+    for raiz_, _d, fs in os.walk(dist):
+        for f in fs:
+            if f.endswith('.html'):
+                for tag in re.findall(r'<[^>]*\bdata-lw-chips="[^"]*"[^>]*>', open(os.path.join(raiz_, f), encoding='utf-8', errors='replace').read()):
+                    attr = lambda k: (re.search(r'\bdata-lw-%s="([^"]*)"' % k, tag) or [None, None])[1]
+                    on, off = attr('on') or defecto.get('on'), attr('off') or defecto.get('off')
+                    if not on or not off:
+                        aborta('elegido: un grupo de chips de %s no declara su «on»/«off» y datos.js ya no trae el defecto (mirar CHIPS_DEFECTO)'
+                               % os.path.relpath(os.path.join(raiz_, f), dist))
+                    grupos.append((on, off))
+    return grupos
+
+
+def _chips_marcados(dist):
+    """{atributo: (fondo «on», fondo «off»)} de los grupos data-chip-* de las páginas: marcaChip() de datos.js le pone al elegido
+    la clase del PRIMER botón del grupo y al resto la del segundo (chipClases), así que el «on» es el fondo del primero."""
+    grupos = {}
+    for raiz_, _d, fs in os.walk(dist):
+        for f in fs:
+            if f.endswith('.html'):
+                por = {}
+                for tag in re.findall(r'<button[^>]*\bdata-chip-[a-z]+="[^"]*"[^>]*>', open(os.path.join(raiz_, f), encoding='utf-8', errors='replace').read()):
+                    attr = re.search(r'\b(data-chip-[a-z]+)=', tag).group(1)
+                    clase = (re.search(r'\bclass="([^"]*)"', tag) or [None, ''])[1]
+                    por.setdefault(attr, []).append([c for c in clase.split() if re.fullmatch(r'bg-[a-z-]+', c)])
+                for attr, fondos in por.items():
+                    if len(fondos) < 2 or len(fondos[0]) != 1 or fondos[0] == fondos[1][:1]:
+                        aborta('elegido: el grupo %s de %s no tiene un primer botón con fondo propio (marcaChip copia su clase)'
+                               % (attr, os.path.relpath(os.path.join(raiz_, f), dist)))
+                    grupos.setdefault(attr, set()).add((fondos[0][0], fondos[1][0] if fondos[1] else ''))
+    # el chip de empresa (data-chip-e) lo crea datos.js con las clases del grupo de proyectos (clasesP): mismo «on»
+    if 'data-chip-p' in grupos:
+        grupos['data-chip-e'] = set(grupos['data-chip-p'])
+    return grupos
+
+
+def seleccion_css(nombre, dist):
+    """La regla CSS del elegido en el color de la piel (ver SELECCION_SELECTORES), o '' sin piel (Lawang, demo). PARA si el
+    texto baja de 4,5:1, si el elegido no se distingue de lo que lo rodea (3:1), si no hay grupos de chips, si un grupo no tiene
+    un fondo «on» propio, o si el fondo «on» de un grupo es el «off» de otro (pintaría de elegido a todos los de ese)."""
+    p = _piel_preset(nombre)
+    if p is None:
+        return ''
+    D = _deriva()
+    fondo, acento = tuple(p['background']), tuple(p['accent-gold'])
+    bg, fg = (acento, fondo) if D.contraste(fondo, acento) >= 4.5 else (tuple(p['primary-container']), tuple(p['on-primary']))
+    if D.contraste(bg, fg) < 4.5:
+        aborta('elegido de %s: texto por debajo de 4,5:1 (%.2f)' % (nombre, D.contraste(bg, fg)))
+    bajas = ['%s %.2f' % (t, D.contraste(bg, tuple(p[t]))) for t in SELECCION_ALREDEDOR if D.contraste(bg, tuple(p[t])) < 3]
+    bajas += ['subrayado/%s %.2f' % (t, D.contraste(bg, tuple(p[t]))) for t in SELECCION_ALREDEDOR if D.contraste(bg, tuple(p[t])) < 4.5]
+    if bajas:
+        aborta('elegido de %s: no se distingue de lo que lo rodea: %s' % (nombre, ', '.join(bajas)))
+    grupos = _chips_del_paquete(dist)
+    if not grupos:
+        aborta('elegido de %s: ningún grupo de chips (data-lw-chips) en el paquete' % nombre)
+    ons, offs = set(), set()
+    for on, off in grupos:
+        fondo_on = [c for c in on.split() if re.fullmatch(r'bg-[a-z-]+', c)]
+        if len(fondo_on) != 1:
+            aborta('elegido de %s: el «on» de un grupo de chips no tiene un fondo propio (on=%r)' % (nombre, on))
+        ons.add(fondo_on[0])
+        offs |= set(off.split())
+    if ons & offs:
+        aborta('elegido de %s: el fondo «on» de un grupo de chips es el «off» de otro: %s' % (nombre, ', '.join(sorted(ons & offs))))
+    marcados = []
+    for attr, pares in sorted(_chips_marcados(dist).items()):
+        on_a, off_a = {o for o, _f in pares}, {f for _o, f in pares}
+        if on_a & off_a:   # el mismo atributo en dos páginas, con el «on» de una como «off» de la otra
+            aborta('elegido de %s: en %s el fondo «on» de un grupo es el «off» de otro: %s' % (nombre, attr, ', '.join(sorted(on_a & off_a))))
+        marcados += ['[%s].%s' % (attr, o) for o in sorted(on_a)]
+    h = lambda c: '#%02X%02X%02X' % tuple(c)
+    sel = ','.join('html ' + s for s in ['[data-lw-chips] button.' + o for o in sorted(ons)] + marcados + list(SELECCION_SELECTORES))
+    sub = ','.join('html ' + s for s in SELECCION_SUBRAYADO)
+    borde = ','.join('html ' + s for s in SELECCION_BORDE)
+    return ('\n%s{background:%s;color:%s;border-color:%s}\n%s{color:%s;border-bottom-color:%s}\n%s{border-color:%s}\n'
+            % (sel, h(bg), h(fg), h(bg), sub, h(bg), h(bg), borde, h(bg)))
+
+
 # La suite clásica (la puerta /, /crea-contrasena/) no pinta con los tokens --tema-: cada página declara su paleta de Lawang en
 # un `:root{--dl:#104C4F…}` de su propio <style>, que va DESPUÉS de las hojas y por eso ganaba a cualquier `:root` añadido a
 # axw.css (Calidad, 12-oct: la puerta de bbm salía con el botón y el título verdes; el primer intento, que añadía `:root` a la
@@ -4294,6 +4409,12 @@ def instancia(nombre):
         if not os.path.isfile(hoja):
             aborta('menú oscuro: falta assets/shell.css en el paquete')
         open(hoja, 'a', encoding='utf-8', newline='\n').write(menu)
+    elegido = seleccion_css(nombre, DIST)   # F14 (bbm-p40): filtro, pestaña o segmento elegido en el acento de la piel
+    if elegido:
+        hoja = os.path.join(DIST, 'assets', 'shell.css')
+        if not os.path.isfile(hoja):
+            aborta('elegido: falta assets/shell.css en el paquete')
+        open(hoja, 'a', encoding='utf-8', newline='\n').write(elegido)
     # El núcleo «operación» ya está en la base de las instancias del ERP (no aún en Lawang): se enciende.
     # Módulos: el navegador pregunta a la base cuáles están activos al cargar (panel de control, 28-sep-2026). Va en
     # TODA instancia del ERP (antes solo si el registro traía modulos_activos, Des #4).
