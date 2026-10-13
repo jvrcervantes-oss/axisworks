@@ -25,7 +25,7 @@ function nuevaBase(o = {}) {
     { id: 'm1', numero_producto: 'P-1', nombre: 'Honda Beat', referencia: null, unidad: 'día', precio: 0, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'alquiler' },
     { id: 's1', numero_producto: 'P-2', nombre: o.xss ? XSS : 'Entrega y recogida a domicilio', referencia: 'DEL', unidad: 'viaje', precio: 50000, moneda: 'IDR', descripcion: null, impuesto_id: 'i1', activo: false, clase: 'servicio' },
     { id: 's2', numero_producto: 'P-3', nombre: 'Casco extra', referencia: null, unidad: 'ud', precio: 25000, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'servicio' }];
-  if (o.mil) for (let k = 0; k < 1001; k++) prods.push({ id: 'x' + k, numero_producto: 'P-X' + k, nombre: 'Extra ' + k, referencia: null, unidad: 'ud', precio: 1000, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'servicio' });
+  if (o.mil) for (let k = 0; k < (o.mil === 'justo' ? 998 : 1001); k++) prods.push({ id: 'x' + k, numero_producto: 'P-X' + k, nombre: 'Extra ' + k, referencia: null, unidad: 'ud', precio: 1000, moneda: 'IDR', descripcion: null, impuesto_id: null, activo: true, clase: 'servicio' });
   if (o.largo) prods.push({ id: 's3', numero_producto: 'P-4', nombre: 'W'.repeat(120), referencia: 'R'.repeat(60), unidad: 'ud', precio: 123456789, moneda: 'IDR', descripcion: null, impuesto_id: 'i2', activo: true, clase: 'servicio' });
   return { o, llamadas: [], n: 10, prods, imps: [{ id: 'i1', numero_impuesto: 'IMP-1', nombre: 'PPN 11 %', pais: 'ID', clase: 'suma', porcentaje: 11, activo: true },
     { id: 'i2', numero_impuesto: 'IMP-2', nombre: 'Viejo', pais: 'ID', clase: 'suma', porcentaje: 10, activo: false }] };
@@ -106,15 +106,22 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('enlaza a Flota para las motos (por la ruta)', (await p.$$('a[data-ex="ir-flota"][href="/intranet/v4/flota/"]')).length === 1);
     ok('XSS del nombre se pinta como texto', await limpio(p));
     const cad = (base.llamadas.find(x => x[1] === 'productos') || [])[2];
-    ok('la consulta filtra la clase en la base (neq clase alquiler) ANTES del tope de 1000 (revisor 14-oct)', !!cad && J(cad.cad.filter(c => c[0] !== 'select')) === J([['neq', 'clase', 'alquiler'], ['order', 'nombre'], ['limit', 1000]]), J(cad));
+    ok('la consulta filtra la clase en la base (neq clase alquiler) ANTES del tope de 1000 (revisor 14-oct)', !!cad && J(cad.cad.filter(c => c[0] !== 'select')) === J([['neq', 'clase', 'alquiler'], ['order', 'nombre'], ['limit', 1001]]), J(cad));
     ok('con menos de 1000 extras no sale el aviso de lista recortada', await p.$eval('[data-ex="recortado"]', e => e.classList.contains('axw-oculto')));
+    await ctx.close();
+  }
+  // 1c. exactamente 1000 extras (998 + los 2 de siempre): sin aviso falso
+  {
+    const { p, ctx } = await abre({ base: { mil: 'justo' } });
+    const n = await p.$$eval('.ex-fila[data-producto-id]', fs => fs.length);
+    ok('con exactamente 1000 extras: las 1000 filas y SIN aviso de lista recortada', n === 1000 && await p.$eval('[data-ex="recortado"]', e => e.classList.contains('axw-oculto')), String(n));
     await ctx.close();
   }
   // 1b. más de 1000 extras: se enseñan 1000 y se avisa (las motos no gastan el tope)
   {
     const { p, ctx } = await abre({ base: { mil: true }, idioma: 'id' });
     const n = await p.$$eval('.ex-fila[data-producto-id]', fs => fs.length);
-    ok('con 1001 extras + motos: 1000 filas y el aviso de lista recortada, en indonesio', n === 1000 && await p.$eval('[data-ex="recortado"]', e => !e.classList.contains('axw-oculto') && /Ditampilkan 1000 ekstra/.test(e.textContent)), String(n));
+    ok('con más de 1000 extras + motos: 1000 filas y el aviso de lista recortada, en indonesio', n === 1000 && await p.$eval('[data-ex="recortado"]', e => !e.classList.contains('axw-oculto') && /Ditampilkan 1000 ekstra/.test(e.textContent)), String(n));
     await ctx.close();
   }
   // 2. vacío ≠ error ≠ sin permiso
