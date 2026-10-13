@@ -204,7 +204,10 @@ async function servidor(s, nombre, a) {
   return err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
 }
 
-const pagina = (idioma) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
+// Sin la cáscara (Tailwind) las clases p-8 no pintan nada: el panel mediría más ancho que en la página real. Se ponen a mano el relleno de cada bloque (p-8 = 32 px)
+// y un margen de página de 16 px, para que «no desborda» se mida con una caja de contenido tan estrecha como la de verdad.
+const PIEL_MINIMA = '<style>body{margin:0;padding:0 16px}[data-ag^="bloque-"],.lw-cabecera{padding:32px}</style>';
+const pagina = (idioma) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title>${PIEL_MINIMA}</head><body>
 ${MARCADO}
 <script>
 window.__xss = undefined; window.__fromLlamado = 0; window.__fetchLlamado = 0; window.__sinTr = []; window.__errores = [];
