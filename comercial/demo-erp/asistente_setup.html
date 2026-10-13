@@ -154,6 +154,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var t = vacia($('titulo'));
     // diseño S03: «Set up Sample Rentals, one step at a time.» — el nombre del negocio de Ajustes › marca (lo guarda el paso S10); sin él, «tu ERP»
     var marca = ctx && ctx.ajustes && typeof ctx.ajustes.marca === 'string' ? ctx.ajustes.marca.trim() : '';
+    // sin marca guardada, el nombre que ya enseña el menú (la ficha de la instancia: lwMarca), para no decir «tu ERP» al lado de «Bali Best»
+    if (!marca && typeof window.lwMarca === 'function') { var fm = String(window.lwMarca('%marca') || '').trim(); if (fm && fm.indexOf('%marca') < 0) marca = fm; }
     t.appendChild(el('span', { 'data-axw-titulo-marca': marca ? '1' : '0', text: (marca ? U('as_titulo_marca', { m: marca }) : U('as_titulo')) + ' ' }));
     t.appendChild(el('span', { style: 'font-weight:300', text: U('as_titulo2') }));
     $('lead').textContent = U('as_lead'); $('lead').hidden = false;

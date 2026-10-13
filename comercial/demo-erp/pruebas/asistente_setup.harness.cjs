@@ -112,9 +112,10 @@ window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' 
 </script>
 <script>${NUCLEO}</script><script>${PASOS}</script>${HTML[1]}</body></html>`;
 
-async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=facturas', ancho = 1440, reloj = null } = {}) {
+async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=facturas', ancho = 1440, reloj = null, init = null } = {}) {
   const ctx = await nav.newContext({ viewport: { width: ancho, height: 900 } });
   const p = await ctx.newPage();
+  if (init) await p.addInitScript(init);   // algo de la página real que el arnés no carga (p. ej. lwMarca de i18n.js)
   if (reloj) await p.clock.install({ time: new Date(reloj) });   // la hora del navegador fijada (año fiscal en Nochevieja)
   await p.route('**/*', r => {
     const u = new URL(r.request().url());
@@ -364,6 +365,15 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     ok('S03 ' + idioma + ': el título lleva el nombre del negocio', tit.trim() === esperado, tit);
     await ctx.close();
   }
+  // nombre hostil: se ve tal cual, sin crear elementos ni rellenar sus %
+  ({ p, ctx } = await abre(nav, base('sin_configurar', { valores: { marca: '<img src=x onerror=window.__pwn=1> %t' } }), { url: '/ajustes/configurar/' }));
+  ok('S03: un nombre con HTML y % sale como texto', ((await txt(p, '[data-axw-titulo-marca="1"]')) || '').trim() === 'Configura <img src=x onerror=window.__pwn=1> %t,'
+     && !(await p.$('[data-axw-titulo-marca] img')) && !(await p.evaluate(() => window.__pwn)), await txt(p, '[data-axw-titulo-marca]'));
+  await ctx.close();
+  // sin marca guardada: el nombre de la ficha que enseña el menú (lwMarca), no «tu ERP»
+  ({ p, ctx } = await abre(nav, base('sin_configurar'), { url: '/ajustes/configurar/', init: () => { window.lwMarca = (s) => String(s).split('%marca').join('Bali Best Motorcycle'); } }));
+  ok('S03: sin marca guardada, el nombre de la ficha', ((await txt(p, '[data-axw-titulo-marca="1"]')) || '').trim() === 'Configura Bali Best Motorcycle,', await txt(p, '[data-axw-titulo-marca]'));
+  await ctx.close();
   ({ p, ctx } = await abre(nav, base('sin_configurar', { valores: { marca: '   ' } }), { url: '/ajustes/configurar/' }));
   ok('S03: con la marca vacía, «Configura tu ERP,»', ((await txt(p, '[data-axw-titulo-marca="0"]')) || '').trim() === 'Configura tu ERP,', await txt(p, '[data-axw-titulo-marca]'));
   await ctx.close();
