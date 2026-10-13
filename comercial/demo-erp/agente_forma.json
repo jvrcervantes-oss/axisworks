@@ -32,7 +32,7 @@
     "ultima_pasada": "null | {dia: fecha, pasada: pasada, en: instante, resultado: enum(hecha, en_pausa, apagadas, parado, cupo, otro)}",
     "tope_mensual_cent": "entero >= 0: el tope VIGENTE (sin tope guardado, 0 = no puede gastar; nunca null: revisor 13-oct)",
     "tope_propuesto_cent": "entero | null: una subida pendiente (entra a las 24 h); null = ninguna",
-    "tope_propuesto_desde": "instante | null: cuándo entra esa subida",
+    "tope_propuesto_desde": "instante | null: CUÁNDO ENTRA esa subida (la base da lo guardado + 24 h; en agente_ficha_datos, la clave del mismo nombre es cuándo se pidió)",
     "gastado_mes_cent": "entero",
     "moneda": "texto de 3 letras, SIEMPRE con el módulo encendido (la ficha cuenta en EUR; la pantalla no pone una moneda por su cuenta)",
     "usd_por_eur": "número | null",
@@ -85,7 +85,7 @@
   "agente_para": {
    "args": {},
    "devuelve": "{parado: true}",
-   "quien": "herramienta agente; freno 1/min y 10/día"
+   "quien": "herramienta agente; SIN freno: parar funciona siempre (decisión del CEO, 13-oct). Si ya está parado no escribe, así que solo escribe tras una reanudación, que sí va frenada"
   },
   "agente_reanuda": {
    "args": {},

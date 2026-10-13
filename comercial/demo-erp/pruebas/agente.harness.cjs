@@ -92,8 +92,9 @@ async function servidor(s, nombre, a) {
       s.decisiones[a.p_id] = [a.p_decision, o.xss ? XSS : 'Made'];
       return { data: { ok: true, decision: a.p_decision }, error: null };
     case 'agente_propuesta_decide': { const e = soloDueno(); if (e) return e; s.propDec[a.p_id] = [a.p_decision, a.p_nota]; return { data: { ok: true, estado: a.p_decision }, error: null }; }
-    case 'agente_para': if (o.freno) return err('P0001', 'freno', 'agente_freno'); s.parado = true; return { data: { parado: true }, error: null };
-    case 'agente_reanuda': { const e = soloDueno(); if (e) return e; s.parado = false; return { data: { parado: false }, error: null }; }
+    // «Parar» no se frena nunca (decisión del CEO, 13-oct: un gesto de seguridad frenado falla abierto)
+    case 'agente_para': s.parado = true; return { data: { parado: true }, error: null };
+    case 'agente_reanuda': { const e = soloDueno(); if (e) return e; if (o.freno) return err('P0001', 'freno', 'agente_freno'); s.parado = false; return { data: { parado: false }, error: null }; }
     case 'agente_ficha_ajusta': {
       const e = soloDueno(); if (e) return e;
       if (a.p_trabajos.some(t => !FORMA.trabajos.includes(t))) return err('22023', 'trabajo desconocido', 'datos');
@@ -333,8 +334,8 @@ const MUESTRA = (() => {
     await ctx.close();
   }
   {
-    const { p, ctx } = await abre({ base: { herramienta: true, freno: true } });
-    await p.click('[data-accion="ag-parar"]');
+    const { p, ctx } = await abre({ base: { dueno: true, pausa: true, freno: true } });
+    await p.click('[data-accion="ag-reanudar"]');
     await p.waitForSelector('[data-ag="error"]:not(.axw-oculto)');
     ok('freno de la base: frase propia por su hint', (await txt(p, '[data-ag="error"]')).includes('Demasiados cambios seguidos'));
     await ctx.close();
