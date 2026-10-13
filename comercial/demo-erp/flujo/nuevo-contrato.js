@@ -522,13 +522,20 @@
      base de la demo dice que no hay ninguna, se pone delante una tarjeta que lo explica y abre «+ New contract» (que sí crea
      el contrato, con su plan de pagos), y se aparta el paso de plantilla vacío. Con plantillas, la pantalla queda como siempre.
      Enganche por data-lw (emitir-paso-plantilla) y data-accion (demo-nuevo-contrato), nunca por rótulo. */
+  // La MISMA regla que emitir.js para «hay con qué emitir»: versión activa, sin archivar y de un tipo activo. Contar la lista
+  // entera dejaría la pantalla sin tarjeta y sin plantilla elegible el día que la demo traiga una archivada o de un tipo apagado.
+  function usables(d) {
+    var tipos = {};
+    (d.tipos || []).forEach(function (x) { if (x.activo) tipos[x.clave] = true; });
+    return (d.plantillas || []).some(function (p) { return p.activa && p.activa.id && !p.archivada && tipos[p.tipo_contrato]; });
+  }
   function emitirSinPlantillas() {
     if (location.pathname.indexOf('/emitir/') !== 0 || typeof window.lwDatos !== 'function') return;
     var paso = document.querySelector('[data-lw="emitir-paso-plantilla"]');
     if (!paso || document.querySelector('[data-axf="emitir-demo"]')) return;
     Promise.all([prepara(), window.lwDatos('plantillas_contrato_datos')]).then(function (rs) {
       var d = rs[1] && rs[1].data;
-      if (!d || (Array.isArray(d.plantillas) && d.plantillas.length) || document.querySelector('[data-axf="emitir-demo"]')) return;
+      if (!d || usables(d) || document.querySelector('[data-axf="emitir-demo"]')) return;
       var tarjeta = el('section', { class: paso.className, 'data-axf': 'emitir-demo' }, [
         el('h2', { class: 'font-headline-sm text-headline-sm', text: t('emitir.tit') }),
         el('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: t('emitir.texto') }),

@@ -458,11 +458,11 @@ img,svg{display:block}
      «axw-demo:») y, además, el localStorage de este origen: demo.axisworks.studio solo sirve la demo, y ahí guardan sus
      preferencias de pantalla (idioma, módulos encendidos, tour visto). Sin esto, «Reset» no volvía del todo al principio.
      Comentario HTML y no de JS a propósito: puerta_demo() quita los comentarios HTML y la portada no pasa por el limpiador
-     de comentarios del resto del paquete. Dentro de un comentario nunca se escribe su marca de cierre. -->
+     de comentarios del resto del paquete. Dentro de un comentario nunca se escribe su marca de cierre.
+     La selección de módulos que trae la web (erp.axisworks.studio → «Open the demo» → /?sel=…, 13-oct-2026) sigue a la
+     intranet: se copia en cada enlace [data-puerta="intranet"]. Solo ids del catálogo (letras, cifras, guion, guion bajo y
+     comas) y con tope; lo demás se ignora. Quien la valida de verdad es la intranet (CAT.leeSel en modulos_demo.js). -->
 <script>
-/* La selección de módulos que trae la web (erp.axisworks.studio → «Open the demo» → /?sel=…, 13-oct-2026) sigue a la intranet:
-   se copia en cada enlace [data-puerta="intranet"]. Solo ids del catálogo (letras, cifras, guion, guion bajo y comas) y con
-   tope; lo demás se ignora. Quien la valida de verdad es la intranet (CAT.leeSel en modulos_demo.js). */
 (function () {
   var sel = null;
   try { sel = new URLSearchParams(location.search).get('sel'); } catch (e) { sel = null; /* MUDO A PROPOSITO: sin URLSearchParams la intranet abre con todo */ }

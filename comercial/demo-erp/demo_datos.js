@@ -59,11 +59,13 @@
     if (suma !== 10000) return { ok: false, error: 'plan_suma', suma: pctTexto(suma) };
     return { ok: true, hitos: out };
   }
-  // El precio repartido en céntimos: cada hito su parte redondeada y el ÚLTIMO la diferencia, así la suma da el precio exacto.
+  // El precio repartido en céntimos por redondeo ACUMULADO: cada hito es lo que toca hasta él menos lo ya repartido. La suma da
+  // el precio exacto y ninguno sale negativo (redondeando cada parte por separado, 0,02 a 25/25/25/25 daba 1, 1, 1 y -1 céntimos).
   function repartePlan(precio, hitos) {
-    var total = Math.round(Number(precio) * 100), hecho = 0;
-    return hitos.map(function (h, i) {
-      var m = i === hitos.length - 1 ? total - hecho : Math.round(total * h.c / 10000);
+    var total = Math.round(Number(precio) * 100), acum = 0, hecho = 0;
+    return hitos.map(function (h) {
+      acum += h.c;
+      var m = Math.round(total * acum / 10000) - hecho;
       hecho += m;
       return m / 100;
     });
@@ -532,7 +534,8 @@
      En producción cada una es una función de la base (supabase/migrations/20260927163135_b10a_cifras_datos.sql,
      20260927232020_law338_l2_pantallas.sql, 20260927235009_law338_l2_ajustes.sql de Lawang). Aquí se calculan
      sobre las FIXTURES con la MISMA forma de respuesta (claves, orden, `siguiente`, `recortado`). Lo que no se
-     emula: los permisos (la demo entra siempre como super admin) — un 42501 no puede darse aquí.
+     emula: los permisos (la demo entra siempre como super admin) — un 42501 no puede darse aquí, salvo el de
+     servicios_axisworks_datos (de abajo), que dice que esa pantalla no existe en la demo.
      Un argumento que la base rechaza (22023) se devuelve como error, igual que la base: `falla()`.
      Firma: LW_DEMO_DATOS[nombre](FIXTURES, args) → data. Lo llama el envoltorio de `rpc` que pone build.py;
      build.py ABORTA si la v4 pide un `*_datos` que no está en este mapa. */
@@ -605,7 +608,7 @@
       /* Servicios de AxisWorks (Lawang 980451272, 13-oct-2026): pestaña de Ajustes solo para el super administrador de Lawang;
          ajustes-servicios.js no la arranca con AXW_NUCLEO_OPERACION, así que la demo nunca la pide. Si algo la pidiera, falla
          diciéndolo (42501, como la base a quien no es super admin) en vez de inventar márgenes, topes o un extracto de gasto. */
-      servicios_axisworks_datos: function () { falla('servicios_axisworks_datos: no existe en la demo', '42501'); },
+      servicios_axisworks_datos: function () { falla('servicios_axisworks_datos: not available in the demo', '42501'); },
       contrato_plantilla_texto_datos: function () { return { numero: null, texto: null, texto_sha256: null }; },
       comunicacion_datos: function (F, a) {
         var pg = pagina(filas(F, 'comunicados'), 'actualizado_en', tope(a.p_limit, 100), a.p_despues);
@@ -1008,6 +1011,13 @@
     filasDe(F, 'contratos').forEach(function (c) { c.cobrado = Math.round((cobrado[c.id] || 0) * 100) / 100; });
     var uPorId = {}; filasDe(F, 'unidades').forEach(function (u) { uPorId[u.id] = u; });
     var cPorId = {}; filasDe(F, 'contratos').forEach(function (c) { cPorId[c.id] = c; });
+    /* La copia del contrato en cada vencimiento (el doble no hace joins; Vencimientos y el portal leen `contratos.bloqueado`):
+       sale SIEMPRE del contrato, aquí, como `contrato_firmado` de abajo. Escribirla a mano en cada camino la dejaba vieja
+       en el primero que se olvidara. */
+    filasDe(F, 'contrato_vencimientos').forEach(function (v) {
+      var c = cPorId[v.contrato_id];
+      if (c) v.contratos = { id: c.id, numero: c.numero, bloqueado: !!c.bloqueado, liberado_en: c.liberado_en || null };
+    });
     filasDe(F, 'unidades_estado').forEach(function (ue) {
       var u = uPorId[ue.id]; if (!u) return;
       ['estado', 'contrato_id', 'obra_fase', 'obra_fecha_entrega', 'obra_actualizado', 'precio'].forEach(function (k) { if (k in u) ue[k] = u[k]; });
@@ -1573,13 +1583,13 @@
         if (tipo === 'reserva_parcela') actualiza(F, 'unidades', [u], { contrato_id: c.id });
         /* Su calendario, con la forma de los sembrados: el portal («Payment plan») y Vencimientos lo leen de aquí. El importe va
            guardado (el reparto de arriba, que cuadra al céntimo) para que nadie lo recalcule con otro redondeo. La fecha solo
-           en el primero (a la firma): los demás son hitos de obra, no fechas. `contratos` es la copia del contrato que el doble
-           guarda en la fila porque no hace joins; la firma la pone al día. */
+           en el primero (a la firma): los demás son hitos de obra, no fechas. La copia `contratos` de cada fila (el doble no
+           hace joins) no se escribe aquí: la saca recalcula() del contrato tras cada llamada. */
         var montos = repartePlan(precio, plan.hitos), hoy0 = hoyLocal();
         inserta(F, 'contrato_vencimientos', plan.hitos.map(function (h, j) {
           return { id: 'cv-' + c.id + '-' + j, contrato_id: c.id, orden: j + 1, descripcion: h.descripcion, pct: h.pct, monto: montos[j],
             fecha: j === 0 ? hoy0 : null, ajustado: false, nota: null, actualizado_por: null, actualizado_en: null, creado_en: t0,
-            factura_id: null, no_facturar: false, contratos: { id: c.id, numero: numero, bloqueado: false, liberado_en: null } };
+            factura_id: null, no_facturar: false };
         }));
         return { id: c.id, numero: numero, operacion_id: opId };
       },
@@ -1587,14 +1597,10 @@
         var c = porId(F, 'contratos', a.p_contrato);
         if (!c) falla('contrato_no_existe', [], 'P0002');
         if (c.bloqueado) falla('ya_firmado');
-        // El día de HOY del visitante, no el de UTC: en Bali de madrugada salía «firmado el 11» con el contrato del 12
-        // (verificación en vivo, 12-oct; las fechas de la siembra siguen en UTC, son relativas).
-        var ahoraLocal = new Date();
-        var hoy = ahoraLocal.getFullYear() + '-' + String(ahoraLocal.getMonth() + 1).padStart(2, '0') + '-' + String(ahoraLocal.getDate()).padStart(2, '0');
+        // El día de HOY del visitante, no el de UTC (las fechas de la siembra siguen en UTC, son relativas). La copia del
+        // contrato que llevan sus vencimientos la pone al día recalcula().
+        var hoy = hoyLocal();
         actualiza(F, 'contratos', [c], { bloqueado: true, fecha_firma: hoy });
-        // la copia del contrato que llevan sus hitos (el doble no hace joins): firmado también ahí, o Vencimientos lo vería sin firmar
-        actualiza(F, 'contrato_vencimientos', filasDe(F, 'contrato_vencimientos').filter(function (v) { return v.contrato_id === c.id; }),
-          { contratos: { id: c.id, numero: c.numero, bloqueado: true, liberado_en: null } });
         actualiza(F, 'contrato_firmas', filasDe(F, 'contrato_firmas').filter(function (x) { return x.contrato_id === c.id && x.estado === 'pendiente'; }),
           { estado: 'firmado', firmado_en: ahora(), firmante_nombre: txt(a.p_firmante_nombre) || c.comprador_nombre });
         var u = porId(F, 'unidades', c.unidad_id);

@@ -665,7 +665,7 @@ PUERTAS_DEMO = r"""(function () {
   function fija(k, v) { try { Object.defineProperty(window, k, { value: v, writable: false, configurable: false, enumerable: true }); } catch (e) { /* MUDO A PROPOSITO: el guard cargado dos veces; la primera ya fijó lo mismo */ } }
   var FICHA = window.LW_INSTANCIA || {};
   var URL_SB = FICHA.sb_url || 'https://demo.invalid';
-  function noDemo(que) { var e = new Error(que + ': no disponible en la demo'); e.clave = 'no_disponible_en_la_demo'; return Promise.reject(e); }
+  function noDemo(que) { var e = new Error(que + ': not available in the demo'); e.clave = 'no_disponible_en_la_demo'; return Promise.reject(e); }
   fija('LW_SB_URL', URL_SB);
   fija('LW_SB_KEY', FICHA.sb_key || 'demo-publishable-key');
   /* Moneda base (F3 fase E, 12-oct-2026): el guard real la saca de Ajustes vía la capa de módulos, que la demo no lleva. Los
@@ -678,7 +678,7 @@ PUERTAS_DEMO = r"""(function () {
   fija('lwDatos', function (nombre, args) {
     if (!/^[a-z][a-z0-9_]*_datos$/.test(String(nombre))) throw new Error('lwDatos: solo RPC *_datos (' + nombre + ')');
     if (!(window.LW_DEMO_DATOS && Object.prototype.hasOwnProperty.call(window.LW_DEMO_DATOS, nombre))) {
-      return Promise.resolve({ data: null, error: { message: 'no disponible en la demo' } });
+      return Promise.resolve({ data: null, error: { message: 'not available in the demo' } });
     }
     var cli = window.LW_SB ? Promise.resolve(window.LW_SB)
       : window.LW_AUTH ? window.LW_AUTH.then(function (a) { return a.sb; })

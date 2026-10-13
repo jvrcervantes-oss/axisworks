@@ -200,8 +200,10 @@ const r = (q) => Promise.resolve(q);
   const vc = (await r(sb.from('contrato_vencimientos').select('*').eq('contrato_id', kc3.data && kc3.data.id))).data.sort((a, b) => a.orden - b.orden);
   ok('33,33/33,33/33,34: coma leída y los importes suman el precio exacto', !kc3.error && vc.map(v => v.pct).join('/') === '33.33/33.33/33.34' &&
     Math.round(vc.reduce((s, v) => s + v.monto, 0) * 100) === 10000000, vc.map(v => [v.pct, v.monto]));
-  ok('reparto: el último hito se queda la diferencia', JSON.stringify(P.reparte(1000.01, P.valida(h(['A', '33.33'], ['B', '33.33'], ['C', '33.34'])).hitos)) === '[333.3,333.3,333.41]',
-    P.reparte(1000.01, P.valida(h(['A', '33.33'], ['B', '33.33'], ['C', '33.34'])).hitos));
+  const rep3 = P.reparte(1000.01, P.valida(h(['A', '33.33'], ['B', '33.33'], ['C', '33.34'])).hitos);
+  ok('reparto acumulado: 1000,01 a 33,33/33,33/33,34 suma exacto', JSON.stringify(rep3) === '[333.3,333.31,333.4]', rep3);
+  const rep4 = P.reparte(0.02, P.valida(h(['A', '25'], ['B', '25'], ['C', '25'], ['D', '25'])).hitos);
+  ok('reparto: ningún hito negativo con un precio mínimo (0,02 a 25×4)', rep4.every(m => m >= 0) && Math.round(rep4.reduce((x, m) => x + m, 0) * 100) === 2, rep4);
 
   // ── fotos de obra: las mismas filas para la intranet y el portal (13-oct-2026)
   const fases = (await r(sb.from('obra_fases').select('*'))).data;
