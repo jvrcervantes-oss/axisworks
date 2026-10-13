@@ -1,5 +1,5 @@
 {
- "_que": "Contrato del panel del AaaS (/intranet/v4/agente/, agente.html) con la base (migraciones 20261013183000 y 20261013190000 del maestro). Fuente ÚNICA de la forma: la lee el doble del panel (pruebas/agente.harness.cjs, test_agente.py) y la prueba con conexiones reales de la agencia (erp/pruebas/agente_piloto_local.py, casos F1/F2, contra el Postgres local de pg_local.py; no corre en ningún gate porque necesita ese Postgres: se corre antes de aplicar las migraciones en una instancia y antes de poner su marca «aaas»). Si la base cambia una clave, cambia aquí y fallan los dos lados. 13-oct-2026, sesión pilotos-panel.",
+ "_que": "Contrato del panel del AaaS (/intranet/v4/agente/, agente.html) con la base (migraciones 20261014060000 y 20261014060500 del maestro (comunes a todos los tipos) y 20261014061000 (paquete de Reservas)). Fuente ÚNICA de la forma: la lee el doble del panel (pruebas/agente.harness.cjs, test_agente.py) y la prueba con conexiones reales de la agencia (erp/pruebas/agente_piloto_local.py, casos F1/F2, contra el Postgres local de pg_local.py; no corre en ningún gate porque necesita ese Postgres: se corre antes de aplicar las migraciones en una instancia y antes de poner su marca «aaas»). Si la base cambia una clave, cambia aquí y fallan los dos lados. 13-oct-2026, sesión pilotos-panel.",
  "trabajos": [
   "flota",
   "salidas",
@@ -40,7 +40,13 @@
     "nivel_ruta": "entero 0-1",
     "nivel_max": "entero",
     "cupo_dia": "entero",
-    "notas_hoy": "entero"
+    "notas_hoy": "entero",
+    "trabajos_orden": "[trabajo]: los trabajos del CATÁLOGO de esta instancia, en su orden (la ventana pinta en este orden; vacío sin paquete de su tipo)",
+    "limites": "[{modulo: texto, nivel: 0..3 (lo guardado), nivel_efectivo: 0..3 (lo que vale: 0 si el módulo se apagó después de guardarlo), tope_cent: entero | null}]: una fila por módulo que PUEDE llevar límite ahora (encendido, de su tipo de ERP, sin base ni agente)",
+    "limites_fuera": "[{modulo: texto, nivel: 1..3}]: niveles guardados sobre módulos que ya no están en este ERP: no se aplican; el siguiente guardado los retira",
+    "contexto": "{quien?: texto ≤600, horarios?: texto ≤300, reglas?: [texto ≤200] ≤20, tono?: texto ≤200}: el contexto del negocio ({} sin rellenar)",
+    "historial": "[{cuando: instante, quien: número de usuario | 'estudio' | null, campos: [nombre de campo], motivo: texto | null}]: los 10 últimos cambios de la ficha (nunca los valores)",
+    "acciones_pendientes": "entero: acciones que el AaaS propone y esperan al dueño (sin caducar)"
    },
    "errores": {
     "42501": "sin la herramienta agente y sin ser el owner de la ficha"
@@ -57,7 +63,8 @@
     "hoy": "fecha",
     "notas": "[{id: entero, trabajo: trabajo, pasada: pasada, estado: estado_nota, cifras: {clave: entero}, items: [{clave: entero | enum | uuid}], mas: entero, creada_en: instante, decision: null | 'hecha' | 'descartada', decidida_en: instante | null, decidida_por: texto | null}]",
     "propuestas": "[{id: entero, problema: texto, evidencia: texto, cambio: texto, riesgo: texto, estado: 'pendiente' | 'aceptada' | 'rechazada', creada_en: instante, decidida_en: instante | null, decidida_por: texto | null, nota: texto | null}]",
-    "nombres": "{uuid: texto} solo de los uuid que aparecen en las notas devueltas (matrícula de la moto, nombre del modelo), resuelto con la sesión de quien mira"
+    "acciones": "[{id: entero, accion: 'aviso_reserva' | otra de la lista, modulo: texto, datos: {reserva: uuid, motivo: 'unidad_en_taller' | 'unidad_de_baja' | 'unidad_doble', trabajo: 'salidas'} (según la acción), estado: 'pendiente' | 'aceptada' | 'rechazada' | 'anulada' | 'caducada', motivo: null | 'datos' | 'nivel' | 'caducada', creada_en: instante, expira_en: instante, decidida_en: instante | null, decidida_por: texto | null}]: acciones que el AaaS propone (nivel 1), pendientes y decididas en 30 días",
+    "nombres": "{uuid: texto} solo de los uuid que aparecen en las notas devueltas y en las acciones (matrícula de la moto, nombre del modelo, número de la reserva), resuelto con la sesión de quien mira"
    },
    "errores": {
     "42501": "módulo apagado o sin la herramienta agente"
@@ -94,9 +101,9 @@
   },
   "agente_ficha_ajusta": {
    "args": {
-    "p_tope_mensual_cent": "entero >= 0 | null: null = el tope NO cambia (la pantalla solo lo manda si el dueño lo cambió: bajarlo cancela una subida pendiente, revisor 13-oct)",
-    "p_trabajos": "texto[] (subconjunto de los 8; los 8 = todos)",
-    "p_nivel_ruta": "0 | 1",
+    "p_tope_mensual_cent": "entero >= 0 | null: null = el tope NO cambia. Pedir el MISMO tope que está guardado cancela una subida pendiente (botón «Cancelar la subida»); pedir uno más bajo lo baja ya y también la cancela; uno más alto queda pendiente 24 h",
+    "p_trabajos": "texto[] | null: null = los trabajos NO cambian. Una lista = esos trabajos del catálogo (`trabajos_orden`); si la lista los trae TODOS se guarda como null en la ficha = «todos», también los que el catálogo añada después",
+    "p_nivel_ruta": "0 | 1 | null: null = NO cambia",
     "p_motivo": "texto 3-300"
    },
    "devuelve": "lo mismo que agente_panel_estado",
@@ -109,6 +116,31 @@
    },
    "devuelve": "{encendido: bool}",
    "quien": "owner de la ficha (activo), funciona con el módulo apagado; solo cambia `agente` (aborta si cambia otro); freno 1/min y 10/día"
+  },
+  "agente_ficha_limites": {
+   "args": {
+    "p_niveles": "{modulo: 0..3} con TODOS los módulos de `limites` (lo que no se manda se retira)",
+    "p_topes": "{modulo: céntimos >= 0}",
+    "p_motivo": "texto 3-300"
+   },
+   "devuelve": "agente_panel_estado()",
+   "quien": "owner de la ficha; freno 1/min y 10/día; un módulo fuera de `limites` → 22023 hint agente_modulo_fuera"
+  },
+  "agente_ficha_contexto": {
+   "args": {
+    "p_contexto": "{quien?, horarios?, reglas?, tono?} (claves cerradas, sin enlaces ni saltos de línea)",
+    "p_motivo": "texto 3-300"
+   },
+   "devuelve": "agente_panel_estado()",
+   "quien": "owner de la ficha; freno 1/min y 10/día; forma mal → 22023 hint agente_contexto_forma"
+  },
+  "agente_accion_decide": {
+   "args": {
+    "p_id": "entero",
+    "p_decision": "'aceptada' | 'rechazada'"
+   },
+   "devuelve": "{ok: true, estado: 'aceptada' | 'rechazada' | 'anulada' | 'caducada', motivo: null | 'datos' | 'nivel' | 'caducada'}",
+   "quien": "owner de la ficha (aceptar la aplica: vuelve a mirar la forma, el nivel y la condición en la base); ya decidida → 22023 hint ya_decidida"
   }
  },
  "items_por_trabajo": {
@@ -200,6 +232,8 @@
  "errores_con_hint": {
   "freno": "hint 'agente_freno' (demasiados cambios seguidos)",
   "sin_owner": "42501 hint 'agente_solo_owner'",
-  "cuenta_pruebas": "42501 hint 'cuenta_pruebas'"
+  "cuenta_pruebas": "42501 hint 'cuenta_pruebas'",
+  "modulo_fuera": "22023 hint 'agente_modulo_fuera' (ese módulo no puede llevar límite en este ERP)",
+  "contexto_forma": "22023 hint 'agente_contexto_forma' (contexto con claves o largos fuera de lo admitido)"
  }
 }
