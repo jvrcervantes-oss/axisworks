@@ -24,13 +24,48 @@ const XSS = `<img src=x onerror="window.__xss=1"> 'q' "d"`;
 const U = n => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
 const HOY = '2026-10-14';
 const iso = h => '2026-10-14T' + String(h).padStart(2, '0') + ':05:00+08:00';
+const AHORA = Date.now();
+const en = h => new Date(AHORA + h * 3600e3).toISOString();   // caducidad de las acciones: relativa a AHORA (la pantalla compara con Date.now())
+const clon = x => JSON.parse(JSON.stringify(x));
+// El rótulo de cada módulo, como lo deja la capa de módulos en guard.js (build.py: mapa['n'] = {k: [nombre, qué hace]}) desde la MISMA fuente.
+const ROTULOS = (() => { const r = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'modulos_rotulos.json'), 'utf8')); const n = {};
+  Object.keys(r).filter(k => !k.startsWith('_') && k !== 'base').forEach(k => { n[k] = [r[k][0], r[k][3]]; }); return n; })();
+// Claves del contrato (fuente única): el doble devuelve EXACTAMENTE estas, y un cambio en la forma rompe el doble y no solo la base.
+const CLAVES_ESTADO = Object.keys(FORMA.lecturas.agente_panel_estado.devuelve).sort();
+const CLAVES_NOTAS = Object.keys(FORMA.lecturas.agente_notas_datos.devuelve).sort();
+const CLAVES_ACCION = [...new Set((FORMA.lecturas.agente_notas_datos.devuelve.acciones.replace(/datos: \{[^}]*\}/, 'datos: x').match(/[[{,]\s*([a-z_]+):/g) || []).map(x => x.replace(/[[{,:\s]/g, '')))].sort();
 
-/* Una base con la forma de agente_forma.json. o: dueno, herramienta, apagado, nulo (el interruptor del navegador contesta null), sinDatos, xss, pausa, sinNotas, freno */
+/* Una base con la forma de agente_forma.json. o: dueno, herramienta, apagado, nulo (el interruptor del navegador contesta null), sinDatos, xss, pausa, sinNotas, freno,
+   orden (trabajos_orden), sinAcciones / limitesRaros / sinContexto / sinHistorial (falta esa parte), dePago / otroTipo (rechazos de A13), anulaDatos, moduloFuera, sumaTopes, lento */
 function nuevaBase(o = {}) {
-  const trabajos = {}; FORMA.trabajos.forEach(t => { trabajos[t] = true; });
-  const s = { o, llamadas: [], encendido: !o.apagado, parado: !!o.pausa, nivel: 1, tope: o.tope0 ? 0 : 3700, trabajos, decisiones: {}, propDec: {} };
+  const orden = o.orden || FORMA.trabajos;
+  const trabajos = {}; orden.forEach(t => { trabajos[t] = true; });
+  const s = { o, orden, llamadas: [], encendido: !o.apagado, parado: !!o.pausa, nivel: 1, tope: o.tope0 ? 0 : 3700, propuesto: o.propuesto ? 5000 : null, trabajos, decisiones: {}, propDec: {},
+    limites: [
+      { modulo: 'reservas-producto', nivel: 1, nivel_efectivo: 1, tope_cent: null },
+      { modulo: 'facturas', nivel: 2, nivel_efectivo: 0, tope_cent: 1500 },     // se apagó después de guardarlo: no vale hasta volver a guardar
+      { modulo: 'modulo-sin-rotulo', nivel: 0, nivel_efectivo: 0, tope_cent: null }   // sin fila en modulos_rotulos.json: se enseña su id
+    ],
+    fuera: [{ modulo: 'obra', nivel: 2 }],
+    contexto: { quien: 'Alquiler de motos en Canggu', reglas: ['Nunca prometer una entrega antes de las 9'], tono: 'Cercano' },
+    historial: [
+      { cuando: iso(9), quien: 'USR-00001', campos: ['niveles', 'topes_cent', 'niveles_en'], motivo: o.xss ? XSS : 'Primeros límites' },
+      { cuando: iso(9), quien: 'USR-00001', campos: [], motivo: o.xss ? XSS : 'Primeros límites' },   // la gemela sin campos que deja la base en un mismo guardado
+      { cuando: iso(8), quien: 'estudio', campos: ['tope_mensual_cent', 'tope_propuesto_cent', 'tope_propuesto_desde'], motivo: null },
+      { cuando: iso(7), quien: null, campos: ['campo_raro'], motivo: 'Prueba' },
+      { cuando: iso(6), quien: 'USR-00002', campos: [], motivo: 'No cambia nada' }
+    ],
+    acciones: [
+      { id: 101, accion: 'aviso_reserva', modulo: 'reservas-producto', datos: { reserva: U(500), motivo: 'unidad_en_taller', trabajo: 'salidas' }, estado: 'pendiente', motivo: null, creada_en: en(-5), expira_en: en(72), decidida_en: null, decidida_por: null },
+      { id: 102, accion: 'aviso_reserva', modulo: 'reservas-producto', datos: { reserva: U(501), motivo: 'unidad_doble', trabajo: 'salidas' }, estado: 'pendiente', motivo: null, creada_en: en(-4), expira_en: en(48), decidida_en: null, decidida_por: null },
+      { id: 103, accion: 'aviso_reserva', modulo: 'reservas-producto', datos: { reserva: U(502), motivo: 'unidad_de_baja', trabajo: 'salidas' }, estado: 'pendiente', motivo: null, creada_en: en(-200), expira_en: en(-1), decidida_en: null, decidida_por: null },
+      { id: 104, accion: 'otra_accion', modulo: 'facturas', datos: {}, estado: 'anulada', motivo: 'datos', creada_en: en(-100), expira_en: en(68), decidida_en: en(-90), decidida_por: 'USR-00001' },
+      { id: 105, accion: 'aviso_reserva', modulo: 'reservas-producto', datos: { reserva: U(502), motivo: 'unidad_de_baja', trabajo: 'salidas' }, estado: 'aceptada', motivo: null, creada_en: en(-50), expira_en: en(118), decidida_en: en(-40), decidida_por: 'USR-00001' }
+    ] };
+  if (o.sinDatos) { s.acciones = []; s.historial = []; s.contexto = {}; }
   return s;
 }
+const nivelDe = (s, m) => { const l = s.limites.find(x => x.modulo === m); return l ? l.nivel_efectivo : 0; };
 function notas(s) {
   const o = s.o;
   if (o.sinNotas) return [];
@@ -57,6 +92,7 @@ function nombres(s) {
   const n = {};
   for (let i = 1; i <= 30; i++) n[U(i)] = 'DK ' + (1000 + i) + ' AB';
   n[U(900)] = 'Honda Vario 160'; n[U(901)] = 'Honda Scoopy'; n[U(902)] = s.o.xss ? XSS : 'Yamaha NMAX';
+  n[U(500)] = s.o.xss ? XSS : 'R-0012'; n[U(502)] = 'R-0019';   // U(501): una reserva que la base no resuelve
   delete n[U(2)];   // una moto que la base ya no conoce: el panel lo dice, no pinta el uuid
   return n;
 }
@@ -72,8 +108,21 @@ function estado(s) {
   if (!s.encendido) return { encendido: false, soy_dueno: dueno, puedo_decidir: decide };
   return { encendido: true, parado: s.parado, soy_dueno: dueno, puedo_decidir: decide && !o.pruebas,
     ultima_pasada: o.sinNotas ? null : { dia: HOY, pasada: 'tarde', en: iso(18), resultado: s.parado ? 'en_pausa' : 'hecha' },
-    tope_mensual_cent: s.tope, tope_propuesto_cent: o.propuesto ? 5000 : null, tope_propuesto_desde: o.propuesto ? iso(20) : null,
-    gastado_mes_cent: 0, moneda: o.sinMoneda ? undefined : 'EUR', usd_por_eur: 1.08, trabajos: Object.assign({}, s.trabajos), nivel_ruta: s.nivel, nivel_max: 1, cupo_dia: 24, notas_hoy: o.sinNotas ? 0 : 9 };
+    tope_mensual_cent: s.tope, tope_propuesto_cent: s.propuesto, tope_propuesto_desde: s.propuesto != null ? iso(20) : null,
+    gastado_mes_cent: 0, moneda: o.sinMoneda ? undefined : 'EUR', usd_por_eur: 1.08, trabajos: Object.assign({}, s.trabajos), nivel_ruta: s.nivel, nivel_max: 1, cupo_dia: 24, notas_hoy: o.sinNotas ? 0 : 9,
+    trabajos_orden: s.orden.slice(), limites: o.limitesRaros ? 'x' : clon(s.limites), limites_fuera: clon(s.fuera), contexto: o.sinContexto ? null : clon(s.contexto),
+    historial: o.sinHistorial ? null : clon(s.historial.slice(0, 10)),
+    acciones_pendientes: s.acciones.filter(x => x.estado === 'pendiente' && Date.parse(x.expira_en) > Date.now()).length };
+}
+const ahoraIso = () => new Date().toISOString();
+function cambio(s, campos, motivo) { s.historial.unshift({ cuando: ahoraIso(), quien: 'USR-00001', campos, motivo }); }
+/* La forma del contexto como _agente_contexto_ok (060500): claves cerradas, largos, sin enlaces ni caracteres de control */
+function contextoOk(c) {
+  const topes = { quien: 600, horarios: 300, tono: 200 }, url = /https?:\/\/|www\./i, ctl = /[\u0000-\u001f\u007f]/;
+  if (!c || typeof c !== 'object' || Array.isArray(c)) return false;
+  return Object.keys(c).every(k => k === 'reglas'
+    ? Array.isArray(c.reglas) && c.reglas.length <= 20 && c.reglas.every(r => typeof r === 'string' && r.length >= 1 && r.length <= 200 && !ctl.test(r) && !url.test(r))
+    : (k in topes) && typeof c[k] === 'string' && c[k].length <= topes[k] && !ctl.test(c[k]) && !url.test(c[k]));
 }
 async function servidor(s, nombre, a) {
   s.llamadas.push([nombre, JSON.parse(JSON.stringify(a || {}))]);
@@ -86,7 +135,7 @@ async function servidor(s, nombre, a) {
     case 'agente_notas_datos':
       if (!s.encendido) return err('42501', 'agente: módulo no activo', 'modulo_apagado');
       if (o.notasRaras) return { data: { notas: 'x' }, error: null };
-      return { data: { dia: HOY, hoy: HOY, notas: notas(s), propuestas: propuestas(s), nombres: nombres(s) }, error: null };
+      return { data: { dia: HOY, hoy: HOY, notas: notas(s), propuestas: propuestas(s), acciones: o.sinAcciones ? undefined : clon(s.acciones), nombres: nombres(s) }, error: null };
     case 'agente_nota_decide':
       if (o.pruebas) return err('42501', 'cuenta de pruebas', 'cuenta_pruebas');
       s.decisiones[a.p_id] = [a.p_decision, o.xss ? XSS : 'Made'];
@@ -97,19 +146,68 @@ async function servidor(s, nombre, a) {
     case 'agente_reanuda': { const e = soloDueno(); if (e) return e; if (o.freno) return err('P0001', 'freno', 'agente_freno'); s.parado = false; return { data: { parado: false }, error: null }; }
     case 'agente_ficha_ajusta': {
       const e = soloDueno(); if (e) return e;
-      if (a.p_trabajos.some(t => !FORMA.trabajos.includes(t))) return err('22023', 'trabajo desconocido', 'datos');
-      s.trabajos = {}; FORMA.trabajos.forEach(t => { s.trabajos[t] = a.p_trabajos.includes(t); });
-      s.nivel = a.p_nivel_ruta; if (a.p_tope_mensual_cent !== null) s.tope = a.p_tope_mensual_cent;   // null = el tope no cambia (forma)
+      // null = NO cambia (forma: p_tope_mensual_cent, p_trabajos y p_nivel_ruta)
+      if (a.p_trabajos !== null) {
+        if (!Array.isArray(a.p_trabajos) || a.p_trabajos.some(t => !s.orden.includes(t))) return err('22023', 'trabajo desconocido', 'datos');
+        s.trabajos = {}; s.orden.forEach(t => { s.trabajos[t] = a.p_trabajos.includes(t); });
+      }
+      if (a.p_nivel_ruta !== null) s.nivel = a.p_nivel_ruta;
+      if (a.p_tope_mensual_cent !== null) {
+        // el MISMO tope cancela la subida pendiente; uno más bajo baja ya y la cancela; uno más alto queda pendiente
+        if (a.p_tope_mensual_cent <= s.tope) { s.tope = a.p_tope_mensual_cent; s.propuesto = null; } else s.propuesto = a.p_tope_mensual_cent;
+      }
+      cambio(s, ['tope_mensual_cent'], a.p_motivo);
       return { data: estado(s), error: null };
     }
     case 'agente_modulo_cambia': { const e = soloDueno(); if (e) return e; if (o.cambiaNulo) return { data: null, error: null };
       if (o.sinSembrar && a.p_encender) return err('55000', 'modulo sin tipos', 'tipos_sin_sembrar');   // A13 de erp-alta en una instancia sin sembrar
+      if (o.dePago && a.p_encender) return err('42501', 'modulo de pago', 'modulo_de_pago');
+      if (o.otroTipo && a.p_encender) return err('42501', 'modulo de otro tipo', 'modulo_de_otro_tipo');
       s.encendido = !!a.p_encender; return { data: { encendido: s.encendido }, error: null }; }
+    case 'agente_ficha_limites': {
+      const e = soloDueno(); if (e) return e;
+      if (o.freno) return err('P0001', 'freno', 'agente_freno');
+      const vale = s.limites.map(l => l.modulo);
+      if (o.moduloFuera || Object.keys(a.p_niveles).concat(Object.keys(a.p_topes)).some(k => !vale.includes(k))) return err('22023', 'agente_ficha_limites: «x» no es un módulo encendido de este ERP', 'agente_modulo_fuera');
+      if (Object.values(a.p_niveles).some(v => ![0, 1, 2, 3].includes(v)) || Object.values(a.p_topes).some(v => !Number.isInteger(v) || v < 0)) return err('22023', 'agente_ficha_limites: forma');
+      if (typeof a.p_motivo !== 'string' || a.p_motivo.trim().length < 3) return err('22023', 'di el motivo');
+      if (o.sumaTopes) return err('23514', 'topes_cent: la suma (5000 céntimos) pasa del tope mensual (3700 céntimos)');
+      s.limites = s.limites.map(l => ({ modulo: l.modulo, nivel: a.p_niveles[l.modulo] ?? 0, nivel_efectivo: a.p_niveles[l.modulo] ?? 0, tope_cent: a.p_topes[l.modulo] ?? null }));
+      s.fuera = [];
+      s.acciones.forEach(x => { if (x.estado === 'pendiente' && nivelDe(s, x.modulo) === 0) Object.assign(x, { estado: 'anulada', motivo: 'nivel', decidida_en: ahoraIso(), decidida_por: 'USR-00001' }); });
+      cambio(s, ['niveles', 'topes_cent', 'niveles_en'], a.p_motivo);
+      return { data: estado(s), error: null };
+    }
+    case 'agente_ficha_contexto': {
+      const e = soloDueno(); if (e) return e;
+      if (typeof a.p_motivo !== 'string' || a.p_motivo.trim().length < 3) return err('22023', 'di el motivo');
+      if (!contextoOk(a.p_contexto)) return err('22023', 'agente_ficha_contexto: forma', 'agente_contexto_forma');
+      s.contexto = clon(a.p_contexto);
+      cambio(s, ['contexto'], a.p_motivo);
+      return { data: estado(s), error: null };
+    }
+    case 'agente_accion_decide': {
+      const e = soloDueno(); if (e) return e;
+      const x = s.acciones.find(y => y.id === a.p_id);
+      if (!x) return err('P0002', 'no existe esa propuesta');
+      if (x.estado !== 'pendiente' || o.yaDecidida) { if (o.yaDecidida) Object.assign(x, { estado: 'rechazada', decidida_en: ahoraIso(), decidida_por: 'USR-00002' }); return err('22023', 'la propuesta ya está decidida', 'ya_decidida'); }
+      let estado2, motivo2 = null;
+      if (Date.parse(x.expira_en) <= Date.now()) { estado2 = 'caducada'; motivo2 = 'caducada'; }
+      else if (a.p_decision === 'rechazada') estado2 = 'rechazada';
+      else if (nivelDe(s, x.modulo) === 0) { estado2 = 'anulada'; motivo2 = 'nivel'; }
+      else if (o.anulaDatos) { estado2 = 'anulada'; motivo2 = 'datos'; }
+      else estado2 = 'aceptada';
+      Object.assign(x, { estado: estado2, motivo: motivo2, decidida_en: ahoraIso(), decidida_por: 'USR-00001' });
+      return { data: { ok: true, estado: estado2, motivo: motivo2 }, error: null };
+    }
   }
   return err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
 }
 
-const pagina = (idioma) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
+// Sin la cáscara (Tailwind) las clases p-8 no pintan nada: el panel mediría más ancho que en la página real. Se ponen a mano el relleno de cada bloque (p-8 = 32 px)
+// y un margen de página de 16 px, para que «no desborda» se mida con una caja de contenido tan estrecha como la de verdad.
+const PIEL_MINIMA = '<style>body{margin:0;padding:0 16px}[data-ag^="bloque-"],.lw-cabecera{padding:32px}</style>';
+const pagina = (idioma) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title>${PIEL_MINIMA}</head><body>
 ${MARCADO}
 <script>
 window.__xss = undefined; window.__fromLlamado = 0; window.__fetchLlamado = 0; window.__sinTr = []; window.__errores = [];
@@ -122,6 +220,7 @@ window.LW_AUTH = Promise.resolve({ sb: sb, ficha: { rol: 'admin', herramientas: 
 window.lwDatos = function (n, a) { if (!/^[a-z][a-z0-9_]*_datos$/.test(n)) throw new Error('lwDatos solo *_datos'); return Promise.resolve(sb.rpc(n, a)).then(function (r) { return { data: r.data, error: r.error }; }); };
 window.LW_IDIOMA = '${idioma}';
 window.LW_EN = {}; window.LW_ID = {};
+window.AXW_MAPA_MODULOS = { n: ${JSON.stringify(ROTULOS).replace(/</g, '\\u003c')} };
 window.lwLocale = function () { return window.LW_IDIOMA === 'en' ? 'en-GB' : (window.LW_IDIOMA === 'id' ? 'id-ID' : 'es-ES'); };
 window.lwT = function (s) { s = String(s); var d = window.LW_IDIOMA === 'en' ? window.LW_EN : (window.LW_IDIOMA === 'id' ? window.LW_ID : null);
   if (d) { if (Object.prototype.hasOwnProperty.call(d, s)) return d[s]; if (!/^[\\s\u2014\u00b70-9.,%():\u2265\u2264-]*$/.test(s)) window.__sinTr.push(s); } return s; };
@@ -142,7 +241,8 @@ const MUESTRA = (() => {
 })();
 (async () => {
   const exe = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
-  const nav = await chromium.launch({ executablePath: fs.existsSync(exe) ? exe : undefined });
+  // Con barras de scroll VISIBLES (Playwright las esconde en headless con --hide-scrollbars): a 390 px el contenido mide 390 menos la barra, como en un PC.
+  const nav = await chromium.launch({ executablePath: fs.existsSync(exe) ? exe : undefined, ignoreDefaultArgs: ['--hide-scrollbars'] });
   async function abre(opts = {}) {
     const base = nuevaBase(opts.base || {});
     const ctx = await nav.newContext({ viewport: { width: opts.ancho || 1440, height: 1000 } });
@@ -172,7 +272,13 @@ const MUESTRA = (() => {
       await p.waitForFunction(() => document.querySelector('[data-ag="carga"]').getAttribute('data-tipo') !== 'cargando', null, { timeout: 5000 });
       await p.waitForTimeout(150);
       ok('muestra ' + idioma + ' ' + ancho + ' · la respuesta real se pinta sin error de forma', (await p.$eval('[data-ag="carga"]', e => e.getAttribute('data-tipo'))) === 'listo' && !(await visible(p, '[data-ag="error-hoy"]')));
-      ok('muestra ' + idioma + ' ' + ancho + ' · 8 tarjetas', (await p.$$('[data-ag="nota"]')).length === 8);
+      ok('muestra ' + idioma + ' ' + ancho + ' · una tarjeta por trabajo de trabajos_orden', (await p.$$('[data-ag="nota"]')).length === MUESTRA.estado.trabajos_orden.length);
+      ok('muestra ' + idioma + ' ' + ancho + ' · una fila por límite (' + MUESTRA.estado.limites.length + '), cada una con su nombre y sin error de forma',
+         (await hay(p, '[data-ag="limite"]')) === MUESTRA.estado.limites.length && !(await visible(p, '[data-ag="error-limites"]'))
+         && (await p.$$eval('[data-ag="limite"] strong', e => e.every(x => x.textContent.trim().length > 0))));
+      ok('muestra ' + idioma + ' ' + ancho + ' · historial y contexto se pintan; las acciones vacías lo dicen',
+         (await hay(p, '[data-ag="cambio"]')) > 0 && !(await visible(p, '[data-ag="error-contexto"]'))
+         && (Array.isArray(MUESTRA.notas.acciones) && !MUESTRA.notas.acciones.length ? (await hay(p, '[data-ag="sin-acciones"]')) === 1 : true));
       const sin = await p.evaluate(() => window.__sinTr);
       ok('muestra ' + idioma + ' ' + ancho + ' · nada sin traducir y ningún uuid en crudo', sin.length === 0 && !/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-/.test(await txt(p, '[data-ag="hoy"]')), J(sin.slice(0, 4)));
       const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
@@ -349,6 +455,225 @@ const MUESTRA = (() => {
     ok('XSS en el nombre de un modelo, en una propuesta y en quién decidió: se pinta como texto', await sinInyeccion(p) && (await tarjeta(p, 'ocupacion')).includes('<img src=x'));
     await ctx.close();
   }
+  // 4b. la VENTANA de configuración (14-oct): el doble dice lo que dice el contrato
+  {
+    const b = nuevaBase({ dueno: true });
+    ok('doble: agente_panel_estado devuelve exactamente las claves del contrato', J(Object.keys(estado(b)).sort()) === J(CLAVES_ESTADO), J(Object.keys(estado(b)).sort()));
+    const dn = (await servidor(b, 'agente_notas_datos', { p_dia: null })).data;
+    ok('doble: agente_notas_datos devuelve exactamente las claves del contrato', J(Object.keys(dn).sort()) === J(CLAVES_NOTAS), J(Object.keys(dn).sort()));
+    ok('doble: cada acción lleva exactamente las claves del contrato', dn.acciones.every(x => J(Object.keys(x).sort()) === J(CLAVES_ACCION)), J(CLAVES_ACCION));
+  }
+  // 4c. límites por módulo
+  {
+    const { p, base, ctx } = await abre({ base: { dueno: true } });
+    ok('límites: una fila por módulo de `limites`, en su orden', J(await p.$$eval('[data-ag="limite"]', e => e.map(x => x.getAttribute('data-modulo')))) === J(['reservas-producto', 'facturas', 'modulo-sin-rotulo']));
+    const nombres = await p.$$eval('[data-ag="limite"] strong', e => e.map(x => x.textContent));
+    ok('límites: el nombre sale del rótulo del registro y, sin rótulo, el id tal cual', nombres[0] === ROTULOS['reservas-producto'][0] && nombres[1] === ROTULOS.facturas[0] && nombres[2] === 'modulo-sin-rotulo', J(nombres));
+    ok('límites: nivel guardado en el selector y tope en euros (vacío si no hay)', J(await p.$$eval('[data-limite="nivel"]', e => e.map(x => x.value))) === J(['1', '2', '0'])
+       && J(await p.$$eval('[data-limite="tope"]', e => e.map(x => x.value))) === J(['', '15', '']));
+    ok('límites: los 4 niveles con nombre en cada selector', (await p.$$eval('[data-limite="nivel"]', e => e.every(s => s.options.length === 4))));
+    ok('límites: aviso SOLO en la fila cuyo nivel efectivo no es el guardado', J(await p.$$eval('[data-ag="limite-aviso"]', e => e.map(x => x.closest('[data-ag="limite"]').getAttribute('data-modulo')))) === J(['facturas']));
+    ok('límites: lo que ya no está en este ERP se enseña aparte, apagado, con su nombre', (await visible(p, '[data-ag="bloque-fuera"]')) && (await txt(p, '[data-ag="limites-fuera"]')).includes(ROTULOS.obra[0]) && (await txt(p, '[data-ag="limites-fuera"]')).includes('al guardar los límites se retira'));
+    await p.click('[data-accion="ag-guardar-limites"]');
+    ok('límites: sin motivo no se manda', llamadas(base, 'agente_ficha_limites').length === 0 && (await txt(p, '[data-ag="falla-limites"]')).includes('motivo'));
+    await p.fill('[data-modulo="reservas-producto"] [data-limite="tope"]', '1.500'); await p.fill('[data-campo="motivo_limites"]', 'Ajusto límites');
+    await p.click('[data-accion="ag-guardar-limites"]');
+    ok('límites: un tope ambiguo no se manda y dice de qué módulo es', llamadas(base, 'agente_ficha_limites').length === 0 && (await txt(p, '[data-ag="falla-limites"]')).includes(ROTULOS['reservas-producto'][0]));
+    await p.fill('[data-modulo="reservas-producto"] [data-limite="tope"]', '20');
+    await p.selectOption('[data-modulo="modulo-sin-rotulo"] [data-limite="nivel"]', '3');
+    // otro botón mientras se escribe (Hecho en una nota) no borra lo tecleado
+    await p.click('[data-trabajo="salidas"] [data-accion="ag-nota-hecha"]');
+    await p.waitForSelector('[data-trabajo="salidas"] [data-ag="decidida"]');
+    ok('límites: recargar por otro botón no borra lo que el dueño está escribiendo', (await p.$eval('[data-modulo="reservas-producto"] [data-limite="tope"]', e => e.value)) === '20' && (await p.$eval('[data-modulo="modulo-sin-rotulo"] [data-limite="nivel"]', e => e.value)) === '3');
+    await p.click('[data-accion="ag-guardar-limites"]');
+    await hasta(() => llamadas(base, 'agente_ficha_limites').length === 1);
+    const lim = llamadas(base, 'agente_ficha_limites')[0][1];
+    ok('límites: guardar manda TODAS las filas de `limites` (también las de nivel 0), nunca lo de fuera; topes solo los escritos, en céntimos',
+       J(lim) === J({ p_niveles: { 'reservas-producto': 1, facturas: 2, 'modulo-sin-rotulo': 3 }, p_topes: { 'reservas-producto': 2000, facturas: 1500 }, p_motivo: 'Ajusto límites' }), J(lim));
+    await p.waitForSelector('[data-ag="exito-limites"]:not(.axw-oculto)');
+    ok('límites: tras guardar, el aviso de la fila y lo de fuera desaparecen; el motivo se vacía', (await hay(p, '[data-ag="limite-aviso"]')) === 0 && !(await visible(p, '[data-ag="bloque-fuera"]')) && (await p.$eval('[data-campo="motivo_limites"]', e => e.value)) === '');
+    ok('límites: el historial recoge el cambio (Límites, Topes), sin valores', (await txt(p, '[data-ag="historial"] [data-ag="cambio"]')).includes('Límites, Topes') && !(await txt(p, '[data-ag="historial"]')).includes('2000'));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, moduloFuera: true } });
+    await p.fill('[data-campo="motivo_limites"]', 'Ajusto'); await p.click('[data-accion="ag-guardar-limites"]');
+    await p.waitForSelector('[data-ag="falla-limites"]:not(.axw-oculto)');
+    ok('límites: hint agente_modulo_fuera → frase clara junto al botón', (await txt(p, '[data-ag="falla-limites"]')).includes('ya no puede llevar límite'));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, sumaTopes: true } });
+    await p.fill('[data-campo="motivo_limites"]', 'Ajusto'); await p.click('[data-accion="ag-guardar-limites"]');
+    await p.waitForSelector('[data-ag="falla-limites"]:not(.axw-oculto)');
+    ok('límites: la suma de topes por encima del tope mensual (23514, sin hint) se enseña tal cual la da la base', (await txt(p, '[data-ag="falla-limites"]')).includes('pasa del tope mensual'));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, freno: true } });
+    await p.fill('[data-campo="motivo_limites"]', 'Ajusto'); await p.click('[data-accion="ag-guardar-limites"]');
+    await p.waitForSelector('[data-ag="falla-limites"]:not(.axw-oculto)');
+    ok('límites: el freno (agente_freno) tiene su frase', (await txt(p, '[data-ag="falla-limites"]')).includes('Demasiados cambios seguidos'));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, limitesRaros: true, sinContexto: true, sinHistorial: true, sinAcciones: true } });
+    ok('una parte que falta se dice en SU bloque («no se ha podido mirar») y el resto de la página sigue viva',
+       (await txt(p, '[data-ag="error-limites"]')).includes('no se ha podido mirar') && !(await visible(p, '[data-ag="limites-form"]'))
+       && (await txt(p, '[data-ag="error-contexto"]')).includes('no se ha podido mirar') && (await hay(p, '[data-ag="historial-error"]')) === 1
+       && (await txt(p, '[data-ag="error-acciones"]')).includes('no se ha podido mirar') && (await hay(p, '[data-ag="sin-acciones"]')) === 0
+       && (await hay(p, '[data-ag="nota"]')) === 8 && (await p.$eval('[data-ag="carga"]', e => e.getAttribute('data-tipo'))) === 'listo');
+    await ctx.close();
+  }
+  // 4d. contexto del negocio
+  {
+    const { p, base, ctx } = await abre({ base: { dueno: true } });
+    ok('contexto: se pinta lo guardado (reglas una por línea) con sus contadores', (await p.$eval('[data-campo="ctx_quien"]', e => e.value)) === 'Alquiler de motos en Canggu'
+       && (await p.$eval('[data-campo="ctx_reglas"]', e => e.value)) === 'Nunca prometer una entrega antes de las 9' && (await txt(p, '[data-ag="cuenta-ctx_quien"]')) === '27 de 600 caracteres' && (await txt(p, '[data-ag="cuenta-ctx_reglas"]')) === '1 de 20 reglas');
+    await p.fill('[data-campo="ctx_quien"]', 'Alquiler de motos\nen Canggu y Uluwatu');
+    await p.fill('[data-campo="ctx_horarios"]', '');
+    await p.fill('[data-campo="ctx_reglas"]', 'Nunca prometer una entrega antes de las 9\n\n   \nSi llueve, avisar al cliente  \n');
+    await p.fill('[data-campo="ctx_tono"]', 'Cercano');
+    await p.click('[data-accion="ag-guardar-contexto"]');
+    ok('contexto: sin motivo no se manda', llamadas(base, 'agente_ficha_contexto').length === 0 && (await txt(p, '[data-ag="falla-contexto"]')).includes('motivo'));
+    await p.fill('[data-campo="motivo_contexto"]', 'Más zonas');
+    await p.click('[data-accion="ag-guardar-contexto"]');
+    await hasta(() => llamadas(base, 'agente_ficha_contexto').length === 1);
+    const cx = llamadas(base, 'agente_ficha_contexto')[0][1];
+    ok('contexto: claves vacías no viajan, el salto de línea pasa a espacio y las reglas van en lista sin líneas vacías',
+       J(cx) === J({ p_contexto: { quien: 'Alquiler de motos en Canggu y Uluwatu', reglas: ['Nunca prometer una entrega antes de las 9', 'Si llueve, avisar al cliente'], tono: 'Cercano' }, p_motivo: 'Más zonas' }), J(cx));
+    await p.waitForSelector('[data-ag="exito-contexto"]:not(.axw-oculto)');
+    ok('contexto: guardado, el formulario enseña lo de la base y el historial dice «Contexto del negocio»', (await p.$eval('[data-campo="ctx_quien"]', e => e.value)) === 'Alquiler de motos en Canggu y Uluwatu'
+       && (await txt(p, '[data-ag="historial"] [data-ag="cambio"]')).includes('Contexto del negocio'));
+    await p.fill('[data-campo="ctx_reglas"]', Array.from({ length: 21 }, (_, i) => 'Regla ' + (i + 1)).join('\n')); await p.fill('[data-campo="motivo_contexto"]', 'Muchas');
+    await p.click('[data-accion="ag-guardar-contexto"]');
+    ok('contexto: más de 20 reglas no se manda y lo dice', llamadas(base, 'agente_ficha_contexto').length === 1 && (await txt(p, '[data-ag="falla-contexto"]')).includes('20 reglas'));
+    await p.fill('[data-campo="ctx_reglas"]', 'Ver https://ejemplo.com'); await p.fill('[data-campo="motivo_contexto"]', 'Con enlace');
+    await p.click('[data-accion="ag-guardar-contexto"]');
+    await hasta(() => llamadas(base, 'agente_ficha_contexto').length === 2);
+    await p.waitForSelector('[data-ag="falla-contexto"]:not(.axw-oculto)');
+    ok('contexto: la base rechaza un enlace (hint agente_contexto_forma) → frase clara, y lo escrito NO se borra', (await txt(p, '[data-ag="falla-contexto"]')).includes('no puede llevar enlaces')
+       && (await p.$eval('[data-campo="ctx_reglas"]', e => e.value)) === 'Ver https://ejemplo.com');
+    await ctx.close();
+  }
+  // 4e. historial
+  {
+    const { p, ctx } = await abre({ base: { dueno: true } });
+    const filas = await p.$$eval('[data-ag="cambio"]', e => e.map(x => x.textContent));
+    ok('historial: la gemela sin campos de un mismo guardado no sale; un guardado sin cambios sí lo dice', filas.length === 4 && filas.filter(f => f.includes('Primeros límites')).length === 1 && filas[3].includes('Guardado sin cambios.'), J(filas));
+    ok('historial: campos en palabras y sin repetir (Límites una vez), quien «El estudio», un campo desconocido tal cual, quien null = —',
+       filas[0].includes('Cambió: Límites, Topes') && filas[1].includes('El estudio') && filas[1].includes('Tope mensual, Subida de tope') && !/Subida de tope.*Subida de tope/.test(filas[1])
+       && filas[2].includes('campo_raro') && filas[2].includes(' · —') && filas[1].includes('Motivo: —'), J(filas));
+    await ctx.close();
+  }
+  // 4f. acciones que propone el AaaS
+  {
+    const { p, base, ctx } = await abre({ base: { dueno: true, lento: 300 } });
+    await p.waitForSelector('[data-ag="accion"]');   // lento: las notas llegan después del estado
+    ok('acciones: aviso arriba con las pendientes sin caducar (2) y enlace al bloque', (await txt(p, '[data-ag="pendientes"]')).includes('El AaaS propone 2 acciones que esperan tu decisión.') && (await hay(p, '[data-ag="ir-acciones"][href="#ag-acciones"]')) === 1);
+    const ids = await p.$$eval('[data-ag="accion"]', e => e.map(x => x.getAttribute('data-id') + ':' + x.getAttribute('data-estado')));
+    ok('acciones: pendientes primero; la pendiente ya vencida sale como caducada', J(ids) === J(['102:pendiente', '101:pendiente', '105:aceptada', '104:anulada', '103:caducada']), J(ids));
+    const a101 = await txt(p, '[data-ag="accion"][data-id="101"]');
+    ok('acciones: aviso_reserva con el número de la reserva, su módulo y cuándo caduca', a101.includes('Aviso en la reserva R-0012: moto en el taller') && a101.includes(ROTULOS['reservas-producto'][0]) && a101.includes('Caduca el'));
+    ok('acciones: una reserva sin número no enseña el uuid', (await txt(p, '[data-ag="accion"][data-id="102"]')).includes('Aviso en la reserva (sin número en este sistema): moto todavía fuera en otra reserva') && !/[0-9a-f]{8}-[0-9a-f]{4}-/.test(await txt(p, '[data-ag="acciones"]')));
+    ok('acciones: una acción de tipo desconocido no se calla; la anulada dice por qué', (await txt(p, '[data-ag="accion"][data-id="104"]')).includes('Acción de un tipo que esta pantalla aún no conoce.') && (await txt(p, '[data-ag="accion"][data-id="104"]')).includes('Ya no se cumplía'));
+    ok('acciones: Aceptar/Rechazar solo en las pendientes vigentes (la vencida no los tiene)', (await hay(p, '[data-accion="ag-acc-aceptar"]')) === 2 && (await hay(p, '[data-ag="accion"][data-id="103"] [data-accion]')) === 0);
+    await p.dblclick('[data-ag="accion"][data-id="101"] [data-accion="ag-acc-aceptar"]');
+    await p.click('[data-ag="accion"][data-id="101"] [data-accion="ag-acc-rechazar"]', { force: true, timeout: 500 }).catch(() => {});
+    await hasta(() => llamadas(base, 'agente_accion_decide').length >= 1);
+    await p.waitForSelector('[data-ag="exito-acciones"]:not(.axw-oculto)');
+    ok('acciones: doble clic en Aceptar (y un Rechazar encima) manda UNA sola decisión', llamadas(base, 'agente_accion_decide').length === 1 && J(llamadas(base, 'agente_accion_decide')[0][1]) === J({ p_id: 101, p_decision: 'aceptada' }), J(llamadas(base, 'agente_accion_decide')));
+    ok('acciones: aceptada → «Acción aceptada y hecha.» y la tarjeta pasa a aceptada', (await txt(p, '[data-ag="exito-acciones"]')) === 'Acción aceptada y hecha.' && (await p.$eval('[data-ag="accion"][data-id="101"]', e => e.getAttribute('data-estado'))) === 'aceptada');
+    ok('acciones: el aviso de arriba baja a 1', (await txt(p, '[data-ag="pendientes"]')).includes('El AaaS propone una acción que espera tu decisión.'));
+    await p.click('[data-ag="accion"][data-id="102"] [data-accion="ag-acc-rechazar"]');
+    await p.waitForFunction(() => document.querySelector('[data-ag="exito-acciones"]').textContent === 'Acción rechazada.');
+    ok('acciones: rechazar manda la decisión y desaparece el aviso de arriba', J(llamadas(base, 'agente_accion_decide')[1][1]) === J({ p_id: 102, p_decision: 'rechazada' }) && !(await visible(p, '[data-ag="pendientes"]')));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, anulaDatos: true } });
+    await p.click('[data-ag="accion"][data-id="101"] [data-accion="ag-acc-aceptar"]');
+    await p.waitForSelector('[data-ag="aviso-acciones"]:not(.axw-oculto)');
+    ok('acciones: anulada por datos → «No se ha hecho: ya no se cumplía.» (aviso, no éxito)', (await txt(p, '[data-ag="aviso-acciones"]')) === 'No se ha hecho: ya no se cumplía.' && !(await visible(p, '[data-ag="exito-acciones"]')));
+    await ctx.close();
+  }
+  {
+    const b = { dueno: true };
+    const { p, base, ctx } = await abre({ base: b });
+    base.limites[0].nivel_efectivo = 0;   // el límite de reservas-producto ya no lo permite (se apagó el módulo entre pintar y aceptar)
+    await p.click('[data-ag="accion"][data-id="101"] [data-accion="ag-acc-aceptar"]');
+    await p.waitForSelector('[data-ag="aviso-acciones"]:not(.axw-oculto)');
+    ok('acciones: anulada por nivel → «el límite de ese módulo ya no lo permite»', (await txt(p, '[data-ag="aviso-acciones"]')).includes('el límite de ese módulo ya no lo permite'));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, yaDecidida: true } });
+    await p.click('[data-ag="accion"][data-id="101"] [data-accion="ag-acc-aceptar"]');
+    await p.waitForSelector('[data-ag="aviso-acciones"]:not(.axw-oculto)');
+    ok('acciones: ya decidida por otro (ya_decidida) → lo dice y repinta cómo quedó', (await txt(p, '[data-ag="aviso-acciones"]')).includes('Alguien ya lo decidió') && (await p.$eval('[data-ag="accion"][data-id="101"]', e => e.getAttribute('data-estado'))) === 'rechazada');
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { herramienta: true } });
+    ok('no dueño: ve las acciones y el aviso «espera la decisión del dueño», sin botones', (await hay(p, '[data-ag="accion"]')) === 5 && (await hay(p, '[data-accion="ag-acc-aceptar"]')) === 0
+       && (await txt(p, '[data-ag="pendientes"]')).includes('esperan la decisión del dueño') && (await visible(p, '[data-ag="motivo-acciones"]')));
+    ok('no dueño: límites y contexto en solo lectura (fieldset deshabilitado, con el porqué)', (await p.$eval('[data-ag="limites-form"]', e => e.disabled)) && (await p.$eval('[data-ag="contexto-form"]', e => e.disabled))
+       && (await visible(p, '[data-ag="motivo-limites"]')) && (await visible(p, '[data-ag="motivo-contexto"]')) && (await hay(p, '[data-ag="limite"]')) === 3);
+    await ctx.close();
+  }
+  // 4g. trabajos desde trabajos_orden
+  {
+    const { p, base, ctx } = await abre({ base: { dueno: true, orden: ['cobros', 'flota', 'trabajo_nuevo'] } });
+    const tj = await p.$$eval('[data-ag="nota"]', e => e.map(x => x.getAttribute('data-trabajo')));
+    ok('trabajos: tarjetas en el orden de trabajos_orden; un id sin nombre tal cual; las notas de trabajos fuera del catálogo van al final, no se callan',
+       J(tj) === J(['cobros', 'flota', 'trabajo_nuevo', 'salidas', 'vueltas', 'bloqueos', 'taller', 'ocupacion', 'cierre']) && (await tarjeta(p, 'trabajo_nuevo')).includes('trabajo_nuevo') && (await tarjeta(p, 'trabajo_nuevo')).includes('Sin pasada todavía hoy.'), J(tj));
+    ok('trabajos: las casillas también salen de trabajos_orden', J(await p.$$eval('[data-ag="trabajos"] input', e => e.map(x => x.getAttribute('data-trabajo')))) === J(['cobros', 'flota', 'trabajo_nuevo']));
+    await p.uncheck('[data-ag="trabajos"] [data-trabajo="flota"]'); await p.fill('[data-campo="motivo"]', 'Sin flota');
+    await p.click('[data-accion="ag-guardar"]');
+    await hasta(() => llamadas(base, 'agente_ficha_ajusta').length === 1);
+    ok('trabajos: guardar manda los marcados del catálogo de la base', J(llamadas(base, 'agente_ficha_ajusta')[0][1].p_trabajos) === J(['cobros', 'trabajo_nuevo']));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, orden: [], sinNotas: true } });
+    ok('trabajos: catálogo vacío → «Este ERP aún no tiene trabajos del AaaS para su tipo de negocio» en Hoy y en los ajustes',
+       (await txt(p, '[data-ag="sin-trabajos-hoy"]')).includes('aún no tiene trabajos del AaaS') && (await txt(p, '[data-ag="sin-trabajos"]')).includes('aún no tiene trabajos del AaaS') && (await hay(p, '[data-ag="trabajos"] input')) === 0);
+    await ctx.close();
+  }
+  // 4h. «Cancelar la subida»
+  {
+    const { p, ctx } = await abre({ base: { dueno: true } });
+    ok('cancelar la subida: sin subida pendiente no hay botón', (await hay(p, '[data-accion="ag-cancelar-subida"]')) === 0);
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { herramienta: true, propuesto: true } });
+    ok('cancelar la subida: el no dueño no lo ve', (await hay(p, '[data-accion="ag-cancelar-subida"]')) === 0);
+    await ctx.close();
+  }
+  {
+    const { p, base, ctx } = await abre({ base: { dueno: true, propuesto: true } });
+    await p.click('[data-accion="ag-cancelar-subida"]');
+    ok('cancelar la subida: el diálogo dice que el tope se queda y la subida no entra', (await txt(p, '.axw-modal')).includes('El tope se queda en') && (await txt(p, '.axw-modal')).includes('no entrará'));
+    await p.click('[data-accion="ag-modal-confirmar"]');
+    ok('cancelar la subida: sin motivo no se manda', llamadas(base, 'agente_ficha_ajusta').length === 0);
+    await p.fill('[data-campo="dialogo-motivo"]', 'Mejor no subir');
+    await p.click('[data-accion="ag-modal-confirmar"]');
+    await hasta(() => llamadas(base, 'agente_ficha_ajusta').length === 1);
+    ok('cancelar la subida: manda el tope GUARDADO (explícito) y null en trabajos y nivel', J(llamadas(base, 'agente_ficha_ajusta')[0][1]) === J({ p_tope_mensual_cent: 3700, p_trabajos: null, p_nivel_ruta: null, p_motivo: 'Mejor no subir' }), J(llamadas(base, 'agente_ficha_ajusta')[0][1]));
+    await p.waitForSelector('[data-ag="exito"]:not(.axw-oculto)');
+    ok('cancelar la subida: la subida desaparece, el tope sigue igual y el botón se va', !(await txt(p, '[data-ag="estado"]')).includes('Subida de tope pendiente') && (await hay(p, '[data-accion="ag-cancelar-subida"]')) === 0
+       && (await p.$eval('[data-campo="tope"]', e => e.value)) === '37' && base.tope === 3700);
+    await ctx.close();
+  }
+  // 4i. A13: los dos rechazos al encender, en llano
+  for (const [o, frase] of [[{ dePago: true }, 'lo enciende el estudio'], [{ otroTipo: true }, 'no es para el tipo de negocio de este ERP']]) {
+    const { p, ctx } = await abre({ base: Object.assign({ dueno: true, apagado: true }, o) });
+    await p.click('[data-accion="ag-encender"]'); await p.fill('[data-campo="dialogo-motivo"]', 'Encender'); await p.click('[data-accion="ag-modal-confirmar"]');
+    await p.waitForSelector('.axw-modal .axw-error:not(.axw-oculto)');
+    ok('A13 ' + Object.keys(o)[0] + ': «' + frase + '»', (await txt(p, '.axw-modal .axw-error')).includes(frase));
+    await ctx.close();
+  }
   // 5. idiomas: en e id sin una cadena sin traducir, en todos los estados
   for (const idioma of ['en', 'id']) {
     for (const [nombre, base] of [['dueño', { dueno: true }], ['no dueño', { herramienta: true }], ['sin datos', { dueno: true, sinDatos: true }], ['sin notas', { dueno: true, sinNotas: true }],
@@ -365,8 +690,8 @@ const MUESTRA = (() => {
   for (const idioma of ['es', 'en', 'id']) {
     for (const ancho of [1440, 390]) {
       const { p, ctx } = await abre({ ancho, idioma, base: { dueno: true } });
-      const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
-      ok(idioma + ' ' + ancho + ' px · el panel no desborda', m.sw <= m.cw, J(m));
+      const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, barra: window.innerWidth - document.documentElement.clientWidth }));
+      ok(idioma + ' ' + ancho + ' px · con la barra de scroll vertical visible (' + m.barra + ' px), el panel no desborda', m.barra > 0 && m.sw <= m.cw, J(m));
       const anchas = await p.$$eval('[data-ag="raiz"] *', es => es.filter(e => e.getBoundingClientRect().right > document.documentElement.clientWidth + 1).map(e => e.tagName + '.' + e.className).slice(0, 4));
       ok(idioma + ' ' + ancho + ' px · ningún elemento se sale por la derecha', anchas.length === 0, J(anchas));
       if (SHOT) await p.screenshot({ path: SHOT + '_' + idioma + '_' + ancho + '.png', fullPage: true });

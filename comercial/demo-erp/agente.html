@@ -10,7 +10,10 @@
      Las frases de cada aviso las pinta ESTE CÓDIGO desde `trabajo`, `estado`, `cifras` e `items` (en es, en e id). Una moto o un modelo llegan por su uuid y el nombre sale del
      mapa `nombres` que resuelve la base con la sesión de quien mira. Un trabajo sin datos lo DICE («sin reservas en este sistema todavía»); un trabajo sin nota hoy también («sin
      pasada todavía hoy»): nunca se calla ni se inventa.
-     Todo dato de la base se pinta con textContent (ayudas comunes, sin innerHTML). Enganche por data-accion / data-ag, nunca por un rótulo. Colores por var(--tema-*). -->
+     Todo dato de la base se pinta con textContent (ayudas comunes, sin innerHTML). Enganche por data-accion / data-ag, nunca por un rótulo. Colores por var(--tema-*).
+     Ventana de configuración (14-oct-2026, migración 060500): límites por módulo (agente_ficha_limites, siempre con TODAS las filas de `limites`), contexto del negocio
+     (agente_ficha_contexto), historial (10 últimos, nunca valores), acciones que propone el AaaS (agente_accion_decide) y «Cancelar la subida» del tope. Los trabajos y
+     su orden salen de `trabajos_orden` (el catálogo de la instancia); aquí solo va el nombre de cada id. Cada bloque que no puede leer su parte lo dice en su sitio. -->
 <div class="flex flex-col w-full gap-8" data-ag="raiz">
 <style>
 /*AXW_COMUN_CSS*/
@@ -38,6 +41,27 @@
 .ag-apagado{opacity:.6}
 .ag-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:4px 16px}
 .ag-campos .axw-campo input,.ag-campos .axw-campo select{width:100%;min-width:0;box-sizing:border-box}
+.ag-ctx .axw-campo input,.ag-ctx .axw-campo textarea{width:100%;min-width:0;box-sizing:border-box;resize:vertical}
+.ag-ctx .axw-campo{margin:4px 0}
+.ag-cuenta{font-size:12px;color:rgb(var(--tema-on-surface-variant, 68 72 63));margin:0;font-variant-numeric:tabular-nums}
+.ag-niveles{display:grid;grid-template-columns:minmax(0,max-content) minmax(0,1fr);gap:4px 12px;margin:0;font-size:13px;line-height:1.45}
+.ag-niveles dt{font-weight:600}
+.ag-niveles dd{margin:0;color:rgb(var(--tema-on-surface-variant, 68 72 63))}
+.ag-limites{display:flex;flex-direction:column}
+.ag-limite{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.4fr) minmax(0,1fr);gap:8px 16px;align-items:center;padding:12px 0;border-bottom:1px solid rgb(var(--tema-surface-container-highest, 228 226 221));min-width:0}
+.ag-limite:last-child{border-bottom:0}
+.ag-limite .axw-campo{margin:0;min-width:0}
+.ag-limite .axw-campo select,.ag-limite .axw-campo input{width:100%;min-width:0;box-sizing:border-box}
+.ag-limite .axw-campo>label{font-size:12px;font-weight:500;color:rgb(var(--tema-on-surface-variant, 68 72 63))}
+.ag-limite-nombre{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ag-limite-nombre strong{font-size:15px;font-weight:600;word-break:break-word}
+.ag-limite-aviso{font-size:13px;line-height:1.4;margin:0;color:#8a4b00;word-break:break-word}
+.ag-historial{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.ag-historial li{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid rgb(var(--tema-surface-container-highest, 228 226 221));font-size:14px;line-height:1.45;word-break:break-word}
+.ag-historial li:last-child{border-bottom:0}
+.ag-niveles+.ag-sub,.ag-niveles+fieldset,.ag-niveles+p{margin-top:8px}
+@media (max-width:720px){.ag-limite{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}.ag-limite-nombre{grid-column:1 / -1}.ag-niveles{grid-template-columns:minmax(0,1fr)}.ag-niveles dd{margin-bottom:6px}}
+@media (max-width:520px){.ag-limite{grid-template-columns:minmax(0,1fr)}}
 </style>
 
 <div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
@@ -50,12 +74,23 @@
 <p class="axw-ok axw-oculto" data-ag="exito" role="status"></p>
 <p class="axw-error axw-oculto" data-ag="error" role="alert"></p>
 <div data-ag="carga" data-tipo="cargando" class="axw-vacio"></div>
+<p class="axw-aviso axw-oculto" data-ag="pendientes" role="status"></p>
 
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-estado">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Estado</h2>
 <div class="ag-estado" data-ag="estado"></div>
 <p class="ag-sub axw-oculto" data-ag="motivo-estado"></p>
 <div class="axw-acciones" data-ag="acciones-estado"></div>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-acciones" id="ag-acciones">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Acciones que propone el AaaS</h2>
+<p class="ag-sub" data-lwt>En los módulos con el límite «Lo propone y decide el dueño», el AaaS no hace nada por su cuenta: deja aquí lo que haría. Al aceptar una, el sistema comprueba otra vez que sigue haciendo falta y la hace.</p>
+<p class="ag-sub axw-oculto" data-ag="motivo-acciones"></p>
+<p class="axw-ok axw-oculto" data-ag="exito-acciones" role="status"></p>
+<p class="axw-aviso axw-oculto" data-ag="aviso-acciones" role="status"></p>
+<p class="axw-error axw-oculto" data-ag="error-acciones" role="alert"></p>
+<div class="flex flex-col gap-3" data-ag="acciones"></div>
 </section>
 
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-hoy">
@@ -76,19 +111,73 @@
 <fieldset class="flex flex-col gap-3" data-ag="ajustes" style="border:0;padding:0;margin:0;min-width:0">
 <legend class="font-body-md" style="font-weight:600;padding:0;margin-bottom:6px" data-lwt>Qué trabajos hace</legend>
 <div class="ag-trabajos" data-ag="trabajos"></div>
+<p class="axw-vacio axw-oculto" data-ag="sin-trabajos"></p>
 <div class="ag-campos">
 <div class="axw-campo"><label for="ag-f-nivel" data-lwt>Nivel de Ruta</label><select id="ag-f-nivel" data-campo="nivel_ruta"><option value="0" data-lwt>0 · No hace la pasada</option><option value="1" data-lwt>1 · Mira y avisa</option></select></div>
 <div class="axw-campo"><label for="ag-f-tope" data-ag="tope-etiqueta">Tope de gasto al mes</label><input id="ag-f-tope" type="text" inputmode="decimal" autocomplete="off" data-campo="tope"><p class="ag-sub" data-ag="tope-ayuda"></p></div>
 <div class="axw-campo"><label for="ag-f-motivo" data-lwt>Motivo del cambio (obligatorio)</label><input id="ag-f-motivo" type="text" autocomplete="off" maxlength="300" data-campo="motivo"></div>
 </div>
-<div class="axw-acciones"><button class="axw-boton" type="button" data-accion="ag-guardar" data-primario="1"><span data-lwt>Guardar</span></button></div>
+<div class="axw-acciones" data-ag="acciones-ajustes"><button class="axw-boton" type="button" data-accion="ag-guardar" data-primario="1"><span data-lwt>Guardar</span></button></div>
 </fieldset>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-limites">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Límites por módulo</h2>
+<p class="ag-sub" data-lwt>Hasta dónde puede llegar el AaaS en cada módulo de este ERP.</p>
+<dl class="ag-niveles">
+<dt data-lwt>Nunca</dt><dd data-lwt>No hace nada en ese módulo.</dd>
+<dt data-lwt>Lo propone y decide el dueño</dt><dd data-lwt>Deja la acción en «Acciones que propone el AaaS» y no la hace hasta que el dueño la acepta.</dd>
+<dt data-lwt>Lo hace, sin pasar del tope</dt><dd data-lwt>La hace sin preguntar mientras no gaste más que el tope de ese módulo.</dd>
+<dt data-lwt>Lo hace solo</dt><dd data-lwt>La hace sin preguntar.</dd>
+</dl>
+<p class="ag-sub axw-oculto" data-ag="motivo-limites"></p>
+<p class="axw-error axw-oculto" data-ag="error-limites" role="alert"></p>
+<fieldset class="flex flex-col gap-3" data-ag="limites-form" style="border:0;padding:0;margin:0;min-width:0">
+<legend class="font-body-md" style="font-weight:600;padding:0;margin-bottom:6px" data-lwt>Módulos</legend>
+<div class="ag-limites" data-ag="limites"></div>
+<div class="flex flex-col gap-2 axw-oculto" data-ag="bloque-fuera">
+<p class="font-body-md" style="font-weight:600;margin:0" data-lwt>Ya no están en este ERP</p>
+<ul class="ag-lineas ag-apagado" data-ag="limites-fuera"></ul>
+</div>
+<p class="ag-sub" data-ag="topes-ayuda"></p>
+<div class="ag-campos">
+<div class="axw-campo"><label for="ag-f-motivo-l" data-lwt>Motivo del cambio (obligatorio)</label><input id="ag-f-motivo-l" type="text" autocomplete="off" maxlength="300" data-campo="motivo_limites"></div>
+</div>
+<p class="axw-ok axw-oculto" data-ag="exito-limites" role="status"></p>
+<p class="axw-error axw-oculto" data-ag="falla-limites" role="alert"></p>
+<div class="axw-acciones"><button class="axw-boton" type="button" data-accion="ag-guardar-limites" data-primario="1"><span data-lwt>Guardar los límites</span></button></div>
+</fieldset>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-contexto">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Contexto del negocio</h2>
+<p class="ag-sub" data-lwt>Lo que el AaaS tiene que saber de este negocio. Lo lee, pero no puede cambiarlo. Sin enlaces.</p>
+<p class="ag-sub axw-oculto" data-ag="motivo-contexto"></p>
+<p class="axw-error axw-oculto" data-ag="error-contexto" role="alert"></p>
+<fieldset class="ag-ctx flex flex-col gap-2" data-ag="contexto-form" style="border:0;padding:0;margin:0;min-width:0">
+<legend class="font-body-md" style="font-weight:600;padding:0;margin-bottom:6px" data-lwt>Ficha del negocio</legend>
+<div class="axw-campo"><label for="ag-c-quien" data-lwt>Quién es el negocio</label><textarea id="ag-c-quien" rows="3" maxlength="600" data-campo="ctx_quien" data-tope="600"></textarea><p class="ag-cuenta" data-ag="cuenta-ctx_quien"></p></div>
+<div class="axw-campo"><label for="ag-c-horarios" data-lwt>Horarios</label><textarea id="ag-c-horarios" rows="2" maxlength="300" data-campo="ctx_horarios" data-tope="300"></textarea><p class="ag-cuenta" data-ag="cuenta-ctx_horarios"></p></div>
+<div class="axw-campo"><label for="ag-c-reglas" data-lwt>Reglas que tiene que seguir</label><textarea id="ag-c-reglas" rows="5" data-campo="ctx_reglas"></textarea><p class="ag-cuenta" data-ag="cuenta-ctx_reglas"></p></div>
+<div class="axw-campo"><label for="ag-c-tono" data-lwt>Tono</label><input id="ag-c-tono" type="text" autocomplete="off" maxlength="200" data-campo="ctx_tono" data-tope="200"><p class="ag-cuenta" data-ag="cuenta-ctx_tono"></p></div>
+<p class="ag-sub" data-lwt>Una regla por línea: como mucho 20, de hasta 200 caracteres cada una. En los otros campos, los saltos de línea se guardan como espacios.</p>
+<div class="axw-campo"><label for="ag-c-motivo" data-lwt>Motivo del cambio (obligatorio)</label><input id="ag-c-motivo" type="text" autocomplete="off" maxlength="300" data-campo="motivo_contexto"></div>
+<p class="axw-ok axw-oculto" data-ag="exito-contexto" role="status"></p>
+<p class="axw-error axw-oculto" data-ag="falla-contexto" role="alert"></p>
+<div class="axw-acciones"><button class="axw-boton" type="button" data-accion="ag-guardar-contexto" data-primario="1"><span data-lwt>Guardar el contexto</span></button></div>
+</fieldset>
+</section>
+
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-historial">
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Historial de cambios</h2>
+<p class="ag-sub" data-lwt>Los 10 últimos cambios en los ajustes del AaaS, con quién los hizo y por qué. No enseña los valores.</p>
+<ol class="ag-historial" data-ag="historial"></ol>
 </section>
 
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-mas">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Más adelante</h2>
 <div class="ag-estado">
-<div class="ag-dato ag-apagado"><span data-lwt>Clave de IA</span><strong data-lwt>Aún no se usa</strong><span class="ag-sub" data-lwt>Los ocho trabajos no llaman a la IA: las cuentas las hace el propio sistema.</span></div>
+<div class="ag-dato ag-apagado"><span data-lwt>Clave de IA</span><strong data-lwt>Aún no se usa</strong><span class="ag-sub" data-lwt>Sus trabajos no llaman a la IA: las cuentas las hace el propio sistema.</span></div>
 <div class="ag-dato ag-apagado"><span data-lwt>Avisos por Telegram</span><strong data-lwt>Aún no se usa</strong><span class="ag-sub" data-lwt>Los avisos están en este panel.</span></div>
 </div>
 </section>
@@ -106,7 +195,7 @@
     '0 · No hace la pasada': '0 · Does not run', '1 · Mira y avisa': '1 · Looks and alerts',
     'Tope de gasto al mes': 'Monthly spending cap', 'Motivo del cambio (obligatorio)': 'Reason for the change (required)', 'Guardar': 'Save',
     'Más adelante': 'Later', 'Clave de IA': 'AI key', 'Aún no se usa': 'Not used yet',
-    'Los ocho trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'The eight jobs do not call the AI: the system itself does the counting.',
+    'Sus trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'Its jobs do not call the AI: the system itself does the counting.',
     'Avisos por Telegram': 'Telegram alerts', 'Los avisos están en este panel.': 'Alerts are on this panel.',
     'Módulo': 'Module', 'Encendido': 'On', 'Apagado': 'Off', 'Trabajo': 'Work', 'Trabajando': 'Working', 'En pausa': 'Paused',
     'Última pasada': 'Last run', 'Todavía no ha hecho ninguna pasada.': 'It has not run yet.', 'Gastado este mes': 'Spent this month', 'Tope': 'Cap',
@@ -119,7 +208,7 @@
     'Parar': 'Pause', 'Reanudar': 'Resume', 'Encender el AaaS': 'Switch the AaaS on', 'Apagar el AaaS': 'Switch the AaaS off',
     'El AaaS está apagado: no mira nada ni escribe nada.': 'The AaaS is off: it reads nothing and writes nothing.',
     'Lo enciende el dueño de la ficha del AaaS.': 'The owner of the AaaS settings switches it on.',
-    'Reanudar, encender, apagar, los trabajos y el tope son del dueño de la ficha del AaaS.': 'Resuming, switching on and off, the jobs and the cap belong to the owner of the AaaS settings.',
+    'Reanudar, encender, apagar, los trabajos, el tope, los límites y el contexto son del dueño de la ficha del AaaS.': 'Resuming, switching on and off, the jobs, the cap, the limits and the context belong to the owner of the AaaS settings.',
     'Solo lo cambia el dueño de la ficha del AaaS.': 'Only the owner of the AaaS settings can change this.',
     'Marcar avisos como hechos o descartarlos necesita la herramienta «AaaS» sin ser la cuenta de pruebas.': 'Marking alerts as done or dismissing them needs the “AaaS” tool and cannot be done from the test account.',
     'Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.': 'Switching the AaaS off stops it reading and writing at once. Its notes stay here.',
@@ -163,12 +252,101 @@
     'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).': 'Too many changes in a row: wait a minute (at most 10 a day).',
     'Esto solo lo puede hacer el dueño de la ficha del AaaS.': 'Only the owner of the AaaS settings can do this.',
     'Este ERP aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender el AaaS.': 'This ERP does not yet know which modules fit its type of business: the studio sets that up before the AaaS is switched on.',
-    'El AaaS es un módulo de pago: solo se enciende desde esta ventana, por su dueño.': 'The AaaS is a paid module: it is only switched on from this window, by its owner.',
-    'La cuenta de pruebas no puede cambiar nada aquí.': 'The test account cannot change anything here.',
+        'La cuenta de pruebas no puede cambiar nada aquí.': 'The test account cannot change anything here.',
     'No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.': 'You do not have the “AaaS” tool: ask the main administrator for it in Users.',
     'El AaaS está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'The AaaS is off: its alerts cannot be read until it is switched on. This does NOT mean there are none.',
     'La base no confirmó el cambio: recarga antes de repetir.': 'The database did not confirm the change: reload before trying again.',
-    'Hecho: marcado.': 'Done: marked.', 'Descartado.': 'Dismissed.', 'Propuesta aceptada.': 'Proposal accepted.', 'Propuesta rechazada.': 'Proposal rejected.'
+    'Hecho: marcado.': 'Done: marked.', 'Descartado.': 'Dismissed.', 'Propuesta aceptada.': 'Proposal accepted.', 'Propuesta rechazada.': 'Proposal rejected.',
+    'Acciones que propone el AaaS': 'Actions the AaaS proposes',
+    'En los módulos con el límite «Lo propone y decide el dueño», el AaaS no hace nada por su cuenta: deja aquí lo que haría. Al aceptar una, el sistema comprueba otra vez que sigue haciendo falta y la hace.': 'In modules whose limit is “Proposes it, the owner decides”, the AaaS does nothing on its own: it leaves here what it would do. When you accept one, the system checks again that it is still needed and then does it.',
+    'Límites por módulo': 'Limits per module',
+    'Hasta dónde puede llegar el AaaS en cada módulo de este ERP.': 'How far the AaaS can go in each module of this ERP.',
+    'Nunca': 'Never',
+    'No hace nada en ese módulo.': 'It does nothing in that module.',
+    'Lo propone y decide el dueño': 'Proposes it, the owner decides',
+    'Deja la acción en «Acciones que propone el AaaS» y no la hace hasta que el dueño la acepta.': 'It leaves the action in “Actions the AaaS proposes” and does not do it until the owner accepts it.',
+    'Lo hace, sin pasar del tope': 'Does it, within the cap',
+    'La hace sin preguntar mientras no gaste más que el tope de ese módulo.': 'It does it without asking, as long as it spends no more than that module’s cap.',
+    'Lo hace solo': 'Does it on its own',
+    'La hace sin preguntar.': 'It does it without asking.',
+    'Módulos': 'Modules',
+    'Ya no están en este ERP': 'No longer in this ERP',
+    'Guardar los límites': 'Save the limits',
+    'Contexto del negocio': 'Business context',
+    'Lo que el AaaS tiene que saber de este negocio. Lo lee, pero no puede cambiarlo. Sin enlaces.': 'What the AaaS needs to know about this business. It reads it but cannot change it. No links.',
+    'Ficha del negocio': 'Business profile',
+    'Quién es el negocio': 'Who the business is',
+    'Horarios': 'Opening hours',
+    'Reglas que tiene que seguir': 'Rules it must follow',
+    'Tono': 'Tone',
+    'Una regla por línea: como mucho 20, de hasta 200 caracteres cada una. En los otros campos, los saltos de línea se guardan como espacios.': 'One rule per line: at most 20, up to 200 characters each. In the other fields, line breaks are saved as spaces.',
+    'Guardar el contexto': 'Save the context',
+    'Historial de cambios': 'Change history',
+    'Los 10 últimos cambios en los ajustes del AaaS, con quién los hizo y por qué. No enseña los valores.': 'The last 10 changes to the AaaS settings, with who made them and why. It does not show the values.',
+    'Límites': 'Limits',
+    'Topes': 'Caps',
+    'Trabajos': 'Jobs',
+    'Tope mensual': 'Monthly cap',
+    'Subida de tope': 'Cap increase',
+    'Ruta': 'Ruta',
+    'Capital': 'Capital',
+    'Objetivo de margen': 'Margin target',
+    'IVA de proveedores': 'Supplier VAT',
+    'Gastos fijos': 'Fixed costs',
+    'Freno por pérdidas': 'Loss brake',
+    'Anulada': 'Cancelled',
+    'Caducada': 'Expired',
+    'Ya no se cumplía, así que no se ha hecho.': 'It no longer applied, so it was not done.',
+    'El límite de ese módulo ya no lo permite, así que no se ha hecho.': 'That module’s limit no longer allows it, so it was not done.',
+    'Caducó sin que nadie la decidiera.': 'It expired before anyone decided.',
+    'Aviso en la reserva {r}: moto en el taller': 'Alert on booking {r}: bike in the workshop',
+    'Aviso en la reserva {r}: moto dada de baja': 'Alert on booking {r}: bike retired',
+    'Aviso en la reserva {r}: moto todavía fuera en otra reserva': 'Alert on booking {r}: bike still out on another booking',
+    'Aviso en la reserva {r}: un motivo que esta pantalla aún no conoce': 'Alert on booking {r}: a reason this screen does not know yet',
+    'Acción aceptada y hecha.': 'Action accepted and done.',
+    'Acción rechazada.': 'Action rejected.',
+    'No se ha hecho: ya no se cumplía.': 'Not done: it no longer applied.',
+    'No se ha hecho: el límite de ese módulo ya no lo permite.': 'Not done: that module’s limit no longer allows it.',
+    'No se ha hecho: había caducado.': 'Not done: it had expired.',
+    'El AaaS es un módulo de pago: lo enciende el estudio cuando el negocio lo contrata.': 'The AaaS is a paid module: the studio switches it on once the business signs up for it.',
+    'Este módulo no es para el tipo de negocio de este ERP.': 'This module is not for the type of business of this ERP.',
+    'Uno de los módulos ya no puede llevar límite en este ERP: recarga la página y vuelve a guardar.': 'One of the modules can no longer have a limit in this ERP: reload the page and save again.',
+    'El contexto no se ha guardado: no puede llevar enlaces, y como mucho 600 caracteres en «Quién es el negocio», 300 en los horarios, 200 en el tono y 20 reglas de 200.': 'The context was not saved: it cannot contain links, and it allows at most 600 characters in “Who the business is”, 300 in the opening hours, 200 in the tone and 20 rules of 200.',
+    'Alguien ya lo decidió: así ha quedado.': 'Someone already decided it: this is how it ended up.',
+    'Este ERP aún no tiene trabajos del AaaS para su tipo de negocio.': 'This ERP does not have AaaS jobs for its type of business yet.',
+    'Cancelar la subida': 'Cancel the increase',
+    'Este módulo se apagó después de guardar su límite: ahora no se aplica, hasta que el dueño vuelva a guardar los límites.': 'This module was switched off after its limit was saved: it does not apply now, until the owner saves the limits again.',
+    'Qué puede hacer': 'What it can do',
+    'Ningún módulo de este ERP puede llevar límite ahora mismo.': 'No module of this ERP can have a limit right now.',
+    'Ya no está en este ERP: no se aplica, y al guardar los límites se retira.': 'No longer in this ERP: it does not apply, and saving the limits removes it.',
+    'El tope de cada módulo va en {m}. Entre todos no pueden pasar del tope mensual ({x}). Déjalo vacío si ese módulo no lleva tope propio.': 'Each module’s cap is in {m}. Together they cannot go over the monthly cap ({x}). Leave it empty if that module has no cap of its own.',
+    '{n} de {m} caracteres': '{n} of {m} characters',
+    '{n} de 20 reglas': '{n} of 20 rules',
+    'El estudio': 'The studio',
+    'Cambió': 'Changed',
+    'Guardado sin cambios.': 'Saved with no changes.',
+    'Todavía no hay cambios en los ajustes del AaaS.': 'No changes to the AaaS settings yet.',
+    'El AaaS propone una acción que espera tu decisión.': 'The AaaS proposes an action that is waiting for your decision.',
+    'El AaaS propone una acción que espera la decisión del dueño.': 'The AaaS proposes an action that is waiting for the owner’s decision.',
+    'El AaaS propone {n} acciones que esperan tu decisión.': 'The AaaS proposes {n} actions that are waiting for your decision.',
+    'El AaaS propone {n} acciones que esperan la decisión del dueño.': 'The AaaS proposes {n} actions that are waiting for the owner’s decision.',
+    'Ver las acciones': 'See the actions',
+    'sin número en este sistema': 'no number in this system',
+    'Acción de un tipo que esta pantalla aún no conoce.': 'An action of a kind this screen does not know yet.',
+    'Propuesta el': 'Proposed on',
+    'Caduca el': 'Expires on',
+    'Decidida por': 'Decided by',
+    'Las acepta o las rechaza el dueño de la ficha del AaaS.': 'The owner of the AaaS settings accepts or rejects them.',
+    'El AaaS no ha propuesto ninguna acción en los últimos 30 días.': 'The AaaS has not proposed any action in the last 30 days.',
+    'La pantalla no tiene todos los módulos: recarga la página antes de guardar.': 'The screen does not have all the modules: reload the page before saving.',
+    'El tope de «{x}» no se entiende: escríbelo con cifras y sin separador de miles, por ejemplo 37 o 37.50.': 'The cap for “{x}” is not clear: write it in figures without a thousands separator, for example 37 or 37.50.',
+    'Límites guardados.': 'Limits saved.',
+    'Algún campo pasa de su largo máximo: mira el contador de cada uno.': 'A field is over its maximum length: check the counter under each one.',
+    'Como mucho 20 reglas, y hay {n}.': 'At most 20 rules, and there are {n}.',
+    'La regla {n} pasa de 200 caracteres.': 'Rule {n} is over 200 characters.',
+    'Contexto guardado.': 'Context saved.',
+    'El tope se queda en {x} y la subida a {y} no entrará.': 'The cap stays at {x} and the increase to {y} will not apply.',
+    'Subida cancelada: el tope no cambia.': 'Increase cancelled: the cap does not change.'
   };
   var ID_AG = {
     'AaaS': 'AaaS',
@@ -179,7 +357,7 @@
     '0 · No hace la pasada': '0 · Tidak berjalan', '1 · Mira y avisa': '1 · Memeriksa dan memberi peringatan',
     'Tope de gasto al mes': 'Batas biaya per bulan', 'Motivo del cambio (obligatorio)': 'Alasan perubahan (wajib)', 'Guardar': 'Simpan',
     'Más adelante': 'Nanti', 'Clave de IA': 'Kunci AI', 'Aún no se usa': 'Belum digunakan',
-    'Los ocho trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'Delapan tugas ini tidak memanggil AI: perhitungannya dilakukan oleh sistem sendiri.',
+    'Sus trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'Tugas-tugasnya tidak memanggil AI: perhitungannya dilakukan oleh sistem sendiri.',
     'Avisos por Telegram': 'Peringatan lewat Telegram', 'Los avisos están en este panel.': 'Peringatan ada di panel ini.',
     'Módulo': 'Modul', 'Encendido': 'Aktif', 'Apagado': 'Nonaktif', 'Trabajo': 'Kerja', 'Trabajando': 'Bekerja', 'En pausa': 'Dijeda',
     'Última pasada': 'Pemeriksaan terakhir', 'Todavía no ha hecho ninguna pasada.': 'Belum pernah berjalan.', 'Gastado este mes': 'Terpakai bulan ini', 'Tope': 'Batas',
@@ -192,7 +370,7 @@
     'Parar': 'Jeda', 'Reanudar': 'Lanjutkan', 'Encender el AaaS': 'Aktifkan AaaS', 'Apagar el AaaS': 'Matikan AaaS',
     'El AaaS está apagado: no mira nada ni escribe nada.': 'AaaS nonaktif: tidak membaca dan tidak menulis apa pun.',
     'Lo enciende el dueño de la ficha del AaaS.': 'Yang mengaktifkannya adalah pemilik pengaturan AaaS.',
-    'Reanudar, encender, apagar, los trabajos y el tope son del dueño de la ficha del AaaS.': 'Melanjutkan, mengaktifkan, mematikan, tugas, dan batas biaya adalah hak pemilik pengaturan AaaS.',
+    'Reanudar, encender, apagar, los trabajos, el tope, los límites y el contexto son del dueño de la ficha del AaaS.': 'Melanjutkan, mengaktifkan, mematikan, tugas, batas biaya, batas per modul, dan konteks adalah hak pemilik pengaturan AaaS.',
     'Solo lo cambia el dueño de la ficha del AaaS.': 'Hanya pemilik pengaturan AaaS yang dapat mengubahnya.',
     'Marcar avisos como hechos o descartarlos necesita la herramienta «AaaS» sin ser la cuenta de pruebas.': 'Menandai peringatan selesai atau mengabaikannya memerlukan alat «AaaS» dan tidak bisa dari akun uji coba.',
     'Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.': 'Mematikan AaaS langsung menghentikannya membaca dan menulis. Catatannya tetap di sini.',
@@ -236,12 +414,101 @@
     'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).': 'Terlalu banyak perubahan berturut-turut: tunggu satu menit (maksimal 10 per hari).',
     'Esto solo lo puede hacer el dueño de la ficha del AaaS.': 'Ini hanya bisa dilakukan oleh pemilik pengaturan AaaS.',
     'Este ERP aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender el AaaS.': 'ERP ini belum tahu modul mana yang cocok untuk jenis usahanya: studio menyiapkannya sebelum AaaS diaktifkan.',
-    'El AaaS es un módulo de pago: solo se enciende desde esta ventana, por su dueño.': 'AaaS adalah modul berbayar: hanya diaktifkan dari jendela ini, oleh pemiliknya.',
-    'La cuenta de pruebas no puede cambiar nada aquí.': 'Akun uji coba tidak dapat mengubah apa pun di sini.',
+        'La cuenta de pruebas no puede cambiar nada aquí.': 'Akun uji coba tidak dapat mengubah apa pun di sini.',
     'No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.': 'Anda tidak punya alat «AaaS»: mintalah kepada admin utama di Pengguna.',
     'El AaaS está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'AaaS nonaktif: peringatannya tidak bisa dibaca sampai diaktifkan. Ini BUKAN berarti tidak ada.',
     'La base no confirmó el cambio: recarga antes de repetir.': 'Database tidak mengonfirmasi perubahan: muat ulang sebelum mengulang.',
-    'Hecho: marcado.': 'Selesai: sudah ditandai.', 'Descartado.': 'Diabaikan.', 'Propuesta aceptada.': 'Usulan diterima.', 'Propuesta rechazada.': 'Usulan ditolak.'
+    'Hecho: marcado.': 'Selesai: sudah ditandai.', 'Descartado.': 'Diabaikan.', 'Propuesta aceptada.': 'Usulan diterima.', 'Propuesta rechazada.': 'Usulan ditolak.',
+    'Acciones que propone el AaaS': 'Tindakan yang diusulkan AaaS',
+    'En los módulos con el límite «Lo propone y decide el dueño», el AaaS no hace nada por su cuenta: deja aquí lo que haría. Al aceptar una, el sistema comprueba otra vez que sigue haciendo falta y la hace.': 'Di modul dengan batas «Diusulkan, pemilik yang memutuskan», AaaS tidak melakukan apa pun sendiri: ia menaruh di sini apa yang akan dilakukannya. Saat Anda menerimanya, sistem memeriksa lagi bahwa tindakan itu masih diperlukan, lalu menjalankannya.',
+    'Límites por módulo': 'Batas per modul',
+    'Hasta dónde puede llegar el AaaS en cada módulo de este ERP.': 'Sejauh mana AaaS boleh bertindak di setiap modul ERP ini.',
+    'Nunca': 'Tidak pernah',
+    'No hace nada en ese módulo.': 'Tidak melakukan apa pun di modul itu.',
+    'Lo propone y decide el dueño': 'Diusulkan, pemilik yang memutuskan',
+    'Deja la acción en «Acciones que propone el AaaS» y no la hace hasta que el dueño la acepta.': 'Tindakannya ditaruh di «Tindakan yang diusulkan AaaS» dan tidak dijalankan sampai pemilik menerimanya.',
+    'Lo hace, sin pasar del tope': 'Dijalankan, tanpa melewati batas',
+    'La hace sin preguntar mientras no gaste más que el tope de ese módulo.': 'Dijalankan tanpa bertanya selama biayanya tidak melebihi batas modul itu.',
+    'Lo hace solo': 'Dijalankan sendiri',
+    'La hace sin preguntar.': 'Dijalankan tanpa bertanya.',
+    'Módulos': 'Modul',
+    'Ya no están en este ERP': 'Sudah tidak ada di ERP ini',
+    'Guardar los límites': 'Simpan batas',
+    'Contexto del negocio': 'Konteks usaha',
+    'Lo que el AaaS tiene que saber de este negocio. Lo lee, pero no puede cambiarlo. Sin enlaces.': 'Hal yang perlu diketahui AaaS tentang usaha ini. AaaS membacanya, tetapi tidak bisa mengubahnya. Tanpa tautan.',
+    'Ficha del negocio': 'Profil usaha',
+    'Quién es el negocio': 'Tentang usaha ini',
+    'Horarios': 'Jam buka',
+    'Reglas que tiene que seguir': 'Aturan yang harus diikuti',
+    'Tono': 'Nada bicara',
+    'Una regla por línea: como mucho 20, de hasta 200 caracteres cada una. En los otros campos, los saltos de línea se guardan como espacios.': 'Satu aturan per baris: maksimal 20, masing-masing sampai 200 karakter. Di kolom lain, baris baru disimpan sebagai spasi.',
+    'Guardar el contexto': 'Simpan konteks',
+    'Historial de cambios': 'Riwayat perubahan',
+    'Los 10 últimos cambios en los ajustes del AaaS, con quién los hizo y por qué. No enseña los valores.': '10 perubahan terakhir pada pengaturan AaaS, beserta siapa yang mengubah dan alasannya. Nilainya tidak ditampilkan.',
+    'Límites': 'Batas',
+    'Topes': 'Batas biaya modul',
+    'Trabajos': 'Tugas',
+    'Tope mensual': 'Batas bulanan',
+    'Subida de tope': 'Kenaikan batas',
+    'Ruta': 'Ruta',
+    'Capital': 'Modal',
+    'Objetivo de margen': 'Target margin',
+    'IVA de proveedores': 'PPN pemasok',
+    'Gastos fijos': 'Biaya tetap',
+    'Freno por pérdidas': 'Rem kerugian',
+    'Anulada': 'Dibatalkan',
+    'Caducada': 'Kedaluwarsa',
+    'Ya no se cumplía, así que no se ha hecho.': 'Sudah tidak berlaku, jadi tidak dijalankan.',
+    'El límite de ese módulo ya no lo permite, así que no se ha hecho.': 'Batas modul itu sudah tidak mengizinkannya, jadi tidak dijalankan.',
+    'Caducó sin que nadie la decidiera.': 'Kedaluwarsa sebelum ada yang memutuskan.',
+    'Aviso en la reserva {r}: moto en el taller': 'Peringatan di booking {r}: motor di bengkel',
+    'Aviso en la reserva {r}: moto dada de baja': 'Peringatan di booking {r}: motor tidak dipakai',
+    'Aviso en la reserva {r}: moto todavía fuera en otra reserva': 'Peringatan di booking {r}: motor masih keluar di booking lain',
+    'Aviso en la reserva {r}: un motivo que esta pantalla aún no conoce': 'Peringatan di booking {r}: alasan yang belum dikenal layar ini',
+    'Acción aceptada y hecha.': 'Tindakan diterima dan dijalankan.',
+    'Acción rechazada.': 'Tindakan ditolak.',
+    'No se ha hecho: ya no se cumplía.': 'Tidak dijalankan: sudah tidak berlaku.',
+    'No se ha hecho: el límite de ese módulo ya no lo permite.': 'Tidak dijalankan: batas modul itu sudah tidak mengizinkannya.',
+    'No se ha hecho: había caducado.': 'Tidak dijalankan: sudah kedaluwarsa.',
+    'El AaaS es un módulo de pago: lo enciende el estudio cuando el negocio lo contrata.': 'AaaS adalah modul berbayar: studio yang mengaktifkannya setelah usaha ini berlangganan.',
+    'Este módulo no es para el tipo de negocio de este ERP.': 'Modul ini bukan untuk jenis usaha ERP ini.',
+    'Uno de los módulos ya no puede llevar límite en este ERP: recarga la página y vuelve a guardar.': 'Salah satu modul sudah tidak bisa diberi batas di ERP ini: muat ulang halaman lalu simpan lagi.',
+    'El contexto no se ha guardado: no puede llevar enlaces, y como mucho 600 caracteres en «Quién es el negocio», 300 en los horarios, 200 en el tono y 20 reglas de 200.': 'Konteks tidak tersimpan: tidak boleh ada tautan, dan maksimal 600 karakter di «Tentang usaha ini», 300 di jam buka, 200 di nada bicara, dan 20 aturan masing-masing 200.',
+    'Alguien ya lo decidió: así ha quedado.': 'Sudah ada yang memutuskannya: beginilah hasilnya.',
+    'Este ERP aún no tiene trabajos del AaaS para su tipo de negocio.': 'ERP ini belum punya tugas AaaS untuk jenis usahanya.',
+    'Cancelar la subida': 'Batalkan kenaikan',
+    'Este módulo se apagó después de guardar su límite: ahora no se aplica, hasta que el dueño vuelva a guardar los límites.': 'Modul ini dimatikan setelah batasnya disimpan: sekarang tidak berlaku, sampai pemilik menyimpan batas lagi.',
+    'Qué puede hacer': 'Yang boleh dilakukan',
+    'Ningún módulo de este ERP puede llevar límite ahora mismo.': 'Saat ini tidak ada modul di ERP ini yang bisa diberi batas.',
+    'Ya no está en este ERP: no se aplica, y al guardar los límites se retira.': 'Sudah tidak ada di ERP ini: tidak berlaku, dan akan dihapus saat batas disimpan.',
+    'El tope de cada módulo va en {m}. Entre todos no pueden pasar del tope mensual ({x}). Déjalo vacío si ese módulo no lleva tope propio.': 'Batas setiap modul dalam {m}. Jumlah semuanya tidak boleh melebihi batas bulanan ({x}). Kosongkan jika modul itu tidak punya batas sendiri.',
+    '{n} de {m} caracteres': '{n} dari {m} karakter',
+    '{n} de 20 reglas': '{n} dari 20 aturan',
+    'El estudio': 'Studio',
+    'Cambió': 'Berubah',
+    'Guardado sin cambios.': 'Disimpan tanpa perubahan.',
+    'Todavía no hay cambios en los ajustes del AaaS.': 'Belum ada perubahan pada pengaturan AaaS.',
+    'El AaaS propone una acción que espera tu decisión.': 'AaaS mengusulkan satu tindakan yang menunggu keputusan Anda.',
+    'El AaaS propone una acción que espera la decisión del dueño.': 'AaaS mengusulkan satu tindakan yang menunggu keputusan pemilik.',
+    'El AaaS propone {n} acciones que esperan tu decisión.': 'AaaS mengusulkan {n} tindakan yang menunggu keputusan Anda.',
+    'El AaaS propone {n} acciones que esperan la decisión del dueño.': 'AaaS mengusulkan {n} tindakan yang menunggu keputusan pemilik.',
+    'Ver las acciones': 'Lihat tindakannya',
+    'sin número en este sistema': 'tanpa nomor di sistem ini',
+    'Acción de un tipo que esta pantalla aún no conoce.': 'Tindakan jenis yang belum dikenal layar ini.',
+    'Propuesta el': 'Diusulkan pada',
+    'Caduca el': 'Kedaluwarsa pada',
+    'Decidida por': 'Diputuskan oleh',
+    'Las acepta o las rechaza el dueño de la ficha del AaaS.': 'Pemilik pengaturan AaaS yang menerima atau menolaknya.',
+    'El AaaS no ha propuesto ninguna acción en los últimos 30 días.': 'AaaS belum mengusulkan tindakan apa pun dalam 30 hari terakhir.',
+    'La pantalla no tiene todos los módulos: recarga la página antes de guardar.': 'Layar ini tidak memuat semua modul: muat ulang halaman sebelum menyimpan.',
+    'El tope de «{x}» no se entiende: escríbelo con cifras y sin separador de miles, por ejemplo 37 o 37.50.': 'Batas untuk «{x}» tidak jelas: tulis dengan angka tanpa pemisah ribuan, misalnya 37 atau 37.50.',
+    'Límites guardados.': 'Batas tersimpan.',
+    'Algún campo pasa de su largo máximo: mira el contador de cada uno.': 'Ada kolom yang melebihi panjang maksimal: lihat penghitung di bawah setiap kolom.',
+    'Como mucho 20 reglas, y hay {n}.': 'Maksimal 20 aturan, dan ada {n}.',
+    'La regla {n} pasa de 200 caracteres.': 'Aturan {n} lebih dari 200 karakter.',
+    'Contexto guardado.': 'Konteks tersimpan.',
+    'El tope se queda en {x} y la subida a {y} no entrará.': 'Batas tetap {x} dan kenaikan ke {y} tidak akan berlaku.',
+    'Subida cancelada: el tope no cambia.': 'Kenaikan dibatalkan: batas tidak berubah.'
   };
   var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
   var traduce = function (r) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(r); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
@@ -263,9 +530,23 @@
   function msg(n, m) { var e = $a(n); e.textContent = m || ''; oculta(e, !m); }
   var exito = function (m) { msg('exito', m); }, error = function (m) { msg('error', m); };
 
-  var TRABAJOS = ['flota', 'salidas', 'vueltas', 'bloqueos', 'cobros', 'taller', 'ocupacion', 'cierre'];
-  var NOMBRE = { flota: 'Flota y taller', salidas: 'Salidas y recogidas de mañana', vueltas: 'Motos que no han vuelto', bloqueos: 'Reservas sin pagar que caducan',
+  /* Qué trabajos hay y en qué orden lo dice la BASE (`trabajos_orden`: el catálogo de esta instancia, según su tipo de negocio). Aquí solo va el NOMBRE de
+     cada trabajo por su id: un tipo nuevo (propiedades, servicios) añade sus ids a este diccionario sin tocar nada más. Un id sin nombre se enseña tal cual. */
+  var NOMBRE = { /* Reservas */ flota: 'Flota y taller', salidas: 'Salidas y recogidas de mañana', vueltas: 'Motos que no han vuelto', bloqueos: 'Reservas sin pagar que caducan',
                  cobros: 'Cobros por cuadrar', taller: 'Qué sacar primero del taller', ocupacion: 'Modelos siempre llenos o vacíos', cierre: 'Cierre del día' };
+  /* Límites por módulo (agente_ficha_limites): 0..3, lo mismo que guarda la base en agente_ficha.niveles. */
+  var NIVELES = { 0: 'Nunca', 1: 'Lo propone y decide el dueño', 2: 'Lo hace, sin pasar del tope', 3: 'Lo hace solo' };
+  /* Historial: el NOMBRE de cada campo de la ficha que cambió (la base nunca da valores). Uno desconocido se enseña tal cual. */
+  var CAMPO = { niveles: 'Límites', niveles_en: 'Límites', topes_cent: 'Topes', contexto: 'Contexto del negocio', trabajos: 'Trabajos', tope_mensual_cent: 'Tope mensual',
+                tope_propuesto_cent: 'Subida de tope', tope_propuesto_desde: 'Subida de tope', nivel_ruta: 'Ruta', capital_cent: 'Capital', objetivo_margen_cent: 'Objetivo de margen',
+                bot_telegram: 'Avisos por Telegram', iva_proveedores: 'IVA de proveedores', fijos: 'Gastos fijos', freno_perdida_cent: 'Freno por pérdidas' };
+  /* Acciones que propone el AaaS (agente_notas_datos.acciones y agente_accion_decide) */
+  var ACC_ESTADO = { pendiente: 'Pendiente', aceptada: 'Aceptada', rechazada: 'Rechazada', anulada: 'Anulada', caducada: 'Caducada' };
+  var ACC_MOTIVO = { datos: 'Ya no se cumplía, así que no se ha hecho.', nivel: 'El límite de ese módulo ya no lo permite, así que no se ha hecho.', caducada: 'Caducó sin que nadie la decidiera.' };
+  var ACC_AVISO = { unidad_en_taller: 'Aviso en la reserva {r}: moto en el taller', unidad_de_baja: 'Aviso en la reserva {r}: moto dada de baja',
+                    unidad_doble: 'Aviso en la reserva {r}: moto todavía fuera en otra reserva' };
+  var ACC_RESULTADO = { aceptada: 'Acción aceptada y hecha.', rechazada: 'Acción rechazada.', datos: 'No se ha hecho: ya no se cumplía.',
+                        nivel: 'No se ha hecho: el límite de ese módulo ya no lo permite.', caducada: 'No se ha hecho: había caducado.' };
   var SIN_DATOS = { flota: 'Sin motos en este sistema todavía.', cobros: 'Sin reservas ni pagos en este sistema todavía.' };
   var PANTALLA = { taller: ['/intranet/v4/taller/', 'Ver en Taller'], flota: ['/intranet/v4/flota/', 'Ver en Flota y tarifas'], hoy: ['/intranet/v4/home/', 'Ver en Hoy'],
                    reservas: ['/intranet/v4/reservas-producto/', 'Ver en Reservas de producto'] };
@@ -287,10 +568,17 @@
   var POR_HINT = { agente_freno: 'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).', agente_solo_owner: 'Esto solo lo puede hacer el dueño de la ficha del AaaS.',
                    cuenta_pruebas: 'La cuenta de pruebas no puede cambiar nada aquí.',
                    /* A13 de erp-alta (20261014021000): el interruptor de módulos no deja encender uno de pago ni uno de tipo sin sembrar */
-                   tipos_sin_sembrar: 'Este ERP aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender el AaaS.', modulo_de_pago: 'El AaaS es un módulo de pago: solo se enciende desde esta ventana, por su dueño.' };
+                   tipos_sin_sembrar: 'Este ERP aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender el AaaS.',
+                   modulo_de_pago: 'El AaaS es un módulo de pago: lo enciende el estudio cuando el negocio lo contrata.',
+                   modulo_de_otro_tipo: 'Este módulo no es para el tipo de negocio de este ERP.',
+                   /* la ventana de configuración (060500) */
+                   agente_modulo_fuera: 'Uno de los módulos ya no puede llevar límite en este ERP: recarga la página y vuelve a guardar.',
+                   agente_contexto_forma: 'El contexto no se ha guardado: no puede llevar enlaces, y como mucho 600 caracteres en «Quién es el negocio», 300 en los horarios, 200 en el tono y 20 reglas de 200.',
+                   ya_decidida: 'Alguien ya lo decidió: así ha quedado.' };
 
   var SB = null;
-  var E = { estado: null, notas: null };
+  /* sucio: el dueño está escribiendo en ese formulario; recargar (tras otro botón) no le borra lo que lleva */
+  var E = { estado: null, notas: null, sucio: { ajustes: false, limites: false, contexto: false } };
 
   /* Una entrada por RPC, con el nombre LITERAL (erp/contrato_front.py extrae `.rpc('x')` y `lwDatos('x')`). agente_notas_datos es *_datos (dueña erp_lector) y va por lwDatos;
      agente_panel_estado NO lo es (dueña postgres: responde con el módulo apagado) y va por sb.rpc, igual que las que escriben. */
@@ -302,7 +590,10 @@
     agente_para: function () { return SB.rpc('agente_para', {}); },
     agente_reanuda: function () { return SB.rpc('agente_reanuda', {}); },
     agente_ficha_ajusta: function (a) { return SB.rpc('agente_ficha_ajusta', a); },
-    agente_modulo_cambia: function (a) { return SB.rpc('agente_modulo_cambia', a); }
+    agente_modulo_cambia: function (a) { return SB.rpc('agente_modulo_cambia', a); },
+    agente_ficha_limites: function (a) { return SB.rpc('agente_ficha_limites', a); },
+    agente_ficha_contexto: function (a) { return SB.rpc('agente_ficha_contexto', a); },
+    agente_accion_decide: function (a) { return SB.rpc('agente_accion_decide', a); }
   };
   function llama(nombre, args) {
     var p;
@@ -326,6 +617,18 @@
       && typeof d.moneda === 'string' && /^[A-Z]{3}$/.test(d.moneda) && (d.ultima_pasada == null || esObj(d.ultima_pasada));
   }
   function notasOk(d) { return esObj(d) && Array.isArray(d.notas) && Array.isArray(d.propuestas) && esObj(d.nombres) && typeof d.dia === 'string'; }
+  /* Cada bloque nuevo mira su propia parte de la respuesta: una clave que falta se dice en SU bloque («no se ha podido mirar»), no deja la página en blanco. */
+  var NO_MIRADO = 'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.';
+  function ordenDe(d) { return d && Array.isArray(d.trabajos_orden) && d.trabajos_orden.every(function (t) { return typeof t === 'string' && t; }) ? d.trabajos_orden : null; }
+  function limiteOk(l) { return esObj(l) && typeof l.modulo === 'string' && l.modulo && ent(l.nivel) && l.nivel >= 0 && l.nivel <= 3 && ent(l.nivel_efectivo) && (l.tope_cent == null || ent(l.tope_cent)); }
+  function nombreTrabajo(t) { return NOMBRE[t] ? T(NOMBRE[t]) : String(t); }
+  /* El nombre de un módulo es el rótulo del registro (modulos_rotulos.json → window.AXW_MAPA_MODULOS.n, que deja la capa de módulos en guard.js), en
+     español; lwTSuave lo traduce solo si el diccionario lo tiene. Es un dato: nunca pasa por T(). Sin rótulo, su id. */
+  function nombreModulo(m) {
+    var M = window.AXW_MAPA_MODULOS, n = M && esObj(M.n) ? M.n[m] : null;
+    var s = Array.isArray(n) && typeof n[0] === 'string' && n[0] ? n[0] : String(m == null ? '' : m);
+    return typeof window.lwTSuave === 'function' ? window.lwTSuave(s) : s;
+  }
 
   /* ── pintar: estado ── */
   function dato(etq, valor, chip) {
@@ -352,7 +655,7 @@
       if (!d.parado && d.puedo_decidir) acc.appendChild(C.boton(T('Parar'), 'ag-parar'));
       if (d.parado && d.soy_dueno) acc.appendChild(C.boton(T('Reanudar'), 'ag-reanudar', { 'data-primario': '1' }));
       if (d.soy_dueno) acc.appendChild(C.boton(T('Apagar el AaaS'), 'ag-apagar', { 'data-peligro': '1' }));
-      if (!d.soy_dueno) motivo = T('Reanudar, encender, apagar, los trabajos y el tope son del dueño de la ficha del AaaS.');
+      if (!d.soy_dueno) motivo = T('Reanudar, encender, apagar, los trabajos, el tope, los límites y el contexto son del dueño de la ficha del AaaS.');
     }
     msg('motivo-estado', motivo);
   }
@@ -392,7 +695,7 @@
   function tarjeta(trabajo, n) {
     var est = n ? n.estado : 'sin_nota';
     var t = h('article', { class: 'ag-tarjeta', 'data-ag': 'nota', 'data-trabajo': trabajo, 'data-estado': est });
-    var cab = h('div', { class: 'ag-cab' }, [h('h3', { text: T(NOMBRE[trabajo]) })]);
+    var cab = h('div', { class: 'ag-cab' }, [h('h3', { text: nombreTrabajo(trabajo) })]);
     if (n) cab.appendChild(C.chip(T(n.pasada === 'tarde' ? 'Pasada de la tarde' : 'Pasada de la mañana')));
     t.appendChild(cab);
     if (!n) { t.appendChild(h('p', { class: 'ag-sub', text: T('Sin pasada todavía hoy.') })); return t; }
@@ -430,14 +733,20 @@
     oculta($a('bloque-hoy'), false);
     $a('dia').textContent = C.fechaDia(d.dia);
     var caja = vacia($a('hoy'));
-    /* la nota más reciente de cada trabajo (la de la tarde manda sobre la de la mañana) */
-    var ult = {};
+    var orden = ordenDe(E.estado);
+    if (!orden) { msg('error-hoy', T(NO_MIRADO)); return; }
+    /* la nota más reciente de cada trabajo (la de la tarde manda sobre la de la mañana). Una nota de un trabajo que ya no está en el catálogo
+       de esta instancia no se calla: va al final, con su id. */
+    var ult = {}, fuera = [];
     d.notas.forEach(function (n) {
-      if (!esObj(n) || TRABAJOS.indexOf(n.trabajo) < 0) return;
+      if (!esObj(n) || typeof n.trabajo !== 'string' || !n.trabajo) return;
+      if (orden.indexOf(n.trabajo) < 0 && fuera.indexOf(n.trabajo) < 0) fuera.push(n.trabajo);
       var prev = ult[n.trabajo];
       if (!prev || (n.pasada === 'tarde' && prev.pasada !== 'tarde') || (n.pasada === prev.pasada && String(n.creada_en) > String(prev.creada_en))) ult[n.trabajo] = n;
     });
-    TRABAJOS.forEach(function (tr) { caja.appendChild(tarjeta(tr, ult[tr] || null)); });
+    var todos = orden.concat(fuera);
+    if (!todos.length) { caja.appendChild(h('p', { class: 'axw-vacio', 'data-ag': 'sin-trabajos-hoy', text: T('Este ERP aún no tiene trabajos del AaaS para su tipo de negocio.') })); return; }
+    todos.forEach(function (tr) { caja.appendChild(tarjeta(tr, ult[tr] || null)); });
   }
   function pintaPropuestas(d) {
     oculta($a('bloque-propuestas'), false);
@@ -460,22 +769,167 @@
   function pintaAjustes(d) {
     oculta($a('bloque-ajustes'), false);
     oculta($a('bloque-mas'), false);
-    var cj = vacia($a('trabajos'));
-    TRABAJOS.forEach(function (tr) {
-      var id = 'ag-t-' + tr;
-      var cb = h('input', { type: 'checkbox', id: id, 'data-trabajo': tr });
-      cb.checked = d.trabajos[tr] === true;
-      cj.appendChild(h('label', { class: 'ag-check', for: id }, [cb, h('span', { text: T(NOMBRE[tr]) })]));
-    });
-    F('nivel_ruta').value = d.nivel_ruta === 1 ? '1' : '0';
+    var orden = ordenDe(d);
+    var sin = $a('sin-trabajos');
+    sin.textContent = !orden ? T(NO_MIRADO) : (orden.length ? '' : T('Este ERP aún no tiene trabajos del AaaS para su tipo de negocio.'));
+    oculta(sin, !!(orden && orden.length));
+    if (!E.sucio.ajustes) {
+      var cj = vacia($a('trabajos'));
+      (orden || []).forEach(function (tr, i) {
+        var id = 'ag-t-' + i;
+        var cb = h('input', { type: 'checkbox', id: id, 'data-trabajo': tr });
+        cb.checked = d.trabajos[tr] === true;
+        cj.appendChild(h('label', { class: 'ag-check', for: id }, [cb, h('span', { text: nombreTrabajo(tr) })]));
+      });
+      F('nivel_ruta').value = d.nivel_ruta === 1 ? '1' : '0';
+      F('tope').value = String(d.tope_mensual_cent / 100);
+    }
     var etq = $a('tope-etiqueta'); etq.textContent = T('Tope de gasto al mes') + ' (' + d.moneda + ')';
-    F('tope').value = String(d.tope_mensual_cent / 100);
     var ayuda = T('Subir el tope tarda 24 h en entrar; bajarlo es inmediato.');
     if (ent(d.tope_propuesto_cent)) ayuda += ' ' + Tf('Hay una subida pendiente a {x}: bajar el tope ahora la cancela.', { x: eur(d.tope_propuesto_cent, d) });
     if (typeof d.usd_por_eur === 'number' && d.usd_por_eur > 0) ayuda += ' ' + Tf('Unos {u} USD al cambio de hoy.', { u: Math.round(d.tope_mensual_cent / 100 * d.usd_por_eur) });
     $a('tope-ayuda').textContent = ayuda;
+    /* «Cancelar la subida»: solo con una subida pendiente y solo el dueño. Manda el tope GUARDADO (no null): pedir el mismo tope la cancela sin bajarlo. */
+    var acc = $a('acciones-ajustes'), viejo = acc.querySelector('[data-accion="ag-cancelar-subida"]');
+    if (viejo) acc.removeChild(viejo);
+    if (d.soy_dueno && ent(d.tope_propuesto_cent)) acc.appendChild(C.boton(T('Cancelar la subida'), 'ag-cancelar-subida'));
     $a('ajustes').disabled = !d.soy_dueno;
     msg('motivo-ajustes', d.soy_dueno ? '' : T('Solo lo cambia el dueño de la ficha del AaaS.'));
+  }
+
+  /* ── pintar: límites por módulo ── */
+  function filaLimite(l, i, d) {
+    var sel = h('select', { id: 'ag-l-n-' + i, 'data-limite': 'nivel' });
+    [0, 1, 2, 3].forEach(function (n) { sel.appendChild(h('option', { value: String(n), text: T(NIVELES[n]) })); });
+    sel.value = String(l.nivel);
+    var tope = h('input', { id: 'ag-l-t-' + i, type: 'text', inputmode: 'decimal', autocomplete: 'off', 'data-limite': 'tope' });
+    tope.value = ent(l.tope_cent) ? String(l.tope_cent / 100) : '';
+    var nom = h('div', { class: 'ag-limite-nombre' }, [h('strong', { text: nombreModulo(l.modulo) })]);
+    if (l.nivel_efectivo !== l.nivel) nom.appendChild(h('p', { class: 'ag-limite-aviso', 'data-ag': 'limite-aviso', text: T('Este módulo se apagó después de guardar su límite: ahora no se aplica, hasta que el dueño vuelva a guardar los límites.') }));
+    return h('div', { class: 'ag-limite', 'data-ag': 'limite', 'data-modulo': l.modulo }, [nom,
+      h('div', { class: 'axw-campo' }, [h('label', { for: 'ag-l-n-' + i, text: T('Qué puede hacer') }), sel]),
+      h('div', { class: 'axw-campo' }, [h('label', { for: 'ag-l-t-' + i, text: T('Tope') + ' (' + d.moneda + ')' }), tope])]);
+  }
+  function pintaLimites(d) {
+    oculta($a('bloque-limites'), false);
+    var form = $a('limites-form'), caja = $a('limites'), fuera = vacia($a('limites-fuera'));
+    msg('error-limites', '');
+    form.disabled = !d.soy_dueno;
+    msg('motivo-limites', d.soy_dueno ? '' : T('Solo lo cambia el dueño de la ficha del AaaS.'));
+    if (!Array.isArray(d.limites) || !d.limites.every(limiteOk) || !Array.isArray(d.limites_fuera)) {
+      oculta(form, true); msg('error-limites', T(NO_MIRADO)); return;
+    }
+    oculta(form, false);
+    if (!E.sucio.limites) {
+      vacia(caja);
+      if (!d.limites.length) caja.appendChild(h('p', { class: 'axw-vacio', 'data-ag': 'sin-limites', text: T('Ningún módulo de este ERP puede llevar límite ahora mismo.') }));
+      d.limites.forEach(function (l, i) { caja.appendChild(filaLimite(l, i, d)); });
+    }
+    d.limites_fuera.forEach(function (f) {
+      if (!esObj(f)) return;
+      fuera.appendChild(h('li', { 'data-ag': 'limite-fuera', 'data-modulo': String(f.modulo) }, [
+        h('strong', { text: nombreModulo(f.modulo) }), ' · ' + (NIVELES[f.nivel] ? T(NIVELES[f.nivel]) : String(f.nivel)) + ' · ',
+        h('span', { text: T('Ya no está en este ERP: no se aplica, y al guardar los límites se retira.') })]));
+    });
+    oculta($a('bloque-fuera'), !d.limites_fuera.length);
+    $a('topes-ayuda').textContent = Tf('El tope de cada módulo va en {m}. Entre todos no pueden pasar del tope mensual ({x}). Déjalo vacío si ese módulo no lleva tope propio.', { m: d.moneda, x: eur(d.tope_mensual_cent, d) });
+  }
+
+  /* ── pintar: contexto del negocio ── */
+  var CTX = ['ctx_quien', 'ctx_horarios', 'ctx_tono'];
+  function lineasReglas() { return String(F('ctx_reglas').value || '').split(/\r?\n/).map(function (s) { return s.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim(); }).filter(function (s) { return s; }); }
+  function cuentas() {
+    CTX.forEach(function (k) { var el = F(k); $a('cuenta-' + k).textContent = Tf('{n} de {m} caracteres', { n: el.value.length, m: el.getAttribute('data-tope') }); });
+    $a('cuenta-ctx_reglas').textContent = Tf('{n} de 20 reglas', { n: lineasReglas().length });
+  }
+  function pintaContexto(d) {
+    oculta($a('bloque-contexto'), false);
+    var form = $a('contexto-form'), c = d.contexto;
+    msg('error-contexto', '');
+    form.disabled = !d.soy_dueno;
+    msg('motivo-contexto', d.soy_dueno ? '' : T('Solo lo cambia el dueño de la ficha del AaaS.'));
+    if (!esObj(c)) { oculta(form, true); msg('error-contexto', T(NO_MIRADO)); return; }
+    oculta(form, false);
+    if (!E.sucio.contexto) {
+      F('ctx_quien').value = typeof c.quien === 'string' ? c.quien : '';
+      F('ctx_horarios').value = typeof c.horarios === 'string' ? c.horarios : '';
+      F('ctx_tono').value = typeof c.tono === 'string' ? c.tono : '';
+      F('ctx_reglas').value = Array.isArray(c.reglas) ? c.reglas.filter(function (r) { return typeof r === 'string'; }).join('\n') : '';
+    }
+    cuentas();
+  }
+
+  /* ── pintar: historial (los 10 últimos cambios; nunca valores) ── */
+  function pintaHistorial(d) {
+    oculta($a('bloque-historial'), false);
+    var caja = vacia($a('historial'));
+    if (!Array.isArray(d.historial)) { caja.appendChild(h('li', { class: 'axw-error', 'data-ag': 'historial-error', text: T(NO_MIRADO) })); return; }
+    var conCampos = function (x) { return Array.isArray(x.campos) && x.campos.length > 0; };
+    var filas = d.historial.filter(esObj);
+    /* Un guardado puede dejar dos filas gemelas (mismo instante, persona y motivo), una sin campos: se enseña solo la que dice qué cambió. */
+    filas = filas.filter(function (x) {
+      return conCampos(x) || !filas.some(function (y) { return y !== x && conCampos(y) && y.cuando === x.cuando && y.quien === x.quien && y.motivo === x.motivo; });
+    });
+    if (!filas.length) { caja.appendChild(h('li', { class: 'axw-vacio', 'data-ag': 'sin-historial', text: T('Todavía no hay cambios en los ajustes del AaaS.') })); return; }
+    filas.forEach(function (x) {
+      var campos = [];
+      (Array.isArray(x.campos) ? x.campos : []).forEach(function (c) { var s = CAMPO[c] ? T(CAMPO[c]) : String(c); if (campos.indexOf(s) < 0) campos.push(s); });
+      var quien = x.quien === 'estudio' ? T('El estudio') : (x.quien == null || x.quien === '' ? '—' : String(x.quien));
+      caja.appendChild(h('li', { 'data-ag': 'cambio' }, [
+        h('strong', { text: C.fechaHora(x.cuando) + ' · ' + quien }),
+        h('span', { 'data-ag': 'cambio-campos', text: campos.length ? T('Cambió') + ': ' + campos.join(', ') : T('Guardado sin cambios.') }),
+        h('span', { class: 'ag-sub', text: T('Motivo') + ': ' + (x.motivo == null || x.motivo === '' ? '—' : String(x.motivo)) })]));
+    });
+  }
+
+  /* ── pintar: acciones que propone el AaaS ── */
+  function avisoPendientes(d) {
+    var caja = vacia($a('pendientes')), n = d && d.encendido && ent(d.acciones_pendientes) ? d.acciones_pendientes : 0;
+    oculta(caja, n <= 0);
+    if (n <= 0) return;
+    var t;
+    if (n === 1) t = d.soy_dueno ? T('El AaaS propone una acción que espera tu decisión.') : T('El AaaS propone una acción que espera la decisión del dueño.');
+    else t = d.soy_dueno ? Tf('El AaaS propone {n} acciones que esperan tu decisión.', { n: n }) : Tf('El AaaS propone {n} acciones que esperan la decisión del dueño.', { n: n });
+    caja.appendChild(document.createTextNode(t + ' '));
+    caja.appendChild(h('a', { class: 'ag-enlace', href: '#ag-acciones', 'data-ag': 'ir-acciones', text: T('Ver las acciones') }));
+  }
+  function tituloAccion(a) {
+    if (a.accion === 'aviso_reserva' && esObj(a.datos)) {
+      var r = E.notas && esObj(E.notas.nombres) ? E.notas.nombres[a.datos.reserva] : null;
+      r = typeof r === 'string' && r ? r : '(' + T('sin número en este sistema') + ')';
+      return ACC_AVISO[a.datos.motivo] ? Tf(ACC_AVISO[a.datos.motivo], { r: r }) : Tf('Aviso en la reserva {r}: un motivo que esta pantalla aún no conoce', { r: r });
+    }
+    return T('Acción de un tipo que esta pantalla aún no conoce.');
+  }
+  function tarjetaAccion(a, dueno) {
+    /* una pendiente ya vencida no se puede aceptar (la base la daría por caducada): sin botones */
+    var vencida = a.estado === 'pendiente' && !(Date.parse(a.expira_en) > Date.now());
+    var est = vencida ? 'caducada' : String(a.estado);
+    var tono = est === 'aceptada' ? 'ok' : (est === 'pendiente' ? 'espera' : (est === 'rechazada' ? 'mal' : 'neutro'));
+    var b = h('article', { class: 'ag-propuesta', 'data-ag': 'accion', 'data-id': a.id, 'data-estado': est }, [
+      h('div', { class: 'ag-cab' }, [h('h3', { text: tituloAccion(a) }), C.chip(ACC_ESTADO[est] ? T(ACC_ESTADO[est]) : est, tono)]),
+      C.resumen([['Módulo', nombreModulo(a.modulo)], ['Propuesta el', C.fechaHora(a.creada_en)]].concat(est === 'pendiente' ? [['Caduca el', C.fechaHora(a.expira_en)]] : []))]);
+    if (est !== 'pendiente') {
+      var por = est === 'aceptada' ? T('Aceptada por') : (est === 'rechazada' ? T('Rechazada por') : T('Decidida por'));
+      if (a.decidida_en) b.appendChild(h('p', { class: 'ag-sub', text: por + ' ' + (a.decidida_por || '—') + ' ' + T('el') + ' ' + C.fechaHora(a.decidida_en) }));
+      var mot = vencida ? 'caducada' : a.motivo;
+      if (ACC_MOTIVO[mot]) b.appendChild(h('p', { class: 'ag-sub', 'data-ag': 'accion-motivo', text: T(ACC_MOTIVO[mot]) }));
+    } else if (dueno) {
+      b.appendChild(h('div', { class: 'axw-acciones' }, [C.boton(T('Aceptar'), 'ag-acc-aceptar', { 'data-id': a.id, 'data-primario': '1' }), C.boton(T('Rechazar'), 'ag-acc-rechazar', { 'data-id': a.id })]));
+    }
+    return b;
+  }
+  function pintaAcciones(dn) {
+    oculta($a('bloque-acciones'), false);
+    var caja = vacia($a('acciones')), dueno = !!(E.estado && E.estado.soy_dueno);
+    msg('error-acciones', '');
+    msg('motivo-acciones', dueno ? '' : T('Las acepta o las rechaza el dueño de la ficha del AaaS.'));
+    if (!esObj(dn) || !Array.isArray(dn.acciones)) { msg('error-acciones', T(NO_MIRADO)); return; }
+    var lista = dn.acciones.filter(esObj);
+    if (!lista.length) { caja.appendChild(h('p', { class: 'axw-vacio', 'data-ag': 'sin-acciones', text: T('El AaaS no ha propuesto ninguna acción en los últimos 30 días.') })); return; }
+    var pend = function (a) { return a.estado === 'pendiente' && Date.parse(a.expira_en) > Date.now() ? 0 : 1; };
+    lista.slice().sort(function (x, y) { return pend(x) - pend(y) || (String(x.creada_en) < String(y.creada_en) ? 1 : -1); })
+      .forEach(function (a) { caja.appendChild(tarjetaAccion(a, dueno)); });
   }
 
   /* ── cargar ── */
@@ -492,34 +946,49 @@
       E.estado = d;
       oculta(est, true); est.setAttribute('data-tipo', 'listo');
       pintaEstado(d);
-      ['bloque-hoy', 'bloque-propuestas', 'bloque-ajustes', 'bloque-mas'].forEach(function (b) { oculta($a(b), true); });
+      avisoPendientes(d);
+      ['bloque-hoy', 'bloque-acciones', 'bloque-propuestas', 'bloque-ajustes', 'bloque-limites', 'bloque-contexto', 'bloque-historial', 'bloque-mas'].forEach(function (b) { oculta($a(b), true); });
       if (!d.encendido) return;
       pintaAjustes(d);
+      pintaLimites(d);
+      pintaContexto(d);
+      pintaHistorial(d);
       return llama('agente_notas_datos', { p_dia: null }).then(function (rn) {
         msg('error-hoy', '');
         if (rn.error || !notasOk(rn.data)) {
+          var t = rn.error ? textoError(rn.error, true) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
           oculta($a('bloque-hoy'), false); vacia($a('hoy'));
-          msg('error-hoy', rn.error ? textoError(rn.error, true) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'));
+          msg('error-hoy', t);
+          /* las acciones vienen en la misma respuesta: tampoco se han podido mirar, y se dice en su sitio (el aviso de arriba las cuenta) */
+          oculta($a('bloque-acciones'), false); vacia($a('acciones')); msg('error-acciones', t);
           return;
         }
         E.notas = rn.data;
         pintaHoy(rn.data);
+        pintaAcciones(rn.data);
         pintaPropuestas(rn.data);
       });
     });
   }
 
   /* ── escribir ── */
-  function hazYRecarga(btn, nombre, args, ok) {
+  /* o.zona: los mensajes van a ese bloque (exito-<zona> / falla-<zona>) en vez de arriba; o.form: ese formulario deja de estar «sucio» si la base lo guarda. */
+  function hazYRecarga(btn, nombre, args, ok, o) {
+    o = o || {};
+    var mal = function (m) { if (o.zona) msg('falla-' + o.zona, m); else error(m); };
+    var bien = function (m) { if (o.zona) msg('exito-' + o.zona, m); else exito(m); };
     if (!C.ocupa(btn)) return Promise.resolve(false);
     error(''); exito('');
+    if (o.zona) { msg('falla-' + o.zona, ''); msg('exito-' + o.zona, ''); }
     return llama(nombre, args).then(function (r) {
       C.libera(btn);
-      if (r.error) { error(textoError(r.error, false)); return false; }
-      if (!esObj(r.data)) { error(T('La base no confirmó el cambio: recarga antes de repetir.')); return false; }
-      return carga().then(function () { exito(ok); return true; });
+      if (r.error) { mal(textoError(r.error, false)); return false; }
+      if (!esObj(r.data)) { mal(T('La base no confirmó el cambio: recarga antes de repetir.')); return false; }
+      if (o.form) E.sucio[o.form] = false;
+      return carga().then(function () { bien(ok); return true; });
     });
   }
+  function zonaMal(zona, m) { msg('exito-' + zona, ''); msg('falla-' + zona, m); }
   function conMotivo(titulo, explica, peligro, alConfirmar, opcional) {
     var inp = h('input', { type: 'text', maxlength: '300', 'data-campo': 'dialogo-motivo', autocomplete: 'off' });
     var d = C.dialogo(titulo, [h('p', { class: 'ag-sub', text: explica }), C.campo(opcional ? 'Nota (opcional)' : 'Motivo', inp)], [
@@ -542,7 +1011,8 @@
   }
   function alGuardar(btn) {
     var d = E.estado; if (!d || !d.soy_dueno) return;
-    var trabajos = TRABAJOS.filter(function (tr) { var c = raiz.querySelector('[data-trabajo="' + tr + '"][type="checkbox"]'); return c && c.checked; });
+    var trabajos = Array.prototype.filter.call(raiz.querySelectorAll('[data-ag="trabajos"] input[type="checkbox"][data-trabajo]'), function (c) { return c.checked; })
+      .map(function (c) { return c.getAttribute('data-trabajo'); });
     var nivel = F('nivel_ruta').value === '1' ? 1 : 0;
     var imp = C.importe(F('tope').value, 2);
     var m = F('motivo').value.trim();
@@ -550,8 +1020,86 @@
     if (imp.e) { error(T(imp.e === 'ambiguo' ? 'Ese número es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 37 o 37.50.' : 'Escribe un importe con cifras y, si hace falta, un punto o una coma para los céntimos.')); return; }
     if (nivel === 1 && !trabajos.length) { error(T('Elige al menos un trabajo, o pon el nivel de Ruta a 0.')); return; }
     if (m.length < 3 || m.length > 300) { error(T('Escribe el motivo (entre 3 y 300 caracteres).')); return; }
-    hazYRecarga(btn, 'agente_ficha_ajusta', { p_tope_mensual_cent: Math.round(imp.v * 100) === d.tope_mensual_cent ? null : Math.round(imp.v * 100), p_trabajos: trabajos, p_nivel_ruta: nivel, p_motivo: m }, T('Guardado.'))
+    hazYRecarga(btn, 'agente_ficha_ajusta', { p_tope_mensual_cent: Math.round(imp.v * 100) === d.tope_mensual_cent ? null : Math.round(imp.v * 100), p_trabajos: trabajos, p_nivel_ruta: nivel, p_motivo: m }, T('Guardado.'), { form: 'ajustes' })
       .then(function (ok) { if (ok) F('motivo').value = ''; });
+  }
+  /* Límites: se manda la lista ENTERA de `limites` (lo que no se manda, la base lo retira; `limites_fuera` no se manda nunca: es lo que se retira).
+     Un tope vacío no viaja (no se convierte en 0 en silencio). */
+  function alGuardarLimites(btn) {
+    var d = E.estado; if (!d || !d.soy_dueno || !Array.isArray(d.limites)) return;
+    var filas = {};
+    Array.prototype.forEach.call(raiz.querySelectorAll('[data-ag="limite"]'), function (f) { filas[f.getAttribute('data-modulo')] = f; });
+    var niveles = {}, topes = {}, malo = '';
+    d.limites.forEach(function (l) {
+      var f = filas[l.modulo];
+      if (malo) return;
+      if (!f) { malo = T('La pantalla no tiene todos los módulos: recarga la página antes de guardar.'); return; }
+      var n = Number(f.querySelector('[data-limite="nivel"]').value);
+      if (!(n === 0 || n === 1 || n === 2 || n === 3)) { malo = T('La pantalla no tiene todos los módulos: recarga la página antes de guardar.'); return; }
+      niveles[l.modulo] = n;
+      var imp = C.importe(f.querySelector('[data-limite="tope"]').value, 2);
+      if (imp.e) { malo = Tf('El tope de «{x}» no se entiende: escríbelo con cifras y sin separador de miles, por ejemplo 37 o 37.50.', { x: nombreModulo(l.modulo) }); return; }
+      if (!imp.vacio) topes[l.modulo] = Math.round(imp.v * 100);
+    });
+    var m = F('motivo_limites').value.trim();
+    if (!malo && (m.length < 3 || m.length > 300)) malo = T('Escribe el motivo (entre 3 y 300 caracteres).');
+    if (malo) { zonaMal('limites', malo); return; }
+    hazYRecarga(btn, 'agente_ficha_limites', { p_niveles: niveles, p_topes: topes, p_motivo: m }, T('Límites guardados.'), { zona: 'limites', form: 'limites' })
+      .then(function (ok) { if (ok) F('motivo_limites').value = ''; });
+  }
+  /* Contexto: claves vacías no viajan; en quién/horarios/tono un salto de línea pasa a espacio (la base no admite caracteres de control);
+     las reglas, una por línea y sin líneas vacías. Quien decide si vale es la base (hint agente_contexto_forma). */
+  function alGuardarContexto(btn) {
+    var d = E.estado; if (!d || !d.soy_dueno) return;
+    var linea = function (k) { return String(F(k).value || '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/ {2,}/g, ' ').trim(); };
+    var ctx = {}, quien = linea('ctx_quien'), horarios = linea('ctx_horarios'), tono = linea('ctx_tono'), reglas = lineasReglas();
+    if (quien) ctx.quien = quien;
+    if (horarios) ctx.horarios = horarios;
+    if (reglas.length) ctx.reglas = reglas;
+    if (tono) ctx.tono = tono;
+    var m = F('motivo_contexto').value.trim(), malo = '';
+    var larga = -1;
+    reglas.forEach(function (r, i) { if (larga < 0 && r.length > 200) larga = i; });
+    if (quien.length > 600 || horarios.length > 300 || tono.length > 200) malo = T('Algún campo pasa de su largo máximo: mira el contador de cada uno.');
+    else if (reglas.length > 20) malo = Tf('Como mucho 20 reglas, y hay {n}.', { n: reglas.length });
+    else if (larga >= 0) malo = Tf('La regla {n} pasa de 200 caracteres.', { n: larga + 1 });
+    else if (m.length < 3 || m.length > 300) malo = T('Escribe el motivo (entre 3 y 300 caracteres).');
+    if (malo) { zonaMal('contexto', malo); return; }
+    hazYRecarga(btn, 'agente_ficha_contexto', { p_contexto: ctx, p_motivo: m }, T('Contexto guardado.'), { zona: 'contexto', form: 'contexto' })
+      .then(function (ok) { if (ok) F('motivo_contexto').value = ''; });
+  }
+  /* Decidir una acción: un solo envío (ocupa + la tarjeta marcada y sus dos botones apagados hasta repintar). El resultado lo da la base:
+     aceptada, rechazada, anulada (datos | nivel) o caducada; se dice tal cual, sin darla por hecha si no lo está. */
+  function decideAccion(btn, id, acepta) {
+    var art = btn.closest ? btn.closest('[data-ag="accion"]') : null;
+    if (!art || art.getAttribute('data-enviando') === '1') return;
+    if (!C.ocupa(btn)) return;
+    art.setAttribute('data-enviando', '1');
+    var botones = art.querySelectorAll('[data-accion]');
+    Array.prototype.forEach.call(botones, function (b) { b.disabled = true; });
+    var suelta = function () { art.removeAttribute('data-enviando'); Array.prototype.forEach.call(botones, function (b) { b.disabled = false; }); };
+    error(''); exito('');
+    ['exito-acciones', 'aviso-acciones', 'error-acciones'].forEach(function (n) { msg(n, ''); });
+    llama('agente_accion_decide', { p_id: id, p_decision: acepta ? 'aceptada' : 'rechazada' }).then(function (r) {
+      if (r.error) {
+        var t = textoError(r.error, false);
+        if (r.error.hint === 'ya_decidida') return carga().then(function () { C.libera(btn); msg('aviso-acciones', t); });
+        C.libera(btn); suelta(); msg('error-acciones', t); return;
+      }
+      var res = esObj(r.data) && ACC_ESTADO[r.data.estado] ? (r.data.estado === 'anulada' ? r.data.motivo : r.data.estado) : null;
+      if (!res || !ACC_RESULTADO[res]) { C.libera(btn); msg('error-acciones', T('La base no confirmó el cambio: recarga antes de repetir.')); return; }
+      return carga().then(function () {
+        C.libera(btn);
+        msg(res === 'aceptada' || res === 'rechazada' ? 'exito-acciones' : 'aviso-acciones', T(ACC_RESULTADO[res]));
+      });
+    });
+  }
+  function cancelaSubida() {
+    var d = E.estado; if (!d || !d.soy_dueno || !ent(d.tope_propuesto_cent)) return;
+    var guardado = d.tope_mensual_cent;
+    conMotivo(T('Cancelar la subida'), Tf('El tope se queda en {x} y la subida a {y} no entrará.', { x: eur(guardado, d), y: eur(d.tope_propuesto_cent, d) }), false, function (m) {
+      return llama('agente_ficha_ajusta', { p_tope_mensual_cent: guardado, p_trabajos: null, p_nivel_ruta: null, p_motivo: m }).then(function (r) { if (!r.error && esObj(r.data)) exito(T('Subida cancelada: el tope no cambia.')); return r; });
+    });
   }
   function alClic(ev) {
     var el = ev.target.closest ? ev.target.closest('[data-accion]') : null;
@@ -564,6 +1112,10 @@
     else if (a === 'ag-nota-hecha') hazYRecarga(el, 'agente_nota_decide', { p_id: id, p_decision: 'hecha' }, T('Hecho: marcado.'));
     else if (a === 'ag-nota-descartar') hazYRecarga(el, 'agente_nota_decide', { p_id: id, p_decision: 'descartada' }, T('Descartado.'));
     else if (a === 'ag-guardar') alGuardar(el);
+    else if (a === 'ag-guardar-limites') alGuardarLimites(el);
+    else if (a === 'ag-guardar-contexto') alGuardarContexto(el);
+    else if (a === 'ag-cancelar-subida') cancelaSubida();
+    else if (a === 'ag-acc-aceptar' || a === 'ag-acc-rechazar') { if (E.estado && E.estado.soy_dueno) decideAccion(el, id, a === 'ag-acc-aceptar'); }
     else if (a === 'ag-apagar' || a === 'ag-encender') {
       var enc = a === 'ag-encender';
       conMotivo(T(enc ? 'Encender el AaaS' : 'Apagar el AaaS'), T(enc ? 'Al encenderlo, vuelve a mirar el negocio dos veces al día y a dejar avisos aquí. No toca nada.' : 'Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.'),
@@ -578,6 +1130,17 @@
   function init(aut) {
     SB = aut.sb;
     raiz.addEventListener('click', alClic);
+    /* lo que el dueño escribe en un formulario no lo borra el repintado de otro botón (ver E.sucio) */
+    var FORMS = { ajustes: 'ajustes', 'limites-form': 'limites', 'contexto-form': 'contexto' };
+    var alEscribir = function (ev) {
+      var fs = ev.target && ev.target.closest ? ev.target.closest('fieldset[data-ag]') : null;
+      var k = fs ? FORMS[fs.getAttribute('data-ag')] : null;
+      if (!k || /^motivo/.test(ev.target.getAttribute('data-campo') || '')) return;
+      E.sucio[k] = true;
+      if (k === 'contexto') cuentas();
+    };
+    raiz.addEventListener('input', alEscribir);
+    raiz.addEventListener('change', alEscribir);
     carga();
   }
   function arranca() {
