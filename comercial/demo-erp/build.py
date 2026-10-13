@@ -1582,6 +1582,40 @@ LAWANG_SUELTOS = {'0D5B5F': 'primary-container',        # hover del botón prima
                   'EFEADE': 'surface-container',        # --sup-hover
                   'E8E2D5': 'filete', 'F0EBE0': 'filete',  # filetes del papel (documento.css)
                   '6B6C66': 'on-surface-variant', '676B63': 'on-surface-variant'}   # --muted
+# La COLA (bbm-p42c, 13-oct; orquestador: «un documento que recibe el cliente no puede llevar tonos de otra marca»): los colores escritos a
+# mano en el código de LAWANG (están en su repo) que no son token ni suelto: sus tonos de estado propios y la cola larga de grises y cremas
+# cálidos, por FAMILIAS. Clasificados por tono y luz (scratchpad familias.py del 13-oct) y revisados a mano: un crema claro es superficie,
+# no aviso; los degradados oscuros de las tarjetas de proyecto (tw-movil-pc) van a la tinta. Los destinos que no son token de la piel se
+# derivan de su token de estado (FAMILIAS_DERIVADAS). FUERA, a propósito y con nombre (orquestador, 13-oct): ver COLORES_AJENOS.
+LAWANG_FAMILIAS = {
+    'accent-gold': ('2F5D9E', '3E6E8E', '5B4B8A', '6B4E9B', '9DB6CF'),
+    'aviso': ('5C4210', '634A00', '662906', '6A4A14', '6A5A3C', '6B5420', '6B5A3A', '78350F', '7A4B14', '7A5200', '8A3B1C', '8A4B00', '8A5A00', '8A6A34', '8C5E10', '92400E', 'B06A3B', 'B45309', 'B8550A', 'C06C47', 'C8791F', 'C9892B', 'CF6312', 'E8741C', 'F59E0B'),
+    'aviso-borde': ('C5A880', 'D8A984', 'E6D7B4', 'E8C27A', 'EBDCB4', 'FDE68A'),
+    'aviso-fondo': ('FBEEE7', 'FBEFBE', 'FBF3E4', 'FDF6F2', 'FEF3C7', 'FFF1D6', 'FFF4E0', 'FFFAF0', 'FFFBEB'),
+    'deep-lagoon': ('0B3638', '0C3A3C', '0E6B70', '0F2E30', '1F4E4A', '4E8386', '7FB3B5', '9AC0C2', 'A9CDCE'),
+    'filete': ('D6CFC2', 'D6D2C8', 'D6D3D1', 'E2DACA', 'E4E0D6', 'E6E1D6', 'E7DDCD', 'E7E1D2', 'E7E3D2', 'E7E4DC', 'EAE4D3', 'EAE5D8', 'ECE4D6'),
+    'inverse-primary': ('CBD6B6',),
+    'ok': ('065F46', '10B981', '1B4332', '1F5130', '2C4A2C', '2E5B3E', '2F5D3A', '354F2C', '3A5231', '3C4D2D', '98BF98'),
+    'ok-fondo': ('A7F3D0', 'DCEBDC', 'E4F0DA', 'E6EFE9', 'E7EFE3', 'ECF6EF', 'ECFDF5', 'EEF3E6', 'EEF3EA', 'EEF3F0', 'F1F7F5', 'FBFDFC'),
+    'on-background': ('0C0A09', '103436', '123E40', '143236', '1A1E20', '1A494D', '1B2B1A', '1C1917', '1C1B17', '1C1C1C', '1E2522', '204944', '21272A', '22282A', '25423F', '273822', '292524', '2C281E', '2D3F27', '344B2A', '3B2B1E', '483A25', '523D2B'),
+    'on-surface-variant': ('3A3A3A', '44403C', '4A4F4A', '4A5052', '57534E', '5A6062', '5C5A52', '5E625A'),
+    'outline': ('6B6B6B', '6E7B5A', '736B5E', '73777F', '78716C', '78786E', '7B7C74', '7C8B7A', '8A9182'),
+    'outline-variant': ('A8A29E', 'B9B2A4', 'B9B5A8', 'BDBDB5', 'C9BCA4', 'C9C3B4', 'D3C8B2'),
+    'peligro': ('842620', '8A2E22', '9E2F26', 'B5462F', 'BE123C', 'C46A62', 'E11D48', 'F43F5E'),
+    'peligro-fondo': ('E0C6C2', 'E9C9C5', 'F5B8B2', 'F6E1DE', 'F8E3E0', 'FBF3F1', 'FDECEA', 'FFF1EF', 'FFF4F2'),
+    'surface-container': ('EAE8E2', 'EDE8DE', 'EFE7D9', 'EFE8DA', 'EFEAE0', 'EFECE4', 'F0EEE9', 'F1EFE9', 'F2EEE3', 'F3F0E8', 'F3F1EA', 'F4ECD8', 'F4EFE3', 'F4F2EC', 'F5EFE6', 'F5F1E8', 'F6F2E7'),
+    'surface-container-low': ('CFE2E2', 'CFE3E3', 'D9ECEC', 'DCEAE7', 'E3ECF5', 'F2F8F8', 'F3F6EE', 'F5F5F4', 'F6FAF2', 'F7F4EA', 'F7F4EC', 'F7F5EF', 'FAF7F0', 'FAF8F3', 'FAFAF9', 'FBF8F2', 'FBF9F3', 'FBFDF7', 'FDFCF8'),
+}
+# Colores que NO son de otra marca y por eso no entran (ni se cambian ni los cuenta el barrido): la ✕ de AxisWorks (la marca del fabricante,
+# en el icono de las herramientas) y los grises y azules por defecto de Tailwind (preflight y forms; el slate del CRM clásico de leads no está
+# en ninguna lista y por eso tampoco se toca). Los TONOS DE ESTADO de Tailwind que Lawang usa (ámbar, esmeralda, rosa, stone; también los
+# chips del CRM) sí entran por su familia: un «aprobado» lleva el verde de estado de la piel, sea de Tailwind o no. Los colores propios del
+# MAESTRO (no están en el repo de Lawang: avisos de pantalla_comun, fichas de la portada, el velo del cajón de flota) tampoco entran: son de
+# esta casa, no de otro cliente.
+COLORES_AJENOS = {'15181C': 'la ✕ de AxisWorks', 'E2581C': 'la ✕ de AxisWorks', '6B7280': 'Tailwind', '2563EB': 'Tailwind', '3B82F6': 'Tailwind',
+                  '9CA3AF': 'Tailwind', 'E5E7EB': 'Tailwind', 'D1D5DB': 'Tailwind'}
+# destino derivado → (token de la piel, mezcla con el blanco de la hoja). El texto de estado sobre su fondo, ≥ 4,5:1 o PARA.
+FAMILIAS_DERIVADAS = {'aviso-fondo': ('aviso', 0.88), 'aviso-borde': ('aviso', 0.62), 'ok-fondo': ('ok', 0.86)}
 NEUTROS = {(255, 255, 255), (0, 0, 0)}
 # Apariciones de un color de Lawang con más de un significado: (fichero de DIST, texto que tiene que aparecer junto al color —regex sobre
 # 80 caracteres antes y 40 después—, destino, cuántas). Destino None = el token del color (marca); 'ok' = el verde de estado de la piel
@@ -1635,6 +1669,11 @@ def lawang_paleta():
         aborta('colores de Lawang: %s trae solo %d colores (¿cambió su forma?)' % (LAWANG_TW, len(pal)))
     for hx, tok in LAWANG_SUELTOS.items():
         pal.setdefault(_rgb_hex(hx), []).append(tok)
+    for dst, hxs in LAWANG_FAMILIAS.items():
+        for hx in hxs:
+            if hx in COLORES_AJENOS or _rgb_hex(hx) in pal:
+                aborta('colores de Lawang: %s está en LAWANG_FAMILIAS y además es %s' % (hx, COLORES_AJENOS.get(hx) or 'token o suelto de Lawang'))
+            pal[_rgb_hex(hx)] = [dst]
     return pal
 
 
@@ -1663,15 +1702,24 @@ def piel_colores_lawang(dist, nombre):
         return 0
     D = _deriva()
     pal = lawang_paleta()
-    faltan = sorted({t for toks in pal.values() for t in toks} - set(p))
+    p = dict(p)
+    if 'ok' not in p:
+        p['ok'] = p['fiduciary-green']
+    blanco = tuple(p['surface-container-lowest'])
+    faltan = sorted({t for toks in pal.values() for t in toks} - set(p) - set(FAMILIAS_DERIVADAS) - {'peligro-fondo'}
+                    | {b for b, _m in FAMILIAS_DERIVADAS.values()} - set(p))
     if faltan:
         aborta('colores de Lawang: la piel de %s no trae los tokens %s' % (nombre, ', '.join(faltan)))
-    ok = tuple(p['ok'] if 'ok' in p else p['fiduciary-green'])
-    blanco = tuple(p['surface-container-lowest'])
-    destino = {'ok': ok, 'ok-fondo': D.mix(ok, blanco, 0.86), 'ok-tinta': ok}
-    if D.contraste(destino['ok-tinta'], destino['ok-fondo']) < 4.5 or D.contraste(ok, blanco) < 4.5:
-        aborta('colores de estado de %s por debajo de 4,5:1 (ok %.2f sobre blanco, %.2f sobre su fondo)'
-               % (nombre, D.contraste(ok, blanco), D.contraste(destino['ok-tinta'], destino['ok-fondo'])))
+    p['peligro-fondo'] = p.get('error-container')
+    for dst, (base, mezcla) in FAMILIAS_DERIVADAS.items():
+        p[dst] = D.mix(tuple(p[base]), blanco, mezcla)
+    ok = tuple(p['ok'])
+    destino = {'ok': ok, 'ok-fondo': tuple(p['ok-fondo']), 'ok-tinta': ok}
+    bajas = ['%s sobre %s %.2f' % (a, b, D.contraste(tuple(p[a]), tuple(p[b]))) for a, b in
+             (('ok', 'surface-container-lowest'), ('ok', 'ok-fondo'), ('aviso', 'surface-container-lowest'), ('aviso', 'aviso-fondo'),
+              ('peligro', 'surface-container-lowest'), ('peligro', 'peligro-fondo')) if D.contraste(tuple(p[a]), tuple(p[b])) < 4.5]
+    if bajas:
+        aborta('colores de estado de %s por debajo de 4,5:1: %s' % (nombre, ', '.join(bajas)))
     # un color de Lawang compartido por varios tokens que en la piel valen distinto es ambiguo: sin reglas de contexto, PARA
     simple, ambiguos = {}, set()
     for c, toks in pal.items():
