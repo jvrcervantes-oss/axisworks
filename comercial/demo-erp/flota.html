@@ -36,6 +36,8 @@
 .fl-prev{display:flex;flex-direction:column;gap:4px;max-height:220px;overflow:auto;border:1px solid rgb(var(--tema-surface-container-highest, 228 226 221));border-radius:8px;padding:6px 8px}
 .fl-prev>div{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:13px;word-break:break-word}
 .fl-modal textarea{font-family:inherit}
+.fl-check{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px;min-width:0;word-break:break-word}
+.fl-check input{width:18px;height:18px;flex:none}
 details.fl-versiones summary{cursor:pointer;font-weight:600}
 /* Composición del diseño del owner «Reservas · Flota y tarifas» (lienzo AxisWorks ERP Dashboard; p37, 13-oct-2026). Cada modelo es una tarjeta ancha: sus tramos en
    baldosas a la izquierda y sus motos en tabla a la derecha, todo a la vista (sin plegables: al guardar se relee y se repinta). Colores por la piel. */
@@ -231,6 +233,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
 <span class="fl-ayuda" data-fl="n-visibles" role="status"></span>
 <span class="fl-inv-orden"><label for="fl-orden" data-lwt>Ordenar</label><select id="fl-orden" data-fl="orden"><option value="nombre" data-lwt>Nombre</option><option value="motos" data-lwt>Más motos</option><option value="disponibles" data-lwt>Menos disponibles</option><option value="precio" data-lwt>Tarifa de 1 día</option></select></span>
 <button class="axw-boton" type="button" data-accion="fl-actualizar"><span data-lwt>Actualizar</span></button>
+<button class="axw-boton" type="button" data-accion="fl-modelo-nuevo" data-primario="1"><span data-lwt>Nuevo modelo</span></button>
 </div>
 <p class="axw-aviso axw-oculto" data-fl="recortado" data-lwt>La lista está recortada: no se enseñan todos los productos.</p>
 <div class="fl-inv" data-fl="lista" data-vista="modelos"></div>
@@ -269,8 +272,14 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     "Qué": "Apa",
     "Motivo": "Alasan",
     "Tabla": "Tabel",
-    "Aún no hay productos: créalos en Productos.": "Belum ada produk: buat di Produk.",
-    "Ir a Productos": "Buka Produk",
+    "Aún no hay modelos: crea el primero aquí y después pon sus tarifas y sus motos.": "Belum ada model: buat yang pertama di sini, lalu isi tarif dan motornya.",
+    "Nuevo modelo": "Model baru", "Editar modelo": "Ubah model",
+    "Nombre del modelo": "Nama model", "Como lo verá el cliente en la reserva y en la factura.": "Seperti yang dilihat pelanggan di booking dan di faktur.",
+    "Referencia (opcional)": "Referensi (opsional)", "No se puede repetir en el catálogo.": "Tidak boleh sama dengan yang lain di katalog.",
+    "Activo: se puede reservar": "Aktif: bisa di-booking",
+    "El precio del alquiler son sus tarifas por días: se ponen en este mismo modelo.": "Harga sewa adalah tarif per hari: diisi di model ini juga.",
+    "Falta el nombre.": "Nama belum diisi.", "No hay nada que cambiar.": "Tidak ada yang diubah.",
+    "Crear modelo": "Buat model", "Modelo creado: ahora pon sus tarifas y sus motos.": "Model dibuat: sekarang isi tarif dan motornya.",
     "No se ha podido mirar": "Tidak bisa diperiksa",
     "La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.": "Database mengembalikan data yang tidak terduga. Bukan berarti kosong: datanya tidak dapat diperiksa.",
     "El módulo de reservas de producto está apagado en esta instancia: no hay flota que editar. Esto NO quiere decir que esté vacía.": "Modul booking produk nonaktif di instance ini: tidak ada armada yang bisa diedit. Ini BUKAN berarti datanya kosong.",
@@ -402,7 +411,14 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     'La lista está recortada: no se enseñan todos los productos.': 'The list is cut: not all products are shown.',
     'Últimos cambios': 'Latest changes', 'Aún no hay cambios registrados.': 'No changes recorded yet.',
     'Cuándo': 'When', 'Quién': 'Who', 'Qué': 'What', 'Motivo': 'Reason', 'Tabla': 'Table',
-    'Aún no hay productos: créalos en Productos.': 'There are no products yet: create them in Products.', 'Ir a Productos': 'Go to Products',
+    'Aún no hay modelos: crea el primero aquí y después pon sus tarifas y sus motos.': 'There are no models yet: create the first one here, then set its rates and its bikes.',
+    'Nuevo modelo': 'New model', 'Editar modelo': 'Edit model',
+    'Nombre del modelo': 'Model name', 'Como lo verá el cliente en la reserva y en la factura.': 'As the customer will see it in the booking and on the invoice.',
+    'Referencia (opcional)': 'Reference (optional)', 'No se puede repetir en el catálogo.': 'It cannot be repeated in the catalogue.',
+    'Activo: se puede reservar': 'Active: it can be booked',
+    'El precio del alquiler son sus tarifas por días: se ponen en este mismo modelo.': 'The rental price is its rates by days: they are set in this same model.',
+    'Falta el nombre.': 'The name is missing.', 'No hay nada que cambiar.': 'There is nothing to change.',
+    'Crear modelo': 'Create model', 'Modelo creado: ahora pon sus tarifas y sus motos.': 'Model created: now set its rates and its bikes.',
     'No se ha podido mirar': 'It could not be checked',
     'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'The database returned something unexpected. It is not empty: it could not be checked.',
     'El módulo de reservas de producto está apagado en esta instancia: no hay flota que editar. Esto NO quiere decir que esté vacía.': 'The product bookings module is off in this instance: there is no fleet to edit. This does NOT mean it is empty.',
@@ -513,6 +529,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   /* Una entrada por RPC, con el nombre LITERAL: así erp/contrato_front.py ve cada llamada (extrae `.rpc('x')` y `lwDatos('x')`). La lectura va por lwDatos; las que escriben, por sb.rpc. */
   var RPC = {
     producto_flota_datos: function (a) { return window.lwDatos('producto_flota_datos', a); },
+    // el MODELO (nombre, referencia, impuesto, activo; clase 'alquiler' al crearlo): la misma RPC que Productos, con su puerta de admin y de herramienta en la base
+    producto_guarda: function (a) { return SB.rpc('producto_guarda', a); },
     producto_unidades_alta_lote: function (a) { return SB.rpc('producto_unidades_alta_lote', a); },
     producto_unidad_guarda: function (a) { return SB.rpc('producto_unidad_guarda', a); },
     producto_tarifa_guarda: function (a) { return SB.rpc('producto_tarifa_guarda', a); },
@@ -590,7 +608,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   function pintaProducto(p) {
     var r = resumenDe(p), faltan = r.faltan;
     var tarjeta = h('div', { class: 'fl-tarjeta' }, [h('div', { class: 'fl-chips' }, [C.chip(p.activo === false ? T('Inactivo') : T('Activo'), p.activo === false ? 'neutro' : 'ok'),
-      C.chip(p.listo_para_reservar === true ? T('Listo para reservar') : T('No se puede reservar todavía'), p.listo_para_reservar === true ? 'ok' : 'espera')]),
+      C.chip(p.listo_para_reservar === true ? T('Listo para reservar') : T('No se puede reservar todavía'), p.listo_para_reservar === true ? 'ok' : 'espera'),
+      C.boton(T('Editar modelo'), 'fl-modelo-editar', { 'data-producto-id': p.id })]),
       h('dl', { class: 'fl-cuentas' }, [h('dt', { 'data-estado': 'disponible', text: T('Disponible') }), h('dd', { text: String(r.disponible) }), h('dt', { 'data-estado': 'taller', text: T('En taller') }), h('dd', { text: String(r.taller) }),
         h('dt', { 'data-estado': 'baja', text: T('De baja') }), h('dd', { text: String(r.baja) }), h('dt', { text: T('Total') }), h('dd', { text: String(r.total) })])]);
     if (p.listo_para_reservar !== true) {
@@ -883,8 +902,9 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     var est = $v('estado');
     if (!d.productos.length) {
       vacia(est); est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'vacio');
-      est.appendChild(h('span', { text: T('Aún no hay productos: créalos en Productos.') + ' ' }));
-      est.appendChild(h('a', { href: '/intranet/v4/productos/', text: T('Ir a Productos') }));
+      // Flota es el ÚNICO sitio de las motos (owner 13-oct: «¿Fleets and rates y Products no es lo mismo?»): el primer modelo se crea aquí, sin salir de la pantalla
+      est.appendChild(h('p', { text: T('Aún no hay modelos: crea el primero aquí y después pon sus tarifas y sus motos.') }));
+      est.appendChild(C.boton(T('Nuevo modelo'), 'fl-modelo-nuevo', { 'data-primario': '1' }));
     } else { est.textContent = ''; est.className = 'axw-vacio axw-oculto'; est.setAttribute('data-tipo', 'listo'); }
     var t = $v('versiones'), v = d.versiones;
     oculta($v('versiones-vacio'), v.length > 0);
@@ -1117,6 +1137,74 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
         d.error(''); aviso(T('Recargado. Se conserva lo que escribiste: revisa los valores y vuelve a confirmar.'));
       }, function () { C.libera(bt); });
     };
+  }
+
+  /* ── el MODELO: crearlo sin salir de Flota y cambiarle el nombre o si está activo (erp-front, 14-oct-2026; owner 13-oct: «¿Fleets and rates y Products no es lo mismo?») ──
+     Crear manda clase 'alquiler' (como el asistente, S41); una base sin clase de producto no admite el campo y se repite sin él (la base lo pasa a alquiler con la primera
+     moto). El precio de un alquiler son sus tramos: aquí no se pide. Editar manda solo lo que cambió. La referencia y el impuesto de un modelo YA creado no se leen todavía
+     (producto_flota_datos no los da y esta pantalla no lee tablas, revisión previa #256): se editarán aquí cuando la base dé su lectura. Lo decide la base (admin + herramienta). */
+  function abreModelo(pid) {
+    var p = pid ? prodPorId(pid) : null;
+    if (pid && !p) return;
+    var limpia = function (s) { return String(s == null ? '' : s).replace(/^\s+|\s+$/g, ''); };
+    var nombreEl = h('input', { type: 'text', id: 'fl-f-nombre', 'data-campo': 'nombre', autocomplete: 'off', maxlength: '200' });
+    var refEl = null, activoEl = null;
+    nombreEl.value = p && p.nombre != null ? String(p.nombre) : '';
+    var nodos = [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-nombre', text: T('Nombre del modelo') }), nombreEl,
+      h('p', { class: 'fl-ayuda', text: T('Como lo verá el cliente en la reserva y en la factura.') })])];
+    if (!pid) {
+      refEl = h('input', { type: 'text', id: 'fl-f-referencia', 'data-campo': 'referencia', autocomplete: 'off', maxlength: '80' });
+      nodos.push(h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-referencia', text: T('Referencia (opcional)') }), refEl, h('p', { class: 'fl-ayuda', text: T('No se puede repetir en el catálogo.') })]));
+    } else {
+      activoEl = h('input', { type: 'checkbox', id: 'fl-f-activo', 'data-campo': 'activo' });
+      activoEl.checked = p.activo !== false;
+      nodos.push(h('label', { class: 'fl-check', for: 'fl-f-activo' }, [activoEl, h('span', { text: T('Activo: se puede reservar') })]));
+    }
+    nodos.push(h('p', { class: 'fl-ayuda', text: T('El precio del alquiler son sus tarifas por días: se ponen en este mismo modelo.') }));
+    function datos() {
+      var q = {}, nom = limpia(nombreEl.value);
+      if (!nom) return { e: T('Falta el nombre.'), mal: nombreEl };
+      if (!pid) {
+        q = { nombre: nom, clase: 'alquiler', unidad: 'día', activo: true };
+        var ref = limpia(refEl.value);
+        if (ref) q.referencia = ref;
+        return { v: q };
+      }
+      if (nom !== limpia(p.nombre)) q.nombre = nom;
+      if (activoEl.checked !== (p.activo !== false)) q.activo = activoEl.checked;
+      if (!Object.keys(q).length) return { e: T('No hay nada que cambiar.') };
+      return { v: q };
+    }
+    function guarda(bt, d) {
+      var r = datos();
+      marca(nombreEl, r.mal === nombreEl);
+      if (r.e) { d.error(r.e); return; }
+      if (!C.ocupa(bt)) return;
+      d.error(''); d.guardando = true;
+      var pide = function (q) { return llama('producto_guarda', { p_id: pid || null, p_datos: q }); };
+      pide(r.v).then(function (x) {
+        if (!pid && x.error && C.clasifica(x.error).hint === 'campo_no_admitido' && /clase/.test(String(x.error.message || ''))) {
+          var q2 = {}; Object.keys(r.v).forEach(function (k) { if (k !== 'clase') q2[k] = r.v[k]; });
+          return pide(q2);
+        }
+        return x;
+      }).then(function (x) {
+        if (x.error) { d.guardando = false; C.libera(bt); fallo(x.error, d); return; }
+        var nuevo = !pid && typeof x.data === 'string' ? x.data : null;
+        return carga().then(function (l) {
+          C.libera(bt); d.cierra();
+          if (!l.ok) { exito(''); error(T('Se guardó, pero no se pudo volver a leer: recarga la página.')); return; }
+          error(''); aviso('');
+          if (nuevo && cajonAbre(nuevo, null)) { cajonOk(T('Modelo creado: ahora pon sus tarifas y sus motos.')); return; }
+          exito(T('Guardado.')); if (E.cajon) cajonOk(T('Guardado.'));
+        });
+      }, function (e) { d.guardando = false; C.libera(bt); fallo(e, d); });
+    }
+    var b = [{ texto: pid ? T('Confirmar y guardar') : T('Crear modelo'), accion: 'fl-modal-confirmar', primario: true, alclic: guarda },
+             { texto: T('Cancelar'), accion: 'fl-modal-cerrar', cierra: true }];
+    // editar: dentro del cajón, como las demás ventanas del modelo · crear: diálogo de la pantalla (todavía no hay cajón que abrir)
+    var d = pid ? abre(T('Editar modelo'), nodos, b) : C.dialogo(T('Nuevo modelo'), [h('div', { class: 'fl-modal' }, nodos)], b);
+    if (d && !pid) { d.guardando = false; try { nombreEl.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
   }
 
   /* ── editar una moto ── */
@@ -1359,6 +1447,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     // una fila de la vista por moto: abre el cajón de su modelo con esa moto ya en edición (un clic menos)
     if (a === 'fl-cajon-moto') { var uid = el.getAttribute('data-fila-unidad'); if (cajonAbre(el.getAttribute('data-fila-producto'), '.fl-inv-fila[data-fila-unidad="' + uid + '"]')) abreMoto(uid); return; }
     if (a === 'fl-actualizar') { if (C.ocupa(el)) carga().then(function () { C.libera(el); }, function () { C.libera(el); }); }
+    else if (a === 'fl-modelo-nuevo') abreModelo(null);
+    else if (a === 'fl-modelo-editar') abreModelo(el.getAttribute('data-producto-id'));
     else if (a === 'fl-moto-editar') abreMoto(el.getAttribute('data-unidad-id'));
     else if (a === 'fl-lote-abrir') abreLote(el.getAttribute('data-producto-id'));
     else if (a === 'fl-tarifa-abrir') abreTarifa(el.getAttribute('data-producto-id'), null);
