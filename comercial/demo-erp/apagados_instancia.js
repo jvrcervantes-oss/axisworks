@@ -342,7 +342,7 @@
     if (v && typeof v === 'object' && Array.isArray(v.ofrecidos) && typeof v.defecto === 'string' && v.ofrecidos.indexOf(v.defecto) >= 0) {
       lista = [v.defecto].concat(v.ofrecidos.filter(function (c) { return c !== v.defecto; }));
     }
-    /* BBM-67 (bbm-p40, 13-oct): el PAPEL (factura, recibí y su correo) sigue a lo que la base guardó, sin pasar por localStorage: documento.js lo lee
+    /* BBM-72 (bbm-p40, 13-oct): el PAPEL (factura, recibí y su correo) sigue a lo que la base guardó, sin pasar por localStorage: documento.js lo lee
        con axwDocId() al pintar (el primero manda, como _doc_idioma() de la base). Sin fila o con algo que no es uno de los dos pares, null = el build. */
     window.AXW_IDIOMAS_DOC = (lista && [['es', 'en'], ['id', 'en']].some(function (p) { return p.join() === lista.join(); })) ? lista : null;
     var b = window.AXW_IDIOMAS_BUILD;

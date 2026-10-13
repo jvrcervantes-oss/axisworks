@@ -245,5 +245,29 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(ls() === null && E.recargas.length === 0, 'idiomas: forma rara (defecto fuera) → manda el build');
   }
 
+  // 9. El papel (BBM-72, bbm-p40, 13-oct): window.AXW_IDIOMAS_DOC = el par que guardó la base, el primero el defecto; null si no es uno de los dos
+  //    pares. No depende de localStorage ni de que el paquete sepa pintar la interfaz en ese par (el papel lleva los dos en la copia)
+  {
+    const doc = () => JSON.stringify(globalThis.AXW_IDIOMAS_DOC);
+    let E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['en', 'es'], defecto: 'es' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(doc() === '["es","en"]', 'papel: Ajustes es·en (en otro orden) → ["es","en"]');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'id' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(doc() === '["id","en"]', 'papel: Ajustes id·en → ["id","en"]');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: null, guardado: ['es', 'en'] });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(doc() === 'null', 'papel: sin fila → null (manda el build), aunque el navegador tuviera es·en guardado');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'es'], defecto: 'id' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(doc() === 'null', 'papel: un par que no es de los dos → null');
+    E = escenario({ activos: null, build: ['id', 'en'], idiomas: { ofrecidos: ['id', 'en'], defecto: 'xx' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(doc() === 'null', 'papel: forma rara (defecto fuera) → null');
+    E = escenario({ activos: null, build: null, idiomas: { ofrecidos: ['es', 'en'], defecto: 'es' } });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS;
+    ok(doc() === '["es","en"]', 'papel: también se apunta en un paquete sin idiomas del build (el selector solo existe si el build lo puso)');
+  }
+
   console.log('OK apagados_instancia: ' + n + '/' + n);
 })().catch((e) => { console.error('FALLA', e.message); process.exit(1); });

@@ -1991,7 +1991,7 @@ def sistema_documento_fuentes():
         aborta('sistema: falta clasico/facturas/documento.js en el paquete')
     t = open(p, encoding='utf-8').read()
     n = len(DOC_GOOGLE.findall(t))
-    papeles = 2 if 'axwDocId' in t else 1   # BBM-67: la copia de una instancia en indonesio lleva los dos papeles (es·en e id·en)
+    papeles = 2 if 'axwDocId' in t else 1   # BBM-72: la copia de una instancia en indonesio lleva los dos papeles (es·en e id·en)
     if n != papeles:
         aborta('sistema: documento.js tiene %d enlaces a las fuentes de Google con la forma esperada (%d): ¿cambió su <head>?' % (n, papeles))
     t = DOC_GOOGLE.sub(lambda _m: '''<link rel="stylesheet" href="' + base + '/assets/fonts/fonts.css">''', t)
@@ -4020,10 +4020,10 @@ def comprueba_idiomas(dist, idiomas):
 # ── El DOCUMENTO (factura, proforma, recibí) en el par de idiomas de la instancia (owner, 12-oct-2026, BBM-65: «Indonesio e inglés») ───────────────
 # documento.js de Lawang pinta el papel bilingüe es·en, y de él salen la vista previa, el PDF (window.print del iframe) y el correo (la edge recibe el
 # HTML ya armado). En una instancia con `"idiomas": ["id", ...]` en erp/instancias.json, la COPIA pasa a id·en: rótulos, títulos, concepto del
-# recibí, fecha en id-ID fija (del documento, no de quien mira: por eso documento.js sigue en ES_ES_FIJOS) y lang del HTML. El par sale del BUILD y
-# no de AXW_IDIOMAS/localStorage: dos navegadores no pueden emitir el mismo documento en idiomas distintos (decisión por defecto, encargo
-# estudio_erp_plan_unico; cuando la 220000 deje cambiar los idiomas desde Ajustes se decide si el papel la sigue). Sin `idiomas` o con es primero:
-# no se toca nada (Lawang y la demo siguen es·en byte a byte). Los importes no cambian: lwFormatoImporte ya da «1.500.000 IDR», sin decimales.
+# recibí, fecha en id-ID fija (del documento, no de quien mira: por eso documento.js sigue en ES_ES_FIJOS) y lang del HTML. Desde BBM-72 la copia
+# lleva este papel id·en Y el es·en, y elige al pintar según Ajustes › Idiomas (ver DOC_ENVOLTORIO); nunca según AXW_IDIOMAS/localStorage. Sin
+# `idiomas` o con es primero en el build: no se toca nada (Lawang y la demo siguen es·en byte a byte). Los importes no cambian: lwFormatoImporte
+# ya da «1.500.000 IDR», sin decimales.
 # Términos fiscales en indonesio revisados por Legal (bbm-p36, 13-oct); lo que solo confirma un hablante nativo va a la fila del owner.
 DOC_TITULOS_ID = {'factura': 'Invoice', 'proforma': 'Invoice Proforma', 'recibi': 'Kuitansi', 'rectificativa': 'Invoice Koreksi'}
 DOC_PARCHES_ID = (
@@ -4075,6 +4075,19 @@ DOC_PARCHES_ID = (
      "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[DOC_TIPO_REAL]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n' +\n"
      "        'Salam / Kind regards,\\n' + lwMarca('%%firma_correo'));"),
 )
+# BBM-72: lo que es de la INSTANCIA y no del idioma va también al papel es·en (el que sale con Ajustes es·en); sin esto el papel español de una
+# instancia decía «Proyecto · Project» y, en el recibí, «Facturar a · Bill to» (revisor, 13-oct). Mismo criterio que el id·en (Legal, 13-oct).
+DOC_PARCHES_INSTANCIA_ES = (
+    ("'<h3>Facturar a · Bill to</h3>'",
+     "'<h3>' + (d.tipo === 'recibi' ? 'Recibido de · Received from' : 'Facturar a · Bill to') + '</h3>'"),
+    (">Proyecto · Project: <b>'", ">Referencia · Reference: <b>'"),
+)
+# El correo del papel es·en de una instancia, también en los dos idiomas del papel (en Lawang sigue solo en español: no pasa por aquí)
+DOC_CORREO_ES_EN = (
+    "'Buenos días' + (vals.cliente_nombre ? ' ' + vals.cliente_nombre : '') + ',\\n\\n' +\n"
+    "        'Adjunto ' + tipo.toLowerCase() + ' ' + saved.numero + ' para su revisión.\\n' +\n"
+    "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[DOC_TIPO_REAL]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n' +\n"
+    "        'Un saludo / Kind regards,\\n' + lwMarca('%firma_correo')")
 
 
 # La factura y el recibí NUEVOS nacen en la moneda de la instancia (Ajustes › moneda → lwMonedaBase() de guard.js), no en 'EUR' escrito a mano
@@ -4097,13 +4110,13 @@ def moneda_documento():
 DOC_TIPO_REAL_JS ="(vals.rectifica_numero && vals.tipo !== 'proforma' && vals.tipo !== 'recibi' ? 'rectificativa' : vals.tipo)"
 
 
-# BBM-67 (owner 13-oct, «Sí, un solo sitio»; bbm-p40): el idioma del papel lo decide Ajustes › Idiomas, no el build. El documento.js de la copia lleva
+# BBM-72 (owner 13-oct, «Sí, un solo sitio»; bbm-p40): el idioma del papel lo decide Ajustes › Idiomas, no el build. El documento.js de la copia lleva
 # los DOS papeles —el es·en de Lawang, intacto, y el id·en de DOC_PARCHES_ID— cada uno en su ámbito, y elige al pintar con `axwDocId()`: lo que la base
 # guardó (modulos_activos_datos().idiomas, apuntado por apagados_instancia.js en window.AXW_IDIOMAS_DOC: el PRIMERO de la lista manda, igual que
 # _doc_idioma() de la base) y, sin fila o sin saberlo aún, el par del build, como hasta hoy. La decisión sale de la BASE (no de localStorage ni de
 # la interfaz de quien mira): dos navegadores no emiten el mismo documento en idiomas distintos. Contrato de la fila: bbm-p36, 13-oct.
 # El correo que acompaña al PDF (editores.js) sigue la misma regla.
-DOC_ENVOLTORIO = """/* ── bbm-p40, BBM-67: los dos papeles de esta instancia; manda Ajustes › Idiomas (window.AXW_IDIOMAS_DOC), y sin él el par del build ── */
+DOC_ENVOLTORIO = """/* ── bbm-p40, BBM-72: los dos papeles de esta instancia; manda Ajustes › Idiomas (window.AXW_IDIOMAS_DOC), y sin él el par del build ── */
 function axwDocId() {
   var v = (typeof window !== 'undefined') ? window.AXW_IDIOMAS_DOC : null;
   if (Array.isArray(v) && v[0] === 'es') return false;   // solo «es» primero da el papel español; «id» primero, el indonesio
@@ -4136,7 +4149,7 @@ DOC_CORREO_ES = "(typeof axwDocId === 'function' && !axwDocId())"   # el correo 
 
 def documento_idiomas(idiomas):
     """El papel de factura/proforma/recibí y el correo que lo acompaña, en el par de la instancia (ver DOC_PARCHES_ID) o en el que guarde Ajustes ›
-    Idiomas (BBM-67, DOC_ENVOLTORIO). Solo la copia (DIST, antes de reraiz y de quitar comentarios); cada trozo exactamente una vez o el build para."""
+    Idiomas (BBM-72, DOC_ENVOLTORIO). Solo la copia (DIST, antes de reraiz y de quitar comentarios); cada trozo exactamente una vez o el build para."""
     if not idiomas or idiomas[0] != 'id':
         return
     doc = os.path.join(DIST, 'intranet', 'facturas', 'documento.js')
@@ -4157,8 +4170,14 @@ def documento_idiomas(idiomas):
             if pre:   # tipoDocEs: se sustituye la línea entera de su return
                 v_ = "return ((typeof TIPOS_DOC !== 'undefined' && " + v_
                 n_ = "return ((typeof TIPOS_DOC !== 'undefined' && " + n_
-            ed = _una_vez(ed, v_, '(%s ? %s : %s)%s' % (DOC_CORREO_ES, v_[len(pre):-len(fin)], n_[len(pre):-len(fin)], fin) if not pre else
+            # el mensaje del papel es·en va en español + inglés (DOC_CORREO_ES_EN); el asunto, con el título español del tipo
+            es_ = v_[len(pre):-len(fin)]
+            if es_.startswith("'Buenos días'"):
+                es_ = DOC_CORREO_ES_EN.replace('DOC_TIPO_REAL', DOC_TIPO_REAL_JS)
+            ed = _una_vez(ed, v_, '(%s ? %s : %s)%s' % (DOC_CORREO_ES, es_, n_[len(pre):-len(fin)], fin) if not pre else
                           'return %s ? %s : %s;' % (DOC_CORREO_ES, v_[len(pre):-1], n_[len(pre):-1]), 'documento ' + rel_)
+    for viejo, nuevo in DOC_PARCHES_INSTANCIA_ES:   # después de sacar el id·en, que parte del original de Lawang
+        es = _una_vez(es, viejo, nuevo, 'documento: papel es·en de la instancia')
     es = _una_vez(es, DOC_EXPORTS, '', 'documento: module.exports del papel es')
     idd = _una_vez(idd, DOC_EXPORTS, '', 'documento: module.exports del papel id')
     envuelto = (DOC_ENVOLTORIO.replace('__DEFECTO_ID__', 'true')
@@ -4172,12 +4191,13 @@ def documento_idiomas(idiomas):
 
 
 def comprueba_documento_idiomas(dist, idiomas):
-    """Sobre el paquete construido: el documento.js servido no lleva ningún rótulo español del papel. Además corre el arnés
-    (pruebas/documento_idiomas.harness.cjs), que pinta los cinco casos y busca palabras españolas en el resultado: así para un rótulo NUEVO de Lawang."""
+    """Sobre el paquete construido: el documento.js servido lleva el selector de Ajustes › Idiomas (BBM-72), y el arnés
+    (pruebas/documento_idiomas.harness.cjs) pinta el papel id·en (sin fila y con Ajustes id·en) buscando palabras españolas —así para un rótulo
+    NUEVO de Lawang— y el es·en de la instancia (Ajustes es·en) con sus correcciones de instancia."""
     if not idiomas or idiomas[0] != 'id':
         return
     t = open(os.path.join(dist, 'clasico', 'facturas', 'documento.js'), encoding='utf-8').read()
-    # BBM-67: el servido lleva los dos papeles (el es·en de Lawang para Ajustes es·en), así que la lista fija ya no se busca en el fichero entero:
+    # BBM-72: el servido lleva los dos papeles (el es·en de Lawang para Ajustes es·en), así que la lista fija ya no se busca en el fichero entero:
     # se exige el selector y el arnés pinta el papel id·en (sin fila y con Ajustes id·en) y el es·en, y busca español en el id·en
     if 'axwDocId' not in t or 'AXW_IDIOMAS_DOC' not in t:
         aborta('documento: el papel servido no lleva el selector de Ajustes › Idiomas (axwDocId)')

@@ -2,11 +2,13 @@
    node pruebas/documento_idiomas.harness.cjs <paquete construido> [--html <carpeta>]
 
    Carga el documento.js SERVIDO por el paquete (clasico/facturas/), con dinero.js, entities.js y totales.js del mismo paquete, en un ámbito
-   (como documento.test.js de Lawang), pinta los cuatro tipos en IDR y exige:
+   (como documento.test.js de Lawang). Desde BBM-72 ese fichero lleva los dos papeles y elige con Ajustes › Idiomas (window.AXW_IDIOMAS_DOC).
+   Sin fila y con Ajustes id·en pinta los cuatro tipos en IDR y exige:
      · ni una palabra española en el papel (texto sin etiquetas): rótulos, títulos, concepto del recibí, mes de la fecha;
      · la fecha con el mes en indonesio y los importes IDR sin decimales;
-     · <html lang="id"> en la página que va al PDF y al correo;
-     · el correo que acompaña al PDF (editores.js) sin «Buenos días» y con el título indonesio.
+     · <html lang="id"> en la página que va al PDF y al correo.
+   Con Ajustes es·en: el papel español·inglés, lang="es", con lo que es de la instancia («Referencia», y en el recibí «Recibido de»), nunca
+   «Proyecto» ni, en el recibí, «Facturar a». El correo que acompaña al PDF (editores.js) elige con axwDocId(): id+en o es+en.
    Con --html escribe las páginas (documentoPagina) para sacar capturas y PDF. Sin paquete id+en, sale con error: no hay nada que medir. */
 'use strict';
 const fs = require('fs');
@@ -20,7 +22,7 @@ if (!dist || !fs.existsSync(path.join(dist, 'clasico', 'facturas', 'documento.js
   process.exit(2);
 }
 const RUTAS = ['contracts/assets/dinero.js', 'contracts/assets/entities.js', 'clasico/facturas/totales.js', 'clasico/facturas/documento.js'];
-// BBM-67 (bbm-p40, 13-oct): el papel sigue a Ajustes › Idiomas (window.AXW_IDIOMAS_DOC, el primero manda); sin fila, el par del build (id·en en bbm)
+// BBM-72 (bbm-p40, 13-oct): el papel sigue a Ajustes › Idiomas (window.AXW_IDIOMAS_DOC, el primero manda); sin fila, el par del build (id·en en bbm)
 function carga(idiomasDoc) {
   const caja = {};
   new Function('caja', 'window',
@@ -79,6 +81,7 @@ for (const [nombre0, d, numero] of casos) {
     ok(/Tanggal · Date/.test(t) && /Jatuh tempo · Due date/.test(t) && /Ditagihkan kepada · Bill to/.test(t), 'factura: faltan rótulos id·en');
     ok((t.match(/\bInvoice\b/g) || []).length >= 1 && !/Invoice Invoice/.test(t), 'factura: título repetido o ausente');
   }
+  if (nombre0 !== 'vacio') ok(/Referensi · Reference: R-0012/.test(t), nombre + ': falta «Referensi · Reference»');
   if (nombre0 === 'recibi') ok(/Kuitansi/.test(t) && /Receipt/.test(t) && /Pembayaran invoice INV-2026-0001 · Payment of invoice INV-2026-0001/.test(t)
     && /Diterima dari · Received from/.test(t) && !/Bill to/.test(t), 'recibí: título, concepto o «Diterima dari» (un recibí no factura a nadie)');
   if (nombre0 === 'rectificativa') ok(/Mengoreksi · Corrects/.test(t) && /Alasan · Reason/.test(t), 'rectificativa: rótulos');
@@ -93,6 +96,13 @@ for (const [nombre0, d, numero] of casos) {
   ok(/Fecha · Date/.test(t) && /Facturar a · Bill to/.test(t) && /Factura/.test(t), 'Ajustes es·en: el papel no sale en español·inglés: ' + t.slice(0, 200));
   ok(/<html lang="es">/.test(cEs.documentoPagina(b, { numero: 'INV-2026-0001', base: 'https://bbm.axisworks.studio' })), 'Ajustes es·en: la página no va en lang="es"');
   ok(/Pembayaran/.test(carga(['id', 'en']).conceptoCobroRecibi('X')) && /Cobro de la factura/.test(cEs.conceptoCobroRecibi('X')), 'el concepto del recibí no sigue a Ajustes');
+  // lo que es de la instancia también en el papel español (revisor, 13-oct): la referencia y, en el recibí, quién paga
+  ok(/Referencia · Reference: R-0012/.test(t) && !/Proyecto/.test(t), 'Ajustes es·en: la factura dice «Proyecto» en vez de «Referencia»: ' + t.slice(0, 300));
+  const rEs = casosDe().find(x => x[0] === 'recibi')[1];
+  const tr = texto(cEs.documentoHTML(Object.assign({}, rEs, { lineas: [{ descripcion: cEs.conceptoCobroRecibi('INV-2026-0001'), importe: '1.550.000' }] }), { numero: 'REC-2026-0001' }));
+  ok(/Recibido de · Received from/.test(tr) && !/Facturar a/.test(tr) && !/Proyecto/.test(tr) && /Referencia · Reference: R-0012/.test(tr),
+    'Ajustes es·en: el recibí no dice «Recibido de» o arrastra «Facturar a»/«Proyecto»: ' + tr.slice(0, 300));
+  ok(/Recib[ií]/.test(tr) && /Cobro de la factura INV-2026-0001/.test(tr), 'Ajustes es·en: el recibí no lleva su título o su concepto en español');
   ok(!texto(carga(['en', 'id']).documentoHTML(b, { numero: 'X' })).includes('Fecha ·'), 'una lista que no empieza por es no puede dar el papel español');
 }
 // El correo que acompaña al PDF (el paquete minifica: se busca por trozos)
@@ -100,7 +110,8 @@ const ed = fs.readFileSync(path.join(dist, 'assets', 'editores.js'), 'utf8');
 // el correo que acompaña al PDF sigue al papel: el español (el de Lawang) solo si axwDocId() dice que el papel no es indonesio
 ok((ed.match(/typeof axwDocId\s*===?\s*["']function["']\s*&&\s*!axwDocId\(\)\s*\?/g) || []).length >= 2 && /Buenos d[ií]as/.test(ed),
   'correo: asunto y mensaje no eligen con axwDocId()');
-ok(/Terlampir /.test(ed) && /Please find attached /.test(ed), 'correo: falta el mensaje id + en');
+ok(/Terlampir /.test(ed) && (ed.match(/Please find attached /g) || []).length >= 2, 'correo: falta el mensaje id + en o el es + en');
+ok(/Un saludo \/ Kind regards/.test(ed) && /Salam \/ Kind regards/.test(ed), 'correo: la despedida no va en los dos idiomas del papel');
 ok((ed.match(/f0\.moneda\s*\|\|\s*lwMonedaBase\(\)\s*\|\|/g) || []).length === 2, 'factura y recibí nuevos: no nacen en la moneda de la instancia (lwMonedaBase)');
 ok(/["']rectificativa["']/.test(ed),'correo: el asunto no distingue la rectificativa (tipo real del documento)');
 
