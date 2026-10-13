@@ -435,6 +435,98 @@
   if (window.AXW_PASOS && typeof window.AXW_PASOS.registra === 'function') window.AXW_PASOS.registra('cobros', COMP);
   window.AXW_COBROS = { componente: COMP };
 
+  // ── Ajustes › Cobros: «Comisión de pago en línea (%)» (erp-front, 14-oct-2026; contrato de bbm-bot-erp, bbm_bot_al_erp_13oct.md §3a) ─────────────
+  // Se suma a lo que el cliente paga por enlace. Vive en `cobros_comision_pct` (ajustes_config_datos / ajustes_config_guardar), NO en la edge de
+  // las claves: es un bloque aparte, debajo del componente, con su propio botón. Sale solo si la base declara la clave en `editables` (una base sin
+  // ella, como la demo, no lo enseña); el campo se puede cambiar solo si `puede_escribir` (super admin): la pantalla no decide el rol.
+  // La cifra: «3,5» o «3.5» (en indonesio y en español la coma es lo normal; parseFloat('3,5') daría 3 y cambiaría lo que se cobra), de 0 a 10 y
+  // hasta 2 decimales; se manda como NÚMERO JSON y la base lo vuelve a comprobar (hint comision_no_valida). Cambiar un valor que ya había pide motivo
+  // (hint motivo). Enganches: data-axw-comision="…", nunca un rótulo.
+  var ES_COM = ['Comisión de pago en línea (%)',
+    'Se suma a lo que el cliente paga por enlace (moto, extras y entrega; nunca la fianza ni el seguro). 0 = sin comisión. Solo cambia las cotizaciones nuevas.',
+    'Escribe por qué lo cambias (por ejemplo, la tarifa de la pasarela).', 'Motivo del cambio', 'Guardar comisión',
+    'Un número de 0 a 10, con hasta 2 decimales (por ejemplo, 3 o 2,5).', 'No has cambiado la cifra.', 'Comisión guardada.',
+    'La base no ha respondido: no sabemos si se guardó. Recarga la página para verlo.', 'No se guardó: ', 'Solo la cambia el administrador principal.'];
+  var EN_COM = ['Online payment fee (%)',
+    'Added to what customers pay by payment link (bike, extras and delivery; never the deposit or insurance). 0 = no fee. Changes only new quotes.',
+    "Write why you change it (for example, the gateway's rate).", 'Reason for the change', 'Save fee',
+    'A number from 0 to 10, with up to 2 decimals (for example, 3 or 2.5).', "You haven't changed the figure.", 'Fee saved.',
+    "The database didn't answer: we don't know if it was saved. Reload the page to see it.", 'Not saved: ', 'Only the main administrator can change it.'];
+  var ID_COM = ['Biaya pembayaran online (%)',
+    'Ditambahkan ke yang dibayar pelanggan lewat link pembayaran (motor, tambahan dan antar; tidak termasuk deposit atau asuransi). 0 = tanpa biaya. Hanya berlaku untuk penawaran baru.',
+    'Tulis alasan perubahannya (misalnya, tarif gateway).', 'Alasan perubahan', 'Simpan biaya',
+    'Angka 0 sampai 10, paling banyak 2 desimal (misalnya, 3 atau 2,5).', 'Angkanya belum Anda ubah.', 'Biaya tersimpan.',
+    'Basis data tidak menjawab: kami tidak tahu apakah sudah tersimpan. Muat ulang halaman untuk melihatnya.', 'Tidak tersimpan: ', 'Hanya administrator utama yang dapat mengubahnya.'];
+  (function () {
+    ES_COM.forEach(function (k, i) {
+      if (window.LW_EN && typeof window.LW_EN === 'object' && !(k in window.LW_EN)) window.LW_EN[k] = EN_COM[i];
+      if (window.LW_ID && typeof window.LW_ID === 'object' && !(k in window.LW_ID)) window.LW_ID[k] = ID_COM[i];
+    });
+  })();
+  function pct(s) {   // «3», «2,5», «2.75» → número; cualquier otra cosa (vacío, negativo, 3 decimales, miles, letras, > 10) → null
+    s = String(s == null ? '' : s).trim();
+    if (!/^\d{1,2}(?:[.,]\d{1,2})?$/.test(s)) return null;
+    var n = Number(s.replace(',', '.'));
+    return n >= 0 && n <= 10 ? n : null;
+  }
+  function pctTexto(n) { return String(n).replace('.', (window.LW_IDIOMA || 'es') === 'en' ? '.' : ','); }
+  function comision(sec) {
+    if (!sec || document.querySelector('[data-axw-comision="bloque"]') || typeof window.lwDatos !== 'function') return;
+    var caja = el('div', { 'data-axw-comision': 'bloque', class: 'rounded-2xl border border-outline-variant bg-surface-container-low px-5 py-5 flex flex-col gap-3',
+      style: 'margin:0 clamp(16px,3vw,32px) 24px' });
+    caja.hidden = true;
+    sec.appendChild(caja);
+    function lee() {
+      return window.lwDatos('ajustes_config_datos').then(function (r) {
+        var d = r && !r.error ? r.data : null;
+        if (!d || !Array.isArray(d.editables) || d.editables.indexOf('cobros_comision_pct') === -1) return null;
+        return { v: d.valores ? d.valores.cobros_comision_pct : null, escribe: d.puede_escribir === true };
+      }, function () { return null; });
+    }
+    function pintaCom(x) {
+      vacia(caja);
+      if (!x) { caja.hidden = true; return; }
+      caja.hidden = false;
+      var tiene = typeof x.v === 'number';
+      var entrada = el('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', id: 'axw-comision-pct', 'data-axw-comision': 'pct', class: CLS_INPUT, style: 'max-width:10rem' });
+      entrada.value = tiene ? pctTexto(x.v) : '';
+      entrada.disabled = !x.escribe;
+      var motivo = el('input', { type: 'text', autocomplete: 'off', id: 'axw-comision-motivo', 'data-axw-comision': 'motivo', maxlength: '300', class: CLS_INPUT });
+      var est = el('p', { role: 'status', 'aria-live': 'polite', 'data-axw-comision': 'estado', class: 'font-body-sm text-body-sm text-on-surface-variant' });
+      var g = el('button', { type: 'button', 'data-axw-comision': 'guardar', class: BTN1, style: 'min-height:44px;align-self:flex-start', text: T(ES_COM[4]) });
+      caja.appendChild(el('label', { for: 'axw-comision-pct', class: 'font-label-md text-label-md text-on-surface', text: T(ES_COM[0]) }));
+      caja.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: T(ES_COM[1]) }));
+      caja.appendChild(entrada);
+      if (!x.escribe) { caja.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-comision': 'solo-lectura', text: T(ES_COM[10]) })); return; }
+      caja.appendChild(el('label', { for: 'axw-comision-motivo', class: 'font-label-md text-label-md text-on-surface', text: T(ES_COM[3]) }));
+      caja.appendChild(motivo);
+      caja.appendChild(g);
+      caja.appendChild(est);
+      function dice(t, mal) { est.className = 'font-body-sm text-body-sm ' + (mal ? 'text-error' : 'text-on-surface-variant'); est.textContent = t; }
+      g.addEventListener('click', function () {
+        var n = pct(entrada.value);
+        if (n === null) { dice(T(ES_COM[5]), true); entrada.focus(); return; }
+        if (tiene && n === x.v) { dice(T(ES_COM[6]), true); return; }
+        var args = { p_clave: 'cobros_comision_pct', p_valor: n };
+        var m = motivo.value.trim();
+        if (m) args.p_motivo = m;
+        g.disabled = true; dice(S().ui('cargando'), false);
+        var p;
+        try { p = window.LW_SB.rpc('ajustes_config_guardar', args); } catch (e) { p = Promise.reject(e); }
+        Promise.resolve(p).then(function (r) {
+          g.disabled = false;
+          if (r && !r.error) { lee().then(function (y) { pintaCom(y); var e2 = caja.querySelector('[data-axw-comision="estado"]'); if (e2) { e2.textContent = T(ES_COM[7]); } }); return; }
+          var e = (r && r.error) || {};
+          if (!e.code) { dice(T(ES_COM[8]), true); return; }
+          if (e.hint === 'comision_no_valida') { dice(T(ES_COM[5]), true); entrada.focus(); return; }
+          if (e.hint === 'motivo') { dice(T(ES_COM[2]), true); motivo.focus(); return; }
+          dice(T(ES_COM[9]) + S().explica(e, true).texto, true);
+        }, function () { g.disabled = false; dice(T(ES_COM[8]), true); });
+      });
+    }
+    lee().then(pintaCom);
+  }
+
   // ── Ajustes › Cobros: la pestaña (build.py pone data-lw-tab="cobros" oculto y su panel #lw-aj-cobros) ─────────────────────────────────────
   // Sale solo si la base declara el paso «cobros» (puede_configurar) o, para quien no configura, si el módulo de reservas está encendido.
   // El componente se monta al ABRIR la pestaña, nunca al cargar /ajustes/.
@@ -447,6 +539,7 @@
       if (montado || !datos || !abierta()) return;
       montado = true;
       vacia(panel);
+      comision(panel.closest('[data-lw-panel]'));   // una vez: el bloque va FUERA de #lw-aj-cobros, que se vacía en cada vuelta
       if (!datos.puede_configurar) {   // S90 «A module that isn't ready»: sin pasos, sin llamar a la edge
         var m = datos.modulos.filter(function (x) { return x.modulo === 'reservas-producto'; })[0];
         var listo = m && m.estado === 'configurado';

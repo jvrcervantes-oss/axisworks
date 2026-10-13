@@ -124,7 +124,7 @@ const comun = idioma => `
 window.__sinTrad = []; window.__errores = []; window.addEventListener('error', function (e) { window.__errores.push(String(e.message)); });
 function cadena() { var q = { select: function () { return q; }, eq: function () { return q; }, maybeSingle: function () { return Promise.resolve({ data: null, error: null }); } }; return q; }
 var sb = { rpc: function (n, a) { return window.__srv(n, a || {}); }, from: cadena, auth: { getSession: function () { return Promise.resolve({ data: { session: { access_token: 'jwt-de-prueba' } } }); } } };
-window.LW_AUTH = Promise.resolve({ sb: sb }); window.lwDatos = function (n, a) { return sb.rpc(n, a); };
+window.LW_AUTH = Promise.resolve({ sb: sb }); window.LW_SB = sb; window.lwDatos = function (n, a) { return sb.rpc(n, a); };
 window.lwEdge = function (n) { return 'https://sb.test/functions/v1/' + n; }; window.LW_SB_KEY = 'anon';
 window.fetch = function (url, init) { return window.__edge(String(url), init && init.body ? JSON.parse(init.body) : null).then(function (r) {
   if (r.red) throw new TypeError('Failed to fetch');
@@ -158,7 +158,7 @@ async function abre(nav, b, { idioma = 'es', ancho = 1440, url = '/ajustes/#cobr
   p.__consola = [];
   p.on('console', m => p.__consola.push(m.text()));
   await p.route('**/*', r => r.fulfill({ status: 200, contentType: 'text/html', body: tipo === 'ajustes' ? ajustes(idioma) : tipo === 'real' ? ajustesReal(idioma) : asistente(idioma, url) }));
-  await p.exposeFunction('__srv', async (n, a) => { b.rpc.push(n); if (n === 'modulos_setup_estado') return { data: setupEstado(b), error: null }; if (n === 'ajustes_config_datos') return { data: { valores: {} }, error: null }; return { data: null, error: { code: '42883', message: 'x' } }; });
+  await p.exposeFunction('__srv', async (n, a) => { b.rpc.push(n); if (n === 'modulos_setup_estado') return { data: setupEstado(b), error: null }; if (n === 'ajustes_config_datos') return { data: b.ajustes ? JSON.parse(JSON.stringify(b.ajustes)) : { valores: {} }, error: null }; if (n === 'ajustes_config_guardar' && b.guarda) { b.guardados = (b.guardados || []).concat([a]); return b.guarda(a); } return { data: null, error: { code: '42883', message: 'x' } }; });
   await p.exposeFunction('__edge', async (u, c) => (u.endsWith('/functions/v1/ajustes-pagos') ? edge(b, c) : { status: 404, json: null }));
   await p.goto('http://local.test' + url); await p.waitForTimeout(500);
   return { p, ctx };
@@ -550,6 +550,68 @@ const C = '[data-axw-cobros-caja]';
     ok(idioma + ' ' + ancho + ': sin scroll horizontal', w1 <= ancho && w2 <= ancho, w1 + ' / ' + w2);
     if (SHOT) await r2.p.screenshot({ path: path.join(SHOT, 'cobros_configurada_' + idioma + '_' + ancho + '.png'), fullPage: true });
     await r2.ctx.close();
+  }
+
+  // 13. «Comisión de pago en línea (%)» (erp-front 14-oct; contrato bbm_bot_al_erp_13oct.md §3a): fuera de #lw-aj-cobros, con su propio botón
+  {
+    const conCom = (o = {}) => { const x = base({ conf: { creacion: 1, lectura: 1, aviso: 1 }, modo: 'test', nuevo: true });
+      x.ajustes = { editables: o.sinClave ? ['marca'] : ['marca', 'cobros_comision_pct'], puede_escribir: o.escribe !== false, valores: o.sinValor ? {} : { cobros_comision_pct: 3 }, actualizado: {} };
+      x.guarda = a => {
+        if (typeof a.p_valor !== 'number' || a.p_valor < 0 || a.p_valor > 10 || Math.round(a.p_valor * 100) !== a.p_valor * 100) return { data: null, error: { code: '22023', message: 'x', hint: 'comision_no_valida' } };
+        if (o.red) return { data: null, error: { message: 'Failed to fetch' } };
+        if ('cobros_comision_pct' in x.ajustes.valores && (!a.p_motivo || a.p_motivo.trim().length < 3)) return { data: null, error: { code: '22023', message: 'motivo', hint: 'motivo' } };
+        x.ajustes.valores.cobros_comision_pct = a.p_valor; return { data: { ok: true }, error: null }; };
+      return x; };
+    const C2 = '[data-axw-comision="bloque"]';
+    // sin la clave en editables (la demo): no sale; y el componente de claves sigue igual (ningún input nuevo DENTRO de #lw-aj-cobros)
+    b = conCom({ sinClave: true }); ({ p, ctx } = await abre(nav, b));
+    ok('comisión: una base sin cobros_comision_pct en editables no enseña el bloque', !(await p.$(C2 + ':not([hidden])')));
+    await ctx.close();
+    for (const idioma of ['es', 'en', 'id']) {
+      b = conCom(); ({ p, ctx } = await abre(nav, b, { idioma }));
+      const v = await p.$eval('[data-axw-comision="pct"]', e => e.value);
+      ok(idioma + ': comisión: enseña la cifra de la base (3), fuera de #lw-aj-cobros', v === '3' && !(await p.$('#lw-aj-cobros [data-axw-comision]')));
+      // «3,5» con coma (lo normal en id y es) = 3.5, número JSON; sin motivo la base lo rechaza y se dice
+      await p.fill('[data-axw-comision="pct"]', '3,5'); await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(200);
+      const g1 = (b.guardados || []).slice(-1)[0];
+      ok(idioma + ': comisión: «3,5» se manda como 3.5 (número) y sin motivo la base pide motivo', !!g1 && g1.p_valor === 3.5 && typeof g1.p_valor === 'number' && !('p_motivo' in g1)
+         && (await txt(p, '[data-axw-comision="estado"]')) === { es: 'Escribe por qué lo cambias (por ejemplo, la tarifa de la pasarela).', en: "Write why you change it (for example, the gateway's rate).", id: 'Tulis alasan perubahannya (misalnya, tarif gateway).' }[idioma]);
+      await p.fill('[data-axw-comision="motivo"]', 'tarifa de Xendit'); await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(300);
+      ok(idioma + ': comisión: con motivo se guarda, se relee de la base y lo dice', b.ajustes.valores.cobros_comision_pct === 3.5 && (await p.$eval('[data-axw-comision="pct"]', e => e.value)) === (idioma === 'en' ? '3.5' : '3,5')
+         && (await txt(p, '[data-axw-comision="estado"]')) === { es: 'Comisión guardada.', en: 'Fee saved.', id: 'Biaya tersimpan.' }[idioma]);
+      const sinT = (await p.evaluate(() => window.__sinTrad)).filter(s => !/^(Xendit|LIVE)$/.test(s));
+      ok(idioma + ': comisión: ninguna frase sin traducir', idioma === 'es' || sinT.length === 0, sinT.slice(0, 3).join(' | '));
+      for (const ancho of [390, 1440]) { await p.setViewportSize({ width: ancho, height: 900 }); await p.waitForTimeout(100);
+        const w = await p.evaluate(() => document.documentElement.scrollWidth); ok(idioma + ' ' + ancho + ': comisión sin scroll horizontal', w <= ancho, String(w));
+        if (SHOT) await p.screenshot({ path: path.join(SHOT, 'cobros_comision_' + idioma + '_' + ancho + '.png'), fullPage: true }); }
+      await ctx.close();
+    }
+    // cifras que no valen: no llegan a la base (y la base lo vuelve a mirar igual)
+    b = conCom(); ({ p, ctx } = await abre(nav, b));
+    for (const malo of ['3.555', '11', 'abc', '-1', '1.000', '', '10,5']) {
+      await p.fill('[data-axw-comision="pct"]', malo); await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(80);
+    }
+    ok('comisión: 3.555, 11, abc, -1, 1.000, vacío y 10,5 no se mandan', !(b.guardados || []).length && ((await txt(p, '[data-axw-comision="estado"]')) || '').startsWith('Un número de 0 a 10'));
+    await p.fill('[data-axw-comision="pct"]', '3'); await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(80);
+    ok('comisión: la misma cifra no se manda («No has cambiado la cifra.»)', !(b.guardados || []).length && (await txt(p, '[data-axw-comision="estado"]')) === 'No has cambiado la cifra.');
+    // el bloque no se duplica cuando el anfitrión vuelve a montar
+    await p.evaluate(() => { location.hash = '#x'; }); await p.evaluate(() => { location.hash = '#cobros'; }); await p.waitForTimeout(200);
+    ok('comisión: un solo bloque aunque el anfitrión vuelva a montar', (await p.$$(C2)).length === 1);
+    await ctx.close();
+    // sin red: «no sabemos si se guardó»
+    b = conCom({ red: true }); ({ p, ctx } = await abre(nav, b));
+    await p.fill('[data-axw-comision="pct"]', '2'); await p.fill('[data-axw-comision="motivo"]', 'prueba'); await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(200);
+    ok('comisión: sin respuesta de la base dice que no sabe si se guardó', ((await txt(p, '[data-axw-comision="estado"]')) || '').startsWith('La base no ha respondido'));
+    await ctx.close();
+    // quien no puede escribir: ve la cifra, sin botón ni motivo
+    b = conCom({ escribe: false }); ({ p, ctx } = await abre(nav, b));
+    ok('comisión: sin puede_escribir se ve la cifra en solo lectura, sin guardar', await p.$eval('[data-axw-comision="pct"]', e => e.disabled && e.value === '3') && !(await p.$('[data-axw-comision="guardar"]')) && !!(await p.$('[data-axw-comision="solo-lectura"]')));
+    await ctx.close();
+    // primera vez (sin fila): se guarda sin motivo
+    b = conCom({ sinValor: true }); ({ p, ctx } = await abre(nav, b));
+    await p.fill('[data-axw-comision="pct"]', '0'); await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(300);
+    ok('comisión: sin valor previo, «0» se guarda sin motivo', b.ajustes.valores.cobros_comision_pct === 0);
+    await ctx.close();
   }
   await nav.close();
   console.log(fallos ? 'FALLAN ' + fallos : 'TODO BIEN — cobros.harness.cjs');
