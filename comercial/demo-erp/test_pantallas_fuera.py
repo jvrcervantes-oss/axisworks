@@ -92,6 +92,12 @@ for _m in ('base', 'facturas', 'recibos', 'gastos', 'productos', 'reservas-produ
         fallos.append('bbm: %s es núcleo, ajuste, de todos los tipos o de Reservas y no puede salir del paquete' % _m)
 if not set(_bbm) <= set(build.mapa_modulos('bbm')['xp']):
     fallos.append('bbm: las pantallas de otro tipo tienen que ir en xp (el menú las oculta siempre)')
+# una retirada que el paquete ni trae (/clasico/obra/ en bbm) también lleva su aviso: en vivo daba 403, carpeta vacía (agencia-81, 14-oct 03:01)
+if '/clasico/obra/' not in _bbm:
+    fallos.append('bbm: /clasico/obra/ (obra, Propiedades) tiene que salir por tipo')
+_src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'build.py'), encoding='utf-8').read()
+if "if u in fuera and not os.path.isfile(f):" not in _src:
+    fallos.append('instancia(): una pantalla fuera que el paquete no trae tiene que salir igualmente como «Pantalla no incluida» (no 403/404)')
 _viejo = build._instancia_registro
 try:
     build._instancia_registro = lambda n: {'config': {}}

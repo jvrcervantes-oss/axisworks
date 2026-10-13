@@ -5349,6 +5349,11 @@ def instancia(nombre):
     cargaban = set()   # ficheros que cargaban las pantallas que salen del paquete: candidatos a salir con ellas
     for u in mapa['xp']:
         f = os.path.join(DIST, *u.strip('/').split('/'), 'index.html')
+        if u in fuera and not os.path.isfile(f):
+            # Una pantalla retirada que el paquete ni siquiera trae (la /clasico/obra/ de bbm, 14-oct): sin su aviso, el servidor daba 403 (carpeta vacía
+            # que dejó la publicación anterior) o 404 a quien la tenía guardada. Lleva el mismo «Pantalla no incluida» que las demás.
+            os.makedirs(os.path.dirname(f), exist_ok=True)
+            open(f, 'w', encoding='utf-8').write('')
         if os.path.isfile(f):
             if u in fuera:
                 # Declarada en apagados_extra.p («pantalla no incluida en esta instancia»): no nombra un módulo (taller cuelga de
