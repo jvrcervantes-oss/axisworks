@@ -1,0 +1,7 @@
+{
+  "sha": "3ce0ec8e6ecb86f6e08597c00141dc1f7c2f3927",
+  "doble_qa_sha256": "64681dd51947881b65579bb9fa0f80355d767a286ef97d21c94bdc088ee0160e",
+  "fecha": "2026-10-13",
+  "por": "erp-separa-lawang (S1, rama erp-separa-lawang-s1)",
+  "motivo": "Primer sha fijado: el último de Lawang con el que pasa TODO lo del ERP con AxisWorks 51d9b73 (matriz del 13-oct: instancias, demo, --publico y test_*.py). Al aterrizar se sube con `sube main` al main de Lawang de ese momento."
+}

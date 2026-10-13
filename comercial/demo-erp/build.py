@@ -49,13 +49,22 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 # AXW_AGENCIA_RAIZ: raíz de la AGENCIA (donde viven erp/, tools/, private/ y proyectos/Lawang) cuando se construye desde una copia de
 # sesión de AxisWorks, que vive en _sesiones/<id>/AxisWorks y no cuatro niveles bajo la agencia: apunta a la copia de sesión de la agencia.
 AGENCIA = os.path.abspath(os.environ.get('AXW_AGENCIA_RAIZ') or os.path.join(AQUI, '..', '..', '..', '..'))
-# AXW_LAWANG_RAIZ: construir desde una copia de sesión (tools/sesion.py) en vez del clon principal, para probar un
-# cambio del núcleo ANTES de aterrizarlo (26-sep-2026, F3 lote 2b).
-LAWANG = os.path.abspath(os.environ.get('AXW_LAWANG_RAIZ') or os.path.join(AGENCIA, 'proyectos', 'Lawang'))
-# El doble de QA está gitignorado: no viaja a las copias de sesión. Se lee del clon principal (solo lectura).
-DOBLE_QA = next((d for d in (os.path.join(LAWANG, '_qa_double_guard.js'),
-                             os.path.join(AGENCIA, 'proyectos', 'Lawang', '_qa_double_guard.js')) if os.path.isfile(d)),
-                os.path.join(LAWANG, '_qa_double_guard.js'))
+# LAWANG = Lawang en el sha FIJADO de lawang.json, nunca el disco del clon principal (E3.9, owner 13-oct-2026: «Separar ya
+# el ERP de Lawang»; 6 builds/gates en rojo en 3 días por leer el Lawang vivo). Ver lawang_fijado.py.
+# AXW_LAWANG_RAIZ: construir desde OTRO árbol de Lawang (una copia de sesión o un sha candidato) para probar un cambio del núcleo
+# ANTES de fijarlo (26-sep-2026, F3 lote 2b). publica_instancia.py se niega a publicar con ella puesta.
+import lawang_fijado  # noqa: E402
+if os.environ.get('AXW_LAWANG_RAIZ'):
+    LAWANG = os.path.abspath(os.environ['AXW_LAWANG_RAIZ'])
+    LAWANG_GIT, LAWANG_REV = LAWANG, 'HEAD'
+    # El doble de QA está gitignorado: no viaja a las copias de sesión. Se lee del clon principal (solo lectura).
+    DOBLE_QA = next((d for d in (os.path.join(LAWANG, '_qa_double_guard.js'),
+                                 os.path.join(AGENCIA, 'proyectos', 'Lawang', '_qa_double_guard.js')) if os.path.isfile(d)),
+                    os.path.join(LAWANG, '_qa_double_guard.js'))
+else:
+    LAWANG = lawang_fijado.raiz()
+    LAWANG_GIT, LAWANG_REV = lawang_fijado.almacen(), lawang_fijado.lee_fijado()['sha']
+    DOBLE_QA = lawang_fijado.doble_qa()   # fuera de git: del clon principal, solo si su huella es la de lawang.json
 DIST = os.path.join(AQUI, 'dist')
 
 SB_URL = 'https://vtulllundrfennhjddhc.supabase.co'
@@ -3386,7 +3395,7 @@ def quien_cambio_lawang(donde):
     if not rel_:
         return ''
     try:
-        r = subprocess.run(['git', '-C', LAWANG, '--no-optional-locks', 'log', '-1', '--date=short', '--format=%h %ad %s', '--', rel_],
+        r = subprocess.run(['git', '-C', LAWANG_GIT, '--no-optional-locks', 'log', '-1', '--date=short', '--format=%h %ad %s', LAWANG_REV, '--', rel_],
                            capture_output=True, text=True, encoding='utf-8', timeout=20)
         return (' · último cambio de Lawang en %s: %s' % (rel_, r.stdout.strip()[:160])) if r.returncode == 0 and r.stdout.strip() else ''
     except Exception:   # MUDO A PROPOSITO: es solo una pista para el mensaje; el build ya está parando
