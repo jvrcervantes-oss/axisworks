@@ -42,6 +42,8 @@ const P = require('./portada.js').nucleo(CAT);
 const soloModulos = (e) => CAT.MODULOS.map((m) => m[0]).filter((k) => e[k]).sort();
 const idaYVuelta = (e, que) => {
   const url = P.urlDemo('https://demo.axisworks.studio', 'demo', e);
+  // «Open the demo» abre la PORTADA de dos puertas (13-oct-2026), que reenvía ?sel= a su puerta de la intranet
+  assert.strictEqual(new URL(url).pathname, '/', '«Open the demo» va a la portada, no dentro de la intranet');
   const sel = new URL(url).searchParams.get('sel');
   assert.deepStrictEqual(soloModulos(CAT.leeSel(sel)), soloModulos(e), 'ida y vuelta: ' + que + ' (' + sel + ')');
   const tour = new URL(P.urlDemo('', 'tour', e), 'https://x');
@@ -79,5 +81,26 @@ CAT.MODULOS.filter((m) => !CAT.pack('base')[3].includes(m[0])).forEach((m) => {
 });
 // El tipo de negocio no cambia la rejilla (hoy): devuelve todos los módulos
 ['properties', 'bookings', 'services'].forEach((t) => assert.deepStrictEqual(P.modulosDeTipo(t).slice().sort(), todos, 'tipo ' + t));
+
+// La portada de dos puertas (puerta_demo.html, 13-oct-2026): la `sel=` que trae «Open the demo» viaja SOLO al enlace de la
+// intranet, y solo si tiene forma de ids del catálogo. Se ejecuta su <script> de verdad con un documento mínimo.
+{
+  const fs = require('fs'), vm = require('vm');
+  const html = fs.readFileSync(require('path').join(__dirname, 'puerta_demo.html'), 'utf8');
+  const bloques = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]).filter((c) => c.indexOf('data-puerta="intranet"') !== -1);
+  assert.strictEqual(bloques.length, 1, 'un solo <script> de la portada reenvía la selección');
+  const portada = (busca) => {
+    const enlaces = [{ href: '/home/' }, { href: '/home/' }].map((a) => ({ a, setAttribute: (k, v) => { if (k === 'href') a.href = v; } }));
+    const portal = { href: '/portal/' };
+    const document = { querySelector: () => null,
+      querySelectorAll: (q) => (q === 'a[data-puerta="intranet"]' ? enlaces : q.indexOf('portal') !== -1 ? [portal] : []) };
+    vm.runInNewContext(bloques[0], { document, location: { search: busca }, URLSearchParams });
+    return { intranet: enlaces.map((e) => e.a.href), portal: portal.href };
+  };
+  assert.deepStrictEqual(portada('?sel=base,ventas').intranet, ['/home/?sel=base%2Cventas', '/home/?sel=base%2Cventas'], 'la selección pasa a la intranet');
+  assert.strictEqual(portada('?sel=base,ventas').portal, '/portal/', 'el portal no cambia');
+  for (const malo of ['', '?sel=', '?sel=%3Cscript%3E', '?sel=base;ventas', '?sel=' + 'a'.repeat(2049), '?sel=..%2F..', '?x=base'])
+    assert.deepStrictEqual(portada(malo).intranet, ['/home/', '/home/'], 'tenía que ignorar: ' + malo.slice(0, 40));
+}
 
 console.log('ok sel.test.js');

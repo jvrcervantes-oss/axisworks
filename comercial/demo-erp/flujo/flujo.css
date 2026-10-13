@@ -69,6 +69,33 @@ html.axf-abierto { overflow: hidden; }
 .axf-btn[disabled] { opacity: .55; cursor: progress; }
 
 .axf-revision { display: grid; gap: 16px; max-width: 820px; }
+/* Plan de pagos (13-oct-2026): filas concepto · % · importe · quitar; a 390 px el importe y «Remove» bajan a otra línea. */
+.axf-plan { border: 1px solid var(--axf-linea); border-radius: 12px; padding: 14px 16px 12px; margin: 0 0 16px; min-width: 0; }
+.axf-plan legend { font-size: 13px; font-weight: 600; padding: 0 6px; color: var(--axf-tinta); }
+.axf-plan-filas { display: grid; gap: 8px; margin: 6px 0 10px; }
+.axf-plan-fila { display: grid; grid-template-columns: 22px minmax(0, 1fr) 92px minmax(96px, auto) auto; gap: 8px; align-items: center; }
+.axf-plan-n { font-size: 12px; font-weight: 600; color: var(--axf-suave); text-align: right; }
+.axf-plan-fila input { width: 100%; box-sizing: border-box; min-width: 0; padding: 9px 10px; border: 1px solid var(--axf-linea); border-radius: 10px;
+  background: var(--axf-papel); color: var(--axf-tinta); font: inherit; }
+.axf-plan-fila input:focus-visible { outline: 2px solid var(--axf-acento); outline-offset: 1px; }
+.axf-plan-pct { display: flex; align-items: center; gap: 4px; }
+.axf-plan-pct input { text-align: right; }
+.axf-plan-importe { font-variant-numeric: tabular-nums; text-align: right; color: var(--axf-suave); white-space: nowrap; }
+.axf-plan-quitar { padding: 6px 12px; }
+.axf-plan-pie { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.axf-plan-total { margin: 0; font-weight: 600; color: var(--axf-ok); }
+.axf-plan-total.axf-plan-mal { color: var(--axf-error); }
+.axf-plan-tarjeta { border: 1px solid var(--axf-linea); border-radius: 12px; padding: 14px 16px; background: var(--axf-papel); min-width: 0; }
+.axf-plan-tit { margin: 0 0 8px; font-size: 15px; }
+.axf-plan-tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+.axf-plan-tabla th { text-align: left; font-size: 12px; color: var(--axf-suave); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--axf-linea); }
+.axf-plan-tabla td { padding: 6px; border-bottom: 1px solid var(--axf-linea); overflow-wrap: anywhere; }
+.axf-plan-tabla td:nth-child(2), .axf-plan-tabla td:nth-child(3), .axf-plan-tabla th:nth-child(2), .axf-plan-tabla th:nth-child(3) { text-align: right; white-space: nowrap; }
+@media (max-width: 560px) {
+  .axf-plan-fila { grid-template-columns: 22px minmax(0, 1fr) 92px; }
+  .axf-plan-importe { grid-column: 2; text-align: left; }
+  .axf-plan-quitar { grid-column: 3; justify-self: end; }
+}
 .axf-firma { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 24px; align-items: start; }
 .axf-firma-lado { background: var(--axf-papel); border-radius: 16px; padding: 20px; position: sticky; top: 0; z-index: 2; }
 .axf-firmante { margin: 0 0 10px; }

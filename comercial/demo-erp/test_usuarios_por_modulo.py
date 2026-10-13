@@ -27,11 +27,12 @@ def ok(nombre, cond, detalle=''):
 
 
 def lawang():
+    """Lawang en el sha fijado de lawang.json (E3.9, 13-oct-2026), o AXW_LAWANG_RAIZ para probar otro árbol: nunca el disco del clon."""
     if os.environ.get('AXW_LAWANG_RAIZ'):
         return os.environ['AXW_LAWANG_RAIZ']
-    if os.environ.get('AXW_AGENCIA_RAIZ'):
-        return os.path.join(os.environ['AXW_AGENCIA_RAIZ'], 'proyectos', 'Lawang')
-    return os.path.normpath(os.path.join(AQUI, '..', '..', '..', 'Lawang'))
+    sys.path.insert(0, AQUI)
+    import lawang_fijado
+    return lawang_fijado.raiz()
 
 
 def tupla_de_build(nombre):

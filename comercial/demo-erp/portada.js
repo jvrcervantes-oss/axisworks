@@ -51,10 +51,11 @@
        puntos de partida por tipo, saldrán de UNA fuente (catalogo.js, junto a PACKS) y esta función será la única que
        la lea; nunca listas por tipo escritas a mano en la página. */
     function modulosDeTipo(_tipo) { return CAT.MODULOS.map(function (m) { return m[0]; }); }
-    /* URL a la demo con la selección. destino: 'demo' → /home/?sel=…, 'tour' → /home/?tour=1&sel=… */
+    /* URL a la demo con la selección. destino: 'demo' → la portada de dos puertas, /?sel=… (owner, 13-oct-2026: «Open the
+       demo» llevaba dentro de la intranet; la portada reenvía ?sel= a su puerta de la intranet); 'tour' → /home/?tour=1&sel=… */
     function urlDemo(origen, destino, e) {
       var sel = encodeURIComponent(CAT.codificaSel(e));
-      return (origen || '') + '/home/' + (destino === 'tour' ? '?tour=1&sel=' : '?sel=') + sel;
+      return (origen || '') + (destino === 'tour' ? '/home/?tour=1&sel=' : '/?sel=') + sel;
     }
     return { inicial: inicial, todo: todo, soloBase: soloBase, esBase: esBase, alterna: alterna, activos: activos,
       modulosDeTipo: modulosDeTipo, urlDemo: urlDemo };

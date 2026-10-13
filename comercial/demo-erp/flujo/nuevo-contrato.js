@@ -92,7 +92,9 @@
     abriendo = true;
     prepara().then(function () {
       abriendo = false;
-      E = { paso: 0, sel: { cliente: null, proyecto: null, unidad: null, precio: '', notas: '' }, contrato: null, firmaImg: null, cambiado: false };
+      // El plan de pagos vive en E.sel (no en la pantalla): «Back» y el cambio de unidad repintan el paso 1 sin perderlo.
+      E = { paso: 0, sel: { cliente: null, proyecto: null, unidad: null, precio: '', notas: '', hitos: plan() ? plan().defecto() : [] },
+        contrato: null, firmaImg: null, cambiado: false };
       montaCapa(opc.firmar ? t('panel.firmar') : t('panel.nuevo'));
       if (opc.firmar) return cargaParaFirmar(opc.firmar);
       return cargaListas(opc.cliente);
@@ -151,6 +153,7 @@
     if (!E) { console.error('[demo] new contract:', msg); window.alert(window.AXW_DEMO_T ? t('panel.error_prefijo', msg) : 'New contract (demo): ' + msg); return; }
     E.aviso.textContent = msg;
     E.aviso.hidden = false;
+    E.aviso.removeAttribute('data-axf-plan');   // el aviso del plan lo marca quien lo pone (paso 1), para quitarlo al cuadrar
   }
 
   /* ── Paso 1: cliente y unidad ─────────────────────────────────────────── */
@@ -172,6 +175,91 @@
   }
 
   function opcion(valor, texto, sel) { return el('option', { value: valor, selected: sel ? true : null, text: texto }); }
+
+  /* ── Plan de pagos por hitos (13-oct-2026) ─────────────────────────────────
+     Lo que se valida y cómo se reparte el precio es del doble (window.LW_DEMO_PLAN, demo_datos.js): la pantalla usa SUS
+     funciones para avisar en el sitio y para enseñar los importes, y el doble lo vuelve a validar al guardar. */
+  function plan() { return window.LW_DEMO_PLAN || null; }
+  function importeTxt(n, moneda) { return window.AXW_DEMO_CONTRATO.importe(n) + (moneda ? ' ' + moneda : ''); }
+  function errorPlan(v) {
+    if (v.error === 'plan_n') return t('plan.err_n', plan().max);
+    if (v.error === 'plan_concepto') return t('plan.err_concepto', v.n, plan().conceptoMax);
+    if (v.error === 'plan_pct') return t('plan.err_pct', v.n);
+    if (v.error === 'plan_suma') return t('plan.err_suma', v.suma);
+    return v.error;
+  }
+  function seccionPlan(s, moneda) {
+    var P = plan();
+    var caja = el('fieldset', { class: 'axf-plan', 'data-axf': 'plan' });
+    var filasEl = el('div', { class: 'axf-plan-filas' });
+    var total = el('p', { class: 'axf-plan-total', 'aria-live': 'polite', 'data-axf': 'plan-total' });
+    var importes = [];
+    function suma() {
+      var c = 0, todo = true;
+      s.hitos.forEach(function (h) { var x = P.leePct(h.pct); if (x == null) todo = false; else c += x; });
+      return { c: c, todo: todo };
+    }
+    function refresca() {
+      var v = P.valida(s.hitos), sm = suma();
+      var montos = v.ok && Number(s.precio) > 0 ? P.reparte(Number(s.precio), v.hitos) : null;
+      importes.forEach(function (celda, i) { celda.textContent = montos ? importeTxt(montos[i], moneda()) : '—'; });
+      var bien = sm.todo && sm.c === 10000;
+      total.textContent = bien ? t('plan.total', P.pctTexto(sm.c)) : t('plan.total_mal', sm.todo ? P.pctTexto(sm.c) : '—');
+      total.classList.toggle('axf-plan-mal', !bien);
+      // el aviso de «no suma 100» se va en cuanto el plan cuadra (a 390 px se quedaba encima del plan ya bueno)
+      if (v.ok && E && E.aviso && E.aviso.hasAttribute('data-axf-plan')) { E.aviso.hidden = true; E.aviso.removeAttribute('data-axf-plan'); }
+    }
+    function pinta(foco) {
+      filasEl.textContent = '';
+      importes = [];
+      s.hitos.forEach(function (h, i) {
+        var n = i + 1;
+        var concepto = el('input', { type: 'text', maxlength: String(P.conceptoMax), 'aria-label': t('plan.concepto_aria', n), 'data-axf': 'plan-concepto' });
+        concepto.value = h.descripcion;
+        concepto.addEventListener('input', function () { h.descripcion = concepto.value; refresca(); });
+        var pct = el('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', 'aria-label': t('plan.pct_aria', n), 'data-axf': 'plan-pct' });
+        pct.value = h.pct;
+        pct.addEventListener('input', function () { h.pct = pct.value; refresca(); });
+        var imp = el('span', { class: 'axf-plan-importe', 'data-axf': 'plan-importe' });
+        importes.push(imp);
+        var quitar = boton(t('plan.quitar'), 'axf-btn-sec axf-plan-quitar', 'plan-quitar', { 'aria-label': t('plan.quitar_aria', n), disabled: s.hitos.length <= 1 ? true : null });
+        quitar.addEventListener('click', function () { s.hitos.splice(i, 1); pinta(Math.max(0, i - 1)); });
+        filasEl.appendChild(el('div', { class: 'axf-plan-fila', 'data-axf': 'plan-fila' }, [
+          el('span', { class: 'axf-plan-n', text: String(n) }), concepto,
+          el('span', { class: 'axf-plan-pct' }, [pct, el('span', { text: '%', 'aria-hidden': 'true' })]), imp, quitar]));
+      });
+      anadir.disabled = s.hitos.length >= P.max;
+      refresca();
+      if (foco != null) { var f = filasEl.querySelectorAll('[data-axf="plan-concepto"]')[foco]; if (f) f.focus(); }
+    }
+    var anadir = boton(t('plan.anadir'), 'axf-btn-sec', 'plan-anadir');
+    anadir.addEventListener('click', function () {
+      if (s.hitos.length >= P.max) return;
+      s.hitos.push({ descripcion: '', pct: '' });
+      pinta(s.hitos.length - 1);
+    });
+    caja.appendChild(el('legend', { text: t('plan.tit') }));
+    caja.appendChild(el('p', { class: 'axf-ayuda', text: t('plan.ayuda', P.max) }));
+    caja.appendChild(filasEl);
+    caja.appendChild(el('div', { class: 'axf-plan-pie' }, [anadir, total]));
+    pinta(null);
+    return { caja: caja, refresca: refresca };
+  }
+  function tarjetaPlan(s, moneda) {
+    var v = plan() && plan().valida(s.hitos || []);
+    if (!v || !v.ok) return null;
+    var montos = plan().reparte(Number(s.precio), v.hitos);
+    return el('section', { class: 'axf-plan-tarjeta', 'data-axf': 'plan-revision', 'aria-label': t('plan.tit') }, [
+      el('h3', { class: 'axf-plan-tit', text: t('plan.tit') }),
+      el('table', { class: 'axf-plan-tabla' }, [
+        el('thead', null, [el('tr', null, [el('th', { scope: 'col', text: t('plan.concepto') }), el('th', { scope: 'col', text: '%' }), el('th', { scope: 'col', text: t('plan.importe') })])]),
+        el('tbody', null, v.hitos.map(function (h, i) {
+          return el('tr', null, [el('td', { text: h.descripcion }), el('td', { text: h.pct + ' %' }), el('td', { text: importeTxt(montos[i], moneda) })]);
+        }))
+      ]),
+      el('p', { class: 'axf-ayuda', text: t('plan.nota') })
+    ]);
+  }
   function campo(id, rotulo, control, ayuda) {
     return el('div', { class: 'axf-campo' }, [el('label', { for: id, text: rotulo }), control, ayuda ? el('p', { class: 'axf-ayuda', text: ayuda }) : null]);
   }
@@ -211,12 +299,16 @@
     precio.addEventListener('input', function () { s.precio = precio.value; });
     notas.addEventListener('input', function () { s.notas = notas.value; });
     pintaUnidades();
+    var secPlan = plan() ? seccionPlan(s, function () { var u = unidad(); return (u && u.moneda) || ''; }) : null;
+    precio.addEventListener('input', function () { if (secPlan) secPlan.refresca(); });
+    selUni.addEventListener('change', function () { if (secPlan) secPlan.refresca(); });
 
     var form = el('form', { class: 'axf-form', novalidate: true }, [
       el('p', { class: 'axf-intro', text: t('f.intro') }),
       campo('axf-cliente', t('f.cliente'), selCli, t('f.cliente_ayuda')),
       el('div', { class: 'axf-fila' }, [campo('axf-proyecto', t('f.proyecto'), selPro), campo('axf-unidad', t('f.unidad'), selUni)]),
       campo('axf-precio', t('f.precio'), el('div', { class: 'axf-importe' }, [precio, moneda]), t('f.precio_ayuda')),
+      secPlan ? secPlan.caja : null,
       campo('axf-notas', t('f.notas'), notas),
       el('div', { class: 'axf-acciones' }, [boton(t('f.revisar'), 'axf-btn-pri', 'revisar', { type: 'submit' })])
     ]);
@@ -226,6 +318,7 @@
       if (!s.cliente) return fallo(new Error(t('f.err_cliente')));
       if (!u) return fallo(new Error(t('f.err_unidad')));
       if (!(Number(s.precio) > 0)) return fallo(new Error(t('f.err_precio')));
+      if (plan()) { var v = plan().valida(s.hitos); if (!v.ok) { fallo(new Error(errorPlan(v))); E.aviso.setAttribute('data-axf-plan', ''); return; } }
       pasoDos();
     });
     if (!conUnidades.length) fallo(new Error(t('f.err_sin_unidades')));
@@ -253,7 +346,8 @@
     guardar.addEventListener('click', function () {
       guardar.disabled = true;
       var s = E.sel;
-      rpc('demo_contrato_crea', { p_client_id: s.cliente, p_unidad_id: s.unidad, p_tipo: 'reserva_parcela', p_precio: Number(s.precio), p_texto_sha: null })
+      rpc('demo_contrato_crea', { p_client_id: s.cliente, p_unidad_id: s.unidad, p_tipo: 'reserva_parcela', p_precio: Number(s.precio), p_texto_sha: null,
+        p_hitos: plan() ? s.hitos.map(function (h) { return { descripcion: h.descripcion, pct: h.pct }; }) : undefined })
         .then(function (r) {
           if (!r.id || !r.numero) throw new Error(t('datos.sin_numero'));
           E.contrato = { id: r.id, numero: r.numero, fecha: new Date().toISOString(), firmado: false };
@@ -266,8 +360,11 @@
     atras.addEventListener('click', pasoUno);
     var imp = boton(t('b.imprimir'), 'axf-btn-sec', 'imprimir');
     imp.addEventListener('click', imprimir);
+    // El plan de pagos va FUERA del documento de muestra: su texto es de Legal y no se toca (textos.js, `plantilla`).
+    var d0 = datosDoc();
     E.cuerpo.appendChild(el('div', { class: 'axf-revision' }, [
-      window.AXW_DEMO_CONTRATO.documento(datosDoc()),
+      window.AXW_DEMO_CONTRATO.documento(d0),
+      tarjetaPlan(E.sel, d0.moneda),
       el('div', { class: 'axf-acciones' }, [atras, imp, guardar])
     ]));
   }
@@ -419,6 +516,37 @@
     abre({ cliente: cliente });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', desdeUrl); else desdeUrl();
+
+  /* «Issue contract» sin plantillas (13-oct-2026, demo en inglés). La demo no trae plantillas de contrato (Legal, AXW-139: son
+     el texto de cada negocio) y la pantalla se quedaba en «There is no active template»: una demo que no emite nada. Si la
+     base de la demo dice que no hay ninguna, se pone delante una tarjeta que lo explica y abre «+ New contract» (que sí crea
+     el contrato, con su plan de pagos), y se aparta el paso de plantilla vacío. Con plantillas, la pantalla queda como siempre.
+     Enganche por data-lw (emitir-paso-plantilla) y data-accion (demo-nuevo-contrato), nunca por rótulo. */
+  // La MISMA regla que emitir.js para «hay con qué emitir»: versión activa, sin archivar y de un tipo activo. Contar la lista
+  // entera dejaría la pantalla sin tarjeta y sin plantilla elegible el día que la demo traiga una archivada o de un tipo apagado.
+  function usables(d) {
+    var tipos = {};
+    (d.tipos || []).forEach(function (x) { if (x.activo) tipos[x.clave] = true; });
+    return (d.plantillas || []).some(function (p) { return p.activa && p.activa.id && !p.archivada && tipos[p.tipo_contrato]; });
+  }
+  function emitirSinPlantillas() {
+    if (location.pathname.indexOf('/emitir/') !== 0 || typeof window.lwDatos !== 'function') return;
+    var paso = document.querySelector('[data-lw="emitir-paso-plantilla"]');
+    if (!paso || document.querySelector('[data-axf="emitir-demo"]')) return;
+    Promise.all([prepara(), window.lwDatos('plantillas_contrato_datos')]).then(function (rs) {
+      var d = rs[1] && rs[1].data;
+      if (!d || usables(d) || document.querySelector('[data-axf="emitir-demo"]')) return;
+      var tarjeta = el('section', { class: paso.className, 'data-axf': 'emitir-demo' }, [
+        el('h2', { class: 'font-headline-sm text-headline-sm', text: t('emitir.tit') }),
+        el('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: t('emitir.texto') }),
+        el('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: t('emitir.texto2') }),
+        el('div', { class: 'axf-acciones' }, [el('button', { type: 'button', class: 'axf-btn axf-btn-pri', 'data-accion': 'demo-nuevo-contrato', text: t('emitir.boton') })])
+      ]);
+      paso.parentNode.insertBefore(tarjeta, paso);
+      paso.style.display = 'none';   // `hidden` no basta: la clase flex de la sección le gana
+    }).catch(function (e) { console.error('[demo] issue contract:', (e && e.message) || e); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', emitirSinPlantillas); else emitirSinPlantillas();
 
   window.AXW_DEMO_FLUJO = Object.freeze({ nuevoContrato: function (clienteId) { abre({ cliente: clienteId }); },
     firmar: function (id) { abre({ firmar: id }); } });

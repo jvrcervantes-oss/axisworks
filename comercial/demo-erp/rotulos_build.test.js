@@ -19,7 +19,10 @@ ok('build.py trae MENU_I18N', !!m);
 const MENU = m ? vm.runInNewContext('(' + m[1].split('\n').filter(l => !/^\s*#/.test(l)).join('\n') + ')', {}) : {};
 
 // El LW_EN de Lawang (contracts/assets/i18n.js), cargado como lo carga el navegador
-const lawang = process.env.AXW_LAWANG_RAIZ || (process.env.AXW_AGENCIA_RAIZ ? path.join(process.env.AXW_AGENCIA_RAIZ, 'proyectos', 'Lawang') : path.join(AQUI, '..', '..', '..', 'Lawang'));
+// Lawang en el sha fijado de lawang.json (E3.9, 13-oct-2026): la ruta la da lawang_fijado.py (único resolutor; si falla, esto
+// falla en voz alta). AXW_LAWANG_RAIZ sigue valiendo para probar otro árbol.
+const lawang = process.env.AXW_LAWANG_RAIZ ||
+  require('child_process').execFileSync(process.env.PYTHON || 'python', [path.join(AQUI, 'lawang_fijado.py'), '--raiz'], { encoding: 'utf8' }).trim().split(/\r?\n/).pop();
 const i18n = path.join(lawang, 'contracts', 'assets', 'i18n.js');
 let EN = null;
 if (fs.existsSync(i18n)) {

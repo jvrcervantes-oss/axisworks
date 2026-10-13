@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """python test_oculta_por_modulo.py — lo que build.py oculta POR MÓDULO en la copia de una instancia (OCULTA_POR_MODULO, bbm-p39, 13-oct-2026).
 
-Aplica las marcas sobre el HTML REAL de Lawang (AXW_LAWANG_RAIZ o <agencia>/proyectos/Lawang) y comprueba:
+Aplica las marcas sobre el HTML REAL de Lawang (el sha de lawang.json, o AXW_LAWANG_RAIZ) y comprueba:
   · cada trozo de Lawang está exactamente una vez (si Lawang lo cambia, esto y el build se ponen rojos a la vez);
   · en cada tabla, la cabecera marcada y la celda marcada de la fila PLANTILLA (la que clona plantillaFilas() de datos.js: la 2.ª del tbody)
     están en la MISMA posición y con el mismo marcador: si no, se ocultaría la cabecera de una columna y la celda de otra;
@@ -27,11 +27,12 @@ def ok(nombre, cond, detalle=''):
 
 
 def lawang():
+    """Lawang en el sha fijado de lawang.json (E3.9, 13-oct-2026), o AXW_LAWANG_RAIZ para probar otro árbol: nunca el disco del clon."""
     if os.environ.get('AXW_LAWANG_RAIZ'):
         return os.environ['AXW_LAWANG_RAIZ']
-    if os.environ.get('AXW_AGENCIA_RAIZ'):
-        return os.path.join(os.environ['AXW_AGENCIA_RAIZ'], 'proyectos', 'Lawang')
-    return os.path.normpath(os.path.join(AQUI, '..', '..', '..', 'Lawang'))
+    sys.path.insert(0, AQUI)
+    import lawang_fijado
+    return lawang_fijado.raiz()
 
 
 def tupla_de_build(nombre):

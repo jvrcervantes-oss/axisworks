@@ -16,7 +16,12 @@ _argv, sys.argv = sys.argv, ['build.py']
 import build  # noqa: E402
 sys.argv = _argv
 
-PUBLICADO = os.path.abspath(os.path.join(AQUI, '..', '..', 'dist', 'demo-erp'))
+# `--publicado <carpeta>` (lo pasa lawang_fijado.py prueba/sube, 14-oct-2026): se mira lo que ACABA de construir `build.py --publico`
+# fuera del repo, no el dist/ de git; si no, el `sube` daba por buena la demo publicada vieja (axw-cola). Por ARGUMENTO y no por
+# la variable AXW_PRUEBA_PUBLICO: heredada en el control de subida haría que se comprobara otra carpeta que la que sube (revisor).
+PUBLICADO = (os.path.join(os.path.abspath(sys.argv[sys.argv.index('--publicado') + 1]), 'demo-erp') if '--publicado' in sys.argv
+             else os.path.abspath(os.path.join(AQUI, '..', '..', 'dist', 'demo-erp')))
+print('Comprobando la demo publicada en %s' % PUBLICADO)
 FALLOS = []
 
 
@@ -24,6 +29,14 @@ def ok(cond, msg):
     print(('ok   ' if cond else 'FALLA ') + msg)
     if not cond:
         FALLOS.append(msg)
+
+# PROVEEDOR_IA (axw-cola, 14-oct-2026): fuera el nombre del proveedor entre paréntesis de un texto de ayuda, igual en la clave de
+# i18n.js y en la llamada T() de la pantalla; una llamada real (dominio, razón social) la sigue parando comprueba_sin_secretos().
+_frase = 'Tu frase se envía a un proveedor externo de IA (Anthropic) para redactar el borrador.'
+ok(build.PROVEEDOR_IA.sub('', _frase) == 'Tu frase se envía a un proveedor externo de IA para redactar el borrador.',
+   'PROVEEDOR_IA quita «(Anthropic)» de un texto de ayuda')
+ok('api.anthropic.com' in build.PROVEEDOR_IA.sub('', 'fetch("https://api.anthropic.com/v1")') and
+   '(Anthropic, PBC)' in build.PROVEEDOR_IA.sub('', '(Anthropic, PBC)'), 'PROVEEDOR_IA no toca una llamada real ni la razón social')
 
 
 ruta = os.path.join(PUBLICADO, build.HUELLA)

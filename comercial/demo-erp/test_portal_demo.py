@@ -17,7 +17,12 @@ import subprocess
 import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
-PUBLICADO = os.path.abspath(os.path.join(AQUI, '..', '..', 'dist', 'demo-erp'))
+# `--publicado <carpeta>` (lo pasa lawang_fijado.py prueba/sube, 14-oct-2026): se mira lo que ACABA de construir `build.py --publico`
+# fuera del repo, no el dist/ de git; si no, el `sube` daba por buena la demo publicada vieja (axw-cola). Por ARGUMENTO y no por
+# la variable AXW_PRUEBA_PUBLICO: heredada en el control de subida haría que se comprobara otra carpeta que la que sube (revisor).
+PUBLICADO = (os.path.join(os.path.abspath(sys.argv[sys.argv.index('--publicado') + 1]), 'demo-erp') if '--publicado' in sys.argv
+             else os.path.abspath(os.path.join(AQUI, '..', '..', 'dist', 'demo-erp')))
+print('Comprobando la demo publicada en %s' % PUBLICADO)
 FALLOS = []
 
 
@@ -65,11 +70,30 @@ ok(os.path.isfile(os.path.join(PUBLICADO, 'portal', 'demo', 'isotipo.svg')), 'el
 
 # Fotos de relleno (12-oct-2026): todas las que nombra el adaptador están publicadas, son webp de verdad y cada una tiene su
 # fila de procedencia en LICENCIAS.txt (que vive en el fuente y no se publica).
-# los pasos de obra son el 3.er campo de cada título (["Excavation",-19,"excavacion"]: el publicado va minificado); las
-# portadas, portada-1..3
-pasos = set(re.findall(r"""\[\s*["'][^"'\]]+["']\s*,\s*[^,\]]+,\s*["']([a-z]+)["']\s*\]""", adap))
+# Fotos de obra con un solo dueño (13-oct-2026, demo en inglés): ya no las inventa el adaptador; las siembra demo_datos.js
+# (publicado dentro de guard.js) como `…/demo-obra-<escena>.webp`, y el portal (fotoDe del adaptador) y Obra en la intranet
+# (createSignedUrl del doble) las resuelven a /portal/demo/fotos/obra-<escena>.webp. Las escenas son el 3.er campo de cada
+# título (["Excavation",-19,"excavacion"]: el publicado va minificado) del tramo de la siembra de obra_fotos; las portadas,
+# portada-1..3.
+guard = lee('contracts', 'assets', 'guard.js')
+i_fotos = guard.find('FOTOS_POR_FASE')
+m_fin = re.compile(r'''tabla\(\s*["']obra_fotos["']''').search(guard, max(i_fotos, 0))
+tramo = guard[i_fotos:m_fin.start()] if i_fotos >= 0 and m_fin else ''
+# El dist/ que hay en git es el de la ÚLTIMA publicación de la demo, y hasta que se republique trae la forma de antes (los
+# títulos dentro del adaptador). Se acepta una forma u otra, nunca una mezcla: si el adaptador ya resuelve por demo-obra-,
+# las fotos tienen que salir de la siembra.
+nuevo = 'demo-obra-' in adap
+TITULO = r"""\[\s*["'][^"'\]]+["']\s*,\s*[^,\]]+,\s*["']([a-z]+)["']\s*\]"""
+pasos = set(re.findall(TITULO, tramo if nuevo else adap))
 pedidas = {'portada-%d.webp' % n for n in (1, 2, 3)} | {'obra-%s.webp' % p for p in pasos}
-ok(len(pasos) >= 8, 'el adaptador nombra sus fotos de obra por paso (%d)' % len(pasos))
+ok(len(pasos) >= 8, '%s nombra sus fotos de obra por paso (%d)'
+   % ('la siembra de obra_fotos (guard.js)' if nuevo else 'el adaptador', len(pasos)))
+if nuevo:
+    ok('demo-obra-' in guard and '/portal/demo/fotos/obra-' in guard,
+       'el portal y Obra resuelven las fotos de obra por el mismo nombre (demo-obra-<escena> → /portal/demo/fotos/obra-<escena>.webp)')
+else:
+    ok('FOTOS_POR_FASE' not in guard and 'demo-obra-' not in guard,
+       'forma vieja entera: con las fotos en el adaptador, guard.js no siembra fotos de obra (nunca mezcladas)')
 fotos_dir = os.path.join(PUBLICADO, 'portal', 'demo', 'fotos')
 publicadas = set(os.listdir(fotos_dir)) if os.path.isdir(fotos_dir) else set()
 ok(pedidas <= publicadas, 'las fotos que pide el adaptador están publicadas (%d)' % len(pedidas))

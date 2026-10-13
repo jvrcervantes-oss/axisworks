@@ -3,7 +3,7 @@
 """
 Demo del ERP (intranet v4 de Lawang) para enseñar a prospectos SIN darles acceso — 24-sep-2026.
 
-    python build.py            # genera dist/ desde proyectos/Lawang (en disco, tal cual esté hoy)
+    python build.py            # genera dist/ desde Lawang en el sha de lawang.json (E3.9, 13-oct-2026; antes: el disco)
     presentar.cmd              # lo sirve en http://127.0.0.1:8977/ y abre el navegador
 
 Qué hace: copia la v4 y los assets compartidos que usa, y en el sitio de
@@ -49,13 +49,21 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 # AXW_AGENCIA_RAIZ: raíz de la AGENCIA (donde viven erp/, tools/, private/ y proyectos/Lawang) cuando se construye desde una copia de
 # sesión de AxisWorks, que vive en _sesiones/<id>/AxisWorks y no cuatro niveles bajo la agencia: apunta a la copia de sesión de la agencia.
 AGENCIA = os.path.abspath(os.environ.get('AXW_AGENCIA_RAIZ') or os.path.join(AQUI, '..', '..', '..', '..'))
-# AXW_LAWANG_RAIZ: construir desde una copia de sesión (tools/sesion.py) en vez del clon principal, para probar un
-# cambio del núcleo ANTES de aterrizarlo (26-sep-2026, F3 lote 2b).
-LAWANG = os.path.abspath(os.environ.get('AXW_LAWANG_RAIZ') or os.path.join(AGENCIA, 'proyectos', 'Lawang'))
-# El doble de QA está gitignorado: no viaja a las copias de sesión. Se lee del clon principal (solo lectura).
-DOBLE_QA = next((d for d in (os.path.join(LAWANG, '_qa_double_guard.js'),
-                             os.path.join(AGENCIA, 'proyectos', 'Lawang', '_qa_double_guard.js')) if os.path.isfile(d)),
-                os.path.join(LAWANG, '_qa_double_guard.js'))
+# LAWANG = Lawang en el sha FIJADO de lawang.json, nunca el disco del clon principal (E3.9, owner 13-oct-2026: «Separar ya
+# el ERP de Lawang»; 6 builds/gates en rojo en 3 días por leer el Lawang vivo). Ver lawang_fijado.py.
+# AXW_LAWANG_RAIZ: construir desde OTRO árbol de Lawang (una copia de sesión o un sha candidato) para probar un cambio del núcleo
+# ANTES de fijarlo (26-sep-2026, F3 lote 2b). publica_instancia.py se niega a publicar con ella puesta.
+import lawang_fijado  # noqa: E402
+if os.environ.get('AXW_LAWANG_RAIZ'):
+    LAWANG = os.path.abspath(os.environ['AXW_LAWANG_RAIZ'])
+    # `prueba`/`sube` pasan el almacén y el sha candidato para que la pista de quien_cambio_lawang diga el commit
+    LAWANG_GIT, LAWANG_REV = os.environ.get('AXW_LAWANG_GIT') or LAWANG, os.environ.get('AXW_LAWANG_REV') or 'HEAD'
+else:
+    LAWANG = lawang_fijado.raiz()
+    LAWANG_GIT, LAWANG_REV = lawang_fijado.almacen(), lawang_fijado.lee_fijado()['sha']
+# El doble de QA está gitignorado (no viaja en ningún sha ni en las copias de sesión): del clon principal, SOLO si su sha256 es el
+# de lawang.json, sea cual sea el árbol de Lawang (un solo camino, revisor 13-oct).
+DOBLE_QA = lawang_fijado.doble_qa()
 DIST = os.path.join(AQUI, 'dist')
 
 SB_URL = 'https://vtulllundrfennhjddhc.supabase.co'
@@ -105,6 +113,18 @@ if PRUEBA_ORIGENES:
             or os.path.normcase(_salida).startswith(_repo):
         print('ABORTA: --prueba-origenes pide AXW_PRUEBA_DEMO y AXW_PRUEBA_WEB (http://127.0.0.1:N o http://localhost:N) '
               'y AXW_PRUEBA_SALIDA fuera del repo AxisWorks')
+        sys.exit(1)
+    DESTINO_PUBLICO, DESTINO_WEB = os.path.join(_salida, 'demo-erp'), os.path.join(_salida, 'erp-web')
+# AXW_PRUEBA_PUBLICO (E3.9, 13-oct-2026): `lawang_fijado.py prueba/sube` construyen `--publico` con el Lawang CANDIDATO; con las URLs
+# reales pero escribiendo FUERA del repo, para no dejar dist/demo-erp y dist/erp-web (que van en git y los publica el push) construidos
+# con un Lawang que aún no se ha fijado (revisor, 13-oct).
+PRUEBA_PUBLICO = bool(os.environ.get('AXW_PRUEBA_PUBLICO')) and not PRUEBA_ORIGENES
+if PRUEBA_PUBLICO:
+    _salida = os.path.abspath(os.environ['AXW_PRUEBA_PUBLICO'])
+    # La raíz del repo justa también cuenta como dentro (BAJA del revisor de S1): `startswith(repo + sep)` solo no la veía.
+    _repo = os.path.normcase(os.path.abspath(os.path.join(AQUI, '..', '..')))
+    if os.path.normcase(_salida) == _repo or os.path.normcase(_salida).startswith(_repo + os.sep):
+        print('ABORTA: AXW_PRUEBA_PUBLICO tiene que estar fuera del repo AxisWorks: ' + _salida)
         sys.exit(1)
     DESTINO_PUBLICO, DESTINO_WEB = os.path.join(_salida, 'demo-erp'), os.path.join(_salida, 'erp-web')
 # Dónde vuelve la demo al configurador («← Modules», el aviso de módulo apagado, el final del tour): la portada, que en
@@ -169,8 +189,8 @@ def comprueba_salida():
     d = os.path.normcase(os.path.realpath(DIST))
     if not d.endswith(os.path.normcase(os.path.join('AxisWorks', 'comercial', 'demo-erp', 'dist'))):
         aborta('la salida no es comercial/demo-erp/dist: ' + d)
-    if os.path.normcase(os.path.realpath(LAWANG)) in d:
-        aborta('la salida cae dentro de proyectos/Lawang')
+    if any(os.path.normcase(os.path.realpath(x)) in d for x in (LAWANG, lawang_fijado.almacen())):
+        aborta('la salida cae dentro de proyectos/Lawang (o de la caché del sha fijado)')
     r = subprocess.run(['git', 'check-ignore', '-q', os.path.join(DIST, 'x.html')], cwd=AQUI)
     if r.returncode != 0:
         aborta('dist/ no está en .gitignore del repo AxisWorks: el webhook lo publicaría')
@@ -600,7 +620,9 @@ def guard_demo():
         ("data: (paths || []).map(function (p) { return { path: p, signedUrl: 'about:blank#qa-' + p, error: null }; }),",
          "data: (paths || []).map(function (p) { return { path: p, signedUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E', error: null }; }),"),
         ("createSignedUrl: function (path) { return Promise.resolve({ data: { signedUrl: 'about:blank#qa-' + path }, error: null }); },",
-         "createSignedUrl: function (path) { return Promise.resolve({ data: { signedUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E' }, error: null }); },"),
+         # Fotos de obra de muestra (13-oct-2026): demo_datos.js las nombra «…/demo-obra-<escena>.webp» y aquí se sirven con la foto
+         # libre de /portal/demo/fotos/ (la misma que enseña el portal), para que Obra en la intranet las vea; el resto, la tesela.
+         "createSignedUrl: function (path) { var m = bucket === 'obra' && /[/]demo-obra-([a-z]+)[.]webp$/.exec(String(path)); return Promise.resolve({ data: { signedUrl: m ? '/portal/demo/fotos/obra-' + m[1] + '.webp' : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E' }, error: null }); },"),
         # Lo mismo para las fotos PÚBLICAS (getPublicUrl: fotos de modelo en /v4/modelos/ y lwFotoUrls): revisor, 28-sep.
         ("getPublicUrl: function (path) { return { data: { publicUrl: 'about:blank#qa-' + path } }; },",
          "getPublicUrl: function (path) { return { data: { publicUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23e7e5df%22/%3E%3C/svg%3E' } }; },"),
@@ -663,7 +685,7 @@ PUERTAS_DEMO = r"""(function () {
   function fija(k, v) { try { Object.defineProperty(window, k, { value: v, writable: false, configurable: false, enumerable: true }); } catch (e) { /* MUDO A PROPOSITO: el guard cargado dos veces; la primera ya fijó lo mismo */ } }
   var FICHA = window.LW_INSTANCIA || {};
   var URL_SB = FICHA.sb_url || 'https://demo.invalid';
-  function noDemo(que) { var e = new Error(que + ': no disponible en la demo'); e.clave = 'no_disponible_en_la_demo'; return Promise.reject(e); }
+  function noDemo(que) { var e = new Error(que + ': not available in the demo'); e.clave = 'no_disponible_en_la_demo'; return Promise.reject(e); }
   fija('LW_SB_URL', URL_SB);
   fija('LW_SB_KEY', FICHA.sb_key || 'demo-publishable-key');
   /* Moneda base (F3 fase E, 12-oct-2026): el guard real la saca de Ajustes vía la capa de módulos, que la demo no lleva. Los
@@ -676,7 +698,7 @@ PUERTAS_DEMO = r"""(function () {
   fija('lwDatos', function (nombre, args) {
     if (!/^[a-z][a-z0-9_]*_datos$/.test(String(nombre))) throw new Error('lwDatos: solo RPC *_datos (' + nombre + ')');
     if (!(window.LW_DEMO_DATOS && Object.prototype.hasOwnProperty.call(window.LW_DEMO_DATOS, nombre))) {
-      return Promise.resolve({ data: null, error: { message: 'no disponible en la demo' } });
+      return Promise.resolve({ data: null, error: { message: 'not available in the demo' } });
     }
     var cli = window.LW_SB ? Promise.resolve(window.LW_SB)
       : window.LW_AUTH ? window.LW_AUTH.then(function (a) { return a.sb; })
@@ -2662,6 +2684,12 @@ EJEMPLOS_ADMITIDOS = frozenset((
 
 
 REF_INTERNA = re.compile(r'\s*\((?:LAW|AXW|BBM|EST)-\d+\)|(?:LAW|AXW|BBM|EST)-\d+')
+# El proveedor de IA nombrado ENTRE PARÉNTESIS en un texto de ayuda («…a un proveedor externo de IA (Anthropic) para…», aviso de
+# privacidad del editor de contratos de Lawang, E10, 13-oct-2026): fuera, como las referencias internas; la frase sigue siendo
+# verdad sin el nombre. Por forma y no por la frase de Lawang (no se engancha a su texto), y la misma en i18n.js y en la
+# pantalla, así la clave sigue casando. Una llamada de verdad (api.anthropic.com, una clave) no va entre paréntesis: la sigue
+# parando comprueba_sin_secretos().
+PROVEEDOR_IA = re.compile(r'\s*\((?i:anthropic)\)')
 QA_ID = re.compile(r'(?<![A-Za-z0-9_$])(qa|QA)(?=[._-])')
 QA_PALABRA = re.compile(r'(?<![A-Za-z0-9_$])QA(?![A-Za-z0-9_$])')
 # Lo visible del doble de QA que se cambia por algo de demo ANTES del renombrado genérico (cada uno debe aparecer: si el doble
@@ -2693,6 +2721,8 @@ def limpia_internos(dist):
             p = os.path.join(raiz, f)
             t = open(p, encoding='utf-8', errors='replace').read()
             t2, n = REF_INTERNA.subn('', t)
+            t2, n_ia = PROVEEDOR_IA.subn('', t2)
+            n += n_ia
             if n:
                 refs += n
                 open(p, 'w', encoding='utf-8', newline='').write(t2)
@@ -2838,7 +2868,7 @@ def publica():
         aborta('quedan rastros de Lawang, no se publica:\n  ' + '\n  '.join(restos[:40]))
     versiona(DIST)
     # Copia a dist/demo-erp/: se vacía por dentro (la carpeta es del repo) y se rellena con lo comprobado.
-    if not PRUEBA_ORIGENES and not DESTINO_PUBLICO.endswith(os.path.join('AxisWorks', 'dist', 'demo-erp')):
+    if not PRUEBA_ORIGENES and not PRUEBA_PUBLICO and not DESTINO_PUBLICO.endswith(os.path.join('AxisWorks', 'dist', 'demo-erp')):
         aborta('destino público inesperado: ' + DESTINO_PUBLICO)
     os.makedirs(DESTINO_PUBLICO, exist_ok=True)
     for x in os.listdir(DESTINO_PUBLICO):
@@ -3016,7 +3046,7 @@ def config_portada(html_txt, demo_url, app_url=None):
 def publica_web():
     """dist/erp-web/: la portada sola, con los enlaces a la demo absolutos. Sale de lo ya comprobado en DIST."""
     destino = DESTINO_WEB
-    if not PRUEBA_ORIGENES and not destino.endswith(os.path.join('AxisWorks', 'dist', 'erp-web')):
+    if not PRUEBA_ORIGENES and not PRUEBA_PUBLICO and not destino.endswith(os.path.join('AxisWorks', 'dist', 'erp-web')):
         aborta('destino de la portada inesperado: ' + destino)
     fuentes_css, fuentes = fuentes_portada()   # antes de vaciar nada: sin fuentes no se publica
     os.makedirs(destino, exist_ok=True)
@@ -3044,6 +3074,10 @@ def publica_web():
     t, n = re.subn(r'''(href=["']?)/home/''', lambda m: m.group(1) + DEMO_URL + '/home/', t)
     if not n:
         aborta('la portada no enlaza la demo (/home/): ¿ha cambiado landing.html?')
+    # «Open the demo» va a la PORTADA de dos puertas (owner, 13-oct-2026), por su data-enlace y no por el rótulo.
+    t, n = re.subn(r'''href="/"(\s+data-enlace="demo")''', lambda m: 'href="' + DEMO_URL + '/"' + m.group(1), t)
+    if not n:
+        aborta('la portada no enlaza la portada de la demo (href="/" data-enlace="demo"): ¿ha cambiado landing.html?')
     open(os.path.join(destino, 'index.html'), 'w', encoding='utf-8', newline='').write(t)
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     permitidas = '|'.join(re.escape(f) for f in LISTA_WEB if f != '.htaccess' and f != 'index.html')
@@ -3386,7 +3420,7 @@ def quien_cambio_lawang(donde):
     if not rel_:
         return ''
     try:
-        r = subprocess.run(['git', '-C', LAWANG, '--no-optional-locks', 'log', '-1', '--date=short', '--format=%h %ad %s', '--', rel_],
+        r = subprocess.run(['git', '-C', LAWANG_GIT, '--no-optional-locks', 'log', '-1', '--date=short', '--format=%h %ad %s', LAWANG_REV, '--', rel_],
                            capture_output=True, text=True, encoding='utf-8', timeout=20)
         return (' · último cambio de Lawang en %s: %s' % (rel_, r.stdout.strip()[:160])) if r.returncode == 0 and r.stdout.strip() else ''
     except Exception:   # MUDO A PROPOSITO: es solo una pista para el mensaje; el build ya está parando
@@ -4595,7 +4629,11 @@ def textos_instancia(nombre):
 # quede en español se cuenta aparte (LW_T_ESPANOL) para que la prueba pueda ponerse roja.
 IDIOMAS_CONOCIDOS = (('id', 'en'),)
 # Palabras que en indonesio se escriben igual que en español (Diseño, 12-oct): las únicas traducciones que pueden ser iguales a su clave.
-IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis', 'Panel', 'Bot', 'AaaS')   # AaaS: nombre del producto, igual en los tres idiomas (owner, 13-oct)
+IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis', 'Panel', 'Bot',
+                 # 13-oct (editores.js al indonesio): «Closer» y «Setter» son los nombres de los roles de venta, que el equipo usa tal
+                 # cual en indonesio
+                 'Closer', 'Setter',
+                 'AaaS')   # AaaS: nombre del producto, igual en los tres idiomas (owner, 13-oct)
 # Lo que hay que tocar en el front copiado: (fichero en DIST, trozo de Lawang, sustituto). Cada trozo tiene que aparecer EXACTAMENTE una vez.
 IDIOMAS_PARCHES = (
     ('contracts/assets/idioma.js', "  window.LW_IDIOMA = (v === 'en') ? 'en' : 'es';",
