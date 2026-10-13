@@ -372,7 +372,7 @@ mira('sin hub en el paquete: nada', hub(None)[0] == 'pasa')
 mira('instancia() pone el sistema tras tipografias_libres y los colores a mano tras la suite clásica, todo antes de versionar',
      cuerpo.index('tipografias_libres()') < cuerpo.index('sistema_instancia(nombre)') < cuerpo.index('\n    versiona(DIST)')
      and cuerpo.index('piel_suite_clasica(DIST, nombre)') < cuerpo.index('piel_v4_fijos(DIST, nombre)') < cuerpo.index('\n    versiona(DIST)'))
-mira('instancia() pone la capa en el hub justo después de pegarla al guard', cuerpo.index('setup_para_guard())') < cuerpo.index('capa_modulos_hub(interruptores)') < cuerpo.index('\n    versiona(DIST)'))
+mira('instancia() pone la capa en el hub justo después de pegarla al guard', cuerpo.index('+ setup_para_guard()') < cuerpo.index('capa_modulos_hub(interruptores)') < cuerpo.index('\n    versiona(DIST)'))
 
 # 4c — el ELEGIDO (filtro, pestaña, segmento) en el acento de la piel (bbm-p40 F14, 13-oct)
 DATOS_DEF = 'var ON=cont.getAttribute("data-lw-on")||"bg-volcanic-ash text-x";var OFF=cont.getAttribute("data-lw-off")||"bg-surface-container-low text-y";'
