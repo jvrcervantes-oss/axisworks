@@ -2430,6 +2430,9 @@ def fuentes_panel():
     for rel, origen in pares:
         if rel.endswith('.woff2'):
             datos['/' + rel] = 'data:font/woff2;base64,' + base64.b64encode(open(origen, 'rb').read()).decode('ascii')
+    falta = sorted(set(re.findall(r'(/assets/fonts/x/[A-Za-z0-9._-]+\.woff2)', css)) - set(datos))
+    if falta:
+        aborta('fuentes del panel: fonts.css cita woff2 que no están entre los ficheros de fuentes: %s' % falta)
     css = re.sub(r'''url\(\s*['"]?(/assets/fonts/x/[A-Za-z0-9._-]+\.woff2)['"]?\s*\)''', lambda m: 'url(%s)' % datos[m.group(1)], css)
     css = re.sub(r'/\*.*?\*/', '', css, flags=re.S).strip()
     if 'url(/' in css or '@font-face' not in css:
@@ -2667,8 +2670,8 @@ def setup_para_panel():
     después»): el hueco __AXW_SETUP__ de panel_control.html. Nada se escribe a mano aquí:
       - `registro`: erp/modulos.json → setup.modulos (lo que declara erp/modulos.py → SETUP). Solo lo usa el mapa de la instalación
         (S00, la lámina por tipo de negocio): los pasos de UNA instancia los da su base (erp_control_estado → setup), nunca esto.
-      - `textos`: los títulos de cada paso y de cada módulo en es y en, sacados de setup_modulos.js (el mismo mapa código → frase del
-        aviso, el asistente y Ajustes; no hay una segunda copia de las frases).
+      - `textos`: los títulos de cada paso y de cada módulo en es y en, sacados de setup_modulos.js y de setup_reservas.js (los pasos de
+        Reservas de producto; el mismo mapa código → frase del aviso, el asistente y Ajustes; no hay una segunda copia de las frases).
       - `en`: panel_setup_en.json (nombres EN de módulos y tipos). Aborta si falta un módulo del registro o un tipo de perfiles.json."""
     reg = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))
     perf = json.load(open(os.path.join(AGENCIA, 'erp', 'perfiles.json'), encoding='utf-8'))['perfiles']
@@ -2687,13 +2690,13 @@ def setup_para_panel():
     r = subprocess.run(['node', '-e', prog, os.path.join(AQUI, 'setup_modulos.js'), os.path.join(AQUI, 'setup_reservas.js')],
                        capture_output=True, text=True, encoding='utf-8')
     if r.returncode != 0:
-        aborta('setup_modulos.js no se deja leer para el panel: ' + (r.stderr or '')[-400:])
+        aborta('setup_modulos.js / setup_reservas.js no se dejan leer para el panel: ' + (r.stderr or '')[-400:])
     textos = json.loads(r.stdout)
     sin_en = sorted(k for k, v in textos['paso'].items() if not v['en'])
     pasos_decl = sorted({p['clave'] for m in reg['setup']['modulos'].values() if isinstance(m, dict) for p in m.get('pasos', [])})
     sin_texto = [k for k in pasos_decl if k not in textos['paso']]
     if sin_en or sin_texto:
-        aborta('setup_modulos.js: pasos sin frase en inglés %s · pasos declarados sin frase %s' % (sin_en, sin_texto))
+        aborta('setup_modulos.js + setup_reservas.js: pasos sin frase en inglés %s · pasos declarados sin frase %s' % (sin_en, sin_texto))
     # Lista blanca (revisor, 12-oct): /panel/ es público (sin sesión da 200), así que solo sale lo que el mapa lee — clave, obligatorio,
     # irreversible y si el módulo se declara «ninguno» —, nunca rpc, ajustes, funciones de estado, herramientas ni el motivo interno.
     registro = {}
