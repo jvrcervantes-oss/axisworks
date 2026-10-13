@@ -68,7 +68,6 @@
 <button class="axw-boton" type="button" data-accion="ex-actualizar"><span data-lwt>Actualizar</span></button>
 <button class="axw-boton" type="button" data-accion="ex-nuevo" data-primario="1"><span data-lwt>Nuevo extra</span></button>
 </div>
-<p class="axw-aviso axw-oculto" data-ex="impuestos-no" data-lwt>No se ha podido leer la lista de impuestos: el impuesto de cada extra no se enseña ni se cambia desde aquí. Recarga para verlo.</p>
 <p class="axw-aviso axw-oculto" data-ex="recortado" data-lwt>El catálogo es más largo de lo que se puede enseñar aquí: puede faltar algún extra o impuesto.</p>
 <ul class="ex-lista" data-ex="lista"></ul>
 </div>
@@ -82,7 +81,6 @@
     "Entrega a domicilio, accesorios, servicios: lo que se añade a una reserva o se factura suelto. Las motos y sus precios están en Flota y tarifas.": "Antar ke alamat, aksesori, layanan: yang ditambahkan ke booking atau dibuatkan invoice terpisah. Motor dan harganya ada di Armada dan tarif.",
     "Las motos se dan de alta y se cambian en": "Motor ditambahkan dan diubah di", "Flota y tarifas": "Armada dan tarif",
     "Actualizar": "Muat ulang", "Nuevo extra": "Ekstra baru", "Editar extra": "Ubah ekstra", "Extras · %n": "Ekstra · %n",
-    "No se ha podido leer la lista de impuestos: el impuesto de cada extra no se enseña ni se cambia desde aquí. Recarga para verlo.": "Daftar pajak tidak dapat dibaca: pajak setiap ekstra tidak ditampilkan dan tidak diubah dari sini. Muat ulang untuk melihatnya.",
     "El catálogo es más largo de lo que se puede enseñar aquí: puede faltar algún extra o impuesto.": "Katalognya lebih panjang daripada yang bisa ditampilkan di sini: mungkin ada ekstra atau pajak yang tidak muncul.",
     "Aún no hay extras: crea el primero (por ejemplo, la entrega a domicilio).": "Belum ada ekstra: buat yang pertama (misalnya, antar ke alamat).",
     "No se ha podido mirar": "Tidak bisa diperiksa", "Cargando…": "Memuat…",
@@ -113,7 +111,6 @@
     'Entrega a domicilio, accesorios, servicios: lo que se añade a una reserva o se factura suelto. Las motos y sus precios están en Flota y tarifas.': 'Home delivery, accessories, services: what is added to a booking or invoiced on its own. The bikes and their prices are in Fleet and rates.',
     'Las motos se dan de alta y se cambian en': 'Bikes are added and changed in', 'Flota y tarifas': 'Fleet and rates',
     'Actualizar': 'Refresh', 'Nuevo extra': 'New extra', 'Editar extra': 'Edit extra', 'Extras · %n': 'Extras · %n',
-    'No se ha podido leer la lista de impuestos: el impuesto de cada extra no se enseña ni se cambia desde aquí. Recarga para verlo.': 'The list of taxes could not be read: the tax of each extra is not shown or changed from here. Reload to see it.',
     'El catálogo es más largo de lo que se puede enseñar aquí: puede faltar algún extra o impuesto.': 'The catalogue is longer than what can be shown here: an extra or a tax may be missing.',
     'Aún no hay extras: crea el primero (por ejemplo, la entrega a domicilio).': 'There are no extras yet: create the first one (for example, home delivery).',
     'No se ha podido mirar': 'It could not be checked', 'Cargando…': 'Loading…',
@@ -202,7 +199,6 @@
   function pinta() {
     var est = $v('estado'), l = vacia($v('lista'));
     $v('n').textContent = T('Extras · %n').replace('%n', String(E.filas.length));
-    oculta($v('impuestos-no'), !!E.imps);
     oculta($v('recortado'), !E.recortado);
     if (!E.filas.length) {
       vacia(est); est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'vacio');

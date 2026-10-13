@@ -934,8 +934,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     var yo = ++PETICION, est = $v('estado');
     if (!E.d) { est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'cargando'); est.textContent = T('Cargando…'); }
     // las dos lecturas a la vez; el catálogo no tumba Flota: si no llega, la lista sale sin filtrar (como antes) y lo dice
-    var cat = llama('productos_catalogo_datos', {}).then(function (x) { return x; }, function (e) { return { error: e || {} }; });
-    return Promise.all([llama('producto_flota_datos', {}), cat]).then(function (rs) {
+    var pCat = llama('productos_catalogo_datos', {}).then(function (x) { return x; }, function (e) { return { error: e || {} }; });
+    return Promise.all([llama('producto_flota_datos', {}), pCat]).then(function (rs) {
       var r = rs[0], cat = rs[1];
       if (yo !== PETICION) return { ok: false, tarde: true };   // llegó tarde: ya se pidió otra lectura y esa manda
       if (r.error || !formaOk(r.data)) {
@@ -957,7 +957,10 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   /* AXW-290: Flota es de lo que se alquila. Un producto con clase distinta de 'alquiler' (un extra de «Extras y servicios») sale de la lista: si no, se le podía
      poner una moto o una tarifa y el disparador _producto_unidad_clase lo pasaba en silencio a alquiler. Clase null (base anterior a F3-E3) o un producto que el
      catálogo no trae (recortado a 1000): se queda, no se sabe qué es. */
-  function avisoCat() { aviso(E.catFallo ? T('No se ha podido saber qué productos son de alquiler: puede que en la lista salga algún extra.') : ''); }   // lo que borra el aviso de un guardado no puede borrar este
+  function avisoCat() {   // el aviso del catálogo caído se queda mientras siga caído; y avisoCat solo quita ESE, nunca el de otro
+    var m = T('No se ha podido saber qué productos son de alquiler: puede que en la lista salga algún extra.'), e = $v('aviso');
+    if (E.catFallo) aviso(m); else if (e && e.textContent === m) aviso('');
+  }
   function catalogo(d, c) {
     var bien = c && !c.error && esObj(c.data) && Array.isArray(c.data.productos) && Array.isArray(c.data.impuestos);
     E.cat = null; E.imps = null; E.catFallo = !bien;
