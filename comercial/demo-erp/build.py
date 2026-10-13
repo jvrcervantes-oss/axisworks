@@ -1609,11 +1609,31 @@ LAWANG_FAMILIAS = {
 # Colores que NO son de otra marca y por eso no entran (ni se cambian ni los cuenta el barrido): la ✕ de AxisWorks (la marca del fabricante,
 # en el icono de las herramientas) y los grises y azules por defecto de Tailwind (preflight y forms; el slate del CRM clásico de leads no está
 # en ninguna lista y por eso tampoco se toca). Los TONOS DE ESTADO de Tailwind que Lawang usa (ámbar, esmeralda, rosa, stone; también los
-# chips del CRM) sí entran por su familia: un «aprobado» lleva el verde de estado de la piel, sea de Tailwind o no. Los colores propios del
-# MAESTRO (no están en el repo de Lawang: avisos de pantalla_comun, fichas de la portada, el velo del cajón de flota) tampoco entran: son de
-# esta casa, no de otro cliente.
+# chips del CRM) sí entran por su familia: un «aprobado» lleva el verde de estado de la piel, sea de Tailwind o no. Del MAESTRO se quedan
+# solo los dos que ya son del lenguaje de la casa (el tinte azul del chip «confirmada» y el velo del cajón de flota); el resto va por
+# COLORES_MAESTRO, abajo.
 COLORES_AJENOS = {'15181C': 'la ✕ de AxisWorks', 'E2581C': 'la ✕ de AxisWorks', '6B7280': 'Tailwind', '2563EB': 'Tailwind', '3B82F6': 'Tailwind',
-                  '9CA3AF': 'Tailwind', 'E5E7EB': 'Tailwind', 'D1D5DB': 'Tailwind'}
+                  '9CA3AF': 'Tailwind', 'E5E7EB': 'Tailwind', 'D1D5DB': 'Tailwind',
+                  'E3E6FD': 'el tinte azul del maestro (chip «confirmada» de la portada y de reservas)',
+                  '0F111E': 'el velo del cajón de flota (tinta azul del maestro, rgba)'}
+# Colores que el MAESTRO escribe a mano en sus propias pantallas (no están en el repo de Lawang) y que hablan el idioma de Lawang —las cajas
+# de aviso de pantalla_comun (oliva, crema, rojo teja), sus rayas y tintas cálidas— o son un fondo de estado: también a la piel, cada uno con
+# su porqué (revisión del 13-oct: un hueco sin nombre no es una exclusión; el barrido los conoce como cualquier color de la cola).
+COLORES_MAESTRO = {
+    '7A1A14': ('peligro', 'texto de la caja de error (pantalla_comun)'),
+    'FDE2E0': ('peligro-fondo', 'fondo de la caja de error (pantalla_comun)'),
+    'FDE4E1': ('peligro-fondo', 'fondo de error (flota, portada de reservas)'),
+    'F3C5BE': ('peligro-fondo', 'borde de la caja de error de flota'),
+    'FFF3E0': ('aviso-fondo', 'fondo de la caja de aviso (pantalla_comun)'),
+    'FFE9D2': ('aviso-fondo', 'chip «en espera» (portada de reservas)'),
+    'E6EFDD': ('ok-fondo', 'fondo oliva de la caja de éxito (pantalla_comun)'),
+    'DCF2E3': ('ok-fondo', 'chip «ok» (portada de reservas)'),
+    '2C3D1F': ('ok', 'texto oliva de la caja de éxito (pantalla_comun)'),
+    'F0EEE8': ('filete', 'raya cálida de las tablas (pantalla_comun)'),
+    'FAF9F5': ('surface-container-low', 'fila al pasar el ratón (ventas, alta del bot)'),
+    '4A4C45': ('on-surface-variant', 'texto secundario cálido (flota, entrega)'),
+    '2B2B25': ('on-background', 'tinta cálida de la página de rescate (contratos, obra)'),
+}
 # destino derivado → (token de la piel, mezcla con el blanco de la hoja). El texto de estado sobre su fondo, ≥ 4,5:1 o PARA.
 FAMILIAS_DERIVADAS = {'aviso-fondo': ('aviso', 0.88), 'aviso-borde': ('aviso', 0.62), 'ok-fondo': ('ok', 0.86)}
 NEUTROS = {(255, 255, 255), (0, 0, 0)}
@@ -1674,6 +1694,10 @@ def lawang_paleta():
             if hx in COLORES_AJENOS or _rgb_hex(hx) in pal:
                 aborta('colores de Lawang: %s está en LAWANG_FAMILIAS y además es %s' % (hx, COLORES_AJENOS.get(hx) or 'token o suelto de Lawang'))
             pal[_rgb_hex(hx)] = [dst]
+    for hx, (dst, _porque) in COLORES_MAESTRO.items():
+        if hx in COLORES_AJENOS or _rgb_hex(hx) in pal:
+            aborta('colores de Lawang: %s está en COLORES_MAESTRO y además es %s' % (hx, COLORES_AJENOS.get(hx) or 'de Lawang'))
+        pal[_rgb_hex(hx)] = [dst]
     return pal
 
 

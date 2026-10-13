@@ -4,8 +4,8 @@
 # cambia CONSERVANDO su forma; (2) el barrido las ve todas; (3) un verde ambiguo (#485B37) en un fichero nuevo PARA, igual que un
 # recuento distinto en un fichero conocido; (4) sin piel no se toca nada (Lawang y la demo, byte a byte); (5) binarios y .json no se
 # tocan; (6) el papel (brand.css) pasa al acento y la tinta; (7) instancia() lo llama después de escribir páginas y antes de versiona();
-# (8) la cola por familias (bbm-p42c): tonos de estado y grises/cremas de Lawang a su token o fondo derivado, lo ajeno y lo del maestro
-# intactos, contraste de los estados ≥ 4,5:1 o PARA, y un ajeno metido en una familia PARA.
+# (8) la cola por familias (bbm-p42c): tonos de estado y grises/cremas de Lawang a su token o fondo derivado, lo ajeno con nombre
+# intacto, los del maestro con tono de Lawang (COLORES_MAESTRO) también a la piel, contraste de los estados ≥ 4,5:1 o PARA, y un ajeno metido en una familia PARA.
 # NO ejecuta build.instancia(): trabaja en carpetas temporales.
 import hashlib, os, re, shutil, sys, tempfile
 AQUI = os.path.dirname(os.path.abspath(__file__))
@@ -115,13 +115,13 @@ try:
         build._pon_color = viejo_pon
     shutil.rmtree(d)
     # (8) la cola por familias (bbm-p42c): un tono de estado propio de Lawang va al de estado de la piel (o a su fondo derivado), un gris
-    # cálido a su superficie; lo ajeno (Tailwind gris/azul, la ✕ de AxisWorks) y lo propio del maestro se quedan; el ejemplo de un campo, también
+    # cálido a su superficie; lo ajeno con nombre (Tailwind gris/azul, la ✕ de AxisWorks, el azul del maestro) se queda; la caja oliva del maestro va a ok; el ejemplo de un campo, también
     D_ = build._deriva()
     blanco = tuple(BBM['surface-container-lowest'])
     av_fondo = '%02X%02X%02X' % D_.mix(tuple(BBM['aviso']), blanco, 0.88)
     d = tempfile.mkdtemp()
     escribe(d, 'a/cola.css', '.av{color:#8A5A00;background:#FBF3E4;border-color:#D6CFC2}.ok{color:#2F5D3A}.mal{color:#9E2F26;background:#FDECEA}'
-                             '.tw{color:#6B7280;border:1px solid #E5E7EB}.x{fill:#E2581C}.maestro{color:#7A1A14}')
+                             '.tw{color:#6B7280;border:1px solid #E5E7EB}.x{fill:#E2581C}.maestro{color:#7A1A14;background:#E6EFDD}.azul{background:#E3E6FD}')
     escribe(d, 'a/campo.js', 'var C=[{k:"aviso",ayuda:"#662906"},{k:"filete",ayuda:"#E7E3D2"}];')
     build.piel_colores_lawang(d, 'x')
     cola = open(os.path.join(d, 'a', 'cola.css'), encoding='utf-8').read().upper()
@@ -129,8 +129,11 @@ try:
          'COLOR:#%s;' % H('aviso') in cola and 'BACKGROUND:#%s;' % av_fondo in cola and 'BORDER-COLOR:#%s}' % H('filete') in cola)
     mira('familia: verde y rojo de estado de Lawang pasan a ok / peligro de la piel, y el fondo rojo al error-container',
          '.OK{COLOR:#%s}' % H('ok' if 'ok' in BBM else 'fiduciary-green') in cola and '.MAL{COLOR:#%s;BACKGROUND:#%s}' % (H('peligro'), H('error-container')) in cola)
-    mira('ajenos con nombre (Tailwind gris, la ✕ de AxisWorks) y colores propios del maestro NO se tocan',
-         '#6B7280' in cola and '#E5E7EB' in cola and '#E2581C' in cola and '#7A1A14' in cola)
+    mira('ajenos con nombre (Tailwind gris, la ✕ de AxisWorks, el tinte azul del maestro) NO se tocan',
+         '#6B7280' in cola and '#E5E7EB' in cola and '#E2581C' in cola and '#E3E6FD' in cola)
+    ok_fondo = '%02X%02X%02X' % D_.mix(tuple(BBM['ok' if 'ok' in BBM else 'fiduciary-green']), blanco, 0.86)
+    mira('del maestro (COLORES_MAESTRO): el rojo teja y el fondo oliva de sus cajas pasan a peligro y al fondo de ok de la piel',
+         '.MAESTRO{COLOR:#%s;BACKGROUND:#%s}' % (H('peligro'), ok_fondo) in cola)
     cj = open(os.path.join(d, 'a', 'campo.js'), encoding='utf-8').read()
     mira('el ejemplo de un campo que es color de la cola (ayuda:"#662906", "#E7E3D2") se queda', 'ayuda:"#662906"' in cj and 'ayuda:"#E7E3D2"' in cj)
     mira('tras el pase, el barrido no encuentra ni un color de la cola', build.colores_lawang_en(d, BBM) == [])
