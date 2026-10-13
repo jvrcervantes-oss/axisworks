@@ -56,6 +56,8 @@
     'Al emitir un contrato, exigir que se diga quién cerró la venta': 'When issuing a contract, require saying who closed the sale',
     'Guardar interruptores': 'Save switches', 'No has cambiado nada.': "You haven't changed anything.", 'Interruptores guardados.': 'Switches saved.',
     'Último cambio: %q, %c.': 'Last change: %q, %c.',
+    'Aún no se ha podido leer la lista: hasta que se lea no se guarda nada aquí. Si no aparece, recarga la página.': "The list hasn't been read yet: nothing is saved here until it is. If it doesn't appear, reload the page.",
+    'No se ha enviado nada: tu sesión no está activa. Recarga la página y vuelve a entrar.': 'Nothing was sent: your session is not active. Reload the page and sign in again.',
     'No se ha podido leer cómo están los interruptores: recarga la página.': "We couldn't read how the switches are set: reload the page.",
     'La base no ha respondido: no sabemos si se guardó. Recarga la página para verlo.': "The database didn't answer: we don't know if it was saved. Reload the page to see it.",
     'Solo el administrador principal cambia estos interruptores.': 'Only the main administrator can change these switches.',
@@ -102,6 +104,8 @@
     'Al emitir un contrato, exigir que se diga quién cerró la venta': 'Saat menerbitkan kontrak, wajib menyebutkan siapa yang menutup penjualan',
     'Guardar interruptores': 'Simpan sakelar', 'No has cambiado nada.': 'Belum ada yang Anda ubah.', 'Interruptores guardados.': 'Sakelar tersimpan.',
     'Último cambio: %q, %c.': 'Perubahan terakhir: %q, %c.',
+    'Aún no se ha podido leer la lista: hasta que se lea no se guarda nada aquí. Si no aparece, recarga la página.': 'Daftar belum terbaca: tidak ada yang disimpan di sini sampai terbaca. Jika tidak muncul, muat ulang halaman.',
+    'No se ha enviado nada: tu sesión no está activa. Recarga la página y vuelve a entrar.': 'Tidak ada yang dikirim: sesi Anda tidak aktif. Muat ulang halaman dan masuk lagi.',
     'No se ha podido leer cómo están los interruptores: recarga la página.': 'Status sakelar tidak dapat dibaca: muat ulang halaman.',
     'La base no ha respondido: no sabemos si se guardó. Recarga la página para verlo.': 'Basis data tidak menjawab: kami tidak tahu apakah sudah tersimpan. Muat ulang halaman untuk melihatnya.',
     'Solo el administrador principal cambia estos interruptores.': 'Hanya administrator utama yang dapat mengubah sakelar ini.',
@@ -252,6 +256,7 @@
           lista.removeAttribute('aria-busy');
           if (!r.ok || !Array.isArray(r.data)) { vacia(lista); lista.appendChild(el('li', { class: CLS_ERR, 'data-axw-pr-lista-error': 'tipos', text: T('No se ha podido leer la lista: ') + frase(ERR_TIPO, r.error) })); return; }
           st.tipos = r.data.filter(function (t) { return t && typeof t.clave === 'string'; });
+          st.leido = true;
           pintaLista();
         });
       }
@@ -265,6 +270,7 @@
         valores: function () {
           var n = String(nom.value || '').trim(), k = String(cla.value || '').trim();
           BORRADOR.tipos = { nombre: nom.value, clave: cla.value, claveTocada: st.claveTocada, editando: st.editando };
+          if (!st.leido) return { ok: false, error: T('Aún no se ha podido leer la lista: hasta que se lea no se guarda nada aquí. Si no aparece, recarga la página.') };   // sin la lista, el control de clave repetida no frena nada
           if (!n) return st.hay && !st.editando ? { ok: true, v: {} } : { ok: false, error: T(st.editando ? 'El nombre va de 1 a 60 caracteres.' : 'Escribe el nombre del primer tipo (por ejemplo, Parcela).') };
           if (/^[=+\-@]/.test(n)) return { ok: false, error: T('El nombre no puede empezar por = + - @.') };
           if (nombreMal(n, 60)) return { ok: false, error: T('El nombre va de 1 a 60 caracteres.') };
@@ -279,7 +285,9 @@
     guarda: function (sb, v) {
       if (!v || !v.clave) { BORRADOR.tipos = null; return Promise.resolve({ ok: true }); }   // ya había tipos activos y no se escribió otro
       return resultado(sb.rpc('tipo_vivienda_guarda', { p_clave: v.clave, p_datos: v.datos })).then(function (r) { if (r.ok) BORRADOR.tipos = null; return conFrase(ERR_TIPO, r); });
-    }
+    },
+    // sin respuesta no se da por guardado aunque el paso ya estuviera hecho; reenviar es seguro (revisor erp-front-propiedades)
+    comprueba: function () { return false; }
   };
 
   // ── 2 · Fases de obra (módulo obra, obligatorio) ──────────────────────────────────────────────────────────────────────────────────────────
@@ -336,6 +344,7 @@
           }
           var pagoDe = {};
           b.data.forEach(function (x) { if (x && typeof x.obra_fase_clave === 'string') pagoDe[x.obra_fase_clave] = x.orden_pago; });
+          st.leido = true;
           st.fases = a.data.filter(function (f) { return f && typeof f.clave === 'string'; }).map(function (f) { return { clave: f.clave, es: f.es, en: f.en, orden: f.orden, orden_pago: f.clave in pagoDe ? pagoDe[f.clave] : null }; });
           if (!st.fases.length) lista.appendChild(el('li', { class: CLS_AYUDA, 'data-axw-pr-lista-vacia': 'fases', text: T('Aún no hay ninguna fase.') }));
           st.fases.forEach(function (f) {
@@ -355,6 +364,7 @@
         valores: function () {
           var e = String(es.value || '').trim(), i = String(en.value || '').trim(), o = String(orden.value || '').trim(), p = String(pago.value || '');
           BORRADOR.fases = { es: es.value, en: en.value, orden: orden.value, pago: p, editando: st.editando };
+          if (!st.leido) return { ok: false, error: T('Aún no se ha podido leer la lista: hasta que se lea no se guarda nada aquí. Si no aparece, recarga la página.') };
           if (!e && !i && !st.editando) return st.fases.length ? { ok: true, v: {} } : { ok: false, error: T('Escribe el nombre de la primera fase.') };
           if (/^[=+\-@]/.test(e) || /^[=+\-@]/.test(i)) return { ok: false, error: T('El nombre no puede empezar por = + - @.') };
           if (nombreMal(e, 60) || nombreMal(i, 60)) return { ok: false, error: T('El nombre de la fase va de 1 a 60 caracteres.') };
@@ -373,7 +383,9 @@
     guarda: function (sb, v) {
       if (!v || !v.clave) { BORRADOR.fases = null; return Promise.resolve({ ok: true }); }
       return resultado(sb.rpc('obra_fase_guarda', { p_clave: v.clave, p_datos: v.datos })).then(function (r) { if (r.ok) BORRADOR.fases = null; return conFrase(ERR_FASE, r); });
-    }
+    },
+    // sin respuesta no se da por guardado aunque el paso ya estuviera hecho; reenviar es seguro (revisor erp-front-propiedades)
+    comprueba: function () { return false; }
   };
 
   // ── 3 · Carta de reserva (módulo reservas, obligatorio): qué tipo de contrato es la reserva ───────────────────────────────────────────────
@@ -438,7 +450,9 @@
     guarda: function (sb, v) {
       if (!v || !v.tipo) { BORRADOR.carta = null; return Promise.resolve({ ok: true }); }
       return resultado(sb.rpc('contrato_tipo_etapa_guarda', { p_tipo: v.tipo, p_etapa: 'reserva' })).then(function (r) { if (r.ok) BORRADOR.carta = null; return conFrase(ERR_CARTA, r); });
-    }
+    },
+    // sin respuesta no se da por guardado aunque el paso ya estuviera hecho; reenviar es seguro (revisor erp-front-propiedades)
+    comprueba: function () { return false; }
   };
 
   // ── 4 · Ajustes › Comisiones: los dos interruptores (no es paso del asistente) ───────────────────────────────────────────────────────────
@@ -490,13 +504,15 @@
       INTERRUPTORES.forEach(function (x) { if (casillas[x[0]].checked !== (d[x[0]] === true)) q[x[0]] = casillas[x[0]].checked; });
       if (!Object.keys(q).length) { dice(T('No has cambiado nada.'), true); return; }
       g.disabled = true; dice(T('Cargando…'), false);
-      sesion().then(function (sb) { return sb ? resultado(sb.rpc('comisiones_interruptor_guarda', { p_datos: q })) : { ok: false, sinRespuesta: true, error: {} }; }).then(function (r) {
+      sesion().then(function (sb) { return sb ? resultado(sb.rpc('comisiones_interruptor_guarda', { p_datos: q })) : { ok: false, sinSesion: true, error: {} }; }).then(function (r) {
         g.disabled = false;
         if (r.ok && r.data && typeof r.data.recalculo_auto === 'boolean' && typeof r.data.modo_obligatorio === 'boolean') {
           d.recalculo_auto = r.data.recalculo_auto; d.modo_obligatorio = r.data.modo_obligatorio;   // lo que devuelve la base manda
           INTERRUPTORES.forEach(function (x) { casillas[x[0]].checked = d[x[0]]; });
+          var ult = panel.querySelector('[data-axw-pr="comisiones-ultimo"]'); if (ult) ult.remove();   // el último cambio ya es este
           dice(T('Interruptores guardados.'), false); return;
         }
+        if (r.sinSesion) { dice(T('No se ha enviado nada: tu sesión no está activa. Recarga la página y vuelve a entrar.'), true); return; }
         if (r.ok || r.sinRespuesta) { dice(T('La base no ha respondido: no sabemos si se guardó. Recarga la página para verlo.'), true); return; }
         dice(frase(ERR_INT, r.error), true);
       });

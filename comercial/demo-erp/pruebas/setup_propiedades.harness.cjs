@@ -44,6 +44,8 @@ function servidor(b, n, a) {
   b.llamadas.push([n, JSON.parse(JSON.stringify(a))]);
   if (n === 'modulos_setup_estado') return { data: estado(b), error: null };
   if (n === 'ajustes_config_datos') return { data: { valores: {}, puede_escribir: true }, error: null };
+  if (n === 'from:tipos_vivienda' && b.o.listaFalla) return err('57014');
+  if (b.o.redEn === n) return { red: true };
   if (n === 'from:tipos_vivienda') return { data: b.tipos.map(t => Object.assign({}, t)), error: null };
   if (n === 'from:obra_fases') return { data: b.fases.map(f => Object.assign({}, f)), error: null };
   if (n === 'from:obra_fase_orden_pago') return { data: Object.keys(b.pagos).map(k => ({ obra_fase_clave: k, orden_pago: b.pagos[k] })), error: null };
@@ -192,6 +194,22 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:|22023|42501|55000|23505|P000
   await p.click('[data-axw-pr-accion="tipo-desactivar"][data-axw-pr-clave="parcela"]'); await p.waitForTimeout(300);
   const e2b = await txt(p, '[data-axw-pr-error="tipos"]');
   ok('T2 42501/modulo_apagado: «Este módulo está apagado…», no la del permiso', !!e2b && e2b.includes('Este módulo está apagado') && !e2b.includes('permiso') && sinCodigo(e2b), e2b);
+  await ctx.close();
+
+  // revisor erp-front-propiedades (14-oct): sin la lista leída no se guarda (la función ACTUALIZARÍA una fila con esa clave que no se ve)
+  b = base({ tipos: [{ clave: 'parcela', etiqueta: 'Parcela', activo: true }], listaFalla: true });
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=proyectos&paso=tipos_vivienda' }));
+  if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
+  await p.fill('[data-axw-campo="tv_etiqueta"]', 'Parcela'); await p.fill('[data-axw-campo="tv_clave"]', 'parcela'); await clic(p, 'enviar');
+  ok('T2 lista sin leer: no llama y lo dice', de(b, 'tipo_vivienda_guarda').length === 0 && ((await errorTxt(p)) || '').includes('Aún no se ha podido leer la lista'), await errorTxt(p));
+  await ctx.close();
+  // y un guardado sin respuesta sobre un paso ya hecho NO se da por guardado (comprueba() = false)
+  b = base({ tipos: [{ clave: 'parcela', etiqueta: 'Parcela', activo: true }], redEn: 'tipo_vivienda_guarda' });
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=proyectos&paso=tipos_vivienda' }));
+  if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
+  await p.fill('[data-axw-campo="tv_etiqueta"]', 'Villa'); await p.fill('[data-axw-campo="tv_clave"]', 'villa'); await clic(p, 'enviar'); await p.waitForTimeout(600);
+  const sinR = await p.evaluate(() => document.body.innerText);
+  ok('T2 sin respuesta en un paso ya hecho: no se da por guardado', de(b, 'tipo_vivienda_guarda').length === 1 && /no se guardó|no sabemos|no ha respondido/i.test(sinR) && !b.tipos.some(t => t.clave === 'villa'), sinR.slice(0, 300));
   await ctx.close();
 
   // ── 3. fases de obra: alta con su pago, clave repetida con sufijo, errores 55000 / 23505 por hint ───────────────────────────────────────────

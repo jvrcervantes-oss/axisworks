@@ -4441,7 +4441,7 @@ AJUSTES_COMISIONES_PANEL = (
 
 def propiedades_en_paquete(nombre):
     """¿Lleva esta instancia los pasos de Propiedades (setup_propiedades.js, erp-front 14-oct-2026; contrato encargo_front_pasos_propiedades.md de
-    erp-setup)? Sí solo si en la agencia hay una migración que da `grant execute … to authenticated` a sus tres escritores y esa migración va a la
+    erp-setup)? Sí solo si en la agencia hay una migración que da `grant execute … to authenticated` a sus cuatro escritores y una lectura y esa migración va a la
     instancia (abanico.va_a: su `tipo:` y su `solo-en:`). Sin el grant, la pantalla llamaría a una función cerrada (42501 a todo el mundo) y el
     contrato front↔base saldría rojo; con el grant y sin la pantalla, una función abierta sin llamador (§1.ter). Una migración que abra solo
     algunos de los tres no vale: aborta, porque los tres pasos son un mismo componente."""

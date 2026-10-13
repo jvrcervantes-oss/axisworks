@@ -1,5 +1,6 @@
 # Prueba de build.py:propiedades_en_paquete() (erp-front, 14-oct-2026; contrato encargo_front_pasos_propiedades.md de erp-setup): python test_propiedades_paquete.py
-# Los tres escritores de N4 (tipo_vivienda_guarda, obra_fase_guarda, contrato_tipo_etapa_guarda) nacen CERRADOS y se abren en el MISMO aterrizaje que
+# Los cuatro escritores de N4 (tipo_vivienda_guarda, obra_fase_guarda, contrato_tipo_etapa_guarda, comisiones_interruptor_guarda) y la lectura
+# comisiones_interruptor_datos nacen CERRADOS y se abren en el MISMO aterrizaje que
 # setup_propiedades.js. Mira que el script va SOLO donde va la migración que da el grant (su `tipo:` y su `solo-en:`, abanico.va_a), en ninguna si
 # esa migración aún no existe, y que una migración que abre solo una parte para el build (los tres pasos son un mismo componente). El comportamiento en
 # el navegador lo mide pruebas/setup_propiedades.harness.cjs. No escribe en erp/despliegues/.
@@ -58,7 +59,7 @@ mira('instancia() llama a setup_propiedades_pasos() solo tras propiedades_en_paq
 mira('setup_propiedades.js está en el chequeo de clases del setup', "'setup_propiedades.js')" in src.split('SETUP_CLASES = ')[1].split('\n')[0])
 js = open(os.path.join(AQUI, 'setup_propiedades.js'), encoding='utf-8').read()
 mira('el componente lee comisiones_interruptor_datos con su nombre literal', all("datos('%s')" % f in js for f in build.PROPIEDADES_LECTURAS))
-mira('el componente nombra LITERAL las cuatro funciones que escriben (contrato_front las busca así)', all("sb.rpc('%s'" % f for f in build.PROPIEDADES_ESCRITORES) and all("sb.rpc('%s'" % f in js for f in build.PROPIEDADES_ESCRITORES))
+mira('el componente nombra LITERAL las cuatro funciones que escriben (contrato_front las busca así)', len(build.PROPIEDADES_ESCRITORES) == 4 and all("sb.rpc('%s'" % f in js for f in build.PROPIEDADES_ESCRITORES))
 mira('no lee tipos_contrato con .from (sin SELECT para authenticated): va por plantillas_contrato_datos', ".from('tipos_contrato')" not in js and "datos('plantillas_contrato_datos')" in js)
 mira('engancha por data-axw-*, nunca por un rótulo ni con innerHTML', 'innerHTML' not in js and 'textContent ===' not in js)
 
