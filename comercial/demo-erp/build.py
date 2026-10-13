@@ -3349,6 +3349,32 @@ def ruta_limpia(u):
     return n
 
 
+def pantallas_por_tipo(nombre):
+    """{ruta limpia: módulo} de las pantallas que esta instancia NO puede encender nunca por su TIPO de ERP, más las de los módulos «fuera» (solo Lawang).
+    N6.3 del plan ajustado (erp-front, 14-oct-2026; owner 13-oct: «las instalaciones del ERP MAESTRO deben estar limpias»; agencia-81: «por TIPO, no por
+    encendido»): el paquete lleva el núcleo, Ajustes y TODAS las pantallas de los módulos de su tipo, encendidos o no, porque un módulo se enciende desde el
+    panel sin volver a publicar (apagados_instancia.js lo decide en el navegador). Lo de otro tipo no se puede encender ahí, así que su pantalla sale como
+    «Pantalla no incluida» y los ficheros que solo ella cargaba salen del paquete (como apagados_extra.p). El tipo es `config.tipo_erp` del registro de
+    instancias (A12) y el de cada módulo, TIPO_MODULO de erp/modulos.py (E3.1): una sola fuente, la misma que usa el servidor (A13). Sin tipo en el registro,
+    nada cambia (la instancia sale como hasta hoy). Revertir: devolver {} aquí."""
+    tipo = (_instancia_registro(nombre).get('config') or {}).get('tipo_erp')
+    if tipo is None:
+        return {}
+    sys.path.insert(0, os.path.join(AGENCIA, 'erp'))
+    from modulos import TIPO_MODULO, TIPOS_ERP
+    if tipo not in TIPOS_ERP:
+        aborta('erp/instancias.json: %s declara tipo_erp %r y solo se conocen %s' % (nombre, tipo, ', '.join(TIPOS_ERP)))
+    m = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))
+    out = {}
+    for mod, d in sorted(TIPO_MODULO.items()):
+        if mod == 'base' or ((d.get('clase') != 'fuera') and ('todos' in d['tipos'] or tipo in d['tipos'])):
+            continue
+        for u in (m['modulos'].get(mod) or {}).get('pantallas') or []:
+            if u.startswith('/intranet/'):
+                out[ruta_limpia(u)] = mod
+    return out
+
+
 def mapa_modulos(nombre):
     """Panel de control (28-sep-2026, rev. previa #138): el mapa objeto → módulo de TODOS los módulos (salvo base), para
     que el navegador decida al cargar con los activos que le da la base (apagados_instancia.js). Hasta el 27-sep esto
@@ -3389,6 +3415,7 @@ def mapa_modulos(nombre):
     xp = {ruta_limpia(u) for u in extra.get('p') or []}
     for mod in nunca:
         xp |= {ruta_limpia(u) for u in (m['modulos'].get(mod) or {}).get('pantallas') or [] if u.startswith('/intranet/')}
+    xp |= set(pantallas_por_tipo(nombre))   # N6.3 (14-oct-2026): lo de otro tipo, también oculto en el menú
     out['xp'] = sorted(xp)
     # n: nombre y «qué hace» de cada módulo, para la pantalla «Módulo no instalado» (28-sep-2026)
     out['n'] = {k: [v[0], v[3]] for k, v in rotulos().items() if k != 'base'}
@@ -5178,6 +5205,7 @@ def instancia(nombre):
     # se sirve la pantalla y apagados_instancia.js la cambia por «Módulo no instalado» si su módulo está apagado.
     extra_p = _instancia_registro(nombre).get('apagados_extra') or {}
     fuera = {ruta_limpia(u) for u in extra_p.get('p') or []}
+    fuera |= set(pantallas_por_tipo(nombre))   # N6.3: lo de otro tipo sale como «Pantalla no incluida» y se lleva sus ficheros, como apagados_extra.p
     rotulos_fuera = {ruta_limpia(u): r for u, r in (extra_p.get('p_rotulos') or {}).items()}
     cargaban = set()   # ficheros que cargaban las pantallas que salen del paquete: candidatos a salir con ellas
     for u in mapa['xp']:
