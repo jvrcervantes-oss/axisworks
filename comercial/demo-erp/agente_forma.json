@@ -29,7 +29,7 @@
     "parado": "bool",
     "soy_dueno": "bool",
     "puedo_decidir": "bool",
-    "falta_configurar": "null | texto: lo que le falta al AaaS para trabajar (aaas-2, paso 5): la clave del primer paso obligatorio sin hacer — tope_aaas, contexto_aaas, limites_aaas, un paso de la base del ERP — o setup_sin_sembrar (la instancia no trae su declaración: es del estudio). Con algo aquí el AaaS está PARADO aunque `parado` (la pausa del equipo) sea false",
+    "falta_configurar": "null | texto: lo que le falta al AaaS para trabajar (aaas-2, paso 5): la clave del primer paso obligatorio sin hacer — tope_aaas, contexto_aaas, limites_aaas, un paso de la base del ERP — o setup_sin_sembrar (la instancia no trae su declaración: es del estudio), o sin_ficha (sin ficha del AaaS: la crea el estudio con el alta; revisor, aaas-2). Con algo aquí el AaaS está PARADO aunque `parado` (la pausa del equipo) sea false",
     "ultima_pasada": "null | {dia: fecha, pasada: pasada, en: instante, resultado: enum(hecha, en_pausa, apagadas, parado, cupo, otro)}",
     "tope_mensual_cent": "entero >= 0: el tope VIGENTE (sin tope guardado, 0 = no puede gastar; nunca null: revisor 13-oct)",
     "tope_propuesto_cent": "entero | null: una subida pendiente (entra a las 24 h); null = ninguna",

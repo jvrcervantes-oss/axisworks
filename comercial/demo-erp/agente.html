@@ -206,6 +206,7 @@
     'Le falta el tope mensual.': 'The monthly cap is missing.', 'Le falta el contexto del negocio: quién es.': 'The business context is missing: who the business is.',
     'Le faltan los límites por módulo.': 'The limits per module are missing.',
     'Esta instancia aún no trae la configuración del AaaS: la pone el estudio.': 'This instance does not have the AaaS setup yet: the studio adds it.',
+    'El estudio aún no ha preparado la ficha del AaaS en esta instancia: la crea con el alta.': 'The studio has not prepared the AaaS profile on this instance yet: it creates it at sign-up.',
     'Le falta un paso de la configuración del ERP ({x}).': 'A step of the ERP setup is missing ({x}).',
     'No se ha podido leer la configuración del AaaS. Avisa al estudio.': 'The AaaS setup could not be read. Tell the studio.',
     'Última pasada': 'Last run', 'Todavía no ha hecho ninguna pasada.': 'It has not run yet.', 'Gastado este mes': 'Spent this month', 'Tope': 'Cap',
@@ -377,6 +378,7 @@
     'Le falta el tope mensual.': 'Batas bulanan belum diisi.', 'Le falta el contexto del negocio: quién es.': 'Konteks bisnis belum diisi: siapa bisnisnya.',
     'Le faltan los límites por módulo.': 'Batas per modul belum diisi.',
     'Esta instancia aún no trae la configuración del AaaS: la pone el estudio.': 'Instans ini belum punya pengaturan AaaS: studio yang menambahkannya.',
+    'El estudio aún no ha preparado la ficha del AaaS en esta instancia: la crea con el alta.': 'Studio belum menyiapkan profil AaaS di instans ini: dibuat saat pendaftaran.',
     'Le falta un paso de la configuración del ERP ({x}).': 'Ada langkah pengaturan ERP yang belum selesai ({x}).',
     'No se ha podido leer la configuración del AaaS. Avisa al estudio.': 'Pengaturan AaaS tidak bisa dibaca. Beri tahu studio.',
     'Última pasada': 'Pemeriksaan terakhir', 'Todavía no ha hecho ninguna pasada.': 'Belum pernah berjalan.', 'Gastado este mes': 'Terpakai bulan ini', 'Tope': 'Batas',
@@ -661,6 +663,7 @@
     if (k === 'tope_aaas') return T('Le falta el tope mensual.');
     if (k === 'contexto_aaas') return T('Le falta el contexto del negocio: quién es.');
     if (k === 'limites_aaas') return T('Le faltan los límites por módulo.');
+    if (k === 'sin_ficha') return T('El estudio aún no ha preparado la ficha del AaaS en esta instancia: la crea con el alta.');
     if (k === 'setup_sin_sembrar') return T('Esta instancia aún no trae la configuración del AaaS: la pone el estudio.');
     if (k === 'setup_roto') return T('No se ha podido leer la configuración del AaaS. Avisa al estudio.');
     return Tf('Le falta un paso de la configuración del ERP ({x}).', { x: String(k) });
