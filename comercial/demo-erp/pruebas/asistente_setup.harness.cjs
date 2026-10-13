@@ -54,6 +54,7 @@ function servidor(b, n, a) {
   if (n === 'usuario_guarda_permisos') {   // la RPC REEMPLAZA el array entero (como la de verdad)
     const u = (b.usuarios || []).find(x => x.user_id === a.p_user_id);
     if (!u) return err('P0002', null);
+    if (b.permRed && b.permRed.veces > 0) { b.permRed.veces--; if (b.permRed.aplica) u.herramientas = a.p_cambios.herramientas.slice(); return { red: true }; }
     u.herramientas = a.p_cambios.herramientas.slice();
     const pu = b.d.pasos.find(x => x.clave === 'usuarios' && x.modulo === 'reservas-producto');
     if (pu) pu.hecho = b.usuarios.some(x => x.activo && x.rol !== 'super_admin' && x.creado_por !== 'estudio:cuenta-pruebas' && x.herramientas.includes('reservas-producto'));
@@ -98,7 +99,7 @@ window.__sinTrad = []; window.__errores = [];
 window.addEventListener('error', function (e) { window.__errores.push(String(e.message)); });
 function cadena(t) { var f = {}; var q = { select: function () { return q; }, eq: function (c, v) { f[c] = v; return q; }, maybeSingle: function () { return window.__srv('from:' + t, f); },
   then: function (a, b) { return window.__srv('from:' + t + ':lista', f).then(a, b); } }; return q; }
-window.AXW_MAPA_MODULOS = { h: { facturas: 'facturas', recibos: 'recibos', 'reservas-producto': 'reservas-producto' } };
+window.AXW_MAPA_MODULOS = { h: { facturas: 'facturas', recibos: 'recibos', 'reservas-producto': 'reservas-producto' }, o: ['reservas-producto'] };
 var sb = { rpc: function (n, a) { return window.__srv(n, a || {}); }, from: cadena };
 window.LW_AUTH = Promise.resolve({ sb: sb });
 window.lwDatos = function (n, a) { return sb.rpc(n, a); };
@@ -401,10 +402,10 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     ok('S14: una sola casilla por persona y ninguna para el administrador principal', (await p.$$('[data-axw-quien-usuario]')).length === 2 && !(await p.$('[data-axw-quien-usuario="u-dion"]')));
     ok('S14: la casilla dice qué hace («Kadek usa Reservas de producto») y refleja la herramienta', (await p.getAttribute('[data-axw-quien-usuario="u-kadek"]', 'aria-label')) === 'Kadek usa Reservas de producto'
        && !(await p.$eval('[data-axw-quien-usuario="u-kadek"]', e => e.checked)) && (await p.$eval('[data-axw-quien-usuario="u-putu"]', e => e.checked)));
-    ok('S14: recuento con el administrador principal', (await txt(p, '[data-axw-quien="cuenta"]')) === '2 personas usan Reservas de producto', await txt(p, '[data-axw-quien="cuenta"]'));
+    ok('S14: recuento con la regla de la base (módulo operativo: el administrador principal no cuenta)', (await txt(p, '[data-axw-quien="cuenta"]')) === '1 persona usa Reservas de producto', await txt(p, '[data-axw-quien="cuenta"]'));
     ok('S14: «Invitar a alguien» lleva al alta de Usuarios', (await p.getAttribute('[data-axw-quien="invitar"]', 'href')) === '/usuarios/');
     await p.click('[data-axw-quien-usuario="u-kadek"]', { force: true });
-    ok('S14: el recuento sigue a la casilla', (await txt(p, '[data-axw-quien="cuenta"]')) === '3 personas usan Reservas de producto');
+    ok('S14: el recuento sigue a la casilla', (await txt(p, '[data-axw-quien="cuenta"]')) === '2 personas usan Reservas de producto');
     bq.usuarios.find(u => u.user_id === 'u-kadek').herramientas.push('otra-de-otra-sesion');   // otra sesión le da algo a Kadek mientras tanto
     await clic(p, 'enviar'); await p.waitForTimeout(400);
     const g = llamadas(bq, 'usuario_guarda_permisos');
@@ -429,8 +430,36 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     await p.waitForSelector('[data-axw-quien="solo-tu"]', { timeout: 8000 }).catch(() => {});
     ok('S14: solo el administrador principal: invita a alguien', !!(await p.$('[data-axw-quien="solo-tu"]')));
     await clic(p, 'enviar'); await p.waitForTimeout(300);
-    ok('S14: guardar sin cambios no llama a nada que escriba', llamadas(bv, 'usuario_guarda_permisos').length === 0);
+    ok('S14: guardar sin cambios no llama a nada que escriba y dice qué hacer', llamadas(bv, 'usuario_guarda_permisos').length === 0
+       && ((await txt(p, '[data-axw-as="error"]')) || '').includes('Enciende a alguien para que use Reservas de producto'), await txt(p, '[data-axw-as="error"]'));
     await ctx.close();
+    // revisor 13-oct: en un módulo administrativo (Facturas) el administrador principal sí cuenta
+    const bf = base('sin_configurar'); bf.d.pasos.push(Object.assign({}, pasoU, { modulo: 'facturas', obligatorio: false })); bf.usuarios = equipo();
+    ({ p, ctx } = await abre(nav, bf, { url: '/ajustes/configurar/?modulo=facturas&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
+    ok('S14: en Facturas (administrativo) el administrador principal cuenta', (await txt(p, '[data-axw-quien="cuenta"]')) === '2 personas usan Facturas', await txt(p, '[data-axw-quien="cuenta"]'));
+    await ctx.close();
+    // revisor 13-oct: sin herramienta para el módulo en el mapa, el paso es «otra pantalla» de verdad (y guardar no se cuelga)
+    const bt = base('sin_configurar'); bt.d.modulos.push({ modulo: 'taller', estado: 'sin_configurar', falta: 'usuarios' }); bt.d.pasos.push(Object.assign({}, pasoU, { modulo: 'taller' })); bt.usuarios = equipo();
+    ({ p, ctx } = await abre(nav, bt, { url: '/ajustes/configurar/?modulo=taller&paso=usuarios' }));
+    await p.waitForTimeout(500);
+    ok('S14: módulo sin herramienta en el mapa: «Ya lo hice, comprobar», sin interruptores', !!(await p.$('[data-axw-accion="comprobar"]')) && !(await p.$('[data-axw-quien-usuario]')));
+    await ctx.close();
+    // revisor 13-oct: la red se cae al escribir. Si la base NO lo aplicó: «no se guardó» y el paso sigue; si SÍ: sigue sin duda
+    for (const aplica of [false, true]) {
+      const bd = base('sin_configurar'); bd.d.pasos.push(Object.assign({}, pasoU, { hecho: true, falta: null })); bd.usuarios = equipo(); bd.permRed = { veces: 1, aplica };
+      ({ p, ctx } = await abre(nav, bd, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+      await p.waitForSelector('[data-axw-quien-usuario="u-putu"]', { timeout: 8000 }).catch(() => {});
+      if (await p.$('[data-axw-accion="cambiar"]')) await clic(p, 'cambiar');
+      await p.waitForSelector('[data-axw-quien-usuario="u-putu"]', { timeout: 8000 }).catch(() => {});
+      await p.click('[data-axw-quien-usuario="u-putu"]', { force: true });   // quitarle la herramienta a Putu (el paso ya estaba hecho por él)
+      await clic(p, 'enviar'); await p.waitForTimeout(700);
+      const putu = bd.usuarios.find(u => u.user_id === 'u-putu');
+      const err = (await txt(p, '[data-axw-as="error"]')) || '';
+      if (!aplica) ok('S14 red caída sin aplicar: dice que no se guardó (nunca «guardado» porque el paso ya esté hecho)', putu.herramientas.includes('reservas-producto') && /no se guard/i.test(err), err);
+      else ok('S14 red caída pero aplicado: lo da por guardado al releer la fila', !putu.herramientas.includes('reservas-producto') && !/no se guard/i.test(err), err);
+      await ctx.close();
+    }
     for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
       // coherente con «nadie lo tiene» (falta sin_usuarios): Putu aún sin esta herramienta, para que la captura no se contradiga
       const bi = base('sin_configurar'); bi.d.pasos.push(Object.assign({}, pasoU)); bi.usuarios = equipo().map(u => u.user_id === 'u-putu' ? Object.assign(u, { herramientas: ['taller'] }) : u);

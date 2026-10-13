@@ -248,6 +248,7 @@
    *  · «Puede crear / solo ver» del diseño no se pinta: la base no tiene niveles por herramienta (lista de Backend). Invitar = alta de Usuarios. */
   var COLS_USUARIO = 'user_id,nombre,email,rol,activo,herramientas,creado_por';
   function herramientaDe(modulo) { var M = window.AXW_MAPA_MODULOS, h = M && M.h && M.h[modulo]; return typeof h === 'string' && h ? h : null; }
+  function operativo(modulo) { var o = window.AXW_MAPA_MODULOS && window.AXW_MAPA_MODULOS.o; return Array.isArray(o) && o.indexOf(modulo) >= 0; }
   function cliente() {
     if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') return Promise.resolve(null);
     return window.LW_AUTH.then(function (a) { return a && a.sb ? a.sb : null; }, function () { return null; });
@@ -282,7 +283,9 @@
       caja.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('quien_nota') }));
       function recuenta() {
         if (!st.lista) return;
-        var n = st.lista.filter(function (u) { return u.rol === 'super_admin'; }).length + lista.querySelectorAll('input[data-axw-quien-usuario]:checked').length;
+        // la regla de la base: en un módulo operativo el administrador principal no cuenta; en uno administrativo, sí
+        var n = (operativo(ctx.paso.modulo) ? 0 : st.lista.filter(function (u) { return u.rol === 'super_admin'; }).length)
+              + lista.querySelectorAll('input[data-axw-quien-usuario]:checked').length;
         cuenta.textContent = n === 1 ? U('quien_uno', { m: m }) : U('quien_n', { n: String(n), m: m });
       }
       cliente().then(function (sb) {
@@ -328,28 +331,46 @@
             var antes = !!(u && Array.isArray(u.herramientas) && u.herramientas.indexOf(herr) >= 0);
             if (u && i.checked !== antes) cambios.push({ user_id: u.user_id, poner: i.checked });
           });
+          if (!cambios.length && !ctx.paso.hecho) return { ok: false, error: U('quien_sin_cambios', { m: m }) };
           return { ok: true, v: { herr: herr, cambios: cambios } };
         }
       };
     },
     guarda: function (sb, v) {
+      if (!v || !v.herr || !Array.isArray(v.cambios)) return faltaFila();
       var i = 0;
+      function fila(id) { return resultado(sb.from('usuarios').select('user_id,herramientas').eq('user_id', id).maybeSingle()); }
+      function tiene(d) { return !!(d && Array.isArray(d.herramientas) && d.herramientas.indexOf(v.herr) >= 0); }
       function sigue() {
         if (i >= v.cambios.length) return Promise.resolve({ ok: true });
         var c = v.cambios[i++];
-        return resultado(sb.from('usuarios').select('user_id,herramientas').eq('user_id', c.user_id).maybeSingle()).then(function (r) {
+        return fila(c.user_id).then(function (r) {
           if (!r.ok) return r;
           if (!r.data) return faltaFila();
           var hs = (Array.isArray(r.data.herramientas) ? r.data.herramientas : []).filter(function (h) { return h !== v.herr; });
           if (c.poner) hs.push(v.herr);
-          return resultado(sb.rpc('usuario_guarda_permisos', { p_user_id: c.user_id, p_cambios: { herramientas: hs } })).then(function (r2) { return r2.ok ? sigue() : r2; });
+          return resultado(sb.rpc('usuario_guarda_permisos', { p_user_id: c.user_id, p_cambios: { herramientas: hs } })).then(function (r2) {
+            if (r2.ok) return sigue();
+            if (!r2.sinRespuesta) return r2;
+            // sin respuesta: se relee ESA fila y manda lo que tiene la base (revisor 13-oct: nunca «guardado» porque el paso ya esté hecho)
+            return fila(c.user_id).then(function (r3) {
+              if (!r3.ok) return r2;   // tampoco se puede mirar: duda; comprueba() dice «no se guardó» y repetir es seguro (relee y pone/quita)
+              return tiene(r3.data) === c.poner ? sigue() : faltaFila();
+            });
+          });
         });
       }
       return sigue();
-    }
+    },
+    // si la duda llega a la pantalla es que ni se pudo releer la fila: no se da por guardado; repetir es seguro
+    comprueba: function () { return false; }
   };
   PASOS.usuarios = QUIEN;
-  function de(clave) { return PASOS[clave] || EXTERNO; }
+  function de(clave, paso) {
+    // «quién lo usa» sin herramienta para ese módulo en el mapa del build (base y build desfasados): el paso se hace en Usuarios
+    if (clave === 'usuarios' && paso && !herramientaDe(paso.modulo)) return EXTERNO;
+    return PASOS[clave] || EXTERNO;
+  }
   // Un paso con su componente en otro fichero (cobros_paso.js, setup_reservas.js; F3) se suma con registra(). Solo sustituye al genérico de «otra
   // pantalla» (flota, entrega); nunca pisa un componente de verdad.
   function registra(clave, comp) { if ((!PASOS[clave] || PASOS[clave] === EXTERNO) && comp && typeof comp.pinta === 'function' && typeof comp.guarda === 'function') PASOS[clave] = comp; }

@@ -2771,6 +2771,8 @@ def mapa_modulos(nombre):
     # sembrada desde este registro). El paso del asistente da o quita solo esa herramienta (bbm-p41, 13-oct, mesa S14 del diseño del owner).
     out['h'] = {k: d['herramienta'] for k, d in ((m.get('setup') or {}).get('modulos') or {}).items()
                 if isinstance(d, dict) and isinstance(d.get('herramienta'), str) and d['herramienta']}
+    # operativos: en ellos el super_admin no cuenta como «quién lo usa» (20261012130000_f3_e1_setup_marco.sql, paso usuarios)
+    out['o'] = sorted(k for k, d in ((m.get('setup') or {}).get('modulos') or {}).items() if isinstance(d, dict) and d.get('operativo') is True)
     return out
 
 

@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function cargando() { var t = $('tarjeta'); t.setAttribute('aria-busy', 'true'); vacia(t).appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: U('cargando') })); }
   function fallo(texto, reintento) {
-    sinCarril(); $('salir').style.display = 'none';
+    sinCarril(); if (st.vista === 'duda') $('salir').style.display = 'none';
     var t = $('tarjeta'); t.setAttribute('aria-busy', 'false'); vacia(t);
     // S90: lo que ha pasado, en su caja, y la única cosa que hacer (Reintentar vuelve a MIRAR, nunca reenvía)
     t.appendChild(el('div', { role: 'alert', class: 'rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-error', text: texto }));
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // Solo las faltas que el paso NO puede resolver llevan a su pestaña de Ajustes (impuestos en «reservas», varias empresas en «sociedades»);
       // en el resto el formulario de aquí ya es el sitio, y los pasos de otra pantalla traen su propio botón (revisor 12-oct, 2.ª vuelta)
       var dnd = FALTA_FUERA[p.falta.codigo];
-      if (dnd && !P.de(p.clave).externo) cab.appendChild(el('a', { href: RAIZ + dnd, 'data-axw-accion': 'abrir-donde', class: BTN2 + ' self-start', style: 'min-height:44px', text: U('revisar_ajustes') }));
+      if (dnd && !P.de(p.clave, p).externo) cab.appendChild(el('a', { href: RAIZ + dnd, 'data-axw-accion': 'abrir-donde', class: BTN2 + ' self-start', style: 'min-height:44px', text: U('revisar_ajustes') }));
     }
     t.appendChild(cab);
     var pie = el('footer', { class: 'flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-outline-variant', 'data-axw-as': 'pie' });
@@ -359,7 +359,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (atras) pie.appendChild(atras);
       t.appendChild(pie); h.focus(); return;
     }
-    var comp = P.de(p.clave), cuerpo = el('div', { class: 'flex flex-col gap-4', 'data-axw-as': 'cuerpo' });
+    var comp = P.de(p.clave, p), cuerpo = el('div', { class: 'flex flex-col gap-4', 'data-axw-as': 'cuerpo' });
     var editando = !p.hecho || st.cambia;
     var ctl = null;
     if (editando || comp.externo) ctl = comp.pinta(cuerpo, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: st.cambia });
@@ -389,7 +389,7 @@ document.addEventListener('DOMContentLoaded', function () {
     h.focus();
   }
   function pintaConfirma(p) {
-    var t = $('tarjeta'), ctl = P.de(p.clave);
+    var t = $('tarjeta'), ctl = P.de(p.clave, p);
     var r = st.resumen;
     var cab = cabezaPaso(p, lista(ctx.datos, st.modulo));   // S11/S21: la misma cabeza del paso; el valor que se fija, en su recuadro
     cab.appendChild(el('h2', { tabindex: '-1', class: 'font-headline-sm text-headline-sm text-deep-lagoon', style: 'font-size:24px;line-height:1.2', text: S.texto('paso', p.clave, 0) }));
@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ocupado = true;
     window.addEventListener('beforeunload', sinSalir);
     document.querySelectorAll('[data-axw-accion]').forEach(function (b) { if (b.tagName === 'BUTTON') b.disabled = true; });
-    P.de(p.clave).guarda(sb, v, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad }, confirmo, motivo).then(function (r) {
+    P.de(p.clave, p).guarda(sb, v, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad }, confirmo, motivo).then(function (r) {
       if (r.ok) return siguiente(p, r.sigue);   // un paso que no guarda por sí solo (la clase, S40) dice cuál va después
       if (!r.sinRespuesta) { termina(); st.error = U('no_se_guardo', { e: S.explica(r.error, true).texto }); st.vista = st.vista === 'confirma' ? 'confirma' : 'paso'; pinta(); return; }
       st.vista = 'duda'; pinta(); comprueba(p);
@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function () {
     lee().then(function (bien) {
       if (!bien) { termina(); st.vista = 'duda'; fallo(U('no_mirar'), 'recomprobar'); return; }   // sigue la duda: «Reintentar» vuelve a MIRAR, nunca reenvía
       var ahora = ctx.datos.pasos.filter(function (x) { return x.clave === p.clave && x.modulo === p.modulo; })[0];
-      var comp = P.de(p.clave);
+      var comp = P.de(p.clave, p);
       termina();
       // por VALOR releído cuando el componente sabe compararlo (un paso ya hecho sigue hecho aunque no se guardara; revisor 12-oct)
       if (comp.comprueba ? comp.comprueba(st.valores, ctx) : (ahora && ahora.hecho)) { st.error = ''; st.vista = 'paso'; st.cambia = false; st.paso = ''; pinta(); return; }
