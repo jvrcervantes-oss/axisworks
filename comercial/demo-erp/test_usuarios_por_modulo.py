@@ -46,26 +46,29 @@ ALTA = tupla_de_build('ALTA_SIN_CONTRATOS')
 ed = open(os.path.join(lawang(), 'intranet', 'v4', 'assets', 'editores.js'), encoding='utf-8').read()
 # 13-oct: el ancla es SOLO la rama del ERP; la de Lawang (justo antes) es de Lawang y cambia (d17d5df2a la hizo bloque). Lo que sí tiene que
 # seguir siendo verdad: dentro del manejador del alta, Lawang sale con su propia rama ANTES de llegar al código del ERP.
+# Se EJECUTA en Node el tramo real de Lawang (de su `if (!window.AXW_NUCLEO_OPERACION)` al ancla del ERP) delante del código del ERP (revisor:
+# buscar «return» en el texto lo daba por bueno aunque faltara el de fuera).
 _i_alta = ed.find("ata('invitar-miembro'")
-_i_erp = ed.find(ALTA[0][1][:60], _i_alta)
-_tramo = ed[_i_alta:_i_erp] if 0 <= _i_alta < _i_erp else ''
-ok('el alta: la rama de Lawang (sin AXW_NUCLEO_OPERACION) vuelve antes del código del ERP',
-   'if (!window.AXW_NUCLEO_OPERACION)' in _tramo and 'return ' in _tramo[_tramo.find('if (!window.AXW_NUCLEO_OPERACION)'):], 'tramo de %d caracteres' % len(_tramo))
+_i_erp = ed.find(ALTA[0][1], _i_alta)
+_i_if = ed.find('if (!window.AXW_NUCLEO_OPERACION)', _i_alta)
+TRAMO_LAWANG = ed[_i_if:_i_erp] if 0 <= _i_alta < _i_if < _i_erp else ''
+ok('el alta: la rama de Lawang está dentro del manejador y antes del ancla del ERP', bool(TRAMO_LAWANG), 'alta %d · if %d · erp %d' % (_i_alta, _i_if, _i_erp))
 for rel_, viejo, nuevo in ALTA:
     ok('editores.js trae una vez el trozo «%s…»' % viejo.strip()[:50], ed.count(viejo) == 1, 'aparece %d veces' % ed.count(viejo))
     ed = ed.replace(viejo, nuevo)
 
 # ── el manejador del botón, en Node ──────────────────────────────────────────────────────────────────────────────────────────────
 NODE = r"""
-const [viejo, nuevo] = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+const [viejo, nuevo, tramoLawang] = JSON.parse(require('fs').readFileSync(0, 'utf8'));
 function corre(cuerpo, caso) {
   const traza = [];
   const window = { AXW_NUCLEO_OPERACION: caso.nucleo };
-  if (caso.modulos) {
-    window.AXW_MODULOS_LISTOS = Promise.resolve(caso.supo);
-    window.axwModuloActivo = (m) => (caso.supo ? caso.modulos.indexOf(m) !== -1 : true);   // como apagados_instancia.js: sin saber, true
-    window.axwPermisoActivo = (k) => (caso.supo ? k !== 'leads' && k !== 'contratos' : true);
-  }
+  // también en Lawang: si su rama no volviera, caería en el código del ERP y la traza lo diría (sin un TypeError mudo dentro de un .then)
+  const modulos = caso.modulos || [], supo = caso.modulos ? caso.supo : false;
+  window.AXW_MODULOS_LISTOS = Promise.resolve(supo);
+  window.axwModuloActivo = (m) => (supo ? modulos.indexOf(m) !== -1 : true);   // como apagados_instancia.js: sin saber, true
+  window.axwPermisoActivo = (k) => (supo ? k !== 'leads' && k !== 'contratos' : true);
+  const sb = {};
   const abreAlta = (t) => traza.push('abre:' + JSON.stringify(t));
   const tiposErp = () => { traza.push('lee_catalogo'); return Promise.resolve(caso.catalogo); };
   const aviso = (m) => traza.push('aviso');
@@ -75,10 +78,9 @@ function corre(cuerpo, caso) {
   const listas = "var herrCrmAlta = [['leads', 'CRM']], herrRestoAlta = ['sin', 'rehacer'];"
     + "var permisosPorMenu = function (f) { return ['taller', 'contratos'].filter(f); }; var puedoDarAlta = function () { return true; };"
     + "var esCrmAlta = function (p) { return p[0] === 'leads'; };";
-  // la rama de Lawang va FUERA del ancla (es de Lawang); aquí, su forma mínima: sin la bandera, abre con su lista y no sigue
-  const guardaLawang = 'if (!window.AXW_NUCLEO_OPERACION) return abreAlta(tiposCatAlta);\n';
-  new Function('window', 'abreAlta', 'tiposErp', 'aviso', 'opcionesTipos', 'tiposCatAlta',
-    listas + guardaLawang + cuerpo +';window.__listas = function () { return [herrCrmAlta.length, herrRestoAlta.join()]; };')(window, abreAlta, tiposErp, aviso, opcionesTipos, tiposCatAlta);
+  // la rama de Lawang va FUERA del ancla (es de Lawang): se ejecuta la REAL, tal cual está en su editores.js
+  new Function('window', 'abreAlta', 'tiposErp', 'aviso', 'opcionesTipos', 'tiposCatAlta', 'sb',
+    listas + tramoLawang + cuerpo +';window.__listas = function () { return [herrCrmAlta.length, herrRestoAlta.join()]; };')(window, abreAlta, tiposErp, aviso, opcionesTipos, tiposCatAlta, sb);
   return new Promise((r) => setTimeout(() => r(traza.join(' ') + (caso.listas ? ' listas:' + JSON.stringify(window.__listas()) : '')), 20));
 }
 const casos = {
@@ -96,7 +98,7 @@ const casos = {
 })();
 """
 viejo, nuevo = ALTA[0][1], ALTA[0][2]
-r = subprocess.run(['node', '-e', NODE], input=json.dumps([viejo, nuevo]), capture_output=True, text=True, encoding='utf-8')
+r = subprocess.run(['node', '-e', NODE], input=json.dumps([viejo, nuevo, TRAMO_LAWANG]), capture_output=True, text=True, encoding='utf-8')
 ok('el manejador se evalúa en Node', r.returncode == 0, (r.stderr or '')[-300:])
 if r.returncode == 0:
     t = json.loads(r.stdout)

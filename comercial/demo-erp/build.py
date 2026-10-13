@@ -3376,13 +3376,19 @@ NOTA_EDITOR = 'Nacionalidad, pasaporte / NPWP y estado KYC no se piden por aquí
 def quien_cambio_lawang(donde):
     """Para el mensaje de un ancla que ya no casa: el último commit de Lawang que tocó el fichero nombrado en `donde` (si es de Lawang).
     Así el aviso dice QUÉ aterrizaje de Lawang lo rompió, no solo que algo cambió (13-oct: dos veces en dos días). Nunca tapa el aborto."""
-    m = re.search(r'((?:intranet|contracts|assets)/[\w./-]+\.(?:js|html|css))', donde)
-    if not m or not os.path.isfile(os.path.join(LAWANG, *m.group(1).split('/'))):
+    # la ruta entera («intranet/v4/assets/editores.js») o un nombre corto («nav.js MENU_V4», «ajustes/index.html»): se busca en las carpetas de
+    # Lawang de donde sale la copia, y la primera que exista manda
+    m = re.search(r'([\w./-]+\.(?:js|html|css))', donde)
+    if not m or '..' in m.group(1):
+        return ''
+    rel_ = next((c for c in (m.group(1), 'intranet/v4/' + m.group(1), 'intranet/v4/assets/' + m.group(1), 'contracts/assets/' + m.group(1))
+                 if os.path.isfile(os.path.join(LAWANG, *c.split('/')))), None)
+    if not rel_:
         return ''
     try:
-        r = subprocess.run(['git', '-C', LAWANG, '--no-optional-locks', 'log', '-1', '--date=short', '--format=%h %ad %s', '--', m.group(1)],
+        r = subprocess.run(['git', '-C', LAWANG, '--no-optional-locks', 'log', '-1', '--date=short', '--format=%h %ad %s', '--', rel_],
                            capture_output=True, text=True, encoding='utf-8', timeout=20)
-        return (' · último cambio de Lawang en %s: %s' % (m.group(1), r.stdout.strip()[:160])) if r.returncode == 0 and r.stdout.strip() else ''
+        return (' · último cambio de Lawang en %s: %s' % (rel_, r.stdout.strip()[:160])) if r.returncode == 0 and r.stdout.strip() else ''
     except Exception:   # MUDO A PROPOSITO: es solo una pista para el mensaje; el build ya está parando
         return ''
 
@@ -4036,20 +4042,32 @@ def ajustes_puesta_en_marcha():
 SETUP_CLASES = ('asistente_setup.html', 'setup_pasos.js', 'setup_reservas.js', 'setup_comun.js', 'ajustes_puesta.js', 'cobros_paso.js')
 # Dónde empieza una lista de clases: `class:` y `className =`/`+=` (se lee la expresión ENTERA: ternarios y concatenaciones), las constantes
 # BTN*/CLS_* y el atributo class="…" del HTML.
-RE_CLASES_INICIO = re.compile(r"""\bclass\s*:|\bclassName\s*\+?=|\bvar\s+(?:BTN\w*|CLS_\w*)\s*=|\bclass="([^"\n]*)\"""")
+RE_CLASES_INICIO = re.compile(r"""\bclass\s*:|\bclassName\s*\+?=(?!=)|\bvar\s+(?:BTN\w*|CLS_\w*)\s*=|\bclass="([^"\n]*)\"""")
+_OPS_SIGUE = ('+', '?', ':', '||', '&&', '(', ',')   # la expresión sigue en la línea de abajo si esta acaba en uno o la siguiente empieza por uno
+
+
+def _es_comparacion(antes, despues):
+    """Un literal comparado (== != < > <= >=) no es una clase: `tipo === 'error' ? …`. La flecha `=>` no es comparación."""
+    a, d = antes.rstrip(), despues.lstrip()
+    if a.endswith(('==', '!=', '<=', '>=', '<')) or (a.endswith('>') and not a.endswith('=>')):
+        return True
+    return d.startswith(('==', '!=', '<', '>'))
 
 
 def _literales(t, i):
-    """Los literales '…'/"…" de la expresión que empieza en t[i:], hasta , ; ) ] } de nivel 0 (o fin de línea). Los que se comparan
-    (== / !=) no son clases: `tipo === 'error' ? …`."""
+    """Los literales '…', "…" y `…` de la expresión que empieza en t[i:], hasta , ; ) ] } de nivel 0 o el fin de la expresión (un salto de
+    línea solo la corta si ni esa línea acaba ni la siguiente empieza con un operador). Fuera: los comparados y los argumentos de una llamada
+    (`claseDe('error')`). Una plantilla `…${…}…` se devuelve entera: `${` no tiene forma de clase y para el build (mejor que perderla)."""
     out, nivel, j, n = [], 0, i, len(t)
     while j < n:
         c = t[j]
-        if c in '\'"':
+        if c in '\'"`':
             k = j + 1
             while k < n and t[k] != c:
                 k += 2 if t[k] == '\\' else 1
-            if not (t[:j].rstrip().endswith(('==', '!=')) or t[k + 1:].lstrip().startswith(('==', '!='))):
+            antes = t[:j].rstrip()
+            llamada = antes.endswith('(') and re.search(r'[\w$]\s*\($', antes)
+            if not llamada and not _es_comparacion(t[:j], t[k + 1:]):
                 out.append(t[j + 1:k])
             j = k + 1
             continue
@@ -4062,17 +4080,40 @@ def _literales(t, i):
         elif c in ',;' and nivel == 0:
             break
         elif c == '\n' and nivel == 0 and t[i:j].strip():
-            break
+            linea = t[t.rfind('\n', 0, j) + 1:j].rstrip()
+            sig = t[j + 1:t.find('\n', j + 1) if t.find('\n', j + 1) >= 0 else n].lstrip()
+            if not (linea.endswith(_OPS_SIGUE) or sig.startswith(_OPS_SIGUE)):
+                break
         j += 1
     return out
 
 
-def _selector_tw(c):
-    """El selector con el que Tailwind escribe la clase: puntuación con barra invertida, la coma como \\2c y un dígito inicial como \\3N."""
-    pre = ''
-    if c[0].isdigit():
-        pre, c = '\\3' + c[0] + ' ', c[1:]
-    return '.' + pre + ''.join(ch if ch.isalnum() or ch in '-_' else ('\\2c ' if ch == ',' else '\\' + ch) for ch in c)
+def _selectores_tw(c):
+    """Las formas en que Tailwind/CSS puede escribir el selector de la clase: puntuación con barra invertida, la coma como \\2c y un dígito
+    inicial como \\3N, con espacio detrás solo si lo que sigue podría leerse como hexadecimal (Tailwind 3.4: `.\\32xl\\:…`)."""
+    cuerpo = lambda s: ''.join(ch if ch.isalnum() or ch in '-_' else ('\\2c ' if ch == ',' else '\\' + ch) for ch in s)
+    if not c[0].isdigit():
+        return ['.' + cuerpo(c)]
+    resto = cuerpo(c[1:])
+    formas = ['.\\3' + c[0] + ' ' + resto]
+    if not re.match(r'[0-9a-fA-F]', c[1:2]):
+        formas.append('.\\3' + c[0] + resto)
+    return formas
+
+
+def clases_que_faltan(hoja, textos):
+    """[«fichero:línea clase»] de las clases de `textos` ({nombre: contenido}) que `hoja` no trae. Pura: la prueba la llama sin construir."""
+    faltan = []
+    for f, t in textos.items():
+        for m in RE_CLASES_INICIO.finditer(t):
+            for lit in ([m.group(1)] if m.group(1) is not None else _literales(t, m.end())):
+                for c in lit.split():
+                    if c.startswith('axw-'):
+                        continue
+                    if not re.fullmatch(r'[\w:/.\[\]%#(),!-]+', c) or not any(
+                            re.search(re.escape(s) + r'[\s{,:]', hoja) for s in _selectores_tw(c)):
+                        faltan.append('%s:%d %s' % (f, t.count('\n', 0, m.start()) + 1, c))
+    return faltan
 
 
 def clases_setup_en_hoja():
@@ -4080,16 +4121,7 @@ def clases_setup_en_hoja():
     cáscara vienen de shell.css, que las dos páginas también cargan; las axw-* las define cada fichero en su <style>. Una pieza que no tiene
     forma de clase también para: o es una clase rara que hay que mirar, o el chequeo está leyendo algo que no es una clase."""
     hoja = ''.join(open(os.path.join(DIST, 'intranet', 'v4', 'assets', f), encoding='utf-8').read() for f in ('tw.css', 'shell.css'))
-    faltan = []
-    for f in SETUP_CLASES:
-        t = open(os.path.join(AQUI, f), encoding='utf-8').read()
-        for m in RE_CLASES_INICIO.finditer(t):
-            for lit in ([m.group(1)] if m.group(1) is not None else _literales(t, m.end())):
-                for c in lit.split():
-                    if c.startswith('axw-'):
-                        continue
-                    if not re.fullmatch(r'[\w:/.\[\]%#(),!-]+', c) or not re.search(re.escape(_selector_tw(c)) + r'[\s{,:]', hoja):
-                        faltan.append('%s:%d %s' % (f, t.count('\n', 0, m.start()) + 1, c))
+    faltan = clases_que_faltan(hoja, {f: open(os.path.join(AQUI, f), encoding='utf-8').read() for f in SETUP_CLASES})
     if faltan:
         aborta('clases del setup que la tw.css (ni shell.css) de la instancia no trae (saldrían sin estilo; usa una que exista o estilo en línea): '
                + ', '.join(faltan))
@@ -4136,7 +4168,9 @@ AJUSTES_COBROS_PANEL = (
     '</div>\n'
     '<div id="lw-aj-cobros"></div>\n'
     '</section>\n\n')
-AJUSTES_COBROS_PESTANAS = "'registro'];"
+# La lista CERRADA de pestañas de ajustes.js (`var PESTANAS = [...];`): 'cobros' se añade al FINAL de la que haya. Antes el ancla era el último
+# elemento ('registro'];) y una pestaña nueva de Lawang al final habría dejado rojo el build de bbm (revisor, 13-oct; familia ancla-de-texto-en-lawang).
+AJUSTES_COBROS_PESTANAS = re.compile(r"(var PESTANAS = \[[^\]\n]*)\];")
 COBROS_TRAS = '/setup_pasos.js" defer></script>'
 
 
@@ -4159,7 +4193,10 @@ def ajustes_cobros():
     open(conf, 'w', encoding='utf-8', newline='').write(s)
     js = os.path.join(v4, 'assets', 'ajustes.js')
     a = open(js, encoding='utf-8').read()
-    a = _una_vez(a, AJUSTES_COBROS_PESTANAS, "'cobros', " + AJUSTES_COBROS_PESTANAS, 'ajustes.js PESTANAS (cobros)')
+    lista = AJUSTES_COBROS_PESTANAS.findall(a)
+    if len(lista) != 1 or "'cobros'" in lista[0]:
+        aborta('ajustes.js: esperaba UNA lista `var PESTANAS = [...];` sin cobros y hay %d%s' % (len(lista), quien_cambio_lawang('ajustes.js')))
+    a = AJUSTES_COBROS_PESTANAS.sub(lambda m: m.group(1) + ", 'cobros'];", a, count=1)
     open(js, 'w', encoding='utf-8', newline='').write(a)
     shutil.copy2(os.path.join(AQUI, 'cobros_paso.js'), os.path.join(v4, 'assets', 'cobros_paso.js'))
 

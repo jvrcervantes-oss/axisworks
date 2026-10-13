@@ -23,7 +23,7 @@ const CSS_PIEL = process.env.AXW_CSS_DIST ? ['tw.css', 'shell.css'].map(f => fs.
 const SHOT = process.argv[2];
 // /ajustes/ con el ajustes.js REAL de Lawang (pestañas por hash, panel oculto) y el marcado de la pestaña y el panel SACADO de build.py
 const AJ_LAWANG = [process.env.AXW_LAWANG_RAIZ, 'C:/Users/jvrce/Desktop/ClaudeCode/Agencia/proyectos/Lawang'].filter(Boolean).map(r => path.join(r, 'intranet', 'v4', 'assets', 'ajustes.js')).find(f => fs.existsSync(f));
-const AJ_REAL = AJ_LAWANG ? fs.readFileSync(AJ_LAWANG, 'utf8').replace("'registro'];", "'cobros', 'registro'];") : '';
+const AJ_REAL = AJ_LAWANG ? fs.readFileSync(AJ_LAWANG, 'utf8').replace(/(var PESTANAS = \[[^\]\n]*)\];/, "$1, 'cobros'];") : '';   // como build.py: al final de la lista que haya
 const BUILD = fs.readFileSync(path.join(AQUI, 'build.py'), 'utf8');
 function pyCadena(nombre) {   // la constante de build.py, juntando sus trozos entre comillas simples (son marcado HTML, sin escapes raros)
   const m = new RegExp('^' + nombre + ' = \\(([\\s\\S]*?)\\)\\n', 'm').exec(BUILD);
