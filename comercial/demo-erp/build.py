@@ -1790,6 +1790,9 @@ NEUTROS = {(255, 255, 255), (0, 0, 0)}
 # 80 caracteres antes y 40 después—, destino, cuántas). Destino None = el token del color (marca); 'ok' = el verde de estado de la piel
 # ('ok' o, si no lo trae, 'fiduciary-green'); 'ok-fondo'/'ok-tinta' = la pareja fondo/texto de una etiqueta «aprobada». Decisión por
 # defecto del orquestador (13-oct): los colores de ESTADO van a los de estado de la piel, nunca al acento de la marca.
+# Rutas retiradas por tipo que el paquete NO traía y que instancia() rellena con «Pantalla no incluida» (14-oct, /clasico/obra/ de bbm): para el
+# recuento de LAWANG_POR_CONTEXTO siguen siendo «una pantalla que no sale» (antes el fichero no existía y la regla no contaba).
+AVISOS_SIN_PANTALLA = set()
 LAWANG_POR_CONTEXTO = {
     '485B37': (('assets/datos.js', r'(?i)background:#485b37;color:#fff', None, 2),                 # botón
                ('assets/datos.js', r'DATOS EN VIVO|disponible:|en_venta:|llega\?', 'ok', 4),        # estados
@@ -1989,7 +1992,7 @@ def piel_colores_lawang(dist, nombre):
     for c, rs in reglas.items():
         for i, (fr, ctx, dst, cuantas) in enumerate(rs):
             # una pantalla que no sale en esta instancia (módulo apagado, poda) no cuenta; la que sale tiene que cuadrar
-            if os.path.isfile(os.path.join(dist, *fr.split('/'))) and vistos[(c, i)] != cuantas:
+            if os.path.isfile(os.path.join(dist, *fr.split('/'))) and fr not in AVISOS_SIN_PANTALLA and vistos[(c, i)] != cuantas:
                 mal.append('%s en %s («%s»): %d, se esperaban %d' % (h(c), fr, ctx or 'el resto', vistos[(c, i)], cuantas))
     if mal:
         aborta('colores de Lawang: cambió el recuento de un color ambiguo (¿una aparición nueva de Lawang?):\n  ' + '\n  '.join(mal))
@@ -5426,8 +5429,15 @@ def instancia(nombre):
     fuera |= set(pantallas_por_tipo(nombre))   # N6.3: lo de otro tipo sale como «Pantalla no incluida» y se lleva sus ficheros, como apagados_extra.p
     rotulos_fuera = {ruta_limpia(u): r for u, r in (extra_p.get('p_rotulos') or {}).items()}
     cargaban = set()   # ficheros que cargaban las pantallas que salen del paquete: candidatos a salir con ellas
+    AVISOS_SIN_PANTALLA.clear()
     for u in mapa['xp']:
         f = os.path.join(DIST, *u.strip('/').split('/'), 'index.html')
+        if u in fuera and not os.path.isfile(f):
+            AVISOS_SIN_PANTALLA.add(u.strip('/') + '/index.html')
+            # Una pantalla retirada que el paquete ni siquiera trae (la /clasico/obra/ de bbm, 14-oct): sin su aviso, el servidor daba 403 (carpeta vacía
+            # que dejó la publicación anterior) o 404 a quien la tenía guardada. Lleva el mismo «Pantalla no incluida» que las demás.
+            os.makedirs(os.path.dirname(f), exist_ok=True)
+            open(f, 'w', encoding='utf-8').write('')
         if os.path.isfile(f):
             if u in fuera:
                 # Declarada en apagados_extra.p («pantalla no incluida en esta instancia»): no nombra un módulo (taller cuelga de

@@ -68,8 +68,7 @@
 <button class="axw-boton" type="button" data-accion="ex-actualizar"><span data-lwt>Actualizar</span></button>
 <button class="axw-boton" type="button" data-accion="ex-nuevo" data-primario="1"><span data-lwt>Nuevo extra</span></button>
 </div>
-<p class="axw-aviso axw-oculto" data-ex="impuestos-no" data-lwt>No se ha podido leer la lista de impuestos: el impuesto de cada extra no se enseña ni se cambia desde aquí. Recarga para verlo.</p>
-<p class="axw-aviso axw-oculto" data-ex="recortado" data-lwt>Se enseñan los 1000 primeros extras por nombre: hay más en la base.</p>
+<p class="axw-aviso axw-oculto" data-ex="recortado" data-lwt>El catálogo es más largo de lo que se puede enseñar aquí: puede faltar algún extra o impuesto.</p>
 <ul class="ex-lista" data-ex="lista"></ul>
 </div>
 </div>
@@ -82,11 +81,10 @@
     "Entrega a domicilio, accesorios, servicios: lo que se añade a una reserva o se factura suelto. Las motos y sus precios están en Flota y tarifas.": "Antar ke alamat, aksesori, layanan: yang ditambahkan ke booking atau dibuatkan invoice terpisah. Motor dan harganya ada di Armada dan tarif.",
     "Las motos se dan de alta y se cambian en": "Motor ditambahkan dan diubah di", "Flota y tarifas": "Armada dan tarif",
     "Actualizar": "Muat ulang", "Nuevo extra": "Ekstra baru", "Editar extra": "Ubah ekstra", "Extras · %n": "Ekstra · %n",
-    "No se ha podido leer la lista de impuestos: el impuesto de cada extra no se enseña ni se cambia desde aquí. Recarga para verlo.": "Daftar pajak tidak dapat dibaca: pajak setiap ekstra tidak ditampilkan dan tidak diubah dari sini. Muat ulang untuk melihatnya.",
-    "Se enseñan los 1000 primeros extras por nombre: hay más en la base.": "Ditampilkan 1000 ekstra pertama menurut nama: masih ada lagi di basis data.",
+    "El catálogo es más largo de lo que se puede enseñar aquí: puede faltar algún extra o impuesto.": "Katalognya lebih panjang daripada yang bisa ditampilkan di sini: mungkin ada ekstra atau pajak yang tidak muncul.",
     "Aún no hay extras: crea el primero (por ejemplo, la entrega a domicilio).": "Belum ada ekstra: buat yang pertama (misalnya, antar ke alamat).",
     "No se ha podido mirar": "Tidak bisa diperiksa", "Cargando…": "Memuat…",
-    "Nombre": "Nama", "Precio": "Harga", "Impuesto": "Pajak", "Estado": "Status", "Activo": "Aktif", "Desactivado": "Nonaktif",
+    "Nombre": "Nama", "Precio": "Harga", "Impuesto": "Pajak", "Estado": "Status", "Activo": "Aktif", "Desactivado": "Nonaktif", "Impuesto que ya no está en la lista": "Pajak yang sudah tidak ada di daftar",
     "Editar": "Ubah", "Desactivar": "Nonaktifkan", "Reactivar": "Aktifkan kembali",
     "Sin impuesto por defecto": "Tanpa pajak bawaan", "Impuesto no encontrado": "Pajak tidak ditemukan", "desactivado": "nonaktif",
     "Nombre del extra": "Nama ekstra", "Como sale en la línea de la factura.": "Seperti yang tertulis di baris invoice.",
@@ -113,11 +111,10 @@
     'Entrega a domicilio, accesorios, servicios: lo que se añade a una reserva o se factura suelto. Las motos y sus precios están en Flota y tarifas.': 'Home delivery, accessories, services: what is added to a booking or invoiced on its own. The bikes and their prices are in Fleet and rates.',
     'Las motos se dan de alta y se cambian en': 'Bikes are added and changed in', 'Flota y tarifas': 'Fleet and rates',
     'Actualizar': 'Refresh', 'Nuevo extra': 'New extra', 'Editar extra': 'Edit extra', 'Extras · %n': 'Extras · %n',
-    'No se ha podido leer la lista de impuestos: el impuesto de cada extra no se enseña ni se cambia desde aquí. Recarga para verlo.': 'The list of taxes could not be read: the tax of each extra is not shown or changed from here. Reload to see it.',
-    'Se enseñan los 1000 primeros extras por nombre: hay más en la base.': 'Showing the first 1000 extras by name: there are more in the database.',
+    'El catálogo es más largo de lo que se puede enseñar aquí: puede faltar algún extra o impuesto.': 'The catalogue is longer than what can be shown here: an extra or a tax may be missing.',
     'Aún no hay extras: crea el primero (por ejemplo, la entrega a domicilio).': 'There are no extras yet: create the first one (for example, home delivery).',
     'No se ha podido mirar': 'It could not be checked', 'Cargando…': 'Loading…',
-    'Nombre': 'Name', 'Precio': 'Price', 'Impuesto': 'Tax', 'Estado': 'Status', 'Activo': 'Active', 'Desactivado': 'Deactivated',
+    'Nombre': 'Name', 'Precio': 'Price', 'Impuesto': 'Tax', 'Estado': 'Status', 'Activo': 'Active', 'Desactivado': 'Deactivated', 'Impuesto que ya no está en la lista': 'Tax no longer on the list',
     'Editar': 'Edit', 'Desactivar': 'Deactivate', 'Reactivar': 'Reactivate',
     'Sin impuesto por defecto': 'No default tax', 'Impuesto no encontrado': 'Tax not found', 'desactivado': 'deactivated',
     'Nombre del extra': 'Name of the extra', 'Como sale en la línea de la factura.': 'As it appears on the invoice line.',
@@ -162,16 +159,14 @@
   /* ── lo que se lee: las mismas tablas y columnas que la pantalla Productos de Lawang (ver cabecera) ── */
   function lee(q) { return Promise.resolve(q).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; }, function (e) { return { data: null, error: e }; }); }
   var PETICION = 0;
-  var TOPE = 1000;   // se piden TOPE+1: si llegan más de TOPE, se enseñan TOPE y se avisa (con exactamente 1000 no hay aviso falso; revisor)
   function carga() {
     var yo = ++PETICION, est = $v('estado');
     if (!E.filas) { est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'cargando'); est.textContent = T('Cargando…'); }
-    return Promise.all([
-      lee(SB.from('productos').select('id,numero_producto,nombre,referencia,unidad,precio,moneda,descripcion,impuesto_id,activo,clase').neq('clase', 'alquiler').order('nombre').limit(TOPE + 1)),
-      lee(SB.from('impuestos').select('id,numero_impuesto,nombre,pais,clase,porcentaje,activo').order('pais').order('orden'))
-    ]).then(function (r) {
+    // AXW-290: una sola lectura del servidor (productos con su clase + impuestos, los dos con tope y `recortado`); el navegador ya no lee las tablas
+    return lee(window.lwDatos('productos_catalogo_datos')).then(function (r) {
       if (yo !== PETICION) return { ok: false, tarde: true };
-      var p = r[0], i = r[1];
+      var d = r.data, bien = !r.error && d && typeof d === 'object' && Array.isArray(d.productos) && Array.isArray(d.impuestos);
+      var p = { error: r.error, data: bien ? d.productos : null };
       if (p.error || !Array.isArray(p.data)) {
         var c = p.error ? C.clasifica(p.error) : null, t = p.error ? C.mensaje(p.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
         if (E.filas) { error(T('No se ha podido mirar') + ': ' + t); return { ok: false }; }
@@ -182,10 +177,10 @@
         return { ok: false };
       }
       // Lo que se alquila va en Flota: aquí solo lo demás; la consulta ya lo filtra (neq) para que el tope no lo gasten las motos, y se vuelve a mirar aquí (una fila sin clase, de una base anterior a F3-E3, tampoco se enseña: no se sabe qué es)
-      E.filas = p.data.slice(0, TOPE).filter(function (x) { return x && typeof x.id === 'string' && typeof x.clase === 'string' && x.clase !== 'alquiler'; })
+      E.filas = p.data.filter(function (x) { return x && typeof x.id === 'string' && typeof x.clase === 'string' && x.clase !== 'alquiler'; })
         .sort(function (a, b) { return (b.activo ? 1 : 0) - (a.activo ? 1 : 0); });
-      E.imps = !i.error && Array.isArray(i.data) ? i.data : null;
-      E.recortado = p.data.length > TOPE;
+      E.imps = d.impuestos;
+      E.recortado = d.recortado === true;
       pinta();
       return { ok: true };
     });
@@ -204,7 +199,6 @@
   function pinta() {
     var est = $v('estado'), l = vacia($v('lista'));
     $v('n').textContent = T('Extras · %n').replace('%n', String(E.filas.length));
-    oculta($v('impuestos-no'), !!E.imps);
     oculta($v('recortado'), !E.recortado);
     if (!E.filas.length) {
       vacia(est); est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'vacio');
@@ -213,7 +207,7 @@
     if (E.filas.length) l.appendChild(h('li', { class: 'ex-fila ex-th', 'aria-hidden': 'true' }, [h('span', { text: T('Nombre') }), h('span', { text: T('Precio') }), h('span', { text: T('Impuesto') }), h('span', { text: T('Estado') }), h('span')]));
     E.filas.forEach(function (x) {
       l.appendChild(h('li', { class: 'ex-fila', 'data-producto-id': x.id, 'data-activo': x.activo ? '1' : '0' }, [
-        h('span', { class: 'ex-nombre', text: x.nombre || '—' }, [h('span', { class: 'ex-sub', text: [x.numero_producto, x.referencia].filter(Boolean).join(' · ') })]),
+        h('span', { class: 'ex-nombre', text: x.nombre || '—' }, [h('span', { class: 'ex-sub', text: [x.numero, x.referencia].filter(Boolean).join(' · ') })]),
         h('span', { class: 'ex-dato' }, [h('span', { class: 'ex-et', text: T('Precio') }), document.createTextNode(precioDe(x))]),
         h('span', { class: 'ex-dato' }, [h('span', { class: 'ex-et', text: T('Impuesto') }), document.createTextNode(impuestoDe(x))]),
         h('span', null, [C.chip(T(x.activo ? 'Activo' : 'Desactivado'), x.activo ? 'ok' : 'neutro')]),
@@ -263,6 +257,8 @@
       E.imps.filter(function (i) { return i && (i.activo || i.id === impActual); }).forEach(function (i) {
         ops.push(h('option', { value: String(i.id), text: (i.numero_impuesto ? i.numero_impuesto + ' · ' : '') + (i.nombre || '—') + (i.pais ? ' (' + i.pais + ')' : '') + (i.activo ? '' : ' — ' + T('desactivado')) }));
       });
+      if (impActual && !E.imps.some(function (i) { return i && String(i.id) === String(impActual); }))
+        ops.push(h('option', { value: String(impActual), text: T('Impuesto que ya no está en la lista') }));   // como Flota: se conserva, no se manda null
       imp = h('select', { 'data-campo': 'impuesto_id' }, ops); imp.value = impActual;
     }
     var activo = null;
