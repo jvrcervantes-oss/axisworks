@@ -101,7 +101,9 @@ async function servidor(s, nombre, a) {
       s.nivel = a.p_nivel_ruta; if (a.p_tope_mensual_cent !== null) s.tope = a.p_tope_mensual_cent;   // null = el tope no cambia (forma)
       return { data: estado(s), error: null };
     }
-    case 'agente_modulo_cambia': { const e = soloDueno(); if (e) return e; if (o.cambiaNulo) return { data: null, error: null }; s.encendido = !!a.p_encender; return { data: { encendido: s.encendido }, error: null }; }
+    case 'agente_modulo_cambia': { const e = soloDueno(); if (e) return e; if (o.cambiaNulo) return { data: null, error: null };
+      if (o.sinSembrar && a.p_encender) return err('55000', 'modulo sin tipos', 'tipos_sin_sembrar');   // A13 de erp-alta en una instancia sin sembrar
+      s.encendido = !!a.p_encender; return { data: { encendido: s.encendido }, error: null }; }
   }
   return err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
 }
@@ -320,6 +322,14 @@ const MUESTRA = (() => {
     await hasta(() => llamadas(base, 'agente_modulo_cambia').length === 1);
     await p.waitForSelector('.axw-modal .axw-error:not(.axw-oculto)');
     ok('encender con respuesta null (interruptor del navegador) NO se da por hecho: lo dice en el diálogo', (await txt(p, '.axw-modal .axw-error')).includes('no confirmó') && !(await visible(p, '[data-ag="exito"]')));
+    await ctx.close();
+  }
+  {
+    const { p, base, ctx } = await abre({ base: { dueno: true, apagado: true, sinSembrar: true } });
+    await p.click('[data-accion="ag-encender"]'); await p.fill('[data-campo="dialogo-motivo"]', 'Encender'); await p.click('[data-accion="ag-modal-confirmar"]');
+    await hasta(() => llamadas(base, 'agente_modulo_cambia').length === 1);
+    await p.waitForSelector('.axw-modal .axw-error:not(.axw-oculto)');
+    ok('A13 sin sembrar (55000 tipos_sin_sembrar): lo dice en llano y sigue apagado', (await txt(p, '.axw-modal .axw-error')).includes('lo prepara el estudio') && (await txt(p, '[data-ag="estado"]')).includes('Apagado'));
     await ctx.close();
   }
   {

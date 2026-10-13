@@ -162,6 +162,8 @@
     'AaaS encendido.': 'AaaS switched on.', 'AaaS apagado.': 'AaaS switched off.',
     'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).': 'Too many changes in a row: wait a minute (at most 10 a day).',
     'Esto solo lo puede hacer el dueño de la ficha del AaaS.': 'Only the owner of the AaaS settings can do this.',
+    'Este ERP aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender el AaaS.': 'This ERP does not yet know which modules fit its type of business: the studio sets that up before the AaaS is switched on.',
+    'El AaaS es un módulo de pago: solo se enciende desde esta ventana, por su dueño.': 'The AaaS is a paid module: it is only switched on from this window, by its owner.',
     'La cuenta de pruebas no puede cambiar nada aquí.': 'The test account cannot change anything here.',
     'No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.': 'You do not have the “AaaS” tool: ask the main administrator for it in Users.',
     'El AaaS está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'The AaaS is off: its alerts cannot be read until it is switched on. This does NOT mean there are none.',
@@ -233,6 +235,8 @@
     'AaaS encendido.': 'AaaS aktif.', 'AaaS apagado.': 'AaaS dimatikan.',
     'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).': 'Terlalu banyak perubahan berturut-turut: tunggu satu menit (maksimal 10 per hari).',
     'Esto solo lo puede hacer el dueño de la ficha del AaaS.': 'Ini hanya bisa dilakukan oleh pemilik pengaturan AaaS.',
+    'Este ERP aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender el AaaS.': 'ERP ini belum tahu modul mana yang cocok untuk jenis usahanya: studio menyiapkannya sebelum AaaS diaktifkan.',
+    'El AaaS es un módulo de pago: solo se enciende desde esta ventana, por su dueño.': 'AaaS adalah modul berbayar: hanya diaktifkan dari jendela ini, oleh pemiliknya.',
     'La cuenta de pruebas no puede cambiar nada aquí.': 'Akun uji coba tidak dapat mengubah apa pun di sini.',
     'No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.': 'Anda tidak punya alat «AaaS»: mintalah kepada admin utama di Pengguna.',
     'El AaaS está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'AaaS nonaktif: peringatannya tidak bisa dibaca sampai diaktifkan. Ini BUKAN berarti tidak ada.',
@@ -281,7 +285,9 @@
     modulo_apagado: T('El AaaS está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.')
   };
   var POR_HINT = { agente_freno: 'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).', agente_solo_owner: 'Esto solo lo puede hacer el dueño de la ficha del AaaS.',
-                   cuenta_pruebas: 'La cuenta de pruebas no puede cambiar nada aquí.' };
+                   cuenta_pruebas: 'La cuenta de pruebas no puede cambiar nada aquí.',
+                   /* A13 de erp-alta (20261014021000): el interruptor de módulos no deja encender uno de pago ni uno de tipo sin sembrar */
+                   tipos_sin_sembrar: 'Este ERP aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender el AaaS.', modulo_de_pago: 'El AaaS es un módulo de pago: solo se enciende desde esta ventana, por su dueño.' };
 
   var SB = null;
   var E = { estado: null, notas: null };
