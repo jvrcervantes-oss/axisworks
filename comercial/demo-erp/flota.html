@@ -1355,7 +1355,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     if (a === 'fl-vista') { F.vista = el.getAttribute('data-vista') === 'motos' ? 'motos' : 'modelos'; pintaLista(); return; }
     if (a === 'fl-cajon-cerrar') { cajonPideCerrar(); return; }
     error(''); exito(''); aviso(''); cajonOk('');
-    if (a === 'fl-cajon-abrir') { cajonAbre(el.getAttribute('data-fila-producto'), '.fl-inv-fila[data-fila-producto="' + el.getAttribute('data-fila-producto') + '"][data-accion="fl-cajon-abrir"]'); return; }
+    if (a === 'fl-cajon-abrir') { cajonAbre(el.getAttribute('data-fila-producto'), '.fl-inv-fila[data-fila-producto="' + el.getAttribute('data-fila-producto') + '"]:not([data-fila-unidad])'); return; }
     // una fila de la vista por moto: abre el cajón de su modelo con esa moto ya en edición (un clic menos)
     if (a === 'fl-cajon-moto') { var uid = el.getAttribute('data-fila-unidad'); if (cajonAbre(el.getAttribute('data-fila-producto'), '.fl-inv-fila[data-fila-unidad="' + uid + '"]')) abreMoto(uid); return; }
     if (a === 'fl-actualizar') { if (C.ocupa(el)) carga().then(function () { C.libera(el); }, function () { C.libera(el); }); }
