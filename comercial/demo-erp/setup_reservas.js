@@ -485,6 +485,13 @@
   }
   function val(caja, k) { var i = caja.querySelector('[data-axw-campo="' + k + '"]'); return i ? String(i.value || '').trim() : ''; }
   function marcado(caja, k) { var i = caja.querySelector('[data-axw-campo="' + k + '"]:checked'); return i ? i.value : ''; }
+  // «18 oct» en el idioma de la pantalla; la fecha es un día (AAAA-MM-DD), así que se lee en UTC para no correrla un día
+  function diaMes(iso) {
+    var d = new Date(String(iso) + 'T00:00:00Z');
+    if (isNaN(d)) return String(iso || '');
+    try { return d.toLocaleDateString(typeof window.lwLocale === 'function' ? window.lwLocale() : 'es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' }); }
+    catch (e) { return String(iso); }   // MUDO A PROPOSITO: navegador sin Intl; va la fecha tal cual
+  }
   function hoyISO(dias) {
     var d = new Date(); d.setHours(12, 0, 0, 0); if (dias) d.setDate(d.getDate() + dias);
     return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
@@ -1061,7 +1068,7 @@
       caja.appendChild(lista);
       function fila() {
         var n = lista.querySelectorAll('[data-axw-sr-fila]').length;
-        var f = el('div', { class: 'flex flex-col gap-3 rounded-xl border border-outline-variant p-3', 'data-axw-sr-fila': String(n) });
+        var f = el('div', { class: 'flex flex-col gap-3 rounded-xl border border-outline-variant', style: 'padding:12px', 'data-axw-sr-fila': String(n) });   // p-3 no está compilado
         var r = rejilla(150);
         var sid = 'axw-sr-pu-' + n, sel = el('select', { id: sid, 'data-axw-campo': 'pu_' + n, class: CLS_IN });
         sel.appendChild(el('option', { value: '', text: U('elige') }));
@@ -1096,9 +1103,9 @@
         });
         var nFuera = Object.keys(fuera).length, libres = d.unidades.filter(function (u) { return !fuera[u.id] && u.estado === 'disponible'; }).length;
         vacia(tl);
-        [[U('sr_tile_fuera'), String(nFuera), null], [U('sr_tile_libres'), String(libres), null], [U('sr_tile_vuelta'), vuelta ? vuelta.f : '—', vuelta ? vuelta.m : null]].forEach(function (t) {
+        [[U('sr_tile_fuera'), String(nFuera), null], [U('sr_tile_libres'), String(libres), null], [U('sr_tile_vuelta'), vuelta ? diaMes(vuelta.f) : '—', vuelta ? vuelta.m : null]].forEach(function (t) {
           tl.appendChild(el('div', { class: 'flex flex-col gap-1 rounded-xl bg-surface-container-low px-3 py-3 min-w-0' }, [
-            el('span', { class: 'font-label-md text-[11px] tracking-[0.08em] uppercase text-outline', text: t[0] }),
+            el('span', { class: 'font-label-md text-[11px] uppercase text-outline', style: 'letter-spacing:.08em', text: t[0] }),
             el('span', { class: 'text-deep-lagoon', style: 'font-size:22px;line-height:1.2;overflow-wrap:anywhere', text: t[1] }),
             t[2] ? el('span', { class: CLS_AYUDA, style: 'overflow-wrap:anywhere', text: t[2] }) : null]));
         });
@@ -1225,7 +1232,7 @@
       s.appendChild(svg('circle', { cx: '340', cy: '100', r: '7', fill: 'currentColor' }));
       var tx = svg('text', { x: '340', y: '150', 'text-anchor': 'middle', 'font-size': '14', fill: 'currentColor' }); tx.textContent = U('sr_fig_tienda'); s.appendChild(tx);
       fig.appendChild(s);
-      var cap = el('figcaption', { class: 'flex flex-wrap gap-x-5 gap-y-1 font-body-sm text-body-sm text-on-surface-variant' });
+      var cap = el('figcaption', { class: 'flex flex-wrap gap-y-1 font-body-sm text-body-sm text-on-surface-variant', style: 'column-gap:20px' });   // gap-x-5 no está compilado
       fig.appendChild(cap); zona.appendChild(fig);
       function leyenda() {
         var pk = importe(val(zona, 'precio_km')), kg = val(zona, 'km_gratis') || '0', km = val(zona, 'km_max') || '—', mi = importe(val(zona, 'minimo'));

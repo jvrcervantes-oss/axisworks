@@ -315,7 +315,9 @@ async function rellenaAlquiler(p, o = {}) {
   await clic(p, 'enviar');
   ok('S44 vuelta hoy: lo dice antes de enviar', ((await errorTxt(p)) || '').includes('después de hoy') && llamadas(b, 'reservas_previas_guarda').length === 0);
   await p.fill('[data-axw-campo="ph_0"]', hoy(5)); await p.fill('[data-axw-campo="pc_0"]', 'Ana López'); await p.waitForTimeout(100);
-  ok('S44 recuadros: 1 fuera, 1 libre, vuelve ' + hoy(5), ((await txt(p, '[data-axw-sr-tiles]')) || '').replace(/\s+/g, '').includes('Fueraahora1Libreshoy1Próximavuelta' + hoy(5)), await txt(p, '[data-axw-sr-tiles]'));
+  const vueltaTxt = new Date(hoy(5) + 'T00:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' });   // «18 oct», como el diseño
+  ok('S44 recuadros: 1 fuera, 1 libre, vuelve ' + vueltaTxt, ((await txt(p, '[data-axw-sr-tiles]')) || '').replace(/\s+/g, '').includes('Fueraahora1Libreshoy1Próximavuelta' + vueltaTxt.replace(/\s+/g, '')), await txt(p, '[data-axw-sr-tiles]'));
+  ok('S44: la fila de un alquiler lleva su margen interior (p-3 no está compilado en la instancia)', (await p.$eval('[data-axw-sr-fila]', e => getComputedStyle(e).paddingTop)) === '12px');
   if (SHOT) await p.screenshot({ path: path.join(SHOT, 's44_1440.png'), fullPage: true });
   await clic(p, 'enviar'); await p.waitForTimeout(300);
   const rp = llamadas(b, 'reservas_previas_guarda')[0][1];
@@ -478,6 +480,7 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S45 km gratis ≥ km máximo: se dice antes de enviar', ((await errorTxt(p)) || '').includes('por debajo de la distancia máxima') && escrituras(b).length === 0, await errorTxt(p));
   await p.fill('[data-axw-campo="km_gratis"]', '3'); await p.waitForTimeout(80);
   ok('S45 la leyenda de la ilustración sigue a lo tecleado, sin precio de ejemplo', ((await txt(p, '[data-axw-sr-figura]')) || '').includes('Gratis · hasta 3 km') && ((await txt(p, '[data-axw-sr-figura]')) || '').includes('Mínimo por trayecto: IDR 15.000'), await txt(p, '[data-axw-sr-figura]'));
+  ok('S45: las partes de la leyenda van separadas (gap-x-5 no está compilado en la instancia)', (await p.$eval('figcaption', e => getComputedStyle(e).columnGap)) === '20px');
   if (SHOT) await p.screenshot({ path: path.join(SHOT, 's45_1440.png'), fullPage: true });
   await clic(p, 'enviar'); await p.waitForTimeout(500);
   const ord = escrituras(b).map(x => x[0] + (x[1].p_datos && 'activa' in x[1].p_datos ? ':activa' : ''));
