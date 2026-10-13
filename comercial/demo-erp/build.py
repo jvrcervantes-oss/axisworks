@@ -1991,8 +1991,9 @@ def sistema_documento_fuentes():
         aborta('sistema: falta clasico/facturas/documento.js en el paquete')
     t = open(p, encoding='utf-8').read()
     n = len(DOC_GOOGLE.findall(t))
-    if n != 1:
-        aborta('sistema: documento.js tiene %d enlaces a las fuentes de Google con la forma esperada (uno): ¿cambió su <head>?' % n)
+    papeles = 2 if 'axwDocId' in t else 1   # BBM-67: la copia de una instancia en indonesio lleva los dos papeles (es·en e id·en)
+    if n != papeles:
+        aborta('sistema: documento.js tiene %d enlaces a las fuentes de Google con la forma esperada (%d): ¿cambió su <head>?' % (n, papeles))
     t = DOC_GOOGLE.sub(lambda _m: '''<link rel="stylesheet" href="' + base + '/assets/fonts/fonts.css">''', t)
     if 'fonts.googleapis.com' in t:
         aborta('sistema: documento.js sigue pidiendo fuentes a Google tras el cambio')
@@ -4074,10 +4075,6 @@ DOC_PARCHES_ID = (
      "        'Please find attached ' + (((typeof TIPOS_DOC !== 'undefined' && TIPOS_DOC[DOC_TIPO_REAL]) || { en: 'Invoice' }).en).toLowerCase() + ' ' + saved.numero + ' for your review.\\n\\n' +\n"
      "        'Salam / Kind regards,\\n' + lwMarca('%%firma_correo'));"),
 )
-# Lo que NO puede quedar en el documento.js servido de una instancia en indonesio (comprobación sobre el paquete construido, tras minificar)
-DOC_ESPANOL = ('Factura · ', 'Fecha · Date', 'Vencimiento · ', 'Facturar a', 'Conceptos · ', 'Descripción · ', 'Importe · ', 'Impuesto · ',
-               'Notas · ', 'Datos bancarios', 'Titular · ', 'Cuenta · ', 'Dirección · ', 'Nota · Note', 'Cobro de la factura', 'Cobro · Payment',
-               'Sin conceptos', 'Proyecto · Project', 'Contrato · Contract', 'Rectifica a', 'Motivo · ', "'es-ES'", '"es-ES"', 'lang="es"')
 
 
 # La factura y el recibí NUEVOS nacen en la moneda de la instancia (Ajustes › moneda → lwMonedaBase() de guard.js), no en 'EUR' escrito a mano
@@ -4100,20 +4097,78 @@ def moneda_documento():
 DOC_TIPO_REAL_JS ="(vals.rectifica_numero && vals.tipo !== 'proforma' && vals.tipo !== 'recibi' ? 'rectificativa' : vals.tipo)"
 
 
+# BBM-67 (owner 13-oct, «Sí, un solo sitio»; bbm-p40): el idioma del papel lo decide Ajustes › Idiomas, no el build. El documento.js de la copia lleva
+# los DOS papeles —el es·en de Lawang, intacto, y el id·en de DOC_PARCHES_ID— cada uno en su ámbito, y elige al pintar con `axwDocId()`: lo que la base
+# guardó (modulos_activos_datos().idiomas, apuntado por apagados_instancia.js en window.AXW_IDIOMAS_DOC: el PRIMERO de la lista manda, igual que
+# _doc_idioma() de la base) y, sin fila o sin saberlo aún, el par del build, como hasta hoy. La decisión sale de la BASE (no de localStorage ni de
+# la interfaz de quien mira): dos navegadores no emiten el mismo documento en idiomas distintos. Contrato de la fila: bbm-p36, 13-oct.
+# El correo que acompaña al PDF (editores.js) sigue la misma regla.
+DOC_ENVOLTORIO = """/* ── bbm-p40, BBM-67: los dos papeles de esta instancia; manda Ajustes › Idiomas (window.AXW_IDIOMAS_DOC), y sin él el par del build ── */
+function axwDocId() {
+  var v = (typeof window !== 'undefined') ? window.AXW_IDIOMAS_DOC : null;
+  if (Array.isArray(v) && v[0] === 'es') return false;   // solo «es» primero da el papel español; «id» primero, el indonesio
+  if (Array.isArray(v) && v[0] === 'id') return true;
+  return __DEFECTO_ID__;   // sin fila, o algo que no es uno de los dos pares: el del build
+}
+var __docEs = (function () {
+__ES__
+  return { TIPOS_DOC: TIPOS_DOC, conceptoCobroRecibi: conceptoCobroRecibi, escDoc: escDoc, bancoDocHTML: bancoDocHTML, documentoVars: documentoVars, documentoHTML: documentoHTML, documentoPagina: documentoPagina };
+})();
+var __docId = (function () {
+__ID__
+  return { TIPOS_DOC: TIPOS_DOC, conceptoCobroRecibi: conceptoCobroRecibi, escDoc: escDoc, bancoDocHTML: bancoDocHTML, documentoVars: documentoVars, documentoHTML: documentoHTML, documentoPagina: documentoPagina };
+})();
+function __docPapel() { return axwDocId() ? __docId : __docEs; }
+var TIPOS_DOC = __docId.TIPOS_DOC;   // lleva id, es y en: el correo elige con axwDocId()
+function conceptoCobroRecibi(numero) { return __docPapel().conceptoCobroRecibi(numero); }
+function escDoc(s) { return __docEs.escDoc(s); }
+function bancoDocHTML(d) { return __docPapel().bancoDocHTML(d); }
+function documentoVars(soc) { return __docPapel().documentoVars(soc); }
+function documentoHTML(d, opts) { return __docPapel().documentoHTML(d, opts); }
+function documentoPagina(d, opts) { return __docPapel().documentoPagina(d, opts); }
+if (typeof module !== 'undefined')
+  module.exports = { TIPOS_DOC, conceptoCobroRecibi, escDoc, bancoDocHTML, documentoVars, documentoHTML, documentoPagina, axwDocId };
+"""
+DOC_EXPORTS = ("if(typeof module !== 'undefined')\n"
+               "  module.exports = { TIPOS_DOC, conceptoCobroRecibi, escDoc, bancoDocHTML, documentoVars, documentoHTML, documentoPagina };\n")
+DOC_CORREO_ES = "(typeof axwDocId === 'function' && !axwDocId())"   # el correo en español solo si el papel va en español
+
+
 def documento_idiomas(idiomas):
-    """El papel de factura/proforma/recibí y el correo que lo acompaña, en el par de la instancia (ver DOC_PARCHES_ID). Solo la copia (DIST, antes de
-    reraiz y de quitar comentarios); cada trozo exactamente una vez o el build para."""
+    """El papel de factura/proforma/recibí y el correo que lo acompaña, en el par de la instancia (ver DOC_PARCHES_ID) o en el que guarde Ajustes ›
+    Idiomas (BBM-67, DOC_ENVOLTORIO). Solo la copia (DIST, antes de reraiz y de quitar comentarios); cada trozo exactamente una vez o el build para."""
     if not idiomas or idiomas[0] != 'id':
         return
+    doc = os.path.join(DIST, 'intranet', 'facturas', 'documento.js')
+    es = open(doc, encoding='utf-8').read()
+    ed_ruta = os.path.join(DIST, 'intranet', 'v4', 'assets', 'editores.js')
+    ed = open(ed_ruta, encoding='utf-8').read()
+    idd = es
     for rel_, viejo, nuevo in DOC_PARCHES_ID:
-        ruta = os.path.join(DIST, *rel_.split('/'))
-        t = open(ruta, encoding='utf-8').read()
-        t = _una_vez(t, viejo.replace('%%', '%'), (nuevo % DOC_TITULOS_ID).replace('DOC_TIPO_REAL', DOC_TIPO_REAL_JS), 'documento ' + rel_)
-        open(ruta, 'w', encoding='utf-8', newline='').write(t)
-    malos = _sintaxis([os.path.join(DIST, *r_.split('/')) for r_ in {x[0] for x in DOC_PARCHES_ID}])
+        v_, n_ = viejo.replace('%%', '%'), (nuevo % DOC_TITULOS_ID).replace('DOC_TIPO_REAL', DOC_TIPO_REAL_JS)
+        if rel_ == 'intranet/facturas/documento.js':
+            idd = _una_vez(idd, v_, n_, 'documento ' + rel_)
+        else:
+            # el correo: id·en o es (el de Lawang), según el papel. Cada trozo es el final de una expresión que cierra con «;» o «);»
+            fin = ');' if v_.endswith(');') else ';'
+            if not (v_.endswith(fin) and n_.endswith(fin)):
+                aborta('documento: el trozo del correo no termina como se espera (%r)' % v_[-20:])
+            pre = 'return ' if v_.startswith('TIPOS_DOC') else ''
+            if pre:   # tipoDocEs: se sustituye la línea entera de su return
+                v_ = "return ((typeof TIPOS_DOC !== 'undefined' && " + v_
+                n_ = "return ((typeof TIPOS_DOC !== 'undefined' && " + n_
+            ed = _una_vez(ed, v_, '(%s ? %s : %s)%s' % (DOC_CORREO_ES, v_[len(pre):-len(fin)], n_[len(pre):-len(fin)], fin) if not pre else
+                          'return %s ? %s : %s;' % (DOC_CORREO_ES, v_[len(pre):-1], n_[len(pre):-1]), 'documento ' + rel_)
+    es = _una_vez(es, DOC_EXPORTS, '', 'documento: module.exports del papel es')
+    idd = _una_vez(idd, DOC_EXPORTS, '', 'documento: module.exports del papel id')
+    envuelto = (DOC_ENVOLTORIO.replace('__DEFECTO_ID__', 'true')
+                .replace('__ES__', es).replace('__ID__', idd))
+    open(doc, 'w', encoding='utf-8', newline='').write(envuelto)
+    open(ed_ruta, 'w', encoding='utf-8', newline='').write(ed)
+    malos = _sintaxis([doc, ed_ruta])
     if malos:
         aborta('documento: el parche deja JavaScript roto:\n  ' + '\n  '.join(malos))
-    print('documento %s: %d parches (factura, proforma, recibí y correo)' % ('+'.join(idiomas), len(DOC_PARCHES_ID)))
+    print('documento %s (o el de Ajustes › Idiomas): %d parches (factura, proforma, recibí y correo)' % ('+'.join(idiomas), len(DOC_PARCHES_ID)))
 
 
 def comprueba_documento_idiomas(dist, idiomas):
@@ -4122,10 +4177,11 @@ def comprueba_documento_idiomas(dist, idiomas):
     if not idiomas or idiomas[0] != 'id':
         return
     t = open(os.path.join(dist, 'clasico', 'facturas', 'documento.js'), encoding='utf-8').read()
-    restos = [x for x in DOC_ESPANOL if x in t]
-    if restos:
-        aborta('documento: el papel de la instancia sigue con rótulos en español: ' + ', '.join(restos))
-    # La lista fija solo repite lo que _una_vez ya garantiza: un rótulo NUEVO de Lawang lo caza pintar el papel y buscar español en él (revisor)
+    # BBM-67: el servido lleva los dos papeles (el es·en de Lawang para Ajustes es·en), así que la lista fija ya no se busca en el fichero entero:
+    # se exige el selector y el arnés pinta el papel id·en (sin fila y con Ajustes id·en) y el es·en, y busca español en el id·en
+    if 'axwDocId' not in t or 'AXW_IDIOMAS_DOC' not in t:
+        aborta('documento: el papel servido no lleva el selector de Ajustes › Idiomas (axwDocId)')
+    # Un rótulo NUEVO de Lawang lo caza pintar el papel y buscar español en él (revisor)
     r = subprocess.run(['node', os.path.join(AQUI, 'pruebas', 'documento_idiomas.harness.cjs'), dist], capture_output=True, text=True, encoding='utf-8')
     if r.returncode != 0:
         aborta('documento: el papel de la instancia no sale entero en %s:\n%s' % ('·'.join(idiomas), (r.stdout + r.stderr)[-1500:]))

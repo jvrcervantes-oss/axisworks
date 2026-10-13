@@ -338,12 +338,15 @@
      cambia lo que ya se está viendo, UNA recarga por cambio (marca en sessionStorage: nunca un bucle). Sin idiomas en el build no hay nada que aplicar. */
   var CLAVE_IDIOMAS = 'axw_idiomas_erp';
   function idiomasDeLaBase(v) {
-    var b = window.AXW_IDIOMAS_BUILD;
-    if (!Array.isArray(b) || !b.length) return;
     var lista = null;
     if (v && typeof v === 'object' && Array.isArray(v.ofrecidos) && typeof v.defecto === 'string' && v.ofrecidos.indexOf(v.defecto) >= 0) {
       lista = [v.defecto].concat(v.ofrecidos.filter(function (c) { return c !== v.defecto; }));
     }
+    /* BBM-67 (bbm-p40, 13-oct): el PAPEL (factura, recibí y su correo) sigue a lo que la base guardó, sin pasar por localStorage: documento.js lo lee
+       con axwDocId() al pintar (el primero manda, como _doc_idioma() de la base). Sin fila o con algo que no es uno de los dos pares, null = el build. */
+    window.AXW_IDIOMAS_DOC = (lista && [['es', 'en'], ['id', 'en']].some(function (p) { return p.join() === lista.join(); })) ? lista : null;
+    var b = window.AXW_IDIOMAS_BUILD;
+    if (!Array.isArray(b) || !b.length) return;
     var pintable = !!lista && [['es', 'en'], ['id', 'en']].some(function (p) { return p.join() === lista.join(); }) && (lista[0] !== 'id' || b.indexOf('id') >= 0);
     var nueva = pintable ? lista : b;   // null (sin guardar) o algo que este paquete no sabe pintar: manda el build
     try {
