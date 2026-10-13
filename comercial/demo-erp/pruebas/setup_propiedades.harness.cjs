@@ -48,6 +48,15 @@ function servidor(b, n, a) {
   if (n === 'from:obra_fases') return { data: b.fases.map(f => Object.assign({}, f)), error: null };
   if (n === 'from:obra_fase_orden_pago') return { data: Object.keys(b.pagos).map(k => ({ obra_fase_clave: k, orden_pago: b.pagos[k] })), error: null };
   if (n === 'from:contrato_tipo_etapa') return { data: Object.keys(b.etapas).map(k => ({ tipo: k, etapa: b.etapas[k] })), error: null };
+  if (n === 'comisiones_interruptor_datos') return b.o.sinInt ? err('42883') : { data: Object.assign({ recalculo_auto: false, modo_obligatorio: false, cambiado_por: 'dion@x.com', cambiado_en: '2026-10-14T02:00:00Z', puede_editar: true }, b.o.int || {}), error: null };
+  if (n === 'comisiones_interruptor_guarda') {   // §1d: solo el principal; solo booleanos de las dos claves; devuelve los dos valores
+    if (b.o.intNoPrincipal) return err('42501');
+    const d = a.p_datos || {};
+    if (Object.keys(d).some(k => !['recalculo_auto', 'modo_obligatorio'].includes(k)) || Object.values(d).some(v => typeof v !== 'boolean')) return err('22023', 'campo_desconocido');
+    if (b.o.intPierde) return { red: true };
+    b.int = Object.assign({ recalculo_auto: false, modo_obligatorio: false }, b.o.int || {}, b.int || {}, d);
+    return { data: { recalculo_auto: b.int.recalculo_auto, modo_obligatorio: b.int.modo_obligatorio }, error: null };
+  }
   if (n === 'plantillas_contrato_datos') return b.o.sinPlantillas ? err('42501') : { data: { puede_editar: true, tipos: b.tc.map(t => Object.assign({}, t)), plantillas: [] }, error: null };
   const f = b.falla[n];
   if (f) { delete b.falla[n]; return err(f[0], f[1]); }
@@ -106,19 +115,24 @@ window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' 
   if (hu) for (var k in hu) v = v.split('%' + k).join(hu[k]); return v; };
 </script>`;
 const asistente = (idioma, url) => cabeza(idioma) + `<main>${HTML[0]}</main>` + sesion(idioma, url) + `<script>${NUCLEO}</script><script>${PASOS}</script><script>${PROP}</script><script>${COMUN}</script>${HTML[1]}</body></html>`;
+const conTab = idioma => cabeza(idioma) + `<main><div role="tablist"><button type="button" data-lw-tab="empresa">Empresa</button><button type="button" id="lw-tab-comisiones" data-lw-tab="comisiones" data-lwt hidden>Comisiones</button></div>
+<section data-lw-panel="comisiones" hidden><div id="lw-aj-comisiones"></div></section></main>
+<script>document.addEventListener('click', function (e) { var t = e.target.closest('[data-lw-tab]'); if (!t) return; document.querySelectorAll('[data-lw-panel]').forEach(function (s) { s.hidden = s.getAttribute('data-lw-panel') !== t.getAttribute('data-lw-tab'); }); });</script>` + sesion(idioma, '/ajustes/') +
+  `<script>${NUCLEO}</script><script>${PASOS}</script><script>${PROP}</script></body></html>`;
 const ajustes = idioma => cabeza(idioma) + `<main><section data-lw-panel="puesta"><div id="lw-aj-puesta"><p>…</p></div></section></main>` + sesion(idioma, '/ajustes/') +
   `<script>${NUCLEO}</script><script>${PASOS}</script><script>${PROP}</script><script>${COMUN}</script><script>${PUESTA}</script></body></html>`;
 
 async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=proyectos', ancho = 1440, pag = 'asistente' } = {}) {
   const ctx = await nav.newContext({ viewport: { width: ancho, height: 900 } });
   const p = await ctx.newPage();
-  const body = pag === 'ajustes' ? ajustes(idioma) : asistente(idioma, url);
+  const body = pag === 'comisiones' ? conTab(idioma) : pag === 'ajustes' ? ajustes(idioma) : asistente(idioma, url);
   await p.route('**/*', r => r.fulfill({ status: 200, contentType: 'text/html', body }));
-  await p.exposeFunction('__srv', async (n, a) => servidor(b, n, a));
-  await p.goto('http://local.test' + (pag === 'ajustes' ? '/ajustes/' : url));
+  await p.exposeFunction('__srv', async (n, a) => { const r = servidor(b, n, a); if (r && r.red) throw new Error('Failed to fetch'); return r; });
+  await p.goto('http://local.test' + (pag === 'ajustes' || pag === 'comisiones' ? '/ajustes/' : url));
   await p.waitForTimeout(500);
   return { p, ctx };
 }
+const entraCom = async p => { await p.click('[data-lw-tab="comisiones"]'); await p.waitForTimeout(100); };   // ajustes.js abre el panel al pulsar la pestaña (aquí, el stub de conTab)
 const txt = async (p, sel) => (await p.$(sel)) ? (await p.$eval(sel, e => e.textContent.trim())) : null;
 const clic = async (p, accion) => { await p.click('[data-axw-accion="' + accion + '"]'); await p.waitForTimeout(400); };
 const pasoActual = p => p.getAttribute('[data-axw-paso]', 'data-axw-paso').catch(() => null);
@@ -258,6 +272,57 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:|22023|42501|55000|23505|P000
   ok('A1 guarda desde Ajustes igual que en el asistente', a1.length === 1 && a1[0].p_clave === 'parcela', JSON.stringify(a1));
   await sinErroresJs(p, 'A1');
   await ctx.close();
+
+  // ── 5b. Ajustes › Comisiones (pieza 4): solo el principal la ve; manda SOLO lo que cambia; errores por code + hint ──────────────────────────
+  b = base({ int: { puede_editar: false } });
+  ({ p, ctx } = await abre(nav, b, { pag: 'comisiones' }));
+  ok('I1 quien no es el principal: la pestaña Comisiones sigue oculta', await p.$eval('[data-lw-tab="comisiones"]', e => e.hidden) && !(await p.$('[data-axw-pr="comisiones"]')));
+  await ctx.close();
+  b = base({ sinInt: true });
+  ({ p, ctx } = await abre(nav, b, { pag: 'comisiones' }));
+  ok('I1 sin la lectura (base sin la función): la pestaña sigue oculta y sin errores', await p.$eval('[data-lw-tab="comisiones"]', e => e.hidden));
+  await sinErroresJs(p, 'I1');
+  await ctx.close();
+  b = base({ int: { recalculo_auto: true } });
+  ({ p, ctx } = await abre(nav, b, { pag: 'comisiones' }));
+  await entraCom(p);
+  ok('I2 el principal: pestaña a la vista y las casillas como en la base, con el último cambio', !(await p.$eval('[data-lw-tab="comisiones"]', e => e.hidden))
+     && (await p.$eval('[data-axw-campo="recalculo_auto"]', e => e.checked)) && !(await p.$eval('[data-axw-campo="modo_obligatorio"]', e => e.checked))
+     && ((await txt(p, '[data-axw-pr="comisiones-ultimo"]')) || '').includes('dion@x.com'));
+  await p.click('[data-axw-pr-accion="comisiones-guardar"]'); await p.waitForTimeout(150);
+  ok('I2 sin cambios: lo dice y no llama', de(b, 'comisiones_interruptor_guarda').length === 0 && ((await txt(p, '[data-axw-pr="comisiones-estado"]')) || '').includes('No has cambiado nada'));
+  await p.click('[data-axw-campo="modo_obligatorio"]'); await p.click('[data-axw-pr-accion="comisiones-guardar"]'); await p.waitForTimeout(300);
+  const i2 = de(b, 'comisiones_interruptor_guarda');
+  ok('I2 manda SOLO la clave que cambió', i2.length === 1 && JSON.stringify(i2[0].p_datos) === '{"modo_obligatorio":true}', JSON.stringify(i2));
+  ok('I2 guardado: lo dice', ((await txt(p, '[data-axw-pr="comisiones-estado"]')) || '').includes('Interruptores guardados'));
+  await p.click('[data-axw-pr-accion="comisiones-guardar"]'); await p.waitForTimeout(150);
+  ok('I2 tras guardar, lo guardado es lo de partida (no se reenvía)', de(b, 'comisiones_interruptor_guarda').length === 1);
+  await sinErroresJs(p, 'I2');
+  await ctx.close();
+  b = base({ intNoPrincipal: true });
+  ({ p, ctx } = await abre(nav, b, { pag: 'comisiones' }));
+  await entraCom(p);
+  await p.click('[data-axw-campo="recalculo_auto"]'); await p.click('[data-axw-pr-accion="comisiones-guardar"]'); await p.waitForTimeout(300);
+  const e7 = await txt(p, '[data-axw-pr="comisiones-estado"]');
+  ok('I3 42501: «Solo el administrador principal cambia estos interruptores.», sin código', !!e7 && e7.includes('Solo el administrador principal') && sinCodigo(e7), e7);
+  await ctx.close();
+  b = base({ intPierde: true });
+  ({ p, ctx } = await abre(nav, b, { pag: 'comisiones' }));
+  await entraCom(p);
+  await p.click('[data-axw-campo="recalculo_auto"]'); await p.click('[data-axw-pr-accion="comisiones-guardar"]'); await p.waitForTimeout(300);
+  ok('I4 sin respuesta: «no sabemos si se guardó»', ((await txt(p, '[data-axw-pr="comisiones-estado"]')) || '').includes('no sabemos si se guardó'));
+  await ctx.close();
+  for (const idioma of ['en', 'id']) for (const ancho of [390, 1440]) {
+    b = base();
+    ({ p, ctx } = await abre(nav, b, { pag: 'comisiones', idioma, ancho }));
+    await entraCom(p);
+    const w = await p.evaluate(() => document.documentElement.scrollWidth);
+    ok(`I5 ${idioma} ${ancho}: sin scroll horizontal`, w <= ancho, String(w));
+    const sin = (await p.evaluate(() => window.__sinTrad)).filter(s => /nterruptor|omisi|Guardar|cambio|reglas|contrato/.test(s));
+    ok(`I5 ${idioma} ${ancho}: Comisiones traducida`, sin.length === 0, JSON.stringify(sin));
+    if (SHOT) await p.screenshot({ path: path.join(SHOT, `propiedades_comisiones_${idioma}_${ancho}.png`), fullPage: true });
+    await ctx.close();
+  }
 
   // ── 6. es/en/id × 390/1440: sin scroll horizontal, sin frases sin traducir ─────────────────────────────────────────────────────────────────
   for (const idioma of ['es', 'en', 'id']) {

@@ -48,7 +48,17 @@
     'Ese tipo ya tiene contratos: su etapa no se cambia (crea otro tipo).': "That type already has contracts: its stage can't change (create another type).",
     'El nombre no puede empezar por = + - @.': "The name can't start with = + - @.",
     'Ya hay un tipo con esa clave: cámbiala, o usa Editar en la lista.': 'A type with that key already exists: change it, or use Edit in the list.',
-    'Editando el tipo': 'Editing the type'
+    'Editando el tipo': 'Editing the type',
+    'Comisiones': 'Commissions', 'Interruptores de comisiones': 'Commission switches',
+    'Dos reglas de todo el ERP. Solo las cambia el administrador principal y queda apuntado quién y cuándo.': 'Two rules for the whole ERP. Only the main administrator can change them, and who and when is recorded.',
+    'Recalcular solas las comisiones cuando cambia un contrato': 'Recalculate commissions automatically when a contract changes',
+    'Al emitir un contrato, exigir que se diga quién cerró la venta': 'When issuing a contract, require saying who closed the sale',
+    'Guardar interruptores': 'Save switches', 'No has cambiado nada.': "You haven't changed anything.", 'Interruptores guardados.': 'Switches saved.',
+    'Último cambio: %q, %c.': 'Last change: %q, %c.',
+    'No se ha podido leer cómo están los interruptores: recarga la página.': "We couldn't read how the switches are set: reload the page.",
+    'La base no ha respondido: no sabemos si se guardó. Recarga la página para verlo.': "The database didn't answer: we don't know if it was saved. Reload the page to see it.",
+    'Solo el administrador principal cambia estos interruptores.': 'Only the main administrator can change these switches.',
+    'Los interruptores son sí o no.': 'The switches are yes or no.'
   };
   var ID = {
     'Tipos que ya hay': 'Tipe yang sudah ada', 'Aún no hay ningún tipo.': 'Belum ada tipe.', 'Cargando…': 'Memuat…',
@@ -83,7 +93,17 @@
     'Ese tipo ya tiene contratos: su etapa no se cambia (crea otro tipo).': 'Jenis itu sudah memiliki kontrak: tahapnya tidak dapat diubah (buat jenis lain).',
     'El nombre no puede empezar por = + - @.': 'Nama tidak boleh diawali = + - @.',
     'Ya hay un tipo con esa clave: cámbiala, o usa Editar en la lista.': 'Sudah ada tipe dengan kunci itu: ubah kuncinya, atau gunakan Ubah di daftar.',
-    'Editando el tipo': 'Mengubah tipe'
+    'Editando el tipo': 'Mengubah tipe',
+    'Comisiones': 'Komisi', 'Interruptores de comisiones': 'Sakelar komisi',
+    'Dos reglas de todo el ERP. Solo las cambia el administrador principal y queda apuntado quién y cuándo.': 'Dua aturan untuk seluruh ERP. Hanya administrator utama yang dapat mengubahnya, dan siapa serta kapan dicatat.',
+    'Recalcular solas las comisiones cuando cambia un contrato': 'Hitung ulang komisi secara otomatis saat kontrak berubah',
+    'Al emitir un contrato, exigir que se diga quién cerró la venta': 'Saat menerbitkan kontrak, wajib menyebutkan siapa yang menutup penjualan',
+    'Guardar interruptores': 'Simpan sakelar', 'No has cambiado nada.': 'Belum ada yang Anda ubah.', 'Interruptores guardados.': 'Sakelar tersimpan.',
+    'Último cambio: %q, %c.': 'Perubahan terakhir: %q, %c.',
+    'No se ha podido leer cómo están los interruptores: recarga la página.': 'Status sakelar tidak dapat dibaca: muat ulang halaman.',
+    'La base no ha respondido: no sabemos si se guardó. Recarga la página para verlo.': 'Basis data tidak menjawab: kami tidak tahu apakah sudah tersimpan. Muat ulang halaman untuk melihatnya.',
+    'Solo el administrador principal cambia estos interruptores.': 'Hanya administrator utama yang dapat mengubah sakelar ini.',
+    'Los interruptores son sí o no.': 'Sakelar hanya ya atau tidak.'
   };
   function fusiona() {
     if (window.LW_EN && typeof window.LW_EN === 'object') Object.keys(EN).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN[k]; });
@@ -415,6 +435,68 @@
       return resultado(sb.rpc('contrato_tipo_etapa_guarda', { p_tipo: v.tipo, p_etapa: 'reserva' })).then(function (r) { if (r.ok) BORRADOR.carta = null; return conFrase(ERR_CARTA, r); });
     }
   };
+
+  // ── 4 · Ajustes › Comisiones: los dos interruptores (no es paso del asistente) ───────────────────────────────────────────────────────────
+  // build.py pone la pestaña data-lw-tab="comisiones" OCULTA y su panel #lw-aj-comisiones. Se enseña solo si la base dice puede_editar
+  // (es_super_admin): a nadie más le sirve una pantalla de dos interruptores que no puede tocar. Se guarda SOLO lo que cambia.
+  var ERR_INT = {
+    '42501': 'Solo el administrador principal cambia estos interruptores.',
+    '22023/campo_desconocido': 'Los interruptores son sí o no.'
+  };
+  var INTERRUPTORES = [['recalculo_auto', 'Recalcular solas las comisiones cuando cambia un contrato'], ['modo_obligatorio', 'Al emitir un contrato, exigir que se diga quién cerró la venta']];
+  function formaInt(d) { return d && typeof d === 'object' && typeof d.recalculo_auto === 'boolean' && typeof d.modo_obligatorio === 'boolean' && typeof d.puede_editar === 'boolean'; }
+  function comisiones() {
+    var panel = document.getElementById('lw-aj-comisiones'), tab = document.querySelector('[data-lw-tab="comisiones"]');
+    if (!panel || !tab) return;
+    datos('comisiones_interruptor_datos').then(function (r) {
+      if (!r.ok || !formaInt(r.data) || r.data.puede_editar !== true) return;   // sin la lectura o sin ser el principal: la pestaña sigue oculta
+      tab.hidden = false;
+      if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(tab); window.lwIdiomaAplicar(panel.closest('[data-lw-panel]') || panel); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pestaña */ } }
+      var sec = panel.closest('[data-lw-panel]');
+      if (location.hash === '#comisiones' && sec && sec.hidden) tab.click();
+      pintaInt(panel, r.data);
+    });
+  }
+  function pintaInt(panel, d) {
+    vacia(panel);
+    var caja = el('div', { class: 'flex flex-col gap-4 min-w-0', style: 'padding:24px clamp(16px,3vw,32px)', 'data-axw-pr': 'comisiones' });
+    caja.appendChild(el('p', { class: CLS_AYUDA, text: T('Dos reglas de todo el ERP. Solo las cambia el administrador principal y queda apuntado quién y cuándo.') }));
+    var casillas = {};
+    INTERRUPTORES.forEach(function (x) {
+      var id = 'axw-pr-int-' + x[0];
+      var c = el('input', { type: 'checkbox', id: id, 'data-axw-campo': x[0], style: 'width:20px;height:20px;flex:none' });
+      c.checked = d[x[0]] === true;
+      casillas[x[0]] = c;
+      caja.appendChild(el('label', { for: id, class: CLS_FILA, style: 'min-height:44px;cursor:pointer', 'data-axw-fila': x[0] }, [c, el('span', { class: 'font-body-md text-body-md text-on-surface min-w-0', style: 'overflow-wrap:anywhere', text: T(x[1]) })]));
+    });
+    if (d.cambiado_en) {
+      var cuando = String(d.cambiado_en);
+      try { cuando = new Date(d.cambiado_en).toLocaleString(typeof window.lwLocale === 'function' ? window.lwLocale() : undefined); } catch (e) { cuando = String(d.cambiado_en); }
+      caja.appendChild(el('p', { class: CLS_AYUDA, 'data-axw-pr': 'comisiones-ultimo', text: T('Último cambio: %q, %c.', { q: texto(d.cambiado_por).slice(0, 120) || '—', c: cuando }) }));
+    }
+    var est = el('p', { role: 'status', 'aria-live': 'polite', class: CLS_AYUDA, 'data-axw-pr': 'comisiones-estado' });
+    var g = el('button', { type: 'button', class: CLS_BTN2, style: 'min-height:44px;align-self:flex-start', 'data-axw-pr-accion': 'comisiones-guardar', text: T('Guardar interruptores') });
+    caja.appendChild(g); caja.appendChild(est);
+    panel.appendChild(caja);
+    function dice(t, mal) { est.className = mal ? CLS_ERR : CLS_AYUDA; est.textContent = t; }
+    g.addEventListener('click', function () {
+      var q = {};
+      INTERRUPTORES.forEach(function (x) { if (casillas[x[0]].checked !== (d[x[0]] === true)) q[x[0]] = casillas[x[0]].checked; });
+      if (!Object.keys(q).length) { dice(T('No has cambiado nada.'), true); return; }
+      g.disabled = true; dice(T('Cargando…'), false);
+      sesion().then(function (sb) { return sb ? resultado(sb.rpc('comisiones_interruptor_guarda', { p_datos: q })) : { ok: false, sinRespuesta: true, error: {} }; }).then(function (r) {
+        g.disabled = false;
+        if (r.ok && r.data && typeof r.data.recalculo_auto === 'boolean' && typeof r.data.modo_obligatorio === 'boolean') {
+          d.recalculo_auto = r.data.recalculo_auto; d.modo_obligatorio = r.data.modo_obligatorio;   // lo que devuelve la base manda
+          INTERRUPTORES.forEach(function (x) { casillas[x[0]].checked = d[x[0]]; });
+          dice(T('Interruptores guardados.'), false); return;
+        }
+        if (r.ok || r.sinRespuesta) { dice(T('La base no ha respondido: no sabemos si se guardó. Recarga la página para verlo.'), true); return; }
+        dice(frase(ERR_INT, r.error), true);
+      });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', comisiones); else comisiones();
 
   PS.registra('tipos_vivienda', tiposVivienda);
   PS.registra('fases_obra', fasesObra);

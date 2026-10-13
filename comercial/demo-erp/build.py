@@ -4420,7 +4420,20 @@ def setup_reservas_pasos():
 
 # Los escritores de setup_propiedades.js (N4, 20261014051000) nacen CERRADOS: ninguno tiene EXECUTE hasta que llega la pantalla (agencia-81, opción A).
 # La migración que los abre llega en el MISMO aterrizaje que este script; el script entra solo en la instancia a la que va esa migración.
-PROPIEDADES_ESCRITORES = ('tipo_vivienda_guarda', 'obra_fase_guarda', 'contrato_tipo_etapa_guarda')
+PROPIEDADES_ESCRITORES = ('tipo_vivienda_guarda', 'obra_fase_guarda', 'contrato_tipo_etapa_guarda', 'comisiones_interruptor_guarda')
+# la lectura de Ajustes › Comisiones (erp-setup la escribe en la MISMA migración que abre el grant de los cuatro)
+PROPIEDADES_LECTURAS = ('comisiones_interruptor_datos',)
+AJUSTES_COMISIONES_TAB = ('<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors"'
+                          ' role="tab" type="button" id="lw-tab-comisiones" aria-controls="lw-panel-comisiones" aria-selected="false" tabindex="-1" data-lw-tab="comisiones" data-lwt hidden>'
+                          'Comisiones</button>\n')
+AJUSTES_COMISIONES_PANEL = (
+    '<section id="lw-panel-comisiones" role="tabpanel" aria-labelledby="lw-tab-comisiones" data-lw-panel="comisiones" class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden" hidden>\n'
+    '<div class="px-8 pt-8 pb-4 flex flex-col gap-1 border-b border-outline-variant/40">\n'
+    '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Ajustes</span>\n'
+    '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Interruptores de comisiones</h2>\n'
+    '</div>\n'
+    '<div id="lw-aj-comisiones"></div>\n'
+    '</section>\n\n')
 
 
 def propiedades_en_paquete(nombre):
@@ -4437,12 +4450,12 @@ def propiedades_en_paquete(nombre):
         if not n.endswith('.sql'):
             continue
         texto = open(os.path.join(d, n), encoding='utf-8').read()
-        abre = [f for f in PROPIEDADES_ESCRITORES
+        abre = [f for f in PROPIEDADES_ESCRITORES + PROPIEDADES_LECTURAS
                 if re.search(r'grant\s+execute\s+on\s+function\s+public\.%s\s*\([^)]*\)\s+to\s+authenticated' % f, texto, re.I)]
         if not abre:
             continue
-        if len(abre) != len(PROPIEDADES_ESCRITORES):
-            aborta('%s abre solo %s de los escritores de Propiedades %s: setup_propiedades.js los llama a los tres' % (n, abre, list(PROPIEDADES_ESCRITORES)))
+        if len(abre) != len(PROPIEDADES_ESCRITORES + PROPIEDADES_LECTURAS):
+            aborta('%s abre solo %s de las funciones de Propiedades %s: setup_propiedades.js las llama todas' % (n, abre, list(PROPIEDADES_ESCRITORES + PROPIEDADES_LECTURAS)))
         return bool(va_a(texto, nombre, tipo))
     return False
 
@@ -4460,6 +4473,23 @@ def setup_propiedades_pasos():
     for f in PROPIEDADES_ESCRITORES:   # contrato_front busca el nombre LITERAL de la función en el paquete
         if "sb.rpc('%s'" % f not in js:
             aborta('setup_propiedades.js ya no llama a %s por su nombre literal' % f)
+    for f in PROPIEDADES_LECTURAS:
+        if "datos('%s')" % f not in js:
+            aborta('setup_propiedades.js ya no lee %s por su nombre literal' % f)
+    # Ajustes › Comisiones (pieza 4): la pestaña OCULTA y su panel; setup_propiedades.js la enseña solo al administrador principal. Mismas anclas que
+    # Cobros (antes de la pestaña y del panel de Registro) y la pestaña se añade al FINAL de la lista cerrada de ajustes.js.
+    pag = os.path.join(v4, 'ajustes', 'index.html')
+    s = open(pag, encoding='utf-8').read()
+    s = _una_vez(s, AJUSTES_COBROS_TAB_ANCLA, AJUSTES_COMISIONES_TAB + AJUSTES_COBROS_TAB_ANCLA, 'ajustes/index.html pestaña Comisiones')
+    s = _una_vez(s, AJUSTES_COBROS_PANEL_ANCLA, AJUSTES_COMISIONES_PANEL + AJUSTES_COBROS_PANEL_ANCLA, 'ajustes/index.html panel Comisiones')
+    open(pag, 'w', encoding='utf-8', newline='').write(s)
+    aj = os.path.join(v4, 'assets', 'ajustes.js')
+    a = open(aj, encoding='utf-8').read()
+    lista = AJUSTES_COBROS_PESTANAS.findall(a)
+    if len(lista) != 1 or "'comisiones'" in lista[0]:
+        aborta('ajustes.js: esperaba UNA lista `var PESTANAS = [...];` sin comisiones y hay %d%s' % (len(lista), quien_cambio_lawang('ajustes.js')))
+    a = AJUSTES_COBROS_PESTANAS.sub(lambda m: m.group(1) + ", 'comisiones'];", a, count=1)
+    open(aj, 'w', encoding='utf-8', newline='').write(a)
     shutil.copy2(os.path.join(AQUI, 'setup_propiedades.js'), os.path.join(v4, 'assets', 'setup_propiedades.js'))
     print('pasos de Propiedades: setup_propiedades.js en el asistente y en Ajustes')
 

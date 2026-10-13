@@ -20,7 +20,9 @@ CERRADA = ('-- tipo: propiedades\ncreate function public.tipo_vivienda_guarda(p_
 ABRE = ('-- tipo: propiedades\n'
         'grant execute on function public.tipo_vivienda_guarda(text, jsonb) to authenticated;\n'
         'grant execute on function public.obra_fase_guarda(text, jsonb) to authenticated;\n'
-        'grant execute on function public.contrato_tipo_etapa_guarda(text, text) to authenticated;\n')
+        'grant execute on function public.contrato_tipo_etapa_guarda(text, text) to authenticated;\n'
+        'grant execute on function public.comisiones_interruptor_guarda(jsonb) to authenticated;\n'
+        'grant execute on function public.comisiones_interruptor_datos() to authenticated;\n')
 viejo_ag, viejo_reg, viejo_ab = build.AGENCIA, build._instancia_registro, build.aborta
 d = tempfile.mkdtemp()
 class Para(Exception):
@@ -55,7 +57,8 @@ src = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
 mira('instancia() llama a setup_propiedades_pasos() solo tras propiedades_en_paquete()', 'if propiedades_en_paquete(nombre):' in src and 'setup_propiedades_pasos()' in src)
 mira('setup_propiedades.js está en el chequeo de clases del setup', "'setup_propiedades.js')" in src.split('SETUP_CLASES = ')[1].split('\n')[0])
 js = open(os.path.join(AQUI, 'setup_propiedades.js'), encoding='utf-8').read()
-mira('el componente nombra LITERAL las tres funciones (contrato_front las busca así)', all("sb.rpc('%s'" % f for f in build.PROPIEDADES_ESCRITORES) and all("sb.rpc('%s'" % f in js for f in build.PROPIEDADES_ESCRITORES))
+mira('el componente lee comisiones_interruptor_datos con su nombre literal', all("datos('%s')" % f in js for f in build.PROPIEDADES_LECTURAS))
+mira('el componente nombra LITERAL las cuatro funciones que escriben (contrato_front las busca así)', all("sb.rpc('%s'" % f for f in build.PROPIEDADES_ESCRITORES) and all("sb.rpc('%s'" % f in js for f in build.PROPIEDADES_ESCRITORES))
 mira('no lee tipos_contrato con .from (sin SELECT para authenticated): va por plantillas_contrato_datos', ".from('tipos_contrato')" not in js and "datos('plantillas_contrato_datos')" in js)
 mira('engancha por data-axw-*, nunca por un rótulo ni con innerHTML', 'innerHTML' not in js and 'textContent ===' not in js)
 
