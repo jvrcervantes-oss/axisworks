@@ -23,14 +23,14 @@
 .axw-mk{width:22px;height:22px;flex:none;border-radius:50%;border:1.5px solid rgb(var(--tema-background) / .6)}
 .axw-mk[data-mk="hecho"]{background:rgb(var(--tema-background));border-color:rgb(var(--tema-background))}
 .axw-mk[data-mk="medias"]{border-color:rgb(var(--tema-background));background:linear-gradient(90deg,rgb(var(--tema-background)) 50%,transparent 50%)}
-.axw-mk[data-mk="actual"]{border-color:rgb(var(--tema-burnt-earth));background:rgb(var(--tema-burnt-earth))}
+.axw-mk[data-mk="actual"]{border:2px solid rgb(var(--tema-background));background:rgb(var(--tema-burnt-earth))}
 .axw-pasos{display:flex;flex-direction:column;gap:2px;margin:2px 0 8px 22px;padding-left:12px;border-left:1px solid rgb(var(--tema-background) / .16)}
 .axw-st{display:flex;align-items:center;gap:10px;min-height:40px;padding:6px 10px;border-radius:10px;font-size:13.5px;color:rgb(var(--tema-background) / .78)}
 .axw-st:hover{background:rgb(var(--tema-background) / .08)}
 .axw-st .axw-dot{width:16px;height:16px;flex:none;border-radius:50%;border:1.5px solid rgb(var(--tema-background) / .6)}
 .axw-st[data-st="hecho"] .axw-dot{background:rgb(var(--tema-background));border-color:rgb(var(--tema-background))}
 .axw-st[aria-current="step"]{background:rgb(var(--tema-background) / .14);color:rgb(var(--tema-background));font-weight:700}
-.axw-st[aria-current="step"] .axw-dot{border:4px solid rgb(var(--tema-burnt-earth));background:rgb(var(--tema-background))}
+.axw-st[aria-current="step"] .axw-dot{border:4px solid rgb(var(--tema-burnt-earth));background:rgb(var(--tema-background));box-shadow:0 0 0 1.5px rgb(var(--tema-background))}
 .axw-st .axw-opt{margin-left:auto;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--tema-background) / .72)}
 .axw-carril-pie{margin-top:16px;padding:16px 12px 0;border-top:1px solid rgb(var(--tema-background) / .16);font-size:13px;display:flex;flex-direction:column;gap:6px;color:rgb(var(--tema-background) / .78)}
 .axw-carril-pie b{color:rgb(var(--tema-background));font-weight:600}
@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function cargando() { var t = $('tarjeta'); t.setAttribute('aria-busy', 'true'); vacia(t).appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: U('cargando') })); }
   function fallo(texto, reintento) {
+    sinCarril(); $('salir').style.display = 'none';
     var t = $('tarjeta'); t.setAttribute('aria-busy', 'false'); vacia(t);
     // S90: lo que ha pasado, en su caja, y la única cosa que hacer (Reintentar vuelve a MIRAR, nunca reenvía)
     t.appendChild(el('div', { role: 'alert', class: 'rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-error', text: texto }));
@@ -134,13 +135,13 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!abierto) return;
       var L = lista(d, m.modulo), caja = el('div', { class: 'axw-pasos', role: 'list', 'aria-label': U('pasos_modulo', { m: S.nombreModulo(m.modulo) }) });
       L.obligatorios.concat(L.opcionales).forEach(function (p) {
-        caja.appendChild(el('a', { class: 'axw-st', role: 'listitem', href: '?modulo=' + encodeURIComponent(m.modulo) + '&paso=' + encodeURIComponent(p.clave),
+        caja.appendChild(el('div', { role: 'listitem' }, [el('a', { class: 'axw-st', href: '?modulo=' + encodeURIComponent(m.modulo) + '&paso=' + encodeURIComponent(p.clave),
                                    'data-axw-carril-paso': p.clave, 'data-st': p.hecho ? 'hecho' : null, 'aria-current': actual && p === actual ? 'step' : null }, [
           el('span', { class: 'axw-dot', 'aria-hidden': 'true' }),
           el('span', { text: S.texto('paso', p.clave, 0) }),
           p.hecho ? el('span', { class: 'sr-only', text: ' · ' + U('hecho') }) : null,   // el punto lleno no es la única señal
           p.obligatorio ? null : el('span', { class: 'axw-opt font-label-md', text: U('opcional') })
-        ]));
+        ])]));
       });
       nav.appendChild(caja);
     });
@@ -210,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
     cabecera(U('configurar_m', { m: S.nombreModulo(st.modulo) }), true);
     pintaCarril(actual);
     if (st.vista === 'confirma') return pintaConfirma(actual);
-    if (st.vista === 'duda') return pintaDuda();
+    if (st.vista === 'duda') { sinCarril(); $('salir').style.display = 'none'; return pintaDuda(); }
     pintaPaso(actual, L);
   }
   // Chip de estado (S03/S90): texto siempre, el color solo acompaña
@@ -318,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function () {
       t1,
       p.irreversible && !p.hecho ? etiqueta(U('se_fija'), 'se-fija') : null
     ]);
-    var cab = el('header', { class: 'flex flex-col gap-4 pb-5 border-b border-outline-variant' }, [meta]);
+    var cab = el('header', { class: 'flex flex-col gap-4 pb-6 border-b border-outline-variant' }, [meta]);
     if (idx >= 0) {
       var segs = el('div', { class: 'axw-segs', 'aria-hidden': 'true' });
       L.obligatorios.forEach(function (q, k) { segs.appendChild(el('i', { 'data-seg': k === idx ? 'actual' : q.hecho ? 'hecho' : null })); });
