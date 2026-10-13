@@ -4174,8 +4174,13 @@ def documento_idiomas(idiomas):
             es_ = v_[len(pre):-len(fin)]
             if es_.startswith("'Buenos días'"):
                 es_ = DOC_CORREO_ES_EN.replace('DOC_TIPO_REAL', DOC_TIPO_REAL_JS)
+            if pre:   # tipoDocEs del papel es·en: también el tipo REAL (una rectificativa no es «Factura» en el asunto ni en el PDF; revisor, 2.ª vuelta)
+                es_ = v_[len(pre):-1]
+                if es_.count('TIPOS_DOC[vals.tipo]') != 1:
+                    aborta('documento: tipoDocEs de Lawang ya no lee TIPOS_DOC[vals.tipo] (mirar documento_idiomas)')
+                es_ = es_.replace('TIPOS_DOC[vals.tipo]', 'TIPOS_DOC[' + DOC_TIPO_REAL_JS + ']')
             ed = _una_vez(ed, v_, '(%s ? %s : %s)%s' % (DOC_CORREO_ES, es_, n_[len(pre):-len(fin)], fin) if not pre else
-                          'return %s ? %s : %s;' % (DOC_CORREO_ES, v_[len(pre):-1], n_[len(pre):-1]), 'documento ' + rel_)
+                          'return %s ? %s : %s;' % (DOC_CORREO_ES, es_, n_[len(pre):-1]), 'documento ' + rel_)
     for viejo, nuevo in DOC_PARCHES_INSTANCIA_ES:   # después de sacar el id·en, que parte del original de Lawang
         es = _una_vez(es, viejo, nuevo, 'documento: papel es·en de la instancia')
     es = _una_vez(es, DOC_EXPORTS, '', 'documento: module.exports del papel es')

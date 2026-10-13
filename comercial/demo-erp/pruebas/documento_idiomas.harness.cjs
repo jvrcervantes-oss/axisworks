@@ -104,6 +104,14 @@ for (const [nombre0, d, numero] of casos) {
     'Ajustes es·en: el recibí no dice «Recibido de» o arrastra «Facturar a»/«Proyecto»: ' + tr.slice(0, 300));
   ok(/Recib[ií]/.test(tr) && /Cobro de la factura INV-2026-0001/.test(tr), 'Ajustes es·en: el recibí no lleva su título o su concepto en español');
   ok(!texto(carga(['en', 'id']).documentoHTML(b, { numero: 'X' })).includes('Fecha ·'), 'una lista que no empieza por es no puede dar el papel español');
+  // los otros tres casos en es·en (revisor, 2.ª vuelta): proforma, rectificativa y vacío, con lo de la instancia y sin «Proyecto»
+  for (const [nombre0, d, numero] of casosDe().filter(x => ['proforma', 'rectificativa', 'vacio'].includes(x[0]))) {
+    let tx = '';
+    try { tx = texto(cEs.documentoHTML(d, { numero })); } catch (e) { ok(false, 'Ajustes es·en ' + nombre0 + ': ' + e.message); continue; }
+    ok(!/Proyecto/.test(tx) && (nombre0 === 'vacio' || /Referencia · Reference: R-0012/.test(tx)), 'Ajustes es·en ' + nombre0 + ': «Proyecto» o sin «Referencia»: ' + tx.slice(0, 200));
+    if (nombre0 === 'proforma') ok(/Factura proforma/.test(tx), 'Ajustes es·en proforma: sin su título');
+    if (nombre0 === 'rectificativa') ok(/Factura rectificativa/.test(tx) && /Rectifica a · Corrects/.test(tx), 'Ajustes es·en rectificativa: sin su título o sus rótulos');
+  }
 }
 // El correo que acompaña al PDF (el paquete minifica: se busca por trozos)
 const ed = fs.readFileSync(path.join(dist, 'assets', 'editores.js'), 'utf8');
@@ -114,6 +122,9 @@ ok(/Terlampir /.test(ed) && (ed.match(/Please find attached /g) || []).length >=
 ok(/Un saludo \/ Kind regards/.test(ed) && /Salam \/ Kind regards/.test(ed), 'correo: la despedida no va en los dos idiomas del papel');
 ok((ed.match(/f0\.moneda\s*\|\|\s*lwMonedaBase\(\)\s*\|\|/g) || []).length === 2, 'factura y recibí nuevos: no nacen en la moneda de la instancia (lwMonedaBase)');
 ok(/["']rectificativa["']/.test(ed),'correo: el asunto no distingue la rectificativa (tipo real del documento)');
+// el tipo REAL en las dos ramas (asunto/PDF con tipoDocEs y la línea inglesa del cuerpo): 2 en el papel id·en + 2 en el es·en. Con 3, la rama es
+// pondría «Factura» en el asunto de una rectificativa (revisor, 2.ª vuelta). El paquete minifica: se cuenta el trozo que lee rectifica_numero
+ok((ed.match(/TIPOS_DOC\[[\w$]+\.rectifica_numero/g) || []).length >= 4, 'correo: alguna rama no usa el tipo real del documento (asunto, PDF o cuerpo)');
 
 if (fallos.length) { console.error('MAL (' + fallos.length + '):\n  ' + fallos.join('\n  ')); process.exit(1); }
 console.log('TODO BIEN: documento id·en sin fila y con Ajustes id·en (' + casos.length + ' casos cada uno), es·en con Ajustes es·en, y correo');
