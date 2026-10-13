@@ -2676,11 +2676,16 @@ def setup_para_panel():
     faltan = sorted(set(reg['modulos']) - set(en['modulos'])) + sorted('tipo ' + t for t in set(perf) - set(en['tipos']))
     if faltan:
         aborta('panel_setup_en.json: sin nombre en inglés para %s' % faltan)
-    prog = ("global.window={};global.document={readyState:'complete'};require(process.argv[1]);var S=window.AXW_SETUP;"
-            "var o={paso:{},modulo:{}};Object.keys(S.TEXTOS.paso).forEach(function(k){var t=S.TEXTOS.paso[k][0];o.paso[k]={es:t,en:S.EN[t]||null};});"
-            "Object.keys(S.TEXTOS.modulo).forEach(function(k){var t=S.TEXTOS.modulo[k];o.modulo[k]={es:t,en:S.EN[t]||null};});"
+    # 13-oct (erp-panel-4): los pasos de Reservas de producto (clase, reglas_reserva, alquileres_previos) suman su frase desde
+    # setup_reservas.js (en S.TEXTOS) y su inglés en LW_EN, no en S.EN. Se carga detrás, con AXW_PASOS de mentira (solo registra pantallas,
+    # que aquí no se pintan): sin él, el registro declara esos pasos y el build de la instancia del estudio abortaba.
+    prog = ("global.window={LW_EN:{}};global.document={readyState:'complete'};global.location={pathname:'/'};require(process.argv[1]);"
+            "var S=window.AXW_SETUP;window.AXW_PASOS={registra:function(){}};require(process.argv[2]);var E=function(t){return S.EN[t]||window.LW_EN[t]||null;};"
+            "var o={paso:{},modulo:{}};Object.keys(S.TEXTOS.paso).forEach(function(k){var t=S.TEXTOS.paso[k][0];o.paso[k]={es:t,en:E(t)};});"
+            "Object.keys(S.TEXTOS.modulo).forEach(function(k){var t=S.TEXTOS.modulo[k];o.modulo[k]={es:t,en:E(t)};});"
             "process.stdout.write(JSON.stringify(o));")
-    r = subprocess.run(['node', '-e', prog, os.path.join(AQUI, 'setup_modulos.js')], capture_output=True, text=True, encoding='utf-8')
+    r = subprocess.run(['node', '-e', prog, os.path.join(AQUI, 'setup_modulos.js'), os.path.join(AQUI, 'setup_reservas.js')],
+                       capture_output=True, text=True, encoding='utf-8')
     if r.returncode != 0:
         aborta('setup_modulos.js no se deja leer para el panel: ' + (r.stderr or '')[-400:])
     textos = json.loads(r.stdout)
