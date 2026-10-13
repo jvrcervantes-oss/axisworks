@@ -1607,6 +1607,14 @@ PAPEL_FIJOS = (('contracts/assets/brand.css', '--brand-primary: var(--tg);', '--
 COLOR_RE = re.compile(r'(#|%23)([0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-zA-Z_])'
                       r'|(rgba?\(\s*)(\d{1,3})(\s*[, ]\s*)(\d{1,3})(\s*[, ]\s*)(\d{1,3})')
 PIEL_EXT = ('.js', '.css', '.html', '.php', '.svg')   # nada binario ni de datos (.json fuera)
+# Un hex que es TEXTO que lee la persona, no pintura: el ejemplo de un campo de color (Ajustes › sociedad: `ayuda:"#42210B"` bajo «Tinta
+# oscura»). Ni se cambia ni lo cuenta el barrido (revisión de e6d96ed: el pase lo cambiaba y la comprobación de «solo colores» no lo ve,
+# porque el texto también es un hex).
+TEXTO_ANTES_RE = re.compile(r'(?:ayuda:"|placeholder=["\']|placeholder:\s*["\'])$')
+
+
+def _es_texto(m):
+    return bool(TEXTO_ANTES_RE.search(m.string[max(0, m.start() - 20):m.start()]))
 
 
 def _rgb_hex(h):
@@ -1691,7 +1699,7 @@ def piel_colores_lawang(dist, nombre):
                 continue
             ruta = os.path.join(raiz, f)
             rel = os.path.relpath(ruta, dist).replace(os.sep, '/')
-            t = open(ruta, encoding='utf-8').read()
+            t = open(ruta, encoding='utf-8', newline='').read()   # newline='': un CRLF se queda CRLF (ni un byte que no sea color)
             nuevo = t
             for viejo, plantilla, tok in (x[1:] for x in PAPEL_FIJOS if x[0] == rel):
                 if nuevo.count(viejo) != 1:
@@ -1700,6 +1708,8 @@ def piel_colores_lawang(dist, nombre):
             cambios = [0]
 
             def cambia(m):
+                if _es_texto(m):
+                    return m.group(0)
                 c = _color_de(m)
                 if c in reglas:
                     ventana = m.string[max(0, m.start() - 80):m.end() + 40]
@@ -1716,7 +1726,9 @@ def piel_colores_lawang(dist, nombre):
                 return m.group(0)
             nuevo = COLOR_RE.sub(cambia, nuevo)
             if nuevo != t:
-                # ni un texto, ni un importe, ni un data-*: quitando los colores, antes y después son idénticos (el papel, por su línea)
+                # ni un texto, ni un importe, ni un data-*: quitando los colores, antes y después son idénticos (el papel, por su línea).
+                # OJO, lo que esta guarda NO ve: un texto con forma de color (el ejemplo «#42210B» de un campo) se quita igual en los dos
+                # lados; eso lo protege _es_texto(), que lo deja fuera del pase y del barrido.
                 antes = COLOR_RE.sub('§', t)
                 for viejo, plantilla, _tok in (x[1:] for x in PAPEL_FIJOS if x[0] == rel):
                     antes = antes.replace(viejo, plantilla % '§')
@@ -1752,7 +1764,7 @@ def colores_lawang_en(dist, p=None):
             rel = os.path.relpath(ruta, dist).replace(os.sep, '/')
             for m in COLOR_RE.finditer(open(ruta, encoding='utf-8').read()):
                 c = _color_de(m)
-                if c in pal and c not in propios:
+                if c in pal and c not in propios and not _es_texto(m):
                     out.append('%s: %s (%s)' % (rel, m.group(0), '/'.join(pal[c])))
     return out
 

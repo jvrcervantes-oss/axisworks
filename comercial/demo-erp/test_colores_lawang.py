@@ -74,6 +74,8 @@ try:
     escribe(d, 'a/estado.js', 'var E={disponible:"#485B37"};')
     escribe(d, 'a/logo.png', b'\x89PNG#104C4F', 'wb')
     escribe(d, 'a/datos.json', '{"c":"#104C4F"}')
+    escribe(d, 'a/ajustes.js', 'var C=[{k:"tinta_deep",label:"Tinta oscura",ayuda:"#42210B"},{k:"x",estilo:"color:#42210B"}];')
+    escribe(d, 'a/campo.html', '<input placeholder="#104C4F">\r\n<p style="color:#104C4F">x</p>\r\n')
     n = build.piel_colores_lawang(d, 'x')
     css = open(os.path.join(d, 'a', 'formas.css'), encoding='utf-8').read()
     r = '%d %d %d' % tuple(BBM['deep-lagoon'])
@@ -84,6 +86,13 @@ try:
     mira('marca → su token; estado («disponible») → el verde de estado de la piel',
          H('primary-container') in open(os.path.join(d, 'a', 'marca.css'), encoding='utf-8').read()
          and H('ok') in open(os.path.join(d, 'a', 'estado.js'), encoding='utf-8').read())
+    aj = open(os.path.join(d, 'a', 'ajustes.js'), encoding='utf-8').read()
+    mira('un hex que es TEXTO (ayuda:"#42210B", el ejemplo de un campo) no se cambia; el mismo color pintado, sí',
+         'ayuda:"#42210B"' in aj and 'color:#42210B' not in aj)
+    cp = open(os.path.join(d, 'a', 'campo.html'), encoding='utf-8', newline='').read()
+    mira('placeholder="#…" es texto y se queda; el CRLF del fichero se queda CRLF', 'placeholder="#104C4F"' in cp and 'color:#104C4F' not in cp
+         and cp.count('\r\n') == 2)
+    mira('el barrido no cuenta el texto (ayuda/placeholder) como color de Lawang', build.colores_lawang_en(d, BBM) == [])
     mira('ni binarios ni .json se tocan', open(os.path.join(d, 'a', 'logo.png'), 'rb').read() == b'\x89PNG#104C4F'
          and '#104C4F' in open(os.path.join(d, 'a', 'datos.json'), encoding='utf-8').read())
     mira('tras el pase el barrido no ve nada (%d cambios)' % n, n >= 10 and build.colores_lawang_en(d, BBM) == [])
@@ -92,6 +101,16 @@ try:
     mira('una aparición más del verde en un fichero conocido PARA (recuento)', para(lambda: build.piel_colores_lawang(d, 'x')))
     os.remove(os.path.join(d, 'a', 'estado.js')); escribe(d, 'a/marca.css', '.btn{background:#485B37}')
     mira('una pantalla que no sale (módulo apagado) no exige su recuento', build.piel_colores_lawang(d, 'x') >= 1)
+    shutil.rmtree(d)
+    # la guarda «solo cambian colores»: si el pase tocara algo que no es un color, PARA
+    d = tempfile.mkdtemp()
+    escribe(d, 'a/x.css', 'a{color:#104C4F}')
+    viejo_pon = build._pon_color
+    try:
+        build._pon_color = lambda m, c: viejo_pon(m, c) + ';/*x*/'
+        mira('si el pase cambiara algo que no es un color, PARA (guarda «solo colores»)', para(lambda: build.piel_colores_lawang(d, 'x')))
+    finally:
+        build._pon_color = viejo_pon
     shutil.rmtree(d)
     # (6) el papel
     d = tempfile.mkdtemp()
