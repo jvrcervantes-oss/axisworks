@@ -36,6 +36,7 @@
  },
  "tipos": {
   "inmobiliario": ["Properties", "Developers: projects, plots, contracts, commissions"],
-  "generalista": ["Products and bookings", "Products, services and dated bookings"]
+  "generalista": ["Bookings", "Rentals and dated bookings (for example, motorbikes)"],
+  "servicios": ["Services", "Services or products sold without contracts or dated bookings"]
  }
 }
