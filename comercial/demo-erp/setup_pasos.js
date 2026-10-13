@@ -187,6 +187,117 @@
     },
     guarda: function () { return Promise.resolve({ ok: true, externo: true }); }
   };
+  /* «Quién lo usa» en el propio paso (mesa S14 del diseño del owner; bbm-p41, 13-oct). Owner, 09:15: «la ventana de permisos es la que teníamos
+   * en Lawang… aparecen todos los módulos». Aquí solo sale el equipo y UNA casilla por persona: la herramienta de ESTE módulo, la misma con la que
+   * la base decide el paso (window.AXW_MAPA_MODULOS.h, del registro). Sin herramienta en el registro → el paso de siempre, en Usuarios.
+   *  · Lee la tabla `usuarios` como /usuarios/ (misma RLS). Activos, sin la cuenta de pruebas (la base tampoco la cuenta); el administrador
+   *    principal (super_admin) va con «acceso total», sin casilla.
+   *  · Guarda con usuario_guarda_permisos, la RPC de la ficha de Usuarios, que REEMPLAZA el array entero: por eso relee el `herramientas` de
+   *    cada persona justo antes y manda ESE array con solo esta herramienta puesta o quitada (nunca el leído al pintar ni una lista filtrada).
+   *  · «Puede crear / solo ver» del diseño no se pinta: la base no tiene niveles por herramienta (lista de Backend). Invitar = alta de Usuarios. */
+  var COLS_USUARIO = 'user_id,nombre,email,rol,activo,herramientas,creado_por';
+  function herramientaDe(modulo) { var M = window.AXW_MAPA_MODULOS, h = M && M.h && M.h[modulo]; return typeof h === 'string' && h ? h : null; }
+  function cliente() {
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') return Promise.resolve(null);
+    return window.LW_AUTH.then(function (a) { return a && a.sb ? a.sb : null; }, function () { return null; });
+  }
+  (function () {   // el interruptor: solo tokens de la piel (marca blanca); ≥ 3:1 como control encendido y apagado sobre la tarjeta
+    if (typeof document === 'undefined' || !document.head || document.getElementById('axw-quien-estilo')) return;
+    var st = document.createElement('style');
+    st.id = 'axw-quien-estilo';
+    st.textContent = '.axw-sw{position:relative;display:inline-flex;align-items:center;min-height:44px;min-width:52px;cursor:pointer}' +
+      '.axw-sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}' +
+      '.axw-sw i{display:block;width:44px;height:26px;border-radius:999px;background:rgb(var(--tema-outline));transition:background .15s}' +
+      '.axw-sw i::after{content:"";display:block;width:20px;height:20px;margin:3px;border-radius:50%;background:rgb(var(--tema-surface-container-lowest));transition:transform .15s}' +
+      '.axw-sw input:checked+i{background:rgb(var(--tema-on-surface))}.axw-sw input:checked+i::after{transform:translateX(18px)}' +
+      '.axw-sw input:focus-visible+i{outline:2px solid rgb(var(--tema-burnt-earth));outline-offset:2px}' +
+      '@media (prefers-reduced-motion:reduce){.axw-sw i,.axw-sw i::after{transition:none}}';
+    document.head.appendChild(st);
+  })();
+  var QUIEN = {
+    sinMotivo: true,   // usuario_guarda_permisos no pide motivo
+    pinta: function (caja, ctx) {
+      var herr = herramientaDe(ctx.paso.modulo), m = S().nombreModulo(ctx.paso.modulo);
+      if (!herr) return EXTERNO.pinta(caja, ctx);
+      var st = { lista: null, error: null };
+      var lista = el('ul', { class: 'flex flex-col rounded-2xl border border-outline-variant', role: 'list', 'data-axw-quien': 'lista', 'aria-busy': 'true' },
+                     [el('li', { class: 'px-4 py-3 font-body-md text-body-md text-on-surface-variant', text: U('cargando') })]);
+      var cuenta = el('p', { class: 'font-label-md text-label-md text-on-surface', 'data-axw-quien': 'cuenta', 'aria-live': 'polite' });
+      var d = String(ctx.paso.donde || '');
+      var invitar = /^\/[a-z0-9\-\/]*$/i.test(d) ? el('a', { href: d, 'data-axw-quien': 'invitar', style: 'min-height:44px',
+        class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant font-label-md text-label-md text-deep-lagoon self-start', text: U('invitar') }) : null;
+      caja.appendChild(lista);
+      caja.appendChild(el('div', { class: 'flex flex-wrap items-center justify-between gap-3' }, [invitar, cuenta]));
+      caja.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('quien_nota') }));
+      function recuenta() {
+        if (!st.lista) return;
+        var n = st.lista.filter(function (u) { return u.rol === 'super_admin'; }).length + lista.querySelectorAll('input[data-axw-quien-usuario]:checked').length;
+        cuenta.textContent = n === 1 ? U('quien_uno', { m: m }) : U('quien_n', { n: String(n), m: m });
+      }
+      cliente().then(function (sb) {
+        if (!sb) return { error: { code: '42501' } };
+        return new Promise(function (ok) { ok(sb.from('usuarios').select(COLS_USUARIO).eq('activo', true)); });
+      }).then(function (r) {
+        while (lista.firstChild) lista.removeChild(lista.firstChild);
+        lista.setAttribute('aria-busy', 'false');
+        if (!r || r.error || !Array.isArray(r.data)) {
+          st.error = S().explica((r && r.error) || {}, true).texto;
+          lista.appendChild(el('li', { role: 'alert', class: 'px-4 py-3 font-body-md text-body-md text-error', text: U('no_mirar') + ': ' + st.error }));
+          return;
+        }
+        st.lista = r.data.filter(function (u) { return u && u.user_id && u.activo !== false && String(u.creado_por || '') !== 'estudio:cuenta-pruebas'; })
+          .sort(function (a, b) { return (b.rol === 'super_admin') - (a.rol === 'super_admin') || String(a.nombre || a.email || '').localeCompare(String(b.nombre || b.email || '')); });
+        st.lista.forEach(function (u, i) {
+          var nombre = String(u.nombre || u.email || '—'), principal = u.rol === 'super_admin';
+          var tiene = Array.isArray(u.herramientas) && u.herramientas.indexOf(herr) >= 0;
+          var der = principal ? el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('quien_total') })
+            : el('label', { class: 'axw-sw' }, [
+                el('input', { type: 'checkbox', role: 'switch', 'data-axw-quien-usuario': u.user_id, 'aria-label': U('quien_usa', { p: nombre, m: m }), checked: tiene ? '' : null }),
+                el('i', { 'aria-hidden': 'true' })]);
+          lista.appendChild(el('li', { class: 'flex items-center gap-3 px-4 py-3' + (i ? ' border-t border-outline-variant' : '') }, [
+            el('span', { class: 'rounded-full bg-surface-container-high font-label-md text-label-md text-on-surface', 'aria-hidden': 'true',   // grid/place-items no están compilados en la instancia
+                         style: 'width:40px;height:40px;flex:none;display:grid;place-items:center', text: nombre.trim().charAt(0).toUpperCase() }),
+            el('div', { class: 'flex flex-col min-w-0 flex-1' }, [
+              el('span', { class: 'font-label-md text-label-md text-on-surface', style: 'overflow-wrap:anywhere', text: nombre }),
+              el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', style: 'overflow-wrap:anywhere', text: principal ? U('quien_principal') : String(u.email || '') })]),
+            der]));
+        });
+        if (!st.lista.some(function (u) { return u.rol !== 'super_admin'; }))
+          lista.appendChild(el('li', { class: 'px-4 py-3 border-t border-outline-variant font-body-md text-body-md text-on-surface-variant', 'data-axw-quien': 'solo-tu', text: U('quien_solo_tu') }));
+        lista.addEventListener('change', recuenta);
+        recuenta();
+      });
+      return {
+        valores: function () {
+          if (st.error) return { ok: false, error: U('no_mirar') + ': ' + st.error };
+          if (!st.lista) return { ok: false, error: U('cargando') };
+          var cambios = [];
+          lista.querySelectorAll('input[data-axw-quien-usuario]').forEach(function (i) {
+            var u = st.lista.filter(function (x) { return x.user_id === i.getAttribute('data-axw-quien-usuario'); })[0];
+            var antes = !!(u && Array.isArray(u.herramientas) && u.herramientas.indexOf(herr) >= 0);
+            if (u && i.checked !== antes) cambios.push({ user_id: u.user_id, poner: i.checked });
+          });
+          return { ok: true, v: { herr: herr, cambios: cambios } };
+        }
+      };
+    },
+    guarda: function (sb, v) {
+      var i = 0;
+      function sigue() {
+        if (i >= v.cambios.length) return Promise.resolve({ ok: true });
+        var c = v.cambios[i++];
+        return resultado(sb.from('usuarios').select('user_id,herramientas').eq('user_id', c.user_id).maybeSingle()).then(function (r) {
+          if (!r.ok) return r;
+          if (!r.data) return faltaFila();
+          var hs = (Array.isArray(r.data.herramientas) ? r.data.herramientas : []).filter(function (h) { return h !== v.herr; });
+          if (c.poner) hs.push(v.herr);
+          return resultado(sb.rpc('usuario_guarda_permisos', { p_user_id: c.user_id, p_cambios: { herramientas: hs } })).then(function (r2) { return r2.ok ? sigue() : r2; });
+        });
+      }
+      return sigue();
+    }
+  };
+  PASOS.usuarios = QUIEN;
   function de(clave) { return PASOS[clave] || EXTERNO; }
   // Un paso con su componente en otro fichero (cobros_paso.js, setup_reservas.js; F3) se suma con registra(). Solo sustituye al genérico de «otra
   // pantalla» (flota, entrega); nunca pisa un componente de verdad.

@@ -51,6 +51,14 @@ function servidor(b, n, a) {
     return { data: JSON.parse(JSON.stringify(b.d)), error: null };
   }
   if (n === 'ajustes_config_datos') return { data: { valores: Object.assign({}, b.valores), puede_escribir: true }, error: null };
+  if (n === 'usuario_guarda_permisos') {   // la RPC REEMPLAZA el array entero (como la de verdad)
+    const u = (b.usuarios || []).find(x => x.user_id === a.p_user_id);
+    if (!u) return err('P0002', null);
+    u.herramientas = a.p_cambios.herramientas.slice();
+    const pu = b.d.pasos.find(x => x.clave === 'usuarios' && x.modulo === 'reservas-producto');
+    if (pu) pu.hecho = b.usuarios.some(x => x.activo && x.rol !== 'super_admin' && x.creado_por !== 'estudio:cuenta-pruebas' && x.herramientas.includes('reservas-producto'));
+    return { data: null, error: null };
+  }
   const guarda = () => {
     if (b.perdidas > 0) { b.perdidas--; return { perdida: true }; }   // la red se pierde DESPUÉS de que la base guardó (o.guardaAntes) o antes
     return null;
@@ -88,7 +96,9 @@ const pagina = (idioma, url) => `<!doctype html><html><head><meta charset="utf-8
 history.replaceState(null, '', '${url}');
 window.__sinTrad = []; window.__errores = [];
 window.addEventListener('error', function (e) { window.__errores.push(String(e.message)); });
-function cadena(t) { var f = {}; var q = { select: function () { return q; }, eq: function (c, v) { f[c] = v; return q; }, maybeSingle: function () { return window.__srv('from:' + t, f); } }; return q; }
+function cadena(t) { var f = {}; var q = { select: function () { return q; }, eq: function (c, v) { f[c] = v; return q; }, maybeSingle: function () { return window.__srv('from:' + t, f); },
+  then: function (a, b) { return window.__srv('from:' + t + ':lista', f).then(a, b); } }; return q; }
+window.AXW_MAPA_MODULOS = { h: { facturas: 'facturas', recibos: 'recibos', 'reservas-producto': 'reservas-producto' } };
 var sb = { rpc: function (n, a) { return window.__srv(n, a || {}); }, from: cadena };
 window.LW_AUTH = Promise.resolve({ sb: sb });
 window.lwDatos = function (n, a) { return sb.rpc(n, a); };
@@ -111,6 +121,12 @@ async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=
     return r.fulfill({ status: 200, contentType: 'text/html', body: pagina(idioma, url) });
   });
   await p.exposeFunction('__srv', async (n, a) => {
+    if (n.startsWith('from:usuarios')) {   // «Quién lo usa» (S14): la tabla usuarios del doble, con estado
+      b.llamadas.push([n, a]);
+      if (n.endsWith(':lista')) return { data: JSON.parse(JSON.stringify((b.usuarios || []).filter(u => a.activo === undefined || u.activo === a.activo))), error: null };
+      const u = (b.usuarios || []).find(x => x.user_id === a.user_id);
+      return { data: u ? JSON.parse(JSON.stringify(u)) : null, error: null };
+    }
     if (n.startsWith('from:')) return { data: b.sociedad ? Object.assign({}, b.sociedad) : null, error: null };
     const r = servidor(b, n, a);
     if (r && r.red) throw Object.assign(new Error('Failed to fetch'));
@@ -333,6 +349,66 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
         return out;
       });
       ok('piel real ' + idioma + ' ' + ancho + ' ' + (url.includes('modulo') ? 'paso' : 'inicio') + ': texto con contraste suficiente', malos.length === 0, malos.slice(0, 4).join(' | '));
+      await ctx.close();
+    }
+  }
+
+  // 10. «Quién lo usa» en el propio paso (S14, bbm-p41): el equipo con UNA casilla (la herramienta de este módulo), sin la cuenta de pruebas,
+  //     el administrador principal sin casilla; al guardar se relee y se manda el array ENTERO de esa persona con solo esta herramienta cambiada.
+  {
+    const pasoU = { modulo: 'reservas-producto', clave: 'usuarios', obligatorio: true, irreversible: false, hecho: false, donde: '/usuarios/', falta: { codigo: 'sin_usuarios', campos: [] } };
+    const equipo = () => [
+      { user_id: 'u-dion', nombre: 'Dion', email: 'dion@x.test', rol: 'super_admin', activo: true, herramientas: [], creado_por: null },
+      { user_id: 'u-kadek', nombre: 'Kadek', email: 'kadek@x.test', rol: 'agente', activo: true, herramientas: ['facturas', 'recibos'], creado_por: 'dion' },
+      { user_id: 'u-putu', nombre: 'Putu', email: 'putu@x.test', rol: 'agente', activo: true, herramientas: ['reservas-producto', 'taller'], creado_por: 'dion' },
+      { user_id: 'u-prueba', nombre: 'Cuenta de pruebas', email: 'p@x.test', rol: 'admin', activo: true, herramientas: [], creado_por: 'estudio:cuenta-pruebas' },
+      { user_id: 'u-baja', nombre: 'Baja', email: 'b@x.test', rol: 'agente', activo: false, herramientas: [], creado_por: 'dion' }];
+    const bq = base('sin_configurar');
+    bq.d.pasos.push(Object.assign({}, pasoU)); bq.usuarios = equipo();
+    ({ p, ctx } = await abre(nav, bq, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
+    const filas = await p.$$eval('[data-axw-quien="lista"] li', ls => ls.map(l => l.textContent));
+    ok('S14: el equipo activo, sin la cuenta de pruebas ni las bajas', filas.length === 3 && !filas.some(t => /pruebas|Baja/.test(t)), JSON.stringify(filas));
+    ok('S14: una sola casilla por persona y ninguna para el administrador principal', (await p.$$('[data-axw-quien-usuario]')).length === 2 && !(await p.$('[data-axw-quien-usuario="u-dion"]')));
+    ok('S14: la casilla dice qué hace («Kadek usa Reservas de producto») y refleja la herramienta', (await p.getAttribute('[data-axw-quien-usuario="u-kadek"]', 'aria-label')) === 'Kadek usa Reservas de producto'
+       && !(await p.$eval('[data-axw-quien-usuario="u-kadek"]', e => e.checked)) && (await p.$eval('[data-axw-quien-usuario="u-putu"]', e => e.checked)));
+    ok('S14: recuento con el administrador principal', (await txt(p, '[data-axw-quien="cuenta"]')) === '2 personas usan Reservas de producto', await txt(p, '[data-axw-quien="cuenta"]'));
+    ok('S14: «Invitar a alguien» lleva al alta de Usuarios', (await p.getAttribute('[data-axw-quien="invitar"]', 'href')) === '/usuarios/');
+    await p.click('[data-axw-quien-usuario="u-kadek"]', { force: true });
+    ok('S14: el recuento sigue a la casilla', (await txt(p, '[data-axw-quien="cuenta"]')) === '3 personas usan Reservas de producto');
+    bq.usuarios.find(u => u.user_id === 'u-kadek').herramientas.push('otra-de-otra-sesion');   // otra sesión le da algo a Kadek mientras tanto
+    await clic(p, 'enviar'); await p.waitForTimeout(400);
+    const g = llamadas(bq, 'usuario_guarda_permisos');
+    ok('S14: una sola llamada, a la persona cambiada, con su array ENTERO releído más esta herramienta (conserva lo de la otra sesión)',
+       g.length === 1 && g[0][1].p_user_id === 'u-kadek' && JSON.stringify(Object.keys(g[0][1].p_cambios)) === '["herramientas"]'
+       && JSON.stringify(g[0][1].p_cambios.herramientas.slice().sort()) === JSON.stringify(['facturas', 'otra-de-otra-sesion', 'recibos', 'reservas-producto'].sort()), JSON.stringify(g));
+    ok('S14: tras guardar, el «hecho» lo dice la base (el paso sale del recorrido)', !(await p.$('[data-axw-paso="usuarios"]')));
+    ok('S14: sin errores de página', (await p.evaluate(() => window.__errores)).length === 0, JSON.stringify(await p.evaluate(() => window.__errores)));
+    await ctx.close();
+    // quitar: el array de esa persona sin esta herramienta y con todo lo demás
+    const bx = base('sin_configurar'); bx.d.pasos.push(Object.assign({}, pasoU));
+    bx.usuarios = [{ user_id: 'u-putu', nombre: 'Putu', email: 'putu@x.test', rol: 'agente', activo: true, herramientas: ['reservas-producto', 'taller'], creado_por: 'dion' }];
+    ({ p, ctx } = await abre(nav, bx, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
+    await p.click('[data-axw-quien-usuario="u-putu"]', { force: true }); await clic(p, 'enviar'); await p.waitForTimeout(400);
+    const q = llamadas(bx, 'usuario_guarda_permisos');
+    ok('S14: quitar manda el resto de herramientas intacto', q.length === 1 && JSON.stringify(q[0][1].p_cambios.herramientas) === '["taller"]', JSON.stringify(q));
+    await ctx.close();
+    // sin nadie más que el administrador principal: el aviso para invitar
+    const bv = base('sin_configurar'); bv.d.pasos.push(Object.assign({}, pasoU)); bv.usuarios = [equipo()[0]];
+    ({ p, ctx } = await abre(nav, bv, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien="solo-tu"]', { timeout: 8000 }).catch(() => {});
+    ok('S14: solo el administrador principal: invita a alguien', !!(await p.$('[data-axw-quien="solo-tu"]')));
+    await clic(p, 'enviar'); await p.waitForTimeout(300);
+    ok('S14: guardar sin cambios no llama a nada que escriba', llamadas(bv, 'usuario_guarda_permisos').length === 0);
+    await ctx.close();
+    for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
+      const bi = base('sin_configurar'); bi.d.pasos.push(Object.assign({}, pasoU)); bi.usuarios = equipo();
+      ({ p, ctx } = await abre(nav, bi, { idioma, ancho, url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+      await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
+      const sin = await p.evaluate(() => window.__sinTrad.filter(s => !/^(NPWP|IDR|EUR|USD)$/.test(s)));
+      ok('S14 ' + idioma + ' ' + ancho + ': sin español y sin scroll horizontal', sin.length === 0 && (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho, sin.slice(0, 4).join(' | '));
+      if (SHOT) await p.screenshot({ path: path.join(SHOT, 'quien_' + idioma + '_' + ancho + '.png'), fullPage: true });
       await ctx.close();
     }
   }
