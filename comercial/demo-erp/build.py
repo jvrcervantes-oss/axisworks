@@ -2691,13 +2691,19 @@ def rotulos():
     return r
 
 
+# Suman pasos a AXW_SETUP.TEXTOS, en el orden del paquete. cobros_paso.js no: engancha la página al cargarse (getElementById) y la
+# frase de su paso «cobros» ya vive en setup_modulos.js. Un fichero nuevo que sume pasos se añade aquí (si falta, el build aborta).
+SETUP_SUMAN = ('setup_reservas.js', 'setup_comun.js')
+
+
 def setup_para_panel():
     """Lo que el panel de control necesita del REGISTRO para el setup (12-oct-2026, erp-panel-2; owner: «módulo primero y setup
     después»): el hueco __AXW_SETUP__ de panel_control.html. Nada se escribe a mano aquí:
       - `registro`: erp/modulos.json → setup.modulos (lo que declara erp/modulos.py → SETUP). Solo lo usa el mapa de la instalación
         (S00, la lámina por tipo de negocio): los pasos de UNA instancia los da su base (erp_control_estado → setup), nunca esto.
-      - `textos`: los títulos de cada paso y de cada módulo en es y en, sacados de setup_modulos.js y de setup_reservas.js (los pasos de
-        Reservas de producto; el mismo mapa código → frase del aviso, el asistente y Ajustes; no hay una segunda copia de las frases).
+      - `textos`: los títulos de cada paso y de cada módulo en es y en, sacados de setup_modulos.js y de los ficheros que le suman pasos
+        (SETUP_SUMAN: Reservas de producto y pasos comunes; el mismo mapa código → frase del aviso, el asistente y Ajustes; no hay
+        una segunda copia de las frases).
       - `en`: panel_setup_en.json (nombres EN de módulos y tipos). Aborta si falta un módulo del registro o un tipo de perfiles.json."""
     reg = json.load(open(os.path.join(AGENCIA, 'erp', 'modulos.json'), encoding='utf-8'))
     perf = json.load(open(os.path.join(AGENCIA, 'erp', 'perfiles.json'), encoding='utf-8'))['perfiles']
@@ -2705,24 +2711,26 @@ def setup_para_panel():
     faltan = sorted(set(reg['modulos']) - set(en['modulos'])) + sorted('tipo ' + t for t in set(perf) - set(en['tipos']))
     if faltan:
         aborta('panel_setup_en.json: sin nombre en inglés para %s' % faltan)
-    # 13-oct (erp-panel-4): los pasos de Reservas de producto (clase, reglas_reserva, alquileres_previos) suman su frase desde
-    # setup_reservas.js (en S.TEXTOS) y su inglés en LW_EN, no en S.EN. Se carga detrás, con AXW_PASOS de mentira (solo registra pantallas,
-    # que aquí no se pintan): sin él, el registro declara esos pasos y el build de la instancia del estudio abortaba.
-    prog = ("global.window={LW_EN:{}};global.document={readyState:'complete'};global.location={pathname:'/'};require(process.argv[1]);"
-            "var S=window.AXW_SETUP;window.AXW_PASOS={registra:function(){}};require(process.argv[2]);var E=function(t){return S.EN[t]||window.LW_EN[t]||null;};"
+    # 13-oct (erp-panel-4): los pasos de Reservas de producto (clase, reglas_reserva, alquileres_previos) y los comunes (negocio, idiomas,
+    # correo, taller_*) suman su frase desde su propio fichero (en S.TEXTOS) y su inglés en LW_EN, no en S.EN. Se cargan detrás, en
+    # el orden en que los sirve el paquete (el de setup_frases.test.js), con AXW_PASOS y addEventListener de mentira (solo registran
+    # pantallas y eventos, que aquí no se pintan): sin ellos, el registro declaraba esos pasos y el build de la instancia del estudio abortaba.
+    prog = ("global.window={LW_EN:{},LW_ID:{},addEventListener:function(){}};global.document={readyState:'complete',addEventListener:function(){}};"
+            "global.location={pathname:'/'};require(process.argv[1]);var S=window.AXW_SETUP;window.AXW_PASOS={registra:function(){}};"
+            "process.argv.slice(2).forEach(function(f){require(f);});var E=function(t){return S.EN[t]||window.LW_EN[t]||null;};"
             "var o={paso:{},modulo:{}};Object.keys(S.TEXTOS.paso).forEach(function(k){var t=S.TEXTOS.paso[k][0];o.paso[k]={es:t,en:E(t)};});"
             "Object.keys(S.TEXTOS.modulo).forEach(function(k){var t=S.TEXTOS.modulo[k];o.modulo[k]={es:t,en:E(t)};});"
             "process.stdout.write(JSON.stringify(o));")
-    r = subprocess.run(['node', '-e', prog, os.path.join(AQUI, 'setup_modulos.js'), os.path.join(AQUI, 'setup_reservas.js')],
+    r = subprocess.run(['node', '-e', prog] + [os.path.join(AQUI, f) for f in ('setup_modulos.js',) + SETUP_SUMAN],
                        capture_output=True, text=True, encoding='utf-8')
     if r.returncode != 0:
-        aborta('setup_modulos.js / setup_reservas.js no se dejan leer para el panel: ' + (r.stderr or '')[-400:])
+        aborta('setup_modulos.js / %s no se dejan leer para el panel: ' % ', '.join(SETUP_SUMAN) + (r.stderr or '')[-400:])
     textos = json.loads(r.stdout)
     sin_en = sorted(k for k, v in textos['paso'].items() if not v['en'])
     pasos_decl = sorted({p['clave'] for m in reg['setup']['modulos'].values() if isinstance(m, dict) for p in m.get('pasos', [])})
     sin_texto = [k for k in pasos_decl if k not in textos['paso']]
     if sin_en or sin_texto:
-        aborta('setup_modulos.js + setup_reservas.js: pasos sin frase en inglés %s · pasos declarados sin frase %s' % (sin_en, sin_texto))
+        aborta('setup_modulos.js + %s: pasos sin frase en inglés %s · pasos declarados sin frase %s' % (', '.join(SETUP_SUMAN), sin_en, sin_texto))
     # Lista blanca (revisor, 12-oct): /panel/ es público (sin sesión da 200), así que solo sale lo que el mapa lee — clave, obligatorio,
     # irreversible y si el módulo se declara «ninguno» —, nunca rpc, ajustes, funciones de estado, herramientas ni el motivo interno.
     registro = {}
