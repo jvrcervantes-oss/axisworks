@@ -2259,6 +2259,10 @@ MENU_I18N = {
     'Entrega': {'en': 'Delivery', 'id': 'Antar'},
     'Flota y tarifas': {'en': 'Fleet and rates', 'id': 'Armada dan tarif'},
     'Ventas': {'en': 'Sales', 'id': 'Penjualan'},
+    # paginador común (bbm-cola-2 T1, 15-oct): el inglés ya está en el diccionario de Lawang y no se pisa; aquí entra el indonesio
+    '← Anteriores': {'en': '← Previous', 'id': '← Sebelumnya'},
+    'Siguientes →': {'en': 'Next →', 'id': 'Berikutnya →'},
+    'de': {'en': 'of', 'id': 'dari'},
     'Reservas de producto': {'en': 'Product bookings', 'id': 'Booking sewa motor'},
     'Configurar módulos': {'en': 'Module setup', 'id': 'Penyiapan modul'},
     'Interruptores de comisiones': {'en': 'Commission switches', 'id': 'Sakelar komisi'},
@@ -4774,6 +4778,15 @@ TEXTOS_INSTANCIA = (
     ('intranet/v4/assets/datos.js', "H.seccion('Cliente y contrato',", "H.seccion(contratosActivo() ? 'Cliente y contrato' : 'Cliente',", 1),
     ('intranet/v4/assets/datos.js', "        H.dato('Contrato', c ? (contratosActivo() ? enlaceFichaContrato(c) : esc(c.numero || '')) : (f.contrato_numero || null), { html: !!c }) +",
      "        (c || f.contrato_numero || contratosActivo() ? H.dato('Contrato', c ? (contratosActivo() ? enlaceFichaContrato(c) : esc(c.numero || '')) : (f.contrato_numero || null), { html: !!c }) : '') +", 1),
+    # bbm-cola-2 T1 (15-oct-2026, owner por agencia-c0: «la paginación sale en español» en bbm en inglés): el paginador común de Lawang escribe
+    # «← Anteriores», «Siguientes →» y «1–25 de 120» a mano, sin lwT, aunque las tres claves están en su diccionario. Se piden a lwT al pintarse
+    # (en español lwT devuelve la misma clave: la vista española no cambia). Indonesio de las tres, en MENU_I18N.
+    ('contracts/assets/paginacion.js', """'<button type="button" class="sui-chip" data-pag="antes">← Anteriores</button>' +""",
+     """'<button type="button" class="sui-chip" data-pag="antes">' + (typeof lwT === 'function' ? lwT('← Anteriores') : '← Anteriores') + '</button>' +""", 1),
+    ('contracts/assets/paginacion.js', """'<button type="button" class="sui-chip" data-pag="despues">Siguientes →</button>';""",
+     """'<button type="button" class="sui-chip" data-pag="despues">' + (typeof lwT === 'function' ? lwT('Siguientes →') : 'Siguientes →') + '</button>';""", 1),
+    ('contracts/assets/paginacion.js', "(desde + 1) + '–' + (desde + trozo.length) + ' de ' + todas.length",
+     "(desde + 1) + '–' + (desde + trozo.length) + ' ' + (typeof lwT === 'function' ? lwT('de') : 'de') + ' ' + todas.length", 1),
 )
 # Retoques de COMPORTAMIENTO (no de texto) del editor de documentos en toda instancia (bbm-comodidad, 15-oct-2026; revisor de 371396e: no van
 # en TEXTOS_INSTANCIA, que solo cambia texto). Mismo formato y misma función (textos_instancia): cada trozo las veces dichas o el build para.
