@@ -118,6 +118,9 @@ async function servidor(b, nombre, a) {
       // S2 de F3 (12-oct-2026): _exige_configurado niega con 55000, hint <modulo>_sin_configurar y la clave del paso en details
       if (o.cotizaRed) return { data: null, error: { message: 'Failed to fetch' } };   // bbm-comodidad F6: la red, sin code
       if (o.cotizaPermiso) return err('42501', 'sin permiso para reservar');
+      if (o.cotizaSinSesion) return err('42501', 'sin sesión', 'sin_sesion');
+      if (o.cotizaJwt) return err('PGRST301', 'JWT expired');
+      if (o.cotizaApagado) return err('42501', 'módulo no activo', 'modulo_apagado');
       if (o.cotizaSinConfig) return err('55000', 'El módulo no está configurado', o.cotizaSinConfig === 'moneda' ? 'base_sin_configurar' : 'reservas-producto_sin_configurar', o.cotizaSinConfig);
       if (a.p_desde < mas(0)) return err('22023', 'La recogida no puede ser en el pasado');
       const pr = b.productos.find(x => x.id === a.p_producto_id);
@@ -527,11 +530,13 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   }
   {
     // bbm-comodidad F6 (15-oct-2026): un fallo de red o de permiso al cotizar NO se dice como «ninguna moto se puede reservar»
-    for (const caso of ['cotizaRed', 'cotizaPermiso']) {
+    const MOTIVO = { cotizaRed: 'La base no ha respondido', cotizaPermiso: 'No tienes permiso para hacer reservas', cotizaSinSesion: 'La sesión ha caducado',
+      cotizaJwt: 'La sesión ha caducado', cotizaApagado: 'está apagado en esta instancia' };
+    for (const caso of Object.keys(MOTIVO)) {
       const { base, p, ctx } = await abre({ base: { [caso]: true } });
       await hastaMoto(p);
       const t = await txt(p, '[data-rp="as-bloqueo"]');
-      ok('F6 · ' + caso + ': dice que no se pudo mirar, sin culpar a la disponibilidad', t.includes('No se ha podido mirar la disponibilidad') && !t.includes('Ninguna moto se puede reservar'), t);
+      ok('F6 · ' + caso + ': dice que no se pudo mirar y por qué, sin culpar a la disponibilidad', t.includes('No se ha podido mirar la disponibilidad') && t.includes(MOTIVO[caso]) && !t.includes('Ninguna moto se puede reservar') && !t.includes('esta lista'), t);
       ok('F6 · ' + caso + ': no se crea nada', llamadas(base, 'reserva_producto_crea').length === 0);
       await ctx.close();
     }

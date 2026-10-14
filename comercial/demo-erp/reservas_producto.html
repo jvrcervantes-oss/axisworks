@@ -349,6 +349,9 @@ a.rp-boton{text-decoration:none}
     'Cliente con ficha': 'Customer with a record',
     'Buscar cliente': 'Search customer', 'Escribe parte del nombre': 'Type part of the name', 'Ningún cliente con ese nombre': 'No customer with that name',
     'No se ha podido mirar la disponibilidad': 'Availability could not be checked',
+    'No tienes permiso para hacer reservas: pídeselo a la administración.': 'You do not have permission to make bookings: ask the administration.',
+    'El módulo de reservas de producto está apagado en esta instancia.': 'The product bookings module is switched off in this installation.',
+    'La sesión ha caducado: recarga la página o vuelve a entrar.': 'Your session has expired: reload the page or sign in again.',
     'Cliente nuevo o sin ficha (escribe su teléfono)': 'New customer or no record (type their phone)',
     'La reserva se enlaza a la ficha de este cliente: su nombre y su teléfono salen de la ficha.': 'The booking is linked to this customer’s record: name and phone come from the record.',
     'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.': 'The customer list is cut to the first 500: if you cannot see the one you need, ask the administrator.',
@@ -484,6 +487,9 @@ a.rp-boton{text-decoration:none}
     'Cliente con ficha': 'Pelanggan terdaftar',
     'Buscar cliente': 'Cari pelanggan', 'Escribe parte del nombre': 'Ketik sebagian nama', 'Ningún cliente con ese nombre': 'Tidak ada pelanggan dengan nama itu',
     'No se ha podido mirar la disponibilidad': 'Ketersediaan tidak bisa dicek',
+    'No tienes permiso para hacer reservas: pídeselo a la administración.': 'Anda tidak punya izin membuat booking: minta ke bagian administrasi.',
+    'El módulo de reservas de producto está apagado en esta instancia.': 'Modul booking produk dimatikan di instalasi ini.',
+    'La sesión ha caducado: recarga la página o vuelve a entrar.': 'Sesi Anda sudah habis: muat ulang halaman atau masuk lagi.',
     'Cliente nuevo o sin ficha (escribe su teléfono)': 'Pelanggan baru atau belum terdaftar (isi nomornya)',
     'La reserva se enlaza a la ficha de este cliente: su nombre y su teléfono salen de la ficha.': 'Booking ditautkan ke data pelanggan ini: nama dan nomornya diambil dari data pelanggan.',
     'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.': 'Daftar pelanggan hanya 500 pertama: jika yang dicari tidak ada, minta ke pengelola.',
@@ -1139,9 +1145,22 @@ a.rp-boton{text-decoration:none}
       return T('Todavía no se puede reservar: falta configurar este módulo en Ajustes. Sin eso no se crea ninguna reserva.');
     // bbm-comodidad F6 (15-oct-2026): un fallo de red, de sesión o de permiso salía como «ninguna moto se puede reservar», y la persona
     // cambiaba de fechas buscando una moto libre que sí había. Ese prefijo es solo para lo que la base dice como regla.
-    var e0 = A.cot[ids[0]].err;
-    if (clasifica(e0).tipo !== 'regla') return T('No se ha podido mirar la disponibilidad') + ': ' + mensaje(e0, true);
-    return T('Ninguna moto se puede reservar en esas fechas. Lo que dice la base') + ': ' + mensaje(e0);
+    // Si algún modelo dio una regla de la base, esa manda (es la razón real); si todos fallaron por otra cosa, se dice cuál.
+    var errs = ids.map(function (i) { return A.cot[i].err; });
+    var regla = errs.filter(function (e) { return !noEsRegla(e); })[0];
+    if (regla) return T('Ninguna moto se puede reservar en esas fechas. Lo que dice la base') + ': ' + mensaje(regla);
+    return T('No se ha podido mirar la disponibilidad') + ': ' + motivoSinCotizar(errs[0]);
+  }
+  /* F6: ¿el fallo al cotizar NO es una regla de negocio? clasifica() solo reconoce la sesión caída que llega como 42501 sin_sesion; aquí se
+     suman el token caducado de PostgREST (PGRST301-303) y el tiempo agotado (57014), que también salían como «ninguna moto». */
+  function noEsRegla(e) { var x = e || {}; return clasifica(x).tipo !== 'regla' || /^PGRST30[123]$/.test(String(x.code || '')) || String(x.code) === '57014'; }
+  function motivoSinCotizar(e) {
+    var x = e || {}, t = clasifica(x).tipo;
+    if (t === 'sin_sesion' || /^PGRST30[123]$/.test(String(x.code || ''))) return T('La sesión ha caducado: recarga la página o vuelve a entrar.');
+    if (t === 'sin_permiso' || t === 'solo_admin') return T('No tienes permiso para hacer reservas: pídeselo a la administración.');
+    if (t === 'modulo_apagado') return T('El módulo de reservas de producto está apagado en esta instancia.');
+    if (t === 'no_disponible') return mensaje(x);
+    return T('La base no ha respondido: prueba otra vez en un rato.');
   }
   function unidadesLibres(p) {
     if (!A.rango) return [];
@@ -1583,7 +1602,7 @@ a.rp-boton{text-decoration:none}
     if (a === 'rp-modal-as-cerrar') asCierra(false);
     else if (a === 'rp-modal-as-salir') asCierra(true);
     else if (a === 'rp-modal-as-seguir') { A.salir = false; asPinta(); }
-    else if (a === 'rp-modal-as-reinicia') { if (A.enviando || A.comprobando) return; asOlvida(); A.W = asVacio(); A.recuperado = false; A.cot = {}; A.cotClave = null; A.coinc = []; A.dupTel = null; A.err = {}; A.errEnvio = null;
+    else if (a === 'rp-modal-as-reinicia') { if (A.enviando || A.comprobando) return; asOlvida(); A.W = asVacio(); A.recuperado = false; A.cot = {}; A.cotClave = null; A.coinc = []; A.dupTel = null; A.err = {}; A.errEnvio = null; A.filtro = ''; A.filtroCliente = '';
       A.enviado = null; A.yaExiste = false; A.dudosaSinMirar = false; A.recuperadaTrasCorte = false; A.pasoPintado = null; asPinta(); }
     else if (a === 'rp-modal-as-sig') asSiguiente();
     else if (a === 'rp-modal-as-atras') { var i = AS_PASOS.indexOf(W.paso); if (i > 0) asVe(AS_PASOS[i - 1]); }
