@@ -70,7 +70,17 @@ for rel_, viejo, nuevo, veces in otros:
     if rel_.endswith('mascota.js'):
         ok('F10: el hueco solo en pantalla y la regla de impresión intacta', '@media screen{main{padding-bottom:' in nuevo and nuevo.endswith("'@media print{#lw-masc{display:none}}';"))
     if rel_.endswith('nav.js'):
-        ok('F12: la barra se pinta solo con 2+ pestañas', 'mias.length < 2' in nuevo)
+        # el comportamiento, sobre el nav.js parcheado: la barra no se inserta con una pestaña, el `return` de antes sigue igual y el bloque de
+        # «Mis comisiones» de /reparto/ (closer con UNA pestaña) sigue detrás de la inserción, sin ningún return por medio (revisor sobre e8e30cf)
+        tt2 = tt.replace(viejo, nuevo)
+        f = tt2[tt2.index('function cableaPestanas('):]
+        f = f[:f.index('function podaMenu(')]
+        ins, rep = f.index('if (mias.length < 2) {'), f.index("aquiG.pestana.path === 'reparto'")
+        ok('F12: el return de una barra vacía sigue tal cual', '    if (!main || !mias.length) return;' in f and 'mias.length < 2) return' not in f)
+        ok('F12: con una sola pestaña no se inserta la barra, y con 2+ sí (insertBefore detrás de la condición)', ins < f.index('insertBefore(barra'))
+        ok('F12: el bloque de «Mis comisiones» del closer sigue corriendo (sin return entre la barra y él)', ins < rep and 'return' not in f[ins:rep], f[ins:rep][:200])
+        chk = subprocess.run(['node', '--check', '-'], input=tt2, capture_output=True, text=True, encoding='utf-8')
+        ok('F12: nav.js parcheado es JavaScript válido', chk.returncode == 0, chk.stderr[-300:])
     if rel_.endswith('facturas/index.html'):
         tt2 = tt.replace(viejo, nuevo)
         ok('F12: fuera el botón «Recibos» de la cabecera y «Nuevo documento» sigue', 'href="/intranet/v4/recibos/"' not in tt2.split('data-path="recibos"')[-1] and tt2.count('data-accion="nuevo-documento"') == tt.count('data-accion="nuevo-documento"'))
