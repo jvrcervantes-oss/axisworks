@@ -24,7 +24,7 @@ HOME = {
  'working on the engine': 'trabajando en el motor', 'modelling a game asset': 'una pieza del juego', 'weighing in on a plan': 'opinando sobre un plan',
  'seal approved': 'sello aprobado',
  # nombres de nodos
- 'Pilots': 'Pilotos', 'Security': 'Seguridad', 'Quality': 'Calidad', 'Design': 'Diseño', 'Docs': 'Documentación', 'Admin': 'Administración',
+ 'Autonomous agents': 'Agentes autónomos', 'Security': 'Seguridad', 'Quality': 'Calidad', 'Design': 'Diseño', 'Docs': 'Documentación', 'Admin': 'Administración',
  'Architecture': 'Arquitectura', 'Comms': 'Comunicación', 'Organisation': 'Organización', 'Games': 'Videojuegos', 'Game 3D': 'Modelado 3D',
  'Pre-review': 'Revisión previa', 'Code reviewer': 'Revisor de código', 'Request': 'Encargo', 'AI CEO': 'CEO de IA', 'Exploration': 'Exploración',
  'Planning': 'Plan', 'Subtask': 'Subtarea', '3D Modeling': 'Modelado 3D', 'Deploy consult': 'Consulta de deploy', 'Oversight': 'Supervisión',
@@ -65,7 +65,7 @@ HOME = {
  'ordering the roadmap': 'ordenando la hoja de ruta', 'reviewing a screen': 'revisando una pantalla', 'reviewing a translation': 'revisando una traducción',
  'reviewing running costs': 'revisando los costes', 'helping a client': 'atendiendo a un cliente',
  'AxisWorks’ management product to run a business: bookings, contracts, invoices and operations. Demo available.': 'El producto de gestión de AxisWorks para llevar un negocio: reservas, contratos, facturas y operaciones. Con demo.',
- 'Agents that run a business within hard limits (Pilots and Bots).': 'Agentes que llevan un negocio dentro de límites fijos (Pilotos y Bots).',
+ 'Agents that run a business within hard limits (autonomous agents and Bots).': 'Agentes que llevan un negocio dentro de límites fijos (agentes autónomos y Bots).',
  'Custom websites and landing pages for customers.': 'Webs y landings a medida para clientes.',
  'Subagents per department (1 to 3) that review the PLAN before building. Budget of 5 per session.': 'Subagentes por departamento (de 1 a 3) que revisan el PLAN antes de construir. Cinco por sesión como máximo.',
  'Read-only subagent that sweeps many files and returns only the conclusion.': 'Subagente de solo lectura que recorre muchos ficheros y devuelve solo la conclusión.',
