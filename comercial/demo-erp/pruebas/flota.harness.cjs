@@ -933,6 +933,11 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const filas = () => p.$$eval('.fl-inv-fila[data-fila-producto]', fs => fs.map(f => f.getAttribute('data-fila-producto')));
     ok('inventario: una fila por modelo, con motos, disponibles, taller y las tarifas de 1 y 30 días tal cual (o «—»)', (await filas()).length === 4
        && /Honda Beat[\s\S]*P-1/.test(await txt(p, '.fl-inv-fila[data-fila-producto="p1"]')) && (await txt(p, '.fl-inv-fila[data-fila-producto="p1"]')).includes('150.000 IDR') && (await txt(p, '.fl-inv-fila[data-fila-producto="p1"]')).includes('—'));
+    ok('F9: de entrada, «Reservables primero»: los listos por nombre y después el que no se puede cotizar', J(await filas()) === J(['p1', 'p4', 'p2', 'p3'])
+       && (await p.$eval('[data-fl="orden"]', e => e.value)) === 'reservables', J(await filas()));
+    await p.selectOption('[data-fl="orden"]', 'nombre');
+    ok('F9: «Nombre» sigue ordenando solo por nombre', J(await filas()) === J(['p1', 'p4', 'p3', 'p2']), J(await filas()));
+    await p.selectOption('[data-fl="orden"]', 'reservables');
     ok('inventario: el modelo sin tarifas ni motos dice «No se puede cotizar» y por qué, sin abrir nada', /No se puede cotizar[\s\S]*Sin tarifas[\s\S]*Sin motos disponibles/.test(await txt(p, '.fl-inv-fila[data-fila-producto="p3"]')));
     await p.fill('[data-fl="buscar"]', 'dk 7777');
     ok('buscar por matrícula encuentra su modelo (espacios y mayúsculas como la base)', J(await filas()) === J(['p2']));

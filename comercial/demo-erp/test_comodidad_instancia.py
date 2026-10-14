@@ -28,7 +28,7 @@ def ok(nombre, cond, detalle=''):
 REL = 'intranet/v4/assets/editores.js'
 t = open(os.path.join(build.LAWANG, *REL.split('/')), encoding='utf-8').read()
 mios = [x for x in build.COMODIDAD_INSTANCIA if x[0] == REL and ('SOCIEDADES).length === 1' in x[2] or 'if (f0.fecha_vencimiento)' in x[2])]
-ok('F4 y F8 están en COMODIDAD_INSTANCIA (y nada más)', len(mios) == 2 == len(build.COMODIDAD_INSTANCIA), len(mios))
+ok('F4 y F8 están en COMODIDAD_INSTANCIA', len(mios) == 2, len(mios))
 ok('ninguno se quedó en TEXTOS_INSTANCIA', not [x for x in build.TEXTOS_INSTANCIA if 'SOCIEDADES).length' in x[2] or 'if (f0.fecha_vencimiento)' in x[2]])
 ok('textos_instancia() procesa COMODIDAD_INSTANCIA', 'TEXTOS_INSTANCIA + COMODIDAD_INSTANCIA + ' in open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read())
 for rel_, viejo, nuevo, veces in mios:
@@ -60,6 +60,20 @@ if sal.returncode == 0:
     res = json.loads(sal.stdout)
     for (nombre, _, _, esperado), dio in zip(CASOS, res):
         ok('F4 · ' + nombre, dio == esperado, dio)
+
+# F10 y F12 (15-oct): cada trozo está en el fichero REAL de Lawang las veces dichas y el sustituto hace lo que dice
+otros = [x for x in build.COMODIDAD_INSTANCIA if x not in mios]
+ok('F10 y F12 en COMODIDAD_INSTANCIA (mascota.js, nav.js, facturas)', sorted(x[0] for x in otros) == sorted(['intranet/v4/assets/mascota.js', 'intranet/v4/assets/nav.js', 'intranet/v4/facturas/index.html']), [x[0] for x in otros])
+for rel_, viejo, nuevo, veces in otros:
+    tt = open(os.path.join(build.LAWANG, *rel_.split('/')), encoding='utf-8').read()
+    ok('%s: trozo de Lawang las veces dichas (%d)' % (rel_, veces), tt.count(viejo) == veces, tt.count(viejo))
+    if rel_.endswith('mascota.js'):
+        ok('F10: el hueco solo en pantalla y la regla de impresión intacta', '@media screen{main{padding-bottom:' in nuevo and nuevo.endswith("'@media print{#lw-masc{display:none}}';"))
+    if rel_.endswith('nav.js'):
+        ok('F12: la barra se pinta solo con 2+ pestañas', 'mias.length < 2' in nuevo)
+    if rel_.endswith('facturas/index.html'):
+        tt2 = tt.replace(viejo, nuevo)
+        ok('F12: fuera el botón «Recibos» de la cabecera y «Nuevo documento» sigue', 'href="/intranet/v4/recibos/"' not in tt2.split('data-path="recibos"')[-1] and tt2.count('data-accion="nuevo-documento"') == tt.count('data-accion="nuevo-documento"'))
 
 if fallos:
     print('MAL test_comodidad_instancia: %d/%d' % (total - len(fallos), total))
