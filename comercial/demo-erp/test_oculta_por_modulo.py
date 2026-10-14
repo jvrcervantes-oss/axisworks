@@ -97,6 +97,10 @@ for rel_, cambios in sorted(por_fichero.items()):
     p = Tablas()
     p.feed(t)
     marcadas = [x for x in p.tablas if any(x['th']) or any(x['td'])]
+    if not any(re.search(r'<t[hd][ >]', n) for _, n in cambios):
+        # bbm-comodidad F7 (15-oct-2026): un fichero que solo marca avisos o filtros (Gastos) no puede dejar marcada ninguna columna
+        ok('%s: sin columnas marcadas, ninguna tabla queda marcada' % rel_, not marcadas, str(len(marcadas)))
+        continue
     ok('%s: hay una tabla con columna marcada' % rel_, len(marcadas) == 1, str(len(marcadas)))
     for x in marcadas:
         ok('%s: cabecera y celda plantilla marcadas en la MISMA columna' % rel_, x['th'] == x['td'] and len(x['th']) == len(x['td']),

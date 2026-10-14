@@ -4774,6 +4774,18 @@ TEXTOS_INSTANCIA = (
     ('intranet/v4/assets/datos.js', "H.seccion('Cliente y contrato',", "H.seccion(contratosActivo() ? 'Cliente y contrato' : 'Cliente',", 1),
     ('intranet/v4/assets/datos.js', "        H.dato('Contrato', c ? (contratosActivo() ? enlaceFichaContrato(c) : esc(c.numero || '')) : (f.contrato_numero || null), { html: !!c }) +",
      "        (c || f.contrato_numero || contratosActivo() ? H.dato('Contrato', c ? (contratosActivo() ? enlaceFichaContrato(c) : esc(c.numero || '')) : (f.contrato_numero || null), { html: !!c }) : '') +", 1),
+    # bbm-comodidad F4 (15-oct-2026, medido en bbm real): con UNA sola empresa emisora, «Sociedad que factura/cobra» empezaba en «— elige —» en
+    # cada factura y cada recibí (2 clics más, y los impuestos esperaban a elegirla). Con una sola se preselecciona; con dos o más, como siempre.
+    # Los impuestos y la previa leen el valor vivo del select al montarse (montaImpuestosDoc.socActual), así que salen ya con esa empresa.
+    ('intranet/v4/assets/editores.js', "valor: f0.sociedad || '', opciones: [['', '— elige —']].concat(opcionesSociedadDoc())",
+     "valor: f0.sociedad || (Object.keys(SOCIEDADES).length === 1 ? Object.keys(SOCIEDADES)[0] : ''), opciones: [['', '— elige —']].concat(opcionesSociedadDoc())", 2),
+    # bbm-comodidad F8: un recibí no vence; «Vencimiento (opcional)» solo se enseña en uno ya guardado que lo tenga (no se pierde el dato).
+    ('intranet/v4/assets/editores.js', "          campoSimpleDoc(filaF, { k: 'fecha_vencimiento', label: 'Vencimiento (opcional)', tipo: 'date', valor: f0.fecha_vencimiento || '' });\n\n"
+     "          var secEmisor = seccionPlegableDoc(host, 'Emisor', true, { resumen: resumenEmisorDoc });\n"
+     "          campoSimpleDoc(secEmisor, { k: 'sociedad', label: 'Sociedad que cobra',",
+     "          if (f0.fecha_vencimiento) campoSimpleDoc(filaF, { k: 'fecha_vencimiento', label: 'Vencimiento (opcional)', tipo: 'date', valor: f0.fecha_vencimiento });\n\n"
+     "          var secEmisor = seccionPlegableDoc(host, 'Emisor', true, { resumen: resumenEmisorDoc });\n"
+     "          campoSimpleDoc(secEmisor, { k: 'sociedad', label: 'Sociedad que cobra',", 1),
 )
 # Solo en las instancias de alquileres (portada «reservas»): el ejemplo del campo y la pestaña «Reservas» de Ajustes, que en ellas solo lleva los impuestos
 TEXTOS_ALQUILER = (
@@ -4811,6 +4823,14 @@ OCULTA_POR_MODULO = (
      '<th class="py-3.5 px-4 font-semibold" data-axw-sin="contratos" data-lwt>Contrato</th>'),
     ('intranet/v4/recibos/index.html', '<td class="py-4 px-5 font-label-md font-semibold text-deep-lagoon tracking-wide">—</td>\n<td class="py-4 px-4 font-label-md text-on-surface">—</td>',
      '<td class="py-4 px-5 font-label-md font-semibold text-deep-lagoon tracking-wide">—</td>\n<td class="py-4 px-4 font-label-md text-on-surface" data-axw-sin="contratos">—</td>'),
+    # bbm-comodidad F7 (15-oct-2026, medido en el HTML servido de bbm): Gastos hablaba de comisiones de closers, compra de suelo, cuentas de
+    # escrow y filtraba por Proyecto en un negocio de alquiler de motos. Fuera sin comisiones / sin proyectos; con ellos, igual que en Lawang.
+    ('intranet/v4/gastos/index.html', '<li data-lwt>Las comisiones de los closers no se apuntan aquí: salen solas de Comisiones y ya cuentan en Finanzas.</li>',
+     '<li data-axw-sin="comisiones" data-lwt>Las comisiones de los closers no se apuntan aquí: salen solas de Comisiones y ya cuentan en Finanzas.</li>'),
+    ('intranet/v4/gastos/index.html', '<li data-lwt>La compra de suelo es inversión, no gasto de explotación: Finanzas la enseña aparte. Nunca se paga un gasto desde una cuenta de escrow.</li>',
+     '<li data-axw-sin="proyectos" data-lwt>La compra de suelo es inversión, no gasto de explotación: Finanzas la enseña aparte. Nunca se paga un gasto desde una cuenta de escrow.</li>'),
+    ('intranet/v4/gastos/index.html', '<select id="lw-gas-f-proyecto" class="',
+     '<select id="lw-gas-f-proyecto" data-axw-sin="proyectos" class="'),
 )
 # El editor de factura de una instancia SIN el módulo contratos y cuya empresa permite facturar sin contrato nace en el modo «sin contrato» que ya
 # existe (el cliente se elige en el editor) y no enseña el selector de contrato, que solo podía ofrecer «— sin contrato —». Mismo camino que pulsar
