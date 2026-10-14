@@ -88,7 +88,7 @@ function xherr_svg($slug) {
 
 /* Departamentos de una sección del organigrama: [número, cara, nombre, lema, imagen], numerados en el orden del organigrama.
  * `imagen` (15-oct-2026): false = aún no hay assets/images/dep-<cara>.webp (organigrama_web.py publica el departamento igual);
- * la plantilla pinta entonces la inicial en el cuadro en vez de una <img> que daría 404. */
+ * la plantilla pinta entonces la inicial en el cuadro en vez de una etiqueta de imagen que daría 404. */
 function xdeps($sec) {
   global $ORGANIGRAMA, $lang;
   $out = [];
