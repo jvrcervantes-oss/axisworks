@@ -170,7 +170,8 @@ mira('guardar límites manda TODAS las filas de `limites` (nunca limites_fuera) 
      and not re.search(r'limites_fuera[^;]*(niveles|topes)\[', CODIGO))
 mira('«Cancelar la subida»: el tope GUARDADO explícito y null en trabajos y nivel; solo con subida pendiente y solo el dueño',
      "llama('agente_ficha_ajusta', { p_tope_mensual_cent: guardado, p_trabajos: null, p_nivel_ruta: null, p_motivo: m })" in CODIGO
-     and 'var guardado = d.tope_mensual_cent;' in CODIGO and "if (d.soy_dueno && ent(d.tope_propuesto_cent)) acc.appendChild(C.boton(T('Cancelar la subida'), 'ag-cancelar-subida'));" in CODIGO)
+     and 'var guardado = d.tope_mensual_cent;' in CODIGO and "E.botonSubida = (d.soy_dueno && ent(d.tope_propuesto_cent)) ? acc.appendChild(C.boton(T('Cancelar la subida'), 'ag-cancelar-subida')) : null;" in CODIGO
+     and 'acc.querySelector(' not in CODIGO)
 mira('decidir una acción: un solo envío (ocupa + la tarjeta marcada mientras va) y solo el dueño ve los botones',
      "art.getAttribute('data-enviando') === '1'" in CODIGO and 'C.ocupa(btn)' in CODIGO and '} else if (dueno) {' in CODIGO
      and "if (E.estado && E.estado.soy_dueno) decideAccion(" in CODIGO)

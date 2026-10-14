@@ -603,7 +603,7 @@
 
   var SB = null;
   /* sucio: el dueño está escribiendo en ese formulario; recargar (tras otro botón) no le borra lo que lleva */
-  var E = { estado: null, notas: null, sucio: { ajustes: false, limites: false, contexto: false } };
+  var E = { estado: null, notas: null, botonSubida: null, sucio: { ajustes: false, limites: false, contexto: false } };
 
   /* Una entrada por RPC, con el nombre LITERAL (erp/contrato_front.py extrae `.rpc('x')` y `lwDatos('x')`). agente_notas_datos es *_datos (dueña erp_lector) y va por lwDatos;
      agente_panel_estado NO lo es (dueña postgres: responde con el módulo apagado) y va por sb.rpc, igual que las que escriben. */
@@ -829,10 +829,11 @@
     if (typeof d.usd_por_eur === 'number' && d.usd_por_eur > 0) ayuda += ' ' + Tf('Unos {u} USD al cambio de hoy.', { u: Math.round(d.tope_mensual_cent / 100 * d.usd_por_eur) });
     if (ent(d.tope_techo_cent)) ayuda += ' ' + Tf('Como mucho {x}: es el máximo que ha fijado el estudio.', { x: eur(d.tope_techo_cent, d) });
     $a('tope-ayuda').textContent = ayuda;
-    /* «Cancelar la subida»: solo con una subida pendiente y solo el dueño. Manda el tope GUARDADO (no null): pedir el mismo tope la cancela sin bajarlo. */
-    var acc = $a('acciones-ajustes'), viejo = acc.querySelector('[data-accion="ag-cancelar-subida"]');
-    if (viejo) acc.removeChild(viejo);
-    if (d.soy_dueno && ent(d.tope_propuesto_cent)) acc.appendChild(C.boton(T('Cancelar la subida'), 'ag-cancelar-subida'));
+    /* «Cancelar la subida»: solo con una subida pendiente y solo el dueño. Manda el tope GUARDADO (no null): pedir el mismo tope la cancela sin bajarlo.
+       El botón se guarda en E.botonSubida y se quita por esa referencia, no buscándolo por selector. */
+    var acc = $a('acciones-ajustes');
+    if (E.botonSubida && E.botonSubida.parentNode) E.botonSubida.parentNode.removeChild(E.botonSubida);
+    E.botonSubida = (d.soy_dueno && ent(d.tope_propuesto_cent)) ? acc.appendChild(C.boton(T('Cancelar la subida'), 'ag-cancelar-subida')) : null;
     $a('ajustes').disabled = !d.soy_dueno;
     msg('motivo-ajustes', d.soy_dueno ? '' : T('Solo lo cambia el dueño de la ficha del AaaS.'));
   }
