@@ -27,8 +27,10 @@ def ok(nombre, cond, detalle=''):
 
 REL = 'intranet/v4/assets/editores.js'
 t = open(os.path.join(build.LAWANG, *REL.split('/')), encoding='utf-8').read()
-mios = [x for x in build.TEXTOS_INSTANCIA if x[0] == REL and ('SOCIEDADES).length === 1' in x[2] or 'if (f0.fecha_vencimiento)' in x[2])]
-ok('F4 y F8 están en TEXTOS_INSTANCIA', len(mios) == 2, len(mios))
+mios = [x for x in build.COMODIDAD_INSTANCIA if x[0] == REL and ('SOCIEDADES).length === 1' in x[2] or 'if (f0.fecha_vencimiento)' in x[2])]
+ok('F4 y F8 están en COMODIDAD_INSTANCIA (y nada más)', len(mios) == 2 == len(build.COMODIDAD_INSTANCIA), len(mios))
+ok('ninguno se quedó en TEXTOS_INSTANCIA', not [x for x in build.TEXTOS_INSTANCIA if 'SOCIEDADES).length' in x[2] or 'if (f0.fecha_vencimiento)' in x[2]])
+ok('textos_instancia() procesa COMODIDAD_INSTANCIA', 'TEXTOS_INSTANCIA + COMODIDAD_INSTANCIA + ' in open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read())
 for rel_, viejo, nuevo, veces in mios:
     ok('trozo de Lawang las veces dichas (%d)' % veces, t.count(viejo) == veces, t.count(viejo))
     t = t.replace(viejo, nuevo)
