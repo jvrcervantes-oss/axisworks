@@ -213,8 +213,8 @@
     'Añadir': 'Add', 'Ninguna': 'None', 'Elige la pieza.': 'Choose the part.', 'Guardado.': 'Saved.',
     'Solo se ven los primeros 500 modelos o piezas.': 'Only the first 500 models or parts are shown.',
     'Dar por revisadas varias…': 'Mark several as checked…', 'Dar por revisadas varias motos': 'Mark several bikes as checked',
-    'Para las motos que ya están en el taller sin orden, por ejemplo las que vinieron del sistema anterior. Cada una queda con su orden cerrada como lista, sin fotos ni revisiones, con tu nombre y el motivo. Después salen en «Listas para volver»: devolverlas a disponible es otro paso.':
-      'For bikes already in the workshop without an order, for example those that came from the previous system. Each one gets its order closed as ready, without photos or checks, with your name and the reason. Then they appear in «Ready to go back»: making them available again is a separate step.',
+    'Para las motos que están en el taller y nunca han tenido una orden, por ejemplo las que vinieron del sistema anterior. Una moto con alguna orden (también una que se cerró como «No puede circular») no sale aquí: se revisa con el asistente. Cada una queda con su orden cerrada como lista, sin fotos ni revisiones, con tu nombre y el motivo. Después salen en «Listas para volver»: devolverlas a disponible es otro paso.':
+      'For bikes in the workshop that have never had an order, for example those that came from the previous system. A bike with any order (also one closed as «Cannot be ridden») does not appear here: check it with the assistant. Each one gets its order closed as ready, without photos or checks, with your name and the reason. Then they appear in «Ready to go back»: making them available again is a separate step.',
     'Marcar todas': 'Select all', 'Marcar las 100 primeras': 'Select the first 100', 'Marcadas: {n} de {t}': 'Selected: {n} of {t}', 'Cancelar': 'Cancel',
     'Por qué se dan por revisadas sin fotos ni revisiones (3 a 400 caracteres)': 'Why they are marked as checked without photos or checks (3 to 400 characters)',
     'Escribe por qué (3 a 400 caracteres, en una línea).': 'Write why (3 to 400 characters, on one line).',
@@ -223,15 +223,16 @@
     'Confirmar: {n} motos': 'Confirm: {n} bikes', 'Revisando {i} de {n}… No cierres esta pantalla.': 'Working on {i} of {n}… Do not close this screen.',
     'Dadas por revisadas: {n} de {t}': 'Marked as checked: {n} of {t}',
     'Con la orden abierta (termínala en «Órdenes a medias»):': 'With the order still open (finish it in «Unfinished orders»):',
+    'Revisadas fuera de esta tanda (en «Listas para volver»):': 'Checked outside this batch (in «Ready to go back»):',
     'Sin tocar (puedes repetir la tanda):': 'Not touched (you can run the batch again):', 'En otro estado:': 'In another state:', 'No salen en la lista:': 'Not in the list:',
     'Se ha parado en {mat}: {motivo}': 'Stopped at {mat}: {motivo}',
     'Se ha parado en {mat}: estaba disponible y se le ha abierto la orden {num}. Sigue abierta en «Órdenes a medias».': 'Stopped at {mat}: it was available and order {num} has been opened. It is still open in «Unfinished orders».',
-    'Se ha parado en {mat}: ya tenía abierta la orden {num}; no se ha tocado.': 'Stopped at {mat}: order {num} was already open; it was not touched.',
+    'Se ha parado en {mat}: ya tenía la orden {num}; esta tanda no la ha cerrado. Mírala en «Órdenes a medias».': 'Stopped at {mat}: it already had order {num}; this batch has not closed it. Check it in «Unfinished orders».',
     'Se ha parado en {mat}: la base ha devuelto algo inesperado.': 'Stopped at {mat}: the database returned something unexpected.',
     'No se sabe si la última se guardó: mira abajo cómo ha quedado.': 'It is not known whether the last one was saved: see below how it ended up.',
     'La tanda ha terminado o se ha parado, pero no se ha podido releer: recarga la pantalla para ver cómo quedó.': 'The batch has finished or stopped, but it could not be read again: reload the screen to see how it ended up.',
-    'Devolver estas {n} a disponible': 'Make these {n} available again', 'Motivo de la vuelta (3 a 150 caracteres)': 'Reason for returning (3 to 150 characters)',
-    'Escribe el motivo (3 a 150 caracteres, en una línea).': 'Write the reason (3 to 150 characters, on one line).',
+    'Devolver estas {n} a disponible': 'Make these {n} available again', 'Motivo de la vuelta (3 a 120 caracteres)': 'Reason for returning (3 to 120 characters)',
+    'Escribe el motivo (3 a 120 caracteres, en una línea).': 'Write the reason (3 to 120 characters, on one line).',
     'Devueltas a disponible: {n} de {t}': 'Available again: {n} of {t}', 'Volver al taller': 'Back to the workshop'
   };
   // Indonesio (owner, 11-oct-2026: bbm en indonesio e inglés, sin español). Mismas claves que EN_TL; glosario de §10.9 y glosario_id.json (Taller → Bengkel,
@@ -325,8 +326,8 @@
     'Añadir': 'Tambah', 'Ninguna': 'Tidak ada', 'Elige la pieza.': 'Pilih suku cadang.', 'Guardado.': 'Tersimpan.',
     'Solo se ven los primeros 500 modelos o piezas.': 'Hanya 500 model atau suku cadang pertama yang tampil.',
     'Dar por revisadas varias…': 'Tandai beberapa sudah dicek…', 'Dar por revisadas varias motos': 'Tandai beberapa motor sudah dicek',
-    'Para las motos que ya están en el taller sin orden, por ejemplo las que vinieron del sistema anterior. Cada una queda con su orden cerrada como lista, sin fotos ni revisiones, con tu nombre y el motivo. Después salen en «Listas para volver»: devolverlas a disponible es otro paso.':
-      'Untuk motor yang sudah ada di bengkel tanpa order, misalnya yang datang dari sistem sebelumnya. Setiap motor mendapat order yang ditutup sebagai siap, tanpa foto atau pemeriksaan, dengan nama Anda dan alasannya. Setelah itu motor muncul di «Siap kembali disewa»: menjadikannya tersedia adalah langkah terpisah.',
+    'Para las motos que están en el taller y nunca han tenido una orden, por ejemplo las que vinieron del sistema anterior. Una moto con alguna orden (también una que se cerró como «No puede circular») no sale aquí: se revisa con el asistente. Cada una queda con su orden cerrada como lista, sin fotos ni revisiones, con tu nombre y el motivo. Después salen en «Listas para volver»: devolverlas a disponible es otro paso.':
+      'Untuk motor di bengkel yang belum pernah punya order, misalnya yang datang dari sistem sebelumnya. Motor yang pernah punya order (termasuk yang ditutup sebagai «Tidak bisa jalan») tidak muncul di sini: periksa dengan asisten. Setiap motor mendapat order yang ditutup sebagai siap, tanpa foto atau pemeriksaan, dengan nama Anda dan alasannya. Setelah itu motor muncul di «Siap kembali disewa»: menjadikannya tersedia adalah langkah terpisah.',
     'Marcar todas': 'Pilih semua', 'Marcar las 100 primeras': 'Pilih 100 pertama', 'Marcadas: {n} de {t}': 'Dipilih: {n} dari {t}', 'Cancelar': 'Batalkan',
     'Por qué se dan por revisadas sin fotos ni revisiones (3 a 400 caracteres)': 'Alasan ditandai sudah dicek tanpa foto atau pemeriksaan (3 sampai 400 karakter)',
     'Escribe por qué (3 a 400 caracteres, en una línea).': 'Tulis alasannya (3 sampai 400 karakter, satu baris).',
@@ -335,15 +336,16 @@
     'Confirmar: {n} motos': 'Konfirmasi: {n} motor', 'Revisando {i} de {n}… No cierres esta pantalla.': 'Memproses {i} dari {n}… Jangan tutup layar ini.',
     'Dadas por revisadas: {n} de {t}': 'Ditandai sudah dicek: {n} dari {t}',
     'Con la orden abierta (termínala en «Órdenes a medias»):': 'Order masih terbuka (selesaikan di «Order belum selesai»):',
+    'Revisadas fuera de esta tanda (en «Listas para volver»):': 'Dicek di luar proses ini (di «Siap kembali disewa»):',
     'Sin tocar (puedes repetir la tanda):': 'Belum diproses (bisa diulang):', 'En otro estado:': 'Dalam status lain:', 'No salen en la lista:': 'Tidak ada di daftar:',
     'Se ha parado en {mat}: {motivo}': 'Berhenti di {mat}: {motivo}',
     'Se ha parado en {mat}: estaba disponible y se le ha abierto la orden {num}. Sigue abierta en «Órdenes a medias».': 'Berhenti di {mat}: motor ini tersedia dan order {num} sudah dibuka. Order masih terbuka di «Order belum selesai».',
-    'Se ha parado en {mat}: ya tenía abierta la orden {num}; no se ha tocado.': 'Berhenti di {mat}: order {num} sudah terbuka sebelumnya; tidak diubah.',
+    'Se ha parado en {mat}: ya tenía la orden {num}; esta tanda no la ha cerrado. Mírala en «Órdenes a medias».': 'Berhenti di {mat}: motor ini sudah punya order {num}; proses ini tidak menutupnya. Periksa di «Order belum selesai».',
     'Se ha parado en {mat}: la base ha devuelto algo inesperado.': 'Berhenti di {mat}: database mengembalikan data yang tidak terduga.',
     'No se sabe si la última se guardó: mira abajo cómo ha quedado.': 'Belum pasti apakah yang terakhir tersimpan: lihat hasilnya di bawah.',
     'La tanda ha terminado o se ha parado, pero no se ha podido releer: recarga la pantalla para ver cómo quedó.': 'Proses selesai atau berhenti, tetapi data tidak dapat dibaca ulang: muat ulang layar untuk melihat hasilnya.',
-    'Devolver estas {n} a disponible': 'Jadikan {n} motor ini tersedia', 'Motivo de la vuelta (3 a 150 caracteres)': 'Alasan kembali disewa (3 sampai 150 karakter)',
-    'Escribe el motivo (3 a 150 caracteres, en una línea).': 'Tulis alasannya (3 sampai 150 karakter, satu baris).',
+    'Devolver estas {n} a disponible': 'Jadikan {n} motor ini tersedia', 'Motivo de la vuelta (3 a 120 caracteres)': 'Alasan kembali disewa (3 sampai 120 karakter)',
+    'Escribe el motivo (3 a 120 caracteres, en una línea).': 'Tulis alasannya (3 sampai 120 karakter, satu baris).',
     'Devueltas a disponible: {n} de {t}': 'Sudah tersedia: {n} dari {t}', 'Volver al taller': 'Kembali ke bengkel'
   };
   var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
@@ -621,14 +623,18 @@
      Sigue con la siguiente SOLO si la base contesta «adopta» y no «retomada» y después «cerrada · lista · para_volver». Cualquier otra respuesta PARA la tanda, sin
      reintentar sola. Se relee antes de empezar (solo van las que siguen sin orden) y al acabar; el resumen sale de lo RELEÍDO (taller_datos), no de las respuestas.
      Tope 100 por tanda, el de la devolución en lote. Mientras corre no se navega ni se cierra la página sin aviso. */
-  var VARIAS_TOPE = 100, VARIAS_MOTIVO = 400, VARIAS_VUELTA = 150;
+  // VARIAS_VUELTA: la base guarda en el rastro «OT-… · vuelve a disponible: » + motivo y lo corta a 200 (left): ~33 + marca ~35 + 3 + 120 caben.
+  var VARIAS_TOPE = 100, VARIAS_MOTIVO = 400, VARIAS_VUELTA = 120;
   function limpio(x) { return String(x == null ? '' : x).replace(/^\s+|\s+$/g, ''); }
   function enUnaLinea(x, min, max) { return x.length >= min && x.length <= max && !/[\u0000-\u001f\u007f]/.test(x); }
+  // Solo las que NUNCA han tenido orden (con_historial === false, de taller_datos desde 20261015014000; revisor sobre 995e05a, MEDIA): una moto que un
+  // mecánico cerró «fuera_servicio» también está en taller sin orden viva, y darla por revisada en bloque la dejaría alquilarse sin que nadie la mire.
+  // Sin el campo (base sin esa migración) no se ofrece ninguna: se compara con false estricto, nunca «falsy».
   function variasCand() {
     if (!E.datos) return [];
     var vuelven = {};
     E.datos.para_volver.forEach(function (m) { vuelven[m.id] = true; });   // ya revisadas y esperando volver: no se revisan otra vez
-    return E.datos.motos.filter(function (m) { return m.estado === 'taller' && !m.orden_viva && !vuelven[m.id]; });
+    return E.datos.motos.filter(function (m) { return m.estado === 'taller' && !m.orden_viva && m.con_historial === false && !vuelven[m.id]; });
   }
   function variasMarca(n) {
     var f = new Date(), d2 = function (x) { return (x < 10 ? '0' : '') + x; };
@@ -637,7 +643,7 @@
   }
   function variasAbre() {
     if (E.enviando || !E.admin) return;
-    E.varias = { fase: 'elige', sel: {}, motivo: '', ids: [], mats: {}, lote: [], marca: '', excepcion: '', parada: null, resumen: null, vuelta: null };
+    E.varias = { fase: 'elige', sel: {}, motivo: '', ids: [], mats: {}, lote: [], intentadas: {}, marca: '', excepcion: '', parada: null, resumen: null, vuelta: null };
     pintaInicio(); window.scrollTo(0, 0);
   }
   function variasCierra() { if (E.enviando) return; E.varias = null; pintaInicio(); window.scrollTo(0, 0); }
@@ -663,7 +669,7 @@
       var cand = variasCand(), estan = {};
       cand.forEach(function (m) { estan[m.id] = true; });
       Object.keys(V.sel).forEach(function (k) { if (!estan[k]) delete V.sel[k]; });
-      caja.appendChild(aviso('tl-sub', T('Para las motos que ya están en el taller sin orden, por ejemplo las que vinieron del sistema anterior. Cada una queda con su orden cerrada como lista, sin fotos ni revisiones, con tu nombre y el motivo. Después salen en «Listas para volver»: devolverlas a disponible es otro paso.')));
+      caja.appendChild(aviso('tl-sub', T('Para las motos que están en el taller y nunca han tenido una orden, por ejemplo las que vinieron del sistema anterior. Una moto con alguna orden (también una que se cerró como «No puede circular») no sale aquí: se revisa con el asistente. Cada una queda con su orden cerrada como lista, sin fotos ni revisiones, con tu nombre y el motivo. Después salen en «Listas para volver»: devolverlas a disponible es otro paso.')));
       if (!cand.length) caja.appendChild(aviso('axw-vacio', T('No hay motos esperando revisión. Busca la matrícula para abrir una orden.')));
       else {
         caja.appendChild(acciones([['tl-varias-todas', T(cand.length > VARIAS_TOPE ? 'Marcar las 100 primeras' : 'Marcar todas')], ['tl-varias-ninguna', T('Ninguna')]]));
@@ -707,6 +713,7 @@
       caja.appendChild(h('div', { 'data-tl': tl }, [h('strong', { text: T(titulo) }), h('ul', { class: 'axw-nota' }, ids.map(function (id) { return h('li', { text: V.mats[id] + (extra ? extra(id) : '') }); }))]));
     };
     lista('Con la orden abierta (termínala en «Órdenes a medias»):', R.abiertas, 'varias-abiertas', function (id) { var m = porId[id]; return m && m.orden_viva ? ' · ' + String(m.orden_viva.numero || '') : ''; });
+    lista('Revisadas fuera de esta tanda (en «Listas para volver»):', R.fuera, 'varias-fuera');
     lista('Sin tocar (puedes repetir la tanda):', R.sinTocar, 'varias-sin-tocar');
     lista('En otro estado:', R.otras, 'varias-otras', function (id) { var m = porId[id], t = m && ESTADO_MOTO[m.estado]; return ' · ' + T(t ? t[0] : 'Otro estado'); });
     lista('No salen en la lista:', R.sinMirar, 'varias-sin-mirar');
@@ -720,7 +727,7 @@
       var listas = R.rev.filter(function (id) { return vuelven[id]; });
       if (listas.length) {
         var mv = h('input', { type: 'text', maxlength: String(VARIAS_VUELTA), 'data-tl': 'varias-vuelta-motivo', autocomplete: 'off' });
-        caja.appendChild(h('div', { class: 'tl-campo' }, [h('label', { text: T('Motivo de la vuelta (3 a 150 caracteres)') }), mv]));
+        caja.appendChild(h('div', { class: 'tl-campo' }, [h('label', { text: T('Motivo de la vuelta (3 a 120 caracteres)') }), mv]));
         caja.appendChild(h('div', { 'data-tl': 'varias-vuelta-estado', class: 'tl-estado', role: 'status' }));
         caja.appendChild(acciones([['tl-varias-devuelve', TT('Devolver estas {n} a disponible', { n: listas.length }), true]]));
       }
@@ -765,6 +772,7 @@
     var V = E.varias;
     if (i >= V.lote.length) return variasTermina(null);
     var id = V.lote[i], mat = V.mats[id], pr = $v('varias-progreso');
+    V.intentadas[id] = true;
     if (pr) pr.textContent = TT('Revisando {i} de {n}… No cierres esta pantalla.', { i: i + 1, n: V.lote.length });
     return llama('taller_orden_abre', { p_unidad: id, p_motivo_tipo: 'revision', p_nota: V.marca }).then(function (r) {
       var x = r.data;
@@ -776,7 +784,7 @@
       if (!x || !UUID.test(String(x.id || '')) || typeof x.numero !== 'string') return variasPara(id, TT('Se ha parado en {mat}: la base ha devuelto algo inesperado.', { mat: mat }));
       // Seguridad #345 a: solo se sigue con una moto ADOPTADA en una orden NUEVA. Si la base retoma una orden de otra persona, no se cierra; si la moto estaba
       // disponible, la orden ya la pasó al taller: se para y se dice dónde está.
-      if (x.retomada !== false) return variasPara(id, TT('Se ha parado en {mat}: ya tenía abierta la orden {num}; no se ha tocado.', { mat: mat, num: x.numero }));
+      if (x.retomada !== false) return variasPara(id, TT('Se ha parado en {mat}: ya tenía la orden {num}; esta tanda no la ha cerrado. Mírala en «Órdenes a medias».', { mat: mat, num: x.numero }));
       if (x.adopta !== true) return variasPara(id, TT('Se ha parado en {mat}: estaba disponible y se le ha abierto la orden {num}. Sigue abierta en «Órdenes a medias».', { mat: mat, num: x.numero }));
       return llama('taller_orden_resultado', { p_orden: x.id, p_resultado: 'lista', p_nota: null, p_motivo_excepcion: V.excepcion }).then(function (r2) {
         var y = r2.data;
@@ -792,12 +800,13 @@
     return cargaDatos().then(function (ok) {
       E.enviando = false;
       if (!ok) { E.varias = null; $v('vista-inicio').appendChild(aviso('axw-aviso', T('La tanda ha terminado o se ha parado, pero no se ha podido releer: recarga la pantalla para ver cómo quedó.'), 'varias-sin-releer')); return; }
-      var porId = {}, vuelven = {}, R = { rev: [], abiertas: [], sinTocar: [], otras: [], sinMirar: [] };
+      var porId = {}, vuelven = {}, R = { rev: [], fuera: [], abiertas: [], sinTocar: [], otras: [], sinMirar: [] };
       E.datos.motos.forEach(function (m) { porId[m.id] = m; });
       E.datos.para_volver.forEach(function (m) { vuelven[m.id] = true; });
       V.ids.forEach(function (id) {
         var m = porId[id];
-        if (vuelven[id]) R.rev.push(id);
+        if (vuelven[id] && V.intentadas[id]) R.rev.push(id);   // en «Listas para volver» por ESTA tanda
+        else if (vuelven[id]) R.fuera.push(id);                   // otra persona la cerró «lista» entretanto: no es de la tanda ni entra en su devolución
         else if (!m) R.sinMirar.push(id);
         else if (m.orden_viva) R.abiertas.push(id);
         else if (m.estado === 'taller') R.sinTocar.push(id);
@@ -816,7 +825,7 @@
     var ids = V.resumen.rev.filter(function (id) { return vuelven[id]; });
     var mot = limpio(inp.value);
     if (!ids.length) { est.appendChild(aviso('axw-error', T('Elige una moto o más.'))); return; }
-    if (!enUnaLinea(mot, 3, VARIAS_VUELTA)) { est.appendChild(aviso('axw-error', T('Escribe el motivo (3 a 150 caracteres, en una línea).'))); return; }
+    if (!enUnaLinea(mot, 3, VARIAS_VUELTA)) { est.appendChild(aviso('axw-error', T('Escribe el motivo (3 a 120 caracteres, en una línea).'))); return; }
     if (!C.ocupa(bt)) return;
     E.enviando = true;
     // Reintentar tras perder la respuesta es seguro: las que ya volvieron salen como «no_esta_en_taller», nada se aplica dos veces.
