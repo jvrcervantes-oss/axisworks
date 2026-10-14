@@ -232,7 +232,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
 <div class="fl-inv-pie">
 <span class="fl-etq font-label-md uppercase" data-fl="n-modelos"></span>
 <span class="fl-ayuda" data-fl="n-visibles" role="status"></span>
-<span class="fl-inv-orden"><label for="fl-orden" data-lwt>Ordenar</label><select id="fl-orden" data-fl="orden"><option value="nombre" data-lwt>Nombre</option><option value="motos" data-lwt>Más motos</option><option value="disponibles" data-lwt>Menos disponibles</option><option value="precio" data-lwt>Tarifa de 1 día</option></select></span>
+<span class="fl-inv-orden"><label for="fl-orden" data-lwt>Ordenar</label><select id="fl-orden" data-fl="orden"><option value="reservables" data-lwt>Reservables primero</option><option value="nombre" data-lwt>Nombre</option><option value="motos" data-lwt>Más motos</option><option value="disponibles" data-lwt>Menos disponibles</option><option value="precio" data-lwt>Tarifa de 1 día</option></select></span>
 <button class="axw-boton" type="button" data-accion="fl-actualizar"><span data-lwt>Actualizar</span></button>
 <button class="axw-boton" type="button" data-accion="fl-modelo-nuevo" data-primario="1"><span data-lwt>Nuevo modelo</span></button>
 </div>
@@ -388,7 +388,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     // inventario + cajón (bbm-p42, 13-oct-2026)
     "Por modelo": "Per model", "Por moto": "Per motor", "Taller": "Bengkel", "Ordenar": "Urutkan", "Modelo": "Model", "Buscar": "Cari", "Todos": "Semua", "No se puede cotizar": "Belum bisa dikutip",
     "Con motos": "Ada motor", "Sin motos": "Tanpa motor", "Con motos en taller": "Ada motor di bengkel", "Tarifas": "Tarif", "Con tarifas": "Ada tarif", "Sin tarifas": "Tanpa tarif",
-    "Nombre": "Nama", "Más motos": "Motor terbanyak", "Menos disponibles": "Paling sedikit tersedia", "Tarifa de 1 día": "Tarif 1 hari", "Total": "Total",
+    "Reservables primero": "Yang bisa di-booking dulu", "Nombre": "Nama", "Más motos": "Motor terbanyak", "Menos disponibles": "Paling sedikit tersedia", "Tarifa de 1 día": "Tarif 1 hari", "Total": "Total",
     "Sin motos disponibles": "Tidak ada motor tersedia", "Falta algo más": "Masih ada yang kurang", "1 día": "1 hari", "30 días": "30 hari",
     "Nada coincide con la búsqueda o los filtros.": "Tidak ada yang cocok dengan pencarian atau filter.", "Se ven %a de %b": "Menampilkan %a dari %b",
     "Cerrar": "Tutup", "Ese modelo ya no está en la lista: otra persona lo cambió.": "Model itu sudah tidak ada di daftar: orang lain mengubahnya.",
@@ -487,7 +487,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     // inventario + cajón (bbm-p42, 13-oct-2026)
     'Por modelo': 'By model', 'Por moto': 'By bike', 'Taller': 'Workshop', 'Ordenar': 'Sort by', 'Modelo': 'Model', 'Buscar': 'Search', 'Todos': 'All', 'No se puede cotizar': 'Cannot be quoted',
     'Con motos': 'With bikes', 'Sin motos': 'Without bikes', 'Con motos en taller': 'With bikes in the workshop', 'Tarifas': 'Rates', 'Con tarifas': 'With rates', 'Sin tarifas': 'Without rates',
-    'Nombre': 'Name', 'Más motos': 'Most bikes', 'Menos disponibles': 'Fewest available', 'Tarifa de 1 día': '1-day rate', 'Total': 'Total',
+    'Reservables primero': 'Bookable first', 'Nombre': 'Name', 'Más motos': 'Most bikes', 'Menos disponibles': 'Fewest available', 'Tarifa de 1 día': '1-day rate', 'Total': 'Total',
     'Sin motos disponibles': 'No bikes available', 'Falta algo más': 'Something else is missing', '1 día': '1 day', '30 días': '30 days',
     'Nada coincide con la búsqueda o los filtros.': 'Nothing matches the search or the filters.', 'Se ven %a de %b': 'Showing %a of %b',
     'Cerrar': 'Close', 'Ese modelo ya no está en la lista: otra persona lo cambió.': 'That model is no longer in the list: someone else changed it.',
@@ -819,7 +819,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   }
 
   /* ── Paso 1: el inventario (filtros en memoria sobre lo ya leído; nada se pide a la base por filtrar) ── */
-  var F = { vista: 'modelos', q: '', estado: '', motos: '', tarifa: '', motoEstado: '', orden: 'nombre' };
+  var F = { vista: 'modelos', q: '', estado: '', motos: '', tarifa: '', motoEstado: '', orden: 'reservables' };
   function plano(s) { return String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ' ').replace(/^\s|\s$/g, ''); }
   function porNombre(a, b) { return String(a.nombre || '').localeCompare(String(b.nombre || ''), C.locale(), { numeric: true, sensitivity: 'base' }); }
   function modelosVisibles(d) {
@@ -837,7 +837,10 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       if (q && plano(p.nombre).indexOf(q) < 0 && plano(p.numero).indexOf(q) < 0 && !p.unidades.some(function (u) { return plano(u.identificador).indexOf(q) >= 0; })) return false;
       return true;
     });
+    // F9 (bbm-comodidad, 15-oct-2026): en bbm 29 de 51 modelos no tienen motos y salían mezclados con los que se alquilan.
+    function rango(p) { return p.activo === false ? 3 : (p.listo_para_reservar === true ? 0 : (resumenDe(p).disponible ? 1 : 2)); }
     var orden = {
+      reservables: function (a, b) { return rango(a) - rango(b) || porNombre(a, b); },
       nombre: porNombre,
       motos: function (a, b) { return b.unidades.length - a.unidades.length || porNombre(a, b); },
       disponibles: function (a, b) { return resumenDe(a).disponible - resumenDe(b).disponible || porNombre(a, b); },
@@ -853,7 +856,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       if (q && plano(u.identificador).indexOf(q) < 0 && plano(p.nombre).indexOf(q) < 0 && plano(p.numero).indexOf(q) < 0 && plano(u.notas).indexOf(q) < 0) return;
       l.push({ p: p, u: u });
     }); });
-    var orden = F.orden === 'nombre' || F.orden === 'precio' ? function (a, b) { return porNombre(a.p, b.p) || String(a.u.identificador).localeCompare(String(b.u.identificador), C.locale(), { numeric: true }); }
+    var orden = F.orden === 'nombre' || F.orden === 'precio' || F.orden === 'reservables' ? function (a, b) { return porNombre(a.p, b.p) || String(a.u.identificador).localeCompare(String(b.u.identificador), C.locale(), { numeric: true }); }
       : function (a, b) { return porNombre(a.p, b.p); };
     return l.sort(orden);
   }
@@ -1509,7 +1512,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   }
   function filtros() {
     var lee = function (n) { var e = $v(n); return e ? e.value : ''; };
-    F.q = lee('buscar'); F.estado = lee('f-estado'); F.motos = lee('f-motos'); F.tarifa = lee('f-tarifa'); F.motoEstado = lee('f-moto-estado'); F.orden = lee('orden') || 'nombre';
+    F.q = lee('buscar'); F.estado = lee('f-estado'); F.motos = lee('f-motos'); F.tarifa = lee('f-tarifa'); F.motoEstado = lee('f-moto-estado'); F.orden = lee('orden') || 'reservables';
     pintaLista();
   }
   function init(aut) {

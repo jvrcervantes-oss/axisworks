@@ -254,6 +254,10 @@ const TILDES = /[áéíóúñÁÉÍÓÚÑ¿¡]/;
       ({ p, ctx } = await abre({ ancho, idioma: 'id' }));
       const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
       ok(ancho + ' px: sin scroll horizontal', m.sw <= m.cw, JSON.stringify(m));
+      // F11 (bbm-comodidad, 15-oct): el selector de día cabe en UNA línea (en indonesio, el más largo) y cada botón sigue diciendo qué hace
+      const dia = await p.evaluate(() => { const g = document.querySelector('[data-ph="dia"]'), b = [...g.querySelectorAll('button')];
+        return { tops: [...new Set(b.map(x => Math.round(x.getBoundingClientRect().top)))].length, antes: b[0].textContent.trim(), despues: b[2].textContent.trim() }; });
+      ok(ancho + ' px: «‹ · Hoy · ›» en una sola línea y con su nombre entero (lector de pantalla)', dia.tops === 1 && /Hari sebelumnya/.test(dia.antes) && /Hari berikutnya/.test(dia.despues), JSON.stringify(dia));
       if (SHOT) await p.screenshot({ path: SHOT + '_' + ancho + '_id.png', fullPage: true });
       await p.click('[data-ph="entregas"] li:nth-child(1) button');
       await espera(p, () => !!document.querySelector('[data-axw="dialogo"]'));

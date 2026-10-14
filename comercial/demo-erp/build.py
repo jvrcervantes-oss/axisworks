@@ -4791,6 +4791,23 @@ COMODIDAD_INSTANCIA = (
      "          if (f0.fecha_vencimiento) campoSimpleDoc(filaF, { k: 'fecha_vencimiento', label: 'Vencimiento (opcional)', tipo: 'date', valor: f0.fecha_vencimiento });\n\n"
      "          var secEmisor = seccionPlegableDoc(host, 'Emisor', true, { resumen: resumenEmisorDoc });\n"
      "          campoSimpleDoc(secEmisor, { k: 'sociedad', label: 'Sociedad que cobra',", 1),
+    # bbm-comodidad F10 (15-oct-2026, medido en bbm a 1440): el robot del Asistente (fijo abajo a la derecha, 88 px; 72 px en móvil) tapaba lo último
+    # de cada página: «Nuevo modelo» en Flota, la columna Acciones en Facturas, «Configurar» en Ajustes. Se reserva su hueco al final de <main> para
+    # que se pueda bajar más allá del robot. Solo en pantalla y solo donde se pinta el robot (la regla viaja en la hoja que inyecta mascota.js).
+    ('intranet/v4/assets/mascota.js', "    '@media print{#lw-masc{display:none}}';",
+     "    '@media screen{main{padding-bottom:132px!important}}@media screen and (max-width:767px){main{padding-bottom:104px!important}}' +\n"
+     "    '@media print{#lw-masc{display:none}}';", 1),
+    # bbm-comodidad F12: una barra de pestañas con UNA sola pestaña («General» en Ajustes de bbm) repite la entrada del menú y no lleva a ningún
+    # sitio. Con una sola pestaña no se INSERTA; con dos o más, como siempre (Facturas · Recibos). Se toca solo la inserción y no el `return` de
+    # arriba: el resto de cableaPestanas() (la versión «Mis comisiones» de /reparto/ para el closer, que tiene UNA pestaña) tiene que seguir corriendo
+    # (revisor sobre e8e30cf, MEDIA).
+    ('intranet/v4/assets/nav.js', '    if (cab && cab.parentNode) cab.parentNode.insertBefore(barra, cab.nextSibling);\n    else main.insertBefore(barra, main.firstChild);',
+     '    if (mias.length < 2) { /* una sola pestaña: sin barra */ } else if (cab && cab.parentNode) cab.parentNode.insertBefore(barra, cab.nextSibling);\n'
+     '    else main.insertBefore(barra, main.firstChild);', 1),
+    # bbm-comodidad F12: Facturas tenía el botón «Recibos» en la cabecera Y la pestaña «Recibos» justo debajo (la barra del grupo Cobros). Quien
+    # puede abrir Recibos tiene la pestaña; quien no, tampoco podía usar el botón. Se quita el botón.
+    ('intranet/v4/facturas/index.html', '<a class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors shadow-sm font-label-md text-label-md" href="/intranet/v4/recibos/">\n'
+     '<span class="material-symbols-outlined text-[18px] text-stone-sand">payments</span>\n<span class="" data-lwt>Recibos</span>\n</a>\n', '', 1),
 )
 # Solo en las instancias de alquileres (portada «reservas»): el ejemplo del campo y la pestaña «Reservas» de Ajustes, que en ellas solo lleva los impuestos
 TEXTOS_ALQUILER = (

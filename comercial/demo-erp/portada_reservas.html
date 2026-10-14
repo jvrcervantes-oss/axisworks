@@ -79,6 +79,10 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
   .ph-acciones,.ph-acciones .axw-boton{width:100%}
   .ph-dia{display:flex;width:100%;box-sizing:border-box;border-radius:20px}
   html main .ph .ph-dia .axw-boton.axw-boton{flex:1 1 auto;padding:0 12px}
+  /* F11 (bbm-comodidad, 15-oct-2026): una sola línea «‹ · Hoy · ›»; el texto entero queda para el lector de pantalla */
+  .ph-dia{flex-wrap:nowrap}
+  html main .ph .ph-dia .axw-boton.axw-boton[data-accion="ph-antes"],html main .ph .ph-dia .axw-boton.axw-boton[data-accion="ph-despues"]{flex:0 0 auto;min-width:56px;position:relative;font-size:20px}
+  .ph-dia .ph-dia-txt{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
   .ph-col{padding:20px 18px 6px;border-radius:20px}
   .ph-fila{grid-template-columns:minmax(0,1fr)}
   .ph .ph-hora[data-sin="1"]{padding-top:0}
@@ -97,9 +101,9 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
 </div>
 
 <div class="ph-dia" role="group" data-ph="dia">
-<button class="axw-boton" type="button" data-accion="ph-antes"><span data-lwt>‹ Día anterior</span></button>
+<button class="axw-boton" type="button" data-accion="ph-antes"><span aria-hidden="true">‹</span> <span class="ph-dia-txt" data-lwt>Día anterior</span></button>
 <button class="axw-boton" type="button" data-accion="ph-hoy" aria-pressed="false"><span data-lwt>Hoy</span></button>
-<button class="axw-boton" type="button" data-accion="ph-despues"><span data-lwt>Día siguiente ›</span></button>
+<button class="axw-boton" type="button" data-accion="ph-despues"><span class="ph-dia-txt" data-lwt>Día siguiente</span> <span aria-hidden="true">›</span></button>
 </div>
 
 <p class="axw-error axw-oculto" data-ph="error" role="alert"></p>
@@ -140,7 +144,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
   'use strict';
   var EN_PH = {
     'Hay más de las que caben aquí.': 'There are more than fit here.', 'Ábrelas en Reservas de producto': 'Open them in Product bookings',
-    'Inicio': 'Home', 'Hoy': 'Today', '‹ Día anterior': '‹ Previous day', 'Día siguiente ›': 'Next day ›', 'Reservas de producto': 'Product bookings',
+    'Inicio': 'Home', 'Hoy': 'Today', 'Día anterior': 'Previous day', 'Día siguiente': 'Next day', 'Día siguiente ›': 'Next day ›', 'Reservas de producto': 'Product bookings',
     'Entregas': 'Handovers', 'Devoluciones': 'Returns',
     'Hoy no hay entregas.': 'No handovers today.', 'Hoy no hay devoluciones.': 'No returns today.',
     'Este día no hay entregas.': 'No handovers on this day.', 'Este día no hay devoluciones.': 'No returns on this day.',
@@ -164,7 +168,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
   // Indonesio (owner, 11-oct-2026: bbm en indonesio e inglés). Misma clave en español que EN_PH; se fusiona en window.LW_ID solo donde existe (bbm).
   var ID_PH = {
     'Hay más de las que caben aquí.': 'Masih ada lagi yang tidak muat di sini.', 'Ábrelas en Reservas de producto': 'Buka di daftar booking',
-    'Inicio': 'Beranda', 'Hoy': 'Hari ini', '‹ Día anterior': '‹ Hari sebelumnya', 'Día siguiente ›': 'Hari berikutnya ›', 'Reservas de producto': 'Booking sewa motor',
+    'Inicio': 'Beranda', 'Hoy': 'Hari ini', 'Día anterior': 'Hari sebelumnya', 'Día siguiente': 'Hari berikutnya', 'Día siguiente ›': 'Hari berikutnya ›', 'Reservas de producto': 'Booking sewa motor',
     'Entregas': 'Serah terima', 'Devoluciones': 'Motor kembali',
     'Hoy no hay entregas.': 'Hari ini tidak ada serah terima.', 'Hoy no hay devoluciones.': 'Hari ini tidak ada motor yang kembali.',
     'Este día no hay entregas.': 'Tidak ada serah terima pada tanggal ini.', 'Este día no hay devoluciones.': 'Tidak ada motor yang kembali pada tanggal ini.',
