@@ -63,7 +63,8 @@ function base(o = {}) {
   CAMPOS.forEach(k => { if (o.conf && o.conf[k]) est.claves[k] = { configurada: true, puesta_en: '2026-10-11T09:30:00Z', puesta_por: 'dion@balibestmotorcycle.com' }; });
   est.modo = o.modo || (o.conf && o.conf.creacion ? 'test' : null);
   est.configurado = CAMPOS.every(k => est.claves[k].configurada);
-  return { d, est, o, edge: [], rpc: [], pide: o.pide !== false, codigoPara: null };
+  // B10: o.bot = el bot_backend que trae estado (undefined = la edge de antes, sin la clave)
+  return { d, est, o, edge: [], rpc: [], pide: o.pide !== false, codigoPara: null, bot: o.bot === undefined ? undefined : JSON.parse(JSON.stringify(o.bot)) };
 }
 function setupEstado(b) {
   const p = b.d.pasos.find(x => x.clave === 'cobros');
@@ -78,7 +79,22 @@ function edge(b, c) {
   const no = (status, codigo, extra = {}) => ({ status, json: Object.assign({ ok: false, codigo, error: 'texto en español que el front NO debe pintar' }, extra) });
   if (b.o.puede === false) return no(403, 'no_super_admin');
   if (b.o.pruebas) return no(403, 'cuenta_pruebas_solo_mira');   // la cuenta de pruebas del estudio: super admin que solo mira
-  if (c.accion === 'estado') return { status: 200, json: { ok: true, estado: JSON.parse(JSON.stringify(b.est)), pide_codigo: b.pide } };
+  if (c.accion === 'estado') return { status: 200, json: Object.assign({ ok: true, estado: JSON.parse(JSON.stringify(b.est)), pide_codigo: b.pide }, b.bot === undefined ? {} : { bot_backend: JSON.parse(JSON.stringify(b.bot)) }) };
+  // B10: el interruptor del bot, con las reglas de la acción bot_backend del index.ts (va antes del corte del código: no lo necesita)
+  if (c.accion === 'bot_backend') {
+    const extra = Object.keys(c).filter(k => !['accion', 'valor', 'motivo', 'contrasena'].includes(k));
+    if (extra.length) return no(400, 'campo_no_admitido', { campos: extra });
+    if (!/^(dion|erp)$/.test(c.valor || '')) return no(400, 'valor_no_valido');
+    if (!b.bot) return no(502, 'base_no_responde');
+    if (c.valor === b.bot.guardado) return { status: 200, json: { ok: true, cambiado: false, bot_backend: JSON.parse(JSON.stringify(b.bot)) } };
+    const m = typeof c.motivo === 'string' ? c.motivo.trim() : '';
+    if (m.length < 3) return no(400, 'motivo');
+    if (c.valor === 'erp' && !b.bot.puede_erp) return no(409, 'bot_backend_no_listo', { falta: b.bot.falta });
+    if (!c.contrasena) return no(401, 'reautenticar');
+    if (c.contrasena !== 'buena') return no(401, 'clave_actual_incorrecta');
+    b.bot.guardado = c.valor; b.bot.efectivo = c.valor; b.bot.ultimo_cambio = { quien: 'owner@balibestmotorcycle.com', cuando: '2026-10-14T10:00:00Z', motivo: m };
+    return { status: 200, json: { ok: true, cambiado: true, bot_backend: JSON.parse(JSON.stringify(b.bot)) } };
+  }
   if (!b.pide) return no(503, 'codigo_no_disponible');
   const v = {};
   for (const k of CAMPOS) { const x = c[k] == null ? '' : String(c[k]).trim(); if (x !== '' && !(k === 'aviso' ? TOKEN : CLAVE_XND).test(x)) return no(400, 'clave_no_valida', { campo: k }); v[k] = x; }
@@ -174,7 +190,12 @@ const C = '[data-axw-cobros-caja]';
   // 0. textos del servidor (revisor, BAJA 2): los 3 de sin_a_quien_avisar que traducen setup_modulos.js (grupo servidor) y usa este arnés, iguales
   //    byte a byte a los de la edge. Con la edge de antes (sin sin_a_quien_avisar) se avisa y no cuenta; con la nueva, si cambia un texto, ROJO.
   {
-    const ts = EDGE_TS ? fs.readFileSync(EDGE_TS, 'utf8') : '';
+    const entera = EDGE_TS ? fs.readFileSync(EDGE_TS, 'utf8') : '';
+    // Desde la 4b (20261014080100, 14-oct) la edge también cambia cuentas bancarias, con SUS tres sin_a_quien_avisar (los traduce la pantalla de
+    // cuentas, no la de Cobros): se mide solo lo de Cobros, quitando el bloque `if (esCuenta) {` … `// 3. el cambio`. Sin el final, ROJO (no se adivina).
+    const iniC = entera.indexOf('if (esCuenta) {'), finC = entera.indexOf('// 3. el cambio');
+    if (iniC >= 0) ok('textos del servidor: el bloque de cuentas de la edge se puede separar del de Cobros', finC > iniC);
+    const ts = iniC >= 0 && finC > iniC ? entera.slice(0, iniC) + entera.slice(finC) : entera;
     const deEdge = [...ts.matchAll(/no\('sin_a_quien_avisar', '([^']*)', 409\)/g)].map(m => m[1]);
     const sm = fs.readFileSync(path.join(AQUI, 'setup_modulos.js'), 'utf8');
     const grupo = (/servidor: \{([\s\S]*?)\n {4}\}/.exec(sm) || [])[1] || '';
@@ -627,6 +648,55 @@ const C = '[data-axw-cobros-caja]';
     b = conCom({ sinValor: true }); ({ p, ctx } = await abre(nav, b));
     await p.fill('[data-axw-comision="pct"]', '0'); await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(300);
     ok('comisión: sin valor previo, «0» se guarda sin motivo', b.ajustes.valores.cobros_comision_pct === 0);
+    await ctx.close();
+  }
+  // B10 (14-oct-2026): «Quién atiende las reservas del bot de WhatsApp: Dion / ERP», debajo del componente, solo en la pestaña. Lo de sin navegador
+  // (forma, faltas, errores, máquina de duda) está en cobros_bot.test.js; aquí, lo que solo se ve con la página de verdad: anchos, idiomas y el recorrido.
+  {
+    const BB = '[data-axw-bot-backend="bloque"]';
+    const BOT0 = COBROS.edge.acciones.estado.respuesta_200.bot_backend;   // dion, falta cobros + usuarios
+    // edge de antes de B10: sin la clave, el bloque no sale y no se llama a nada más
+    b = base(); ({ p, ctx } = await abre(nav, b));
+    ok('bot: edge sin bot_backend = sin bloque', !(await p.$(BB + ':not([hidden])')) && b.edge.every(x => x.accion === 'estado'));
+    await ctx.close();
+    // el asistente no lo enseña (solo la pestaña)
+    b = base({ bot: BOT0 }); ({ p, ctx } = await abre(nav, b, { tipo: 'asistente', url: '/ajustes/configurar/?modulo=reservas-producto&paso=cobros' }));
+    ok('bot: el paso del asistente no lleva el bloque', !(await p.$(BB)));
+    await ctx.close();
+    for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
+      b = base({ bot: BOT0 }); ({ p, ctx } = await abre(nav, b, { idioma, ancho }));
+      ok('bot ' + idioma + ' ' + ancho + ': el bloque sale con la MISMA llamada estado', !!(await p.$(BB + ':not([hidden])')) && b.edge.filter(x => x.accion === 'estado').length === 1);
+      ok('bot ' + idioma + ' ' + ancho + ': ERP apagado y dice qué falta', await p.$eval('[data-axw-bot-backend="valor-erp"]', e => e.disabled) && !!(await p.$('[data-axw-bot-falta="cobros"]')) && !!(await p.$('[data-axw-bot-falta="usuarios"]')));
+      ok('bot ' + idioma + ' ' + ancho + ': sin scroll horizontal', (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho);
+      ok('bot ' + idioma + ' ' + ancho + ': nada se sale del bloque', await p.$eval(BB, c => { const r = c.getBoundingClientRect(); return Array.from(c.querySelectorAll('*')).every(e => { const x = e.getBoundingClientRect(); return !x.width || (x.left >= r.left - 1 && x.right <= r.right + 1); }); }));
+      ok('bot ' + idioma + ' ' + ancho + ': botones y enlaces de al menos 44 px', await p.$$eval(BB + ' button, ' + BB + ' a', l => l.every(e => e.getBoundingClientRect().height >= 44)));
+      const sin = (await p.evaluate(() => window.__sinTrad)).filter(s => !/^(Xendit|LIVE|Dion|ERP)$/.test(s));
+      if (idioma !== 'es') ok('bot ' + idioma + ' ' + ancho + ': todo traducido', !sin.length, sin.slice(0, 4).join(' | '));
+      if (SHOT) await p.screenshot({ path: path.join(SHOT, 'cobros_bot_' + idioma + '_' + ancho + '.png'), fullPage: true });
+      await ctx.close();
+    }
+    // guardado ERP pero va con Dion: el aviso, a 390 en indonesio
+    b = base({ bot: Object.assign({}, BOT0, { guardado: 'erp', efectivo: 'dion', falta: ['modulo_no_activo', 'cobros'], ultimo_cambio: { quien: 'owner@balibestmotorcycle.com', cuando: '2026-10-14T10:00:00Z', motivo: '<b>no es marcado</b>' } }) });
+    ({ p, ctx } = await abre(nav, b, { idioma: 'id', ancho: 390 }));
+    ok('bot: «puesto en ERP, va con Dion» con lo que falta', !!(await p.$('[data-axw-bot-backend="aviso"] [data-axw-bot-falta="modulo_no_activo"]')));
+    ok('bot: el motivo de otra persona sale como texto', (await txt(p, '[data-axw-bot-backend="ultimo-motivo"]')) === '<b>no es marcado</b>' && !(await p.$(BB + ' b')));
+    ok('bot: 390 id con aviso, sin scroll horizontal', (await p.evaluate(() => document.documentElement.scrollWidth)) <= 390);
+    if (SHOT) await p.screenshot({ path: path.join(SHOT, 'cobros_bot_aviso_id_390.png'), fullPage: true });
+    await ctx.close();
+    // el recorrido: ERP listo → elegir ERP, motivo, contraseña mala, buena; una petición por intento con los 4 campos; contraseña vacía tras cada uno
+    b = base({ bot: Object.assign({}, BOT0, { puede_erp: true, falta: [] }) }); ({ p, ctx } = await abre(nav, b, { ancho: 390 }));
+    await p.click('[data-axw-bot-backend="valor-erp"]');
+    await p.fill('[data-axw-campo="bot_motivo"]', 'Todo configurado'); await p.fill('[data-axw-campo="bot_contrasena"]', 'mala');
+    await p.click('[data-axw-bot-backend="guardar"]'); await p.waitForTimeout(200);
+    ok('bot: contraseña mala = su frase, campo vacío, motivo intacto', (await txt(p, '[data-axw-bot-backend="mensaje"]')) === 'Esa contraseña no es la de tu cuenta.'
+      && (await p.$eval('[data-axw-campo="bot_contrasena"]', i => i.value)) === '' && (await p.$eval('[data-axw-campo="bot_motivo"]', i => i.value)) === 'Todo configurado');
+    await p.fill('[data-axw-campo="bot_contrasena"]', 'buena');
+    await p.click('[data-axw-bot-backend="guardar"]'); await p.waitForTimeout(200);
+    const envios = b.edge.filter(x => x.accion === 'bot_backend');
+    ok('bot: dos intentos = dos peticiones, cada una con accion, valor, motivo y contrasena', envios.length === 2 && envios.every(x => Object.keys(x).sort().join() === 'accion,contrasena,motivo,valor' && x.valor === 'erp'));
+    ok('bot: guardado, repintado con ERP y sin la contraseña', (await p.$eval('[data-axw-bot-backend="efectivo"]', e => e.getAttribute('data-axw-bot-efectivo'))) === 'erp'
+      && (await p.$eval('[data-axw-campo="bot_contrasena"]', i => i.value)) === '' && ((await txt(p, '[data-axw-bot-backend="ultimo"]')) || '').includes('owner@balibestmotorcycle.com'));
+    ok('bot: la contraseña no queda en el marcado ni en la consola', !(await p.evaluate(() => document.documentElement.outerHTML)).includes('buena') && !p.__consola.some(t => /buena|mala/.test(t)));
     await ctx.close();
   }
   await nav.close();
