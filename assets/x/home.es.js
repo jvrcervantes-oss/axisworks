@@ -40,7 +40,7 @@ if (!rm) this.timer = setInterval(() => { if (document.hidden || !self.vis) retu
 }
 componentWillUnmount() { if (this.timer) clearInterval(this.timer); }
 event(n) {
-var W = [['Frontend', 'montando una página'], ['Backend', 'ajustando datos'], ['Bots', 'afinando un asistente'], ['Pilotos', 'probando un agente'], ['Seguridad', 'revisando un plan'], ['Calidad', 'probando lo publicado'], ['Deploy', 'publicando un cambio'], ['Diseño', 'revisando un diseño'], ['Marketing', 'preparando contenido'], ['Legal', 'revisando un texto'], ['Documentación', 'un documento'], ['Administración', 'preparando una factura'], ['Arquitectura', 'una casa en 3D'], ['Comunicación', 'nota de prensa'], ['Organización', 'repasa la estructura'], ['Videojuegos', 'trabajando en el motor'], ['Modelado 3D', 'una pieza del juego'], ['Revisión previa', 'opinando sobre un plan'], ['Revisor de código', 'sello aprobado']];
+var W = [['Frontend', 'montando una página'], ['Backend', 'ajustando datos'], ['Bots', 'afinando un asistente'], ['Pilotos', 'probando un agente'], ['Seguridad', 'revisando un plan'], ['Calidad', 'probando lo publicado'], ['Deploy', 'publicando un cambio'], ['Diseño', 'revisando un diseño'], ['Marketing', 'preparando contenido'], ['Legal', 'revisando un texto'], ['Documentación', 'un documento'], ['Administración', 'preparando una factura'], ['Arquitectura', 'una casa en 3D'], ['Comunicación', 'nota de prensa'], ['Organización', 'repasa la estructura'], ['Videojuegos', 'trabajando en el motor'], ['Modelado 3D', 'una pieza del juego'], ['Revisión previa', 'opinando sobre un plan'], ['Revisor de código', 'sello aprobado'], ['Producto', 'ordenando la hoja de ruta'], ['Experiencia', 'revisando una pantalla'], ['Idiomas', 'revisando una traducción'], ['Costes', 'revisando los costes'], ['Soporte', 'atendiendo a un cliente']];
 var a = (n * 2654435761) >>> 0;
 var sp = this.spots[a % this.spots.length];
 var w = W[(a >>> 7) % W.length];
@@ -171,15 +171,19 @@ var who = Aq.order[0];
 var mins = 9 * 60 + q * 2 + (q % 3);
 var hh = Math.floor(mins / 60) % 24, mm = mins % 60;
 var time = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
-if (q % 3 === 2) log.push({ time: time, who: 'Revisión previa', what: nameOf[Aq.order[1]].toLowerCase() + ' + ' + nameOf[Aq.order[2]].toLowerCase() + ' sobre un plan', op: String(1 - (t - q) * 0.13) });
+var bajo = function (s) { return s === s.toUpperCase() ? s : s.toLowerCase(); };   // «UX» se queda en mayúsculas
+if (q % 3 === 2) log.push({ time: time, who: 'Revisión previa', what: bajo(nameOf[Aq.order[1]]) + ' + ' + bajo(nameOf[Aq.order[2]]) + ' sobre un plan', op: String(1 - (t - q) * 0.13) });
 else log.push({ time: time, who: nameOf[who], what: D.work[who], op: String(1 - (t - q) * 0.13) });
 }
 var layer = function (label, ids) { var c = ids.filter(function (i) { return on[i]; }).length; return { label: label, v: c + '/' + ids.length, w: Math.round(c / ids.length * 100) + '%', title: label + ': ' + c + ' de ' + ids.length + ' resaltados' }; };
+// los de cada capa salen de su fila del diagrama (departamentos, puertas y subagentes; la persona no): una lista a mano
+// se quedó en 4 cuando las filas pasaron a 6 (15-oct-2026)
+var fila = function (tag) { var r = D.rows.filter(function (x) { return x[0] === tag; })[0]; return (r ? r[1] : []).filter(function (nd) { return 'dgs'.indexOf(nd[2]) >= 0; }).map(function (nd) { return nd[0]; }); };
 var layers = [
-layer('Revisión', ['seguridad', 'legal', 'administracion', 'organizacion']),
-layer('Construir', ['frontend', 'backend', 'bots', 'pilotos']),
-layer('Crear', ['diseno', 'arquitectura', 'modelado', 'videojuegos', 'marketing', 'comunicacion']),
-layer('Puertas', ['calidad', 'revisor', 'consulta'])
+layer('Revisión', fila('REVISIÓN')),
+layer('Construir', fila('CONSTRUIR')),
+layer('Crear', fila('CREAR')),
+layer('Puertas', fila('PUERTAS'))
 ];
 var activeCount = D.depts.filter(function (i) { return on[i]; }).length;
 var coordCount = ['revprev', 'explore', 'plan', 'encargo', 'consulta'].filter(function (i) { return on[i]; }).length;

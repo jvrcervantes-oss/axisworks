@@ -39,7 +39,7 @@ if (!rm) this.timer = setInterval(() => { if (document.hidden || !self.vis) retu
 }
 componentWillUnmount() { if (this.timer) clearInterval(this.timer); }
 event(n) {
-var W = [['Frontend', 'building a page'], ['Backend', 'adjusting a database'], ['Bots', 'tuning an assistant'], ['Pilots', 'running an agent'], ['Security', 'reviewing a plan'], ['Quality', 'verifying in production'], ['Deploy', 'publishing a change'], ['Design', 'reviewing a design'], ['Marketing', 'preparing content'], ['Legal', 'reviewing a text'], ['Docs', 'preparing a document'], ['Admin', 'preparing an invoice'], ['Architecture', 'modelling a home in 3D'], ['Comms', 'drafting a press note'], ['Organisation', 'reviewing the structure'], ['Games', 'working on the engine'], ['Game 3D', 'modelling a game asset'], ['Pre-review', 'weighing in on a plan'], ['Code reviewer', 'seal approved']];
+var W = [['Frontend', 'building a page'], ['Backend', 'adjusting a database'], ['Bots', 'tuning an assistant'], ['Pilots', 'running an agent'], ['Security', 'reviewing a plan'], ['Quality', 'verifying in production'], ['Deploy', 'publishing a change'], ['Design', 'reviewing a design'], ['Marketing', 'preparing content'], ['Legal', 'reviewing a text'], ['Docs', 'preparing a document'], ['Admin', 'preparing an invoice'], ['Architecture', 'modelling a home in 3D'], ['Comms', 'drafting a press note'], ['Organisation', 'reviewing the structure'], ['Games', 'working on the engine'], ['Game 3D', 'modelling a game asset'], ['Pre-review', 'weighing in on a plan'], ['Code reviewer', 'seal approved'], ['Product', 'ordering the roadmap'], ['UX', 'reviewing a screen'], ['Languages', 'reviewing a translation'], ['Costs', 'reviewing running costs'], ['Support', 'helping a client']];
 var a = (n * 2654435761) >>> 0;
 var sp = this.spots[a % this.spots.length];
 var w = W[(a >>> 7) % W.length];
@@ -170,15 +170,19 @@ var who = Aq.order[0];
 var mins = 9 * 60 + q * 2 + (q % 3);
 var hh = Math.floor(mins / 60) % 24, mm = mins % 60;
 var time = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
-if (q % 3 === 2) log.push({ time: time, who: 'Pre-review', what: nameOf[Aq.order[1]].toLowerCase() + ' + ' + nameOf[Aq.order[2]].toLowerCase() + ' on a plan', op: String(1 - (t - q) * 0.13) });
+var bajo = function (s) { return s === s.toUpperCase() ? s : s.toLowerCase(); };   // «UX» se queda en mayúsculas
+if (q % 3 === 2) log.push({ time: time, who: 'Pre-review', what: bajo(nameOf[Aq.order[1]]) + ' + ' + bajo(nameOf[Aq.order[2]]) + ' on a plan', op: String(1 - (t - q) * 0.13) });
 else log.push({ time: time, who: nameOf[who], what: D.work[who], op: String(1 - (t - q) * 0.13) });
 }
 var layer = function (label, ids) { var c = ids.filter(function (i) { return on[i]; }).length; return { label: label, v: c + '/' + ids.length, w: Math.round(c / ids.length * 100) + '%', title: label + ': ' + c + ' of ' + ids.length + ' highlighted' }; };
+// los de cada capa salen de su fila del diagrama (departamentos, puertas y subagentes; la persona no): una lista a mano
+// se quedó en 4 cuando las filas pasaron a 6 (15-oct-2026)
+var fila = function (tag) { var r = D.rows.filter(function (x) { return x[0] === tag; })[0]; return (r ? r[1] : []).filter(function (nd) { return 'dgs'.indexOf(nd[2]) >= 0; }).map(function (nd) { return nd[0]; }); };
 var layers = [
-layer('Review', ['seguridad', 'legal', 'administracion', 'organizacion']),
-layer('Build', ['frontend', 'backend', 'bots', 'pilotos']),
-layer('Create', ['diseno', 'arquitectura', 'modelado', 'videojuegos', 'marketing', 'comunicacion']),
-layer('Gates', ['calidad', 'revisor', 'consulta'])
+layer('Review', fila('REVIEW')),
+layer('Build', fila('BUILD')),
+layer('Create', fila('CREATE')),
+layer('Gates', fila('GATES'))
 ];
 var activeCount = D.depts.filter(function (i) { return on[i]; }).length;
 var coordCount = ['revprev', 'explore', 'plan', 'encargo', 'consulta'].filter(function (i) { return on[i]; }).length;
