@@ -259,6 +259,11 @@ const no = (status, codigo, extra) => ({ status, json: Object.assign({ ok: false
   await caso('502 y no consta', [res(502, { ok: false, codigo: 'base_no_responde' }, 'base_no_responde'), releido(BOT_ESTADO)], { tipo: 'duda_no', llamadas: 'bot_backend,estado', comprueba: r => r.bot.guardado === 'dion' });
   await caso('gateway sin respuesta propia y estado sin bot', [res(504, null, 'edge_no_disponible'), releido(null)], { tipo: 'duda', llamadas: 'bot_backend,estado' });
   await caso('la petición revienta y releer también', ['rechaza', 'rechaza'], { tipo: 'duda', llamadas: 'bot_backend,estado' });
+  // sin duda cuando seguro que no se guardó: no salió (sin URL de la edge) o la puerta la rechazó antes de la función (revisor 14-oct)
+  await caso('sin URL de la edge: no salió', [res(0, null, 'edge_no_disponible')], { tipo: 'error', llamadas: 'bot_backend', comprueba: r => r.codigo === 'edge_no_disponible' });
+  await caso('404 de la edge', [res(404, null, 'edge_no_disponible')], { tipo: 'error', llamadas: 'bot_backend' });
+  await caso('401 del gateway sin código', [res(401, null, 'respuesta_ilegible')], { tipo: 'error', llamadas: 'bot_backend' });
+  await caso('403 sin código', [res(403, null, 'respuesta_ilegible')], { tipo: 'error', llamadas: 'bot_backend' });
 
   // ── 6. El bloque pintado ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   // 6a. pinta() del componente pasa bot_backend a quien escuche, con la MISMA llamada estado; sin él, o con un estado roto, null

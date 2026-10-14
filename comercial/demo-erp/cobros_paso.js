@@ -628,7 +628,10 @@
       if (res.status === 409 && res.codigo === 'bot_backend_no_listo') {
         return { tipo: 'no_listo', falta: res.d && Array.isArray(res.d.falta) ? res.d.falta.filter(function (x) { return typeof x === 'string' && BOT_FALTA.test(x); }) : [] };
       }
-      var duda = res.codigo === 'sin_red' || res.codigo === 'edge_no_disponible' || res.codigo === 'respuesta_ilegible' || res.status >= 500;
+      // Duda = la petición pudo llegar y no se sabe qué hizo. No hay duda (es un error, no se guardó) si no llegó a salir (sin URL de la edge: status 0)
+      // o si la puerta la rechazó antes de la función (404, 401, 403): «no se sabe» ahí congelaría el bloque cuando seguro que no se guardó (revisor 14-oct).
+      var noSalio = (res.codigo === 'edge_no_disponible' && res.status === 0) || res.status === 404 || res.status === 401 || res.status === 403;
+      var duda = !noSalio && (res.codigo === 'sin_red' || res.codigo === 'edge_no_disponible' || res.codigo === 'respuesta_ilegible' || res.status >= 500);
       if (!duda) return { tipo: 'error', codigo: res.codigo || 'respuesta_ilegible' };
       return Promise.resolve().then(function () { return f({ accion: 'estado' }); }).then(function (r2) {
         var b2 = r2 && r2.d && r2.d.ok === true ? botForma(r2.d.bot_backend) : null;
