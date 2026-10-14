@@ -49,13 +49,21 @@ function estadoInst(activos, conSetup) {
 const ACT0 = ['base', 'productos', 'reservas-producto', 'bancos', 'whatsapp-bot'];
 const llamadas = [];
 function cierra(set) { const s = new Set(set); let cambia = true; while (cambia) { cambia = false; for (const k of [...s]) for (const d of DEPENDE[k] || []) if (!s.has(d)) { s.add(d); cambia = true; } } return [...s]; }
+// EU4 (20261014097000) y A14 (096000) en el doble: encender exige un ensayo del conjunto EXACTO (con base, ordenado); sin él, `sin_ensayo` con
+// {conjunto, motivo}. Ensayado solo el conjunto CERRADO de Facturas (S01); Recibos solo lo rechaza el disparador de tipo (`rechazo`)
+const clave = a => [...new Set(['base', ...a])].sort().join(',');
+const ENSAYADOS = new Set([clave(cierra([...ACT0, 'facturas']))]);
+const RECHAZOS = { [clave([...ACT0, 'recibos'])]: { codigo: 'modulo_de_otro_tipo', lista: null } };
 function simula(actuales, activos) {
   const faltan = {};
   activos.forEach(k => { const f = (DEPENDE[k] || []).filter(d => activos.indexOf(d) === -1); if (f.length) faltan[k] = f; });
   return { enciende: activos.filter(k => actuales.indexOf(k) === -1), apaga: actuales.filter(k => activos.indexOf(k) === -1),
     faltan_dependencias: faltan, sugerido_con_dependencias: cierra(activos), sugerido_sin_dependientes: activos,
     no_instalables: [], edges_faltan: {}, desconocidos: [],
-    condiciones_faltan: activos.indexOf('gastos') !== -1 && actuales.indexOf('gastos') === -1 ? { gastos: ['terminos_sin_aceptar'] } : undefined };
+    condiciones_faltan: activos.indexOf('gastos') !== -1 && actuales.indexOf('gastos') === -1 ? { gastos: ['terminos_sin_aceptar'] } : undefined,
+    sin_ensayo: activos.some(k => actuales.indexOf(k) === -1) && !ENSAYADOS.has(clave(activos))
+      ? { conjunto: clave(activos).split(','), motivo: 'no hay un ensayo vigente de este conjunto' } : null,
+    rechazo: RECHAZOS[clave(activos)] || null, regla_sin_mirar: null };
 }
 function edge(cuerpo) {
   llamadas.push(cuerpo);
@@ -221,6 +229,23 @@ const ajena = [], marcaGoogle = [];
     txt: document.getElementById('dlg-cuerpo').textContent }));
   ok('condiciones_faltan: bloquea sin botón de encender', cfd.t === 'No se puede aplicar' && cfd.ok && /terminos_sin_aceptar/.test(cfd.txt), JSON.stringify(cfd));
   await p.click('#dlg button[value="no"]');
+
+  // ── EU4: sin ensayo del conjunto final bloquea con el conjunto; un rechazo de la base tapa la falta de ensayo ───────────────────────────
+  // (S01 de arriba ya mide que con dependencias por cerrar la falta de ensayo del conjunto INCOMPLETO no bloquea: el cerrado está ensayado)
+  await p.click('#modulos [data-mod="sociedades"]');
+  await p.waitForSelector('#dlg[open]');
+  const se = await p.evaluate(() => ({ t: document.getElementById('dlg-titulo').textContent, okOculto: document.getElementById('dlg-ok').classList.contains('hidden'),
+    txt: document.getElementById('dlg-cuerpo').textContent }));
+  ok('EU4: sin ensayo del conjunto final bloquea, sin botón, y dice qué conjunto ensayar', se.t === 'No se puede aplicar' && se.okOculto &&
+    /tiene que ensayar este conjunto/.test(se.txt) && /sociedades/.test(se.txt) && /no hay un ensayo vigente/.test(se.txt), JSON.stringify(se));
+  await p.click('#dlg button[value="no"]');
+  await p.click('#modulos [data-mod="recibos"]');
+  await p.waitForSelector('#dlg[open]');
+  const rz = await p.evaluate(() => ({ t: document.getElementById('dlg-titulo').textContent, txt: document.getElementById('dlg-cuerpo').textContent }));
+  ok('A14+EU4: con rechazo y sin ensayo a la vez sale SOLO el rechazo (ningún ensayo lo arregla)', rz.t === 'No se puede aplicar' &&
+    /otro tipo de ERP/.test(rz.txt) && /Ningún ensayo lo cambia/.test(rz.txt) && !/tiene que ensayar/.test(rz.txt), JSON.stringify(rz));
+  await p.click('#dlg button[value="no"]');
+  ok('EU4: ni el bloqueo ni el rechazo aplican nada', llamadas.filter(c => c.accion === 'cambia').length === 1);
 
   // ── una base que aún no manda `setup` ─────────────────────────────────────────────────────────────────────────────────────────
   await p.click('#lista-instancias [data-inst="old-base"]');

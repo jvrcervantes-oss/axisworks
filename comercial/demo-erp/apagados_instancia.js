@@ -32,14 +32,14 @@
   window.AXW_MAPA_MODULOS = M;
   var raiz = document.documentElement;
 
-  var estado = { listo: false, activos: null, error: null };   // activos: {modulo: true} (o 'todos', que desde D1 ya no se pone: null = solo base)
+  var estado = { listo: false, activos: null, error: null };   // activos: {modulo: true}; desde D1 nunca «todos» (sin fila = solo base)
   var avisaListo;
   var pListo = new Promise(function (r) { avisaListo = r; });
 
   function activo(mod) {
     if (!mod || mod === 'base') return true;
     if (estado.error || !estado.listo) return false;
-    return estado.activos === 'todos' || !!estado.activos[mod];
+    return !!estado.activos[mod];
   }
 
   /* Para las GUARDAS de pantalla de otros ficheros (desacople del núcleo comercial, 5-oct-2026). Distinto de activo(): activo()
