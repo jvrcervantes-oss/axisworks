@@ -302,6 +302,28 @@ for nombre, dd in (('ID_TL', ID), ('fotos', FG['id'])):
 mira('una sola traducción por clave con los demás diccionarios (%s)' % '; '.join(choques[:4]), not choques)
 mira('ID_TL se declara como lo lee test_idiomas_instancia.py (var ID_TL = { … \\n  };)', re.search(r'\n  var ID_TL = \{', JS) is not None and '\n  };' in JS[JS.index('var ID_TL = {'):])
 
+# B9 (N4/T, 14-oct-2026): «Necesario para abrir el Taller» tiene una sola fuente, el `exige_taller` de los pasos taller_* en erp/modulos.json (que
+# erp/modulos.py --check ata a _taller_setup_estado). Los pasos de una instancia vienen de su base (erp_modulos.setup, sin ese campo), así que la
+# pantalla lleva su lista NECESARIO_TALLER y aquí se comprueba que es la misma. Sin el campo en la agencia (B9 sin aterrizar), NO COMPROBADO.
+def necesario_taller(js):
+    m = re.search(r'var NECESARIO_TALLER = \{([^}]*)\}', js)
+    return None if not m else set(re.findall(r'(\w+)\s*:\s*1', m.group(1)))
+def exige_registro(ruta):
+    pasos = (json.load(open(ruta, encoding='utf-8')).get('setup', {}).get('modulos', {}).get('reservas-producto') or {}).get('pasos') or []
+    taller = [p for p in pasos if p.get('clave', '').startswith('taller_')]
+    if not taller or any('exige_taller' not in p for p in taller):
+        return None
+    return {p['clave'] for p in taller if p['exige_taller'] is True}
+_comun_js = open(os.path.join(AQUI, 'setup_comun.js'), encoding='utf-8').read()
+_reg = os.path.join(build.AGENCIA, 'erp', 'modulos.json')
+_exige = exige_registro(_reg) if os.path.isfile(_reg) else None
+if _exige is None:
+    NO_COMPROBADO.append('B9: erp/modulos.json de la agencia sin exige_taller en los pasos taller_* (B9 sin aterrizar): NECESARIO_TALLER sin comparar')
+else:
+    mira('B9: NECESARIO_TALLER de setup_comun.js = los pasos con exige_taller del registro (%s vs %s)' % (sorted(necesario_taller(_comun_js) or []), sorted(_exige)),
+         necesario_taller(_comun_js) == _exige)
+mira('B9 contraprueba: una lista distinta no casa', necesario_taller('var NECESARIO_TALLER = { taller_revisiones: 1 };') != {'taller_revisiones', 'taller_mecanicos'})
+
 print('ok: %d comprobaciones' % casos if not fallos else 'FALLOS (%d de %d):\n  %s' % (len(fallos), casos, '\n  '.join(fallos)))
 for n in NO_COMPROBADO:
     print('NO COMPROBADO: ' + n)
