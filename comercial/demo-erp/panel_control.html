@@ -946,7 +946,7 @@ window.AXW_ASIS = (function () {
   function activosDe(inst) {
     var e = inst.estado;
     if (!e) return [];
-    if (e.activos === null) return e.modulos.map(function (m) { return m.modulo; });   // sin lista = todo encendido
+    if (e.activos === null) return ['base'];   // sin lista = SOLO base (D1, 20261014097100: la base cuenta igual)
     return e.activos.slice();
   }
 
