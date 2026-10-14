@@ -128,7 +128,7 @@ function rpc(B, n, a, u) {
       const motos = B.motos.filter(m => m.estado !== 'baja').map(m => { const v = vivaDe(m.id); const p = B.productos.find(x => x.id === m.producto_id);
         const x = { id: m.id, numero: m.numero_unidad, identificador: m.identificador, modelo_id: m.producto_id, modelo: p.nombre, estado: m.estado,
                  orden_viva: v && !v.oculta ? { id: v.id, numero: v.numero, paso: v.paso, estado: v.estado, abierta_por_email: correo(v.abierta_por) } : null };
-        if (!B.o.sinHistorial) x.con_historial = B.ordenes.some(o => o.unidad_id === m.id);   // 20261015014000 (F13)
+        if (!B.o.sinHistorial) x.con_historial = esAdmin(u) ? B.ordenes.some(o => o.unidad_id === m.id) : null;   // 20261015014000 (F13): solo admin
         return x; });
       const vivas = B.ordenes.filter(o => o.estado !== 'cerrada' && !o.oculta).map(o => { const m = B.motos.find(x => x.id === o.unidad_id);
         return { id: o.id, numero: o.numero, unidad_id: o.unidad_id, identificador: m.identificador, modelo: XSS_MOD, paso: o.paso, estado: o.estado, motivo_tipo: o.motivo_tipo, abierta_por_email: correo(o.abierta_por) }; });
