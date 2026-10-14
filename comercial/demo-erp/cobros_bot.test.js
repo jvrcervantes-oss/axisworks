@@ -198,8 +198,12 @@ const no = (status, codigo, extra) => ({ status, json: Object.assign({ ok: false
   const errores = new Set();
   Object.values(DOBLE.edge.acciones.bot_backend.errores).forEach(l => l.forEach(x => errores.add(String(x).split(' ')[0])));
   const ts = path.join(RAIZ, 'erp', 'funciones', 'ajustes-pagos', 'index.ts');
-  if (fs.existsSync(ts)) {
-    const src = fs.readFileSync(ts, 'utf8');
+  const tsSrc = fs.existsSync(ts) ? fs.readFileSync(ts, 'utf8') : '';
+  // la edge de antes de B10 (agencia sin aterrizar 20261014082000) no tiene la acción: se avisa y se mide con el doble. Si la nombra y la regex no la
+  // encuentra, es ROJO: se rompió la lectura, no es una edge vieja.
+  if (tsSrc && !/accion === 'bot_backend'/.test(tsSrc)) console.log('AVISO: la edge de ' + ts + ' es de antes de B10: los códigos de error salen solo del doble');
+  else if (tsSrc) {
+    const src = tsSrc;
     const bloque = (src.match(/if \(accion === 'bot_backend'\) \{[\s\S]*?\n {2}\}\n/) || [''])[0];
     const reaut = (src.match(/const reautentica = [\s\S]*?\n {2}\};\n/) || [''])[0];
     ok('index.ts: se encuentran la acción bot_backend y la reautenticación', !!bloque && !!reaut);
