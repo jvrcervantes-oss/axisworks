@@ -112,6 +112,11 @@ body.ax-app{background:var(--aw-chalk);color:var(--aw-night);font-family:var(--a
 .ax-kv dt{color:var(--aw-text3)}.ax-kv dd{margin:0;min-width:0;font-weight:700;overflow-wrap:anywhere}
 .ax-kv dd small{display:block;font-weight:500;font-size:13px;color:var(--aw-text3)}
 .ax-err-t{color:var(--aw-err)}
+/* N4/T F1 (14-oct-2026): el administrador principal en la Ficha */
+.ax-prop{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-weight:500}
+.ax-prop input{flex:1 1 200px;min-width:0;min-height:44px;padding:0 12px;border:1.5px solid var(--aw-control);border-radius:10px;font:500 15px var(--aw-f-sans);color:var(--aw-night);background:var(--aw-white)}
+.ax-prop button{min-height:44px}
+.ax-prop .ax-btn-sec{background:var(--aw-white);color:var(--aw-night);border-color:var(--aw-control)}
 .ax-h3s{margin:0 0 12px;color:var(--aw-text3)}
 .ax-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
 .ax-modc{display:flex;flex-direction:column;gap:10px;padding:20px;min-height:168px;border-radius:var(--aw-r-tile);background:var(--aw-white);border:1px solid var(--aw-line)}
@@ -980,8 +985,60 @@ window.AXW_ASIS = (function () {
       fila('Nombre', esc(f.marca || '—'), 'Lo cambia el estudio en el registro y el instalador lo lleva a la base.') +
       fila('Dominio', esc(f.dominio_web || '—'), 'Cambiarlo es DNS y republicar: lo hace el estudio.') +
       fila('Intranet', esc(f.url_intranet || '—'), '') +
-      fila('Superadmin', admins, 'Alta: el estudio con el instalador (la cuenta tiene que existir antes).') +
+      fila('Administrador principal', propietarioHtml(i, e), 'El primer administrador del cliente: lo invitas aquí y él pone su contraseña desde el correo. Es uno solo y nunca una cuenta del estudio.') +
+      fila('Superadmin', admins, 'Todas las cuentas con todos los permisos, también las del estudio.') +
       '</dl>' + (avisos.length ? '<p class="ax-err-t" style="margin:12px 0 0;font-size:14px">' + avisos.join(' ') + '</p>' : '');
+  }
+
+  /* Administrador principal (N4/T F1, 14-oct-2026, erp-setup-b1b5). Lo que dice la base de la instancia (`estado.propietario`, que une
+     erp-control-local): null = aún no hay; {email, invitado_en, activo} = invitado (activo = ya puso su contraseña). Sin la clave = la base
+     aún no tiene la migración 098000 y no se ofrece nada. La pantalla no decide: invitar, reenviar y retirar los comprueba la base
+     (un solo propietario, nunca del estudio, topes) y el correo con el enlace lo manda la instancia; aquí no llega nunca el enlace. */
+  function propietarioHtml(i, e) {
+    if (!Object.prototype.hasOwnProperty.call(e, 'propietario')) return '<span class="ax-err-t" data-propietario="sin_dato">La base de esta instancia aún no lo gestiona (le falta la actualización del estudio).</span>';
+    var p = e.propietario;
+    if (!p) {
+      if (!i.editable) return '<span data-propietario="ninguno">Ninguno todavía.</span>';
+      return '<span data-propietario="ninguno">Ninguno todavía.</span><span class="ax-prop">' +
+        '<input id="prop-email" type="email" autocomplete="off" maxlength="254" placeholder="correo del cliente" aria-label="Correo del administrador principal">' +
+        '<input id="prop-nombre" type="text" autocomplete="off" maxlength="120" placeholder="nombre (opcional)" aria-label="Nombre del administrador principal">' +
+        '<button type="button" class="ax-btn-dark" data-prop="invita">Aprobar invitación</button></span>';
+    }
+    var cuando = p.invitado_en ? new Date(p.invitado_en) : null;
+    var fecha = cuando && !isNaN(cuando) ? cuando.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    if (p.activo) return '<span data-propietario="activo">' + esc(p.email) + '</span><small>Ya ha puesto su contraseña.</small>';
+    return '<span data-propietario="invitado">' + esc(p.email) + ' <span class="ax-err-t">· invitado' + (fecha ? ' el ' + esc(fecha) : '') + ', aún no ha entrado</span></span>' +
+      (i.editable ? '<span class="ax-prop"><button type="button" class="ax-btn ax-btn-sec" data-prop="reenvia">Reenviar invitación</button>' +
+        '<button type="button" class="ax-btn ax-btn-sec" data-prop="retira">Retirar invitación</button></span>' : '');
+  }
+  var RE_CORREO_PROP = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  function propietario(accion) {
+    if (ocupado || !actual || !actual.editable || !actual.estado) return;
+    var inst = actual, cuerpo = { accion: accion + '_admin', instancia: inst.nombre }, previo;
+    if (accion === 'invita') {
+      var email = (($('prop-email') || {}).value || '').trim().toLowerCase(), nom = (($('prop-nombre') || {}).value || '').trim();
+      if (!RE_CORREO_PROP.test(email)) { toast('Escribe el correo del administrador principal del cliente.'); if ($('prop-email')) $('prop-email').focus(); return; }
+      cuerpo.email = email; if (nom) cuerpo.nombre = nom;
+      previo = dialogo('<p>Se crea la cuenta de <b>' + esc(email) + '</b> como administrador principal de ' + esc(inst.marca) + ', sin contraseña, y la instancia le manda un correo con el enlace para ponerla.</p>' +
+        '<p class="ax-md">Solo puede haber uno. Mientras no entre, puedes reenviar la invitación o retirarla.</p>', 'Aprobar invitación', null, 'Administrador principal', 'Invitar · ' + inst.marca);
+    } else if (accion === 'retira') {
+      previo = dialogo('<p>Se borra la invitación de <b>' + esc(inst.estado.propietario.email) + '</b>: el enlace que recibió deja de valer y podrás invitar a otra persona.</p>',
+        'Retirar invitación', null, 'Administrador principal', 'Retirar · ' + inst.marca);
+    } else previo = Promise.resolve('ok');
+    ocupado = true;
+    previo.then(function (v) {
+      if (v !== 'ok') return;
+      return pide(cuerpo).then(function (d) {
+        if (d.__estado === 200 && d.ok) {
+          if (accion === 'retira') toast('Invitación retirada.');
+          else if (d.enviado) toast(accion === 'invita' ? 'Invitación enviada: le ha llegado el correo con el enlace.' : 'Invitación reenviada.');
+          else toast('Creado; el correo no ha salido. Reenvía la invitación cuando el correo funcione.');
+          return carga(true);
+        }
+        toast(d.mensaje || 'Respuesta inesperada (' + d.__estado + '). Recargo el estado para ver qué quedó.');
+        return carga(true);
+      });
+    }).catch(function (e) { toast(e.message); }).then(function () { ocupado = false; });
   }
 
   /* Resumen del setup de la instancia (solo lectura, de su base): cuántos encendidos están listos, a medias o sin configurar, y la base
@@ -1408,7 +1465,7 @@ window.AXW_ASIS = (function () {
   }
 
   document.addEventListener('click', function (ev) {
-    var t = ev.target.closest && ev.target.closest('[data-accion],[data-mod],[data-inst],#reintenta,[data-mapa-tipo]');
+    var t = ev.target.closest && ev.target.closest('[data-accion],[data-mod],[data-inst],#reintenta,[data-mapa-tipo],[data-prop]');
     if (!t) return;
     if (t.hasAttribute('data-mapa-tipo')) {   // del asistente al mapa con su tipo marcado (vistaActual cierra el asistente)
       ev.preventDefault();
@@ -1416,6 +1473,7 @@ window.AXW_ASIS = (function () {
       if (location.hash === '#mapa') vistaActual(); else location.hash = '#mapa';
       return;
     }
+    if (t.hasAttribute('data-prop')) { ev.preventDefault(); if (!t.disabled) propietario(t.getAttribute('data-prop')); return; }
     if (t.hasAttribute('data-accion')) { ev.preventDefault(); if (!t.disabled) asisAccion(t); }
     else if (t.id === 'reintenta') carga(true).catch(function (e) { toast(e.message); });
     else if (t.hasAttribute('data-inst')) elige(t.getAttribute('data-inst'));

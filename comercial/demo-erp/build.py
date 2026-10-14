@@ -4609,6 +4609,46 @@ IDIOMAS_PINTABLES_BASE = ("  var IDIOMAS_PINTABLES = [['es', 'en'], ['id', 'en']
                           "(Array.isArray(window.AXW_IDIOMAS_BUILD) && window.AXW_IDIOMAS_BUILD.indexOf('id') >= 0); });")
 
 
+# ── N4/T F2 (14-oct-2026, erp-setup-b1b5): /usuarios/ da de alta por INVITACIÓN, sin contraseña ───────────────────────────────────────────────
+# Owner 14-oct: «Si tengo que darte cosas es porque el ERP está mal»; y nadie fija ni ve la contraseña de otro. La edge admin-usuarios de cada
+# instancia (parche de erp/nueva_instancia.py, B1) tiene la acción `invitar`: crea la cuenta SIN contraseña y manda el enlace a
+# /crea-contrasena/ por el correo de la instancia; el enlace nunca vuelve al navegador. Aquí solo cambia el formulario de la COPIA de Lawang:
+# fuera el campo «Contraseña provisional» y su comprobación, `accion: 'invitar'` sin `password`, y los textos de lo que pasa. Mismos campos
+# `k` y misma edge (enganche por identificador, norma del 29-sep). Reemplazos literales que paran si Lawang cambia el trozo; Lawang no cambia.
+USUARIOS_INVITACION = (
+    ("          { k: 'password', label: 'Contraseña provisional', req: 1, medio: 1,\n"
+     "            ayuda: 'Mínimo 10 caracteres. La verá al entrar; que la cambie después. No se puede volver a consultar.' },\n", ''),
+    ("{ tipo: 'nota', label: 'Se crea la cuenta y se le da acceso de inmediato. Nace sin ningún proyecto asignado — se asigna después editando la ficha ya creada.' },",
+     "{ tipo: 'nota', label: 'Le llega un correo con un enlace para poner su contraseña: nadie más la ve. Hasta que la ponga no puede entrar.' },"),
+    ("], 'Crear usuario', function (v) {", "], 'Enviar invitación', function (v) {"),
+    ("          if ((v.password || '').length < 10) return { error: { message: 'la contraseña necesita 10 caracteres o más' } };\n", ''),
+    ("                accion: 'crear', email: email, password: v.password,\n", "                accion: 'invitar', email: email,\n"),
+    ("              if (d.email_enviado === false) {\n"
+     "                aviso('Usuario creado: ' + email + '. Aviso: no se pudo enviar el correo de bienvenida — dale la contraseña a mano.' + noDados, '#8A6A34');\n"
+     "              } else {\n"
+     "                aviso('Usuario creado: ' + email + ' — correo de bienvenida enviado.' + noDados, noDados ? '#8A6A34' : undefined);\n"
+     "              }\n",
+     "              if (d.enviado === false) {\n"
+     "                aviso('Invitación creada para ' + email + ', pero el correo no ha salido: reenvíala desde su ficha cuando el correo funcione.' + noDados, '#8A6A34');\n"
+     "              } else {\n"
+     "                aviso('Invitación enviada a ' + email + ': pondrá su contraseña desde el correo.' + noDados, noDados ? '#8A6A34' : undefined);\n"
+     "              }\n"),
+    ("              if (d.user_id) u2.searchParams.set('u', email); else u2.searchParams.delete('u');\n",
+     "              if (d.usuario_id) u2.searchParams.set('u', email); else u2.searchParams.delete('u');\n"),
+)
+
+
+def usuarios_por_invitacion():
+    """F2: el alta de /usuarios/ de la instancia por invitación (ver USUARIOS_INVITACION). Solo toca DIST."""
+    js = os.path.join(DIST, 'intranet', 'v4', 'assets', 'editores.js')
+    e = open(js, encoding='utf-8').read()
+    for viejo, nuevo in USUARIOS_INVITACION:
+        e = _una_vez(e, viejo, nuevo, 'usuarios_por_invitacion editores.js')
+    if "accion: 'crear', email: email" in e or "k: 'password', label: 'Contraseña provisional'" in e:
+        aborta('usuarios_por_invitacion: queda un alta con contraseña en editores.js')
+    open(js, 'w', encoding='utf-8', newline='').write(e)
+
+
 def setup_comun_pasos():
     """setup_comun.js detrás de setup_pasos.js en /ajustes/configurar/ y en /ajustes/ (todas las instancias: el módulo base está en todas), y el adaptador
     de Ajustes › Idiomas contra la base. Va después de asistente_setup_pantalla() y ajustes_puesta_en_marcha(). Reemplazos literales que paran si cambia el
@@ -5291,6 +5331,7 @@ def instancia(nombre):
     asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)
     ajustes_puesta_en_marcha()   # F3 (12-oct-2026): Ajustes › Configurar módulos, primera pestaña, en todas las instancias (antes solo las de reservas)
     ajustes_cobros()   # F3 E2 (12-oct-2026): Ajustes › Cobros y el paso «cobros» (oculto hasta que la base declare el paso)
+    usuarios_por_invitacion()   # N4/T F2 (14-oct-2026): /usuarios/ invita sin contraseña (admin-usuarios `invitar`, B1)
     setup_comun_pasos()   # F3 (12-oct-2026, bbm-p31): pasos negocio/idiomas/correo/taller_* y Ajustes › Idiomas contra la base
     textos_instancia(nombre)   # owner 12-oct («Sí, tal cual»): fuera proyectos, villas y Cartas de Reserva de las pantallas comunes de la instancia
     oculta_por_modulo()   # bbm-p39 (13-oct): columnas, vista y selector de contrato que no tienen sentido con su módulo apagado
