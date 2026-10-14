@@ -302,6 +302,44 @@ for nombre, dd in (('ID_TL', ID), ('fotos', FG['id'])):
 mira('una sola traducción por clave con los demás diccionarios (%s)' % '; '.join(choques[:4]), not choques)
 mira('ID_TL se declara como lo lee test_idiomas_instancia.py (var ID_TL = { … \\n  };)', re.search(r'\n  var ID_TL = \{', JS) is not None and '\n  };' in JS[JS.index('var ID_TL = {'):])
 
+# B9 (N4/T, 14-oct-2026): «Necesario para abrir el Taller» tiene una sola fuente, el `exige_taller` de los pasos taller_* en erp/modulos.json (que
+# erp/modulos.py --check ata a _taller_setup_estado). Los pasos de una instancia vienen de su base (erp_modulos.setup, sin ese campo), así que la
+# pantalla lleva su lista NECESARIO_TALLER y aquí se comprueba que es la misma. Sin el campo en la agencia, NO COMPROBADO solo mientras B9 no haya aterrizado (sin taller_exige_roto en modulos.py); después, rojo.
+def necesario_taller(js):
+    m = re.search(r'var NECESARIO_TALLER = \{([^}]*)\}', js)
+    return None if not m else set(re.findall(r'(\w+)\s*:\s*1', m.group(1)))
+def exige_registro(ruta):
+    pasos = (json.load(open(ruta, encoding='utf-8')).get('setup', {}).get('modulos', {}).get('reservas-producto') or {}).get('pasos') or []
+    taller = [p for p in pasos if p.get('clave', '').startswith('taller_')]
+    if not taller or any('exige_taller' not in p for p in taller):
+        return None
+    return {p['clave'] for p in taller if p['exige_taller'] is True}
+_comun_js = open(os.path.join(AQUI, 'setup_comun.js'), encoding='utf-8').read()
+_reg = os.path.join(build.AGENCIA, 'erp', 'modulos.json')
+_exige = exige_registro(_reg) if os.path.isfile(_reg) else None
+# el escape caduca solo: con B9 ya en la agencia (modulos.py trae taller_exige_roto), un registro sin el campo o sin pasos taller_* es rojo
+_b9_en_agencia = 'def taller_exige_roto(' in open(os.path.join(build.AGENCIA, 'erp', 'modulos.py'), encoding='utf-8').read()
+if _exige is None and not _b9_en_agencia:
+    NO_COMPROBADO.append('B9: erp/modulos.json de la agencia sin exige_taller en los pasos taller_* (B9 sin aterrizar): NECESARIO_TALLER sin comparar')
+else:
+    mira('B9: NECESARIO_TALLER de setup_comun.js = los pasos con exige_taller del registro (%s vs %s)' % (sorted(necesario_taller(_comun_js) or []), sorted(_exige or [])),
+         _exige is not None and necesario_taller(_comun_js) == _exige)
+mira('B9 contraprueba: una lista distinta no casa', necesario_taller('var NECESARIO_TALLER = { taller_revisiones: 1 };') != {'taller_revisiones', 'taller_mecanicos'})
+def _registro_inventado(pasos):
+    d = tempfile.mkdtemp()
+    ruta = os.path.join(d, 'modulos.json')
+    json.dump({'setup': {'modulos': {'reservas-producto': {'pasos': pasos}}}}, open(ruta, 'w', encoding='utf-8'))
+    try:
+        return exige_registro(ruta)
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+_otro = _registro_inventado([{'clave': 'taller_revisiones', 'exige_taller': True}, {'clave': 'taller_mecanicos', 'exige_taller': False},
+                             {'clave': 'taller_recambios', 'exige_taller': True}])
+mira('B9 contraprueba: un registro con otro exige_taller no casa con NECESARIO_TALLER (%s)' % sorted(_otro or []),
+     _otro == {'taller_revisiones', 'taller_recambios'} and necesario_taller(_comun_js) != _otro)
+mira('B9 contraprueba: un paso taller_* sin exige_taller deja el registro sin lista (None)',
+     _registro_inventado([{'clave': 'taller_revisiones', 'exige_taller': True}, {'clave': 'taller_mecanicos'}]) is None)
+
 print('ok: %d comprobaciones' % casos if not fallos else 'FALLOS (%d de %d):\n  %s' % (len(fallos), casos, '\n  '.join(fallos)))
 for n in NO_COMPROBADO:
     print('NO COMPROBADO: ' + n)
