@@ -24,7 +24,7 @@ const mas = n => { const d = new Date(HOY.getFullYear(), HOY.getMonth(), HOY.get
 function nuevaBase(o = {}) {
   return {
     llamadas: [], seq: 0, o,
-    clientes: [{ id: 'c1', nombre: 'Ana <b>Q</b>' }, { id: 'c2', nombre: 'Bob' }],
+    clientes: o.clientes || [{ id: 'c1', nombre: 'Ana <b>Q</b>' }, { id: 'c2', nombre: 'Bob' }],
     productos: [{ id: 'p1', numero: 'PRD-1', nombre: 'Honda Beat', activo: true,
       unidades: [{ id: 'u1', numero: 'UND-1', identificador: XSS_MATRICULA, estado: 'disponible', notas: null },
                  { id: 'u2', numero: 'UND-2', identificador: 'DK 2', estado: 'disponible', notas: null },
@@ -116,6 +116,11 @@ async function servidor(b, nombre, a) {
     case 'reserva_producto_cotiza': {
       if (o.cotizaImpuesto) return err('22023', 'Falta decir si las tarifas llevan el impuesto incluido (precio_incluye_impuesto = si | no): lo fija el gestor', 'impuesto_no_configurado');
       // S2 de F3 (12-oct-2026): _exige_configurado niega con 55000, hint <modulo>_sin_configurar y la clave del paso en details
+      if (o.cotizaRed) return { data: null, error: { message: 'Failed to fetch' } };   // bbm-comodidad F6: la red, sin code
+      if (o.cotizaPermiso) return err('42501', 'sin permiso para reservar');
+      if (o.cotizaSinSesion) return err('42501', 'sin sesión', 'sin_sesion');
+      if (o.cotizaJwt) return err('PGRST301', 'JWT expired');
+      if (o.cotizaApagado) return err('42501', 'módulo no activo', 'modulo_apagado');
       if (o.cotizaSinConfig) return err('55000', 'El módulo no está configurado', o.cotizaSinConfig === 'moneda' ? 'base_sin_configurar' : 'reservas-producto_sin_configurar', o.cotizaSinConfig);
       if (a.p_desde < mas(0)) return err('22023', 'La recogida no puede ser en el pasado');
       const pr = b.productos.find(x => x.id === a.p_producto_id);
@@ -522,6 +527,45 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
       if (SHOT && paso === 'flota') await p.screenshot({ path: SHOT + '_E11c_sin_configurar.png' });
       await ctx.close();
     }
+  }
+  {
+    // bbm-comodidad F6 (15-oct-2026): un fallo de red o de permiso al cotizar NO se dice como «ninguna moto se puede reservar»
+    const MOTIVO = { cotizaRed: 'La base no ha respondido', cotizaPermiso: 'No tienes permiso para hacer reservas', cotizaSinSesion: 'La sesión ha caducado',
+      cotizaJwt: 'La sesión ha caducado', cotizaApagado: 'está apagado en esta instancia' };
+    for (const caso of Object.keys(MOTIVO)) {
+      const { base, p, ctx } = await abre({ base: { [caso]: true } });
+      await hastaMoto(p);
+      const t = await txt(p, '[data-rp="as-bloqueo"]');
+      ok('F6 · ' + caso + ': dice que no se pudo mirar y por qué, sin culpar a la disponibilidad', t.includes('No se ha podido mirar la disponibilidad') && t.includes(MOTIVO[caso]) && !t.includes('Ninguna moto se puede reservar') && !t.includes('esta lista'), t);
+      ok('F6 · ' + caso + ': no se crea nada', llamadas(base, 'reserva_producto_crea').length === 0);
+      await ctx.close();
+    }
+  }
+  {
+    // bbm-comodidad F5 (15-oct-2026): con más de 5 clientes hay casilla «Buscar cliente» que filtra la lista sin repintar y sin perder el foco
+    const muchos = [{ id: 'c1', nombre: 'Ana <b>Q</b>' }, { id: 'c2', nombre: 'Bob' }, { id: 'c3', nombre: 'Kadek Ayu' }, { id: 'c4', nombre: 'Ketut Ayu' },
+      { id: 'c5', nombre: 'José Martínez' }, { id: 'c6', nombre: 'Wayan' }, { id: 'c7', nombre: 'Made' }];
+    const { base, p, ctx } = await abre({ base: { clientes: muchos } });
+    await hastaCliente(p);
+    await espera(p, () => document.querySelector('[data-as="filtroCliente"]'));
+    const opciones = () => p.$$eval('[data-as="cliente"] option', os => os.filter(o => o.value).map(o => o.textContent));
+    ok('F5 · sin filtro salen los 7 clientes', (await opciones()).length === 7);
+    await p.focus('[data-as="filtroCliente"]'); await p.keyboard.type('ayu');
+    ok('F5 · «ayu» deja solo los dos Ayu', JSON.stringify(await opciones()) === JSON.stringify(['Kadek Ayu', 'Ketut Ayu']), JSON.stringify(await opciones()));
+    ok('F5 · el foco sigue en la casilla mientras se teclea', await p.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-as') === 'filtroCliente'));
+    await p.fill('[data-as="filtroCliente"]', 'jose martinez');
+    ok('F5 · sin tildes ni mayúsculas: «jose martinez» encuentra a José Martínez', JSON.stringify(await opciones()) === JSON.stringify(['José Martínez']));
+    await p.fill('[data-as="filtroCliente"]', 'zzz');
+    ok('F5 · sin coincidencias lo dice, sin opción elegible', (await p.$eval('[data-as="cliente"]', s => s.textContent)).includes('Ningún cliente con ese nombre') && (await opciones()).length === 0);
+    await p.fill('[data-as="filtroCliente"]', 'kadek');
+    await p.selectOption('[data-as="cliente"]', 'c3');
+    ok('F5 · elegido, el filtro sigue escrito y la ficha queda elegida', (await p.$eval('[data-as="filtroCliente"]', i => i.value)) === 'kadek' && (await p.$eval('[data-as="cliente"]', s => s.value)) === 'c3');
+    await p.fill('[data-as="filtroCliente"]', 'wayan');
+    ok('F5 · la ficha elegida no se pierde aunque el filtro ya no case', (await p.$eval('[data-as="cliente"]', s => s.value)) === 'c3');
+    await sig(p); await enPaso(p, 'entrega'); await sig(p); await enPaso(p, 'resumen');
+    await confirma(p); await espera(p, () => document.querySelector('[data-rp="as-hecha"]'));
+    ok('F5 · la reserva se enlaza a la ficha elegida tras filtrar', llamadas(base, 'reserva_producto_crea')[0][1].p_datos.client_id === 'c3');
+    await ctx.close();
   }
   {
     // E12 · la red se cae al confirmar
