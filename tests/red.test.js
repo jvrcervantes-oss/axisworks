@@ -10,7 +10,7 @@ var fs = require('fs'), vm = require('vm'), path = require('path');
 var ANCLA = '  function aplica(j,now){';
 var src = fs.readFileSync(path.join(__dirname, '..', 'assets', 'red.js'), 'utf8');
 if (src.split(ANCLA).length !== 2) { console.error('red.test.js: el ancla de aplica() no aparece exactamente una vez en red.js'); process.exit(1); }
-src = src.replace(ANCLA, '  __T.validar=validar;\n' + ANCLA);
+src = src.replace(ANCLA, '  __T.validar=validar;__T.aplica=aplica;__T.RS=RS;\n' + ANCLA);
 var el = { getAttribute: function () { return null; }, clientWidth: 1000, style: {}, addEventListener: function () {}, getContext: function () { return null; } };
 var win = { __T: {}, matchMedia: null, addEventListener: function () {}, devicePixelRatio: 1, innerHeight: 900 };
 var doc = { getElementById: function () { return el; }, documentElement: { lang: 'en' }, addEventListener: function () {}, hidden: false, querySelector: function () { return null; }, createElement: function () { return { getContext: function () { return null; } }; } };
@@ -19,11 +19,13 @@ try { vm.runInNewContext(src, win); } catch (e) { if (process.env.DEBUG) console
 var validar = win.__T.validar;
 if (typeof validar !== 'function') { console.error('validar no quedó expuesta'); process.exit(1); }
 
-var IDS = ['dev','data','bots','arch','deploy','games','models','pilots','design','marketing','comms','security','quality','legal','admin','docs','org'];
-var CAT = { dev:'construccion',data:'construccion',bots:'construccion',arch:'construccion',games:'construccion',models:'construccion',pilots:'construccion',design:'diseno',marketing:'captacion',comms:'captacion',docs:'documentacion',legal:'gestion',admin:'gestion',security:'verificacion',quality:'verificacion',deploy:'operacion',org:'operacion' };
+var IDS = ['dev','data','bots','arch','deploy','games','models','pilots','design','marketing','comms','security','quality','legal','admin','docs','org','product','ux','support','lang','costs'];
+var NUEVOS = ['product','ux','support','lang','costs'];  /* los 5 del 14-oct-2026: sin ellos queda el JSON de 17 que se publicaba antes */
+var CAT = { dev:'construccion',data:'construccion',bots:'construccion',arch:'construccion',games:'construccion',models:'construccion',pilots:'construccion',design:'diseno',marketing:'captacion',comms:'captacion',docs:'documentacion',legal:'gestion',admin:'gestion',security:'verificacion',quality:'verificacion',deploy:'operacion',org:'operacion',
+  ux:'diseno',lang:'documentacion',product:'gestion',support:'gestion',costs:'gestion' };
 var H = 3600000, gen = Date.UTC(2026, 9, 10, 10), iso = function (t) { return new Date(t).toISOString().slice(0, 19) + 'Z'; };
 function bueno() {
-  return { version: 1, generado: iso(gen), datos_hasta: iso(gen - 2 * H), valido_hasta: iso(gen + 4 * H), retraso_horas: 2, n_departamentos: 17,
+  return { version: 1, generado: iso(gen), datos_hasta: iso(gen - 2 * H), valido_hasta: iso(gen + 4 * H), retraso_horas: 2, n_departamentos: 22,
     departamentos: IDS.map(function (id) { return { id: id, categoria: CAT[id], estado: 'en_reposo' }; }), coordinacion: { estado: 'en_reposo' } };
 }
 var now = gen + H, fallos = 0;
@@ -44,14 +46,40 @@ caso('hora con minutos', function (j) { j.generado = '2026-10-10T10:30:00Z'; }, 
 caso('30 de febrero', function (j) { j.generado = '2026-02-30T10:00:00Z'; }, 'hora');
 caso('validez distinta de 4 h', function (j) { j.valido_hasta = iso(gen + 40 * H); }, 'orden');
 caso('estado inventado', function (j) { dep(j, 'dev').estado = 'trabajando_ahora'; }, 'estado');
-caso('id desconocido', function (j) { dep(j, 'dev').id = 'constructor'; }, 'id');
+caso('id desconocido: se acepta (se ignora)', function (j) { dep(j, 'dev').id = 'constructor'; }, null);
+caso('id desconocido activo sin volumen (podría ser sensible): se acepta', function (j) { j.departamentos.push({ id: 'nuevo', categoria: 'gestion', estado: 'hoy' }); j.n_departamentos++; }, null);
+caso('id desconocido con volumen inventado', function (j) { j.departamentos.push({ id: 'nuevo', categoria: 'gestion', estado: 'hoy', volumen: 'enorme' }); j.n_departamentos++; }, 'vol');
+caso('id con forma rara', function (j) { dep(j, 'dev').id = '<b>x</b>'; }, 'id');
+caso('JSON de 17 con red.js de 22: se acepta', function (j) { j.departamentos = j.departamentos.filter(function (d) { return NUEVOS.indexOf(d.id) < 0; }); j.n_departamentos = 17; }, null);
+caso('n_departamentos no cuadra con la lista', function (j) { j.n_departamentos = 21; }, 'n');
 caso('id repetido', function (j) { dep(j, 'data').id = 'dev'; }, 'id');
+caso('id desconocido repetido', function (j) { dep(j, 'dev').id = 'nuevo'; dep(j, 'data').id = 'nuevo'; }, 'id');
 caso('categoría inventada', function (j) { dep(j, 'dev').categoria = 'clientes'; }, 'cat');
 caso('reposo con volumen', function (j) { dep(j, 'dev').volumen = 'bajo'; }, 'vol');
 caso('activo sin volumen', function (j) { dep(j, 'dev').estado = 'hoy'; }, 'vol');
 caso('deploy sensible en última hora', function (j) { var d = dep(j, 'deploy'); d.estado = 'ultima_hora'; d.volumen = 'bajo'; }, 'sensible');
 caso('deploy sensible con volumen', function (j) { var d = dep(j, 'deploy'); d.estado = 'hoy'; d.volumen = 'alto'; }, 'sensible');
+caso('support sensible con volumen', function (j) { var d = dep(j, 'support'); d.estado = 'hoy'; d.volumen = 'bajo'; }, 'sensible');
+caso('support sensible en última hora', function (j) { dep(j, 'support').estado = 'ultima_hora'; }, 'sensible');
+caso('support activo hoy sin volumen: se acepta', function (j) { dep(j, 'support').estado = 'hoy'; }, null);
 caso('faltan departamentos', function (j) { j.departamentos.pop(); }, 'n');
 caso('coordinación inválida', function (j) { j.coordinacion = { estado: 'hoy' }; }, 'coord');
+/* aplica(): el id desconocido no deja rastro y lo que no viene en el JSON se queda sin estado (estructura). */
+function aplicado(nombre, mut, comprueba) {
+  var j = bueno(); mut(j); win.__T.aplica(j, now); var r = comprueba(win.__T.RS);
+  if (r !== true) { fallos++; console.error('FALLA ' + nombre + ': ' + r); } else console.log('ok   ' + nombre);
+}
+aplicado('aplica: id desconocido ignorado', function (j) { dep(j, 'dev').id = 'constructor'; var d = dep(j, 'data'); d.estado = 'hoy'; d.volumen = 'alto'; }, function (RS) {
+  if (RS.st !== 'ok') return 'estado ' + RS.st;
+  var k = Object.keys(RS.lvl).filter(function (x) { return x !== 'revprev'; });  /* revprev = coordinación, no es departamento */
+  if (k.length !== 21) return 'esperaba 21 con estado y hay ' + k.length;
+  if (['frontend', 'undefined', 'constructor'].some(function (x) { return Object.prototype.hasOwnProperty.call(RS.lvl, x); })) return 'el id desconocido dejó rastro';
+  return RS.lvl.backend === 2 && RS.vol.backend === 'alto' ? true : 'backend no se aplicó';
+});
+aplicado('aplica: JSON de 17, los 5 nuevos sin estado', function (j) { j.departamentos = j.departamentos.filter(function (d) { return NUEVOS.indexOf(d.id) < 0; }); j.n_departamentos = 17; }, function (RS) {
+  if (RS.st !== 'ok') return 'estado ' + RS.st;
+  var hay = ['producto','experiencia','soporte','idiomas','costes'].filter(function (k) { return k in RS.lvl; });
+  return hay.length ? 'con estado sin venir en el JSON: ' + hay : (Object.keys(RS.lvl).length === 17 + 1 ? true : 'esperaba 17 + coordinación');
+});
 console.log(fallos ? fallos + ' caso(s) fallan' : 'red.js validar(): todos los casos pasan');
 process.exit(fallos ? 1 : 0);
