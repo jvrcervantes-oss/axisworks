@@ -1341,6 +1341,22 @@ window.AXW_ASIS = (function () {
     });
   }
 
+  // El `rechazo` de erp_control_simula ({codigo, lista}, lista cerrada de 20261014096000) en una frase; un código que no está aquí sale tal cual
+  function textoRechazo(r) {
+    var t = {
+      modulo_de_otro_tipo: 'es de otro tipo de ERP: esta instancia no lo puede encender',
+      modulo_de_pago: 'es de pago: lo enciende su propia ventana, no este panel',
+      tipos_sin_sembrar: 'la base aún no tiene sembrado de qué tipo es cada módulo',
+      modulo_sin_declarar: 'hay módulos sin declarar en el registro de la base',
+      sin_declarar_dueno: 'hay piezas sin dueño declarado en el registro de la base',
+      modulos_activos_forma: 'la lista de módulos no tiene la forma que pide la base',
+      cuentas_lectura_abierta: 'Cuentas no se enciende mientras su lectura siga abierta en esta base',
+      cuenta_pruebas_solo_mira: 'la cuenta de pruebas solo puede mirar'
+    }[String(r.codigo)];
+    var lista = Array.isArray(r.lista) && r.lista.length ? ' (' + esc(r.lista.join(', ')) + ')' : '';
+    return 'La base no lo enciende: ' + esc(t || String(r.codigo || 'rechazo sin código')) + lista + '. Ningún ensayo lo cambia.';
+  }
+
   function propone(activos, mod, enciende, vuelta) {
     return pide({ accion: 'simula', instancia: actual.nombre, activos: activos }).then(function (d) {
       if (d.__estado !== 200 || !d.simulacion) throw new Error(d.mensaje || 'No se pudo simular el cambio (' + d.__estado + ').');
@@ -1353,8 +1369,11 @@ window.AXW_ASIS = (function () {
       var cf = s.condiciones_faltan && typeof s.condiciones_faltan === 'object' ? Object.keys(s.condiciones_faltan) : [];
       if (cf.length) bloqueos.push(cf.map(function (k) { var v = s.condiciones_faltan[k];
         return esc(nombre(k)) + ' no se puede encender todavía: le falta ' + esc(Array.isArray(v) ? v.join(', ') : String(v)) + ' (lo pide la base).'; }).join(' '));
+      // A14 (20261014096000): lo que frenaría un disparador de la base (otro tipo, de pago, sin declarar…) va en `rechazo`. Va ANTES y TAPA la falta de
+      // ensayo (EU4, 15-oct, rama de bbm): un rechazo así no lo arregla ningún ensayo, y pedir uno sería trabajo para nada
+      if (s.rechazo && typeof s.rechazo === 'object') bloqueos.push(textoRechazo(s.rechazo));
       // EU4 (20261014097000): encender exige un ensayo en rama del conjunto exacto, registrado en la base (lo hace el estudio: rama_prueba --objetivo + registra_ensayo)
-      if (s.sin_ensayo && typeof s.sin_ensayo === 'object') bloqueos.push('El estudio tiene que ensayar este conjunto de módulos antes de encenderlo: ' +
+      else if (s.sin_ensayo && typeof s.sin_ensayo === 'object') bloqueos.push('El estudio tiene que ensayar este conjunto de módulos antes de encenderlo: ' +
         esc(String(s.sin_ensayo.motivo || 'no hay ensayo')) + '.');
       var cambios = '<p>' + (s.enciende.length ? '<strong>Se enciende:</strong> ' + esc(lista(s.enciende)) + '<br>' : '') +
         (s.apaga.length ? '<strong>Se apaga:</strong> ' + esc(lista(s.apaga)) : '') + '</p>';
