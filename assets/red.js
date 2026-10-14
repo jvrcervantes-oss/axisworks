@@ -2,8 +2,10 @@
  * PORTADA: es una ILUSTRACIÓN con datos de ejemplo, no actividad registrada: la página lo dice en tres sitios.
  * MODO DATOS (solo si #netw lleva data-src): pinta el registro REAL que publica tools/estudio_publico.py
  * (contrato: contexto/estudio_en_vivo_contrato.md). Reglas que este fichero cumple:
- *   · el JSON se valida entero (claves exactas, enums, ids conocidos, fechas, caducidad); si algo no
- *     cuadra se cae a la ESTRUCTURA sin estados y se dice, nunca se pinta a medias;
+ *   · el JSON se valida entero (claves exactas, enums, ids sin repetir, fechas, caducidad); si algo no
+ *     cuadra se cae a la ESTRUCTURA sin estados y se dice, nunca se pinta a medias. Excepción: un id
+ *     que este fichero no conoce se ignora (no se pinta) y uno conocido que no viene queda sin estado,
+ *     para que un departamento nuevo no tumbe la página mientras JSON y red.js se ponen al día;
  *   · ninguna cadena del JSON llega al HTML: los rótulos se buscan por id/enum en este fichero;
  *   · los nodos que no son departamentos (CEO, revisor, productos…) no tienen estado: son estructura;
  *   · sin cifras de agentes ni tareas, sin minutos exactos, y las horas se dan en UTC absoluto.
@@ -83,7 +85,7 @@
       brief:'The request that starts the work, in the requester’s own words.',ceo:'Dispatches work across departments and holds the thread of the assignment.',revisor:'Reviews code with a clean context before publishing; nothing ships without its seal.',humano:'Price, publish, delete or spend: a person decides.',entrega:'The project reaches the customer. Marking it as delivered is a person’s decision.'},
     work:{backend:'Adjusting a database',seguridad:'Reviewing a plan',calidad:'Verifying in production',frontend:'Building a page',diseno:'Reviewing a design',deploy:'Publishing a change',bots:'Tuning an assistant',legal:'Reviewing a text',marketing:'Preparing content',documentacion:'Preparing a document',organizacion:'Reviewing the structure',pilotos:'Testing an agent in test mode',producto:'Ordering the roadmap',experiencia:'Testing a screen as a user',costes:'Reviewing spending',idiomas:'Translating a text',soporte:'Helping a customer'},
     rows:{Input:'Input',Decide:'Decide',Spawned:'Spawned',Review:'Review',Build:'Build',Create:'Create',Gates:'Gates',Publish:'Publish',Verify:'Verify',Products:'Products',Output:'Output'},
-    names:{brief:'Brief',ceo:'CEO · dispatch',revprev:'Pre-review',explore:'Exploration',plan:'Planning',encargo:'Subtask',seguridad:'Security',legal:'Legal',administracion:'Administration',organizacion:'Organization',frontend:'Frontend',backend:'Backend',bots:'Bots',pilotos:'Pilots',diseno:'Design',arquitectura:'Architecture',modelado:'3D Modeling',videojuegos:'Games',marketing:'Marketing',comunicacion:'Comms',calidad:'Quality',revisor:'Code reviewer',consulta:'Deploy consult',humano:'Oversight',deploy:'Deploy',documentacion:'Documentation',verificador:'Verifier',trampas:'Trap plans',aaas:'AaaS',erp:'ERP',webs:'Websites',entrega:'Delivery',producto:'Product',experiencia:'User experience',costes:'Costs',idiomas:'Languages',soporte:'Client success'},
+    names:{brief:'Brief',ceo:'CEO · dispatch',revprev:'Pre-review',explore:'Exploration',plan:'Planning',encargo:'Subtask',seguridad:'Security',legal:'Legal',administracion:'Administration',organizacion:'Organization',frontend:'Frontend',backend:'Backend',bots:'Bots',pilotos:'Pilots',diseno:'Design',arquitectura:'Architecture',modelado:'3D Modeling',videojuegos:'Games',marketing:'Marketing',comunicacion:'Comms',calidad:'Quality',revisor:'Code reviewer',consulta:'Deploy consult',humano:'Oversight',deploy:'Deploy',documentacion:'Documentation',verificador:'Verifier',trampas:'Trap plans',aaas:'AaaS',erp:'ERP',webs:'Websites',entrega:'Delivery',producto:'Product',experiencia:'User experience',costes:'Costs',idiomas:'Languages',soporte:'Customer success'},
     notes:{aaas:'in testing',erp:'demo available',webs:'in production'},
     LS:{3:'active · 1 h',2:'active today',1:'idle'},always:'always',
     hover:['Hover over a node','The diagram is the path work takes through the studio. Particles and figures are an illustration, not live activity.'],
@@ -163,7 +165,7 @@
     for(i=0;i<j.departamentos.length;i++){
       d=j.departamentos[i];
       if(!exacto(d,['id','categoria','estado'],['volumen']))return 'dep';
-      if(!str(d.id)||!/^[a-z]{2,16}$/.test(d.id)||own(visto,d.id))return 'id';
+      if(!str(d.id)||own(visto,d.id))return 'id';
       visto[d.id]=1;
       if(!str(d.categoria)||CATS.indexOf(d.categoria)<0)return 'cat';
       if(!str(d.estado)||!own(ESTADOS,d.estado))return 'estado';
@@ -240,7 +242,7 @@
       W=DW;H=DH;NW=132;NH=58;
       ROWS.forEach(function(r,ri){
         var m=r.n.length,sp=r.k==='Products'?250:Math.min(156,860/m),cxx=REAL?540:600,y=TOP+ri*ROWH+(r.k==='Output'?44:0);
-        r.n.forEach(function(n,j){N.push({id:n[0],proc:!!n[1],col:n[2]||r.t,row:ri,x:cxx+(j-(m-1)/2)*sp,y:y,inn:y-NH/2,out:y+NH/2,note:X.notes[n[0]]})});
+        r.n.forEach(function(n,j){N.push({id:n[0],proc:!!n[1],col:n[2]||r.t,row:ri,x:cxx+(j-(m-1)/2)*sp,y:y,w:r.k==='Output'?148:undefined,inn:y-NH/2,out:y+NH/2,note:X.notes[n[0]]})});  /* Salida: 2 nodos con aire; más anchos para que «Customer success» no se corte */
         LAYT.push(TOP+ri*ROWH-8);
       });
     }

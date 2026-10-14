@@ -49,7 +49,8 @@ caso('estado inventado', function (j) { dep(j, 'dev').estado = 'trabajando_ahora
 caso('id desconocido: se acepta (se ignora)', function (j) { dep(j, 'dev').id = 'constructor'; }, null);
 caso('id desconocido activo sin volumen (podría ser sensible): se acepta', function (j) { j.departamentos.push({ id: 'nuevo', categoria: 'gestion', estado: 'hoy' }); j.n_departamentos++; }, null);
 caso('id desconocido con volumen inventado', function (j) { j.departamentos.push({ id: 'nuevo', categoria: 'gestion', estado: 'hoy', volumen: 'enorme' }); j.n_departamentos++; }, 'vol');
-caso('id con forma rara', function (j) { dep(j, 'dev').id = '<b>x</b>'; }, 'id');
+caso('id desconocido con forma rara: se acepta (no se pinta)', function (j) { dep(j, 'dev').id = 'nuevo_2-dep'; }, null);
+caso('id que no es texto', function (j) { dep(j, 'dev').id = 7; }, 'id');
 caso('JSON de 17 con red.js de 22: se acepta', function (j) { j.departamentos = j.departamentos.filter(function (d) { return NUEVOS.indexOf(d.id) < 0; }); j.n_departamentos = 17; }, null);
 caso('n_departamentos no cuadra con la lista', function (j) { j.n_departamentos = 21; }, 'n');
 caso('id repetido', function (j) { dep(j, 'data').id = 'dev'; }, 'id');
