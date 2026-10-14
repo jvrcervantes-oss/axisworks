@@ -4774,6 +4774,11 @@ TEXTOS_INSTANCIA = (
     ('intranet/v4/assets/datos.js', "H.seccion('Cliente y contrato',", "H.seccion(contratosActivo() ? 'Cliente y contrato' : 'Cliente',", 1),
     ('intranet/v4/assets/datos.js', "        H.dato('Contrato', c ? (contratosActivo() ? enlaceFichaContrato(c) : esc(c.numero || '')) : (f.contrato_numero || null), { html: !!c }) +",
      "        (c || f.contrato_numero || contratosActivo() ? H.dato('Contrato', c ? (contratosActivo() ? enlaceFichaContrato(c) : esc(c.numero || '')) : (f.contrato_numero || null), { html: !!c }) : '') +", 1),
+)
+# Retoques de COMPORTAMIENTO (no de texto) del editor de documentos en toda instancia (bbm-comodidad, 15-oct-2026; revisor de 371396e: no van
+# en TEXTOS_INSTANCIA, que solo cambia texto). Mismo formato y misma función (textos_instancia): cada trozo las veces dichas o el build para.
+# Prueba: test_comodidad_instancia.py. Lawang no pasa por aquí.
+COMODIDAD_INSTANCIA = (
     # bbm-comodidad F4 (15-oct-2026, medido en bbm real): con UNA sola empresa emisora, «Sociedad que factura/cobra» empezaba en «— elige —» en
     # cada factura y cada recibí (2 clics más, y los impuestos esperaban a elegirla). Con una sola se preselecciona; con dos o más, como siempre.
     # Los impuestos y la previa leen el valor vivo del select al montarse (montaImpuestosDoc.socActual), así que salen ya con esa empresa.
@@ -5013,7 +5018,7 @@ def oculta_por_modulo():
 def textos_instancia(nombre):
     """Los textos de inmobiliaria de las pantallas comunes, cambiados en la copia de la instancia (ver TEXTOS_INSTANCIA). Cada trozo tiene que
     aparecer EXACTAMENTE las veces dichas: si Lawang lo cambia, el build para en vez de dejar medio cambio."""
-    for rel_, viejo, nuevo, veces in TEXTOS_INSTANCIA + (TEXTOS_ALQUILER if portada_de(nombre) == 'reservas' else TEXTOS_OTRA):
+    for rel_, viejo, nuevo, veces in TEXTOS_INSTANCIA + COMODIDAD_INSTANCIA + (TEXTOS_ALQUILER if portada_de(nombre) == 'reservas' else TEXTOS_OTRA):
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
         if t.count(viejo) != veces:

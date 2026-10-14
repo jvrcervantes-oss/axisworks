@@ -121,6 +121,7 @@ async function servidor(b, nombre, a) {
       if (o.cotizaSinSesion) return err('42501', 'sin sesión', 'sin_sesion');
       if (o.cotizaJwt) return err('PGRST301', 'JWT expired');
       if (o.cotizaApagado) return err('42501', 'módulo no activo', 'modulo_apagado');
+      if (o.cotizaTimeout) return err('57014', 'canceling statement due to statement timeout');   // revisor 371396e: el tiempo agotado no es una regla
       if (o.cotizaSinConfig) return err('55000', 'El módulo no está configurado', o.cotizaSinConfig === 'moneda' ? 'base_sin_configurar' : 'reservas-producto_sin_configurar', o.cotizaSinConfig);
       if (a.p_desde < mas(0)) return err('22023', 'La recogida no puede ser en el pasado');
       const pr = b.productos.find(x => x.id === a.p_producto_id);
@@ -531,7 +532,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   {
     // bbm-comodidad F6 (15-oct-2026): un fallo de red o de permiso al cotizar NO se dice como «ninguna moto se puede reservar»
     const MOTIVO = { cotizaRed: 'La base no ha respondido', cotizaPermiso: 'No tienes permiso para hacer reservas', cotizaSinSesion: 'La sesión ha caducado',
-      cotizaJwt: 'La sesión ha caducado', cotizaApagado: 'está apagado en esta instancia' };
+      cotizaJwt: 'La sesión ha caducado', cotizaApagado: 'está apagado en esta instancia', cotizaTimeout: 'La base no ha respondido' };
     for (const caso of Object.keys(MOTIVO)) {
       const { base, p, ctx } = await abre({ base: { [caso]: true } });
       await hastaMoto(p);

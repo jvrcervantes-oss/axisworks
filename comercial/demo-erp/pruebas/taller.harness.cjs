@@ -126,8 +126,10 @@ function rpc(B, n, a, u) {
   switch (n) {
     case 'taller_datos': {
       const motos = B.motos.filter(m => m.estado !== 'baja').map(m => { const v = vivaDe(m.id); const p = B.productos.find(x => x.id === m.producto_id);
-        return { id: m.id, numero: m.numero_unidad, identificador: m.identificador, modelo_id: m.producto_id, modelo: p.nombre, estado: m.estado,
-                 orden_viva: v && !v.oculta ? { id: v.id, numero: v.numero, paso: v.paso, estado: v.estado, abierta_por_email: correo(v.abierta_por) } : null }; });
+        const x = { id: m.id, numero: m.numero_unidad, identificador: m.identificador, modelo_id: m.producto_id, modelo: p.nombre, estado: m.estado,
+                 orden_viva: v && !v.oculta ? { id: v.id, numero: v.numero, paso: v.paso, estado: v.estado, abierta_por_email: correo(v.abierta_por) } : null };
+        if (!B.o.sinHistorial) x.con_historial = esAdmin(u) ? B.ordenes.some(o => o.unidad_id === m.id) : null;   // 20261015014000 (F13): solo admin
+        return x; });
       const vivas = B.ordenes.filter(o => o.estado !== 'cerrada' && !o.oculta).map(o => { const m = B.motos.find(x => x.id === o.unidad_id);
         return { id: o.id, numero: o.numero, unidad_id: o.unidad_id, identificador: m.identificador, modelo: XSS_MOD, paso: o.paso, estado: o.estado, motivo_tipo: o.motivo_tipo, abierta_por_email: correo(o.abierta_por) }; });
       const volver = esAdmin(u) ? B.motos.filter(m => m.estado === 'taller' && !vivaDe(m.id)).map(m => ({ m, ult: B.ordenes.filter(o => o.unidad_id === m.id && o.estado === 'cerrada').sort((x, y) => y.cerrada_en - x.cerrada_en)[0] }))
@@ -137,6 +139,8 @@ function rpc(B, n, a, u) {
       return { st: 200, j: r };
     }
     case 'taller_orden_abre': {
+      if (B.abreTruco && B.abreTruco.id === a.p_unidad && B.abreTruco.err) return B.abreTruco.err;
+      if (B.abreTruco && B.abreTruco.id === a.p_unidad) return { st: 200, j: Object.assign({ id: uuid(), numero: 'OT-09999', estado: 'abierta', paso: 'km', motivo_tipo: a.p_motivo_tipo }, B.abreTruco.j) };
       if (!['devolucion', 'revision', 'averia', 'accidente'].includes(a.p_motivo_tipo)) return ERR('22023', 'Elige el motivo', 'motivo_tipo');
       const m = B.motos.find(x => x.id === a.p_unidad);
       if (!m) return ERR('P0002', 'Esa moto no existe: recarga la pantalla', 'moto_no_existe');
@@ -192,18 +196,23 @@ function rpc(B, n, a, u) {
     case 'taller_orden_resultado': {
       if (!['lista', 'espera_recambio', 'fuera_servicio'].includes(a.p_resultado)) return ERR('22023', 'El resultado es lista, espera o fuera', 'resultado');
       if (a.p_motivo_excepcion && !esAdmin(u)) return ERR('42501', 'Solo la administración', 'excepcion_solo_admin');
+      const exc = a.p_motivo_excepcion == null ? '' : String(a.p_motivo_excepcion).trim();
+      if (exc && (exc.length < 3 || exc.length > 500 || /[\u0000-\u001f\u007f]/.test(exc))) return ERR('22023', 'Escribe por qué (de 3 a 500 caracteres, en una línea)', 'motivo_excepcion');
       const { o, e } = viva(B, a.p_orden, u); if (e) return e;
       const m = B.motos.find(x => x.id === o.unidad_id);
       if (a.p_resultado === 'espera_recambio') { o.estado = 'espera_recambio'; o.resultado = 'espera_recambio'; o.nota_cierre = a.p_nota; o.paso = 'resultado';
         return { st: 200, j: { numero: o.numero, estado: 'espera_recambio', resultado: 'espera_recambio', unidad_estado: m.estado, para_volver: false } }; }
       const f = faltan(B, o);
       if (a.p_resultado === 'lista' && f.length && !a.p_motivo_excepcion) return ERR('22023', 'Para dejarla lista faltan: ' + f.join(', '), 'faltan_para_lista', JSON.stringify(f));
-      Object.assign(o, { estado: 'cerrada', resultado: a.p_resultado, cerrada_por: u, cerrada_en: Date.now(), nota_cierre: a.p_nota, paso: 'resultado' });
+      Object.assign(o, { estado: 'cerrada', resultado: a.p_resultado, cerrada_por: u, cerrada_en: Date.now(), nota_cierre: a.p_nota, paso: 'resultado', motivo_excepcion: f.length ? (exc || null) : null });
       if (a.p_resultado === 'lista' && !o.adopto_unidad && m.estado === 'taller') m.estado = 'disponible';
       return { st: 200, j: { numero: o.numero, estado: 'cerrada', resultado: a.p_resultado, unidad_estado: m.estado, para_volver: a.p_resultado === 'lista' && o.adopto_unidad && m.estado === 'taller' } };
     }
     case 'taller_moto_devuelve': {
       if (!esAdmin(u)) return ERR('42501', 'Devolver motos a disponible lo hace la administración', 'solo_admin');
+      const mot = String(a.p_motivo || '').trim();
+      if (mot.length < 3 || mot.length > 200 || /[\u0000-\u001f\u007f]/.test(mot)) return ERR('22023', 'Di el motivo', 'motivo');
+      if ((a.p_unidades || []).length > 100) return ERR('22023', 'Como mucho 100 motos a la vez', 'tope');
       const dev = [], rech = [];
       (a.p_unidades || []).forEach(id => { const m = B.motos.find(x => x.id === id); if (!m) return rech.push({ id, porque: 'no_existe' }); if (m.estado !== 'taller') return rech.push({ id, porque: 'no_esta_en_taller' }); m.estado = 'disponible'; dev.push(id); });
       return { st: 200, j: { devueltas: dev, rechazadas: rech } };
@@ -311,7 +320,8 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
         if (B.latencia) await duerme(B.latencia);
         const u = (/^Bearer tok-(\w+)$/.exec(req.headers().authorization || '') || [])[1];
         const r = rpc(B, rp[1], JSON.parse(req.postData() || '{}'), u);
-        if (B.cortaTras === rp[1]) { B.cortaTras = null; return route.abort('connectionreset'); }   // la base ESCRIBIÓ y la respuesta se pierde
+        if (B.cortaTras === rp[1]) { B.cortaTras = null; return route.abort('connectionreset'); }
+        if (B.cortaN && B.cortaN[0] === rp[1] && --B.cortaN[1] === 0) { B.cortaN = null; return route.abort('connectionreset'); }   // la base ESCRIBIÓ y la respuesta se pierde
         if (B.falla502 === rp[1]) { B.falla502 = null; return route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ message: 'Bad gateway' }) }); }   // escribió y el proxy contesta 502 sin código
         return route.fulfill({ status: r.st, contentType: 'application/json', body: JSON.stringify(r.j) });
       }
@@ -822,6 +832,186 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
        && (await casillaFija(p, 'izquierda')).estado === 'vacia' && (await casillaFija(p, 'atras')).estado === 'subida', JSON.stringify(subU.map(x => [x.clave.slice(-6), x.u])));
     await sinTraducir(p, 'sin configurar id');
     await ctx.close();
+
+    // ═══ 3c. «Dar por revisadas varias…» (bbm-comodidad F13, 15-oct; revisión previa #345 Backend + Seguridad) ═══
+    {
+      // base: m1 (cerró sin «lista»), m2 (matrícula con XSS) y 4 más en taller sin orden; m3 disponible; m4/m5 con orden de la pantalla vieja (m5, invisible en la lista)
+      const nuevaV = (extra = 4) => { const B3 = nuevaBase(); B3.motos.find(m => m.id === U.m2).estado = 'taller';
+        B3.ordenes = B3.ordenes.filter(o => o.unidad_id !== U.m5);   // m5 sin orden: candidata limpia
+        for (let k = 0; k < extra; k++) B3.motos.push({ id: 'cccccccc-0000-4000-8000-' + String(k).padStart(12, '0'), numero_unidad: 'UND-V' + k, identificador: 'DK ' + (6000 + k) + ' VV', producto_id: P1, estado: 'taller' });
+        return B3; };
+      const candidatas = B3 => B3.motos.filter(m => m.estado === 'taller' && !B3.ordenes.some(o => o.unidad_id === m.id)).map(m => m.id);   // nunca han tenido orden
+      const escrituras = B3 => B3.llamadas.filter(x => !x[0].endsWith('_datos'));
+      const fase = p => p.$eval('[data-tl="varias"]', e => e.getAttribute('data-fase')).catch(() => null);
+      const enFase = (p, f, ms) => espera(p, x => { const e = document.querySelector('[data-tl="varias"]'); return e && e.getAttribute('data-fase') === x; }, f, ms);
+
+      let B3 = nuevaV();
+      ({ p, ctx } = await abre(B3));
+      ok('varias: el mecánico no ve «Dar por revisadas varias…»', !(await p.$('[data-accion="tl-varias"]')));
+      await ctx.close();
+      ({ p, ctx } = await abre(B3, { usuario: 'admin' }));
+      ok('varias: la administración lo ve en «Motos para revisar»', !!(await p.$('[data-tl="sec-revisar"] [data-accion="tl-varias"]')));
+      await p.click('[data-accion="tl-varias"]'); await enFase(p, 'elige');
+      const cand0 = candidatas(B3);
+      const ofrecidas = await p.$$eval('[data-varias-id]', cs => cs.map(c => c.getAttribute('data-varias-id')));
+      ok('varias: ofrece SOLO las de taller que nunca han tenido orden (ni disponibles, ni con orden vieja, ni m1 que tuvo una cerrada), y ninguna marcada de entrada',
+         ofrecidas.length === cand0.length && cand0.every(id => ofrecidas.includes(id)) && !ofrecidas.includes(U.m3) && !ofrecidas.includes(U.m4) && !ofrecidas.includes(U.m1)
+         && (await p.$$eval('[data-varias-id]', cs => cs.every(c => !c.checked))), JSON.stringify([ofrecidas.length, cand0.length]));
+      ok('varias: el motivo nace vacío (sin texto por defecto)', (await p.$eval('[data-tl="varias-motivo"]', e => e.value)) === '');
+      await sinInyeccion(p, 'varias elige'); await sinScroll(p, 'varias elige (390)');
+      await shot(p, 'varias_elige_390_id.png', true);
+      await p.click('[data-accion="tl-varias-sigue"]');
+      ok('varias: sin elegir ninguna no sigue y lo dice', (await fase(p)) === 'elige' && (await p.$eval('[data-tl="varias-estado"]', e => e.textContent)).length > 3);
+      await p.click('[data-accion="tl-varias-todas"]');
+      ok('varias: «Marcar todas» y la cuenta «n de t»', (await p.$$eval('[data-varias-id]', cs => cs.every(c => c.checked)))
+         && (await p.$eval('[data-tl="varias-cuenta"]', e => e.textContent)).includes(cand0.length + ' dari ' + cand0.length));
+      await p.click('[data-accion="tl-varias-sigue"]');
+      ok('varias: sin motivo no sigue', (await fase(p)) === 'elige');
+      await p.fill('[data-tl="varias-motivo"]', 'ab');
+      await p.click('[data-accion="tl-varias-sigue"]');
+      ok('varias: motivo de 2 caracteres no sigue', (await fase(p)) === 'elige');
+      const MOT = 'Status lama dari sistem sebelumnya <b>x</b>';
+      await p.fill('[data-tl="varias-motivo"]', MOT);
+      await p.click('[data-accion="tl-varias-sigue"]'); await enFase(p, 'confirma');
+      const conf = await p.$eval('[data-tl="varias"]', e => e.textContent);
+      ok('varias: la confirmación enseña el número y TODAS las matrículas (Seguridad #345 b)', conf.includes(String(cand0.length)) && B3.motos.filter(m => cand0.includes(m.id)).every(m => conf.includes(m.identificador)));
+      ok('varias: hasta confirmar no se ha escrito nada', escrituras(B3).length === 0);
+      await sinInyeccion(p, 'varias confirma'); await shot(p, 'varias_confirma_390_id.png', true);
+      await p.click('[data-accion="tl-varias-atras"]'); await enFase(p, 'elige');
+      ok('varias: «Volver atrás» conserva lo marcado y el motivo', (await p.$eval('[data-tl="varias-motivo"]', e => e.value)) === MOT && (await p.$$eval('[data-varias-id]', cs => cs.every(c => c.checked))));
+      await p.click('[data-accion="tl-varias-sigue"]'); await enFase(p, 'confirma');
+      const datos0 = llamadas(B3, 'taller_datos').length;
+      B3.latencia = 250;
+      await p.click('[data-accion="tl-varias-confirma"]'); await enFase(p, 'marcha');
+      await p.click('[data-accion="tl-tab-taller"]').catch(() => {});
+      ok('varias: en marcha, la pestaña «Motos» no la corta', (await fase(p)) === 'marcha');
+      await enFase(p, 'fin', 20000);
+      B3.latencia = 0;
+      const ab = llamadas(B3, 'taller_orden_abre'), rs = llamadas(B3, 'taller_orden_resultado');
+      const marca = (ab[0] || [0, {}])[1].p_nota || '';
+      ok('varias: se relee antes de escribir y al acabar', llamadas(B3, 'taller_datos').length >= datos0 + 2);
+      ok('varias: una apertura y un cierre por moto, EN SERIE (abre, cierra, abre, cierra…)', ab.length === cand0.length && rs.length === cand0.length
+         && escrituras(B3).every((x, k) => x[0] === (k % 2 ? 'taller_orden_resultado' : 'taller_orden_abre')));
+      ok('varias: abre con motivo «revision» y la marca de la tanda en la nota (queda congelada en la orden)', /^Tanda \d{4}-\d\d-\d\d \d\d:\d\d · \d+ motos$/.test(marca)
+         && ab.every(x => x[1].p_motivo_tipo === 'revision' && x[1].p_nota === marca) && B3.ordenes.filter(o => o.motivo === marca).length === cand0.length, marca);
+      ok('varias: cierra «lista» con la excepción = marca + motivo (Seguridad #345 c)', rs.every(x => x[1].p_resultado === 'lista' && x[1].p_motivo_excepcion === marca + ' · ' + MOT));
+      ok('varias: cada moto queda con su orden cerrada lista, adoptada, y SIGUE en el taller (devolver es otro paso)',
+         cand0.every(id => B3.ordenes.some(o => o.unidad_id === id && o.estado === 'cerrada' && o.resultado === 'lista' && o.adopto_unidad && o.motivo_excepcion === marca + ' · ' + MOT))
+         && cand0.every(id => B3.motos.find(m => m.id === id).estado === 'taller') && llamadas(B3, 'taller_moto_devuelve').length === 0);
+      ok('varias: el resumen (de lo releído) dice «n de n» y no hay parada', (await p.$eval('[data-tl="varias-hechas"]', e => e.textContent)).includes(cand0.length + ' dari ' + cand0.length) && !(await p.$('[data-tl="varias-parada"]')));
+      await sinInyeccion(p, 'varias fin'); await sinScroll(p, 'varias fin (390)'); await shot(p, 'varias_fin_390_id.png', true);
+      ok('varias: el campo del motivo de la vuelta corta en 120', (await p.$eval('[data-tl="varias-vuelta-motivo"]', e => e.maxLength)) === 120);
+      await p.click('[data-accion="tl-varias-devuelve"]');
+      ok('varias: devolver sin motivo no llama a la base', llamadas(B3, 'taller_moto_devuelve').length === 0);
+      await p.fill('[data-tl="varias-vuelta-motivo"]', 'Sudah dicek pemilik');
+      await p.click('[data-accion="tl-varias-devuelve"]'); await espera(p, () => !!document.querySelector('[data-tl="varias-vueltas"]'));
+      const dv = llamadas(B3, 'taller_moto_devuelve');
+      ok('varias: la devolución es un paso aparte, en UN lote, con la marca en el motivo', dv.length === 1 && dv[0][1].p_unidades.length === cand0.length && dv[0][1].p_motivo === marca + ' · Sudah dicek pemilik');
+      ok('varias: tras devolver, las motos están disponibles y el resumen lo dice (de lo releído)', cand0.every(id => B3.motos.find(m => m.id === id).estado === 'disponible')
+         && (await p.$eval('[data-tl="varias-vueltas"]', e => e.textContent)).includes(cand0.length + ' dari ' + cand0.length));
+      await sinTraducir(p, 'varias id');
+      await p.click('[data-accion="tl-varias-cierra"]');
+      ok('varias: «Volver al taller» cierra el panel', !(await p.$('[data-tl="varias"]')) && !!(await p.$('[data-tl="sec-revisar"]')));
+      await ctx.close();
+
+      // ── paradas: cualquier respuesta que no sea «adopta y nueva» → «cerrada · lista» para la tanda y no reintenta ──
+      const lanza = async (B4, prepara) => {
+        ({ p, ctx } = await abre(B4, { usuario: 'admin' }));
+        await p.click('[data-accion="tl-varias"]'); await enFase(p, 'elige');
+        await p.click('[data-accion="tl-varias-todas"]'); await p.fill('[data-tl="varias-motivo"]', 'Status lama');
+        await p.click('[data-accion="tl-varias-sigue"]'); await enFase(p, 'confirma');
+        if (prepara) prepara();
+        await p.click('[data-accion="tl-varias-confirma"]'); await enFase(p, 'fin', 20000);
+      };
+      for (const [nombre, j] of [['retomada (orden de otra persona)', { retomada: true, adopta: true }], ['no adopta (estaba disponible)', { retomada: false, adopta: false }], ['respuesta sin «adopta»', { retomada: false }]]) {
+        const B4 = nuevaV(2), orden = candidatas(B4), objetivo = orden[1];
+        B4.abreTruco = { id: objetivo, j };
+        await lanza(B4);
+        const mat = B4.motos.find(m => m.id === objetivo).identificador;
+        ok('varias para · ' + nombre + ': no cierra esa orden ni sigue con las demás, y dice en qué matrícula',
+           llamadas(B4, 'taller_orden_resultado').length === 1 && llamadas(B4, 'taller_orden_abre').length === 2
+           && (await p.$eval('[data-tl="varias-parada"]', e => e.textContent)).includes(mat), JSON.stringify(escrituras(B4).map(x => x[0])));
+        ok('varias para · ' + nombre + ': el resumen sale de lo releído (1 revisada; las demás «sin tocar»)', (await p.$eval('[data-tl="varias-hechas"]', e => e.textContent)).includes('1 dari ' + orden.length)
+           && (await p.$$eval('[data-tl="varias-sin-tocar"] li', ls => ls.length)) === orden.length - 1);
+        await ctx.close();
+      }
+      {   // error CON código de la base (orden de la pantalla vieja que se abrió entretanto): para, explica con su número, y no dice «no se sabe»
+        const B4 = nuevaV(2);
+        B4.abreTruco = { id: candidatas(B4)[2], err: ERR('22023', 'Esa moto tiene la orden OT-00077 abierta desde la pantalla anterior de Taller: ciérrala allí antes de usar el asistente', 'orden_vieja_viva') };
+        await lanza(B4);
+        const par = await p.$eval('[data-tl="varias-parada"]', e => e.textContent);
+        ok('varias para · error de la base con código: para en esa moto, con su motivo y sin «no se sabe»', par.includes('OT-00077') && !/Belum pasti/.test(par)
+           && llamadas(B4, 'taller_orden_abre').length === llamadas(B4, 'taller_orden_resultado').length + 1, par);
+        await ctx.close();
+      }
+      {   // respuesta perdida en el 2.º cierre (la base sí escribió): para, dice «no se sabe», no reintenta; el resumen releído cuenta 2
+        const B4 = nuevaV(3);
+        B4.cortaN = ['taller_orden_resultado', 2];
+        await lanza(B4);
+        const par = await p.$eval('[data-tl="varias-parada"]', e => e.textContent);
+        ok('varias para · respuesta perdida: para sin reintentar y lo dice («no se sabe»)', /Belum pasti/.test(par) && llamadas(B4, 'taller_orden_resultado').length === 2 && llamadas(B4, 'taller_orden_abre').length === 2, par);
+        ok('varias para · respuesta perdida: el resumen releído cuenta las 2 que la base sí cerró', (await p.$eval('[data-tl="varias-hechas"]', e => e.textContent)).includes('2 dari '));
+        await ctx.close();
+      }
+      {   // entre confirmar y empezar, otra persona abre una orden en una de las elegidas: la relectura la quita del lote
+        const B4 = nuevaV(2), orden = candidatas(B4), quitada = orden[0];
+        await lanza(B4, () => B4.ordenes.push({ id: uuid(), numero: 'OT-00088', unidad_id: quitada, estado: 'abierta', paso: 'km', km: null, motivo_tipo: 'averia', abierta_por: 'mec2', abierta_en: 9, adopto_unidad: true }));
+        ok('varias: la relectura antes de escribir deja fuera la que otra persona abrió entretanto', !llamadas(B4, 'taller_orden_abre').some(x => x[1].p_unidad === quitada)
+           && llamadas(B4, 'taller_orden_abre').length === orden.length - 1 && (await p.$eval('[data-tl="varias-abiertas"]', e => e.textContent)).includes('OT-00088'));
+        await ctx.close();
+      }
+      {   // MEDIA del revisor (995e05a): una moto que un mecánico cerró «No puede circular» (en taller, sin orden viva, fuera de «Listas para volver») NO se ofrece
+        const B4 = nuevaV(2), fs = B4.motos[5].id;
+        B4.ordenes.push({ id: uuid(), numero: 'OT-00066', unidad_id: fs, estado: 'cerrada', paso: 'resultado', resultado: 'fuera_servicio', abierta_por: 'mec1', abierta_en: 5, cerrada_en: 6, adopto_unidad: true, movio_unidad: true });
+        ({ p, ctx } = await abre(B4, { usuario: 'admin' }));
+        ok('varias: la cerrada «fuera de servicio» sigue en «Motos para revisar» (para el asistente)', (await p.$$eval('[data-tl="para-revisar"] [data-moto-id]', bs => bs.map(b => b.getAttribute('data-moto-id')))).includes(fs));
+        await p.click('[data-accion="tl-varias"]'); await enFase(p, 'elige');
+        await p.click('[data-accion="tl-varias-todas"]');
+        ok('varias: la cerrada «fuera de servicio» NO se ofrece ni entra con «Marcar todas»', !(await p.$(`[data-varias-id="${fs}"]`)));
+        await ctx.close();
+      }
+      {   // base sin 20261015014000 (taller_datos sin con_historial): no hay botón
+        const B4 = nuevaV(2); B4.o.sinHistorial = true;
+        ({ p, ctx } = await abre(B4, { usuario: 'admin' }));
+        ok('varias: sin con_historial en la base no se ofrece la tanda (ni el botón)', !(await p.$('[data-accion="tl-varias"]')) && !!(await p.$('[data-tl="sec-revisar"]')));
+        await ctx.close();
+      }
+      {   // otra persona cierra «lista» (adoptada) una de las elegidas entre confirmar y empezar: no cuenta como de la tanda ni entra en su devolución
+        const B4 = nuevaV(2), orden = candidatas(B4), ajena = orden[0];
+        await lanza(B4, () => { B4.ordenes.push({ id: uuid(), numero: 'OT-00055', unidad_id: ajena, estado: 'cerrada', paso: 'resultado', resultado: 'lista', abierta_por: 'mec2', cerrada_por: 'admin', abierta_en: 7, cerrada_en: 8, adopto_unidad: true, movio_unidad: true }); });
+        ok('varias: la cerrada por otra persona no se intenta, no cuenta como revisada por la tanda y no entra en la devolución',
+           !llamadas(B4, 'taller_orden_abre').some(x => x[1].p_unidad === ajena) && (await p.$eval('[data-tl="varias-hechas"]', e => e.textContent)).includes((orden.length - 1) + ' dari ' + orden.length)
+           && (await p.$eval('[data-accion="tl-varias-devuelve"]', e => e.textContent)).includes(String(orden.length - 1))
+           && (await p.$eval('[data-tl="varias-fuera"]', e => e.textContent)).includes(B4.motos.find(m => m.id === ajena).identificador));
+        await ctx.close();
+      }
+      {   // tope de 100 por tanda
+        const B4 = nuevaV(102);
+        ({ p, ctx } = await abre(B4, { usuario: 'admin' }));
+        await p.click('[data-accion="tl-varias"]'); await enFase(p, 'elige');
+        await p.click('[data-accion="tl-varias-todas"]');
+        const n = await p.$$eval('[data-varias-id]', cs => cs.filter(c => c.checked).length);
+        ok('varias tope: con más de 100, «Marcar las 100 primeras» marca 100', n === 100, n);
+        await p.$$eval('[data-varias-id]', cs => { const c = cs.find(x => !x.checked); c.click(); });
+        await p.fill('[data-tl="varias-motivo"]', 'Status lama');
+        await p.click('[data-accion="tl-varias-sigue"]');
+        ok('varias tope: 101 marcadas no sigue y lo dice', (await fase(p)) === 'elige' && (await p.$eval('[data-tl="varias-estado"]', e => e.textContent)).includes('100'));
+        await sinScroll(p, 'varias 104 motos (390)');
+        await ctx.close();
+      }
+      for (const anchoV of [390, 1440]) {   // inglés, los dos anchos
+        const B4 = nuevaV(2);
+        ({ p, ctx } = await abre(B4, { usuario: 'admin', idioma: 'en', ancho: anchoV }));
+        await p.click('[data-accion="tl-varias"]'); await enFase(p, 'elige');
+        await p.click('[data-accion="tl-varias-todas"]'); await p.fill('[data-tl="varias-motivo"]', 'Old status');
+        await p.click('[data-accion="tl-varias-sigue"]'); await enFase(p, 'confirma');
+        await sinScroll(p, 'varias confirma ' + anchoV + ' en'); await sinTraducir(p, 'varias ' + anchoV + ' en');
+        await p.click('[data-accion="tl-varias-confirma"]'); await enFase(p, 'fin', 20000);
+        await sinScroll(p, 'varias fin ' + anchoV + ' en'); await sinTraducir(p, 'varias fin ' + anchoV + ' en');
+        await shot(p, 'varias_fin_' + anchoV + '_en.png', true);
+        await ctx.close();
+      }
+    }
 
     // ═══ 4. inglés, 390 y 1440 ═══
     for (const anchoEn of [390, 1440]) {
