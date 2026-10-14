@@ -190,7 +190,12 @@ const C = '[data-axw-cobros-caja]';
   // 0. textos del servidor (revisor, BAJA 2): los 3 de sin_a_quien_avisar que traducen setup_modulos.js (grupo servidor) y usa este arnés, iguales
   //    byte a byte a los de la edge. Con la edge de antes (sin sin_a_quien_avisar) se avisa y no cuenta; con la nueva, si cambia un texto, ROJO.
   {
-    const ts = EDGE_TS ? fs.readFileSync(EDGE_TS, 'utf8') : '';
+    const entera = EDGE_TS ? fs.readFileSync(EDGE_TS, 'utf8') : '';
+    // Desde la 4b (20261014080100, 14-oct) la edge también cambia cuentas bancarias, con SUS tres sin_a_quien_avisar (los traduce la pantalla de
+    // cuentas, no la de Cobros): se mide solo lo de Cobros, quitando el bloque `if (esCuenta) {` … `// 3. el cambio`. Sin el final, ROJO (no se adivina).
+    const iniC = entera.indexOf('if (esCuenta) {'), finC = entera.indexOf('// 3. el cambio');
+    if (iniC >= 0) ok('textos del servidor: el bloque de cuentas de la edge se puede separar del de Cobros', finC > iniC);
+    const ts = iniC >= 0 && finC > iniC ? entera.slice(0, iniC) + entera.slice(finC) : entera;
     const deEdge = [...ts.matchAll(/no\('sin_a_quien_avisar', '([^']*)', 409\)/g)].map(m => m[1]);
     const sm = fs.readFileSync(path.join(AQUI, 'setup_modulos.js'), 'utf8');
     const grupo = (/servidor: \{([\s\S]*?)\n {4}\}/.exec(sm) || [])[1] || '';
