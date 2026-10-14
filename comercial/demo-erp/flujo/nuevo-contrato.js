@@ -519,7 +519,7 @@
 
   /* «Issue contract» sin plantillas (13-oct-2026, demo en inglés). La demo no trae plantillas de contrato (Legal, AXW-139: son
      el texto de cada negocio) y la pantalla se quedaba en «There is no active template»: una demo que no emite nada. Si la
-     base de la demo dice que no hay ninguna, se pone delante una tarjeta que lo explica y abre «+ New contract» (que sí crea
+     base de la demo dice que no hay ninguna, se pone delante una tarjeta que lo explica y abre «New contract» (que sí crea
      el contrato, con su plan de pagos), y se aparta el paso de plantilla vacío. Con plantillas, la pantalla queda como siempre.
      Enganche por data-lw (emitir-paso-plantilla) y data-accion (demo-nuevo-contrato), nunca por rótulo. */
   // La MISMA regla que emitir.js para «hay con qué emitir»: versión activa, sin archivar y de un tipo activo. Contar la lista
