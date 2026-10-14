@@ -1032,7 +1032,8 @@ window.AXW_ASIS = (function () {
         if (d.__estado === 200 && d.ok) {
           if (accion === 'retira') toast('Invitación retirada.');
           else if (d.enviado) toast(accion === 'invita' ? 'Invitación enviada: le ha llegado el correo con el enlace.' : 'Invitación reenviada.');
-          else toast('Creado; el correo no ha salido. Reenvía la invitación cuando el correo funcione.');
+          else toast(accion === 'invita' ? 'Creado; el correo no ha salido. Reenvía la invitación cuando el correo funcione.'
+                                        : 'El correo no ha salido: revisa el correo de la instancia y vuelve a reenviarla dentro de una hora.');
           return carga(true);
         }
         toast(d.mensaje || 'Respuesta inesperada (' + d.__estado + '). Recargo el estado para ver qué quedó.');

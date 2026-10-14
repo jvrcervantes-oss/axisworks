@@ -2300,6 +2300,38 @@ MENU_I18N = {
     # contraseña y las ayudas en español. Una clave que Lawang ya traduce al inglés conserva su inglés (menu_i18n no lo pisa).
     'Nuevo usuario': {'en': 'New user', 'id': 'Pengguna baru'},
     'Crear usuario': {'en': 'Create user', 'id': 'Buat pengguna'},
+    # N4/T F2 (14-oct): el alta por invitación y el reenvío desde la ficha
+    'Enviar invitación': {'en': 'Send invitation', 'id': 'Kirim undangan'},
+    'Reenviar invitación': {'en': 'Resend invitation', 'id': 'Kirim ulang undangan'},
+    'Le llega un correo con un enlace para poner su contraseña: nadie más la ve. Hasta que la ponga no puede entrar.': {
+        'en': 'They get an email with a link to set their password: nobody else sees it. Until they set it, they cannot sign in.',
+        'id': 'Dia menerima email berisi tautan untuk membuat kata sandinya: tidak ada orang lain yang melihatnya. Sebelum dibuat, dia belum bisa masuk.'},
+    'Le llega un correo con un enlace para poner su contraseña: nadie más la ve. Hasta que la ponga no puede entrar. Nace sin ningún proyecto asignado — se asigna después editando la ficha ya creada.': {
+        'en': 'They get an email with a link to set their password: nobody else sees it. Until they set it, they cannot sign in. The account starts with no project assigned; assign one later by editing the profile.',
+        'id': 'Dia menerima email berisi tautan untuk membuat kata sandinya: tidak ada orang lain yang melihatnya. Sebelum dibuat, dia belum bisa masuk. Akun dimulai tanpa proyek; tetapkan nanti dengan mengedit profilnya.'},
+    'Invitación enviada a %e: pondrá su contraseña desde el correo.': {
+        'en': 'Invitation sent to %e: they will set their password from the email.', 'id': 'Undangan terkirim ke %e: dia akan membuat kata sandi dari email.'},
+    'Invitación creada para %e, pero el correo no ha salido: reenvíala desde su ficha («Reenviar invitación») cuando el correo funcione.': {
+        'en': 'Invitation created for %e, but the email did not go out: resend it from their profile (“Resend invitation”) once email works.',
+        'id': 'Undangan dibuat untuk %e, tetapi email tidak terkirim: kirim ulang dari profilnya («Kirim ulang undangan») setelah email berfungsi.'},
+    'Invitación reenviada a %e.': {'en': 'Invitation resent to %e.', 'id': 'Undangan dikirim ulang ke %e.'},
+    'El correo no ha salido: revisa Ajustes › Correo. Podrás reenviarla dentro de una hora.': {
+        'en': 'The email did not go out: check Settings › Email. You can resend it in an hour.',
+        'id': 'Email tidak terkirim: periksa Pengaturan › Email. Anda bisa mengirim ulang dalam satu jam.'},
+    'No tiene ninguna invitación pendiente: ya entró con su contraseña.': {
+        'en': 'There is no pending invitation: they already signed in with their password.', 'id': 'Tidak ada undangan yang tertunda: dia sudah masuk dengan kata sandinya.'},
+    'Ya se le envió hace menos de una hora: espera antes de reenviarla.': {
+        'en': 'It was sent less than an hour ago: wait before resending it.', 'id': 'Sudah dikirim kurang dari satu jam lalu: tunggu sebelum mengirim ulang.'},
+    'Esta invitación ya se ha reenviado 5 veces: no se reenvía más. Revisa que el correo esté bien escrito.': {
+        'en': 'This invitation has already been resent 5 times: it will not be resent again. Check that the email address is correct.',
+        'id': 'Undangan ini sudah dikirim ulang 5 kali: tidak akan dikirim lagi. Periksa apakah alamat email sudah benar.'},
+    'Solo un super admin reenvía la invitación de un administrador.': {
+        'en': 'Only a super admin can resend an administrator’s invitation.', 'id': 'Hanya super admin yang bisa mengirim ulang undangan administrator.'},
+    'Esta invitación no se reenvía desde aquí: la del administrador principal va por el panel del estudio.': {
+        'en': 'This invitation is not resent from here: the main administrator’s goes through the studio panel.',
+        'id': 'Undangan ini tidak dikirim ulang dari sini: undangan administrator utama lewat panel studio.'},
+    'No se pudo: %e': {'en': 'Could not do it: %e', 'id': 'Tidak bisa: %e'},
+    'No se pudo: sesión no encontrada.': {'en': 'Could not do it: session not found.', 'id': 'Tidak bisa: sesi tidak ditemukan.'},
     'Cerrar panel': {'en': 'Close panel', 'id': 'Tutup panel'},
     'Datos': {'en': 'Details', 'id': 'Data'},
     'Opciones': {'en': 'Options', 'id': 'Opsi'},
@@ -4618,9 +4650,6 @@ IDIOMAS_PINTABLES_BASE = ("  var IDIOMAS_PINTABLES = [['es', 'en'], ['id', 'en']
 USUARIOS_INVITACION = (
     ("          { k: 'password', label: 'Contraseña provisional', req: 1, medio: 1,\n"
      "            ayuda: 'Mínimo 10 caracteres. La verá al entrar; que la cambie después. No se puede volver a consultar.' },\n", ''),
-    ("{ tipo: 'nota', label: 'Se crea la cuenta y se le da acceso de inmediato. Nace sin ningún proyecto asignado — se asigna después editando la ficha ya creada.' },",
-     "{ tipo: 'nota', label: 'Le llega un correo con un enlace para poner su contraseña: nadie más la ve. Hasta que la ponga no puede entrar.' },"),
-    ("], 'Crear usuario', function (v) {", "], 'Enviar invitación', function (v) {"),
     ("          if ((v.password || '').length < 10) return { error: { message: 'la contraseña necesita 10 caracteres o más' } };\n", ''),
     ("                accion: 'crear', email: email, password: v.password,\n", "                accion: 'invitar', email: email,\n"),
     ("              if (d.email_enviado === false) {\n"
@@ -4629,24 +4658,73 @@ USUARIOS_INVITACION = (
      "                aviso('Usuario creado: ' + email + ' — correo de bienvenida enviado.' + noDados, noDados ? '#8A6A34' : undefined);\n"
      "              }\n",
      "              if (d.enviado === false) {\n"
-     "                aviso('Invitación creada para ' + email + ', pero el correo no ha salido: reenvíala desde su ficha cuando el correo funcione.' + noDados, '#8A6A34');\n"
+     "                aviso(tH('Invitación creada para %e, pero el correo no ha salido: reenvíala desde su ficha («Reenviar invitación») cuando el correo funcione.', { e: email }) + noDados, '#8A6A34');\n"
      "              } else {\n"
-     "                aviso('Invitación enviada a ' + email + ': pondrá su contraseña desde el correo.' + noDados, noDados ? '#8A6A34' : undefined);\n"
+     "                aviso(tH('Invitación enviada a %e: pondrá su contraseña desde el correo.', { e: email }) + noDados, noDados ? '#8A6A34' : undefined);\n"
      "              }\n"),
     ("              if (d.user_id) u2.searchParams.set('u', email); else u2.searchParams.delete('u');\n",
      "              if (d.usuario_id) u2.searchParams.set('u', email); else u2.searchParams.delete('u');\n"),
 )
 
 
+# La ficha de un usuario (datos.js): «Reenviar invitación» junto a «Cambiar contraseña», para quien no ha aceptado aún (la edge decide: si ya
+# aceptó contesta sin_invitacion_pendiente). «Cambiar contraseña» se queda: el owner la dejó funcionando en Bali Best el 13-oct (guion 3).
+USUARIOS_REENVIO_FICHA = (
+    ("            acciones.push({ texto: 'Cambiar contraseña', onClick: function () {\n"
+     "              if (window.LW_V4.abreCambiaPassword) window.LW_V4.abreCambiaPassword(u);\n"
+     "              else toast('El editor aún no ha cargado — prueba de nuevo en un segundo.');\n"
+     "            } });\n",
+     "            acciones.push({ texto: 'Cambiar contraseña', onClick: function () {\n"
+     "              if (window.LW_V4.abreCambiaPassword) window.LW_V4.abreCambiaPassword(u);\n"
+     "              else toast('El editor aún no ha cargado — prueba de nuevo en un segundo.');\n"
+     "            } });\n"
+     "            // N4/T F2 (AxisWorks, 14-oct): la edge admin-usuarios de la instancia reenvía SOLO una invitación sin aceptar, con su espera y su tope\n"
+     "            acciones.push({ texto: 'Reenviar invitación', onClick: function () {\n"
+     "              var MOT = { sin_invitacion_pendiente: 'No tiene ninguna invitación pendiente: ya entró con su contraseña.',\n"
+     "                espera: 'Ya se le envió hace menos de una hora: espera antes de reenviarla.',\n"
+     "                tope: 'Esta invitación ya se ha reenviado 5 veces: no se reenvía más. Revisa que el correo esté bien escrito.',\n"
+     "                sin_permiso: 'Solo un super admin reenvía la invitación de un administrador.',\n"
+     "                usuario_no_valido: 'Esta invitación no se reenvía desde aquí: la del administrador principal va por el panel del estudio.' };\n"
+     "              sb.auth.getSession().then(function (s) {\n"
+     "                var tk = s && s.data && s.data.session && s.data.session.access_token;\n"
+     "                if (!tk) return toastMal(tx('No se pudo: sesión no encontrada.'));\n"
+     "                return fetch(window.lwEdge('admin-usuarios'), { method: 'POST',\n"
+     "                  headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk, 'apikey': window.LW_SB_KEY },\n"
+     "                  body: JSON.stringify({ accion: 'reenviar_invitacion', usuario_id: u.user_id }) })\n"
+     "                  .then(function (r) { return r.json().catch(function () { return { error: 'respuesta ilegible del servidor' }; }); })\n"
+     "                  .then(function (d) {\n"
+     "                    if (d && d.ok && d.enviado) toast(tx('Invitación reenviada a %e.', { e: u.email }));\n"
+     "                    else if (d && d.ok) toastMal(tx('El correo no ha salido: revisa Ajustes › Correo. Podrás reenviarla dentro de una hora.'));\n"
+     "                    else toastMal(MOT[d && d.error] ? tx(MOT[d.error]) : tx('No se pudo: %e', { e: String((d && d.error) || '') }));\n"
+     "                  }, function () { toastMal(tx('No se pudo: %e', { e: 'sin conexión' })); });\n"
+     "              });\n"
+     "            } });\n"),
+)
+INVITA_NOTA = 'Le llega un correo con un enlace para poner su contraseña: nadie más la ve. Hasta que la ponga no puede entrar.'
+
+
 def usuarios_por_invitacion():
-    """F2: el alta de /usuarios/ de la instancia por invitación (ver USUARIOS_INVITACION). Solo toca DIST."""
+    """F2: el alta de /usuarios/ de la instancia por invitación (ver USUARIOS_INVITACION) y el reenvío desde la ficha. Solo toca DIST. Va DESPUÉS
+    de oculta_por_modulo: el botón y la nota del alta son anclas de ALTA_SIN_CONTRATOS, así que aquí se cambia el texto que esa deja (revisor
+    14-oct: con F2 antes, el build de toda instancia paraba en oculta_por_modulo)."""
+    boton = [n for _, v, n in ALTA_SIN_CONTRATOS if "'Crear usuario', function (v) {" in v]
+    nota = [n for _, v, n in ALTA_SIN_CONTRATOS if "tipo: 'nota', label: 'Se crea la cuenta" in v]
+    if len(boton) != 1 or len(nota) != 1 or nota[0].count('Se crea la cuenta y se le da acceso de inmediato.') != 2:
+        aborta('usuarios_por_invitacion: ALTA_SIN_CONTRATOS ya no deja el botón y la nota del alta como espera F2')
+    reps = USUARIOS_INVITACION + ((boton[0], boton[0].replace("'Crear usuario'", "'Enviar invitación'")),
+                                  (nota[0], nota[0].replace('Se crea la cuenta y se le da acceso de inmediato.', INVITA_NOTA)))
     js = os.path.join(DIST, 'intranet', 'v4', 'assets', 'editores.js')
     e = open(js, encoding='utf-8').read()
-    for viejo, nuevo in USUARIOS_INVITACION:
+    for viejo, nuevo in reps:
         e = _una_vez(e, viejo, nuevo, 'usuarios_por_invitacion editores.js')
     if "accion: 'crear', email: email" in e or "k: 'password', label: 'Contraseña provisional'" in e:
         aborta('usuarios_por_invitacion: queda un alta con contraseña en editores.js')
     open(js, 'w', encoding='utf-8', newline='').write(e)
+    dj = os.path.join(DIST, 'intranet', 'v4', 'assets', 'datos.js')
+    d = open(dj, encoding='utf-8').read()
+    for viejo, nuevo in USUARIOS_REENVIO_FICHA:
+        d = _una_vez(d, viejo, nuevo, 'usuarios_por_invitacion datos.js')
+    open(dj, 'w', encoding='utf-8', newline='').write(d)
 
 
 def setup_comun_pasos():
@@ -5331,10 +5409,10 @@ def instancia(nombre):
     asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)
     ajustes_puesta_en_marcha()   # F3 (12-oct-2026): Ajustes › Configurar módulos, primera pestaña, en todas las instancias (antes solo las de reservas)
     ajustes_cobros()   # F3 E2 (12-oct-2026): Ajustes › Cobros y el paso «cobros» (oculto hasta que la base declare el paso)
-    usuarios_por_invitacion()   # N4/T F2 (14-oct-2026): /usuarios/ invita sin contraseña (admin-usuarios `invitar`, B1)
     setup_comun_pasos()   # F3 (12-oct-2026, bbm-p31): pasos negocio/idiomas/correo/taller_* y Ajustes › Idiomas contra la base
     textos_instancia(nombre)   # owner 12-oct («Sí, tal cual»): fuera proyectos, villas y Cartas de Reserva de las pantallas comunes de la instancia
     oculta_por_modulo()   # bbm-p39 (13-oct): columnas, vista y selector de contrato que no tienen sentido con su módulo apagado
+    usuarios_por_invitacion()   # N4/T F2 (14-oct-2026): /usuarios/ invita sin contraseña (admin-usuarios `invitar`, B1); DETRÁS de oculta_por_modulo
     # F3 E3/E4 (pasos de Reservas de producto, setup_reservas.js): en el paquete desde que E3/E4 (20261012210000) está aplicada en bbm (bbm-p35, 13-oct;
     # sube a main en el mismo paso que la aplicación, por el guion de la mañana). Sin estas dos líneas el paso OBLIGATORIO «alquileres_previos» no tiene
     # pantalla y bbm no cotiza; con ellas y sin E3, el contrato front↔base para toda publicación de bbm.
