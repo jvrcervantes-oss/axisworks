@@ -20,6 +20,8 @@
  *    contrato de bbm-p34-cobros-live, migración 20261012233000): todo cambio cuyo modo final es real lleva `confirmar_live` = lo que la persona tecleó
  *    (tiene que ser LIVE; la edge y la base lo vuelven a mirar). Vale con los DOS servidores: el viejo trae `estado.live_permitido` y, si no es true, el
  *    botón de real queda apagado (falla cerrado, como antes) e ignora confirmar_live; el nuevo no lo trae y el modo real queda abierto al super admin.
+ * B10 (14-oct-2026): en la pestaña, debajo del componente, «Quién atiende las reservas del bot de WhatsApp: Dion / ERP» (bloqueBot, al final). Sale solo
+ *    si `estado` trae bot_backend con su forma; enganches data-axw-bot-backend="…" y data-axw-campo="bot_motivo"|"bot_contrasena".
  */
 (function () {
   'use strict';
@@ -151,6 +153,8 @@
     raiz.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', 'data-axw-cobros-estado': 'cargando', text: S().ui('cargando') }));
     raiz._listo = llama({ accion: 'estado' }).then(function (r) {
       vacia(raiz);
+      // B10: la misma respuesta trae quién atiende las reservas del bot; se pasa a quien lo pinte (solo la pestaña lo escucha). Sin estado válido, null.
+      avisaBot(raiz, r.d && r.d.ok === true && estadoValido(r.d.estado) ? r.d.bot_backend : null);
       if (r.codigo && !(r.d && r.d.ok === true)) return pintaFallo(raiz, r.codigo);
       if (!r.d || !estadoValido(r.d.estado)) return pintaFallo(raiz, 'respuesta_ilegible');
       var est = r.d.estado, pide = r.d.pide_codigo === true;
@@ -540,6 +544,222 @@
     lee().then(pintaCom);
   }
 
+  // ── Ajustes › Cobros: quién atiende las reservas del bot de WhatsApp, Dion o el ERP (B10, 14-oct-2026; contrato: edge ajustes-pagos, cabecera y
+  // acción bot_backend; doble erp/plan_f3e2_doble_cobros.json → _notas_b10). Solo en la pestaña (el asistente y Configurar módulos no lo enseñan) y solo
+  // si `estado` trae bot_backend con su forma: sin él (ERP sin la migración 20261014082000, o no se pudo leer) el bloque no sale y Cobros sigue igual.
+  // Lo que NO hace (No te creas nada del front): no decide si se puede pasar al ERP (puede_erp y falta los da la base, que lo vuelve a mirar al
+  // guardar), ni qué atiende de verdad el bot (efectivo). Cambiar pide motivo (≥ 3) y la contraseña de la cuenta, que vive solo en su <input> (.value) y
+  // se vacía tras cada envío y en pagehide. Nunca se reenvía: si la respuesta se pierde (sin red, 5xx), se relee `estado` y se compara lo guardado.
+  // Volver a Dion es idempotente (el mismo valor da cambiado:false sin pedir contraseña), así que reintentar a mano no hace daño.
+  // Enganches: data-axw-bot-backend="…" (acciones y zonas), data-axw-campo (bot_motivo, bot_contrasena). Nunca un rótulo.
+  var BOT_NOMBRE = { dion: 'Dion', erp: 'ERP' };   // un nombre y una sigla: no se traducen (como Xendit)
+  var BOT_FALTA = /^[a-z0-9_-]{1,40}$/, BOT_MOTIVO_MAX = 200;
+  function botValor(v) { return v === 'dion' || v === 'erp'; }   // nunca BOT_NOMBRE[v]: 'constructor' saldría «válido»
+  /* La forma de bot_backend (la de botBackendDe en la edge): lo raro es null, y null = el bloque no sale. */
+  function botForma(x) {
+    if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
+    if (!botValor(x.guardado) || !botValor(x.efectivo) || typeof x.puede_erp !== 'boolean' || !Array.isArray(x.falta)) return null;
+    var u = x.ultimo_cambio && typeof x.ultimo_cambio === 'object' && !Array.isArray(x.ultimo_cambio) ? x.ultimo_cambio : null;
+    return {
+      guardado: x.guardado, efectivo: x.efectivo, puede_erp: x.puede_erp,
+      falta: x.falta.filter(function (f) { return typeof f === 'string' && BOT_FALTA.test(f); }),
+      ultimo_cambio: u ? { quien: corto(u.quien, 200), cuando: corto(u.cuando, 40), motivo: corto(u.motivo, 500) } : null
+    };
+  }
+  function avisaBot(raiz, x) {
+    try { raiz.dispatchEvent(new CustomEvent('axw-cobros-bot', { bubbles: true, detail: { bot: botForma(x) } })); } catch (e) { /* MUDO A PROPOSITO: sin CustomEvent el bloque del bot no sale y Cobros sigue igual */ }
+  }
+  function enlaceAsistente(m, paso) {   // el de ajustes_puesta.js: vuelve a Ajustes al terminar
+    return location.pathname.replace(/ajustes\/.*$/, '') + 'ajustes/configurar/?modulo=' + encodeURIComponent(m) + '&paso=' + encodeURIComponent(paso) + '&vuelta=ajustes';
+  }
+  /* Lo que falta para poder elegir ERP → [{codigo, texto, enlace}]. Los pasos salen con su título del setup y, si el asistente sabe dónde están
+     (datos.pasos de modulos_setup_estado, solo base y reservas-producto, como _bot_backend_falta), con su enlace. Un código sin frase sale con la
+     frase digna del setup, nunca el código. Sin ningún código (no debería pasar con puede_erp false), una línea genérica: nunca una lista vacía. */
+  function botFaltas(falta, pasos) {
+    var lista = (falta || []).map(function (k) {
+      if (k === 'modulo_no_activo') return { codigo: k, texto: C('bot_falta_modulo', { m: S().nombreModulo('reservas-producto') }), enlace: null };
+      if (k === 'cobros') return { codigo: k, texto: C('bot_falta_cobros'), enlace: null };   // está en esta misma pestaña, arriba
+      // claves bien puestas pero en modo prueba: los clientes reales recibirían facturas de prueba (también aquí arriba, sin enlace)
+      if (k === 'cobros_modo_pruebas') return { codigo: k, texto: C('bot_falta_modo_pruebas'), enlace: null };
+      if (k === 'setup_sin_sembrar') return { codigo: k, texto: T(S().TEXTOS.hint.setup_sin_sembrar), enlace: null };
+      var de = (Array.isArray(pasos) ? pasos : []).filter(function (p) { return p && p.clave === k && (p.modulo === 'base' || p.modulo === 'reservas-producto'); });
+      var p = de.filter(function (x) { return x.obligatorio && !x.hecho; })[0] || de[0];   // `usuarios` sale en cada módulo: el que está pendiente
+      return { codigo: k, texto: S().texto('paso', k, 0), enlace: p ? enlaceAsistente(p.modulo, k) : null };
+    });
+    if (!lista.length) lista.push({ codigo: '', texto: T(S().TEXTOS.general.desconocido_falta), enlace: null });
+    return lista;
+  }
+  /* Antes de mandar nada: lo que se sabe sin la base. '' = se puede mandar; si no, el código (los mismos de la edge, más sin_cambios). */
+  function botValida(dato, valor, motivo, pass) {
+    if (!botValor(valor)) return 'valor_no_valido';
+    if (valor === dato.guardado) return 'sin_cambios';
+    if (valor === 'erp' && !dato.puede_erp) return 'bot_backend_no_listo';
+    var m = String(motivo == null ? '' : motivo).trim();
+    if (m.length < 3) return 'motivo';
+    if (m.length > BOT_MOTIVO_MAX || /[\u0000-\u001f\u007f]/.test(m)) return 'motivo_no_valido';
+    if (!pass) return 'reautenticar';
+    return '';
+  }
+  /* El cuerpo: SOLO los cuatro campos que admite la edge (otro → 400 campo_no_admitido). */
+  function botCuerpo(valor, motivo, pass) { return { accion: 'bot_backend', valor: valor, motivo: String(motivo == null ? '' : motivo).trim(), contrasena: String(pass || '') }; }
+  function botTexto(codigo) {
+    if (codigo === 'sin_cambios') return C('bot_sin_cambios');
+    if (codigo === 'motivo') return S().ui('motivo_corto');
+    if (codigo === 'motivo_no_valido') return C('bot_motivo_largo');
+    if (codigo === 'bot_backend_no_listo') return C('bot_no_listo');
+    // un fallo de esta pantalla (lo que manda no lo admite la edge): la frase genérica de «avisa al estudio», sin el código
+    if (codigo === 'valor_no_valido' || codigo === 'campo_no_admitido') return T(S().TEXTOS.general.error_codigo);
+    return textoError(codigo);   // reautenticar, clave_actual_incorrecta, demasiados_intentos, base_no_responde, sin_sesion, sin_red…: los de Cobros
+  }
+  /* El envío y su máquina de duda → {tipo, bot?, falta?, codigo?}:
+       cambiado (bot nuevo) · igual (ya estaba así; cambiado:false) · sin_releer (guardado, pero sin poder volver a leerlo) · no_listo (409, falta) ·
+       error (4xx con código: no se guardó) · y si la respuesta se pierde (sin red, gateway sin respuesta propia, 5xx): se relee estado SIN reenviar →
+       cambiado (lo guardado es lo mandado) · duda_no (no consta: lo guardado es otra cosa) · duda (no se pudo ni releer). Una sola petición bot_backend. */
+  function botEnvia(valor, motivo, pass, llamaFn) {
+    var f = llamaFn || llama;
+    var perdida = function () { return { status: 0, codigo: 'sin_red', d: null }; };
+    return Promise.resolve().then(function () { return f(botCuerpo(valor, motivo, pass)); }).then(null, perdida).then(function (res) {
+      res = res || perdida();
+      if (res.d && res.d.ok === true) {
+        var b = botForma(res.d.bot_backend);
+        if (res.d.cambiado === true) return b ? { tipo: 'cambiado', bot: b } : { tipo: 'sin_releer' };
+        return { tipo: 'igual', bot: b };
+      }
+      if (res.status === 409 && res.codigo === 'bot_backend_no_listo') {
+        return { tipo: 'no_listo', falta: res.d && Array.isArray(res.d.falta) ? res.d.falta.filter(function (x) { return typeof x === 'string' && BOT_FALTA.test(x); }) : [] };
+      }
+      var duda = res.codigo === 'sin_red' || res.codigo === 'edge_no_disponible' || res.codigo === 'respuesta_ilegible' || res.status >= 500;
+      if (!duda) return { tipo: 'error', codigo: res.codigo || 'respuesta_ilegible' };
+      return Promise.resolve().then(function () { return f({ accion: 'estado' }); }).then(function (r2) {
+        var b2 = r2 && r2.d && r2.d.ok === true ? botForma(r2.d.bot_backend) : null;
+        if (!b2) return { tipo: 'duda' };
+        return b2.guardado === valor ? { tipo: 'cambiado', bot: b2 } : { tipo: 'duda_no', bot: b2 };
+      }, function () { return { tipo: 'duda' }; });
+    });
+  }
+  window.addEventListener('pagehide', function () {   // la contraseña del bloque del bot (limpia() solo recorre las cajas del componente)
+    document.querySelectorAll('[data-axw-bot-backend="bloque"] input[type="password"]').forEach(function (i) { i.value = ''; });
+  });
+
+  /* El bloque, en `cont` (la pestaña lo crea). dato = botForma(...) válido; pasos = datos.pasos del setup (para los enlaces). */
+  function bloqueBot(cont, dato, pasos) {
+    var n = String(++nCaja), st = { valor: dato.guardado, motivo: '', enviando: false, cerrado: false };
+    var NOTA = 'font-body-sm text-body-sm text-on-surface-variant';
+    function listaFaltas(falta) {
+      var ul = el('ul', { class: 'flex flex-col gap-2', style: 'list-style:none;margin:0;padding:0', 'data-axw-bot-backend': 'falta-lista' });
+      botFaltas(falta, pasos).forEach(function (x) {
+        var li = el('li', { class: 'flex flex-col md:flex-row md:items-center gap-2 min-w-0', 'data-axw-bot-falta': x.codigo || 'otro' },
+          [el('span', { class: 'font-body-md text-body-md break-words', style: 'overflow-wrap:anywhere', text: x.texto })]);
+        if (x.enlace) li.appendChild(el('a', { href: x.enlace, class: BTN_PEQ + ' self-start', style: 'min-height:44px', 'data-axw-bot-backend': 'configurar-' + x.codigo, text: S().ui('configurar_m', { m: x.texto }) }));
+        ul.appendChild(li);
+      });
+      return ul;
+    }
+    function dibujaBot(msg, mal) {
+      vacia(cont);
+      cont.hidden = false;
+      cont.appendChild(el('h3', { class: 'font-label-md text-label-md text-on-surface', text: C('bot_titulo') }));
+      cont.appendChild(el('p', { class: 'font-body-md text-body-md text-deep-lagoon', 'data-axw-bot-backend': 'efectivo', 'data-axw-bot-efectivo': dato.efectivo,
+                                 text: dato.efectivo === 'erp' ? C('bot_ahora_erp') : C('bot_ahora_dion') }));
+      // guardado ERP pero el bot va con Dion: la base lo baja sola (módulo apagado o Cobros sin configurar) y aquí se dice por qué
+      var bajado = dato.guardado === 'erp' && dato.efectivo === 'dion';
+      if (bajado) {
+        cont.appendChild(el('div', { role: 'note', class: 'rounded-xl border bg-error-container text-on-error-container px-4 py-3 flex flex-col gap-2', style: 'border-color:rgb(var(--tema-error))', 'data-axw-bot-backend': 'aviso' },
+          [el('p', { class: 'font-body-md text-body-md', text: C('bot_aviso_efectivo') }), listaFaltas(dato.falta)]));
+      }
+      // Elegir: ERP no se puede elegir como CAMBIO si la base dice que falta algo (si ya es lo guardado, elegirlo es «sin cambios» y se deja)
+      var fs = el('fieldset', { class: 'flex flex-col gap-2', style: 'min-width:0', 'data-axw-bot-backend': 'elegir' },
+        [el('legend', { class: 'font-label-md text-label-md text-on-surface', style: 'margin-bottom:8px', text: C('bot_elige') })]);
+      var seg = el('div', { class: 'flex flex-col md:flex-row gap-2', role: 'radiogroup' });
+      ['dion', 'erp'].forEach(function (v) {
+        var on = st.valor === v, bloqueado = v === 'erp' && !dato.puede_erp && dato.guardado !== 'erp';
+        var b = el('button', { type: 'button', 'data-real': '', role: 'radio', 'aria-checked': on ? 'true' : 'false', 'data-axw-bot-backend': 'valor-' + v,
+                               class: 'flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full font-label-md text-label-md ' + (on ? 'bg-primary-container text-on-primary' : 'border border-outline-variant text-deep-lagoon'),
+                               style: 'min-height:44px' + (bloqueado ? ';opacity:.5' : ''), text: BOT_NOMBRE[v] });
+        if (bloqueado || st.enviando || st.cerrado) b.disabled = true;
+        b.addEventListener('click', function () { if (st.enviando || st.cerrado) return; st.valor = v; marca(); });
+        seg.appendChild(b);
+      });
+      fs.appendChild(seg);
+      if (!dato.puede_erp && !bajado) {   // qué falta: para poder elegir ERP, o (ya en ERP) para poder volver a él si se pasa a Dion
+        fs.appendChild(el('div', { class: 'flex flex-col gap-2', 'data-axw-bot-backend': 'falta' },
+          [el('p', { class: NOTA, text: dato.guardado === 'erp' ? C('bot_falta_volver') : C('bot_falta_elegir') }), listaFaltas(dato.falta)]));
+      }
+      cont.appendChild(fs);
+      // motivo y contraseña (solo cuentan si cambia; la contraseña vive en su <input> y nada más)
+      var idm = 'axw-bot-motivo-' + n, idp = 'axw-bot-pass-' + n;
+      var mot = el('input', { id: idm, type: 'text', autocomplete: 'off', maxlength: String(BOT_MOTIVO_MAX), 'data-axw-campo': 'bot_motivo', class: CLS_INPUT });
+      mot.style.maxWidth = '100%';
+      mot.value = st.motivo;
+      mot.addEventListener('input', function () { st.motivo = mot.value; });
+      cont.appendChild(el('div', { class: 'flex flex-col gap-1.5' }, [el('label', { for: idm, class: 'font-label-md text-label-md text-on-surface', text: S().ui('motivo') }), mot,
+        el('span', { class: NOTA, text: S().ui('motivo_ayuda') })]));
+      var pass = el('input', { id: idp, type: 'password', autocomplete: 'current-password', 'data-axw-campo': 'bot_contrasena', class: CLS_INPUT });
+      pass.style.maxWidth = '100%';
+      cont.appendChild(el('div', { class: 'flex flex-col gap-1.5' }, [el('label', { for: idp, class: 'font-label-md text-label-md text-on-surface', text: C('contrasena') }), pass,
+        el('span', { class: NOTA, text: C('bot_contrasena_d') })]));
+      if (st.enviando || st.cerrado) { mot.disabled = true; pass.disabled = true; }
+      var g = el('button', { type: 'button', 'data-real': '', 'data-axw-bot-backend': 'guardar', class: BTN1, style: 'min-height:44px', text: S().ui('guardar') });
+      g.disabled = st.enviando || st.cerrado;
+      cont.appendChild(g);
+      var est = el('p', { role: 'status', 'aria-live': 'polite', 'data-axw-bot-backend': 'mensaje', class: 'font-body-sm text-body-sm ' + (mal ? 'text-error' : 'text-on-surface-variant'), text: msg || '' });
+      cont.appendChild(est);
+      g.addEventListener('click', function () { guarda(mot, pass, est); });
+      // lo fijo: cuánto tarda en notarse, cómo volver y lo que esta pantalla no ve
+      var notas = el('ul', { class: 'flex flex-col gap-1.5', style: 'list-style:none;margin:0;padding:0', 'data-axw-bot-backend': 'notas' });
+      ['bot_nota_cotizacion', 'bot_nota_enlace', 'bot_nota_volver', 'bot_nota_freno'].forEach(function (k) { notas.appendChild(el('li', { class: NOTA, 'data-axw-bot-nota': k.replace('bot_nota_', ''), text: C(k) })); });
+      cont.appendChild(notas);
+      // el último cambio (texto de una persona: siempre textContent, y el motivo fuera de la frase con huecos)
+      var u = dato.ultimo_cambio, ult = el('div', { class: 'flex flex-col gap-1 min-w-0', 'data-axw-bot-backend': 'ultimo' });
+      if (u) {
+        var cuando = u.cuando && fecha(u.cuando) ? fecha(u.cuando) + ' · ' + hora(u.cuando) : '—';
+        ult.appendChild(el('p', { class: NOTA + ' break-words', style: 'overflow-wrap:anywhere', text: u.quien ? C('bot_ultimo', { f: cuando, p: u.quien }) : C('bot_ultimo_sin_quien', { f: cuando }) }));
+        if (u.motivo) ult.appendChild(el('p', { class: NOTA + ' break-words', style: 'overflow-wrap:anywhere' }, [el('span', { text: C('bot_motivo_label') + ' ' }), el('span', { 'data-axw-bot-backend': 'ultimo-motivo', text: u.motivo })]));
+      } else ult.appendChild(el('p', { class: NOTA, text: C('bot_nunca') }));
+      cont.appendChild(ult);
+    }
+    function marca() {   // cambiar de opción no repinta: lo tecleado (y la contraseña) se queda
+      cont.querySelectorAll('[role="radio"]').forEach(function (b) {
+        var on = b.getAttribute('data-axw-bot-backend') === 'valor-' + st.valor;
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+        b.className = 'flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full font-label-md text-label-md ' + (on ? 'bg-primary-container text-on-primary' : 'border border-outline-variant text-deep-lagoon');
+      });
+    }
+    function guarda(mot, pass, est) {
+      if (st.enviando || st.cerrado) return;
+      var v = st.valor, m = mot.value, p = pass.value;
+      var c = botValida(dato, v, m, p);
+      if (c) {
+        est.className = 'font-body-sm text-body-sm text-error'; est.textContent = botTexto(c);
+        if (c === 'motivo' || c === 'motivo_no_valido') mot.focus(); else if (c === 'reautenticar') pass.focus();
+        return;
+      }
+      st.enviando = true; st.motivo = m;
+      pass.value = ''; p = String(p);   // fuera del DOM en cuanto sale; va solo en el cuerpo de esta petición
+      dibujaBot(S().ui('cargando'), false);
+      botEnvia(v, m, p, null).then(function (r) {
+        p = '';
+        st.enviando = false;
+        if ((r.tipo === 'cambiado' || r.tipo === 'igual' || r.tipo === 'duda_no') && r.bot) { dato = r.bot; st.valor = dato.guardado; }
+        if (r.tipo === 'cambiado') { st.motivo = ''; return dibujaBot(S().ui('guardado'), false); }
+        if (r.tipo === 'igual') { st.motivo = ''; return dibujaBot(C('bot_igual'), false); }
+        if (r.tipo === 'no_listo') {
+          dato = { guardado: dato.guardado, efectivo: dato.efectivo, puede_erp: false, falta: r.falta, ultimo_cambio: dato.ultimo_cambio };
+          st.valor = dato.guardado;
+          return dibujaBot(C('bot_no_listo'), true);
+        }
+        if (r.tipo === 'duda_no') return dibujaBot(C('bot_duda_no'), true);
+        // sin_releer o duda: no se sabe qué hay guardado; el bloque se queda quieto hasta recargar (lo de arriba ya no es de fiar)
+        if (r.tipo === 'sin_releer' || r.tipo === 'duda') { st.cerrado = true; return dibujaBot(r.tipo === 'duda' ? C('bot_duda') : C('bot_sin_releer'), r.tipo === 'duda'); }
+        dibujaBot(botTexto(r.codigo), true);
+        var foco = r.codigo === 'motivo' || r.codigo === 'motivo_no_valido' ? '[data-axw-campo="bot_motivo"]' : (r.codigo === 'reautenticar' || r.codigo === 'clave_actual_incorrecta' ? '[data-axw-campo="bot_contrasena"]' : '');
+        var fe = foco && cont.querySelector(foco); if (fe) fe.focus();
+      });
+    }
+    dibujaBot('', false);
+  }
+  window.AXW_COBROS.bot = { forma: botForma, faltas: botFaltas, valida: botValida, cuerpo: botCuerpo, texto: botTexto, envia: botEnvia, bloque: bloqueBot };
+
   // ── Ajustes › Cobros: la pestaña (build.py pone data-lw-tab="cobros" oculto y su panel #lw-aj-cobros) ─────────────────────────────────────
   // Sale solo si la base declara el paso «cobros» (puede_configurar) o, para quien no configura, si el módulo de reservas está encendido.
   // El componente se monta al ABRIR la pestaña, nunca al cargar /ajustes/.
@@ -553,6 +773,9 @@
       montado = true;
       vacia(panel);
       comision(panel.closest('[data-lw-panel]'));   // una vez: el bloque va FUERA de #lw-aj-cobros, que se vacía en cada vuelta
+      // el bloque del bot (B10) también va fuera, justo detrás del panel: se rehace en cada vuelta con lo que traiga el `estado` nuevo
+      var botViejo = panel.parentNode && panel.parentNode.querySelector('[data-axw-bot-backend="bloque"]');
+      if (botViejo) botViejo.parentNode.removeChild(botViejo);
       if (!datos.puede_configurar) {   // S90 «A module that isn't ready»: sin pasos, sin llamar a la edge
         var m = datos.modulos.filter(function (x) { return x.modulo === 'reservas-producto'; })[0];
         var listo = m && m.estado === 'configurado';
@@ -564,6 +787,16 @@
       var paso = datos.pasos.filter(function (p) { return p.clave === 'cobros'; })[0];
       var cuerpo = el('div', { class: 'flex flex-col gap-5', style: 'padding:24px clamp(16px,3vw,32px)' });
       panel.appendChild(cuerpo);
+      var bot = el('div', { 'data-axw-bot-backend': 'bloque', class: 'rounded-2xl border border-outline-variant bg-surface-container-low px-5 py-5 flex flex-col gap-4',
+        style: 'margin:0 clamp(16px,3vw,32px) 24px;min-width:0' });
+      bot.hidden = true;
+      if (panel.parentNode) panel.parentNode.insertBefore(bot, panel.nextSibling);
+      // lo avisa pinta() con cada `estado` (también al reintentar tras un fallo): null = no sale
+      cuerpo.addEventListener('axw-cobros-bot', function (ev) {
+        var b = ev.detail && ev.detail.bot;
+        if (!b) { vacia(bot); bot.hidden = true; return; }
+        bloqueBot(bot, b, datos.pasos);
+      });
       var ctl = pinta(cuerpo, { paso: paso, datos: datos });
       var est = el('p', { role: 'status', 'aria-live': 'polite', class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-cobros-host': 'estado' });
       var g = boton(C('probar_guardar'), 'host-guardar', BTN1);
