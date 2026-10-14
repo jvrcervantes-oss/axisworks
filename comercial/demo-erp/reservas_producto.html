@@ -347,6 +347,11 @@ a.rp-boton{text-decoration:none}
     'Ver en la lista': 'See it in the list',
     'La base dice que esta reserva ya existe (apartada), pero no aparece en la lista. No la repitas: búscala en la pestaña Reservas.': 'The database says this booking already exists (held), but it is not in the list. Do not repeat it: look for it in the Bookings tab.',
     'Cliente con ficha': 'Customer with a record',
+    'Buscar cliente': 'Search customer', 'Escribe parte del nombre': 'Type part of the name', 'Ningún cliente con ese nombre': 'No customer with that name',
+    'No se ha podido mirar la disponibilidad': 'Availability could not be checked',
+    'No tienes permiso para hacer reservas: pídeselo a la administración.': 'You do not have permission to make bookings: ask the administration.',
+    'El módulo de reservas de producto está apagado en esta instancia.': 'The product bookings module is switched off in this installation.',
+    'La sesión ha caducado: recarga la página o vuelve a entrar.': 'Your session has expired: reload the page or sign in again.',
     'Cliente nuevo o sin ficha (escribe su teléfono)': 'New customer or no record (type their phone)',
     'La reserva se enlaza a la ficha de este cliente: su nombre y su teléfono salen de la ficha.': 'The booking is linked to this customer’s record: name and phone come from the record.',
     'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.': 'The customer list is cut to the first 500: if you cannot see the one you need, ask the administrator.',
@@ -480,6 +485,11 @@ a.rp-boton{text-decoration:none}
     'Ver en la lista': 'Lihat di daftar',
     'La base dice que esta reserva ya existe (apartada), pero no aparece en la lista. No la repitas: búscala en la pestaña Reservas.': 'Sistem menyebut booking ini sudah ada (ditahan), tapi tidak muncul di daftar. Jangan diulang: cari di tab Booking.',
     'Cliente con ficha': 'Pelanggan terdaftar',
+    'Buscar cliente': 'Cari pelanggan', 'Escribe parte del nombre': 'Ketik sebagian nama', 'Ningún cliente con ese nombre': 'Tidak ada pelanggan dengan nama itu',
+    'No se ha podido mirar la disponibilidad': 'Ketersediaan tidak bisa dicek',
+    'No tienes permiso para hacer reservas: pídeselo a la administración.': 'Anda tidak punya izin membuat booking: minta ke bagian administrasi.',
+    'El módulo de reservas de producto está apagado en esta instancia.': 'Modul booking produk dimatikan di instalasi ini.',
+    'La sesión ha caducado: recarga la página o vuelve a entrar.': 'Sesi Anda sudah habis: muat ulang halaman atau masuk lagi.',
     'Cliente nuevo o sin ficha (escribe su teléfono)': 'Pelanggan baru atau belum terdaftar (isi nomornya)',
     'La reserva se enlaza a la ficha de este cliente: su nombre y su teléfono salen de la ficha.': 'Booking ditautkan ke data pelanggan ini: nama dan nomornya diambil dari data pelanggan.',
     'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.': 'Daftar pelanggan hanya 500 pertama: jika yang dicari tidak ada, minta ke pengelola.',
@@ -1133,7 +1143,24 @@ a.rp-boton{text-decoration:none}
       return T('Todavía no se pueden poner precios: falta que el gestor diga en Ajustes cómo va el impuesto. Sin precio no se crea ninguna reserva.');
     if (faltas.every(function (x) { return !!x; }))
       return T('Todavía no se puede reservar: falta configurar este módulo en Ajustes. Sin eso no se crea ninguna reserva.');
-    return T('Ninguna moto se puede reservar en esas fechas. Lo que dice la base') + ': ' + mensaje(A.cot[ids[0]].err);
+    // bbm-comodidad F6 (15-oct-2026): un fallo de red, de sesión o de permiso salía como «ninguna moto se puede reservar», y la persona
+    // cambiaba de fechas buscando una moto libre que sí había. Ese prefijo es solo para lo que la base dice como regla.
+    // Si algún modelo dio una regla de la base, esa manda (es la razón real); si todos fallaron por otra cosa, se dice cuál.
+    var errs = ids.map(function (i) { return A.cot[i].err; });
+    var regla = errs.filter(function (e) { return !noEsRegla(e); })[0];
+    if (regla) return T('Ninguna moto se puede reservar en esas fechas. Lo que dice la base') + ': ' + mensaje(regla);
+    return T('No se ha podido mirar la disponibilidad') + ': ' + motivoSinCotizar(errs[0]);
+  }
+  /* F6: ¿el fallo al cotizar NO es una regla de negocio? clasifica() solo reconoce la sesión caída que llega como 42501 sin_sesion; aquí se
+     suman el token caducado de PostgREST (PGRST301-303) y el tiempo agotado (57014), que también salían como «ninguna moto». */
+  function noEsRegla(e) { var x = e || {}; return clasifica(x).tipo !== 'regla' || /^PGRST30[123]$/.test(String(x.code || '')) || String(x.code) === '57014'; }
+  function motivoSinCotizar(e) {
+    var x = e || {}, t = clasifica(x).tipo;
+    if (t === 'sin_sesion' || /^PGRST30[123]$/.test(String(x.code || ''))) return T('La sesión ha caducado: recarga la página o vuelve a entrar.');
+    if (t === 'sin_permiso' || t === 'solo_admin') return T('No tienes permiso para hacer reservas: pídeselo a la administración.');
+    if (t === 'modulo_apagado') return T('El módulo de reservas de producto está apagado en esta instancia.');
+    if (t === 'no_disponible') return mensaje(x);
+    return T('La base no ha respondido: prueba otra vez en un rato.');
   }
   function unidadesLibres(p) {
     if (!A.rango) return [];
@@ -1291,12 +1318,31 @@ a.rp-boton{text-decoration:none}
       if (A.clientes && A.clientes.length && A.W.paso === 'cliente' && !(ae && A.cuerpo.contains(ae) && /^(INPUT|TEXTAREA)$/.test(ae.tagName))) asPinta();   // tecleando: sale en el siguiente pintado
     });
   }
+  /* Opciones del select de clientes con ficha, filtradas por la casilla «Buscar cliente» (sin tildes ni mayúsculas). Se rehacen las
+     opciones en vez de ocultarlas: Safari de iPhone enseña igual una <option hidden>. La elegida se queda siempre, aunque no case. */
+  function sinTildes(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+  function asOpcionesCliente(sel) {
+    var W = A.W, f = sinTildes(A.filtroCliente).trim();
+    while (sel.firstChild) sel.removeChild(sel.firstChild);
+    sel.appendChild(h('option', { value: '', text: T('Cliente nuevo o sin ficha (escribe su teléfono)') }));
+    var vistos = 0;
+    A.clientes.forEach(function (x) {
+      var elegido = x.id === W.clienteId;
+      if (f && !elegido && sinTildes(x.nombre).indexOf(f) === -1) return;
+      if (!elegido) vistos++;
+      sel.appendChild(h('option', { value: x.id, text: x.nombre || '—', selected: elegido ? true : null }));
+    });
+    if (f && !vistos) sel.appendChild(h('option', { value: '', disabled: true, text: T('Ningún cliente con ese nombre') }));
+    sel.value = W.clienteId || '';
+  }
   function asPasoCliente(c) {
     var W = A.W;
     if (A.clientes && A.clientes.length) {
+      // bbm-comodidad F5 (15-oct-2026): con muchos clientes, buscar en el select a ojo costaba; la casilla filtra la lista al teclear.
+      if (A.clientes.length > 5) c.appendChild(campo('Buscar cliente', h('input', { type: 'search', 'data-as': 'filtroCliente', value: A.filtroCliente || '', autocomplete: 'off',
+        placeholder: T('Escribe parte del nombre'), 'aria-label': T('Buscar cliente') })));
       var selC = h('select', { 'data-as': 'cliente', 'aria-label': T('Cliente con ficha') });
-      selC.appendChild(h('option', { value: '', text: T('Cliente nuevo o sin ficha (escribe su teléfono)') }));
-      A.clientes.forEach(function (x) { selC.appendChild(h('option', { value: x.id, text: x.nombre || '—', selected: x.id === W.clienteId ? true : null })); });
+      asOpcionesCliente(selC);
       c.appendChild(campo('Cliente con ficha', selC, A.clientesTruncado ? [h('span', { class: 'rp-vacio', text: T('La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.') })] : []));
       if (W.clienteId) { c.appendChild(h('p', { class: 'rp-nota', text: T('La reserva se enlaza a la ficha de este cliente: su nombre y su teléfono salen de la ficha.') })); return; }
     } else if (A.clientes === null && W.clienteId) { W.clienteId = ''; W.clienteNombre = ''; }   // solo si la lista NO existe (undefined = todavía cargando)
@@ -1556,7 +1602,7 @@ a.rp-boton{text-decoration:none}
     if (a === 'rp-modal-as-cerrar') asCierra(false);
     else if (a === 'rp-modal-as-salir') asCierra(true);
     else if (a === 'rp-modal-as-seguir') { A.salir = false; asPinta(); }
-    else if (a === 'rp-modal-as-reinicia') { if (A.enviando || A.comprobando) return; asOlvida(); A.W = asVacio(); A.recuperado = false; A.cot = {}; A.cotClave = null; A.coinc = []; A.dupTel = null; A.err = {}; A.errEnvio = null;
+    else if (a === 'rp-modal-as-reinicia') { if (A.enviando || A.comprobando) return; asOlvida(); A.W = asVacio(); A.recuperado = false; A.cot = {}; A.cotClave = null; A.coinc = []; A.dupTel = null; A.err = {}; A.errEnvio = null; A.filtro = ''; A.filtroCliente = '';
       A.enviado = null; A.yaExiste = false; A.dudosaSinMirar = false; A.recuperadaTrasCorte = false; A.pasoPintado = null; asPinta(); }
     else if (a === 'rp-modal-as-sig') asSiguiente();
     else if (a === 'rp-modal-as-atras') { var i = AS_PASOS.indexOf(W.paso); if (i > 0) asVe(AS_PASOS[i - 1]); }
@@ -1587,6 +1633,11 @@ a.rp-boton{text-decoration:none}
         var p = producto(b.getAttribute('data-producto-id'));
         b.hidden = !!f && !(p && String(p.nombre).toLowerCase().indexOf(f) !== -1);
       });
+      return;
+    }
+    if (k === 'filtroCliente') {
+      A.filtroCliente = t.value;
+      var sc = A.cuerpo.querySelector('[data-as="cliente"]'); if (sc) asOpcionesCliente(sc);
       return;
     }
     if (k === 'unidad') W.unidadId = t.value;

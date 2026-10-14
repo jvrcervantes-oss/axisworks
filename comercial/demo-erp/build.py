@@ -4775,6 +4775,40 @@ TEXTOS_INSTANCIA = (
     ('intranet/v4/assets/datos.js', "        H.dato('Contrato', c ? (contratosActivo() ? enlaceFichaContrato(c) : esc(c.numero || '')) : (f.contrato_numero || null), { html: !!c }) +",
      "        (c || f.contrato_numero || contratosActivo() ? H.dato('Contrato', c ? (contratosActivo() ? enlaceFichaContrato(c) : esc(c.numero || '')) : (f.contrato_numero || null), { html: !!c }) : '') +", 1),
 )
+# Retoques de COMPORTAMIENTO (no de texto) del editor de documentos en toda instancia (bbm-comodidad, 15-oct-2026; revisor de 371396e: no van
+# en TEXTOS_INSTANCIA, que solo cambia texto). Mismo formato y misma función (textos_instancia): cada trozo las veces dichas o el build para.
+# Prueba: test_comodidad_instancia.py. Lawang no pasa por aquí.
+COMODIDAD_INSTANCIA = (
+    # bbm-comodidad F4 (15-oct-2026, medido en bbm real): con UNA sola empresa emisora, «Sociedad que factura/cobra» empezaba en «— elige —» en
+    # cada factura y cada recibí (2 clics más, y los impuestos esperaban a elegirla). Con una sola se preselecciona; con dos o más, como siempre.
+    # Los impuestos y la previa leen el valor vivo del select al montarse (montaImpuestosDoc.socActual), así que salen ya con esa empresa.
+    ('intranet/v4/assets/editores.js', "valor: f0.sociedad || '', opciones: [['', '— elige —']].concat(opcionesSociedadDoc())",
+     "valor: f0.sociedad || (Object.keys(SOCIEDADES).length === 1 ? Object.keys(SOCIEDADES)[0] : ''), opciones: [['', '— elige —']].concat(opcionesSociedadDoc())", 2),
+    # bbm-comodidad F8: un recibí no vence; «Vencimiento (opcional)» solo se enseña en uno ya guardado que lo tenga (no se pierde el dato).
+    ('intranet/v4/assets/editores.js', "          campoSimpleDoc(filaF, { k: 'fecha_vencimiento', label: 'Vencimiento (opcional)', tipo: 'date', valor: f0.fecha_vencimiento || '' });\n\n"
+     "          var secEmisor = seccionPlegableDoc(host, 'Emisor', true, { resumen: resumenEmisorDoc });\n"
+     "          campoSimpleDoc(secEmisor, { k: 'sociedad', label: 'Sociedad que cobra',",
+     "          if (f0.fecha_vencimiento) campoSimpleDoc(filaF, { k: 'fecha_vencimiento', label: 'Vencimiento (opcional)', tipo: 'date', valor: f0.fecha_vencimiento });\n\n"
+     "          var secEmisor = seccionPlegableDoc(host, 'Emisor', true, { resumen: resumenEmisorDoc });\n"
+     "          campoSimpleDoc(secEmisor, { k: 'sociedad', label: 'Sociedad que cobra',", 1),
+    # bbm-comodidad F10 (15-oct-2026, medido en bbm a 1440): el robot del Asistente (fijo abajo a la derecha, 88 px; 72 px en móvil) tapaba lo último
+    # de cada página: «Nuevo modelo» en Flota, la columna Acciones en Facturas, «Configurar» en Ajustes. Se reserva su hueco al final de <main> para
+    # que se pueda bajar más allá del robot. Solo en pantalla y solo donde se pinta el robot (la regla viaja en la hoja que inyecta mascota.js).
+    ('intranet/v4/assets/mascota.js', "    '@media print{#lw-masc{display:none}}';",
+     "    '@media screen{main{padding-bottom:132px!important}}@media screen and (max-width:767px){main{padding-bottom:104px!important}}' +\n"
+     "    '@media print{#lw-masc{display:none}}';", 1),
+    # bbm-comodidad F12: una barra de pestañas con UNA sola pestaña («General» en Ajustes de bbm) repite la entrada del menú y no lleva a ningún
+    # sitio. Con una sola pestaña no se INSERTA; con dos o más, como siempre (Facturas · Recibos). Se toca solo la inserción y no el `return` de
+    # arriba: el resto de cableaPestanas() (la versión «Mis comisiones» de /reparto/ para el closer, que tiene UNA pestaña) tiene que seguir corriendo
+    # (revisor sobre e8e30cf, MEDIA).
+    ('intranet/v4/assets/nav.js', '    if (cab && cab.parentNode) cab.parentNode.insertBefore(barra, cab.nextSibling);\n    else main.insertBefore(barra, main.firstChild);',
+     '    if (mias.length < 2) { /* una sola pestaña: sin barra */ } else if (cab && cab.parentNode) cab.parentNode.insertBefore(barra, cab.nextSibling);\n'
+     '    else main.insertBefore(barra, main.firstChild);', 1),
+    # bbm-comodidad F12: Facturas tenía el botón «Recibos» en la cabecera Y la pestaña «Recibos» justo debajo (la barra del grupo Cobros). Quien
+    # puede abrir Recibos tiene la pestaña; quien no, tampoco podía usar el botón. Se quita el botón.
+    ('intranet/v4/facturas/index.html', '<a class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors shadow-sm font-label-md text-label-md" href="/intranet/v4/recibos/">\n'
+     '<span class="material-symbols-outlined text-[18px] text-stone-sand">payments</span>\n<span class="" data-lwt>Recibos</span>\n</a>\n', '', 1),
+)
 # Solo en las instancias de alquileres (portada «reservas»): el ejemplo del campo y la pestaña «Reservas» de Ajustes, que en ellas solo lleva los impuestos
 TEXTOS_ALQUILER = (
     ('intranet/v4/assets/editores.js', "placeholder: 'Ej. Proyecto — Villa 2BR S2'", "placeholder: 'Ej. Reserva R-0012 — Honda PCX'", 2),
@@ -4811,6 +4845,14 @@ OCULTA_POR_MODULO = (
      '<th class="py-3.5 px-4 font-semibold" data-axw-sin="contratos" data-lwt>Contrato</th>'),
     ('intranet/v4/recibos/index.html', '<td class="py-4 px-5 font-label-md font-semibold text-deep-lagoon tracking-wide">—</td>\n<td class="py-4 px-4 font-label-md text-on-surface">—</td>',
      '<td class="py-4 px-5 font-label-md font-semibold text-deep-lagoon tracking-wide">—</td>\n<td class="py-4 px-4 font-label-md text-on-surface" data-axw-sin="contratos">—</td>'),
+    # bbm-comodidad F7 (15-oct-2026, medido en el HTML servido de bbm): Gastos hablaba de comisiones de closers, compra de suelo, cuentas de
+    # escrow y filtraba por Proyecto en un negocio de alquiler de motos. Fuera sin comisiones / sin proyectos; con ellos, igual que en Lawang.
+    ('intranet/v4/gastos/index.html', '<li data-lwt>Las comisiones de los closers no se apuntan aquí: salen solas de Comisiones y ya cuentan en Finanzas.</li>',
+     '<li data-axw-sin="comisiones" data-lwt>Las comisiones de los closers no se apuntan aquí: salen solas de Comisiones y ya cuentan en Finanzas.</li>'),
+    ('intranet/v4/gastos/index.html', '<li data-lwt>La compra de suelo es inversión, no gasto de explotación: Finanzas la enseña aparte. Nunca se paga un gasto desde una cuenta de escrow.</li>',
+     '<li data-axw-sin="proyectos" data-lwt>La compra de suelo es inversión, no gasto de explotación: Finanzas la enseña aparte. Nunca se paga un gasto desde una cuenta de escrow.</li>'),
+    ('intranet/v4/gastos/index.html', '<select id="lw-gas-f-proyecto" class="',
+     '<select id="lw-gas-f-proyecto" data-axw-sin="proyectos" class="'),
 )
 # El editor de factura de una instancia SIN el módulo contratos y cuya empresa permite facturar sin contrato nace en el modo «sin contrato» que ya
 # existe (el cliente se elige en el editor) y no enseña el selector de contrato, que solo podía ofrecer «— sin contrato —». Mismo camino que pulsar
@@ -4993,7 +5035,7 @@ def oculta_por_modulo():
 def textos_instancia(nombre):
     """Los textos de inmobiliaria de las pantallas comunes, cambiados en la copia de la instancia (ver TEXTOS_INSTANCIA). Cada trozo tiene que
     aparecer EXACTAMENTE las veces dichas: si Lawang lo cambia, el build para en vez de dejar medio cambio."""
-    for rel_, viejo, nuevo, veces in TEXTOS_INSTANCIA + (TEXTOS_ALQUILER if portada_de(nombre) == 'reservas' else TEXTOS_OTRA):
+    for rel_, viejo, nuevo, veces in TEXTOS_INSTANCIA + COMODIDAD_INSTANCIA + (TEXTOS_ALQUILER if portada_de(nombre) == 'reservas' else TEXTOS_OTRA):
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
         if t.count(viejo) != veces:

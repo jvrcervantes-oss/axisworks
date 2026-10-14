@@ -2,8 +2,10 @@
  * PORTADA: es una ILUSTRACIÓN con datos de ejemplo, no actividad registrada: la página lo dice en tres sitios.
  * MODO DATOS (solo si #netw lleva data-src): pinta el registro REAL que publica tools/estudio_publico.py
  * (contrato: contexto/estudio_en_vivo_contrato.md). Reglas que este fichero cumple:
- *   · el JSON se valida entero (claves exactas, enums, ids conocidos, fechas, caducidad); si algo no
- *     cuadra se cae a la ESTRUCTURA sin estados y se dice, nunca se pinta a medias;
+ *   · el JSON se valida entero (claves exactas, enums, ids sin repetir, fechas, caducidad); si algo no
+ *     cuadra se cae a la ESTRUCTURA sin estados y se dice, nunca se pinta a medias. Excepción: un id
+ *     que este fichero no conoce se ignora (no se pinta) y uno conocido que no viene queda sin estado,
+ *     para que un departamento nuevo no tumbe la página mientras JSON y red.js se ponen al día;
  *   · ninguna cadena del JSON llega al HTML: los rótulos se buscan por id/enum en este fichero;
  *   · los nodos que no son departamentos (CEO, revisor, productos…) no tienen estado: son estructura;
  *   · sin cifras de agentes ni tareas, sin minutos exactos, y las horas se dan en UTC absoluto.
@@ -26,7 +28,7 @@
       st:{3:'hora previa al corte',2:'24 h previas al corte',1:'sin registro'},
       stLong:{3:'Registrado en la hora hasta {t}',2:'Registrado en las últimas 24 h hasta {t}',1:'Sin registro suficiente'},
       vol:{bajo:'Volumen bajo',medio:'Volumen medio',alto:'Volumen alto'},
-      strInfo:'Paso del camino del trabajo; no tiene estado propio.',
+      strInfo:'Paso del camino del trabajo; no tiene estado propio.',sinDato:'Todavía no figura en el registro publicado.',
       cats:{construccion:'Construcción',diseno:'Diseño',captacion:'Captación',documentacion:'Documentación',gestion:'Gestión',verificacion:'Verificación',operacion:'Operación'},
       coordName:'Revisión previa de planes',aaasNote:'no en servicio',coordDesc:'Revisiones previas de planes entre agentes de IA: antes de construir, subagentes de varios departamentos opinan sobre el plan.',
       pRec:'Registro',pRecRows:['Publicado','Datos hasta','Válido hasta','Retraso'],pArea:'Por área',pAreaE:'registrado · sin registro',pCoord:'Revisiones previas de planes entre agentes de IA',
@@ -40,12 +42,13 @@
       seguridad:'Revisa que todo sea seguro antes y después de publicar.',legal:'Contratos, textos legales y normativa.',administracion:'Facturación y fiscalidad del estudio.',organizacion:'Cuida la estructura del estudio y retira lo que sobra.',
       diseno:'Dirección de arte, identidad y piezas gráficas.',arquitectura:'Viviendas en 3D y parcelarios a partir de planos y fotos.',modelado:'Personajes, props y escenarios para videojuegos.',videojuegos:'Motor y juego propio del estudio.',marketing:'Anuncios, SEO y captación de contactos.',comunicacion:'Notas de prensa y relación con medios.',
       calidad:'Comprueba en producción que lo prometido funciona de verdad. Puede frenar una entrega.',deploy:'Lleva el trabajo a producción y mantiene los servicios.',documentacion:'Propuestas, informes y entregas en PDF.',
+      producto:'Decide qué se construye del software de gestión y en qué orden.',experiencia:'Recorre las herramientas como un usuario real y mide lo que cuesta usarlas.',costes:'Mide y recorta lo que cuesta mantener el estudio.',idiomas:'Traducción y terminología en español, inglés e indonesio.',soporte:'Alta, formación y soporte de cada cliente.',
       erp:'El producto de gestión de AxisWorks para llevar un negocio: reservas, contratos, facturas y operación. Demo disponible.',aaas:'Agentes que llevan un negocio dentro de límites duros (Pilotos y Bots). En pruebas en modo sombra: todavía no es un servicio en marcha.',webs:'Webs a medida para clientes, ya publicadas. Previsto: landings generadas con la información del ERP.',
       revprev:'Subagentes por departamento (1 a 3) que opinan sobre el PLAN antes de construir. Presupuesto de 5 por sesión.',explore:'Subagente de solo lectura que rastrea muchos ficheros y devuelve solo la conclusión.',plan:'Subagente que diseña el plan de implementación y sus alternativas.',encargo:'Un subagente por subtarea, con contexto mínimo, verificado contra su criterio de aceptación.',consulta:'Si el revisor lo pide, un subagente por departamento revisa el mismo diff antes de publicar.',verificador:'Comprueba en producción que lo publicado hace lo esperado, con prueba.',trampas:'Calidad esconde un fallo en un plan para medir si un departamento lo detecta.',
       brief:'El encargo que arranca el trabajo, con las palabras de quien lo pide.',ceo:'Reparte el trabajo entre los departamentos y sostiene el hilo del encargo.',revisor:'Revisa el código con contexto limpio antes de publicar; sin su sello no sube.',humano:'Precio, publicar, borrar o gastar: lo decide una persona.',entrega:'El proyecto llega al cliente. Marcarlo como entregado lo decide una persona.'},
-    work:{backend:'Ajustando una base de datos',seguridad:'Revisando un plan',calidad:'Verificando en producción',frontend:'Construyendo una página',diseno:'Revisando un diseño',deploy:'Publicando un cambio',bots:'Afinando un asistente',legal:'Revisando un texto',marketing:'Preparando contenido',documentacion:'Preparando un documento',organizacion:'Revisando la estructura',pilotos:'Probando un agente en modo de prueba'},
+    work:{backend:'Ajustando una base de datos',seguridad:'Revisando un plan',calidad:'Verificando en producción',frontend:'Construyendo una página',diseno:'Revisando un diseño',deploy:'Publicando un cambio',bots:'Afinando un asistente',legal:'Revisando un texto',marketing:'Preparando contenido',documentacion:'Preparando un documento',organizacion:'Revisando la estructura',pilotos:'Probando un agente en modo de prueba',producto:'Ordenando la hoja de ruta',experiencia:'Probando una pantalla como usuario',costes:'Revisando el gasto',idiomas:'Traduciendo un texto',soporte:'Atendiendo a un cliente'},
     rows:{Input:'Entrada',Decide:'Decide',Spawned:'Se levantan',Review:'Opinan',Build:'Construyen',Create:'Crean',Gates:'Puertas',Publish:'Publican',Verify:'Verifican',Products:'Productos',Output:'Salida'},
-    names:{brief:'Encargo',ceo:'CEO · reparto',revprev:'Revisión previa',explore:'Exploración',plan:'Planificación',encargo:'Subtarea',seguridad:'Seguridad',legal:'Legal',administracion:'Administración',organizacion:'Organización',frontend:'Frontend',backend:'Backend',bots:'Bots',pilotos:'Pilotos',diseno:'Diseño',arquitectura:'Arquitectura',modelado:'Modelado 3D',videojuegos:'Videojuegos',marketing:'Marketing',comunicacion:'Comunicación',calidad:'Calidad',revisor:'Revisor de código',consulta:'Consulta deploy',humano:'Supervisión',deploy:'Deploy',documentacion:'Documentación',verificador:'Verificador',trampas:'Planes trampa',aaas:'AaaS',erp:'ERP',webs:'Webs',entrega:'Entrega'},
+    names:{brief:'Encargo',ceo:'CEO · reparto',revprev:'Revisión previa',explore:'Exploración',plan:'Planificación',encargo:'Subtarea',seguridad:'Seguridad',legal:'Legal',administracion:'Administración',organizacion:'Organización',frontend:'Frontend',backend:'Backend',bots:'Bots',pilotos:'Pilotos',diseno:'Diseño',arquitectura:'Arquitectura',modelado:'Modelado 3D',videojuegos:'Videojuegos',marketing:'Marketing',comunicacion:'Comunicación',calidad:'Calidad',revisor:'Revisor de código',consulta:'Consulta deploy',humano:'Supervisión',deploy:'Deploy',documentacion:'Documentación',verificador:'Verificador',trampas:'Planes trampa',aaas:'AaaS',erp:'ERP',webs:'Webs',entrega:'Entrega',producto:'Producto',experiencia:'Experiencia',costes:'Costes',idiomas:'Idiomas',soporte:'Éxito del cliente'},
     notes:{aaas:'en pruebas',erp:'demo disponible',webs:'en producción'},
     LS:{3:'activo · 1 h',2:'activo hoy',1:'reposo'},always:'siempre',
     hover:['Pasa el cursor por un nodo','El diagrama es el camino del trabajo en el estudio. Las partículas y los datos son una ilustración, no actividad en vivo.'],
@@ -62,7 +65,7 @@
       st:{3:'hour before cut-off',2:'24 h before cut-off',1:'no record'},
       stLong:{3:'Recorded in the hour up to {t}',2:'Recorded in the last 24 h up to {t}',1:'Not enough record'},
       vol:{bajo:'Low volume',medio:'Medium volume',alto:'High volume'},
-      strInfo:'A step on the path work takes; it has no state of its own.',
+      strInfo:'A step on the path work takes; it has no state of its own.',sinDato:'Not yet in the published record.',
       cats:{construccion:'Build',diseno:'Design',captacion:'Outreach',documentacion:'Documentation',gestion:'Management',verificacion:'Verification',operacion:'Operations'},
       coordName:'Plan pre-review',aaasNote:'not in service',coordDesc:'Plan reviews between AI agents: before building, subagents from several departments weigh in on the plan.',
       pRec:'Record',pRecRows:['Published','Data up to','Valid until','Delay'],pArea:'By area',pAreaE:'recorded · no record',pCoord:'Plan reviews between AI agents',
@@ -76,12 +79,13 @@
       seguridad:'Checks that everything is secure before and after publishing.',legal:'Contracts, legal texts and regulation.',administracion:'The studio’s invoicing and tax.',organizacion:'Looks after the studio’s structure and retires what is not needed.',
       diseno:'Art direction, identity and graphic pieces.',arquitectura:'3D homes and plot maps from plans and photos.',modelado:'Characters, props and environments for games.',videojuegos:'The studio’s own engine and game.',marketing:'Ads, SEO and lead generation.',comunicacion:'Press releases and media relations.',
       calidad:'Checks in production that what was promised really works. Can block a delivery.',deploy:'Takes work to production and keeps services running.',documentacion:'Proposals, reports and deliverables in PDF.',
+      producto:'Decides what gets built in the management software, and in what order.',experiencia:'Walks through the tools as a real user would and measures the friction.',costes:'Measures and trims what it costs to run the studio.',idiomas:'Translation and terminology in Spanish, English and Indonesian.',soporte:'Onboarding, training and support for every customer.',
       erp:'AxisWorks’ management product to run a business: bookings, contracts, invoices and operations. Demo available.',aaas:'Agents that run a business within hard limits (Pilots and Bots). In shadow-mode testing: not yet a running service.',webs:'Custom websites for customers, already published. Planned: landing pages generated from the information held in the ERP.',
       revprev:'Subagents per department (1 to 3) that review the PLAN before building. Budget of 5 per session.',explore:'Read-only subagent that sweeps many files and returns only the conclusion.',plan:'Subagent that designs the implementation plan and its alternatives.',encargo:'One subagent per subtask, with minimal context, verified against its acceptance criteria.',consulta:'If the reviewer asks, one subagent per department reviews the same diff before publishing.',verificador:'Checks in production that what was published does what is expected, with proof.',trampas:'Quality hides a flaw in a plan to measure whether a department catches it.',
       brief:'The request that starts the work, in the requester’s own words.',ceo:'Dispatches work across departments and holds the thread of the assignment.',revisor:'Reviews code with a clean context before publishing; nothing ships without its seal.',humano:'Price, publish, delete or spend: a person decides.',entrega:'The project reaches the customer. Marking it as delivered is a person’s decision.'},
-    work:{backend:'Adjusting a database',seguridad:'Reviewing a plan',calidad:'Verifying in production',frontend:'Building a page',diseno:'Reviewing a design',deploy:'Publishing a change',bots:'Tuning an assistant',legal:'Reviewing a text',marketing:'Preparing content',documentacion:'Preparing a document',organizacion:'Reviewing the structure',pilotos:'Testing an agent in test mode'},
+    work:{backend:'Adjusting a database',seguridad:'Reviewing a plan',calidad:'Verifying in production',frontend:'Building a page',diseno:'Reviewing a design',deploy:'Publishing a change',bots:'Tuning an assistant',legal:'Reviewing a text',marketing:'Preparing content',documentacion:'Preparing a document',organizacion:'Reviewing the structure',pilotos:'Testing an agent in test mode',producto:'Ordering the roadmap',experiencia:'Testing a screen as a user',costes:'Reviewing spending',idiomas:'Translating a text',soporte:'Helping a customer'},
     rows:{Input:'Input',Decide:'Decide',Spawned:'Spawned',Review:'Review',Build:'Build',Create:'Create',Gates:'Gates',Publish:'Publish',Verify:'Verify',Products:'Products',Output:'Output'},
-    names:{brief:'Brief',ceo:'CEO · dispatch',revprev:'Pre-review',explore:'Exploration',plan:'Planning',encargo:'Subtask',seguridad:'Security',legal:'Legal',administracion:'Administration',organizacion:'Organization',frontend:'Frontend',backend:'Backend',bots:'Bots',pilotos:'Pilots',diseno:'Design',arquitectura:'Architecture',modelado:'3D Modeling',videojuegos:'Games',marketing:'Marketing',comunicacion:'Comms',calidad:'Quality',revisor:'Code reviewer',consulta:'Deploy consult',humano:'Oversight',deploy:'Deploy',documentacion:'Documentation',verificador:'Verifier',trampas:'Trap plans',aaas:'AaaS',erp:'ERP',webs:'Websites',entrega:'Delivery'},
+    names:{brief:'Brief',ceo:'CEO · dispatch',revprev:'Pre-review',explore:'Exploration',plan:'Planning',encargo:'Subtask',seguridad:'Security',legal:'Legal',administracion:'Administration',organizacion:'Organization',frontend:'Frontend',backend:'Backend',bots:'Bots',pilotos:'Pilots',diseno:'Design',arquitectura:'Architecture',modelado:'3D Modeling',videojuegos:'Games',marketing:'Marketing',comunicacion:'Comms',calidad:'Quality',revisor:'Code reviewer',consulta:'Deploy consult',humano:'Oversight',deploy:'Deploy',documentacion:'Documentation',verificador:'Verifier',trampas:'Trap plans',aaas:'AaaS',erp:'ERP',webs:'Websites',entrega:'Delivery',producto:'Product',experiencia:'User experience',costes:'Costs',idiomas:'Languages',soporte:'Customer success'},
     notes:{aaas:'in testing',erp:'demo available',webs:'in production'},
     LS:{3:'active · 1 h',2:'active today',1:'idle'},always:'always',
     hover:['Hover over a node','The diagram is the path work takes through the studio. Particles and figures are an illustration, not live activity.'],
@@ -100,16 +104,16 @@
     {k:'Input',t:'gray',n:[['brief',1]]},
     {k:'Decide',t:'pink',n:[['ceo',1]]},
     {k:'Spawned',t:'teal',n:[['revprev',1],['explore',1],['plan',1],['encargo',1]]},
-    {k:'Review',t:'blue',n:[['seguridad'],['legal'],['administracion'],['organizacion']]},
-    {k:'Build',t:'green',n:[['frontend'],['backend'],['bots'],['pilotos']]},
+    {k:'Review',t:'blue',n:[['seguridad'],['legal'],['administracion'],['costes'],['organizacion']]},
+    {k:'Build',t:'green',n:[['producto'],['frontend'],['experiencia'],['backend'],['bots'],['pilotos']]},  /* bots y pilotos, los dos ÚLTIMOS: el recuadro AaaS los quiere en la misma línea también en la compacta */
     {k:'Create',t:'green',n:[['diseno'],['arquitectura'],['modelado'],['videojuegos'],['marketing'],['comunicacion']]},
     {k:'Gates',t:'pink',n:[['calidad'],['revisor',1],['consulta',1,'teal'],['humano',1,'white']]},
-    {k:'Publish',t:'yellow',n:[['deploy'],['documentacion']]},
+    {k:'Publish',t:'yellow',n:[['deploy'],['documentacion'],['idiomas']]},
     {k:'Verify',t:'teal',n:[['verificador',1],['trampas',1]]},
     {k:'Products',t:'violet',n:[['aaas',1,'violet'],['erp',1,'violet'],['webs',1,'violet']]},
-    {k:'Output',t:'gray',n:[['entrega',1]]}
+    {k:'Output',t:'gray',n:[['entrega',1],['soporte',0,'teal']]}
   ];
-  var LVL={backend:3,seguridad:3,calidad:3,frontend:3,diseno:3,deploy:3,bots:3,legal:2,marketing:2,documentacion:2,organizacion:2,pilotos:2,revprev:3,explore:3,plan:2,encargo:3,consulta:2,verificador:3,trampas:2};
+  var LVL={backend:3,seguridad:3,calidad:3,frontend:3,diseno:3,deploy:3,bots:3,legal:2,marketing:2,documentacion:2,organizacion:2,pilotos:2,revprev:3,explore:3,plan:2,encargo:3,consulta:2,verificador:3,trampas:2,producto:2,soporte:2};
   var MEETS=3;
   /* Dos maquetas: la de escritorio (lienzo fijo de DW×DH que se escala) y la COMPACTA, para contenedores
      de menos de 720 px (10-oct-2026). Escalar el lienzo de escritorio a un móvil dejaba los rótulos en
@@ -121,9 +125,11 @@
 
   /* ══ MODO DATOS (solo con data-src) ═════════════════════════════════════════════════════════
    * Ids del JSON = `cara` de cada ficha pública (organigrama); ids del diagrama = los de arriba.
-   * El mapa es explícito: un id nuevo en el JSON que no esté aquí hace caer a la estructura. */
-  var MAPA={frontend:'dev',backend:'data',bots:'bots',arquitectura:'arch',deploy:'deploy',videojuegos:'games',modelado:'models',pilotos:'pilots',diseno:'design',marketing:'marketing',comunicacion:'comms',seguridad:'security',calidad:'quality',legal:'legal',administracion:'admin',documentacion:'docs',organizacion:'org'};
-  var MAPAINV={},SENS={security:1,deploy:1,quality:1};
+   * El mapa es explícito: un id del JSON que no esté aquí se IGNORA entero (ver validar()), nunca se pinta.
+   * SENS: los que nunca publican «última hora» ni volumen (IDS_SENSIBLES de tools/estudio_publico.py). */
+  var MAPA={frontend:'dev',backend:'data',bots:'bots',arquitectura:'arch',deploy:'deploy',videojuegos:'games',modelado:'models',pilotos:'pilots',diseno:'design',marketing:'marketing',comunicacion:'comms',seguridad:'security',calidad:'quality',legal:'legal',administracion:'admin',documentacion:'docs',organizacion:'org',
+    producto:'product',experiencia:'ux',soporte:'support',idiomas:'lang',costes:'costs'};
+  var MAPAINV={},SENS={security:1,deploy:1,quality:1,support:1};
   Object.keys(MAPA).forEach(function(k){MAPAINV[MAPA[k]]=k});
   var CATS=['construccion','diseno','captacion','documentacion','gestion','verificacion','operacion'];
   var ESTADOS={ultima_hora:3,hoy:2,en_reposo:1},VOLS={bajo:30,medio:60,alto:90};
@@ -147,20 +153,27 @@
     if(typeof j.retraso_horas!=='number'||j.retraso_horas!==Math.floor(j.retraso_horas)||j.retraso_horas<1||j.retraso_horas>24)return 'retraso';
     if(!(ms.datos_hasta<ms.generado&&ms.generado<ms.valido_hasta)||ms.generado-ms.datos_hasta!==j.retraso_horas*3600000||ms.valido_hasta-ms.generado!==4*3600000)return 'orden';  /* validez fija de 4 h (contrato §3): un valido_hasta lejano no puede hacer eterno un registro */
     if(ms.generado>now+3600000)return 'futuro';
-    if(j.n_departamentos!==NDEP||!Array.isArray(j.departamentos)||j.departamentos.length!==NDEP)return 'n';
-    var visto={},n=0;
+    /* Un departamento nuevo no debe romper la página pública (15-oct-2026): el JSON publicado y este fichero
+       no cambian a la vez, así que durante un rato uno trae más o menos departamentos que el otro.
+       (a) Un id que no está en MAPA se ignora entero: no se pinta, ningún texto suyo llega a la página y, como
+       no se sabe si sería sensible, tampoco se le exige esa regla (lo hace el publicador). Se sigue exigiendo
+       que esté bien formado y que no se repita. (b) El total solo tiene que cuadrar consigo mismo
+       (n_departamentos === departamentos.length), no con NDEP ni con MAPA: un departamento de MAPA que no
+       viene en el JSON se queda en estructura, sin estado. Todo lo demás se sigue rechazando. */
+    if(typeof j.n_departamentos!=='number'||j.n_departamentos<1||j.n_departamentos>64||!Array.isArray(j.departamentos)||j.departamentos.length!==j.n_departamentos)return 'n';
+    var visto=Object.create(null);
     for(i=0;i<j.departamentos.length;i++){
       d=j.departamentos[i];
       if(!exacto(d,['id','categoria','estado'],['volumen']))return 'dep';
-      if(!str(d.id)||!own(MAPAINV,d.id)||own(visto,d.id))return 'id';
-      visto[d.id]=1;n++;
+      if(!str(d.id)||own(visto,d.id))return 'id';
+      visto[d.id]=1;
       if(!str(d.categoria)||CATS.indexOf(d.categoria)<0)return 'cat';
       if(!str(d.estado)||!own(ESTADOS,d.estado))return 'estado';
       if(d.estado==='en_reposo'){if(own(d,'volumen'))return 'vol'}
+      else if(!own(MAPAINV,d.id)){if(own(d,'volumen')&&(!str(d.volumen)||!own(VOLS,d.volumen)))return 'vol'}
       else if(SENS[d.id]){if(d.estado==='ultima_hora'||own(d,'volumen'))return 'sensible'}
       else if(!str(d.volumen)||!own(VOLS,d.volumen))return 'vol';
     }
-    if(n!==Object.keys(MAPA).length)return 'n';
     e=j.coordinacion;
     if(!exacto(e,['estado'],['volumen'])||!str(e.estado)||!own(ESTADOS,e.estado))return 'coord';
     if(e.estado==='en_reposo'?own(e,'volumen'):(!str(e.volumen)||!own(VOLS,e.volumen)))return 'coord';
@@ -172,7 +185,7 @@
     if(r&&r!=='caducado'){RS.st='nodata';return}
     RS.j={gen:j.generado,datos:j.datos_hasta,valido:j.valido_hasta,delay:j.retraso_horas};
     if(r==='caducado'){RS.st='expired';return}
-    j.departamentos.forEach(function(d){var id=MAPAINV[d.id];RS.lvl[id]=ESTADOS[d.estado];RS.vol[id]=d.volumen||null;RS.cat[id]=d.categoria});
+    j.departamentos.forEach(function(d){if(!own(MAPAINV,d.id))return;var id=MAPAINV[d.id];RS.lvl[id]=ESTADOS[d.estado];RS.vol[id]=d.volumen||null;RS.cat[id]=d.categoria});  /* id desconocido: ignorado (validar) */
     RS.lvl.revprev=ESTADOS[j.coordinacion.estado];RS.vol.revprev=j.coordinacion.volumen||null;
     RS.st='ok';
   }
@@ -183,7 +196,9 @@
     try{return new Intl.DateTimeFormat(ES?'es':'en',{timeZone:'UTC',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(iso))+' UTC'}
     catch(e){return iso.slice(0,16).replace('T',' ')+' UTC'}
   }
-  function isStr(n){return REAL&&(RS.st!=='ok'||(n.proc&&n.id!=='revprev'))}
+  /* Estructura (sin estado): todo si no hay registro vigente; los pasos de proceso; y el departamento que el registro no trae. */
+  function sinDato(n){return REAL&&RS.st==='ok'&&!n.proc&&!own(RS.lvl,n.id)}
+  function isStr(n){return REAL&&(RS.st!=='ok'||(n.proc&&n.id!=='revprev')||sinDato(n))}
   function stText(id){var l=lvl(id),t=X.R.stLong[l]||'';return t.replace('{t}',RS.j?fmt(RS.j.datos):'')}
   function volText(id){var v=RS.vol[id];return v?X.R.vol[v]:''}
   if(REAL){X.names.revprev=X.R.coordName;X.desc.revprev=X.R.coordDesc;X.notes.aaas=X.R.aaasNote}
@@ -226,8 +241,8 @@
     }else{
       W=DW;H=DH;NW=132;NH=58;
       ROWS.forEach(function(r,ri){
-        var m=r.n.length,sp=r.k==='Products'?250:Math.min(156,860/m),cxx=REAL?520:600,y=TOP+ri*ROWH+(r.k==='Output'?44:0);
-        r.n.forEach(function(n,j){N.push({id:n[0],proc:!!n[1],col:n[2]||r.t,row:ri,x:cxx+(j-(m-1)/2)*sp,y:y,inn:y-NH/2,out:y+NH/2,note:X.notes[n[0]]})});
+        var m=r.n.length,sp=r.k==='Products'?250:Math.min(156,860/m),cxx=REAL?540:600,y=TOP+ri*ROWH+(r.k==='Output'?44:0);
+        r.n.forEach(function(n,j){N.push({id:n[0],proc:!!n[1],col:n[2]||r.t,row:ri,x:cxx+(j-(m-1)/2)*sp,y:y,w:r.k==='Output'?148:undefined,inn:y-NH/2,out:y+NH/2,note:X.notes[n[0]]})});  /* Salida: 2 nodos con aire; más anchos para que «Customer success» no se corte */
         LAYT.push(TOP+ri*ROWH-8);
       });
     }
@@ -319,7 +334,7 @@
     var l=lvl(id);
     if(REAL){
       var vt=volText(id);
-      $('info').innerHTML='<b>'+esc(nm(id))+'</b><em>'+esc(X.desc[id]||'')+'</em><em>'+esc(isStr(n)?X.R.strInfo:stText(id)+(vt?' · '+vt:''))+'</em>';
+      $('info').innerHTML='<b>'+esc(nm(id))+'</b><em>'+esc(X.desc[id]||'')+'</em><em>'+esc(isStr(n)?(sinDato(n)?X.R.sinDato:X.R.strInfo):stText(id)+(vt?' · '+vt:''))+'</em>';
       return;
     }
     $('info').innerHTML='<b>'+esc(nm(id))+'</b><em>'+esc(X.desc[id]||'')+'</em><em>'+esc(id==='humano'?X.always:X.LS[l])+(X.work[id]&&l>=2?' · '+esc(X.work[id]):'')+'</em>';
@@ -328,7 +343,7 @@
     var log=X.log.map(function(r){return r.length===4?'<li><time>'+r[0]+'</time><span>'+esc(r[1])+' <i>→</i> '+esc(r[2])+' · '+esc(r[3])+'</span></li>':'<li><time>'+r[0]+'</time><span>'+esc(r[1])+' · '+esc(r[2])+'</span></li>'}).join('');
     var mv=!RM;
     var rs='<div class="pn"><h3>'+X.pLog+'<em>'+X.pLogE+'</em></h3><div class="log'+(mv?' mv':'')+'" aria-hidden="true"><ul>'+log+(mv?log:'')+'</ul></div></div>';
-    var G=[['Build','green',['frontend','backend','bots','pilotos']],['Create','green',['diseno','arquitectura','modelado','videojuegos','marketing','comunicacion']],['Review','blue',['seguridad','legal','administracion','organizacion']],['Gates','pink',['calidad','deploy','documentacion']]];
+    var G=[['Build','green',['producto','frontend','experiencia','backend','bots','pilotos']],['Create','green',['diseno','arquitectura','modelado','videojuegos','marketing','comunicacion']],['Review','blue',['seguridad','legal','administracion','costes','organizacion']],['Gates','pink',['calidad','deploy','documentacion','idiomas','soporte']]];
     var rw='';G.forEach(function(g){var a=g[2].filter(function(x){return lvl(x)===3}).length,c=COL[g[1]];rw+='<div class="rw"><span>'+X.G[g[0]]+'</span><div class="t"><i style="width:'+Math.round(a/g[2].length*100)+'%;background:rgb('+c+')"></i></div><b>'+a+'/'+g[2].length+'</b></div>'});
     rs+='<div class="pn"><h3>'+X.pLay+'<em>'+X.pLayE+'</em></h3>'+rw+'</div>';
     var SA=[7,12,3,9,6,4,2],COLS=[COL.teal,COL.teal,COL.teal,COL.teal,COL.pink,COL.teal,COL.teal],sr='';
