@@ -59,13 +59,13 @@ rows: [
 ['ENTRADA', [['brief', 'Encargo', 'p']]],
 ['DECIDE', [['ceo', 'CEO de IA', 'c']]],
 ['SUBAGENTES', [['revprev', 'Revisión previa', 's'], ['explore', 'Exploración', 's'], ['plan', 'Plan', 's'], ['encargo', 'Subtarea', 's']]],
-['REVISIÓN', [['seguridad', 'Seguridad', 'd'], ['legal', 'Legal', 'd'], ['administracion', 'Administración', 'd'], ['organizacion', 'Organización', 'd']]],
-['CONSTRUIR', [['frontend', 'Frontend', 'd'], ['backend', 'Backend', 'd'], ['bots', 'Bots', 'd'], ['pilotos', 'Pilotos', 'd']]],
+['REVISIÓN', [['seguridad', 'Seguridad', 'd'], ['legal', 'Legal', 'd'], ['administracion', 'Administración', 'd'], ['costes', 'Costes', 'd'], ['organizacion', 'Organización', 'd'], ['idiomas', 'Idiomas', 'd']]],
+['CONSTRUIR', [['producto', 'Producto', 'd'], ['frontend', 'Frontend', 'd'], ['experiencia', 'Experiencia', 'd'], ['backend', 'Backend', 'd'], ['bots', 'Bots', 'd'], ['pilotos', 'Pilotos', 'd']]],
 ['CREAR', [['diseno', 'Diseño', 'd'], ['arquitectura', 'Arquitectura', 'd'], ['modelado', 'Modelado 3D', 'd'], ['videojuegos', 'Videojuegos', 'd'], ['marketing', 'Marketing', 'd'], ['comunicacion', 'Comunicación', 'd']]],
 ['PUERTAS', [['calidad', 'Calidad', 'd'], ['revisor', 'Revisor de código', 'g'], ['consulta', 'Consulta de deploy', 's'], ['humano', 'Supervisión', 'h']]],
 ['PUBLICAR · VERIFICAR', [['deploy', 'Deploy', 'd'], ['documentacion', 'Documentación', 'd'], ['verificador', 'Verificador', 's'], ['trampas', 'Planes trampa', 's']]],
 ['PRODUCTOS', [['aaas', 'AaaS', 'x'], ['erp', 'ERP', 'x'], ['webs', 'Webs', 'x']]],
-['SALIDA', [['entrega', 'Entrega', 'p']]]
+['SALIDA', [['entrega', 'Entrega', 'p'], ['soporte', 'Soporte', 'd']]]
 ],
 img: {
 ceo: '/assets/images/team-pepito.webp', frontend: '/assets/images/dep-dev.webp', backend: '/assets/images/dep-data.webp', bots: '/assets/images/dep-bots.webp',
@@ -79,6 +79,8 @@ frontend: 'Lo que el visitante ve y toca: páginas, móvil y accesibilidad.', ba
 seguridad: 'Comprueba que todo es seguro antes y después de publicar.', legal: 'Contratos, textos legales y normativa.', administracion: 'La facturación y los impuestos del estudio.', organizacion: 'Cuida la estructura del estudio y retira lo que sobra.',
 diseno: 'Dirección de arte, identidad y piezas gráficas.', arquitectura: 'Viviendas en 3D y planos de parcelas a partir de planos y fotos.', modelado: 'Personajes, objetos y escenarios para juegos.', videojuegos: 'El motor y el juego propios del estudio.', marketing: 'Anuncios, SEO y captación de contactos.', comunicacion: 'Notas de prensa y relación con medios.',
 calidad: 'Comprueba en la web publicada que lo prometido funciona. Puede frenar una entrega.', deploy: 'Publica el trabajo y mantiene los servicios en marcha.', documentacion: 'Propuestas, informes y entregables en PDF.',
+producto: 'Decide qué se construye después en nuestro propio software.', experiencia: 'Hace cómodas de usar las herramientas del día a día.', idiomas: 'Traducción y terminología en español, inglés e indonesio.',
+costes: 'Mide y recorta lo que cuesta mantener el estudio.', soporte: 'Alta, formación y soporte de cada cliente tras la entrega.',
 erp: 'El producto de gestión de AxisWorks para llevar un negocio: reservas, contratos, facturas y operaciones. Con demo.', aaas: 'Agentes que llevan un negocio dentro de límites fijos (Pilotos y Bots).', webs: 'Webs y landings a medida para clientes.',
 revprev: 'Subagentes por departamento (de 1 a 3) que revisan el PLAN antes de construir. Cinco por sesión como máximo.', explore: 'Subagente de solo lectura que recorre muchos ficheros y devuelve solo la conclusión.', plan: 'Subagente que diseña el plan de trabajo y sus alternativas.', encargo: 'Un subagente por subtarea, con el contexto justo, comprobado contra su criterio de aceptación.',
 consulta: 'Si el revisor lo pide, un subagente por departamento revisa el mismo cambio antes de publicar.', verificador: 'Comprueba en la web publicada que lo publicado hace lo esperado, con pruebas.', trampas: 'Calidad esconde un fallo en un plan para medir si el departamento lo caza.',
@@ -87,10 +89,11 @@ brief: 'Lo que pide el cliente, con sus palabras.', ceo: 'Parte cada encargo en 
 work: {
 backend: 'ajustando datos', seguridad: 'revisando un plan', calidad: 'probando lo publicado', frontend: 'montando una página', diseno: 'revisando un diseño', deploy: 'publicando un cambio', bots: 'afinando un asistente', legal: 'revisando un texto',
 marketing: 'preparando contenido', documentacion: 'un documento', organizacion: 'repasa la estructura', pilotos: 'probando un agente', arquitectura: 'una casa en 3D', modelado: 'una pieza del juego',
-videojuegos: 'trabajando en el motor', comunicacion: 'nota de prensa', administracion: 'preparando una factura'
+videojuegos: 'trabajando en el motor', comunicacion: 'nota de prensa', administracion: 'preparando una factura',
+producto: 'ordenando la hoja de ruta', experiencia: 'revisando una pantalla', idiomas: 'revisando una traducción', costes: 'revisando los costes', soporte: 'atendiendo a un cliente'
 },
 kinds: { d: 'DEPARTAMENTO DE IA', s: 'SUBAGENTE', p: 'PASO', c: 'CEO de IA', g: 'PUERTA', h: 'PERSONA', x: 'PRODUCTO' },
-depts: ['seguridad', 'legal', 'administracion', 'organizacion', 'frontend', 'backend', 'bots', 'pilotos', 'diseno', 'arquitectura', 'modelado', 'videojuegos', 'marketing', 'comunicacion', 'calidad', 'deploy', 'documentacion']
+depts: ['seguridad', 'legal', 'administracion', 'organizacion', 'frontend', 'backend', 'bots', 'pilotos', 'diseno', 'arquitectura', 'modelado', 'videojuegos', 'marketing', 'comunicacion', 'calidad', 'deploy', 'documentacion', 'producto', 'experiencia', 'idiomas', 'costes', 'soporte']
 };
 }
 activeAt(t, D) {

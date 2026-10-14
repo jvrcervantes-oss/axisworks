@@ -58,13 +58,13 @@ rows: [
 ['INPUT', [['brief', 'Request', 'p']]],
 ['DECIDE', [['ceo', 'AI CEO', 'c']]],
 ['SPAWNED', [['revprev', 'Pre-review', 's'], ['explore', 'Exploration', 's'], ['plan', 'Planning', 's'], ['encargo', 'Subtask', 's']]],
-['REVIEW', [['seguridad', 'Security', 'd'], ['legal', 'Legal', 'd'], ['administracion', 'Admin', 'd'], ['organizacion', 'Organisation', 'd']]],
-['BUILD', [['frontend', 'Frontend', 'd'], ['backend', 'Backend', 'd'], ['bots', 'Bots', 'd'], ['pilotos', 'Pilots', 'd']]],
+['REVIEW', [['seguridad', 'Security', 'd'], ['legal', 'Legal', 'd'], ['administracion', 'Admin', 'd'], ['costes', 'Costs', 'd'], ['organizacion', 'Organisation', 'd'], ['idiomas', 'Languages', 'd']]],
+['BUILD', [['producto', 'Product', 'd'], ['frontend', 'Frontend', 'd'], ['experiencia', 'UX', 'd'], ['backend', 'Backend', 'd'], ['bots', 'Bots', 'd'], ['pilotos', 'Pilots', 'd']]],
 ['CREATE', [['diseno', 'Design', 'd'], ['arquitectura', 'Architecture', 'd'], ['modelado', '3D Modeling', 'd'], ['videojuegos', 'Games', 'd'], ['marketing', 'Marketing', 'd'], ['comunicacion', 'Comms', 'd']]],
 ['GATES', [['calidad', 'Quality', 'd'], ['revisor', 'Code reviewer', 'g'], ['consulta', 'Deploy consult', 's'], ['humano', 'Oversight', 'h']]],
 ['PUBLISH · VERIFY', [['deploy', 'Deploy', 'd'], ['documentacion', 'Docs', 'd'], ['verificador', 'Verifier', 's'], ['trampas', 'Trap plans', 's']]],
 ['PRODUCTS', [['aaas', 'AaaS', 'x'], ['erp', 'ERP', 'x'], ['webs', 'Websites', 'x']]],
-['OUTPUT', [['entrega', 'Delivery', 'p']]]
+['OUTPUT', [['entrega', 'Delivery', 'p'], ['soporte', 'Support', 'd']]]
 ],
 img: {
 ceo: '/assets/images/team-pepito.webp', frontend: '/assets/images/dep-dev.webp', backend: '/assets/images/dep-data.webp', bots: '/assets/images/dep-bots.webp',
@@ -78,6 +78,8 @@ frontend: 'What the visitor sees and touches: pages, mobile and accessibility.',
 seguridad: 'Checks that everything is secure before and after publishing.', legal: 'Contracts, legal texts and regulation.', administracion: 'The studio’s invoicing and tax.', organizacion: 'Looks after the studio’s structure and retires what is not needed.',
 diseno: 'Art direction, identity and graphic pieces.', arquitectura: '3D homes and plot maps from plans and photos.', modelado: 'Characters, props and environments for games.', videojuegos: 'The studio’s own engine and game.', marketing: 'Ads, SEO and lead generation.', comunicacion: 'Press releases and media relations.',
 calidad: 'Checks in production that what was promised really works. Can block a delivery.', deploy: 'Takes work to production and keeps services running.', documentacion: 'Proposals, reports and deliverables in PDF.',
+producto: 'Decides what gets built next in our own software.', experiencia: 'Makes everyday tools comfortable to use.', idiomas: 'Translation and terminology in Spanish, English and Indonesian.',
+costes: 'Measures and trims what the studio spends to run.', soporte: 'Onboarding, training and support for each client after delivery.',
 erp: 'AxisWorks’ management product to run a business: bookings, contracts, invoices and operations. Demo available.', aaas: 'Agents that run a business within hard limits (Pilots and Bots).', webs: 'Custom websites and landing pages for customers.',
 revprev: 'Subagents per department (1 to 3) that review the PLAN before building. Budget of 5 per session.', explore: 'Read-only subagent that sweeps many files and returns only the conclusion.', plan: 'Subagent that designs the implementation plan and its alternatives.', encargo: 'One subagent per subtask, with minimal context, verified against its acceptance criteria.',
 consulta: 'If the reviewer asks, one subagent per department reviews the same diff before publishing.', verificador: 'Checks in production that what was published does what is expected, with proof.', trampas: 'Quality hides a flaw in a plan to measure whether a department catches it.',
@@ -86,10 +88,11 @@ brief: 'What the customer asks for, in their own words.', ceo: 'Splits each requ
 work: {
 backend: 'adjusting a database', seguridad: 'reviewing a plan', calidad: 'verifying in production', frontend: 'building a page', diseno: 'reviewing a design', deploy: 'publishing a change', bots: 'tuning an assistant', legal: 'reviewing a text',
 marketing: 'preparing content', documentacion: 'preparing a document', organizacion: 'reviewing the structure', pilotos: 'running an agent', arquitectura: 'modelling a home in 3D', modelado: 'modelling a game asset',
-videojuegos: 'working on the engine', comunicacion: 'drafting a press note', administracion: 'preparing an invoice'
+videojuegos: 'working on the engine', comunicacion: 'drafting a press note', administracion: 'preparing an invoice',
+producto: 'ordering the roadmap', experiencia: 'reviewing a screen', idiomas: 'reviewing a translation', costes: 'reviewing running costs', soporte: 'helping a client'
 },
 kinds: { d: 'AI DEPARTMENT', s: 'SUBAGENT', p: 'STEP', c: 'AI CEO', g: 'GATE', h: 'HUMAN', x: 'PRODUCT' },
-depts: ['seguridad', 'legal', 'administracion', 'organizacion', 'frontend', 'backend', 'bots', 'pilotos', 'diseno', 'arquitectura', 'modelado', 'videojuegos', 'marketing', 'comunicacion', 'calidad', 'deploy', 'documentacion']
+depts: ['seguridad', 'legal', 'administracion', 'organizacion', 'frontend', 'backend', 'bots', 'pilotos', 'diseno', 'arquitectura', 'modelado', 'videojuegos', 'marketing', 'comunicacion', 'calidad', 'deploy', 'documentacion', 'producto', 'experiencia', 'idiomas', 'costes', 'soporte']
 };
 }
 activeAt(t, D) {
