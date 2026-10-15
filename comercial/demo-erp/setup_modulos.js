@@ -347,10 +347,10 @@
       bot_nunca: 'Todavía no se ha cambiado desde el ERP.'
     },
     // Textos que la edge ajustes-pagos manda TAL CUAL y la pantalla enseña (contrato de bbm-p34, 20261012233000): sin_a_quien_avisar tiene dos causas y
-    // solo el servidor sabe cuál. Copiados byte a byte de erp/funciones/ajustes-pagos/index.ts (411a147b); aquí solo para que EN e ID los traduzcan por su
+    // solo el servidor sabe cuál. Copiados byte a byte de erp/funciones/ajustes-pagos/index.ts (411a147b; el de correo, de bbm-admin-puede 20261015190000); aquí solo para que EN e ID los traduzcan por su
     // frase exacta. Si la edge cambia un texto, la pantalla en en/id cae en hint.cobros_sin_a_quien_avisar (nunca enseña español). bbm-p38, 13-oct.
     servidor: {
-      sin_a_quien_avisar_correo: 'El servidor de correo ha cambiado hace menos de 24 horas: para cobrar de verdad espera a que pasen y vuelve a intentarlo. No se ha guardado nada.',
+      sin_a_quien_avisar_correo: 'El servidor de correo ha cambiado hace menos de 24 horas o no lo ha puesto un super admin activo: para cobrar de verdad, un super admin tiene que guardarlo en Ajustes › Correo y, desde entonces, esperar 24 horas. No se ha guardado nada.',
       sin_a_quien_avisar_testigo_24h: 'Para cobrar de verdad tiene que haber alguien más a quien avisar desde hace al menos 24 horas: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo) que no haya cambiado en ese tiempo. No se ha guardado nada.',
       sin_a_quien_avisar_testigo: 'Para cobrar de verdad tiene que haber alguien más a quien avisar: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo). No se ha guardado nada.'
     }
@@ -402,8 +402,8 @@
     'Con claves reales hay que escribir LIVE para confirmar que vas a cobrar dinero de verdad.': 'With live keys you must type LIVE to confirm that you are going to charge real money.',
     'No se ha podido avisar por correo a los demás del paso a cobros reales: no se ha guardado nada. El código sigue valiendo: inténtalo otra vez en un rato.': 'The others could not be told by email about the switch to live payments: nothing was saved. The code is still valid: try again in a moment.',
     'Para cobrar de verdad tiene que haber alguien más a quien avisar del cambio: no se ha guardado nada.': 'To charge real money there must be someone else to tell about the change: nothing was saved.',
-    'El servidor de correo ha cambiado hace menos de 24 horas: para cobrar de verdad espera a que pasen y vuelve a intentarlo. No se ha guardado nada.':
-      'The mail server changed less than 24 hours ago: to charge real money, wait until 24 hours have passed and try again. Nothing was saved.',
+    'El servidor de correo ha cambiado hace menos de 24 horas o no lo ha puesto un super admin activo: para cobrar de verdad, un super admin tiene que guardarlo en Ajustes › Correo y, desde entonces, esperar 24 horas. No se ha guardado nada.':
+      'The mail server changed less than 24 hours ago or was not set by an active super admin: to charge real money, a super admin has to save it in Settings › Email and then wait 24 hours. Nothing was saved.',
     'Para cobrar de verdad tiene que haber alguien más a quien avisar desde hace al menos 24 horas: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo) que no haya cambiado en ese tiempo. No se ha guardado nada.':
       'To charge real money there must be someone else to notify, in place for at least 24 hours: another active super admin, or a system notification mailbox on your domain (Settings › Email) that has not changed in that time. Nothing was saved.',
     'Para cobrar de verdad tiene que haber alguien más a quien avisar: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo). No se ha guardado nada.':
@@ -542,8 +542,8 @@
     'Con claves reales hay que escribir LIVE para confirmar que vas a cobrar dinero de verdad.': 'Dengan kunci live, ketik LIVE untuk mengonfirmasi bahwa Anda akan menagih uang sungguhan.',
     'No se ha podido avisar por correo a los demás del paso a cobros reales: no se ha guardado nada. El código sigue valiendo: inténtalo otra vez en un rato.': 'Admin lain tidak bisa diberi tahu lewat email tentang peralihan ke pembayaran live: tidak ada yang disimpan. Kodenya masih berlaku: coba lagi sebentar lagi.',
     'Para cobrar de verdad tiene que haber alguien más a quien avisar del cambio: no se ha guardado nada.': 'Untuk menagih uang sungguhan harus ada orang lain yang diberi tahu tentang perubahan ini: tidak ada yang disimpan.',
-    'El servidor de correo ha cambiado hace menos de 24 horas: para cobrar de verdad espera a que pasen y vuelve a intentarlo. No se ha guardado nada.':
-      'Server email berubah kurang dari 24 jam yang lalu: untuk menagih uang sungguhan, tunggu sampai 24 jam berlalu lalu coba lagi. Tidak ada yang disimpan.',
+    'El servidor de correo ha cambiado hace menos de 24 horas o no lo ha puesto un super admin activo: para cobrar de verdad, un super admin tiene que guardarlo en Ajustes › Correo y, desde entonces, esperar 24 horas. No se ha guardado nada.':
+      'Server email berubah kurang dari 24 jam yang lalu atau tidak diatur oleh super admin aktif: untuk menagih uang sungguhan, super admin harus menyimpannya di Pengaturan › Email lalu menunggu 24 jam. Tidak ada yang disimpan.',
     'Para cobrar de verdad tiene que haber alguien más a quien avisar desde hace al menos 24 horas: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo) que no haya cambiado en ese tiempo. No se ha guardado nada.':
       'Untuk menagih uang sungguhan harus ada orang lain yang bisa diberi tahu, yang sudah ada minimal 24 jam: super admin aktif lain, atau kotak surat notifikasi sistem di domain Anda (Pengaturan › Email) yang tidak berubah selama waktu itu. Tidak ada yang disimpan.',
     'Para cobrar de verdad tiene que haber alguien más a quien avisar: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo). No se ha guardado nada.':
