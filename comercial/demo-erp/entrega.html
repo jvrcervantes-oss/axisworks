@@ -456,22 +456,12 @@
     oculta($v('versiones-vacio'), v.length > 0);
     if (!v.length) { vacia(t); return; }
     C.tabla(t, [['Versión'], ['Cuándo'], ['Quién'], ['Motivo']], v.map(function (x) {
-      var au = autorDe(x && x.quien);
+      // Quién firma y su motivo: la regla común (C.autorDe, _compartido/pantalla_comun.js; la misma que Flota y el Registro de Ajustes)
+      var au = C.autorDe(x && x.quien);
       return h('tr', { 'data-version': x && x.version != null ? String(x.version) : null, 'data-autor': au },
-        [C.celda(x && x.version, 'axw-nw'), C.celda(C.fechaHora(x && x.cuando), 'axw-nw'), C.celda(QUIEN_DE[au] ? T(QUIEN_DE[au]) : x && x.quien),
-         C.celda(au === 'inicial' ? T('Configuración inicial') : au === 'soporte' ? '—' : x && x.motivo)]);
+        [C.celda(x && x.version, 'axw-nw'), C.celda(C.fechaHora(x && x.cuando), 'axw-nw'), C.celda(C.quienDe(x && x.quien)),
+         C.celda(C.motivoDe(x && x.quien, x && x.motivo))]);
     }));
-  }
-  // Quién firma: por marcador explícito, nunca por descarte (agencia-c0, 15-oct-2026, medido en la base de bbm). La siembra (vacío, postgres,
-  // «migración …», sistema:sql) sale «Sistema · Configuración inicial»; el estudio (@axisworks.studio) «AxisWorks (soporte)»; los dos sin su
-  // motivo, que es interno y en español. Otro sistema:<rol> (edges, AaaS) sale «Sistema» con su motivo; una persona, tal cual.
-  var QUIEN_DE = { inicial: 'Sistema', soporte: 'AxisWorks (soporte)', sistema: 'Sistema' };
-  function autorDe(q) {   // 'inicial' | 'soporte' | 'sistema' | 'persona'
-    q = String(q == null ? '' : q).trim();
-    if (!q || /^(postgres|sistema:sql)$/i.test(q) || /^migraci[oó]n(\s|$)/i.test(q)) return 'inicial';
-    if (/@axisworks\.studio$/i.test(q)) return 'soporte';
-    if (/^sistema:/i.test(q)) return 'sistema';
-    return 'persona';
   }
   function pintaQuien(d) {
     var t = d.tarifa, a = d.ajustes;

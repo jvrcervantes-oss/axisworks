@@ -2319,7 +2319,10 @@ def capa_modulos_hub(interruptores):
     if len(cargas) != 1:
         aborta('hub: index.html no tiene UNA carga de /contracts/assets/instancia.js (la capa de módulos va justo antes)')
     os.makedirs(os.path.dirname(os.path.join(DIST, HUB_CAPA)), exist_ok=True)
-    open(os.path.join(DIST, HUB_CAPA), 'w', encoding='utf-8', newline='').write(interruptores)
+    # Con la marca de instancia, como guard.js en el resto de pantallas: sin ella herramientas.js no añade las herramientas de la instancia
+    # (Productos, Flota, Taller…) y la página «sin permiso» de /productos/ decía «You do not have access to “this tool”» (bbm-idioma-total,
+    # 15-oct-2026, barrido en vivo con la cuenta de pruebas). Va antes de instancia.js y de herramientas.js.
+    open(os.path.join(DIST, HUB_CAPA), 'w', encoding='utf-8', newline='').write('window.AXW_NUCLEO_OPERACION = true;\n' + interruptores)
     t = t.replace(cargas[0], '<script src="/%s"></script>%s' % (HUB_CAPA, cargas[0]))
     open(hub, 'w', encoding='utf-8', newline='').write(t)
 
@@ -5134,8 +5137,8 @@ GASTOS_INSTANCIA = (
     ('intranet/v4/assets/ajustes.js', "esc(f.motivo || '—') + '</td></tr>';",
      "esc(axwAutor(f.quien) === 'inicial' ? T('Configuración inicial') : axwAutor(f.quien) === 'soporte' ? '—' : (f.motivo || '—')) + '</td></tr>';", 1),
     ('intranet/v4/assets/ajustes.js', "    window.lwDatos('ajustes_log_datos', { p_limit: 200 }).then(function (r) {\n",
-     "    function axwAutor(q) { q = String(q == null ? '' : q).trim(); if (!q || /^(postgres|sistema:sql)$/i.test(q) || /^migraci[oó]n(\\s|$)/i.test(q)) return 'inicial';"
-     " if (/@axisworks\\.studio$/i.test(q)) return 'soporte'; return /^sistema:/i.test(q) ? 'sistema' : 'persona'; }\n"
+     "    function axwAutor(q) { q = String(q == null ? '' : q).trim(); if (!q || /^(postgres|sistema:sql)$/i.test(q) || /^migraci[oó]n(\\s|$)/i.test(q) || /^erp:/i.test(q)) return 'inicial';"
+     " if (/@axisworks\\.studio(\\s*\\(panel\\))?$/i.test(q)) return 'soporte'; return /^sistema:/i.test(q) ? 'sistema' : 'persona'; }\n"
      "    window.lwDatos('ajustes_log_datos', { p_limit: 200 }).then(function (r) {\n", 1),
     # Ajustes › Impuestos (agencia-c0, 15-oct-2026: «art. 20.Uno LIVA» en bbm, una empresa indonesia): el maestro siembra los impuestos de España e
     # Indonesia en toda instancia (20260926170000; en bbm, 090500 desactiva los de España sin borrarlos). No se pintan los de un país en el que no
@@ -5549,7 +5552,10 @@ IDIOMAS_PARCHES = (
     ('contracts/assets/topbar.js', "'<span>' + (otro === 'en' ? 'English' : 'Español') + '</span>';",
      "'<span>' + (otro === 'en' ? 'English' : otro === 'id' ? 'Bahasa Indonesia' : 'Español') + '</span>';"),
     ('contracts/assets/topbar.js', "  boton.title = otro === 'en' ? 'Switch interface to English' : 'Cambiar la interfaz a español';",
-     "  boton.title = otro === 'en' ? 'Switch interface to English' : otro === 'id' ? 'Ganti bahasa ke Bahasa Indonesia' : 'Cambiar la interfaz a español';"),
+     # el botón entero (rótulo y title) está en el idioma AL QUE cambia: lleva su lang (W3C i18n; el barrido en vivo de bbm, 15-oct, contaba
+     # «Bahasa Indonesia» como texto sin traducir en la vista inglesa)
+     "  boton.title = otro === 'en' ? 'Switch interface to English' : otro === 'id' ? 'Ganti bahasa ke Bahasa Indonesia' : 'Cambiar la interfaz a español';"
+     " boton.setAttribute('lang', otro);"),
     ('contracts/assets/version.js', "          boton: 'Reload' }\n  };",
      "          boton: 'Reload' }\n  };\n"
      "  TEXTOS.id = { msg: 'Ada versi baru halaman ini. Muat ulang untuk melanjutkan (Ctrl/Cmd+Shift+R).',\n"
@@ -5575,7 +5581,10 @@ IDIOMAS_PARCHES = (
      "  }\n"),
 )
 # Fechas y números escritos a mano en español: 'es-ES' → el locale del idioma elegido. Un 'es-ES' usado como CLAVE de objeto no se puede envolver: para.
-ES_ES_ENVUELTO = {"'": "(window.LW_IDIOMA === 'id' ? 'id-ID' : 'es-ES')", '"': '(window.LW_IDIOMA === "id" ? "id-ID" : "es-ES")'}
+# En inglés, en-GB (día/mes/año, punto decimal): con 'es-ES' la vista inglesa de bbm decía «Last change: 29/9/2026, 17:41:32» y «×0,916667»
+# (barrido en vivo de bbm.axisworks.studio, bbm-idioma-total, 15-oct-2026). El núcleo id-ID sigue igual.
+ES_ES_ENVUELTO = {"'": "(window.LW_IDIOMA === 'id' ? 'id-ID' : window.LW_IDIOMA === 'en' ? 'en-GB' : 'es-ES')",
+                  '"': '(window.LW_IDIOMA === "id" ? "id-ID" : window.LW_IDIOMA === "en" ? "en-GB" : "es-ES")'}
 # Los 'es-ES' que NO son de interfaz y se quedan como están (revisión, 12-oct): cambiarlos con el idioma de quien mira cambiaría un dato, no un rótulo.
 ES_ES_FIJOS = {
     'contracts/assets/dinero.js': 'lwImporteCanonico escribe el importe DENTRO de un campo editable que lwParseImporte vuelve a leer: id-ID agrupa «1.500» donde es-ES deja «1500»',

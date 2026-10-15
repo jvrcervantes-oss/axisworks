@@ -949,7 +949,10 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       var cols = [['Cuándo'], ['Quién'], ['Tabla']].concat(conQue ? [['Qué']] : []).concat([['Motivo']]);
       C.tabla(t, cols, v.map(function (x) {
         var tb = x && x.tabla, tabla = TABLAS[tb] ? T(TABLAS[tb]) : tb;
-        return h('tr', null, [C.celda(C.fechaHora(x && x.cuando), 'axw-nw'), C.celda(x && x.quien), C.celda(tabla)].concat(conQue ? [C.celda(x && x.que)] : []).concat([C.celda(x && x.motivo)]));
+        // la carga inicial la hizo el estudio con un motivo interno en español («… la hace AxisWorks por SQL», visto en bbm en en/id, 15-oct):
+        // quién y motivo por la regla común (C.autorDe), la misma de Entrega y del Registro de Ajustes
+        return h('tr', { 'data-autor': C.autorDe(x && x.quien) }, [C.celda(C.fechaHora(x && x.cuando), 'axw-nw'), C.celda(C.quienDe(x && x.quien)), C.celda(tabla)]
+          .concat(conQue ? [C.celda(x && x.que)] : []).concat([C.celda(C.motivoDe(x && x.quien, x && x.motivo))]));
       }));
     }
     oculta($v('contenido'), false);

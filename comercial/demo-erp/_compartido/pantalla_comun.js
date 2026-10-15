@@ -18,7 +18,9 @@ function axwComun(raiz, T) {
     'Esta función todavía no está disponible en esta base. No es que esté vacía: no se ha podido mirar.': 'This function is not available on this database yet. It is not empty: it could not be checked.',
     'Esta función todavía no está disponible en esta base.': 'This function is not available on this database yet.',
     'No tienes permiso para ver esta lista. No es que esté vacía: no se ha podido mirar.': 'You do not have permission to see this list. It is not empty: it could not be checked.',
-    'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'The database returned something unexpected. It is not empty: it could not be checked.'
+    'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'The database returned something unexpected. It is not empty: it could not be checked.',
+    'La base no ha aceptado el cambio.': 'The database did not accept the change.', 'código': 'code',
+    'Sistema': 'System', 'AxisWorks (soporte)': 'AxisWorks (support)', 'Configuración inicial': 'Initial setup'
   };
   // Indonesio (11-oct-2026: las instancias que lo llevan, hoy bbm). Mismas claves que EN; cada pantalla lo fusiona en window.LW_ID solo si existe.
   var ID = {
@@ -29,7 +31,9 @@ function axwComun(raiz, T) {
     'Esta función todavía no está disponible en esta base. No es que esté vacía: no se ha podido mirar.': 'Fungsi ini belum tersedia di database ini. Bukan berarti kosong: datanya tidak dapat diperiksa.',
     'Esta función todavía no está disponible en esta base.': 'Fungsi ini belum tersedia di database ini.',
     'No tienes permiso para ver esta lista. No es que esté vacía: no se ha podido mirar.': 'Anda tidak punya akses untuk melihat daftar ini. Bukan berarti kosong: datanya tidak dapat diperiksa.',
-    'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'Database mengembalikan data yang tidak terduga. Bukan berarti kosong: datanya tidak dapat diperiksa.'
+    'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'Database mengembalikan data yang tidak terduga. Bukan berarti kosong: datanya tidak dapat diperiksa.',
+    'La base no ha aceptado el cambio.': 'Database tidak menerima perubahan ini.', 'código': 'kode',
+    'Sistema': 'Sistem', 'AxisWorks (soporte)': 'AxisWorks (dukungan)', 'Configuración inicial': 'Pengaturan awal'
   };
 
   function h(tag, attrs, hijos) {
@@ -116,8 +120,25 @@ function axwComun(raiz, T) {
     if (c.tipo === 'sin_sesion') return T('Sin sesión: recarga la página o vuelve a entrar.');
     if (c.tipo === 'red') return T('La base no ha respondido: prueba otra vez en un rato.');
     if (c.tipo === 'sin_permiso' && lectura) return T('No tienes permiso para ver esta lista. No es que esté vacía: no se ha podido mirar.');
-    return c.m || T('La base no ha respondido: prueba otra vez en un rato.');
+    if (!c.m) return T('La base no ha respondido: prueba otra vez en un rato.');
+    // La base escribe sus reglas en español. Fuera del español no se enseña esa frase (bbm-idioma-total, 15-oct-2026: el owner veía errores en
+    // español en bbm): si el diccionario la tiene, traducida; si no, un texto en su idioma con el código estable (hint) para soporte.
+    if ((window.LW_IDIOMA || 'es') === 'es' || T(c.m) !== c.m) return T(c.m);
+    return T('La base no ha aceptado el cambio.') + (c.hint ? ' (' + T('código') + ': ' + String(c.hint).replace(/[^a-z0-9_]/gi, '').slice(0, 40) + ')' : '');
   }
+  /* Quién firma una fila de un registro de cambios (ajustes_log): por marcador explícito, nunca por descarte (agencia-c0, 15-oct-2026, medido en
+     la base de bbm). La siembra (vacío, postgres, «migración …», sistema:sql, «erp: …») es 'inicial'; el estudio (@axisworks.studio), 'soporte';
+     otro sistema:<rol> (edges, AaaS), 'sistema'; el resto, una persona. El motivo de 'inicial' y 'soporte' es interno y en español: no se enseña. */
+  var QUIEN_DE = { inicial: 'Sistema', soporte: 'AxisWorks (soporte)', sistema: 'Sistema' };
+  function autorDe(q) {
+    q = String(q == null ? '' : q).trim();
+    if (!q || /^(postgres|sistema:sql)$/i.test(q) || /^migraci[oó]n(\s|$)/i.test(q) || /^erp:/i.test(q)) return 'inicial';
+    if (/@axisworks\.studio(\s*\(panel\))?$/i.test(q)) return 'soporte';
+    if (/^sistema:/i.test(q)) return 'sistema';
+    return 'persona';
+  }
+  function quienDe(q) { var a = autorDe(q); return QUIEN_DE[a] ? T(QUIEN_DE[a]) : String(q == null ? '' : q); }
+  function motivoDe(q, motivo) { var a = autorDe(q); return a === 'inicial' ? T('Configuración inicial') : a === 'soporte' ? '—' : motivo; }
 
   /* Un importe tecleado → número, SIN adivinar el separador (el fallo de lw_importe('120.000') = 120000 pero ::numeric = 120). Acepta «2500», «2500.5», «2500,5»;
      «2.500» / «2,500» / «1.500.000» (grupos de tres cifras) son ambiguos (¿miles o decimales?) y se rechazan; «1.500,50» tampoco entra. Devuelve {vacio} | {v} | {e:'formato'|'ambiguo'}.
@@ -184,5 +205,5 @@ function axwComun(raiz, T) {
   }
 
   return { EN: EN, ID: ID, h: h, vacia: vacia, oculta: oculta, boton: boton, chip: chip, celda: celda, tabla: tabla, campo: campo, resumen: resumen, locale: locale, dinero: dinero,
-           fechaDia: fechaDia, fechaHora: fechaHora, clasifica: clasifica, mensaje: mensaje, importe: importe, ocupa: ocupa, libera: libera, dialogo: dialogo, pliegue: pliegue };
+           fechaDia: fechaDia, fechaHora: fechaHora, clasifica: clasifica, mensaje: mensaje, autorDe: autorDe, quienDe: quienDe, motivoDe: motivoDe, importe: importe, ocupa: ocupa, libera: libera, dialogo: dialogo, pliegue: pliegue };
 }
