@@ -416,7 +416,7 @@ const TODAS = [];
     await p.route('http://agente.test/**', r => r.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: html }));
     await p.goto(URL_PAG + (opts.hash || ''), { waitUntil: 'load' });
     await p.waitForFunction(() => document.querySelector('[data-ag="carga"]').getAttribute('data-tipo') !== 'cargando', null, { timeout: 5000 });
-    if (process.env.FUENTES_REALES) { await p.evaluate(() => Promise.all(['400 15px Manrope', '600 12px Manrope', '700 14px Manrope', '500 20px Unbounded'].map(f => document.fonts.load(f))).then(() => document.fonts.ready)); if (!(await p.evaluate(() => document.fonts.check('600 12px Manrope')))) throw new Error('FUENTES_REALES: Manrope no ha cargado'); }
+    if (process.env.FUENTES_REALES) { await p.evaluate(() => Promise.all(['400 15px Manrope', '600 12px Manrope', '700 14px Manrope', '500 20px Unbounded'].map(f => document.fonts.load(f))).then(() => document.fonts.ready)); const faltan = await p.evaluate(() => ['400 15px Manrope', '600 12px Manrope', '700 14px Manrope', '500 20px Unbounded'].filter(f => !document.fonts.check(f))); if (faltan.length) throw new Error('FUENTES_REALES: no han cargado ' + faltan.join(', ')); }
     await p.waitForTimeout(200);
     return { base, p, ctx };
   }
@@ -958,7 +958,7 @@ const TODAS = [];
     ok('paso 0 · la lista llega: «Elige una persona» + las 3 activas, en el orden de la base, sin número (ningún nombre se repite)', (await conPersonas(p))
        && J(await p.$$eval(SEL_QUIEN + ' option', os => os.map(o => o.textContent))) === J(['Elige una persona', 'Dion', 'Noelia', 'Cuenta de pruebas']));
     ok('paso 0 · la pista dice solo la primera frase; lo de la subida anulada no sale (no hay subida pendiente)', (await txt(p, '#ag2-aj-quien-p')) === 'Cualquier persona activa de tu equipo, también tú.'
-       && !(await visible(p, '[data-ag="aj-quien-subida"]')));
+       && !(await visible(p, '[data-ag="aj-quien-subida"]')) && (await txt(p, '[data-ag="aj-quien-subida"]')) === '');
     ok('paso 0 · UNA lectura de usuarios: user_id, número y nombre de los activos, por nombre (sin correo)', lecturasUsuarios(base).length === 1
        && J(lecturasUsuarios(base)[0][1]) === J({ tabla: 'usuarios', select: 'user_id,numero_usuario,nombre', eq: [['activo', true]], order: 'nombre' }), J(lecturasUsuarios(base)));
     ok('paso 0 · sin nadie al frente: «Antes de empezar» y «Si lo saltas» a la vista', (await visible(p, '[data-ag="aj-quien-etapa"]')) && (await visible(p, '[data-ag="aj-quien-salta"]')));
@@ -1017,7 +1017,8 @@ const TODAS = [];
     await p.click('[data-ag="aj-quien-cambiar"]'); await enHash(p, '#ajustes-quien'); await conPersonas(p);
     if (idioma === 'es') {
       ok('paso 0 · al cambiar, la persona de ahora sale marcada (por su número de usuario)', (await p.$eval(SEL_QUIEN, e => e.value)) === NOELIA);
-      ok('paso 0 · con una subida del tope pendiente, la pista avisa de que se anula al cambiar', (await visible(p, '[data-ag="aj-quien-subida"]'))
+      ok('paso 0 · con una subida del tope pendiente, la pista avisa de que se anula al cambiar y el campo la tiene en su descripción', (await visible(p, '[data-ag="aj-quien-subida"]'))
+         && (await p.$eval(SEL_QUIEN, e => e.getAttribute('aria-describedby').split(' ').includes('ag2-aj-quien-subida')))
          && (await txt(p, '[data-ag="aj-quien-subida"]')) === 'Hay una subida del tope pendiente: si cambias de persona, se anula y la decide quien lleve el equipo.');
       ok('paso 0 · cambiar: sin «Antes de empezar» ni «Si lo saltas» (ya hay alguien al frente), y sin la línea de arriba (el paso ya lo dice)',
          !(await visible(p, '[data-ag="aj-quien-etapa"]')) && !(await visible(p, '[data-ag="aj-quien-salta"]')) && !(await visible(p, '[data-ag="aj-quien-linea"]')));
@@ -1198,7 +1199,7 @@ const TODAS = [];
         if (nombre.startsWith('listo')) await p.waitForFunction(() => document.querySelectorAll('[data-ag="aj-listo-primero"] li').length > 0, null, { timeout: 4000 }).catch(() => {});
         const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, barra: window.innerWidth - document.documentElement.clientWidth }));
         // lo que gira dentro de la escena (.ag2-escena, overflow:hidden) no se sale: la escena lo recorta, y su caja cambia con cada vuelta (falso positivo según el momento)
-        const anchas = await p.$$eval('[data-ag="raiz"] *', es => es.filter(e => e.getClientRects().length && !e.closest('.ag2-escena') && e.getBoundingClientRect().right > document.documentElement.clientWidth + 1).map(e => e.tagName + '.' + e.className + '[' + (e.getAttribute('data-ag') || '') + ']').slice(0, 4));
+        const anchas = await p.$$eval('[data-ag="raiz"] *', es => es.filter(e => e.getClientRects().length && !(e.parentElement && e.parentElement.closest('.ag2-escena')) && e.getBoundingClientRect().right > document.documentElement.clientWidth + 1).map(e => e.tagName + '.' + e.className + '[' + (e.getAttribute('data-ag') || '') + ']').slice(0, 4));
         ok(idioma + ' ' + ancho + ' px · ' + nombre + ': no desborda y ningún elemento se sale por la derecha', m.sw <= m.cw && anchas.length === 0, J({ m, anchas }));
         // la barra de pasos: ninguna palabra partida por la mitad («Wewenan-g» a 390 px en indonesio), medido con la fuente real
         const partidas = await p.$$eval('[data-ag="aj-pasos"] b', bs => bs.filter(b => b.getClientRects().length).map(b => {

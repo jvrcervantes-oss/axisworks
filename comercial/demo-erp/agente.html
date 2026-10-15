@@ -237,7 +237,6 @@
 .ag2-pista{font-size:13px;line-height:1.45;color:var(--text-lo);margin:0}
 .ag2-cuenta{font-size:12px;color:var(--text-mute);margin:0;font-variant-numeric:tabular-nums;text-align:right}
 .ag2-acc{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.ag2-aj-paso .ag2-acc>.ag2-btn2{order:1}   /* el principal siempre delante del fantasma, sea cual sea el orden del marcado */
 .ag2-mas summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;color:var(--lilac);font-weight:600;list-style:none}
 .ag2-mas summary::-webkit-details-marker{display:none}
 /* señal de desplegable (Diseño, 16-oct): + cerrado, − abierto; el texto alternativo vacío la calla en el lector de pantalla */
@@ -548,7 +547,7 @@
 <label for="ag2-aj-quien-sel" data-lwt>Quién lleva el equipo</label>
 <select id="ag2-aj-quien-sel" data-campo="quien_owner" aria-describedby="ag2-aj-quien-p ag2-aj-quien-subida ag2-aj-quien-msg"></select>
 <p class="ag2-pista" id="ag2-aj-quien-p" data-lwt>Cualquier persona activa de tu equipo, también tú.</p>
-<p class="ag2-pista axw-oculto" id="ag2-aj-quien-subida" data-ag="aj-quien-subida" data-lwt>Hay una subida del tope pendiente: si cambias de persona, se anula y la decide quien lleve el equipo.</p>
+<p class="ag2-pista axw-oculto" id="ag2-aj-quien-subida" data-ag="aj-quien-subida"></p>
 </div>
 <p class="ag2-msg axw-oculto" id="ag2-aj-quien-msg" data-ag="aj-msg-quien" data-tono="mal" role="alert"></p>
 <div class="ag2-acc"><button type="submit" class="ag2-btn"><span data-lwt>Guardar y seguir</span></button><a class="ag2-btn2" href="#equipo" data-ag="aj-quien-volver"><span data-lwt>Volver</span></a></div>
@@ -638,8 +637,8 @@
 <p class="ag2-msg axw-oculto" data-ag="aj-msg-limites" data-tono="mal" role="alert"></p>
 <div class="ag2-acc" data-ag="aj-lim-acc">
 <button type="button" class="ag2-btn" data-accion="ag-aj-recomendado"><span data-lwt>Usar lo recomendado</span></button>
-<button type="button" class="ag2-btn2" data-accion="ag-aj-ajustar" aria-expanded="false"><span data-lwt>Ajustar por módulo</span></button>
 <button type="submit" class="ag2-btn axw-oculto" data-ag="aj-lim-guardar"><span data-lwt>Guardar los límites</span></button>
+<button type="button" class="ag2-btn2" data-accion="ag-aj-ajustar" aria-expanded="false"><span data-lwt>Ajustar por módulo</span></button>
 </div>
 <!-- sin ninguna parte con límites (o sin poder leerlos) el paso no tiene nada que guardar: una salida para no dejar un callejón -->
 <div class="ag2-acc axw-oculto" data-ag="aj-lim-salida"><a class="ag2-btn" href="#equipo" data-ag="aj-lim-equipo"><span data-lwt>Ver el equipo</span></a></div>
@@ -1771,7 +1770,8 @@
   function cuentas() {
     var q = F('ctx_quien'), cq = $a('cuenta-ctx_quien');
     cq.textContent = Tf('{n} de {m} caracteres', { n: q.value.length, m: q.getAttribute('data-tope') });
-    oculta(cq, !E.sucio.negocio);   // el contador solo mientras se teclea (Diseño, 16-oct): con el campo quieto no dice nada útil
+    /* el contador solo mientras se teclea (Diseño, 16-oct), o si lo guardado ya pasa del tope: el error «mira el contador» tiene que poder verse */
+    oculta(cq, !E.sucio.negocio && q.value.length <= Number(q.getAttribute('data-tope')));
     $a('cuenta-ctx_reglas').textContent = Tf('{n} de 20 reglas', { n: lineasReglas().length });
   }
   function pintaNegocio(d) {
@@ -1875,7 +1875,8 @@
     oculta(ir, !p || !d.soy_dueno);
     if (p) ir.setAttribute('href', '#ajustes-' + p);
     /* un solo botón principal: «Ver el equipo» lo es salvo que «Completar ahora» esté a la vista (Diseño, 16-oct) */
-    $a('aj-listo-equipo').className = p && d.soy_dueno ? 'ag2-btn2' : 'ag2-btn';
+    var sec = !!(p && d.soy_dueno), ve = $a('aj-listo-equipo');
+    ve.classList.toggle('ag2-btn2', sec); ve.classList.toggle('ag2-btn', !sec);
   }
   function pintaAjustes() {
     var d = E.estado;
@@ -1944,7 +1945,10 @@
     /* cambiar a quien ya lo lleva no es «antes de empezar» y saltarlo no deja a nadie sin dueño: esas dos frases solo cuando no hay nadie */
     oculta($a('aj-quien-etapa'), ownerOk(OW.d)); oculta($a('aj-quien-salta'), ownerOk(OW.d));
     /* lo de la subida anulada solo si hay una pendiente (con el equipo apagado la base no la da: no se dice) */
-    oculta($a('aj-quien-subida'), !(E.estado && ent(E.estado.tope_propuesto_cent)));
+    /* el texto se pone y se quita (no solo se esconde): aria-describedby lee también lo escondido */
+    var sub = !!(E.estado && ent(E.estado.tope_propuesto_cent));
+    $a('aj-quien-subida').textContent = sub ? T('Hay una subida del tope pendiente: si cambias de persona, se anula y la decide quien lleve el equipo.') : '';
+    oculta($a('aj-quien-subida'), !sub);
     if (E.sucio.quien) return;
     vacia(s);
     msgAj('aj-msg-quien', '');
@@ -1953,11 +1957,11 @@
     s.disabled = false;
     s.appendChild(h('option', { value: '', text: T('Elige una persona') }));
     /* el número de usuario solo cuando dos personas comparten nombre (Diseño, 16-oct): es lo único que las distingue */
-    var clave = function (u) { return String(u.nombre || '').trim().toLowerCase(); }, veces = {};
-    OW.usuarios.forEach(function (u) { var k = clave(u); if (k) veces[k] = (veces[k] || 0) + 1; });
+    var etq = function (u) { return String(u.nombre || u.numero_usuario || u.user_id); }, clave = function (u) { return etq(u).trim().toLowerCase(); }, veces = {};
+    OW.usuarios.forEach(function (u) { var k = clave(u); veces[k] = (veces[k] || 0) + 1; });
     OW.usuarios.forEach(function (u) {
-      var n = u.nombre || u.numero_usuario || u.user_id;
-      s.appendChild(h('option', { value: u.user_id, text: n + (u.numero_usuario && u.nombre && veces[clave(u)] > 1 ? ' · ' + u.numero_usuario : '') }));
+      var rep = veces[clave(u)] > 1, extra = rep ? (u.nombre && u.numero_usuario ? u.numero_usuario : u.user_id.slice(0, 8)) : '';
+      s.appendChild(h('option', { value: u.user_id, text: etq(u) + (extra ? ' · ' + extra : '') }));
     });
     if (!OW.usuarios.length) msgAj('aj-msg-quien', T('No hay ninguna persona activa en tu equipo: añádela en Ajustes › Usuarios.'));
     /* quien lo lleva ahora, marcado por su número de usuario (fijo, lo pone la base) */
