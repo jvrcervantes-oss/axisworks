@@ -122,7 +122,7 @@
       } else if (p.irreversible || comp.soloAsistente) {   // la clase (S40) no guarda sola: se elige en el asistente, camino del primer alquiler
         acciones.appendChild(h('a', { href: enlaceAsistente(p.modulo, p.clave), 'data-pm-asistente-paso': p.clave, class: BTN2, text: U('abrir_asistente') }));
       } else {
-        acciones.appendChild(h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-editar', 'data-pm-paso': p.clave, 'data-pm-modulo': p.modulo, class: BTN2, text: p.hecho ? U('cambiar') : S.texto('general', 'configurar') }));
+        acciones.appendChild(h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-editar', 'data-pm-cambiar': p.clave, 'data-pm-paso': p.clave, 'data-pm-modulo': p.modulo, class: BTN2, text: p.hecho ? U('cambiar') : S.texto('general', 'configurar') }));
       }
     }
     var li = h('li', { class: 'py-3 flex flex-col gap-3 border-t border-outline-variant/20', 'data-pm-fila': p.clave }, [
@@ -227,7 +227,7 @@
     });
   }
   // guardado: se cierra la ventana, se relee la base y el foco vuelve al «Cambiar» de ese paso (pinta() vacía el contenedor)
-  function enfoca(clave) { var b = document.querySelector('[data-pm-fila="' + clave + '"] [data-accion="pm-editar"]'); if (b) b.focus(); }   // predeploy-ok: el botón existe, lo crea filaPaso() con h(…, { 'data-accion': 'pm-editar' }), forma que el detector no lee
+  function enfoca(clave) { var b = document.querySelector('[data-pm-cambiar="' + clave + '"]'); if (b) b.focus(); }
   function guardadoYCierra(dlg, clave) { cierra(dlg, true); return carga().then(function () { enfoca(clave); }); }
   function arranca() {
     var c = cont();
