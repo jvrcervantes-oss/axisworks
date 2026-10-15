@@ -45,7 +45,7 @@ def corre(raiz):
 JS = ('abre([{k:"a",label:"Etiqueta",ayuda:"Lo ve el agente",req:1},{k:"b",placeholder:"Escribe aquí"},'
       '{k:"c",tipo:"select",label:"¿De quién es?",opciones:[["","Sin marcar"],["si","De la sociedad"]]},'
       '{k:"d",tipo:"select",label:"Moneda",opciones:["IDR","Otra"]},{k:"e",tipo:"multicheck",label:"Herramientas",atajos:[{texto:"Todas",valor:true}]},'
-      '{k:"f",label:"bg-surface text-outline"},{k:"g",label:T("Vence el"),tipo:"date"}]);')
+      '{k:"f",label:"bg-surface text-outline",placeholder:"#E7E3D2"},{k:"g",label:T("Vence el"),tipo:"date"}]);')
 TODO = ['Etiqueta', 'Lo ve el agente', 'Escribe aquí', '¿De quién es?', 'Sin marcar', 'De la sociedad', 'Moneda', 'Otra', 'Herramientas', 'Todas', 'Vence el']
 EN = {k: 'en:' + k for k in TODO}
 ID = {k: 'id:' + k for k in TODO}
@@ -67,7 +67,7 @@ try:
         rc, out = corre(raiz)
         ok('%s → salida %d' % (nombre, quiere), rc == quiere, 'sale %d: %s' % (rc, out[-300:]))
         if nombre == 'completo':
-            ok('no cuenta clases CSS ni códigos de moneda como texto', '11 rótulos de editor' in out, out[-200:])
+            ok('no cuenta clases CSS, códigos de moneda ni colores como texto', '11 rótulos de editor' in out, out[-200:])
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

@@ -23,8 +23,10 @@ const EN = sandbox.window.LW_EN, ID = sandbox.window.LW_ID;
 if (!EN || !Object.keys(EN).length) { console.log('NO SE HA PODIDO MIRAR: i18n.js no ha dejado window.LW_EN'); process.exit(2); }
 const idiomas = ID && Object.keys(ID).length ? ['en', 'id'] : ['en'];
 const tiene = (d, k) => Object.prototype.hasOwnProperty.call(d, k);
-// Lo que no es texto para una persona: clases CSS, códigos de moneda, claves internas, cifras
-const NO_ES_TEXTO = [/^(bg|text|border|ring|font|lw|las)-[\w-]+(\s+[\w-]+)*$/, /^[A-Z]{3}$/, /^[a-z0-9]+([_-][a-z0-9]+)+$/, /^[\d\s.,:%/+-]*$/, /^[a-z]+:\/\//];
+// Lo que no es texto para una persona: clases CSS, códigos de moneda, claves internas, cifras, colores (#E7E3D2: el ejemplo de un campo de color,
+// que la piel de la instancia reescribe en el build)
+const NO_ES_TEXTO = [/^(bg|text|border|ring|font|lw|las)-[\w-]+(\s+[\w-]+)*$/, /^[A-Z]{3}$/, /^[a-z0-9]+([_-][a-z0-9]+)+$/, /^[\d\s.,:%/+-]*$/, /^[a-z]+:\/\//,
+  /^#[0-9a-fA-F]{3,8}$/];
 // Los ficheros que llevan formularios del editor: cualquier .js de assets/ con un campo «label:» (hoy editores.js, datos.js, maqueta.js, panel-gastos.js)
 const ficheros = [];
 for (const dir of ['assets', path.join('contracts', 'assets')]) {
