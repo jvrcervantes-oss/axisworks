@@ -46,6 +46,45 @@ import subprocess
 import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
+
+
+def node_modules_de_fuera(aqui=AQUI):
+    """El node_modules de ESTA carpeta en el clon principal, si aquí no hay uno completo; o None (15-oct-2026, deploy-axw).
+    node_modules no va en git: una copia de AxisWorks (cualquier `git worktree`: `proyectos/_sesiones/…` o el scratchpad) no lo
+    trae y limpia_publico.js caía con «Cannot find module 'terser'» (calidad-gastos lo pasó a mano con NODE_PATH). El clon
+    principal es el padre del git-common-dir, como en el gate (tools/test.py). Completo = con `.package-lock.json`."""
+    if os.path.isfile(os.path.join(aqui, 'node_modules', '.package-lock.json')):
+        return None
+    try:
+        g = lambda *a: subprocess.run(['git', *a], cwd=aqui, capture_output=True, text=True, encoding='utf-8',
+                                      timeout=15).stdout.strip()
+        rel = os.path.relpath(aqui, g('rev-parse', '--show-toplevel'))
+        nm = os.path.join(os.path.dirname(g('rev-parse', '--path-format=absolute', '--git-common-dir')), rel, 'node_modules')
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    return nm if os.path.isfile(os.path.join(nm, '.package-lock.json')) else None
+
+
+# Todos los `node` que lanza el build heredan la ruta (solo AÑADE una ruta de búsqueda: no cambia nada si aquí ya está completo).
+_NM_FUERA = node_modules_de_fuera()
+if _NM_FUERA:
+    os.environ['NODE_PATH'] = os.pathsep.join([_NM_FUERA] + ([os.environ['NODE_PATH']] if os.environ.get('NODE_PATH') else []))
+
+
+def limpia_publico(dist):
+    """`node limpia_publico.js <dist>`; sin sus módulos lo dice claro en vez de dejar solo la traza de node."""
+    r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), dist], cwd=AQUI, capture_output=True, text=True,
+                       encoding='utf-8', errors='replace')
+    sys.stdout.write(r.stdout or '')
+    sys.stderr.write(r.stderr or '')
+    if r.returncode != 0:
+        falta = re.search(r"Cannot find module '([^']+)'", (r.stderr or '') + (r.stdout or ''))
+        if falta:
+            aborta("limpia_publico.js no encuentra el módulo '%s': falta node_modules en %s y tampoco hay uno completo en el clon "
+                   "principal. Instálalo con `npm ci` en %s (o en esa carpeta del clon principal)." % (falta.group(1), AQUI, AQUI))
+        aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
+
+
 # AXW_AGENCIA_RAIZ: raíz de la AGENCIA (donde viven erp/, tools/, private/ y proyectos/Lawang) cuando se construye desde una copia de
 # sesión de AxisWorks, que vive en _sesiones/<id>/AxisWorks y no cuatro niveles bajo la agencia: apunta a la copia de sesión de la agencia.
 AGENCIA = os.path.abspath(os.environ.get('AXW_AGENCIA_RAIZ') or os.path.join(AQUI, '..', '..', '..', '..'))
@@ -2863,9 +2902,7 @@ def publica():
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json (repo privado del estudio): sin él no se puede anonimizar la demo')
     quita_limpieza_en_vivo()
-    r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), DIST], cwd=AQUI)
-    if r.returncode != 0:
-        aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
+    limpia_publico(DIST)
     # Nombres de fichero primero (el logo, la hoja lawang.css…), después el texto que los nombra.
     for raiz, dirs, fichs in os.walk(DIST, topdown=False):
         for f in fichs + dirs:
@@ -5527,9 +5564,7 @@ def instancia(nombre):
     # 0. Sin comentarios, como la pública: los de Lawang cuentan sociedades, personas e incidentes.
     shutil.copy2(os.path.join(LAWANG, 'contracts', 'assets', 'guard.js'), os.path.join(DIST, 'contracts', 'assets', 'guard.js'))
     guard_asistente_admin()   # AXW-136: el admin entra a /asistente/ sin la casilla (como la base)
-    r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), DIST], cwd=AQUI)
-    if r.returncode != 0:
-        aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
+    limpia_publico(DIST)
     # 1. Guard REAL: el de Lawang tal cual, con la base de la instancia.
     g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
     for raiz, _d, fichs in os.walk(DIST):
