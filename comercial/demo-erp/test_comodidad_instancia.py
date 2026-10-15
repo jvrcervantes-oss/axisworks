@@ -63,7 +63,7 @@ if sal.returncode == 0:
 
 # F10 y F12 (15-oct): cada trozo está en el fichero REAL de Lawang las veces dichas y el sustituto hace lo que dice
 S5 = [x for x in build.COMODIDAD_INSTANCIA if 'CUENTAS_BANCARIAS).length === 1' in x[2] or "valor: 'si', label: '¿De quién es esta cuenta?'" in x[2]]
-M6DOC = [x for x in build.COMODIDAD_INSTANCIA if 'minmax(min(100%,200px),1fr)' in x[2] or 'lw-tab-usuarios' in x[1] or 'var PESTANAS' in x[1]]
+M6DOC = [x for x in build.COMODIDAD_INSTANCIA if 'minmax(min(100%,200px),1fr)' in x[2] or 'lw-tab-usuarios' in x[1] or "'correo', 'usuarios', 'mantenimiento'," in x[1]]
 otros = [x for x in build.COMODIDAD_INSTANCIA if x not in mios and x not in S5 and x not in M6DOC]
 ok('F10 y F12 en COMODIDAD_INSTANCIA (mascota.js, nav.js, facturas)', sorted(x[0] for x in otros) == sorted(['intranet/v4/assets/mascota.js', 'intranet/v4/assets/nav.js', 'intranet/v4/facturas/index.html']), [x[0] for x in otros])
 for rel_, viejo, nuevo, veces in otros:

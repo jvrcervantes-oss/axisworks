@@ -5155,8 +5155,8 @@ COMODIDAD_INSTANCIA = (
     # puede cambiar nada desde esta pestaña». Fuera la pestaña, su panel y su nombre de PESTANAS en la instancia (los usuarios siguen en /usuarios/):
     # sin esto último, un #usuarios viejo dejaba Ajustes en blanco (desdeHash solo cae a «empresa» con un nombre fuera de la lista; revisor de b6bd9a8).
     # Lawang la conserva.
-    ('intranet/v4/assets/ajustes.js', "  var PESTANAS = ['empresa', 'sociedades', 'idiomas', 'correo', 'usuarios', 'mantenimiento',",
-     "  var PESTANAS = ['empresa', 'sociedades', 'idiomas', 'correo', 'mantenimiento',", 1),
+    ('intranet/v4/assets/ajustes.js', "'correo', 'usuarios', 'mantenimiento',",   # ancla sin el principio: ajustes_puesta() ya puso 'puesta' delante
+     "'correo', 'mantenimiento',", 1),
     ('intranet/v4/ajustes/index.html',
      '<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors" role="tab" type="button" id="lw-tab-usuarios" aria-controls="lw-panel-usuarios" aria-selected="false" tabindex="-1" data-lw-tab="usuarios" data-lwt>Usuarios y roles</button>',
      '', 1),
