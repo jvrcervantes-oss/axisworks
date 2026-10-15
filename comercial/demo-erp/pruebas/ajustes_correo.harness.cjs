@@ -52,10 +52,10 @@ window.onerror = function (m) { (window.__errores = window.__errores || []).push
 // Las 4 direcciones YA NO salen por ajustes_config_datos (ni en `editables` ni en `valores`): solo por `estado`.
 const DATOS = (extra = {}) => Object.assign({ editables: ['marca', 'email_avisos_reservas', 'email_avisos_crm', 'zona_horaria', 'logo_correo_url', 'asunto_por_defecto'],
   puede_escribir: true, valores: { email_avisos_reservas: 'res@negocio.com' }, actualizado: {} }, extra);
-const ESTADO = (o = {}) => ({ ok: true, estado: Object.assign({ configurado: true, host: 'smtp.viejo.com', usuario: 'hola@negocio.com', puerto: 465, nombre: 'Mi Negocio', puesto_en: '2026-10-01T10:00:00Z', puesto_por: 'jefe@negocio.com', hay_previo: false, intentos_recientes: 0, intentos_max: 5 }, o.estado || {}),
+const ESTADO = (o = {}) => Object.assign({ ok: true, estado: Object.assign({ configurado: true, host: 'smtp.viejo.com', usuario: 'hola@negocio.com', puerto: 465, nombre: 'Mi Negocio', puesto_en: '2026-10-01T10:00:00Z', puesto_por: 'jefe@negocio.com', hay_previo: false, intentos_recientes: 0, intentos_max: 5 }, o.estado || {}),
   remitente: Object.assign({ email_from: 'hola@negocio.com', efectivo: 'hola@negocio.com', motivo: '', reply_to: 'resp@negocio.com' }, o.remitente || {}),
   avisos: Object.assign({ soporte: 'soporte@negocio.com', sistema: 'sistema@negocio.com' }, o.avisos || {}),
-  envios_pausados: !!o.pausados, pide_codigo: o.pide_codigo !== false });
+  envios_pausados: !!o.pausados, pide_codigo: o.pide_codigo !== false }, o.puede ? { puede: o.puede } : {});
 const CODIGO_OK = { status: 200, body: { ok: true, codigo: 'codigo_enviado', caduca_en: 600, correo_enmascarado: 'j***@negocio.com' } };
 const err = (status, codigo, extra = {}) => ({ status, body: Object.assign({ ok: false, codigo, error: 'TEXTO-LIBRE-DEL-SERVIDOR <b>x</b>' }, extra) });
 
@@ -403,6 +403,45 @@ const err = (status, codigo, extra = {}) => ({ status, body: Object.assign({ ok:
     await espera(p, '[data-correo-fila="email_from"]');
     ok('estado con HTML hostil: no se ejecuta y se ve como texto', !(await p.evaluate(() => window.__xss)) && /<img src=x/.test(await txt(p, '[data-correo="servidor-actual"]')));
   await ctx.close();
+  }
+  // D27 (bbm-comodidad-2, 15-oct): lo que la edge dice que no se puede cambiar (`puede`) sale en solo lectura con quién lo cambia; sin el campo, como
+  // siempre (los casos de arriba). Lo del admin: servidor, remitente y buzón de sistema no; respuestas y soporte sí.
+  const PUEDE_ADMIN = { servidor: false, email_from: false, email_reply_to: true, email_avisos_sistema: false, email_avisos_soporte: true };
+  for (const configurado of [true, false]) {
+    const { p, ctx, llamadas } = await abre({ datos: DATOS() }, (c) => c.accion === 'estado'
+      ? { status: 200, body: ESTADO(Object.assign({ puede: PUEDE_ADMIN }, configurado ? {} : { estado: { configurado: false, host: null, usuario: null } })) } : CODIGO_OK);
+    await espera(p, '[data-correo-fila="email_from"]');
+    const k = configurado ? ' (con servidor)' : ' (sin servidor propio)';
+    ok('D27' + k + ': sin «Cambiar» del servidor ni formulario abierto, y la línea de quién lo cambia',
+       !(await hay(p, '[data-accion="correo-servidor-editar"]')) && !(await hay(p, cam('host'))) && /super admin/.test(await txt(p, '[data-correo="solo-super-servidor"]') || ''));
+    for (const c of ['email_from', 'email_avisos_sistema'])
+      ok('D27' + k + ': ' + c + ' en solo lectura, sin botón y con «Lo cambia un super admin»', await p.$eval(cam('dir-' + c), (e) => e.readOnly)
+         && !(await hay(p, '[data-correo-fila="' + c + '"] [data-accion^="correo-ajuste-"]')) && /super admin/.test(await txt(p, '[data-correo="solo-super-' + c + '"]') || ''));
+    for (const c of ['email_reply_to', 'email_avisos_soporte'])
+      ok('D27' + k + ': ' + c + ' sigue editable con «Pedir código»', !(await p.$eval(cam('dir-' + c), (e) => e.readOnly)) && await hay(p, '[data-correo-fila="' + c + '"] [data-accion="correo-ajuste-pedir"]'));
+    if (configurado) {
+      await p.fill(cam('dir-email_reply_to'), 'nuevo@negocio.com');
+      await p.click('[data-correo-fila="email_reply_to"] [data-accion="correo-ajuste-pedir"]');
+      await espera(p, cam('dir-codigo-email_reply_to'));
+      ok('D27: el admin pide código para «Responder a» (alcance ajuste, esa clave)', llamadas[1] && llamadas[1].cuerpo.alcance === 'ajuste' && llamadas[1].cuerpo.clave === 'email_reply_to');
+      await foto(p, '7_admin_solo_lectura');
+    }
+    ok('D27' + k + ': sin error de JS', !(await p.evaluate(() => window.__errores)));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ datos: DATOS() }, () => ({ status: 200, body: ESTADO({ puede: { servidor: true, email_from: true, email_reply_to: true, email_avisos_sistema: true, email_avisos_soporte: true } }) }));
+    await espera(p, '[data-correo-fila="email_from"]');
+    ok('D27: con todo permitido (super admin) sale como siempre: Cambiar y las 4 con «Pedir código», sin líneas de solo lectura',
+       await hay(p, '[data-accion="correo-servidor-editar"]') && (await p.$$('[data-accion="correo-ajuste-pedir"]')).length === 4 && !(await hay(p, '[data-correo^="solo-super-"]')));
+    await ctx.close();
+  }
+  for (const [idioma, esperado] of [['en', /changed by a super admin/i], ['id', /diubah oleh super admin/i]]) {
+    const { p, ctx } = await abre({ datos: DATOS(), idioma }, () => ({ status: 200, body: ESTADO({ puede: PUEDE_ADMIN }) }));
+    await espera(p, '[data-correo-fila="email_from"]');
+    const t1 = await txt(p, '[data-correo="solo-super-servidor"]'), t2 = await txt(p, '[data-correo="solo-super-email_from"]');
+    ok('D27 (' + idioma + '): las dos líneas traducidas', esperado.test(t1 || '') && esperado.test(t2 || ''), (t1 || '') + ' | ' + (t2 || ''));
+    await ctx.close();
   }
   {
     const { p, ctx } = await abre({ datos: DATOS() }, (c) => c.accion === 'estado' ? { status: 200, body: ESTADO() } : CODIGO_OK, '#correo', 390);
