@@ -1477,16 +1477,17 @@
   function revListaDe(id) { return ((E.listas && E.listas.revisiones) || []).filter(function (x) { return String(x.id) === String(id); })[0] || null; }
   function filaRev(r, editando) {
     var tr = h('tr', { 'data-l-rev': String(r.id) }), id = String(r.id);
-    var b = function (acc, txt, prim) { return h('button', { class: 'axw-boton', type: 'button', 'data-accion': acc, 'data-rev-id': id, 'data-primario': prim ? '1' : null, text: T(txt) }); };
     var celdas = editando
       ? [h('td', null, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_id', value: String(r.nombre_id || ''), 'aria-label': T('Nombre (indonesio)') })]),
          h('td', null, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_en', value: String(r.nombre_en || ''), 'aria-label': T('Nombre (inglés)') })]),
          h('td', null, [h('input', { type: 'text', inputmode: 'numeric', maxlength: '4', 'data-f': 'orden', value: String(r.orden), 'aria-label': T('Posición') })]),
          h('td', { text: T(r.activa === true ? 'Sí' : 'No') }),
-         h('td', null, [h('div', { class: 'tl-fila-acc' }, [b('tl-l-rev-guarda', 'Guardar', true), b('tl-l-rev-cancela', 'Cancelar')])])]
+         h('td', null, [h('div', { class: 'tl-fila-acc' }, [h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-guarda', 'data-rev-id': id, 'data-primario': '1', text: T('Guardar') }),
+           h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-cancela', 'data-rev-id': id, text: T('Cancelar') })])])]
       : [h('td', { text: String(r.nombre_id || '') }), h('td', { text: String(r.nombre_en || '') }), h('td', { text: String(r.orden) }),
          h('td', { text: T(r.activa === true ? 'Sí' : 'No') }),
-         h('td', null, [h('div', { class: 'tl-fila-acc' }, [b('tl-l-rev-edita', 'Editar'), b('tl-l-rev-activa', r.activa === true ? 'Desactivar' : 'Activar')])])];
+         h('td', null, [h('div', { class: 'tl-fila-acc' }, [h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-edita', 'data-rev-id': id, text: T('Editar') }),
+           h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-activa', 'data-rev-id': id, text: T(r.activa === true ? 'Desactivar' : 'Activar') })])])];
     [h('td', { text: String(r.clave) })].concat(celdas).forEach(function (td) { tr.appendChild(td); });
     return tr;
   }

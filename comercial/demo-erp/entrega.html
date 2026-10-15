@@ -223,7 +223,7 @@
     "Vas a guardar estos cambios con la entrega activa (o activándola):": "Anda akan menyimpan perubahan ini dengan antar aktif (atau sambil mengaktifkannya):",
     "Sede": "Kantor",
     "Tarifa": "Tarif",
-    "Límites y política": "Batas dan kebijakan",
+    "Recogida y límites": "Jemput dan batas",
     "Activar la entrega": "Aktifkan antar",
     "Apagar la entrega": "Matikan antar",
     "Confirmar y guardar": "Konfirmasi dan simpan",
@@ -296,7 +296,7 @@
     'Revisa estos campos:': 'Check these fields:',
     'Esto cambia el precio al bot desde ya': 'This changes the price for the bot right away',
     'Vas a guardar estos cambios con la entrega activa (o activándola):': 'You are about to save these changes with delivery on (or switching it on):',
-    'Sede': 'Office', 'Tarifa': 'Price', 'Límites y política': 'Limits and policy', 'Activar la entrega': 'Switch delivery on', 'Apagar la entrega': 'Switch delivery off',
+    'Sede': 'Office', 'Tarifa': 'Price', 'Recogida y límites': 'Pick-up and limits', 'Activar la entrega': 'Switch delivery on', 'Apagar la entrega': 'Switch delivery off',
     'Confirmar y guardar': 'Confirm and save', 'Cancelar': 'Cancel',
     'Guardado.': 'Saved.', 'Tarifa guardada.': 'Price saved.', 'Versión de los ajustes:': 'Settings version:',
     'La tarifa sí se guardó, pero lo demás no: ': 'The price was saved, but the rest was not: ',
@@ -595,7 +595,7 @@
     var limites = false;
     ['km_max', 'tope_dia', 'tope_mes', 'cache_dias'].forEach(function (n) { if (v[n] !== undefined && v[n] !== s[n]) { a[n] = v[n]; limites = true; } });
     if (v.cobra_recogida !== s.cobra_recogida) { a.cobra_recogida = v.cobra_recogida; limites = true; }
-    if (limites) grupos.push('Límites y política');
+    if (limites) grupos.push('Recogida y límites');   // como el paso 3 (S4): el diálogo habla como los pasos
     if (v.activa !== s.activa) { a.activa = v.activa; grupos.push(v.activa ? 'Activar la entrega' : 'Apagar la entrega'); }
     var tarifa = null;
     var tCambia = v.moneda !== s.moneda || (v.precio_km !== undefined && v.precio_km !== s.precio_km) || (v.km_gratis !== undefined && v.km_gratis !== s.km_gratis) || (v.minimo !== undefined && v.minimo !== s.minimo);

@@ -344,7 +344,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('con la entrega activa la sede esta bloqueada desde el primer momento', (await p.$eval(campo('sede_coord'), e => e.readOnly)) && (await txt(p, '[data-en="sede-bloqueo"]')).includes('Apaga la entrega'));
     await p.evaluate(() => { document.querySelector('[data-campo="sede_coord"]').value = '-1.0, 1.0'; });   // como si lo cambiaran desde las herramientas del navegador: la pantalla no lo manda
     await p.fill(campo('tope_dia'), '70'); await p.fill(campo('motivo'), 'Subo el tope en caliente'); await guardar(p);
-    ok('cambiar algo con la entrega ACTIVA tambien pide confirmacion', (await txt(p, '[data-axw="dialogo"]')).includes('Esto cambia el precio al bot desde ya') && (await txt(p, '[data-axw="dialogo"]')).includes('Límites y política') && escritas(base).length === 0);
+    ok('cambiar algo con la entrega ACTIVA tambien pide confirmacion', (await txt(p, '[data-axw="dialogo"]')).includes('Esto cambia el precio al bot desde ya') && (await txt(p, '[data-axw="dialogo"]')).includes('Recogida y límites') && escritas(base).length === 0);
     await p.click('[data-accion="en-modal-confirmar"]');
     await espera(p, () => document.querySelector('[data-en="exito"]:not(.axw-oculto)'));
     ok('el cambio de la sede en un campo bloqueado NO viaja (la sede sigue siendo la de la base)', J(escritas(base)[0][1].p_datos) === J({ tope_dia: 70 }), J(escritas(base)));
