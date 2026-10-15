@@ -5,8 +5,8 @@
  * cambia la ficha. La frase de cada sección (BUILD…) es copy y vive en home_textos.php. */
 
 $ORGANIGRAMA = [
-  'n' => 22,
-  'palabra' => ['en' => 'twenty-two', 'es' => 'veintidós'],
+  'n' => 23,
+  'palabra' => ['en' => 'twenty-three', 'es' => 'veintitrés'],
   'deps' => [
     ['seccion' => 'BUILD', 'cara' => 'product', 'imagen' => true,
       'en' => ['Product', 'decides what gets built', ['Product roadmap for our business software']],
@@ -45,8 +45,8 @@ $ORGANIGRAMA = [
       'es' => ['Modelado 3D de juegos', 'assets 3D de juego', ['Personajes, props y escenarios 3D hechos para un juego']],
     ],
     ['seccion' => 'BUILD', 'cara' => 'pilots', 'imagen' => true,
-      'en' => ['Pilots', 'autonomous agents', ['Autonomous agents that run a business within limits we set']],
-      'es' => ['Pilotos', 'agentes autónomos', ['Agentes autónomos que llevan un negocio dentro de límites fijados']],
+      'en' => ['Autonomous agents', 'autonomous agents', ['Autonomous agents that run a business within limits we set']],
+      'es' => ['Agentes autónomos', 'agentes autónomos', ['Agentes autónomos que llevan un negocio dentro de límites fijados']],
     ],
     ['seccion' => 'GROW', 'cara' => 'design', 'imagen' => true,
       'en' => ['Design', 'art direction', ['Brand identity', 'Interface design for every product']],
@@ -71,6 +71,10 @@ $ORGANIGRAMA = [
     ['seccion' => 'CONTROL', 'cara' => 'security', 'imagen' => true,
       'en' => ['Security', 'audits &amp; secrets', ['Security audits', 'Secrets and incident response']],
       'es' => ['Seguridad', 'auditorías y secretos', ['Auditorías de seguridad', 'Secretos y respuesta a incidentes']],
+    ],
+    ['seccion' => 'CONTROL', 'cara' => 'db', 'imagen' => true,
+      'en' => ['Databases', 'keeps every database sound', ['Auditing that every database is connected, well built and safe']],
+      'es' => ['Base de datos', 'cuida que cada base esté sana', ['Auditar que cada base esté conectada, bien construida y segura']],
     ],
     ['seccion' => 'CONTROL', 'cara' => 'quality', 'imagen' => true,
       'en' => ['Quality', 'proves it works', ['Independent testing in production']],
