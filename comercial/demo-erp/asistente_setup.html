@@ -49,6 +49,29 @@
 .axw-why-ic{width:20px;height:20px;flex:none;color:rgb(var(--tema-deep-lagoon))}
 .axw-why>[data-axw-salta]{background:rgb(var(--tema-error-container) / .45);border-color:rgb(var(--tema-error) / .3)}
 .axw-why>[data-axw-salta] .axw-why-ic{color:rgb(var(--tema-error))}
+/* En el móvil (< 560 px; Experiencia, 15-oct: «a 390 el primer campo queda debajo de lo que se ve», condición del owner: que no tapen los campos):
+   los dos bloques en una sola caja, cada uno en una línea corrida (título en negrita y su texto detrás); el título del paso más corto; «Dejar para
+   luego» como enlace y no como botón a todo lo ancho; y fuera la línea «Falta…», que repite lo que dice «Si lo saltas» justo encima. */
+@media (max-width:559px){
+  .axw-why{gap:0;border:1px solid rgb(var(--tema-outline-variant));border-radius:14px;overflow:hidden}
+  .axw-why>div{display:block;border:0;border-radius:0;padding:9px 12px;font-size:13.5px;line-height:1.4}
+  .axw-why>div+div{border-top:1px solid rgb(var(--tema-outline-variant))}
+  .axw-why dt{display:inline-flex;vertical-align:-3px;margin-right:6px;font-size:14px}
+  .axw-why dd{display:inline}
+  .axw-why-ic{width:17px;height:17px}
+  [data-axw-as="tarjeta"] h2[data-axw-paso]{font-size:22px!important}
+  [data-axw-as="tarjeta"] header{gap:12px!important;padding-bottom:14px!important}
+  .axw-izq>[data-axw-falta]{display:none}
+  [data-axw-as="salir"]{min-height:36px!important;padding:0!important;border-color:transparent!important;align-self:flex-start;text-decoration:underline;text-underline-offset:3px}
+  /* y la cabecera de la página y la tarjeta, más prietas: medido a 390×664 con la piel de bbm, el primer campo acababa en y=743 */
+  [data-axw-setup="asistente"]{gap:12px!important}
+  [data-axw-setup="asistente"]>.lw-cabecera{padding:14px 16px!important;gap:10px!important}
+  [data-axw-as="titulo"]{font-size:24px!important;line-height:1.15!important}
+  [data-axw-as="tarjeta"]{padding:16px!important;gap:14px!important}
+  /* «2 de 6 pasos hechos» y «Dejar para luego» en la misma línea, la barra debajo (Experiencia: el enlace junto al progreso) */
+  .lw-cabecera>div:last-child{flex-direction:row!important;flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:12px}
+  .lw-cabecera>div:last-child>[aria-hidden="true"]{order:3;flex:1 1 100%}
+}
 /* P5 (bbm-comodidad, 15-oct-2026; owner: «aprovechando el espacio … mostrando datos poco a poco»; Diseño consultado): el paso en dos columnas
    cuando la TARJETA tiene sitio (container query, no media query: el carril ya come 324 px). Izquierda = lo que se rellena (≤ 640 px); derecha
    (320 px, pegajosa) = lo que el paso enseña de lado. Sin sitio, una columna. «Para qué sirve» va ARRIBA de los campos (15-oct, ver .axw-why);

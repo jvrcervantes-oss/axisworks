@@ -2397,6 +2397,25 @@ MENU_I18N = {
     'Lo que el sistema aplica solo y no hace falta tocar en el código: el nombre y la zona horaria de la instalación, el correo y el modo mantenimiento. Cambiarlos aquí vale desde ese momento, y cada cambio queda en el registro.': {
         'en': 'What the system applies by itself, with no need to touch the code: the installation name and time zone, email and maintenance mode. Changes made here apply from that moment, and every change is logged.',
         'id': 'Yang diterapkan sistem secara otomatis, tanpa perlu mengubah kode: nama dan zona waktu instalasi, email, dan mode pemeliharaan. Perubahan di sini langsung berlaku, dan setiap perubahan tercatat.'},
+    # M7 (bbm-comodidad, 15-oct-2026): Ajustes sin jerga (ver TEXTOS_INSTANCIA y TEXTOS_ALQUILER)
+    'Aquí se cambian el nombre y la zona horaria del negocio, el correo y el modo mantenimiento. Cada cambio vale desde ese momento y queda en el registro.': {
+        'en': 'Here you change the business name and time zone, email and maintenance mode. Each change applies from that moment and is logged.',
+        'id': 'Di sini Anda mengubah nama dan zona waktu bisnis, email, dan mode pemeliharaan. Setiap perubahan langsung berlaku dan tercatat.'},
+    '. Cada ajuste tiene su formato y su rango: fuera de él no se guarda. Pausar los envíos y cerrar la intranet, en cambio, los puede hacer cualquier admin.': {
+        'en': '. Each setting has its own format and range: outside it, it is not saved. Pausing sending and closing the intranet, on the other hand, any admin can do.',
+        'id': '. Setiap pengaturan punya format dan rentangnya sendiri: di luar itu tidak disimpan. Sebaliknya, menjeda pengiriman dan menutup intranet bisa dilakukan admin mana pun.'},
+    'Ya se aplica en el ERP. Alguna pantalla puede no enseñarlo todavía.': {
+        'en': 'It already applies in the ERP. Some screens may not show it yet.',
+        'id': 'Sudah berlaku di ERP. Beberapa layar mungkin belum menampilkannya.'},
+    'Se guarda y queda en el registro, pero todavía no cambia nada en el ERP.': {
+        'en': 'It is saved and logged, but it does not change anything in the ERP yet.',
+        'id': 'Tersimpan dan tercatat, tetapi belum mengubah apa pun di ERP.'},
+    'En pausa no sale ningún correo: ni invitaciones, ni avisos, ni comunicados. Lo que quede en cola espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.': {
+        'en': 'While paused no email goes out: no invitations, no alerts, no announcements. Whatever is queued waits and goes out by itself on resume. Pause and resume: any admin.',
+        'id': 'Saat dijeda, tidak ada email yang terkirim: tidak ada undangan, peringatan, maupun pengumuman. Yang masuk antrean akan menunggu dan terkirim otomatis saat dilanjutkan. Menjeda dan melanjutkan: admin mana pun.'},
+    'Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. No cambia lo que cada uno puede hacer. Cerrar y reabrir: cualquier admin.': {
+        'en': 'When closed, only admins get in: the rest of the team sees a maintenance screen with the reason, and anyone inside gets a warning and is signed out after 3 minutes. It does not change what each person can do. Closing and reopening: any admin.',
+        'id': 'Saat ditutup, hanya admin yang bisa masuk: anggota tim lainnya melihat layar pemeliharaan beserta alasannya, dan yang sedang di dalam menerima peringatan lalu dikeluarkan setelah 3 menit. Tidak mengubah apa yang boleh dilakukan setiap orang. Menutup dan membuka kembali: admin mana pun.'},
     'Impuestos': {'en': 'Taxes', 'id': 'Pajak'},
     'Plazos': {'en': 'Time limits', 'id': 'Batas waktu'},
     # rótulos FIJOS que build.py pone en el HTML de Ajustes (pestañas y cabeceras): su traducción tiene que estar ANTES de que la página traduzca el
@@ -5050,8 +5069,18 @@ TEXTOS_INSTANCIA = (
     # (fichero en DIST, trozo de Lawang, sustituto, veces que aparece)
     ('intranet/v4/assets/editores.js', "label: 'Proyecto / unidad'", "label: 'Referencia'", 2),
     ('intranet/v4/facturas/index.html', 'placeholder="Buscar por número, cliente, contrato o proyecto…"', 'placeholder="Buscar por número, cliente o reserva…"', 1),
-    ('intranet/v4/ajustes/index.html', 'el correo, el modo mantenimiento y los plazos de las Cartas de Reserva. Cambiarlos aquí',
-     'el correo y el modo mantenimiento. Cambiarlos aquí', 1),
+    # M7 de la auditoría del setup de bbm (15-oct-2026): la cabecera de Ajustes hablaba de «tocar el código» y de «la instalación»; ahora dice
+    # en llano qué se cambia aquí (antes ya se quitaban las Cartas de Reserva, que en una instancia no existen)
+    ('intranet/v4/ajustes/index.html', 'data-lwt>Lo que el sistema aplica solo y no hace falta tocar en el código: el nombre y la zona horaria de la instalación, el correo, el modo mantenimiento y los plazos de las Cartas de Reserva. Cambiarlos aquí vale desde ese momento, y cada cambio queda en el registro.</p>',
+     'data-lwt>Aquí se cambian el nombre y la zona horaria del negocio, el correo y el modo mantenimiento. Cada cambio vale desde ese momento y queda en el registro.</p>', 1),
+    # M7: el aviso del candado decía «lo comprueba la base de datos, no esta pantalla» (cierto, pero jerga para quien usa el ERP)
+    ('intranet/v4/ajustes/index.html', '</b>, y lo comprueba la base de datos, no esta pantalla. Cada ajuste tiene su formato',
+     '</b>. Cada ajuste tiene su formato', 1),
+    # M7: lo que se dice debajo de cada ajuste hablaba de «funciones de la base» y de «la fase siguiente»
+    ('intranet/v4/assets/ajustes.js', "  var TEXTO_LEE = 'Ya lo leen funciones de la base de este ERP. La pantalla, el menú y los demás correos lo leerán en la fase siguiente.';",
+     "  var TEXTO_LEE = 'Ya se aplica en el ERP. Alguna pantalla puede no enseñarlo todavía.';", 1),
+    ('intranet/v4/assets/ajustes.js', "  var TEXTO_NO_LEE = 'Se guarda y queda en el registro, pero todavía no lo lee ninguna pantalla ni correo de esta instalación: llegará con la fase siguiente.';",
+     "  var TEXTO_NO_LEE = 'Se guarda y queda en el registro, pero todavía no cambia nada en el ERP.';", 1),
     ('intranet/v4/ajustes/index.html', '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Reservas</span>\n'
      '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Vencimiento, gracia y prórrogas de las Cartas de Reserva</h2>',
      '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Ajustes</span>\n'
@@ -5082,6 +5111,26 @@ TEXTOS_INSTANCIA = (
 # en TEXTOS_INSTANCIA, que solo cambia texto). Mismo formato y misma función (textos_instancia): cada trozo las veces dichas o el build para.
 # Prueba: test_comodidad_instancia.py. Lawang no pasa por aquí.
 COMODIDAD_INSTANCIA = (
+    # verificador del tren 4h (15-oct-2026): a 390, en «Documento nuevo» de factura y de recibí, «Nº de documento» (solo lectura) medía 147 px y su
+    # texto «Lo asigna la base al guardar» 232-245: las filas de dos campos del editor eran 1fr 1fr fijas. Ahora dos columnas solo si caben
+    # (cada una ≥ 200 px); si no, una debajo de otra. A 1440 no cambia nada. Las cinco filas de dos del editor salen de esta función.
+    ('intranet/v4/assets/editores.js', "    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px';\n",
+     "    row.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px';\n", 1),
+    # M6 de la auditoría del setup de bbm (15-oct-2026): Ajustes › «Usuarios y roles» era una pestaña que solo decía «Próximamente: todavía no se
+    # puede cambiar nada desde esta pestaña». Fuera la pestaña y su panel en la instancia (los usuarios siguen en /usuarios/). ajustes.js ya lo
+    # aguanta: #usuarios sin botón abre «empresa» (desdeHash). Lawang la conserva.
+    ('intranet/v4/ajustes/index.html',
+     '<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors" role="tab" type="button" id="lw-tab-usuarios" aria-controls="lw-panel-usuarios" aria-selected="false" tabindex="-1" data-lw-tab="usuarios" data-lwt>Usuarios y roles</button>',
+     '', 1),
+    ('intranet/v4/ajustes/index.html',
+     '<section id="lw-panel-usuarios" role="tabpanel" aria-labelledby="lw-tab-usuarios" data-lw-panel="usuarios" class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">\n'
+     '<div class="px-8 pt-8 pb-4 flex flex-col gap-1 border-b border-outline-variant/40">\n'
+     '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Usuarios y roles</span>\n'
+     '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Quién puede qué</h2>\n'
+     '<p class="font-body-sm text-body-sm text-outline" data-lwt>Los permisos por rol y la política de sesión y contraseña se moverán aquí desde la herramienta Usuarios.</p>\n'
+     '</div>\n'
+     '<p class="px-8 py-6 font-body-md text-body-md text-on-surface-variant" data-lwt>Próximamente: todavía no se puede cambiar nada desde esta pestaña. Los usuarios y sus permisos se siguen gestionando en la herramienta Usuarios.</p>\n'
+     '</section>\n', '', 1),
     # bbm-comodidad F4 (15-oct-2026, medido en bbm real): con UNA sola empresa emisora, «Sociedad que factura/cobra» empezaba en «— elige —» en
     # cada factura y cada recibí (2 clics más, y los impuestos esperaban a elegirla). Con una sola se preselecciona; con dos o más, como siempre.
     # Los impuestos y la previa leen el valor vivo del select al montarse (montaImpuestosDoc.socActual), así que salen ya con esa empresa.
@@ -5232,8 +5281,8 @@ TEXTOS_ALQUILER = (
     # bbm-p39 (13-oct, barrido en bbm real): Recibos hablaba de titular, contrato y proyecto; Mantenimiento de contratos para firmar y del portal de compradores
     ('intranet/v4/recibos/index.html', '<th class="py-3.5 px-4 font-semibold" data-lwt>Titular / Pagador</th>', '<th class="py-3.5 px-4 font-semibold" data-lwt>Cliente</th>', 1),
     ('intranet/v4/recibos/index.html', 'placeholder="Buscar por número, cliente, contrato o proyecto…"', 'placeholder="Número, cliente, factura o referencia…"', 1),
-    ('intranet/v4/ajustes/index.html', 'data-lwt>En pausa no sale ningún email: ni contratos para firmar, ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 'data-lwt>En pausa no sale ningún email: ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 1),
-    ('intranet/v4/ajustes/index.html', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. El portal de compradores sigue abierto. Cerrar y reabrir: cualquier admin.</p>', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. Cerrar y reabrir: cualquier admin.</p>', 1),
+    ('intranet/v4/ajustes/index.html', 'data-lwt>En pausa no sale ningún email: ni contratos para firmar, ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 'data-lwt>En pausa no sale ningún correo: ni invitaciones, ni avisos, ni comunicados. Lo que quede en cola espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 1),
+    ('intranet/v4/ajustes/index.html', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. El portal de compradores sigue abierto. Cerrar y reabrir: cualquier admin.</p>', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. No cambia lo que cada uno puede hacer. Cerrar y reabrir: cualquier admin.</p>', 1),
 )
 TEXTOS_OTRA = (   # el resto de instancias: un ejemplo neutro, sin la villa de Lawang
     ('intranet/v4/assets/editores.js', "placeholder: 'Ej. Proyecto — Villa 2BR S2'", "placeholder: 'Ej. Reserva R-0012'", 2),

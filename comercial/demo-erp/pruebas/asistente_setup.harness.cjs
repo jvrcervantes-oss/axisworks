@@ -116,8 +116,8 @@ window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' 
 </script>
 <script>${NUCLEO}</script><script>${PASOS}</script>${HTML[1]}</body></html>`;
 
-async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=facturas', ancho = 1440, reloj = null, init = null } = {}) {
-  const ctx = await nav.newContext({ viewport: { width: ancho, height: 900 } });
+async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=facturas', ancho = 1440, alto = 900, reloj = null, init = null } = {}) {
+  const ctx = await nav.newContext({ viewport: { width: ancho, height: alto } });
   const p = await ctx.newPage();
   if (init) await p.addInitScript(init);   // algo de la página real que el arnés no carga (p. ej. lwMarca de i18n.js)
   if (reloj) await p.clock.install({ time: new Date(reloj) });   // la hora del navegador fijada (año fiscal en Nochevieja)
@@ -418,7 +418,7 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
                iconos: bl.every(b => b && b.querySelector('dt svg.axw-why-ic')), negrita: bl.every(b => +getComputedStyle(b.querySelector('dt')).fontWeight >= 600),
                fondos: bl.map(b => getComputedStyle(b).backgroundColor), ladoVacio: document.querySelector('[data-axw-as="lado"]').children.length === 0
                  ? getComputedStyle(document.querySelector('[data-axw-as="lado"]')).display === 'none' : true,
-               scrollX: document.documentElement.scrollWidth > innerWidth, alto: innerHeight };
+               campoBottom: c ? Math.round(c.bottom) : null, scrollX: document.documentElement.scrollWidth > innerWidth, alto: innerHeight };
     });
     const pq1 = await porQue(p);
     ok('1440: «Para qué sirve» y «Si lo saltas» arriba de los campos (primeros en la columna de lo que se rellena)', pq1.enIzq && pq1.encima, JSON.stringify(pq1));
@@ -427,11 +427,12 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     ok('1440: un paso sin nada de lado no deja una columna vacía a la derecha', pq1.ladoVacio, JSON.stringify(pq1));
     ok('«Dejar para luego» arriba, a la vuelta de siempre', (await p.getAttribute('[data-axw-as="salir"]', 'href')) === '/home/' && (await p.$eval('[data-axw-as="salir"]', e => getComputedStyle(e).display !== 'none')));
     await ctx.close();
-    ({ p, ctx } = await abre(nav, base('sin_configurar'), { ancho: 390 }));
+    ({ p, ctx } = await abre(nav, base('sin_configurar'), { ancho: 390, alto: 664 }));   // 390×844 con la barra del navegador enseña unos 664 (Experiencia, 15-oct)
     ok('390: sin carril (las mesas móviles no lo llevan)', await p.$eval('[data-axw-as="carril"]', e => getComputedStyle(e).display === 'none'));
     const pq3 = await porQue(p);
-    ok('390: los dos bloques arriba de los campos, sin scroll de lado, y el primer campo a la vista sin desplazar (no lo tapan)',
-       pq3.enIzq && pq3.encima && !pq3.scrollX && pq3.campoTop != null && pq3.campoTop < pq3.alto, JSON.stringify(pq3));
+    ok('390×664 (móvil real): los dos bloques arriba de los campos, sin scroll de lado, y el primer campo ENTERO a la vista sin desplazar',
+       pq3.enIzq && pq3.encima && !pq3.scrollX && pq3.campoBottom != null && pq3.campoBottom <= pq3.alto, JSON.stringify(pq3));
+    if (SHOT) { await p.evaluate(() => document.fonts && document.fonts.ready); await p.waitForTimeout(200); await p.screenshot({ path: path.join(SHOT, 'paso_es_390x664.png') }); }
     await ctx.close();
     // un opcional: su consecuencia y «Saltar este paso», que vuelve al cierre del módulo sin llamar a nada que guarde
     const bo = base('sin_configurar');

@@ -63,7 +63,8 @@ if sal.returncode == 0:
 
 # F10 y F12 (15-oct): cada trozo está en el fichero REAL de Lawang las veces dichas y el sustituto hace lo que dice
 S5 = [x for x in build.COMODIDAD_INSTANCIA if 'CUENTAS_BANCARIAS).length === 1' in x[2] or "valor: 'si', label: '¿De quién es esta cuenta?'" in x[2]]
-otros = [x for x in build.COMODIDAD_INSTANCIA if x not in mios and x not in S5]
+M6DOC = [x for x in build.COMODIDAD_INSTANCIA if 'minmax(min(100%,200px),1fr)' in x[2] or 'lw-tab-usuarios' in x[1]]
+otros = [x for x in build.COMODIDAD_INSTANCIA if x not in mios and x not in S5 and x not in M6DOC]
 ok('F10 y F12 en COMODIDAD_INSTANCIA (mascota.js, nav.js, facturas)', sorted(x[0] for x in otros) == sorted(['intranet/v4/assets/mascota.js', 'intranet/v4/assets/nav.js', 'intranet/v4/facturas/index.html']), [x[0] for x in otros])
 for rel_, viejo, nuevo, veces in otros:
     tt = open(os.path.join(build.LAWANG, *rel_.split('/')), encoding='utf-8').read()
@@ -190,6 +191,43 @@ hito = [x for x in build.OCULTA_POR_MODULO if x[0] == 'intranet/v4/vencimientos/
 tv = open(os.path.join(build.LAWANG, 'intranet', 'v4', 'vencimientos', 'index.html'), encoding='utf-8').read()
 ok('S5 · «Ajustar hito» en OCULTA_POR_MODULO por contratos, y el botón está una vez en Lawang', len(hito) == 1 and 'data-axw-sin="contratos"' in hito[0][2] and tv.count(hito[0][1]) == 1,
    hito and tv.count(hito[0][1]))
+
+# 4h + M6 (bbm-comodidad, 15-oct-2026): filas de dos campos del editor que se apilan si no caben; sin la pestaña vacía «Usuarios y roles»
+ok('4h/M6: tres tuplas (fila de dos, botón y panel de Usuarios y roles)', len(M6DOC) == 3, len(M6DOC))
+for rel_, viejo, nuevo, veces in M6DOC:
+    t_ = open(os.path.join(build.LAWANG, *rel_.split('/')), encoding='utf-8').read()
+    ok('4h/M6 · %s: el trozo de Lawang está las veces dichas (%d)' % (viejo[:60], veces), t_.count(viejo) == veces, t_.count(viejo))
+tl_ = open(os.path.join(build.LAWANG, 'intranet', 'v4', 'assets', 'editores.js'), encoding='utf-8').read()
+fila = [x for x in M6DOC if x[0].endswith('editores.js')][0]
+ok('4h: filaDosDoc es la única que lleva la rejilla 1fr 1fr de las filas de dos', tl_.count(fila[1]) == 1 and 'function filaDosDoc(host)' in tl_[:tl_.index(fila[1])][-200:], '')
+ah_ = open(os.path.join(build.LAWANG, 'intranet', 'v4', 'ajustes', 'index.html'), encoding='utf-8').read()
+for rel_, viejo, nuevo, veces in M6DOC:
+    if rel_.endswith('ajustes/index.html'): ah_ = ah_.replace(viejo, nuevo)
+ok('M6: en la instancia no queda ni rastro de la pestaña ni del panel', 'usuarios' not in ah_.split('data-lw-tab=')[1:] and 'lw-panel-usuarios' not in ah_ and 'lw-tab-usuarios' not in ah_)
+aj_ = open(os.path.join(build.LAWANG, 'intranet', 'v4', 'assets', 'ajustes.js'), encoding='utf-8').read()
+ok('M6: ajustes.js abre «empresa» si el hash pide una pestaña sin botón (desdeHash)', "var bt = PESTANAS.indexOf(h) >= 0 ? document.querySelector('[data-lw-tab=\"' + h + '\"]') : null;" in aj_
+   and "return PESTANAS.indexOf(h) >= 0 ? h : 'empresa';" in aj_)
+
+# M7 (bbm-comodidad, 15-oct-2026): Ajustes sin jerga. Cada trozo está en Lawang las veces dichas (el build pararía si no), ninguna frase nueva
+# vuelve a decir «base de datos», «código», «servidor», «fase siguiente» ni «no esta pantalla», y todas tienen su inglés y su indonesio.
+JERGA = ('base de datos', 'código', 'servidor', 'fase siguiente', 'no esta pantalla', 'funciones de la base', 'la instalación')
+M7 = [x for x in build.TEXTOS_INSTANCIA + build.TEXTOS_ALQUILER
+      if ('ajustes/index.html' in x[0] or x[0].endswith('ajustes.js')) and any(j in x[1] for j in JERGA)]
+ok('M7: seis trozos de Ajustes (cabecera, candado, dos avisos de ajuste, pausa y cierre)', len(M7) == 6, len(M7))
+for rel_, viejo, nuevo, veces in M7:
+    t_ = open(os.path.join(build.LAWANG, *rel_.split('/')), encoding='utf-8').read()
+    ok('M7 · %s: el trozo de Lawang está las veces dichas (%d)' % (viejo[:60], veces), t_.count(viejo) == veces, t_.count(viejo))
+    ok('M7 · %s: sin jerga' % nuevo[:60], not any(j in nuevo for j in JERGA), nuevo)
+import re as _re
+for rel_, viejo, nuevo, veces in M7:
+    m_ = _re.search(r"data-lwt>([^<]+)</p>|'([^']+)';$", nuevo)
+    frase = m_ and (m_.group(1) or m_.group(2))
+    if frase:
+        ok('M7 · %s: tiene inglés e indonesio en MENU_I18N' % frase[:60], set(build.MENU_I18N.get(frase, {})) >= {'en', 'id'}, frase)
+nodo = '. Cada ajuste tiene su formato y su rango: fuera de él no se guarda. Pausar los envíos y cerrar la intranet, en cambio, los puede hacer cualquier admin.'
+ok('M7: el trozo de texto que queda tras el candado tiene inglés e indonesio', set(build.MENU_I18N.get(nodo, {})) >= {'en', 'id'})
+sm_ = open(os.path.join(AQUI, 'setup_modulos.js'), encoding='utf-8').read()
+ok('M7: setup_modulos ya no habla de «lo que fijó el estudio al publicarlo» (es, en, id)', 'fijó el estudio' not in sm_ and sm_.count('El ERP sigue en los idiomas con los que se instaló.') == 3)
 
 if fallos:
     print('MAL test_comodidad_instancia: %d/%d' % (total - len(fallos), total))
