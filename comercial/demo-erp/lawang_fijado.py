@@ -21,6 +21,7 @@ QUÉ GARANTIZA (revisión previa nº 311, Backend+Frontend+Deploy+Seguridad):
 
     python lawang_fijado.py --raiz        # imprime la carpeta de Lawang en el sha fijado (para node y la consola)
     python lawang_fijado.py --comprueba   # extrae/verifica y dice qué sha, cuántos ficheros y cuánto tardó
+    python lawang_fijado.py pendientes    # la COLA de lo que Lawang main tiene y el ERP aún no (se calcula, no se escribe; ver abajo)
 """
 import hashlib
 import io
@@ -377,7 +378,115 @@ def sube(destino, por, motivo, sin_red=False):
             pass
 
 
+# ── pendientes: la cola de lo que el ERP aún no tiene de Lawang (15-oct-2026, owner: «un sitio donde lo guardemos para luego exportarlo») ──
+# Se CALCULA del fijado y de Lawang main: los commits (no merges) que tocan RUTAS, cada uno por su sha con su mensaje y sus rutas. Lo único
+# escrito a mano es `lawang_portados.json`: por sha de Lawang, qué parche de build.py trae ya ese arreglo al ERP (y por tanto se quita al
+# subir el fijado por encima). «Exportar» = `sube` (arriba), que prueba todo y fija el sha; esto solo dice cuánto hay y qué parches caen.
+PORTADOS = os.path.join(AQUI, 'lawang_portados.json')
+
+
+def lee_portados():
+    """{sha de Lawang: {'parche', 'quitar'}} del registro (por sha, nunca por nombre de fichero). Sin fichero = nada portado."""
+    try:
+        return json.load(open(PORTADOS, encoding='utf-8'))
+    except OSError:
+        return {}
+    except ValueError as e:
+        sale('no puedo leer %s: %s' % (PORTADOS, e))
+
+
+def _git_en(repo, *args):
+    r = subprocess.run(['git', '-C', repo, '--no-optional-locks', '-c', 'core.autocrlf=false', '-c', 'gc.auto=0'] + list(args),
+                       capture_output=True, timeout=120)
+    return None if r.returncode else r.stdout.decode('utf-8', 'replace')
+
+
+def pendientes(destino='origin/main', repo=None, rango_aterrizaje=None):
+    """La cola calculada. Devuelve un dict:
+      fijado, destino (shas completos), commits [{sha, fecha, asunto, rutas, portado: None|{parche, quitar}}],
+      se_quitan [{parche, quitar, shas}] (parches cuyo arreglo entra al subir el fijado a `destino`),
+      caducados [{sha, parche}] (registro cuyo sha YA está en el fijado: el parche tendría que haberse quitado),
+      toca_aterrizaje (True/False/None: si `rango_aterrizaje` «a..b» toca RUTAS; None si no se pidió).
+    `repo` = dónde leer los objetos (por defecto el clon principal de Lawang; aterriza.py pasa la copia, que ya tiene el sha empujado)."""
+    repo = repo or almacen()
+    fijado = lee_fijado()['sha']
+    nuevo = (_git_en(repo, 'rev-parse', '--verify', '-q', destino + '^{commit}') or '').strip()
+    if len(nuevo) != 40:
+        sale('no encuentro %r en %s' % (destino, repo))
+    portados = {}
+    for pref, fila in lee_portados().items():
+        if not isinstance(fila, dict) or not fila.get('parche') or not fila.get('quitar'):
+            sale('%s: la fila %r necesita «parche» y «quitar»' % (PORTADOS, pref))
+        full = (_git_en(repo, 'rev-parse', '--verify', '-q', pref + '^{commit}') or '').strip()
+        if len(pref) < 9 or len(full) != 40:
+            sale('%s: %r no es un sha (≥9 hex) que exista en Lawang' % (PORTADOS, pref))
+        portados[full] = fila
+    out = _git_en(repo, 'log', '--no-merges', '--name-only', '--format=@@%H%x09%ad%x09%s', '--date=short',
+                  '%s..%s' % (fijado, nuevo), '--', *RUTAS)
+    if out is None:
+        sale('no puedo recorrer %s..%s en %s (¿el fijado no está en ese repo?)' % (fijado[:9], nuevo[:9], repo))
+    commits = []
+    for linea in out.splitlines():
+        if linea.startswith('@@'):
+            sha, fecha, asunto = (linea[2:].split(chr(9), 2) + ['', ''])[:3]
+            commits.append({'sha': sha, 'fecha': fecha, 'asunto': asunto, 'rutas': [], 'portado': portados.get(sha)})
+        elif linea.strip() and commits:
+            commits[-1]['rutas'].append(linea.strip())
+    por_parche = {}
+    for c in commits:
+        if c['portado']:
+            f = por_parche.setdefault(c['portado']['parche'], {'parche': c['portado']['parche'], 'quitar': c['portado']['quitar'], 'shas': []})
+            f['shas'].append(c['sha'])
+    caducados = [{'sha': s, 'parche': f['parche']} for s, f in portados.items()
+                 if _git_en(repo, 'merge-base', '--is-ancestor', s, fijado) is not None]
+    toca = None
+    if rango_aterrizaje:
+        nombres = _git_en(repo, 'diff', '--name-only', rango_aterrizaje, '--', *RUTAS)
+        toca = bool((nombres or '').strip())
+    return {'fijado': fijado, 'destino': nuevo, 'commits': commits, 'se_quitan': list(por_parche.values()),
+            'caducados': caducados, 'toca_aterrizaje': toca}
+
+
+def linea_aterrizaje(p):
+    """Una línea para quien aterriza en Lawang, o '' si lo que subió no toca lo que lee el ERP. Solo informa, nunca bloquea."""
+    if not p['toca_aterrizaje'] or not p['commits']:
+        return ''
+    return ('esto toca rutas que el ERP lee de Lawang y NO le llega hasta subir el fijado: %d commits pendientes '
+            '(`python proyectos/AxisWorks/comercial/demo-erp/lawang_fijado.py pendientes`; subirlo = `sube main`, lo hace Deploy en el tren).'
+            % len(p['commits']))
+
+
+def imprime_pendientes(p, todo=False):
+    cs = p['commits']
+    print('Lawang fijado %s → %s: %d commits pendientes que tocan lo que lee el ERP (%d ya portados a mano)'
+          % (p['fijado'][:9], p['destino'][:9], len(cs), sum(1 for c in cs if c['portado'])))
+    for c in (cs if todo else cs[:40]):
+        marca = '  [PORTADO a mano: %s]' % c['portado']['parche'] if c['portado'] else ''
+        rutas = ', '.join(c['rutas'][:3]) + (' (+%d)' % (len(c['rutas']) - 3) if len(c['rutas']) > 3 else '')
+        print('  %s %s %s%s\n      %s' % (c['sha'][:9], c['fecha'], c['asunto'][:110], marca, rutas))
+    if not todo and len(cs) > 40:
+        print('  … %d más (--todo los lista)' % (len(cs) - 40))
+    for f in p['se_quitan']:
+        print('AL SUBIR el fijado se quita el parche %s: %s (sus commits: %s)' % (f['parche'], f['quitar'], ', '.join(s[:9] for s in f['shas'])))
+    for f in p['caducados']:
+        print('REGISTRO CADUCADO: %s ya está en el fijado; quita el parche %s de build.py y su fila de lawang_portados.json' % (f['sha'][:9], f['parche']))
+
+
 if __name__ == '__main__':
+    if len(sys.argv) > 1 and sys.argv[1] == 'pendientes':
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')   # en Windows, con la salida redirigida, cp1252 no tiene «→» ni «≥»
+        def _a(n, d=None):
+            return sys.argv[sys.argv.index(n) + 1] if n in sys.argv and sys.argv.index(n) + 1 < len(sys.argv) else d
+        if '--fetch' in sys.argv and git('fetch', '-q', 'origin') is None:
+            sale('git fetch de Lawang falló (sin red)')
+        p = pendientes(_a('--destino', 'origin/main'), repo=_a('--en'), rango_aterrizaje=_a('--aterrizaje'))
+        if '--linea' in sys.argv:
+            print(linea_aterrizaje(p))
+        elif '--json' in sys.argv:
+            print(json.dumps(p, ensure_ascii=False, indent=1))
+        else:
+            imprime_pendientes(p, todo='--todo' in sys.argv)
+        sys.exit(0)
     if len(sys.argv) > 2 and sys.argv[1] == 'sube':
         def _arg(n, d=''):
             return sys.argv[sys.argv.index(n) + 1] if n in sys.argv and sys.argv.index(n) + 1 < len(sys.argv) else d
