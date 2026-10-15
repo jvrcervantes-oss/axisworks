@@ -683,6 +683,15 @@ async function rellenaAlquiler(p, o = {}) {
 
   // ── 10. Cada paso a 390 y 1440 en es/en/id: sin scroll horizontal, sin español en en/id; ningún código sin frase ──────────────────────────
   const PANTALLAS = [['clase', {}], ['flota', { conProducto: true }], ['reglas_reserva', { conProducto: true, conPrevio: true }], ['alquileres_previos', { conProducto: true }], ['entrega', { conProducto: true, conPrevio: true }]];
+  // ── La tienda sin configurar trae «Oficina», el valor de fábrica de la columna (137500), en español: no se propone (verificador de bbm, 15-oct)
+  {
+    b = base({ conProducto: true }); b.entrega.ajustes.sede_nombre = 'Oficina';
+    ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=entrega' }));
+    await p.waitForSelector('[data-axw-sr="entrega"] [data-axw-campo="sede_nombre"]', { state: 'attached' });
+    const v = await p.$eval('[data-axw-campo="sede_nombre"]', e => e.value);
+    ok('Entrega: el «Oficina» de fábrica (apagada y sin coordenadas) no sale como nombre de la tienda', v !== 'Oficina', JSON.stringify(v));
+    await ctx.close();
+  }
   // ── S1 · medida de toques (Experiencia, S0): «setup de un cliente nuevo: reglas, una moto alquilada hasta el viernes, Entrega». Un toque = un
   // clic o un campo rellenado por la persona; abrir la página no cuenta. El «antes» (todo a la vista, código anterior a S1a) se cuenta con los
   // mismos datos: reglas 1 (guardar lo que trae la base) · ya alquilado 5 (¿alguna fuera?, moto, desde, hasta, guardar) · entrega 6 (encender,

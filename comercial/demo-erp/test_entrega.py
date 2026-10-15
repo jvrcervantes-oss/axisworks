@@ -229,6 +229,22 @@ bloque_lineas = re.findall(r"'((?:[^'\\]|\\.)*)'\s*:\s*'", bloque)
 repetidas = sorted({c for c in bloque_lineas if bloque_lineas.count(c) > 1})
 mira('ninguna clave repetida en EN_ENT' + (' (' + ', '.join(repetidas) + ')' if repetidas else ''), not repetidas)
 
+# Historial: lo que firma el sistema o el estudio (la carga inicial, «migración 20261008138500») sale como «Sistema · Configuración inicial» y su motivo
+# interno no se pinta (verificador de bbm, 15-oct-2026); lo que firma una persona (correo, o su id de usuario) sale tal cual.
+m_sis = re.search(r'\n  function deSistema\(q\) \{.*?\n  \}', JS, re.S)
+mira('el historial distingue al sistema de una persona (deSistema)', bool(m_sis))
+if m_sis:
+    casos_sis = {'admin@bbm.com': False, 'a"<svg onload="x">@x.com': False, '0b0f6a9e-1c2d-4e5f-8a9b-0c1d2e3f4a5b': False,
+                 'migración 20261008138500': True, 'carga inicial': True, 'postgres': True, '': True}
+    r_sis = subprocess.run(['node', '-e', m_sis.group(0) + ';process.stdout.write(JSON.stringify(' + json.dumps(list(casos_sis)) + '.map(deSistema).concat([deSistema(null)])))'],
+                           capture_output=True, text=True, encoding='utf-8')
+    obt = json.loads(r_sis.stdout or 'null')
+    quiere = list(casos_sis.values()) + [True]
+    mira('deSistema: correo o id de usuario = persona; migración, carga inicial, postgres, vacío o null = sistema' + ('' if obt == quiere else ' (sale %r)' % obt),
+         obt == quiere)
+mira('una fila del sistema pinta «Sistema» y «Configuración inicial», nunca su quien ni su motivo',
+     "C.celda(sis ? T('Sistema') : x && x.quien), C.celda(sis ? T('Configuración inicial') : x && x.motivo)" in CODIGO)
+
 if fallos:
     print('FALLOS (%d de %d):\n  ' % (len(fallos), casos) + '\n  '.join(fallos))
     sys.exit(1)

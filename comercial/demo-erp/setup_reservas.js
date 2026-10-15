@@ -1314,7 +1314,11 @@
       st.partes = PT;
       var b1 = PT.nueva(U('sr_p_donde')), b2 = PT.nueva(U('sr_p_cuanto')), b3 = PT.nueva(U('sr_p_final'));
       var r1 = rejilla(220);
-      campo(r1, 'sede_nombre', U('sr_sede_nombre'), c.sede_nombre, { max: 120, soloLee: c.activa });
+      // Sin coordenadas y apagada, la tienda nunca se configuró: el nombre que trae la base es el de fábrica de la columna («Oficina», en español, de
+      // 137500) y no un dato de Dion (verificador de bbm, 15-oct-2026). Se propone el nombre comercial de Ajustes, o vacío; la base lo exige al guardar.
+      var sedeDeFabrica = !c.activa && c.sede_lat == null;
+      var marca = String((st.ctx.ajustes && st.ctx.ajustes.marca) || '').trim();
+      campo(r1, 'sede_nombre', U('sr_sede_nombre'), sedeDeFabrica ? marca : c.sede_nombre, { max: 120, soloLee: c.activa });
       campo(r1, 'sede_coord', U('sr_sede_coord'), c.sede_lat == null ? '' : c.sede_lat + ', ' + c.sede_lng, { max: 60, soloLee: c.activa, ayuda: c.activa ? U('sr_sede_fija') : U('sr_sede_coord_ayuda') });
       b1.appendChild(r1);
       var r2 = rejilla(160);

@@ -145,6 +145,8 @@
     "Cuándo": "Kapan",
     "Quién": "Siapa",
     "Motivo": "Alasan",
+    "Sistema": "Sistem",
+    "Configuración inicial": "Konfigurasi awal",
     "Entre": "Antara",
     "y": "dan",
     "Sin límite": "Tanpa batas",
@@ -232,6 +234,7 @@
     'Motivo del cambio (obligatorio)': 'Reason for the change (required)', 'Guardar': 'Save', 'Descartar los cambios': 'Discard changes',
     'Últimos cambios': 'Latest changes', 'Aún no hay cambios registrados.': 'No changes recorded yet.',
     'Versión': 'Version', 'Cuándo': 'When', 'Quién': 'Who', 'Motivo': 'Reason',
+    'Sistema': 'System', 'Configuración inicial': 'Initial setup',
     'Entre': 'Between', 'y': 'and', 'Sin límite': 'No limit', 'Fuera de rango': 'Out of range',
     'Solo la administración puede ver y cambiar la entrega. Si necesitas cambiarla, pídelo a un administrador.': 'Only the administration can see and change delivery. If you need to change it, ask an administrator.',
     'No tienes la herramienta «Entrega»: pídesela al administrador principal en Usuarios.': 'You do not have the «Delivery» tool: ask the main administrator for it in Users.',
@@ -419,8 +422,17 @@
     oculta($v('versiones-vacio'), v.length > 0);
     if (!v.length) { vacia(t); return; }
     C.tabla(t, [['Versión'], ['Cuándo'], ['Quién'], ['Motivo']], v.map(function (x) {
-      return h('tr', { 'data-version': x && x.version != null ? String(x.version) : null }, [C.celda(x && x.version, 'axw-nw'), C.celda(C.fechaHora(x && x.cuando), 'axw-nw'), C.celda(x && x.quien), C.celda(x && x.motivo)]);
+      var sis = deSistema(x && x.quien);
+      return h('tr', { 'data-version': x && x.version != null ? String(x.version) : null, 'data-autor': sis ? 'sistema' : 'persona' },
+        [C.celda(x && x.version, 'axw-nw'), C.celda(C.fechaHora(x && x.cuando), 'axw-nw'), C.celda(sis ? T('Sistema') : x && x.quien), C.celda(sis ? T('Configuración inicial') : x && x.motivo)]);
     }));
+  }
+  // Quién: un cambio de una persona lo firma su correo (o, sin correo, su id de usuario: _entrega_exige_admin). Cualquier otro autor es el sistema o el
+  // estudio («migración 20261008138500», la carga inicial, postgres) y su motivo es interno, en español y para nosotros: Dion ve «Sistema · Configuración
+  // inicial» en su idioma (verificador de bbm, 15-oct-2026). El historial no se toca: solo cómo se pinta.
+  function deSistema(q) {
+    q = String(q == null ? '' : q).trim();
+    return !(q.indexOf('@') > 0 || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q));
   }
   function pintaQuien(d) {
     var t = d.tarifa, a = d.ajustes;
