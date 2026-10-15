@@ -1164,10 +1164,14 @@
     if (b) { if (!b.disabled) b.textContent = TT('Todo bien: marcar «Bien» las {n} sin contestar', { n: n }); oculta(b.parentNode, !n && !b.disabled); }
   }
   function todoBien(btn) {
-    var pend = E.orden.revisiones.filter(sinTocar);
+    var pend = E.orden.revisiones.filter(sinTocar).map(function (r) { return r.id; });
     if (!pend.length || !C.ocupa(btn)) return;
-    pend.reduce(function (p, r) { return p.then(function () { return marca(r.id, 'bien'); }); }, Promise.resolve())
-      .then(function () { C.libera(btn); cuentaRev(); });
+    var fin = function () { C.libera(btn); cuentaRev(); };
+    // cada una se vuelve a mirar JUSTO antes de marcarla: lo que el mecánico ha tocado mientras tanto (un «Mal» que ya se guardó, uno que se está
+    // guardando o que se quedó sin guardar) no se pisa con «Bien» (revisor de f33ef3f). Y si se ha salido de la orden, la cadena para.
+    pend.reduce(function (p, id) {
+      return p.then(function () { var r = E.orden ? revDe(id) : null; return r && sinTocar(r) ? marca(id, 'bien') : undefined; });
+    }, Promise.resolve()).then(fin, fin);
   }
   function revDe(id) { return E.orden.revisiones.filter(function (r) { return r.id === id; })[0]; }
   function tarjetaRev(r) {
