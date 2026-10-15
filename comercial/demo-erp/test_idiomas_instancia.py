@@ -18,6 +18,26 @@ def mira(nombre, ok):
         fallos.append(nombre)
 
 
+def entorno_node():
+    """El entorno para `node limpia_publico.js` (15-oct-2026). node_modules no va en git: una copia de AxisWorks (un worktree de
+    `proyectos/_sesiones`) no lo trae, limpia_publico.js no encontraba terser, el comentario de Lawang con 'es-ES' se quedaba y
+    comprueba_idiomas abortaba la prueba entera sin su resumen (bbm-comodidad, base_axw). Si aquí no hay node_modules completo,
+    se añade a NODE_PATH el de esta misma carpeta en el clon principal (el .git común del worktree), como hace el gate
+    (tools/test.py). Solo añade una ruta de búsqueda."""
+    env = dict(os.environ)
+    if os.path.isfile(os.path.join(AQUI, 'node_modules', '.package-lock.json')):
+        return env
+    try:
+        g = lambda *a: subprocess.run(['git', *a], cwd=AQUI, capture_output=True, text=True, encoding='utf-8').stdout.strip()
+        rel = os.path.relpath(AQUI, g('rev-parse', '--show-toplevel'))
+        nm = os.path.join(os.path.dirname(g('rev-parse', '--path-format=absolute', '--git-common-dir')), rel, 'node_modules')
+    except (OSError, ValueError):
+        return env
+    if os.path.isfile(os.path.join(nm, '.package-lock.json')):
+        env['NODE_PATH'] = os.pathsep.join([nm] + ([env['NODE_PATH']] if env.get('NODE_PATH') else []))
+    return env
+
+
 def prepara(cambia=None, extra=None):
     d = tempfile.mkdtemp()
     for f in FICHEROS:
@@ -257,17 +277,28 @@ if r == 'pasa':
     viejo_aqui = build.AQUI
     # comprueba_idiomas mira lo que SALE, y lo que sale ya pasó por limpia_publico.js (sin comentarios): un comentario de Lawang que nombra
     # 'es-ES' no es código (12-oct-2026: Lawang 8d9c76a7 escribió uno en datos.js y esta prueba lo contaba como formato sin id-ID).
-    lp = subprocess.run(['node', os.path.join(build.AQUI, 'limpia_publico.js'), d], capture_output=True, text=True, encoding='utf-8')
-    mira('el paquete de prueba pasa por limpia_publico.js como el de verdad', lp.returncode == 0)
-    mira('comprueba_idiomas da por bueno el paquete recién parcheado', (lambda: (build.comprueba_idiomas(d, ['id', 'en']), True)[1])())
-    roto = tempfile.mkdtemp(); shutil.rmtree(roto); shutil.copytree(d, roto)
-    os.makedirs(os.path.join(roto, 'x'), exist_ok=True)
-    open(os.path.join(roto, 'x', 'y.js'), 'w', encoding='utf-8').write("var f = d.toLocaleDateString('es-ES');\n")
-    try:
-        build.comprueba_idiomas(roto, ['id', 'en']); res = 'pasa'
-    except SystemExit:
-        res = 'para'
-    mira("comprueba_idiomas PARA si queda un 'es-ES' sin su id-ID", res == 'para')
+    lp = subprocess.run(['node', os.path.join(build.AQUI, 'limpia_publico.js'), d], capture_output=True, text=True, encoding='utf-8',
+                        env=entorno_node())
+    if lp.returncode == 0:
+        mira('el paquete de prueba pasa por limpia_publico.js como el de verdad', True)
+        try:
+            build.comprueba_idiomas(d, ['id', 'en']); bueno = True
+        except SystemExit:
+            bueno = False
+        mira('comprueba_idiomas da por bueno el paquete recién parcheado', bueno)
+        roto = tempfile.mkdtemp(); shutil.rmtree(roto); shutil.copytree(d, roto)
+        os.makedirs(os.path.join(roto, 'x'), exist_ok=True)
+        open(os.path.join(roto, 'x', 'y.js'), 'w', encoding='utf-8').write("var f = d.toLocaleDateString('es-ES');\n")
+        try:
+            build.comprueba_idiomas(roto, ['id', 'en']); res = 'pasa'
+        except SystemExit:
+            res = 'para'
+        mira("comprueba_idiomas PARA si queda un 'es-ES' sin su id-ID", res == 'para')
+    else:
+        # sin limpiar, los comentarios de Lawang siguen y las dos medidas de comprueba_idiomas no dirían nada: se dice por qué
+        falta = re.search(r"Cannot find module '[^']+'", (lp.stderr or '') + (lp.stdout or ''))
+        motivo = falta.group(0) if falta else ((lp.stderr or lp.stdout or '').strip().splitlines() or ['sin salida'])[-1][:160]
+        mira('limpia_publico.js falló (¿sin node_modules?): %s — sin limpiar no se puede medir comprueba_idiomas' % motivo, False)
 
 print('%d/%d' % (casos - len(fallos), casos))
 for f in fallos:
