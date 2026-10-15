@@ -262,14 +262,30 @@
       imp = h('select', { 'data-campo': 'impuesto_id' }, ops); imp.value = impActual;
     }
     var activo = null;
+    // bbm-comodidad S4 (15-oct-2026, «1, 2 o 3 campos a rellenar por paso»): a la vista el nombre y el precio, con su moneda y su unidad en la
+    // etiqueta; unidad y moneda (ya vienen puestas), referencia, impuesto y descripción, plegados. Un obligatorio vacío (unidad o moneda) abre el plegado.
+    var campoPrecio = campo('ex-f-precio', T('Precio por unidad'), f.precio, T('Sin impuestos: el impuesto se suma en la factura.'));
+    var rotPrecio = campoPrecio.querySelector('label');
+    var mas = C.pliegue([
+      campo('ex-f-unidad', T('Unidad de medida'), f.unidad, T('ud, hora, viaje, km…')),
+      campo('ex-f-moneda', T('Moneda (3 letras)'), f.moneda),
+      campo('ex-f-referencia', T('Referencia (opcional)'), f.referencia, T('No se puede repetir en el catálogo.'))
+    ].concat(imp ? [campo('ex-f-impuesto', T('Impuesto por defecto'), imp, null, true)] : [])
+     .concat([campo('ex-f-descripcion', T('Descripción (opcional)'), f.descripcion, null, true)]), function () {
+      var o = imp && imp.value ? imp.options[imp.selectedIndex] : null;
+      return [limpia(f.unidad.value) + ' · ' + limpia(f.moneda.value).toUpperCase(), limpia(f.referencia.value), o ? o.textContent : null, limpia(f.descripcion.value)];
+    });
+    function etiquetaPrecio() {
+      var mon = limpia(f.moneda.value).toUpperCase(), uni = limpia(f.unidad.value);
+      rotPrecio.textContent = T('Precio por unidad') + (mon || uni ? ' (' + [mon, uni].filter(Boolean).join(' / ') + ')' : '');
+      mas.actualiza();
+    }
+    [f.moneda, f.unidad].forEach(function (el) { el.addEventListener('input', etiquetaPrecio); });
+    etiquetaPrecio();
+    if (!limpia(f.unidad.value) || !limpia(f.moneda.value)) mas.open = true;   // un obligatorio sin valor no se esconde
     var nodos = [h('div', { class: 'ex-form' }, [
       campo('ex-f-nombre', T('Nombre del extra'), f.nombre, T('Como sale en la línea de la factura.'), true),
-      campo('ex-f-referencia', T('Referencia (opcional)'), f.referencia, T('No se puede repetir en el catálogo.')),
-      campo('ex-f-unidad', T('Unidad de medida'), f.unidad, T('ud, hora, viaje, km…')),
-      campo('ex-f-precio', T('Precio por unidad'), f.precio, T('Sin impuestos: el impuesto se suma en la factura.')),
-      campo('ex-f-moneda', T('Moneda (3 letras)'), f.moneda)
-    ].concat(imp ? [campo('ex-f-impuesto', T('Impuesto por defecto'), imp, null, true)] : [])
-     .concat([campo('ex-f-descripcion', T('Descripción (opcional)'), f.descripcion, null, true)]))];
+      campoPrecio, mas])];
     if (!nuevo) {
       activo = h('input', { type: 'checkbox', id: 'ex-f-activo', 'data-campo': 'activo' }); activo.checked = !!x.activo;
       nodos.push(h('label', { class: 'ex-check', for: 'ex-f-activo' }, [activo, h('span', { text: T('Activo: se ofrece al facturar') })]));
@@ -303,7 +319,7 @@
     var d = C.dialogo(nuevo ? T('Nuevo extra') : T('Editar extra'), nodos, [
       { texto: nuevo ? T('Crear extra') : T('Guardar cambios'), accion: 'ex-modal-confirmar', primario: true, alclic: function (bt, dd) {
         var r = datos();
-        if (r.e) { if (r.el) marca(r.el, true); dd.error(r.e); return; }
+        if (r.e) { if (r.el) { marca(r.el, true); if (mas.contains(r.el)) mas.open = true; } dd.error(r.e); return; }
         if (!C.ocupa(bt)) return;
         dd.error('');
         guarda({ p_id: nuevo ? null : x.id, p_datos: r.v }).then(function (res) {

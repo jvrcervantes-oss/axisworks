@@ -19,7 +19,9 @@ var TOPES = { nombre_negocio: 120, descripcion: 800, horario: 300, ubicacion: 30
   servicio_nombre: 80, servicio_descripcion: 300, servicio_precio: 80, pregunta: 160, respuesta: 500, tonos: ['cercano','formal','neutro'], idiomas_validos: ['es','en','id'] };
 var sb = {
   rpc: function (n, a) { window.__llamadas.push('rpc:' + n);
+    if (n === 'wab_ficha_guarda' && window.__guardaCae) return Promise.reject(new TypeError('Failed to fetch'));   // la llamada se cae del todo (sin red)
     if (n === 'wab_ficha_historial') return Promise.resolve({ data: { versiones: [] }, error: null });
+    if (n === 'modulos_activos_datos') return Promise.resolve({ data: { activos: ['whatsapp_bot'], idiomas: { ofrecidos: ['en', 'id'], defecto: 'id' } }, error: null });
     return Promise.resolve({ data: { ficha: null, version: null, topes: TOPES, estado: window.__estado }, error: null }); },
   auth: { getSession: function () { return Promise.resolve({ data: { session: { access_token: 'JWT-DEL-ADMIN' } } }); } }
 };
@@ -82,7 +84,7 @@ window.toast = function (m) { window.__toast = m; };
   ok('1.6 el canje manda EXACTAMENTE código + los dos ids (y la sesión como Bearer): nada más', JSON.stringify(Object.keys(canje.c).sort()) === JSON.stringify(['accion', 'code', 'phone_number_id', 'waba_id']) && canje.c.accion === 'canjea' && canje.auth === 'Bearer JWT-DEL-ADMIN');
   const volcado = await p.evaluate(() => document.documentElement.outerHTML + JSON.stringify(Object.assign({}, localStorage)) + JSON.stringify(Object.assign({}, sessionStorage)) + document.cookie);
   ok('1.7 el navegador nunca ve ninguna clave (ni en el DOM, ni en storage, ni en cookies)', !volcado.includes(TOKEN_FALSO) && !/EAA[A-Za-z0-9]{20,}/.test(volcado));
-  ok('1.8 la pantalla no escribe en ninguna tabla: solo RPC de lectura/ficha y la edge', (await p.evaluate(() => window.__llamadas)).every((x) => /^rpc:wab_(ficha_(datos|historial)|seguimiento_datos)$/.test(x)));
+  ok('1.8 la pantalla no escribe en ninguna tabla: solo RPC de lectura/ficha y la edge', (await p.evaluate(() => window.__llamadas)).every((x) => /^rpc:(wab_(ficha_(datos|historial)|seguimiento_datos)|modulos_activos_datos)$/.test(x)));
   ok('1.9 con el número conectado se avisa con un toast', await p.evaluate(() => window.__toast) === 'Número conectado.');
   await p.screenshot({ path: SHOT.replace('.png', '_1440.png') });
 
@@ -105,6 +107,17 @@ window.toast = function (m) { window.__toast = m; };
   await p.evaluate(() => window.__fbCb({ authResponse: null }));
   await p.waitForFunction(() => document.querySelector('[data-wb="conexion-error"]').textContent.length > 0);
   ok('3.1 cerrar el popup deja un mensaje claro y el botón libre', (await p.textContent('[data-wb="conexion-error"]')).includes('cerrado la ventana') && await p.isEnabled('[data-accion="conectar"]'));
+
+  // 3b. ficha nueva: los idiomas marcados son los de la instancia (su base: id + en), nunca un español fijo (agencia-c0, 15-oct-2026)
+  await p.waitForFunction(() => document.querySelectorAll('[data-campo="idiomas"] input[data-idioma]:checked').length > 0, null, { timeout: 5000 }).catch(() => {});   // se marcan al llegar, sin frenar la ficha
+  const marcados = await p.$$eval('[data-campo="idiomas"] input[data-idioma]', cs => cs.filter(c => c.checked).map(c => c.getAttribute('data-idioma')).sort().join());
+  ok('3.2 ficha nueva: marca los idiomas de la instancia leídos de la base (en + id), no «es»', marcados === 'en,id', marcados);
+  ok('3.3 con los idiomas ya llegados se puede guardar', await p.isEnabled('[data-accion="guardar"]'));
+  await p.evaluate(() => { window.__guardaCae = true; });
+  await p.fill('[data-campo="motivo"]', 'Primera ficha'); await p.click('[data-accion="guardar"]');
+  await p.waitForFunction(() => !document.querySelector('[data-wb="error"]').classList.contains('wb-oculto'), null, { timeout: 5000 }).catch(() => {});
+  ok('3.4 si la llamada de guardar se cae del todo, Guardar vuelve y lo dice', await p.isEnabled('[data-accion="guardar"]') && (await p.textContent('[data-wb="error"]')).includes('no ha respondido'), await p.textContent('[data-wb="error"]'));
+  await p.evaluate(() => { window.__guardaCae = false; });
 
   // 4. móvil
   await p.setViewportSize({ width: 390, height: 900 });

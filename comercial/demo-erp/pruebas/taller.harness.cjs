@@ -96,6 +96,7 @@ function nuevaBase(o = {}) {
 const ERR = (code, message, hint, details) => ({ st: code === 'P0002' ? 404 : (code === '42501' ? 403 : 400), j: { code, message, hint: hint || null, details: details || null } });
 const esAdmin = u => u === 'admin';
 const correo = u => u + '@taller.test';
+const iso = n => new Date(n > 1e11 ? n : Date.UTC(2026, 9, 14, 8, 0) + n * 3600000).toISOString();   // las horas del modelo son números pequeños
 function faltan(B, o) {
   const f = [];
   ['frente', 'atras', 'izquierda', 'derecha', 'cuentakm'].forEach(r => { if (!B.fotos.some(x => x.orden_id === o.id && x.ranura === r && x.estado === 'confirmada')) f.push('foto:' + r); });
@@ -126,8 +127,10 @@ function rpc(B, n, a, u) {
   switch (n) {
     case 'taller_datos': {
       const motos = B.motos.filter(m => m.estado !== 'baja').map(m => { const v = vivaDe(m.id); const p = B.productos.find(x => x.id === m.producto_id);
-        return { id: m.id, numero: m.numero_unidad, identificador: m.identificador, modelo_id: m.producto_id, modelo: p.nombre, estado: m.estado,
-                 orden_viva: v && !v.oculta ? { id: v.id, numero: v.numero, paso: v.paso, estado: v.estado, abierta_por_email: correo(v.abierta_por) } : null }; });
+        const x = { id: m.id, numero: m.numero_unidad, identificador: m.identificador, modelo_id: m.producto_id, modelo: p.nombre, estado: m.estado,
+                 orden_viva: v && !v.oculta ? { id: v.id, numero: v.numero, paso: v.paso, estado: v.estado, abierta_por_email: correo(v.abierta_por) } : null };
+        if (!B.o.sinHistorial) x.con_historial = esAdmin(u) ? B.ordenes.some(o => o.unidad_id === m.id) : null;   // 20261015014000 (F13): solo admin
+        return x; });
       const vivas = B.ordenes.filter(o => o.estado !== 'cerrada' && !o.oculta).map(o => { const m = B.motos.find(x => x.id === o.unidad_id);
         return { id: o.id, numero: o.numero, unidad_id: o.unidad_id, identificador: m.identificador, modelo: XSS_MOD, paso: o.paso, estado: o.estado, motivo_tipo: o.motivo_tipo, abierta_por_email: correo(o.abierta_por) }; });
       const volver = esAdmin(u) ? B.motos.filter(m => m.estado === 'taller' && !vivaDe(m.id)).map(m => ({ m, ult: B.ordenes.filter(o => o.unidad_id === m.id && o.estado === 'cerrada').sort((x, y) => y.cerrada_en - x.cerrada_en)[0] }))
@@ -137,6 +140,8 @@ function rpc(B, n, a, u) {
       return { st: 200, j: r };
     }
     case 'taller_orden_abre': {
+      if (B.abreTruco && B.abreTruco.id === a.p_unidad && B.abreTruco.err) return B.abreTruco.err;
+      if (B.abreTruco && B.abreTruco.id === a.p_unidad) return { st: 200, j: Object.assign({ id: uuid(), numero: 'OT-09999', estado: 'abierta', paso: 'km', motivo_tipo: a.p_motivo_tipo }, B.abreTruco.j) };
       if (!['devolucion', 'revision', 'averia', 'accidente'].includes(a.p_motivo_tipo)) return ERR('22023', 'Elige el motivo', 'motivo_tipo');
       const m = B.motos.find(x => x.id === a.p_unidad);
       if (!m) return ERR('P0002', 'Esa moto no existe: recarga la pantalla', 'moto_no_existe');
@@ -154,6 +159,21 @@ function rpc(B, n, a, u) {
       B.ordenes.push(o);
       if (m.estado === 'disponible') m.estado = 'taller';
       return { st: 200, j: { id: o.id, numero: o.numero, retomada: false, estado: 'abierta', paso: 'km', motivo_tipo: o.motivo_tipo, unidad_estado: m.estado, adopta: o.adopto_unidad } };
+    }
+    case 'orden_trabajo_datos': {
+      if (B.o.partesFalla) return ERR('42501', 'No tienes acceso a Taller', 'sin_acceso');
+      if (a.p_estado != null && !['abierta', 'cerrada'].includes(a.p_estado)) return ERR('22023', 'orden_trabajo_datos: estado desconocido');
+      const lim = Math.min(Math.max(a.p_limit || 100, 1), 500);
+      let l = B.ordenes.filter(o => a.p_estado == null || (a.p_estado === 'cerrada' ? o.estado === 'cerrada' : o.estado !== 'cerrada'))
+        .sort((x, y) => (y.abierta_en - x.abierta_en) || (x.id < y.id ? 1 : -1));
+      if (a.p_despues) { const i = l.findIndex(o => o.id === a.p_despues); if (i < 0) return ERR('22023', 'orden_trabajo_datos: cursor desconocido'); l = l.slice(i + 1); }
+      const pag = l.slice(0, lim);
+      return { st: 200, j: { ordenes: pag.map(o => { const m = B.motos.find(x => x.id === o.unidad_id);
+        return { id: o.id, numero: o.numero, unidad_id: o.unidad_id, unidad: m.identificador, unidad_numero: m.numero_unidad, producto: XSS_MOD, unidad_estado: m.estado,
+                 motivo: o.motivo || null, bloquea_reservas: true, estado: o.estado, abierta_en: iso(o.abierta_en), abierta_por_email: correo(o.abierta_por),
+                 cerrada_en: o.cerrada_en ? iso(o.cerrada_en) : null, cerrada_por_email: o.cerrada_por ? correo(o.cerrada_por) : null, coste: null, moneda: null,
+                 nota_cierre: o.nota_cierre || null, mia: o.abierta_por === u }; }),
+        unidades: [], unidades_recortadas: false, siguiente: pag.length === lim ? pag[pag.length - 1].id : null } };
     }
     case 'taller_orden_datos': {
       const o = B.ordenes.find(x => x.id === a.p_orden);
@@ -192,18 +212,23 @@ function rpc(B, n, a, u) {
     case 'taller_orden_resultado': {
       if (!['lista', 'espera_recambio', 'fuera_servicio'].includes(a.p_resultado)) return ERR('22023', 'El resultado es lista, espera o fuera', 'resultado');
       if (a.p_motivo_excepcion && !esAdmin(u)) return ERR('42501', 'Solo la administración', 'excepcion_solo_admin');
+      const exc = a.p_motivo_excepcion == null ? '' : String(a.p_motivo_excepcion).trim();
+      if (exc && (exc.length < 3 || exc.length > 500 || /[\u0000-\u001f\u007f]/.test(exc))) return ERR('22023', 'Escribe por qué (de 3 a 500 caracteres, en una línea)', 'motivo_excepcion');
       const { o, e } = viva(B, a.p_orden, u); if (e) return e;
       const m = B.motos.find(x => x.id === o.unidad_id);
       if (a.p_resultado === 'espera_recambio') { o.estado = 'espera_recambio'; o.resultado = 'espera_recambio'; o.nota_cierre = a.p_nota; o.paso = 'resultado';
         return { st: 200, j: { numero: o.numero, estado: 'espera_recambio', resultado: 'espera_recambio', unidad_estado: m.estado, para_volver: false } }; }
       const f = faltan(B, o);
       if (a.p_resultado === 'lista' && f.length && !a.p_motivo_excepcion) return ERR('22023', 'Para dejarla lista faltan: ' + f.join(', '), 'faltan_para_lista', JSON.stringify(f));
-      Object.assign(o, { estado: 'cerrada', resultado: a.p_resultado, cerrada_por: u, cerrada_en: Date.now(), nota_cierre: a.p_nota, paso: 'resultado' });
+      Object.assign(o, { estado: 'cerrada', resultado: a.p_resultado, cerrada_por: u, cerrada_en: Date.now(), nota_cierre: a.p_nota, paso: 'resultado', motivo_excepcion: f.length ? (exc || null) : null });
       if (a.p_resultado === 'lista' && !o.adopto_unidad && m.estado === 'taller') m.estado = 'disponible';
       return { st: 200, j: { numero: o.numero, estado: 'cerrada', resultado: a.p_resultado, unidad_estado: m.estado, para_volver: a.p_resultado === 'lista' && o.adopto_unidad && m.estado === 'taller' } };
     }
     case 'taller_moto_devuelve': {
       if (!esAdmin(u)) return ERR('42501', 'Devolver motos a disponible lo hace la administración', 'solo_admin');
+      const mot = String(a.p_motivo || '').trim();
+      if (mot.length < 3 || mot.length > 200 || /[\u0000-\u001f\u007f]/.test(mot)) return ERR('22023', 'Di el motivo', 'motivo');
+      if ((a.p_unidades || []).length > 100) return ERR('22023', 'Como mucho 100 motos a la vez', 'tope');
       const dev = [], rech = [];
       (a.p_unidades || []).forEach(id => { const m = B.motos.find(x => x.id === id); if (!m) return rech.push({ id, porque: 'no_existe' }); if (m.estado !== 'taller') return rech.push({ id, porque: 'no_esta_en_taller' }); m.estado = 'disponible'; dev.push(id); });
       return { st: 200, j: { devueltas: dev, rechazadas: rech } };
@@ -311,7 +336,8 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
         if (B.latencia) await duerme(B.latencia);
         const u = (/^Bearer tok-(\w+)$/.exec(req.headers().authorization || '') || [])[1];
         const r = rpc(B, rp[1], JSON.parse(req.postData() || '{}'), u);
-        if (B.cortaTras === rp[1]) { B.cortaTras = null; return route.abort('connectionreset'); }   // la base ESCRIBIÓ y la respuesta se pierde
+        if (B.cortaTras === rp[1]) { B.cortaTras = null; return route.abort('connectionreset'); }
+        if (B.cortaN && B.cortaN[0] === rp[1] && --B.cortaN[1] === 0) { B.cortaN = null; return route.abort('connectionreset'); }   // la base ESCRIBIÓ y la respuesta se pierde
         if (B.falla502 === rp[1]) { B.falla502 = null; return route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ message: 'Bad gateway' }) }); }   // escribió y el proxy contesta 502 sin código
         return route.fulfill({ status: r.st, contentType: 'application/json', body: JSON.stringify(r.j) });
       }
@@ -405,7 +431,11 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.click('[data-tl="resultados"] [data-accion="tl-moto"]');
     await enPaso(p, 'moto');
     ok('paso 1: URL #m=<moto>&p=moto y foco en el título', (await p.evaluate(() => location.hash)) === '#m=' + U.m1 + '&p=moto' && (await p.evaluate(() => document.activeElement.getAttribute('data-tl'))) === 'paso-titulo');
-    ok('paso 1: línea compacta «1/6 · DK 1234 AB»', (await p.$eval('[data-tl="linea"]', e => e.textContent)) === '1/6 · DK 1234 AB');
+    ok('paso 1: línea «Langkah 1 dari 6 · DK 1234 AB» (P1: como el asistente de contratos)', (await p.$eval('[data-tl="linea"]', e => e.textContent)) === 'Langkah 1 dari 6 · DK 1234 AB');
+    ok('P1: la lista de pasos lleva los 6 pasos, el 1.º marcado como actual y ninguno hecho; a 390 px no se ve',
+       (await p.$$eval('[data-tl="pasos"] li', ls => ls.length)) === 6 && (await p.$$eval('[data-tl="pasos"] li[aria-current="step"]', ls => ls.length)) === 1
+       && (await p.$eval('[data-tl="pasos"] li:first-child', l => l.getAttribute('aria-current'))) === 'step' && !(await p.$('[data-tl="pasos"] li[data-hecho]'))
+       && (await p.$eval('[data-tl="pasos"]', e => getComputedStyle(e).display)) === 'none');
     const pie = await p.evaluate(() => { const b = document.querySelector('.tl-pie'), r = b.getBoundingClientRect(), s = document.querySelector('[data-tl="siguiente"]').getBoundingClientRect(); return { pos: getComputedStyle(b).position, bottom: Math.round(r.bottom), h: innerHeight, bh: s.height }; });
     ok('390 px: barra Atrás/Siguiente fija abajo con botones de 56 px', pie.pos === 'fixed' && pie.bottom === pie.h && pie.bh >= 56, JSON.stringify(pie));
     ok('paso 1: solo lee (ninguna escritura)', B.llamadas.every(x => x[0].endsWith('_datos')));
@@ -619,6 +649,18 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     semillas.forEach(f => { f.estado = 'caducada'; });
     await sinScroll(p, 'paso 4 (390)');
     await shot(p, 'paso4_390_id.png', true);
+    {   // P1 (15-oct): la misma orden en el ordenador — lista de pasos a la izquierda, los 3 primeros con ✓ y «Fotos» como actual
+      const hshP1 = await p.evaluate(() => location.hash);
+      const g = await abre(B, { ancho: 1440, alto: 900, hash: hshP1 });
+      await espera(g.p, () => { const s = document.querySelector('[data-tl="vista-paso"]'); return s && s.getAttribute('data-paso') === 'fotos' && document.querySelectorAll('[data-tl="pasos"] li').length === 6; });
+      const lp = await g.p.evaluate(() => { const ol = document.querySelector('[data-tl="pasos"]'), ls = [...ol.querySelectorAll('li')];
+        return { vis: getComputedStyle(ol).display, hechos: ls.filter(l => l.getAttribute('data-hecho') === '1').length, actual: ls.findIndex(l => l.getAttribute('aria-current') === 'step'),
+                 marcas: ls.map(l => l.querySelector('.tl-pd').textContent).join(''), linea: document.querySelector('[data-tl="linea"]').textContent }; });
+      ok('P1 1440: lista de pasos visible con 3 hechos (✓), «Fotos» actual y la línea «Langkah 4 dari 6»', lp.vis === 'flex' && lp.hechos === 3 && lp.actual === 3 && lp.marcas === '✓✓✓456' && lp.linea.indexOf('Langkah 4 dari 6') === 0, JSON.stringify(lp));
+      await sinScroll(g.p, 'P1 pasos (1440)'); await sinTraducir(g.p, 'P1 pasos 1440 id');
+      await shot(g.p, 'paso4_1440_id.png', true);
+      await g.ctx.close();
+    }
     ctx.__sinRed = true; await ctx.setOffline(true);
     await sig(p); await espera(p, () => /Belum tersimpan/.test(document.querySelector('[data-tl="paso-estado"]').textContent));
     ok('sin red en fotos → Siguiente: no avanza', (await paso(p)) === 'fotos');
@@ -708,9 +750,51 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     // pestaña Listas por modelo
     await p.click('[data-accion="tl-tab-listas"]'); await espera(p, () => !!document.querySelector('[data-tl="l-revisiones"]') || !!document.querySelector('[data-accion="tl-l-basica"]') || !!document.querySelector('[data-tl="l-nueva"]'));
     ok('Listas por modelo: URL #listas y lista común', (await p.evaluate(() => location.hash)) === '#listas' && (await p.$$('[data-l-rev]')).length === 2);
-    await p.fill('[data-tl="l-nueva"] [data-f="clave"]', 'luces'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Lampu'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Lights');
+    const vistos = sel => p.evaluate(s => [...document.querySelectorAll(s + ' input, ' + s + ' select, ' + s + ' textarea')]
+      .filter(e => e.checkVisibility({ contentVisibilityAuto: true, visibilityProperty: true })).map(e => e.getAttribute('data-f')), sel);
+    ok('S4 · revisión nueva: a la vista solo los dos nombres (la clave sale sola, la posición plegada)', JSON.stringify(await vistos('[data-tl="l-nueva"]')) === '["nombre_id","nombre_en"]', JSON.stringify(await vistos('[data-tl="l-nueva"]')));
+    ok('S4 · pieza nueva: referencia y los dos nombres (coste, moneda y revisión sugerida plegados)', JSON.stringify(await vistos('[data-tl="l-pieza-nueva"]')) === '["ref","nombre_id","nombre_en"]', JSON.stringify(await vistos('[data-tl="l-pieza-nueva"]')));
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Lampu'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Lights');
     await p.click('[data-accion="tl-l-rev-nueva"]'); await espera(p, () => document.querySelectorAll('[data-l-rev]').length === 3);
     ok('añadir revisión a la lista común: taller_revision_guarda con producto nulo', llamadas(B, 'taller_revision_guarda').slice(-1)[0][1].p_datos.producto_id === null);
+    ok('S4 · la clave sale del nombre en inglés: «Lights» → lights', llamadas(B, 'taller_revision_guarda').slice(-1)[0][1].p_datos.clave === 'lights');
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Lampu belakang'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Lights');
+    await p.click('[data-accion="tl-l-rev-nueva"]'); await espera(p, () => document.querySelectorAll('[data-l-rev]').length === 4);
+    ok('S4 · si ya hay una con esa clave en la lista, lleva _2 (no choca)', llamadas(B, 'taller_revision_guarda').slice(-1)[0][1].p_datos.clave === 'lights_2');
+    await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_id"]', 'Busi'); await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_en"]', 'Spark plug');
+    await p.click('[data-accion="tl-l-rec-nueva"]'); for (let i = 0; i < 100 && !llamadas(B, 'taller_recambio_guarda').length; i++) await p.waitForTimeout(50);   // la cuenta de llamadas vive en Node
+    const pz = llamadas(B, 'taller_recambio_guarda').slice(-1)[0][1].p_datos;
+    ok('S4 · pieza sin coste: ni coste ni moneda (la moneda puesta solo viaja con un coste)', pz.coste_ref === null && pz.moneda === null, JSON.stringify(pz));
+    // la moneda de la instancia (lwMonedaBase, de su base) sale puesta en la pieza nueva y viaja con el coste
+    await p.evaluate(() => { window.lwMonedaBase = () => 'IDR'; document.querySelector('[data-accion="tl-tab-listas"]').click(); });
+    await espera(p, () => { const e = document.querySelector('[data-tl="l-pieza-nueva"] [data-f="moneda"]'); return e && e.value === 'IDR'; });
+    await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_id"]', 'Oli'); await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_en"]', 'Oil');
+    await p.evaluate(() => { document.querySelector('[data-tl="l-pieza-nueva"] [data-axw="mas-datos"]').open = true; });
+    await p.fill('[data-tl="l-pieza-nueva"] [data-f="coste"]', '45000');
+    const nPz = llamadas(B, 'taller_recambio_guarda').length;
+    await p.click('[data-accion="tl-l-rec-nueva"]'); for (let i = 0; i < 100 && llamadas(B, 'taller_recambio_guarda').length === nPz; i++) await p.waitForTimeout(50);
+    const pz2 = llamadas(B, 'taller_recambio_guarda').slice(-1)[0][1].p_datos;
+    ok('S4 · pieza con coste: viaja con la moneda de la instancia ya puesta (IDR)', pz2.coste_ref === 45000 && pz2.moneda === 'IDR', JSON.stringify(pz2));
+    // un nombre sin letras ni cifras: no se envía y sale el campo de la clave, para escribirla a mano
+    await espera(p, () => !!document.querySelector('[data-tl="l-nueva"]'));
+    const nRev = llamadas(B, 'taller_revision_guarda').length;
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', '***'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', '!!!');
+    await p.click('[data-accion="tl-l-rev-nueva"]');
+    ok('S4 · nombre sin letras ni cifras: no se envía y sale el campo de la clave', llamadas(B, 'taller_revision_guarda').length === nRev
+       && await p.$eval('[data-tl="l-clave"]', e => !e.classList.contains('axw-oculto')));
+    // los nombres vacíos dicen lo de los nombres, no lo de la clave
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', ''); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', '');
+    await p.click('[data-accion="tl-l-rev-nueva"]');
+    ok('S4 · sin nombres: el error es el de los nombres', llamadas(B, 'taller_revision_guarda').length === nRev && /línea|baris|line/i.test(await p.$eval('[data-tl="l-estado"]', e => e.textContent)), await p.$eval('[data-tl="l-estado"]', e => e.textContent));
+    // la base rechaza la clave (otra persona acaba de crear «brakes» y esta pantalla aún no la ve): sale el campo con la propuesta, para cambiarla
+    await p.evaluate(() => document.querySelector('[data-accion="tl-tab-listas"]').click());
+    await espera(p, () => { const c = document.querySelector('[data-tl="l-clave"]'); return c && c.classList.contains('axw-oculto'); });
+    B.revs.push({ id: 'rev-de-otra-sesion', producto_id: null, clave: 'brakes', nombre_id: 'Rem', nombre_en: 'Brakes', orden: 100, activa: true });
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Rem'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Brakes');
+    await p.click('[data-accion="tl-l-rev-nueva"]');
+    await espera(p, () => !document.querySelector('[data-tl="l-clave"]').classList.contains('axw-oculto'));
+    ok('S4 · la base rechaza la clave: sale el campo con la propuesta escrita', (await p.inputValue('[data-tl="l-clave"] input')) === 'brakes');
+    B.revs.splice(B.revs.findIndex(x => x.id === 'rev-de-otra-sesion'), 1);
     await sinScroll(p, 'listas (1440)'); await sinTraducir(p, 'admin id');
     await ctx.close();
 
@@ -768,6 +852,21 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     ({ p, ctx } = await abre(B, { usuario: 'admin' }));
     ok('setup sin hacer, admin con Flota: botón a «Listas por modelo»; enlace solo para rutas del mismo origen', !!(await p.$('[data-tl="setup"] [data-accion="tl-tab-listas"]'))
        && (await p.$$eval('[data-tl="setup"] a', as => as.map(a => a.getAttribute('href')))).join() === '/usuarios/');
+    // P3 (bbm-comodidad, 15-oct): cada falta se resuelve desde el aviso — la lista básica en un clic y «Invitar a un mecánico»
+    ok('P3: falta de revisiones → «Usar la lista básica para todos los modelos» en su línea; falta de mecánico → «Undang mekanik» a Usuarios',
+       !!(await p.$('[data-tl="setup"] [data-setup="revisiones"] [data-accion="tl-setup-basica"]'))
+       && (await p.$eval('[data-tl="setup"] [data-setup="mecanico"] a', a => a.textContent.trim())) === 'Undang mekanik');
+    const nBasica = llamadas(B, 'taller_lista_basica').length, nDatos = llamadas(B, 'taller_datos').length;
+    B.setup = { listo: true, pasos: [] };   // lo que diría la base tras cargar la lista común (y con mecánico)
+    await p.click('[data-accion="tl-setup-basica"]');
+    await espera(p, () => { const b = document.querySelector('[data-tl="buscar"]'); return !document.querySelector('[data-tl="setup"]') && b && !b.disabled; });
+    ok('P3: el botón llama UNA vez a taller_lista_basica, relee taller_datos y, configurado, se puede empezar (buscar activo)',
+       llamadas(B, 'taller_lista_basica').length === nBasica + 1 && llamadas(B, 'taller_datos').length > nDatos && !(await p.$eval('[data-tl="buscar"]', e => e.disabled))
+       && ((await p.$eval('[data-tl="raiz"]', e => e.textContent)) || '').includes('Daftar dasar sudah dipasang'));
+    await ctx.close();
+    B.setup = { listo: false, pasos: [{ clave: 'revisiones', hecho: false, obligatorio: true, detalle: 'x', donde: '/taller/#listas', fase: 1 }] };
+    ({ p, ctx } = await abre(B));
+    ok('P3: el mecánico (sin Flota) no ve el botón de la lista básica', !(await p.$('[data-accion="tl-setup-basica"]')));
     await ctx.close();
     B.setup = null;
 
@@ -822,6 +921,267 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
        && (await casillaFija(p, 'izquierda')).estado === 'vacia' && (await casillaFija(p, 'atras')).estado === 'subida', JSON.stringify(subU.map(x => [x.clave.slice(-6), x.u])));
     await sinTraducir(p, 'sin configurar id');
     await ctx.close();
+
+    // ═══ 3c. «Dar por revisadas varias…» (bbm-comodidad F13, 15-oct; revisión previa #345 Backend + Seguridad) ═══
+    {
+      // base: m1 (cerró sin «lista»), m2 (matrícula con XSS) y 4 más en taller sin orden; m3 disponible; m4/m5 con orden de la pantalla vieja (m5, invisible en la lista)
+      const nuevaV = (extra = 4) => { const B3 = nuevaBase(); B3.motos.find(m => m.id === U.m2).estado = 'taller';
+        B3.ordenes = B3.ordenes.filter(o => o.unidad_id !== U.m5);   // m5 sin orden: candidata limpia
+        for (let k = 0; k < extra; k++) B3.motos.push({ id: 'cccccccc-0000-4000-8000-' + String(k).padStart(12, '0'), numero_unidad: 'UND-V' + k, identificador: 'DK ' + (6000 + k) + ' VV', producto_id: P1, estado: 'taller' });
+        return B3; };
+      const candidatas = B3 => B3.motos.filter(m => m.estado === 'taller' && !B3.ordenes.some(o => o.unidad_id === m.id)).map(m => m.id);   // nunca han tenido orden
+      const escrituras = B3 => B3.llamadas.filter(x => !x[0].endsWith('_datos'));
+      const fase = p => p.$eval('[data-tl="varias"]', e => e.getAttribute('data-fase')).catch(() => null);
+      const enFase = (p, f, ms) => espera(p, x => { const e = document.querySelector('[data-tl="varias"]'); return e && e.getAttribute('data-fase') === x; }, f, ms);
+
+      let B3 = nuevaV();
+      ({ p, ctx } = await abre(B3));
+      ok('varias: el mecánico no ve «Dar por revisadas varias…»', !(await p.$('[data-accion="tl-varias"]')));
+      await ctx.close();
+      ({ p, ctx } = await abre(B3, { usuario: 'admin' }));
+      ok('varias: la administración lo ve en «Motos para revisar»', !!(await p.$('[data-tl="sec-revisar"] [data-accion="tl-varias"]')));
+      await p.click('[data-accion="tl-varias"]'); await enFase(p, 'elige');
+      const cand0 = candidatas(B3);
+      const ofrecidas = await p.$$eval('[data-varias-id]', cs => cs.map(c => c.getAttribute('data-varias-id')));
+      ok('varias: ofrece SOLO las de taller que nunca han tenido orden (ni disponibles, ni con orden vieja, ni m1 que tuvo una cerrada), y ninguna marcada de entrada',
+         ofrecidas.length === cand0.length && cand0.every(id => ofrecidas.includes(id)) && !ofrecidas.includes(U.m3) && !ofrecidas.includes(U.m4) && !ofrecidas.includes(U.m1)
+         && (await p.$$eval('[data-varias-id]', cs => cs.every(c => !c.checked))), JSON.stringify([ofrecidas.length, cand0.length]));
+      ok('varias: el motivo nace vacío (sin texto por defecto)', (await p.$eval('[data-tl="varias-motivo"]', e => e.value)) === '');
+      await sinInyeccion(p, 'varias elige'); await sinScroll(p, 'varias elige (390)');
+      await shot(p, 'varias_elige_390_id.png', true);
+      await p.click('[data-accion="tl-varias-sigue"]');
+      ok('varias: sin elegir ninguna no sigue y lo dice', (await fase(p)) === 'elige' && (await p.$eval('[data-tl="varias-estado"]', e => e.textContent)).length > 3);
+      await p.click('[data-accion="tl-varias-todas"]');
+      ok('varias: «Marcar todas» y la cuenta «n de t»', (await p.$$eval('[data-varias-id]', cs => cs.every(c => c.checked)))
+         && (await p.$eval('[data-tl="varias-cuenta"]', e => e.textContent)).includes(cand0.length + ' dari ' + cand0.length));
+      await p.click('[data-accion="tl-varias-sigue"]');
+      ok('varias: sin motivo no sigue', (await fase(p)) === 'elige');
+      await p.fill('[data-tl="varias-motivo"]', 'ab');
+      await p.click('[data-accion="tl-varias-sigue"]');
+      ok('varias: motivo de 2 caracteres no sigue', (await fase(p)) === 'elige');
+      const MOT = 'Status lama dari sistem sebelumnya <b>x</b>';
+      await p.fill('[data-tl="varias-motivo"]', MOT);
+      await p.click('[data-accion="tl-varias-sigue"]'); await enFase(p, 'confirma');
+      const conf = await p.$eval('[data-tl="varias"]', e => e.textContent);
+      ok('varias: la confirmación enseña el número y TODAS las matrículas (Seguridad #345 b)', conf.includes(String(cand0.length)) && B3.motos.filter(m => cand0.includes(m.id)).every(m => conf.includes(m.identificador)));
+      ok('varias: hasta confirmar no se ha escrito nada', escrituras(B3).length === 0);
+      await sinInyeccion(p, 'varias confirma'); await shot(p, 'varias_confirma_390_id.png', true);
+      await p.click('[data-accion="tl-varias-atras"]'); await enFase(p, 'elige');
+      ok('varias: «Volver atrás» conserva lo marcado y el motivo', (await p.$eval('[data-tl="varias-motivo"]', e => e.value)) === MOT && (await p.$$eval('[data-varias-id]', cs => cs.every(c => c.checked))));
+      await p.click('[data-accion="tl-varias-sigue"]'); await enFase(p, 'confirma');
+      const datos0 = llamadas(B3, 'taller_datos').length;
+      B3.latencia = 250;
+      await p.click('[data-accion="tl-varias-confirma"]'); await enFase(p, 'marcha');
+      await p.click('[data-accion="tl-tab-taller"]').catch(() => {});
+      ok('varias: en marcha, la pestaña «Motos» no la corta', (await fase(p)) === 'marcha');
+      await enFase(p, 'fin', 20000);
+      B3.latencia = 0;
+      const ab = llamadas(B3, 'taller_orden_abre'), rs = llamadas(B3, 'taller_orden_resultado');
+      const marca = (ab[0] || [0, {}])[1].p_nota || '';
+      ok('varias: se relee antes de escribir y al acabar', llamadas(B3, 'taller_datos').length >= datos0 + 2);
+      ok('varias: una apertura y un cierre por moto, EN SERIE (abre, cierra, abre, cierra…)', ab.length === cand0.length && rs.length === cand0.length
+         && escrituras(B3).every((x, k) => x[0] === (k % 2 ? 'taller_orden_resultado' : 'taller_orden_abre')));
+      ok('varias: abre con motivo «revision» y la marca de la tanda en la nota (queda congelada en la orden)', /^Tanda \d{4}-\d\d-\d\d \d\d:\d\d · \d+ motos$/.test(marca)
+         && ab.every(x => x[1].p_motivo_tipo === 'revision' && x[1].p_nota === marca) && B3.ordenes.filter(o => o.motivo === marca).length === cand0.length, marca);
+      ok('varias: cierra «lista» con la excepción = marca + motivo (Seguridad #345 c)', rs.every(x => x[1].p_resultado === 'lista' && x[1].p_motivo_excepcion === marca + ' · ' + MOT));
+      ok('varias: cada moto queda con su orden cerrada lista, adoptada, y SIGUE en el taller (devolver es otro paso)',
+         cand0.every(id => B3.ordenes.some(o => o.unidad_id === id && o.estado === 'cerrada' && o.resultado === 'lista' && o.adopto_unidad && o.motivo_excepcion === marca + ' · ' + MOT))
+         && cand0.every(id => B3.motos.find(m => m.id === id).estado === 'taller') && llamadas(B3, 'taller_moto_devuelve').length === 0);
+      ok('varias: el resumen (de lo releído) dice «n de n» y no hay parada', (await p.$eval('[data-tl="varias-hechas"]', e => e.textContent)).includes(cand0.length + ' dari ' + cand0.length) && !(await p.$('[data-tl="varias-parada"]')));
+      await sinInyeccion(p, 'varias fin'); await sinScroll(p, 'varias fin (390)'); await shot(p, 'varias_fin_390_id.png', true);
+      ok('varias: el campo del motivo de la vuelta corta en 120', (await p.$eval('[data-tl="varias-vuelta-motivo"]', e => e.maxLength)) === 120);
+      await p.click('[data-accion="tl-varias-devuelve"]');
+      ok('varias: devolver sin motivo no llama a la base', llamadas(B3, 'taller_moto_devuelve').length === 0);
+      await p.fill('[data-tl="varias-vuelta-motivo"]', 'Sudah dicek pemilik');
+      await p.click('[data-accion="tl-varias-devuelve"]'); await espera(p, () => !!document.querySelector('[data-tl="varias-vueltas"]'));
+      const dv = llamadas(B3, 'taller_moto_devuelve');
+      ok('varias: la devolución es un paso aparte, en UN lote, con la marca en el motivo', dv.length === 1 && dv[0][1].p_unidades.length === cand0.length && dv[0][1].p_motivo === marca + ' · Sudah dicek pemilik');
+      ok('varias: tras devolver, las motos están disponibles y el resumen lo dice (de lo releído)', cand0.every(id => B3.motos.find(m => m.id === id).estado === 'disponible')
+         && (await p.$eval('[data-tl="varias-vueltas"]', e => e.textContent)).includes(cand0.length + ' dari ' + cand0.length));
+      await sinTraducir(p, 'varias id');
+      await p.click('[data-accion="tl-varias-cierra"]');
+      ok('varias: «Volver al taller» cierra el panel', !(await p.$('[data-tl="varias"]')) && !!(await p.$('[data-tl="sec-revisar"]')));
+      await ctx.close();
+
+      // ── paradas: cualquier respuesta que no sea «adopta y nueva» → «cerrada · lista» para la tanda y no reintenta ──
+      const lanza = async (B4, prepara) => {
+        ({ p, ctx } = await abre(B4, { usuario: 'admin' }));
+        await p.click('[data-accion="tl-varias"]'); await enFase(p, 'elige');
+        await p.click('[data-accion="tl-varias-todas"]'); await p.fill('[data-tl="varias-motivo"]', 'Status lama');
+        await p.click('[data-accion="tl-varias-sigue"]'); await enFase(p, 'confirma');
+        if (prepara) prepara();
+        await p.click('[data-accion="tl-varias-confirma"]'); await enFase(p, 'fin', 20000);
+      };
+      for (const [nombre, j] of [['retomada (orden de otra persona)', { retomada: true, adopta: true }], ['no adopta (estaba disponible)', { retomada: false, adopta: false }], ['respuesta sin «adopta»', { retomada: false }]]) {
+        const B4 = nuevaV(2), orden = candidatas(B4), objetivo = orden[1];
+        B4.abreTruco = { id: objetivo, j };
+        await lanza(B4);
+        const mat = B4.motos.find(m => m.id === objetivo).identificador;
+        ok('varias para · ' + nombre + ': no cierra esa orden ni sigue con las demás, y dice en qué matrícula',
+           llamadas(B4, 'taller_orden_resultado').length === 1 && llamadas(B4, 'taller_orden_abre').length === 2
+           && (await p.$eval('[data-tl="varias-parada"]', e => e.textContent)).includes(mat), JSON.stringify(escrituras(B4).map(x => x[0])));
+        ok('varias para · ' + nombre + ': el resumen sale de lo releído (1 revisada; las demás «sin tocar»)', (await p.$eval('[data-tl="varias-hechas"]', e => e.textContent)).includes('1 dari ' + orden.length)
+           && (await p.$$eval('[data-tl="varias-sin-tocar"] li', ls => ls.length)) === orden.length - 1);
+        await ctx.close();
+      }
+      {   // error CON código de la base (orden de la pantalla vieja que se abrió entretanto): para, explica con su número, y no dice «no se sabe»
+        const B4 = nuevaV(2);
+        B4.abreTruco = { id: candidatas(B4)[2], err: ERR('22023', 'Esa moto tiene la orden OT-00077 abierta desde la pantalla anterior de Taller: ciérrala allí antes de usar el asistente', 'orden_vieja_viva') };
+        await lanza(B4);
+        const par = await p.$eval('[data-tl="varias-parada"]', e => e.textContent);
+        ok('varias para · error de la base con código: para en esa moto, con su motivo y sin «no se sabe»', par.includes('OT-00077') && !/Belum pasti/.test(par)
+           && llamadas(B4, 'taller_orden_abre').length === llamadas(B4, 'taller_orden_resultado').length + 1, par);
+        await ctx.close();
+      }
+      {   // respuesta perdida en el 2.º cierre (la base sí escribió): para, dice «no se sabe», no reintenta; el resumen releído cuenta 2
+        const B4 = nuevaV(3);
+        B4.cortaN = ['taller_orden_resultado', 2];
+        await lanza(B4);
+        const par = await p.$eval('[data-tl="varias-parada"]', e => e.textContent);
+        ok('varias para · respuesta perdida: para sin reintentar y lo dice («no se sabe»)', /Belum pasti/.test(par) && llamadas(B4, 'taller_orden_resultado').length === 2 && llamadas(B4, 'taller_orden_abre').length === 2, par);
+        ok('varias para · respuesta perdida: el resumen releído cuenta las 2 que la base sí cerró', (await p.$eval('[data-tl="varias-hechas"]', e => e.textContent)).includes('2 dari '));
+        await ctx.close();
+      }
+      {   // entre confirmar y empezar, otra persona abre una orden en una de las elegidas: la relectura la quita del lote
+        const B4 = nuevaV(2), orden = candidatas(B4), quitada = orden[0];
+        await lanza(B4, () => B4.ordenes.push({ id: uuid(), numero: 'OT-00088', unidad_id: quitada, estado: 'abierta', paso: 'km', km: null, motivo_tipo: 'averia', abierta_por: 'mec2', abierta_en: 9, adopto_unidad: true }));
+        ok('varias: la relectura antes de escribir deja fuera la que otra persona abrió entretanto', !llamadas(B4, 'taller_orden_abre').some(x => x[1].p_unidad === quitada)
+           && llamadas(B4, 'taller_orden_abre').length === orden.length - 1 && (await p.$eval('[data-tl="varias-abiertas"]', e => e.textContent)).includes('OT-00088'));
+        await ctx.close();
+      }
+      {   // MEDIA del revisor (995e05a): una moto que un mecánico cerró «No puede circular» (en taller, sin orden viva, fuera de «Listas para volver») NO se ofrece
+        const B4 = nuevaV(2), fs = B4.motos[5].id;
+        B4.ordenes.push({ id: uuid(), numero: 'OT-00066', unidad_id: fs, estado: 'cerrada', paso: 'resultado', resultado: 'fuera_servicio', abierta_por: 'mec1', abierta_en: 5, cerrada_en: 6, adopto_unidad: true, movio_unidad: true });
+        ({ p, ctx } = await abre(B4, { usuario: 'admin' }));
+        ok('varias: la cerrada «fuera de servicio» sigue en «Motos para revisar» (para el asistente)', (await p.$$eval('[data-tl="para-revisar"] [data-moto-id]', bs => bs.map(b => b.getAttribute('data-moto-id')))).includes(fs));
+        await p.click('[data-accion="tl-varias"]'); await enFase(p, 'elige');
+        await p.click('[data-accion="tl-varias-todas"]');
+        ok('varias: la cerrada «fuera de servicio» NO se ofrece ni entra con «Marcar todas»', !(await p.$(`[data-varias-id="${fs}"]`)));
+        await ctx.close();
+      }
+      {   // base sin 20261015014000 (taller_datos sin con_historial): no hay botón
+        const B4 = nuevaV(2); B4.o.sinHistorial = true;
+        ({ p, ctx } = await abre(B4, { usuario: 'admin' }));
+        ok('varias: sin con_historial en la base no se ofrece la tanda (ni el botón)', !(await p.$('[data-accion="tl-varias"]')) && !!(await p.$('[data-tl="sec-revisar"]')));
+        await ctx.close();
+      }
+      {   // otra persona cierra «lista» (adoptada) una de las elegidas entre confirmar y empezar: no cuenta como de la tanda ni entra en su devolución
+        const B4 = nuevaV(2), orden = candidatas(B4), ajena = orden[0];
+        await lanza(B4, () => { B4.ordenes.push({ id: uuid(), numero: 'OT-00055', unidad_id: ajena, estado: 'cerrada', paso: 'resultado', resultado: 'lista', abierta_por: 'mec2', cerrada_por: 'admin', abierta_en: 7, cerrada_en: 8, adopto_unidad: true, movio_unidad: true }); });
+        ok('varias: la cerrada por otra persona no se intenta, no cuenta como revisada por la tanda y no entra en la devolución',
+           !llamadas(B4, 'taller_orden_abre').some(x => x[1].p_unidad === ajena) && (await p.$eval('[data-tl="varias-hechas"]', e => e.textContent)).includes((orden.length - 1) + ' dari ' + orden.length)
+           && (await p.$eval('[data-accion="tl-varias-devuelve"]', e => e.textContent)).includes(String(orden.length - 1))
+           && (await p.$eval('[data-tl="varias-fuera"]', e => e.textContent)).includes(B4.motos.find(m => m.id === ajena).identificador));
+        await ctx.close();
+      }
+      {   // tope de 100 por tanda
+        const B4 = nuevaV(102);
+        ({ p, ctx } = await abre(B4, { usuario: 'admin' }));
+        await p.click('[data-accion="tl-varias"]'); await enFase(p, 'elige');
+        await p.click('[data-accion="tl-varias-todas"]');
+        const n = await p.$$eval('[data-varias-id]', cs => cs.filter(c => c.checked).length);
+        ok('varias tope: con más de 100, «Marcar las 100 primeras» marca 100', n === 100, n);
+        await p.$$eval('[data-varias-id]', cs => { const c = cs.find(x => !x.checked); c.click(); });
+        await p.fill('[data-tl="varias-motivo"]', 'Status lama');
+        await p.click('[data-accion="tl-varias-sigue"]');
+        ok('varias tope: 101 marcadas no sigue y lo dice', (await fase(p)) === 'elige' && (await p.$eval('[data-tl="varias-estado"]', e => e.textContent)).includes('100'));
+        await sinScroll(p, 'varias 104 motos (390)');
+        await ctx.close();
+      }
+      for (const anchoV of [390, 1440]) {   // inglés, los dos anchos
+        const B4 = nuevaV(2);
+        ({ p, ctx } = await abre(B4, { usuario: 'admin', idioma: 'en', ancho: anchoV }));
+        await p.click('[data-accion="tl-varias"]'); await enFase(p, 'elige');
+        await p.click('[data-accion="tl-varias-todas"]'); await p.fill('[data-tl="varias-motivo"]', 'Old status');
+        await p.click('[data-accion="tl-varias-sigue"]'); await enFase(p, 'confirma');
+        await sinScroll(p, 'varias confirma ' + anchoV + ' en'); await sinTraducir(p, 'varias ' + anchoV + ' en');
+        await p.click('[data-accion="tl-varias-confirma"]'); await enFase(p, 'fin', 20000);
+        await sinScroll(p, 'varias fin ' + anchoV + ' en'); await sinTraducir(p, 'varias fin ' + anchoV + ' en');
+        await shot(p, 'varias_fin_' + anchoV + '_en.png', true);
+        await ctx.close();
+      }
+    }
+
+    // ═══ S9. «Partes hechos» (owner 15-oct-2026: «superadmin no es mecánico pero puedo ver los partes para ver si todo está bien o qué») ═══
+    // La administración mira los partes cerrados en SOLO LECTURA: lista de 25 en 25 con «Ver más» (cursor), el parte entero por id, fotos una a una por la
+    // edge (ver) y vuelta a la lista con el foco en su fila. Invariante: abrir y mirar NO llama a nada que escriba (solo *_datos) ni pinta una casilla.
+    {
+      const nuevaS9 = () => {
+        const B9 = nuevaBase();
+        for (let i = 0; i < 30; i++) B9.ordenes.push({ id: uuid(), numero: 'OT-1' + String(i).padStart(4, '0'), unidad_id: U.m3, estado: 'cerrada', paso: 'resultado', km: 1000 + i, gasolina: 3,
+          motivo_tipo: 'revision', motivo: i === 29 ? XSS_REV : null, resultado: 'lista', abierta_por: 'mec1', abierta_en: 100 + i, cerrada_en: 100 + i, cerrada_por: 'mec1',
+          nota_cierre: i === 29 ? 'Semua baik' : null, adopto_unidad: false, movio_unidad: true });
+        B9.ordenes[0].cerrada_en = 1; B9.ordenes[0].cerrada_por = 'admin';   // OT-00001: de la pantalla anterior (sin paso)
+        const nueva = B9.ordenes[B9.ordenes.length - 1];
+        ['frente', 'atras', 'izquierda', 'derecha', 'dano'].forEach(r => B9.fotos.push({ id: uuid(), orden_id: nueva.id, ranura: r, clave: 'k9' + r, estado: 'confirmada' }));
+        B9.respuestas.push({ orden_id: nueva.id, revision_id: B9.revs[0].id, resultado: 'bien', nota: null, autor: 'mec1' },
+                           { orden_id: nueva.id, revision_id: B9.revs[2].id, resultado: 'atencion', nota: 'Kencangkan', autor: 'mec1' });
+        return { B9, nueva, vieja: B9.ordenes[0] };
+      };
+      const escrituras = B => B.llamadas.filter(x => !/_datos$/.test(x[0])).map(x => x[0]);
+      const filas = p => p.$$eval('[data-tl="partes"] [data-accion="tl-parte"]', bs => bs.length);
+      {   // un mecánico no tiene la pestaña ni entra por la URL
+        const { B9 } = nuevaS9();
+        ({ p, ctx } = await abre(B9, { usuario: 'mec1', hash: '#partes' }));
+        ok('S9 mecánico: sin pestaña «Partes hechos»', await p.$eval('[data-accion="tl-tab-partes"]', e => e.classList.contains('axw-oculto')));
+        ok('S9 mecánico: #partes lo deja en el inicio y no lee los partes', (await p.$eval('[data-tl="raiz"]', e => e.getAttribute('data-modo'))) === 'inicio' && llamadas(B9, 'orden_trabajo_datos').length === 0);
+        await ctx.close();
+      }
+      for (const [idioma, anchoS9] of [['id', 390], ['en', 1440]]) {
+        const { B9, nueva, vieja } = nuevaS9();
+        ({ p, ctx } = await abre(B9, { usuario: 'admin', idioma, ancho: anchoS9 }));
+        const pre = idioma + ' ' + anchoS9 + ': ';
+        ok('S9 ' + pre + 'la administración ve la pestaña', !(await p.$eval('[data-accion="tl-tab-partes"]', e => e.classList.contains('axw-oculto'))));
+        await p.click('[data-accion="tl-tab-partes"]');
+        await espera(p, () => !!document.querySelector('[data-tl="partes"]'));
+        const l1 = llamadas(B9, 'orden_trabajo_datos');
+        ok('S9 ' + pre + 'UNA lectura: cerradas, de 25, sin cursor', l1.length === 1 && l1[0][1].p_estado === 'cerrada' && l1[0][1].p_limit === 25 && l1[0][1].p_despues == null, JSON.stringify(l1));
+        ok('S9 ' + pre + '25 filas, la más nueva arriba', (await filas(p)) === 25 && (await p.$eval('[data-tl="partes"] [data-accion="tl-parte"]', b => b.getAttribute('data-orden-id'))) === nueva.id);
+        ok('S9 ' + pre + 'la pestaña marcada y la URL #partes', (await p.$eval('[data-accion="tl-tab-partes"]', e => e.getAttribute('aria-selected'))) === 'true' && (await p.evaluate(() => location.hash)) === '#partes');
+        await sinScroll(p, 'S9 lista ' + pre); await sinTraducir(p, 'S9 lista ' + pre);
+        await shot(p, 'partes_lista_' + anchoS9 + '_' + idioma + '.png', true);
+        const id25 = await p.$$eval('[data-tl="partes"] [data-accion="tl-parte"]', bs => bs[24].getAttribute('data-orden-id'));
+        await p.click('[data-accion="tl-partes-mas"]');
+        await espera(p, () => document.querySelectorAll('[data-tl="partes"] [data-accion="tl-parte"]').length > 25);
+        const l2 = llamadas(B9, 'orden_trabajo_datos');
+        ok('S9 ' + pre + '«Ver más» pide con el cursor de la fila 25 y añade el resto (31), sin más «Ver más»', l2.length === 2 && l2[1][1].p_despues === id25 && (await filas(p)) === 31 && !(await p.$('[data-accion="tl-partes-mas"]')), JSON.stringify(l2.map(x => x[1])));
+        // el parte entero
+        await p.click('[data-tl="partes"] [data-orden-id="' + nueva.id + '"]');
+        await espera(p, () => !!document.querySelector('[data-tl="parte"]'));
+        const det = await p.$eval('[data-tl="parte"]', e => e.textContent);
+        ok('S9 ' + pre + 'el parte dice moto, número, km, quién lo cerró y la nota', det.includes('DK 5555 CC') && det.includes('OT-10029') && /1[.,]029 km/.test(det) && det.includes('mec1@taller.test') && det.includes('Semua baik'), det.slice(0, 300));
+        ok('S9 ' + pre + 'el foco va al título del parte', await p.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-tl') === 'parte-titulo'));
+        ok('S9 ' + pre + 'fotos: 5 fijas + 1 de daño, el cuentakm sin foto', (await p.$$eval('[data-tl="parte-fotos"] li', l => l.length)) === 6 && (await p.$$eval('[data-accion="tl-parte-foto"]', l => l.length)) === 5);
+        ok('S9 ' + pre + 'revisiones: 3, con lo contestado y lo que no', (await p.$$eval('[data-tl="parte-revisiones"] li', l => l.length)) === 3 && (await p.$eval('[data-tl="parte-revisiones"]', e => e.textContent)).includes('Kencangkan'));
+        ok('S9 ' + pre + 'SOLO LECTURA: ni una casilla en la vista y solo botones de mirar', await p.$eval('[data-tl="vista-partes"]', v => !v.querySelector('input,select,textarea') && Array.from(v.querySelectorAll('button')).every(b => ['tl-partes-lista', 'tl-parte-foto'].includes(b.getAttribute('data-accion')))));
+        await sinScroll(p, 'S9 parte ' + pre); await sinTraducir(p, 'S9 parte ' + pre);
+        await shot(p, 'partes_parte_' + anchoS9 + '_' + idioma + '.png', true);
+        await p.click('[data-accion="tl-parte-foto"]');
+        await espera(p, () => !!document.querySelector('[data-tl="parte-fotos"] img.tl-foto'));
+        ok('S9 ' + pre + 'Ver abre esa foto (URL firmada de la edge) y solo esa', (await p.$$eval('[data-tl="parte-fotos"] img.tl-foto', l => l.map(i => i.getAttribute('src')))).join() === 'https://erp.test/almacen/' + B9.fotos.find(f => f.orden_id === nueva.id && f.ranura === 'frente').id);
+        await p.click('[data-accion="tl-partes-lista"]');
+        await espera(p, () => !!document.querySelector('[data-tl="partes"]'));
+        ok('S9 ' + pre + 'Volver a la lista: las 31 siguen (sin releer) y el foco en su fila', (await filas(p)) === 31 && llamadas(B9, 'orden_trabajo_datos').length === 2 && await p.evaluate(id => document.activeElement && document.activeElement.getAttribute('data-orden-id') === id, nueva.id));
+        await p.click('[data-tl="partes"] [data-orden-id="' + vieja.id + '"]');
+        await espera(p, () => !!document.querySelector('[data-tl="parte"]'));
+        ok('S9 ' + pre + 'un parte de la pantalla anterior se abre y lo dice', (await p.$eval('[data-tl="parte"]', e => e.textContent)).includes(idioma === 'id' ? 'Order dari layar sebelumnya' : 'Order from the previous screen'));
+        ok('S9 ' + pre + 'mirar NO ha escrito nada (solo lecturas *_datos)', escrituras(B9).length === 0, escrituras(B9).join());
+        ok('S9 ' + pre + 'sin XSS ni errores', await p.evaluate(() => window.__xss === undefined && window.__errores.length === 0));
+        await ctx.close();
+      }
+      {   // entrar por la URL y la base que no contesta
+        const { B9 } = nuevaS9();
+        ({ p, ctx } = await abre(B9, { usuario: 'admin', hash: '#partes' }));
+        await espera(p, () => !!document.querySelector('[data-tl="partes"]'));
+        ok('S9: #partes al recargar abre «Partes hechos»', (await p.$eval('[data-tl="raiz"]', e => e.getAttribute('data-modo'))) === 'partes');
+        await ctx.close();
+        B9.o.partesFalla = true;
+        ({ p, ctx } = await abre(B9, { usuario: 'admin', hash: '#partes' }));
+        await espera(p, () => !!document.querySelector('[data-tl="partes-no-mirado"]'));
+        ok('S9: la base no deja mirar → lo dice (no una lista vacía)', !(await p.$('[data-tl="partes-vacio"]')) && /tidak dapat diperiksa/.test(await p.$eval('[data-tl="partes-no-mirado"]', e => e.textContent)));
+        await ctx.close();
+      }
+    }
 
     // ═══ 4. inglés, 390 y 1440 ═══
     for (const anchoEn of [390, 1440]) {

@@ -7,6 +7,10 @@
 // perdida (se relee, nunca se reenvía sola); el mismo componente en Ajustes; quien no configura; 390/1440 sin scroll horizontal; es/en/id sin español;
 // y que ningún código de la base se queda sin frase. La base real NO se toca: esto prueba la pantalla contra el contrato, no contra Postgres.
 const fs = require('fs');
+const visibles = (p, sel) => p.$eval(sel, z => { const vis = e => e.checkVisibility({ visibilityProperty: true, contentVisibilityAuto: true });   // lo de un <details> cerrado NO se ve (offsetWidth sí lo contaba)
+  const n = new Set(); z.querySelectorAll('input:not([type=hidden]),select,textarea').forEach(e => { if (!vis(e)) return; n.add(e.type === 'radio' ? 'r:' + e.name : e); });
+  window.__vis = [...n].map(x => typeof x === 'string' ? x : (x.getAttribute('data-axw-campo') || x.name || x.type)); return n.size; });
+const visLista = p => p.evaluate(() => (window.__vis || []).join(','));
 const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || 'C:/Users/jvrce/AppData/Roaming/npm/node_modules/@playwright/mcp/node_modules/playwright-core');
 const EXE = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
@@ -39,7 +43,7 @@ const RANGOS = { bloqueo_minutos: [10, 10080], dias_min: [1, 366], dias_max: [1,
 function base(o = {}) {
   const b = { o, llamadas: [], moneda: 'IDR', valores: { reservas_sin_impuesto: 'no', precio_incluye_impuesto: 'si' }, productos: [], garantias: [], seguros: [],
     reglas: { bloqueo_minutos: null, dias_min: null, dias_max: null, horizonte_dias: null, max_por_telefono: null, max_activos: null }, previos: [], revisado: null,
-    entrega: { ajustes: { activa: false, sede_nombre: null, sede_lat: null, sede_lng: null, km_max: null, cobra_recogida: null, tope_dia: 200, tope_mes: 3000, cache_dias: 30 }, version: 1, tarifa: null },
+    entrega: { ajustes: { activa: false, sede_nombre: null, sede_lat: null, sede_lng: null, km_max: 60, cobra_recogida: null, tope_dia: 200, tope_mes: 3000, cache_dias: 30 }, version: 1, tarifa: null },
     falla: Object.assign({}, o.falla || {}), pierde: Object.assign({}, o.pierde || {}) };
   if (o.conProducto) {
     b.productos.push({ id: 'p-honda', numero: 'P-1', nombre: 'Honda Scoopy', activo: true, clase: 'alquiler', precio: 90000, moneda: 'IDR',
@@ -220,7 +224,7 @@ function servidor(b, n, a) {
 
 // ── las páginas: el asistente y Ajustes › Configurar módulos, con la sesión y el idioma simulados ─────────────────────────────────────────────
 const cabeza = (idioma) => `<!doctype html><html lang="${idioma}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}[hidden]{display:none!important}</style><style>${CSS_PIEL}</style><style>${FUENTES}${PIEL_VARS}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}">`;
+<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}${CSS_PIEL ? '' : '[hidden]{display:none!important}'}</style><style>${CSS_PIEL}</style><style>${FUENTES}${PIEL_VARS}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}">`;
 const sesion = (idioma, url) => `<script>
 history.replaceState(null, '', '${url}');
 window.__sinTrad = []; window.__errores = [];
@@ -258,17 +262,38 @@ async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=
 }
 const txt = async (p, sel) => (await p.$(sel)) ? (await p.$eval(sel, e => e.textContent.trim())) : null;
 const clic = async (p, accion) => { await p.click('[data-axw-accion="' + accion + '"]'); await p.waitForTimeout(350); };
+
+// S1c: la flota va en 4 partes (AXW_SETUP.partes). Se va a la parte de un campo con el «Atrás»/«Siguiente» DE VERDAD del asistente
+const parteVista = p => p.$eval('[data-axw-partes] > [data-axw-parte]:not([hidden])', e => Number(e.getAttribute('data-axw-parte'))).catch(() => 0);
+async function aParte(p, k) {
+  for (let i = 0; i < 8; i++) { const a = await parteVista(p); if (!a || a === k) return a; await clic(p, a > k ? 'atras' : 'enviar'); }
+  return parteVista(p);
+}
+async function llena(p, campo, v) {
+  const sel = '[data-axw-campo="' + campo + '"]';
+  const k = await p.$eval(sel, e => { const c = e.closest('[data-axw-parte]'); return c ? Number(c.getAttribute('data-axw-parte')) : 0; });
+  if (k) await aParte(p, k);
+  const pl = await p.$eval(sel, e => { const d = e.closest('details[data-axw-plegado]'); return d && !d.open ? d.getAttribute('data-axw-plegado') : null; });
+  if (pl) await p.click('details[data-axw-plegado="' + pl + '"] > summary');
+  await p.fill(sel, v);
+}
 const pasoActual = p => p.getAttribute('[data-axw-paso]', 'data-axw-paso').catch(() => null);
 const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
 const escrituras = b => b.llamadas.filter(x => !/(_datos|modulos_setup_estado)$/.test(x[0]));
 const errorTxt = p => txt(p, '[data-axw-as="error"]');
 const sinErroresJs = async (p, n) => ok(n + ': sin errores de página', (await p.evaluate(() => window.__errores)).length === 0, JSON.stringify(await p.evaluate(() => window.__errores)));
+// S1c: parte a parte con «Siguiente»; acaba en la 4.ª (fianza), donde el botón ya es «Guardar y seguir»
 async function rellenaAlquiler(p, o = {}) {
-  await p.fill('[data-axw-campo="nombre"]', o.nombre || 'Honda Vario 125');
-  await p.fill('[data-axw-campo="tarifa_1"]', '90.000'); await p.fill('[data-axw-campo="tarifa_7"]', '550.000'); await p.fill('[data-axw-campo="tarifa_30"]', '1.800.000');
-  await p.fill('[data-axw-campo="seguro_1"]', '30.000'); await p.fill('[data-axw-campo="seguro_30"]', '600.000'); await p.fill('[data-axw-campo="seguro_365"]', '1.800.000');
-  await p.fill('[data-axw-campo="fianza"]', '1.000.000'); await p.check('[data-axw-campo="seguro_obligatorio"]');
+  await aParte(p, 1);
+  await p.fill('[data-axw-campo="nombre"]', o.nombre || 'Honda Vario 125'); await p.fill('[data-axw-campo="tarifa_1"]', '90.000');
   await p.fill('[data-axw-campo="mat_0"]', 'dk 1234 ab'); await p.click('[data-axw-sr-accion="anadir-unidad"]'); await p.fill('[data-axw-campo="mat_1"]', 'DK 5678 CD');
+  await clic(p, 'enviar');
+  await p.fill('[data-axw-campo="tarifa_7"]', '550.000'); await p.fill('[data-axw-campo="tarifa_30"]', '1.800.000');
+  await clic(p, 'enviar');
+  await p.fill('[data-axw-campo="seguro_1"]', '30.000'); await p.check('[data-axw-campo="seguro_obligatorio"]');
+  await llena(p, 'seguro_30', '600.000'); await p.fill('[data-axw-campo="seguro_365"]', '1.800.000');
+  await clic(p, 'enviar');
+  await p.fill('[data-axw-campo="fianza"]', '1.000.000');
 }
 
 (async () => {
@@ -292,8 +317,49 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S41 vacío: el color de la unidad y los dos niveles de seguro NO se pintan (sin base)', !(await p.$('[data-axw-campo*="color"]')) && !(await p.$('[data-axw-campo*="basic"]')));
   await clic(p, 'enviar');
   ok('S41 vacío: dice qué falta y no envía', ((await errorTxt(p)) || '').includes('nombre del producto') && escrituras(b).length === 0, await errorTxt(p));
+  // S1c (owner 15-oct: «1, 2 o 3 campos a rellenar por paso»): 4 partes; en cada una ≤ 3 campos a la vista, «Parte k de m», «Siguiente» hasta la última
+  {
+    const parteTxt = () => txt(p, '[data-axw-parte]:not([hidden]) [data-axw-parte-de]');
+    const boton = () => txt(p, '[data-axw-accion="enviar"]');
+    const cuenta = [];
+    ok('S1c parte 1: «Parte 1 de 4», nombre + precio del día + la primera matrícula, y el botón dice «Siguiente»', (await parteVista(p)) === 1 && (await parteTxt()) === 'Parte 1 de 4'
+       && (await visibles(p, '[data-axw-sr="flota"]')) === 3 && (await visLista(p)) === 'nombre,tarifa_1,mat_0' && (await boton()) === 'Siguiente', (await parteTxt()) + ' · ' + await visLista(p) + ' · ' + await boton());
+    if (SHOT) await (await p.$('[data-axw-sr="flota"]')).screenshot({ path: path.join(SHOT, 's1c_flota_p1_1440.png') });
+    await p.fill('[data-axw-campo="nombre"]', 'Honda Vario 125'); await p.fill('[data-axw-campo="mat_0"]', 'DK 1234 AB'); await clic(p, 'enviar');
+    ok('S1c parte 1 sin precio del día: no sigue, lo dice y no envía', (await parteVista(p)) === 1 && ((await errorTxt(p)) || '').includes('precio por día') && escrituras(b).length === 0, await errorTxt(p));
+    await p.fill('[data-axw-campo="tarifa_1"]', '90.000'); await clic(p, 'enviar');
+    ok('S1c «Siguiente»: pasa a la parte 2, borra el error y el foco va a su pregunta', (await parteVista(p)) === 2 && !((await errorTxt(p)) || '').trim()
+       && await p.evaluate(() => document.activeElement && document.activeElement.matches('[data-axw-parte="2"] h3')), await errorTxt(p));
+    cuenta.push(await visibles(p, '[data-axw-sr="flota"]') + ':' + await visLista(p));
+    if (SHOT) await (await p.$('[data-axw-sr="flota"]')).screenshot({ path: path.join(SHOT, 's1c_flota_p2_1440.png') });
+    await p.fill('[data-axw-campo="tarifa_7"]', '50.000'); await clic(p, 'enviar');
+    ok('S1c parte 2: una semana más barata que un día no deja seguir', (await parteVista(p)) === 2 && ((await errorTxt(p)) || '').includes('no puede costar menos'), await errorTxt(p));
+    await p.fill('[data-axw-campo="tarifa_7"]', ''); await clic(p, 'enviar');
+    cuenta.push(await visibles(p, '[data-axw-sr="flota"]') + ':' + await visLista(p));
+    ok('S1c parte 3: el seguro de un día y «toda reserva lleva seguro»; 30 y 365 días plegados', (await parteVista(p)) === 3
+       && await p.$eval('details[data-axw-plegado="seguro-mas"]', d => !d.open && !!d.querySelector('[data-axw-campo="seguro_365"]')), cuenta[1]);
+    if (SHOT) await (await p.$('[data-axw-sr="flota"]')).screenshot({ path: path.join(SHOT, 's1c_flota_p3_1440.png') });
+    await p.fill('[data-axw-campo="seguro_1"]', '30.000'); await p.evaluate(() => { document.querySelector('[data-axw-campo="seguro_30"]').value = '10.000'; });   // como lo deja un borrador
+    await clic(p, 'enviar');
+    ok('S1c parte 3: un error de un campo plegado (30 días más barato que 1) no deja seguir y abre SU plegado', (await parteVista(p)) === 3
+       && await p.$eval('details[data-axw-plegado="seguro-mas"]', d => d.open) && ((await errorTxt(p)) || '').includes('no puede costar menos'), await errorTxt(p));
+    await p.fill('[data-axw-campo="seguro_30"]', ''); await p.fill('[data-axw-campo="seguro_1"]', '');
+    await p.click('details[data-axw-plegado="seguro-mas"] > summary');
+    await clic(p, 'enviar');
+    cuenta.push(await visibles(p, '[data-axw-sr="flota"]') + ':' + await visLista(p));
+    ok('S1c parte 4: fianza y «¿fianza también con seguro?»; el botón vuelve a «Guardar y seguir»', (await parteVista(p)) === 4 && (await boton()) === 'Guardar y seguir', cuenta[2] + ' · ' + await boton());
+    if (SHOT) await (await p.$('[data-axw-sr="flota"]')).screenshot({ path: path.join(SHOT, 's1c_flota_p4_1440.png') });
+    ok('S1c recuento: 2, 2 y 2 campos a la vista en las partes 2, 3 y 4', JSON.stringify(cuenta) === JSON.stringify(['2:tarifa_7,tarifa_30', '2:seguro_1,seguro_obligatorio', '2:fianza,r:axw-sr-fianza_con_seguro']), JSON.stringify(cuenta));
+    await clic(p, 'atras');
+    ok('S1c «Atrás» del asistente: vuelve a la parte 3, sin salir del paso', (await parteVista(p)) === 3 && (await pasoActual(p)) === 'flota', await pasoActual(p));
+    await aParte(p, 4);
+    await p.evaluate(() => { document.querySelector('[data-axw-campo="nombre"]').value = ''; });   // lo de una parte anterior que ya no vale
+    await clic(p, 'enviar');
+    ok('S1c en la última: un error de una parte anterior lleva a esa parte y no envía', (await parteVista(p)) === 1 && ((await errorTxt(p)) || '').includes('nombre del producto') && escrituras(b).length === 0, await errorTxt(p));
+  }
   await rellenaAlquiler(p);
   ok('S41 la matrícula se escribe en mayúsculas', (await p.inputValue('[data-axw-campo="mat_0"]')) === 'DK 1234 AB');
+  await aParte(p, 1);
   // Diseño S41: tabla «# · Matrícula · Quitar» con la cuenta arriba; quitar una fila renumera (número, etiqueta y clave)
   const nums = () => p.$$eval('[data-axw-sr-filas="unidades"] [data-axw-sr-num]', ls => ls.map(l => l.textContent));
   ok('S41 tabla: filas numeradas y la cuenta arriba', JSON.stringify(await nums()) === '["1","2"]' && (await txt(p, '[data-axw-sr-cuenta="unidades"]')) === '2 unidades', JSON.stringify(await nums()));
@@ -307,7 +373,7 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S41 quitar y luego añadir: la nueva es mat_2, sin repetir', JSON.stringify(tras) === '["mat_0","mat_1","mat_2"]', JSON.stringify(tras));
   await p.click('[data-axw-sr-fila="2"] [data-axw-sr-accion="quitar-unidad"]');
   await p.fill('[data-axw-campo="mat_1"]', 'DK 5678 CD');
-  await clic(p, 'enviar'); await p.waitForTimeout(400);
+  await aParte(p, 4); await clic(p, 'enviar'); await p.waitForTimeout(400);
   const orden = escrituras(b).map(x => x[0] + (x[1].p_dias ? ':' + x[1].p_dias : ''));
   ok('S41 orden: producto, 3 tarifas, garantía, 3 seguros, lote de unidades', JSON.stringify(orden) === JSON.stringify(['producto_guarda', 'producto_tarifa_guarda:1', 'producto_tarifa_guarda:7', 'producto_tarifa_guarda:30', 'producto_garantia_guarda', 'producto_seguro_guarda:1', 'producto_seguro_guarda:30', 'producto_seguro_guarda:365', 'producto_unidades_alta_lote']), JSON.stringify(orden));
   const pg = llamadas(b, 'producto_guarda')[0][1];
@@ -324,7 +390,16 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S44 vacío: obliga a responder sí o no', (await errorTxt(p)) === 'Elige sí o no.' && llamadas(b, 'reservas_previas_guarda').length === 0);
   await p.check('[data-axw-campo="fuera"][value="si"]'); await p.waitForTimeout(100);
   const u1 = b.productos[0].unidades[0].id;
-  await p.selectOption('[data-axw-campo="pu_0"]', u1); await p.fill('[data-axw-campo="pd_0"]', hoy(-3)); await p.fill('[data-axw-campo="ph_0"]', hoy(0));
+  // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): por fila, la moto y la vuelta a la vista; «desde» = hoy y el cliente, plegados
+  ok('S1 ya alquilado: 3 campos a la vista (¿alguna fuera?, moto, vuelta)', (await visibles(p, '[data-axw-sr="alquileres_previos"]')) === 3, await visLista(p));
+  ok('S1 ya alquilado: «desde» viene puesto a hoy, plegado con el cliente, y el resumen lo dice', (await p.inputValue('[data-axw-campo="pd_0"]')) === hoy(0)
+     && await p.$eval('details[data-axw-plegado="previo-0"]', d => !d.open && !!d.querySelector('[data-axw-campo="pc_0"]') && /hoy/.test(d.querySelector('[data-axw-plegado-resumen]').textContent)));
+  if (SHOT) await (await p.$('[data-axw-sr="alquileres_previos"]')).screenshot({ path: path.join(SHOT, 's1_previos_1440.png') });
+  await p.selectOption('[data-axw-campo="pu_0"]', u1); await p.fill('[data-axw-campo="ph_0"]', hoy(4));
+  await p.click('details[data-axw-plegado="previo-0"] > summary'); await p.fill('[data-axw-campo="pd_0"]', hoy(2)); await p.click('details[data-axw-plegado="previo-0"] > summary');
+  await clic(p, 'enviar');
+  ok('S1 ya alquilado: un «desde» mal puesto abre su plegado (el error no se esconde) y no envía', await p.$eval('details[data-axw-plegado="previo-0"]', d => d.open) && llamadas(b, 'reservas_previas_guarda').length === 0, await errorTxt(p));
+  await p.fill('[data-axw-campo="pd_0"]', hoy(-3)); await p.fill('[data-axw-campo="ph_0"]', hoy(0));
   await clic(p, 'enviar');
   ok('S44 vuelta hoy: lo dice antes de enviar', ((await errorTxt(p)) || '').includes('después de hoy') && llamadas(b, 'reservas_previas_guarda').length === 0);
   await p.fill('[data-axw-campo="ph_0"]', hoy(5)); await p.fill('[data-axw-campo="pc_0"]', 'Ana López'); await p.waitForTimeout(100);
@@ -350,6 +425,7 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S41 error con motivo: la frase del código (datos), no el mensaje de la base', ((await errorTxt(p)) || '').includes('Algún dato no vale') && !((await errorTxt(p)) || '').includes('NO lee'), await errorTxt(p));
   ok('S41 a medias: dice qué se guardó y qué no', ((await txt(p, '[data-axw-sr-aviso]')) || '').includes('No se guardó: el seguro de 30 días'), await txt(p, '[data-axw-sr-aviso]'));
   ok('S41 a medias: lo tecleado sigue ahí', (await p.inputValue('[data-axw-campo="seguro_30"]')) === '600.000' && (await p.inputValue('[data-axw-campo="mat_1"]')) === 'DK 5678 CD');
+  ok('S1c a medias: se sigue en la última parte (la de «Guardar y seguir»)', (await parteVista(p)) === 4, String(await parteVista(p)));
   const antes = escrituras(b).length;
   await clic(p, 'enviar'); await p.waitForTimeout(500);
   const despues = escrituras(b).slice(antes).map(x => x[0] + (x[1].p_dias ? ':' + x[1].p_dias : ''));
@@ -378,7 +454,9 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S41 hecho: «Hecho» y «Cambiar», sin formulario', !!(await p.$('[data-axw-hecho]')) && !!(await p.$('[data-axw-accion="cambiar"]')) && !(await p.$('[data-axw-sr="flota"]')));
   await clic(p, 'cambiar'); await p.waitForSelector('[data-axw-sr="flota"] [data-axw-campo="nombre"]');
   ok('S41 editar: trae el producto, sus unidades y avisa del tramo de 3 días', (await p.inputValue('[data-axw-campo="nombre"]')) === 'Honda Scoopy' && ((await txt(p, '[data-axw-sr="flota"]')) || '').includes('DK 1111 AA') && ((await txt(p, '[data-axw-sr="flota"]')) || '').includes('(3 días)'));
-  await p.fill('[data-axw-campo="tarifa_1"]', '95.000'); await clic(p, 'enviar');
+  await p.fill('[data-axw-campo="tarifa_1"]', '95.000'); await aParte(p, 4);
+  ok('S1c editar: la parte 4 lleva también el motivo (3 campos a la vista)', (await visibles(p, '[data-axw-sr="flota"]')) === 3 && (await visLista(p)).endsWith('sr_motivo'), await visLista(p));
+  await clic(p, 'enviar');
   ok('S41 cambiar un precio guardado sin motivo: no envía', ((await errorTxt(p)) || '').includes('motivo') && escrituras(b).length === 0, await errorTxt(p));
   const esp0 = b.productos[0].tarifas[0].actualizado_en;
   await p.fill('[data-axw-sr="flota"] [data-axw-campo="sr_motivo"]', 'Subida de temporada'); await clic(p, 'enviar'); await p.waitForTimeout(400);
@@ -399,7 +477,7 @@ async function rellenaAlquiler(p, o = {}) {
     ok('S41 con unidades: las de antes, numeradas en la tabla; la nueva sigue la cuenta', nya > 0 && ya[0].startsWith('1') && num0 === String(nya + 1)
        && (await txt(p, '[data-axw-sr-cuenta="unidades"]')) === (nya + 1) + ' unidades', JSON.stringify(ya) + ' ' + num0);
   }
-  await p.fill('[data-axw-campo="mat_0"]', 'DK 4444 DD'); await clic(p, 'enviar'); await p.waitForTimeout(400);
+  await p.fill('[data-axw-campo="mat_0"]', 'DK 4444 DD'); await aParte(p, 4); await clic(p, 'enviar'); await p.waitForTimeout(400);
   const lt = llamadas(b, 'producto_unidades_alta_lote')[0];
   ok('S41 añadir unidades a lo existente: solo el lote, con «Añadido desde el asistente»', escrituras(b).length === 1 && lt && lt[1].p_motivo === 'Añadido desde el asistente de configuración' && JSON.stringify(lt[1].p_identificadores) === '["DK 4444 DD"]', JSON.stringify(escrituras(b)));
   await ctx.close();
@@ -407,15 +485,15 @@ async function rellenaAlquiler(p, o = {}) {
   b = base({ conProducto: true, pierde: { producto_guarda: 'despues' } });
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=flota' }));
   await clic(p, 'cambiar'); await p.waitForSelector('[data-axw-sr="flota"] [data-axw-campo="nombre"]');
-  await p.fill('[data-axw-campo="nombre"]', 'Honda Scoopy 2024'); await p.fill('[data-axw-campo="tarifa_7"]', '500.000');
-  await p.fill('[data-axw-sr="flota"] [data-axw-campo="sr_motivo"]', 'Nombre del modelo nuevo'); await clic(p, 'enviar'); await p.waitForTimeout(600);
+  await p.fill('[data-axw-campo="nombre"]', 'Honda Scoopy 2024'); await llena(p, 'tarifa_7', '500.000');
+  await llena(p, 'sr_motivo', 'Nombre del modelo nuevo'); await clic(p, 'enviar'); await p.waitForTimeout(600);
   ok('S41 duda al renombrar: se reconoce por el nombre releído y sigue con el tramo', b.productos[0].nombre === 'Honda Scoopy 2024' && llamadas(b, 'producto_guarda').length === 1 && llamadas(b, 'producto_tarifa_guarda').some(x => x[1].p_dias === 7), JSON.stringify(escrituras(b)));
   await ctx.close();
   // conflicto de versión: 40001 flota_cambio
   b = base({ conProducto: true, falla: { 'producto_tarifa_guarda:1': ['40001', 'flota_cambio'] } });
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=flota' }));
   await clic(p, 'cambiar'); await p.waitForSelector('[data-axw-sr="flota"] [data-axw-campo="nombre"]');
-  await p.fill('[data-axw-campo="tarifa_1"]', '95.000'); await p.fill('[data-axw-sr="flota"] [data-axw-campo="sr_motivo"]', 'Subida de temporada'); await clic(p, 'enviar'); await p.waitForTimeout(400);
+  await p.fill('[data-axw-campo="tarifa_1"]', '95.000'); await llena(p, 'sr_motivo', 'Subida de temporada'); await clic(p, 'enviar'); await p.waitForTimeout(400);
   ok('S41 40001 flota_cambio: «otra persona ha cambiado esto»', ((await errorTxt(p)) || '').includes('Otra persona ha cambiado'), await errorTxt(p));
   await ctx.close();
   // la herramienta: 42501 sin_herramienta
@@ -437,6 +515,11 @@ async function rellenaAlquiler(p, o = {}) {
   await p.check('[data-axw-campo="bloqueo_minutos"][value="120"]'); await p.waitForTimeout(80);
   ok('S43 el ejemplo sigue al tiempo elegido', ((await txt(p, '[data-axw-sr-ejemplo]')) || '').includes('12:00'), await txt(p, '[data-axw-sr-ejemplo]'));
   await p.click('[data-axw-sr-accion="mas-dias_min"]'); await p.click('[data-axw-sr-accion="mas-dias_min"]');
+  // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): a la vista las 3 reglas que exige la base; antelación y límites del bot bajo «Más reglas»
+  if (SHOT) await (await p.$('[data-axw-sr="reglas_reserva"]')).screenshot({ path: path.join(SHOT, 's1_reglas_1440.png') });
+  ok('S1 reglas: «Más reglas» cerrado con la antelación y los límites del bot dentro', await p.$eval('details[data-axw-plegado="reglas"]', d => !d.open && !!d.querySelector('[data-axw-campo="horizonte_dias"]') && !!d.querySelector('[data-axw-sr-bot]')));
+  ok('S1 reglas: 3 campos a la vista (tiempo sin pagar, alquiler más corto y más largo)', (await visibles(p, '[data-axw-sr="reglas_reserva"]')) === 3, await visLista(p));
+  await p.click('details[data-axw-plegado="reglas"] > summary');
   await p.selectOption('[data-axw-campo="horizonte_dias"]', '180');
   await clic(p, 'enviar'); await p.waitForTimeout(300);
   const rg = llamadas(b, 'reservas_reglas_guarda')[0];
@@ -468,6 +551,7 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S44 retomar: lo apuntado fijo y la pregunta pasa a «alguna otra»', ((await txt(p, '[data-axw-sr="alquileres_previos"]')) || '').includes('¿Hay alguna otra unidad fuera'));
   ok('S44 la unidad de baja no se ofrece', !((await p.$$eval('[data-axw-campo="pu_0"] option', os => os.map(o => o.textContent))).join('|').includes('DK 3333 CC')));
   await p.check('[data-axw-campo="fuera"][value="si"]'); await p.selectOption('[data-axw-campo="pu_0"]', 'u1');
+  await p.click('details[data-axw-plegado="previo-0"] > summary');
   await p.fill('[data-axw-campo="pd_0"]', hoy(-1)); await p.fill('[data-axw-campo="ph_0"]', hoy(3)); await clic(p, 'enviar');
   ok('S44 la misma unidad que ya está fuera: se dice antes de enviar', ((await errorTxt(p)) || '').includes('dos veces') && llamadas(b, 'reservas_previas_guarda').length === 0, await errorTxt(p));
   await p.selectOption('[data-axw-campo="pu_0"]', 'u2');
@@ -493,16 +577,52 @@ async function rellenaAlquiler(p, o = {}) {
   await p.waitForSelector('[data-axw-sr="entrega"] [data-axw-campo="activa"]');
   ok('S45 el MÍNIMO por trayecto está (el diseño no lo pinta; el dato real sí)', !!(await p.$('[data-axw-campo="minimo"]')));
   ok('S45 una sola sede: no hay desplegable de sedes', !(await p.$('[data-axw-sr="entrega"] select')));
-  await p.check('[data-axw-campo="activa"]'); await clic(p, 'enviar');
-  ok('S45 encender sin datos: dice lo que falta y no envía', ((await errorTxt(p)) || '').includes('hacen falta la tienda') && escrituras(b).length === 0, await errorTxt(p));
+  // P5 (owner, 15-oct: «mostrando datos poco a poco»): apagada y sin nada guardado, solo el interruptor; a 1440, dos columnas
+  const p5a = await p.evaluate(() => { const b = document.querySelector('[data-axw-sr-bloques="entrega"]'), s = document.querySelector('[data-axw-campo="activa"]');
+    return { oculto: getComputedStyle(b).display === 'none', exp: s.getAttribute('aria-expanded'), rol: s.getAttribute('role'),
+             falta: [...document.querySelectorAll('[data-axw-falta]')].some(e => getComputedStyle(e).display !== 'none'), fig: getComputedStyle(document.querySelector('[data-axw-sr-figura]')).display,
+             km: document.querySelector('[data-axw-campo="km_max"]').value }; });
+  ok('P5 entrega apagada y vacía (con el km_max 60 que trae la base): solo el interruptor (role=switch, aria-expanded=false); sin bloques, sin «Falta completar» y sin ilustración',
+     p5a.oculto && p5a.exp === 'false' && p5a.rol === 'switch' && !p5a.falta && p5a.fig === 'none' && p5a.km === '60', JSON.stringify(p5a));
+  const p5l = await p.evaluate(() => { const i = document.querySelector('[data-axw-as="izq"]').getBoundingClientRect(), l = document.querySelector('[data-axw-as="lado"]').getBoundingClientRect();
+    return { lado: l.left >= i.right, fig: !!document.querySelector('[data-axw-as="lado"] [data-axw-sr-figura]'), why: !!document.querySelector('[data-axw-as="lado"] .axw-why') }; });   // la ilustración vive a la derecha aunque esté oculta
+  ok('P5 1440: dos columnas — a la derecha «para qué sirve» y la ilustración', p5l.lado && p5l.fig && p5l.why, JSON.stringify(p5l));
+  if (SHOT) {   // P5: el «después» de la entrega apagada, para compararlo con el «antes» (todo a la vez)
+    await p.screenshot({ path: path.join(SHOT, 'p5_entrega_apagada_1440.png'), fullPage: true });
+    await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(150);
+    await p.screenshot({ path: path.join(SHOT, 'p5_entrega_apagada_390.png'), fullPage: true });
+    await p.setViewportSize({ width: 1440, height: 900 }); await p.waitForTimeout(150);
+  }
+  ok('S1d entrega apagada y vacía: una sola parte, el botón NO dice «Siguiente»', (await txt(p, '[data-axw-accion="enviar"]')) !== 'Siguiente', await txt(p, '[data-axw-accion="enviar"]'));
+  await p.check('[data-axw-campo="activa"]');
+  const p5b = await p.evaluate(() => ({ visible: getComputedStyle(document.querySelector('[data-axw-sr-bloques="entrega"]')).display !== 'none',
+    exp: document.querySelector('[data-axw-campo="activa"]').getAttribute('aria-expanded'), foco: document.activeElement && document.activeElement.getAttribute('data-axw-campo'),
+    n: document.querySelectorAll('[data-axw-sr-bloques="entrega"] h3').length, fig: getComputedStyle(document.querySelector('[data-axw-sr-figura]')).display }));
+  ok('P5 al encenderla: tres bloques numerados, la ilustración y el foco en «Sale desde»', p5b.visible && p5b.exp === 'true' && p5b.foco === 'sede_nombre' && p5b.n === 3 && p5b.fig !== 'none', JSON.stringify(p5b));
+  // S1d (owner 15-oct: «1, 2 o 3 campos a rellenar por paso»): encendida, 3 partes; el interruptor sigue arriba a la vista
+  ok('S1d encendida: «Parte 1 de 3», el interruptor + la tienda y sus coordenadas (3 a la vista), y «Siguiente»', (await parteVista(p)) === 1
+     && (await txt(p, '[data-axw-parte]:not([hidden]) [data-axw-parte-de]')) === 'Parte 1 de 3' && (await visibles(p, '[data-axw-sr="entrega"]')) === 3
+     && (await visLista(p)) === 'activa,sede_nombre,sede_coord' && (await txt(p, '[data-axw-accion="enviar"]')) === 'Siguiente', await visLista(p));
+  if (SHOT) await (await p.$('[data-axw-sr="entrega"]')).screenshot({ path: path.join(SHOT, 's1d_entrega_p1_1440.png') });
+  await clic(p, 'enviar');
+  ok('S45 encender sin datos: dice lo que falta y no envía', ((await errorTxt(p)) || '').includes('hacen falta la tienda') && escrituras(b).length === 0 && (await parteVista(p)) === 1, await errorTxt(p));
   await p.fill('[data-axw-campo="sede_nombre"]', 'Tienda Canggu'); await p.fill('[data-axw-campo="sede_coord"]', '-8.65, 115.13');
-  await p.fill('[data-axw-campo="precio_km"]', '5.000'); await p.fill('[data-axw-campo="km_gratis"]', '20'); await p.fill('[data-axw-campo="km_max"]', '20'); await p.fill('[data-axw-campo="minimo"]', '15.000');
-  await p.check('[data-axw-campo="cobra_recogida"][value="si"]'); await clic(p, 'enviar');
-  ok('S45 km gratis ≥ km máximo: se dice antes de enviar', ((await errorTxt(p)) || '').includes('por debajo de la distancia máxima') && escrituras(b).length === 0, await errorTxt(p));
+  await clic(p, 'enviar');
+  ok('S1d parte 2: precio por km y km gratis a la vista (3 con el interruptor); distancia máxima (60) y mínimo plegados con su resumen', (await parteVista(p)) === 2
+     && (await visLista(p, await visibles(p, '[data-axw-sr="entrega"]'))) === 'activa,precio_km,km_gratis'
+     && await p.$eval('details[data-axw-plegado="entrega-mas"]', d => !d.open && d.querySelector('[data-axw-plegado-resumen]').textContent.includes('60 km')), await visLista(p));
+  if (SHOT) await (await p.$('[data-axw-sr="entrega"]')).screenshot({ path: path.join(SHOT, 's1d_entrega_p2_1440.png') });
+  await p.fill('[data-axw-campo="precio_km"]', '5.000'); await p.fill('[data-axw-campo="km_gratis"]', '80'); await llena(p, 'km_max', '80'); await llena(p, 'minimo', '15.000');
+  await clic(p, 'enviar');
+  ok('S45 km gratis ≥ km máximo: se dice antes de seguir (en su parte) y no envía', ((await errorTxt(p)) || '').includes('por debajo de la distancia máxima') && escrituras(b).length === 0 && (await parteVista(p)) === 2, await errorTxt(p));
   await p.fill('[data-axw-campo="km_gratis"]', '3'); await p.waitForTimeout(80);
   ok('S45 la leyenda de la ilustración sigue a lo tecleado, sin precio de ejemplo', ((await txt(p, '[data-axw-sr-figura]')) || '').includes('Gratis · hasta 3 km') && ((await txt(p, '[data-axw-sr-figura]')) || '').includes('Mínimo por trayecto: IDR 15.000'), await txt(p, '[data-axw-sr-figura]'));
   ok('S45: las partes de la leyenda van separadas (gap-x-5 no está compilado en la instancia)', (await p.$eval('figcaption', e => getComputedStyle(e).columnGap)) === '20px');
   if (SHOT) await p.screenshot({ path: path.join(SHOT, 's45_1440.png'), fullPage: true });
+  await clic(p, 'enviar');
+  ok('S1d parte 3: la recogida, y el botón vuelve al de siempre', (await parteVista(p)) === 3 && (await visLista(p, await visibles(p, '[data-axw-sr="entrega"]'))) === 'activa,r:axw-sr-cobra_recogida'
+     && (await txt(p, '[data-axw-accion="enviar"]')) !== 'Siguiente', await visLista(p));
+  await p.check('[data-axw-campo="cobra_recogida"][value="si"]');
   await clic(p, 'enviar'); await p.waitForTimeout(500);
   const ord = escrituras(b).map(x => x[0] + (x[1].p_datos && 'activa' in x[1].p_datos ? ':activa' : ''));
   ok('S45 orden: ajustes (sube km_max) → tarifa → encender', JSON.stringify(ord) === JSON.stringify(['entrega_ajustes_guarda', 'entrega_tarifa_guarda', 'entrega_ajustes_guarda:activa']), JSON.stringify(ord));
@@ -516,7 +636,7 @@ async function rellenaAlquiler(p, o = {}) {
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=entrega' }));
   await clic(p, 'cambiar'); await p.waitForSelector('[data-axw-sr="entrega"] [data-axw-campo="sede_nombre"]');
   ok('S45 encendida: la tienda es de solo lectura y pide motivo', await p.$eval('[data-axw-campo="sede_nombre"]', e => e.readOnly) && !!(await p.$('[data-axw-sr="entrega"] [data-axw-campo="sr_motivo"]')));
-  await p.fill('[data-axw-campo="precio_km"]', '6.000'); await p.fill('[data-axw-sr="entrega"] [data-axw-campo="sr_motivo"]', 'Sube la gasolina'); await clic(p, 'enviar'); await p.waitForTimeout(400);
+  await llena(p, 'precio_km', '6.000'); await llena(p, 'sr_motivo', 'Sube la gasolina'); await clic(p, 'enviar'); await p.waitForTimeout(400);
   ok('S45 40001 entrega_cambio: «otra persona ha cambiado esto»', ((await errorTxt(p)) || '').includes('Otra persona ha cambiado'), await errorTxt(p));
   await ctx.close();
 
@@ -530,6 +650,16 @@ async function rellenaAlquiler(p, o = {}) {
   ok('Ajustes: guardar llama a la misma función y repinta con «Hecho»', llamadas(b, 'reservas_reglas_guarda').length === 1 && (await p.getAttribute('[data-pm-fila="reglas_reserva"] [data-pm-hecho]', 'data-pm-hecho')) === '1');
   await p.click('[data-pm-fila="flota"] [data-accion="pm-editar"]'); await p.waitForSelector('[data-pm-fila="flota"] [data-axw-sr="flota"] [data-axw-campo="nombre"]');
   ok('Ajustes: Flota abre el alquiler con el producto ya dado de alta', (await p.inputValue('[data-pm-fila="flota"] [data-axw-campo="nombre"]')) === 'Honda Scoopy');
+  {   // S1c: la ventana de Ajustes también va de parte en parte con su «Atrás» y su botón principal
+    const F = '[data-pm-fila="flota"] ', gtxt = () => txt(p, F + '[data-accion="pm-guardar"]'), nEsc = escrituras(b).length;
+    ok('S1c Ajustes: Flota en partes: la 1.ª, el botón dice «Siguiente» y no hay «Atrás»', (await parteVista(p)) === 1 && (await gtxt()) === 'Siguiente' && !(await p.isVisible(F + '[data-accion="pm-atras"]')), await gtxt());
+    await p.click(F + '[data-accion="pm-guardar"]'); await p.waitForTimeout(300);
+    ok('S1c Ajustes: «Siguiente» pasa a la parte 2, sale «Atrás» y no guarda nada', (await parteVista(p)) === 2 && await p.isVisible(F + '[data-accion="pm-atras"]') && escrituras(b).length === nEsc, String(await parteVista(p)));
+    await p.click(F + '[data-accion="pm-atras"]'); await p.waitForTimeout(300);
+    ok('S1c Ajustes: «Atrás» vuelve a la parte 1 sin cerrar la ventana', (await parteVista(p)) === 1 && !!(await p.$('dialog[data-pm-ventana="flota"][open]')), String(await parteVista(p)));
+    for (let i = 0; i < 3; i++) { await p.click(F + '[data-accion="pm-guardar"]'); await p.waitForTimeout(300); }
+    ok('S1c Ajustes: en la última parte el botón vuelve a «Guardar»', (await parteVista(p)) === 4 && (await gtxt()) === 'Guardar' && escrituras(b).length === nEsc, await gtxt());
+  }
   for (const ancho of [390, 1440]) {
     await p.setViewportSize({ width: ancho, height: 900 }); await p.waitForTimeout(100);
     ok('Ajustes ' + ancho + ': sin scroll horizontal', (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho);
@@ -553,6 +683,56 @@ async function rellenaAlquiler(p, o = {}) {
 
   // ── 10. Cada paso a 390 y 1440 en es/en/id: sin scroll horizontal, sin español en en/id; ningún código sin frase ──────────────────────────
   const PANTALLAS = [['clase', {}], ['flota', { conProducto: true }], ['reglas_reserva', { conProducto: true, conPrevio: true }], ['alquileres_previos', { conProducto: true }], ['entrega', { conProducto: true, conPrevio: true }]];
+  // ── La tienda sin configurar trae «Oficina», el valor de fábrica de la columna (137500), en español: no se propone (verificador de bbm, 15-oct)
+  {
+    b = base({ conProducto: true }); b.entrega.ajustes.sede_nombre = 'Oficina';
+    ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=entrega' }));
+    await p.waitForSelector('[data-axw-sr="entrega"] [data-axw-campo="sede_nombre"]', { state: 'attached' });
+    const v = await p.$eval('[data-axw-campo="sede_nombre"]', e => e.value);
+    ok('Entrega: el «Oficina» de fábrica (apagada y sin coordenadas) no sale como nombre de la tienda', v !== 'Oficina', JSON.stringify(v));
+    await ctx.close();
+  }
+  // ── S1 · medida de toques (Experiencia, S0): «setup de un cliente nuevo: reglas, una moto alquilada hasta el viernes, Entrega». Un toque = un
+  // clic o un campo rellenado por la persona; abrir la página no cuenta. El «antes» (todo a la vista, código anterior a S1a) se cuenta con los
+  // mismos datos: reglas 1 (guardar lo que trae la base) · ya alquilado 5 (¿alguna fuera?, moto, desde, hasta, guardar) · entrega 6 (encender,
+  // tienda, coordenadas, precio por km, recogida, guardar). Las partes suman sus «Siguiente»; lo que viene puesto (desde = hoy) los resta.
+  {
+    const T = { reglas: 0, previos: 0, entrega: 0 };
+    const toque = async (k, f) => { T[k]++; await f(); };
+    b = base({ conProducto: true });
+    ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=reglas_reserva' }));
+    await p.waitForSelector('[data-axw-sr="reglas_reserva"] [data-axw-campo="dias_min"]');
+    await toque('reglas', () => clic(p, 'enviar')); await p.waitForTimeout(300);
+    const okReglas = llamadas(b, 'reservas_reglas_guarda').length === 1;
+    await ctx.close();
+    ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=alquileres_previos' }));
+    await p.waitForSelector('[data-axw-sr="alquileres_previos"] [data-axw-campo="fuera"]');
+    const viernes = hoy(((5 - new Date().getDay() + 7) % 7) || 7);
+    await toque('previos', () => p.check('[data-axw-campo="fuera"][value="si"]')); await p.waitForTimeout(80);
+    const uni = await p.$eval('[data-axw-campo="pu_0"]', s => [...s.options].map(o => o.value).filter(Boolean)[0]);
+    await toque('previos', () => p.selectOption('[data-axw-campo="pu_0"]', uni));
+    await toque('previos', () => p.fill('[data-axw-campo="ph_0"]', viernes));
+    await toque('previos', () => clic(p, 'enviar')); await p.waitForTimeout(300);
+    const okPrevios = llamadas(b, 'reservas_previas_guarda').length === 1;
+    await ctx.close();
+    ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=entrega' }));
+    await p.waitForSelector('[data-axw-sr="entrega"] [data-axw-campo="activa"]');
+    await toque('entrega', () => p.check('[data-axw-campo="activa"]'));
+    await toque('entrega', () => p.fill('[data-axw-campo="sede_nombre"]', 'Tienda Canggu'));
+    await toque('entrega', () => p.fill('[data-axw-campo="sede_coord"]', '-8.65, 115.13'));
+    await toque('entrega', () => clic(p, 'enviar'));   // Siguiente
+    await toque('entrega', () => p.fill('[data-axw-campo="precio_km"]', '5.000'));
+    await toque('entrega', () => clic(p, 'enviar'));   // Siguiente (km máximo: el que trae la base)
+    await toque('entrega', () => p.check('[data-axw-campo="cobra_recogida"][value="si"]'));
+    await toque('entrega', () => clic(p, 'enviar')); await p.waitForTimeout(500);
+    const okEntrega = b.entrega.ajustes.activa === true;
+    console.log('MEDIDA S1 toques (antes → después): reglas 1 → ' + T.reglas + ' · ya alquilado 5 → ' + T.previos + ' · entrega 6 → ' + T.entrega
+      + ' · total 12 → ' + (T.reglas + T.previos + T.entrega));
+    ok('S1 toques: la tarea se completa (reglas, una moto fuera hasta el viernes, entrega encendida) con 1 + 4 + 8 toques', okReglas && okPrevios && okEntrega
+       && T.reglas === 1 && T.previos === 4 && T.entrega === 8, JSON.stringify({ T, okReglas, okPrevios, okEntrega }));
+    await ctx.close();
+  }
+
   for (const [paso, o] of PANTALLAS) for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
     b = base(o);
     ({ p, ctx } = await abre(nav, b, { idioma, ancho, url: '/ajustes/configurar/?modulo=reservas-producto&paso=' + paso }));
@@ -563,9 +743,15 @@ async function rellenaAlquiler(p, o = {}) {
     if (paso === 'flota') { await p.click('[data-axw-sr-accion="anadir-unidad"]'); await p.fill('[data-axw-campo="tarifa_1"]', 'x'); }
     if (paso === 'clase') await p.check('[data-axw-campo="clase"][value="servicio"]');   // «servicio» no avanza: lleva a Productos con su aviso
     if (paso === 'reglas_reserva') await p.fill('[data-axw-campo="dias_min"]', '0');   // type=number: no admite letras; 0 está por debajo del mínimo
-    if (paso === 'entrega') await p.fill('[data-axw-campo="precio_km"]', 'x');
+    if (paso === 'entrega') { await p.check('[data-axw-campo="activa"]'); await p.fill('[data-axw-campo="sede_coord"]', 'x'); }   // P5: los campos salen al encenderla; S1d: la 1.ª parte
     await clic(p, 'enviar');   // que también salga el texto de error
     ok(paso + ' ' + idioma + ' ' + ancho + ': se mide esta pantalla (no la siguiente)', !!(await p.$('[data-axw-sr="' + paso + '"]')));
+    if (paso === 'entrega') ok('S1d entrega ' + idioma + ' ' + ancho + ': ≤ 3 campos a la vista en la parte en curso', (await visibles(p, '[data-axw-sr="entrega"]')) <= 3, await visLista(p));
+    if (paso === 'flota') ok('S1c flota ' + idioma + ' ' + ancho + ': ≤ 3 campos a la vista en la parte en curso', (await visibles(p, '[data-axw-sr="flota"]')) <= 3, await visLista(p));
+    {   // P5: a 390 la explicación va DESPUÉS de los campos; a 1440, a su derecha
+      const g = await p.evaluate(() => { const i = document.querySelector('[data-axw-as="izq"]').getBoundingClientRect(), l = document.querySelector('[data-axw-as="lado"]').getBoundingClientRect(); return { iR: i.right, iB: i.bottom, lL: l.left, lT: l.top }; });
+      ok(paso + ' ' + idioma + ' ' + ancho + ': ' + (ancho === 390 ? 'la explicación debajo de los campos' : 'dos columnas'), ancho === 390 ? g.lT >= g.iB : g.lL >= g.iR, JSON.stringify(g));
+    }
     const anchoDoc = await p.evaluate(() => document.documentElement.scrollWidth);
     ok(paso + ' ' + idioma + ' ' + ancho + ': sin scroll horizontal', anchoDoc <= ancho, String(anchoDoc));
     if (idioma !== 'es') {

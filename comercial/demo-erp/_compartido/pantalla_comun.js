@@ -11,6 +11,7 @@ function axwComun(raiz, T) {
   'use strict';
   var ocupado = false;
   var EN = {
+    'Más datos (opcional)': 'More details (optional)', 'más': 'more',
     'Trabajando…': 'Working…', 'Cargando…': 'Loading…', 'Cerrar': 'Close', 'Cancelar': 'Cancel', 'Actualizar': 'Refresh', 'Sí': 'Yes', 'No': 'No',
     'Sin sesión: recarga la página o vuelve a entrar.': 'No session: reload the page or sign in again.',
     'La base no ha respondido: prueba otra vez en un rato.': 'The database did not respond: try again in a moment.',
@@ -21,6 +22,7 @@ function axwComun(raiz, T) {
   };
   // Indonesio (11-oct-2026: las instancias que lo llevan, hoy bbm). Mismas claves que EN; cada pantalla lo fusiona en window.LW_ID solo si existe.
   var ID = {
+    'Más datos (opcional)': 'Data lainnya (opsional)', 'más': 'lagi',
     'Trabajando…': 'Memproses…', 'Cargando…': 'Memuat…', 'Cerrar': 'Tutup', 'Cancelar': 'Batalkan', 'Actualizar': 'Muat ulang', 'Sí': 'Ya', 'No': 'Tidak',
     'Sin sesión: recarga la página o vuelve a entrar.': 'Sesi habis: muat ulang halaman atau masuk lagi.',
     'La base no ha respondido: prueba otra vez en un rato.': 'Database tidak merespons: coba lagi sebentar lagi.',
@@ -139,6 +141,24 @@ function axwComun(raiz, T) {
     if (btn && btn.hasAttribute('data-texto-antes')) { btn.textContent = btn.getAttribute('data-texto-antes'); btn.removeAttribute('data-texto-antes'); btn.disabled = false; }
   }
 
+  /* Plegado (S0 de Diseño, 15-oct-2026; owner: «1, 2 o 3 campos a rellenar por paso»). Lo opcional, o lo que ya trae valor (moneda, unidad),
+     va bajo un <details> nativo «Más datos (opcional) +» con un resumen tenue de lo de dentro (máximo 2 y «+n más»); lo plegado no cuenta en el
+     recuento. Un obligatorio sin valor nunca va plegado: quien valida lo abre si el error es de dentro (det.open = true). resumen() → [textos];
+     det.actualiza() repinta el resumen tras cambiar un valor por código. */
+  function pliegue(nodos, resumen) {
+    var signo = h('span', { 'aria-hidden': 'true', text: '+' }), res = h('span', { class: 'axw-pliegue-res', 'data-axw': 'pliegue-resumen' });
+    var det = h('details', { class: 'axw-pliegue', 'data-axw': 'mas-datos' }, [h('summary', null, [h('span', { class: 'axw-pliegue-linea' }, [h('span', { text: T('Más datos (opcional)') }), signo]), res]),
+      h('div', { class: 'axw-pliegue-cuerpo' }, nodos)]);
+    det.actualiza = function () {
+      var l = (resumen() || []).filter(function (x) { return x != null && String(x).replace(/^\s+|\s+$/g, '') !== ''; });
+      res.textContent = l.slice(0, 2).join(' · ') + (l.length > 2 ? ' +' + (l.length - 2) + ' ' + T('más') : '');
+      oculta(res, !l.length); signo.textContent = det.open ? '−' : '+';
+    };
+    ['toggle', 'input', 'change'].forEach(function (ev) { det.addEventListener(ev, det.actualiza); });
+    det.actualiza();
+    return det;
+  }
+
   /* Ventana de diálogo: ESC y el botón con `cierra` la cierran, el foco entra y vuelve. */
   function dialogo(titulo, nodos, botones) {
     var previo = document.activeElement;
@@ -164,5 +184,5 @@ function axwComun(raiz, T) {
   }
 
   return { EN: EN, ID: ID, h: h, vacia: vacia, oculta: oculta, boton: boton, chip: chip, celda: celda, tabla: tabla, campo: campo, resumen: resumen, locale: locale, dinero: dinero,
-           fechaDia: fechaDia, fechaHora: fechaHora, clasifica: clasifica, mensaje: mensaje, importe: importe, ocupa: ocupa, libera: libera, dialogo: dialogo };
+           fechaDia: fechaDia, fechaHora: fechaHora, clasifica: clasifica, mensaje: mensaje, importe: importe, ocupa: ocupa, libera: libera, dialogo: dialogo, pliegue: pliegue };
 }

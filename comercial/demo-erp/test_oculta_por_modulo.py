@@ -97,6 +97,10 @@ for rel_, cambios in sorted(por_fichero.items()):
     p = Tablas()
     p.feed(t)
     marcadas = [x for x in p.tablas if any(x['th']) or any(x['td'])]
+    if not any(re.search(r'<t[hd][ >]', n) for _, n in cambios):
+        # bbm-comodidad F7 (15-oct-2026): un fichero que solo marca avisos o filtros (Gastos) no puede dejar marcada ninguna columna
+        ok('%s: sin columnas marcadas, ninguna tabla queda marcada' % rel_, not marcadas, str(len(marcadas)))
+        continue
     ok('%s: hay una tabla con columna marcada' % rel_, len(marcadas) == 1, str(len(marcadas)))
     for x in marcadas:
         ok('%s: cabecera y celda plantilla marcadas en la MISMA columna' % rel_, x['th'] == x['td'] and len(x['th']) == len(x['td']),
@@ -136,6 +140,43 @@ if r.returncode == 0:
     res = json.loads(r.stdout.strip().splitlines()[-1])
     for (nombre, *_x, esperado), dio in zip(CASOS, res):
         ok('editor: ' + nombre, dio is esperado, 'dio %s' % dio)
+
+# «Enviar por email» sin el módulo contratos (CORREO_DOC_SIN_CONTRATOS, bbm-correo 15-oct-2026): su edge (send-contract-email) es de contratos.
+# Cada trozo, una vez en el Lawang fijado; y el comportamiento en Node: con contratos apagado (dato de la base) el botón se oculta, también si la base
+# contesta DESPUÉS de montar la barra, y enviaDocMail no llega a la edge; sin saber o sin axwModuloActivo (Lawang), lo de siempre.
+CORREO = tupla_de_build('CORREO_DOC_SIN_CONTRATOS')
+ok('CORREO_DOC_SIN_CONTRATOS trae 3 trozos (enviaDocMail, barra, ficha)', len(CORREO) == 3)
+for rel_, viejo, nuevo in CORREO:
+    src = open(os.path.join(lawang(), *rel_.split('/')), encoding='utf-8', newline='').read()
+    ok('correo: el trozo de %s está UNA vez en el Lawang fijado' % rel_, src.count(viejo) == 1, 'aparece %d' % src.count(viejo))
+    ok('correo: el sustituto de %s sigue llamando a lo mismo' % rel_,
+       "V4acc('enviarDocumento', f0.id)" in nuevo or 'enviaDocMail(' in nuevo)
+guarda = CORREO[0][2].split('\n')[1].strip()   # la primera línea de enviaDocMail
+barra = '\n'.join(CORREO[1][2].split('\n')[1:4])  # ocultaMail + su llamada + la de cuando la base contesta
+ok('correo: la ficha solo lo ofrece con contratosActivo()', "if (!f0.anulada && contratosActivo())" in CORREO[2][2])
+CASOS_CORREO = [   # (nombre, axwModuloActivo('contratos') al montar, ¿la base contesta después con apagado?, oculto, corta envío)
+    ('contratos apagado', False, False, True, True),
+    ('contratos encendido', True, False, False, False),
+    ('sin saber al montar y la base dice apagado antes de pulsar', True, True, True, True),
+    ('sin axwModuloActivo (Lawang)', None, False, False, False),
+]
+js = 'var out = [];\n' + ''.join(
+    '(function () { var estado = %s, luego = %s, avisos = 0, hecho = null; var window = {}; '
+    'if (estado !== null) window.axwModuloActivo = function (m) { return m === "contratos" ? estado : true; }; '
+    'if (luego) window.AXW_MODULOS_LISTOS = {then: function (f) { hecho = f; }}; '
+    'var toastMal = function () { avisos++; }, edT = function (s) { return s; }; var bMail = {style: {display: ""}}; '
+    '%s\n if (hecho) { estado = false; hecho(); } '
+    'var llego = false; (function () { %s\n llego = true; })(); '
+    'out.push([bMail.style.display === "none", !llego && avisos === 1]); })();\n'
+    % ('null' if m is None else json.dumps(m), json.dumps(l), barra, guarda)
+    for _, m, l, _o, _c in CASOS_CORREO) + 'console.log(JSON.stringify(out));'
+r = subprocess.run(['node', '-e', js], capture_output=True, text=True, encoding='utf-8')
+ok('correo: los casos se evalúan en Node', r.returncode == 0, (r.stderr or '')[-300:])
+if r.returncode == 0:
+    res = json.loads(r.stdout.strip().splitlines()[-1])
+    for (nombre, _m, _l, oculto, corta), (dio_o, dio_c) in zip(CASOS_CORREO, res):
+        ok('correo: %s → oculto %s' % (nombre, oculto), dio_o is oculto, 'dio %s' % dio_o)
+        ok('correo: %s → enviaDocMail corta %s' % (nombre, corta), dio_c is corta, 'dio %s' % dio_c)
 
 print(('OK' if not fallos else 'MAL') + ' test_oculta_por_modulo: %d/%d' % (total - len(fallos), total))
 for f in fallos:

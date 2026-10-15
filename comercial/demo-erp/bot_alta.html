@@ -21,6 +21,7 @@
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4">
 <style>
 .ba-oculto{display:none !important}
+.ba-parte{margin:0;font:600 12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#44483f}
 .ba-estado{padding:10px 16px;border-radius:999px;background:#e4e2dd;color:#1b1c19;font-size:13px}
 .ba-estado[data-listo="1"]{background:#485B37;color:#fff}
 .ba-aviso{padding:10px 14px;border-radius:8px;background:#fff3e0;color:#8a4b00;font-size:14px;white-space:pre-line;word-break:break-word}
@@ -42,6 +43,8 @@
 .ba-boton:disabled{opacity:.5;cursor:not-allowed}
 .ba-texto{max-height:420px;overflow:auto;padding:16px 18px;border:1px solid #c5c8bc;border-radius:10px;background:#faf9f5;font-size:14px;line-height:1.55}
 .ba-texto p{margin:0 0 10px}
+.ba-texto details{margin:0 0 8px;border-top:1px solid #e4e2dd;padding-top:8px}
+.ba-texto summary{cursor:pointer;font-weight:600;margin:0 0 8px}
 .ba-huella{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#75786e;word-break:break-all}
 .ba-casilla{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45}
 .ba-casilla input{margin-top:3px;width:18px;height:18px;flex:none}
@@ -59,7 +62,9 @@
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-6" data-ba="seccion-alta">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>1 · Datos de tu negocio para las condiciones</h2>
 <div class="ba-nota" data-lwt>Estos datos aparecen en las condiciones y en el aviso de privacidad que ven las personas que escriben a tu bot. Escríbelos tal cual los quieres ahí: tú respondes de que sean ciertos.</div>
+<p class="ba-parte" data-ba="parte-linea" aria-live="polite"></p>
 <div class="ba-grid" data-ba="formulario">
+<div class="ba-grid ba-ancho" data-ba="parte-1">
 <div class="ba-campo">
 <label for="ba-razon_social" data-lwt>Razón social (nombre legal de la empresa)</label>
 <input type="text" id="ba-razon_social" data-campo="razon_social" autocomplete="off">
@@ -75,6 +80,8 @@
 <input type="text" id="ba-domicilio" data-campo="domicilio" autocomplete="off">
 <div class="ba-pie"><span></span><span data-cuenta="domicilio"></span></div>
 </div>
+</div>
+<div class="ba-grid ba-ancho ba-oculto" data-ba="parte-2">
 <div class="ba-campo">
 <label for="ba-contacto_privacidad" data-lwt>Contacto de privacidad (un correo o un teléfono)</label>
 <input type="text" id="ba-contacto_privacidad" data-campo="contacto_privacidad" autocomplete="off">
@@ -85,22 +92,25 @@
 <input type="text" id="ba-plazo_conservacion" data-campo="plazo_conservacion" autocomplete="off">
 <div class="ba-pie"><span data-lwt>Por ejemplo: «24 meses desde el último mensaje»</span><span data-cuenta="plazo_conservacion"></span></div>
 </div>
-</div>
-<div class="ba-campo">
+<div class="ba-campo ba-ancho">
 <label for="ba-motivo" data-lwt>¿Qué has cambiado? (queda en el registro)</label>
 <input type="text" id="ba-motivo" data-campo="motivo" autocomplete="off">
 </div>
+</div>
+</div>
 <p class="ba-aviso ba-oculto" data-ba="aviso-razon" role="status"></p>
 <div class="flex flex-wrap items-center justify-end gap-3">
+<button class="ba-boton ba-oculto" type="button" data-accion="alta-atras" data-ba="atras"><span data-lwt>‹ Atrás</span></button>
 <button class="ba-boton" type="button" data-accion="recargar"><span data-lwt>Descartar los cambios</span></button>
-<button class="ba-boton" type="button" data-accion="guardar-alta" data-primario="1"><span data-lwt>Guardar los datos</span></button>
+<button class="ba-boton" type="button" data-accion="alta-siguiente" data-primario="1" data-ba="siguiente"><span data-lwt>Siguiente ›</span></button>
+<button class="ba-boton ba-oculto" type="button" data-accion="guardar-alta" data-primario="1" data-ba="guardar"><span data-lwt>Guardar los datos</span></button>
 </div>
 </section>
 
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4" data-ba="seccion-terminos">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>2 · Condiciones del servicio</h2>
 <p class="ba-vacio ba-oculto" data-ba="terminos-bloqueado"></p>
-<div class="ba-texto" data-ba="texto" tabindex="0" role="document" aria-label="Condiciones del servicio" lang="es"></div>
+<div class="ba-texto" data-ba="texto" tabindex="0" role="document" aria-label="Condiciones del servicio" data-lwt-aria="Condiciones del servicio"></div>
 <p class="ba-huella" data-ba="huella"></p>
 <label class="ba-casilla"><input type="checkbox" data-campo="acepto"><span data-ba="rotulo-acepto"></span></label>
 <div class="flex flex-wrap items-center justify-between gap-3">
@@ -130,17 +140,67 @@
     'Razón social (nombre legal de la empresa)': 'Company name (legal name)', 'Nombre del negocio (cómo te conocen)': 'Business name (how people know you)',
     'Domicilio de la empresa': 'Company address', 'Contacto de privacidad (un correo o un teléfono)': 'Privacy contact (an email or a phone number)',
     'Cuánto tiempo guardas las conversaciones': 'How long you keep conversations', 'Por ejemplo: «24 meses desde el último mensaje»': 'For example: “24 months after the last message”',
+    'Parte 1 de 2 · Tu empresa': 'Part 1 of 2 · Your company', 'Parte 2 de 2 · Privacidad': 'Part 2 of 2 · Privacy', '‹ Atrás': '‹ Back', 'Siguiente ›': 'Next ›',
     '¿Qué has cambiado? (queda en el registro)': 'What did you change? (kept in the log)', 'Descartar los cambios': 'Discard changes', 'Guardar los datos': 'Save the details',
     '2 · Condiciones del servicio': '2 · Service terms', 'Aceptar las condiciones': 'Accept the terms', '3 · Contrato marco': '3 · Framework agreement',
     'Aceptaciones registradas': 'Recorded acceptances',
     'Los datos del negocio': 'Your business details', 'Aceptar las condiciones (versión vigente)': 'Accept the terms (current version)', 'Contrato marco firmado (lo confirma el estudio)': 'Signed framework agreement (confirmed by the studio)',
     'Todo listo: el estudio ya puede encender tu bot.': 'All set: the studio can now switch your bot on.', 'Falta algo': 'Something is missing',
-    'El texto legal se muestra en español, que es la versión que aceptas.': 'The legal text is shown in Spanish, which is the version you accept.',
     'Todavía no hay aceptaciones.': 'There are no acceptances yet.', 'Datos guardados.': 'Details saved.', 'Condiciones aceptadas.': 'Terms accepted.',
-    'Huella del texto que se te muestra (SHA-256):': 'Fingerprint of the text shown to you (SHA-256):'
+    'Huella del texto que se te muestra (SHA-256):': 'Fingerprint of the text shown to you (SHA-256):',
+    /* 15-oct-2026 (legal-bot-bbm): lo que faltaba en inglés. El rótulo de la casilla es el que cita la cláusula 16 de las Condiciones v3 en cada lengua. */
+    'He leído y acepto las condiciones del servicio de bots de WhatsApp, versión': 'I have read and accept the WhatsApp bot service terms, version',
+    'Condiciones del servicio': 'Service terms', 'Aceptadas por': 'Accepted by', 'Firmado': 'Signed', 'confirmado por': 'confirmed by',
+    'Completa y guarda los datos del negocio (arriba): las condiciones llevan tu razón social y tu nombre y hasta entonces no se pueden mostrar.': 'Complete and save the business details (above): the terms include your company name and your name, and until then they cannot be shown.',
+    'Cuando todo esté completo, el estudio enciende el bot desde su panel.': 'When everything is complete, the studio switches the bot on from its panel.',
+    'Cuenta en una frase qué has cambiado: queda en el registro.': 'Say in one sentence what you changed: it is kept in the log.',
+    'El texto que se muestra no coincide con su huella: recarga la página. No se puede aceptar.': 'The text shown does not match its fingerprint: reload the page. It cannot be accepted.',
+    'Falta publicar las condiciones: avisa al estudio.': 'The terms have not been published yet: let the studio know.',
+    'Has cambiado la razón social: las condiciones que ya habías aceptado dejan de valer y hay que aceptarlas otra vez antes de volver a encender el bot.': 'You changed the company name: the terms you had accepted no longer apply and must be accepted again before the bot can be switched on again.',
+    'La base no ha respondido: prueba otra vez en un rato.': 'The database did not respond: try again in a while.',
+    'No tienes permiso: esta pantalla es solo para el administrador de tu instancia.': 'You do not have permission: this screen is only for the administrator of your instance.',
+    'Pendiente: lo firma el cliente con el estudio y el estudio lo marca aquí cuando lo recibe. Sin él el bot no se enciende.': 'Pending: the client signs it with the studio, and the studio marks it here when it receives it. Without it the bot cannot be switched on.',
+    'Sin sesión: recarga la página o vuelve a entrar.': 'No session: reload the page or sign in again.',
+    'Todavía no hay condiciones publicadas: avisa al estudio.': 'No terms have been published yet: let the studio know.'
+  };
+  /* Indonesio (instancias con "idiomas": ["id", "en"], hoy bbm). Misma clave en español; se fusiona en window.LW_ID solo si existe (15-oct-2026,
+     legal-bot-bbm: antes la pantalla entera caía al inglés o al español). Traducción de modelo revisada por Idiomas, sin posedición humana. */
+  var ID_BA = {
+    'Bot de WhatsApp · alta y condiciones': 'Bot WhatsApp · pendaftaran dan ketentuan',
+    'Antes de encender tu bot hace falta que completes los datos de tu negocio, aceptes las condiciones del servicio y que el estudio confirme el contrato marco firmado. Aquí ves qué falta y lo haces.': 'Sebelum bot Anda dapat dinyalakan, Anda perlu melengkapi data usaha Anda, menerima ketentuan layanan, dan studio harus mengonfirmasi perjanjian induk yang sudah ditandatangani. Di sini Anda melihat apa yang masih kurang dan melengkapinya.',
+    'Qué falta para encender el bot': 'Yang masih kurang untuk menyalakan bot',
+    '1 · Datos de tu negocio para las condiciones': '1 · Data usaha Anda untuk ketentuan',
+    'Estos datos aparecen en las condiciones y en el aviso de privacidad que ven las personas que escriben a tu bot. Escríbelos tal cual los quieres ahí: tú respondes de que sean ciertos.': 'Data ini muncul di ketentuan dan di pemberitahuan privasi yang dilihat orang yang menulis ke bot Anda. Tulis persis seperti yang Anda inginkan di sana: Anda bertanggung jawab atas kebenarannya.',
+    'Razón social (nombre legal de la empresa)': 'Nama badan usaha (nama resmi perusahaan)', 'Nombre del negocio (cómo te conocen)': 'Nama usaha (nama yang dikenal orang)',
+    'Domicilio de la empresa': 'Alamat perusahaan', 'Contacto de privacidad (un correo o un teléfono)': 'Kontak privasi (email atau nomor telepon)',
+    'Cuánto tiempo guardas las conversaciones': 'Berapa lama Anda menyimpan percakapan', 'Por ejemplo: «24 meses desde el último mensaje»': 'Contoh: «24 bulan sejak pesan terakhir»',
+    'Parte 1 de 2 · Tu empresa': 'Bagian 1 dari 2 · Perusahaan Anda', 'Parte 2 de 2 · Privacidad': 'Bagian 2 dari 2 · Privasi', '‹ Atrás': '‹ Kembali', 'Siguiente ›': 'Lanjut ›',
+    '¿Qué has cambiado? (queda en el registro)': 'Apa yang Anda ubah? (tercatat di log)', 'Descartar los cambios': 'Buang perubahan', 'Guardar los datos': 'Simpan data',
+    '2 · Condiciones del servicio': '2 · Ketentuan layanan', 'Aceptar las condiciones': 'Terima ketentuan', '3 · Contrato marco': '3 · Perjanjian induk',
+    'Aceptaciones registradas': 'Penerimaan yang tercatat',
+    'Los datos del negocio': 'Data usaha', 'Aceptar las condiciones (versión vigente)': 'Menerima ketentuan (versi yang berlaku)', 'Contrato marco firmado (lo confirma el estudio)': 'Perjanjian induk yang ditandatangani (dikonfirmasi oleh studio)',
+    'Todo listo: el estudio ya puede encender tu bot.': 'Semua siap: studio sekarang dapat menyalakan bot Anda.', 'Falta algo': 'Masih ada yang kurang',
+    'Todavía no hay aceptaciones.': 'Belum ada penerimaan.', 'Datos guardados.': 'Data tersimpan.', 'Condiciones aceptadas.': 'Ketentuan diterima.',
+    'Huella del texto que se te muestra (SHA-256):': 'Sidik jari teks yang ditampilkan kepada Anda (SHA-256):',
+    'He leído y acepto las condiciones del servicio de bots de WhatsApp, versión': 'Saya telah membaca dan menerima ketentuan layanan bot WhatsApp, versi',
+    'Condiciones del servicio': 'Ketentuan layanan', 'Aceptadas por': 'Diterima oleh', 'Firmado': 'Ditandatangani', 'confirmado por': 'dikonfirmasi oleh',
+    'Completa y guarda los datos del negocio (arriba): las condiciones llevan tu razón social y tu nombre y hasta entonces no se pueden mostrar.': 'Lengkapi dan simpan data usaha (di atas): ketentuan memuat nama badan usaha dan nama Anda, dan sampai saat itu belum dapat ditampilkan.',
+    'Cuando todo esté completo, el estudio enciende el bot desde su panel.': 'Setelah semuanya lengkap, studio menyalakan bot dari panelnya.',
+    'Cuenta en una frase qué has cambiado: queda en el registro.': 'Jelaskan dalam satu kalimat apa yang Anda ubah: akan tercatat di log.',
+    'El texto que se muestra no coincide con su huella: recarga la página. No se puede aceptar.': 'Teks yang ditampilkan tidak sesuai dengan sidik jarinya: muat ulang halaman. Ketentuan tidak dapat diterima.',
+    'Falta publicar las condiciones: avisa al estudio.': 'Ketentuan belum diterbitkan: beri tahu studio.',
+    'Has cambiado la razón social: las condiciones que ya habías aceptado dejan de valer y hay que aceptarlas otra vez antes de volver a encender el bot.': 'Anda mengubah nama badan usaha: ketentuan yang sudah Anda terima tidak berlaku lagi dan harus diterima kembali sebelum bot dapat dinyalakan lagi.',
+    'La base no ha respondido: prueba otra vez en un rato.': 'Database tidak merespons: coba lagi sebentar lagi.',
+    'No tienes permiso: esta pantalla es solo para el administrador de tu instancia.': 'Anda tidak memiliki izin: layar ini hanya untuk administrator instansi Anda.',
+    'Pendiente: lo firma el cliente con el estudio y el estudio lo marca aquí cuando lo recibe. Sin él el bot no se enciende.': 'Tertunda: klien menandatanganinya dengan studio, dan studio menandainya di sini setelah menerimanya. Tanpa itu bot tidak dapat dinyalakan.',
+    'Sin sesión: recarga la página o vuelve a entrar.': 'Sesi habis: muat ulang halaman atau masuk lagi.',
+    'Todavía no hay condiciones publicadas: avisa al estudio.': 'Belum ada ketentuan yang diterbitkan: beri tahu studio.'
   };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
     Object.keys(EN_BA).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_BA[k]; });
+  }
+  if (window.LW_ID && typeof window.LW_ID === 'object') {
+    Object.keys(ID_BA).forEach(function (k) { if (!(k in window.LW_ID)) window.LW_ID[k] = ID_BA[k]; });
   }
   var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
   var traduce = function (raiz) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(raiz); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
@@ -171,9 +231,27 @@
     });
   }
 
-  /* El texto legal lleva **negrita** de markdown y párrafos separados por línea en blanco: se pinta con nodos de texto (nada de HTML). */
+  /* Desde la v3 (BOT-2026-10-15-v3) el texto lleva las tres lenguas en UN texto con UNA huella, separadas por las líneas `[[id]]`, `[[en]]`, `[[es]]`
+     (marcas estables: nada se engancha al texto de un encabezado). Se abre la sección del idioma de quien lee y las otras quedan plegadas, cada una con
+     su `lang`; lo que se acepta y se comprueba es el texto entero. Sin marcas (la v1, solo en español) se pinta como antes. */
+  var NOMBRE_IDIOMA = { id: 'Bahasa Indonesia', en: 'English', es: 'Español' };
   function pintaTexto(cont, t) {
     limpia(cont);
+    var trozos = String(t).split(/\n\[\[(id|en|es)\]\]\n/);
+    if (trozos.length < 3) { cont.setAttribute('lang', 'es'); pintaParrafos(cont, t); return; }
+    cont.removeAttribute('lang');
+    pintaParrafos(cont, trozos[0]);
+    var secc = [], mio = window.LW_IDIOMA;
+    for (var i = 1; i + 1 < trozos.length; i += 2) secc.push({ l: trozos[i], t: trozos[i + 1].replace(/^\s+|\s+$/g, '') });
+    secc = secc.filter(function (s) { return s.l === mio; }).concat(secc.filter(function (s) { return s.l !== mio; }));
+    secc.forEach(function (s, n) {
+      var d = document.createElement('details'); d.setAttribute('lang', s.l); d.setAttribute('data-idioma', s.l); d.open = n === 0;
+      var su = document.createElement('summary'); su.setAttribute('translate', 'no'); su.textContent = NOMBRE_IDIOMA[s.l] || s.l;
+      d.appendChild(su); pintaParrafos(d, s.t); cont.appendChild(d);
+    });
+  }
+  /* El texto legal lleva **negrita** de markdown y párrafos separados por línea en blanco: se pinta con nodos de texto (nada de HTML). */
+  function pintaParrafos(cont, t) {
     String(t).split(/\n{2,}/).forEach(function (par) {
       var p = document.createElement('p');
       par.split('**').forEach(function (trozo, i) {
@@ -261,10 +339,19 @@
     });
   }
 
+  /* bbm-comodidad S4 (15-oct-2026, «1, 2 o 3 campos a rellenar por paso»): el alta va en dos partes, «Tu empresa» (razón social, nombre,
+     domicilio) y «Privacidad» (contacto, plazo y el motivo que exige la base). Se guarda todo en la parte 2, con la misma llamada de siempre;
+     «Atrás» y «Siguiente» no tocan lo escrito. */
+  function vaParte(n) {
+    oculta($b('parte-1'), n !== 1); oculta($b('parte-2'), n !== 2);
+    oculta($b('atras'), n !== 2); oculta($b('siguiente'), n !== 1); oculta($b('guardar'), n !== 2);
+    texto($b('parte-linea'), n === 1 ? T('Parte 1 de 2 · Tu empresa') : T('Parte 2 de 2 · Privacidad'));
+  }
   function pinta() {
     var c = D.cliente || {};
     CAMPOS.forEach(function (k) { $c(k).value = c[k] || ''; });
     $c('motivo').value = '';
+    vaParte(1);
     oculta($b('aviso-razon'), true);
     pintaFaltan(); pintaTerminos(); pintaMarco(); pintaHistorial(); recuenta();
   }
@@ -283,13 +370,31 @@
   }
   function recoge() { var o = {}; CAMPOS.forEach(function (k) { o[k] = $c(k).value; }); return o; }
 
+  /* El primer dato que la base rechazaría, en SU orden (_wab_cliente_error: razón social, domicilio, contacto, plazo, nombre) y con SUS topes
+     (D.topes, que vienen de la base): vacío o largo, luego saltos de línea o asteriscos, luego el mínimo, luego el contacto sin correo ni teléfono.
+     Solo sirve para saber a qué parte volver; quien decide sigue siendo la base. */
+  function primerRechazado() {
+    var t = (D && D.topes) || {}, m = Number(t.minimo) || 1, orden = ['razon_social', 'domicilio', 'contacto_privacidad', 'plazo_conservacion', 'nombre_negocio'], i, v;
+    var limpio = function (k) { return $c(k).value.replace(/^\s+|\s+$/g, ''); };
+    for (i = 0; i < orden.length; i++) { v = $c(orden[i]).value; if (!limpio(orden[i]) || (t[orden[i]] && v.length > Number(t[orden[i]]))) return orden[i]; }
+    for (i = 0; i < orden.length; i++) if (/[\n*]/.test($c(orden[i]).value)) return orden[i];
+    for (i = 0; i < orden.length; i++) if (limpio(orden[i]).length < m) return orden[i];
+    v = $c('contacto_privacidad').value;
+    return !/@/.test(v) && !/(\d\D*){6}/.test(v) ? 'contacto_privacidad' : null;
+  }
   function guardaAlta(btn) {
     var motivo = $c('motivo').value;
     if (!motivo.trim()) { error(T('Cuenta en una frase qué has cambiado: queda en el registro.')); $c('motivo').focus(); return; }
     btn.disabled = true; error('');
     SB.rpc('wab_cliente_guarda', { p_datos: recoge(), p_motivo: motivo }).then(function (r) {
       btn.disabled = false;
-      if (r.error) { error(mensaje(r.error)); return; }
+      if (r.error) {
+        error(mensaje(r.error));
+        // un rechazo de un dato de la parte 1 (razón social, nombre, domicilio): se vuelve a esa parte con el mensaje a la vista. Se decide por el
+        // campo (el hint estable de la base y su misma comprobación), nunca por el texto del mensaje, que puede cambiar o traducirse
+        if (r.error.hint === 'cliente_no_valido' && ['razon_social', 'nombre_negocio', 'domicilio'].indexOf(primerRechazado()) !== -1) vaParte(1);
+        return;
+      }
       ok(T('Datos guardados.'));
       var cambia = r.data && r.data.razon_social_cambia;
       carga().then(function () {
@@ -327,6 +432,8 @@
       if (!el || !raiz.contains(el)) return;
       var a = el.getAttribute('data-accion');
       if (a === 'guardar-alta') guardaAlta(el);
+      else if (a === 'alta-siguiente') { error(''); vaParte(2); try { $c('contacto_privacidad').focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
+      else if (a === 'alta-atras') { vaParte(1); try { $c('razon_social').focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
       else if (a === 'recargar') carga();
       else if (a === 'aceptar') acepta(el);
     });

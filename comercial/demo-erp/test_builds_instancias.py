@@ -56,7 +56,9 @@ def construye(nombre):
     try:
         if not fuera_de_agencia(d):
             return 1, 'la carpeta temporal %s cae dentro de la agencia: no construyo (pisaría erp/despliegues)' % d, 0
-        env = dict(os.environ, AXW_PRUEBA_DESPLIEGUE=os.path.join(d, 'paquete'), PYTHONIOENCODING='utf-8')
+        # sin el barrido de idiomas en Chromium (comprueba_pantallas_idiomas): este test mide que la instancia CONSTRUYE y corre en el gate,
+        # que no puede depender de un navegador (tools/test.py, PY_ARGS). El barrido corre en el build de publicar y en test_idiomas_pantallas.py.
+        env = dict(os.environ, AXW_PRUEBA_DESPLIEGUE=os.path.join(d, 'paquete'), PYTHONIOENCODING='utf-8', AXW_IDIOMAS_SIN_NAVEGADOR='1')
         t0 = time.time()
         try:
             r = subprocess.run([sys.executable, '-c', LANZA, AQUI, dist, nombre], cwd=AQUI, env=env,

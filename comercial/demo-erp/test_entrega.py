@@ -229,6 +229,23 @@ bloque_lineas = re.findall(r"'((?:[^'\\]|\\.)*)'\s*:\s*'", bloque)
 repetidas = sorted({c for c in bloque_lineas if bloque_lineas.count(c) > 1})
 mira('ninguna clave repetida en EN_ENT' + (' (' + ', '.join(repetidas) + ')' if repetidas else ''), not repetidas)
 
+# Historial, por marcador explícito (agencia-c0, 15-oct-2026, medido en la base de bbm): siembra (vacío, postgres, «migración …», sistema:sql) =
+# «Sistema · Configuración inicial»; @axisworks.studio = «AxisWorks (soporte)», los dos sin su motivo; otro sistema:<rol> = «Sistema» con su motivo;
+# una persona, tal cual (también si firma con un nombre: no se oculta por descarte).
+m_aut = re.search(r'\n  function autorDe\(q\) \{.*?\n  \}', JS, re.S)
+mira('el historial clasifica al autor (autorDe)', bool(m_aut))
+if m_aut:
+    casos_aut = {'admin@bbm.com': 'persona', 'a"<svg onload="x">@x.com': 'persona', '0b0f6a9e-1c2d-4e5f-8a9b-0c1d2e3f4a5b': 'persona', 'Dion': 'persona',
+                 'migración 20261008138500': 'inicial', 'postgres': 'inicial', 'Postgres': 'inicial', 'sistema:sql': 'inicial', '': 'inicial',
+                 'soporte@axisworks.studio': 'soporte', 'sistema:aaas': 'sistema'}
+    r_aut = subprocess.run(['node', '-e', m_aut.group(0) + ';process.stdout.write(JSON.stringify(' + json.dumps(list(casos_aut)) + '.map(autorDe).concat([autorDe(null)])))'],
+                           capture_output=True, text=True, encoding='utf-8')
+    obt = json.loads(r_aut.stdout or 'null')
+    quiere = list(casos_aut.values()) + ['inicial']
+    mira('autorDe: persona / inicial / soporte / sistema por marcador explícito' + ('' if obt == quiere else ' (sale %r)' % obt), obt == quiere)
+mira('la fila pinta «Sistema» o «AxisWorks (soporte)» en vez del autor, y el motivo solo de una persona o de un sistema:<rol>',
+     "C.celda(QUIEN_DE[au] ? T(QUIEN_DE[au]) : x && x.quien)" in CODIGO and "C.celda(au === 'inicial' ? T('Configuración inicial') : au === 'soporte' ? '—' : x && x.motivo)" in CODIGO)
+
 if fallos:
     print('FALLOS (%d de %d):\n  ' % (len(fallos), casos) + '\n  '.join(fallos))
     sys.exit(1)

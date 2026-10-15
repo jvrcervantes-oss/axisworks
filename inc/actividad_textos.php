@@ -8,7 +8,7 @@
  *     resultado ni duración. Las coordinaciones se llaman «revisiones previas de planes entre agentes de IA».
  *   · El mensaje es en dos partes: el estudio trabaja con IA bajo supervisión humana; los agentes
  *     autónomos (AaaS) son un producto previsto y no están en servicio.
- *   · Ningún cliente, proyecto, importe ni texto de trabajo: la página solo conoce los 17 departamentos.
+ *   · Ningún cliente, proyecto, importe ni texto de trabajo: la página solo conoce los departamentos (los de inc/organigrama.php).
  * Los textos que pinta red.js en modo datos viven en el propio red.js (diccionario X.R). */
 $ACT = [
 'en' => [

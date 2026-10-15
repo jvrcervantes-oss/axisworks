@@ -32,14 +32,14 @@
   window.AXW_MAPA_MODULOS = M;
   var raiz = document.documentElement;
 
-  var estado = { listo: false, activos: null, error: null };   // activos: {modulo: true} o 'todos'
+  var estado = { listo: false, activos: null, error: null };   // activos: {modulo: true}; desde D1 nunca «todos» (sin fila = solo base)
   var avisaListo;
   var pListo = new Promise(function (r) { avisaListo = r; });
 
   function activo(mod) {
     if (!mod || mod === 'base') return true;
     if (estado.error || !estado.listo) return false;
-    return estado.activos === 'todos' || !!estado.activos[mod];
+    return !!estado.activos[mod];
   }
 
   /* Para las GUARDAS de pantalla de otros ficheros (desacople del núcleo comercial, 5-oct-2026). Distinto de activo(): activo()
@@ -357,7 +357,7 @@
   // ── pedir los activos (con sesión; un fallo no se guarda) ────────────────────────────────────
   function decide(err, valor) {
     if (err) estado.error = err;
-    else if (valor === null) estado.activos = 'todos';               // sin modulos_activos = todo encendido
+    else if (valor === null) estado.activos = { base: true };        // sin modulos_activos = SOLO base (D1, 20261014097100: la base cuenta igual)
     else if (Array.isArray(valor)) { var s = { base: true }; valor.forEach(function (k) { s[k] = true; }); estado.activos = s; }
     else estado.error = new Error('respuesta de módulos con forma rara');
     estado.listo = true;

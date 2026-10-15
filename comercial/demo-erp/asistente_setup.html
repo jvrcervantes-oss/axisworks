@@ -44,6 +44,17 @@
 .axw-why>div{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:16px;background:rgb(var(--tema-background));font-size:14px;line-height:1.45}
 .axw-why dt{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:rgb(var(--tema-on-surface-variant));margin-bottom:3px}
 .axw-why dd{margin:0;color:rgb(var(--tema-on-surface))}
+/* P5 (bbm-comodidad, 15-oct-2026; owner: «aprovechando el espacio … mostrando datos poco a poco»; Diseño consultado): el paso en dos columnas
+   cuando la TARJETA tiene sitio (container query, no media query: el carril ya come 324 px). Izquierda = lo que se rellena (≤ 640 px); derecha
+   (320 px, pegajosa) = para qué sirve + lo que el paso enseña de lado. Sin sitio, una columna y la explicación DESPUÉS de los campos. */
+[data-axw-as="tarjeta"]{container-type:inline-size}
+.axw-dos,.axw-izq,.axw-lado{display:flex;flex-direction:column;gap:20px;min-width:0}
+@media (min-width:1360px){.axw-wz[data-carril="1"] [data-axw-as="tarjeta"][data-axw-vista="paso"]{max-width:64rem!important}}
+@container (min-width:900px){
+  .axw-dos{display:grid;grid-template-columns:minmax(0,640px) 320px;justify-content:space-between;align-items:start;gap:32px}
+  .axw-lado{position:sticky;top:16px}
+  .axw-lado .axw-why{grid-template-columns:minmax(0,1fr)}
+}
 </style>
 <div class="flex flex-col w-full gap-6" data-axw-setup="asistente">
 <div class="lw-cabecera flex flex-col md:flex-row md:items-end gap-4 bg-surface-container-lowest p-6 md:p-8 rounded-2xl border border-outline-variant">
@@ -92,6 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function cargando() { var t = $('tarjeta'); t.setAttribute('aria-busy', 'true'); vacia(t).appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: U('cargando') })); }
   function fallo(texto, reintento) {
+    $('tarjeta').removeAttribute('data-axw-vista');   // P5: la caja de fallo no se ensancha
     sinCarril(); if (st.vista === 'duda') $('salir').style.display = 'none';
     var t = $('tarjeta'); t.setAttribute('aria-busy', 'false'); vacia(t);
     // S90: lo que ha pasado, en su caja, y la única cosa que hacer (Reintentar vuelve a MIRAR, nunca reenvía)
@@ -111,6 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
     sal.style.display = conSalir ? '' : 'none'; sal.textContent = U('luego'); sal.setAttribute('href', vuelta);
     document.title = titulo;
     $('tarjeta').style.maxWidth = '47.5rem';
+    $('tarjeta').removeAttribute('data-axw-vista');   // pintaPaso la vuelve a poner
   }
   function sinCarril() { $('cuerpo-asistente').removeAttribute('data-carril'); vacia($('carril')); }
   // Carril «Tu configuración» (S10-S60): los módulos con pasos y su n/m de obligatorios; el abierto, con sus pasos (hecho · actual · pendiente,
@@ -345,32 +358,53 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function pintaPaso(p, L) {
     var t = $('tarjeta');
+    t.setAttribute('data-axw-vista', 'paso');   // P5: solo la vista de un paso se ensancha a dos columnas
     var cab = cabezaPaso(p, L);
     var h = el('h2', { tabindex: '-1', class: 'font-headline-sm text-headline-sm text-deep-lagoon tracking-tight', style: 'font-size:28px;line-height:1.15', 'data-axw-paso': p.clave, text: S.texto('paso', p.clave, 0) });
     cab.appendChild(h);
-    cab.appendChild(porQue(p));
-    if (p.hecho) cab.appendChild(el('span', { class: 'self-start px-3 py-1 rounded-full font-label-md text-[13px] bg-primary-container text-on-primary', 'data-axw-hecho': '1', text: U('hecho') }));
+    t.appendChild(cab);
+    // P5 (owner, 15-oct-2026): a la izquierda lo que se rellena; a la derecha —o debajo de los campos en el móvil— para qué sirve y lo que el paso
+    // enseña de lado (ctx.lado: la muestra impresa de Facturas, la ilustración de la Entrega). Un componente sin ctx.lado (Ajustes) pinta como siempre.
+    var izq = el('div', { class: 'axw-izq', 'data-axw-as': 'izq' }), lado = el('aside', { class: 'axw-lado', 'data-axw-as': 'lado' }, [porQue(p)]);
+    t.appendChild(el('div', { class: 'axw-dos', 'data-axw-as': 'dos' }, [izq, lado]));
+    var faltaEl = null;   // se le pasa al componente (ctx.falta): Entrega la esconde mientras está apagada (la base no distingue apagada de incompleta)
+    if (p.hecho) izq.appendChild(el('span', { class: 'self-start px-3 py-1 rounded-full font-label-md text-[13px] bg-primary-container text-on-primary', 'data-axw-hecho': '1', text: U('hecho') }));
     else if (p.falta) {
-      cab.appendChild(el('p', { class: 'font-body-sm text-body-sm text-outline', 'data-axw-falta': p.falta.codigo, text: S.textoFalta(p.falta) }));
+      faltaEl = el('p', { class: 'font-body-sm text-body-sm text-outline', 'data-axw-falta': p.falta.codigo, text: S.textoFalta(p.falta) });
+      izq.appendChild(faltaEl);
       // Solo las faltas que el paso NO puede resolver llevan a su pestaña de Ajustes (impuestos en «reservas», varias empresas en «sociedades»);
       // en el resto el formulario de aquí ya es el sitio, y los pasos de otra pantalla traen su propio botón (revisor 12-oct, 2.ª vuelta)
       var dnd = FALTA_FUERA[p.falta.codigo];
-      if (dnd && !P.de(p.clave, p).externo) cab.appendChild(el('a', { href: RAIZ + dnd, 'data-axw-accion': 'abrir-donde', class: BTN2 + ' self-start', style: 'min-height:44px', text: U('revisar_ajustes') }));
+      if (dnd && !P.de(p.clave, p).externo) izq.appendChild(el('a', { href: RAIZ + dnd, 'data-axw-accion': 'abrir-donde', class: BTN2 + ' self-start', style: 'min-height:44px', text: U('revisar_ajustes') }));
     }
-    t.appendChild(cab);
     var pie = el('footer', { class: 'flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-outline-variant', 'data-axw-as': 'pie' });
     var idx = L.obligatorios.indexOf(p);
-    var atras = idx > 0 ? boton(U('atras'), 'atras', false) : null;
+    var atras = boton(U('atras'), 'atras', false);
+    atras.hidden = idx <= 0;   // en el primer paso solo sale si el paso va en partes y no está en la primera (S1c)
     if (p.modulo_requerido && !moduloActivo(p.modulo_requerido)) {
-      t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-requiere': p.modulo_requerido, text: U('requiere', { m: S.nombreModulo(p.modulo_requerido) }) }));
+      izq.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-requiere': p.modulo_requerido, text: U('requiere', { m: S.nombreModulo(p.modulo_requerido) }) }));
       if (atras) pie.appendChild(atras);
       t.appendChild(pie); h.focus(); return;
     }
     var comp = P.de(p.clave, p), cuerpo = el('div', { class: 'flex flex-col gap-4', 'data-axw-as': 'cuerpo' });
+    // S1c: un paso en partes (ctl.partes, AXW_SETUP.partes) usa el «Siguiente» y el «Atrás» de aquí para ir de parte en parte; en la última, el de
+    // siempre. Se escucha ANTES de pintar (revisor S1c): el último aviso se guarda y se aplica en cuanto existe el botón principal.
+    var parteVista = null, principal = null, txtPrincipal = '';
+    function aplicaParte() {
+      if (!parteVista || !principal) return;
+      principal.textContent = parteVista.k < parteVista.m ? U('siguiente') : txtPrincipal;
+      atras.hidden = idx <= 0 && parteVista.k <= 1;
+    }
+    cuerpo.addEventListener('axw-parte', function (ev) { parteVista = ev.detail || {}; aplicaParte(); });
     var editando = !p.hecho || st.cambia;
     var ctl = null;
-    if (editando || comp.externo) ctl = comp.pinta(cuerpo, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: st.cambia });
-    t.appendChild(cuerpo);
+    if (editando || comp.externo) ctl = comp.pinta(cuerpo, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: st.cambia, lado: lado, falta: faltaEl });
+    // Un paso hecho que ya no se cambia (la moneda, irreversible) enseña lo que quedó fijado (Experiencia, 15-oct: «no enseña cuál se eligió»)
+    if (!editando && !comp.externo && comp.actual) {
+      var va = comp.actual({ datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad });
+      if (va) izq.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-actual': p.clave, text: U('valor_actual', { v: String(va) }) }));
+    }
+    izq.appendChild(cuerpo);
     var motivo = null;
     // cambiar algo ya guardado: la base pide motivo (p17, 12-oct); se decide por el VALOR guardado, no por «hecho» (repaso 12-oct)
     if (editando && P.pideMotivo(p.clave, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad })) {
@@ -379,12 +413,13 @@ document.addEventListener('DOMContentLoaded', function () {
         el('span', { class: 'font-body-sm text-body-sm text-outline', text: U('motivo_ayuda') })]));
     }
     var err = el('p', { role: 'alert', class: 'font-body-sm text-body-sm text-error', 'data-axw-as': 'error', text: st.error || '' });
-    t.appendChild(err);
-    var principal;
+    izq.appendChild(err);
     if (comp.externo) principal = boton(U('comprobar'), 'comprobar', true);
     else if (!editando) principal = boton(U('siguiente'), 'siguiente', true);
     else if (ctl && ctl.bloqueado) principal = boton(U('siguiente'), 'siguiente', true);
     else principal = boton(ctl && ctl.boton ? ctl.boton : (p.irreversible ? U('siguiente') : U('guardar_seguir')), 'enviar', true);
+    txtPrincipal = principal.textContent;
+    aplicaParte();
     if (atras) pie.appendChild(atras);
     var der = el('div', { class: 'axw-btn flex flex-col md:flex-row gap-3', style: 'margin-left:auto' });
     if (!editando && !p.irreversible && !comp.externo) der.appendChild(boton(U('cambiar'), 'cambiar', false));
@@ -416,6 +451,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function pintaDuda() {
     var t = $('tarjeta');
+    t.removeAttribute('data-axw-vista');   // P5: «comprobando» no pasa por cabecera(): tampoco se ensancha
     t.setAttribute('aria-busy', 'true');
     t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-estado': 'duda', text: U('comprobando') }));   // sin botones: no se reenvía ni se sale
   }
@@ -462,6 +498,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (a === 'recomprobar') { st.vista = 'duda'; vacia(t); pintaDuda(); comprueba(p || { clave: st.paso, modulo: st.modulo }); return; }
     if (!ctx) return;
     if (a === 'atras') {
+      var pa = t._ctl && t._ctl.partes;
+      if (pa && pa.k > 1) { pa.retrocede(); var e1 = t.querySelector('[data-axw-as="error"]'); if (e1) e1.textContent = ''; return; }
       var L = lista(ctx.datos, st.modulo), i = L.obligatorios.indexOf(p);
       if (i > 0) { st.paso = L.obligatorios[i - 1].clave; st.error = ''; st.cambia = false; pinta(); }
       return;
@@ -476,6 +514,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (a === 'comprobar') { siguiente(p); return; }
     if (a === 'confirma-atras') { st.vista = 'paso'; st.error = ''; pinta(); return; }
     if (a === 'enviar') {
+      var pe = t._ctl && t._ctl.partes;
+      if (pe && pe.k < pe.m) { var ra = pe.avanza(), e0 = t.querySelector('[data-axw-as="error"]'); if (e0) e0.textContent = ra.ok ? '' : ra.error; return; }
       var r = t._ctl ? t._ctl.valores() : { ok: false, error: U('elige') };
       if (!r.ok) { var e = t.querySelector('[data-axw-as="error"]'); if (e) e.textContent = r.error; return; }
       var motivo = t._motivo ? t._motivo.value.trim() : '';

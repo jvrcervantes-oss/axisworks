@@ -140,6 +140,16 @@
       sr_meses_n: '%n meses de antelación',
       sr_dias_antes: '%n días de antelación',
       sr_bot: 'Límites del bot',
+      sr_mas_reglas: 'Más reglas',
+      sr_p_que: '¿Qué alquilas y a cuánto el día?',
+      sr_p_semana: '¿Y por semana o por mes? (opcional)',
+      sr_p_seguro: '¿Ofreces seguro?',
+      sr_p_fianza: '¿Pides fianza?',
+      sr_mas_seguro: 'Seguro de más días',
+      sr_p_donde: '¿Desde dónde sale?',
+      sr_p_cuanto: '¿Cuánto cuesta llevarla?',
+      sr_p_final: '¿Y al final del alquiler?',
+      sr_hoy: 'hoy',
       sr_max_tel: 'Reservas sin pagar por teléfono',
       sr_max_act: 'Reservas sin pagar a la vez, en total',
       sr_por_defecto: 'Aún no se ha guardado: si lo dejas así, se usan estos valores.',
@@ -177,6 +187,8 @@
       sr_ninguna_libre: 'No hay ninguna unidad que se pueda apuntar: da de alta las unidades primero.',
       // S45
       sr_ofrecer: 'Ofrecer entrega a domicilio',
+      sr_ofrecer_ayuda: 'Actívalo si llevas las motos a la puerta del cliente. Si no, salta este paso.',
+      sr_b_donde: '1 · Desde dónde sale', sr_b_cuanto: '2 · Cuánto cuesta', sr_b_final: '3 · Al final del alquiler',
       sr_sede_nombre: 'Sale desde (nombre de la tienda)',
       sr_sede_coord: 'Coordenadas de la tienda (lat, lng)',
       sr_sede_coord_ayuda: 'Cópialas de Google Maps: clic derecho sobre la tienda y pulsa las cifras. Por ejemplo: -8.65, 115.13',
@@ -279,7 +291,7 @@
     'Pasado ese tiempo sin pagar, la reserva se libera y la unidad vuelve a estar libre. Solo afecta a las reservas nuevas.': 'After that time without payment, the booking is released and the unit is free again. It only affects new bookings.',
     'Alquiler más corto': 'Shortest rental', 'Alquiler más largo': 'Longest rental', 'Un día menos': 'One day less', 'Un día más': 'One day more', 'Uno menos': 'One less', 'Uno más': 'One more',
     'Se puede reservar con': 'Bookable up to', 'Sin límite': 'No limit', '%n meses de antelación': '%n months ahead', '%n días de antelación': '%n days ahead',
-    'Límites del bot': 'Bot limits', 'Reservas sin pagar por teléfono': 'Unpaid bookings per phone', 'Reservas sin pagar a la vez, en total': 'Unpaid bookings at once, in total',
+    'Límites del bot': 'Bot limits', 'Más reglas': 'More rules', '¿Qué alquilas y a cuánto el día?': 'What do you rent, and how much per day?', '¿Y por semana o por mes? (opcional)': 'And per week or per month? (optional)', '¿Ofreces seguro?': 'Do you offer insurance?', '¿Pides fianza?': 'Do you ask for a deposit?', 'Seguro de más días': 'Insurance for longer rentals', '¿Desde dónde sale?': 'Where does it leave from?', '¿Cuánto cuesta llevarla?': 'How much does delivery cost?', '¿Y al final del alquiler?': 'And at the end of the rental?', 'hoy': 'today', 'Reservas sin pagar por teléfono': 'Unpaid bookings per phone', 'Reservas sin pagar a la vez, en total': 'Unpaid bookings at once, in total',
     'Aún no se ha guardado: si lo dejas así, se usan estos valores.': 'Not saved yet: if you leave it like this, these values are used.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar a las %h se libera.': 'Example: a booking made at 10:00 and still unpaid at %h is released.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar se libera al día siguiente a las %h.': 'Example: a booking made at 10:00 and still unpaid is released the next day at %h.',
@@ -307,7 +319,8 @@
     'Gratis · hasta %k km': 'Free · up to %k km', '%p por km después · hasta %k km': '%p per km after that · up to %k km', 'Mínimo por trayecto: %p': 'Minimum per trip: %p',
     'Ilustración · sin escala': 'Illustration · not to scale', 'Tienda': 'Shop',
     'Ilustración: la tienda en el centro, la zona gratis alrededor y la zona de pago hasta la distancia máxima.': 'Illustration: the shop in the centre, the free zone around it and the paid zone up to the maximum distance.',
-    'Más ajustes en Entrega': 'More delivery settings',
+    'Más ajustes en Entrega': 'More delivery settings', 'Actívalo si llevas las motos a la puerta del cliente. Si no, salta este paso.': 'Switch it on if you take the bikes to the customer’s door. If not, skip this step.',
+    '1 · Desde dónde sale': '1 · Where it leaves from', '2 · Cuánto cuesta': '2 · What it costs', '3 · Al final del alquiler': '3 · At the end of the rental',
     'Escribe las coordenadas como «-8.65, 115.13».': 'Write the coordinates like «-8.65, 115.13».',
     'Los km gratis tienen que quedar por debajo de la distancia máxima.': 'The free km have to stay below the maximum distance.',
     'Para ofrecer la entrega hacen falta la tienda, sus coordenadas, el precio por km, la distancia máxima y decidir la recogida.': 'To offer delivery you need the shop, its coordinates, the price per km, the maximum distance and a decision on collection.',
@@ -387,7 +400,7 @@
     'Pasado ese tiempo sin pagar, la reserva se libera y la unidad vuelve a estar libre. Solo afecta a las reservas nuevas.': 'Setelah waktu itu lewat tanpa pembayaran, booking dilepas dan unit kembali tersedia. Hanya berlaku untuk booking baru.',
     'Alquiler más corto': 'Sewa terpendek', 'Alquiler más largo': 'Sewa terpanjang', 'Un día menos': 'Kurangi satu hari', 'Un día más': 'Tambah satu hari', 'Uno menos': 'Kurangi satu', 'Uno más': 'Tambah satu',
     'Se puede reservar con': 'Bisa booking paling jauh', 'Sin límite': 'Tanpa batas', '%n meses de antelación': '%n bulan sebelumnya', '%n días de antelación': '%n hari sebelumnya',
-    'Límites del bot': 'Batas bot', 'Reservas sin pagar por teléfono': 'Booking belum dibayar per nomor telepon', 'Reservas sin pagar a la vez, en total': 'Total booking belum dibayar sekaligus',
+    'Límites del bot': 'Batas bot', 'Más reglas': 'Aturan lain', '¿Qué alquilas y a cuánto el día?': 'Apa yang Anda sewakan, dan berapa per hari?', '¿Y por semana o por mes? (opcional)': 'Lalu per minggu atau per bulan? (opsional)', '¿Ofreces seguro?': 'Apakah Anda menawarkan asuransi?', '¿Pides fianza?': 'Apakah Anda meminta deposit?', 'Seguro de más días': 'Asuransi untuk sewa lebih lama', '¿Desde dónde sale?': 'Berangkat dari mana?', '¿Cuánto cuesta llevarla?': 'Berapa biaya antarnya?', '¿Y al final del alquiler?': 'Dan di akhir masa sewa?', 'hoy': 'hari ini', 'Reservas sin pagar por teléfono': 'Booking belum dibayar per nomor telepon', 'Reservas sin pagar a la vez, en total': 'Total booking belum dibayar sekaligus',
     'Aún no se ha guardado: si lo dejas así, se usan estos valores.': 'Belum tersimpan: jika dibiarkan, nilai-nilai ini yang dipakai.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar a las %h se libera.': 'Contoh: booking dibuat pukul 10:00 dan belum dibayar pada pukul %h akan dilepas.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar se libera al día siguiente a las %h.': 'Contoh: booking dibuat pukul 10:00 dan belum dibayar akan dilepas keesokan harinya pukul %h.',
@@ -415,7 +428,8 @@
     'Gratis · hasta %k km': 'Gratis · sampai %k km', '%p por km después · hasta %k km': '%p per km setelahnya · sampai %k km', 'Mínimo por trayecto: %p': 'Minimum per perjalanan: %p',
     'Ilustración · sin escala': 'Ilustrasi · tidak berskala', 'Tienda': 'Toko',
     'Ilustración: la tienda en el centro, la zona gratis alrededor y la zona de pago hasta la distancia máxima.': 'Ilustrasi: toko di tengah, zona gratis di sekitarnya, dan zona berbayar sampai jarak maksimum.',
-    'Más ajustes en Entrega': 'Pengaturan lain di Pengantaran',
+    'Más ajustes en Entrega': 'Pengaturan lain di Pengantaran', 'Actívalo si llevas las motos a la puerta del cliente. Si no, salta este paso.': 'Aktifkan jika Anda mengantar motor ke depan pintu pelanggan. Jika tidak, lewati langkah ini.',
+    '1 · Desde dónde sale': '1 · Berangkat dari mana', '2 · Cuánto cuesta': '2 · Berapa biayanya', '3 · Al final del alquiler': '3 · Di akhir sewa',
     'Escribe las coordenadas como «-8.65, 115.13».': 'Tulis koordinat seperti «-8.65, 115.13».',
     'Los km gratis tienen que quedar por debajo de la distancia máxima.': 'Km gratis harus di bawah jarak maksimum.',
     'Para ofrecer la entrega hacen falta la tienda, sus coordenadas, el precio por km, la distancia máxima y decidir la recogida.': 'Untuk menawarkan pengantaran diperlukan toko, koordinatnya, harga per km, jarak maksimum, dan keputusan soal penjemputan.',
@@ -540,6 +554,16 @@
   function grupo(caja, titulo, ayuda) {
     var g = el('div', { class: 'flex flex-col gap-3 min-w-0' }, [el('span', { class: CLS_ETQ, style: 'font-weight:600', text: titulo }), ayuda ? el('span', { class: CLS_AYUDA, text: ayuda }) : null]);
     caja.appendChild(g); return g;
+  }
+  // P5: el interruptor se ve como interruptor (Diseño, 15-oct): pista de pastilla, sin sombras; colores solo por token de la piel
+  function estiloInterruptor() {
+    if (document.getElementById('axw-sr-estilo')) return;
+    var s = document.createElement('style'); s.id = 'axw-sr-estilo';
+    s.textContent = '.axw-sr-switch{-webkit-appearance:none;appearance:none;width:44px!important;height:24px!important;flex:none;margin:0;border-radius:999px;position:relative;cursor:pointer;background:rgb(var(--tema-outline-variant))}'
+      + '.axw-sr-switch::before{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:999px;background:rgb(var(--tema-surface-container-lowest));transition:transform .15s}'
+      + '.axw-sr-switch:checked{background:rgb(var(--tema-primary-container))}.axw-sr-switch:checked::before{transform:translateX(20px)}'
+      + '.axw-sr-switch:focus-visible{outline:2px solid rgb(var(--tema-primary));outline-offset:2px}';
+    document.head.appendChild(s);
   }
   function nota(caja, texto, tipo) { var p = el('p', { class: 'font-body-sm text-body-sm ' + (tipo === 'error' ? 'text-error' : 'text-on-surface-variant'), 'data-axw-sr-nota': tipo || 'info', text: texto }); caja.appendChild(p); return p; }
   function campoMotivo(caja, st) {
@@ -667,8 +691,23 @@
         var zona = el('div', { class: 'flex flex-col gap-5 min-w-0', 'data-axw-sr': def.clave });
         caja.appendChild(zona);
         st.zona = zona;
+        // S1c: un paso en partes (S.partes) pregunta a su propia validación qué falla y dónde, para no dejar seguir con un error de esta parte
+        st.errores = function () { var r = def.valores(st); return r.ok ? [] : (r.errores || [{ t: r.error }]); };
+        var ctl = {
+          valores: function () {
+            if (!st.listo) return { ok: false, error: U('cargando') };
+            var r = def.valores(st);
+            if (r.ok) r.v.__st = st;
+            else if (st.partes && r.errores) st.partes.irA(r.errores);   // en la última parte, un error de una anterior lleva a la suya
+            return r;
+          },
+          boton: def.boton ? U(def.boton) : null,
+          partes: null   // el contrato con el anfitrión (S.partes): lo pone dibuja() si el paso va en partes
+        };
         st.recarga = function () {
-          st.listo = false; st.motivo = null;
+          st.listo = false; st.motivo = null; st.partes = null; ctl.partes = null;
+          var viejo = ctx.lado && ctx.lado.querySelector('[data-axw-lado-de="' + def.clave + '"]');
+          if (viejo) viejo.parentNode.removeChild(viejo);   // lo que el paso puso de lado no se queda mientras relee (ni si la relectura falla)
           vacia(zona).appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', 'data-axw-sr-estado': 'cargando', text: U('cargando') }));
           return def.lee(ctx).then(function (r) {
             vacia(zona);
@@ -681,8 +720,9 @@
             }
             st.datos = r.datos;
             var b0 = BORRADOR[def.clave];
-            if (b0) st.filas = b0.filas || {};
+            if (b0) { st.filas = b0.filas || {}; if (b0.parte) st.parte = b0.parte; }   // tras un fallo se vuelve a la parte en la que estaba
             def.dibuja(zona, st);
+            ctl.partes = st.partes || null;
             if (b0) { restaura(zona, b0); if (def.refresca) def.refresca(st); }
             var av = AVISO[def.clave];
             if (av) { zona.insertBefore(el('p', { role: 'status', 'data-axw-sr-aviso': '1', class: 'rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-sm text-body-sm text-on-surface', text: av }), zona.firstChild); }   // sigue hasta el próximo guardado: el asistente repinta el paso al fallar
@@ -690,20 +730,12 @@
           });
         };
         st.recarga();
-        return {
-          valores: function () {
-            if (!st.listo) return { ok: false, error: U('cargando') };
-            var r = def.valores(st);
-            if (r.ok) r.v.__st = st;
-            return r;
-          },
-          boton: def.boton ? U(def.boton) : null
-        };
+        return ctl;
       },
       guarda: function (sb, v) {
         var st = v.__st;
         if (!st) return Promise.resolve({ ok: false, error: { hint: 'axw_no_confirma' } });
-        BORRADOR[def.clave] = instantanea(st.zona); delete AVISO[def.clave];
+        BORRADOR[def.clave] = instantanea(st.zona); BORRADOR[def.clave].parte = st.parte || null; delete AVISO[def.clave];
         return def.guarda(sb, v, st).then(function (r) {
           if (r.ok) { delete BORRADOR[def.clave]; delete AVISO[def.clave]; return { ok: true, sigue: r.sigue || null }; }
           if (r.hechos && r.hechos.length) AVISO[def.clave] = U('sr_parcial', { h: r.hechos.join(', '), f: r.falla || '—' });
@@ -781,31 +813,45 @@
       var d = st.datos, p = d.p, mon = (st.ctx.datos && st.ctx.datos.moneda) || '';
       var g0 = p ? d.setup.garantias.filter(function (x) { return x.producto_id === p.id; })[0] || null : null;
       var seg0 = p ? d.setup.seguro_tramos.filter(function (x) { return x.producto_id === p.id; }) : [];
-      campo(zona, 'nombre', U('sr_nombre'), p ? p.nombre : '', { max: 120, ayuda: U('sr_nombre_ayuda') });
-      // Precios
-      var gp = grupo(zona, U('sr_precios'), U('sr_precios_ayuda')), rp = rejilla(160);
-      TRAMOS_PRECIO.forEach(function (t) {
+      // S1c (owner 15-oct: «1, 2 o 3 campos a rellenar por paso»): el alta en 4 partes de 1-3 campos (S.partes). Se valida y se guarda TODO en la
+      // última, como antes: lo que se manda a la base no cambia. 1 qué y a cuánto el día + matrículas · 2 semana y mes · 3 seguro · 4 fianza (+ motivo)
+      var PT = S.partes({ padre: zona, marca: 'flota', inicio: st.parte, errores: st.errores, alCambiar: function (k) { st.parte = k; } });
+      st.partes = PT;
+      var z1 = PT.nueva(U('sr_p_que')), z2 = PT.nueva(U('sr_p_semana')), z3 = PT.nueva(U('sr_p_seguro')), z4 = PT.nueva(U('sr_p_fianza'));
+      function precio(caja, t) {
         var x = p ? p.tarifas.filter(function (y) { return Number(y.dias) === t[0]; })[0] : null;
-        campo(rp, 'tarifa_' + t[0], U(t[1]), x ? fmt(x.precio) : '', { modo: 'decimal', antes: mon, max: 20 });
-      });
-      gp.appendChild(rp);
+        campo(caja, 'tarifa_' + t[0], U(t[1]), x ? fmt(x.precio) : '', { modo: 'decimal', antes: mon, max: 20 });
+      }
+      campo(z1, 'nombre', U('sr_nombre'), p ? p.nombre : '', { max: 120, ayuda: U('sr_nombre_ayuda') });
+      precio(z1, TRAMOS_PRECIO[0]);
+      // Precios de 7 y 30 días
+      var rp = rejilla(160);
+      precio(rp, TRAMOS_PRECIO[1]); precio(rp, TRAMOS_PRECIO[2]);
+      z2.appendChild(rp);
+      nota(z2, U('sr_precios_ayuda'));
       var otros = p ? p.tarifas.filter(function (y) { return [1, 7, 30].indexOf(Number(y.dias)) < 0; }).map(function (y) { return String(y.dias); }) : [];
-      if (otros.length) nota(gp, U('sr_otros_tramos', { d: otros.join(', ') }));
-      // Seguro (por tramo) y fianza
-      var gs = grupo(zona, U('sr_seguro'), U('sr_seguro_ayuda')), rs = rejilla(160);
-      TRAMOS_SEGURO.forEach(function (dd) {
+      if (otros.length) nota(z2, U('sr_otros_tramos', { d: otros.join(', ') }));
+      // Seguro (por tramo): el de un día y «toda reserva lleva seguro» a la vista; los de 30 y 365 días, plegados con su resumen
+      nota(z3, U('sr_seguro_ayuda'));
+      function seguro(caja, dd) {
         var x = seg0.filter(function (y) { return Number(y.dias) === dd; })[0];
-        campo(rs, 'seguro_' + dd, txtTramo(dd), x ? fmt(x.precio) : '', { modo: 'decimal', antes: mon, max: 20 });
-      });
-      gs.appendChild(rs);
+        campo(caja, 'seguro_' + dd, txtTramo(dd), x ? fmt(x.precio) : '', { modo: 'decimal', antes: mon, max: 20 });
+      }
+      seguro(z3, TRAMOS_SEGURO[0]);
+      interruptor(z3, 'seguro_obligatorio', U('sr_seguro_oblig'), g0 && g0.seguro_obligatorio === true);
+      var ps = S.plegado({ padre: z3, marca: 'seguro-mas', rotulo: U('sr_mas_seguro'), resumen: function () {
+        return TRAMOS_SEGURO.slice(1).map(function (dd) { var x = val(zona, 'seguro_' + dd); return x ? txtTramo(dd) + ': ' + x : null; }); } });
+      var rs = rejilla(160);
+      TRAMOS_SEGURO.slice(1).forEach(function (dd) { seguro(rs, dd); });
+      ps.cuerpo.appendChild(rs); ps.actualiza();
       var segOtros = seg0.filter(function (y) { return TRAMOS_SEGURO.indexOf(Number(y.dias)) < 0; }).map(function (y) { return String(y.dias); });
-      if (segOtros.length) nota(gs, U('sr_otros_tramos', { d: segOtros.join(', ') }));
-      interruptor(gs, 'seguro_obligatorio', U('sr_seguro_oblig'), g0 && g0.seguro_obligatorio === true);
-      campo(zona, 'fianza', U('sr_fianza'), g0 && g0.fianza != null ? fmt(g0.fianza) : '', { modo: 'decimal', antes: mon, max: 20, ayuda: U('sr_fianza_ayuda') });
-      seg(zona, 'fianza_con_seguro', U('sr_fianza_o'), [['no', U('sr_fianza_o_no')], ['si', U('sr_fianza_o_si')]], g0 ? (g0.fianza_con_seguro ? 'si' : 'no') : 'no');
+      if (segOtros.length) nota(z3, U('sr_otros_tramos', { d: segOtros.join(', ') }));
+      campo(z4, 'fianza', U('sr_fianza'), g0 && g0.fianza != null ? fmt(g0.fianza) : '', { modo: 'decimal', antes: mon, max: 20, ayuda: U('sr_fianza_ayuda') });
+      seg(z4, 'fianza_con_seguro', U('sr_fianza_o'), [['no', U('sr_fianza_o_no')], ['si', U('sr_fianza_o_si')]], g0 ? (g0.fianza_con_seguro ? 'si' : 'no') : 'no');
       // Unidades (diseño S41): una tabla «# · Matrícula · Quitar». Las que ya hay, fijas y numeradas; las nuevas, una fila por matrícula.
       // La cuenta de la cabecera sigue a las filas. El color de la unidad del diseño no se pinta: la base no lo guarda.
-      var gu = grupo(zona, U('sr_unidades'), U('sr_unidades_ayuda'));
+      var gu = grupo(z1, U('sr_unidades'), U('sr_unidades_ayuda'));
+      gu.setAttribute('data-axw-error-de', 'unidades');   // «añade al menos una unidad» lleva a esta parte aunque no quede ninguna fila
       var ya = p ? p.unidades : [];
       var COLS = 'display:grid;grid-template-columns:2.5rem minmax(0,1fr) 44px;gap:8px;align-items:center';
       var cuenta = el('p', { class: 'font-label-md text-label-md text-on-surface-variant', 'data-axw-sr-cuenta': 'unidades' });
@@ -851,41 +897,43 @@
       var mas = el('button', { type: 'button', 'data-axw-sr-accion': 'anadir-unidad', class: CLS_BTN2 + ' self-start', style: ALTO, text: '+ ' + U('sr_anadir_unidad') });
       mas.addEventListener('click', function () { fila().focus(); });
       gu.appendChild(mas);
-      var pie = el('p', { class: CLS_AYUDA }, [U('sr_mas_alquileres') + ' ']);
-      zona.appendChild(pie);
-      if (p) campoMotivo(zona, st);
+      if (p) campoMotivo(z4, st);
+      z4.appendChild(el('p', { class: CLS_AYUDA }, [U('sr_mas_alquileres') + ' ']));
+      PT.listo();
     },
     valores: function (st) {
-      var z = st.zona, d = st.datos, p = d.p, v = { tarifas: {}, seguros: {}, nuevas: [] }, er = [];
+      var z = st.zona, d = st.datos, p = d.p, v = { tarifas: {}, seguros: {}, nuevas: [] }, er = [], ec = [];
+      // cada error dice de qué campo es (S1c): las partes llevan a la suya y abren su plegado al llegar (un error nunca se esconde)
+      function mal(c, t) { er.push(t); ec.push({ c: c, t: t }); }
       v.nombre = val(z, 'nombre');
-      if (!v.nombre) er.push(U('sr_falta_nombre'));
-      TRAMOS_PRECIO.forEach(function (t) { var r = leeImporte(z, 'tarifa_' + t[0], U(t[1])); if (r.e) er.push(r.e); else v.tarifas[t[0]] = r.v; });
-      if (v.tarifas[1] == null && !er.length) er.push(U('sr_falta_dia'));
+      if (!v.nombre) mal('nombre', U('sr_falta_nombre'));
+      TRAMOS_PRECIO.forEach(function (t) { var r = leeImporte(z, 'tarifa_' + t[0], U(t[1])); if (r.e) mal('tarifa_' + t[0], r.e); else v.tarifas[t[0]] = r.v; });
+      if (v.tarifas[1] == null && !er.length) mal('tarifa_1', U('sr_falta_dia'));
       // ayuda, no garantía: la base vuelve a comprobar «más días no cuesta menos en total»
       var tt = [1, 7, 30].map(function (k) { return v.tarifas[k]; });
-      if ((tt[1] != null && tt[0] != null && tt[1] < tt[0]) || (tt[2] != null && ((tt[1] != null && tt[2] < tt[1]) || (tt[0] != null && tt[2] < tt[0])))) er.push(U('sr_tramo_menos'));
-      TRAMOS_SEGURO.forEach(function (dd) { var r = leeImporte(z, 'seguro_' + dd, txtTramo(dd)); if (r.e) er.push(r.e); else v.seguros[dd] = r.v; });
+      if ((tt[1] != null && tt[0] != null && tt[1] < tt[0]) || (tt[2] != null && ((tt[1] != null && tt[2] < tt[1]) || (tt[0] != null && tt[2] < tt[0])))) mal('tarifa_7', U('sr_tramo_menos'));
+      TRAMOS_SEGURO.forEach(function (dd) { var r = leeImporte(z, 'seguro_' + dd, txtTramo(dd)); if (r.e) mal('seguro_' + dd, r.e); else v.seguros[dd] = r.v; });
       var sv = TRAMOS_SEGURO.map(function (k) { return v.seguros[k]; }).filter(function (x) { return x != null; });
-      for (var i = 1; i < sv.length; i++) if (sv[i] < sv[i - 1]) { er.push(U('sr_tramo_menos')); break; }
-      var fz = leeImporte(z, 'fianza', U('sr_fianza')); if (fz.e) er.push(fz.e); else v.fianza = fz.v;
+      for (var i = 1; i < sv.length; i++) if (sv[i] < sv[i - 1]) { mal('seguro_' + TRAMOS_SEGURO[1], U('sr_tramo_menos')); break; }
+      var fz = leeImporte(z, 'fianza', U('sr_fianza')); if (fz.e) mal('fianza', fz.e); else v.fianza = fz.v;
       v.seguro_obligatorio = !!(z.querySelector('[data-axw-campo="seguro_obligatorio"]') || {}).checked;
       v.fianza_con_seguro = marcado(z, 'fianza_con_seguro') === 'si';
       var segurosTras = TRAMOS_SEGURO.some(function (k) { return v.seguros[k] != null; }) || (p && d.setup.seguro_tramos.some(function (x) { return x.producto_id === p.id && TRAMOS_SEGURO.indexOf(Number(x.dias)) < 0; }));
-      if (v.seguro_obligatorio && !segurosTras) er.push(U('sr_seguro_sin_precio'));
+      if (v.seguro_obligatorio && !segurosTras) mal('seguro_' + TRAMOS_SEGURO[0], U('sr_seguro_sin_precio'));
       var ya = (p ? p.unidades : []).map(function (u) { return normMat(u.identificador); }), vistos = {};
       z.querySelectorAll('[data-axw-sr-fila] input[data-axw-campo^="mat_"]').forEach(function (inp) {
-        var m = normMat(inp.value);
+        var m = normMat(inp.value), c = inp.getAttribute('data-axw-campo');
         if (!m) return;
-        if (ya.indexOf(m) >= 0 || vistos[m]) { er.push(U('sr_matricula_repe', { m: m })); return; }
+        if (ya.indexOf(m) >= 0 || vistos[m]) { mal(c, U('sr_matricula_repe', { m: m })); return; }
         var tm = d.flota.topes && d.flota.topes.identificador;
-        if (esObj(tm) && ((num(tm.min) != null && m.length < tm.min) || (num(tm.max) != null && m.length > tm.max))) { er.push(U('sr_matricula_largo', { m: m })); return; }
+        if (esObj(tm) && ((num(tm.min) != null && m.length < tm.min) || (num(tm.max) != null && m.length > tm.max))) { mal(c, U('sr_matricula_largo', { m: m })); return; }
         vistos[m] = 1; v.nuevas.push(m);
       });
-      if (!ya.length && !v.nuevas.length) er.push(U('sr_sin_unidades'));
-      if (er.length) return { ok: false, error: er.filter(function (x, i2) { return er.indexOf(x) === i2; }).join(' ') };
+      if (!ya.length && !v.nuevas.length) mal('unidades', U('sr_sin_unidades'));
+      if (er.length) return { ok: false, error: er.filter(function (x, i2) { return er.indexOf(x) === i2; }).join(' '), errores: ec };
       v.plan = planAlquiler(st, v);
       var m = motivo(st, !!(p && v.plan.cambia));
-      if (m.e) return { ok: false, error: m.e };
+      if (m.e) return { ok: false, error: m.e, errores: [{ c: 'sr_motivo', t: m.e }] };
       v.motivo = m.v;
       return { ok: true, v: v };
     },
@@ -1009,12 +1057,16 @@
         sel.appendChild(el('option', { value: String(o[0]), text: o[0] === '' ? U(o[1]) : (o[1] ? U('sr_meses_n', { n: String(o[1]) }) : U('sr_dias_antes', { n: String(o[0]) })) }));
       });
       sel.value = hz == null ? '' : String(hz);
-      zona.appendChild(el('div', { class: 'flex flex-col gap-1.5 min-w-0', 'data-axw-fila': 'horizonte_dias', style: 'max-width:22rem' }, [el('label', { for: sel.id, class: CLS_ETQ, text: U('sr_horizonte') }), sel]));
-      var det = el('details', { class: 'rounded-xl border border-outline-variant px-4 py-3', 'data-axw-sr-bot': '1' }, [el('summary', { class: CLS_ETQ, style: 'cursor:pointer;min-height:24px', text: U('sr_bot') })]);
-      var r3 = rejilla(200); r3.style.marginTop = '12px';
+      // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): a la vista las 3 que exige la base; la antelación y los límites del bot, bajo «Más reglas»
+      var mas = S.plegado({ padre: zona, marca: 'reglas', rotulo: U('sr_mas_reglas'), resumen: function () {
+        var s1 = sel.options[sel.selectedIndex];
+        return [U('sr_horizonte') + ': ' + (s1 ? s1.text : '—'), U('sr_max_tel') + ': ' + (val(zona, 'max_por_telefono') || '—'), U('sr_max_act') + ': ' + (val(zona, 'max_activos') || '—')]; } });
+      mas.cuerpo.appendChild(el('div', { class: 'flex flex-col gap-1.5 min-w-0', 'data-axw-fila': 'horizonte_dias', style: 'max-width:22rem' }, [el('label', { for: sel.id, class: CLS_ETQ, text: U('sr_horizonte') }), sel]));
+      var r3 = rejilla(200);
       stepper(r3, 'max_por_telefono', U('sr_max_tel'), efectiva(d, 'max_por_telefono'), RANGOS.max_por_telefono);
       campo(r3, 'max_activos', U('sr_max_act'), fmt(efectiva(d, 'max_activos')), { tipo: 'number', modo: 'numeric', min: '1', maxv: '500' });
-      det.appendChild(r3); zona.appendChild(det);
+      mas.cuerpo.appendChild(el('div', { class: 'flex flex-col gap-2', 'data-axw-sr-bot': '1' }, [el('p', { class: CLS_ETQ, text: U('sr_bot') }), r3]));
+      mas.actualiza();
       var ej = el('p', { class: 'rounded-xl bg-surface-container-low px-4 py-3 font-body-sm text-body-sm text-on-surface', 'data-axw-sr-ejemplo': '1' });
       zona.appendChild(ej);
       function refresca() {
@@ -1035,7 +1087,10 @@
       v.bloqueo_minutos = Number(b);
       ['dias_min', 'dias_max', 'max_por_telefono', 'max_activos'].forEach(function (k) {
         var raw = val(z, k), n = Number(raw);
-        if (!/^\d+$/.test(raw) || n < RANGOS[k][0] || n > RANGOS[k][1]) er.push(U(ETQ_REGLA[k]) + ': ' + U('sr_rango', { a: String(RANGOS[k][0]), b: String(RANGOS[k][1]) }));
+        if (!/^\d+$/.test(raw) || n < RANGOS[k][0] || n > RANGOS[k][1]) {
+          er.push(U(ETQ_REGLA[k]) + ': ' + U('sr_rango', { a: String(RANGOS[k][0]), b: String(RANGOS[k][1]) }));
+          var dp = z.querySelector('[data-axw-campo="' + k + '"]'); dp = dp && dp.closest('details[data-axw-plegado]'); if (dp) dp.open = true;   // un error nunca se esconde
+        }
         else v[k] = n;
       });
       if (v.dias_min != null && v.dias_max != null && v.dias_max < v.dias_min) er.push(U('sr_max_menor'));
@@ -1101,10 +1156,15 @@
         sel.appendChild(el('option', { value: '', text: U('elige') }));
         d.unidades.forEach(function (u) { sel.appendChild(el('option', { value: u.id, text: u.identificador + (u.producto ? ' · ' + u.producto : '') })); });
         r.appendChild(el('div', { class: 'flex flex-col gap-1.5 min-w-0' }, [el('label', { for: sid, class: CLS_ETQ, text: U('sr_unidad') }), sel]));
-        campo(r, 'pd_' + n, U('sr_desde'), '', { tipo: 'date', maxv: hoy, min: hoyISO(-366) });
         campo(r, 'ph_' + n, U('sr_hasta'), '', { tipo: 'date', min: hoyISO(1) });
-        campo(r, 'pc_' + n, U('sr_cliente'), '', { max: 120, ph: U('sr_cliente_ph') });
         f.appendChild(r);
+        // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): «desde» es hoy salvo que salió antes, y el cliente es opcional: plegados con su resumen
+        var pl = S.plegado({ padre: f, marca: 'previo-' + n, resumen: function () {
+          var de = val(f, 'pd_' + n), c = val(f, 'pc_' + n); return [U('sr_desde') + ': ' + (de === hoy ? U('sr_hoy') : (de ? diaMes(de) : '—')), c]; } });
+        var r2 = rejilla(150);
+        campo(r2, 'pd_' + n, U('sr_desde'), hoy, { tipo: 'date', maxv: hoy, min: hoyISO(-366) });
+        campo(r2, 'pc_' + n, U('sr_cliente'), '', { max: 120, ph: U('sr_cliente_ph') });
+        pl.cuerpo.appendChild(r2); pl.actualiza();
         var q = el('button', { type: 'button', 'data-axw-sr-accion': 'quitar-fila', class: CLS_BTN2 + ' self-start', style: ALTO, text: U('sr_quitar_fila') });
         q.addEventListener('click', function () { lista.removeChild(f); tiles(); });
         f.appendChild(q);
@@ -1151,12 +1211,12 @@
       z.querySelectorAll('[data-axw-sr-filas="previos"] [data-axw-sr-fila]').forEach(function (fl) {
         var k = fl.getAttribute('data-axw-sr-fila');
         var u = val(fl, 'pu_' + k), de = val(fl, 'pd_' + k), ha = val(fl, 'ph_' + k), c = val(fl, 'pc_' + k);
-        if (!u && !de && !ha && !c) return;   // fila vacía: no cuenta
+        if (!u && !ha && !c && (!de || de === hoy)) return;   // fila vacía: no cuenta («desde» viene puesto a hoy)
         if (!u) { er.push(U('sr_fila_unidad')); return; }
         var uu = d.unidades.filter(function (x) { return x.id === u; })[0], mat = uu ? uu.identificador : u;
         if (usadas[u] != null) { er.push(U('sr_fila_repe', { m: mat })); return; }
         usadas[u] = mat;
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(de) || de > hoy || de < min) er.push(U('sr_fila_desde'));
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(de) || de > hoy || de < min) { er.push(U('sr_fila_desde')); var dp = fl.querySelector('details[data-axw-plegado]'); if (dp) dp.open = true; }   // un error nunca se esconde
         if (!/^\d{4}-\d{2}-\d{2}$/.test(ha) || ha <= hoy) er.push(U('sr_fila_hasta'));
         lista.push({ unidad_id: u, desde: de, hasta: ha, cliente_ref: c || null });
       });
@@ -1237,22 +1297,48 @@
     dibuja: function (zona, st) {
       if (st.datos.noPreparada) { nota(zona, U('sr_no_preparada'), 'error'); return; }
       var c = st.datos.c, mon = (st.ctx.datos && st.ctx.datos.moneda) || c.moneda || '';
-      interruptor(zona, 'activa', U('sr_ofrecer'), c.activa);
+      // P5 (owner, 15-oct-2026: «mostrando datos poco a poco»; Diseño consultado): primero solo el interruptor; los tres bloques salen al encenderlo
+      // o si ya hay algo guardado. Todos los campos siguen en el DOM (mismos data-axw-campo, mismo guardado); con algo escrito no se esconden.
+      estiloInterruptor();
+      var sw = interruptor(zona, 'activa', U('sr_ofrecer'), c.activa);
+      sw.setAttribute('role', 'switch'); sw.classList.add('axw-sr-switch');
+      var ayudaSw = c.activa ? null : nota(zona, U('sr_ofrecer_ayuda'));
       if (c.activa) nota(zona, U('sr_activa_nota'));
+      var bloques = el('div', { id: 'axw-sr-entrega-bloques', class: 'flex flex-col gap-6 min-w-0', 'data-axw-sr-bloques': 'entrega' });
+      sw.setAttribute('aria-controls', bloques.id);
+      zona.appendChild(bloques);
+      // S1d (owner 15-oct: «1, 2 o 3 campos a rellenar por paso»): los tres bloques son ahora 3 partes (S.partes), y el interruptor queda arriba
+      // a la vista. 1 la tienda y sus coordenadas · 2 precio por km y km gratis, con la distancia máxima y el mínimo plegados · 3 la recogida (+ motivo).
+      // Apagada y sin nada, una sola parte (PT.solo): el botón del anfitrión no dice «Siguiente» hacia partes que no se ven. Se guarda igual que antes.
+      var PT = S.partes({ padre: bloques, marca: 'entrega', inicio: st.parte, errores: st.errores, alCambiar: function (k) { st.parte = k; } });
+      st.partes = PT;
+      var b1 = PT.nueva(U('sr_p_donde')), b2 = PT.nueva(U('sr_p_cuanto')), b3 = PT.nueva(U('sr_p_final'));
       var r1 = rejilla(220);
-      campo(r1, 'sede_nombre', U('sr_sede_nombre'), c.sede_nombre, { max: 120, soloLee: c.activa });
+      // Sin coordenadas y apagada, la tienda nunca se configuró: el nombre que trae la base es el de fábrica de la columna («Oficina», en español, de
+      // 137500) y no un dato de Dion (verificador de bbm, 15-oct-2026). Se propone el nombre comercial de Ajustes, o vacío; la base lo exige al guardar.
+      var sedeDeFabrica = !c.activa && c.sede_lat == null;
+      var marca = String((st.ctx.ajustes && st.ctx.ajustes.marca) || '').trim();
+      campo(r1, 'sede_nombre', U('sr_sede_nombre'), sedeDeFabrica ? marca : c.sede_nombre, { max: 120, soloLee: c.activa });
       campo(r1, 'sede_coord', U('sr_sede_coord'), c.sede_lat == null ? '' : c.sede_lat + ', ' + c.sede_lng, { max: 60, soloLee: c.activa, ayuda: c.activa ? U('sr_sede_fija') : U('sr_sede_coord_ayuda') });
-      zona.appendChild(r1);
+      b1.appendChild(r1);
       var r2 = rejilla(160);
       campo(r2, 'precio_km', U('sr_precio_km'), fmt(c.precio_km), { modo: 'decimal', antes: mon, max: 20 });
       campo(r2, 'km_gratis', U('sr_gratis'), c.precio_km == null && !c.km_gratis ? '' : fmt(c.km_gratis), { modo: 'decimal', despues: 'km', max: 8 });
-      campo(r2, 'km_max', U('sr_km_max'), fmt(c.km_max), { modo: 'decimal', despues: 'km', max: 8 });
-      campo(r2, 'minimo', U('sr_minimo'), c.precio_km == null && !c.minimo ? '' : fmt(c.minimo), { modo: 'decimal', antes: mon, max: 20, ayuda: U('sr_minimo_ayuda') });
-      zona.appendChild(r2);
+      b2.appendChild(r2);
+      // la distancia máxima trae valor de la base (60) y el mínimo es opcional: plegados con su resumen; un error en ellos abre el plegado
+      var pm = S.plegado({ padre: b2, marca: 'entrega-mas', resumen: function () {
+        var kx = val(zona, 'km_max'), mi = val(zona, 'minimo');
+        return [kx ? U('sr_km_max') + ': ' + kx + ' km' : null, mi ? U('sr_minimo') + ': ' + mi : null]; } });
+      var r2b = rejilla(160);
+      campo(r2b, 'km_max', U('sr_km_max'), fmt(c.km_max), { modo: 'decimal', despues: 'km', max: 8 });
+      campo(r2b, 'minimo', U('sr_minimo'), c.precio_km == null && !c.minimo ? '' : fmt(c.minimo), { modo: 'decimal', antes: mon, max: 20, ayuda: U('sr_minimo_ayuda') });
+      pm.cuerpo.appendChild(r2b); pm.actualiza();
       // Ilustración (S45): la tienda, la zona gratis y la de pago. Sin escala ni precio de ejemplo: el importe lo calcula la base, no la pantalla.
       var NS = 'http://www.w3.org/2000/svg';
       function svg(tag, a) { var e = document.createElementNS(NS, tag); Object.keys(a).forEach(function (k) { e.setAttribute(k, a[k]); }); return e; }
-      var fig = el('figure', { class: 'flex flex-col gap-2 text-deep-lagoon', style: 'margin:0', 'data-axw-sr-figura': '1' });
+      var lado = st.ctx.lado, vieja = lado && lado.querySelector('[data-axw-lado-de="entrega"]');
+      if (vieja) vieja.parentNode.removeChild(vieja);   // al releer, una sola ilustración
+      var fig = el('figure', { class: 'flex flex-col gap-2 text-deep-lagoon', style: 'margin:0', 'data-axw-sr-figura': '1', 'data-axw-lado-de': 'entrega' });
       var s = svg('svg', { viewBox: '0 0 680 200', role: 'img', 'aria-label': U('sr_fig_alt'), style: 'width:100%;height:auto;display:block' });
       s.appendChild(svg('circle', { cx: '340', cy: '100', r: '92', fill: 'currentColor', 'fill-opacity': '0.06', stroke: 'currentColor', 'stroke-opacity': '0.4', 'stroke-dasharray': '6 6' }));
       s.appendChild(svg('circle', { cx: '340', cy: '100', r: '30', fill: 'currentColor', 'fill-opacity': '0.16' }));
@@ -1260,7 +1346,7 @@
       var tx = svg('text', { x: '340', y: '150', 'text-anchor': 'middle', 'font-size': '14', fill: 'currentColor' }); tx.textContent = U('sr_fig_tienda'); s.appendChild(tx);
       fig.appendChild(s);
       var cap = el('figcaption', { class: 'flex flex-wrap gap-y-1 font-body-sm text-body-sm text-on-surface-variant', style: 'column-gap:20px' });   // gap-x-5 no está compilado
-      fig.appendChild(cap); zona.appendChild(fig);
+      fig.appendChild(cap); (lado || b2).appendChild(fig);   // P5: en el asistente, de lado; en Ajustes, con su precio
       function leyenda() {
         var pk = importe(val(zona, 'precio_km')), kg = val(zona, 'km_gratis') || '0', km = val(zona, 'km_max') || '—', mi = importe(val(zona, 'minimo'));
         vacia(cap);
@@ -1271,34 +1357,55 @@
       }
       zona.addEventListener('input', leyenda); leyenda();
       st.refrescaFig = leyenda;
-      seg(zona, 'cobra_recogida', U('sr_recogida'), [['si', U('sr_recogida_si')], ['no', U('sr_recogida_no')]], c.cobra_recogida === true ? 'si' : (c.cobra_recogida === false ? 'no' : ''));
-      zona.appendChild(el('a', { href: RAIZ + 'entrega/', class: 'font-label-md text-label-md text-deep-lagoon underline self-start', style: 'min-height:24px', 'data-axw-sr-accion': 'abrir-entrega', text: U('sr_mas_entrega') }));
-      if (c.sede_nombre || c.precio_km != null || c.activa) campoMotivo(zona, st);
+      seg(b3, 'cobra_recogida', U('sr_recogida'), [['si', U('sr_recogida_si')], ['no', U('sr_recogida_no')]], c.cobra_recogida === true ? 'si' : (c.cobra_recogida === false ? 'no' : ''));
+      if (c.sede_nombre || c.precio_km != null || c.activa) campoMotivo(b3, st);
+      b3.appendChild(el('a', { href: RAIZ + 'entrega/', class: 'font-label-md text-label-md text-deep-lagoon underline self-start', style: 'min-height:24px', 'data-axw-sr-accion': 'abrir-entrega', text: U('sr_mas_entrega') }));
+      PT.listo();
+      // Abierto por lo GUARDADO (km_max no cuenta: la base lo trae a 60 por defecto) o por lo TECLEADO respecto a lo pintado (el borrador restaurado cuenta)
+      var guardado = c.activa || !!c.sede_nombre || c.sede_lat != null || c.tarifa_id != null || c.cobra_recogida != null;
+      var campos = [].slice.call(bloques.querySelectorAll('input'));
+      var inicial = campos.map(function (i) { return (i.type === 'radio' || i.type === 'checkbox') ? i.checked : i.value; });
+      function tecleado() { return campos.some(function (i, k) { return ((i.type === 'radio' || i.type === 'checkbox') ? i.checked : i.value) !== inicial[k]; }); }
+      st.aplicaEntrega = function (porUsuario) {
+        var abierto = sw.checked || guardado || tecleado();
+        if (st.ctx.falta) st.ctx.falta.style.display = (sw.checked || c.activa) ? '' : 'none';   // apagada, «Falta: entrega encendida…» no dice nada útil
+        bloques.style.display = abierto ? '' : 'none'; sw.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+        PT.solo(!abierto);
+        if (ayudaSw) ayudaSw.hidden = abierto;
+        fig.style.display = abierto ? '' : 'none';   // sin tienda ni precio, la ilustración solo diría «hasta 0 km»
+        if (porUsuario && sw.checked) { var f = bloques.querySelector('[data-axw-parte]:not([hidden]) input:not([readonly])'); if (f) f.focus(); }   // el foco, solo si lo enciende la persona
+      };
+      sw.addEventListener('change', function () { st.aplicaEntrega(true); });
+      st.aplicaEntrega(false);
     },
-    refresca: function (st) { if (st.refrescaFig) st.refrescaFig(); },
+    refresca: function (st) { if (st.refrescaFig) st.refrescaFig(); if (st.aplicaEntrega) st.aplicaEntrega(false); },
     valores: function (st) {
       if (st.datos.noPreparada) return { ok: false, error: U('sr_no_preparada') };
-      var z = st.zona, c = st.datos.c, v = {}, er = [];
+      var z = st.zona, c = st.datos.c, v = {}, er = [], ec = [];
+      function mal(k, t) { er.push(t); ec.push({ c: k, t: t }); }   // S1d: cada error dice su campo; las partes llevan a la suya
       v.activa = !!(z.querySelector('[data-axw-campo="activa"]') || {}).checked;
       if (c.activa) { v.sede_nombre = c.sede_nombre; v.sede_lat = c.sede_lat; v.sede_lng = c.sede_lng; }
       else {
         v.sede_nombre = val(z, 'sede_nombre');
         var co = parseCoord(val(z, 'sede_coord'));
-        if (co.e) er.push(co.e);
+        if (co.e) mal('sede_coord', co.e);
         v.sede_lat = co.vacio ? null : co.lat; v.sede_lng = co.vacio ? null : co.lng;
       }
-      var pk = leeImporte(z, 'precio_km', U('sr_precio_km')); if (pk.e) er.push(pk.e); else v.precio_km = pk.v;
-      var mi = leeImporte(z, 'minimo', U('sr_minimo')); if (mi.e) er.push(mi.e); else v.minimo = mi.v == null ? 0 : mi.v;
-      var kg = leeKm(z, 'km_gratis', U('sr_gratis')); if (kg.e) er.push(kg.e); else v.km_gratis = kg.v == null ? 0 : kg.v;
-      var kx = leeKm(z, 'km_max', U('sr_km_max')); if (kx.e) er.push(kx.e); else v.km_max = kx.v;
+      var pk = leeImporte(z, 'precio_km', U('sr_precio_km')); if (pk.e) mal('precio_km', pk.e); else v.precio_km = pk.v;
+      var mi = leeImporte(z, 'minimo', U('sr_minimo')); if (mi.e) mal('minimo', mi.e); else v.minimo = mi.v == null ? 0 : mi.v;
+      var kg = leeKm(z, 'km_gratis', U('sr_gratis')); if (kg.e) mal('km_gratis', kg.e); else v.km_gratis = kg.v == null ? 0 : kg.v;
+      var kx = leeKm(z, 'km_max', U('sr_km_max')); if (kx.e) mal('km_max', kx.e); else v.km_max = kx.v;
       var rc = marcado(z, 'cobra_recogida'); v.cobra_recogida = rc === 'si' ? true : (rc === 'no' ? false : null);
-      if (!er.length && v.km_max != null && v.km_gratis >= v.km_max && (v.km_gratis > 0)) er.push(U('sr_gratis_mayor'));
-      if (!er.length && v.activa && (!v.sede_nombre || v.sede_lat == null || v.precio_km == null || v.km_max == null || v.cobra_recogida == null)) er.push(U('sr_activa_falta'));
-      if (er.length) return { ok: false, error: er.join(' ') };
+      if (!er.length && v.km_max != null && v.km_gratis >= v.km_max && (v.km_gratis > 0)) mal('km_gratis', U('sr_gratis_mayor'));
+      if (!er.length && v.activa) {   // la frase dice todo lo que falta; lleva a la parte del primer hueco
+        var hueco = !v.sede_nombre ? 'sede_nombre' : v.sede_lat == null ? 'sede_coord' : v.precio_km == null ? 'precio_km' : v.km_max == null ? 'km_max' : v.cobra_recogida == null ? 'cobra_recogida' : null;
+        if (hueco) mal(hueco, U('sr_activa_falta'));
+      }
+      if (er.length) return { ok: false, error: er.join(' '), errores: ec };
       v.plan = planEntrega(c, v, (st.ctx.datos && st.ctx.datos.moneda) || c.moneda);
       var hay = v.plan.pasos.length > 0;
       var m = motivo(st, hay && !!st.motivo);
-      if (m.e) return { ok: false, error: m.e };
+      if (m.e) return { ok: false, error: m.e, errores: [{ c: 'sr_motivo', t: m.e }] };
       v.motivo = m.v;
       return { ok: true, v: v };
     },

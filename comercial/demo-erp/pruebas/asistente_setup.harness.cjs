@@ -5,6 +5,10 @@
 // moneda de «base» delante cuando falta, el primer valor sin motivo y el cambio con motivo, la máquina de duda (respuesta perdida: guardado y no
 // guardado, sin reenviar), errores por código, quien no configura, función ausente, 390 px sin scroll horizontal, es/en/id sin español. La base real NO se toca.
 const fs = require('fs');
+const visibles = (p, sel) => p.$eval(sel, z => { const vis = e => e.checkVisibility({ visibilityProperty: true, contentVisibilityAuto: true });   // lo de un <details> cerrado NO se ve (offsetWidth sí lo contaba)
+  const n = new Set(); z.querySelectorAll('input:not([type=hidden]),select,textarea').forEach(e => { if (!vis(e)) return; n.add(e.type === 'radio' ? 'r:' + e.name : e); });
+  window.__vis = [...n].map(x => typeof x === 'string' ? x : (x.getAttribute('data-axw-campo') || x.name || x.type)); return n.size; });
+const visLista = p => p.evaluate(() => (window.__vis || []).join(','));
 const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || 'C:/Users/jvrce/AppData/Roaming/npm/node_modules/@playwright/mcp/node_modules/playwright-core');
 const EXE = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
@@ -156,6 +160,7 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   ok('«Facturas · Paso 1 de 2» en la cabeza del paso (la moneda de base ya está hecha: no cuenta)', (await txt(p, '[data-axw-as="meta"]')) === 'Facturas · Paso 1 de 2', await txt(p, '[data-axw-as="meta"]'));
   ok('arriba, el total de pasos hechos de todos los módulos (barra del diseño S10-S60)', (await txt(p, '[data-axw-as="progreso"]')) === '2 de 6 pasos hechos', await txt(p, '[data-axw-as="progreso"]'));
   ok('la URL lleva el paso', (await p.evaluate(() => location.search)).includes('paso=sociedad'));
+  ok('S1c paso 1 de 2: «Atrás» no se ve (revisor S1c: con la piel, `hidden` perdía ante .inline-flex)', !(await p.isVisible('[data-axw-accion="atras"]')));
   await clic(p, 'enviar');
   ok('vacío: dice qué falta y no envía', (await txt(p, '[data-axw-as="error"]')).includes('Razón social') && llamadas(b, 'sociedad_guarda').length === 0);
   ok('S20: sin razón social la muestra impresa no se enseña (no inventa datos)', !(await p.isVisible('[data-axw-muestra="impresa"]')));
@@ -165,6 +170,10 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
      && (await txt(p, '[data-axw-muestra="domicilio"]')) === 'Jl. Raya 1, Denpasar' && (await txt(p, '[data-axw-muestra="npwp"]')) === 'NPWP 01.234.567.8-901.000'
      && (await p.isVisible('[data-axw-muestra="impresa"]')));
   ok('S20: sin prefijo fijado no se inventa un número: dice que sale al fijarlo', (await txt(p, '[data-axw-muestra="numero"]')) === 'El número sale al fijar el prefijo de la numeración.');
+  // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): a la vista razón social, identificación fiscal y domicilio; etiqueta y representante plegados
+  ok('S1 empresa: 3 campos a la vista (razón social, identificación fiscal, domicilio)', (await visibles(p, '[data-axw-as="tarjeta"]')) === 3, await visLista(p));
+  ok('S1 empresa: etiqueta fiscal y representante plegados (cerrado) con el resumen «NPWP»', await p.$eval('details[data-axw-plegado="sociedad"]', d => !d.open && !!d.querySelector('[data-axw-campo="npwp_label"]') && !!d.querySelector('[data-axw-campo="rep"]') && d.querySelector('[data-axw-plegado-resumen]').textContent.includes('NPWP')));
+  await p.click('details[data-axw-plegado="sociedad"] > summary');
   await p.fill('[data-axw-campo="npwp_label"]', 'NIF');
   ok('S20: «15 o 16 cifras» es del NPWP: con otra etiqueta fiscal se esconde', !(await p.isVisible('[data-axw-fila="npwp"] span')));
   await p.fill('[data-axw-campo="npwp_label"]', 'NPWP');
@@ -198,6 +207,12 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   ok('ofrece el siguiente módulo por configurar', (await txt(p, '[data-axw-accion="siguiente-modulo"]')) === 'Configurar Reservas de producto');
   ok('sin errores de página', (await p.evaluate(() => window.__errores)).length === 0, JSON.stringify(await p.evaluate(() => window.__errores)));
   if (SHOT) await p.screenshot({ path: path.join(SHOT, 'listo_1440.png'), fullPage: true });
+  await ctx.close();
+
+  // P5 (Experiencia, 15-oct: «la moneda no enseña cuál se eligió»): el paso hecho e irreversible dice el valor fijado
+  b = base('sin_configurar'); b.d.moneda = 'IDR';
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=base&paso=moneda' }));
+  ok('P5 moneda hecha: «Ahora: IDR» junto a «Hecho», sin campo para cambiarla', (await txt(p, '[data-axw-actual="moneda"]')) === 'Ahora: IDR' && !!(await p.$('[data-axw-hecho]')) && !(await p.$('[data-axw-campo="moneda"]')), await txt(p, '[data-axw-as="tarjeta"]'));
   await ctx.close();
 
   // 2. La moneda de «base» va delante si falta, sin valor elegido; reservas: el primer sí/no se guarda sin motivo

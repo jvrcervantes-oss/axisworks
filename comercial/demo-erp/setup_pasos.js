@@ -178,25 +178,30 @@
       guarda: function (sb, v, ctx, confirmo, motivo) { return guardaAjuste(sb, 'moneda', v.moneda, confirmo, motivo); },
       comprueba: function (v, ctx) { return !!(ctx.datos && ctx.datos.moneda === v.moneda); },
       // valor guardado = la fila de config_instancia, aunque no sea un código válido (entonces «hecho» es false y la base igual pide motivo)
-      guardado: function (ctx) { return !!(ctx.ajustes && ctx.ajustes.moneda != null); }
+      guardado: function (ctx) { return !!(ctx.ajustes && ctx.ajustes.moneda != null); },
+      actual: function (ctx) { return ctx.datos && ctx.datos.moneda; }   // P5: la moneda fijada se enseña en el paso hecho
     },
     sociedad: {
       sinMotivo: true,   // sociedad_guarda no lleva motivo: no se pide lo que no se guarda (revisor 12-oct)
       // Lo mínimo que pide la base; el editor completo (logo, aspecto, NIB…) está en Ajustes › Sociedades emisoras (#285)
       pinta: function (caja, ctx) {
         var s = ctx.sociedad || {};
+        // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): a la vista los 3 que exige la base; la etiqueta fiscal («NPWP» ya puesta) y el
+        // representante, plegados con su resumen
         campo(caja, 'razon', U('razon') + ' *', s.razon, { max: 200, ayuda: U('razon_ayuda') });
-        campo(caja, 'npwp_label', U('npwp_label'), s.npwp_label || 'NPWP', { max: 20 });
         // «15 o 16 cifras» es del NPWP indonesio: con otra etiqueta fiscal no se dice
         campo(caja, 'npwp', U('npwp') + ' *', s.npwp, { max: 40, ayuda: U('npwp_ayuda') });
+        campo(caja, 'domicilio', U('domicilio') + ' *', s.domicilio, { max: 400 });
+        var mas = S().plegado({ padre: caja, marca: 'sociedad', resumen: function () { return [lee(caja, 'npwp_label') || 'NPWP', lee(caja, 'rep')]; } });
+        campo(mas.cuerpo, 'npwp_label', U('npwp_label'), s.npwp_label || 'NPWP', { max: 20 });
+        campo(mas.cuerpo, 'rep', U('rep'), s.rep, { max: 200 });
+        mas.actualiza();
         var ayudaNpwp = caja.querySelector('[data-axw-fila="npwp"] span');
         function ayudaFiscal() { if (ayudaNpwp) ayudaNpwp.style.display = (lee(caja, 'npwp_label') || 'NPWP').toUpperCase() === 'NPWP' ? '' : 'none'; }
         caja.querySelector('[data-axw-campo="npwp_label"]').addEventListener('input', ayudaFiscal);
         ayudaFiscal();
-        campo(caja, 'domicilio', U('domicilio') + ' *', s.domicilio, { max: 400 });
-        campo(caja, 'rep', U('rep'), s.rep, { max: 200 });
         var mu = muestraImpresa(caja, s, ctx);
-        caja.appendChild(mu.fig);
+        (ctx.lado || caja).appendChild(mu.fig);   // P5: en el asistente, al lado de lo que se teclea (sigue escuchando a la caja)
         mu.pinta();
         caja.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-nota': 'otra_empresa', text: U('otra_empresa') }));
         return { valores: function () {

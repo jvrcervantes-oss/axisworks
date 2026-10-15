@@ -1,0 +1,5 @@
+{
+  "8297615bbbb17f3164d82c9bdee8d42b8a0faa14": {"parche": "MOTION_CUENTA", "quitar": "cifra_cuenta(), MOTION_CUENTA, motion_cuenta_lawang.js y su llamada en main() de build.py"},
+  "671a23edf6c9f92edbb85dbe3dd5661db016a2df": {"parche": "MOTION_CUENTA", "quitar": "cifra_cuenta(), MOTION_CUENTA, motion_cuenta_lawang.js y su llamada en main() de build.py"},
+  "ee3d296a82a1f117ea89cddf76b350935d540bc6": {"parche": "MOTION_CUENTA_PORTAL", "quitar": "cifra_cuenta_portal(), MOTION_CUENTA_PORTAL, PORTAL_MOTION_V, motion_cuenta_portal_lawang.js y su llamada en main() de build.py"}
+}

@@ -117,6 +117,7 @@ body.ax-app{background:var(--aw-chalk);color:var(--aw-night);font-family:var(--a
 .ax-prop input{flex:1 1 200px;min-width:0;min-height:44px;padding:0 12px;border:1.5px solid var(--aw-control);border-radius:10px;font:500 15px var(--aw-f-sans);color:var(--aw-night);background:var(--aw-white)}
 .ax-prop button{min-height:44px}
 .ax-prop .ax-btn-sec{background:var(--aw-white);color:var(--aw-night);border-color:var(--aw-control)}
+.ax-buzon{margin-top:10px;font-weight:500}.ax-buzon summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
 .ax-h3s{margin:0 0 12px;color:var(--aw-text3)}
 .ax-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
 .ax-modc{display:flex;flex-direction:column;gap:10px;padding:20px;min-height:168px;border-radius:var(--aw-r-tile);background:var(--aw-white);border:1px solid var(--aw-line)}
@@ -931,7 +932,7 @@ window.AXW_ASIS = (function () {
   var tT;
   function toast(t) { var b = $('toast'); b.textContent = t; b.classList.remove('hidden'); clearTimeout(tT); tT = setTimeout(function () { b.classList.add('hidden'); }, 4000); }
 
-  var sb = null, instancias = [], actual = null, ocupado = false, perfiles = null, cargaSeq = 0;
+  var sb = null, instancias = [], actual = null, ocupado = false, perfiles = null, cargaSeq = 0, buzonMando = null;
 
   function pide(cuerpo) {
     return sb.auth.getSession().then(function (s) {
@@ -946,7 +947,7 @@ window.AXW_ASIS = (function () {
   function activosDe(inst) {
     var e = inst.estado;
     if (!e) return [];
-    if (e.activos === null) return e.modulos.map(function (m) { return m.modulo; });   // sin lista = todo encendido
+    if (e.activos === null) return ['base'];   // sin lista = SOLO base (D1, 20261014097100: la base cuenta igual)
     return e.activos.slice();
   }
 
@@ -986,6 +987,7 @@ window.AXW_ASIS = (function () {
       fila('Dominio', esc(f.dominio_web || '—'), 'Cambiarlo es DNS y republicar: lo hace el estudio.') +
       fila('Intranet', esc(f.url_intranet || '—'), '') +
       fila('Administrador principal', propietarioHtml(i, e), 'El primer administrador del cliente: lo invitas aquí y él pone su contraseña desde el correo. Es uno solo y nunca una cuenta del estudio.') +
+      fila('Buzón del estudio', buzonHtml(i, e), 'Con él salen la invitación del administrador principal y el primer código de Ajustes › Correo. Es del estudio; el cliente pone después el suyo.') +
       fila('Superadmin', admins, 'Todas las cuentas con todos los permisos, también las del estudio.') +
       '</dl>' + (avisos.length ? '<p class="ax-err-t" style="margin:12px 0 0;font-size:14px">' + avisos.join(' ') + '</p>' : '');
   }
@@ -1034,6 +1036,77 @@ window.AXW_ASIS = (function () {
           else if (d.enviado) toast(accion === 'invita' ? 'Invitación enviada: le ha llegado el correo con el enlace.' : 'Invitación reenviada.');
           else toast(accion === 'invita' ? 'Creado; el correo no ha salido. Reenvía la invitación cuando el correo funcione.'
                                         : 'El correo no ha salido: revisa el correo de la instancia y vuelve a reenviarla dentro de una hora.');
+          return carga(true);
+        }
+        toast(d.mensaje || 'Respuesta inesperada (' + d.__estado + '). Recargo el estado para ver qué quedó.');
+        return carga(true);
+      });
+    }).catch(function (e) { toast(e.message); }).then(function () { ocupado = false; });
+  }
+
+  /* Buzón del estudio (B3, 15-oct-2026, bbm-correo; revisión previa #360). Vive en la base de cada instancia (Vault) y lo reparte el mando: aquí se
+     enseña lo que dice la base de ESTA instancia (`estado.buzon_estudio`, sin contraseña) frente al del mando (`buzon_mando`, su versión), y se
+     pide poner (en todas), copiar (a esta) o quitar (de esta). La pantalla no decide nada: el mando lo comprueba (DNS, tope, login real) y cada
+     base lo vuelve a validar. La contraseña va solo en la petición de «poner» y el campo se vacía al enviarla; nunca vuelve. */
+  function buzonHtml(i, e) {
+    if (!Object.prototype.hasOwnProperty.call(e, 'buzon_estudio')) return '<span class="ax-err-t" data-buzon-estado="sin_dato">La base de esta instancia aún no lo gestiona (le falta la actualización del estudio).</span>';
+    var b = e.buzon_estudio || {}, vm = buzonMando && buzonMando.puesto ? buzonMando.version : null;
+    var cuando = b.puesto_en ? new Date(b.puesto_en) : null;
+    var fecha = cuando && !isNaN(cuando) ? cuando.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    var txt, clave;
+    if (!b.puesto) { clave = 'ninguno'; txt = '<span class="ax-err-t">Sin buzón: la invitación no saldrá.</span>'; }
+    else {
+      clave = vm && b.version === vm ? 'igual' : 'distinto';
+      txt = esc(b.usuario || '') + ' · ' + esc(b.host || '') + (fecha ? ' <small>Puesto el ' + esc(fecha) + '.</small>' : '') +
+        (clave === 'igual' ? '<small>El mismo que tiene el mando.</small>' : '<small class="ax-err-t">No es el que tiene el mando ahora' + (vm ? '' : ' (el mando no tiene ninguno)') + '.</small>');
+    }
+    var html = '<span data-buzon-estado="' + clave + '">' + txt + '</span>';
+    if (!i.editable) return html;
+    var botones = (vm && clave !== 'igual' ? '<button type="button" class="ax-btn ax-btn-sec" data-buzon="copia">Copiar a esta</button>' : '') +
+      (b.puesto ? '<button type="button" class="ax-btn ax-btn-sec" data-buzon="quita">Quitar de esta</button>' : '');
+    return html + (botones ? '<span class="ax-prop">' + botones + '</span>' : '') +
+      '<details class="ax-buzon"' + (vm ? '' : ' open') + '><summary>' + (vm ? 'Cambiar el buzón en todas las instancias' : 'Poner el buzón en todas las instancias') + '</summary>' +
+      '<span class="ax-prop">' +
+      '<input id="buzon-host" type="text" autocomplete="off" spellcheck="false" maxlength="253" placeholder="servidor (smtp.proveedor.com)" aria-label="Servidor SMTP del buzón del estudio">' +
+      '<input id="buzon-user" type="email" autocomplete="off" maxlength="254" placeholder="dirección del buzón" aria-label="Dirección del buzón del estudio">' +
+      '<input id="buzon-pass" type="password" autocomplete="new-password" maxlength="200" placeholder="contraseña" aria-label="Contraseña del buzón del estudio">' +
+      '<button type="button" class="ax-btn-dark" data-buzon="pon">Comprobar y poner en todas</button></span>' +
+      '<small>Puerto 465. Se entra en el buzón para comprobarlo antes de guardar nada; 5 intentos por hora.</small></details>';
+  }
+  function buzon(accion) {
+    if (ocupado || !actual || !actual.editable || !actual.estado) return;
+    var inst = actual, cuerpo = { accion: 'buzon_estudio_' + accion }, previo;
+    var nCtl = instancias.filter(function (x) { return x.editable; }).length;
+    if (accion === 'pon') {
+      var h = (($('buzon-host') || {}).value || '').trim(), u = (($('buzon-user') || {}).value || '').trim(), p = ($('buzon-pass') || {}).value || '';
+      if (!h || !u || !p) { toast('Escribe el servidor, la dirección y la contraseña del buzón del estudio.'); return; }
+      cuerpo.host = h; cuerpo.user = u; cuerpo.pass = p;
+      // las de solo lectura salen del estado (nunca un nombre escrito aquí: el paquete de cada instancia no lleva marcas de otros clientes)
+      var fuera = instancias.filter(function (x) { return !x.editable; }).map(function (x) { return x.marca; });
+      previo = dialogo('<p>Se entra en <b>' + esc(u) + '</b> (' + esc(h) + ', puerto 465) para comprobar la contraseña y, si entra, se guarda en las ' +
+        nCtl + ' instancias que controla el panel. Lo que tuvieran antes se sustituye.</p>' +
+        (fuera.length ? '<p class="ax-md">No lo reciben las de solo lectura: ' + esc(fuera.join(', ')) + '.</p>' : ''),
+        'Comprobar y poner', null, 'Buzón del estudio', 'Poner en todas');
+      // la contraseña se borra del campo en cuanto se confirma (si se cancela, sigue escrita para no teclearla otra vez)
+      previo = previo.then(function (v) { if (v === 'ok' && $('buzon-pass')) $('buzon-pass').value = ''; return v; });
+    } else if (accion === 'quita') {
+      cuerpo.instancia = inst.nombre;
+      previo = dialogo('<p>Se vacía el buzón del estudio de <b>' + esc(inst.marca) + '</b> y la instancia <b>queda fuera para siempre</b>: ni «Poner en todas» ni «Copiar a esta» se lo volverán a dar. Su invitación y su primer código de Ajustes dejarán de salir.</p>' +
+        '<p class="ax-md">Hazlo antes de dar al cliente acceso de administrador a su proyecto de Supabase, y después cambia la contraseña del buzón y pulsa «Comprobar y poner en todas». Para devolvérselo hace falta una decisión del owner.</p>',
+        'Quitar', null, 'Buzón del estudio', 'Quitar · ' + inst.marca);
+    } else { cuerpo.instancia = inst.nombre; previo = Promise.resolve('ok'); }
+    ocupado = true;
+    previo.then(function (v) {
+      if (v !== 'ok') return;
+      return pide(cuerpo).then(function (d) {
+        if (d.__estado === 200) {
+          if (accion === 'pon') {
+            var mal = (d.instancias || []).filter(function (x) { return !x.ok; });
+            toast(!mal.length ? 'Buzón comprobado y puesto en ' + (d.instancias || []).length + ' instancias.'
+              : 'Puesto en ' + ((d.instancias || []).length - mal.length) + '; no en ' + mal.map(function (x) {
+                  var m = instancias.filter(function (y) { return y.nombre === x.nombre; })[0];
+                  return (m ? m.marca : x.nombre) + ' (' + (x.mensaje || x.codigo) + ')'; }).join(', ') + '.');
+          } else toast(accion === 'copia' ? 'Buzón copiado a ' + inst.marca + '.' : 'Buzón quitado de ' + inst.marca + '.');
           return carga(true);
         }
         toast(d.mensaje || 'Respuesta inesperada (' + d.__estado + '). Recargo el estado para ver qué quedó.');
@@ -1248,6 +1321,7 @@ window.AXW_ASIS = (function () {
       if (d.__estado !== 200 || !Array.isArray(d.instancias)) throw new Error('El mando no responde (' + d.__estado + ').');
       instancias = d.instancias;
       perfiles = d.perfiles || null;
+      buzonMando = d.buzon_mando || null;
       var sigue = mantener && actual && actual.nombre;
       actual = null;
       $('estado-carga').classList.add('hidden');
@@ -1341,6 +1415,27 @@ window.AXW_ASIS = (function () {
     });
   }
 
+  // El `rechazo` de erp_control_simula ({codigo, lista}, lista cerrada de 20261014096000) en una frase; un código que no está aquí sale tal cual.
+  // `crudo` para un toast (va por textContent: sin escapar)
+  function textoRechazo(r, crudo) {
+    var e = crudo ? String : esc;
+    var t = {
+      modulo_de_otro_tipo: 'es de otro tipo de ERP: esta instancia no lo puede encender',
+      modulo_de_pago: 'es de pago: lo enciende su propia ventana, no este panel',
+      tipos_sin_sembrar: 'la base aún no tiene sembrado de qué tipo es cada módulo',
+      modulo_sin_declarar: 'hay módulos sin declarar en el registro de la base',
+      sin_declarar_dueno: 'hay piezas sin dueño declarado en el registro de la base',
+      modulos_activos_forma: 'la lista de módulos no tiene la forma que pide la base',
+      cuentas_lectura_abierta: 'Cuentas no se enciende mientras su lectura siga abierta en esta base',
+      cuenta_pruebas_solo_mira: 'la cuenta de pruebas solo puede mirar'
+    }[String(r.codigo)];
+    var piezas = Array.isArray(r.lista) && r.lista.length ? ' (' + e(r.lista.join(', ')) + ')' : '';
+    return 'La base no lo enciende: ' + e(t || String(r.codigo || 'rechazo sin código')) + piezas + '. Ningún ensayo lo cambia.';
+  }
+  // regla_sin_mirar de erp_control_simula (096000, Seguridad #326-3): la base no pudo preguntar a sus disparadores; ok false, nunca verde
+  var SIN_MIRAR = { disparador_apagado: 'el disparador de la regla de tipos está apagado', diferible: 'hay una regla que solo salta al confirmar',
+    solo_lectura: 'la conexión es de solo lectura' };
+
   function propone(activos, mod, enciende, vuelta) {
     return pide({ accion: 'simula', instancia: actual.nombre, activos: activos }).then(function (d) {
       if (d.__estado !== 200 || !d.simulacion) throw new Error(d.mensaje || 'No se pudo simular el cambio (' + d.__estado + ').');
@@ -1353,10 +1448,21 @@ window.AXW_ASIS = (function () {
       var cf = s.condiciones_faltan && typeof s.condiciones_faltan === 'object' ? Object.keys(s.condiciones_faltan) : [];
       if (cf.length) bloqueos.push(cf.map(function (k) { var v = s.condiciones_faltan[k];
         return esc(nombre(k)) + ' no se puede encender todavía: le falta ' + esc(Array.isArray(v) ? v.join(', ') : String(v)) + ' (lo pide la base).'; }).join(' '));
+      // A14 (20261014096000): lo que frenaría un disparador de la base (otro tipo, de pago, sin declarar…) va en `rechazo`. Va ANTES y TAPA la falta de
+      // ensayo (EU4, 15-oct, rama de bbm): un rechazo así no lo arregla ningún ensayo, y pedir uno sería trabajo para nada
+      var faltan = s.faltan_dependencias || {}, fk = Object.keys(faltan);
+      if (s.rechazo && typeof s.rechazo === 'object') bloqueos.push(textoRechazo(s.rechazo));
+      else if (s.regla_sin_mirar) bloqueos.push('La base no pudo comprobar este cambio (' + esc(SIN_MIRAR[s.regla_sin_mirar] || String(s.regla_sin_mirar)) +
+        '): no se aplica desde aquí.');
+      // EU4 (20261014097000): encender exige un ensayo en rama del conjunto exacto, registrado en la base (lo hace el estudio: rama_prueba --objetivo +
+      // registra_ensayo). Solo frena el conjunto que se aplicaría: con dependencias por cerrar la base ensaya el conjunto incompleto, que siempre sale
+      // sin ensayo, y el panel tiene que llegar a proponer el conjunto con lo que arrastra (revisor, 1.ª vuelta de a3d03af)
+      else if (s.sin_ensayo && typeof s.sin_ensayo === 'object' && !fk.length) bloqueos.push('El estudio tiene que ensayar este conjunto de módulos antes de encenderlo' +
+        (Array.isArray(s.sin_ensayo.conjunto) && s.sin_ensayo.conjunto.length ? ' (' + esc(s.sin_ensayo.conjunto.join(', ')) + ')' : '') + ': ' +
+        esc(String(s.sin_ensayo.motivo || 'no hay ensayo')) + '.');
       var cambios = '<p>' + (s.enciende.length ? '<strong>Se enciende:</strong> ' + esc(lista(s.enciende)) + '<br>' : '') +
         (s.apaga.length ? '<strong>Se apaga:</strong> ' + esc(lista(s.apaga)) : '') + '</p>';
       if (bloqueos.length) return dialogo(cambios + bloqueos.map(function (b) { return '<p class="ax-error">' + b + '</p>'; }).join(''), null, null, 'No se puede aplicar').then(function () { return null; });
-      var faltan = s.faltan_dependencias || {}, fk = Object.keys(faltan);
       // Encender con lo que arrastra: se vuelve a simular el conjunto que propone la base y se confirma UNA vez, enseñando qué se
       // enciende y qué setup trae cada uno (plan F3 punto 5). Solo una vuelta: si el conjunto propuesto sigue sin cerrar, no hay salida sola.
       if (fk.length && enciende && !vuelta) {
@@ -1398,6 +1504,9 @@ window.AXW_ASIS = (function () {
           return carga(true);
         }
         if (d.error === 'ocupado') toast(d.mensaje);
+        else if (d.error === 'rechazado' && d.motivo && d.motivo.sin_ensayo && typeof d.motivo.sin_ensayo === 'object')
+          toast('La base no lo enciende: el estudio tiene que ensayar este conjunto antes (' + String(d.motivo.sin_ensayo.motivo || 'sin ensayo') + ').');
+        else if (d.error === 'rechazado' && d.motivo && d.motivo.rechazo && typeof d.motivo.rechazo === 'object') toast(textoRechazo(d.motivo.rechazo, true));
         else if (d.error === 'rechazado') toast('La base lo ha rechazado: vuelve a intentarlo, el estado ha cambiado.');
         else toast(d.mensaje || 'Respuesta inesperada (' + d.__estado + '). Recargo el estado para ver qué quedó.');
         return carga(true);
@@ -1466,7 +1575,7 @@ window.AXW_ASIS = (function () {
   }
 
   document.addEventListener('click', function (ev) {
-    var t = ev.target.closest && ev.target.closest('[data-accion],[data-mod],[data-inst],#reintenta,[data-mapa-tipo],[data-prop]');
+    var t = ev.target.closest && ev.target.closest('[data-accion],[data-mod],[data-inst],#reintenta,[data-mapa-tipo],[data-prop],[data-buzon]');
     if (!t) return;
     if (t.hasAttribute('data-mapa-tipo')) {   // del asistente al mapa con su tipo marcado (vistaActual cierra el asistente)
       ev.preventDefault();
@@ -1475,6 +1584,7 @@ window.AXW_ASIS = (function () {
       return;
     }
     if (t.hasAttribute('data-prop')) { ev.preventDefault(); if (!t.disabled) propietario(t.getAttribute('data-prop')); return; }
+    if (t.hasAttribute('data-buzon')) { ev.preventDefault(); if (!t.disabled) buzon(t.getAttribute('data-buzon')); return; }
     if (t.hasAttribute('data-accion')) { ev.preventDefault(); if (!t.disabled) asisAccion(t); }
     else if (t.id === 'reintenta') carga(true).catch(function (e) { toast(e.message); });
     else if (t.hasAttribute('data-inst')) elige(t.getAttribute('data-inst'));

@@ -46,6 +46,45 @@ import subprocess
 import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
+
+
+def node_modules_de_fuera(aqui=AQUI):
+    """El node_modules de ESTA carpeta en el clon principal, si aquí no hay uno completo; o None (15-oct-2026, deploy-axw).
+    node_modules no va en git: una copia de AxisWorks (cualquier `git worktree`: `proyectos/_sesiones/…` o el scratchpad) no lo
+    trae y limpia_publico.js caía con «Cannot find module 'terser'» (calidad-gastos lo pasó a mano con NODE_PATH). El clon
+    principal es el padre del git-common-dir, como en el gate (tools/test.py). Completo = con `.package-lock.json`."""
+    if os.path.isfile(os.path.join(aqui, 'node_modules', '.package-lock.json')):
+        return None
+    try:
+        g = lambda *a: subprocess.run(['git', *a], cwd=aqui, capture_output=True, text=True, encoding='utf-8',
+                                      timeout=15).stdout.strip()
+        rel = os.path.relpath(aqui, g('rev-parse', '--show-toplevel'))
+        nm = os.path.join(os.path.dirname(g('rev-parse', '--path-format=absolute', '--git-common-dir')), rel, 'node_modules')
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    return nm if os.path.isfile(os.path.join(nm, '.package-lock.json')) else None
+
+
+# Todos los `node` que lanza el build heredan la ruta (solo AÑADE una ruta de búsqueda: no cambia nada si aquí ya está completo).
+_NM_FUERA = node_modules_de_fuera()
+if _NM_FUERA:
+    os.environ['NODE_PATH'] = os.pathsep.join([_NM_FUERA] + ([os.environ['NODE_PATH']] if os.environ.get('NODE_PATH') else []))
+
+
+def limpia_publico(dist):
+    """`node limpia_publico.js <dist>`; sin sus módulos lo dice claro en vez de dejar solo la traza de node."""
+    r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), dist], cwd=AQUI, capture_output=True, text=True,
+                       encoding='utf-8', errors='replace')
+    sys.stdout.write(r.stdout or '')
+    sys.stderr.write(r.stderr or '')
+    if r.returncode != 0:
+        falta = re.search(r"Cannot find module '([^']+)'", (r.stderr or '') + (r.stdout or ''))
+        if falta:
+            aborta("limpia_publico.js no encuentra el módulo '%s': falta node_modules en %s y tampoco hay uno completo en el clon "
+                   "principal. Instálalo con `npm ci` en %s (o en esa carpeta del clon principal)." % (falta.group(1), AQUI, AQUI))
+        aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
+
+
 # AXW_AGENCIA_RAIZ: raíz de la AGENCIA (donde viven erp/, tools/, private/ y proyectos/Lawang) cuando se construye desde una copia de
 # sesión de AxisWorks, que vive en _sesiones/<id>/AxisWorks y no cuatro niveles bajo la agencia: apunta a la copia de sesión de la agencia.
 AGENCIA = os.path.abspath(os.environ.get('AXW_AGENCIA_RAIZ') or os.path.join(AQUI, '..', '..', '..', '..'))
@@ -234,6 +273,68 @@ def copia_v4():
     # El CRM de leads (v3) está en el menú de la v4.
     for f in ('index.html', 'leads.css', 'leads.js'):
         copia(os.path.join(LAWANG, 'intranet', 'leads', f), os.path.join(DIST, 'intranet', 'leads', f))
+
+
+# Contadores que dicen «0» (15-oct-2026, Calidad, encargo de agencia-c0): cuenta() de motion.js escribía «0» en el TEXTO de cada contador
+# [data-lw^="k-"] y lo subía con requestAnimationFrame; hasta el primer fotograma —y para siempre con la pestaña oculta, donde rAF no corre—
+# Usuarios decía «0 activos» con 2 en la lista (Experiencia, bbm, 14-oct). Arreglado en Lawang (8297615bb, afinado en 671a23edf): el dato se queda siempre en el
+# texto y la cifra que sube es una capa aria-hidden encima; sin animación si la pestaña está oculta. El fijado (lawang.json) es anterior, así
+# que el bloque nuevo llega tal cual, cortado del motion.js de Lawang (motion_cuenta_lawang.js), y MOTION_V de nav.js se recalcula como lo
+# hace Lawang (8 primeros del sha1 del fichero con LF) para que ningún navegador siga con el viejo de caché.
+# El portal de clientes (solo la demo: las instancias no llevan /portal/) tenía el mismo fallo con el importe en su propio cuenta()
+# (portal/motion.js): mismo arreglo en Lawang (ee3d296a8, afinado en 671a23edf), que llega igual con motion_cuenta_portal_lawang.js y motion.js?v=20261015.
+# QUITAR (constantes, funciones, sus llamadas en main() y los dos motion_cuenta_*.js) cuando el fijado pase de Lawang 671a23edf: el bloque
+# viejo ya no estará y esto para el build a propósito. Prueba: test_motion_cifra.py.
+# (fichero en dist/, ancla de inicio, ancla de fin, sha1 del bloque viejo del fijado con LF, bloque nuevo)
+MOTION_CUENTA = ('intranet/v4/assets/motion.js', '  var NUM = ', '  function entra() {',
+                 'e26238648f7d4c9629bd0f9353b2bb3f11ab3b86', os.path.join(AQUI, 'motion_cuenta_lawang.js'))
+MOTION_CUENTA_PORTAL = ('portal/motion.js', '  /* El dinero que se recorre', '  /* Entrada de una pantalla',
+                        'c5abfcfc03ecdb53c974aed69286df95500a44de', os.path.join(AQUI, 'motion_cuenta_portal_lawang.js'))
+PORTAL_MOTION_V = ('/portal/motion.js?v=20261009', '/portal/motion.js?v=20261015')
+
+
+def _motion_v(texto):
+    return hashlib.sha1(texto.replace('\r\n', '\n').encode('utf-8')).hexdigest()[:8]
+
+
+def cifra_cuenta_motion(texto, cual=MOTION_CUENTA):
+    """motion.js del fijado → con el cuenta() arreglado de Lawang. Para si el bloque viejo no es el medido el 15-oct."""
+    donde, ini, fin, sha, fuente = cual
+    a, b = texto.find(ini), texto.find(fin)
+    if a < 0 or b < a:
+        aborta('%s: no encuentro cuenta() (%r … %r)%s' % (donde, ini, fin, quien_cambio_lawang(donde)))
+    viejo = texto[a:b]
+    if hashlib.sha1(viejo.replace('\r\n', '\n').encode('utf-8')).hexdigest() != sha:
+        aborta('%s: cuenta() del fijado ya no es la medida el 15-oct; si el fijado ya trae el arreglo, quita cifra_cuenta() y '
+               'motion_cuenta_*.js%s' % (donde, quien_cambio_lawang(donde)))
+    nuevo = open(fuente, encoding='utf-8', newline='').read().replace('\r\n', '\n')
+    if '\r\n' in viejo:
+        nuevo = nuevo.replace('\n', '\r\n')
+    return texto[:a] + nuevo + texto[b:]
+
+
+def cifra_cuenta_portal():
+    """El cuenta() arreglado en dist/portal/motion.js y su ?v= en dist/portal/index.html (solo la demo, tras portal_lawang())."""
+    m = os.path.join(DIST, 'portal', 'motion.js')
+    texto = cifra_cuenta_motion(open(m, encoding='utf-8', newline='').read(), MOTION_CUENTA_PORTAL)   # leer ANTES de abrir para escribir
+    open(m, 'w', encoding='utf-8', newline='').write(texto)
+    p = os.path.join(DIST, 'portal', 'index.html')
+    texto = _una_vez(open(p, encoding='utf-8', newline='').read(), *PORTAL_MOTION_V, 'portal/index.html')
+    open(p, 'w', encoding='utf-8', newline='').write(texto)
+
+
+def cifra_cuenta():
+    """Aplica cifra_cuenta_motion() al motion.js de dist/ y sube MOTION_V en nav.js (demo e instancias: los dos pasan por copia_v4())."""
+    assets = os.path.join(DIST, 'intranet', 'v4', 'assets')
+    m, n = os.path.join(assets, 'motion.js'), os.path.join(assets, 'nav.js')
+    texto = cifra_cuenta_motion(open(m, encoding='utf-8', newline='').read())
+    open(m, 'w', encoding='utf-8', newline='').write(texto)
+    nav = open(n, encoding='utf-8', newline='').read()
+    v = re.findall(r"var MOTION_V = '([0-9a-f]{8})';", nav)
+    if len(v) != 1:
+        aborta('nav.js: esperaba una sola `var MOTION_V = \'…\';` y hay %d%s' % (len(v), quien_cambio_lawang('nav.js')))
+    nav = _una_vez(nav, "var MOTION_V = '%s';" % v[0], "var MOTION_V = '%s';" % _motion_v(texto), 'nav.js')
+    open(n, 'w', encoding='utf-8', newline='').write(nav)
 
 
 def cierra_referencias():
@@ -1199,9 +1300,10 @@ def poda_ficheros_sin_pantalla(dist, candidatos):
     return sorted(quitados)
 
 
-def avisos_para_rotos(demo=False):
+def avisos_para_rotos(demo=False, pagina=None):
     """Cada herramienta enlazada que la demo no trae enseña el aviso, no un 404. `demo`: el de la demo para un cliente (en
-    inglés, AVISO_DEMO); sin él, el de siempre, que es el que usan las instancias."""
+    inglés, AVISO_DEMO); sin él, el de siempre, que es el que usan las instancias. `pagina(ruta)`: el aviso de la instancia en SUS idiomas
+    (bbm-idiomas, 15-oct: /contracts/ salía «Herramienta no incluida · Demo» en español en bbm, que es inglesa)."""
     if demo:
         texto = AVISO_DEMO.format(t='Not included in the demo',
                                   m='This older tool is not part of the demo: the demo shows the current version of the ERP.')
@@ -1213,7 +1315,9 @@ def avisos_para_rotos(demo=False):
             continue                                   # un fichero que falta es un fallo, no una pantalla
         d = os.path.join(DIST, ruta.strip('/').replace('/', os.sep))
         os.makedirs(d, exist_ok=True)
-        open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(texto)
+        open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(pagina('/' + ruta.strip('/') + '/') if pagina else texto)
+        if pagina:   # ya no es el AVISO verde de Lawang: LAWANG_POR_CONTEXTO no lo cuenta (como las retiradas por tipo)
+            AVISOS_SIN_PANTALLA.add(ruta.strip('/') + '/index.html')
 
 
 def comprueba_resultado(raiz_dir):
@@ -2259,6 +2363,26 @@ MENU_I18N = {
     'Entrega': {'en': 'Delivery', 'id': 'Antar'},
     'Flota y tarifas': {'en': 'Fleet and rates', 'id': 'Armada dan tarif'},
     'Ventas': {'en': 'Sales', 'id': 'Penjualan'},
+    # paginador común (bbm-cola-2 T1, 15-oct): el inglés ya está en el diccionario de Lawang y no se pisa; aquí entra el indonesio
+    '← Anteriores': {'en': '← Previous', 'id': '← Sebelumnya'},
+    'Siguientes →': {'en': 'Next →', 'id': 'Berikutnya →'},
+    'de': {'en': 'of', 'id': 'dari'},
+    # cabecera del CSV de Gastos, ahora por T (bbm-cola-2 T1, 15-oct): las que el diccionario de Lawang no tenía, y el indonesio de todas
+    'Nº factura': {'en': 'Invoice no.', 'id': 'No. invoice'},
+    'Impuesto': {'en': 'Tax', 'id': 'Pajak'},
+    'Tipo PPh': {'en': 'PPh type', 'id': 'Jenis PPh'},
+    'Cuenta de pago': {'en': 'Payment account', 'id': 'Rekening pembayaran'},
+    'Motivo anulación': {'en': 'Cancellation reason', 'id': 'Alasan pembatalan'},
+    'Proveedor': {'en': 'Supplier', 'id': 'Pemasok'},
+    'Categoría': {'en': 'Category', 'id': 'Kategori'},
+    'Concepto': {'en': 'Concept', 'id': 'Keterangan'},
+    'Base': {'en': 'Base', 'id': 'DPP'},
+    'Total': {'en': 'Total', 'id': 'Total'},
+    'Retención PPh': {'en': 'PPh withholding', 'id': 'Pemotongan PPh'},
+    'Retención ingresada': {'en': 'Withholding paid', 'id': 'Pemotongan disetor'},
+    'Moneda': {'en': 'Currency', 'id': 'Mata uang'},
+    'Vence': {'en': 'Due', 'id': 'Jatuh tempo'},
+    'Pagado el': {'en': 'Paid on', 'id': 'Dibayar pada'},
     'Reservas de producto': {'en': 'Product bookings', 'id': 'Booking sewa motor'},
     'Configurar módulos': {'en': 'Module setup', 'id': 'Penyiapan modul'},
     'Interruptores de comisiones': {'en': 'Commission switches', 'id': 'Sakelar komisi'},
@@ -2362,6 +2486,177 @@ MENU_I18N = {
         'en': 'When closed, only admins get in: the rest of the team sees a maintenance screen with the reason, and anyone inside gets a warning and is signed out after 3 minutes. It is a screen gate: it does not change database permissions. Closing and reopening: any admin.',
         'id': 'Saat ditutup, hanya admin yang bisa masuk: anggota tim lain melihat layar pemeliharaan beserta alasannya, dan siapa pun yang sedang berada di dalam menerima peringatan lalu dikeluarkan setelah 3 menit. Ini hanya pintu di layar: izin basis data tidak berubah. Menutup dan membuka kembali: admin mana pun.'},
 }
+
+
+# bbm-idiomas (15-oct-2026, owner: «/ajustes/ no puede salir en español, ¿tengo que ir ventana a ventana avisándote?»): lo que el barrido de
+# pantallas (pruebas/idiomas_pantallas.harness.cjs, todas las del paquete, todos los módulos) encontró en español y no era una clave del
+# diccionario. Lo pinta traduce_instancia.js (el HTML de Lawang sin marca de diccionario) o lwT (lo que ya pasaba por él sin clave). Inglés: el término que
+# ya usa el diccionario de Lawang para lo mismo (Reparto → Routing, Escrow); indonesio: glosario_id.json (rekening para la cuenta bancaria,
+# perusahaan, kuitansi, invoice). Traducción automática SIN REVISAR por un hablante nativo (departamentos/idiomas: ISO 18587); la valida el
+# equipo de Dion como el resto del glosario. Lo que ya tenía inglés en Lawang solo recibe aquí su indonesio (una clave EN existente no se pisa).
+MENU_I18N.update({
+    # historiales: lo que firma el sistema o el estudio (verificador de bbm, 15-oct)
+    'Sistema': {'en': 'System', 'id': 'Sistem'},
+    'Configuración inicial': {'en': 'Initial setup', 'id': 'Konfigurasi awal'},
+    'AxisWorks (soporte)': {'en': 'AxisWorks (support)', 'id': 'AxisWorks (dukungan)'},
+    'Cifras principales': {'en': 'Key figures', 'id': 'Angka utama'},
+    # verificador de bbm (15-oct): la tarjeta «Asistente» de herramientas.js no tenía su frase en ningún diccionario
+    'Pide lo que no puedes hacer tú: cambiar un dato, anular o borrar un documento, borrar una operación. Lo aprueba dirección.': {
+        'en': "Ask for what you can't do yourself: change a detail, void or delete a document, delete a transaction. Management approves it.",
+        'id': 'Minta hal yang tidak bisa Anda lakukan sendiri: mengubah data, membatalkan atau menghapus dokumen, menghapus transaksi. Disetujui manajemen.'},
+    'esta herramienta': {'en': 'this tool', 'id': 'alat ini'},
+    'La categoría se creó, pero no se pudo releer la lista: recarga la página y pulsa «Nuevo gasto».': {
+        'en': 'The category was created, but the list could not be reloaded: reload the page and press «New expense».',
+        'id': 'Kategori sudah dibuat, tetapi daftarnya tidak dapat dimuat ulang: muat ulang halaman dan tekan «Pengeluaran baru».'},
+    # Gastos: la primera categoría al vuelo (agencia-c0, 15-oct; GASTOS_INSTANCIA)
+    'Primero, una categoría': {'en': 'First, a category', 'id': 'Pertama, satu kategori'},
+    'Cada gasto va en una categoría y aún no hay ninguna. Crea la primera: después podrás añadir más.': {
+        'en': 'Every expense goes into a category and there are none yet. Create the first one: you can add more later.',
+        'id': 'Setiap pengeluaran masuk ke satu kategori dan belum ada satu pun. Buat yang pertama: nanti Anda bisa menambah lagi.'},
+    'Nombre de la categoría': {'en': 'Category name', 'id': 'Nama kategori'},
+    'Crear y seguir': {'en': 'Create and continue', 'id': 'Buat dan lanjut'},
+    'El nombre va de 1 a 80 caracteres y no empieza por = + - @.': {
+        'en': "The name must be 1 to 80 characters and can't start with = + - @.", 'id': 'Nama 1 sampai 80 karakter dan tidak diawali = + - @.'},
+    'No se pudo crear la categoría': {'en': 'The category could not be created', 'id': 'Kategori tidak dapat dibuat'},
+    'Aún no hay categorías de gasto: la primera se crea al pulsar «Nuevo gasto».': {
+        'en': 'There are no expense categories yet: the first one is created when you press «New expense».',
+        'id': 'Belum ada kategori pengeluaran: yang pertama dibuat saat Anda menekan «Pengeluaran baru».'},
+    # Cuentas de cobro y reparto (pantalla de Lawang sin marca de diccionario)
+    'Cuentas de Cobro & Reparto': {'en': 'Payment Accounts & Routing', 'id': 'Rekening Pembayaran & Alokasi'},
+    'Las cuentas a las que transfiere el cliente, y qué cuenta puede elegir el agente en cada documento y en cada proyecto.': {
+        'en': 'The accounts the client transfers to, and which account the agent can choose on each document and each project.',
+        'id': 'Rekening tujuan transfer pelanggan, dan rekening mana yang dapat dipilih agen di setiap dokumen dan setiap proyek.'},
+    'Ver el reparto lo puede cualquier admin; cambiarlo exige super admin, y el permiso lo comprueba la base. La clave de una cuenta no se edita nunca: viaja dentro de cada documento ya emitido.': {
+        'en': 'Any admin can see the routing; changing it requires a super admin, and the database checks the permission. An account key is never edited: it travels inside every document already issued.',
+        'id': 'Setiap admin dapat melihat alokasi; mengubahnya memerlukan super admin, dan izinnya diperiksa oleh basis data. Kode rekening tidak pernah diubah: kode itu ikut di setiap dokumen yang sudah diterbitkan.'},
+    'Cuentas activas': {'en': 'Active accounts', 'id': 'Rekening aktif'},
+    'dadas de alta': {'en': 'registered', 'id': 'terdaftar'},   # «de ⟨n⟩ dadas de alta»: el número va en su propio <span data-lw>
+    'Cuentas de cobro': {'en': 'Payment accounts', 'id': 'Rekening pembayaran'},
+    'Depósito en garantía': {'en': 'Escrow deposit', 'id': 'Deposit escrow'},
+    'cuentas escrow': {'en': 'escrow accounts', 'id': 'rekening escrow'},
+    'Documentos que cobran': {'en': 'Documents that collect payment', 'id': 'Dokumen yang menagih'},
+    'plantillas de pago': {'en': 'payment templates', 'id': 'templat pembayaran'},
+    'Sin cuenta marcada': {'en': 'No account selected', 'id': 'Tanpa rekening terpilih'},
+    'ningún documento vivo se queda sin cuenta': {'en': 'no live document is left without an account', 'id': 'tidak ada dokumen aktif tanpa rekening'},
+    'Nueva cuenta': {'en': 'New account', 'id': 'Rekening baru'},
+    'Por contrato': {'en': 'By contract', 'id': 'Per kontrak'},
+    'Por proyecto': {'en': 'By project', 'id': 'Per proyek'},
+    'Por cuenta': {'en': 'By account', 'id': 'Per rekening'},
+    'Reparto': {'en': 'Routing', 'id': 'Alokasi'},
+    'Qué cuentas puede elegir el agente en cada contrato': {'en': 'Which accounts the agent can choose on each contract', 'id': 'Rekening yang dapat dipilih agen di setiap kontrak'},
+    'Cuentas ofrecidas': {'en': 'Accounts offered', 'id': 'Rekening yang ditawarkan'},
+    'Ningún tipo de contrato registrado.': {'en': 'No contract type registered.', 'id': 'Belum ada jenis kontrak terdaftar.'},
+    'Las cuentas dadas de alta': {'en': 'Registered accounts', 'id': 'Rekening terdaftar'},
+    'Ninguna cuenta dada de alta.': {'en': 'No account registered.', 'id': 'Belum ada rekening terdaftar.'},
+    'Ningún proyecto activo.': {'en': 'No active project.', 'id': 'Tidak ada proyek aktif.'},
+    'Qué proyectos tienen reglas propias, fuera del reparto general': {'en': 'Which projects have their own rules, outside the general routing', 'id': 'Proyek dengan aturan sendiri, di luar alokasi umum'},
+    'En cuántos documentos se ofrece cada cuenta': {'en': 'On how many documents each account is offered', 'id': 'Di berapa dokumen setiap rekening ditawarkan'},
+    'Con contrato': {'en': 'With contract', 'id': 'Dengan kontrak'},
+    'En firma': {'en': 'Out for signing', 'id': 'Dalam penandatanganan'},
+    'Trayendo los clientes…': {'en': 'Loading clients…', 'id': 'Memuat pelanggan…'},
+    'Todos los vencimientos': {'en': 'All payments', 'id': 'Semua jatuh tempo'},
+    'Incluir sin firmar': {'en': 'Include unsigned', 'id': 'Sertakan yang belum ditandatangani'},
+    'Ver más hechos': {'en': 'See more events', 'id': 'Lihat kejadian lainnya'},
+    'Enviar': {'en': 'Send', 'id': 'Kirim'},
+    'Mes': {'en': 'Month', 'id': 'Bulan'},
+    # Comunicación
+    'Aún no hay comunicados. Escribe el primero a la izquierda.': {'en': 'No announcements yet. Write the first one on the left.', 'id': 'Belum ada pengumuman. Tulis yang pertama di sebelah kiri.'},
+    'No se pudieron traer los comunicados.': {'en': 'Could not load the announcements.', 'id': 'Pengumuman tidak dapat dimuat.'},
+    'Vista previa del email': {'en': 'Email preview', 'id': 'Pratinjau email'},
+    # Finanzas y Bancos
+    'Base sin impuesto de los gastos registrados': {'en': 'Pre-tax amount of recorded expenses', 'id': 'DPP pengeluaran yang tercatat'},
+    'Recibís cobrados menos gastos y comisiones pagados': {'en': 'Receipts collected minus expenses and commissions paid', 'id': 'Kuitansi yang tertagih dikurangi pengeluaran dan komisi yang dibayar'},
+    'Se solapa con «Firmado por cobrar»: no se suman.': {'en': 'It overlaps with «Signed, to collect»: they are not added together.', 'id': 'Tumpang tindih dengan «Ditandatangani, belum ditagih»: tidak dijumlahkan.'},
+    'Firmado por cobrar': {'en': 'Signed, to collect', 'id': 'Ditandatangani, belum ditagih'},
+    'Secciones de Finanzas': {'en': 'Finance sections', 'id': 'Bagian Keuangan'},
+    'Saldos por cuenta': {'en': 'Balances by account', 'id': 'Saldo per rekening'},
+    'cobrado por contrato': {'en': 'collected per contract', 'id': 'tertagih per kontrak'},
+    'calendario de pagos': {'en': 'payment schedule', 'id': 'jadwal pembayaran'},
+    'facturas y recibís': {'en': 'invoices and receipts', 'id': 'invoice dan kuitansi'},
+    'pendiente por factura': {'en': 'outstanding per invoice', 'id': 'sisa per invoice'},
+    'unidades': {'en': 'units', 'id': 'unit'},
+    'solicitudes de pago': {'en': 'payment requests', 'id': 'permintaan pembayaran'},
+    'comisiones': {'en': 'commissions', 'id': 'komisi'},
+    # «No se ha podido cargar «⟨qué⟩» …» (datos.js de Lawang): lo que va entre comillas, para PATRONES_INSTANCIA
+    'ajustes': {'en': 'settings', 'id': 'pengaturan'},
+    'compradores': {'en': 'clients', 'id': 'pelanggan'},
+    'cuentas bancarias': {'en': 'bank accounts', 'id': 'rekening bank'},
+    'facturas': {'en': 'invoices', 'id': 'invoice'},
+    'historial de sociedades': {'en': 'company history', 'id': 'riwayat perusahaan'},
+    'impuestos': {'en': 'taxes', 'id': 'pajak'},
+    'operaciones': {'en': 'deals', 'id': 'transaksi'},
+    'proyectos': {'en': 'projects', 'id': 'proyek'},
+    'recibís': {'en': 'receipts', 'id': 'kuitansi'},
+    'sociedades': {'en': 'companies', 'id': 'perusahaan'},
+    'tipos de contrato': {'en': 'contract types', 'id': 'jenis kontrak'},
+    # Ajustes y su asistente (setup_modulos.js y Lawang): frases que pasan por lwT sin clave
+    'Configurar': {'en': 'Configure', 'id': 'Atur'},
+    'No se ha podido mirar la configuración': {'en': 'Could not check the configuration', 'id': 'Konfigurasi tidak dapat diperiksa'},
+    'No se ha podido hacer. Si vuelve a pasar, avisa al estudio.': {'en': 'That could not be done. If it happens again, let the studio know.', 'id': 'Tidak dapat dilakukan. Jika terjadi lagi, beri tahu studio.'},
+    '«Tu reserva está confirmada.»': {'en': '«Your booking is confirmed.»', 'id': '«Booking Anda sudah dikonfirmasi.»'},
+    # Alta del bot de WhatsApp (bot_alta.html: pasa por lwT y no tenía clave)
+    'Condiciones del servicio': {'en': 'Terms of service', 'id': 'Ketentuan layanan'},
+    'Cuando todo esté completo, el estudio enciende el bot desde su panel.': {'en': 'When everything is complete, the studio switches the bot on from its panel.', 'id': 'Setelah semuanya lengkap, studio menyalakan bot dari panelnya.'},
+    'Todavía no hay condiciones publicadas: avisa al estudio.': {'en': 'No terms published yet: let the studio know.', 'id': 'Belum ada ketentuan yang diterbitkan: beri tahu studio.'},
+    'Pendiente: lo firma el cliente con el estudio y el estudio lo marca aquí cuando lo recibe. Sin él el bot no se enciende.': {
+        'en': 'Pending: the client signs it with the studio, and the studio marks it here when it arrives. Without it the bot does not switch on.',
+        'id': 'Menunggu: klien menandatanganinya bersama studio, dan studio menandainya di sini setelah diterima. Tanpa itu bot tidak dapat dinyalakan.'},
+    'alta': {'en': 'sign-up', 'id': 'pendaftaran'},   # el tramo del menú «Bot de WhatsApp · alta»
+    # El velo de carga de la v4 (datos.js de Lawang, f1d931ff3): solo se ve mientras queda una consulta en vuelo, así que el barrido lo caza
+    # o no según lo que tarde la pantalla (tren de bbm, 15-oct: /finanzas/ en «vacía», en inglés). Lawang lo escribe sin tildes.
+    'Trayendo los datos de la pantalla': {'en': 'Loading the data for this screen', 'id': 'Memuat data untuk layar ini'},
+    'Sigue viniendo — la consulta esta tardando mas de lo normal': {
+        'en': 'Still loading — the request is taking longer than usual',
+        'id': 'Masih memuat — permintaan ini memakan waktu lebih lama dari biasanya'},
+})
+
+# Traducciones de Lawang que en INGLÉS dejan dentro el nombre español de una casilla o un permiso («tick «Gastos y proveedores»»): en la instancia
+# se dice con el rótulo que ve en inglés (el de la casilla de Usuarios). Estas SÍ pisan (menu_i18n no pisa una clave existente).
+PISA_I18N = {
+    'Solo se importan cuentas marcadas como propias en Cuentas. Si falta una (por ejemplo Statrys), dala de alta en Cuentas y márcala «De la sociedad».': {
+        'en': 'Only accounts marked as own in Accounts can be imported. If one is missing (for example Statrys), add it in Accounts and tick «Company-owned».',
+        'id': 'Hanya rekening yang ditandai milik perusahaan di Rekening yang dapat diimpor. Jika ada yang belum ada (misalnya Statrys), tambahkan di Rekening dan centang «Milik perusahaan».'},
+    'De la sociedad': {'en': 'Company-owned', 'id': 'Milik perusahaan'},
+    'Si eres admin, pide que te marquen «Gastos y proveedores» en Usuarios.': {
+        'en': 'If you are an admin, ask to have «Expenses and suppliers» ticked in Users.',
+        'id': 'Jika Anda admin, minta agar «Pengeluaran dan pemasok» dicentang di Pengguna.'},
+    'Si eres admin, pide que te marquen «Bancos» en Usuarios.': {
+        'en': 'If you are an admin, ask to have «Banks» ticked in Users.', 'id': 'Jika Anda admin, minta agar «Bank» dicentang di Pengguna.'},
+    'Falta la casilla «Gastos y proveedores» en Usuarios: sin ella no se ve lo que sale.': {
+        'en': 'The «Expenses and suppliers» permission is missing in Users: without it outflows are not visible.',
+        'id': 'Izin «Pengeluaran dan pemasok» belum dicentang di Pengguna: tanpa itu uang keluar tidak terlihat.'},
+    'Sin la casilla «Gastos y proveedores» el gráfico enseña solo lo que entra.': {
+        'en': 'Without the «Expenses and suppliers» permission the chart shows only inflows.',
+        'id': 'Tanpa izin «Pengeluaran dan pemasok», grafik hanya menampilkan uang masuk.'},
+}
+
+# Frases de Lawang montadas con un dato (traduce_instancia.js): regex sobre el texto entero → molde por idioma; {n} = grupo n, traducido si es una
+# clave. Mismo sentido que el original; «revisa sesión/permisos» se dice entero.
+PATRONES_INSTANCIA = [
+    ['^No se ha podido cargar «(.+?)»( \\([^)]*\\))? — revisa sesión/permisos\\.$',
+     {'en': 'Could not load «{1}»{2} — check your session and permissions.', 'id': 'Tidak dapat memuat «{1}»{2} — periksa sesi dan izin Anda.'}],
+    ['^(\\d+) dadas de baja$', {'en': '{1} deactivated', 'id': '{1} dinonaktifkan'}],
+    ['^de (\\d+) tipos en el catálogo · (\\d+) archivados$', {'en': 'of {1} types in the catalogue · {2} archived', 'id': 'dari {1} jenis di katalog · {2} diarsipkan'}],
+    ['^Comunicados: (.+)$', {'en': 'Announcements: {1}', 'id': 'Pengumuman: {1}'}],
+]
+
+
+def traduce_instancia_js():
+    """Pega al final del i18n.js de la COPIA (después del núcleo del indonesio y de MENU_I18N) las correcciones de PISA_I18N y
+    traduce_instancia.js con PATRONES_INSTANCIA. Solo la instancia: Lawang y la demo no pasan por aquí (instancia())."""
+    ruta = os.path.join(DIST, 'contracts', 'assets', 'i18n.js')
+    t = open(ruta, encoding='utf-8').read()
+    if 'window.LW_EN = EN;' not in t:
+        aborta('traduce_instancia: i18n.js de Lawang ya no expone window.LW_EN')
+    js = open(os.path.join(AQUI, 'traduce_instancia.js'), encoding='utf-8').read()
+    if js.count('__AXW_PATRONES__') != 1:
+        aborta('traduce_instancia.js: tiene que llevar UNA vez el hueco __AXW_PATRONES__')
+    for p, _m in PATRONES_INSTANCIA:
+        re.compile(p)   # un patrón roto para aquí y no en el navegador
+    pisa = ('(function(){var D=%s,E=window.LW_EN,I=window.LW_ID;for(var k in D){if(E)E[k]=D[k].en;if(I)I[k]=D[k].id;}})();\n'
+            % json.dumps(PISA_I18N, ensure_ascii=False, sort_keys=True))
+    js = js.replace('__AXW_PATRONES__', json.dumps(PATRONES_INSTANCIA, ensure_ascii=False))
+    open(ruta, 'w', encoding='utf-8', newline='').write(t.rstrip() + '\n' + pisa + js.rstrip() + '\n')
 
 
 def menu_i18n():
@@ -2863,9 +3158,7 @@ def publica():
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json (repo privado del estudio): sin él no se puede anonimizar la demo')
     quita_limpieza_en_vivo()
-    r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), DIST], cwd=AQUI)
-    if r.returncode != 0:
-        aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
+    limpia_publico(DIST)
     # Nombres de fichero primero (el logo, la hoja lawang.css…), después el texto que los nombra.
     for raiz, dirs, fichs in os.walk(DIST, topdown=False):
         for f in fichs + dirs:
@@ -4347,7 +4640,8 @@ def ajustes_puesta_en_marcha():
 # Revisor 13-oct (bbm-p41): la tw.css de la instancia es la de Lawang, purgada con las páginas de Lawang. Una clase que solo usan los ficheros del
 # setup (que no son de Lawang) no se compila y la pantalla sale sin ese estilo, en silencio: p-3, gap-x-5 y tracking-[0.08em] en S44/S45. Estos
 # ficheros pintan /ajustes/configurar/ y /ajustes/, que cargan esa tw.css; las axw-* las define el propio fichero en su <style>.
-SETUP_CLASES = ('asistente_setup.html', 'setup_pasos.js', 'setup_reservas.js', 'setup_comun.js', 'ajustes_puesta.js', 'cobros_paso.js', 'setup_propiedades.js')
+# setup_modulos.js (15-oct): la ventana común de Ajustes; sus clases no pueden depender de que otro fichero las use. Una sola línea: test_propiedades_paquete la lee
+SETUP_CLASES = ('asistente_setup.html', 'setup_pasos.js', 'setup_reservas.js', 'setup_comun.js', 'ajustes_puesta.js', 'cobros_paso.js', 'setup_modulos.js', 'setup_propiedades.js')
 # Dónde empieza una lista de clases: `class:` y `className =`/`+=` (se lee la expresión ENTERA: ternarios y concatenaciones), las constantes
 # BTN*/CLS_* y el atributo class="…" del HTML.
 RE_CLASES_INICIO = re.compile(r"""\bclass\s*:|\bclassName\s*\+?=(?!=)|\bvar\s+(?:BTN\w*|CLS_\w*)\s*=|\bclass="([^"\n]*)\"""")
@@ -4774,6 +5068,137 @@ TEXTOS_INSTANCIA = (
     ('intranet/v4/assets/datos.js', "H.seccion('Cliente y contrato',", "H.seccion(contratosActivo() ? 'Cliente y contrato' : 'Cliente',", 1),
     ('intranet/v4/assets/datos.js', "        H.dato('Contrato', c ? (contratosActivo() ? enlaceFichaContrato(c) : esc(c.numero || '')) : (f.contrato_numero || null), { html: !!c }) +",
      "        (c || f.contrato_numero || contratosActivo() ? H.dato('Contrato', c ? (contratosActivo() ? enlaceFichaContrato(c) : esc(c.numero || '')) : (f.contrato_numero || null), { html: !!c }) : '') +", 1),
+    # bbm-cola-2 T1 (15-oct-2026, owner por agencia-c0: «la paginación sale en español» en bbm en inglés): el paginador común de Lawang escribe
+    # «← Anteriores», «Siguientes →» y «1–25 de 120» a mano, sin lwT, aunque las tres claves están en su diccionario. Se piden a lwT al pintarse
+    # (en español lwT devuelve la misma clave: la vista española no cambia). Indonesio de las tres, en MENU_I18N.
+    ('contracts/assets/paginacion.js', """'<button type="button" class="sui-chip" data-pag="antes">← Anteriores</button>' +""",
+     """'<button type="button" class="sui-chip" data-pag="antes">' + (typeof lwT === 'function' ? lwT('← Anteriores') : '← Anteriores') + '</button>' +""", 1),
+    ('contracts/assets/paginacion.js', """'<button type="button" class="sui-chip" data-pag="despues">Siguientes →</button>';""",
+     """'<button type="button" class="sui-chip" data-pag="despues">' + (typeof lwT === 'function' ? lwT('Siguientes →') : 'Siguientes →') + '</button>';""", 1),
+    ('contracts/assets/paginacion.js', "(desde + 1) + '–' + (desde + trozo.length) + ' de ' + todas.length",
+     "(desde + 1) + '–' + (desde + trozo.length) + ' ' + (typeof lwT === 'function' ? lwT('de') : 'de') + ' ' + todas.length", 1),
+)
+# Retoques de COMPORTAMIENTO (no de texto) del editor de documentos en toda instancia (bbm-comodidad, 15-oct-2026; revisor de 371396e: no van
+# en TEXTOS_INSTANCIA, que solo cambia texto). Mismo formato y misma función (textos_instancia): cada trozo las veces dichas o el build para.
+# Prueba: test_comodidad_instancia.py. Lawang no pasa por aquí.
+COMODIDAD_INSTANCIA = (
+    # bbm-comodidad F4 (15-oct-2026, medido en bbm real): con UNA sola empresa emisora, «Sociedad que factura/cobra» empezaba en «— elige —» en
+    # cada factura y cada recibí (2 clics más, y los impuestos esperaban a elegirla). Con una sola se preselecciona; con dos o más, como siempre.
+    # Los impuestos y la previa leen el valor vivo del select al montarse (montaImpuestosDoc.socActual), así que salen ya con esa empresa.
+    ('intranet/v4/assets/editores.js', "valor: f0.sociedad || '', opciones: [['', '— elige —']].concat(opcionesSociedadDoc())",
+     "valor: f0.sociedad || (Object.keys(SOCIEDADES).length === 1 ? Object.keys(SOCIEDADES)[0] : ''), opciones: [['', '— elige —']].concat(opcionesSociedadDoc())", 2),
+    # bbm-comodidad F8: un recibí no vence; «Vencimiento (opcional)» solo se enseña en uno ya guardado que lo tenga (no se pierde el dato).
+    ('intranet/v4/assets/editores.js', "          campoSimpleDoc(filaF, { k: 'fecha_vencimiento', label: 'Vencimiento (opcional)', tipo: 'date', valor: f0.fecha_vencimiento || '' });\n\n"
+     "          var secEmisor = seccionPlegableDoc(host, 'Emisor', true, { resumen: resumenEmisorDoc });\n"
+     "          campoSimpleDoc(secEmisor, { k: 'sociedad', label: 'Sociedad que cobra',",
+     "          if (f0.fecha_vencimiento) campoSimpleDoc(filaF, { k: 'fecha_vencimiento', label: 'Vencimiento (opcional)', tipo: 'date', valor: f0.fecha_vencimiento });\n\n"
+     "          var secEmisor = seccionPlegableDoc(host, 'Emisor', true, { resumen: resumenEmisorDoc });\n"
+     "          campoSimpleDoc(secEmisor, { k: 'sociedad', label: 'Sociedad que cobra',", 1),
+    # bbm-comodidad F10 (15-oct-2026, medido en bbm a 1440): el robot del Asistente (fijo abajo a la derecha, 88 px; 72 px en móvil) tapaba lo último
+    # de cada página: «Nuevo modelo» en Flota, la columna Acciones en Facturas, «Configurar» en Ajustes. Se reserva su hueco al final de <main> para
+    # que se pueda bajar más allá del robot. Solo en pantalla y solo donde se pinta el robot (la regla viaja en la hoja que inyecta mascota.js).
+    ('intranet/v4/assets/mascota.js', "    '@media print{#lw-masc{display:none}}';",
+     "    '@media screen{main{padding-bottom:132px!important}}@media screen and (max-width:767px){main{padding-bottom:104px!important}}' +\n"
+     "    '@media print{#lw-masc{display:none}}';", 1),
+    # bbm-comodidad F12: una barra de pestañas con UNA sola pestaña («General» en Ajustes de bbm) repite la entrada del menú y no lleva a ningún
+    # sitio. Con una sola pestaña no se INSERTA; con dos o más, como siempre (Facturas · Recibos). Se toca solo la inserción y no el `return` de
+    # arriba: el resto de cableaPestanas() (la versión «Mis comisiones» de /reparto/ para el closer, que tiene UNA pestaña) tiene que seguir corriendo
+    # (revisor sobre e8e30cf, MEDIA).
+    ('intranet/v4/assets/nav.js', '    if (cab && cab.parentNode) cab.parentNode.insertBefore(barra, cab.nextSibling);\n    else main.insertBefore(barra, main.firstChild);',
+     '    if (mias.length < 2) { /* una sola pestaña: sin barra */ } else if (cab && cab.parentNode) cab.parentNode.insertBefore(barra, cab.nextSibling);\n'
+     '    else main.insertBefore(barra, main.firstChild);', 1),
+    # bbm-comodidad F12: Facturas tenía el botón «Recibos» en la cabecera Y la pestaña «Recibos» justo debajo (la barra del grupo Cobros). Quien
+    # puede abrir Recibos tiene la pestaña; quien no, tampoco podía usar el botón. Se quita el botón.
+    ('intranet/v4/facturas/index.html', '<a class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors shadow-sm font-label-md text-label-md" href="/intranet/v4/recibos/">\n'
+     '<span class="material-symbols-outlined text-[18px] text-stone-sand">payments</span>\n<span class="" data-lwt>Recibos</span>\n</a>\n', '', 1),
+)
+# Gastos sin «Proyecto» con el módulo proyectos apagado y su CSV por T (bbm-cola-2 T1, 15-oct-2026). Mismo formato y misma función que
+# COMODIDAD_INSTANCIA (textos_instancia); tupla aparte porque es de otro encargo (bbm-idiomas). Lawang no pasa por aquí.
+GASTOS_INSTANCIA = (
+    # Ajustes › Registro de cambios (verificador de bbm, 15-oct-2026; agencia-c0: la misma regla que el historial de /entrega/), por marcador
+    # explícito: siembra (vacío, postgres, «migración …», sistema:sql) = «Sistema · Configuración inicial»; @axisworks.studio = «AxisWorks
+    # (soporte)», los dos sin su motivo interno; otro sistema:<rol> = «Sistema» con su motivo; una persona, tal cual.
+    ('intranet/v4/assets/ajustes.js', "esc(f.quien) + '</td>' +",
+     "esc(axwAutor(f.quien) === 'persona' ? f.quien : T(axwAutor(f.quien) === 'soporte' ? 'AxisWorks (soporte)' : 'Sistema')) + '</td>' +", 1),
+    ('intranet/v4/assets/ajustes.js', "esc(f.motivo || '—') + '</td></tr>';",
+     "esc(axwAutor(f.quien) === 'inicial' ? T('Configuración inicial') : axwAutor(f.quien) === 'soporte' ? '—' : (f.motivo || '—')) + '</td></tr>';", 1),
+    ('intranet/v4/assets/ajustes.js', "    window.lwDatos('ajustes_log_datos', { p_limit: 200 }).then(function (r) {\n",
+     "    function axwAutor(q) { q = String(q == null ? '' : q).trim(); if (!q || /^(postgres|sistema:sql)$/i.test(q) || /^migraci[oó]n(\\s|$)/i.test(q)) return 'inicial';"
+     " if (/@axisworks\\.studio$/i.test(q)) return 'soporte'; return /^sistema:/i.test(q) ? 'sistema' : 'persona'; }\n"
+     "    window.lwDatos('ajustes_log_datos', { p_limit: 200 }).then(function (r) {\n", 1),
+    # Ajustes › Impuestos (agencia-c0, 15-oct-2026: «art. 20.Uno LIVA» en bbm, una empresa indonesia): el maestro siembra los impuestos de España e
+    # Indonesia en toda instancia (20260926170000; en bbm, 090500 desactiva los de España sin borrarlos). No se pintan los de un país en el que no
+    # hay ninguna sociedad de la instancia: el país de cada sociedad es el que usa la base al facturar (es_indonesia → ID, si no ES; b1_dinero),
+    # y uno atado a una sociedad (sociedad_clave) va con ella. Sin poder leer las sociedades, todo como siempre (la lista no se queda vacía a ciegas).
+    # el editor ofrece solo los países de las sociedades y un impuesto nuevo nace con el primero (revisor de b469bb7: nacía en 'ES' y, con el
+    # filtro de la lista, desaparecía al guardarlo). Uno que se edita conserva su país aunque no sea de ninguna sociedad.
+    ('intranet/v4/assets/editores.js', "        var socs = window.LW_V4.sociedadesImpuesto;\n",
+     "        var socs = window.LW_V4.sociedadesImpuesto;\n"
+     "        var axwP = (socs || []).map(function (s) { return s.es_indonesia === true ? 'ID' : s.es_indonesia === false ? 'ES' : null; })\n"
+     "          .filter(function (pa, i, l) { return pa && l.indexOf(pa) === i; });\n"
+     "        if (axwP.length) { paises = paises.filter(function (pa) { return axwP.indexOf(pa) >= 0 || (!nuevo && pa === x.pais); }); if (nuevo) x.pais = axwP[0]; }\n", 1),
+    ('intranet/v4/assets/datos.js', "vig(sb.from('sociedades').select('clave,razon,label,activa').order('orden'))",
+     "vig(sb.from('sociedades').select('clave,razon,label,activa,es_indonesia').order('orden'))", 1),
+    ('intranet/v4/assets/datos.js', "        var filas = r[0], socs = r[1];\n        if (!filas) return;   // fallo() ya pintó el aviso en la lista\n",
+     "        var filas = r[0], socs = r[1];\n        if (!filas) return;   // fallo() ya pintó el aviso en la lista\n"
+     "        if (socs && socs.length) {   // solo los países de las sociedades de la instancia (por su clave); sin leerlas, todos\n"
+     "          var axwPais = {}, axwSoc = {};\n"
+     "          socs.forEach(function (s) { var pa = s.es_indonesia === true ? 'ID' : s.es_indonesia === false ? 'ES' : null; if (pa) { axwPais[pa] = true; axwSoc[s.clave] = pa; } });\n"
+     "          if (Object.keys(axwPais).length) filas = filas.filter(function (x) { return x.sociedad_clave ? axwSoc[x.sociedad_clave] === x.pais : !!axwPais[x.pais]; });\n"
+     "        }\n", 1),
+    # la región de cifras llevaba su aria-label en español sin marca de idioma (verificador de bbm, 15-oct-2026): se le pone la de los aria-label de Lawang.
+    # El atributo va partido en dos literales a propósito: rotulos_build.test.js lee del fuente los rótulos visibles con esa marca y esto no lo es.
+    ('intranet/v4/gastos/index.html', 'gap-4" aria-label="Cifras principales">', 'gap-4" data-' 'lwt-aria aria-label="Cifras principales">', 1),
+    # bbm-cola-2 T1 (15-oct-2026, owner por agencia-c0: Gastos «lleva textos de Lawang» en un negocio de alquiler de motos). Con el módulo
+    # proyectos APAGADO (dato de la base: axwModuloActivo devuelve false solo entonces; sin saber, todo como siempre):
+    #   · el formulario no ofrece «Proyecto» (un gasto ya guardado CON proyecto lo sigue enseñando: no se pierde el dato); sin el campo,
+    #     el envío manda proyecto_id null, igual que elegir «General (sin proyecto)»;
+    #   · la columna de la lista se queda (cabecera en el HTML y celda en el JS: ocultar solo una descuadraría la tabla);
+    #   · la ficha no enseña «Proyecto: General (sin proyecto)».
+    # Y la cabecera del CSV pasa por T (en Lawang era español fijo en toda lengua; en español no cambia).
+    ('intranet/v4/assets/panel-gastos.js', "  function camposGasto(g) {\n    g = g || {};\n    var socs = sociedades();\n    return [\n",
+     "  function camposGasto(g) {\n    g = g || {};\n    var socs = sociedades();\n"
+     "    var sinProy = !g.proyecto_id && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false;\n    return [\n", 1),
+    ('intranet/v4/assets/panel-gastos.js', "      { k: 'notas', label: T('Notas'), tipo: 'textarea', valor: g.notas || '' }\n    ];\n",
+     "      { k: 'notas', label: T('Notas'), tipo: 'textarea', valor: g.notas || '' }\n    ].filter(function (c) { return !(sinProy && c.k === 'proyecto_id'); });\n", 1),
+    ('intranet/v4/assets/panel-gastos.js', "H.dato(T('Proyecto'), proy) +",
+     "(!g.proyecto_id && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false ? '' : H.dato(T('Proyecto'), proy)) +", 1),
+    ('intranet/v4/assets/panel-gastos.js', "    var filas = [['Fecha', 'Sociedad', 'Proyecto', 'Proveedor', 'Categoría', 'Concepto', 'Nº factura', 'Base', 'Impuesto', 'Total', 'Retención PPh', 'Tipo PPh', 'Retención ingresada', 'Moneda', 'Estado', 'Vence', 'Pagado el', 'Cuenta de pago', 'Motivo anulación']]\n",
+     "    var filas = [['Fecha', 'Sociedad', 'Proyecto', 'Proveedor', 'Categoría', 'Concepto', 'Nº factura', 'Base', 'Impuesto', 'Total', 'Retención PPh', 'Tipo PPh', 'Retención ingresada', 'Moneda', 'Estado', 'Vence', 'Pagado el', 'Cuenta de pago', 'Motivo anulación'].map(T)]\n", 1),
+    ('intranet/v4/assets/panel-gastos.js', "proyPorId[g.proyecto_id].nombre : 'General',", "proyPorId[g.proyecto_id].nombre : T('General'),", 1),
+    # agencia-c0, 15-oct-2026 (bbm vivo: «Categoría» salía en «— elige —» sin ninguna y el aviso decía «Pídelo a administración»): sin ninguna
+    # categoría activa, «Nuevo gasto» pide ANTES la primera, aquí mismo y en un solo campo (el nombre; grupo «general», que el paso del asistente
+    # deja elegir), con la misma función de la base que ese paso (gasto_categoria_guarda: la clave la saca la base del nombre y ella decide quién
+    # puede). Creada, se releen los datos y se abre el gasto con ella ya elegida (por la clave que devuelve la base), sin recargar la página.
+    # Solo la ve quien puede crearla: la pantalla es de admin y sin la herramienta «Gastos» no carga (= _gasto_puede de la base). Prueba:
+    # test_gastos_primera_categoria.py.
+    ('intranet/v4/assets/panel-gastos.js', "  function nuevoGasto() {\n    var campos = camposGasto().concat([\n",
+     "  function axwPrimeraCategoria() {\n"
+     "    window.lwVentana(T('Primero, una categoría'), [\n"
+     "      { tipo: 'nota', label: T('Cada gasto va en una categoría y aún no hay ninguna. Crea la primera: después podrás añadir más.') },\n"
+     "      { k: 'nombre', label: T('Nombre de la categoría'), req: true, valor: '' }\n"
+     "    ], T('Crear y seguir'), function (v) {\n"
+     "      var n = String(v.nombre || '').trim();\n"
+     "      if (!n || n.length > 80 || /^[-=+@]/.test(n)) return { error: { message: T('El nombre va de 1 a 80 caracteres y no empieza por = + - @.') } };\n"
+     "      return sb.rpc('gasto_categoria_guarda', { p_clave: null, p_datos: { nombre: n, grupo: 'general' } }).then(function (r) {\n"
+     "        if (r.error) return rpcOk(r, T('No se pudo crear la categoría'));\n"
+     "        var clave = typeof r.data === 'string' ? r.data : null;   // la clave la decide la base y la devuelve: se apunta por ella, no por el nombre\n"
+     "        return cargar().then(function () {\n"
+     "          pintaTodo();\n"
+     "          nuevoGasto(clave);   // abre el gasto: el editor ya no es este y no se recarga (sinRecarga)\n"
+     "          return null;\n"
+     "        }, function () {\n"
+     "          return { error: { message: T('La categoría se creó, pero no se pudo releer la lista: recarga la página y pulsa «Nuevo gasto».') } };\n"
+     "        });\n"
+     "      });\n"
+     "    }, { sub: T('Gastos y proveedores'), sinRecarga: true });\n"
+     "  }\n"
+     "  function nuevoGasto(axwCat) {\n"
+     "    if (!D.categorias.some(function (c) { return c.activa; })) { axwPrimeraCategoria(); return; }\n"
+     "    var campos = camposGasto(axwCat ? { categoria: axwCat } : null).concat([\n", 1),
+    ('intranet/v4/assets/panel-gastos.js',
+     "T('No hay categorías de gasto dadas de alta: sin ellas no se puede registrar un gasto. Pídelo a administración.')",
+     "T('Aún no hay categorías de gasto: la primera se crea al pulsar «Nuevo gasto».')", 1),
 )
 # Solo en las instancias de alquileres (portada «reservas»): el ejemplo del campo y la pestaña «Reservas» de Ajustes, que en ellas solo lleva los impuestos
 TEXTOS_ALQUILER = (
@@ -4811,6 +5236,14 @@ OCULTA_POR_MODULO = (
      '<th class="py-3.5 px-4 font-semibold" data-axw-sin="contratos" data-lwt>Contrato</th>'),
     ('intranet/v4/recibos/index.html', '<td class="py-4 px-5 font-label-md font-semibold text-deep-lagoon tracking-wide">—</td>\n<td class="py-4 px-4 font-label-md text-on-surface">—</td>',
      '<td class="py-4 px-5 font-label-md font-semibold text-deep-lagoon tracking-wide">—</td>\n<td class="py-4 px-4 font-label-md text-on-surface" data-axw-sin="contratos">—</td>'),
+    # bbm-comodidad F7 (15-oct-2026, medido en el HTML servido de bbm): Gastos hablaba de comisiones de closers, compra de suelo, cuentas de
+    # escrow y filtraba por Proyecto en un negocio de alquiler de motos. Fuera sin comisiones / sin proyectos; con ellos, igual que en Lawang.
+    ('intranet/v4/gastos/index.html', '<li data-lwt>Las comisiones de los closers no se apuntan aquí: salen solas de Comisiones y ya cuentan en Finanzas.</li>',
+     '<li data-axw-sin="comisiones" data-lwt>Las comisiones de los closers no se apuntan aquí: salen solas de Comisiones y ya cuentan en Finanzas.</li>'),
+    ('intranet/v4/gastos/index.html', '<li data-lwt>La compra de suelo es inversión, no gasto de explotación: Finanzas la enseña aparte. Nunca se paga un gasto desde una cuenta de escrow.</li>',
+     '<li data-axw-sin="proyectos" data-lwt>La compra de suelo es inversión, no gasto de explotación: Finanzas la enseña aparte. Nunca se paga un gasto desde una cuenta de escrow.</li>'),
+    ('intranet/v4/gastos/index.html', '<select id="lw-gas-f-proyecto" class="',
+     '<select id="lw-gas-f-proyecto" data-axw-sin="proyectos" class="'),
 )
 # El editor de factura de una instancia SIN el módulo contratos y cuya empresa permite facturar sin contrato nace en el modo «sin contrato» que ya
 # existe (el cliente se elige en el editor) y no enseña el selector de contrato, que solo podía ofrecer «— sin contrato —». Mismo camino que pulsar
@@ -4826,6 +5259,28 @@ EDITOR_SIN_CONTRATO = (
     # cambia esa función, el build PARA aquí y se revisa si el arranque de arriba tiene que hacer lo mismo. No cambia nada (viejo == nuevo).
     ('intranet/v4/assets/editores.js', "          function pasaASinContrato() {\n            // Lo que trajo el contrato anterior se suelta y se vacía: el cliente se elige de nuevo.\n            estadoContrato.id = null; estadoContrato.numero = ''; estadoContrato.clienteId = null; estadoContrato.sinContrato = true;\n            sueltaCamposDoc();\n            ['cliente_nombre', 'cliente_documento', 'cliente_email', 'cliente_domicilio', 'proyecto_nombre'].forEach(function (k) { ponCampoDoc(k, ''); });\n            if (delC) delC.limpia();\n            btnC.textContent = edT('— sin contrato —'); btnCli.textContent = edT('— elige el cliente —');\n            notaC.textContent = edT('El documento irá a nombre del cliente que elijas, sin contrato.');\n            pintaModoContrato(); repintaPreview();\n          }\n",
      "          function pasaASinContrato() {\n            // Lo que trajo el contrato anterior se suelta y se vacía: el cliente se elige de nuevo.\n            estadoContrato.id = null; estadoContrato.numero = ''; estadoContrato.clienteId = null; estadoContrato.sinContrato = true;\n            sueltaCamposDoc();\n            ['cliente_nombre', 'cliente_documento', 'cliente_email', 'cliente_domicilio', 'proyecto_nombre'].forEach(function (k) { ponCampoDoc(k, ''); });\n            if (delC) delC.limpia();\n            btnC.textContent = edT('— sin contrato —'); btnCli.textContent = edT('— elige el cliente —');\n            notaC.textContent = edT('El documento irá a nombre del cliente que elijas, sin contrato.');\n            pintaModoContrato(); repintaPreview();\n          }\n"),
+)
+
+# «Enviar por email» de factura y recibí en una instancia SIN el módulo contratos (bbm-correo, 15-oct-2026). El botón llama a la edge
+# send-contract-email (pinta el PDF en el servidor), que es del módulo contratos: con él apagado no existe (404) y `publica_instancia --simula`
+# paraba en rojo (contrato_front: la contaba alcanzable por `usada_por` facturas/recibos de erp/modulos.py, que se retira en el mismo cambio).
+# Con contratos apagado (dato de la base: axwModuloActivo devuelve false solo entonces) el botón de la barra se oculta —también cuando la base
+# contesta después de montarla—, la ficha no lo ofrece y enviaDocMail no sale a la red; con contratos encendido, o sin saber, lo de siempre
+# (y en esa ventana apagados_instancia.js corta la llamada con 404 sin salir a la red). Para que bbm envíe facturas por correo hace falta la
+# edge en la instancia con su render (para después). Lawang no pasa por aquí. Lo fija test_oculta_por_modulo.py (casos en Node).
+CORREO_DOC_SIN_CONTRATOS = (
+    ('intranet/v4/assets/editores.js', "  function enviaDocMail(sb, vals, saved, alEnviado) {\n",
+     "  function enviaDocMail(sb, vals, saved, alEnviado) {\n"
+     "    if (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false) { toastMal(edT('No se pudo enviar')); return; }\n"),
+    ('intranet/v4/assets/editores.js',
+     "    var bMail = btn('Enviar por email', function () { enviaDocMail(ctx.sb, ctx.getVals(), ctx.saved, ctx.alEnviado); });\n",
+     "    var bMail = btn('Enviar por email', function () { enviaDocMail(ctx.sb, ctx.getVals(), ctx.saved, ctx.alEnviado); });\n"
+     "    var ocultaMail = function () { if (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false) bMail.style.display = 'none'; };\n"
+     "    ocultaMail();\n"
+     "    if (window.AXW_MODULOS_LISTOS && window.AXW_MODULOS_LISTOS.then) window.AXW_MODULOS_LISTOS.then(ocultaMail);\n"),
+    ('intranet/v4/assets/datos.js',
+     "    if (!f0.anulada) acciones.push({ texto: 'Enviar por email', onClick: V4acc('enviarDocumento', f0.id) });\n",
+     "    if (!f0.anulada && contratosActivo()) acciones.push({ texto: 'Enviar por email', onClick: V4acc('enviarDocumento', f0.id) });\n"),
 )
 
 # Alta de usuario en una instancia SIN el módulo contratos (bbm-p40, 13-oct-2026). El botón «Nuevo usuario» leía primero el catálogo de tipos
@@ -4971,13 +5426,28 @@ PERMISOS_POR_MODULO = (
      "              tipos.length ? H.chips(tipos) : H.nota('Sin restricción: vacío = TODOS los tipos (al revés que Proyectos).')) : '');\n"),
 )
 
+# Accesos que solo existen con su módulo encendido en ESTA instancia (no marcado: comportamiento; OCULTA_POR_MODULO solo añade
+# data-axw-sin al marcado y test_oculta_por_modulo lo exige). Mismo formato y la misma oculta_por_modulo().
+ACCESOS_POR_MODULO = (
+    # Owner 15-oct-2026 (bbm): «Si no está el módulo del asistente, ¿por qué aparece ahí?». nav.js cargaba el robot del Asistente (mascota.js)
+    # mirando solo el ROL; ahora también el módulo `asistente` de ESTA instancia, el que da su base (modulos_activos_datos, apagados_instancia.js).
+    # Se espera a saberlo (axwModuloActivo falla abierto mientras carga) y, si no se pudo comprobar, no sale: es un acceso, no un dato.
+    # Prueba: test_comodidad_instancia.py (con la forma vieja el robot sale con el módulo apagado).
+    ('intranet/v4/assets/nav.js',
+     "        sm.src = ROOT + 'assets/mascota.js?v=' + MASCOTA_V;\n        document.head.appendChild(sm);\n",
+     "        sm.src = ROOT + 'assets/mascota.js?v=' + MASCOTA_V;\n"
+     "        (window.AXW_MODULOS_LISTOS || Promise.resolve(false)).then(function (sabido) {   // ERP: solo con el módulo asistente encendido\n"
+     "          if (sabido && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('asistente')) document.head.appendChild(sm);\n"
+     "        });\n"),
+)
+
 
 def oculta_por_modulo():
     """Marca en la copia lo que sobra con un módulo apagado (OCULTA_POR_MODULO) y pone en cada página su regla; y el editor de factura sin
-    contrato (EDITOR_SIN_CONTRATO), el alta de usuario sin contratos (ALTA_SIN_CONTRATOS) y Usuarios solo con las herramientas de módulos
+    contrato (EDITOR_SIN_CONTRATO), el correo de factura sin contratos (CORREO_DOC_SIN_CONTRATOS), el alta de usuario sin contratos (ALTA_SIN_CONTRATOS) y Usuarios solo con las herramientas de módulos
     encendidos (PERMISOS_POR_MODULO). Cada trozo exactamente una vez o el build para."""
     reglas = {}
-    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO + ALTA_SIN_CONTRATOS + PERMISOS_POR_MODULO:
+    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO + CORREO_DOC_SIN_CONTRATOS + ALTA_SIN_CONTRATOS + PERMISOS_POR_MODULO + ACCESOS_POR_MODULO:
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
         open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, viejo, nuevo, 'oculta_por_modulo ' + rel_))
@@ -4993,7 +5463,7 @@ def oculta_por_modulo():
 def textos_instancia(nombre):
     """Los textos de inmobiliaria de las pantallas comunes, cambiados en la copia de la instancia (ver TEXTOS_INSTANCIA). Cada trozo tiene que
     aparecer EXACTAMENTE las veces dichas: si Lawang lo cambia, el build para en vez de dejar medio cambio."""
-    for rel_, viejo, nuevo, veces in TEXTOS_INSTANCIA + (TEXTOS_ALQUILER if portada_de(nombre) == 'reservas' else TEXTOS_OTRA):
+    for rel_, viejo, nuevo, veces in TEXTOS_INSTANCIA + COMODIDAD_INSTANCIA + GASTOS_INSTANCIA + (TEXTOS_ALQUILER if portada_de(nombre) == 'reservas' else TEXTOS_OTRA):
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
         if t.count(viejo) != veces:
@@ -5012,7 +5482,10 @@ IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis', 'Panel', 'Bot',
                  # 13-oct (editores.js al indonesio): «Closer» y «Setter» son los nombres de los roles de venta, que el equipo usa tal
                  # cual en indonesio
                  'Closer', 'Setter',
-                 'AaaS')   # AaaS: nombre del producto, igual en los tres idiomas (owner, 13-oct)
+                 'AaaS',   # AaaS: nombre del producto, igual en los tres idiomas (owner, 13-oct)
+                 # 15-oct (panel V2 del AaaS, agente.html): «Radar» es el nombre del agente de precios (como Closer/Setter, un nombre,
+                 # no una palabra que traducir); Facebook, Instagram y Google Business son marcas
+                 'Radar', 'Facebook', 'Instagram', 'Google Business')
 # Lo que hay que tocar en el front copiado: (fichero en DIST, trozo de Lawang, sustituto). Cada trozo tiene que aparecer EXACTAMENTE una vez.
 IDIOMAS_PARCHES = (
     ('contracts/assets/idioma.js', "  window.LW_IDIOMA = (v === 'en') ? 'en' : 'es';",
@@ -5059,6 +5532,18 @@ IDIOMAS_PARCHES = (
     ('intranet/v4/assets/mascota.js', "(window.LW_IDIOMA === 'en' ? 'EN' : 'ES')", "String(window.LW_IDIOMA || 'es').toUpperCase()"),
     # la puerta: la pregunta del pie no llevaba marca de idioma (lo cazó la prueba de las páginas de entrada, 12-oct)
     ('intranet/index.html', '<p class="pie">¿Eres cliente? <a href="/portal/"', '<p class="pie"><span data-lwt>¿Eres cliente?</span> <a href="/portal/"'),
+    # el aviso de sin permiso enseñaba la clave de ?sin_permiso= en bruto («You do not have access to “gastos”», verificador de bbm, 15-oct):
+    # se busca la herramienta por su clave y sale su nombre traducido; guard.js manda a veces un nombre («Panel de control»), que se traduce
+    # tal cual; una clave que no está en la lista no se enseña (sale «esta herramienta»). Prueba: test_sin_permiso_nombre.py.
+    ('intranet/index.html', "lwT('No tienes acceso a «%h».', { h: esc(sin) })",
+     "lwT('No tienes acceso a «%h».', { h: esc(axwNombreSinPermiso(sin)) })"),
+    ('intranet/index.html', "  const sin = new URLSearchParams(location.search).get('sin_permiso');\n",
+     "  const sin = new URLSearchParams(location.search).get('sin_permiso');\n"
+     "  function axwNombreSinPermiso(x){   // por la clave de la herramienta (herr), nunca la clave en bruto\n"
+     "    const h = (typeof HERRAMIENTAS !== 'undefined' ? HERRAMIENTAS : []).find(t => [].concat(t.herr).includes(x));   // herr puede ser una lista (Creatividades)\n"
+     "    if(h) return lwT(h.nombre);\n"
+     "    return /^[a-z0-9_-]+$/.test(x) ? lwT('esta herramienta') : lwT(x);\n"
+     "  }\n"),
 )
 # Fechas y números escritos a mano en español: 'es-ES' → el locale del idioma elegido. Un 'es-ES' usado como CLAVE de objeto no se puede envolver: para.
 ES_ES_ENVUELTO = {"'": "(window.LW_IDIOMA === 'id' ? 'id-ID' : 'es-ES')", '"': '(window.LW_IDIOMA === "id" ? "id-ID" : "es-ES")'}
@@ -5289,6 +5774,60 @@ def moneda_documento():
         open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, viejo, nuevo, 'moneda del documento ' + rel_))
 
 
+# Gastos en la moneda de la instancia (calidad-gastos, 15-oct-2026; lo vio Experiencia en bbm y Calidad lo midió: bbm tiene 0 gastos y moneda IDR
+# en Ajustes, y las cifras de arriba decían «0 EUR» porque panel-gastos.js de Lawang cae a ['EUR'] sin gastos). Sin gastos, las cifras salen en la
+# moneda de Ajustes (lwMonedaBase() de guard.js); sin moneda decidida, «—», nunca «0 EUR», y se repintan cuando llega la capa de módulos
+# (AXW_MODULOS_LISTOS, la misma espera que conMonedaBase de datos.js, que vive dentro de su IIFE y aquí no se alcanza). El alta de un gasto nace en
+# esa moneda y la ofrece aunque no esté en la lista de Lawang; sin moneda decidida nace en «— elige —» y es obligatoria (orquestador agencia-c0,
+# 15-oct: ningún EUR por defecto a fuego). Se lee la base EN EJECUCIÓN (config_instancia.moneda vía modulos_activos_datos): el paquete no
+# guarda ninguna moneda. El servidor tampoco la supone: gasto_guarda (migración de calidad-gastos) usa la de Ajustes o da error.
+# Con gastos, la suma por moneda de siempre. Toda instancia; Lawang no pasa por aquí (allí EUR es su moneda). Parte de BBM-64.
+# Y el alta ofrece SOLO la moneda de Ajustes (agencia-c0, 15-oct, visto en bbm vivo: ofrecía también EUR y USD, y la base rechaza cualquier
+# otra con «La moneda de la instancia es IDR»: Dion rellenaría todo para chocar al guardar). Con una sola posible no hay desplegable: «Moneda:
+# IDR» como texto fijo (tipo 'nota' de modal) y payloadDe manda la de Ajustes. Al editar un gasto en otra moneda, se ofrecen esa y la de Ajustes.
+# Prueba: test_moneda_gastos.py (aplica esto al Lawang fijado y ejecuta pintaKpis/camposGasto/payloadDe en Node; sin el parche, rojo).
+MONEDA_GASTOS_PARCHES = (
+    ('intranet/v4/assets/panel-gastos.js', "  var MONEDAS = [['EUR', 'EUR'], ['IDR', 'IDR'], ['USD', 'USD']];\n",
+     "  var MONEDAS = [['EUR', 'EUR'], ['IDR', 'IDR'], ['USD', 'USD']];\n"
+     "  /* AxisWorks (calidad-gastos, 15-oct-2026): la moneda de los gastos es la de Ajustes (lwMonedaBase), no 'EUR' escrito a mano. */\n"
+     "  function axwMonedaGastos() { var m = typeof window.lwMonedaBase === 'function' ? window.lwMonedaBase() : null; return /^[A-Z]{3}$/.test(m || '') ? m : null; }\n"
+     "  function axwMonedasGastos(actual) {   // SOLO la de Ajustes (la base rechaza otra) y la que ya tiene el gasto que se edita\n"
+     "    var m = axwMonedaGastos(), a = /^[A-Z]{3}$/.test(actual || '') ? actual : null;\n"
+     "    if (m) return a && a !== m ? [[m, m], [a, a]] : [[m, m]];\n"
+     "    var out = MONEDAS.slice(); if (a && !out.some(function (y) { return y[0] === a; })) out.unshift([a, a]);   // sin moneda decidida: la base dirá cuál\n"
+     "    return a ? out : [['', T('— elige —')]].concat(out);\n"
+     "  }\n"
+     "  function axwCampoMoneda(actual) {   // una sola posible: texto fijo, sin desplegable que ofrezca lo que la base rechaza\n"
+     "    var m = axwMonedaGastos(), ops = axwMonedasGastos(actual);\n"
+     "    if (m && ops.length === 1) return { tipo: 'nota', axwMoneda: m, label: T('Moneda') + ': ' + m };\n"
+     "    return { k: 'moneda', label: T('Moneda'), tipo: 'select', req: true, medio: 1, valor: actual || m || '', opciones: ops };\n"
+     "  }\n"
+     "  var axwMonedaGastosEsperada = false;\n"
+     "  function axwTrasMonedaGastos(fn) {\n"
+     "    var p = window.AXW_MODULOS_LISTOS;\n"
+     "    if (axwMonedaGastosEsperada || !p || typeof p.then !== 'function') return;\n"
+     "    axwMonedaGastosEsperada = true;\n"
+     "    p.then(function () { if (axwMonedaGastos()) fn(); }, function () { /* MUDO A PROPOSITO: sin la capa de módulos la moneda no se sabe y las cifras siguen en «—» */ });\n"
+     "  }\n"),
+    ('intranet/v4/assets/panel-gastos.js',
+     "    var monedas = Object.keys(calc); if (!monedas.length) monedas = ['EUR'];\n"
+     "    var linea = function (k) { return monedas.map(function (m) { return fmt((calc[m] || {})[k] || 0, m); }).join(' · '); };\n",
+     "    var monedas = Object.keys(calc); if (!monedas.length) { var mbG = axwMonedaGastos(); monedas = mbG ? [mbG] : []; if (!mbG) axwTrasMonedaGastos(pintaKpis); }\n"
+     "    var linea = function (k) { return monedas.length ? monedas.map(function (m) { return fmt((calc[m] || {})[k] || 0, m); }).join(' · ') : '—'; };\n"),
+    ('intranet/v4/assets/panel-gastos.js', "{ k: 'moneda', label: T('Moneda'), tipo: 'select', medio: 1, valor: g.moneda || 'EUR', opciones: MONEDAS }",
+     "axwCampoMoneda(g.moneda)"),
+    ('intranet/v4/assets/panel-gastos.js', "moneda: v.moneda || 'EUR', fecha: v.fecha,",
+     "moneda: v.moneda || axwMonedaGastos() || null, fecha: v.fecha,"),
+)
+
+
+def moneda_gastos():
+    for rel_, viejo, nuevo in MONEDA_GASTOS_PARCHES:
+        ruta = os.path.join(DIST, *rel_.split('/'))
+        t = open(ruta, encoding='utf-8').read()
+        open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, viejo, nuevo, 'moneda de los gastos ' + rel_))
+
+
 DOC_TIPO_REAL_JS ="(vals.rectifica_numero && vals.tipo !== 'proforma' && vals.tipo !== 'recibi' ? 'rectificativa' : vals.tipo)"
 
 
@@ -5394,6 +5933,31 @@ def comprueba_documento_idiomas(dist, idiomas):
         aborta('documento: el papel de la instancia no sale entero en %s:\n%s' % ('·'.join(idiomas), (r.stdout + r.stderr)[-1500:]))
 
 
+def comprueba_pantallas_idiomas(dist, idiomas):
+    """Sobre el paquete construido: NINGUNA pantalla sale en español en un idioma de la instancia que no sea el español (owner, 15-oct-2026, bbm:
+    «/ajustes/ no puede salir en español, ¿tengo que ir ventana a ventana avisándote?»). El arnés (pruebas/idiomas_pantallas.harness.cjs) abre
+    cada carpeta con index.html del paquete en Chromium, con la base simulada vacía y caída, en cada idioma que no sea 'es', y mira texto, <option>,
+    placeholder, title, aria-label, <title>, lo oculto que se abrirá, los diálogos, LW_T_MISSES y el paginador. Para con cualquier salida que no sea
+    0: un 2 («no he podido mirar») tampoco es un verde. Datos de la base, correos y PDF quedan fuera de este arnés (el PDF lo mira el de arriba)."""
+    lenguas = [x for x in (idiomas or []) if x != 'es']
+    if not lenguas:
+        return
+    # Solo test_builds_instancias.py (el gate de push, que mide que la instancia CONSTRUYE y no puede depender de Chromium; mismo criterio que
+    # test_crea_contrasena --sin-navegador en tools/test.py) lo apaga, y lo dice. Publicar una instancia corre el build entero, con el barrido.
+    if os.environ.get('AXW_IDIOMAS_SIN_NAVEGADOR') == '1':
+        print('idiomas: barrido de pantallas SIN MIRAR (AXW_IDIOMAS_SIN_NAVEGADOR=1, solo el gate): no vale como verde para publicar')
+        return
+    # la agencia de ESTE build (erp/modulos.json: todos los módulos encendidos, también desde un worktree) y el informe entero si se pide
+    entorno = dict(os.environ, LENGUAS=','.join(lenguas), AXW_AGENCIA_RAIZ=AGENCIA,
+                   PARALELO=os.environ.get('PARALELO', '4'))
+    r = subprocess.run(['node', os.path.join(AQUI, 'pruebas', 'idiomas_pantallas.harness.cjs'), dist], capture_output=True, text=True,
+                       encoding='utf-8', env=entorno)
+    sal = (r.stdout or '') + (r.stderr or '')
+    if r.returncode != 0:
+        aborta('idiomas: hay pantallas con texto en español en %s (salida %d del arnés):\n%s' % ('+'.join(lenguas), r.returncode, sal[-3000:]))
+    print('idiomas: ' + ' · '.join(l for l in sal.splitlines() if l.strip() and not l.startswith('FALLA'))[-300:])
+
+
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
@@ -5425,6 +5989,7 @@ def instancia(nombre):
         portada_reservas()
         extras_pantalla()   # erp-front 14-oct-2026: /productos/ = «Extras y servicios»; las motos solo en Flota
     moneda_documento()   # 13-oct (bbm-p36): factura y recibí nuevos en la moneda de la instancia, no en EUR
+    moneda_gastos()   # 15-oct (calidad-gastos): Gastos en la moneda de la instancia; sin gastos, «0 EUR» era mentira en bbm (IDR)
     idiomas = idiomas_de(nombre)
     pantalla = idioma_pantalla_de(nombre, idiomas)   # bbm-p42: SIEMPRE, también sin `idiomas` (un idioma_pantalla sin lista aborta, no se ignora: revisor)
     global AVISO_IDIOMAS
@@ -5433,15 +5998,14 @@ def instancia(nombre):
         idiomas_instancia(idiomas, pantalla)   # + el idioma de pantalla por defecto (el del registro; también el de la puerta sin sesión)
         documento_idiomas(idiomas)   # BBM-65 (13-oct): el papel de factura/recibí y su correo en el par de la instancia (id·en en bbm)
     menu_i18n()   # rótulos del menú en en/id en todas las páginas (después del núcleo del indonesio)
+    traduce_instancia_js()   # bbm-idiomas (15-oct): el HTML de Lawang sin marca de diccionario, en el idioma de la instancia (después de MENU_I18N)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]
     # 0. Sin comentarios, como la pública: los de Lawang cuentan sociedades, personas e incidentes.
     shutil.copy2(os.path.join(LAWANG, 'contracts', 'assets', 'guard.js'), os.path.join(DIST, 'contracts', 'assets', 'guard.js'))
     guard_asistente_admin()   # AXW-136: el admin entra a /asistente/ sin la casilla (como la base)
-    r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), DIST], cwd=AQUI)
-    if r.returncode != 0:
-        aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
+    limpia_publico(DIST)
     # 1. Guard REAL: el de Lawang tal cual, con la base de la instancia.
     g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
     for raiz, _d, fichs in os.walk(DIST):
@@ -5601,7 +6165,8 @@ def instancia(nombre):
         d = os.path.join(DIST, *ruta.split('/'))
         os.makedirs(os.path.dirname(d), exist_ok=True)
         open(d, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, None, '/' + ruta, herramienta=herr))
-    avisos_para_rotos()
+    # con idiomas, el aviso de la instancia en sus idiomas («Pantalla no incluida»); sin ellos, el de siempre
+    avisos_para_rotos(pagina=(lambda r: pagina_no_instalado(no_instalado, marca, None, r, herramienta=r)) if AVISO_IDIOMAS else None)
     # bbm-p42b: los colores de Lawang que quedan a fuego (editores, cajones, papel) a la piel; tras TODO lo que escribe páginas
     # (pagina_no_instalado también lleva el verde) y antes de versiona(), para que el ?v= cambie con ellos
     print('colores de Lawang a la piel: %d' % piel_colores_lawang(DIST, nombre))
@@ -5625,6 +6190,7 @@ def instancia(nombre):
     if idiomas:
         comprueba_idiomas(DIST, idiomas)
         comprueba_documento_idiomas(DIST, idiomas)
+        comprueba_pantallas_idiomas(DIST, idiomas)
     comprueba_resultado(DIST)
     # 4. Copia al clon del repo privado de la instancia (gitignored en la agencia).
     destino = os.path.join(DESPLIEGUES, nombre)
@@ -5804,6 +6370,7 @@ def main():
         p = os.path.join(DIST, x)
         shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
     copia_v4()
+    cifra_cuenta()   # 15-oct: los contadores no dicen «0» (se quita al subir el fijado de Lawang por encima de 671a23edf)
     if '--instancia' in sys.argv:
         # El guard real manda a la puerta (antes /intranet/, ahora la raíz tras reraiz): es la pantalla de acceso de verdad.
         copia(os.path.join(LAWANG, 'intranet', 'index.html'), os.path.join(DIST, 'intranet', 'index.html'))
@@ -5816,6 +6383,7 @@ def main():
         return instancia(sys.argv[i + 1])
     # Solo la demo: el portal de clientes del ERP con los datos del doble (las instancias no llevan /portal/ propio).
     portal_lawang()
+    cifra_cuenta_portal()   # 15-oct: el importe del portal no dice «0» (se quita con cifra_cuenta() al subir el fijado)
     faltan |= cierra_referencias()
     g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
     os.makedirs(os.path.dirname(g), exist_ok=True)

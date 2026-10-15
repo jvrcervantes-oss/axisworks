@@ -38,6 +38,9 @@
 .fl-modal textarea{font-family:inherit}
 .fl-check{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px;min-width:0;word-break:break-word}
 .fl-check input{width:18px;height:18px;flex:none}
+/* bbm-comodidad S3 (15-oct-2026): la línea «Parte k de m» de un paso partido (el plegado está en pantalla_comun.css) */
+.fl-parte{margin:0;font:600 12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:rgb(var(--tema-on-surface-variant, 68 72 63))}
+.fl-pregunta{margin:2px 0 8px;font-size:15px;font-weight:600}
 details.fl-versiones summary{cursor:pointer;font-weight:600}
 /* Composición del diseño del owner «Reservas · Flota y tarifas» (lienzo AxisWorks ERP Dashboard; p37, 13-oct-2026). Cada modelo es una tarjeta ancha: sus tramos en
    baldosas a la izquierda y sus motos en tabla a la derecha, todo a la vista (sin plegables: al guardar se relee y se repinta). Colores por la piel. */
@@ -232,7 +235,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
 <div class="fl-inv-pie">
 <span class="fl-etq font-label-md uppercase" data-fl="n-modelos"></span>
 <span class="fl-ayuda" data-fl="n-visibles" role="status"></span>
-<span class="fl-inv-orden"><label for="fl-orden" data-lwt>Ordenar</label><select id="fl-orden" data-fl="orden"><option value="nombre" data-lwt>Nombre</option><option value="motos" data-lwt>Más motos</option><option value="disponibles" data-lwt>Menos disponibles</option><option value="precio" data-lwt>Tarifa de 1 día</option></select></span>
+<span class="fl-inv-orden"><label for="fl-orden" data-lwt>Ordenar</label><select id="fl-orden" data-fl="orden"><option value="reservables" data-lwt>Reservables primero</option><option value="nombre" data-lwt>Nombre</option><option value="motos" data-lwt>Más motos</option><option value="disponibles" data-lwt>Menos disponibles</option><option value="precio" data-lwt>Tarifa de 1 día</option></select></span>
 <button class="axw-boton" type="button" data-accion="fl-actualizar"><span data-lwt>Actualizar</span></button>
 <button class="axw-boton" type="button" data-accion="fl-modelo-nuevo" data-primario="1"><span data-lwt>Nuevo modelo</span></button>
 </div>
@@ -314,6 +317,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     "De baja": "Dikeluarkan",
     "Motivo del cambio (obligatorio)": "Alasan perubahan (wajib)",
     "El motivo es obligatorio": "Alasan wajib diisi",
+    "Parte 1 de 2": "Bagian 1 dari 2", "Parte 2 de 2": "Bagian 2 dari 2", "Siguiente": "Lanjut", "Atrás": "Kembali",
+    "¿Qué fianza pides?": "Berapa deposit yang diminta?", "¿Por qué lo cambias?": "Kenapa diubah?",
     "en una sola línea": "dalam satu baris",
     "caracteres": "karakter",
     "Entre": "Antara",
@@ -388,7 +393,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     // inventario + cajón (bbm-p42, 13-oct-2026)
     "Por modelo": "Per model", "Por moto": "Per motor", "Taller": "Bengkel", "Ordenar": "Urutkan", "Modelo": "Model", "Buscar": "Cari", "Todos": "Semua", "No se puede cotizar": "Belum bisa dikutip",
     "Con motos": "Ada motor", "Sin motos": "Tanpa motor", "Con motos en taller": "Ada motor di bengkel", "Tarifas": "Tarif", "Con tarifas": "Ada tarif", "Sin tarifas": "Tanpa tarif",
-    "Nombre": "Nama", "Más motos": "Motor terbanyak", "Menos disponibles": "Paling sedikit tersedia", "Tarifa de 1 día": "Tarif 1 hari", "Total": "Total",
+    "Reservables primero": "Yang bisa di-booking dulu", "Nombre": "Nama", "Más motos": "Motor terbanyak", "Menos disponibles": "Paling sedikit tersedia", "Tarifa de 1 día": "Tarif 1 hari", "Total": "Total",
     "Sin motos disponibles": "Tidak ada motor tersedia", "Falta algo más": "Masih ada yang kurang", "1 día": "1 hari", "30 días": "30 hari",
     "Nada coincide con la búsqueda o los filtros.": "Tidak ada yang cocok dengan pencarian atau filter.", "Se ven %a de %b": "Menampilkan %a dari %b",
     "Cerrar": "Tutup", "Ese modelo ya no está en la lista: otra persona lo cambió.": "Model itu sudah tidak ada di daftar: orang lain mengubahnya.",
@@ -440,6 +445,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     'día': 'day', 'días': 'days', 'Sin notas': 'No notes',
     'Disponible': 'Available', 'En taller': 'In the workshop', 'De baja': 'Retired',
     'Motivo del cambio (obligatorio)': 'Reason for the change (required)',
+    'Parte 1 de 2': 'Part 1 of 2', 'Parte 2 de 2': 'Part 2 of 2', 'Siguiente': 'Next', 'Atrás': 'Back',
+    '¿Qué fianza pides?': 'What deposit do you ask for?', '¿Por qué lo cambias?': 'Why are you changing it?',
     'El motivo es obligatorio': 'The reason is required', 'en una sola línea': 'on a single line', 'caracteres': 'characters',
     'Entre': 'Between', 'y': 'and', 'Fuera de rango': 'Out of range',
     'Esto cambia lo que cotiza y cobra el bot.': 'This changes what the bot quotes and charges.',
@@ -487,7 +494,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     // inventario + cajón (bbm-p42, 13-oct-2026)
     'Por modelo': 'By model', 'Por moto': 'By bike', 'Taller': 'Workshop', 'Ordenar': 'Sort by', 'Modelo': 'Model', 'Buscar': 'Search', 'Todos': 'All', 'No se puede cotizar': 'Cannot be quoted',
     'Con motos': 'With bikes', 'Sin motos': 'Without bikes', 'Con motos en taller': 'With bikes in the workshop', 'Tarifas': 'Rates', 'Con tarifas': 'With rates', 'Sin tarifas': 'Without rates',
-    'Nombre': 'Name', 'Más motos': 'Most bikes', 'Menos disponibles': 'Fewest available', 'Tarifa de 1 día': '1-day rate', 'Total': 'Total',
+    'Reservables primero': 'Bookable first', 'Nombre': 'Name', 'Más motos': 'Most bikes', 'Menos disponibles': 'Fewest available', 'Tarifa de 1 día': '1-day rate', 'Total': 'Total',
     'Sin motos disponibles': 'No bikes available', 'Falta algo más': 'Something else is missing', '1 día': '1 day', '30 días': '30 days',
     'Nada coincide con la búsqueda o los filtros.': 'Nothing matches the search or the filters.', 'Se ven %a de %b': 'Showing %a of %b',
     'Cerrar': 'Close', 'Ese modelo ya no está en la lista: otra persona lo cambió.': 'That model is no longer in the list: someone else changed it.',
@@ -713,7 +720,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     var diasEl = h('input', { type: 'text', id: 'fl-f-dias', 'data-campo': 'dias', inputmode: 'numeric', autocomplete: 'off' });
     var precioEl = h('input', { type: 'text', id: 'fl-f-precio', 'data-campo': 'precio', inputmode: 'decimal', autocomplete: 'off' });
     var monEl = h('select', { id: 'fl-f-moneda', 'data-campo': 'moneda' }, monedas.map(function (m) { return h('option', { value: m, text: m }); }));
-    var usada = previo ? previo.moneda : ((segurosDe(pid)[0] || p.tarifas[0] || {}).moneda);
+    var usada = previo ? previo.moneda : ((segurosDe(pid)[0] || p.tarifas[0] || {}).moneda || monedaInstancia(monedas));
     if (usada && monedas.indexOf(usada) === -1) monEl.appendChild(h('option', { value: usada, text: usada }));
     if (usada) monEl.value = usada;
     var notaMonS = h('p', { class: 'fl-ayuda', 'data-fl': 'nota-moneda' });
@@ -722,9 +729,10 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     if (previo) { diasEl.value = String(previo.dias); diasEl.readOnly = true; precioEl.value = String(previo.precio); }
     var modo = h('p', { class: 'fl-ayuda', 'data-fl': 'modo' }), eco = h('div', { class: 'fl-eco', 'data-fl': 'eco', 'data-tipo': 'neutro' });
     var motEl = campoMotivo();
+    var rotPrecioS = h('label', { for: 'fl-f-precio', text: T('Precio del seguro') });
+    var masS = pliegue([h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-moneda', text: T('Moneda') }), monEl, notaMonS])], function () { return [T('Moneda') + ': ' + monEl.value]; });
     var form = h('div', { class: 'fl-form' }, [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-dias', text: T('Días del tramo') }), diasEl]),
-      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-precio', text: T('Precio del seguro') }), precioEl]),
-      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-moneda', text: T('Moneda') }), monEl, notaMonS]), h('div', { class: 'fl-ancho' }, [motEl])]);
+      h('div', { class: 'axw-campo' }, [rotPrecioS, precioEl]), h('div', { class: 'fl-ancho' }, [motEl]), masS]);
     function lee() {
       var er = {}, v = {}, td = tope('dias'), dtxt = diasEl.value.replace(/\s+/g, '');
       if (!/^\d+$/.test(dtxt)) er.dias = T('Los días son un número entero.');
@@ -743,6 +751,8 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       if (Object.keys(r.er).length) { eco.setAttribute('data-tipo', 'mal'); eco.textContent = T('No se puede enviar todavía') + ': ' + Object.keys(r.er).map(function (k) { return r.er[k]; }).join(' '); }
       else { eco.setAttribute('data-tipo', 'neutro'); eco.textContent = T('Se enviará') + ': ' + T('Seguro') + ' · ' + unDia(r.v.dias) + ' · ' + precioTal(r.v.precio, r.v.moneda); }
       marca(diasEl, !!r.er.dias); marca(precioEl, !!r.er.precio);
+      rotPrecioS.textContent = T('Precio del seguro') + (r.v.moneda ? ' (' + r.v.moneda + ')' : '');
+      masS.actualiza();
       return r;
     }
     var d = abre(T('Seguro') + ' · ' + (p.nombre || '—'), [modo, form, eco, h('p', { class: 'axw-nota', text: T('Esto cambia lo que cotiza y cobra el bot desde ya.') })],
@@ -787,16 +797,26 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     var motEl = campoMotivo();
     var form = h('div', { class: 'fl-form' }, [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-fianza', text: T('Fianza') + (monF ? ' (' + monF + ')' : '') }), fianzaEl, h('span', { class: 'fl-ayuda', text: T('Vacía = sin fianza. Se retiene al recoger y se devuelve al entregar.') })]),
       h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-fianza-con-seguro', text: T('Con seguro, ¿se cobra también la fianza?') }), conEl]),
-      h('div', { class: 'axw-campo fl-ancho' }, [h('label', { for: 'fl-f-seguro-obligatorio', style: 'display:flex;align-items:center;gap:8px;font-weight:600' }, [oblEl, document.createTextNode(T('Toda reserva lleva seguro'))])]),
-      h('div', { class: 'fl-ancho' }, [motEl])]);
+      h('div', { class: 'axw-campo fl-ancho' }, [h('label', { for: 'fl-f-seguro-obligatorio', style: 'display:flex;align-items:center;gap:8px;font-weight:600' }, [oblEl, document.createTextNode(T('Toda reserva lleva seguro'))])])]);
     var nota = h('p', { class: 'fl-ayuda', 'data-fl': 'nota-obligatorio' }), eco = h('div', { class: 'fl-eco', 'data-fl': 'eco', 'data-tipo': 'neutro' });
+    // S3: 3 campos + el motivo pasaban de 3: el motivo va en su propia parte (Experiencia, S0); lo que se manda es el mismo y en la misma llamada
+    var parte1 = h('div', { 'data-fl': 'parte-1' }, [h('p', { class: 'fl-parte', text: T('Parte 1 de 2') }), h('h4', { class: 'fl-pregunta', text: T('¿Qué fianza pides?') }), form, nota]);
+    var atras = h('button', { type: 'button', class: 'fl-volver', 'data-accion': 'fl-modal-atras', text: '‹ ' + T('Atrás') });
+    var parte2 = h('div', { 'data-fl': 'parte-2' }, [h('p', { class: 'fl-parte', text: T('Parte 2 de 2') }), h('h4', { class: 'fl-pregunta', text: T('¿Por qué lo cambias?') }), motEl, atras]);
+    var parteG = 1;
+    function vaParte(n) {
+      parteG = n; oculta(parte1, n !== 1); oculta(parte2, n !== 2);
+      var bt = d && d.botones['fl-modal-confirmar']; if (bt) bt.textContent = n === 1 ? T('Siguiente') + ' ›' : T('Confirmar y guardar');
+      if (d) d.error('');
+      var f = (n === 1 ? parte1 : parte2).querySelector('input,select'); try { if (f) f.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ }
+    }
     function refresca() {
       nota.textContent = oblEl.checked && !segurosDe(pid).length ? T('Para que toda reserva lleve seguro, pon el precio del seguro.') : ''; oculta(nota, !nota.textContent);
       var txt = fianzaEl.value.replace(/\s+/g, ''), im = txt ? C.importe(fianzaEl.value, 4) : null;
       if (im && im.e) { eco.setAttribute('data-tipo', 'mal'); eco.textContent = T('No se puede enviar todavía') + ': ' + (im.e === 'ambiguo' ? T('Ese precio es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 600000.') : T('El precio no se entiende: escribe solo cifras y, si hace falta, un punto o una coma para los decimales, sin separador de miles.')); }
       else { eco.setAttribute('data-tipo', 'neutro'); eco.textContent = T('Se enviará') + ': ' + T('Fianza') + ' · ' + (im ? (monF ? precioTal(im.v, monF) : String(im.v)) : T('Sin fianza')); }
     }
-    var d = abre(T('Fianza y reglas del seguro') + ' · ' + (p.nombre || '—'), [form, nota, eco, h('p', { class: 'axw-nota', text: T('Esto cambia lo que cotiza y cobra el bot desde ya.') })],
+    var d = abre(T('Fianza y reglas del seguro') + ' · ' + (p.nombre || '—'), [parte1, parte2, eco, h('p', { class: 'axw-nota', text: T('Esto cambia lo que cotiza y cobra el bot desde ya.') })],
       botonesBase(function (bt, dd) {
         var fz = null;
         if (fianzaEl.value.replace(/\s+/g, '') !== '') {
@@ -808,6 +828,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
         marca(fianzaEl, false);
         var q = { fianza: fz, seguro_obligatorio: oblEl.checked, fianza_con_seguro: conEl.value === 'si' }, g = garantiaDe(pid);
         if (g && (g.fianza == null ? null : Number(g.fianza)) === q.fianza && g.seguro_obligatorio === q.seguro_obligatorio && g.fianza_con_seguro === q.fianza_con_seguro) { dd.error(T('No hay cambios que guardar.')); return; }
+        if (parteG === 1) { vaParte(2); return; }
         var m = validaMotivo(motEl.querySelector('input').value);
         if (m.e) { marca(motEl.querySelector('input'), true); dd.error(m.e); return; }
         marca(motEl.querySelector('input'), false);
@@ -815,11 +836,13 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       }));
     if (!d) return;
     oblEl.addEventListener('change', refresca); fianzaEl.addEventListener('input', refresca); refresca();
+    atras.addEventListener('click', function () { vaParte(1); });
+    vaParte(1);
     recargaConserva(d, function () { if (!prodPorId(pid)) return false; var g = garantiaDe(pid); ctx.esperado = g ? g.actualizado_en : null; refresca(); return true; });
   }
 
   /* ── Paso 1: el inventario (filtros en memoria sobre lo ya leído; nada se pide a la base por filtrar) ── */
-  var F = { vista: 'modelos', q: '', estado: '', motos: '', tarifa: '', motoEstado: '', orden: 'nombre' };
+  var F = { vista: 'modelos', q: '', estado: '', motos: '', tarifa: '', motoEstado: '', orden: 'reservables' };
   function plano(s) { return String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ' ').replace(/^\s|\s$/g, ''); }
   function porNombre(a, b) { return String(a.nombre || '').localeCompare(String(b.nombre || ''), C.locale(), { numeric: true, sensitivity: 'base' }); }
   function modelosVisibles(d) {
@@ -837,7 +860,10 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       if (q && plano(p.nombre).indexOf(q) < 0 && plano(p.numero).indexOf(q) < 0 && !p.unidades.some(function (u) { return plano(u.identificador).indexOf(q) >= 0; })) return false;
       return true;
     });
+    // F9 (bbm-comodidad, 15-oct-2026): en bbm 29 de 51 modelos no tienen motos y salían mezclados con los que se alquilan.
+    function rango(p) { return p.activo === false ? 3 : (p.listo_para_reservar === true ? 0 : (resumenDe(p).disponible ? 1 : 2)); }
     var orden = {
+      reservables: function (a, b) { return rango(a) - rango(b) || porNombre(a, b); },
       nombre: porNombre,
       motos: function (a, b) { return b.unidades.length - a.unidades.length || porNombre(a, b); },
       disponibles: function (a, b) { return resumenDe(a).disponible - resumenDe(b).disponible || porNombre(a, b); },
@@ -853,7 +879,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       if (q && plano(u.identificador).indexOf(q) < 0 && plano(p.nombre).indexOf(q) < 0 && plano(p.numero).indexOf(q) < 0 && plano(u.notas).indexOf(q) < 0) return;
       l.push({ p: p, u: u });
     }); });
-    var orden = F.orden === 'nombre' || F.orden === 'precio' ? function (a, b) { return porNombre(a.p, b.p) || String(a.u.identificador).localeCompare(String(b.u.identificador), C.locale(), { numeric: true }); }
+    var orden = F.orden === 'nombre' || F.orden === 'precio' || F.orden === 'reservables' ? function (a, b) { return porNombre(a.p, b.p) || String(a.u.identificador).localeCompare(String(b.u.identificador), C.locale(), { numeric: true }); }
       : function (a, b) { return porNombre(a.p, b.p); };
     return l.sort(orden);
   }
@@ -1075,6 +1101,12 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   }
   /* Abre una ventana de edición DENTRO del cajón (misma interfaz que el diálogo de pantalla_comun: cuerpo, botones, error, cierra): un solo editor a la vez
      (doble clic en «Añadir…» no abre dos) y el indicador se baja siempre al cerrarlo (botón, Esc o tras guardar). */
+  var pliegue = C.pliegue;   // S3: el plegado común de S0 (_compartido/pantalla_comun.js)
+  function monedaInstancia(admitidas) {   // la moneda ya no se ve como campo: la de partida tiene que ser la de la instancia, si se admite
+    var m = null;
+    try { m = typeof window.lwMonedaBase === 'function' ? window.lwMonedaBase() : null; } catch (e) { /* MUDO A PROPOSITO: sin moneda de la instancia, la primera admitida, como antes */ }
+    return /^[A-Z]{3}$/.test(m || '') && admitidas.indexOf(m) >= 0 ? m : null;
+  }
   function abre(titulo, nodos, botones) {
     if (E.dialogo || !E.cajon) return null;
     var c = E.cajon, previo = document.activeElement;
@@ -1126,6 +1158,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     if (c.hint === 'sin_herramienta') { d.error(T('No tienes la herramienta «Flota y tarifas»: pídesela al administrador principal en Usuarios.')); return; }
     if (c.tipo === 'sin_permiso') { d.error(T('Solo la administración puede cambiar la flota y las tarifas.')); return; }
     d.error((prefijo ? prefijo + ' ' : '') + C.mensaje(err, false, PROPIOS));
+    if (c.tipo === 'regla' && d.cuerpo) [].forEach.call(d.cuerpo.querySelectorAll('[data-axw="mas-datos"]'), function (x) { x.open = true; });   // S3: lo plegado puede ser lo rechazado
   }
   /* Escribe y RELEE de la base (nada de estado optimista): la lista que se ve es la que la base devuelve. */
   function envia(nombre, args, btn, d, prefijo) {
@@ -1177,7 +1210,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     if (pid && !p) return;
     var limpia = function (s) { return String(s == null ? '' : s).replace(/^\s+|\s+$/g, ''); };
     var nombreEl = h('input', { type: 'text', id: 'fl-f-nombre', 'data-campo': 'nombre', autocomplete: 'off', maxlength: '200' });
-    var refEl = null, activoEl = null, impEl = null, cx = pid && E.cat ? E.cat[pid] || null : null;
+    var refEl = null, activoEl = null, impEl = null, cx = pid && E.cat ? E.cat[pid] || null : null, plg = [];
     nombreEl.value = p && p.nombre != null ? String(p.nombre) : '';
     var nodos = [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-nombre', text: T('Nombre del modelo') }), nombreEl,
       h('p', { class: 'fl-ayuda', text: T('Como lo verá el cliente en la reserva y en la factura.') })])];
@@ -1188,7 +1221,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       if (cx) {   // la referencia y el impuesto del modelo ya creado, por el catálogo (AXW-290); sin él, como antes: solo nombre y activo
         refEl = h('input', { type: 'text', id: 'fl-f-referencia', 'data-campo': 'referencia', autocomplete: 'off', maxlength: '80' });
         refEl.value = cx.referencia != null ? String(cx.referencia) : '';
-        nodos.push(h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-referencia', text: T('Referencia (opcional)') }), refEl, h('p', { class: 'fl-ayuda', text: T('No se puede repetir en el catálogo.') })]));
+        plg.push(h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-referencia', text: T('Referencia (opcional)') }), refEl, h('p', { class: 'fl-ayuda', text: T('No se puede repetir en el catálogo.') })]));
         impEl = h('select', { id: 'fl-f-impuesto', 'data-campo': 'impuesto_id' });
         impEl.appendChild(h('option', { value: '', text: T('Sin impuesto por defecto') }));
         (E.imps || []).forEach(function (i) {
@@ -1200,11 +1233,12 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
         if (cx.impuesto_id && !(E.imps || []).some(function (i) { return i.id === cx.impuesto_id; })) {
           var o2 = h('option', { value: String(cx.impuesto_id), text: T('Impuesto que ya no está en la lista') }); o2.selected = true; impEl.appendChild(o2);
         }
-        nodos.push(h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-impuesto', text: T('Impuesto por defecto') }), impEl]));
+        plg.push(h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-impuesto', text: T('Impuesto por defecto') }), impEl]));
       }
       activoEl = h('input', { type: 'checkbox', id: 'fl-f-activo', 'data-campo': 'activo' });
       activoEl.checked = p.activo !== false;
       nodos.push(h('label', { class: 'fl-check', for: 'fl-f-activo' }, [activoEl, h('span', { text: T('Activo: se puede reservar') })]));
+      if (plg.length) nodos.push(pliegue(plg, function () { var o = impEl.options[impEl.selectedIndex]; return [refEl.value, o ? o.textContent : null]; }));
     }
     nodos.push(h('p', { class: 'fl-ayuda', text: T('El precio del alquiler son sus tarifas por días: se ponen en este mismo modelo.') }));
     function datos() {
@@ -1268,9 +1302,10 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     idEl.value = vis.identificador; selEl.value = vis.estado; notasEl.value = vis.notas;
     [idEl, selEl, notasEl].forEach(function (el) { ['input', 'change'].forEach(function (ev) { el.addEventListener(ev, function () { tocado[el.getAttribute('data-campo')] = true; }); }); });
     var motEl = campoMotivo();
+    var masM = pliegue([h('div', { class: 'axw-campo fl-ancho' }, [h('label', { for: 'fl-f-notas', text: T('Notas') }), notasEl])], function () { return [notasEl.value]; });
     var form = h('div', { class: 'fl-form' }, [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-identificador', text: T('Matrícula o identificador') }), idEl]),
       h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-estado', text: T('Estado') }), selEl]),
-      h('div', { class: 'axw-campo fl-ancho' }, [h('label', { for: 'fl-f-notas', text: T('Notas') }), notasEl]), h('div', { class: 'fl-ancho' }, [motEl])]);
+      h('div', { class: 'fl-ancho' }, [motEl]), masM]);
     var d = abre(T('Editar moto'), [h('p', { class: 'fl-ayuda', text: s.p.nombre || '' }), form,
       h('p', { class: 'fl-ayuda', text: T('Si la moto tiene reservas vivas, la base no dejará pasarla a taller ni de baja y lo dirá.') }), h('p', { class: 'axw-nota', text: T('Esto cambia qué motos puede reservar el bot.') })],
       botonesBase(function (bt, dd) {
@@ -1294,7 +1329,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       var nuevo = deFila(f.u), els = { identificador: idEl, estado: selEl, notas: notasEl }, et = { identificador: T('Matrícula o identificador'), estado: T('Estado'), notas: T('Notas') }, cambios = [];
       Object.keys(nuevo).forEach(function (k) {
         if (nuevo[k] === vis[k]) return;
-        if (!tocado[k]) els[k].value = nuevo[k];
+        if (!tocado[k]) { els[k].value = nuevo[k]; masM.actualiza(); }
         cambios.push({ etiqueta: et[k], valor: k === 'estado' ? T(ESTADOS[nuevo.estado][0]) : (nuevo[k] === '' ? '—' : nuevo[k]), conservado: !!tocado[k] });
         vis[k] = nuevo[k];
       });
@@ -1392,13 +1427,16 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     existentes.forEach(function (m) { if (monedas.indexOf(m) === -1) monEl.appendChild(h('option', { value: m, text: m })); });   // una moneda ya usada que la base ya no admite sigue visible
     if (previa) { diasEl.value = String(previa.t.dias); diasEl.readOnly = true; precioEl.value = previa.t.precio == null ? '' : String(previa.t.precio); etqEl.value = previa.t.etiqueta == null ? '' : String(previa.t.etiqueta); monEl.value = String(previa.t.moneda); }
     else if (existentes.length === 1) monEl.value = existentes[0];
+    else if (!existentes.length) { var mi = monedaInstancia(monedas); if (mi) monEl.value = mi; }
     var visT = previa ? { precio: previa.t.precio == null ? '' : String(previa.t.precio), moneda: String(previa.t.moneda), etiqueta: previa.t.etiqueta == null ? '' : String(previa.t.etiqueta) } : null, tocadoT = {};
     if (previa) [precioEl, monEl, etqEl].forEach(function (el) { ['input', 'change'].forEach(function (ev) { el.addEventListener(ev, function () { tocadoT[el.getAttribute('data-campo')] = true; }); }); });
     var motEl = campoMotivo();
+    var rotPrecio = h('label', { for: 'fl-f-precio', text: T('Precio') });
+    var mas = pliegue([h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-moneda', text: T('Moneda') }), monEl]),
+      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-etiqueta', text: T('Etiqueta (opcional)') }), etqEl]), h('div', { class: 'fl-ancho' }, [notaMon])],
+      function () { return [T('Moneda') + ': ' + monEl.value, etqEl.value]; });
     var form = h('div', { class: 'fl-form' }, [h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-dias', text: T('Días del tramo') }), diasEl]),
-      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-precio', text: T('Precio') }), precioEl]),
-      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-moneda', text: T('Moneda') }), monEl]),
-      h('div', { class: 'axw-campo' }, [h('label', { for: 'fl-f-etiqueta', text: T('Etiqueta (opcional)') }), etqEl]), h('div', { class: 'fl-ancho' }, [notaMon]), h('div', { class: 'fl-ancho' }, [motEl])]);
+      h('div', { class: 'axw-campo' }, [rotPrecio, precioEl]), h('div', { class: 'fl-ancho' }, [motEl]), mas]);
     function lee() {
       var er = {}, v = {};
       var dtxt = diasEl.value.replace(/\s+/g, ''), td = tope('dias');
@@ -1432,6 +1470,9 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       if (hay) { eco.setAttribute('data-tipo', 'mal'); eco.textContent = T('No se puede enviar todavía') + ': ' + Object.keys(r.er).map(function (k) { return r.er[k]; }).join(' '); }
       else { eco.setAttribute('data-tipo', 'neutro'); eco.textContent = T('Se enviará') + ': ' + unDia(vv.dias) + ' · ' + precioTal(vv.precio, vv.moneda) + (vv.etiqueta ? ' · ' + vv.etiqueta : ''); }
       marca(diasEl, !!r.er.dias); marca(precioEl, !!r.er.precio); marca(monEl, !!r.er.moneda);
+      rotPrecio.textContent = T('Precio') + (vv.moneda ? ' (' + vv.moneda + ')' : '');   // la moneda, como texto junto al precio
+      if (r.er.moneda) mas.open = true;
+      mas.actualiza();
       return r;
     }
     var d = abre(T('Tramo de tarifa') + ' · ' + (p.nombre || '—'), [modo, form, eco, h('p', { class: 'axw-nota', text: T('Esto cambia lo que cotiza y cobra el bot desde ya.') })],
@@ -1447,6 +1488,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     if (!d) return;
     ['input', 'change'].forEach(function (ev) { d.cuerpo.addEventListener(ev, function (e) { if (e.target !== motEl.querySelector('input')) { d.error(''); refresca(); } }); });
     refresca();
+    if (monedasDe(p).length > 1) mas.open = true;   // mezcla de monedas: el aviso está dentro y se tiene que ver
     recargaConserva(d, function () {
       if (!prodPorId(pid)) return false;
       p = prodPorId(pid); instantanea();
@@ -1509,7 +1551,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   }
   function filtros() {
     var lee = function (n) { var e = $v(n); return e ? e.value : ''; };
-    F.q = lee('buscar'); F.estado = lee('f-estado'); F.motos = lee('f-motos'); F.tarifa = lee('f-tarifa'); F.motoEstado = lee('f-moto-estado'); F.orden = lee('orden') || 'nombre';
+    F.q = lee('buscar'); F.estado = lee('f-estado'); F.motos = lee('f-motos'); F.tarifa = lee('f-tarifa'); F.motoEstado = lee('f-moto-estado'); F.orden = lee('orden') || 'reservables';
     pintaLista();
   }
   function init(aut) {

@@ -86,13 +86,22 @@ function xherr_svg($slug) {
   return '<svg aria-hidden="true" focusable="false" fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path d="' . e($m[1]) . '"></path></svg>';
 }
 
-/* Departamentos de una sección del organigrama: [número, cara, nombre, lema], numerados en el orden del organigrama. */
+/* Departamentos de una sección del organigrama: [número, cara, nombre, lema, imagen], numerados en el orden del organigrama.
+ * `imagen` (15-oct-2026): false = aún no hay assets/images/dep-<cara>.webp (organigrama_web.py publica el departamento igual);
+ * la plantilla pinta entonces la inicial en el cuadro en vez de una etiqueta de imagen que daría 404. */
 function xdeps($sec) {
   global $ORGANIGRAMA, $lang;
   $out = [];
   foreach ($ORGANIGRAMA['deps'] as $i => $d) {
     if ($d['seccion'] !== $sec) continue;
-    $out[] = [sprintf('%02d', $i + 1), $d['cara'], $d[$lang][0], $d[$lang][1]];
+    $out[] = [sprintf('%02d', $i + 1), $d['cara'], $d[$lang][0], $d[$lang][1], ($d['imagen'] ?? true) === true];
   }
   return $out;
+}
+
+/* El cuadro de 48 px del departamento: su busto, o su inicial si aún no tiene imagen. */
+function xdep_cara($cara, $nom, $img) {
+  if ($img) return '<img alt="" src="/assets/images/dep-' . e($cara) . '.webp" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; flex: none"/>';
+  $ini = mb_substr(html_entity_decode(strip_tags((string) $nom), ENT_QUOTES, 'UTF-8'), 0, 1, 'UTF-8');
+  return '<span aria-hidden="true" data-dep-ini="' . e($cara) . '" style="width: 48px; height: 48px; border-radius: 12px; flex: none; display: flex; align-items: center; justify-content: center; background: #23253D; color: #F2F3F7; font-family: \'IBM Plex Mono\', monospace; font-size: 20px">' . e($ini) . '</span>';
 }

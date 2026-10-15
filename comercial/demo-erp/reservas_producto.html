@@ -323,6 +323,7 @@ a.rp-boton{text-decoration:none}
     'Búsqueda parcial: solo se han mirado las últimas 500 reservas.': 'Partial search: only the last 500 bookings were checked.',
     '¿Dónde recibe la moto el cliente?': 'Where does the customer get the motorbike?', '¿Dónde la devuelve?': 'Where do they return it?',
     'En la tienda': 'At the shop', 'A domicilio': 'Delivered to them', 'La recogemos nosotros': 'We collect it',
+    'En la misma dirección': 'At the same address', 'En otra dirección': 'At another address', 'Parte': 'Part',
     'Escribe la dirección de entrega (calle, zona y alguna referencia).': 'Type the delivery address (street, area and a landmark).',
     'Escribe la dirección de recogida (calle, zona y alguna referencia).': 'Type the collection address (street, area and a landmark).',
     'El coste de llevar o recoger la moto NO se suma desde esta pantalla todavía: pregunta a administración cómo se cobra.': 'The cost of delivering or collecting the bike is NOT added from this screen yet: ask administration how to charge it.',
@@ -347,6 +348,11 @@ a.rp-boton{text-decoration:none}
     'Ver en la lista': 'See it in the list',
     'La base dice que esta reserva ya existe (apartada), pero no aparece en la lista. No la repitas: búscala en la pestaña Reservas.': 'The database says this booking already exists (held), but it is not in the list. Do not repeat it: look for it in the Bookings tab.',
     'Cliente con ficha': 'Customer with a record',
+    'Buscar cliente': 'Search customer', 'Escribe parte del nombre': 'Type part of the name', 'Ningún cliente con ese nombre': 'No customer with that name',
+    'No se ha podido mirar la disponibilidad': 'Availability could not be checked',
+    'No tienes permiso para hacer reservas: pídeselo a la administración.': 'You do not have permission to make bookings: ask the administration.',
+    'El módulo de reservas de producto está apagado en esta instancia.': 'The product bookings module is switched off in this installation.',
+    'La sesión ha caducado: recarga la página o vuelve a entrar.': 'Your session has expired: reload the page or sign in again.',
     'Cliente nuevo o sin ficha (escribe su teléfono)': 'New customer or no record (type their phone)',
     'La reserva se enlaza a la ficha de este cliente: su nombre y su teléfono salen de la ficha.': 'The booking is linked to this customer’s record: name and phone come from the record.',
     'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.': 'The customer list is cut to the first 500: if you cannot see the one you need, ask the administrator.',
@@ -456,6 +462,7 @@ a.rp-boton{text-decoration:none}
     'Búsqueda parcial: solo se han mirado las últimas 500 reservas.': 'Pencarian sebagian: hanya 500 booking terakhir yang dicek.',
     '¿Dónde recibe la moto el cliente?': 'Pelanggan terima motornya di mana?', '¿Dónde la devuelve?': 'Motornya dikembalikan di mana?',
     'En la tienda': 'Di toko', 'A domicilio': 'Diantar ke alamat', 'La recogemos nosotros': 'Kami jemput',
+    'En la misma dirección': 'Di alamat yang sama', 'En otra dirección': 'Di alamat lain', 'Parte': 'Bagian',
     'Escribe la dirección de entrega (calle, zona y alguna referencia).': 'Isi alamat antar (jalan, daerah, dan patokan).',
     'Escribe la dirección de recogida (calle, zona y alguna referencia).': 'Isi alamat jemput (jalan, daerah, dan patokan).',
     'El coste de llevar o recoger la moto NO se suma desde esta pantalla todavía: pregunta a administración cómo se cobra.': 'Ongkos antar atau jemput motor BELUM ditambahkan dari layar ini: tanyakan ke admin cara menagihnya.',
@@ -480,6 +487,11 @@ a.rp-boton{text-decoration:none}
     'Ver en la lista': 'Lihat di daftar',
     'La base dice que esta reserva ya existe (apartada), pero no aparece en la lista. No la repitas: búscala en la pestaña Reservas.': 'Sistem menyebut booking ini sudah ada (ditahan), tapi tidak muncul di daftar. Jangan diulang: cari di tab Booking.',
     'Cliente con ficha': 'Pelanggan terdaftar',
+    'Buscar cliente': 'Cari pelanggan', 'Escribe parte del nombre': 'Ketik sebagian nama', 'Ningún cliente con ese nombre': 'Tidak ada pelanggan dengan nama itu',
+    'No se ha podido mirar la disponibilidad': 'Ketersediaan tidak bisa dicek',
+    'No tienes permiso para hacer reservas: pídeselo a la administración.': 'Anda tidak punya izin membuat booking: minta ke bagian administrasi.',
+    'El módulo de reservas de producto está apagado en esta instancia.': 'Modul booking produk dimatikan di instalasi ini.',
+    'La sesión ha caducado: recarga la página o vuelve a entrar.': 'Sesi Anda sudah habis: muat ulang halaman atau masuk lagi.',
     'Cliente nuevo o sin ficha (escribe su teléfono)': 'Pelanggan baru atau belum terdaftar (isi nomornya)',
     'La reserva se enlaza a la ficha de este cliente: su nombre y su teléfono salen de la ficha.': 'Booking ditautkan ke data pelanggan ini: nama dan nomornya diambil dari data pelanggan.',
     'La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.': 'Daftar pelanggan hanya 500 pertama: jika yang dicari tidak ada, minta ke pengelola.',
@@ -964,7 +976,8 @@ a.rp-boton{text-decoration:none}
   }
   function asVacio() {
     return { paso: 'fechas', desde: null, hasta: null, mes: null, prodId: null, unidadId: '', prefijo: '+62', numero: '', nombre: '',
-             entrega: 'tienda', dirEntrega: '', recogida: 'tienda', dirRecogida: '', notas: '', modo: null, clave: claveNueva(), telefono: '', clienteId: '', clienteNombre: '' };
+             entrega: 'tienda', dirEntrega: '', recogida: 'tienda', dirRecogida: '', notas: '', modo: null, clave: claveNueva(), telefono: '', clienteId: '', clienteNombre: '',
+             parteEntrega: 1, recogidaElegida: false };
   }
   function asTieneDatos(W) { return !!(W.desde || W.prodId || W.numero || W.nombre || W.dirEntrega || W.dirRecogida || W.notas); }
   function asGuarda() {
@@ -1076,6 +1089,7 @@ a.rp-boton{text-decoration:none}
     if (previo && previo.focus) { try { previo.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
   }
   function asVe(paso) {
+    if (paso === 'entrega' && A.W.paso === 'cliente') A.W.parteEntrega = 1;   // se entra por delante: la primera parte
     A.W.paso = paso; A.salir = false; A.recuperado = false;
     if (paso === 'moto') asCargaMotos();
     if (paso === 'cliente') asCargaClientes();
@@ -1133,7 +1147,24 @@ a.rp-boton{text-decoration:none}
       return T('Todavía no se pueden poner precios: falta que el gestor diga en Ajustes cómo va el impuesto. Sin precio no se crea ninguna reserva.');
     if (faltas.every(function (x) { return !!x; }))
       return T('Todavía no se puede reservar: falta configurar este módulo en Ajustes. Sin eso no se crea ninguna reserva.');
-    return T('Ninguna moto se puede reservar en esas fechas. Lo que dice la base') + ': ' + mensaje(A.cot[ids[0]].err);
+    // bbm-comodidad F6 (15-oct-2026): un fallo de red, de sesión o de permiso salía como «ninguna moto se puede reservar», y la persona
+    // cambiaba de fechas buscando una moto libre que sí había. Ese prefijo es solo para lo que la base dice como regla.
+    // Si algún modelo dio una regla de la base, esa manda (es la razón real); si todos fallaron por otra cosa, se dice cuál.
+    var errs = ids.map(function (i) { return A.cot[i].err; });
+    var regla = errs.filter(function (e) { return !noEsRegla(e); })[0];
+    if (regla) return T('Ninguna moto se puede reservar en esas fechas. Lo que dice la base') + ': ' + mensaje(regla);
+    return T('No se ha podido mirar la disponibilidad') + ': ' + motivoSinCotizar(errs[0]);
+  }
+  /* F6: ¿el fallo al cotizar NO es una regla de negocio? clasifica() solo reconoce la sesión caída que llega como 42501 sin_sesion; aquí se
+     suman el token caducado de PostgREST (PGRST301-303) y el tiempo agotado (57014), que también salían como «ninguna moto». */
+  function noEsRegla(e) { var x = e || {}; return clasifica(x).tipo !== 'regla' || /^PGRST30[123]$/.test(String(x.code || '')) || String(x.code) === '57014'; }
+  function motivoSinCotizar(e) {
+    var x = e || {}, t = clasifica(x).tipo;
+    if (t === 'sin_sesion' || /^PGRST30[123]$/.test(String(x.code || ''))) return T('La sesión ha caducado: recarga la página o vuelve a entrar.');
+    if (t === 'sin_permiso' || t === 'solo_admin') return T('No tienes permiso para hacer reservas: pídeselo a la administración.');
+    if (t === 'modulo_apagado') return T('El módulo de reservas de producto está apagado en esta instancia.');
+    if (t === 'no_disponible') return mensaje(x);
+    return T('La base no ha respondido: prueba otra vez en un rato.');
   }
   function unidadesLibres(p) {
     if (!A.rango) return [];
@@ -1170,7 +1201,7 @@ a.rp-boton{text-decoration:none}
     if (A.creada) { asPintaHecha(c); return; }
     var n = AS_PASOS.indexOf(W.paso) + 1;
     var cab = h('div', { class: 'rp-as-cab' }, [
-      h('div', null, [h('p', { class: 'rp-as-progreso', text: T('Paso') + ' ' + n + ' ' + T('de') + ' ' + AS_PASOS.length }),
+      h('div', null, [h('p', { class: 'rp-as-progreso', text: T('Paso') + ' ' + n + ' ' + T('de') + ' ' + AS_PASOS.length + (asParte() ? ' · ' + T('Parte') + ' ' + asParte() + ' ' + T('de') + ' 2' : '') }),
                       h('h3', { tabindex: '-1', 'data-rp': 'as-titulo', text: T(AS_TITULO[W.paso]) })]),
       h('button', { type: 'button', class: 'rp-boton', 'data-accion': 'rp-modal-as-cerrar', disabled: A.enviando || A.comprobando ? true : null, text: T('Cerrar') })]);
     c.appendChild(cab);
@@ -1198,8 +1229,8 @@ a.rp-boton{text-decoration:none}
     }
     c0.appendChild(pie);
     traduce(c0);
-    if (A.pasoPintado !== W.paso) {
-      A.pasoPintado = W.paso;
+    if (A.pasoPintado !== W.paso + asParte()) {
+      A.pasoPintado = W.paso + asParte();
       var t = c0.querySelector('[data-rp="as-titulo"]');
       try { t.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ }
     }
@@ -1291,12 +1322,31 @@ a.rp-boton{text-decoration:none}
       if (A.clientes && A.clientes.length && A.W.paso === 'cliente' && !(ae && A.cuerpo.contains(ae) && /^(INPUT|TEXTAREA)$/.test(ae.tagName))) asPinta();   // tecleando: sale en el siguiente pintado
     });
   }
+  /* Opciones del select de clientes con ficha, filtradas por la casilla «Buscar cliente» (sin tildes ni mayúsculas). Se rehacen las
+     opciones en vez de ocultarlas: Safari de iPhone enseña igual una <option hidden>. La elegida se queda siempre, aunque no case. */
+  function sinTildes(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+  function asOpcionesCliente(sel) {
+    var W = A.W, f = sinTildes(A.filtroCliente).trim();
+    while (sel.firstChild) sel.removeChild(sel.firstChild);
+    sel.appendChild(h('option', { value: '', text: T('Cliente nuevo o sin ficha (escribe su teléfono)') }));
+    var vistos = 0;
+    A.clientes.forEach(function (x) {
+      var elegido = x.id === W.clienteId;
+      if (f && !elegido && sinTildes(x.nombre).indexOf(f) === -1) return;
+      if (!elegido) vistos++;
+      sel.appendChild(h('option', { value: x.id, text: x.nombre || '—', selected: elegido ? true : null }));
+    });
+    if (f && !vistos) sel.appendChild(h('option', { value: '', disabled: true, text: T('Ningún cliente con ese nombre') }));
+    sel.value = W.clienteId || '';
+  }
   function asPasoCliente(c) {
     var W = A.W;
     if (A.clientes && A.clientes.length) {
+      // bbm-comodidad F5 (15-oct-2026): con muchos clientes, buscar en el select a ojo costaba; la casilla filtra la lista al teclear.
+      if (A.clientes.length > 5) c.appendChild(campo('Buscar cliente', h('input', { type: 'search', 'data-as': 'filtroCliente', value: A.filtroCliente || '', autocomplete: 'off',
+        placeholder: T('Escribe parte del nombre'), 'aria-label': T('Buscar cliente') })));
       var selC = h('select', { 'data-as': 'cliente', 'aria-label': T('Cliente con ficha') });
-      selC.appendChild(h('option', { value: '', text: T('Cliente nuevo o sin ficha (escribe su teléfono)') }));
-      A.clientes.forEach(function (x) { selC.appendChild(h('option', { value: x.id, text: x.nombre || '—', selected: x.id === W.clienteId ? true : null })); });
+      asOpcionesCliente(selC);
       c.appendChild(campo('Cliente con ficha', selC, A.clientesTruncado ? [h('span', { class: 'rp-vacio', text: T('La lista de clientes está recortada a los primeros 500: si no ves el que buscas, pídelo al gestor.') })] : []));
       if (W.clienteId) { c.appendChild(h('p', { class: 'rp-nota', text: T('La reserva se enlaza a la ficha de este cliente: su nombre y su teléfono salen de la ficha.') })); return; }
     } else if (A.clientes === null && W.clienteId) { W.clienteId = ''; W.clienteNombre = ''; }   // solo si la lista NO existe (undefined = todavía cargando)
@@ -1334,23 +1384,32 @@ a.rp-boton{text-decoration:none}
                                                            'aria-pressed': actual === o[0] ? 'true' : 'false', text: T(o[1]) })); });
     return g;
   }
+  /* bbm-comodidad S4 (15-oct-2026): como mucho 3 campos a la vista. Con la entrega a domicilio el paso va en dos partes (entrega y su dirección;
+     devolución y, solo si es en otra dirección, la suya) y la devolución sale con «En la misma dirección» marcada mientras la persona no elija
+     otra cosa: no se escribe la dirección dos veces. 'misma' se manda como recogida_direccion = la de entrega (la misma clave de siempre). */
+  function asParte() { var W = A && A.W; return W && W.paso === 'entrega' && W.entrega === 'domicilio' ? (W.parteEntrega === 2 ? 2 : 1) : 0; }
   function asPasoEntrega(c) {
-    var W = A.W;
-    c.appendChild(h('p', { class: 'rp-as-sub', text: T('¿Dónde recibe la moto el cliente?') }));
-    c.appendChild(asOpciones('entrega', W.entrega, [['tienda', 'En la tienda'], ['domicilio', 'A domicilio']]));
-    if (W.entrega === 'domicilio') c.appendChild(campo('Dirección de entrega', h('textarea', { rows: '2', maxlength: '300', 'data-as': 'dirEntrega', 'aria-label': T('Dirección de entrega'), text: W.dirEntrega }),
-      [A.err.dirEntrega ? h('span', { class: 'rp-as-err', role: 'alert', text: A.err.dirEntrega }) : null]));
-    c.appendChild(h('p', { class: 'rp-as-sub', text: T('¿Dónde la devuelve?') }));
-    c.appendChild(asOpciones('recogida', W.recogida, [['tienda', 'En la tienda'], ['domicilio', 'La recogemos nosotros']]));
-    if (W.recogida === 'domicilio') c.appendChild(campo('Dirección de recogida', h('textarea', { rows: '2', maxlength: '300', 'data-as': 'dirRecogida', 'aria-label': T('Dirección de recogida'), text: W.dirRecogida }),
-      [A.err.dirRecogida ? h('span', { class: 'rp-as-err', role: 'alert', text: A.err.dirRecogida }) : null]));
-    if (W.entrega === 'domicilio' || W.recogida === 'domicilio')
+    var W = A.W, parte = asParte();
+    if (parte !== 2) {
+      c.appendChild(h('p', { class: 'rp-as-sub', text: T('¿Dónde recibe la moto el cliente?') }));
+      c.appendChild(asOpciones('entrega', W.entrega, [['tienda', 'En la tienda'], ['domicilio', 'A domicilio']]));
+      if (W.entrega === 'domicilio') c.appendChild(campo('Dirección de entrega', h('textarea', { rows: '2', maxlength: '300', 'data-as': 'dirEntrega', 'aria-label': T('Dirección de entrega'), text: W.dirEntrega }),
+        [A.err.dirEntrega ? h('span', { class: 'rp-as-err', role: 'alert', text: A.err.dirEntrega }) : null]));
+    } else c.appendChild(h('p', { class: 'rp-nota', 'data-rp': 'as-entrega-en', text: T('Dirección de entrega') + ': ' + W.dirEntrega.trim() }));
+    if (parte !== 1) {
+      c.appendChild(h('p', { class: 'rp-as-sub', text: T('¿Dónde la devuelve?') }));
+      c.appendChild(asOpciones('recogida', W.recogida, parte ? [['tienda', 'En la tienda'], ['misma', 'En la misma dirección'], ['domicilio', 'En otra dirección']]
+                                                             : [['tienda', 'En la tienda'], ['domicilio', 'La recogemos nosotros']]));
+      if (W.recogida === 'domicilio') c.appendChild(campo('Dirección de recogida', h('textarea', { rows: '2', maxlength: '300', 'data-as': 'dirRecogida', 'aria-label': T('Dirección de recogida'), text: W.dirRecogida }),
+        [A.err.dirRecogida ? h('span', { class: 'rp-as-err', role: 'alert', text: A.err.dirRecogida }) : null]));
+    }
+    if (W.entrega === 'domicilio' || W.recogida !== 'tienda')
       c.appendChild(h('p', { class: 'rp-aviso', text: T('El coste de llevar o recoger la moto NO se suma desde esta pantalla todavía: pregunta a administración cómo se cobra.') }));
   }
 
-  function asFila(etiqueta, valor, paso) {
+  function asFila(etiqueta, valor, paso, parte) {
     return h('div', { class: 'rp-as-fila' }, [h('span', { class: 'rp-as-etq', text: T(etiqueta) }), h('span', { class: 'rp-as-val', text: valor || '—' }),
-      paso ? boton(T('Cambiar'), 'rp-modal-as-paso', { 'data-paso': paso, disabled: asBloqueado() ? true : null }) : h('span')]);
+      paso ? boton(T('Cambiar'), 'rp-modal-as-paso', { 'data-paso': paso, 'data-parte': parte ? String(parte) : null, disabled: asBloqueado() ? true : null }) : h('span')]);
   }
   function asPasoResumen(c) {
     var W = A.W, k = asCot(), p = producto(W.prodId);
@@ -1365,15 +1424,15 @@ a.rp-boton{text-decoration:none}
     var imp = k.impuesto ? T('Base') + ' ' + dinero(k.base, k.moneda) + ' · ' + k.impuesto.nombre + ' ' + k.impuesto.porcentaje + '% ' + dinero(k.impuestos, k.moneda)
                          : T('Sin impuesto');
     tot.appendChild(h('span', { class: 'rp-vacio', text: imp }));
-    if (W.entrega === 'domicilio' || W.recogida === 'domicilio') tot.appendChild(h('span', { class: 'rp-aviso', 'data-rp': 'as-sin-entrega', text: T('Entrega o recogida a domicilio: NO incluida en este total.') }));
+    if (W.entrega === 'domicilio' || W.recogida !== 'tienda') tot.appendChild(h('span', { class: 'rp-aviso', 'data-rp': 'as-sin-entrega', text: T('Entrega o recogida a domicilio: NO incluida en este total.') }));
     c.appendChild(tot);
     var uni = W.unidadId && p ? (p.unidades.filter(function (u) { return u.id === W.unidadId; })[0] || {}).identificador : T('la que asigne la base');
     c.appendChild(h('div', { class: 'rp-as-filas' }, [
       asFila('Moto', (p ? p.nombre : '—') + ' · ' + uni, 'moto'),
       asFila('Fechas', fechaLarga(W.desde) + ' → ' + fechaLarga(W.hasta) + ' = ' + k.dias + ' ' + T(Number(k.dias) === 1 ? 'día' : 'días'), 'fechas'),
       asFila('Cliente', W.clienteId ? W.clienteNombre : W.nombre.trim() + ' · ' + W.telefono, 'cliente'),
-      asFila('Entrega', W.entrega === 'domicilio' ? W.dirEntrega.trim() : T('En la tienda'), 'entrega'),
-      asFila('Devolución', W.recogida === 'domicilio' ? W.dirRecogida.trim() : T('En la tienda'), 'entrega'),
+      asFila('Entrega', W.entrega === 'domicilio' ? W.dirEntrega.trim() : T('En la tienda'), 'entrega', 1),
+      asFila('Devolución', W.recogida === 'domicilio' ? W.dirRecogida.trim() : (W.recogida === 'misma' ? T('En la misma dirección') : T('En la tienda')), 'entrega', 2),
       asFila('Pendiente de pago', dinero(k.total, k.moneda) + ' (' + T('todo') + ')', null)]));
     var dup = W.clienteId ? (A.rango || []).filter(function (x) { return x.client_id === W.clienteId && seSolapa(x, W); })[0]
                           : (A.coinc || []).filter(function (x) { return seSolapa(x, W); })[0];
@@ -1399,7 +1458,7 @@ a.rp-boton{text-decoration:none}
       c.appendChild(h('p', { class: 'rp-aviso', 'data-rp': 'as-total-distinto', text: T('Atención: el total final de la base') + ' (' + dinero(d.precio_total, d.moneda) + ') ' +
         T('no es el que se enseñó en el resumen') + ' (' + dinero(A.cotTotal.total, A.cotTotal.moneda) + '). ' + T('Díselo al cliente con el total nuevo.') }));
     if (A.recuperadaTrasCorte) c.appendChild(h('p', { class: 'rp-nota', text: T('La respuesta no llegó por la conexión, pero la reserva sí se creó (la hemos encontrado en la lista).') }));
-    if (W.entrega === 'domicilio' || W.recogida === 'domicilio') c.appendChild(h('p', { class: 'rp-aviso', text: T('Entrega o recogida a domicilio: NO incluida en este total.') }));
+    if (W.entrega === 'domicilio' || W.recogida !== 'tienda') c.appendChild(h('p', { class: 'rp-aviso', text: T('Entrega o recogida a domicilio: NO incluida en este total.') }));
     c.appendChild(h('div', { class: 'rp-acciones' }, [boton(T('Nueva reserva'), 'rp-modal-as-otra', { 'data-primario': '1' }), boton(T('Ver en la lista'), 'rp-modal-as-lista')]));
     traduce(c);
     if (A.pasoPintado !== 'hecha') { A.pasoPintado = 'hecha'; try { c.querySelector('[data-rp="as-titulo"]').focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
@@ -1437,9 +1496,12 @@ a.rp-boton{text-decoration:none}
       });
     }
     if (W.paso === 'entrega') {
+      if (W.entrega !== 'domicilio' && W.recogida === 'misma') W.recogida = 'tienda';   // sin entrega a domicilio no hay «misma dirección»
       A.err.dirEntrega = W.entrega === 'domicilio' && W.dirEntrega.trim().length < 5 ? T('Escribe la dirección de entrega (calle, zona y alguna referencia).') : null;
-      A.err.dirRecogida = W.recogida === 'domicilio' && W.dirRecogida.trim().length < 5 ? T('Escribe la dirección de recogida (calle, zona y alguna referencia).') : null;
-      if (A.err.dirEntrega || A.err.dirRecogida) { asPinta(); return; }
+      A.err.dirRecogida = asParte() !== 1 && W.recogida === 'domicilio' && W.dirRecogida.trim().length < 5 ? T('Escribe la dirección de recogida (calle, zona y alguna referencia).') : null;
+      if (A.err.dirEntrega) { W.parteEntrega = 1; asPinta(); return; }
+      if (asParte() === 1) { W.parteEntrega = 2; asGuarda(); asPinta(); return; }
+      if (A.err.dirRecogida) { asPinta(); return; }
       return asVe('resumen');
     }
   }
@@ -1470,6 +1532,7 @@ a.rp-boton{text-decoration:none}
     else { datos.contacto_nombre = W.nombre.trim(); datos.contacto_telefono = W.telefono; }
     if (W.entrega === 'domicilio') datos.entrega_direccion = W.dirEntrega.trim();
     if (W.recogida === 'domicilio') datos.recogida_direccion = W.dirRecogida.trim();
+    else if (W.recogida === 'misma' && W.entrega === 'domicilio') datos.recogida_direccion = W.dirEntrega.trim();
     if (W.notas.trim()) datos.notas = W.notas.trim();
     var minutos = AS_MODOS[W.modo];
     var firma = JSON.stringify([datos.producto_id, datos.unidad_id || '', datos.desde, datos.hasta, datos.client_id || '', datos.contacto_telefono || '', minutos]);
@@ -1556,11 +1619,11 @@ a.rp-boton{text-decoration:none}
     if (a === 'rp-modal-as-cerrar') asCierra(false);
     else if (a === 'rp-modal-as-salir') asCierra(true);
     else if (a === 'rp-modal-as-seguir') { A.salir = false; asPinta(); }
-    else if (a === 'rp-modal-as-reinicia') { if (A.enviando || A.comprobando) return; asOlvida(); A.W = asVacio(); A.recuperado = false; A.cot = {}; A.cotClave = null; A.coinc = []; A.dupTel = null; A.err = {}; A.errEnvio = null;
+    else if (a === 'rp-modal-as-reinicia') { if (A.enviando || A.comprobando) return; asOlvida(); A.W = asVacio(); A.recuperado = false; A.cot = {}; A.cotClave = null; A.coinc = []; A.dupTel = null; A.err = {}; A.errEnvio = null; A.filtro = ''; A.filtroCliente = '';
       A.enviado = null; A.yaExiste = false; A.dudosaSinMirar = false; A.recuperadaTrasCorte = false; A.pasoPintado = null; asPinta(); }
     else if (a === 'rp-modal-as-sig') asSiguiente();
-    else if (a === 'rp-modal-as-atras') { var i = AS_PASOS.indexOf(W.paso); if (i > 0) asVe(AS_PASOS[i - 1]); }
-    else if (a === 'rp-modal-as-paso') asVe(el.getAttribute('data-paso'));
+    else if (a === 'rp-modal-as-atras') { var i = AS_PASOS.indexOf(W.paso); if (asParte() === 2) { W.parteEntrega = 1; A.err.dirRecogida = null; asGuarda(); asPinta(); } else if (i > 0) asVe(AS_PASOS[i - 1]); }
+    else if (a === 'rp-modal-as-paso') { if (el.getAttribute('data-parte')) W.parteEntrega = Number(el.getAttribute('data-parte')); asVe(el.getAttribute('data-paso')); }
     else if (a === 'rp-modal-as-dia') asDia(el.getAttribute('data-dia'));
     else if (a === 'rp-modal-as-borra-fechas') { W.desde = null; W.hasta = null; A.cotClave = null; asGuarda(); asPinta(); }
     else if (a === 'rp-modal-as-mes') {
@@ -1570,7 +1633,13 @@ a.rp-boton{text-decoration:none}
     else if (a === 'rp-modal-as-moto') { W.prodId = el.getAttribute('data-producto-id'); W.unidadId = ''; A.err.moto = null; asGuarda(); asPinta(); }
     else if (a === 'rp-modal-as-recotiza') { A.cotClave = null; asCargaMotos(); asPinta(); }
     else if (a === 'rp-modal-as-usa') { var x = A.coinc[Number(el.getAttribute('data-i'))]; if (x && x.contacto_nombre) { W.nombre = x.contacto_nombre; asGuarda(); asPinta(); } }
-    else if (a === 'rp-modal-as-opcion') { W[el.getAttribute('data-campo')] = el.getAttribute('data-valor'); A.errEnvio = A.dudosaSinMirar ? A.errEnvio : null; asGuarda(); asPinta(); }
+    else if (a === 'rp-modal-as-opcion') {
+      var campoOp = el.getAttribute('data-campo'), valorOp = el.getAttribute('data-valor');
+      W[campoOp] = valorOp;
+      if (campoOp === 'recogida') W.recogidaElegida = true;   // lo eligió la persona: ya no se le cambia solo
+      if (campoOp === 'entrega' && valorOp === 'domicilio') { W.parteEntrega = 1; if (!W.recogidaElegida) W.recogida = 'misma'; }
+      if (campoOp === 'entrega' && valorOp === 'tienda' && W.recogida === 'misma') W.recogida = 'tienda';
+      A.errEnvio = A.dudosaSinMirar ? A.errEnvio : null; asGuarda(); asPinta(); }
     else if (a === 'rp-modal-as-confirma') asEnvia();
     else if (a === 'rp-modal-as-comprueba') asComprueba();
     else if (a === 'rp-modal-as-otra') { asCierra(true); nuevaReserva(); }
@@ -1587,6 +1656,11 @@ a.rp-boton{text-decoration:none}
         var p = producto(b.getAttribute('data-producto-id'));
         b.hidden = !!f && !(p && String(p.nombre).toLowerCase().indexOf(f) !== -1);
       });
+      return;
+    }
+    if (k === 'filtroCliente') {
+      A.filtroCliente = t.value;
+      var sc = A.cuerpo.querySelector('[data-as="cliente"]'); if (sc) asOpcionesCliente(sc);
       return;
     }
     if (k === 'unidad') W.unidadId = t.value;

@@ -18,10 +18,14 @@ d = decide(DOBLE.a_medias, null, '/facturas/', false);
 ok('a medias: banda con facturas', d && d.tipo === 'banda' && d.modulos.join() === 'facturas', d);
 ok('configurado: nada', decide(DOBLE.configurado, null, '/home/', false) === null);
 ok('«Ahora no» ya pulsado: nada en esta sesión', decide(DOBLE.sin_configurar, null, '/home/', true) === null);
+// owner, 15-oct-2026 («Yo soy superadmin, debería ver el botón»): «Ahora no» esconde la banda, nunca la salida de la pantalla del módulo que falta
+d = decide(DOBLE.sin_configurar, 'reservas-producto', '/reservas-producto/', true);
+ok('quien configura, tras «Ahora no», en la pantalla de un módulo sin configurar: la nota CON «Configurar» a ese módulo', d && d.tipo === 'nota' && d.modulo === 'reservas-producto' && d.destino === '/ajustes/configurar/?modulo=reservas-producto', d);
+ok('quien configura, tras «Ahora no», en un módulo ya configurado: nada', decide(DOBLE.sin_configurar, 'recibos', '/recibos/', true) === null);
 ok('en el propio asistente: nada', decide(DOBLE.sin_configurar, null, '/ajustes/configurar/', false) === null);
 ok('quien no configura, en la Home: nada', decide(DOBLE.no_configura, null, '/home/', false) === null);
 d = decide(DOBLE.no_configura, 'reservas-producto', '/reservas-producto/', false);
-ok('quien no configura, en la pantalla de un módulo sin configurar: la nota', d && d.tipo === 'nota' && d.modulo === 'reservas-producto', d);
+ok('quien no configura, en la pantalla de un módulo sin configurar: la nota, SIN botón (no puede) — dice quién lo termina', d && d.tipo === 'nota' && d.modulo === 'reservas-producto' && !d.destino, d);
 ok('quien no configura, en un módulo configurado: nada', decide(DOBLE.no_configura, 'recibos', '/recibos/', false) === null);
 ok('quien no configura: «Ahora no» no le esconde la nota (no tiene banda)', (decide(DOBLE.no_configura, 'facturas', '/facturas/', true) || {}).tipo === 'nota');
 const soloBase = Object.assign({}, DOBLE.configurado, { modulos: [{ modulo: 'base', estado: 'sin_configurar', falta: 'moneda' }, { modulo: 'facturas', estado: 'configurado', falta: null }] });

@@ -237,6 +237,7 @@
     'No se pudo cargar el SDK de Meta. Revisa tu conexión o el bloqueador de contenido.': 'The Meta SDK could not be loaded. Check your connection or content blocker.',
     'Guardada': 'Saved', 'Todavía no has guardado la ficha.': 'You have not saved the sheet yet.', 'Todavía no hay versiones.': 'There are no versions yet.',
     'servicios': 'services', 'preguntas': 'questions', 'Ficha entera': 'Whole sheet', 'caracteres': 'characters', 'Versión': 'Version',
+    'Sistema': 'System', 'Configuración inicial': 'Initial setup', 'AxisWorks (soporte)': 'AxisWorks (support)',
     'Versión restaurada.': 'Version restored.', 'Ficha guardada.': 'Sheet saved.', 'No había nada que cambiar.': 'There was nothing to change.',
     'Cuenta en una frase qué has cambiado: queda en el historial.': 'Say in one sentence what you changed: it is kept in the history.',
     'Pulsa otra vez para confirmar': 'Press again to confirm', 'Vuelvo a la versión': 'Back to version',
@@ -368,20 +369,37 @@
     (TOPES.tonos || []).forEach(function (t) { var o = document.createElement('option'); o.value = t; o.textContent = T(TONOS[t] || t); sel.appendChild(o); });
     sel.value = f.tono || 'cercano';
     var cont = $c('idiomas'); limpia(cont);
-    var marcados = f.idiomas || ['es'];
+    var marcados = f.idiomas || IDIOMAS_DEF || [];
     (TOPES.idiomas_validos || []).forEach(function (i) {
       var l = document.createElement('label'), c = document.createElement('input');
       c.type = 'checkbox'; c.setAttribute('data-idioma', i); c.checked = marcados.indexOf(i) !== -1;
-      c.addEventListener('change', recuenta);
+      c.addEventListener('change', function () { c.setAttribute('data-tocado', '1'); recuenta(); });
       l.appendChild(c); l.appendChild(document.createTextNode(IDIOMAS[i] || i)); cont.appendChild(l);
     });
     pintaLista('servicios', f.servicios || []);
     pintaLista('preguntas', f.preguntas || []);
     $c('motivo').value = '';
     pintaEstado(d.estado);
-    texto($w('version'), d.version ? T('Versión') + ' ' + d.version + ' · ' + T('Guardada') + ' ' + fecha(d.actualizado_en) + (d.actualizado_por ? ' · ' + d.actualizado_por : '') : T('Todavía no has guardado la ficha.'));
+    texto($w('version'), d.version ? T('Versión') + ' ' + d.version + ' · ' + T('Guardada') + ' ' + fecha(d.actualizado_en) + (d.actualizado_por ? ' · ' + quienSe(d.actualizado_por) : '') : T('Todavía no has guardado la ficha.'));
     recuenta();
     error('');
+  }
+  // Quién firma: por marcador explícito, nunca por descarte (agencia-c0, 15-oct-2026, medido en la base de bbm). La siembra (vacío, postgres,
+  // «migración …», sistema:sql) sale «Sistema · Configuración inicial»; el estudio (@axisworks.studio) «AxisWorks (soporte)»; los dos sin su
+  // motivo, que es interno y en español. Otro sistema:<rol> (edges, AaaS) sale «Sistema» con su motivo; una persona, tal cual.
+  function autorDe(q) {   // 'inicial' | 'soporte' | 'sistema' | 'persona'
+    q = String(q == null ? '' : q).trim();
+    if (!q || /^(postgres|sistema:sql)$/i.test(q) || /^migraci[oó]n(\s|$)/i.test(q)) return 'inicial';
+    if (/@axisworks\.studio$/i.test(q)) return 'soporte';
+    if (/^sistema:/i.test(q)) return 'sistema';
+    return 'persona';
+  }
+  function quienSe(q) { var a = autorDe(q); return a === 'persona' ? String(q) : a === 'soporte' ? T('AxisWorks (soporte)') : T('Sistema'); }
+  function quienMotivo(it) {
+    var a = autorDe(it.quien);
+    if (a === 'inicial') return T('Sistema') + ' · ' + T('Configuración inicial');
+    if (a === 'soporte') return T('AxisWorks (soporte)');
+    return (a === 'sistema' ? T('Sistema') : (it.quien || '')) + (it.motivo ? ' · ' + it.motivo : '');
   }
   function pintaHistorial(r) {
     var cont = $w('historial'); limpia(cont);
@@ -390,7 +408,7 @@
     lista.forEach(function (it) {
       var fila = document.createElement('div'); fila.className = 'wb-hist-fila'; fila.setAttribute('data-version', it.version);
       var s = document.createElement('span');
-      s.textContent = T('Versión') + ' ' + it.version + ' · ' + fecha(it.cuando) + ' · ' + (it.quien || '') + (it.motivo ? ' · ' + it.motivo : '');
+      s.textContent = T('Versión') + ' ' + it.version + ' · ' + fecha(it.cuando) + ' · ' + quienMotivo(it);
       fila.appendChild(s);
       if (it.version === ACTUAL) { var a = document.createElement('span'); a.className = 'wb-vacio'; a.textContent = T('Versión actual'); fila.appendChild(a); }
       else {
@@ -408,11 +426,43 @@
     if (e && e.code === '40001') return m;
     return m || T('La base no ha respondido: prueba otra vez en un rato.');
   }
+  /* agencia-c0 (15-oct-2026): una ficha NUEVA marca por defecto los idiomas de la instancia, de su base (Ajustes › Idiomas,
+     modulos_activos_datos().idiomas, el de documentos primero); sin ellos, los del build; nunca uno fijo. Antes era ['es'] y en bbm (id + en,
+     0 fichas) el bot habría hablado español si nadie lo desmarcaba. Una ficha guardada sigue con los suyos. */
+  var IDIOMAS_DEF = null;
+  function idiomasInstancia() {
+    var build = Array.isArray(window.AXW_IDIOMAS_BUILD) ? window.AXW_IDIOMAS_BUILD : (Array.isArray(window.AXW_IDIOMAS) ? window.AXW_IDIOMAS : []);
+    var pide; try { pide = SB.rpc('modulos_activos_datos'); } catch (e) { pide = Promise.reject(e); }   // un fallo directo cae a los del build, nunca rompe la carga
+    return Promise.resolve(pide).then(function (x) {
+      var v = x && !x.error && x.data && typeof x.data === 'object' ? x.data.idiomas : null;
+      if (!v || !Array.isArray(v.ofrecidos) || !v.ofrecidos.length) return build.slice();
+      return v.ofrecidos.indexOf(v.defecto) >= 0 ? [v.defecto].concat(v.ofrecidos.filter(function (c) { return c !== v.defecto; })) : v.ofrecidos.slice();
+    }, function () { return build.slice(); });
+  }
+  var CARGA = 0, GUARDANDO = false;   // cada carga tiene su número: la respuesta de idiomas de una carga vieja no toca la ficha de la nueva
   function carga() {
     error('');
+    var mia = ++CARGA;
     return window.lwDatos('wab_ficha_datos', {}).then(function (r) {
-      if (r.error || !r.data) { error(mensaje(r.error)); return; }
+      if (mia !== CARGA) return;
+      if (r.error || !r.data) { error(mensaje(r.error)); raiz.querySelector('[data-accion="guardar"]').disabled = GUARDANDO; return; }   // no se queda apagado por una carga anterior
+      var nueva = !(r.data.ficha && Array.isArray(r.data.ficha.idiomas));
+      IDIOMAS_DEF = null;
       pinta(r.data);
+      var btG = raiz.querySelector('[data-accion="guardar"]');
+      btG.disabled = GUARDANDO;   // lo que dejara apagado una carga anterior no se hereda; con un guardado en curso sigue apagado
+      if (nueva) {
+        btG.disabled = true;   // una ficha nueva no se guarda sin idiomas mientras llegan los de la instancia
+        idiomasInstancia().then(function (def) {   // se pinta sin esperarla; al llegar se marcan, si nadie ha tocado ya las casillas
+          if (mia !== CARGA) return;
+          btG.disabled = GUARDANDO;
+          var cs = [].slice.call($c('idiomas').querySelectorAll('input[data-idioma]'));
+          if (!def || cs.some(function (c) { return c.checked || c.getAttribute('data-tocado'); })) return;
+          IDIOMAS_DEF = def;
+          cs.forEach(function (c) { c.checked = def.indexOf(c.getAttribute('data-idioma')) !== -1; });
+          recuenta();
+        });
+      }
       return SB.rpc('wab_ficha_historial').then(function (h) { if (h.error) { error(mensaje(h.error)); return; } pintaHistorial(h.data); });
     });
   }
@@ -425,13 +475,13 @@
   function guarda(btn) {
     var motivo = $c('motivo').value;
     if (!motivo.trim()) { error(T('Cuenta en una frase qué has cambiado: queda en el historial.')); $c('motivo').focus(); return; }
-    btn.disabled = true; error('');
+    btn.disabled = true; GUARDANDO = true; error('');
     SB.rpc('wab_ficha_guarda', { p_ficha: recoge(), p_motivo: motivo, p_version_base: VERSION }).then(function (r) {
-      btn.disabled = false;
+      btn.disabled = false; GUARDANDO = false;
       if (r.error) { error(mensaje(r.error)); return; }
       ok(r.data && r.data.cambiado === false ? T('No había nada que cambiar.') : T('Ficha guardada.'));
       carga();
-    });
+    }, function () { btn.disabled = false; GUARDANDO = false; error(mensaje(null)); });   // la llamada se cayó del todo: Guardar vuelve y se dice
   }
   function restaura(btn) {
     var v = parseInt(btn.getAttribute('data-version'), 10);
@@ -476,14 +526,14 @@
     });
     sEl('motivo').value = '';
     sAviso(v.activo === true ? T('El seguimiento está activado: escribirá a quien deje de contestar.') : T('El seguimiento está apagado: no escribe a nadie.'));
-    texto($w('seg-version'), d.version ? T('Versión') + ' ' + d.version + ' · ' + T('Guardada') + ' ' + fecha(d.actualizado_en) + (d.actualizado_por ? ' · ' + d.actualizado_por : '') : '');
+    texto($w('seg-version'), d.version ? T('Versión') + ' ' + d.version + ' · ' + T('Guardada') + ' ' + fecha(d.actualizado_en) + (d.actualizado_por ? ' · ' + quienSe(d.actualizado_por) : '') : '');
     var h = $w('seg-historial'); limpia(h);
     var lista = d.versiones || [];
     if (!lista.length) { var vacio = document.createElement('p'); vacio.className = 'wb-vacio'; texto(vacio, T('Todavía no hay versiones del seguimiento.')); h.appendChild(vacio); }
     lista.forEach(function (it) {
       var fila = document.createElement('div'); fila.className = 'wb-hist-fila'; fila.setAttribute('data-seg-version', it.version);
       var sp = document.createElement('span');
-      sp.textContent = T('Versión') + ' ' + it.version + ' · ' + fecha(it.cuando) + ' · ' + (it.quien || '') + (it.motivo ? ' · ' + it.motivo : '');
+      sp.textContent = T('Versión') + ' ' + it.version + ' · ' + fecha(it.cuando) + ' · ' + quienMotivo(it);
       fila.appendChild(sp); h.appendChild(fila);
     });
     sError('');

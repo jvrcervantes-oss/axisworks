@@ -253,7 +253,12 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   const sinInyeccion = async p => (await p.$$('[data-fl="raiz"] img, [data-fl="raiz"] svg, [data-fl="raiz"] script, [data-fl="cajon"] img, [data-fl="cajon"] svg, [data-fl="cajon"] script')).length === 0 && (await p.evaluate(() => window.__xss)) === undefined;
   const sinErrores = async p => (await p.evaluate(() => window.__errores)).length === 0 && (await p.evaluate(() => window.__fromLlamado + window.__fetchLlamado)) === 0;
   const desborde = p => p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
-  const motivo = (p, v = 'Motivo de prueba') => p.fill(campo('motivo'), v);
+  const motivo = async (p, v = 'Motivo de prueba') => {   // S3: en la fianza el motivo está en la parte 2: se llega con «Siguiente», como la persona
+    if (!(await p.isVisible(campo('motivo'))) && await p.$('[data-fl="parte-1"]')) await p.click(accion('fl-modal-confirmar'));
+    return p.fill(campo('motivo'), v);
+  };
+  const abrePliegue = p => p.evaluate(() => document.querySelectorAll('[data-axw="dialogo"] [data-axw="mas-datos"]').forEach(d => { d.open = true; }));
+  const rellena = async (p, n, v) => { await abrePliegue(p); return p.fill(campo(n), v); };
   const prod = id => '[data-producto-id="' + id + '"]';
   const nLineas = n => Array.from({ length: n }, (_, i) => '  dk ' + String(1000 + i) + ' ab  ').join('\n');
   async function cajonPara(p, base, sel) {
@@ -418,13 +423,13 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   {
     const { base, p, ctx } = await abre({ base: { conRef: true } });
     await p.click(accion('fl-modelo-editar', '[data-producto-id="p2"]'));
-    await p.waitForSelector('[data-axw="dialogo"] ' + campo('referencia'));
+    await p.waitForSelector('[data-axw="dialogo"] ' + campo('referencia'), { state: 'attached' });   // S3: va plegada
     const ops = await p.$$eval(campo('impuesto_id') + ' option', os => os.map(o => [o.value, o.selected, o.textContent]));
     ok('AXW-290: «Editar modelo» trae la referencia y el impuesto del catálogo (el desactivado que ya tiene sale marcado)', (await p.$eval(campo('referencia'), e => e.value)) === 'VAR-160'
        && ops.some(o => o[0] === 'i2' && o[1] && /Desactivado/.test(o[2])) && ops.some(o => o[0] === 'i1'), J(ops));
     await confirmar(p);
     ok('AXW-290: sin cambios, nada que mandar', (await dlgError(p)).includes('No hay nada que cambiar') && llamadas(base, 'producto_guarda').length === 0);
-    await p.fill(campo('referencia'), ''); await p.selectOption(campo('impuesto_id'), 'i1'); await confirmar(p);
+    await rellena(p, 'referencia', ''); await p.selectOption(campo('impuesto_id'), 'i1'); await confirmar(p);
     await esperaCierre(p);
     const g = llamadas(base, 'producto_guarda');
     ok('AXW-290: manda SOLO referencia (vaciada = null) e impuesto nuevo', g.length === 1 && g[0][1].p_id === 'p2' && J(g[0][1].p_datos) === J({ referencia: null, impuesto_id: 'i1' }), J(g));
@@ -535,7 +540,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('editar abre la ventana con los valores de la base', (await p.$eval(campo('identificador'), e => e.value)) === 'DK 2345 CD' && (await p.$eval(campo('estado'), e => e.value)) === 'disponible');
     await confirmar(p);
     ok('sin cambios no llama', escritas(base).length === 0 && (await dlgError(p)).includes('No hay cambios'));
-    await p.selectOption(campo('estado'), 'taller'); await p.fill(campo('notas'), 'Frenos'); await confirmar(p);
+    await p.selectOption(campo('estado'), 'taller'); await rellena(p, 'notas', 'Frenos'); await confirmar(p);
     ok('con cambios y sin motivo no llama y marca el campo', escritas(base).length === 0 && (await p.$eval(campo('motivo'), e => e.getAttribute('aria-invalid'))) === 'true' && (await dlgError(p)).includes('motivo'));
     await motivo(p, '  Pasa al taller  '); await confirmar(p); await esperaCierre(p);
     const w = escritas(base);
@@ -571,7 +576,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const { base, p, ctx } = await abre({ base: { otroCambia: true } });
     await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]'));
     const visto = base.productos[0].unidades.find(x => x.id === 'u2').actualizado_en;
-    await p.fill(campo('notas'), 'Mi nota tecleada'); await motivo(p, 'Mi motivo'); await confirmar(p);
+    await rellena(p, 'notas', 'Mi nota tecleada'); await motivo(p, 'Mi motivo'); await confirmar(p);
     await espera(p, () => !document.querySelector(`[data-accion="fl-modal-recargar"]`).classList.contains('axw-oculto'));
     ok('conflicto (40001 flota_cambio): mensaje «otra persona lo cambió», boton de recargar visible y nada se dio por guardado', (await dlgError(p)).includes('Otra persona') && (await visible(p, accion('fl-modal-recargar'))) && (await p.$eval('[data-fl="exito"]', e => e.textContent)) === '' && escritas(base).length === 1);
     await p.click(accion('fl-modal-recargar'));
@@ -590,7 +595,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     // conflicto y la fila ya no existe
     const { base, p, ctx } = await abre({ base: { otroCambia: true } });
     await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]'));
-    await p.fill(campo('notas'), 'x'); await motivo(p); await confirmar(p);
+    await rellena(p, 'notas', 'x'); await motivo(p); await confirmar(p);
     await espera(p, () => !document.querySelector(`[data-accion="fl-modal-recargar"]`).classList.contains('axw-oculto'));
     base.productos[0].unidades = base.productos[0].unidades.filter(x => x.id !== 'u2');
     await p.click(accion('fl-modal-recargar'));
@@ -623,7 +628,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     // 2. conflicto: lo que la otra persona cambio y la persona NO toco se vuelca al formulario; lo que tecleo se conserva y se avisa del valor nuevo
     const { base, p, ctx } = await abre({ base: { otroCambiaCampos: true } });
     await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]'));
-    await p.fill(campo('notas'), 'Mi nota nueva'); await motivo(p, 'Mi motivo'); await confirmar(p);
+    await rellena(p, 'notas', 'Mi nota nueva'); await motivo(p, 'Mi motivo'); await confirmar(p);
     await espera(p, () => !document.querySelector('[data-accion="fl-modal-recargar"]').classList.contains('axw-oculto'));
     await p.click(accion('fl-modal-recargar'));
     await espera(p, () => document.querySelector('[data-accion="fl-modal-recargar"]').classList.contains('axw-oculto'));
@@ -640,7 +645,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     // 2b. si la persona SI tecleo un campo que la otra tambien cambio: se conserva lo suyo y el aviso lo dice con el valor nuevo
     const { base, p, ctx } = await abre({ base: { otroCambia: true } });
     await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]'));
-    await p.fill(campo('notas'), 'Mi nota tecleada'); await motivo(p, 'Mi motivo'); await confirmar(p);
+    await rellena(p, 'notas', 'Mi nota tecleada'); await motivo(p, 'Mi motivo'); await confirmar(p);
     await espera(p, () => !document.querySelector('[data-accion="fl-modal-recargar"]').classList.contains('axw-oculto'));
     await p.click(accion('fl-modal-recargar'));
     await espera(p, () => document.querySelector('[data-accion="fl-modal-recargar"]').classList.contains('axw-oculto'));
@@ -652,7 +657,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     // 3. ESC mientras se guarda: se cierra la ventana; al terminar el guardado NO se baja el indicador de la ventana nueva que ya se abrio
     const { base, p, ctx } = await abre({ base: { lento: 500 } });
     await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]'));
-    await p.fill(campo('notas'), 'Guardando'); await motivo(p, 'ESC en pleno guardado'); await confirmar(p);
+    await rellena(p, 'notas', 'Guardando'); await motivo(p, 'ESC en pleno guardado'); await confirmar(p);
     await p.evaluate(() => document.querySelector('[data-axw="dialogo"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     ok('ESC durante el guardado cierra la ventana', (await dlg(p)) === 0);
     await p.click(accion('fl-moto-editar', '[data-unidad-id="u3"]'));
@@ -679,7 +684,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     }
     await p.fill(campo('precio'), '1500,5');
     ok('el eco muestra de vuelta lo que se enviara (dias, precio ya parseado y moneda) ANTES de confirmar', (await txt(p, '[data-fl="eco"]')).includes('Se enviará') && (await txt(p, '[data-fl="eco"]')).includes('2 días') && /1\.?500,5(?!\d)/.test(await txt(p, '[data-fl="eco"]')) && (await txt(p, '[data-fl="eco"]')).includes('IDR'), await txt(p, '[data-fl="eco"]'));
-    await p.fill(campo('precio'), '250000'); await p.fill(campo('etiqueta'), '  Finde largo  '); await confirmar(p); await esperaCierre(p);
+    await p.fill(campo('precio'), '250000'); await rellena(p, 'etiqueta', '  Finde largo  '); await confirmar(p); await esperaCierre(p);
     const w = escritas(base);
     ok('solo viaja el numero parseado: producto, dias entero, precio numero, moneda, etiqueta recortada, motivo y p_esperado null (tramo nuevo)',
        w.length === 1 && J(w[0][1]) === J({ p_producto_id: 'p1', p_dias: 2, p_precio: 250000, p_moneda: 'IDR', p_etiqueta: 'Finde largo', p_motivo: 'Nuevo tramo', p_esperado: null }), J(w));
@@ -792,7 +797,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   // 7. errores de escritura generales
   {
     const { p, ctx } = await abre({ base: { fallaLecturaTrasGuardar: true } });
-    await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]')); await p.fill(campo('notas'), 'otra'); await motivo(p); await confirmar(p); await esperaCierre(p);
+    await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]')); await rellena(p, 'notas', 'otra'); await motivo(p); await confirmar(p); await esperaCierre(p);
     ok('se guarda pero no se puede releer: lo dice (no «Guardado» a ciegas)', (await txt(p, '[data-fl="error"]')).includes('no se pudo volver a leer') && (await txt(p, '[data-fl="exito"]')) === '');
     await ctx.close();
   }
@@ -800,7 +805,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     // escritura sin permiso: 42501 despues de la respuesta
     const { base, p, ctx } = await abre();
     base.o.noAdmin = true; base.o.noAdminSoloEscribe = true;   // la lectura ya paso: solo la escritura contesta 42501
-    await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]')); await p.fill(campo('notas'), 'y'); await motivo(p); await confirmar(p);
+    await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]')); await rellena(p, 'notas', 'y'); await motivo(p); await confirmar(p);
     await espera(p, () => document.querySelector('[data-axw="dialogo"] .axw-error:not(.axw-oculto)'));
     ok('42501 al escribir: dice «solo la administración» DESPUES de la respuesta y la ventana sigue', (await dlgError(p)).includes('Solo la administración') && (await dlg(p)) === 1);
     await ctx.close();
@@ -813,7 +818,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.click('[data-fl="detalle-versiones"] summary');
     ok('el quien y el motivo de la lista de versiones tambien son texto', (await txt(p, '[data-fl="versiones"]')).includes(XSS_QUIEN) && (await txt(p, '[data-fl="versiones"]')).includes(XSS_MOTIVO) && await sinInyeccion(p));
     await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]'));
-    await p.fill(campo('notas'), XSS_NOTAS); await motivo(p, XSS_MOTIVO.slice(0, 120)); await confirmar(p); await esperaCierre(p);
+    await rellena(p, 'notas', XSS_NOTAS); await motivo(p, XSS_MOTIVO.slice(0, 120)); await confirmar(p); await esperaCierre(p);
     ok('lo que escribe el usuario (notas y motivo con etiquetas) viaja como dato y vuelve como texto sin ejecutarse', (await txt(p, '[data-unidad-id="u2"]')).includes(XSS_NOTAS) && (await txt(p, '[data-fl="versiones"]')).includes(XSS_MOTIVO.slice(0, 120)) && await sinInyeccion(p));
     await p.click(accion('fl-lote-abrir', prod('p1')));
     await p.fill(campo('lista'), 'ZZZ <img src=x onerror="window.__xss=8">');
@@ -827,7 +832,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.evaluate(() => { document.querySelectorAll('[data-fl="raiz"] h1, [data-fl="raiz"] h2, [data-fl="raiz"] h3, [data-fl="raiz"] button, [data-fl="raiz"] summary, [data-fl="raiz"] p').forEach(e => { if (!e.querySelector('input,select,button')) e.textContent = 'Rótulo cambiado ' + Math.random().toString(36).slice(2, 6); }); });
     await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]'));
     await p.evaluate(() => { document.querySelectorAll('[data-axw="dialogo"] label, [data-axw="dialogo"] option, [data-axw="dialogo"] h3').forEach(e => { if (!e.querySelector('input,select')) e.textContent = 'Otro rótulo'; }); });
-    await p.fill(campo('notas'), 'cambio'); await motivo(p, 'Con otros rotulos'); await p.click(accion('fl-modal-confirmar')); await esperaCierre(p);
+    await rellena(p, 'notas', 'cambio'); await motivo(p, 'Con otros rotulos'); await p.click(accion('fl-modal-confirmar')); await esperaCierre(p);
     ok('con TODOS los rotulos cambiados, editar y guardar sigue funcionando (data-accion / data-campo / data-*-id)', escritas(base).length === 1 && escritas(base)[0][1].p_id === 'u2');
     await ctx.close();
   }
@@ -851,7 +856,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   }
   {
     const { p, ctx } = await abre({ idioma: 'en', base: { otroCambia: true, ocultas: ['ZZ 9999 ZZ'] } });
-    await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]')); await p.fill(campo('notas'), 'm'); await motivo(p, 'Mine'); await confirmar(p);
+    await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]')); await rellena(p, 'notas', 'm'); await motivo(p, 'Mine'); await confirmar(p);
     await espera(p, () => !document.querySelector('[data-accion="fl-modal-recargar"]').classList.contains('axw-oculto'));
     await p.click(accion('fl-modal-recargar')); await espera(p, () => document.querySelector('[data-accion="fl-modal-recargar"]').classList.contains('axw-oculto'));
     await p.click(accion('fl-modal-cerrar'));
@@ -933,6 +938,11 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const filas = () => p.$$eval('.fl-inv-fila[data-fila-producto]', fs => fs.map(f => f.getAttribute('data-fila-producto')));
     ok('inventario: una fila por modelo, con motos, disponibles, taller y las tarifas de 1 y 30 días tal cual (o «—»)', (await filas()).length === 4
        && /Honda Beat[\s\S]*P-1/.test(await txt(p, '.fl-inv-fila[data-fila-producto="p1"]')) && (await txt(p, '.fl-inv-fila[data-fila-producto="p1"]')).includes('150.000 IDR') && (await txt(p, '.fl-inv-fila[data-fila-producto="p1"]')).includes('—'));
+    ok('F9: de entrada, «Reservables primero»: los listos por nombre y después el que no se puede cotizar', J(await filas()) === J(['p1', 'p4', 'p2', 'p3'])
+       && (await p.$eval('[data-fl="orden"]', e => e.value)) === 'reservables', J(await filas()));
+    await p.selectOption('[data-fl="orden"]', 'nombre');
+    ok('F9: «Nombre» sigue ordenando solo por nombre', J(await filas()) === J(['p1', 'p4', 'p3', 'p2']), J(await filas()));
+    await p.selectOption('[data-fl="orden"]', 'reservables');
     ok('inventario: el modelo sin tarifas ni motos dice «No se puede cotizar» y por qué, sin abrir nada', /No se puede cotizar[\s\S]*Sin tarifas[\s\S]*Sin motos disponibles/.test(await txt(p, '.fl-inv-fila[data-fila-producto="p3"]')));
     await p.fill('[data-fl="buscar"]', 'dk 7777');
     ok('buscar por matrícula encuentra su modelo (espacios y mayúsculas como la base)', J(await filas()) === J(['p2']));
@@ -951,7 +961,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('vista por moto: filtro por estado', J(await p.$$eval('.fl-inv-fila[data-fila-unidad]', fs => fs.map(f => f.getAttribute('data-fila-unidad')))) === J(['u3']));
     await p.click('.fl-inv-fila[data-fila-unidad="u3"]');
     ok('pulsar una moto abre el cajón de su modelo con esa moto ya en edición (un clic)', !!(await p.$('[data-fl="cajon"] section[data-producto-id="p1"]')) && (await dlgTxt(p)).includes('Editar moto') && (await p.$eval(campo('identificador'), e => e.value)) === 'B 1234 XY');
-    await p.fill(campo('notas'), 'tecleado');
+    await rellena(p, 'notas', 'tecleado');
     await p.keyboard.press('Escape');
     ok('Esc con algo tecleado NO cierra: pregunta «Descartar cambios / Seguir editando»', !!(await p.$('[data-fl="cajon"]')) && !!(await p.$('[data-fl="descartar"]')));
     await p.click('[data-accion="fl-modal-descartar-no"]');
@@ -1034,6 +1044,65 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.click(accion('fl-garantia-abrir', prod('p1'))); await p.click(accion('fl-modal-cerrar'));
     await p.click('[data-accion="fl-vista"][data-vista="motos"]'); await p.fill('[data-fl="buscar"]', 'zzzz');
     ok('en inglés las ventanas del seguro y la fianza, la vista por moto y «nada coincide» tampoco dejan nada sin traducir', (await p.evaluate(() => window.__sinEn)).length === 0, J(await p.evaluate(() => window.__sinEn)));
+    await ctx.close();
+  }
+
+  // S3 (bbm-comodidad, 15-oct-2026): como mucho 3 campos a la vista en cada ventana de Flota, a 1440 y a 390. Cuenta: input, select y textarea
+  // visibles dentro de la ventana; lo plegado («Más datos (opcional)») no se ve y no cuenta.
+  {
+    const cuenta = p => p.evaluate(() => [...document.querySelectorAll('[data-axw="dialogo"] input, [data-axw="dialogo"] select, [data-axw="dialogo"] textarea')]
+      .filter(e => e.checkVisibility({ contentVisibilityAuto: true, visibilityProperty: true })).map(e => e.getAttribute('data-campo') || e.id || e.type));
+    const cierra = async p => { await p.click(accion('fl-modal-cerrar')); await esperaCierre(p); };
+    for (const ancho of [1440, 390]) {
+      const { base, p, ctx } = await abre({ ancho });
+      const m = {};
+      await abreTarifa(p); await p.waitForSelector('[data-axw="dialogo"] ' + campo('dias')); m.tarifaNueva = await cuenta(p);
+      ok(ancho + ' px · S3 tarifa: la moneda sale como texto junto al precio y va plegada con la etiqueta', (await txt(p, 'label[for="fl-f-precio"]')).includes('(IDR)')
+         && !(await p.isVisible(campo('moneda'))) && !(await p.isVisible(campo('etiqueta'))) && (await txt(p, '[data-axw="dialogo"] [data-axw="pliegue-resumen"]')).includes('IDR'));
+      await cierra(p);
+      const t1 = base.productos.find(x => x.id === 'p1').tarifas[0].id;
+      await p.click(accion('fl-tarifa-cambiar', '[data-tarifa-id="' + t1 + '"]')); await p.waitForSelector('[data-axw="dialogo"] ' + campo('precio')); m.tarifaCambiar = await cuenta(p);
+      await cierra(p);
+      await p.click(accion('fl-seguro-abrir', prod('p1'))); await p.waitForSelector('[data-axw="dialogo"] ' + campo('precio')); m.seguro = await cuenta(p);
+      await cierra(p);
+      await p.click(accion('fl-garantia-abrir', prod('p1'))); await p.waitForSelector('[data-axw="dialogo"] ' + campo('fianza')); m.fianzaParte1 = await cuenta(p);
+      ok(ancho + ' px · S3 fianza: «Parte 1 de 2», el motivo no está a la vista y el botón dice «Siguiente»', (await txt(p, '[data-fl="parte-1"] .fl-parte')).includes('Parte 1 de 2')
+         && !(await p.isVisible(campo('motivo'))) && (await txt(p, accion('fl-modal-confirmar'))).includes('Siguiente'));
+      await p.fill(campo('fianza'), '500000'); await p.click(accion('fl-modal-confirmar')); m.fianzaParte2 = await cuenta(p);
+      ok(ancho + ' px · S3 fianza: la parte 2 pregunta el motivo y nada se ha enviado', (await txt(p, '[data-fl="parte-2"]')).includes('¿Por qué lo cambias?') && await p.isVisible(campo('motivo'))
+         && escritas(base).length === 0);
+      await p.click(accion('fl-modal-atras'));
+      ok(ancho + ' px · S3 fianza: «Atrás» vuelve a la parte 1 con la fianza escrita', (await p.$eval(campo('fianza'), e => e.value)) === '500000' && await p.isVisible(campo('fianza')));
+      await cierra(p);
+      await p.click(accion('fl-moto-editar', '[data-unidad-id="u2"]')); await p.waitForSelector('[data-axw="dialogo"] ' + campo('identificador')); m.moto = await cuenta(p);
+      await cierra(p);
+      await p.click(accion('fl-modelo-editar', prod('p2'))); await p.waitForSelector('[data-axw="dialogo"] ' + campo('nombre')); m.modelo = await cuenta(p);
+      await cierra(p);
+      ok(ancho + ' px · S3 ninguna ventana de Flota pasa de 3 campos a la vista', Object.values(m).every(n => n.length >= 1 && n.length <= 3), J(m));
+      console.log('  campos a la vista ' + ancho + ' px: ' + J(m));
+      const d = await desborde(p); ok(ancho + ' px · S3 sin scroll horizontal tras abrir las ventanas', d.sw <= d.cw, J(d));
+      await ctx.close();
+    }
+    // tarea de Experiencia: «sube el precio por día de 150.000 a 170.000» → «Cambiar» + precio + motivo + «Confirmar y guardar»: 2 toques y 2 campos, como antes;
+    // la moneda y la etiqueta ya no ocupan sitio. Fianza nueva: un toque más («Siguiente») a cambio de no ver 4 campos a la vez.
+    {   // remate 3: un modelo sin tramos arranca en la moneda de la instancia (USD aquí; la primera de los topes es IDR)
+      const { p, ctx } = await abre({ base: { sinAmbos: true } });
+      await p.evaluate(() => { window.lwMonedaBase = () => 'USD'; });
+      await abreTarifa(p, 'p3'); await p.waitForSelector('[data-axw="dialogo"] ' + campo('precio'));
+      ok('S3 remate: tramo nuevo de un modelo sin tramos, en la moneda de la instancia', (await p.$eval(campo('moneda'), e => e.value)) === 'USD' && (await txt(p, 'label[for="fl-f-precio"]')).includes('(USD)'));
+      await ctx.close();
+    }
+    console.log('  toques S3: subir el precio por día = 2 toques + precio + motivo (igual que antes); fianza = 3 toques (antes 2) con 3 campos por parte (antes 4)');
+    // la fianza en dos partes manda exactamente lo mismo, en una sola llamada
+    const { base, p, ctx } = await abre({ base: { soloUno: true } });
+    await p.click(accion('fl-garantia-abrir', prod('p1')));
+    await p.fill(campo('fianza'), '750000'); await p.click(accion('fl-modal-confirmar'));
+    await p.click(accion('fl-modal-confirmar'));
+    ok('S3 fianza: en la parte 2 sin motivo no se envía', escritas(base).length === 0 && (await dlgError(p)).includes('motivo'));
+    await p.fill(campo('motivo'), 'Fianza de temporada'); await p.click(accion('fl-modal-confirmar')); await esperaCierre(p);
+    const g = escritas(base);
+    ok('S3 fianza: una llamada con lo de siempre', g.length === 1 && g[0][0] === 'producto_garantia_guarda' && J(g[0][1].p_datos) === J({ fianza: 750000, seguro_obligatorio: false, fianza_con_seguro: false })
+       && g[0][1].p_motivo === 'Fianza de temporada', J(g));
     await ctx.close();
   }
 

@@ -12,6 +12,15 @@ const AQUI = path.join(__dirname, '..');
 const DOBLE = JSON.parse(fs.readFileSync(path.join(__dirname, 'doble_modulos_setup_estado.json'), 'utf8')).casos;
 const JS = ['setup_modulos.js', 'setup_pasos.js', 'ajustes_puesta.js'].map(f => fs.readFileSync(path.join(AQUI, f), 'utf8'));
 const SHOT = process.argv[2];
+// AXW_CSS_DIST=<paquete construido>: la piel de la instancia para las capturas (como setup_reservas.harness.cjs). Sin ella no cambia nada de lo que se mide.
+const DIST = process.env.AXW_CSS_DIST || '';
+const CSS_PIEL = DIST ? ['tw.css', 'shell.css'].map(f => fs.readFileSync(path.join(DIST, 'assets', f), 'utf8')).join(' ') : '';
+const PIEL_VARS = (() => {
+  if (!DIST) return '';
+  const m = /\bp=(\{[^}]*\});for\(var k in p\)s\.setProperty\("--tema-"\+k/.exec(fs.readFileSync(path.join(DIST, 'contracts', 'assets', 'instancia.js'), 'utf8'));
+  return m ? ':root{' + Object.entries(JSON.parse(m[1])).map(([k, v]) => '--tema-' + k + ':' + v).join(';') + '}' : '';
+})();
+const FUENTES = DIST && fs.existsSync(path.join(DIST, 'assets', 'fonts', 'fonts.css')) ? fs.readFileSync(path.join(DIST, 'assets', 'fonts', 'fonts.css'), 'utf8') : '';
 let fallos = 0;
 const ok = (n, c, x = '') => { if (!c) { fallos++; console.log('FALLA  ' + n + (x ? ' -> ' + x : '')); } else console.log('ok     ' + n); };
 
@@ -48,7 +57,7 @@ function servidor(b, n, a) {
   }
   return err('42883');
 }
-const pagina = idioma => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}</style></head><body>
+const pagina = idioma => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}${CSS_PIEL ? '' : '[hidden]{display:none!important}'}</style><style>${CSS_PIEL}</style><style>${FUENTES}${PIEL_VARS}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}">
 <main><section data-lw-panel="puesta"><div id="lw-aj-puesta"><p>…</p></div></section></main>
 <script>
 window.__sinTrad = []; window.__errores = []; window.addEventListener('error', function (e) { window.__errores.push(String(e.message)); });
@@ -66,7 +75,14 @@ history.replaceState(null, '', '/ajustes/');
 async function abre(nav, b, { idioma = 'es', ancho = 1440 } = {}) {
   const ctx = await nav.newContext({ viewport: { width: ancho, height: 900 } });
   const p = await ctx.newPage();
-  await p.route('**/*', r => r.fulfill({ status: 200, contentType: 'text/html', body: pagina(idioma) }));
+  await p.route('**/*', r => {
+    const u = new URL(r.request().url());
+    if (DIST && u.pathname.startsWith('/assets/fonts/')) {   // las letras de la piel, para que la captura sea la de la instancia
+      const f = path.join(DIST, u.pathname);
+      return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'font/woff2', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: '' });
+    }
+    return r.fulfill({ status: 200, contentType: 'text/html', body: pagina(idioma) });
+  });
   await p.exposeFunction('__srv', async (n, a) => { const r = servidor(b, n, a); if (r && r.red) throw new Error('Failed to fetch'); return r; });
   await p.goto('http://local.test/ajustes/'); await p.waitForTimeout(400);
   return { p, ctx };
@@ -83,6 +99,16 @@ const txt = async (p, sel) => (await p.$(sel)) ? (await p.$eval(sel, e => e.text
   ok('moneda hecha (irreversible): «Fijado», sin cambiar', (await txt(p, '[data-pm-fila="moneda"] [data-pm-hecho]')) === 'Fijado' && !(await p.$('[data-pm-fila="moneda"] [data-accion="pm-editar"]')));
   ok('prefijo sin hacer (irreversible): lleva al paso en el asistente', (await p.getAttribute('[data-pm-asistente-paso="prefijo"]', 'href')) === '/ajustes/configurar/?modulo=facturas&paso=prefijo&vuelta=ajustes');
   ok('flota (otra pantalla): enlace a /flota/', !!(await p.$('[data-pm-fila="flota"] a[href="/flota/"]')));
+  // S10 (owner 15-oct: «si le doy a change… me abra un pop up con la info»): ventana, no editor dentro de la tarjeta
+  const alto0 = await p.$eval('[data-pm-fila="impuesto_pkp"]', e => e.getBoundingClientRect().height);
+  await p.click('[data-pm-fila="impuesto_pkp"] [data-accion="pm-editar"]');
+  ok('S10: «Configurar» abre una VENTANA modal con el editor dentro', await p.$eval('[data-pm-fila="impuesto_pkp"] [data-pm-editor]', e => !!e.closest('dialog[open]') && e.closest('dialog').matches(':modal')));
+  ok('S10: la tarjeta no crece al abrir (nada se despliega dentro de la página)', Math.abs((await p.$eval('[data-pm-fila="impuesto_pkp"]', e => e.getBoundingClientRect().height)) - alto0) < 1);
+  ok('S10: la ventana dice qué es: módulo, paso y para qué sirve', (await txt(p, 'dialog[data-pm-ventana="impuesto_pkp"] h2')) === '¿La empresa cobra impuesto?' && !!(await p.$('dialog[data-pm-ventana="impuesto_pkp"][aria-labelledby]')),
+     await txt(p, 'dialog[data-pm-ventana="impuesto_pkp"] h2'));
+  await p.keyboard.press('Escape'); await p.waitForTimeout(100);
+  ok('S10: Esc sin tocar nada cierra, la ventana sale del DOM y el foco vuelve a «Configurar»', !(await p.$('dialog[data-pm-ventana]'))
+     && (await p.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-accion'))) === 'pm-editar');
   await p.click('[data-pm-fila="impuesto_pkp"] [data-accion="pm-editar"]');
   ok('el paso se edita con el MISMO componente del asistente', !!(await p.$('[data-pm-fila="impuesto_pkp"] [data-axw-campo="reservas_sin_impuesto"]')));
   await p.check('[data-axw-campo="reservas_sin_impuesto"] input[value="no"]');
@@ -90,6 +116,8 @@ const txt = async (p, sel) => (await p.$(sel)) ? (await p.$eval(sel, e => e.text
   const g1 = b.llamadas.filter(x => x[0] === 'ajustes_config_guardar')[0];
   ok('primer valor: se guarda sin motivo', g1 && g1[1].p_clave === 'reservas_sin_impuesto' && g1[1].p_valor === 'no' && !g1[1].p_motivo, JSON.stringify(g1 && g1[1]));
   ok('se relee y el paso sale «Hecho»', (await txt(p, '[data-pm-fila="impuesto_pkp"] [data-pm-hecho]')) === 'Hecho');
+  ok('S10: guardado, la ventana se cierra y el foco vuelve al «Cambiar» de ese paso', !(await p.$('dialog[data-pm-ventana]'))
+     && (await p.evaluate(() => { const a = document.activeElement; return a && a.getAttribute('data-accion') === 'pm-editar' && a.closest('[data-pm-fila]').getAttribute('data-pm-fila'); })) === 'impuesto_pkp');
   await p.click('[data-pm-fila="impuesto_pkp"] [data-accion="pm-editar"]');
   await p.check('[data-axw-campo="reservas_sin_impuesto"] input[value="si"]');
   await p.click('[data-pm-fila="impuesto_pkp"] [data-accion="pm-guardar"]'); await p.waitForTimeout(200);
