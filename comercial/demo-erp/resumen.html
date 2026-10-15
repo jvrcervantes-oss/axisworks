@@ -92,6 +92,8 @@ html main .rs .rs-periodo .axw-boton.axw-boton[aria-pressed="true"]{background:r
     'Ha entrado': 'Money in', 'Te deben': 'You are owed', 'Por facturar': 'Not invoiced yet', 'Debes': 'You owe', 'Ha salido': 'Money out',
     'Te queda': 'Left over', 'Bancos': 'Banks',
     '%n cobros': '%n payments', '1 cobro': '1 payment', 'Devuelto: %x': 'Refunded: %x',
+    'Pagado por la pasarela, aún sin recibí: %x': 'Gateway payments with no receipt yet: %x',
+    'Con impuestos: no es el beneficio.': 'Taxes included: this is not profit.',
     '%n facturas sin cobrar del todo': '%n invoices not fully paid', '1 factura sin cobrar del todo': '1 invoice not fully paid',
     'Facturado en el periodo: %x': 'Invoiced in the period: %x', 'Nada pendiente de cobro': 'Nothing waiting to be paid',
     '%n reservas sin factura del todo': '%n bookings not fully invoiced', '1 reserva sin factura del todo': '1 booking not fully invoiced',
@@ -121,6 +123,8 @@ html main .rs .rs-periodo .axw-boton.axw-boton[aria-pressed="true"]{background:r
     'Ha entrado': 'Uang masuk', 'Te deben': 'Belum dibayar pelanggan', 'Por facturar': 'Belum di-invoice', 'Debes': 'Harus Anda bayar', 'Ha salido': 'Uang keluar',
     'Te queda': 'Sisa', 'Bancos': 'Bank',
     '%n cobros': '%n pembayaran', '1 cobro': '1 pembayaran', 'Devuelto: %x': 'Dikembalikan: %x',
+    'Pagado por la pasarela, aún sin recibí: %x': 'Pembayaran online yang belum ada kuitansinya: %x',
+    'Con impuestos: no es el beneficio.': 'Termasuk pajak: ini bukan laba.',
     '%n facturas sin cobrar del todo': '%n invoice belum lunas', '1 factura sin cobrar del todo': '1 invoice belum lunas',
     'Facturado en el periodo: %x': 'Ditagih pada periode ini: %x', 'Nada pendiente de cobro': 'Tidak ada yang belum dibayar',
     '%n reservas sin factura del todo': '%n booking belum di-invoice penuh', '1 reserva sin factura del todo': '1 booking belum di-invoice penuh',
@@ -217,9 +221,11 @@ html main .rs .rs-periodo .axw-boton.axw-boton[aria-pressed="true"]{background:r
     var B = d.bloques || {}, cifras = $v('cifras'), out = [];
     var rec = de(B, 'recibos'), fac = de(B, 'facturas'), res = de(B, 'reservas-producto'), gas = de(B, 'gastos'), caja = de(B, 'caja'), ban = de(B, 'bancos');
     if (rec) {
-      var nr = num(rec.n) || 0, dev = num(rec.devuelto) || 0;
-      out.push(tarjeta('entrado', 'Ha entrado', dinero(rec.neto),
-        [plural(nr, '1 cobro', '%n cobros'), dev ? T('Devuelto: %x').replace('%x', dinero(dev)) : null, otras(rec)], ['Ver ventas', '/intranet/v4/ventas/']));
+      // `entrado` lo da el servidor: recibís − devuelto + lo cobrado por la pasarela que aún no es recibí (se factura al entregar)
+      var nr = num(rec.n) || 0, dev = num(rec.devuelto) || 0, pas = res && !res.sin_permiso ? num(res.cobrado_sin_recibi) || 0 : 0;
+      out.push(tarjeta('entrado', 'Ha entrado', dinero(rec.entrado),
+        [plural(nr, '1 cobro', '%n cobros'), pas ? C.chip(T('Pagado por la pasarela, aún sin recibí: %x').replace('%x', dinero(pas)), 'espera') : null,
+         dev ? T('Devuelto: %x').replace('%x', dinero(dev)) : null, otras(rec)], ['Ver ventas', '/intranet/v4/ventas/']));
     }
     if (fac) {
       var np = num(fac.n_pendiente) || 0;
@@ -252,7 +258,8 @@ html main .rs .rs-periodo .axw-boton.axw-boton[aria-pressed="true"]{background:r
     }
     if (caja) {
       var r = num(caja.resultado);
-      out.push(tarjeta('queda', 'Te queda', dinero(r), [T('Lo que ha entrado menos lo que ha salido en el periodo.')], null, r != null && r < 0 ? 'mal' : null));
+      out.push(tarjeta('queda', 'Te queda', dinero(r), [T('Lo que ha entrado menos lo que ha salido en el periodo.'), T('Con impuestos: no es el beneficio.')],
+        null, r != null && r < 0 ? 'mal' : null));
     }
     if (ban) {
       if (ban.sin_permiso) out.push(sinPermiso('bancos', 'Bancos', 'Bancos'));
@@ -288,13 +295,13 @@ html main .rs .rs-periodo .axw-boton.axw-boton[aria-pressed="true"]{background:r
   function pintaMeses(d) {
     var serie = (d.bloques || {}).serie, sec = $v('meses'), tb = $v('tabla-meses');
     if (!Array.isArray(serie) || !serie.length) { oculta(sec, true); return; }
-    var conC = serie.some(function (x) { return x.cobrado != null; }), conP = serie.some(function (x) { return x.pagado != null; });
+    var conC = serie.some(function (x) { return x.entrado != null; }), conP = serie.some(function (x) { return x.pagado != null; });
     var cab = [['Mes']];
     if (conC) cab.push(['Ha entrado', 'rs-d']);
     if (conP) cab.push(['Ha salido', 'rs-d']);
     var filas = serie.slice().reverse().map(function (x, i) {
       var tr = h('tr', i === 0 ? { 'data-hoy': '1' } : null, [C.celda(nombreMes(x.mes))]);
-      if (conC) tr.appendChild(C.celda(dinero(x.cobrado), 'rs-d'));
+      if (conC) tr.appendChild(C.celda(dinero(x.entrado), 'rs-d'));
       if (conP) tr.appendChild(C.celda(dinero(x.pagado), 'rs-d'));
       return tr;
     });
@@ -304,7 +311,10 @@ html main .rs .rs-periodo .axw-boton.axw-boton[aria-pressed="true"]{background:r
 
   var NOMBRE = { facturas: 'facturas', recibos: 'cobros', gastos: 'gastos', 'reservas-producto': 'reservas', bancos: 'bancos' };
   function pintaPie(d) {
-    var s = (d.sumados || []).map(function (k) { return T(de(NOMBRE, k) || k); });
+    // solo lo que se ha podido leer: un bloque sin_permiso no se ha sumado (revisor, 15-oct)
+    var B = d.bloques || {};
+    var s = (d.sumados || []).filter(function (k) { var b = de(B, k); return b && !b.sin_permiso; }).map(function (k) { return T(de(NOMBRE, k) || k); });
+    if (!s.length && (d.sumados || []).length) { $v('pie').textContent = ''; return; }   // todo encendido pero sin permiso: ya lo dicen las tarjetas
     if (!s.length) { $v('pie').textContent = T('Nada que sumar: ninguna de estas secciones está encendida (facturas, cobros, gastos, reservas, bancos).'); return; }
     var lista = s.length === 1 ? s[0] : s.slice(0, -1).join(', ') + T(' y ') + s[s.length - 1];
     $v('pie').textContent = T('Suma: %l.').replace('%l', lista);
@@ -341,7 +351,13 @@ html main .rs .rs-periodo .axw-boton.axw-boton[aria-pressed="true"]{background:r
       E.hoy = String(d.hoy); E.moneda = String(d.moneda || '');
       $v('rango').textContent = T('Del %d al %h').replace('%d', C.fechaDia(d.desde)).replace('%h', C.fechaDia(d.hasta));
       vacia($v('cifras'));
-      if (primerDia(d)) pintaPrimerDia(d);
+      if (primerDia(d)) {
+        pintaPrimerDia(d);
+        // el aviso no tapa lo que no se ha podido leer: las tarjetas «sin permiso» siguen diciéndolo (revisor, 15-oct)
+        var B = d.bloques || {}, solo = {};
+        Object.keys(B).forEach(function (k) { if (B[k] && B[k].sin_permiso) solo[k] = B[k]; });
+        pintaTarjetas({ bloques: solo });
+      }
       else { pintaTarjetas(d); pintaMeses(d); }
       pintaPie(d);
     });
