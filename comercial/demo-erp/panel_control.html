@@ -946,7 +946,7 @@ window.AXW_ASIS = (function () {
   function activosDe(inst) {
     var e = inst.estado;
     if (!e) return [];
-    if (e.activos === null) return e.modulos.map(function (m) { return m.modulo; });   // sin lista = todo encendido
+    if (e.activos === null) return ['base'];   // sin lista = SOLO base (D1, 20261014097100: la base cuenta igual)
     return e.activos.slice();
   }
 
@@ -1341,6 +1341,27 @@ window.AXW_ASIS = (function () {
     });
   }
 
+  // El `rechazo` de erp_control_simula ({codigo, lista}, lista cerrada de 20261014096000) en una frase; un código que no está aquí sale tal cual.
+  // `crudo` para un toast (va por textContent: sin escapar)
+  function textoRechazo(r, crudo) {
+    var e = crudo ? String : esc;
+    var t = {
+      modulo_de_otro_tipo: 'es de otro tipo de ERP: esta instancia no lo puede encender',
+      modulo_de_pago: 'es de pago: lo enciende su propia ventana, no este panel',
+      tipos_sin_sembrar: 'la base aún no tiene sembrado de qué tipo es cada módulo',
+      modulo_sin_declarar: 'hay módulos sin declarar en el registro de la base',
+      sin_declarar_dueno: 'hay piezas sin dueño declarado en el registro de la base',
+      modulos_activos_forma: 'la lista de módulos no tiene la forma que pide la base',
+      cuentas_lectura_abierta: 'Cuentas no se enciende mientras su lectura siga abierta en esta base',
+      cuenta_pruebas_solo_mira: 'la cuenta de pruebas solo puede mirar'
+    }[String(r.codigo)];
+    var piezas = Array.isArray(r.lista) && r.lista.length ? ' (' + e(r.lista.join(', ')) + ')' : '';
+    return 'La base no lo enciende: ' + e(t || String(r.codigo || 'rechazo sin código')) + piezas + '. Ningún ensayo lo cambia.';
+  }
+  // regla_sin_mirar de erp_control_simula (096000, Seguridad #326-3): la base no pudo preguntar a sus disparadores; ok false, nunca verde
+  var SIN_MIRAR = { disparador_apagado: 'el disparador de la regla de tipos está apagado', diferible: 'hay una regla que solo salta al confirmar',
+    solo_lectura: 'la conexión es de solo lectura' };
+
   function propone(activos, mod, enciende, vuelta) {
     return pide({ accion: 'simula', instancia: actual.nombre, activos: activos }).then(function (d) {
       if (d.__estado !== 200 || !d.simulacion) throw new Error(d.mensaje || 'No se pudo simular el cambio (' + d.__estado + ').');
@@ -1353,10 +1374,21 @@ window.AXW_ASIS = (function () {
       var cf = s.condiciones_faltan && typeof s.condiciones_faltan === 'object' ? Object.keys(s.condiciones_faltan) : [];
       if (cf.length) bloqueos.push(cf.map(function (k) { var v = s.condiciones_faltan[k];
         return esc(nombre(k)) + ' no se puede encender todavía: le falta ' + esc(Array.isArray(v) ? v.join(', ') : String(v)) + ' (lo pide la base).'; }).join(' '));
+      // A14 (20261014096000): lo que frenaría un disparador de la base (otro tipo, de pago, sin declarar…) va en `rechazo`. Va ANTES y TAPA la falta de
+      // ensayo (EU4, 15-oct, rama de bbm): un rechazo así no lo arregla ningún ensayo, y pedir uno sería trabajo para nada
+      var faltan = s.faltan_dependencias || {}, fk = Object.keys(faltan);
+      if (s.rechazo && typeof s.rechazo === 'object') bloqueos.push(textoRechazo(s.rechazo));
+      else if (s.regla_sin_mirar) bloqueos.push('La base no pudo comprobar este cambio (' + esc(SIN_MIRAR[s.regla_sin_mirar] || String(s.regla_sin_mirar)) +
+        '): no se aplica desde aquí.');
+      // EU4 (20261014097000): encender exige un ensayo en rama del conjunto exacto, registrado en la base (lo hace el estudio: rama_prueba --objetivo +
+      // registra_ensayo). Solo frena el conjunto que se aplicaría: con dependencias por cerrar la base ensaya el conjunto incompleto, que siempre sale
+      // sin ensayo, y el panel tiene que llegar a proponer el conjunto con lo que arrastra (revisor, 1.ª vuelta de a3d03af)
+      else if (s.sin_ensayo && typeof s.sin_ensayo === 'object' && !fk.length) bloqueos.push('El estudio tiene que ensayar este conjunto de módulos antes de encenderlo' +
+        (Array.isArray(s.sin_ensayo.conjunto) && s.sin_ensayo.conjunto.length ? ' (' + esc(s.sin_ensayo.conjunto.join(', ')) + ')' : '') + ': ' +
+        esc(String(s.sin_ensayo.motivo || 'no hay ensayo')) + '.');
       var cambios = '<p>' + (s.enciende.length ? '<strong>Se enciende:</strong> ' + esc(lista(s.enciende)) + '<br>' : '') +
         (s.apaga.length ? '<strong>Se apaga:</strong> ' + esc(lista(s.apaga)) : '') + '</p>';
       if (bloqueos.length) return dialogo(cambios + bloqueos.map(function (b) { return '<p class="ax-error">' + b + '</p>'; }).join(''), null, null, 'No se puede aplicar').then(function () { return null; });
-      var faltan = s.faltan_dependencias || {}, fk = Object.keys(faltan);
       // Encender con lo que arrastra: se vuelve a simular el conjunto que propone la base y se confirma UNA vez, enseñando qué se
       // enciende y qué setup trae cada uno (plan F3 punto 5). Solo una vuelta: si el conjunto propuesto sigue sin cerrar, no hay salida sola.
       if (fk.length && enciende && !vuelta) {
@@ -1398,6 +1430,9 @@ window.AXW_ASIS = (function () {
           return carga(true);
         }
         if (d.error === 'ocupado') toast(d.mensaje);
+        else if (d.error === 'rechazado' && d.motivo && d.motivo.sin_ensayo && typeof d.motivo.sin_ensayo === 'object')
+          toast('La base no lo enciende: el estudio tiene que ensayar este conjunto antes (' + String(d.motivo.sin_ensayo.motivo || 'sin ensayo') + ').');
+        else if (d.error === 'rechazado' && d.motivo && d.motivo.rechazo && typeof d.motivo.rechazo === 'object') toast(textoRechazo(d.motivo.rechazo, true));
         else if (d.error === 'rechazado') toast('La base lo ha rechazado: vuelve a intentarlo, el estado ha cambiado.');
         else toast(d.mensaje || 'Respuesta inesperada (' + d.__estado + '). Recargo el estado para ver qué quedó.');
         return carga(true);

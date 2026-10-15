@@ -105,14 +105,14 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(E.red.filter((u) => u.includes('modulos_activos_datos')).length === 1, 'una sola petición de módulos por página');
   }
 
-  // 2. no portado: siempre apagado aunque la base diga todo encendido
+  // 2. no portado: siempre apagado; y sin modulos_activos, SOLO base (D1, 20261014097100): lo de un módulo, apagado sin salir a la red
   {
     const E = escenario({ activos: null });
     E.publica();
     const a = await E.sb.from('creatividades').select('*');
     ok(a.data.length === 0 && !E.red.some((u) => u.includes('creatividades')), 'apagados_extra: siempre apagado');
     const b = await E.sb.from('comisiones_devengadas').select('*');
-    ok(b.data.length === 1, 'sin modulos_activos = todo encendido');
+    ok(b.data.length === 0 && !E.red.some((u) => u.includes('comisiones_devengadas')), 'sin modulos_activos = solo base: lo de módulo apagado');
   }
 
   // 3. pantalla de un módulo apagado: no arranca y dice «no instalado»
@@ -188,7 +188,8 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     const T = escenario({ activos: null });
     T.publica();
     await espera(50);
-    ok(![...T.clases].some((c) => c.startsWith('axw-sin-')), 'sin modulos_activos (todo encendido): ninguna clase');
+    ok(T.clases.has('axw-sin-comisiones') && T.clases.has('axw-sin-facturas') && !T.clases.has('axw-sin-base'),
+      'sin modulos_activos (D1: solo base): cada módulo con su clase, base sin ella');
   }
 
   // 6. lo que se rellena va escapado (el nombre sale de un JSON, pero la plantilla va por innerHTML)
@@ -226,11 +227,11 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(globalThis.axwRutaActiva('usuarios') === true && globalThis.axwRutaActiva('') === true, 'axwRutaActiva: pantalla del núcleo (sin módulo) o sin path, true');
     ok(globalThis.axwRutaActiva('factura') === true, 'axwRutaActiva: compara la ruta entera (/factura/ no es /facturas/)');
 
-    // (b) sin modulos_activos = todo encendido
+    // (b) sin modulos_activos = SOLO base (D1, 20261014097100)
     const T = escenario({ activos: null });
     T.publica();
     await globalThis.AXW_MODULOS_LISTOS;
-    ok(globalThis.axwModuloActivo('comisiones') === true, '(b) todos encendidos: true');
+    ok(globalThis.axwModuloActivo('comisiones') === false && globalThis.axwModuloActivo('base') === true, '(b) solo base: comisiones false, base true');
 
     // (c) si la comprobación falla: la promesa resuelve false y la guarda sigue abierta (no esconde por un fallo de red)
     const F = escenario({ fallaActivos: true });
