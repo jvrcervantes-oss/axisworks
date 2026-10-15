@@ -976,7 +976,8 @@ a.rp-boton{text-decoration:none}
   }
   function asVacio() {
     return { paso: 'fechas', desde: null, hasta: null, mes: null, prodId: null, unidadId: '', prefijo: '+62', numero: '', nombre: '',
-             entrega: 'tienda', dirEntrega: '', recogida: 'tienda', dirRecogida: '', notas: '', modo: null, clave: claveNueva(), telefono: '', clienteId: '', clienteNombre: '' };
+             entrega: 'tienda', dirEntrega: '', recogida: 'tienda', dirRecogida: '', notas: '', modo: null, clave: claveNueva(), telefono: '', clienteId: '', clienteNombre: '',
+             parteEntrega: 1, recogidaElegida: false };
   }
   function asTieneDatos(W) { return !!(W.desde || W.prodId || W.numero || W.nombre || W.dirEntrega || W.dirRecogida || W.notas); }
   function asGuarda() {
@@ -1621,7 +1622,7 @@ a.rp-boton{text-decoration:none}
     else if (a === 'rp-modal-as-reinicia') { if (A.enviando || A.comprobando) return; asOlvida(); A.W = asVacio(); A.recuperado = false; A.cot = {}; A.cotClave = null; A.coinc = []; A.dupTel = null; A.err = {}; A.errEnvio = null; A.filtro = ''; A.filtroCliente = '';
       A.enviado = null; A.yaExiste = false; A.dudosaSinMirar = false; A.recuperadaTrasCorte = false; A.pasoPintado = null; asPinta(); }
     else if (a === 'rp-modal-as-sig') asSiguiente();
-    else if (a === 'rp-modal-as-atras') { var i = AS_PASOS.indexOf(W.paso); if (asParte() === 2) { W.parteEntrega = 1; A.err.entrega = null; asGuarda(); asPinta(); } else if (i > 0) asVe(AS_PASOS[i - 1]); }
+    else if (a === 'rp-modal-as-atras') { var i = AS_PASOS.indexOf(W.paso); if (asParte() === 2) { W.parteEntrega = 1; A.err.dirRecogida = null; asGuarda(); asPinta(); } else if (i > 0) asVe(AS_PASOS[i - 1]); }
     else if (a === 'rp-modal-as-paso') { if (el.getAttribute('data-parte')) W.parteEntrega = Number(el.getAttribute('data-parte')); asVe(el.getAttribute('data-paso')); }
     else if (a === 'rp-modal-as-dia') asDia(el.getAttribute('data-dia'));
     else if (a === 'rp-modal-as-borra-fechas') { W.desde = null; W.hasta = null; A.cotClave = null; asGuarda(); asPinta(); }
@@ -1636,7 +1637,7 @@ a.rp-boton{text-decoration:none}
       var campoOp = el.getAttribute('data-campo'), valorOp = el.getAttribute('data-valor');
       W[campoOp] = valorOp;
       if (campoOp === 'recogida') W.recogidaElegida = true;   // lo eligió la persona: ya no se le cambia solo
-      if (campoOp === 'entrega' && valorOp === 'domicilio' && !W.recogidaElegida) W.recogida = 'misma';
+      if (campoOp === 'entrega' && valorOp === 'domicilio') { W.parteEntrega = 1; if (!W.recogidaElegida) W.recogida = 'misma'; }
       if (campoOp === 'entrega' && valorOp === 'tienda' && W.recogida === 'misma') W.recogida = 'tienda';
       A.errEnvio = A.dudosaSinMirar ? A.errEnvio : null; asGuarda(); asPinta(); }
     else if (a === 'rp-modal-as-confirma') asEnvia();

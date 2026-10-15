@@ -732,6 +732,15 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('tras recargar la pagina se recupera el borrador (fechas, moto) y se dice', !!(await p.$('[data-rp="as-recuperado"]')) && await p.$eval('[data-producto-id="p1"]', b => b.getAttribute('aria-pressed')) === 'true');
     await sig(p); await enPaso(p, 'cliente');
     ok('y el telefono y el nombre siguen ahi', await p.$eval('[data-as="nombre"]', i => i.value) === 'Made' && await p.$eval('[data-as="numero"]', i => i.value) === '081234567890');
+    // S4: la devolución elegida a mano («En la tienda») sobrevive a la recarga y «A domicilio» no la cambia sola a «misma dirección»
+    await sig(p); await enPaso(p, 'entrega');
+    await p.click('[data-accion="rp-modal-as-opcion"][data-campo="recogida"][data-valor="tienda"]');
+    await p.reload(); await espera(p, () => document.querySelector('[data-rp="res-estado"]') && !document.querySelector('[data-rp="res-estado"]').textContent.includes('Cargando'));
+    await p.click('[data-accion="rp-nueva"]'); await enPaso(p, 'moto'); await motosListas(p);
+    await sig(p); await enPaso(p, 'cliente'); await sig(p); await enPaso(p, 'entrega');
+    await p.click('[data-accion="rp-modal-as-opcion"][data-campo="entrega"][data-valor="domicilio"]');
+    await p.fill('[data-as="dirEntrega"]', 'Jl. Raya Canggu 1'); await sig(p);
+    ok('S4 · tras recargar, la devolución elegida a mano sigue «En la tienda»', (await p.getAttribute('[data-campo="recogida"][data-valor="tienda"]', 'aria-pressed')) === 'true');
     await ctx.close();
   }
 
@@ -1018,6 +1027,11 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.click('[data-accion="rp-modal-as-opcion"][data-campo="entrega"][data-valor="domicilio"]');
     await p.click('[data-accion="rp-modal-as-opcion"][data-campo="entrega"][data-valor="tienda"]');
     ok('S4 · vuelta a «En la tienda»: la devolución vuelve a la tienda y el paso es uno solo', (await p.getAttribute('[data-campo="recogida"][data-valor="tienda"]', 'aria-pressed')) === 'true' && !(await txt(p, '.rp-as-progreso')).includes('Parte'));
+    await sig(p); await enPaso(p, 'resumen');
+    await p.click('[data-accion="rp-modal-as-paso"][data-paso="entrega"][data-parte="2"]');
+    await p.click('[data-accion="rp-modal-as-opcion"][data-campo="entrega"][data-valor="domicilio"]');
+    ok('S4 · entrando por «Cambiar» de la devolución, «A domicilio» abre la parte 1 con su dirección', (await txt(p, '.rp-as-progreso')).includes('Parte 1 de 2') && !!(await p.$('[data-as="dirEntrega"]')));
+    await p.click('[data-accion="rp-modal-as-opcion"][data-campo="entrega"][data-valor="tienda"]');
     await sig(p); await enPaso(p, 'resumen'); await confirma(p); await espera(p, () => document.querySelector('[data-rp="as-hecha"]'));
     const pd = (llamadas(base, 'reserva_producto_crea')[0] || [])[1];
     ok('S4 · en la tienda las dos: sin direcciones', pd && !('entrega_direccion' in pd.p_datos) && !('recogida_direccion' in pd.p_datos), JSON.stringify(pd));
