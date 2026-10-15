@@ -171,6 +171,11 @@
 .ag2[data-vista="apagado"] .ag2-tabs,.ag2[data-vista="apagado"] .ag2-reloj,.ag2[data-vista="ajustes"] .ag2-reloj{display:none}
 .ag2:not([data-vista="apagado"]) [data-ag="v2-apagado"]{display:none}
 .ag2:not([data-vista="equipo"]) [data-ag="v2-apagar"]{display:none!important}
+/* paso 0 con el equipo apagado (#ajustes-quien): solo ese paso, sin pestañas ni barra de pasos */
+.ag2[data-solo="quien"] .ag2-tabs,.ag2[data-solo="quien"] [data-ag="aj-pasos"],.ag2[data-solo="quien"] [data-ag="aj-quien-linea"]{display:none!important}
+.ag2-quien-linea{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:10px 14px;border-radius:14px;background:rgba(11,12,30,.6);border:1px solid var(--line-soft);min-width:0}
+.ag2-quien-linea p{margin:0;flex:1 1 200px;min-width:0;color:var(--text-hi);overflow-wrap:anywhere}
+.ag2 .ag2-quien-linea a.ag2-btn2{min-height:40px;padding:0 16px}
 .ag2[data-vista="ajustes"] [data-ag="v2-falta"],.ag2[data-vista="ajustes"] [data-ag="v2-esperan"]{display:none}
 .ag2-aviso-falta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:18px;background:rgba(255,122,69,.14);border:1px solid rgba(255,122,69,.5);color:var(--text-hi)}
 .ag2-aviso-falta p{margin:0;min-width:0;flex:1 1 240px;overflow-wrap:anywhere}
@@ -278,7 +283,8 @@
   .ag2-aj-cab .ag2-msg{padding:8px 12px}
   /* los botones de un paso, de dos en dos y a lo ancho (el texto largo del indonesio parte dentro del botón, no baja el botón a otra fila) */
   .ag2-aj-paso .ag2-acc>.ag2-btn,.ag2-aj-paso .ag2-acc>.ag2-btn2{flex:1 1 120px;min-width:0;padding:6px 12px;text-align:center}
-  .ag2 .ag2-pasos a{padding:8px}
+  .ag2 .ag2-pasos a{padding:8px 6px}
+  .ag2-pasos b{font-size:12px}   /* «3 · Wewenang» cabe sin partir la palabra en 4 columnas a 390 px (lo mide el arnés) */
   .ag2-niveles{grid-template-columns:minmax(0,1fr)}
 }
 </style>
@@ -311,12 +317,16 @@
 <div class="ag2-aviso-falta axw-oculto" data-ag="v2-falta" role="status">
 <p data-ag="v2-falta-txt"></p>
 <a class="ag2-btn axw-oculto" data-ag="v2-falta-ir" href="#ajustes"><span data-lwt>Hacerlo ahora</span></a>
+<a class="ag2-btn axw-oculto" data-ag="v2-falta-quien" href="#ajustes-quien"><span data-lwt>Elegir quién lleva el equipo</span></a>
 </div>
+<!-- quien llevaba el equipo y ya no (agente_owner_estado.ya_no_eres_owner, Seguridad #385 1c): aviso suave, en todas las vistas -->
+<p class="ag2-msg axw-oculto" data-ag="v2-ya-no" data-tono="neutro" role="status"></p>
 <p class="ag2-msg axw-oculto" data-ag="pendientes" data-tono="neutro" role="status"></p>
 <!-- Módulo apagado: solo esto (las RPC del panel exigen el módulo encendido) -->
 <div class="ag2-card ag2-apagado" data-ag="v2-apagado">
 <p data-ag="v2-apagado-txt"></p>
 <div class="ag2-acc" data-ag="v2-apagado-acc"></div>
+<a class="ag2-btn axw-oculto" data-ag="v2-apagado-quien" href="#ajustes-quien"><span data-lwt>Elegir quién lleva el equipo</span></a>
 </div>
 <div class="axw-oculto" data-ag="v2-cuerpo" style="display:flex;flex-direction:column;gap:20px;min-width:0">
 
@@ -481,6 +491,11 @@
 <section class="ag2-aj" data-ag="v2-ajustes" aria-labelledby="ag2-t-aj">
 <div class="ag2-aj-cab">
 <h3 class="ag2-sr" id="ag2-t-aj" data-lwt>Ajustes</h3>
+<!-- quién lleva el equipo (paso 0): una línea; «Cambiar» solo para quien puede nombrarlo (agente_owner_estado.puedo_poner) -->
+<div class="ag2-quien-linea axw-oculto" data-ag="aj-quien-linea">
+<p data-ag="aj-quien-txt"></p>
+<a class="ag2-btn2 axw-oculto" href="#ajustes-quien" data-ag="aj-quien-cambiar"><span data-lwt>Cambiar</span></a>
+</div>
 <ol class="ag2-pasos" data-ag="aj-pasos">
 <li><a href="#ajustes-tope" data-ag="aj-ir" data-paso="tope"><b data-lwt>1 · Tope</b><span class="e"><span class="ag2-dot" aria-hidden="true"></span><span data-ag="aj-st"></span></span></a></li>
 <li><a href="#ajustes-negocio" data-ag="aj-ir" data-paso="negocio"><b data-lwt>2 · Tu negocio</b><span class="e"><span class="ag2-dot" aria-hidden="true"></span><span data-ag="aj-st"></span></span></a></li>
@@ -490,6 +505,26 @@
 <p class="ag2-msg axw-oculto" data-ag="aj-ok" data-tono="ok" role="status"></p>
 <p class="ag2-nota-modo axw-oculto" data-ag="aj-solo-dueno"></p>
 </div>
+
+<!-- PASO 0 (15-oct-2026, migración 20261015194000): quién lleva el equipo. Lo elige la persona propietaria de la cuenta entre los usuarios activos
+     (la misma lectura de la tabla `usuarios` que Ajustes › Usuarios, solo user_id, número y nombre) y lo guarda agente_owner_pon. -->
+<form class="ag2-aj-paso" data-ag="aj-f-quien" data-paso="quien" autocomplete="off" novalidate hidden aria-labelledby="ag2-aj-h-quien">
+<span class="ag2-etapa" data-ag="aj-quien-etapa" data-lwt>Antes de empezar</span>
+<h3 id="ag2-aj-h-quien" tabindex="-1" data-lwt>¿Quién lleva el equipo?</h3>
+<dl class="ag2-why">
+<div><dt data-lwt>Para qué sirve</dt><dd data-lwt>Esa persona enciende el equipo, pone el tope y decide hasta dónde llega cada agente. Solo ella cambia estos ajustes.</dd></div>
+<div data-salta data-ag="aj-quien-salta"><dt data-lwt>Si lo saltas</dt><dd data-lwt>Sin nadie al frente, el equipo no se puede encender ni configurar.</dd></div>
+</dl>
+<fieldset data-ag="aj-fs-quien">
+<div class="ag2-campo">
+<label for="ag2-aj-quien-sel" data-lwt>Quién lleva el equipo</label>
+<select id="ag2-aj-quien-sel" data-campo="quien_owner" aria-describedby="ag2-aj-quien-p ag2-aj-quien-msg"></select>
+<p class="ag2-pista" id="ag2-aj-quien-p" data-lwt>Cualquier persona activa de tu equipo, también tú. Si cambias de persona y había una subida del tope pendiente, se anula: la decide quien lo lleve.</p>
+</div>
+<p class="ag2-msg axw-oculto" id="ag2-aj-quien-msg" data-ag="aj-msg-quien" data-tono="mal" role="alert"></p>
+<div class="ag2-acc"><button type="submit" class="ag2-btn"><span data-lwt>Guardar y seguir</span></button><a class="ag2-btn2" href="#equipo" data-ag="aj-quien-volver"><span data-lwt>Volver</span></a></div>
+</fieldset>
+</form>
 
 <form class="ag2-aj-paso" data-ag="aj-f-tope" data-paso="tope" autocomplete="off" novalidate hidden aria-labelledby="ag2-aj-h-tope">
 <span class="ag2-etapa" data-lwt>Paso 1 de 3 (más 1 opcional)</span>
@@ -935,7 +970,7 @@
     'Escribe el importe con cifras, como {x}.': 'Write the amount in figures, like {x}.',
     'Escribe quién es el negocio: sin eso tu equipo no empieza.': 'Write who the business is: without it your team does not start.',
     'Esperan tu OK': 'Waiting for your OK',
-    'Falta': 'Missing',
+    'Falta~paso': 'Missing',
     'Guardar y seguir': 'Save and continue',
     'Hacerlo ahora': 'Do it now',
     'Hay una subida pendiente a {x}: entra el {f}.': 'There is a pending increase to {x}: it applies on {f}.',
@@ -998,7 +1033,44 @@
     'Usar {x}': 'Use {x}',
     'Escribe cuánto pueden gastar al mes, por ejemplo {x}.': 'Write how much they can spend a month, for example {x}.',
     'Hoy ya se han hecho los 10 cambios que caben aquí: podrás guardar mañana. Lo escrito se queda.': 'The 10 changes allowed here today are used up: you can save tomorrow. What you wrote stays.',
-    'Podrás guardar en {s} s: lo escrito se queda.': 'You can save in {s} s: what you wrote stays.'
+    'Podrás guardar en {s} s: lo escrito se queda.': 'You can save in {s} s: what you wrote stays.',
+    'Elegir quién lleva el equipo': 'Choose who runs the team',
+    'Cambiar': 'Change',
+    'Volver': 'Back',
+    'Antes de empezar': 'Before you start',
+    '¿Quién lleva el equipo?': 'Who runs the team?',
+    'Esa persona enciende el equipo, pone el tope y decide hasta dónde llega cada agente. Solo ella cambia estos ajustes.': 'That person switches the team on, sets the cap and decides how far each agent goes. Only they change these settings.',
+    'Sin nadie al frente, el equipo no se puede encender ni configurar.': 'With nobody in charge, the team cannot be switched on or set up.',
+    'Quién lleva el equipo': 'Who runs the team',
+    'Cualquier persona activa de tu equipo, también tú. Si cambias de persona y había una subida del tope pendiente, se anula: la decide quien lo lleve.': 'Anyone active on your team, including you. If you change person and a cap increase was pending, it is cancelled: whoever runs it decides.',
+    'alguien del equipo': 'someone on the team',
+    'Llevas tú el equipo.': 'You run the team.',
+    'Lleva el equipo {n}.': '{n} runs the team.',
+    '{n} llevaba el equipo, pero su cuenta ya no está activa.': '{n} ran the team, but their account is no longer active.',
+    'Elige a otra persona.': 'Choose someone else.',
+    'Lo cambia la persona propietaria de la cuenta.': 'The account owner changes it.',
+    'Aún no hay nadie al frente del equipo.': 'Nobody is in charge of the team yet.',
+    'Lo nombra la persona propietaria de la cuenta.': 'The account owner appoints them.',
+    'No se ha podido mirar quién lleva el equipo.': 'Could not check who runs the team.',
+    'Ahora lleva el equipo {n}: tú ya no cambias estos ajustes.': '{n} now runs the team: you no longer change these settings.',
+    'Ya no llevas el equipo: tú ya no cambias estos ajustes.': 'You no longer run the team: you no longer change these settings.',
+    'No se ha podido leer la lista de personas. No es que esté vacía: recarga la página.': 'The list of people could not be read. It is not that it is empty: reload the page.',
+    'Elige una persona': 'Choose a person',
+    'No hay ninguna persona activa en tu equipo: añádela en Ajustes › Usuarios.': 'There is nobody active on your team: add them in Settings › Users.',
+    'Hoy ya se ha cambiado 3 veces quién lleva el equipo, el máximo: podrás cambiarlo mañana.': 'Who runs the team has already been changed 3 times today, the maximum: you can change it tomorrow.',
+    'Elige quién lleva el equipo.': 'Choose who runs the team.',
+    'La cuenta de pruebas no puede llevar el equipo: elige a otra persona.': 'The test account cannot run the team: choose someone else.',
+    'esa persona': 'that person',
+    '{n} ya llevaba el equipo.': '{n} already ran the team.',
+    'Ahora lleva el equipo {n}.': '{n} now runs the team.',
+    'La subida del tope que estaba pendiente se ha anulado: la decide quien lleva ahora el equipo.': 'The pending cap increase has been cancelled: the person who now runs the team decides it.',
+    'Sin alguien al frente, tu equipo no empieza.': 'With nobody in charge, your team does not start.',
+    'Lo completa {n}, que lleva el equipo.': '{n}, who runs the team, completes it.',
+    'Esto lo configura {n}, que lleva el equipo.': 'This is set up by {n}, who runs the team.',
+    'Antes de encenderlo, elige quién lleva el equipo.': 'Before switching it on, choose who runs the team.',
+    'Lo enciende {n}, que lleva el equipo.': '{n}, who runs the team, switches it on.',
+    'Solo la persona propietaria de la cuenta elige quién lleva el equipo.': 'Only the account owner chooses who runs the team.',
+    'Esa persona ya no está activa o no puede llevar el equipo: elige a otra.': 'That person is no longer active or cannot run the team: choose someone else.'
   };
   var ID_AG = {
     'AaaS': 'AaaS',
@@ -1319,7 +1391,7 @@
     'Escribe el importe con cifras, como {x}.': 'Tulis jumlahnya dengan angka, misalnya {x}.',
     'Escribe quién es el negocio: sin eso tu equipo no empieza.': 'Tulis tentang usaha ini: tanpa itu tim Anda tidak mulai.',
     'Esperan tu OK': 'Menunggu persetujuan Anda',
-    'Falta': 'Belum ada',
+    'Falta~paso': 'Belum',
     'Guardar y seguir': 'Simpan dan lanjut',
     'Hacerlo ahora': 'Kerjakan sekarang',
     'Hay una subida pendiente a {x}: entra el {f}.': 'Ada kenaikan tertunda ke {x}: berlaku pada {f}.',
@@ -1382,7 +1454,44 @@
     'Usar {x}': 'Pakai {x}',
     'Escribe cuánto pueden gastar al mes, por ejemplo {x}.': 'Tulis berapa yang boleh dibelanjakan per bulan, misalnya {x}.',
     'Hoy ya se han hecho los 10 cambios que caben aquí: podrás guardar mañana. Lo escrito se queda.': 'Sudah 10 perubahan hari ini, batas di sini: Anda bisa menyimpan besok. Yang sudah ditulis tetap ada.',
-    'Podrás guardar en {s} s: lo escrito se queda.': 'Anda bisa menyimpan dalam {s} detik: yang sudah ditulis tetap ada.'
+    'Podrás guardar en {s} s: lo escrito se queda.': 'Anda bisa menyimpan dalam {s} detik: yang sudah ditulis tetap ada.',
+    'Elegir quién lleva el equipo': 'Pilih siapa yang mengelola tim',
+    'Cambiar': 'Ubah',
+    'Volver': 'Kembali',
+    'Antes de empezar': 'Sebelum mulai',
+    '¿Quién lleva el equipo?': 'Siapa yang mengelola tim?',
+    'Esa persona enciende el equipo, pone el tope y decide hasta dónde llega cada agente. Solo ella cambia estos ajustes.': 'Orang itu menyalakan tim, mengatur anggaran, dan menentukan sejauh mana tiap agen bertindak. Hanya dia yang mengubah pengaturan ini.',
+    'Sin nadie al frente, el equipo no se puede encender ni configurar.': 'Tanpa pengelola, tim tidak bisa dinyalakan atau diatur.',
+    'Quién lleva el equipo': 'Pengelola tim',
+    'Cualquier persona activa de tu equipo, también tú. Si cambias de persona y había una subida del tope pendiente, se anula: la decide quien lo lleve.': 'Siapa pun yang aktif di tim Anda, termasuk Anda. Jika Anda mengganti orang dan ada kenaikan anggaran yang tertunda, kenaikan itu dibatalkan: pengelola baru yang memutuskan.',
+    'alguien del equipo': 'seseorang di tim',
+    'Llevas tú el equipo.': 'Anda yang mengelola tim.',
+    'Lleva el equipo {n}.': 'Tim dikelola oleh {n}.',
+    '{n} llevaba el equipo, pero su cuenta ya no está activa.': '{n} dulu mengelola tim, tetapi akunnya sudah tidak aktif.',
+    'Elige a otra persona.': 'Pilih orang lain.',
+    'Lo cambia la persona propietaria de la cuenta.': 'Pemilik akun yang menggantinya.',
+    'Aún no hay nadie al frente del equipo.': 'Belum ada yang mengelola tim.',
+    'Lo nombra la persona propietaria de la cuenta.': 'Pemilik akun yang menunjuknya.',
+    'No se ha podido mirar quién lleva el equipo.': 'Tidak bisa memeriksa siapa pengelola tim.',
+    'Ahora lleva el equipo {n}: tú ya no cambias estos ajustes.': 'Sekarang tim dikelola oleh {n}: Anda tidak lagi mengubah pengaturan ini.',
+    'Ya no llevas el equipo: tú ya no cambias estos ajustes.': 'Anda tidak lagi mengelola tim: Anda tidak lagi mengubah pengaturan ini.',
+    'No se ha podido leer la lista de personas. No es que esté vacía: recarga la página.': 'Daftar orang tidak bisa dibaca. Bukan berarti kosong: muat ulang halaman.',
+    'Elige una persona': 'Pilih seseorang',
+    'No hay ninguna persona activa en tu equipo: añádela en Ajustes › Usuarios.': 'Belum ada orang aktif di tim Anda: tambahkan di Pengaturan › Pengguna.',
+    'Hoy ya se ha cambiado 3 veces quién lleva el equipo, el máximo: podrás cambiarlo mañana.': 'Pengelola tim sudah diganti 3 kali hari ini, batas maksimumnya: Anda bisa menggantinya besok.',
+    'Elige quién lleva el equipo.': 'Pilih siapa yang mengelola tim.',
+    'La cuenta de pruebas no puede llevar el equipo: elige a otra persona.': 'Akun uji coba tidak bisa mengelola tim: pilih orang lain.',
+    'esa persona': 'orang itu',
+    '{n} ya llevaba el equipo.': '{n} memang sudah mengelola tim.',
+    'Ahora lleva el equipo {n}.': 'Sekarang tim dikelola oleh {n}.',
+    'La subida del tope que estaba pendiente se ha anulado: la decide quien lleva ahora el equipo.': 'Kenaikan anggaran yang tertunda dibatalkan: pengelola tim yang baru yang memutuskan.',
+    'Sin alguien al frente, tu equipo no empieza.': 'Tanpa pengelola, tim Anda tidak mulai.',
+    'Lo completa {n}, que lleva el equipo.': 'Dilengkapi oleh {n}, pengelola tim.',
+    'Esto lo configura {n}, que lleva el equipo.': 'Ini diatur oleh {n}, pengelola tim.',
+    'Antes de encenderlo, elige quién lleva el equipo.': 'Sebelum menyalakannya, pilih siapa yang mengelola tim.',
+    'Lo enciende {n}, que lleva el equipo.': 'Dinyalakan oleh {n}, pengelola tim.',
+    'Solo la persona propietaria de la cuenta elige quién lleva el equipo.': 'Hanya pemilik akun yang memilih pengelola tim.',
+    'Esa persona ya no está activa o no puede llevar el equipo: elige a otra.': 'Orang itu sudah tidak aktif atau tidak bisa mengelola tim: pilih orang lain.'
   };
   // sin lwT, como lwT en español: lo de antes del «~» ('Operaciones~agente' → 'Operaciones')
   var T = typeof window.lwT === 'function' ? window.lwT : function (s) { s = String(s); var c = s.indexOf('~'); return c < 0 ? s : s.slice(0, c); };
@@ -1430,11 +1539,14 @@
                    /* la ventana de configuración (060500) */
                    agente_modulo_fuera: 'Una parte de tu negocio ya no admite límites: recarga la página y vuelve a guardar.',
                    agente_contexto_forma: 'El contexto no se ha guardado: no puede llevar enlaces, y como mucho 600 caracteres en «Quién es el negocio», 300 en los horarios, 200 en el tono y 20 reglas de 200.',
-                   ya_decidida: 'Alguien ya lo decidió: así ha quedado.' };
+                   ya_decidida: 'Alguien ya lo decidió: así ha quedado.',
+                   /* paso 0, agente_owner_pon (20261015194000) */
+                   solo_propietario: 'Solo la persona propietaria de la cuenta elige quién lleva el equipo.',
+                   usuario_no_valido: 'Esa persona ya no está activa o no puede llevar el equipo: elige a otra.' };
 
   var SB = null;
   /* sucio: el dueño está escribiendo en ese paso; recargar (tras otro botón o el sondeo) no le borra lo que lleva. notasError: «no se ha podido mirar» las acciones */
-  var E = { estado: null, notas: null, notasError: '', sucio: { tope: false, negocio: false, limites: false, trabajos: false } };
+  var E = { estado: null, notas: null, notasError: '', sucio: { quien: false, tope: false, negocio: false, limites: false, trabajos: false } };
 
   /* Una entrada por RPC, con el nombre LITERAL (erp/contrato_front.py extrae `.rpc('x')` y `lwDatos('x')`). agente_notas_datos es *_datos (dueña erp_lector) y va por lwDatos;
      agente_panel_estado NO lo es (dueña postgres: responde con el módulo apagado) y va por sb.rpc, igual que las que escriben.
@@ -1442,6 +1554,12 @@
      confirme que nada genera esas filas (revisión previa #383, punto 8; agente_forma.json → escrituras_sin_llamador). */
   var RPC = {
     agente_panel_estado: function () { return SB.rpc('agente_panel_estado', {}); },
+    /* paso 0 (20261015194000): núcleo, contestan también con el módulo apagado */
+    agente_owner_estado: function () { return SB.rpc('agente_owner_estado', {}); },
+    agente_owner_pon: function (a) { return SB.rpc('agente_owner_pon', a); },
+    /* la lista de personas del paso 0: la misma lectura de la tabla que Ajustes › Usuarios (RLS «el admin todas»), solo id, número y nombre, sin correo.
+       Única lectura directa de tabla de esta pantalla; solo se hace si quien mira puede nombrar (puedo_poner) */
+    usuarios_activos: function () { return SB.from('usuarios').select('user_id,numero_usuario,nombre').eq('activo', true).order('nombre'); },
     agente_notas_datos: function (a) { return window.lwDatos('agente_notas_datos', a); },
     agente_para: function () { return SB.rpc('agente_para', {}); },
     agente_reanuda: function () { return SB.rpc('agente_reanuda', {}); },
@@ -1511,23 +1629,27 @@
      con su URL (#ajustes-<paso>). Cada paso guarda solo; el motivo que exigen las RPC lo pone la pantalla (MOTIVO_AJ: queda en el rastro de la ficha).
      Lo que no cambió no viaja: el freno de la base (1 por minuto y 10 al día por gesto, en límites y contexto) no salta por repetir lo mismo. */
   var PASOS = ['tope', 'negocio', 'limites', 'trabajos'];
-  var OBLIGATORIOS = ['tope', 'negocio', 'limites'];
+  /* «quien» (paso 0) va primero, pero no está en la barra de pasos: solo lo hace la persona propietaria y casi nunca cambia */
+  var OBLIGATORIOS = ['quien', 'tope', 'negocio', 'limites'];
   var PASO_DE_FALTA = { tope_aaas: 'tope', contexto_aaas: 'negocio', limites_aaas: 'limites' };
   var NOMBRE_PASO = { tope: 'Tope del mes', negocio: 'Tu negocio', limites: 'Límites', trabajos: 'Trabajos' };
   /* el nivel recomendado: el que «lo hace dentro de sus límites» (revisión previa #383, punto 1); ni 0 «Nunca» ni 1 «Lo propone y decide el dueño» */
   var NIVEL_REC = 2;
   var MOTIVO_AJ = { tope: 'Asistente de Ajustes: tope', negocio: 'Asistente de Ajustes: tu negocio', limites: 'Asistente de Ajustes: límites',
-                    trabajos: 'Asistente de Ajustes: trabajos', subida: 'Asistente de Ajustes: cancelar la subida' };
+                    trabajos: 'Asistente de Ajustes: trabajos', subida: 'Asistente de Ajustes: cancelar la subida', quien: 'Asistente de Ajustes: quién lleva el equipo' };
   /* lo primero que hace cada agente cuando el equipo empieza (pantalla final); un agente que no está aquí no se nombra */
   var PRIMERO = { capitan: 'fija las prioridades de hoy y te dice por qué.', ruta: 'mira las salidas y las vueltas de mañana y avisa de lo que falta.',
                   tesorero: 'aparta cada gasto antes de que salga y corta en el tope.', cifras: 'mide qué modelos se alquilan y cuánto rinden.',
                   radar: 'mira la demanda y mueve las tarifas dentro de tu margen.', altavoz: 'prepara publicaciones para tus redes.' };
-  var EST_PASO = { hecho: 'Hecho', falta: 'Falta', opcional: 'Opcional' };
+  /* 'Falta~paso': la palabra corta de la barra de pasos (en id «Belum»; el «Falta» suelto de otras pantallas es «Belum ada» y a 390 px partía la barra en 3 líneas) */
+  var EST_PASO = { hecho: 'Hecho', falta: 'Falta~paso', opcional: 'Opcional' };
   var AJ = { paso: null, modoLim: false };
   var CTX = ['ctx_quien', 'ctx_horarios', 'ctx_tono'];
 
   /* ¿está hecho el paso? Lo mismo que mira la base en _agente_setup_estado (060500), con lo que da agente_panel_estado. */
   function hechoPaso(p, d) {
+    /* paso 0: hecho si hay alguien activo al frente; sin la función en la base (404) o para quien no puede nombrarlo, no se pide */
+    if (p === 'quien') return !OW.d || !OW.d.puedo_poner || ownerOk(OW.d);
     if (!d || !d.encendido) return false;
     if (p === 'tope') {
       var pedido = Math.max(d.tope_mensual_cent, ent(d.tope_propuesto_cent) ? d.tope_propuesto_cent : 0);
@@ -1690,14 +1812,123 @@
   }
   function pintaAjustes() {
     var d = E.estado;
-    if (!d || !d.encendido) return;
+    if (!d) return;
+    PASOS.concat(['listo', 'quien']).forEach(function (p) { var f = $a(p === 'listo' ? 'aj-listo' : 'aj-f-' + p); f.hidden = AJ.paso !== p; });
+    pintaQuienLinea();
+    $a('aj-fs-quien').disabled = !puedeQuien();   // como los otros pasos: quien no puede guardarlo lo tiene apagado aunque no lo vea
+    if (AJ.paso === 'quien') pintaQuienPaso();
+    if (!d.encendido) return;   // apagado: solo el paso 0 (aplicaRuta)
     var dueno = d.soy_dueno === true;
     pintaPasosNav(d);
-    PASOS.concat(['listo']).forEach(function (p) { var f = $a(p === 'listo' ? 'aj-listo' : 'aj-f-' + p); f.hidden = AJ.paso !== p; });
     ['aj-fs-tope', 'aj-fs-negocio', 'aj-fs-limites', 'aj-fs-trabajos'].forEach(function (n) { $a(n).disabled = !dueno; });
-    msgAj('aj-solo-dueno', dueno ? '' : T('Esto lo configura la persona que lleva el equipo.'));
+    /* quien no lleva el equipo lo ve en solo lectura y sabe quién lo cambia (en el paso 0 sobra: ese paso es de la persona propietaria) */
+    msgAj('aj-solo-dueno', dueno || AJ.paso === 'quien' ? '' : (OW.d && ownerOk(OW.d) ? Tf('Esto lo configura {n}, que lleva el equipo.', { n: nombreOwner(OW.d) }) : (OW.d ? textoQuien(OW.d) : T('Esto lo configura la persona que lleva el equipo.'))));
     pintaTope(d); pintaNegocio(d); pintaLimites(d); pintaTrabajos(d);
     if (AJ.paso === 'listo') pintaListo(d);
+  }
+
+  /* ── PASO 0: quién lleva el equipo (agente_owner_estado / agente_owner_pon; agencia erp/migraciones 20261015194000) ──
+     OW.d = lo que da agente_owner_estado. Sin la función en la base (404: la migración aún no ha llegado) OW.d es null y OW.err vacío: el paso 0 no
+     existe y todo funciona como antes. Si se ha podido preguntar pero no leer, OW.err lo dice (no se confunde con «no hay nadie»). */
+  var OW = { d: null, err: '', usuarios: null, usuariosErr: false, leyendo: false };
+  function ownerOk(d) { return !!(d && d.hay_owner === true && d.owner_activo === true); }
+  function owEstadoOk(x) {
+    return esObj(x) && ['hay_owner', 'owner_activo', 'soy_owner', 'soy_propietario', 'puedo_poner', 'ya_no_eres_owner'].every(function (k) { return typeof x[k] === 'boolean'; })
+      && (x.owner_nombre == null || typeof x.owner_nombre === 'string') && (x.owner_numero == null || typeof x.owner_numero === 'string') && ent(x.cambios_24h);
+  }
+  function noExiste(err) { return !!err && (err.code === 'PGRST202' || err.status === 404 || /could not find the function/i.test(String(err.message || ''))); }
+  function leeOwner() {
+    return llama('agente_owner_estado').then(function (r) {
+      if (r.error) { OW.d = null; OW.err = noExiste(r.error) ? '' : textoError(r.error, true); return; }
+      if (!owEstadoOk(r.data)) { OW.d = null; OW.err = T(NO_MIRADO); return; }
+      OW.d = r.data; OW.err = '';
+    });
+  }
+  function puedeQuien() { return !!(OW.d && OW.d.puedo_poner === true); }
+  /* el nombre es un dato (nombre, o su número si no tiene): nunca pasa por T() */
+  function nombreOwner(d) { return d.owner_nombre || d.owner_numero || T('alguien del equipo'); }
+  function textoQuien(d) {
+    if (ownerOk(d)) return d.soy_owner ? T('Llevas tú el equipo.') : Tf('Lleva el equipo {n}.', { n: nombreOwner(d) });
+    if (d.hay_owner) return Tf('{n} llevaba el equipo, pero su cuenta ya no está activa.', { n: nombreOwner(d) }) + ' ' + (d.puedo_poner ? T('Elige a otra persona.') : T('Lo cambia la persona propietaria de la cuenta.'));
+    return T('Aún no hay nadie al frente del equipo.') + (d.puedo_poner ? '' : ' ' + T('Lo nombra la persona propietaria de la cuenta.'));
+  }
+  function pintaQuienLinea() {
+    var l = $a('aj-quien-linea');
+    oculta(l, (!OW.d && !OW.err) || AJ.paso === 'quien');   // en el propio paso 0 la línea sobra: el paso ya dice quién lo lleva
+    $a('aj-quien-txt').textContent = OW.d ? textoQuien(OW.d) : (OW.err ? T('No se ha podido mirar quién lleva el equipo.') + ' ' + OW.err : '');
+    oculta($a('aj-quien-cambiar'), !(puedeQuien() && ownerOk(OW.d)));
+    var ya = !!(OW.d && OW.d.ya_no_eres_owner), y = $a('v2-ya-no');
+    y.textContent = !ya ? '' : (ownerOk(OW.d) ? Tf('Ahora lleva el equipo {n}: tú ya no cambias estos ajustes.', { n: nombreOwner(OW.d) }) : T('Ya no llevas el equipo: tú ya no cambias estos ajustes.'));
+    oculta(y, !ya);
+  }
+  function leeUsuarios() {
+    if (OW.leyendo) return;
+    OW.leyendo = true;
+    llama('usuarios_activos').then(function (r) {
+      OW.leyendo = false;
+      var ok = !r.error && Array.isArray(r.data) && r.data.every(function (u) { return esObj(u) && typeof u.user_id === 'string' && /^[0-9a-f-]{36}$/i.test(u.user_id); });
+      OW.usuarios = ok ? r.data : null; OW.usuariosErr = !ok;
+      if (AJ.paso === 'quien') pintaQuienPaso();
+    });
+  }
+  function pintaQuienPaso() {
+    var s = F('quien_owner');
+    $a('aj-fs-quien').disabled = !puedeQuien();
+    /* cambiar a quien ya lo lleva no es «antes de empezar» y saltarlo no deja a nadie sin dueño: esas dos frases solo cuando no hay nadie */
+    oculta($a('aj-quien-etapa'), ownerOk(OW.d)); oculta($a('aj-quien-salta'), ownerOk(OW.d));
+    if (E.sucio.quien) return;
+    vacia(s);
+    msgAj('aj-msg-quien', '');
+    if (OW.usuariosErr) { s.appendChild(h('option', { value: '', text: '—' })); s.disabled = true; msgAj('aj-msg-quien', T('No se ha podido leer la lista de personas. No es que esté vacía: recarga la página.')); return; }
+    if (!OW.usuarios) { s.appendChild(h('option', { value: '', text: T('Cargando…') })); s.disabled = true; if (puedeQuien()) leeUsuarios(); return; }
+    s.disabled = false;
+    s.appendChild(h('option', { value: '', text: T('Elige una persona') }));
+    OW.usuarios.forEach(function (u) {
+      var n = u.nombre || u.numero_usuario || u.user_id;
+      s.appendChild(h('option', { value: u.user_id, text: n + (u.numero_usuario && u.nombre ? ' · ' + u.numero_usuario : '') }));
+    });
+    if (!OW.usuarios.length) msgAj('aj-msg-quien', T('No hay ninguna persona activa en tu equipo: añádela en Ajustes › Usuarios.'));
+    /* quien lo lleva ahora, marcado por su número de usuario (fijo, lo pone la base) */
+    var act = OW.d && OW.d.owner_numero ? OW.usuarios.filter(function (u) { return u.numero_usuario === OW.d.owner_numero; })[0] : null;
+    if (act && ownerOk(OW.d)) s.value = act.user_id;
+  }
+  /* el freno de agente_owner_pon (1 por minuto y 3 en 24 h) se sabe EXACTO con lo que da agente_owner_estado: cuándo fue el último cambio y cuántos hoy */
+  function frenoQuien() {
+    var d = OW.d || {}, t = Date.parse(d.cambiado_en), s = 60;
+    if (isFinite(t)) s = Math.min(60, Math.max(1, Math.ceil((60000 - (Date.now() - t)) / 1000)));
+    return { dia: ent(d.cambios_24h) && d.cambios_24h >= 3, s: s, diaTxt: T('Hoy ya se ha cambiado 3 veces quién lleva el equipo, el máximo: podrás cambiarlo mañana.') };
+  }
+  function guardaQuien(btn) {
+    if (!puedeQuien()) return;
+    var s = F('quien_owner'), v = s.value;
+    msgAj('aj-ok', '');
+    s.removeAttribute('aria-invalid');
+    if (!v) { msgAj('aj-msg-quien', T('Elige quién lleva el equipo.')); s.setAttribute('aria-invalid', 'true'); s.focus(); return; }
+    if (!C.ocupa(btn)) return;
+    msgAj('aj-msg-quien', '');
+    llama('agente_owner_pon', { p_user_id: v, p_motivo: MOTIVO_AJ.quien }).then(function (r) {
+      if (frenado(r)) { frena('quien', 'aj-msg-quien', btn, frenoQuien()); return; }
+      if (r.error) {
+        C.libera(btn);
+        /* quien llama sí puede nombrar (puedo_poner): «cuenta_pruebas» aquí es que la persona ELEGIDA es la cuenta de pruebas */
+        msgAj('aj-msg-quien', r.error.hint === 'cuenta_pruebas' ? T('La cuenta de pruebas no puede llevar el equipo: elige a otra persona.') : textoError(r.error, false));
+        return;
+      }
+      if (!esObj(r.data) || r.data.ok !== true) { C.libera(btn); msgAj('aj-msg-quien', T('La base no confirmó el cambio: recarga antes de repetir.')); return; }
+      var res = r.data, o = esObj(res.owner) ? res.owner : {}, n = o.nombre || o.numero_usuario || T('esa persona');
+      var m = res.cambia === false ? Tf('{n} ya llevaba el equipo.', { n: n }) : Tf('Ahora lleva el equipo {n}.', { n: n });
+      if (res.subida_cancelada === true) m += ' ' + T('La subida del tope que estaba pendiente se ha anulado: la decide quien lleva ahora el equipo.');
+      if (res.cambia !== false) GUARDADO_EN.quien = Date.now();
+      E.sucio.quien = false; OW.usuarios = null; OW.usuariosErr = false;
+      carga().then(function () {
+        C.libera(btn);
+        if ($a('carga').getAttribute('data-tipo') !== 'listo' || rutaActual().vista !== 'ajustes') return;
+        var e = E.estado;
+        /* si quien lo lleva ahora es quien mira, sigue con el siguiente paso que falte; si no, vuelve al equipo (los pasos ya no son suyos) */
+        if (e && e.encendido && e.soy_dueno === true) { ir('#ajustes-' + siguiente('quien', e)); msgAj('aj-ok', m); }
+        else { ir('#equipo'); msgV2('v2-ok', m, 'ok'); }
+      });
+    });
   }
 
   /* ── escribir un paso: un solo envío a la vez (C.ocupa); un fallo se dice EN el paso y lo tecleado no se borra ── */
@@ -1741,18 +1972,23 @@
     FRENO.btns.forEach(function (b) { b.disabled = false; });
     FRENO.t = null; FRENO.msg = null; FRENO.btns = []; FRENO.campo = null;
   }
-  function frena(paso, zona, btn) {
-    var campo = GESTO[paso], ahora = Date.now(), ult = GUARDADO_EN[campo] || 0, s = 60;
+  /* info (paso 0): {dia, s, diaTxt} cuando la base ya dice cuánto falta (agente_owner_estado); sin info se deduce como arriba */
+  function frena(paso, zona, btn, info) {
+    var campo = GESTO[paso] || paso, ahora = Date.now(), ult = GUARDADO_EN[campo] || 0, s = 60;
     C.libera(btn);
     paraFreno(false);
-    var hist = E.estado && Array.isArray(E.estado.historial) ? E.estado.historial : [];
-    var hoy = hist.filter(function (x) {
-      var t = esObj(x) && Array.isArray(x.campos) && (x.campos.indexOf(campo) >= 0 || x.campos.indexOf(campo + '_en') >= 0) ? Date.parse(x.cuando) : NaN;
-      return isFinite(t) && ahora - t < 86400000;
-    }).length;
-    var yaEsperado = ESPERADO[campo] && ESPERADO[campo] > ult;
-    if (hoy >= 10 || yaEsperado) { msgAj(zona, T('Hoy ya se han hecho los 10 cambios que caben aquí: podrás guardar mañana. Lo escrito se queda.')); return; }
-    if (ult && ahora - ult < 60000) s = Math.max(1, Math.ceil((60000 - (ahora - ult)) / 1000));
+    var dia = !!(ESPERADO[campo] && ESPERADO[campo] > ult);
+    if (info) { dia = dia || !!info.dia; s = info.s || 60; }
+    else {
+      var hist = E.estado && Array.isArray(E.estado.historial) ? E.estado.historial : [];
+      var hoy = hist.filter(function (x) {
+        var t = esObj(x) && Array.isArray(x.campos) && (x.campos.indexOf(campo) >= 0 || x.campos.indexOf(campo + '_en') >= 0) ? Date.parse(x.cuando) : NaN;
+        return isFinite(t) && ahora - t < 86400000;
+      }).length;
+      dia = dia || hoy >= 10;
+      if (ult && ahora - ult < 60000) s = Math.max(1, Math.ceil((60000 - (ahora - ult)) / 1000));
+    }
+    if (dia) { msgAj(zona, info && info.diaTxt ? info.diaTxt : T('Hoy ya se han hecho los 10 cambios que caben aquí: podrás guardar mañana. Lo escrito se queda.')); return; }
     var m = $a(zona), texto = function (q) { return Tf('Podrás guardar en {s} s: lo escrito se queda.', { s: q }); };
     msgAj(zona, texto(s));
     var btns = botonesQueGuardan(paso);
@@ -1921,15 +2157,17 @@
   function aplicaRuta(mueve) {
     var caja = $a('v2'), d = E.estado;
     if (!d) return;
-    if (!d.encendido) { caja.setAttribute('data-vista', 'apagado'); return; }
-    var r = rutaActual();
+    var r = rutaActual(), te = $a('v2-tab-equipo'), ta = $a('v2-tab-ajustes');
+    /* con el equipo apagado solo existe el paso 0 (#ajustes-quien), y solo para quien puede nombrar: hay que tener a alguien al frente para encenderlo */
+    var solo = !d.encendido && r.vista === 'ajustes' && r.paso === 'quien' && puedeQuien();
+    if (solo) caja.setAttribute('data-solo', 'quien'); else caja.removeAttribute('data-solo');
+    if (!d.encendido && !solo) { if (AJ.paso) paraFreno(); AJ.paso = null; caja.setAttribute('data-vista', 'apagado'); return; }
     caja.setAttribute('data-vista', r.vista);
-    var te = $a('v2-tab-equipo'), ta = $a('v2-tab-ajustes');
     if (r.vista === 'ajustes') { ta.setAttribute('aria-current', 'page'); te.removeAttribute('aria-current'); }
     else { te.setAttribute('aria-current', 'page'); ta.removeAttribute('aria-current'); }
     if (r.vista === 'ajustes') {
       var p = r.paso;
-      if (PASOS.indexOf(p) < 0 && p !== 'listo') {
+      if ((PASOS.indexOf(p) < 0 && p !== 'listo' && p !== 'quien') || (p === 'quien' && !puedeQuien())) {
         p = siguiente(null, d);
         try { history.replaceState(null, '', '#ajustes-' + p); } catch (e) { /* MUDO A PROPOSITO: sin replaceState la barra se queda en #ajustes; el paso se pinta igual */ }
       }
@@ -1950,13 +2188,21 @@
       }
     }
   }
-  /* ── lo que le falta al equipo para empezar, con el botón que abre ese paso (revisión previa #383, punto 5) ── */
+  /* ── lo que le falta al equipo para empezar, con el botón que abre ese paso (revisión previa #383, punto 5). Sin nadie al frente (paso 0) eso va
+     antes que nada: ningún otro paso lo puede hacer nadie ── */
   function pintaFalta(d) {
     var falta = typeof d.falta_configurar === 'string' && d.falta_configurar ? d.falta_configurar : null, p = falta ? PASO_DE_FALTA[falta] : null;
+    var sinOwner = !!(OW.d && !ownerOk(OW.d));
+    oculta($a('v2-falta-quien'), !(sinOwner && puedeQuien()));
+    if (sinOwner) {
+      oculta($a('v2-falta'), false); oculta($a('v2-falta-ir'), true);
+      $a('v2-falta-txt').textContent = textoQuien(OW.d) + ' ' + T('Sin alguien al frente, tu equipo no empieza.');
+      return;
+    }
     oculta($a('v2-falta'), !falta);
     if (!falta) return;
     var t = textoFalta(falta);
-    if (p) t += ' ' + T('Tu equipo no empieza hasta completarlo.') + (d.soy_dueno === true ? '' : ' ' + T('Lo completa la persona que lleva el equipo.'));
+    if (p) t += ' ' + T('Tu equipo no empieza hasta completarlo.') + (d.soy_dueno === true ? '' : ' ' + (OW.d && ownerOk(OW.d) ? Tf('Lo completa {n}, que lleva el equipo.', { n: nombreOwner(OW.d) }) : T('Lo completa la persona que lleva el equipo.')));
     $a('v2-falta-txt').textContent = t;
     var a = $a('v2-falta-ir');
     oculta(a, !p || d.soy_dueno !== true);
@@ -2029,7 +2275,12 @@
   }
   /* ── módulo apagado: la tarjeta de encender (el dueño, o quien no se sabe si lo es: la base decide) ── */
   function pintaApagado(d) {
-    $a('v2-apagado-txt').textContent = T('Tu equipo está apagado: no mira nada ni hace nada.') + (d.soy_dueno === true ? '' : ' ' + T('Lo enciende la persona que lleva el equipo.'));
+    /* sin nadie al frente nadie puede encenderlo (agente_modulo_cambia exige al dueño): lo primero es el paso 0, para quien puede nombrarlo */
+    var ok = OW.d ? ownerOk(OW.d) : true, txt = T('Tu equipo está apagado: no mira nada ni hace nada.');
+    if (!ok) txt += ' ' + textoQuien(OW.d) + (puedeQuien() ? ' ' + T('Antes de encenderlo, elige quién lleva el equipo.') : '');
+    else if (d.soy_dueno !== true) txt += ' ' + (OW.d && !OW.d.soy_owner ? Tf('Lo enciende {n}, que lleva el equipo.', { n: nombreOwner(OW.d) }) : T('Lo enciende la persona que lleva el equipo.'));
+    $a('v2-apagado-txt').textContent = txt;
+    oculta($a('v2-apagado-quien'), ok || !puedeQuien());
     var acc = vacia($a('v2-apagado-acc'));
     if (d.soy_dueno !== false) acc.appendChild(h('button', { type: 'button', class: 'ag2-btn', 'data-accion': 'ag-encender', text: T('Encender a tu equipo') }));
     oculta($a('v2-falta'), true);
@@ -2720,7 +2971,8 @@
   function carga() {
     var est = $a('carga');
     est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'cargando'); est.textContent = T('Cargando…'); oculta(est, false);
-    return llama('agente_panel_estado').then(function (r) {
+    var pOw = leeOwner();   // el paso 0 se lee a la vez (con la función ausente, 404, no pasa nada)
+    return llama('agente_panel_estado').then(function (r) { return pOw.then(function () { return r; }); }).then(function (r) {
       /* sin estado no se sabe si el módulo sigue encendido: el panel V2 no se queda enseñando datos de antes */
       if (r.error) { est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = textoError(r.error, true); oculta($a('v2'), true); return; }
       /* null: solo si agente_panel_estado quedara registrada en el módulo `agente` (apagados_instancia.js contesta null a las funciones de un módulo apagado).
@@ -2731,6 +2983,7 @@
       E.estado = d;
       oculta(est, true); est.setAttribute('data-tipo', 'listo');
       oculta($a('v2'), false);
+      pintaQuienLinea();
       /* apagado: solo la tarjeta de encender (las RPC del panel exigen el módulo encendido: apagado, la base las rechaza) */
       if (!d.encendido) { V.d = null; reloj(); E.notas = null; E.notasError = ''; pintaApagado(d); aplicaRuta(false); return; }
       pintaFalta(d);
@@ -2793,7 +3046,8 @@
     ev.preventDefault();
     var btn = f.querySelector('button[type="submit"]:not(.axw-oculto)');
     if (!btn || btn.disabled) return true;
-    if (k === 'aj-f-tope') guardaTope(btn);
+    if (k === 'aj-f-quien') guardaQuien(btn);
+    else if (k === 'aj-f-tope') guardaTope(btn);
     else if (k === 'aj-f-negocio') guardaNegocio(btn);
     else if (k === 'aj-f-limites') guardaLimites(btn, !AJ.modoLim);
     else if (k === 'aj-f-trabajos') guardaTrabajos(btn);
@@ -2803,7 +3057,7 @@
     SB = aut.sb;
     raiz.addEventListener('click', alClic);
     /* lo que el dueño escribe en un paso no lo borra un repintado (otro botón, el sondeo): ver E.sucio */
-    var PASO_FORM = { 'aj-f-tope': 'tope', 'aj-f-negocio': 'negocio', 'aj-f-limites': 'limites', 'aj-f-trabajos': 'trabajos' };
+    var PASO_FORM = { 'aj-f-quien': 'quien', 'aj-f-tope': 'tope', 'aj-f-negocio': 'negocio', 'aj-f-limites': 'limites', 'aj-f-trabajos': 'trabajos' };
     var alEscribir = function (ev) {
       var f = ev.target && ev.target.closest ? ev.target.closest('form[data-ag]') : null;
       var k = f ? PASO_FORM[f.getAttribute('data-ag')] : null;

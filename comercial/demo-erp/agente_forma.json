@@ -95,9 +95,34 @@
    "args": {},
    "devuelve": "[{proveedor: 'claude' | 'meta' | 'google', estado: 'sin_comprobar' | 'conectada' | 'caducada' | 'error' | 'desconectada', ultimos4, version, guardada_en, por, comprobada_en, ultimo_error, ajustes}] — NUNCA el secreto",
    "quien": "herramienta agente; la cuenta de pruebas → 42501 hint cuenta_pruebas"
+  },
+  "agente_owner_estado": {
+   "transporte": "sb.rpc (paso 0 del asistente; agencia erp/migraciones 20261015194000; núcleo: contesta con el módulo apagado; sin la migración → 404 PGRST202 y el paso 0 no se enseña)",
+   "args": {},
+   "devuelve": {
+    "hay_owner": "bool",
+    "owner_activo": "bool",
+    "soy_owner": "bool",
+    "soy_propietario": "bool",
+    "puedo_poner": "bool: la persona propietaria y no la cuenta de pruebas",
+    "owner_nombre": "texto | null",
+    "owner_numero": "texto | null (USR-00001)",
+    "cambiado_en": "instante | null: el último cambio de dueño",
+    "cambios_24h": "entero: cambios de dueño en las últimas 24 h (freno 3)",
+    "ya_no_eres_owner": "bool: quien llama lo era antes del último cambio"
+   },
+   "quien": "cualquier usuario activo por la API (42501 hint solo_api | sin_usuario); sin uid ni correo de nadie"
   }
  },
  "escrituras": {
+  "agente_owner_pon": {
+   "args": {
+    "p_user_id": "uuid de un usuario ACTIVO de esta base (de la lectura de `usuarios` de la pantalla, como Ajustes › Usuarios)",
+    "p_motivo": "texto 3-300 (la pantalla pone MOTIVO_AJ.quien)"
+   },
+   "devuelve": "{ok: true, cambia: bool, owner: {nombre, numero_usuario}, telegram_borrado: bool, subida_cancelada: bool}",
+   "quien": "SOLO la persona propietaria (42501 hint solo_propietario); nunca la cuenta de pruebas, ni para llamar ni como elegida (42501 hint cuenta_pruebas); usuario que no vale → 22023 hint usuario_no_valido; motivo → 22023 hint motivo; freno 1/min y 3/24 h → P0001 hint agente_freno"
+  },
   "agente_para": {
    "args": {},
    "devuelve": "{parado: true}",
@@ -298,6 +323,8 @@
   "sin_owner": "42501 hint 'agente_solo_owner'",
   "cuenta_pruebas": "42501 hint 'cuenta_pruebas'",
   "modulo_fuera": "22023 hint 'agente_modulo_fuera' (ese módulo no puede llevar límite en este ERP)",
-  "contexto_forma": "22023 hint 'agente_contexto_forma' (contexto con claves o largos fuera de lo admitido)"
+  "contexto_forma": "22023 hint 'agente_contexto_forma' (contexto con claves o largos fuera de lo admitido)",
+  "solo_propietario": "42501 hint 'solo_propietario' (agente_owner_pon: solo la persona propietaria nombra a quien lleva el equipo)",
+  "usuario_no_valido": "22023 hint 'usuario_no_valido' (agente_owner_pon: no es un usuario activo de esta base)"
  }
 }

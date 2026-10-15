@@ -116,7 +116,10 @@ mira('Lawang no se toco: los ficheros siguen igual', all(open(os.path.join(build
 mira('ningun innerHTML ni insertAdjacentHTML ni outerHTML ni document.write', not re.search(r'innerHTML|insertAdjacentHTML|outerHTML|document\.write|\.append\(\s*`', CODIGO))
 mira('no usa el esc() de Lawang', not re.search(r'\besc\(|lwCajonHtml', CODIGO))
 mira('ningun console.log', 'console.log' not in CODIGO)
-mira('el navegador no toca tablas ni almacenamiento: ni .from( ni insert/update/upsert/delete ni storage', not re.search(r'\.from\(|\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.storage\b|localStorage|sessionStorage', CODIGO))
+# la ÚNICA lectura directa de tabla: la lista de personas del paso 0, la misma de Ajustes › Usuarios (RLS «el admin todas»), sin correo (15-oct)
+LEE_USUARIOS = "SB.from('usuarios').select('user_id,numero_usuario,nombre').eq('activo', true).order('nombre')"
+mira('una sola lectura de tabla (la lista de personas del paso 0: user_id, número y nombre de los activos, sin correo)', CODIGO.count(LEE_USUARIOS) == 1)
+mira('el navegador no toca tablas ni almacenamiento: ni otro .from( ni insert/update/upsert/delete ni storage', not re.search(r'\.from\(|\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.storage\b|localStorage|sessionStorage', CODIGO.replace(LEE_USUARIOS, '')))
 mira('no nombra claves de servicio', not re.search(r'service_role|sb_secret_', JS + MARCADO))
 mira('no trae un rol cableado: quien es dueño lo dice la base (soy_dueno / puedo_decidir)', not re.search(r"rol\s*===|\.rol\b|es_admin|esAdmin|LW_ROL|super_admin", CODIGO) and 'soy_dueno' in CODIGO)
 CONTRATO = set(FORMA['lecturas']) | set(FORMA['escrituras'])
@@ -131,7 +134,10 @@ for n, e in FORMA['escrituras'].items():
     for u in usados:
         args |= set(re.findall(r'\b(p_[a-z_]+)\s*:', u))
     mira('%s: manda exactamente los argumentos del contrato %s (manda %s)' % (n, sorted(e['args']), sorted(args)), args == set(e['args']))
-mira('nada de autor, correo, fechas ni uid viaja a la base', not re.search(r'p_(autor|por|email|creado|actualizado|user|uid|fecha|dueno)', CODIGO))
+# p_user_id solo en el paso 0: es la persona ELEGIDA de la lista, no quien llama (eso lo pone la base con su sesión)
+PON_OWNER = "llama('agente_owner_pon', { p_user_id: v, p_motivo: MOTIVO_AJ.quien })"
+mira('nada de autor, correo, fechas ni uid de quien llama viaja a la base (el único p_user_id es la persona elegida en el paso 0)', CODIGO.count(PON_OWNER) == 1
+     and not re.search(r'p_(autor|por|email|creado|actualizado|user|uid|fecha|dueno)', CODIGO.replace(PON_OWNER, '')))
 mira('los trabajos NO van en una lista fija de la pantalla: el orden sale de trabajos_orden de la base', not re.search(r'var TRABAJOS\s*=', CODIGO) and 'd.trabajos_orden' in CODIGO)
 def mapa(nombre):
     """{clave: texto} del objeto `var <nombre> = {...};` del código (sin comentarios)."""
@@ -201,7 +207,7 @@ mira('toda accion tiene manejador (' + ', '.join(sorted(a for a in acciones if (
 PASOS_AJ = ('tope', 'negocio', 'limites', 'trabajos')
 mira('no queda ningún bloque viejo de configuración (Estado, Hoy, Historial, Más adelante, Acciones, Propuestas de cambio…)', 'data-ag="bloque-' not in MARCADO)
 mira('ningún campo «motivo» en Ajustes: el motivo que piden las RPC lo pone la pantalla (MOTIVO_AJ)',
-     not re.search(r'data-campo="motivo', MARCADO) and all(('MOTIVO_AJ.' + k) in CODIGO for k in ('tope', 'negocio', 'limites', 'trabajos', 'subida')))
+     not re.search(r'data-campo="motivo', MARCADO) and all(('MOTIVO_AJ.' + k) in CODIGO for k in ('tope', 'negocio', 'limites', 'trabajos', 'subida', 'quien')))
 mira('cada paso tiene su formulario y su enlace #ajustes-<paso>, y la pantalla final el suyo',
      all(('data-ag="aj-f-' + p + '"') in MARCADO and ('href="#ajustes-' + p + '"') in MARCADO for p in PASOS_AJ) and 'data-ag="aj-listo"' in MARCADO)
 mira('la ruta por hash abre Ajustes y escucha hashchange', r"/^ajustes(?:-([a-z]+))?$/" in CODIGO and "addEventListener('hashchange'" in CODIGO)
@@ -228,6 +234,17 @@ mira('el paso del tope dice el aviso de las 24 h y trae un valor sugerido', "T('
 mira('la pantalla final dice lo primero que hará cada agente (PRIMERO, por id de agente)', 'var PRIMERO = {' in CODIGO and "data-ag=\"aj-listo-primero\"" in MARCADO)
 mira('el aviso «Falta X» lleva botón que abre su paso; quien no es dueño lee quién lo hace',
      'data-ag="v2-falta-ir"' in MARCADO and 'PASO_DE_FALTA[' in CODIGO and "T('Lo completa la persona que lleva el equipo.')" in CODIGO)
+# -- (3f) PASO 0 «¿Quién lleva el equipo?» (agencia erp/migraciones 20261015194000)
+OWN = FORMA['lecturas']['agente_owner_estado']['devuelve']
+# soy_propietario no se pinta: puedo_poner ya es «propietaria y no la cuenta de pruebas», que es lo que decide la pantalla
+sin_leer_ow = sorted(k for k in OWN if k != 'soy_propietario' and not re.search(r'\.' + k + r'\b', CODIGO))
+mira('el paso 0 lee cada clave de agente_owner_estado del contrato' + (' (no lee: ' + ', '.join(sin_leer_ow) + ')' if sin_leer_ow else ''), not sin_leer_ow)
+mira('paso 0: un formulario con UN campo (la persona), enlazable por #ajustes-quien, y fuera de la barra de pasos',
+     'data-ag="aj-f-quien"' in MARCADO and controles_fuera_de_details('quien') == 1 and 'href="#ajustes-quien"' in MARCADO and 'data-paso="quien"' not in MARCADO.split('data-ag="aj-pasos"')[1].split('</ol>')[0])
+mira('paso 0: sin la función en la base (404 / PGRST202) no se enseña y nada se rompe', "err.code === 'PGRST202'" in CODIGO and "OW.err = noExiste(r.error) ? '' :" in CODIGO)
+mira('paso 0: la lista de personas solo se pide si quien mira puede nombrar', 'if (puedeQuien()) leeUsuarios();' in CODIGO and "llama('usuarios_activos')" in CODIGO)
+mira('paso 0: el freno exacto sale de lo que da la base (cambiado_en y cambios_24h)', 'function frenoQuien()' in CODIGO and 'd.cambios_24h >= 3' in CODIGO)
+mira('paso 0: subida_cancelada se le dice a quien lo cambia', "res.subida_cancelada === true" in CODIGO)
 mira('agente_nota_decide y agente_propuesta_decide siguen en el contrato como «sin llamador» y la pantalla no las llama',
      set(FORMA.get('escrituras_sin_llamador', {})) - {'_que'} == {'agente_nota_decide', 'agente_propuesta_decide'}
      and not any(n in CODIGO for n in ('agente_nota_decide', 'agente_propuesta_decide')))
