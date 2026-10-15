@@ -5987,6 +5987,240 @@ def comprueba_pantallas_idiomas(dist, idiomas):
     print('idiomas: ' + ' · '.join(l for l in sal.splitlines() if l.strip() and not l.startswith('FALLA'))[-300:])
 
 
+# ── Rutas en el idioma de la instancia (bbm-idioma-total, 15-oct-2026; owner: «la barra de dirección sigue diciendo palabras en español») ──────
+# spec_R1R2 + su adenda (revisiones previas #353 y #355). Las CARPETAS del paquete no cambian: /taller/ sigue siendo la carpeta y la CLAVE INTERNA con
+# la que decide el código, así que reraiz, legado_htaccess, ruta_limpia, los avisos y la retirada de huérfanos no se tocan y Lawang y la demo salen
+# byte a byte iguales (todo esto solo corre en instancia()). Lo que cambia es lo que se ve: el servidor sirve también la ruta inglesa (alias_htaccess,
+# reescritura INTERNA, sin redirigir el español: sin bucles) y rutas_idioma.js, primer <script> de cada página, pone la barra y los enlaces en el idioma
+# de rutas de la instancia (el de pantalla de Ajustes › Idiomas, en la base; 'es' → español, cualquier otro → inglés). Las lecturas de la barra del
+# código (location.pathname/search/hash) pasan por el ayudante y ven SIEMPRE la clave interna (rutas_idioma_paquete).
+# Nombres: Idiomas (#355). productos → products por el encargo del owner (/products/; Idiomas proponía extras, que es el rótulo visible): decisión
+# por defecto, reversible cambiando este valor.
+RUTAS_IDIOMA = {
+    'ajustes': 'settings', 'usuarios': 'users', 'reservas-producto': 'bookings', 'taller': 'workshop', 'entrega': 'delivery',
+    'flota': 'fleet', 'facturas': 'invoices', 'ventas': 'sales', 'recibos': 'receipts', 'vencimientos': 'payment-schedule',
+    'compradores': 'clients', 'productos': 'products', 'operaciones': 'deals', 'finanzas': 'finance', 'gastos': 'expenses',
+    'bancos': 'banks', 'cuentas': 'bank-accounts', 'sociedades': 'companies', 'comunicacion': 'announcements',
+    'crea-contrasena': 'create-password', 'whatsapp-bot-alta': 'whatsapp-bot-signup',
+    'reservas': 'reservations',   # reservado: hoy solo el aviso «pantalla no incluida»; va en el mapa para que nadie más use ese nombre
+}
+# Segundo tramo: solo bajo una pantalla del mapa. Una subcarpeta con index.html que no esté aquí PARA el build (saldría por el nombre español).
+RUTAS_SUB = {'ajustes': {'configurar': 'setup'}}
+# Hash por pantalla (clave interna). Las pestañas de Ajustes: PESTANAS de assets/ajustes.js (Lawang) + las que añade el build (puesta, comisiones,
+# cobros). Una pestaña sin nombre aquí PARA el build (rutas_idioma_paquete) y el test.
+HASHES = {'ajustes': {'puesta': 'setup', 'empresa': 'company', 'sociedades': 'companies', 'idiomas': 'languages', 'correo': 'email',
+                      'usuarios': 'users', 'mantenimiento': 'maintenance', 'reservas': 'reservations', 'servicios': 'services',
+                      'registro': 'log', 'cobros': 'payments', 'comisiones': 'commissions'}}
+# Consulta: sin_permiso=<clave> (guard.js → el hub) sale como no_access=<nombre inglés>; next=<ruta> (la puerta) lleva la ruta visible.
+RUTAS_BUSCA = {'sin_permiso': 'no_access'}
+RUTAS_BUSCA_RUTA = ('next',)
+RUTA_FORMA = re.compile(r'^[a-z]+(-[a-z]+)*$')
+RUTAS_RESERVADAS = RAIZ_RESERVADA | {'contracts', 'assets', 'entrar', 'portal', 'panel', 'clasico', 'home', 'templates'}
+RUTAS_JS = os.path.join(AQUI, 'rutas_idioma.js')
+RUTAS_SCRIPT = '<script id="axw-rutas">'
+# Una lectura de la barra: location.pathname/search/hash, con window./document. delante o sin nada (raiz.location.pathname NO: otro objeto). No
+# casa dentro de la forma ya envuelta: la pasada es idempotente.
+LECTURA_BARRA = re.compile(r'(?<![\w$.])(?<!\|\|String\)\()((?:window\.|document\.)?location\.(pathname|search|hash))(?![\w$])')
+ASIGNACION_JS = re.compile(r'\s*(?:>>>|<<|>>|\*\*|&&|\|\||\?\?|[-+*/%&|^])?=(?!=)')
+ENVOLTORIO_BARRA = {'pathname': 'axwRutaInterna', 'search': 'axwBuscaInterna', 'hash': 'axwHashInterno'}
+BARRA_ENVUELTA = re.compile(r'\(window\.axw(?:RutaInterna|BuscaInterna|HashInterno)\|\|String\)\((?:window\.|document\.)?location\.(?:pathname|search|hash)\)')
+BARRA_ESCRITA = re.compile(r'(?<![\w$.])(?:window\.|document\.)?location\.(?:search|hash)' + ASIGNACION_JS.pattern)
+BARRA_RESTO = re.compile(r'([\w$]+\s*\.\s*)?location\s*\.\s*(pathname|search|hash)(?![\w$])')
+# Lecturas de la barra que se quedan sin envolver, cada una con su porqué (la trampa para con cualquier otra).
+BARRA_LISTA_BLANCA = {
+    ('contracts/assets/version.js', 'raiz.location.pathname'): 'pide al servidor la PROPIA página para ver si cambió su versión y la apunta en '
+                                                              'sessionStorage para compararla con la misma lectura: cualquiera de las dos rutas la sirve',
+}
+# Quien lee un href para DECIDIR por su ruta tiene que normalizarlo con axwRutaInterna (en apagados_instancia.js: interna(...)).
+HREF_DECIDE = re.compile(r'''getAttribute\(\s*["']href["']\s*\)|\.href\s*\)\s*\.\s*pathname|new URL\([^;]{0,200}?\)\s*\.\s*pathname''')
+HREF_NORMALIZADO = re.compile(r'''\binterna\(new URL\([^;]{0,200}?\)\s*\.\s*pathname\)|setAttribute\(\s*["']href["']\s*,\s*[\w$.\[\]]+\.getAttribute\(\s*["']href["']\s*\)\s*\)''')
+HREF_LISTA_BLANCA = {}   # {fichero del paquete: motivo}; vacía a propósito
+
+
+def problemas_mapa_rutas(carpetas=()):
+    """Lo que está mal en los mapas de rutas (lista vacía = bien). `carpetas`: las de pantalla que ya existen (el paquete o el árbol de Lawang):
+    un nombre inglés que choca con una carpeta real serviría la carpeta y no el alias."""
+    malos, vistos = [], {}
+    for clave, en in sorted(RUTAS_IDIOMA.items()):
+        if not RUTA_FORMA.match(en):
+            malos.append('%s → %r: no es ^[a-z]+(-[a-z]+)*$' % (clave, en))
+        if en == clave:
+            malos.append('%s → %s: el nombre inglés es la propia clave' % (clave, en))
+        if en in vistos:
+            malos.append('%s y %s → %s: el mismo nombre para dos pantallas' % (vistos[en], clave, en))
+        vistos[en] = clave
+        if en in RUTAS_IDIOMA:
+            malos.append('%s → %s: el nombre inglés es la clave de otra pantalla' % (clave, en))
+        if en in RUTAS_RESERVADAS:
+            malos.append('%s → %s: carpeta reservada de la raíz' % (clave, en))
+        if en in carpetas:
+            malos.append('%s → %s: ya es una carpeta de pantalla del paquete' % (clave, en))
+    for nombre, mapa in (('RUTAS_SUB', RUTAS_SUB), ('HASHES', HASHES)):
+        for clave, sub in sorted(mapa.items()):
+            if clave not in RUTAS_IDIOMA:
+                malos.append('%s[%s]: la pantalla no está en RUTAS_IDIOMA' % (nombre, clave))
+            vs = {}
+            for k, v in sorted(sub.items()):
+                if not RUTA_FORMA.match(v) or v == k or v in sub or v in vs:
+                    malos.append('%s[%s]: %s → %r no vale (forma, igual a una clave o repetido)' % (nombre, clave, k, v))
+                vs[v] = k
+    for k, v in RUTAS_BUSCA.items():
+        if not re.match(r'^[a-z]+(_[a-z]+)*$', v) or v == k or v in RUTAS_BUSCA or v in RUTAS_BUSCA_RUTA:
+            malos.append('RUTAS_BUSCA: %s → %r no vale' % (k, v))
+    return malos
+
+
+def rutas_idioma_script(idioma_build):
+    """El ayudante en línea: rutas_idioma.js sin comentarios, con los mapas y el idioma de pantalla del build. Solo ASCII: va delante del <meta charset>
+    de las pantallas de la v4 y la instancia sirve text/html sin charset."""
+    t = open(RUTAS_JS, encoding='utf-8').read()
+    t = re.sub(r'/\*.*?\*/', '', t, flags=re.S)
+    t = re.sub(r'^\s*//[^\n]*\n', '', t, flags=re.M)
+    for hueco in ('__AXW_RUTAS__', '__AXW_IDIOMA_BUILD__'):
+        if t.count(hueco) != 1:
+            aborta('rutas_idioma.js sin el hueco %s en el código (una vez)' % hueco)
+    datos = {'r': RUTAS_IDIOMA, 's': RUTAS_SUB, 'h': HASHES, 'q': RUTAS_BUSCA, 'qr': list(RUTAS_BUSCA_RUTA)}
+    t = (t.replace('__AXW_RUTAS__', json.dumps(datos, ensure_ascii=True, sort_keys=True))
+         .replace('__AXW_IDIOMA_BUILD__', json.dumps(idioma_build or 'es')))
+    if '</' in t or not t.isascii():
+        aborta('rutas_idioma.js: el ayudante en línea no puede llevar «</» ni nada que no sea ASCII')
+    return RUTAS_SCRIPT + '\n' + t.strip() + '\n</script>'
+
+
+def envuelve_lecturas_barra(t):
+    """Cada lectura de location.pathname/search/hash → (window.axwXInterna||String)(location.x): la clave interna con el ayudante, lo de siempre sin
+    él (un documento sin la página alrededor no revienta). Devuelve (texto, envueltas, asignaciones a pathname). Las asignaciones a search o hash se
+    quedan: navegan (o disparan hashchange) y la página de llegada ya se canoniza."""
+    n, malos = [0], []
+
+    def uno(m):
+        if ASIGNACION_JS.match(t, m.end()):
+            if m.group(2) == 'pathname':
+                malos.append(t[max(0, m.start() - 40):m.end() + 20])
+            return m.group(0)
+        n[0] += 1
+        return '(window.%s||String)(%s)' % (ENVOLTORIO_BARRA[m.group(2)], m.group(1))
+    return LECTURA_BARRA.sub(uno, t), n[0], malos
+
+
+def trampas_barra(t, donde):
+    """Lo que queda en `t` (ya envuelto) que lee la barra o un href para decidir sin pasar por el ayudante (lista vacía = bien)."""
+    malos = []
+    s = BARRA_ESCRITA.sub('', BARRA_ENVUELTA.sub('', t))
+    for m in BARRA_RESTO.finditer(s):
+        expr = re.sub(r'\s+', '', m.group(0))
+        if (donde, expr) not in BARRA_LISTA_BLANCA:
+            malos.append('%s: lectura de la barra sin envolver: …%s…' % (donde, s[max(0, m.start() - 50):m.end() + 20]))
+    if donde not in HREF_LISTA_BLANCA:
+        for m in HREF_DECIDE.finditer(HREF_NORMALIZADO.sub('', t)):
+            malos.append('%s: lee un href para decidir sin axwRutaInterna: …%s…' % (donde, m.group(0)[:80]))
+    return malos
+
+
+def inyecta_rutas(t, script):
+    """El ayudante como PRIMER <script> del documento: tras <meta charset> si va antes que cualquier script, si no justo delante del primero; sin
+    <head> (los redirectores /entrar/ y /portal/), igual. Un documento con dos <head> PARA (no se sabe cuál es)."""
+    if RUTAS_SCRIPT in t:
+        aborta('rutas_idioma: el ayudante ya estaba en la página (¿dos pasadas?)')
+    heads = list(re.finditer(r'<head(?:\s[^>]*)?>', t, re.I))
+    if len(heads) > 1:
+        return None
+    s = re.search(r'<script\b', t, re.I)
+    meta = re.search(r'<meta\s+charset=[^>]*>', t, re.I)
+    if meta and (not s or meta.end() <= s.start()):
+        pos = meta.end()
+    elif s:
+        pos = s.start()
+    elif heads:
+        pos = heads[0].end()
+    else:
+        d = re.match(r'\s*<!doctype[^>]*>', t, re.I)
+        pos = d.end() if d else 0
+    return t[:pos] + script + t[pos:]
+
+
+def rutas_idioma_paquete(dist, idioma_build):
+    """La pasada de rutas del paquete de la instancia: va DESPUÉS de todo lo que escribe páginas o injerta código (pantallas, _una_vez, PORTADA_SEG,
+    textos_instancia, no_instalado, crea-contrasena, entrar/portal, panel) y ANTES de versiona(). El código ya va sin comentarios (limpia_publico.js
+    corre al principio de instancia(): «antes de minificar» no se puede cumplir a la vez que «después de los injertos»; terser va sin mangle, así que
+    los nombres siguen ahí). 1) envuelve las lecturas de la barra en todo .js y en todo .html (menos el ayudante, que se mete después); 2) PARA si
+    queda una sin envolver, una asignación a location.pathname o un href leído para decidir; 3) mete el ayudante en cada .html; 4) PARA si una
+    pantalla del mapa tiene una subcarpeta con index.html que no está en RUTAS_SUB, si una pestaña de Ajustes no tiene nombre inglés, si un nombre
+    inglés choca con una carpeta real o si algo de lo tocado deja de ser JavaScript válido."""
+    carpetas = {d for d in os.listdir(dist) if os.path.isdir(os.path.join(dist, d))}
+    malos = problemas_mapa_rutas(carpetas - set(RUTAS_IDIOMA))
+    for clave in sorted(RUTAS_IDIOMA):
+        base = os.path.join(dist, clave)
+        if not os.path.isdir(base):
+            continue
+        for raiz, _d, fichs in os.walk(base):
+            if raiz != base and 'index.html' in fichs:
+                sub = os.path.relpath(raiz, base).replace(os.sep, '/')
+                if sub not in (RUTAS_SUB.get(clave) or {}):
+                    malos.append('/%s/%s/ es una subcarpeta con página que no está en RUTAS_SUB: /%s/%s/ saldría por el nombre español'
+                                 % (clave, sub, RUTAS_IDIOMA[clave], sub))
+    aj = os.path.join(dist, 'assets', 'ajustes.js')
+    if os.path.isfile(aj) and 'ajustes' in HASHES:
+        m = re.search(r'PESTANAS\s*=\s*\[([^\]]*)\]', open(aj, encoding='utf-8').read())
+        if not m:
+            malos.append('assets/ajustes.js sin su lista PESTANAS: no se puede comprobar que cada pestaña tiene nombre inglés')
+        else:
+            for tab in re.findall(r'''["']([^"']+)["']''', m.group(1)):
+                if tab not in HASHES['ajustes']:
+                    malos.append('la pestaña de Ajustes «%s» no tiene nombre inglés en HASHES[ajustes]' % tab)
+    script = rutas_idioma_script(idioma_build)
+    tocados, envueltas, sin_head = [], 0, []
+    for raiz, _d, fichs in os.walk(dist):
+        for f in fichs:
+            if not f.endswith(('.js', '.html')):
+                continue
+            p = os.path.join(raiz, f)
+            donde = os.path.relpath(p, dist).replace(os.sep, '/')
+            t = open(p, encoding='utf-8').read()
+            t2, n, asignadas = envuelve_lecturas_barra(t)
+            malos += ['%s: asigna location.pathname (navegaría por la ruta interna sin pasar por el ayudante): …%s…' % (donde, a) for a in asignadas]
+            malos += trampas_barra(t2, donde)
+            if f.endswith('.html'):
+                t3 = inyecta_rutas(t2, script)
+                if t3 is None:
+                    sin_head.append(donde)
+                    continue
+                t2 = t3
+            if t2 != t:
+                open(p, 'w', encoding='utf-8', newline='').write(t2)
+                tocados.append(p)
+                envueltas += n
+    malos += ['%s: más de un <head>, no se sabe dónde va el ayudante' % x for x in sin_head]
+    malos += ['sintaxis tras la pasada de rutas: ' + x for x in _sintaxis(tocados)]
+    if malos:
+        aborta('rutas en el idioma de la instancia:\n  ' + '\n  '.join(malos[:40]))
+    print('rutas: %d lecturas de la barra envueltas, ayudante en %d ficheros (idioma de rutas del build: %s)'
+          % (envueltas, len(tocados), 'es' if (idioma_build or 'es') == 'es' else 'en'))
+
+
+def alias_htaccess(destino):
+    """Bloque de .htaccess con las rutas inglesas de la instancia (va DETRÁS del legado). Por cada par del mapa cuya carpeta exista: la ruta inglesa
+    se sirve por dentro desde la carpeta (sin R: la barra no cambia y no hay bucle con el ayudante, que canoniza en el navegador) y la ruta sin barra
+    final redirige (302) a la misma con barra (si no, mod_dir mandaría a la carpeta española). Los submapas, ANTES que su pantalla. Patrones
+    cerrados: el primer tramo del destino es siempre una carpeta de la lista y el resto va detrás, así que ninguna entrada produce un destino fuera
+    del dominio. Solo instancias: legado_htaccess (la demo) no se toca. AddDefaultCharset: el ayudante va delante del <meta charset>."""
+    get = '  RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$\n'
+    reglas = []
+    for clave, en in sorted(RUTAS_IDIOMA.items(), key=lambda x: x[1]):
+        if not os.path.isdir(os.path.join(destino, clave)):
+            continue
+        for sub, sub_en in sorted((RUTAS_SUB.get(clave) or {}).items()):
+            if os.path.isdir(os.path.join(destino, clave, sub)):
+                reglas.append(get + '  RewriteRule ^%s/%s$ /%s/%s/ [R=302,L,QSA]\n' % (re.escape(en), re.escape(sub_en), en, sub_en))
+                reglas.append('  RewriteRule ^%s/%s/(.*)$ %s/%s/$1 [L]\n' % (re.escape(en), re.escape(sub_en), clave, sub))
+        reglas.append(get + '  RewriteRule ^%s$ /%s/ [R=302,L,QSA]\n' % (re.escape(en), en))
+        reglas.append('  RewriteRule ^%s/(.*)$ %s/$1 [L]\n' % (re.escape(en), clave))
+    if not reglas:
+        return ''
+    return ('# Rutas en el idioma de la instancia: /workshop/x se sirve desde taller/x (sin redirigir: el navegador canoniza la barra).\n'
+            'AddDefaultCharset UTF-8\n<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteBase /\n' + ''.join(reglas) + '</IfModule>\n')
+
+
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
@@ -6199,6 +6433,9 @@ def instancia(nombre):
     # bbm-p42b: los colores de Lawang que quedan a fuego (editores, cajones, papel) a la piel; tras TODO lo que escribe páginas
     # (pagina_no_instalado también lleva el verde) y antes de versiona(), para que el ?v= cambie con ellos
     print('colores de Lawang a la piel: %d' % piel_colores_lawang(DIST, nombre))
+    # bbm-idioma-total (15-oct): las rutas en el idioma de la instancia. DETRÁS de todo lo que escribe páginas o injerta código y antes de versiona(),
+    # para que el ?v= recoja las lecturas envueltas. Idioma de rutas del build: el de pantalla del registro, si no el primero de sus idiomas, si no 'es'.
+    rutas_idioma_paquete(DIST, pantalla or (idiomas[0] if idiomas else 'es'))
     # ?v= con la huella de lo que SALE de este build, como en la demo pública (28-sep-2026). Sin esto, la v4 llevaba el
     # ?v= del fichero de Lawang (guard.js se reescribe entero aquí: mapa de módulos + ficha) y /panel/ iba sin versión:
     # Hostinger cachea 7 días y el verificador vio el guard.js viejo en /panel/ tras publicar.
@@ -6243,7 +6480,7 @@ def instancia(nombre):
         s_ = os.path.join(DIST, x)
         shutil.copytree(s_, os.path.join(destino, x)) if os.path.isdir(s_) else shutil.copy2(s_, destino)
     open(os.path.join(destino, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(HTACCESS_INSTANCIA.format(
-        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino),
+        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino) + alias_htaccess(destino),   # rutas inglesas DETRÁS del legado
         dominio_re='(' + '|'.join(re.escape(d) for d in [dominio] + _instancia_alias(nombre)) + ')'))
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(destino)
