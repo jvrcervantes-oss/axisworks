@@ -1373,6 +1373,7 @@
         PT.solo(!abierto);
         if (ayudaSw) ayudaSw.hidden = abierto;
         fig.style.display = abierto ? '' : 'none';   // sin tienda ni precio, la ilustración solo diría «hasta 0 km»
+        fig.hidden = !abierto;   // y con ella oculta, la columna de lado del asistente no se queda en blanco (.axw-lado sin nada a la vista)
         if (porUsuario && sw.checked) { var f = bloques.querySelector('[data-axw-parte]:not([hidden]) input:not([readonly])'); if (f) f.focus(); }   // el foco, solo si lo enciende la persona
       };
       sw.addEventListener('change', function () { st.aplicaEntrega(true); });

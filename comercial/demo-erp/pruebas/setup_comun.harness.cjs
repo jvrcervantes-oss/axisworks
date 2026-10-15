@@ -23,7 +23,15 @@ const DIST = process.env.AXW_CSS_DIST || '';
 const CSS_PIEL = DIST ? ['tw.css', 'shell.css'].map(f => fs.readFileSync(path.join(DIST, 'assets', f), 'utf8')).join(' ') + (() => {
   const m = /\bp=(\{[^}]*\});for\(var k in p\)s\.setProperty\("--tema-"\+k/.exec(fs.readFileSync(path.join(DIST, 'contracts', 'assets', 'instancia.js'), 'utf8'));
   return m ? ':root{' + Object.entries(JSON.parse(m[1])).map(([k, v]) => '--tema-' + k + ':' + v).join(';') + '}' : ''; })() : '';
-const SUGERIDAS = fs.readFileSync(path.join(__dirname, '..', 'categorias_gasto_sugeridas.json'), 'utf8');
+// La lista sugerida de la «base» (gasto_categorias_sugeridas, la escribe Backend): por tipo, y el nombre en los idiomas que ofrece la instancia
+const SUG = {
+  reservas: [['general', 'Fuel', 'Bahan bakar'], ['general', 'Spare parts and repairs', 'Suku cadang dan bengkel'], ['personal', 'Salaries', 'Gaji'], ['general', 'Premises rent', 'Sewa tempat'],
+    ['general', 'Power, water and internet', 'Listrik, air dan internet'], ['marketing', 'Marketing and advertising', 'Pemasaran dan iklan'], ['financiero', 'Payment fees', 'Biaya pembayaran'],
+    ['financiero', 'Insurance', 'Asuransi'], ['impuestos', 'Taxes', 'Pajak']],
+  _generico: [['personal', 'Salaries', 'Gaji'], ['general', 'Premises rent', 'Sewa tempat'], ['general', 'Power, water and internet', 'Listrik, air dan internet'],
+    ['marketing', 'Marketing and advertising', 'Pemasaran dan iklan'], ['impuestos', 'Taxes', 'Pajak']]
+};
+const listaSug = (tipo, idiomas) => (SUG[tipo] || SUG._generico).map(([grupo, en, id]) => ({ nombre: idiomas.map(i => i === 'en' ? en : id).join(' · '), grupo }));
 // ── la base simulada (forma del doble de bbm-p28) ───────────────────────────────────────────────────────────────────────────────────────────
 const IDIOMAS_OK = DOBLE.idiomas.guardar.listas_validas.map(l => l.join());
 function base(o = {}) {
@@ -85,8 +93,12 @@ function servidor(b, n, a) {
   if (pr) { delete b.pierde[clave]; if (pr === 'despues') guarda(b, a); return { red: true }; }
   if (n === 'ajustes_config_guardar') return guarda(b, a);
   if (n === 'gastos_panel_datos') return { data: { gastos: [], categorias: b.cats.map(c => Object.assign({}, c)) }, error: null };
-  // modulos_activos_datos: o.modAct = lo que devuelve (tipo como CLAVE de config_instancia.tipo_erp, idiomas {ofrecidos, defecto}); sin él, no existe
-  if (n === 'modulos_activos_datos') return b.o.modAct ? { data: Object.assign({ activos: null, moneda: 'IDR' }, b.o.modAct), error: null } : err('42883');
+  // gasto_categorias_sugeridas: o.sugeridas = { tipo, idiomas } (la lista la arma la base); o.sugeridas === 'cae' = error; sin o.sugeridas, no existe
+  if (n === 'gasto_categorias_sugeridas') {
+    if (!b.o.sugeridas) return err('42883');
+    if (b.o.sugeridas === 'cae') return err('42501');
+    return { data: b.cats.length ? [] : (b.o.sugeridas.lista || listaSug(b.o.sugeridas.tipo, b.o.sugeridas.idiomas)), error: null };
+  }
   if (n === 'gasto_categoria_guarda') {   // como 20261014050000: alta con p_clave null; la clave la saca la base del nombre
     b.nGuarda++;
     if (b.o.fallaEn && b.nGuarda === b.o.fallaEn[0]) return err(b.o.fallaEn[1], b.o.fallaEn[2]);   // la llamada n.º k la rechaza la base
@@ -112,7 +124,7 @@ function edge(b, cuerpo) {
 
 // ── las páginas ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 const cabeza = (idioma) => `<!doctype html><html lang="${idioma}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}[hidden]{display:none!important}</style>${CSS_PIEL ? '<style>' + CSS_PIEL + '</style>' : ''}</head><body>`;
+<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}${CSS_PIEL ? '' : '[hidden]{display:none!important}'}</style>${CSS_PIEL ? '<style>' + CSS_PIEL + '</style>' : ''}</head><body>`;
 const sesion = (idioma, url, build) => `<script>
 history.replaceState(null, '', '${url}');
 window.__sinTrad = []; window.__errores = [];
@@ -129,9 +141,10 @@ window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' 
   if (d) { if (Object.prototype.hasOwnProperty.call(d, s)) v = d[s]; else if (!/^[\\s0-9.:]*$/.test(s)) window.__sinTrad.push(s); }
   if (hu) for (var k in hu) v = v.split('%' + k).join(hu[k]); return v; };
 </script>`;
-const asistente = (idioma, url, build) => cabeza(idioma) + `<main>${HTML[0]}</main>` + sesion(idioma, url, build) + `<script>${NUCLEO}</script><script>${PASOS}</script><script>${COMUN}</script>${HTML[1]}</body></html>`;
+const ENGANCHE_SUG = `<script>window.AXW_PASOS.sugeridasGasto = function () { return window.__srv('gasto_categorias_sugeridas', {}).then(function (r) { if (r && r.error) throw r.error; return r && r.data; }); };</script>`;
+const asistente = (idioma, url, build) => cabeza(idioma) + `<main>${HTML[0]}</main>` + sesion(idioma, url, build) + `<script>${NUCLEO}</script><script>${PASOS}</script>${ENGANCHE_SUG}<script>${COMUN}</script>${HTML[1]}</body></html>`;
 const ajustes = (idioma, build) => cabeza(idioma) + `<main><section data-lw-panel="puesta"><div id="lw-aj-puesta"><p>…</p></div></section></main>` + sesion(idioma, '/ajustes/', build) +
-  `<script>${NUCLEO}</script><script>${PASOS}</script><script>${COMUN}</script><script>${PUESTA}</script></body></html>`;
+  `<script>${NUCLEO}</script><script>${PASOS}</script>${ENGANCHE_SUG}<script>${COMUN}</script><script>${PUESTA}</script></body></html>`;
 
 async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=base', ancho = 1440, pag = 'asistente', build = ['id', 'en'] } = {}) {
   const ctx = await nav.newContext({ viewport: { width: ancho, height: 900 } });
@@ -140,8 +153,6 @@ async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=
   await p.route('**/*', r => {
     const u = r.request().url();
     if (u.includes('/edge/')) { const x = edge(b, JSON.parse(r.request().postData() || '{}')); return r.fulfill({ status: x.status, contentType: 'application/json', body: x.body }); }
-    // el catálogo de categorías sugeridas (al lado de setup_comun.js; inline aquí, así que relativo a la página): solo si el caso lo trae
-    if (u.endsWith('/categorias_gasto_sugeridas.json')) return b.o.sugeridas ? r.fulfill({ status: 200, contentType: 'application/json', body: SUGERIDAS }) : r.fulfill({ status: 404, body: '' });
     return r.fulfill({ status: 200, contentType: 'text/html', body });
   });
   await p.exposeFunction('__srv', async (n, a) => { const r = servidor(b, n, a); if (r && r.red) throw new Error('Failed to fetch'); return r; });
@@ -357,21 +368,23 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:/i.test(String(t || ''));
 
   // ── 10b. Categorías SUGERIDAS (owner vía agencia-c0, 15-oct-2026): con cero categorías, una lista ya hecha para el tipo de negocio, todas marcadas,
   //    con «Usar estas»; se dan de alta una por llamada por gasto_categoria_guarda; se puede quitar alguna o añadir una; al menos una, como siempre
-  const SUG = JSON.parse(SUGERIDAS);
+  const SUGL = t => SUG[t] || SUG._generico;
   const vistosSug = pg => pg.evaluate(() => [...document.querySelectorAll('[data-axw-co="categorias_gasto"] input,[data-axw-co="categorias_gasto"] select')]
     .filter(e => e.checkVisibility({ visibilityProperty: true, contentVisibilityAuto: true })).length);
   const fichas = pg => pg.$$eval('[data-axw-n4-sug="fichas"] li', l => l.map(e => e.textContent));
-  const bbm = { sugeridas: true, gastos: true, modAct: { tipo: 'reservas', idiomas: { ofrecidos: ['id', 'en'], defecto: 'id' } }, valores: { marca: 'X', zona_horaria: 'Asia/Makassar' } };
+  const bbm = { sugeridas: { tipo: 'reservas', idiomas: ['id', 'en'] }, gastos: true, valores: { marca: 'X', zona_horaria: 'Asia/Makassar' } };
   for (const ancho of [390, 1440]) {
     b = base(bbm);
     ({ p, ctx } = await abre(nav, b, { idioma: 'id', ancho, url: '/ajustes/configurar/?modulo=gastos' }));
     await p.waitForSelector('[data-axw-n4-cat="sugeridas"]', { timeout: 3000 }).catch(() => {});
     const f = await fichas(p);
-    ok('SUG ' + ancho + ' bbm (reservas, id·en): la lista de alquiler, todas marcadas, cada nombre «id · en»', f.length === SUG.reservas.length && f[0] === 'Bahan bakar · Fuel' && f.includes('Pajak · Taxes'), JSON.stringify(f));
+    ok('SUG ' + ancho + ' bbm: la lista que da la base (gasto_categorias_sugeridas), todas marcadas', f.length === SUGL('reservas').length && f[0] === 'Bahan bakar · Fuel' && f.includes('Pajak · Taxes')
+       && b.llamadas.some(x => x[0] === 'gasto_categorias_sugeridas'), JSON.stringify(f));
     ok('SUG ' + ancho + ': el botón principal dice «Pakai ini» (Usar estas)', (await txt(p, '[data-axw-accion="enviar"]')) === 'Pakai ini', await txt(p, '[data-axw-accion="enviar"]'));
     ok('SUG ' + ancho + ': ningún campo a la vista (quitar o añadir va plegado) y sin el campo libre', (await vistosSug(p)) === 0 && !(await p.$eval('[data-axw-campo="cat_nombre"]', e => e.checkVisibility())), String(await vistosSug(p)));
     ok('SUG ' + ancho + ': sin scroll de lado', await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     if (SHOT) {
+      await p.evaluate(() => document.fonts && document.fonts.ready); await p.waitForTimeout(200);
       await p.screenshot({ path: path.join(SHOT, 'sugeridas_id_' + ancho + '.png'), fullPage: true });
       await p.click('[data-axw-plegado="n4-sugeridas"] > summary'); await p.waitForTimeout(150);
       await p.screenshot({ path: path.join(SHOT, 'sugeridas_abierto_id_' + ancho + '.png'), fullPage: true });
@@ -380,20 +393,20 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:/i.test(String(t || ''));
     if (ancho === 1440) {
       await clic(p, 'enviar'); await p.waitForTimeout(600);
       const gs = catGuardadas(b);
-      ok('SUG «Usar estas» en un toque: una llamada por categoría, en orden, por gasto_categoria_guarda(null, {nombre, grupo})', gs.length === SUG.reservas.length && gs.every(x => x.p_clave === null && Object.keys(x.p_datos).join() === 'nombre,grupo')
-        && gs[0].p_datos.nombre === 'Bahan bakar · Fuel' && gs[2].p_datos.grupo === 'personal' && b.cats.length === SUG.reservas.length, JSON.stringify(gs.map(x => x.p_datos)));
+      ok('SUG «Usar estas» en un toque: una llamada por categoría, en orden, por gasto_categoria_guarda(null, {nombre, grupo})', gs.length === SUGL('reservas').length && gs.every(x => x.p_clave === null && Object.keys(x.p_datos).join() === 'nombre,grupo')
+        && gs[0].p_datos.nombre === 'Bahan bakar · Fuel' && gs[2].p_datos.grupo === 'personal' && b.cats.length === SUGL('reservas').length, JSON.stringify(gs.map(x => x.p_datos)));
       ok('SUG hecho: Gastos listo', (await p.$('[data-axw-estado="listo"]')) !== null, await txt(p, '[data-axw-estado]'));
     }
     await sinErroresJs(p, 'SUG ' + ancho);
     ok('SUG ' + ancho + ': sin frases sin traducir (id)', (await p.evaluate(() => window.__sinTrad.slice())).length === 0, JSON.stringify(await p.evaluate(() => window.__sinTrad.slice())));
     await ctx.close();
   }
-  // sin tipo: la lista genérica corta, en el idioma que ofrece la instancia
-  b = base(Object.assign({}, bbm, { modAct: { idiomas: { ofrecidos: ['en'], defecto: 'en' } } }));
+  // la genérica (la base decide cuál; aquí, en inglés), y lo que llega mal de la base se descarta: nombre que empieza por =, grupo raro → general, repetido
+  b = base(Object.assign({}, bbm, { sugeridas: { lista: listaSug('_generico', ['en']).concat([{ nombre: '=HYPERLINK(1)', grupo: 'general' }, { nombre: 'Salaries', grupo: 'personal' }, { nombre: 'Other', grupo: 'raro' }]) } }));
   ({ p, ctx } = await abre(nav, b, { idioma: 'en', url: '/ajustes/configurar/?modulo=gastos' }));
   await p.waitForSelector('[data-axw-n4-cat="sugeridas"]', { timeout: 3000 }).catch(() => {});
-  ok('SUG sin tipo: la genérica corta, en inglés', JSON.stringify(await fichas(p)) === JSON.stringify(SUG._generico.map(x => x.en)), JSON.stringify(await fichas(p)));
-  ok('SUG sin tipo (en): «Use these»', (await txt(p, '[data-axw-accion="enviar"]')) === 'Use these', await txt(p, '[data-axw-accion="enviar"]'));
+  ok('SUG la lista de la base, sin lo que no vale (= al principio) ni repetidos', JSON.stringify(await fichas(p)) === JSON.stringify(SUG._generico.map(x => x[1]).concat(['Other'])), JSON.stringify(await fichas(p)));
+  ok('SUG (en): «Use these»', (await txt(p, '[data-axw-accion="enviar"]')) === 'Use these', await txt(p, '[data-axw-accion="enviar"]'));
   // todo desmarcado y nada escrito: no deja seguir y no llama
   await p.click('[data-axw-plegado="n4-sugeridas"] > summary');
   for (const c of await p.$$('[data-axw-plegado="n4-sugeridas"] input[type=checkbox]')) await c.uncheck();
@@ -403,7 +416,7 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:/i.test(String(t || ''));
   // dos marcadas y una propia: solo esas, la propia en «general»
   const cks = await p.$$('[data-axw-plegado="n4-sugeridas"] input[type=checkbox]');
   await cks[0].check(); await cks[4].check(); await p.fill('[data-axw-campo="sug_propia"]', 'Office supplies');
-  ok('SUG las fichas siguen a lo marcado y a la propia', JSON.stringify(await fichas(p)) === JSON.stringify([SUG._generico[0].en, SUG._generico[4].en, 'Office supplies']), JSON.stringify(await fichas(p)));
+  ok('SUG las fichas siguen a lo marcado y a la propia', JSON.stringify(await fichas(p)) === JSON.stringify([SUG._generico[0][1], SUG._generico[4][1], 'Office supplies']), JSON.stringify(await fichas(p)));
   await clic(p, 'enviar'); await p.waitForTimeout(500);
   ok('SUG solo lo marcado y la propia (en «general»)', JSON.stringify(catGuardadas(b).map(x => [x.p_datos.nombre, x.p_datos.grupo])) === JSON.stringify([['Salaries', 'personal'], ['Taxes', 'impuestos'], ['Office supplies', 'general']]),
      JSON.stringify(catGuardadas(b).map(x => x.p_datos)));
@@ -422,14 +435,29 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:/i.test(String(t || ''));
   ({ p, ctx } = await abre(nav, b, { idioma: 'id', url: '/ajustes/configurar/?modulo=gastos' }));
   await p.waitForSelector('[data-axw-n4-cat="sugeridas"]', { timeout: 3000 }).catch(() => {});
   await clic(p, 'enviar'); await p.waitForTimeout(700);
-  ok('SUG nombre_repetido a mitad: sigue con todas, sin error', catGuardadas(b).length === SUG.reservas.length && !(await errorTxt(p)) && (await p.$('[data-axw-estado="listo"]')) !== null, await errorTxt(p));
+  ok('SUG nombre_repetido a mitad: sigue con todas, sin error', catGuardadas(b).length === SUGL('reservas').length && !(await errorTxt(p)) && (await p.$('[data-axw-estado="listo"]')) !== null, await errorTxt(p));
   await ctx.close();
-  // sin catálogo (fichero que no está): el campo libre de siempre
-  b = base(Object.assign({}, bbm, { sugeridas: false }));
-  ({ p, ctx } = await abre(nav, b, { idioma: 'id', url: '/ajustes/configurar/?modulo=gastos' }));
-  await p.waitForSelector('[data-axw-n4-cat="ninguna"]', { timeout: 3000 }).catch(() => {});
-  ok('SUG sin catálogo: el campo libre de siempre y el botón de siempre', !(await p.$('[data-axw-n4-cat="sugeridas"]')) && (await p.$eval('[data-axw-campo="cat_nombre"]', e => e.checkVisibility())) && (await txt(p, '[data-axw-accion="enviar"]')) !== 'Pakai ini');
+  // en Ajustes › Configurar módulos (la ventana de Ajustes): las mismas sugeridas y su botón dice «Use these»
+  b = base(Object.assign({}, bbm, { sugeridas: { tipo: 'reservas', idiomas: ['en'] } }));
+  ({ p, ctx } = await abre(nav, b, { idioma: 'en', pag: 'ajustes' }));
+  await p.waitForSelector('[data-pm-fila]', { timeout: 4000 }).catch(() => {});
+  const filaCat = await p.$('[data-accion="pm-editar"][data-pm-paso="categorias_gasto"], [data-pm-paso="categorias_gasto"][data-accion]');
+  if (filaCat) {
+    await filaCat.click();
+    await p.waitForSelector('[data-axw-n4-cat="sugeridas"]', { timeout: 3000 }).catch(() => {});
+    ok('SUG en Ajustes: las sugeridas y el botón «Use these»', !!(await p.$('[data-axw-n4-cat="sugeridas"]')) && (await txt(p, '[data-accion="pm-guardar"][data-pm-paso="categorias_gasto"]')) === 'Use these',
+       await txt(p, '[data-accion="pm-guardar"][data-pm-paso="categorias_gasto"]'));
+  } else ok('SUG en Ajustes: la fila de categorías se puede abrir', false, await p.evaluate(() => [...document.querySelectorAll('[data-pm-paso]')].map(e => e.getAttribute('data-accion') + ':' + e.getAttribute('data-pm-paso')).join(' ')));
   await ctx.close();
+  // sin la función en la base (hoy) o si falla: el campo libre de siempre y el botón de siempre
+  for (const [nom, sg] of [['sin la función en la base', false], ['la lectura falla', 'cae']]) {
+    b = base(Object.assign({}, bbm, { sugeridas: sg }));
+    ({ p, ctx } = await abre(nav, b, { idioma: 'id', url: '/ajustes/configurar/?modulo=gastos' }));
+    await p.waitForSelector('[data-axw-n4-cat="ninguna"]', { timeout: 3000 }).catch(() => {});
+    ok('SUG ' + nom + ': el campo libre de siempre y el botón de siempre', !(await p.$('[data-axw-n4-cat="sugeridas"]')) && (await p.$eval('[data-axw-campo="cat_nombre"]', e => e.checkVisibility())) && (await txt(p, '[data-axw-accion="enviar"]')) !== 'Pakai ini');
+    await sinErroresJs(p, 'SUG ' + nom);
+    await ctx.close();
+  }
 
   // ── 9. es/en/id a 390 y 1440: sin scroll horizontal, sin frases sin traducir, sin códigos sin frase ─────────────────────────────────────────
   const recorridos = [['base', 'negocio'], ['base', 'idiomas'], ['base', 'correo'], ['reservas-producto', 'taller_revisiones'], ['reservas-producto', 'taller_recambios'], ['reservas-producto', 'taller_mecanicos'], ['gastos', 'categorias_gasto']];

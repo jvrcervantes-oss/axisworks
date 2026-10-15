@@ -341,8 +341,6 @@
   }
   function vacia(e) { while (e.firstChild) e.removeChild(e.firstChild); return e; }
   var RAIZ = (function () { var p = location.pathname, i = p.indexOf('/ajustes/'); return i >= 0 ? p.slice(0, i + 1) : '/'; })();
-  // el catálogo de categorías sugeridas va al lado de este fichero (assets/); leído al cargar: después document.currentScript ya no es este
-  var URL_SUGERIDAS = ((document.currentScript && document.currentScript.src) || '').replace(/[^\/]*$/, '') + 'categorias_gasto_sugeridas.json';
   var CLS_IN = 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md';
   var CLS_ETQ = 'font-label-md text-label-md text-on-surface';
   var CLS_AYUDA = 'font-body-sm text-body-sm text-outline';
@@ -594,31 +592,22 @@
   // code + hint (nombre_repetido, nombre_no_valido, grupo_no_valido, 42501). Editar o desactivar sigue en la pantalla de Gastos.
   var GRUPOS_GASTO = ['general', 'suelo', 'construccion', 'comercial', 'marketing', 'personal', 'impuestos', 'financiero'];
   var BORRADOR_CAT = null;
-  // Sugeridas (owner vía agencia-c0, 15-oct-2026: «¿por qué Expense categories es obligatorio?»): con CERO categorías, el paso propone una lista ya hecha
-  // para el tipo de negocio, todas marcadas, y el botón principal dice «Usar estas». La lista es DATO (categorias_gasto_sugeridas.json, por
-  // config_instancia.tipo_erp, que da modulos_activos_datos().tipo como clave; sin tipo, _generico), nunca código. Cada nombre en los idiomas que
-  // ofrece la instancia («id · en» en bbm; sin idiomas, el de la página). Sin catálogo o sin lectura, el campo libre de siempre.
-  // Decisión por defecto de bbm-comodidad-2 (revertir: borrar el .json).
-  var IDIOMAS_SUG = ['es', 'en', 'id'];
+  // Sugeridas (owner vía agencia-c0, 15-oct-2026: «¿por qué Expense categories es obligatorio?»): con CERO categorías, el paso propone una lista ya
+  // hecha para el tipo de negocio, todas marcadas, y el botón principal dice «Usar estas». La lista la da LA BASE (agencia-c0, decisión por defecto:
+  // «nada del ERP fuera de su base», como taller_lista_basica): gasto_categorias_sugeridas() → [{nombre, grupo}], con el nombre ya en los idiomas de
+  // la instancia; la escribe Backend (bbm-resumen). Mientras no exista en la base, la pantalla no la llama (el contrato front↔base pararía la
+  // publicación) y el paso se queda con el campo libre de siempre: el punto de enganche es PS.sugeridasGasto (una función → promesa de esa lista),
+  // que hoy solo pone el arnés. Lo que llegue se vuelve a mirar aquí (nombre 1-80 sin = + - @ al principio, grupo de la lista, sin repetidos) y la
+  // base comprueba cada alta.
   function nombreValido(n) { return !!n && n.length <= 80 && !/^[=+\-@]/.test(n); }
   function sugeridas() {
-    var cat = (typeof fetch === 'function' ? fetch(URL_SUGERIDAS, { cache: 'no-cache', credentials: 'same-origin' }) : Promise.reject(null))
-      .then(function (r) { return r && r.ok ? r.json() : null; }).then(null, function () { return null; });
-    var mod = sesion().then(function (sb) { return sb ? resultado(sb.rpc('modulos_activos_datos')) : { ok: false }; });
-    return Promise.all([cat, mod]).then(function (x) {
-      var c = x[0], d = x[1] && x[1].ok && x[1].data && typeof x[1].data === 'object' ? x[1].data : {};
-      if (!c || typeof c !== 'object' || Array.isArray(c)) return null;
-      var tipo = typeof d.tipo === 'string' && Array.isArray(c[d.tipo]) ? d.tipo : '_generico';
-      var ofr = d.idiomas && Array.isArray(d.idiomas.ofrecidos) ? d.idiomas.ofrecidos : [], idi = [];
-      ofr.forEach(function (i) { i = texto(i).slice(0, 2); if (IDIOMAS_SUG.indexOf(i) >= 0 && idi.indexOf(i) < 0) idi.push(i); });
-      if (!idi.length) { var pg = String(document.documentElement.lang || '').slice(0, 2); idi.push(IDIOMAS_SUG.indexOf(pg) >= 0 ? pg : 'es'); }
+    var f = typeof PS.sugeridasGasto === 'function' ? PS.sugeridasGasto : null;
+    if (!f) return Promise.resolve(null);
+    return Promise.resolve().then(f).then(function (l) {
+      if (!Array.isArray(l)) return null;
       var vistos = {};
-      return (Array.isArray(c[tipo]) ? c[tipo] : []).map(function (e) {
-        if (!e || typeof e !== 'object') return null;
-        var partes = [];
-        idi.forEach(function (i) { var t = texto(e[i]).trim(); if (t && partes.indexOf(t) < 0) partes.push(t); });
-        var n = partes.join(' · ');
-        if (n.length > 80) n = partes[0] || '';
+      return l.map(function (e) {
+        var n = e && typeof e === 'object' ? texto(e.nombre).trim() : '';
         if (!nombreValido(n) || vistos[n.toLowerCase()]) return null;
         vistos[n.toLowerCase()] = true;
         return { nombre: n, grupo: GRUPOS_GASTO.indexOf(e.grupo) >= 0 ? e.grupo : 'general' };
@@ -646,7 +635,8 @@
       var sug = null;   // con las sugeridas a la vista: { filas: [{nombre, grupo, chk}], propia }
       function pintaSugeridas(l) {
         // lo de siempre (lista vacía y campo libre) se esconde; a la vista, la lista como fichas y el botón principal «Usar estas»
-        [].forEach.call(z.children, function (n) { n.hidden = true; });
+        // display:none y no solo `hidden`: en la instancia no hay regla [hidden] y las filas llevan .flex, que le gana (advisor, 15-oct)
+        [].forEach.call(z.children, function (n) { n.hidden = true; n.style.display = 'none'; });
         var bloque = el('div', { class: 'flex flex-col gap-3 min-w-0', 'data-axw-n4-cat': 'sugeridas' });
         bloque.appendChild(el('p', { class: CLS_ETQ, text: U('n4_sug_titulo') }));
         var fichas = el('ul', { class: 'flex flex-wrap gap-2', role: 'list', 'data-axw-n4-sug': 'fichas' });

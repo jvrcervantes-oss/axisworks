@@ -141,6 +141,8 @@
       gBtn.textContent = d.k < d.m ? U('siguiente') : U('guardar');
       aBtn.hidden = !(d.k > 1);
     });
+    // un paso que decide su botón DESPUÉS de leer (las categorías sugeridas: «Usar estas») lo avisa con 'axw-boton' {texto}, como en el asistente
+    caja.addEventListener('axw-boton', function (ev) { var t = String(ev.detail || ''); if (t) gBtn.textContent = t; });
     var ctl = comp.pinta(caja, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: p.hecho });
     var motivo = null;
     // sociedad_guarda no guarda motivo: no se pide (revisor 12-oct); y se decide por el VALOR guardado, no por «hecho» (repaso 12-oct)

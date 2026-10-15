@@ -52,16 +52,16 @@
 /* P5 (bbm-comodidad, 15-oct-2026; owner: «aprovechando el espacio … mostrando datos poco a poco»; Diseño consultado): el paso en dos columnas
    cuando la TARJETA tiene sitio (container query, no media query: el carril ya come 324 px). Izquierda = lo que se rellena (≤ 640 px); derecha
    (320 px, pegajosa) = lo que el paso enseña de lado. Sin sitio, una columna. «Para qué sirve» va ARRIBA de los campos (15-oct, ver .axw-why);
-   un paso que no enseña nada de lado se queda en una columna. */
+   un paso que no enseña nada de lado (vacío, o todo lo de dentro con `hidden`) se queda en una columna. */
 [data-axw-as="tarjeta"]{container-type:inline-size}
 .axw-dos,.axw-izq,.axw-lado{display:flex;flex-direction:column;gap:20px;min-width:0}
 @media (min-width:1360px){.axw-wz[data-carril="1"] [data-axw-as="tarjeta"][data-axw-vista="paso"]{max-width:64rem!important}}
 @container (min-width:900px){
   .axw-dos{display:grid;grid-template-columns:minmax(0,640px) 320px;justify-content:space-between;align-items:start;gap:32px}
   .axw-lado{position:sticky;top:16px}
-  .axw-dos:has(>.axw-lado:empty){display:flex}
+  .axw-dos:has(>.axw-lado:not(:has(>:not([hidden])))){display:flex}
 }
-.axw-lado:empty{display:none}
+.axw-lado:not(:has(>:not([hidden]))){display:none}   /* vacía, o con todo lo de dentro oculto (hidden): sin columna en blanco (revisor de 87801b8) */
 </style>
 <div class="flex flex-col w-full gap-6" data-axw-setup="asistente">
 <div class="lw-cabecera flex flex-col md:flex-row md:items-end gap-4 bg-surface-container-lowest p-6 md:p-8 rounded-2xl border border-outline-variant">

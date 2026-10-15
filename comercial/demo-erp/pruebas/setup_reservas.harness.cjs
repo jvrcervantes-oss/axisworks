@@ -586,7 +586,10 @@ async function rellenaAlquiler(p, o = {}) {
      p5a.oculto && p5a.exp === 'false' && p5a.rol === 'switch' && !p5a.falta && p5a.fig === 'none' && p5a.km === '60', JSON.stringify(p5a));
   const p5l = await p.evaluate(() => { const i = document.querySelector('[data-axw-as="izq"]').getBoundingClientRect(), l = document.querySelector('[data-axw-as="lado"]').getBoundingClientRect();
     return { lado: l.left >= i.right, fig: !!document.querySelector('[data-axw-as="lado"] [data-axw-sr-figura]'), why: !!document.querySelector('[data-axw-as="izq"] > .axw-why:first-child') }; });   // la ilustración vive a la derecha aunque esté oculta
-  ok('P5 1440: dos columnas — a la derecha la ilustración; «para qué sirve» arriba de los campos (15-oct)', p5l.lado && p5l.fig && p5l.why, JSON.stringify(p5l));
+  ok('P5 1440: la ilustración vive en la columna de lado; «para qué sirve» arriba de los campos (15-oct)', p5l.fig && p5l.why, JSON.stringify(p5l));
+  const p5v = await p.evaluate(() => { const l = document.querySelector('[data-axw-as="lado"]'); return { display: getComputedStyle(l).display, ancho: Math.round(l.getBoundingClientRect().width),
+    izq: Math.round(document.querySelector('[data-axw-as="izq"]').getBoundingClientRect().width) }; });
+  ok('P5 1440 entrega apagada: sin columna de lado en blanco (la ilustración oculta no la sostiene)', p5v.display === 'none' && p5v.izq > 0, JSON.stringify(p5v));
   if (SHOT) {   // P5: el «después» de la entrega apagada, para compararlo con el «antes» (todo a la vez)
     await p.screenshot({ path: path.join(SHOT, 'p5_entrega_apagada_1440.png'), fullPage: true });
     await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(150);
