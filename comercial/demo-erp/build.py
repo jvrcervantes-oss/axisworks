@@ -5161,6 +5161,28 @@ EDITOR_SIN_CONTRATO = (
      "          function pasaASinContrato() {\n            // Lo que trajo el contrato anterior se suelta y se vacía: el cliente se elige de nuevo.\n            estadoContrato.id = null; estadoContrato.numero = ''; estadoContrato.clienteId = null; estadoContrato.sinContrato = true;\n            sueltaCamposDoc();\n            ['cliente_nombre', 'cliente_documento', 'cliente_email', 'cliente_domicilio', 'proyecto_nombre'].forEach(function (k) { ponCampoDoc(k, ''); });\n            if (delC) delC.limpia();\n            btnC.textContent = edT('— sin contrato —'); btnCli.textContent = edT('— elige el cliente —');\n            notaC.textContent = edT('El documento irá a nombre del cliente que elijas, sin contrato.');\n            pintaModoContrato(); repintaPreview();\n          }\n"),
 )
 
+# «Enviar por email» de factura y recibí en una instancia SIN el módulo contratos (bbm-correo, 15-oct-2026). El botón llama a la edge
+# send-contract-email (pinta el PDF en el servidor), que es del módulo contratos: con él apagado no existe (404) y `publica_instancia --simula`
+# paraba en rojo (contrato_front: la contaba alcanzable por `usada_por` facturas/recibos de erp/modulos.py, que se retira en el mismo cambio).
+# Con contratos apagado (dato de la base: axwModuloActivo devuelve false solo entonces) el botón de la barra se oculta —también cuando la base
+# contesta después de montarla—, la ficha no lo ofrece y enviaDocMail no sale a la red; con contratos encendido, o sin saber, lo de siempre
+# (y en esa ventana apagados_instancia.js corta la llamada con 404 sin salir a la red). Para que bbm envíe facturas por correo hace falta la
+# edge en la instancia con su render (para después). Lawang no pasa por aquí. Lo fija test_oculta_por_modulo.py (casos en Node).
+CORREO_DOC_SIN_CONTRATOS = (
+    ('intranet/v4/assets/editores.js', "  function enviaDocMail(sb, vals, saved, alEnviado) {\n",
+     "  function enviaDocMail(sb, vals, saved, alEnviado) {\n"
+     "    if (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false) { toastMal(edT('No se pudo enviar')); return; }\n"),
+    ('intranet/v4/assets/editores.js',
+     "    var bMail = btn('Enviar por email', function () { enviaDocMail(ctx.sb, ctx.getVals(), ctx.saved, ctx.alEnviado); });\n",
+     "    var bMail = btn('Enviar por email', function () { enviaDocMail(ctx.sb, ctx.getVals(), ctx.saved, ctx.alEnviado); });\n"
+     "    var ocultaMail = function () { if (typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('contratos') === false) bMail.style.display = 'none'; };\n"
+     "    ocultaMail();\n"
+     "    if (window.AXW_MODULOS_LISTOS && window.AXW_MODULOS_LISTOS.then) window.AXW_MODULOS_LISTOS.then(ocultaMail);\n"),
+    ('intranet/v4/assets/datos.js',
+     "    if (!f0.anulada) acciones.push({ texto: 'Enviar por email', onClick: V4acc('enviarDocumento', f0.id) });\n",
+     "    if (!f0.anulada && contratosActivo()) acciones.push({ texto: 'Enviar por email', onClick: V4acc('enviarDocumento', f0.id) });\n"),
+)
+
 # Alta de usuario en una instancia SIN el módulo contratos (bbm-p40, 13-oct-2026). El botón «Nuevo usuario» leía primero el catálogo de tipos
 # de contrato (plantillas_contrato_datos, del módulo contratos) y, si no lo podía leer, NO abría el alta: con contratos apagado no se leía
 # nunca, así que en bbm no se podía dar de alta a nadie. Ahora espera a saber los módulos y, con contratos apagado (dato de la base, no un
@@ -5322,10 +5344,10 @@ ACCESOS_POR_MODULO = (
 
 def oculta_por_modulo():
     """Marca en la copia lo que sobra con un módulo apagado (OCULTA_POR_MODULO) y pone en cada página su regla; y el editor de factura sin
-    contrato (EDITOR_SIN_CONTRATO), el alta de usuario sin contratos (ALTA_SIN_CONTRATOS) y Usuarios solo con las herramientas de módulos
+    contrato (EDITOR_SIN_CONTRATO), el correo de factura sin contratos (CORREO_DOC_SIN_CONTRATOS), el alta de usuario sin contratos (ALTA_SIN_CONTRATOS) y Usuarios solo con las herramientas de módulos
     encendidos (PERMISOS_POR_MODULO). Cada trozo exactamente una vez o el build para."""
     reglas = {}
-    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO + ALTA_SIN_CONTRATOS + PERMISOS_POR_MODULO + ACCESOS_POR_MODULO:
+    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO + CORREO_DOC_SIN_CONTRATOS + ALTA_SIN_CONTRATOS + PERMISOS_POR_MODULO + ACCESOS_POR_MODULO:
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
         open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, viejo, nuevo, 'oculta_por_modulo ' + rel_))
