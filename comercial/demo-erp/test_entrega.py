@@ -229,21 +229,22 @@ bloque_lineas = re.findall(r"'((?:[^'\\]|\\.)*)'\s*:\s*'", bloque)
 repetidas = sorted({c for c in bloque_lineas if bloque_lineas.count(c) > 1})
 mira('ninguna clave repetida en EN_ENT' + (' (' + ', '.join(repetidas) + ')' if repetidas else ''), not repetidas)
 
-# Historial: lo que firma el sistema o el estudio (la carga inicial, «migración 20261008138500») sale como «Sistema · Configuración inicial» y su motivo
-# interno no se pinta (verificador de bbm, 15-oct-2026); lo que firma una persona (correo, o su id de usuario) sale tal cual.
-m_sis = re.search(r'\n  function deSistema\(q\) \{.*?\n  \}', JS, re.S)
-mira('el historial distingue al sistema de una persona (deSistema)', bool(m_sis))
-if m_sis:
-    casos_sis = {'admin@bbm.com': False, 'a"<svg onload="x">@x.com': False, '0b0f6a9e-1c2d-4e5f-8a9b-0c1d2e3f4a5b': False,
-                 'migración 20261008138500': True, 'carga inicial': True, 'postgres': True, '': True}
-    r_sis = subprocess.run(['node', '-e', m_sis.group(0) + ';process.stdout.write(JSON.stringify(' + json.dumps(list(casos_sis)) + '.map(deSistema).concat([deSistema(null)])))'],
+# Historial, por marcador explícito (agencia-c0, 15-oct-2026, medido en la base de bbm): siembra (vacío, postgres, «migración …», sistema:sql) =
+# «Sistema · Configuración inicial»; @axisworks.studio = «AxisWorks (soporte)», los dos sin su motivo; otro sistema:<rol> = «Sistema» con su motivo;
+# una persona, tal cual (también si firma con un nombre: no se oculta por descarte).
+m_aut = re.search(r'\n  function autorDe\(q\) \{.*?\n  \}', JS, re.S)
+mira('el historial clasifica al autor (autorDe)', bool(m_aut))
+if m_aut:
+    casos_aut = {'admin@bbm.com': 'persona', 'a"<svg onload="x">@x.com': 'persona', '0b0f6a9e-1c2d-4e5f-8a9b-0c1d2e3f4a5b': 'persona', 'Dion': 'persona',
+                 'migración 20261008138500': 'inicial', 'postgres': 'inicial', 'sistema:sql': 'inicial', '': 'inicial',
+                 'soporte@axisworks.studio': 'soporte', 'sistema:aaas': 'sistema'}
+    r_aut = subprocess.run(['node', '-e', m_aut.group(0) + ';process.stdout.write(JSON.stringify(' + json.dumps(list(casos_aut)) + '.map(autorDe).concat([autorDe(null)])))'],
                            capture_output=True, text=True, encoding='utf-8')
-    obt = json.loads(r_sis.stdout or 'null')
-    quiere = list(casos_sis.values()) + [True]
-    mira('deSistema: correo o id de usuario = persona; migración, carga inicial, postgres, vacío o null = sistema' + ('' if obt == quiere else ' (sale %r)' % obt),
-         obt == quiere)
-mira('una fila del sistema pinta «Sistema» y «Configuración inicial», nunca su quien ni su motivo',
-     "C.celda(sis ? T('Sistema') : x && x.quien), C.celda(sis ? T('Configuración inicial') : x && x.motivo)" in CODIGO)
+    obt = json.loads(r_aut.stdout or 'null')
+    quiere = list(casos_aut.values()) + ['inicial']
+    mira('autorDe: persona / inicial / soporte / sistema por marcador explícito' + ('' if obt == quiere else ' (sale %r)' % obt), obt == quiere)
+mira('la fila pinta «Sistema» o «AxisWorks (soporte)» en vez del autor, y el motivo solo de una persona o de un sistema:<rol>',
+     "C.celda(QUIEN_DE[au] ? T(QUIEN_DE[au]) : x && x.quien)" in CODIGO and "C.celda(au === 'inicial' ? T('Configuración inicial') : au === 'soporte' ? '—' : x && x.motivo)" in CODIGO)
 
 if fallos:
     print('FALLOS (%d de %d):\n  ' % (len(fallos), casos) + '\n  '.join(fallos))
