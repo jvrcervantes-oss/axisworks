@@ -585,8 +585,8 @@ async function rellenaAlquiler(p, o = {}) {
   ok('P5 entrega apagada y vacía (con el km_max 60 que trae la base): solo el interruptor (role=switch, aria-expanded=false); sin bloques, sin «Falta completar» y sin ilustración',
      p5a.oculto && p5a.exp === 'false' && p5a.rol === 'switch' && !p5a.falta && p5a.fig === 'none' && p5a.km === '60', JSON.stringify(p5a));
   const p5l = await p.evaluate(() => { const i = document.querySelector('[data-axw-as="izq"]').getBoundingClientRect(), l = document.querySelector('[data-axw-as="lado"]').getBoundingClientRect();
-    return { lado: l.left >= i.right, fig: !!document.querySelector('[data-axw-as="lado"] [data-axw-sr-figura]'), why: !!document.querySelector('[data-axw-as="lado"] .axw-why') }; });   // la ilustración vive a la derecha aunque esté oculta
-  ok('P5 1440: dos columnas — a la derecha «para qué sirve» y la ilustración', p5l.lado && p5l.fig && p5l.why, JSON.stringify(p5l));
+    return { lado: l.left >= i.right, fig: !!document.querySelector('[data-axw-as="lado"] [data-axw-sr-figura]'), why: !!document.querySelector('[data-axw-as="izq"] > .axw-why:first-child') }; });   // la ilustración vive a la derecha aunque esté oculta
+  ok('P5 1440: dos columnas — a la derecha la ilustración; «para qué sirve» arriba de los campos (15-oct)', p5l.lado && p5l.fig && p5l.why, JSON.stringify(p5l));
   if (SHOT) {   // P5: el «después» de la entrega apagada, para compararlo con el «antes» (todo a la vez)
     await p.screenshot({ path: path.join(SHOT, 'p5_entrega_apagada_1440.png'), fullPage: true });
     await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(150);
@@ -748,9 +748,14 @@ async function rellenaAlquiler(p, o = {}) {
     ok(paso + ' ' + idioma + ' ' + ancho + ': se mide esta pantalla (no la siguiente)', !!(await p.$('[data-axw-sr="' + paso + '"]')));
     if (paso === 'entrega') ok('S1d entrega ' + idioma + ' ' + ancho + ': ≤ 3 campos a la vista en la parte en curso', (await visibles(p, '[data-axw-sr="entrega"]')) <= 3, await visLista(p));
     if (paso === 'flota') ok('S1c flota ' + idioma + ' ' + ancho + ': ≤ 3 campos a la vista en la parte en curso', (await visibles(p, '[data-axw-sr="flota"]')) <= 3, await visLista(p));
-    {   // P5: a 390 la explicación va DESPUÉS de los campos; a 1440, a su derecha
-      const g = await p.evaluate(() => { const i = document.querySelector('[data-axw-as="izq"]').getBoundingClientRect(), l = document.querySelector('[data-axw-as="lado"]').getBoundingClientRect(); return { iR: i.right, iB: i.bottom, lL: l.left, lT: l.top }; });
-      ok(paso + ' ' + idioma + ' ' + ancho + ': ' + (ancho === 390 ? 'la explicación debajo de los campos' : 'dos columnas'), ancho === 390 ? g.lT >= g.iB : g.lL >= g.iR, JSON.stringify(g));
+    {   // «Para qué sirve» / «Si lo saltas» ARRIBA de los campos en todos los anchos (owner vía agencia-c0, 15-oct); lo que el paso enseña de lado
+        // (P5) va a la derecha a 1440 y debajo a 390; un paso sin nada de lado no deja columna vacía
+      const g = await p.evaluate(() => { const i = document.querySelector('[data-axw-as="izq"]'), l = document.querySelector('[data-axw-as="lado"]'), pq = document.querySelector('[data-axw-as="por-que"]');
+        const c = [...i.querySelectorAll('[data-axw-campo]')].find(e => e.checkVisibility()), ri = i.getBoundingClientRect(), rl = l.getBoundingClientRect();
+        return { arriba: !!pq && i.firstElementChild === pq && !!c && pq.getBoundingClientRect().bottom <= c.getBoundingClientRect().top,
+                 lado: l.children.length ? (rl.left >= ri.right ? 'derecha' : rl.top >= ri.bottom ? 'debajo' : 'encima') : getComputedStyle(l).display === 'none' ? 'vacío oculto' : 'vacío a la vista' }; });
+      ok(paso + ' ' + idioma + ' ' + ancho + ': «para qué sirve» arriba de los campos; lo de lado ' + (ancho === 390 ? 'debajo' : 'a la derecha'),
+         g.arriba && (g.lado === 'vacío oculto' || g.lado === (ancho === 390 ? 'debajo' : 'derecha')), JSON.stringify(g));
     }
     const anchoDoc = await p.evaluate(() => document.documentElement.scrollWidth);
     ok(paso + ' ' + idioma + ' ' + ancho + ': sin scroll horizontal', anchoDoc <= ancho, String(anchoDoc));

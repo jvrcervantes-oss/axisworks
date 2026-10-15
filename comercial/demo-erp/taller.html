@@ -101,6 +101,23 @@
   .tl-tarjeta{padding:16px}
   .tl-raiz[data-modo="paso"] .tl-paso{min-height:calc(100vh - 140px);min-height:calc(100dvh - 140px);padding-bottom:calc(var(--tl-pie) + 24px + env(safe-area-inset-bottom))}
   .tl-pie{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:8px 16px calc(8px + env(safe-area-inset-bottom));background:rgb(var(--tema-surface-container-lowest, 255 255 255));border-top:1px solid rgb(var(--tema-outline-variant, 197 200 188))}
+  /* Listas por modelo en el móvil (verificador del tren 4g, 15-oct-2026: la tabla medía 564 px en 326, la clave se partía letra a letra y los botones
+     salían con el texto en vertical): cada revisión es una tarjeta — los dos nombres, posición y activa con su rótulo, y los botones debajo. La clave
+     no se enseña (la pone el sistema y no se edita). En edición, las tres casillas a todo lo ancho con su rótulo encima. */
+  .tl-tabla-l,.tl-tabla-l tbody{display:block;width:100%;min-width:0}
+  .tl-tabla-l thead{display:none}
+  .tl-tabla-l tr{display:flex;flex-wrap:wrap;gap:4px 16px;padding:12px 0;border-bottom:1px solid rgb(var(--tema-outline-variant, 197 200 188))}
+  .tl-tabla-l tr[data-l-editando]{flex-direction:column;gap:8px}
+  .tl-tabla-l td{display:block;padding:0;border:0;min-width:0;overflow-wrap:anywhere;flex:1 1 100%}
+  .tl-tabla-l tr:not([data-l-editando]) td[data-l-col="orden"],.tl-tabla-l tr:not([data-l-editando]) td[data-l-col="activa"]{flex:0 1 auto}
+  .tl-tabla-l td[data-l-col="clave"]{display:none}
+  .tl-tabla-l td[data-l-col="nombre_id"]{font-weight:600;font-size:16px}
+  .tl-tabla-l td[data-etq]::before{content:attr(data-etq) ": ";color:rgb(var(--tema-on-surface-variant, 68 72 63));font-size:13px}
+  .tl-tabla-l tr[data-l-editando] td[data-etq]::before{display:block;content:attr(data-etq);font-weight:600;font-size:14px;margin-bottom:4px;color:inherit}
+  .tl-tabla-l tr[data-l-editando] td[data-l-col="activa"]{display:none}
+  .tl-tabla-l input[type="text"]{width:100%;min-width:0;min-height:48px;font-size:16px}
+  .tl-tabla-l .tl-fila-acc{padding-top:4px}
+  .tl-tabla-l .tl-fila-acc .axw-boton{min-height:44px;white-space:nowrap}
 }
 </style>
 
@@ -1499,17 +1516,18 @@
   function filaRev(r, editando) {
     var tr = h('tr', { 'data-l-rev': String(r.id), 'data-l-editando': editando ? '1' : null }), id = String(r.id);
     var celdas = editando
-      ? [h('td', null, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_id', value: String(r.nombre_id || ''), 'aria-label': T('Nombre (indonesio)') })]),
-         h('td', null, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_en', value: String(r.nombre_en || ''), 'aria-label': T('Nombre (inglés)') })]),
-         h('td', null, [h('input', { type: 'text', inputmode: 'numeric', maxlength: '4', 'data-f': 'orden', value: String(r.orden), 'aria-label': T('Posición') })]),
-         h('td', { text: T(r.activa === true ? 'Sí' : 'No') }),
+      ? [h('td', { 'data-l-col': 'nombre_id', 'data-etq': T('Nombre (indonesio)') }, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_id', value: String(r.nombre_id || ''), 'aria-label': T('Nombre (indonesio)') })]),
+         h('td', { 'data-l-col': 'nombre_en', 'data-etq': T('Nombre (inglés)') }, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_en', value: String(r.nombre_en || ''), 'aria-label': T('Nombre (inglés)') })]),
+         h('td', { 'data-l-col': 'orden', 'data-etq': T('Posición') }, [h('input', { type: 'text', inputmode: 'numeric', maxlength: '4', 'data-f': 'orden', value: String(r.orden), 'aria-label': T('Posición') })]),
+         h('td', { 'data-l-col': 'activa', text: T(r.activa === true ? 'Sí' : 'No') }),
          h('td', null, [h('div', { class: 'tl-fila-acc' }, [h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-guarda', 'data-rev-id': id, 'data-primario': '1', text: T('Guardar') }),
            h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-cancela', 'data-rev-id': id, text: T('Cancelar') })])])]
-      : [h('td', { text: String(r.nombre_id || '') }), h('td', { text: String(r.nombre_en || '') }), h('td', { text: String(r.orden) }),
-         h('td', { text: T(r.activa === true ? 'Sí' : 'No') }),
+      : [h('td', { 'data-l-col': 'nombre_id', text: String(r.nombre_id || '') }), h('td', { 'data-l-col': 'nombre_en', text: String(r.nombre_en || '') }),
+         h('td', { 'data-l-col': 'orden', 'data-etq': T('Posición'), text: String(r.orden) }),
+         h('td', { 'data-l-col': 'activa', 'data-etq': T('Activa'), text: T(r.activa === true ? 'Sí' : 'No') }),
          h('td', null, [h('div', { class: 'tl-fila-acc' }, [h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-edita', 'data-rev-id': id, text: T('Editar') }),
            h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-activa', 'data-rev-id': id, text: T(r.activa === true ? 'Desactivar' : 'Activar') })])])];
-    [h('td', { text: String(r.clave) })].concat(celdas).forEach(function (td) { tr.appendChild(td); });
+    [h('td', { 'data-l-col': 'clave', text: String(r.clave) })].concat(celdas).forEach(function (td) { tr.appendChild(td); });
     return tr;
   }
   function pintaListas(v, d) {

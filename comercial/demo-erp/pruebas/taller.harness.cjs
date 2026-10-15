@@ -794,8 +794,21 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     ok('S4 · las revisiones se leen: ninguna casilla a la vista en la tabla', JSON.stringify(await vistos('[data-tl="l-revisiones"]')) === '[]', JSON.stringify(await vistos('[data-tl="l-revisiones"]')));
     const idRev = await p.$eval('[data-l-rev]', e => e.getAttribute('data-l-rev'));
     const rev0 = B.revs.find(x => String(x.id) === idRev), activa0 = rev0.activa === true;
+    // a 390 (verificador del tren 4g: la tabla medía 564 px en 326 y los botones salían en vertical): cada revisión es una tarjeta que cabe
+    const tarjeta390 = async () => { await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(150);
+      const m = await p.evaluate(() => { const t = document.querySelector('[data-tl="l-revisiones"]'), caja = t.parentNode;
+        const bots = [...t.querySelectorAll('.axw-boton')].map(b => b.getBoundingClientRect());
+        return { tabla: Math.round(t.scrollWidth), caja: Math.round(caja.clientWidth), docX: document.documentElement.scrollWidth > innerWidth,
+                 botonAlto: Math.round(Math.max(...bots.map(b => b.height))), botonFuera: bots.some(b => b.right > innerWidth + 0.5),
+                 clave: [...t.querySelectorAll('td[data-l-col="clave"]')].some(e => e.checkVisibility()), fila: Math.round(Math.max(...[...t.querySelectorAll('tr[data-l-rev]')].map(e => e.getBoundingClientRect().height))) }; });
+      await p.setViewportSize({ width: 1440, height: 900 }); await p.waitForTimeout(150); return m; };
+    const m390 = await tarjeta390();
+    ok('Listas a 390: cada revisión cabe (sin scroll dentro de la tabla), sin la clave, botones de una línea y a la vista, fila de ≤ 200 px',
+       m390.tabla <= m390.caja && !m390.docX && !m390.clave && m390.botonAlto <= 60 && !m390.botonFuera && m390.fila <= 200, JSON.stringify(m390));
     await p.click(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-edita"]`);
     ok('S4 · «Editar» abre 3 casillas en esa fila: los dos nombres y la posición', JSON.stringify(await vistos('[data-tl="l-revisiones"]')) === '["nombre_id","nombre_en","orden"]', JSON.stringify(await vistos('[data-tl="l-revisiones"]')));
+    const e390 = await tarjeta390();
+    ok('Listas a 390 editando: las tres casillas caben, con los botones a la vista', e390.tabla <= e390.caja && !e390.docX && e390.botonAlto <= 60 && !e390.botonFuera, JSON.stringify(e390));
     const otra = await p.$$eval('[data-l-rev]', es => es[1] && es[1].getAttribute('data-l-rev'));
     await p.click(`[data-l-rev="${otra}"] [data-accion="tl-l-rev-edita"]`);
     ok('S4 · una fila a la vez: editar otra cierra la primera', JSON.stringify(await vistos('[data-tl="l-revisiones"]')) === '["nombre_id","nombre_en","orden"]' && !(await p.$(`[data-l-rev="${idRev}"] input`)));
