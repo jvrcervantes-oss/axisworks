@@ -1700,10 +1700,11 @@ window.AXW_ASIS = (function () {
     else if (!t.disabled) alterna(t.getAttribute('data-mod'));
   });
   $('sel-instancia').addEventListener('change', function () { elige(this.value); });
-  document.addEventListener('input', function (ev) { if (ev.target && ev.target.closest && ev.target.closest('#ficha .ax-techo')) ev.target.removeAttribute('aria-invalid'); });
   $('asis-form').addEventListener('submit', function (ev) { ev.preventDefault(); });   // Enter dispara el clic del botón de enviar (data-accion), no el submit
-  // un solo oyente de entrada para todo el asistente: texto, selects, radios y casillas; el campo lo dice data-campo / data-opc
+  // un solo oyente de entrada para todo el asistente: texto, selects, radios y casillas; el campo lo dice data-campo / data-opc.
+  // También quita la marca de error de un campo del Techo del AaaS en cuanto se vuelve a escribir en él.
   document.addEventListener('input', function (ev) {
+    if (ev.target && ev.target.closest && ev.target.closest('#ficha .ax-techo')) { ev.target.removeAttribute('aria-invalid'); return; }
     var c = ev.target.closest && ev.target.closest('#asis [data-campo],#asis [data-opc]');
     if (!c || !asis) return;
     if (c.hasAttribute('data-opc')) asis.despacha({ t: 'opc', modulo: c.getAttribute('data-opc'), on: c.checked });
