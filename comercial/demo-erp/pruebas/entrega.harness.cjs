@@ -104,6 +104,7 @@ window.LW_AUTH = Promise.resolve({ sb: sb, ficha: { rol: 'agente', herramientas:
 window.lwDatos = function (n, a) { return Promise.resolve(sb.rpc(n, a)).then(function (r) { return { data: r.data, error: r.error }; }); };
 window.LW_IDIOMA = '${idioma}';
 window.LW_EN = {};
+window.lwMonedaBase = function () { return 'IDR'; };   // la moneda de la instancia (de su base)
 window.lwLocale = function () { return window.LW_IDIOMA === 'en' ? 'en-GB' : 'es-ES'; };
 window.lwT = function (s) { s = String(s); if (window.LW_IDIOMA === 'en') { if (Object.prototype.hasOwnProperty.call(window.LW_EN, s)) return window.LW_EN[s]; if (!/^[\\s\u2014\u00b70-9.,%():\u2265\u2264-]*$/.test(s)) window.__sinEn.push(s); } return s; };
 window.lwIdiomaAplicar = function (raiz) { Array.prototype.forEach.call(raiz.querySelectorAll('[data-lwt]'), function (e) { e.textContent = window.lwT(e.textContent); }); };
@@ -600,6 +601,24 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
        && (await p.getAttribute(campo('precio_km'), 'aria-invalid')) === 'true' && await p.isVisible(campo('precio_km')));
     const d = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth })); ok(ancho + ' px · S4 entrega: sin scroll horizontal con los pasos', d.sw <= d.cw, J(d));
     console.log('  campos a la vista ' + ancho + ' px: ' + J(m));
+    await ctx.close();
+  }
+  {
+    // sin tarifa todavía: la moneda de la instancia sale puesta (plegada y junto al precio) y la primera tarifa pide solo el precio
+    const { base, p, ctx } = await abre({ base: { conServicio: true } });
+    ok('S4 entrega: sin tarifa, «Precio por km (IDR)» con la moneda de la instancia ya puesta', (await txt(p, 'label[for="en-f-precio_km"]')) === 'Precio por km (IDR)' && (await p.inputValue(campo('moneda'))) === 'IDR');
+    await p.fill(campo('sede_coord'), '-8.65, 115.21'); await p.fill(campo('precio_km'), '2500'); await p.fill(campo('motivo'), 'Primera tarifa'); await guardar(p);
+    await espera(p, () => document.querySelector('[data-en="exito"]:not(.axw-oculto)'));
+    const w = escritas(base).filter(x => x[0] === 'entrega_tarifa_guarda');
+    ok('S4 entrega: la primera tarifa se guarda con solo el precio, en la moneda de la instancia', w.length === 1 && w[0][1].p_datos.moneda === 'IDR' && w[0][1].p_datos.precio_km === 2500, J(w));
+    await ctx.close();
+  }
+  {
+    // guardar solo la sede, sin tarifa: la moneda puesta no cuenta como un cambio de tarifa
+    const { base, p, ctx } = await abre({ base: { conServicio: true } });
+    await p.fill(campo('sede_coord'), '-8.65, 115.21'); await p.fill(campo('motivo'), 'Solo la sede'); await guardar(p);
+    await espera(p, () => document.querySelector('[data-en="exito"]:not(.axw-oculto)'));
+    ok('S4 entrega: guardar solo la sede no intenta una tarifa por la moneda ya puesta', escritas(base).every(x => x[0] !== 'entrega_tarifa_guarda'), J(escritas(base)));
     await ctx.close();
   }
   console.log('  toques S4 entrega: antes 13 campos en una página; ahora 2 + 2 + 3 con «Siguiente» (2 toques más) o saltando con los botones de paso');

@@ -43,7 +43,7 @@
 <div data-en="estado" data-tipo="cargando" class="axw-vacio"></div>
 
 <form class="flex flex-col gap-8 axw-oculto" data-en="form" novalidate>
-<nav class="en-pasos" data-en="pasos" aria-label="Pasos">
+<nav class="en-pasos" data-en="pasos">
 <p class="en-paso-linea" data-en="paso-linea" aria-live="polite"></p>
 <div class="en-pasos-botones">
 <button class="axw-boton" type="button" data-accion="en-ir-paso" data-paso="1"><span data-lwt>1 · Sede</span></button>
@@ -130,7 +130,7 @@
     "Otra persona ha guardado cambios mientras tú editabas. Recarga para ver los valores nuevos: lo que has escrito se conserva.": "Orang lain telah menyimpan perubahan saat Anda mengedit. Muat ulang untuk melihat nilai baru: yang sudah Anda tulis tetap tersimpan.",
     "Recargar conservando lo que escribí": "Muat ulang, simpan tulisan saya",
     "1 · Sede": "1 · Kantor",
-    "2 · Tarifa": "2 · Tarif", "3 · Activar": "3 · Aktifkan", "‹ Atrás": "‹ Kembali", "Siguiente ›": "Lanjut ›",
+    "Pasos": "Langkah", "2 · Tarifa": "2 · Tarif", "3 · Activar": "3 · Aktifkan", "‹ Atrás": "‹ Kembali", "Siguiente ›": "Lanjut ›",
     "Paso 1 de 3 · ¿Desde dónde sale la moto?": "Langkah 1 dari 3 · Motor berangkat dari mana?",
     "Paso 2 de 3 · ¿Cuánto cobras?": "Langkah 2 dari 3 · Berapa tarifnya?",
     "Paso 3 de 3 · Recogida, activar y guardar": "Langkah 3 dari 3 · Jemput, aktifkan, dan simpan",
@@ -243,7 +243,7 @@
     'Otra persona ha guardado cambios mientras tú editabas. Recarga para ver los valores nuevos: lo que has escrito se conserva.': 'Someone else saved changes while you were editing. Reload to see the new values: what you typed is kept.',
     'Recargar conservando lo que escribí': 'Reload and keep what I typed',
     '1 · Sede': '1 · Office',
-    '2 · Tarifa': '2 · Rate', '3 · Activar': '3 · Switch on', '‹ Atrás': '‹ Back', 'Siguiente ›': 'Next ›',
+    'Pasos': 'Steps', '2 · Tarifa': '2 · Rate', '3 · Activar': '3 · Switch on', '‹ Atrás': '‹ Back', 'Siguiente ›': 'Next ›',
     'Paso 1 de 3 · ¿Desde dónde sale la moto?': 'Step 1 of 3 · Where does the motorbike leave from?',
     'Paso 2 de 3 · ¿Cuánto cobras?': 'Step 2 of 3 · How much do you charge?',
     'Paso 3 de 3 · Recogida, activar y guardar': 'Step 3 of 3 · Collection, switch on and save', 'Nombre de la sede': 'Office name', 'Coordenadas (lat, lng)': 'Coordinates (lat, lng)',
@@ -358,10 +358,17 @@
   function noPreparada(d) { return esObj(d) && d.ajustes == null && d.version == null && Array.isArray(d.faltan) && esObj(d.uso) && Array.isArray(d.versiones); }
   function num(x) { return x == null || x === '' || isNaN(Number(x)) ? null : Number(x); }
   /* La versión «canónica» de lo que hay guardado (lo que la base dio), con la que se compara lo escrito. */
+  /* Sin tarifa todavía, la moneda de partida es la de la instancia (lwMonedaBase, de su base; S4, 15-oct-2026): va plegada y la primera tarifa
+     pide solo el precio. Entra en la LECTURA (canon), no se escribe en el campo después: así no cuenta como un cambio de tarifa al guardar otra cosa. */
+  function monedaInstancia() {
+    var m = null;
+    try { m = typeof window.lwMonedaBase === 'function' ? window.lwMonedaBase() : null; } catch (e) { /* MUDO A PROPOSITO: sin moneda de la instancia, se escribe a mano */ }
+    return /^[A-Z]{3}$/.test(m || '') ? m : '';
+  }
   function canon(d) {
     var a = d.ajustes, t = d.tarifa;
     return { sede_nombre: String(a.sede_nombre == null ? '' : a.sede_nombre), sede_lat: num(a.sede_lat), sede_lng: num(a.sede_lng),
-      moneda: t && t.moneda ? String(t.moneda).toUpperCase() : '', precio_km: t ? num(t.precio_km) : null, km_gratis: t ? (num(t.km_gratis) || 0) : 0, minimo: t ? (num(t.minimo) || 0) : 0,
+      moneda: t && t.moneda ? String(t.moneda).toUpperCase() : monedaInstancia(), precio_km: t ? num(t.precio_km) : null, km_gratis: t ? (num(t.km_gratis) || 0) : 0, minimo: t ? (num(t.minimo) || 0) : 0,
       km_max: num(a.km_max), tope_dia: num(a.tope_dia), tope_mes: num(a.tope_mes), cache_dias: num(a.cache_dias),
       cobra_recogida: a.cobra_recogida === true ? true : (a.cobra_recogida === false ? false : null), activa: a.activa === true };
   }
@@ -411,6 +418,7 @@
     oculta($v('conflicto'), true);
     oculta($v('form'), false);
     PLIEGUES.forEach(function (d) { d.actualiza(); });   // los valores se ponen por código: el resumen del plegado se repinta
+    rotuloPrecio();
     var est = $v('estado'); est.textContent = ''; est.setAttribute('data-tipo', 'listo'); est.className = 'axw-vacio axw-oculto';
   }
   function pintaFaltan(d) {
@@ -623,6 +631,7 @@
     });
     rejL.parentNode.insertBefore(plL, rejL.nextSibling);
     PLIEGUES = [plT, plL];
+    $v('pasos').setAttribute('aria-label', T('Pasos'));
   }
   function vaPaso(k, foco) {
     PASO = k;
@@ -631,6 +640,10 @@
     [].forEach.call(raiz.querySelectorAll('[data-accion="en-ir-paso"]'), function (b) { if (Number(b.getAttribute('data-paso')) === k) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
     oculta(raiz.querySelector('[data-accion="en-atras"]'), k === 1); oculta(raiz.querySelector('[data-accion="en-siguiente"]'), k === PASOS.length);
     if (foco) { var f = $v(PASOS[k - 1].bloques[0]).querySelector('input:not([readonly]),select'); try { if (f) f.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
+  }
+  function rotuloPrecio() {
+    var l = raiz.querySelector('label[for="en-f-precio_km"]'), m = F('moneda').value.replace(/\s+/g, '').toUpperCase();
+    l.textContent = T('Precio por km') + (/^[A-Z]{3}$/.test(m) ? ' (' + m + ')' : '');
   }
   function pasoDe(el) { for (var i = 0; i < PASOS.length; i++) if (PASOS[i].bloques.some(function (b) { return $v(b).contains(el); })) return i + 1; return PASO; }
   function limpiaInvalidos() { CAMPOS.concat(['motivo']).forEach(function (n) { F(n).removeAttribute('aria-invalid'); }); }
@@ -748,6 +761,7 @@
     SB = aut.sb;
     raiz.addEventListener('click', alClic);
     raiz.addEventListener('change', function (ev) { if (ev.target === F('cobra_recogida')) ajustaRecogida(); });
+    raiz.addEventListener('input', function (ev) { if (ev.target === F('moneda')) rotuloPrecio(); });
     montaPasos(); vaPaso(1);
     carga(null);
   }
