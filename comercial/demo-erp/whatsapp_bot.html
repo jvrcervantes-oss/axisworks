@@ -369,7 +369,7 @@
     (TOPES.tonos || []).forEach(function (t) { var o = document.createElement('option'); o.value = t; o.textContent = T(TONOS[t] || t); sel.appendChild(o); });
     sel.value = f.tono || 'cercano';
     var cont = $c('idiomas'); limpia(cont);
-    var marcados = f.idiomas || ['es'];
+    var marcados = f.idiomas || IDIOMAS_DEF || [];
     (TOPES.idiomas_validos || []).forEach(function (i) {
       var l = document.createElement('label'), c = document.createElement('input');
       c.type = 'checkbox'; c.setAttribute('data-idioma', i); c.checked = marcados.indexOf(i) !== -1;
@@ -426,10 +426,26 @@
     if (e && e.code === '40001') return m;
     return m || T('La base no ha respondido: prueba otra vez en un rato.');
   }
+  /* agencia-c0 (15-oct-2026): una ficha NUEVA marca por defecto los idiomas de la instancia, de su base (Ajustes › Idiomas,
+     modulos_activos_datos().idiomas, el de documentos primero); sin ellos, los del build; nunca uno fijo. Antes era ['es'] y en bbm (id + en,
+     0 fichas) el bot habría hablado español si nadie lo desmarcaba. Una ficha guardada sigue con los suyos. */
+  var IDIOMAS_DEF = null;
+  function idiomasInstancia() {
+    var build = Array.isArray(window.AXW_IDIOMAS_BUILD) ? window.AXW_IDIOMAS_BUILD : (Array.isArray(window.AXW_IDIOMAS) ? window.AXW_IDIOMAS : []);
+    return Promise.resolve(SB.rpc('modulos_activos_datos')).then(function (x) {
+      var v = x && !x.error && x.data && typeof x.data === 'object' ? x.data.idiomas : null;
+      if (!v || !Array.isArray(v.ofrecidos) || !v.ofrecidos.length) return build.slice();
+      return v.ofrecidos.indexOf(v.defecto) >= 0 ? [v.defecto].concat(v.ofrecidos.filter(function (c) { return c !== v.defecto; })) : v.ofrecidos.slice();
+    }, function () { return build.slice(); });
+  }
   function carga() {
     error('');
     return window.lwDatos('wab_ficha_datos', {}).then(function (r) {
       if (r.error || !r.data) { error(mensaje(r.error)); return; }
+      var nueva = !(r.data.ficha && Array.isArray(r.data.ficha.idiomas));
+      return (nueva ? idiomasInstancia() : Promise.resolve(null)).then(function (def) { IDIOMAS_DEF = def; return r; });
+    }).then(function (r) {
+      if (!r) return;
       pinta(r.data);
       return SB.rpc('wab_ficha_historial').then(function (h) { if (h.error) { error(mensaje(h.error)); return; } pintaHistorial(h.data); });
     });
