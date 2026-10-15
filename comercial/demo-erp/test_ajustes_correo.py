@@ -74,8 +74,17 @@ r, salida, ruta = corre(ORIGINAL)
 mira('el build pasa sobre el ajustes.js de Lawang de hoy', r == 'pasa')
 chk = subprocess.run(['node', '--check', ruta], capture_output=True, text=True, encoding='utf-8')
 mira('el JS resultante compila (node --check)' + (': ' + chk.stderr.strip()[:300] if chk.returncode else ''), chk.returncode == 0)
-mira('lo que sale es el fichero de Lawang con UNA sola línea distinta (el instalador)',
-     salida != ORIGINAL and salida.count(NUEVO) == 1 and salida.replace(NUEVO, VIEJO) == ORIGINAL and len(salida.splitlines()) == len(ORIGINAL.splitlines()))
+# lo que el maestro cambia: la línea del instalador y las de D27 (solo lectura por lo que diga la edge en `puede`). Deshechas, queda el de Lawang.
+CAMBIOS = [(VIEJO, NUEVO)] + [(v, n) for v, n, _q in build.AJUSTES_CORREO_SOLO_SUPER]
+def deshace(t):
+    for v, n in CAMBIOS:
+        t = t.replace(n, v)
+    return t
+mira('lo que sale es el fichero de Lawang con solo las líneas del maestro (el instalador y D27), cada una una vez',
+     salida != ORIGINAL and all(salida.count(n) == 1 for _v, n in CAMBIOS) and deshace(salida) == ORIGINAL)
+for v, n, que in build.AJUSTES_CORREO_SOLO_SUPER:
+    mira('D27: Lawang trae una vez la línea de «' + que + '»', ORIGINAL.count(v) == 1)
+    mira('D27: para si Lawang cambia la línea de «' + que + '»', corre(ORIGINAL.replace(v, v[:-1] + ' ' + v[-1], 1))[0] == 'para')
 for que, rx in build.AJUSTES_CORREO_UNA_VEZ:
     mira('en lo que sale, una sola vez: ' + que + ' (hay %d)' % len(re.findall(rx, salida)), len(re.findall(rx, salida)) == 1)
 BLOQUE = salida[salida.index(INICIO):salida.index(FIN)] if r == 'pasa' else ''
@@ -143,6 +152,15 @@ mira('edge no disponible (404/5xx sin código, sin red) tiene mensaje propio', '
 mira('«puesta por el instalador» se dice con palabras y dentro de la frase con huecos de Lawang',
      "e.puesto_por === 'instalador' ? T('el instalador')" in CODIGO and "T('Contraseña del buzón puesta el %cuando por %quien', { cuando: cuando || '—', quien: porQuien })" in CODIGO)
 
+# D27: solo lectura por lo que dice la EDGE (`puede`), nunca por un rol calculado en el navegador; sin el campo, como antes
+mira('D27: srv.puede sale de la respuesta de la edge y puedeCorreo() solo dice «no» con un false explícito',
+     "if (d && d.puede && typeof d.puede === 'object') srv.puede = d.puede;" in CODIGO and 'return !(srv.puede && srv.puede[k] === false);' in CODIGO)
+mira('D27: la pantalla no mira el rol (ni ficha.rol ni super_admin en el código)', not re.search(r'ficha\.rol|\.rol\b|super_admin[^:]', CODIGO))   # «no_super_admin:» es un código de error de la tabla
+mira('D27: sin permiso del servidor no hay botón Cambiar ni formulario que se abra solo',
+     "puedeCorreo('servidor')) filaContra" in CODIGO and CODIGO.index("if (!puedeCorreo('servidor')) {") < CODIGO.index('if (!configurado) srv.editando = true;'))
+mira('D27: una dirección sin permiso queda readonly y sin botones, con la línea de quién la cambia',
+     "if (soloLee) inp.setAttribute('readonly', '');" in CODIGO and "else cola.appendChild(filaB);" in CODIGO and "T('Lo cambia un super admin.')" in CODIGO)
+
 # (4a) todo código que la edge del MAESTRO puede devolver tiene su texto en llano. La lista sale de su index.ts (no de la memoria de nadie):
 # `host_no_comprobable` existía en la edge y no en la pantalla del maestro, y salió «Respuesta no reconocida» (revisor, 10-oct-2026).
 edge = open(EDGE_TS, encoding='utf-8').read()
@@ -199,7 +217,8 @@ mira('los textos de error no llevan jerga' + (' (' + ', '.join(jerga) + ')' if j
 i18n = open(LAWANG_I18N, encoding='utf-8').read()
 sin = []
 def exige(c, donde):
-    if ("'" + c.replace("'", "\\'") + "':") not in i18n:
+    m = build.MENU_I18N.get(c)   # lo que pone el maestro (D27) lo traduce MENU_I18N en en/id, que menu_i18n() añade al i18n.js del paquete
+    if ("'" + c.replace("'", "\\'") + "':") not in i18n and not (m and m.get('en') and m.get('id')):
         sin.append(donde + ': ' + c[:70])
 def suelta(g):
     return g.replace("\\'", "'")
