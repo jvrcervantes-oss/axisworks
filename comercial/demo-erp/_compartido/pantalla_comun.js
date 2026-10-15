@@ -20,6 +20,7 @@ function axwComun(raiz, T) {
     'No tienes permiso para ver esta lista. No es que esté vacía: no se ha podido mirar.': 'You do not have permission to see this list. It is not empty: it could not be checked.',
     'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'The database returned something unexpected. It is not empty: it could not be checked.',
     'La base no ha aceptado el cambio.': 'The database did not accept the change.', 'código': 'code',
+    'La base ha devuelto un error. No es que esté vacía: no se ha podido mirar.': 'The database returned an error. It is not empty: it could not be checked.',
     'Sistema': 'System', 'AxisWorks (soporte)': 'AxisWorks (support)', 'Configuración inicial': 'Initial setup'
   };
   // Indonesio (11-oct-2026: las instancias que lo llevan, hoy bbm). Mismas claves que EN; cada pantalla lo fusiona en window.LW_ID solo si existe.
@@ -33,6 +34,7 @@ function axwComun(raiz, T) {
     'No tienes permiso para ver esta lista. No es que esté vacía: no se ha podido mirar.': 'Anda tidak punya akses untuk melihat daftar ini. Bukan berarti kosong: datanya tidak dapat diperiksa.',
     'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'Database mengembalikan data yang tidak terduga. Bukan berarti kosong: datanya tidak dapat diperiksa.',
     'La base no ha aceptado el cambio.': 'Database tidak menerima perubahan ini.', 'código': 'kode',
+    'La base ha devuelto un error. No es que esté vacía: no se ha podido mirar.': 'Database mengembalikan galat. Bukan berarti kosong: datanya tidak dapat diperiksa.',
     'Sistema': 'Sistem', 'AxisWorks (soporte)': 'AxisWorks (dukungan)', 'Configuración inicial': 'Pengaturan awal'
   };
 
@@ -123,8 +125,10 @@ function axwComun(raiz, T) {
     if (!c.m) return T('La base no ha respondido: prueba otra vez en un rato.');
     // La base escribe sus reglas en español. Fuera del español no se enseña esa frase (bbm-idioma-total, 15-oct-2026: el owner veía errores en
     // español en bbm): si el diccionario la tiene, traducida; si no, un texto en su idioma con el código estable (hint) para soporte.
-    if ((window.LW_IDIOMA || 'es') === 'es' || T(c.m) !== c.m) return T(c.m);
-    return T('La base no ha aceptado el cambio.') + (c.hint ? ' (' + T('código') + ': ' + String(c.hint).replace(/[^a-z0-9_]/gi, '').slice(0, 40) + ')' : '');
+    // (se mira el diccionario sin pasar por T: T apunta en LW_T_MISSES cada frase que no tiene, y la de la base no es una clave)
+    var L = window.LW_IDIOMA || 'es', dic = L === 'id' ? window.LW_ID : window.LW_EN;
+    if (L === 'es' || (dic && Object.prototype.hasOwnProperty.call(dic, c.m))) return T(c.m);
+    return (lectura ? T('La base ha devuelto un error. No es que esté vacía: no se ha podido mirar.') : T('La base no ha aceptado el cambio.')) + (c.hint ? ' (' + T('código') + ': ' + String(c.hint).replace(/[^a-z0-9_]/gi, '').slice(0, 40) + ')' : '');
   }
   /* Quién firma una fila de un registro de cambios (ajustes_log): por marcador explícito, nunca por descarte (agencia-c0, 15-oct-2026, medido en
      la base de bbm). La siembra (vacío, postgres, «migración …», sistema:sql, «erp: …») es 'inicial'; el estudio (@axisworks.studio), 'soporte';

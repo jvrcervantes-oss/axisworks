@@ -14,7 +14,8 @@
 //   · el paginador (lwPaginador) pintado aparte con 60 filas, que con la base vacía no saldría.
 // Sale 1 si queda algo, 2 si no ha podido mirar (no es un verde). Con [informe.json] escribe todo lo encontrado por pantalla (lo usa quien arregla).
 // Lo que NO ve (dicho en el informe del encargo): datos de la base (categorías, estados guardados), correos y plantillas de Auth (servidor),
-// textos que solo salen tras un clic con datos (el PDF lo mira documento_idiomas.harness.cjs).
+// textos que solo salen tras un clic CON DATOS (el PDF lo mira documento_idiomas.harness.cjs). Desde el 15-oct (bbm-idioma-total) mira también
+// la página «sin permiso» de un usuario sin herramientas (modo sinpermiso) y lo que sale al pulsar los botones con la base vacía (modo clics).
 // En esta PC: PLAYWRIGHT_CORE=C:/Users/jvrce/AppData/Roaming/npm/node_modules/@playwright/mcp/node_modules/playwright-core
 'use strict';
 const fs = require('fs');
@@ -42,7 +43,13 @@ function todosLosModulos() {
 let ACTIVOS;
 try { ACTIVOS = process.env.ACTIVOS ? process.env.ACTIVOS.split(',') : todosLosModulos(); }
 catch (e) { console.log('NO SE HA PODIDO MIRAR: sin erp/modulos.json de la agencia (AXW_AGENCIA_RAIZ): ' + e.message); process.exit(2); }
-const MODOS = (process.env.MODOS || 'vacia,caida,apagados').split(',');
+// sinpermiso: un usuario SIN herramientas (rol agente): cada pantalla rebota a la página «sin permiso» del hub (/?sin_permiso=<clave>), que con
+// el super_admin de los otros modos no se veía nunca (bbm-idioma-total, 15-oct: su menú salía con aria-label «Herramientas» en en e id).
+// clics: como vacia, y además pulsa los botones de cada pantalla de CLIC_PANTALLAS (el asistente de instalación, Ajustes y las pantallas propias
+// de la instancia) y mira lo que aparece: ventanas, pasos, avisos. La base es falsa: pulsar no escribe en ninguna parte.
+const MODOS = (process.env.MODOS || 'vacia,caida,apagados,sinpermiso,clics').split(',');
+const CLIC_PANTALLAS = (process.env.CLIC_PANTALLAS || 'ajustes/configurar,ajustes,flota,entrega,taller,reservas-producto,productos,ventas,gastos,usuarios,recibos,facturas,whatsapp-bot-alta').split(',');
+const CLIC_MAX = Number(process.env.CLIC_MAX || 25);
 const LENGUAS = (process.env.LENGUAS || 'en,id').split(',');
 const PARALELO = Math.max(1, Number(process.env.PARALELO || 3));
 // Todas las pantallas del paquete: cada carpeta con index.html (la raíz incluida). PANTALLAS por entorno solo para mirar unas pocas a mano.
@@ -72,7 +79,9 @@ const falso = modo => `(function(){
   var CAIDA = ${JSON.stringify(modo === 'caida')};
   var ERR = { message:'test: database unavailable', code:'57014', details:null, hint:null };
   var ses = { access_token:'a', refresh_token:'r', user:{ id:'u1', email:'super@prueba.test' } };
-  var tablas = { usuarios: { rol:'super_admin', herramientas:[], activo:true, nombre:'Test Super', notif_visto_hasta:null, ambito:null, empresas:null, es_propietario:true } };
+  var tablas = { usuarios: ${modo === 'sinpermiso'
+    ? "{ rol:'agente', herramientas:[], activo:true, nombre:'Test Agent', notif_visto_hasta:null, ambito:null, empresas:null, es_propietario:false }"
+    : "{ rol:'super_admin', herramientas:[], activo:true, nombre:'Test Super', notif_visto_hasta:null, ambito:null, empresas:null, es_propietario:true }"} };
   var rpcs = { modulos_activos_datos: { activos: ${JSON.stringify(modo === 'apagados' ? ['base'] : ACTIVOS)} }, portada_reservas_dia_datos: { dia: ${JSON.stringify(HOY)}, entregas: [], devoluciones: [] } };
   var SIEMPRE = { usuarios:1, modulos_activos_datos:1 };
   function q(t){ var st = { single:false, then:null };
@@ -166,7 +175,7 @@ async function contexto(nav, modo, lengua) {
   if (!ok) throw new Error('/home/ no trae lwSetIdioma: no se puede elegir el idioma');
   return ctx;
 }
-async function mira(ctx, pant, errores) {
+async function mira(ctx, pant, errores, clics) {
   const p = await ctx.newPage();
   const dialogos = [];
   p.on('dialog', d => { dialogos.push(d.message()); d.dismiss().catch(() => {}); });
@@ -176,6 +185,33 @@ async function mira(ctx, pant, errores) {
     await p.waitForLoadState('networkidle', { timeout: 4000 }).catch(() => { /* MUDO A PROPOSITO: una pantalla con sondeo no queda quieta; se mira igual */ });
     await p.waitForTimeout(400);
     const r = await p.evaluate(MIRA);
+    if (clics) {
+      // Cada botón visible, uno a uno, por su posición en la lista del momento (la pantalla cambia al pulsar). Lo que aparece se mira con la
+      // misma MIRA; si el clic navega, se vuelve. Escape cierra la ventana que haya abierto.
+      const yaVisto = new Set(r.sale.map(x => x.donde + x.t));
+      const SEL = 'button:not([disabled]),[role="button"],summary,[data-accion]:not(a):not(input)';
+      const url0 = p.url();
+      let pulsados = 0;
+      for (let i = 0; i < CLIC_MAX; i++) {
+        const quien = await p.evaluate(([sel, i]) => {
+          const vis = [...document.querySelectorAll(sel)].filter(e => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.closest('[data-axw-sin],.lw-rail,#lwRail,nav,header'));
+          const e = vis[i];
+          if (!e) return null;
+          e.setAttribute('data-arnes-clic', String(i));
+          return (e.getAttribute('data-accion') || e.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+        }, [SEL, i]);
+        if (quien === null) break;
+        try { await p.click('[data-arnes-clic="' + i + '"]', { timeout: 1500 }); pulsados++; }
+        catch (e) { continue; /* MUDO A PROPOSITO: un botón tapado o que se va al pulsar otro no es texto en español; se sigue con el siguiente */ }
+        await p.waitForTimeout(250);
+        if (p.url() !== url0) { await p.goto(url0, { waitUntil: 'load' }); await p.waitForTimeout(300); continue; }
+        const r2 = await p.evaluate(MIRA);
+        for (const x of r2.sale) if (!yaVisto.has(x.donde + x.t)) { yaVisto.add(x.donde + x.t); r.sale.push({ t: x.t, donde: 'tras «' + quien + '»:' + x.donde }); }
+        for (const f of r2.fallos || []) if (!(r.fallos || []).includes(f)) (r.fallos = r.fallos || []).push(f);
+        await p.keyboard.press('Escape').catch(() => { /* MUDO A PROPOSITO: sin ventana abierta, Escape no hace nada */ });
+      }
+      r.pulsados = pulsados;
+    }
     for (const m of dialogos) r.sale.push({ t: m, donde: 'dialogo' });
     return r;
   } finally { await p.close(); }
@@ -191,18 +227,25 @@ async function mira(ctx, pant, errores) {
   const t0 = Date.now();
   for (const lengua of LENGUAS) for (const modo of MODOS) {
     const ctx = await contexto(nav, modo, lengua);
-    const cola = PANTALLAS.slice();
+    const estas = modo === 'clics' ? PANTALLAS.filter(x => CLIC_PANTALLAS.includes(x)) : PANTALLAS;
+    if (modo === 'clics' && !estas.length) { console.log('NO SE HA PODIDO MIRAR: ninguna de CLIC_PANTALLAS está en el paquete'); process.exit(2); }
+    const cola = estas.slice();
     const res = {};
     await Promise.all(Array.from({ length: PARALELO }, async () => {
-      for (let pant; (pant = cola.shift()) !== undefined;) res[pant] = await mira(ctx, pant, errores);
+      for (let pant; (pant = cola.shift()) !== undefined;) res[pant] = await mira(ctx, pant, errores, modo === 'clics');
     }));
-    for (const pant of PANTALLAS) {
+    if (modo === 'clics') {
+      const n = estas.reduce((a, x) => a + (res[x].pulsados || 0), 0);
+      console.log(lengua + ' clics: ' + n + ' botones pulsados en ' + estas.length + ' pantallas');
+      if (!n) { console.log('NO SE HA PODIDO MIRAR: el modo clics no ha pulsado ningún botón'); process.exit(2); }
+    }
+    for (const pant of estas) {
       const r = res[pant];
       miradas++;
       const quedan = r.sale.filter(x => !EXCEPCIONES.some(([rx]) => rx.test(x.t)));
       const fallos = (r.fallos || []).filter(t => !EXCEPCIONES.some(([rx]) => rx.test(t)));
       const clave = lengua + ' ' + modo + ' /' + (pant ? pant + '/' : '');
-      informe[clave] = { lang: r.lang, sin_traducir: fallos, en_espanol: quedan };
+      informe[clave] = { lang: r.lang, sin_traducir: fallos, en_espanol: quedan, pulsados: r.pulsados };
       const n = quedan.length + fallos.length;
       total += n;
       if (n || process.env.VERBOSO) console.log((n ? 'FALLA  ' : 'ok     ') + clave + ': ' + quedan.length + ' en español, ' + fallos.length + ' sin traducir (LW_T_MISSES)'
