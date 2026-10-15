@@ -439,20 +439,30 @@
       return v.ofrecidos.indexOf(v.defecto) >= 0 ? [v.defecto].concat(v.ofrecidos.filter(function (c) { return c !== v.defecto; })) : v.ofrecidos.slice();
     }, function () { return build.slice(); });
   }
+  var CARGA = 0;   // cada carga tiene su número: la respuesta de idiomas de una carga vieja no toca la ficha de la nueva
   function carga() {
     error('');
+    var mia = ++CARGA;
     return window.lwDatos('wab_ficha_datos', {}).then(function (r) {
+      if (mia !== CARGA) return;
       if (r.error || !r.data) { error(mensaje(r.error)); return; }
       var nueva = !(r.data.ficha && Array.isArray(r.data.ficha.idiomas));
       IDIOMAS_DEF = null;
       pinta(r.data);
-      if (nueva) idiomasInstancia().then(function (def) {   // se pinta sin esperarla; al llegar se marcan, si nadie ha tocado ya las casillas
-        var cs = [].slice.call($c('idiomas').querySelectorAll('input[data-idioma]'));
-        if (!def || cs.some(function (c) { return c.checked || c.getAttribute('data-tocado'); })) return;
-        IDIOMAS_DEF = def;
-        cs.forEach(function (c) { c.checked = def.indexOf(c.getAttribute('data-idioma')) !== -1; });
-        recuenta();
-      });
+      var btG = raiz.querySelector('[data-accion="guardar"]');
+      btG.disabled = false;   // lo que dejara apagado una carga anterior no se hereda
+      if (nueva) {
+        btG.disabled = true;   // una ficha nueva no se guarda sin idiomas mientras llegan los de la instancia
+        idiomasInstancia().then(function (def) {   // se pinta sin esperarla; al llegar se marcan, si nadie ha tocado ya las casillas
+          if (mia !== CARGA) return;
+          btG.disabled = false;
+          var cs = [].slice.call($c('idiomas').querySelectorAll('input[data-idioma]'));
+          if (!def || cs.some(function (c) { return c.checked || c.getAttribute('data-tocado'); })) return;
+          IDIOMAS_DEF = def;
+          cs.forEach(function (c) { c.checked = def.indexOf(c.getAttribute('data-idioma')) !== -1; });
+          recuenta();
+        });
+      }
       return SB.rpc('wab_ficha_historial').then(function (h) { if (h.error) { error(mensaje(h.error)); return; } pintaHistorial(h.data); });
     });
   }

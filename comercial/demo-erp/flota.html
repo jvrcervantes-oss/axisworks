@@ -1427,7 +1427,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     existentes.forEach(function (m) { if (monedas.indexOf(m) === -1) monEl.appendChild(h('option', { value: m, text: m })); });   // una moneda ya usada que la base ya no admite sigue visible
     if (previa) { diasEl.value = String(previa.t.dias); diasEl.readOnly = true; precioEl.value = previa.t.precio == null ? '' : String(previa.t.precio); etqEl.value = previa.t.etiqueta == null ? '' : String(previa.t.etiqueta); monEl.value = String(previa.t.moneda); }
     else if (existentes.length === 1) monEl.value = existentes[0];
-    else if (!existentes.length && monedaInstancia(monedas)) monEl.value = monedaInstancia(monedas);
+    else if (!existentes.length) { var mi = monedaInstancia(monedas); if (mi) monEl.value = mi; }
     var visT = previa ? { precio: previa.t.precio == null ? '' : String(previa.t.precio), moneda: String(previa.t.moneda), etiqueta: previa.t.etiqueta == null ? '' : String(previa.t.etiqueta) } : null, tocadoT = {};
     if (previa) [precioEl, monEl, etqEl].forEach(function (el) { ['input', 'change'].forEach(function (ev) { el.addEventListener(ev, function () { tocadoT[el.getAttribute('data-campo')] = true; }); }); });
     var motEl = campoMotivo();

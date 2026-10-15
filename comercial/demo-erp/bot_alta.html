@@ -21,6 +21,7 @@
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4">
 <style>
 .ba-oculto{display:none !important}
+.ba-parte{margin:0;font:600 12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#44483f}
 .ba-estado{padding:10px 16px;border-radius:999px;background:#e4e2dd;color:#1b1c19;font-size:13px}
 .ba-estado[data-listo="1"]{background:#485B37;color:#fff}
 .ba-aviso{padding:10px 14px;border-radius:8px;background:#fff3e0;color:#8a4b00;font-size:14px;white-space:pre-line;word-break:break-word}
@@ -61,7 +62,9 @@
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-6" data-ba="seccion-alta">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>1 · Datos de tu negocio para las condiciones</h2>
 <div class="ba-nota" data-lwt>Estos datos aparecen en las condiciones y en el aviso de privacidad que ven las personas que escriben a tu bot. Escríbelos tal cual los quieres ahí: tú respondes de que sean ciertos.</div>
+<p class="ba-parte" data-ba="parte-linea" aria-live="polite"></p>
 <div class="ba-grid" data-ba="formulario">
+<div class="ba-grid ba-ancho" data-ba="parte-1">
 <div class="ba-campo">
 <label for="ba-razon_social" data-lwt>Razón social (nombre legal de la empresa)</label>
 <input type="text" id="ba-razon_social" data-campo="razon_social" autocomplete="off">
@@ -77,6 +80,8 @@
 <input type="text" id="ba-domicilio" data-campo="domicilio" autocomplete="off">
 <div class="ba-pie"><span></span><span data-cuenta="domicilio"></span></div>
 </div>
+</div>
+<div class="ba-grid ba-ancho ba-oculto" data-ba="parte-2">
 <div class="ba-campo">
 <label for="ba-contacto_privacidad" data-lwt>Contacto de privacidad (un correo o un teléfono)</label>
 <input type="text" id="ba-contacto_privacidad" data-campo="contacto_privacidad" autocomplete="off">
@@ -87,15 +92,18 @@
 <input type="text" id="ba-plazo_conservacion" data-campo="plazo_conservacion" autocomplete="off">
 <div class="ba-pie"><span data-lwt>Por ejemplo: «24 meses desde el último mensaje»</span><span data-cuenta="plazo_conservacion"></span></div>
 </div>
-</div>
-<div class="ba-campo">
+<div class="ba-campo ba-ancho">
 <label for="ba-motivo" data-lwt>¿Qué has cambiado? (queda en el registro)</label>
 <input type="text" id="ba-motivo" data-campo="motivo" autocomplete="off">
 </div>
+</div>
+</div>
 <p class="ba-aviso ba-oculto" data-ba="aviso-razon" role="status"></p>
 <div class="flex flex-wrap items-center justify-end gap-3">
+<button class="ba-boton ba-oculto" type="button" data-accion="alta-atras" data-ba="atras"><span data-lwt>‹ Atrás</span></button>
 <button class="ba-boton" type="button" data-accion="recargar"><span data-lwt>Descartar los cambios</span></button>
-<button class="ba-boton" type="button" data-accion="guardar-alta" data-primario="1"><span data-lwt>Guardar los datos</span></button>
+<button class="ba-boton" type="button" data-accion="alta-siguiente" data-primario="1" data-ba="siguiente"><span data-lwt>Siguiente ›</span></button>
+<button class="ba-boton ba-oculto" type="button" data-accion="guardar-alta" data-primario="1" data-ba="guardar"><span data-lwt>Guardar los datos</span></button>
 </div>
 </section>
 
@@ -132,6 +140,7 @@
     'Razón social (nombre legal de la empresa)': 'Company name (legal name)', 'Nombre del negocio (cómo te conocen)': 'Business name (how people know you)',
     'Domicilio de la empresa': 'Company address', 'Contacto de privacidad (un correo o un teléfono)': 'Privacy contact (an email or a phone number)',
     'Cuánto tiempo guardas las conversaciones': 'How long you keep conversations', 'Por ejemplo: «24 meses desde el último mensaje»': 'For example: “24 months after the last message”',
+    'Parte 1 de 2 · Tu empresa': 'Part 1 of 2 · Your company', 'Parte 2 de 2 · Privacidad': 'Part 2 of 2 · Privacy', '‹ Atrás': '‹ Back', 'Siguiente ›': 'Next ›',
     '¿Qué has cambiado? (queda en el registro)': 'What did you change? (kept in the log)', 'Descartar los cambios': 'Discard changes', 'Guardar los datos': 'Save the details',
     '2 · Condiciones del servicio': '2 · Service terms', 'Aceptar las condiciones': 'Accept the terms', '3 · Contrato marco': '3 · Framework agreement',
     'Aceptaciones registradas': 'Recorded acceptances',
@@ -165,6 +174,7 @@
     'Razón social (nombre legal de la empresa)': 'Nama badan usaha (nama resmi perusahaan)', 'Nombre del negocio (cómo te conocen)': 'Nama usaha (nama yang dikenal orang)',
     'Domicilio de la empresa': 'Alamat perusahaan', 'Contacto de privacidad (un correo o un teléfono)': 'Kontak privasi (email atau nomor telepon)',
     'Cuánto tiempo guardas las conversaciones': 'Berapa lama Anda menyimpan percakapan', 'Por ejemplo: «24 meses desde el último mensaje»': 'Contoh: «24 bulan sejak pesan terakhir»',
+    'Parte 1 de 2 · Tu empresa': 'Bagian 1 dari 2 · Perusahaan Anda', 'Parte 2 de 2 · Privacidad': 'Bagian 2 dari 2 · Privasi', '‹ Atrás': '‹ Kembali', 'Siguiente ›': 'Lanjut ›',
     '¿Qué has cambiado? (queda en el registro)': 'Apa yang Anda ubah? (tercatat di log)', 'Descartar los cambios': 'Buang perubahan', 'Guardar los datos': 'Simpan data',
     '2 · Condiciones del servicio': '2 · Ketentuan layanan', 'Aceptar las condiciones': 'Terima ketentuan', '3 · Contrato marco': '3 · Perjanjian induk',
     'Aceptaciones registradas': 'Penerimaan yang tercatat',
@@ -329,10 +339,19 @@
     });
   }
 
+  /* bbm-comodidad S4 (15-oct-2026, «1, 2 o 3 campos a rellenar por paso»): el alta va en dos partes, «Tu empresa» (razón social, nombre,
+     domicilio) y «Privacidad» (contacto, plazo y el motivo que exige la base). Se guarda todo en la parte 2, con la misma llamada de siempre;
+     «Atrás» y «Siguiente» no tocan lo escrito. */
+  function vaParte(n) {
+    oculta($b('parte-1'), n !== 1); oculta($b('parte-2'), n !== 2);
+    oculta($b('atras'), n !== 2); oculta($b('siguiente'), n !== 1); oculta($b('guardar'), n !== 2);
+    texto($b('parte-linea'), n === 1 ? T('Parte 1 de 2 · Tu empresa') : T('Parte 2 de 2 · Privacidad'));
+  }
   function pinta() {
     var c = D.cliente || {};
     CAMPOS.forEach(function (k) { $c(k).value = c[k] || ''; });
     $c('motivo').value = '';
+    vaParte(1);
     oculta($b('aviso-razon'), true);
     pintaFaltan(); pintaTerminos(); pintaMarco(); pintaHistorial(); recuenta();
   }
@@ -395,6 +414,8 @@
       if (!el || !raiz.contains(el)) return;
       var a = el.getAttribute('data-accion');
       if (a === 'guardar-alta') guardaAlta(el);
+      else if (a === 'alta-siguiente') { error(''); vaParte(2); try { $c('contacto_privacidad').focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
+      else if (a === 'alta-atras') { error(''); vaParte(1); try { $c('razon_social').focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
       else if (a === 'recargar') carga();
       else if (a === 'aceptar') acepta(el);
     });

@@ -111,6 +111,7 @@ window.toast = function (m) { window.__toast = m; };
   await p.waitForFunction(() => document.querySelectorAll('[data-campo="idiomas"] input[data-idioma]:checked').length > 0, null, { timeout: 5000 }).catch(() => {});   // se marcan al llegar, sin frenar la ficha
   const marcados = await p.$$eval('[data-campo="idiomas"] input[data-idioma]', cs => cs.filter(c => c.checked).map(c => c.getAttribute('data-idioma')).sort().join());
   ok('3.2 ficha nueva: marca los idiomas de la instancia leídos de la base (en + id), no «es»', marcados === 'en,id', marcados);
+  ok('3.3 con los idiomas ya llegados se puede guardar', await p.isEnabled('[data-accion="guardar"]'));
 
   // 4. móvil
   await p.setViewportSize({ width: 390, height: 900 });
