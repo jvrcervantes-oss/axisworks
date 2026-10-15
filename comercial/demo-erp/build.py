@@ -236,6 +236,68 @@ def copia_v4():
         copia(os.path.join(LAWANG, 'intranet', 'leads', f), os.path.join(DIST, 'intranet', 'leads', f))
 
 
+# Contadores que dicen «0» (15-oct-2026, Calidad, encargo de agencia-c0): cuenta() de motion.js escribía «0» en el TEXTO de cada contador
+# [data-lw^="k-"] y lo subía con requestAnimationFrame; hasta el primer fotograma —y para siempre con la pestaña oculta, donde rAF no corre—
+# Usuarios decía «0 activos» con 2 en la lista (Experiencia, bbm, 14-oct). Arreglado en Lawang 8297615bb: el dato se queda siempre en el
+# texto y la cifra que sube es una capa aria-hidden encima; sin animación si la pestaña está oculta. El fijado (lawang.json) es anterior, así
+# que el bloque nuevo llega tal cual, cortado del motion.js de Lawang (motion_cuenta_lawang.js), y MOTION_V de nav.js se recalcula como lo
+# hace Lawang (8 primeros del sha1 del fichero con LF) para que ningún navegador siga con el viejo de caché.
+# El portal de clientes (solo la demo: las instancias no llevan /portal/) tenía el mismo fallo con el importe en su propio cuenta()
+# (portal/motion.js): mismo arreglo en Lawang ee3d296a8, que llega igual con motion_cuenta_portal_lawang.js y motion.js?v=20261015.
+# QUITAR (constantes, funciones, sus llamadas en main() y los dos motion_cuenta_*.js) cuando el fijado pase de Lawang ee3d296a8: el bloque
+# viejo ya no estará y esto para el build a propósito. Prueba: test_motion_cifra.py.
+# (fichero en dist/, ancla de inicio, ancla de fin, sha1 del bloque viejo del fijado con LF, bloque nuevo)
+MOTION_CUENTA = ('intranet/v4/assets/motion.js', '  var NUM = ', '  function entra() {',
+                 'e26238648f7d4c9629bd0f9353b2bb3f11ab3b86', os.path.join(AQUI, 'motion_cuenta_lawang.js'))
+MOTION_CUENTA_PORTAL = ('portal/motion.js', '  /* El dinero que se recorre', '  /* Entrada de una pantalla',
+                        'c5abfcfc03ecdb53c974aed69286df95500a44de', os.path.join(AQUI, 'motion_cuenta_portal_lawang.js'))
+PORTAL_MOTION_V = ('/portal/motion.js?v=20261009', '/portal/motion.js?v=20261015')
+
+
+def _motion_v(texto):
+    return hashlib.sha1(texto.replace('\r\n', '\n').encode('utf-8')).hexdigest()[:8]
+
+
+def cifra_cuenta_motion(texto, cual=MOTION_CUENTA):
+    """motion.js del fijado → con el cuenta() arreglado de Lawang. Para si el bloque viejo no es el medido el 15-oct."""
+    donde, ini, fin, sha, fuente = cual
+    a, b = texto.find(ini), texto.find(fin)
+    if a < 0 or b < a:
+        aborta('%s: no encuentro cuenta() (%r … %r)%s' % (donde, ini, fin, quien_cambio_lawang(donde)))
+    viejo = texto[a:b]
+    if hashlib.sha1(viejo.replace('\r\n', '\n').encode('utf-8')).hexdigest() != sha:
+        aborta('%s: cuenta() del fijado ya no es la medida el 15-oct; si el fijado ya trae el arreglo, quita cifra_cuenta() y '
+               'motion_cuenta_*.js%s' % (donde, quien_cambio_lawang(donde)))
+    nuevo = open(fuente, encoding='utf-8', newline='').read().replace('\r\n', '\n')
+    if '\r\n' in viejo:
+        nuevo = nuevo.replace('\n', '\r\n')
+    return texto[:a] + nuevo + texto[b:]
+
+
+def cifra_cuenta_portal():
+    """El cuenta() arreglado en dist/portal/motion.js y su ?v= en dist/portal/index.html (solo la demo, tras portal_lawang())."""
+    m = os.path.join(DIST, 'portal', 'motion.js')
+    texto = cifra_cuenta_motion(open(m, encoding='utf-8', newline='').read(), MOTION_CUENTA_PORTAL)   # leer ANTES de abrir para escribir
+    open(m, 'w', encoding='utf-8', newline='').write(texto)
+    p = os.path.join(DIST, 'portal', 'index.html')
+    texto = _una_vez(open(p, encoding='utf-8', newline='').read(), *PORTAL_MOTION_V, 'portal/index.html')
+    open(p, 'w', encoding='utf-8', newline='').write(texto)
+
+
+def cifra_cuenta():
+    """Aplica cifra_cuenta_motion() al motion.js de dist/ y sube MOTION_V en nav.js (demo e instancias: los dos pasan por copia_v4())."""
+    assets = os.path.join(DIST, 'intranet', 'v4', 'assets')
+    m, n = os.path.join(assets, 'motion.js'), os.path.join(assets, 'nav.js')
+    texto = cifra_cuenta_motion(open(m, encoding='utf-8', newline='').read())
+    open(m, 'w', encoding='utf-8', newline='').write(texto)
+    nav = open(n, encoding='utf-8', newline='').read()
+    v = re.findall(r"var MOTION_V = '([0-9a-f]{8})';", nav)
+    if len(v) != 1:
+        aborta('nav.js: esperaba una sola `var MOTION_V = \'…\';` y hay %d%s' % (len(v), quien_cambio_lawang('nav.js')))
+    nav = _una_vez(nav, "var MOTION_V = '%s';" % v[0], "var MOTION_V = '%s';" % _motion_v(texto), 'nav.js')
+    open(n, 'w', encoding='utf-8', newline='').write(nav)
+
+
 def cierra_referencias():
     """Sigue las rutas absolutas locales de lo copiado hasta que no aparezca nada nuevo."""
     vistos, faltan = set(), set()
@@ -5846,6 +5908,7 @@ def main():
         p = os.path.join(DIST, x)
         shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
     copia_v4()
+    cifra_cuenta()   # 15-oct: los contadores no dicen «0» (se quita al subir el fijado de Lawang por encima de 8297615bb)
     if '--instancia' in sys.argv:
         # El guard real manda a la puerta (antes /intranet/, ahora la raíz tras reraiz): es la pantalla de acceso de verdad.
         copia(os.path.join(LAWANG, 'intranet', 'index.html'), os.path.join(DIST, 'intranet', 'index.html'))
@@ -5858,6 +5921,7 @@ def main():
         return instancia(sys.argv[i + 1])
     # Solo la demo: el portal de clientes del ERP con los datos del doble (las instancias no llevan /portal/ propio).
     portal_lawang()
+    cifra_cuenta_portal()   # 15-oct: el importe del portal no dice «0» (se quita con cifra_cuenta() al subir el fijado)
     faltan |= cierra_referencias()
     g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
     os.makedirs(os.path.dirname(g), exist_ok=True)
