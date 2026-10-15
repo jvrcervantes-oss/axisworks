@@ -901,7 +901,7 @@ window.AXW_ASIS = (function () {
   /* Setup por módulo (F3, 12-oct-2026, erp-panel-2; owner: «módulo primero y setup después»). Lo pone build.py (setup_para_panel):
      `textos` (título de cada paso en es/en, de setup_modulos.js), `registro` (SETUP de erp/modulos.py: SOLO para el mapa S00) y `en`
      (nombres EN de módulos y tipos). Los pasos y el estado de UNA instancia los da su base por erp_control_estado (forma de Backend,
-     bbm-p21, 12-oct): por módulo `setup` = erp_modulos.setup tal cual ({pasos:[…]} | {ninguno: motivo} | null = sin declarar) y, en
+     12-oct): por módulo `setup` = erp_modulos.setup tal cual ({pasos:[…]} | {ninguno: motivo} | null = sin declarar) y, en
      los encendidos con pasos, `setup_estado` = {estado: sin_configurar|configurado, hechos, total} (total = obligatorios). */
   var SETUP = __AXW_SETUP__;
   var tieneCampo = function (o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k); };
@@ -1055,7 +1055,7 @@ window.AXW_ASIS = (function () {
     }).catch(function (e) { toast(e.message); }).then(function () { ocupado = false; });
   }
 
-  /* Buzón del estudio (B3, 15-oct-2026, bbm-correo; revisión previa #360). Vive en la base de cada instancia (Vault) y lo reparte el mando: aquí se
+  /* Buzón del estudio (B3, 15-oct-2026; revisión previa #360). Vive en la base de cada instancia (Vault) y lo reparte el mando: aquí se
      enseña lo que dice la base de ESTA instancia (`estado.buzon_estudio`, sin contraseña) frente al del mando (`buzon_mando`, su versión), y se
      pide poner (en todas), copiar (a esta) o quitar (de esta). La pantalla no decide nada: el mando lo comprueba (DNS, tope, login real) y cada
      base lo vuelve a validar. La contraseña va solo en la petición de «poner» y el campo se vacía al enviarla; nunca vuelve. */
@@ -1142,12 +1142,17 @@ window.AXW_ASIS = (function () {
     if (!/^\d{1,9}([.,]\d{1,2})?$/.test(s)) return NaN;
     return Math.round(parseFloat(s.replace(',', '.')) * 100);
   }
+  // `leve` (ámbar, no rojo): lo que no es una avería del estudio ahora mismo. Con el agente APAGADO, que no pueda gastar no es un fallo:
+  // se avisa de lo que faltará al encenderlo (revisor del Techo, 16-oct: en una instancia que no ha encendido el agente salía rojo).
   function causaTope0(a) {
     if (typeof a.tope_vigente_cent === 'number' && a.tope_vigente_cent > 0) return null;
-    var t = a.techos || {};
-    if (!a.techo_puesto || !(t.tope_mensual_cent > 0)) return { clave: 'sin_techo', txt: 'Ahora el agente no puede gastar nada: falta el techo del estudio' + (a.techo_puesto ? ' (está a 0)' : '') +
-      '. Ponlo aquí abajo; sin él el dueño no puede completar el paso «Tope mensual» de su asistente.' };
-    if (!(a.tope_ficha_cent > 0)) return { clave: 'sin_tope_dueno', txt: 'Ahora el agente no puede gastar nada: el techo ya está puesto, pero el dueño no ha puesto su tope mensual. ' +
+    var t = a.techos || {}, apagado = a.encendido === false;
+    if (!a.techo_puesto || !(t.tope_mensual_cent > 0)) return { clave: 'sin_techo', leve: apagado, txt: apagado
+      ? 'El agente está apagado. Antes de encenderlo falta el techo del estudio' + (a.techo_puesto ? ' (está a 0)' : '') +
+        ': sin él no podrá gastar nada ni el dueño completar el paso «Tope mensual» de su asistente. Ponlo aquí abajo.'
+      : 'Ahora el agente no puede gastar nada: falta el techo del estudio' + (a.techo_puesto ? ' (está a 0)' : '') +
+        '. Ponlo aquí abajo; sin él el dueño no puede completar el paso «Tope mensual» de su asistente.' };
+    if (!(a.tope_ficha_cent > 0)) return { clave: 'sin_tope_dueno', leve: true, txt: 'Ahora el agente no puede gastar nada: el techo ya está puesto, pero el dueño no ha puesto su tope mensual. ' +
       'Lo pone él en su asistente; el estudio no tiene que hacer nada.' + (a.hay_owner ? '' : ' Y este negocio aún no tiene dueño del agente.') };
     return { clave: 'otro', txt: 'Algo no cuadra: con el techo y el tope puestos, ahora vale 0. Recarga; si sigue igual, es un fallo del estudio, no del dueño.' };
   }
@@ -1161,7 +1166,7 @@ window.AXW_ASIS = (function () {
       : '<span class="ax-err-t" data-techo-estado="sin_techo">Sin techo.</span>') +
       '<small>Tope del dueño: ' + esc(typeof a.tope_ficha_cent === 'number' ? eur(a.tope_ficha_cent) : 'sin poner') + ' · lo que vale ahora: ' + esc(eur(a.tope_vigente_cent)) +
       (typeof a.subida_pendiente_cent === 'number' ? ' · subida a ' + esc(eur(a.subida_pendiente_cent)) + ' pendiente (entra a las 24 h)' : '') + '.</small>' +
-      (causa ? '<small class="' + (causa.clave === 'sin_tope_dueno' ? 'ax-aten' : 'ax-err-t') + '" data-techo-aviso="' + causa.clave + '">' + esc(causa.txt) + '</small>' : '');
+      (causa ? '<small class="' + (causa.leve ? 'ax-aten' : 'ax-err-t') + '" data-techo-aviso="' + causa.clave + '">' + esc(causa.txt) + '</small>' : '');
     if (!i.editable) return html;
     var ph = function (c) { return typeof c === 'number' ? ' placeholder="ahora ' + esc(eur(c)) + '"' : ' placeholder="en euros"'; };
     return html + '<details class="ax-buzon" data-techo-form' + (causa && causa.clave === 'sin_techo' ? ' open' : '') + '><summary>' + (a.techo_puesto ? 'Cambiar el techo' : 'Poner el techo') + '</summary>' +
@@ -1557,7 +1562,7 @@ window.AXW_ASIS = (function () {
       if (cf.length) bloqueos.push(cf.map(function (k) { var v = s.condiciones_faltan[k];
         return esc(nombre(k)) + ' no se puede encender todavía: le falta ' + esc(Array.isArray(v) ? v.join(', ') : String(v)) + ' (lo pide la base).'; }).join(' '));
       // A14 (20261014096000): lo que frenaría un disparador de la base (otro tipo, de pago, sin declarar…) va en `rechazo`. Va ANTES y TAPA la falta de
-      // ensayo (EU4, 15-oct, rama de bbm): un rechazo así no lo arregla ningún ensayo, y pedir uno sería trabajo para nada
+      // ensayo (EU4, 15-oct): un rechazo así no lo arregla ningún ensayo, y pedir uno sería trabajo para nada
       var faltan = s.faltan_dependencias || {}, fk = Object.keys(faltan);
       if (s.rechazo && typeof s.rechazo === 'object') bloqueos.push(textoRechazo(s.rechazo));
       else if (s.regla_sin_mirar) bloqueos.push('La base no pudo comprobar este cambio (' + esc(SIN_MIRAR[s.regla_sin_mirar] || String(s.regla_sin_mirar)) +

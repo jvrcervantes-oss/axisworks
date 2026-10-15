@@ -151,6 +151,9 @@ const ajena = [], marcaGoogle = [];
   const limpiaParaCaptura = () => p.evaluate(() => { scrollTo(0, 0); document.getElementById('toast').classList.add('hidden'); });
   const html = fs.readFileSync(path.join(RAIZ, 'panel', 'index.html'), 'utf8');
   const fuga = (html.match(/_[a-z_]+_setup_estado|sociedad_guarda|ajustes_config_guardar|producto_guarda|#283|"rpc"|"ajustes"|"herramienta"|"operativo"/) || [])[0];
+  // /panel/ va en el paquete de TODAS las instancias: ni en un comentario el alias de un cliente (revisor del Techo, 16-oct). Rodeado de lo que
+  // nunca sale en base64 (espacio, paréntesis, guion…): las fuentes incrustadas contienen esas letras por azar
+  { const alias = (html.match(/[\s(,;]bbm[\s\-),;:]/i) || [])[0]; ok('/panel/ no lleva el alias de un cliente, ni en comentarios', !alias, alias); }
   ok('/panel/ es público: no lleva rpc, ajustes, funciones de estado ni motivos internos del registro', !fuga, fuga);
   await p.goto(ORIGEN + '/panel/', { waitUntil: 'load' });
   await p.waitForSelector('#modulos [data-mod]', { timeout: 15000 });
@@ -272,9 +275,18 @@ const ajena = [], marcaGoogle = [];
     aviso: document.querySelector('#ficha [data-techo-aviso]') && document.querySelector('#ficha [data-techo-aviso]').getAttribute('data-techo-aviso'),
     avisoTxt: (document.querySelector('#ficha [data-techo-aviso]') || {}).textContent || '', abierto: !!document.querySelector('#ficha details[open] [data-techo]'),
     form: !!document.querySelector('#ficha [data-techo="pon"]') }));
+  const avisoLeve = () => p.evaluate(() => { const e = document.querySelector('#ficha [data-techo-aviso]'); return e ? e.classList.contains('ax-aten') : null; });
+  // con el agente APAGADO, sin techo no es una avería: ámbar, y dice lo que faltará al encenderlo (revisor del Techo, 16-oct)
+  const ta = await techoVe();
+  ok('techo: agente apagado y sin techo → aviso en ámbar (no rojo) que dice lo que faltará al encenderlo, con el formulario abierto',
+    ta.estado === 'sin_techo' && ta.aviso === 'sin_techo' && (await avisoLeve()) === true && /El agente está apagado/.test(ta.avisoTxt) &&
+    /Ponlo aquí abajo/.test(ta.avisoTxt) && ta.abierto, JSON.stringify(ta));
+  AAAS.encendido = true;
+  await p.reload({ waitUntil: 'load' });
+  await p.waitForSelector('#ficha [data-techo-estado]', { timeout: 15000 });
   const t0 = await techoVe();
-  ok('techo: sin techo lo dice, con el aviso de tope 0 que arregla el estudio, y el formulario abierto', t0.estado === 'sin_techo' && t0.aviso === 'sin_techo' &&
-    /no puede gastar nada/.test(t0.avisoTxt) && /Ponlo aquí abajo/.test(t0.avisoTxt) && t0.abierto, JSON.stringify(t0));
+  ok('techo: encendido y sin techo lo dice en rojo, con el aviso de tope 0 que arregla el estudio, y el formulario abierto', t0.estado === 'sin_techo' && t0.aviso === 'sin_techo' &&
+    (await avisoLeve()) === false && /no puede gastar nada/.test(t0.avisoTxt) && /Ponlo aquí abajo/.test(t0.avisoTxt) && t0.abierto, JSON.stringify(t0));
   const nTecho = () => llamadas.filter(c => /^techo_aaas_/.test(c.accion)).length;
   let n0 = nTecho();
   await p.click('[data-techo="pon"]');
