@@ -224,6 +224,9 @@
       });
       document.title = p.titulo;
       document.body.innerHTML = p.html;
+      // la cáscara (shell.css) tapa <main> 12 s, como red de rescate, hasta que nav.js pone body.lw-listo; aquí nav.js no llega a correr y el
+      // aviso se quedaba en blanco esos 12 s (verificador de bbm, 15-oct-2026): la señal de «listo» la da quien monta la pantalla
+      document.body.classList.add('lw-listo');
       raiz.classList.remove('axw-mod-pend');
       raiz.style.visibility = 'visible';
       var b = document.getElementById('axw-reintenta');

@@ -6361,11 +6361,21 @@ def alias_htaccess(destino):
         reglas.append(get + '  RewriteRule ^%s$ /%s/ [R=302,L,QSA]\n' % (re.escape(en), en))
         reglas.append('  RewriteRule ^%s/(.*)$ %s/$1 [L]\n' % (re.escape(en), clave))
     # el charset SIEMPRE (también sin ninguna carpeta del mapa): el ayudante va en todas las páginas, delante del <meta charset> (code-review, 15-oct)
-    cab = 'AddDefaultCharset UTF-8\n'
+    cab = CHARSET_HTACCESS
     if not reglas:
         return cab
     return ('# Rutas en el idioma de la instancia: /workshop/x se sirve desde taller/x (sin redirigir: el navegador canoniza la barra).\n'
             + cab + '<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteBase /\n' + ''.join(reglas) + '</IfModule>\n')
+
+
+CHARSET_HTACCESS = 'AddDefaultCharset UTF-8\n'
+
+
+def htaccess_idioma(destino, rutas_on):
+    """Lo del idioma en el .htaccess de la instancia: las rutas inglesas (con su charset) o, con las rutas apagadas, SOLO el charset. Al apagar las
+    rutas (95590f5, hasta su ensayo) el charset se fue con ellas y bbm servía text/html sin charset (verificador, 15-oct-2026): el ayudante va
+    delante del <meta charset> y las páginas de la v4 lo llevan pasado el primer KB, así que el charset no puede depender de las rutas."""
+    return alias_htaccess(destino) if rutas_on else CHARSET_HTACCESS
 
 
 def instancia(nombre):
@@ -6633,7 +6643,7 @@ def instancia(nombre):
         s_ = os.path.join(DIST, x)
         shutil.copytree(s_, os.path.join(destino, x)) if os.path.isdir(s_) else shutil.copy2(s_, destino)
     open(os.path.join(destino, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(HTACCESS_INSTANCIA.format(
-        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino) + (alias_htaccess(destino) if rutas_on else ''),   # rutas inglesas DETRÁS del legado
+        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino) + htaccess_idioma(destino, rutas_on),   # rutas inglesas DETRÁS del legado
         dominio_re='(' + '|'.join(re.escape(d) for d in [dominio] + _instancia_alias(nombre)) + ')'))
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(destino)
