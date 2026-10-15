@@ -237,6 +237,7 @@
     'No se pudo cargar el SDK de Meta. Revisa tu conexión o el bloqueador de contenido.': 'The Meta SDK could not be loaded. Check your connection or content blocker.',
     'Guardada': 'Saved', 'Todavía no has guardado la ficha.': 'You have not saved the sheet yet.', 'Todavía no hay versiones.': 'There are no versions yet.',
     'servicios': 'services', 'preguntas': 'questions', 'Ficha entera': 'Whole sheet', 'caracteres': 'characters', 'Versión': 'Version',
+    'Sistema': 'System', 'Configuración inicial': 'Initial setup',
     'Versión restaurada.': 'Version restored.', 'Ficha guardada.': 'Sheet saved.', 'No había nada que cambiar.': 'There was nothing to change.',
     'Cuenta en una frase qué has cambiado: queda en el historial.': 'Say in one sentence what you changed: it is kept in the history.',
     'Pulsa otra vez para confirmar': 'Press again to confirm', 'Vuelvo a la versión': 'Back to version',
@@ -379,10 +380,19 @@
     pintaLista('preguntas', f.preguntas || []);
     $c('motivo').value = '';
     pintaEstado(d.estado);
-    texto($w('version'), d.version ? T('Versión') + ' ' + d.version + ' · ' + T('Guardada') + ' ' + fecha(d.actualizado_en) + (d.actualizado_por ? ' · ' + d.actualizado_por : '') : T('Todavía no has guardado la ficha.'));
+    texto($w('version'), d.version ? T('Versión') + ' ' + d.version + ' · ' + T('Guardada') + ' ' + fecha(d.actualizado_en) + (d.actualizado_por ? ' · ' + quienSe(d.actualizado_por) : '') : T('Todavía no has guardado la ficha.'));
     recuenta();
     error('');
   }
+  // Quién firma una versión: una persona lo hace con su correo (o su id de usuario). Cualquier otro autor es el sistema o el estudio (la
+  // migración que sembró la fila, postgres) y su motivo es interno, en español y para nosotros: sale «Sistema · Configuración inicial» en el
+  // idioma de quien mira (verificador de bbm, 15-oct-2026; la misma regla que el historial de /entrega/). Solo cambia lo que se pinta.
+  function deSistema(q) {
+    q = String(q == null ? '' : q).trim();
+    return !(q.indexOf('@') > 0 || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q));
+  }
+  function quienSe(q) { return deSistema(q) ? T('Sistema') : String(q); }
+  function quienMotivo(it) { return deSistema(it.quien) ? T('Sistema') + ' · ' + T('Configuración inicial') : (it.quien || '') + (it.motivo ? ' · ' + it.motivo : ''); }
   function pintaHistorial(r) {
     var cont = $w('historial'); limpia(cont);
     var lista = (r && r.versiones) || [];
@@ -390,7 +400,7 @@
     lista.forEach(function (it) {
       var fila = document.createElement('div'); fila.className = 'wb-hist-fila'; fila.setAttribute('data-version', it.version);
       var s = document.createElement('span');
-      s.textContent = T('Versión') + ' ' + it.version + ' · ' + fecha(it.cuando) + ' · ' + (it.quien || '') + (it.motivo ? ' · ' + it.motivo : '');
+      s.textContent = T('Versión') + ' ' + it.version + ' · ' + fecha(it.cuando) + ' · ' + quienMotivo(it);
       fila.appendChild(s);
       if (it.version === ACTUAL) { var a = document.createElement('span'); a.className = 'wb-vacio'; a.textContent = T('Versión actual'); fila.appendChild(a); }
       else {
@@ -476,14 +486,14 @@
     });
     sEl('motivo').value = '';
     sAviso(v.activo === true ? T('El seguimiento está activado: escribirá a quien deje de contestar.') : T('El seguimiento está apagado: no escribe a nadie.'));
-    texto($w('seg-version'), d.version ? T('Versión') + ' ' + d.version + ' · ' + T('Guardada') + ' ' + fecha(d.actualizado_en) + (d.actualizado_por ? ' · ' + d.actualizado_por : '') : '');
+    texto($w('seg-version'), d.version ? T('Versión') + ' ' + d.version + ' · ' + T('Guardada') + ' ' + fecha(d.actualizado_en) + (d.actualizado_por ? ' · ' + quienSe(d.actualizado_por) : '') : '');
     var h = $w('seg-historial'); limpia(h);
     var lista = d.versiones || [];
     if (!lista.length) { var vacio = document.createElement('p'); vacio.className = 'wb-vacio'; texto(vacio, T('Todavía no hay versiones del seguimiento.')); h.appendChild(vacio); }
     lista.forEach(function (it) {
       var fila = document.createElement('div'); fila.className = 'wb-hist-fila'; fila.setAttribute('data-seg-version', it.version);
       var sp = document.createElement('span');
-      sp.textContent = T('Versión') + ' ' + it.version + ' · ' + fecha(it.cuando) + ' · ' + (it.quien || '') + (it.motivo ? ' · ' + it.motivo : '');
+      sp.textContent = T('Versión') + ' ' + it.version + ' · ' + fecha(it.cuando) + ' · ' + quienMotivo(it);
       fila.appendChild(sp); h.appendChild(fila);
     });
     sError('');

@@ -2495,6 +2495,9 @@ MENU_I18N = {
 # perusahaan, kuitansi, invoice). Traducción automática SIN REVISAR por un hablante nativo (departamentos/idiomas: ISO 18587); la valida el
 # equipo de Dion como el resto del glosario. Lo que ya tenía inglés en Lawang solo recibe aquí su indonesio (una clave EN existente no se pisa).
 MENU_I18N.update({
+    # historiales: lo que firma el sistema o el estudio (verificador de bbm, 15-oct)
+    'Sistema': {'en': 'System', 'id': 'Sistem'},
+    'Configuración inicial': {'en': 'Initial setup', 'id': 'Konfigurasi awal'},
     'Cifras principales': {'en': 'Key figures', 'id': 'Angka utama'},
     # verificador de bbm (15-oct): la tarjeta «Asistente» de herramientas.js no tenía su frase en ningún diccionario
     'Pide lo que no puedes hacer tú: cambiar un dato, anular o borrar un documento, borrar una operación. Lo aprueba dirección.': {
@@ -5111,6 +5114,28 @@ COMODIDAD_INSTANCIA = (
 # Gastos sin «Proyecto» con el módulo proyectos apagado y su CSV por T (bbm-cola-2 T1, 15-oct-2026). Mismo formato y misma función que
 # COMODIDAD_INSTANCIA (textos_instancia); tupla aparte porque es de otro encargo (bbm-idiomas). Lawang no pasa por aquí.
 GASTOS_INSTANCIA = (
+    # Ajustes › Registro de cambios (verificador de bbm, 15-oct-2026; agencia-c0: la misma regla que el historial de /entrega/): una fila que no
+    # firma una persona (correo o id de usuario) es del sistema o del estudio y su motivo es interno: «Sistema» y «Configuración inicial».
+    ('intranet/v4/assets/ajustes.js', "esc(f.quien) + '</td>' +",
+     "esc(axwDeSistema(f.quien) ? T('Sistema') : f.quien) + '</td>' +", 1),
+    ('intranet/v4/assets/ajustes.js', "esc(f.motivo || '—') + '</td></tr>';",
+     "esc(axwDeSistema(f.quien) ? T('Configuración inicial') : (f.motivo || '—')) + '</td></tr>';", 1),
+    ('intranet/v4/assets/ajustes.js', "    window.lwDatos('ajustes_log_datos', { p_limit: 200 }).then(function (r) {\n",
+     "    function axwDeSistema(q) { q = String(q == null ? '' : q).trim(); return !(q.indexOf('@') > 0 || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q)); }\n"
+     "    window.lwDatos('ajustes_log_datos', { p_limit: 200 }).then(function (r) {\n", 1),
+    # Ajustes › Impuestos (agencia-c0, 15-oct-2026: «art. 20.Uno LIVA» en bbm, una empresa indonesia): el maestro siembra los impuestos de España e
+    # Indonesia en toda instancia (20260926170000; en bbm, 090500 desactiva los de España sin borrarlos). No se pintan los de un país en el que no
+    # hay ninguna sociedad de la instancia: el país de cada sociedad es el que usa la base al facturar (es_indonesia → ID, si no ES; b1_dinero),
+    # y uno atado a una sociedad (sociedad_clave) va con ella. Sin poder leer las sociedades, todo como siempre (la lista no se queda vacía a ciegas).
+    ('intranet/v4/assets/datos.js', "vig(sb.from('sociedades').select('clave,razon,label,activa').order('orden'))",
+     "vig(sb.from('sociedades').select('clave,razon,label,activa,es_indonesia').order('orden'))", 1),
+    ('intranet/v4/assets/datos.js', "        var filas = r[0], socs = r[1];\n        if (!filas) return;   // fallo() ya pintó el aviso en la lista\n",
+     "        var filas = r[0], socs = r[1];\n        if (!filas) return;   // fallo() ya pintó el aviso en la lista\n"
+     "        if (socs && socs.length) {   // solo los países de las sociedades de la instancia (por su clave); sin leerlas, todos\n"
+     "          var axwPais = {}, axwSoc = {};\n"
+     "          socs.forEach(function (s) { var pa = s.es_indonesia === true ? 'ID' : s.es_indonesia === false ? 'ES' : null; if (pa) { axwPais[pa] = true; axwSoc[s.clave] = pa; } });\n"
+     "          if (Object.keys(axwPais).length) filas = filas.filter(function (x) { return x.sociedad_clave ? axwSoc[x.sociedad_clave] === x.pais : !!axwPais[x.pais]; });\n"
+     "        }\n", 1),
     # la región de cifras llevaba su aria-label en español sin marca de idioma (verificador de bbm, 15-oct-2026): se le pone la de los aria-label de Lawang.
     # El atributo va partido en dos literales a propósito: rotulos_build.test.js lee del fuente los rótulos visibles con esa marca y esto no lo es.
     ('intranet/v4/gastos/index.html', 'gap-4" aria-label="Cifras principales">', 'gap-4" data-' 'lwt-aria aria-label="Cifras principales">', 1),
