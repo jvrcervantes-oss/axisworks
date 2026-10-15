@@ -2366,6 +2366,9 @@ MENU_I18N = {
     'Entrega': {'en': 'Delivery', 'id': 'Antar'},
     'Flota y tarifas': {'en': 'Fleet and rates', 'id': 'Armada dan tarif'},
     'Ventas': {'en': 'Sales', 'id': 'Penjualan'},
+    # el menú de una instancia con "aaas": true (aaas_en_paquete, tren 5 de bbm, 15-oct): «AaaS» es el nombre del producto, igual en los tres
+    # idiomas (owner, 13-oct; ya en IGUALES_EN_ID), pero sin entrada aquí lwT lo contaba como sin traducir en las 54 pantallas (LW_T_MISSES)
+    'AaaS': {'en': 'AaaS', 'id': 'AaaS'},
     # paginador común (bbm-cola-2 T1, 15-oct): el inglés ya está en el diccionario de Lawang y no se pisa; aquí entra el indonesio
     '← Anteriores': {'en': '← Previous', 'id': '← Sebelumnya'},
     'Siguientes →': {'en': 'Next →', 'id': 'Berikutnya →'},
@@ -4199,6 +4202,19 @@ def _pantalla_bot(v4, archivo, carpeta, titulo, puerta='data-rol="admin"'):
     t = _una_vez(t, '<title data-lw-titulo>Asistente</title>', '<title data-lw-titulo>%s</title>' % titulo, carpeta + '/index.html título')
     os.makedirs(os.path.join(v4, carpeta), exist_ok=True)
     open(os.path.join(v4, carpeta, 'index.html'), 'w', encoding='utf-8', newline='').write(t)
+
+
+def resumen_pantalla():
+    """Pantalla /finanzas/ (Resumen) de TODA instancia del maestro (E4.3, sesión bbm-resumen, 15-oct-2026; revisión previa #369 con Producto y Experiencia).
+    Sustituye la de Lawang (finanzas/index.html + panel-finanzas.js: contratos, unidades, comisiones y cuentas, calculado en el navegador) por `resumen.html`
+    sobre la cáscara de /asistente/, que pide UNA lectura (finanzas_resumen_datos) y pinta un bloque por módulo encendido en la base. Misma puerta que tenía
+    la página (data-rol="admin"); la base la vuelve a exigir. El menú no cambia: «Resumen» ya apunta a /finanzas/. datos.js no tiene manejador para
+    «finanzas» (es de las PROPIAS: velo y contador de red), así que no hay que desviarle el segmento como en la portada. El registro lo sabe por
+    SUSTITUIDA_MAESTRO de erp/modulos.py (la agencia). Solo se toca lo copiado en DIST, nunca el repo de Lawang. Revertir: quitar la llamada en instancia()."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    if not os.path.isfile(os.path.join(v4, 'finanzas', 'index.html')):
+        aborta('resumen_pantalla: no está /finanzas/ copiada de Lawang (intranet/v4/finanzas/index.html): ¿cambió su sitio?')
+    _pantalla_bot(v4, 'resumen.html', 'finanzas', 'Resumen')
 
 
 def ventas_pantalla():
@@ -6407,11 +6423,21 @@ def alias_htaccess(destino):
         reglas.append(get + '  RewriteRule ^%s$ /%s/ [R=302,L,QSA]\n' % (re.escape(en), en))
         reglas.append('  RewriteRule ^%s/(.*)$ %s/$1 [L]\n' % (re.escape(en), clave))
     # el charset SIEMPRE (también sin ninguna carpeta del mapa): el ayudante va en todas las páginas, delante del <meta charset> (code-review, 15-oct)
-    cab = 'AddDefaultCharset UTF-8\n'
+    cab = CHARSET_HTACCESS
     if not reglas:
         return cab
     return ('# Rutas en el idioma de la instancia: /workshop/x se sirve desde taller/x (sin redirigir: el navegador canoniza la barra).\n'
             + cab + '<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteBase /\n' + ''.join(reglas) + '</IfModule>\n')
+
+
+CHARSET_HTACCESS = 'AddDefaultCharset UTF-8\n'
+
+
+def htaccess_idioma(destino, rutas_on):
+    """Lo del idioma en el .htaccess de la instancia: las rutas inglesas (con su charset) o, con las rutas apagadas, SOLO el charset. Al apagar las
+    rutas (95590f5, hasta su ensayo) el charset se fue con ellas y bbm servía text/html sin charset (verificador, 15-oct-2026): el ayudante va
+    delante del <meta charset> y las páginas de la v4 lo llevan pasado el primer KB, así que el charset no puede depender de las rutas."""
+    return alias_htaccess(destino) if rutas_on else CHARSET_HTACCESS
 
 
 def instancia(nombre):
@@ -6424,6 +6450,7 @@ def instancia(nombre):
     taller_pantalla()   # F8 pieza 2 (8-oct-2026): Taller — órdenes de trabajo ligeras (tras reservas de producto: sus anclas de nav.js)
     entrega_pantalla()   # F8 pieza 8 (10-oct-2026): Entrega — sede, tarifa por km y límites (tras taller: sus anclas de nav.js y herramientas.js)
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
+    resumen_pantalla()   # E4.3 (15-oct-2026): /finanzas/ = el Resumen que suma solo lo encendido (sustituye el panel inmobiliario de Lawang)
     if aaas_en_paquete(nombre):
         agente_pantalla()   # EP.5 (13-oct-2026): AaaS — su ventana (tras flota: sus anclas de nav.js y la marca de herramientas.js)
     asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)
@@ -6678,7 +6705,7 @@ def instancia(nombre):
         s_ = os.path.join(DIST, x)
         shutil.copytree(s_, os.path.join(destino, x)) if os.path.isdir(s_) else shutil.copy2(s_, destino)
     open(os.path.join(destino, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(HTACCESS_INSTANCIA.format(
-        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino) + (alias_htaccess(destino) if rutas_on else ''),   # rutas inglesas DETRÁS del legado
+        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino) + htaccess_idioma(destino, rutas_on),   # rutas inglesas DETRÁS del legado
         dominio_re='(' + '|'.join(re.escape(d) for d in [dominio] + _instancia_alias(nombre)) + ')'))
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(destino)

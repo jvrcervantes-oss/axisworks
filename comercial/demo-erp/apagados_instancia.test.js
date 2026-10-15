@@ -31,7 +31,7 @@ function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, bu
     documentElement: { classList: { add: (c) => clases.add(c), remove: (c) => clases.delete(c) }, style: {}, appendChild() {} },
     head: { appendChild(el) { if (el.id === 'axw-modulos') doc._hoja = el; } },
     title: '',
-    body: { innerHTML: 'pantalla' },
+    body: { innerHTML: 'pantalla', classList: { add: (c) => clases.add('body.' + c) } },
     createElement: () => ({}),
     querySelectorAll: (sel) => (sel === 'a[href]' && enlaces ? enlaces : []),
     getElementById: () => null,
@@ -131,6 +131,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     await espera(50);
     ok(!arranco, 'LW_AUTH no se resuelve en una pantalla de módulo apagado');
     ok(/no instalado/i.test(E.doc.body.innerHTML) && !E.clases.has('axw-mod-pend'), 'la pantalla dice «Módulo no instalado»');
+    ok(E.clases.has('body.lw-listo'), 'el aviso se ve ya: body.lw-listo quita la red de rescate de 12 s de shell.css');
     const b = E.doc.body.innerHTML;
     ok(b.includes('«Comisiones» no está activo') && b.includes('Lo que se debe a cada comercial.'), 'dice qué módulo y qué hace');
     ok(b.includes('mailto:hello@axisworks.studio?subject=Activar%20m%C3%B3dulo%3A%20Comisiones') && b.includes('https://axisworks.studio'),
