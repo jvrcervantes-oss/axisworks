@@ -439,23 +439,23 @@
       return v.ofrecidos.indexOf(v.defecto) >= 0 ? [v.defecto].concat(v.ofrecidos.filter(function (c) { return c !== v.defecto; })) : v.ofrecidos.slice();
     }, function () { return build.slice(); });
   }
-  var CARGA = 0;   // cada carga tiene su número: la respuesta de idiomas de una carga vieja no toca la ficha de la nueva
+  var CARGA = 0, GUARDANDO = false;   // cada carga tiene su número: la respuesta de idiomas de una carga vieja no toca la ficha de la nueva
   function carga() {
     error('');
     var mia = ++CARGA;
     return window.lwDatos('wab_ficha_datos', {}).then(function (r) {
       if (mia !== CARGA) return;
-      if (r.error || !r.data) { error(mensaje(r.error)); return; }
+      if (r.error || !r.data) { error(mensaje(r.error)); raiz.querySelector('[data-accion="guardar"]').disabled = GUARDANDO; return; }   // no se queda apagado por una carga anterior
       var nueva = !(r.data.ficha && Array.isArray(r.data.ficha.idiomas));
       IDIOMAS_DEF = null;
       pinta(r.data);
       var btG = raiz.querySelector('[data-accion="guardar"]');
-      btG.disabled = false;   // lo que dejara apagado una carga anterior no se hereda
+      btG.disabled = GUARDANDO;   // lo que dejara apagado una carga anterior no se hereda; con un guardado en curso sigue apagado
       if (nueva) {
         btG.disabled = true;   // una ficha nueva no se guarda sin idiomas mientras llegan los de la instancia
         idiomasInstancia().then(function (def) {   // se pinta sin esperarla; al llegar se marcan, si nadie ha tocado ya las casillas
           if (mia !== CARGA) return;
-          btG.disabled = false;
+          btG.disabled = GUARDANDO;
           var cs = [].slice.call($c('idiomas').querySelectorAll('input[data-idioma]'));
           if (!def || cs.some(function (c) { return c.checked || c.getAttribute('data-tocado'); })) return;
           IDIOMAS_DEF = def;
@@ -475,9 +475,9 @@
   function guarda(btn) {
     var motivo = $c('motivo').value;
     if (!motivo.trim()) { error(T('Cuenta en una frase qué has cambiado: queda en el historial.')); $c('motivo').focus(); return; }
-    btn.disabled = true; error('');
+    btn.disabled = true; GUARDANDO = true; error('');
     SB.rpc('wab_ficha_guarda', { p_ficha: recoge(), p_motivo: motivo, p_version_base: VERSION }).then(function (r) {
-      btn.disabled = false;
+      btn.disabled = false; GUARDANDO = false;
       if (r.error) { error(mensaje(r.error)); return; }
       ok(r.data && r.data.cambiado === false ? T('No había nada que cambiar.') : T('Ficha guardada.'));
       carga();

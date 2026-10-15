@@ -750,9 +750,21 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     // pestaña Listas por modelo
     await p.click('[data-accion="tl-tab-listas"]'); await espera(p, () => !!document.querySelector('[data-tl="l-revisiones"]') || !!document.querySelector('[data-accion="tl-l-basica"]') || !!document.querySelector('[data-tl="l-nueva"]'));
     ok('Listas por modelo: URL #listas y lista común', (await p.evaluate(() => location.hash)) === '#listas' && (await p.$$('[data-l-rev]')).length === 2);
-    await p.fill('[data-tl="l-nueva"] [data-f="clave"]', 'luces'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Lampu'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Lights');
+    const vistos = sel => p.evaluate(s => [...document.querySelectorAll(s + ' input, ' + s + ' select, ' + s + ' textarea')]
+      .filter(e => e.checkVisibility({ contentVisibilityAuto: true, visibilityProperty: true })).map(e => e.getAttribute('data-f')), sel);
+    ok('S4 · revisión nueva: a la vista solo los dos nombres (la clave sale sola, la posición plegada)', JSON.stringify(await vistos('[data-tl="l-nueva"]')) === '["nombre_id","nombre_en"]', JSON.stringify(await vistos('[data-tl="l-nueva"]')));
+    ok('S4 · pieza nueva: referencia y los dos nombres (coste, moneda y revisión sugerida plegados)', JSON.stringify(await vistos('[data-tl="l-pieza-nueva"]')) === '["ref","nombre_id","nombre_en"]', JSON.stringify(await vistos('[data-tl="l-pieza-nueva"]')));
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Lampu'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Lights');
     await p.click('[data-accion="tl-l-rev-nueva"]'); await espera(p, () => document.querySelectorAll('[data-l-rev]').length === 3);
     ok('añadir revisión a la lista común: taller_revision_guarda con producto nulo', llamadas(B, 'taller_revision_guarda').slice(-1)[0][1].p_datos.producto_id === null);
+    ok('S4 · la clave sale del nombre en inglés: «Lights» → lights', llamadas(B, 'taller_revision_guarda').slice(-1)[0][1].p_datos.clave === 'lights');
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Lampu belakang'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Lights');
+    await p.click('[data-accion="tl-l-rev-nueva"]'); await espera(p, () => document.querySelectorAll('[data-l-rev]').length === 4);
+    ok('S4 · si ya hay una con esa clave en la lista, lleva _2 (no choca)', llamadas(B, 'taller_revision_guarda').slice(-1)[0][1].p_datos.clave === 'lights_2');
+    await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_id"]', 'Busi'); await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_en"]', 'Spark plug');
+    await p.click('[data-accion="tl-l-rec-nueva"]'); for (let i = 0; i < 100 && !llamadas(B, 'taller_recambio_guarda').length; i++) await p.waitForTimeout(50);   // la cuenta de llamadas vive en Node
+    const pz = llamadas(B, 'taller_recambio_guarda').slice(-1)[0][1].p_datos;
+    ok('S4 · pieza sin coste: ni coste ni moneda (la moneda puesta solo viaja con un coste)', pz.coste_ref === null && pz.moneda === null, JSON.stringify(pz));
     await sinScroll(p, 'listas (1440)'); await sinTraducir(p, 'admin id');
     await ctx.close();
 

@@ -1452,6 +1452,22 @@
     return sel;
   }
   function campoL(etq, ctrl) { return h('div', { class: 'tl-campo' }, [h('label', { text: T(etq) }), ctrl]); }
+  /* S4 (bbm-comodidad, 15-oct-2026, «1, 2 o 3 campos a rellenar por paso»). La clave de una revisión nueva no se pide: sale del nombre en inglés
+     (minúsculas, sin tildes, «_»; la base exige ^[a-z0-9_]{2,40}$) y, si choca con una de esta lista, lleva _2, _3…; el campo solo aparece si la
+     base aun así no la acepta, con la propuesta escrita. La posición va plegada (sin ella, al final). En una pieza nueva, coste, moneda (con la de la
+     instancia ya puesta) y revisión sugerida van plegados; la moneda solo viaja con un coste: «las dos o ninguna», como pide la base. */
+  function claveDe(nombre, usadas) {
+    var b = String(nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 36);
+    if (b.length < 2) return '';
+    var c = b, i = 2;
+    while (usadas.indexOf(c) >= 0) c = b + '_' + (i++);
+    return c;
+  }
+  function monedaInstancia() {
+    var m = null;
+    try { m = typeof window.lwMonedaBase === 'function' ? window.lwMonedaBase() : null; } catch (e) { /* MUDO A PROPOSITO: sin moneda de la instancia, se escribe a mano */ }
+    return /^[A-Z]{3}$/.test(m || '') ? m : '';
+  }
   function pintaListas(v, d) {
     var sel = opcionesModelos(h('select', { 'data-tl': 'l-modelo' }), d, true, E.listaSel);
     v.appendChild(h('section', { class: 'tl-tarjeta' }, [campoL('Elige la lista', sel), h('div', { 'data-tl': 'l-estado', class: 'tl-estado', role: 'status' })]));
@@ -1472,12 +1488,14 @@
     if (filas.length) { C.tabla(tabla, [['Clave'], ['Nombre (indonesio)'], ['Nombre (inglés)'], ['Posición'], ['Activa'], ['']], filas); hijosRev.push(h('div', { class: 'axw-tabla-caja' }, [tabla])); }
     else hijosRev.push(h('p', { class: 'axw-vacio', text: T('Esta lista no tiene revisiones.') }));
     if (!filas.length && !E.listaSel) hijosRev.push(h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-basica', 'data-primario': '1', text: T('Cargar la lista básica') }));
-    var nueva = h('div', { class: 'axw-barra', 'data-tl': 'l-nueva' }, [
-      campoL('Clave', h('input', { type: 'text', maxlength: '40', 'data-f': 'clave', autocomplete: 'off' })),
+    var campoClave = campoL('Clave', h('input', { type: 'text', maxlength: '40', 'data-f': 'clave', autocomplete: 'off' }));
+    campoClave.classList.add('axw-oculto'); campoClave.setAttribute('data-tl', 'l-clave');
+    var posEl = h('input', { type: 'text', inputmode: 'numeric', maxlength: '4', 'data-f': 'orden', autocomplete: 'off' });
+    var nueva = h('div', { 'data-tl': 'l-nueva' }, [h('div', { class: 'axw-barra' }, [campoClave,
       campoL('Nombre (indonesio)', h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_id', autocomplete: 'off' })),
       campoL('Nombre (inglés)', h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_en', autocomplete: 'off' })),
-      campoL('Posición', h('input', { type: 'text', inputmode: 'numeric', maxlength: '4', 'data-f': 'orden', autocomplete: 'off' })),
-      h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-nueva', 'data-primario': '1', text: T('Añadir revisión') })]);
+      h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-nueva', 'data-primario': '1', text: T('Añadir revisión') })]),
+      C.pliegue([campoL('Posición', posEl)], function () { return [posEl.value ? T('Posición') + ' ' + posEl.value : null]; })]);
     hijosRev.push(nueva);
     v.appendChild(seccion('Revisiones', hijosRev));
     // copiar de otro modelo
@@ -1498,14 +1516,21 @@
     d.catalogo.forEach(function (p) { if (!d.recambios.some(function (x) { return x.recambio_id === p.id; })) cat.appendChild(h('option', { value: String(p.id), text: (p.ref ? String(p.ref) + ' · ' : '') + nombreDe(p) })); });
     v.appendChild(seccion('Piezas de esta lista', [d.recambios.length ? ul : h('p', { class: 'axw-vacio', text: T('Esta lista no tiene piezas.') }),
       h('div', { class: 'axw-barra', 'data-tl': 'l-vincula' }, [campoL('Añadir pieza existente', cat), campoL('Revisión sugerida', revOpts()), h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-vincula', text: T('Añadir') })]),
-      h('div', { class: 'axw-barra', 'data-tl': 'l-pieza-nueva' }, [h('strong', { text: T('Pieza nueva') }),
+      piezaNueva()]));
+    function piezaNueva() {
+      var costeEl = h('input', { type: 'text', inputmode: 'decimal', maxlength: '16', 'data-f': 'coste', autocomplete: 'off' });
+      var monEl = h('input', { type: 'text', maxlength: '3', 'data-f': 'moneda', autocomplete: 'off', value: monedaInstancia() });
+      var revEl = revOpts();
+      return h('div', { 'data-tl': 'l-pieza-nueva' }, [h('div', { class: 'axw-barra' }, [h('strong', { text: T('Pieza nueva') }),
         campoL('Referencia', h('input', { type: 'text', maxlength: '60', 'data-f': 'ref', autocomplete: 'off' })),
         campoL('Nombre (indonesio)', h('input', { type: 'text', maxlength: '120', 'data-f': 'nombre_id', autocomplete: 'off' })),
         campoL('Nombre (inglés)', h('input', { type: 'text', maxlength: '120', 'data-f': 'nombre_en', autocomplete: 'off' })),
-        campoL('Coste de referencia', h('input', { type: 'text', inputmode: 'decimal', maxlength: '16', 'data-f': 'coste', autocomplete: 'off' })),
-        campoL('Moneda', h('input', { type: 'text', maxlength: '3', 'data-f': 'moneda', autocomplete: 'off' })),
-        campoL('Revisión sugerida', revOpts()),
-        h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rec-nueva', 'data-primario': '1', text: T('Añadir') })])]));
+        h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rec-nueva', 'data-primario': '1', text: T('Añadir') })]),
+        C.pliegue([campoL('Coste de referencia', costeEl), campoL('Moneda', monEl), campoL('Revisión sugerida', revEl)], function () {
+          var o = revEl.value ? revEl.options[revEl.selectedIndex] : null;
+          return [costeEl.value ? costeEl.value + ' ' + monEl.value.toUpperCase() : null, o ? T('Revisión sugerida') + ': ' + o.textContent : null];
+        })]);
+    }
   }
   function lEstado(tipo, t) { var e = $v('l-estado'); if (!e) return; vacia(e); if (t) e.appendChild(h('p', { class: tipo === 'ok' ? 'axw-ok' : 'axw-error', text: t })); }
   function fv(caja, f) { var e = caja && caja.querySelector('[data-f="' + f + '"]'); return e ? (e.type === 'checkbox' ? e.checked : String(e.value || '').replace(/^\s+|\s+$/g, '')) : null; }
@@ -1515,7 +1540,7 @@
     if (!C.ocupa(bt)) return Promise.resolve();
     return llama(nombre, args).then(function (r) {
       C.libera(bt);
-      if (r.error) { lEstado('error', T('No guardado') + ' · ' + texto(r.error)); return null; }
+      if (r.error) { lEstado('error', T('No guardado') + ' · ' + texto(r.error)); return false; }
       return abreListas().then(function () { lEstado('ok', okTexto || T('Guardado.')); return r.data; });
     });
   }
@@ -1528,11 +1553,19 @@
       return lEscribe(el, 'taller_revision_guarda', { p_id: el.getAttribute('data-rev-id'), p_datos: { nombre_id: fv(tr, 'nombre_id'), nombre_en: fv(tr, 'nombre_en'), orden: Number(orden), activa: fv(tr, 'activa') } });
     }
     if (a === 'tl-l-rev-nueva') {
-      var c = $v('l-nueva'), ord = fv(c, 'orden'), datos = { producto_id: prod, clave: fv(c, 'clave').toLowerCase(), nombre_id: fv(c, 'nombre_id'), nombre_en: fv(c, 'nombre_en') };
-      if (!/^[a-z0-9_]{2,40}$/.test(datos.clave)) { lEstado('error', T('La clave va en minúsculas, cifras o guion bajo (2 a 40).')); return; }
+      var c = $v('l-nueva'), ord = fv(c, 'orden'), campoCl = c.querySelector('[data-tl="l-clave"]'), aMano = campoCl && !campoCl.classList.contains('axw-oculto');
+      var usadas = ((E.listas && E.listas.revisiones) || []).map(function (x) { return String(x.clave); });
+      var datos = { producto_id: prod, clave: aMano ? fv(c, 'clave').toLowerCase() : claveDe(fv(c, 'nombre_en') || fv(c, 'nombre_id'), usadas), nombre_id: fv(c, 'nombre_id'), nombre_en: fv(c, 'nombre_en') };
+      if (!/^[a-z0-9_]{2,40}$/.test(datos.clave)) {
+        if (!aMano && (datos.nombre_id || datos.nombre_en)) { campoCl.classList.remove('axw-oculto'); campoCl.querySelector('input').value = datos.clave; }   // un nombre sin letras ni cifras: la clave a mano
+        lEstado('error', T('La clave va en minúsculas, cifras o guion bajo (2 a 40).')); return;
+      }
       if (!datos.nombre_id || !datos.nombre_en) { lEstado('error', T('Los nombres van en una línea (hasta 80 caracteres).')); return; }
-      if (ord) { if (!/^\d{1,4}$/.test(ord)) { lEstado('error', T('El orden es un número de 0 a 9999.')); return; } datos.orden = Number(ord); }
-      return lEscribe(el, 'taller_revision_guarda', { p_id: null, p_datos: datos });
+      if (ord) { if (!/^\d{1,4}$/.test(ord)) { var pl = c.querySelector('[data-axw="mas-datos"]'); if (pl) pl.open = true; lEstado('error', T('El orden es un número de 0 a 9999.')); return; } datos.orden = Number(ord); }
+      return lEscribe(el, 'taller_revision_guarda', { p_id: null, p_datos: datos }).then(function (x) {
+        // la base no la aceptó (p. ej. clave_duplicada en otra lista que esta pantalla no ve): sale el campo con la propuesta, para cambiarla
+        if (x === false && campoCl && campoCl.isConnected) { campoCl.classList.remove('axw-oculto'); campoCl.querySelector('input').value = datos.clave; }
+      });
     }
     if (a === 'tl-l-copia') {
       var desde = $v('l-desde') && $v('l-desde').value;
@@ -1552,8 +1585,8 @@
       return lEscribe(el, 'taller_recambio_vincula', { p_recambio: rec, p_producto: prod, p_revision: fv(cv, 'revision') || null, p_quita: false });
     }
     if (a === 'tl-l-rec-nueva') {
-      var cn = $v('l-pieza-nueva'), coste = fv(cn, 'coste'), mon = (fv(cn, 'moneda') || '').toUpperCase(), imp = C.importe(coste, 4);
-      if (imp.e || (!imp.vacio) !== !!mon || (mon && !/^[A-Z]{3}$/.test(mon))) { lEstado('error', T('El coste va con su moneda (las dos o ninguna, moneda en tres letras).')); return; }
+      var cn = $v('l-pieza-nueva'), coste = fv(cn, 'coste'), imp = C.importe(coste, 4), mon = imp.vacio ? '' : (fv(cn, 'moneda') || '').toUpperCase();   // la moneda (ya puesta) solo viaja con un coste
+      if (imp.e || (!imp.vacio && !/^[A-Z]{3}$/.test(mon))) { var pc = cn.querySelector('[data-axw="mas-datos"]'); if (pc) pc.open = true; lEstado('error', T('El coste va con su moneda (las dos o ninguna, moneda en tres letras).')); return; }
       var dp = { ref: fv(cn, 'ref') || null, nombre_id: fv(cn, 'nombre_id'), nombre_en: fv(cn, 'nombre_en'), coste_ref: imp.vacio ? null : imp.v, moneda: mon || null };
       if (!dp.nombre_id || !dp.nombre_en) { lEstado('error', T('Los nombres van en una línea (hasta 80 caracteres).')); return; }
       var revSug = fv(cn, 'revision') || null;

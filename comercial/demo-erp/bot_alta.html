@@ -376,7 +376,12 @@
     btn.disabled = true; error('');
     SB.rpc('wab_cliente_guarda', { p_datos: recoge(), p_motivo: motivo }).then(function (r) {
       btn.disabled = false;
-      if (r.error) { error(mensaje(r.error)); return; }
+      if (r.error) {
+        error(mensaje(r.error));
+        // un rechazo de un dato de la parte 1 (razón social, nombre, domicilio): se vuelve a esa parte con el mensaje a la vista
+        if (/raz[oó]n social|razon_social|nombre_negocio|nombre del negocio|domicilio/i.test(String((r.error.message || '') + ' ' + (r.error.hint || '') + ' ' + (r.error.details || '')))) vaParte(1);
+        return;
+      }
       ok(T('Datos guardados.'));
       var cambia = r.data && r.data.razon_social_cambia;
       carga().then(function () {
@@ -415,7 +420,7 @@
       var a = el.getAttribute('data-accion');
       if (a === 'guardar-alta') guardaAlta(el);
       else if (a === 'alta-siguiente') { error(''); vaParte(2); try { $c('contacto_privacidad').focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
-      else if (a === 'alta-atras') { error(''); vaParte(1); try { $c('razon_social').focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
+      else if (a === 'alta-atras') { vaParte(1); try { $c('razon_social').focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
       else if (a === 'recargar') carga();
       else if (a === 'aceptar') acepta(el);
     });
