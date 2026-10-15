@@ -28,6 +28,8 @@
 .tl-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .tl-fila{width:100%;min-height:56px;text-align:left;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;padding:10px 14px;border-radius:12px;border:1px solid rgb(var(--tema-outline-variant, 197 200 188));background:rgb(var(--tema-surface-container-lowest, 255 255 255));color:inherit;font:inherit;cursor:pointer}
 .tl-fila:disabled{cursor:not-allowed;opacity:.6}
+.tl-fila[data-solo-ver]{cursor:default}
+.tl-foto{display:block;max-width:100%;max-height:420px;border-radius:8px;margin-top:8px}
 .tl-fila:focus-visible,.tl-op:focus-visible,.tl-res button:focus-visible{outline:3px solid rgb(var(--tema-deep-lagoon, 16 76 79));outline-offset:2px}
 .tl-mat{font-size:17px;font-weight:600;word-break:break-word}
 .tl-sub{font-size:14px;color:rgb(var(--tema-on-surface-variant, 68 72 63));word-break:break-word}
@@ -108,6 +110,7 @@
 <div class="tl-pestanas" role="tablist">
 <button class="axw-boton" type="button" role="tab" aria-selected="true" data-accion="tl-tab-taller"><span data-lwt>Motos</span></button>
 <button class="axw-boton axw-oculto" type="button" role="tab" aria-selected="false" data-accion="tl-tab-listas"><span data-lwt>Listas por modelo</span></button>
+<button class="axw-boton axw-oculto" type="button" role="tab" aria-selected="false" data-accion="tl-tab-partes"><span data-lwt>Partes hechos</span></button>
 </div>
 </div>
 
@@ -133,6 +136,8 @@
 </section>
 
 <section class="tl-vista axw-oculto" data-tl="vista-listas"></section>
+
+<section class="tl-vista axw-oculto" data-tl="vista-partes"></section>
 
 </div>
 <!--AXW_SCRIPT-->
@@ -250,7 +255,12 @@
     'La tanda ha terminado o se ha parado, pero no se ha podido releer: recarga la pantalla para ver cómo quedó.': 'The batch has finished or stopped, but it could not be read again: reload the screen to see how it ended up.',
     'Devolver estas {n} a disponible': 'Make these {n} available again', 'Motivo de la vuelta (3 a 120 caracteres)': 'Reason for returning (3 to 120 characters)',
     'Escribe el motivo (3 a 120 caracteres, en una línea).': 'Write the reason (3 to 120 characters, on one line).',
-    'Devueltas a disponible: {n} de {t}': 'Available again: {n} of {t}', 'Volver al taller': 'Back to the workshop'
+    'Devueltas a disponible: {n} de {t}': 'Available again: {n} of {t}', 'Volver al taller': 'Back to the workshop',
+    'Partes hechos': 'Finished orders', 'Solo para mirar: los partes cerrados, del más reciente al más antiguo. Aquí no se cambia nada.': 'View only: closed orders, newest first. Nothing can be changed here.',
+    'Aún no hay partes cerrados.': 'There are no closed orders yet.', 'Ver más': 'Show more', 'Cerrada el {f} por {q}': 'Closed on {f} by {q}', 'Cerrada el {f}': 'Closed on {f}',
+    'No se han podido mirar los partes': 'The orders could not be checked', 'No se ha podido abrir el parte': 'The order could not be opened', 'Volver a la lista': 'Back to the list',
+    'Nota del motivo': 'Reason note', 'Apertura': 'Opened', 'Cierre': 'Closed', 'Nota del cierre': 'Closing note', 'Orden de la pantalla anterior': 'Order from the previous screen',
+    'Sin foto': 'No photo', 'Daño {n}': 'Damage {n}'
   };
   // Indonesio (owner, 11-oct-2026: bbm en indonesio e inglés, sin español). Mismas claves que EN_TL; glosario de §10.9 y glosario_id.json (Taller → Bengkel,
   // Reserva → Booking, Guardar → Simpan, Flota → Armada; devolución de la moto = «kembali»; nada de lo que glosario_id.json pone en «prohibidos»). Lo lee alguien del equipo de Dion antes de abrir.
@@ -365,7 +375,12 @@
     'La tanda ha terminado o se ha parado, pero no se ha podido releer: recarga la pantalla para ver cómo quedó.': 'Proses selesai atau berhenti, tetapi data tidak dapat dibaca ulang: muat ulang layar untuk melihat hasilnya.',
     'Devolver estas {n} a disponible': 'Jadikan {n} motor ini tersedia', 'Motivo de la vuelta (3 a 120 caracteres)': 'Alasan kembali disewa (3 sampai 120 karakter)',
     'Escribe el motivo (3 a 120 caracteres, en una línea).': 'Tulis alasannya (3 sampai 120 karakter, satu baris).',
-    'Devueltas a disponible: {n} de {t}': 'Sudah tersedia: {n} dari {t}', 'Volver al taller': 'Kembali ke bengkel'
+    'Devueltas a disponible: {n} de {t}': 'Sudah tersedia: {n} dari {t}', 'Volver al taller': 'Kembali ke bengkel',
+    'Partes hechos': 'Order selesai', 'Solo para mirar: los partes cerrados, del más reciente al más antiguo. Aquí no se cambia nada.': 'Hanya untuk dilihat: order yang sudah ditutup, dari yang terbaru. Di sini tidak ada yang bisa diubah.',
+    'Aún no hay partes cerrados.': 'Belum ada order yang ditutup.', 'Ver más': 'Tampilkan lagi', 'Cerrada el {f} por {q}': 'Ditutup {f} oleh {q}', 'Cerrada el {f}': 'Ditutup {f}',
+    'No se han podido mirar los partes': 'Order tidak dapat diperiksa', 'No se ha podido abrir el parte': 'Order tidak dapat dibuka', 'Volver a la lista': 'Kembali ke daftar',
+    'Nota del motivo': 'Catatan alasan', 'Apertura': 'Dibuka', 'Cierre': 'Ditutup', 'Nota del cierre': 'Catatan penutupan', 'Orden de la pantalla anterior': 'Order dari layar sebelumnya',
+    'Sin foto': 'Tanpa foto', 'Daño {n}': 'Kerusakan {n}'
   };
   var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
   var traduce = function (r) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(r); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda con su clave */ } } };
@@ -429,6 +444,7 @@
     taller_datos: function (a) { return window.lwDatos('taller_datos', a); },
     taller_orden_datos: function (a) { return window.lwDatos('taller_orden_datos', a); },
     taller_listas_datos: function (a) { return window.lwDatos('taller_listas_datos', a); },
+    orden_trabajo_datos: function (a) { return window.lwDatos('orden_trabajo_datos', a); },
     taller_orden_abre: function (a) { return SB.rpc('taller_orden_abre', a); },
     taller_orden_km: function (a) { return SB.rpc('taller_orden_km', a); },
     taller_orden_paso: function (a) { return SB.rpc('taller_orden_paso', a); },
@@ -459,7 +475,7 @@
 
   /* ── estado ── */
   var E = { ficha: null, admin: false, flota: false, datos: null, moto: null, orden: null, paso: 'inicio', motivo: null, gas: null, fg: null,
-            enviando: false, reintento: null, revGuardando: {}, revError: {}, resultado: null, fin: null, duda: null, sucio: false, busca: '', listas: null, listaSel: '', varias: null };
+            enviando: false, reintento: null, revGuardando: {}, revError: {}, resultado: null, fin: null, duda: null, sucio: false, busca: '', listas: null, listaSel: '', varias: null, partes: null };
   function idioma() { return window.LW_IDIOMA || 'es'; }
   function nombreDe(x) { if (!x) return ''; var a = idioma() === 'en' ? x.nombre_en : x.nombre_id; return String(a || x.nombre_id || x.nombre_en || ''); }
   function norm(s) { return String(s == null ? '' : s).toUpperCase().replace(/[^A-Z0-9]/g, ''); }
@@ -470,6 +486,7 @@
   /* ── URL ── */
   function hashDe(paso) {
     if (paso === 'listas') return '#listas';
+    if (paso === 'partes') return '#partes';
     if (E.orden && PASOS.indexOf(paso) > 1) return '#o=' + E.orden.orden.id + '&p=' + paso;
     if (E.moto && (paso === 'moto' || paso === 'motivo')) return '#m=' + E.moto.id + '&p=' + paso;
     return '#';
@@ -484,6 +501,7 @@
   function leeHash() {
     var s = String(location.hash || '').replace(/^#/, ''), o = {};
     if (s === 'listas') return { listas: true };
+    if (s === 'partes') return { partes: true };
     s.split('&').forEach(function (par) {
       var i = par.indexOf('=');
       if (i > 0) { try { o[par.slice(0, i)] = decodeURIComponent(par.slice(i + 1)); } catch (e) { /* MUDO A PROPOSITO: un trozo de URL mal escrito se ignora y se va al inicio */ } }
@@ -494,9 +512,9 @@
   /* ── modos ── */
   function modo(m) {
     raiz.setAttribute('data-modo', m);
-    oculta($v('vista-inicio'), m !== 'inicio'); oculta($v('vista-paso'), m !== 'paso'); oculta($v('vista-listas'), m !== 'listas');
-    var tabs = raiz.querySelectorAll('[role="tab"]');
-    Array.prototype.forEach.call(tabs, function (t) { t.setAttribute('aria-selected', String((t.getAttribute('data-accion') === 'tl-tab-listas') === (m === 'listas'))); });
+    oculta($v('vista-inicio'), m !== 'inicio'); oculta($v('vista-paso'), m !== 'paso'); oculta($v('vista-listas'), m !== 'listas'); oculta($v('vista-partes'), m !== 'partes');
+    var tabs = raiz.querySelectorAll('[role="tab"]'), sel = m === 'listas' ? 'tl-tab-listas' : m === 'partes' ? 'tl-tab-partes' : 'tl-tab-taller';
+    Array.prototype.forEach.call(tabs, function (t) { t.setAttribute('aria-selected', String(t.getAttribute('data-accion') === sel)); });
   }
 
   /* ── inicio (paso 0) ── */
@@ -909,6 +927,7 @@
       return;
     }
     if (paso === 'listas') { modo('listas'); ponHash('listas', push); abreListas(); return; }
+    if (paso === 'partes') { modo('partes'); ponHash('partes', push); abrePartes(); return; }
     modo('paso');
     var sec = $v('vista-paso');
     sec.setAttribute('data-paso', paso);
@@ -1268,6 +1287,146 @@
     siguiente('Volver al inicio', false);
   }
 
+  /* ── Partes hechos (S9, owner 15-oct-2026: «superadmin no es mecánico pero puedo ver los partes para ver si todo está bien o qué») ──
+     Solo LEE: la lista de órdenes cerradas (orden_trabajo_datos('cerrada'), de 25 en 25, «Ver más» con su cursor) y el parte entero por id (taller_orden_datos),
+     con las fotos que se abren una a una por la edge taller-fotos (acción ver, la misma de las fotos guiadas). Ningún botón escribe. La pestaña sale a la
+     administración (admin y super admin): un mecánico rellena partes, no los supervisa. La base vuelve a exigir el acceso a Taller en cada lectura.
+     El parte abierto no va en la URL: #o= es de las órdenes vivas (entraOrden rechaza las cerradas). */
+  var PARTES_PAGINA = 25;
+  function pEstado(t) { var e = $v('partes-estado'); if (!e) return; vacia(e); if (t) e.appendChild(h('p', { class: 'axw-error', role: 'alert', text: t })); }
+  function abrePartes() {
+    E.partes = { lista: [], siguiente: null, abierto: null, det: null, fila: null };
+    return cargaPartes(false);
+  }
+  function cargaPartes(mas) {
+    var P = E.partes, v = $v('vista-partes');
+    if (!mas) { vacia(v); v.appendChild(h('p', { class: 'axw-vacio', role: 'status', text: T('Cargando…') })); }
+    return llama('orden_trabajo_datos', { p_estado: 'cerrada', p_limit: PARTES_PAGINA, p_despues: mas ? P.siguiente : null }).then(function (r) {
+      if (E.partes !== P) return;   // se salió de la pestaña y se volvió a entrar: esta respuesta ya no manda
+      var d = r.data;
+      if (r.error || !d || !Array.isArray(d.ordenes)) {
+        var t = T('No se han podido mirar los partes') + ': ' + (r.error ? C.mensaje(r.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'));
+        if (mas) { pEstado(t); return; }
+        vacia(v); v.appendChild(h('p', { class: 'axw-error', role: 'alert', 'data-tl': 'partes-no-mirado', text: t }));
+        return;
+      }
+      P.lista = P.lista.concat(d.ordenes.filter(function (o) { return o && UUID.test(String(o.id || '')); }));
+      P.siguiente = UUID.test(String(d.siguiente || '')) ? d.siguiente : null;
+      pintaPartes();
+    });
+  }
+  function cerradaTexto(o) {
+    var f = o.cerrada_en ? C.fechaHora(o.cerrada_en) : '—';
+    return o.cerrada_por_email ? TT('Cerrada el {f} por {q}', { f: f, q: String(o.cerrada_por_email) }) : TT('Cerrada el {f}', { f: f });
+  }
+  function pintaPartes() {
+    var P = E.partes, v = $v('vista-partes');
+    vacia(v);
+    if (P.abierto) { v.appendChild(pintaParte()); traduce(v); return; }
+    var ul = h('ul', { class: 'tl-lista', 'data-tl': 'partes' });
+    P.lista.forEach(function (o) {
+      var izq = h('div', null, [h('div', { class: 'tl-mat', text: String(o.unidad || '—') + ' · ' + String(o.numero || '') }),
+        h('div', { class: 'tl-sub', text: [String(o.producto || ''), cerradaTexto(o)].filter(Boolean).join(' · ') })]);
+      ul.appendChild(h('li', null, [h('button', { class: 'tl-fila', type: 'button', 'data-accion': 'tl-parte', 'data-orden-id': String(o.id) }, [izq, chip(T('Ver'), 'neutro')])]));
+    });
+    var hijos = [h('p', { class: 'tl-sub', text: T('Solo para mirar: los partes cerrados, del más reciente al más antiguo. Aquí no se cambia nada.') })];
+    hijos.push(P.lista.length ? ul : h('p', { class: 'axw-vacio', 'data-tl': 'partes-vacio', text: T('Aún no hay partes cerrados.') }));
+    if (P.siguiente) hijos.push(h('div', { class: 'tl-acciones' }, [h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-partes-mas', text: T('Ver más') })]));
+    hijos.push(h('div', { 'data-tl': 'partes-estado' }));
+    v.appendChild(seccion('Partes hechos', hijos, 'sec-partes'));
+    traduce(v);
+  }
+  function abreParte(id, bt) {
+    var P = E.partes;
+    var fila = P ? P.lista.filter(function (o) { return o.id === id; })[0] : null;
+    if (!fila || !C.ocupa(bt)) return;
+    pEstado('');
+    return llama('taller_orden_datos', { p_orden: id }).then(function (r) {
+      C.libera(bt);
+      if (E.partes !== P) return;
+      var d = r.data;
+      if (r.error || !d || !d.orden || !d.moto || !Array.isArray(d.revisiones) || !Array.isArray(d.fotos)) {
+        pEstado(T('No se ha podido abrir el parte') + ': ' + (r.error ? C.mensaje(r.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.')));
+        return;
+      }
+      P.abierto = id; P.det = d; P.fila = fila; P.urls = {};
+      pintaPartes();
+      try { $v('parte-titulo').focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ }
+      window.scrollTo(0, 0);
+    });
+  }
+  function cierraParte() {
+    var P = E.partes; if (!P || !P.abierto) return;
+    var id = P.abierto;
+    P.abierto = null; P.det = null; P.fila = null; P.urls = {};
+    pintaPartes();
+    var b = Array.prototype.filter.call(raiz.querySelectorAll('[data-orden-id]'), function (x) { return x.getAttribute('data-orden-id') === id; })[0];
+    if (b) b.focus();
+  }
+  function filaFoto(rotulo, x) {
+    var P = E.partes;
+    var cola = x ? (P.urls[x.id] ? h('img', { class: 'tl-foto', src: P.urls[x.id], alt: rotulo })
+                                 : h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-parte-foto', 'data-foto-id': String(x.id), text: T('Ver') }))
+                 : chip(T('Sin foto'), 'mal');
+    return h('li', { class: 'tl-fila', 'data-solo-ver': '1', 'data-foto-caja': x ? String(x.id) : null }, [h('div', { text: rotulo }), cola]);
+  }
+  function pintaParte() {
+    var P = E.partes, d = P.det, o = d.orden, f = P.fila;
+    var res = RESULTADOS.filter(function (x) { return x[0] === o.resultado; })[0];
+    var mot = MOTIVOS.filter(function (x) { return x[0] === o.motivo_tipo; })[0];
+    var gas = GASOLINA.filter(function (g) { return g[0] === Number(o.gasolina); })[0];
+    var volver = function () { return h('div', { class: 'tl-acciones' }, [h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-partes-lista', text: T('Volver a la lista') })]); };
+    var caja = h('section', { class: 'tl-tarjeta', 'data-tl': 'parte', 'data-orden-id': String(o.id) });
+    caja.appendChild(volver());
+    caja.appendChild(h('h2', { tabindex: '-1', 'data-tl': 'parte-titulo', text: String(d.moto.identificador || '—') + ' · ' + String(o.numero || '') }));
+    caja.appendChild(h('p', { class: 'tl-sub', text: [String(d.moto.modelo || ''), cerradaTexto(f)].filter(Boolean).join(' · ') }));
+    caja.appendChild(C.resumen([
+      ['Resultado', res ? T(res[1]) : (o.paso ? '' : T('Orden de la pantalla anterior'))],
+      ['Motivo', mot ? T(mot[1]) : ''],
+      ['Nota del motivo', o.motivo ? String(o.motivo) : ''],
+      ['Kilómetros', o.km != null ? entero(o.km) + ' km' : ''],
+      ['Gasolina', gas ? T(gas[1]) : ''],
+      ['Apertura', [o.abierta_en ? C.fechaHora(o.abierta_en) : '', o.abierta_por_email ? String(o.abierta_por_email) : ''].filter(Boolean).join(' · ')],
+      ['Cierre', [f.cerrada_en ? C.fechaHora(f.cerrada_en) : '', f.cerrada_por_email ? String(f.cerrada_por_email) : ''].filter(Boolean).join(' · ')],
+      ['Nota del cierre', o.nota_cierre ? String(o.nota_cierre) : '']]));
+    // fotos: las 5 fijas (hecha o no) y las de daño; cada una se abre al pulsar Ver (la edge firma la URL 300 s), nunca todas de golpe
+    var fijas = ['frente', 'atras', 'izquierda', 'derecha', 'cuentakm'];
+    var conf = d.fotos.filter(function (x) { return x && x.estado === 'confirmada' && UUID.test(String(x.id || '')); });
+    var ulf = h('ul', { class: 'tl-lista', 'data-tl': 'parte-fotos' });
+    fijas.forEach(function (rn) { ulf.appendChild(filaFoto(T(FOTO_RANURA[rn]), conf.filter(function (y) { return y.ranura === rn; })[0])); });
+    conf.filter(function (y) { return fijas.indexOf(y.ranura) < 0; }).forEach(function (x, i) { ulf.appendChild(filaFoto(TT('Daño {n}', { n: i + 1 }), x)); });
+    caja.appendChild(h('h3', { class: 'tl-etq', text: T('Fotos') }));
+    caja.appendChild(ulf);
+    var ulr = h('ul', { class: 'tl-lista', 'data-tl': 'parte-revisiones' });
+    d.revisiones.forEach(function (rv) {
+      var x = REV.filter(function (y) { return y[0] === rv.resultado; })[0];
+      ulr.appendChild(h('li', { class: 'tl-fila', 'data-solo-ver': '1', 'data-rev-id': String(rv.id || '') }, [
+        h('div', null, [h('div', { text: nombreDe(rv) }), rv.nota ? h('div', { class: 'tl-sub', text: String(rv.nota) }) : null]),
+        x ? chip(x[2] + ' ' + T(x[1]), x[0] === 'bien' ? 'ok' : x[0] === 'mal' ? 'mal' : 'espera') : chip(T('Sin contestar'), 'neutro')]));
+    });
+    caja.appendChild(h('h3', { class: 'tl-etq', text: T('Revisiones') }));
+    caja.appendChild(d.revisiones.length ? ulr : h('p', { class: 'axw-vacio', text: '—' }));
+    caja.appendChild(h('div', { 'data-tl': 'partes-estado' }));
+    caja.appendChild(volver());
+    return caja;
+  }
+  function verFoto(id, bt) {
+    var P = E.partes;
+    if (!P || !P.abierto || !UUID.test(String(id || '')) || !C.ocupa(bt)) return;
+    pEstado('');
+    return token().then(function (tok) {
+      return fetch(window.lwEdge('taller-fotos'), { method: 'POST', headers: { authorization: 'Bearer ' + (tok || ''), apikey: String(window.LW_SB_KEY || ''), 'content-type': 'application/json' },
+                                                     body: JSON.stringify({ accion: 'ver', foto: id }) });
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      if (!j || j.ok !== true || typeof j.url !== 'string' || !/^https:\/\//.test(j.url)) throw new Error('ver');
+      C.libera(bt);
+      if (E.partes !== P || !P.abierto) return;
+      P.urls[id] = j.url;
+      var li = Array.prototype.filter.call(raiz.querySelectorAll('[data-foto-caja]'), function (x) { return x.getAttribute('data-foto-caja') === id; })[0];
+      if (li && li.parentNode) li.parentNode.replaceChild(filaFoto(li.firstChild ? li.firstChild.textContent : '', { id: id }), li);
+    }).catch(function () { C.libera(bt); pEstado(T('No se pudo abrir la foto.')); });
+  }
+
   /* ── Listas por modelo (administración con Flota) ── */
   function abreListas() {
     var v = $v('vista-listas');
@@ -1417,6 +1576,11 @@
     if (a.indexOf('fg-') === 0 || a.indexOf('tl-km-') === 0) return;   // las fotos y los diálogos llevan su propio manejador
     if (a === 'tl-tab-taller') { error(''); exito(''); if (!E.enviando) { E.varias = null; ir('inicio', true); } return; }
     if (a === 'tl-tab-listas') { error(''); exito(''); if (!E.enviando && E.flota) ir('listas', true); return; }
+    if (a === 'tl-tab-partes') { error(''); exito(''); if (!E.enviando && E.admin) { E.varias = null; ir('partes', true); } return; }
+    if (a === 'tl-partes-mas') { if (E.partes && E.partes.siguiente && C.ocupa(el)) cargaPartes(true).then(function () { C.libera(el); }); return; }
+    if (a === 'tl-parte') { abreParte(el.getAttribute('data-orden-id'), el); return; }
+    if (a === 'tl-partes-lista') { cierraParte(); return; }
+    if (a === 'tl-parte-foto') { verFoto(el.getAttribute('data-foto-id'), el); return; }
     if (a.indexOf('tl-l-') === 0) { accionListas(a, el); return; }
     if (a === 'tl-setup-basica') {
       if (E.enviando || !E.flota || !C.ocupa(el)) return;
@@ -1504,6 +1668,7 @@
     var hsh = leeHash();
     if (E.paso === 'fin') { E.fin = null; ir('inicio', false); return; }   // terminada la orden, Atrás no vuelve a sus pasos
     if (hsh.listas) { if (E.flota) ir('listas', false); else ir('inicio', false); return; }
+    if (hsh.partes) { if (E.admin) ir('partes', false); else ir('inicio', false); return; }
     if (hsh.o) {
       // Atrás dentro de la misma orden: al paso de la URL, con la orden RELEÍDA (las fotos y respuestas que se hicieron después tienen que verse)
       if (!inicial && E.orden && E.orden.orden.id === hsh.o && PASOS.indexOf(hsh.p) > 1) return cargaOrden(hsh.o).then(function (ok) { if (ok) ir(hsh.p, false); });
@@ -1532,6 +1697,7 @@
     // solo decide qué se OFRECE: la base vuelve a exigir el permiso en cada llamada
     E.flota = rol === 'super_admin' || (!!rol && Array.isArray(E.ficha.herramientas) && E.ficha.herramientas.indexOf('flota') !== -1);
     oculta(raiz.querySelector('[data-accion="tl-tab-listas"]'), !E.flota);
+    oculta(raiz.querySelector('[data-accion="tl-tab-partes"]'), !E.admin);
     raiz.addEventListener('click', alClic);
     raiz.addEventListener('input', function (ev) { if (ev.target === $v('buscar')) pintaBusqueda(); });
     raiz.addEventListener('change', function (ev) {

@@ -142,20 +142,23 @@ for nombre, cod in (('la pantalla', CODIGO), ('las ayudas comunes', CODIGO_COMUN
          not re.search(r'\.from\(|\.insert\(|\.update\(|\.upsert\(|\.storage\b' + (r'|\.rpc\(' if cod is CODIGO_FOTOS else r'|\.delete\('), cod))
     mira('%s: enganche por data-*: nada busca por texto' % nombre, not re.search(r'textContent\s*===|innerText|\.placeholder\s*===', cod))
 mira('no nombra claves de servicio', not re.search(r'service_role|sb_secret_', JS + MARCADO + FOTOS_JS))
-LECTURAS = {'taller_datos', 'taller_orden_datos', 'taller_listas_datos'}
+# orden_trabajo_datos (S9 «Partes hechos», 15-oct-2026): la ÚNICA lectura de partes CERRADOS que hay en la base; desde ese día tiene llamador con nombre y la
+# retirada de Seguridad #275 (a) queda en orden_trabajo_abre / orden_trabajo_cierra, que siguen prohibidas aquí abajo. Revertir: una taller_partes_datos propia.
+LECTURAS = {'taller_datos', 'taller_orden_datos', 'taller_listas_datos', 'orden_trabajo_datos'}
 ESCRITURAS = {'taller_orden_abre', 'taller_orden_km', 'taller_orden_paso', 'taller_revision_marca', 'taller_orden_resultado', 'taller_moto_devuelve',
               'taller_revision_guarda', 'taller_recambio_guarda', 'taller_recambio_vincula', 'taller_listas_copia', 'taller_lista_basica'}
 lect = set(re.findall(r"window\.lwDatos\('([a-z_]+)'", CODIGO))
 escr = set(re.findall(r"SB\.rpc\('([a-z_]+)'", CODIGO))
-mira('lecturas por lwDatos: exactamente las tres *_datos (%s)' % ', '.join(sorted(lect ^ LECTURAS)), lect == LECTURAS)
+mira('lecturas por lwDatos: exactamente las cuatro *_datos (%s)' % ', '.join(sorted(lect ^ LECTURAS)), lect == LECTURAS)
 mira('escrituras por sb.rpc: exactamente las once del plan (%s)' % ', '.join(sorted(escr ^ ESCRITURAS)), escr == ESCRITURAS)
 llamadas = set(re.findall(r"\bllama\('([a-z_]+)'", CODIGO)) | set(re.findall(r"\benvia\('([a-z_]+)'", CODIGO)) | set(re.findall(r"lEscribe\(el, '([a-z_]+)'", CODIGO))
 mira('todo lo que se llama tiene su entrada literal (%s)' % ', '.join(sorted(llamadas - LECTURAS - ESCRITURAS)), llamadas <= LECTURAS | ESCRITURAS)
-mira('ni la viejas orden_trabajo_* ni las de la edge (foto_prepara/confirma/ver/cuenta) se llaman desde el navegador',
-     not re.search(r"'orden_trabajo_|taller_foto_|taller_fotos_cuenta", CODIGO + CODIGO_FOTOS))
+mira('ni la viejas orden_trabajo_abre/cierra ni las de la edge (foto_prepara/confirma/ver/cuenta) se llaman desde el navegador',
+     not re.search(r"'orden_trabajo_(?!datos')|taller_foto_|taller_fotos_cuenta", CODIGO + CODIGO_FOTOS))
 mira('ninguna lectura encadenada (.rpc(...).select)', '.select(' not in CODIGO and not re.search(r"\.rpc\([^)]*\)\s*\.", CODIGO))
+# el filtro p_estado: 'cerrada' de la lectura de partes (S9) no es un estado que se escriba: se quita ESE literal y nada más antes de mirar
 mira('el navegador no manda autor, correo, número, ruta ni estado de la moto',
-     not re.search(r"p_(autor|por|email|numero|ruta|estado|unidad_estado|abierta|cerrada|user)\b", CODIGO) and "'ruta'" not in CODIGO_FOTOS and 'ruta' not in re.sub(r"'[^']*'", '', CODIGO_FOTOS))
+     not re.search(r"p_(autor|por|email|numero|ruta|estado|unidad_estado|abierta|cerrada|user)\b", CODIGO.replace("{ p_estado: 'cerrada', p_limit: PARTES_PAGINA,", '')) and "'ruta'" not in CODIGO_FOTOS and 'ruta' not in re.sub(r"'[^']*'", '', CODIGO_FOTOS))
 mira('abrir manda SOLO moto, motivo y nota', "{ p_unidad: E.moto.id, p_motivo_tipo: E.motivo, p_nota: nota || null }" in CODIGO)
 mira('km manda orden, km entero, gasolina y la confirmación', "{ p_orden: id, p_km: n, p_gasolina: E.gas, p_confirma: !!confirma }" in CODIGO and 'inputmode: \'numeric\'' in CODIGO and "replace(/[^0-9]/g, '')" in CODIGO)
 mira('resultado manda orden, resultado, nota y motivo de excepción', "{ p_orden: id, p_resultado: res, p_nota: nota || null, p_motivo_excepcion: exc || null }" in CODIGO)
@@ -185,14 +188,15 @@ mira('botones de 56 px', estilo.count('min-height:56px') >= 4)
 mira('Baik / Perlu dicek / Rusak como radiogroup con aria-checked, texto e icono', "role: 'radiogroup'" in CODIGO and "role: 'radio'" in CODIGO and "'aria-checked'" in CODIGO and "'tl-ico'" in CODIGO)
 
 # hints: los que se traducen existen en la base (migración) o en la edge; los pendientes de la base se declaran aquí
-def migracion():
-    cands = [os.path.join(build.AGENCIA, 'erp', 'migraciones', '20261011170000_f8_taller_pasos.sql')]
-    cands += sorted(glob.glob(os.path.join(build.AGENCIA, 'proyectos', '_sesiones', '*', 'Agencia', 'erp', 'migraciones', '20261011170000_f8_taller_pasos.sql')))
+def migracion(nombre='20261011170000_f8_taller_pasos.sql'):
+    cands = [os.path.join(build.AGENCIA, 'erp', 'migraciones', nombre)]
+    cands += sorted(glob.glob(os.path.join(build.AGENCIA, 'proyectos', '_sesiones', '*', 'Agencia', 'erp', 'migraciones', nombre)))
     for c in cands:
         if os.path.isfile(c):
             return open(c, encoding='utf-8').read()
     return None
 MIG = migracion()
+MIG_VIEJA = migracion('20261008135100_f8_orden_trabajo.sql')   # orden_trabajo_datos (S9) nace aquí con su grant; 20261011170000 la reemplaza y conserva permisos
 # los propios de la edge taller-fotos (cabecera de erp/funciones/taller-fotos/index.ts, ebaab585, 12-oct-2026)
 EDGE_HINTS = {'origen', 'metodo', 'sin_sesion', 'sesion_no_comprobada', 'tope_minuto', 'cuerpo', 'accion', 'campo_no_admitido', 'orden', 'ranura', 'clave', 'foto',
               'fichero', 'fichero_grande', 'fichero_vacio', 'fichero_tipo', 'fichero_exif', 'almacen', 'base', 'config'}
@@ -218,7 +222,9 @@ else:
     mira('todo hint de las fotos existe en la base o en la edge (%s)' % ', '.join(malos_f), not malos_f)
     funcs = set(re.findall(r'create function public\.([a-z_]+)\(', MIG))
     grant = MIG[MIG.index('grant execute on function public.taller_datos()'):MIG.index('to authenticated;', MIG.index('grant execute on function public.taller_datos()'))]
-    faltan = sorted(n for n in LECTURAS | ESCRITURAS if n not in funcs or ('public.%s(' % n) not in grant)
+    vieja_ok = bool(MIG_VIEJA) and 'grant execute on function public.orden_trabajo_datos(text, integer, uuid) to authenticated;' in MIG_VIEJA \
+        and 'create or replace function public.orden_trabajo_datos(p_estado text default null, p_limit integer default 100, p_despues uuid default null)' in MIG
+    faltan = sorted(n for n in LECTURAS | ESCRITURAS if not (n == 'orden_trabajo_datos' and vieja_ok) and (n not in funcs or ('public.%s(' % n) not in grant))
     mira('cada RPC existe en la migración y authenticated la ejecuta (%s)' % ', '.join(faltan), not faltan)
     for n, firma in (('taller_orden_abre', 'p_unidad uuid, p_motivo_tipo text, p_nota text'), ('taller_orden_km', 'p_orden uuid, p_km integer, p_gasolina smallint, p_confirma boolean'),
                      ('taller_orden_resultado', 'p_orden uuid, p_resultado text, p_nota text default null, p_motivo_excepcion text'),

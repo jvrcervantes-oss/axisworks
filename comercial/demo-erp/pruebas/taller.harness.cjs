@@ -96,6 +96,7 @@ function nuevaBase(o = {}) {
 const ERR = (code, message, hint, details) => ({ st: code === 'P0002' ? 404 : (code === '42501' ? 403 : 400), j: { code, message, hint: hint || null, details: details || null } });
 const esAdmin = u => u === 'admin';
 const correo = u => u + '@taller.test';
+const iso = n => new Date(n > 1e11 ? n : Date.UTC(2026, 9, 14, 8, 0) + n * 3600000).toISOString();   // las horas del modelo son números pequeños
 function faltan(B, o) {
   const f = [];
   ['frente', 'atras', 'izquierda', 'derecha', 'cuentakm'].forEach(r => { if (!B.fotos.some(x => x.orden_id === o.id && x.ranura === r && x.estado === 'confirmada')) f.push('foto:' + r); });
@@ -158,6 +159,21 @@ function rpc(B, n, a, u) {
       B.ordenes.push(o);
       if (m.estado === 'disponible') m.estado = 'taller';
       return { st: 200, j: { id: o.id, numero: o.numero, retomada: false, estado: 'abierta', paso: 'km', motivo_tipo: o.motivo_tipo, unidad_estado: m.estado, adopta: o.adopto_unidad } };
+    }
+    case 'orden_trabajo_datos': {
+      if (B.o.partesFalla) return ERR('42501', 'No tienes acceso a Taller', 'sin_acceso');
+      if (a.p_estado != null && !['abierta', 'cerrada'].includes(a.p_estado)) return ERR('22023', 'orden_trabajo_datos: estado desconocido');
+      const lim = Math.min(Math.max(a.p_limit || 100, 1), 500);
+      let l = B.ordenes.filter(o => a.p_estado == null || (a.p_estado === 'cerrada' ? o.estado === 'cerrada' : o.estado !== 'cerrada'))
+        .sort((x, y) => (y.abierta_en - x.abierta_en) || (x.id < y.id ? 1 : -1));
+      if (a.p_despues) { const i = l.findIndex(o => o.id === a.p_despues); if (i < 0) return ERR('22023', 'orden_trabajo_datos: cursor desconocido'); l = l.slice(i + 1); }
+      const pag = l.slice(0, lim);
+      return { st: 200, j: { ordenes: pag.map(o => { const m = B.motos.find(x => x.id === o.unidad_id);
+        return { id: o.id, numero: o.numero, unidad_id: o.unidad_id, unidad: m.identificador, unidad_numero: m.numero_unidad, producto: XSS_MOD, unidad_estado: m.estado,
+                 motivo: o.motivo || null, bloquea_reservas: true, estado: o.estado, abierta_en: iso(o.abierta_en), abierta_por_email: correo(o.abierta_por),
+                 cerrada_en: o.cerrada_en ? iso(o.cerrada_en) : null, cerrada_por_email: o.cerrada_por ? correo(o.cerrada_por) : null, coste: null, moneda: null,
+                 nota_cierre: o.nota_cierre || null, mia: o.abierta_por === u }; }),
+        unidades: [], unidades_recortadas: false, siguiente: pag.length === lim ? pag[pag.length - 1].id : null } };
     }
     case 'taller_orden_datos': {
       const o = B.ordenes.find(x => x.id === a.p_orden);
@@ -1040,6 +1056,87 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
         await p.click('[data-accion="tl-varias-confirma"]'); await enFase(p, 'fin', 20000);
         await sinScroll(p, 'varias fin ' + anchoV + ' en'); await sinTraducir(p, 'varias fin ' + anchoV + ' en');
         await shot(p, 'varias_fin_' + anchoV + '_en.png', true);
+        await ctx.close();
+      }
+    }
+
+    // ═══ S9. «Partes hechos» (owner 15-oct-2026: «superadmin no es mecánico pero puedo ver los partes para ver si todo está bien o qué») ═══
+    // La administración mira los partes cerrados en SOLO LECTURA: lista de 25 en 25 con «Ver más» (cursor), el parte entero por id, fotos una a una por la
+    // edge (ver) y vuelta a la lista con el foco en su fila. Invariante: abrir y mirar NO llama a nada que escriba (solo *_datos) ni pinta una casilla.
+    {
+      const nuevaS9 = () => {
+        const B9 = nuevaBase();
+        for (let i = 0; i < 30; i++) B9.ordenes.push({ id: uuid(), numero: 'OT-1' + String(i).padStart(4, '0'), unidad_id: U.m3, estado: 'cerrada', paso: 'resultado', km: 1000 + i, gasolina: 3,
+          motivo_tipo: 'revision', motivo: i === 29 ? XSS_REV : null, resultado: 'lista', abierta_por: 'mec1', abierta_en: 100 + i, cerrada_en: 100 + i, cerrada_por: 'mec1',
+          nota_cierre: i === 29 ? 'Semua baik' : null, adopto_unidad: false, movio_unidad: true });
+        B9.ordenes[0].cerrada_en = 1; B9.ordenes[0].cerrada_por = 'admin';   // OT-00001: de la pantalla anterior (sin paso)
+        const nueva = B9.ordenes[B9.ordenes.length - 1];
+        ['frente', 'atras', 'izquierda', 'derecha', 'dano'].forEach(r => B9.fotos.push({ id: uuid(), orden_id: nueva.id, ranura: r, clave: 'k9' + r, estado: 'confirmada' }));
+        B9.respuestas.push({ orden_id: nueva.id, revision_id: B9.revs[0].id, resultado: 'bien', nota: null, autor: 'mec1' },
+                           { orden_id: nueva.id, revision_id: B9.revs[2].id, resultado: 'atencion', nota: 'Kencangkan', autor: 'mec1' });
+        return { B9, nueva, vieja: B9.ordenes[0] };
+      };
+      const escrituras = B => B.llamadas.filter(x => !/_datos$/.test(x[0])).map(x => x[0]);
+      const filas = p => p.$$eval('[data-tl="partes"] [data-accion="tl-parte"]', bs => bs.length);
+      {   // un mecánico no tiene la pestaña ni entra por la URL
+        const { B9 } = nuevaS9();
+        ({ p, ctx } = await abre(B9, { usuario: 'mec1', hash: '#partes' }));
+        ok('S9 mecánico: sin pestaña «Partes hechos»', await p.$eval('[data-accion="tl-tab-partes"]', e => e.classList.contains('axw-oculto')));
+        ok('S9 mecánico: #partes lo deja en el inicio y no lee los partes', (await p.$eval('[data-tl="raiz"]', e => e.getAttribute('data-modo'))) === 'inicio' && llamadas(B9, 'orden_trabajo_datos').length === 0);
+        await ctx.close();
+      }
+      for (const [idioma, anchoS9] of [['id', 390], ['en', 1440]]) {
+        const { B9, nueva, vieja } = nuevaS9();
+        ({ p, ctx } = await abre(B9, { usuario: 'admin', idioma, ancho: anchoS9 }));
+        const pre = idioma + ' ' + anchoS9 + ': ';
+        ok('S9 ' + pre + 'la administración ve la pestaña', !(await p.$eval('[data-accion="tl-tab-partes"]', e => e.classList.contains('axw-oculto'))));
+        await p.click('[data-accion="tl-tab-partes"]');
+        await espera(p, () => !!document.querySelector('[data-tl="partes"]'));
+        const l1 = llamadas(B9, 'orden_trabajo_datos');
+        ok('S9 ' + pre + 'UNA lectura: cerradas, de 25, sin cursor', l1.length === 1 && l1[0][1].p_estado === 'cerrada' && l1[0][1].p_limit === 25 && l1[0][1].p_despues == null, JSON.stringify(l1));
+        ok('S9 ' + pre + '25 filas, la más nueva arriba', (await filas(p)) === 25 && (await p.$eval('[data-tl="partes"] [data-accion="tl-parte"]', b => b.getAttribute('data-orden-id'))) === nueva.id);
+        ok('S9 ' + pre + 'la pestaña marcada y la URL #partes', (await p.$eval('[data-accion="tl-tab-partes"]', e => e.getAttribute('aria-selected'))) === 'true' && (await p.evaluate(() => location.hash)) === '#partes');
+        await sinScroll(p, 'S9 lista ' + pre); await sinTraducir(p, 'S9 lista ' + pre);
+        await shot(p, 'partes_lista_' + anchoS9 + '_' + idioma + '.png', true);
+        const id25 = await p.$$eval('[data-tl="partes"] [data-accion="tl-parte"]', bs => bs[24].getAttribute('data-orden-id'));
+        await p.click('[data-accion="tl-partes-mas"]');
+        await espera(p, () => document.querySelectorAll('[data-tl="partes"] [data-accion="tl-parte"]').length > 25);
+        const l2 = llamadas(B9, 'orden_trabajo_datos');
+        ok('S9 ' + pre + '«Ver más» pide con el cursor de la fila 25 y añade el resto (31), sin más «Ver más»', l2.length === 2 && l2[1][1].p_despues === id25 && (await filas(p)) === 31 && !(await p.$('[data-accion="tl-partes-mas"]')), JSON.stringify(l2.map(x => x[1])));
+        // el parte entero
+        await p.click('[data-tl="partes"] [data-orden-id="' + nueva.id + '"]');
+        await espera(p, () => !!document.querySelector('[data-tl="parte"]'));
+        const det = await p.$eval('[data-tl="parte"]', e => e.textContent);
+        ok('S9 ' + pre + 'el parte dice moto, número, km, quién lo cerró y la nota', det.includes('DK 5555 CC') && det.includes('OT-10029') && /1[.,]029 km/.test(det) && det.includes('mec1@taller.test') && det.includes('Semua baik'), det.slice(0, 300));
+        ok('S9 ' + pre + 'el foco va al título del parte', await p.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-tl') === 'parte-titulo'));
+        ok('S9 ' + pre + 'fotos: 5 fijas + 1 de daño, el cuentakm sin foto', (await p.$$eval('[data-tl="parte-fotos"] li', l => l.length)) === 6 && (await p.$$eval('[data-accion="tl-parte-foto"]', l => l.length)) === 5);
+        ok('S9 ' + pre + 'revisiones: 3, con lo contestado y lo que no', (await p.$$eval('[data-tl="parte-revisiones"] li', l => l.length)) === 3 && (await p.$eval('[data-tl="parte-revisiones"]', e => e.textContent)).includes('Kencangkan'));
+        ok('S9 ' + pre + 'SOLO LECTURA: ni una casilla en la vista y solo botones de mirar', await p.$eval('[data-tl="vista-partes"]', v => !v.querySelector('input,select,textarea') && Array.from(v.querySelectorAll('button')).every(b => ['tl-partes-lista', 'tl-parte-foto'].includes(b.getAttribute('data-accion')))));
+        await sinScroll(p, 'S9 parte ' + pre); await sinTraducir(p, 'S9 parte ' + pre);
+        await shot(p, 'partes_parte_' + anchoS9 + '_' + idioma + '.png', true);
+        await p.click('[data-accion="tl-parte-foto"]');
+        await espera(p, () => !!document.querySelector('[data-tl="parte-fotos"] img.tl-foto'));
+        ok('S9 ' + pre + 'Ver abre esa foto (URL firmada de la edge) y solo esa', (await p.$$eval('[data-tl="parte-fotos"] img.tl-foto', l => l.map(i => i.getAttribute('src')))).join() === 'https://erp.test/almacen/' + B9.fotos.find(f => f.orden_id === nueva.id && f.ranura === 'frente').id);
+        await p.click('[data-accion="tl-partes-lista"]');
+        await espera(p, () => !!document.querySelector('[data-tl="partes"]'));
+        ok('S9 ' + pre + 'Volver a la lista: las 31 siguen (sin releer) y el foco en su fila', (await filas(p)) === 31 && llamadas(B9, 'orden_trabajo_datos').length === 2 && await p.evaluate(id => document.activeElement && document.activeElement.getAttribute('data-orden-id') === id, nueva.id));
+        await p.click('[data-tl="partes"] [data-orden-id="' + vieja.id + '"]');
+        await espera(p, () => !!document.querySelector('[data-tl="parte"]'));
+        ok('S9 ' + pre + 'un parte de la pantalla anterior se abre y lo dice', (await p.$eval('[data-tl="parte"]', e => e.textContent)).includes(idioma === 'id' ? 'Order dari layar sebelumnya' : 'Order from the previous screen'));
+        ok('S9 ' + pre + 'mirar NO ha escrito nada (solo lecturas *_datos)', escrituras(B9).length === 0, escrituras(B9).join());
+        ok('S9 ' + pre + 'sin XSS ni errores', await p.evaluate(() => window.__xss === undefined && window.__errores.length === 0));
+        await ctx.close();
+      }
+      {   // entrar por la URL y la base que no contesta
+        const { B9 } = nuevaS9();
+        ({ p, ctx } = await abre(B9, { usuario: 'admin', hash: '#partes' }));
+        await espera(p, () => !!document.querySelector('[data-tl="partes"]'));
+        ok('S9: #partes al recargar abre «Partes hechos»', (await p.$eval('[data-tl="raiz"]', e => e.getAttribute('data-modo'))) === 'partes');
+        await ctx.close();
+        B9.o.partesFalla = true;
+        ({ p, ctx } = await abre(B9, { usuario: 'admin', hash: '#partes' }));
+        await espera(p, () => !!document.querySelector('[data-tl="partes-no-mirado"]'));
+        ok('S9: la base no deja mirar → lo dice (no una lista vacía)', !(await p.$('[data-tl="partes-vacio"]')) && /tidak dapat diperiksa/.test(await p.$eval('[data-tl="partes-no-mirado"]', e => e.textContent)));
         await ctx.close();
       }
     }
