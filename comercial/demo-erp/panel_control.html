@@ -1081,10 +1081,14 @@ window.AXW_ASIS = (function () {
       var h = (($('buzon-host') || {}).value || '').trim(), u = (($('buzon-user') || {}).value || '').trim(), p = ($('buzon-pass') || {}).value || '';
       if (!h || !u || !p) { toast('Escribe el servidor, la dirección y la contraseña del buzón del estudio.'); return; }
       cuerpo.host = h; cuerpo.user = u; cuerpo.pass = p;
-      if ($('buzon-pass')) $('buzon-pass').value = '';
+      // las de solo lectura salen del estado (nunca un nombre escrito aquí: el paquete de cada instancia no lleva marcas de otros clientes)
+      var fuera = instancias.filter(function (x) { return !x.editable; }).map(function (x) { return x.marca; });
       previo = dialogo('<p>Se entra en <b>' + esc(u) + '</b> (' + esc(h) + ', puerto 465) para comprobar la contraseña y, si entra, se guarda en las ' +
-        nCtl + ' instancias que controla el panel. Lo que tuvieran antes se sustituye.</p><p class="ax-md">Lawang y las de solo lectura no lo reciben.</p>',
+        nCtl + ' instancias que controla el panel. Lo que tuvieran antes se sustituye.</p>' +
+        (fuera.length ? '<p class="ax-md">No lo reciben las de solo lectura: ' + esc(fuera.join(', ')) + '.</p>' : ''),
         'Comprobar y poner', null, 'Buzón del estudio', 'Poner en todas');
+      // la contraseña se borra del campo en cuanto se confirma (si se cancela, sigue escrita para no teclearla otra vez)
+      previo = previo.then(function (v) { if (v === 'ok' && $('buzon-pass')) $('buzon-pass').value = ''; return v; });
     } else if (accion === 'quita') {
       cuerpo.instancia = inst.nombre;
       previo = dialogo('<p>Se vacía el buzón del estudio de <b>' + esc(inst.marca) + '</b>: su invitación y su primer código de Ajustes dejarán de salir hasta que lo copies otra vez.</p>' +
@@ -1099,7 +1103,9 @@ window.AXW_ASIS = (function () {
           if (accion === 'pon') {
             var mal = (d.instancias || []).filter(function (x) { return !x.ok; });
             toast(!mal.length ? 'Buzón comprobado y puesto en ' + (d.instancias || []).length + ' instancias.'
-              : 'Puesto en ' + ((d.instancias || []).length - mal.length) + '; no en ' + mal.map(function (x) { return x.nombre + ' (' + (x.mensaje || x.codigo) + ')'; }).join(', ') + '.');
+              : 'Puesto en ' + ((d.instancias || []).length - mal.length) + '; no en ' + mal.map(function (x) {
+                  var m = instancias.filter(function (y) { return y.nombre === x.nombre; })[0];
+                  return (m ? m.marca : x.nombre) + ' (' + (x.mensaje || x.codigo) + ')'; }).join(', ') + '.');
           } else toast(accion === 'copia' ? 'Buzón copiado a ' + inst.marca + '.' : 'Buzón quitado de ' + inst.marca + '.');
           return carga(true);
         }
