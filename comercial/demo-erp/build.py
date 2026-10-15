@@ -2576,6 +2576,12 @@ MENU_I18N.update({
         'en': 'Pending: the client signs it with the studio, and the studio marks it here when it arrives. Without it the bot does not switch on.',
         'id': 'Menunggu: klien menandatanganinya bersama studio, dan studio menandainya di sini setelah diterima. Tanpa itu bot tidak dapat dinyalakan.'},
     'alta': {'en': 'sign-up', 'id': 'pendaftaran'},   # el tramo del menú «Bot de WhatsApp · alta»
+    # El velo de carga de la v4 (datos.js de Lawang, f1d931ff3): solo se ve mientras queda una consulta en vuelo, así que el barrido lo caza
+    # o no según lo que tarde la pantalla (tren de bbm, 15-oct: /finanzas/ en «vacía», en inglés). Lawang lo escribe sin tildes.
+    'Trayendo los datos de la pantalla': {'en': 'Loading the data for this screen', 'id': 'Memuat data untuk layar ini'},
+    'Sigue viniendo — la consulta esta tardando mas de lo normal': {
+        'en': 'Still loading — the request is taking longer than usual',
+        'id': 'Masih memuat — permintaan ini memakan waktu lebih lama dari biasanya'},
 })
 
 # Traducciones de Lawang que en INGLÉS dejan dentro el nombre español de una casilla o un permiso («tick «Gastos y proveedores»»): en la instancia
