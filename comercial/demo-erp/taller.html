@@ -1476,7 +1476,7 @@
      vez. La llamada es la de siempre (taller_revision_guarda con los cuatro datos): lo que no se edita viaja como lo leyó la base. Una fila a la vez. */
   function revListaDe(id) { return ((E.listas && E.listas.revisiones) || []).filter(function (x) { return String(x.id) === String(id); })[0] || null; }
   function filaRev(r, editando) {
-    var tr = h('tr', { 'data-l-rev': String(r.id) }), id = String(r.id);
+    var tr = h('tr', { 'data-l-rev': String(r.id), 'data-l-editando': editando ? '1' : null }), id = String(r.id);
     var celdas = editando
       ? [h('td', null, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_id', value: String(r.nombre_id || ''), 'aria-label': T('Nombre (indonesio)') })]),
          h('td', null, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_en', value: String(r.nombre_en || ''), 'aria-label': T('Nombre (inglés)') })]),
@@ -1563,11 +1563,11 @@
     if (a === 'tl-l-basica') return lEscribe(el, 'taller_lista_basica', {});
     if (a === 'tl-l-rev-edita' || a === 'tl-l-rev-cancela') {
       var rv = revListaDe(el.getAttribute('data-rev-id')); if (!rv) return;
-      [].forEach.call($v('l-revisiones').querySelectorAll('[data-accion="tl-l-rev-guarda"]'), function (g) { var o = revListaDe(g.getAttribute('data-rev-id')); if (o) g.closest('tr').replaceWith(filaRev(o, false)); });   // una fila a la vez
+      [].forEach.call($v('l-revisiones').querySelectorAll('tr[data-l-editando]'), function (g) { var o = revListaDe(g.getAttribute('data-l-rev')); if (o) g.replaceWith(filaRev(o, false)); });   // una fila a la vez
       var nueva = filaRev(rv, a === 'tl-l-rev-edita'), vieja = $v('l-revisiones').querySelector('[data-l-rev="' + String(rv.id).replace(/["\\]/g, '') + '"]');
       if (vieja) vieja.replaceWith(nueva);
       lEstado('', '');
-      var foco = nueva.querySelector(a === 'tl-l-rev-edita' ? '[data-f="nombre_id"]' : '[data-accion="tl-l-rev-edita"]'); try { if (foco) foco.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ }
+      var foco = nueva.querySelector(a === 'tl-l-rev-edita' ? '[data-f="nombre_id"]' : 'button'); try { if (foco) foco.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ }
       return;
     }
     if (a === 'tl-l-rev-activa') {

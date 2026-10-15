@@ -750,6 +750,13 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     // pestaña Listas por modelo
     await p.click('[data-accion="tl-tab-listas"]'); await espera(p, () => !!document.querySelector('[data-tl="l-revisiones"]') || !!document.querySelector('[data-accion="tl-l-basica"]') || !!document.querySelector('[data-tl="l-nueva"]'));
     ok('Listas por modelo: URL #listas y lista común', (await p.evaluate(() => location.hash)) === '#listas' && (await p.$$('[data-l-rev]')).length === 2);
+    // escribir en Listas y esperar a que se haya vuelto a leer y PINTAR: tras cada escritura se repinta la pestaña entera, y escribir en ese
+    // hueco deja lo tecleado en la pestaña vieja (intermitente con la máquina cargada). La señal es el «Guardado» que pinta lEscribe al final.
+    const escribeLista = async sel => {
+      await p.evaluate(() => { const e = document.querySelector('[data-tl="l-estado"]'); if (e) e.textContent = ''; });
+      await p.click(sel);
+      await espera(p, () => !!document.querySelector('[data-tl="l-estado"] .axw-ok'));
+    };
     const vistos = sel => p.evaluate(s => [...document.querySelectorAll(s + ' input, ' + s + ' select, ' + s + ' textarea')]
       .filter(e => e.checkVisibility({ contentVisibilityAuto: true, visibilityProperty: true })).map(e => e.getAttribute('data-f')), sel);
     ok('S4 · revisión nueva: a la vista solo los dos nombres (la clave sale sola, la posición plegada)', JSON.stringify(await vistos('[data-tl="l-nueva"]')) === '["nombre_id","nombre_en"]', JSON.stringify(await vistos('[data-tl="l-nueva"]')));
@@ -775,18 +782,17 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.click(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-edita"]`);
     await p.fill(`[data-l-rev="${idRev}"] [data-f="nombre_en"]`, 'Oil change');
     const nG = llamadas(B, 'taller_revision_guarda').length;
-    await p.click(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-guarda"]`); for (let i = 0; i < 100 && llamadas(B, 'taller_revision_guarda').length === nG; i++) await p.waitForTimeout(50);
+    await escribeLista(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-guarda"]`);
     const g1 = llamadas(B, 'taller_revision_guarda').slice(-1)[0][1];
     ok('S4 · «Guardar» de la fila: la llamada de siempre, con el nombre nuevo y la activa como estaba', g1.p_id === idRev && g1.p_datos.nombre_en === 'Oil change' && g1.p_datos.activa === activa0 && Object.keys(g1.p_datos).sort().join() === 'activa,nombre_en,nombre_id,orden', JSON.stringify(g1));
-    await espera(p, id => !!document.querySelector(`[data-l-rev="${id}"] [data-accion="tl-l-rev-activa"]`), idRev);
     const txtAct = await p.$eval(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-activa"]`, e => e.textContent);
-    await p.click(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-activa"]`); for (let i = 0; i < 100 && llamadas(B, 'taller_revision_guarda').length === nG + 1; i++) await p.waitForTimeout(50);
+    await escribeLista(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-activa"]`);
     const g2 = llamadas(B, 'taller_revision_guarda').slice(-1)[0][1];
     ok('S4 · «Desactivar»/«Activar» en un toque: cambia solo la activa', g2.p_id === idRev && g2.p_datos.activa === !activa0 && g2.p_datos.nombre_en === 'Oil change', JSON.stringify(g2));
-    await espera(p, a => { const e = document.querySelector(`[data-l-rev="${a[0]}"] [data-accion="tl-l-rev-activa"]`); return !!e && e.textContent !== a[1]; }, [idRev, txtAct]);   // la lista ya se ha vuelto a leer
+    ok('S4 · tras «Desactivar»/«Activar» el botón dice lo contrario', (await p.$eval(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-activa"]`, e => e.textContent)) !== txtAct);
     await sinScroll(p, 'listas con la fila editable (1440)');
     await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_id"]', 'Busi'); await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_en"]', 'Spark plug');
-    await p.click('[data-accion="tl-l-rec-nueva"]'); for (let i = 0; i < 100 && !llamadas(B, 'taller_recambio_guarda').length; i++) await p.waitForTimeout(50);   // la cuenta de llamadas vive en Node
+    await escribeLista('[data-accion="tl-l-rec-nueva"]');
     const pz = llamadas(B, 'taller_recambio_guarda').slice(-1)[0][1].p_datos;
     ok('S4 · pieza sin coste: ni coste ni moneda (la moneda puesta solo viaja con un coste)', pz.coste_ref === null && pz.moneda === null, JSON.stringify(pz));
     // la moneda de la instancia (lwMonedaBase, de su base) sale puesta en la pieza nueva y viaja con el coste
@@ -796,7 +802,7 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.evaluate(() => { document.querySelector('[data-tl="l-pieza-nueva"] [data-axw="mas-datos"]').open = true; });
     await p.fill('[data-tl="l-pieza-nueva"] [data-f="coste"]', '45000');
     const nPz = llamadas(B, 'taller_recambio_guarda').length;
-    await p.click('[data-accion="tl-l-rec-nueva"]'); for (let i = 0; i < 100 && llamadas(B, 'taller_recambio_guarda').length === nPz; i++) await p.waitForTimeout(50);
+    await escribeLista('[data-accion="tl-l-rec-nueva"]');
     const pz2 = llamadas(B, 'taller_recambio_guarda').slice(-1)[0][1].p_datos;
     ok('S4 · pieza con coste: viaja con la moneda de la instancia ya puesta (IDR)', pz2.coste_ref === 45000 && pz2.moneda === 'IDR', JSON.stringify(pz2));
     // un nombre sin letras ni cifras: no se envía y sale el campo de la clave, para escribirla a mano
