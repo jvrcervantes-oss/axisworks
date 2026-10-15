@@ -89,6 +89,7 @@
 .tl-fg .fg-mini{font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid rgb(var(--tema-outline-variant, 197 200 188));background:rgb(var(--tema-surface-container-lowest, 255 255 255));cursor:pointer}
 .tl-tabla-l input[type="text"],.tl-tabla-l input:not([type]){min-width:120px}
 .tl-fila-acc{display:flex;flex-wrap:wrap;gap:6px}
+.tl-fila-acc [aria-pressed="true"]{font-weight:700;text-decoration:underline;text-underline-offset:4px}
 .tl-casilla{display:flex;align-items:center;gap:10px;min-height:48px}
 .tl-casilla input{width:22px;height:22px}
 .tl-varias{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:4px 16px}
@@ -233,7 +234,7 @@
     'Añadir revisión': 'Add check', 'Esta lista no tiene revisiones.': 'This list has no checks.', 'Cargar la lista básica': 'Load the basic list',
     'Copiar de otro modelo': 'Copy from another model', 'Copiar': 'Copy', 'Copiadas: {r} revisiones y {v} piezas.': 'Copied: {r} checks and {v} parts.',
     'Piezas de esta lista': 'Parts in this list', 'Esta lista no tiene piezas.': 'This list has no parts.', 'Quitar': 'Remove', 'Revisión sugerida': 'Suggested check',
-    'Añadir pieza existente': 'Add existing part', 'Pieza nueva': 'New part', 'Referencia': 'Reference', 'Coste de referencia': 'Reference cost', 'Moneda': 'Currency',
+    'Añadir pieza existente': 'Add existing part', 'Pieza nueva': 'New part', 'Del catálogo': 'From the catalogue', 'Añadir una pieza': 'Add a part', 'Referencia': 'Reference', 'Coste de referencia': 'Reference cost', 'Moneda': 'Currency',
     'Añadir': 'Add', 'Ninguna': 'None', 'Elige la pieza.': 'Choose the part.', 'Guardado.': 'Saved.',
     'Solo se ven los primeros 500 modelos o piezas.': 'Only the first 500 models or parts are shown.',
     'Dar por revisadas varias…': 'Mark several as checked…', 'Dar por revisadas varias motos': 'Mark several bikes as checked',
@@ -354,7 +355,7 @@
     'Añadir revisión': 'Tambah pemeriksaan', 'Esta lista no tiene revisiones.': 'Daftar ini belum punya pemeriksaan.', 'Cargar la lista básica': 'Muat daftar dasar',
     'Copiar de otro modelo': 'Salin dari model lain', 'Copiar': 'Salin', 'Copiadas: {r} revisiones y {v} piezas.': 'Disalin: {r} pemeriksaan dan {v} suku cadang.',
     'Piezas de esta lista': 'Suku cadang di daftar ini', 'Esta lista no tiene piezas.': 'Daftar ini belum punya suku cadang.', 'Quitar': 'Hapus', 'Revisión sugerida': 'Pemeriksaan terkait',
-    'Añadir pieza existente': 'Tambah suku cadang yang ada', 'Pieza nueva': 'Suku cadang baru', 'Referencia': 'Referensi', 'Coste de referencia': 'Biaya acuan', 'Moneda': 'Mata uang',
+    'Añadir pieza existente': 'Tambah suku cadang yang ada', 'Pieza nueva': 'Suku cadang baru', 'Del catálogo': 'Dari katalog', 'Añadir una pieza': 'Tambah suku cadang', 'Referencia': 'Referensi', 'Coste de referencia': 'Biaya acuan', 'Moneda': 'Mata uang',
     'Añadir': 'Tambah', 'Ninguna': 'Tidak ada', 'Elige la pieza.': 'Pilih suku cadang.', 'Guardado.': 'Tersimpan.',
     'Solo se ven los primeros 500 modelos o piezas.': 'Hanya 500 model atau suku cadang pertama yang tampil.',
     'Dar por revisadas varias…': 'Tandai beberapa sudah dicek…', 'Dar por revisadas varias motos': 'Tandai beberapa motor sudah dicek',
@@ -1528,9 +1529,19 @@
     });
     var cat = h('select', { 'data-f': 'recambio' }, [h('option', { value: '', text: T('Elige la pieza.') })]);
     d.catalogo.forEach(function (p) { if (!d.recambios.some(function (x) { return x.recambio_id === p.id; })) cat.appendChild(h('option', { value: String(p.id), text: (p.ref ? String(p.ref) + ' · ' : '') + nombreDe(p) })); });
-    v.appendChild(seccion('Piezas de esta lista', [d.recambios.length ? ul : h('p', { class: 'axw-vacio', text: T('Esta lista no tiene piezas.') }),
-      h('div', { class: 'axw-barra', 'data-tl': 'l-vincula' }, [campoL('Añadir pieza existente', cat), campoL('Revisión sugerida', revOpts()), h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-vincula', text: T('Añadir') })]),
-      piezaNueva()]));
+    /* S4 (verificador del tren 4f, 15-oct-2026): «Añadir pieza existente» (2) y «Pieza nueva» (3) juntas eran 5 campos a la vista. Un formulario
+       cada vez: «Del catálogo» o «Pieza nueva», con dos botones; sin nada en el catálogo que añadir, solo «Pieza nueva». La elección se recuerda
+       mientras se trabaja en la pestaña (E.piezaModo). */
+    var hayCat = cat.options.length > 1, modo = hayCat ? (E.piezaModo || 'existente') : 'nueva';
+    var vinc = h('div', { class: 'axw-barra', 'data-tl': 'l-vincula' }, [campoL('Añadir pieza existente', cat), campoL('Revisión sugerida', revOpts()), h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-vincula', text: T('Añadir') })]);
+    var nuevaP = piezaNueva();
+    oculta(vinc, modo !== 'existente'); oculta(nuevaP, modo !== 'nueva');
+    var hijosP = [d.recambios.length ? ul : h('p', { class: 'axw-vacio', text: T('Esta lista no tiene piezas.') })];
+    if (hayCat) hijosP.push(h('div', { class: 'tl-fila-acc', role: 'group', 'aria-label': T('Añadir una pieza'), 'data-tl': 'l-pieza-modo' }, [
+      h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-pieza-modo', 'data-modo': 'existente', 'aria-pressed': modo === 'existente' ? 'true' : 'false', text: T('Del catálogo') }),
+      h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-pieza-modo', 'data-modo': 'nueva', 'aria-pressed': modo === 'nueva' ? 'true' : 'false', text: T('Pieza nueva') })]));
+    hijosP.push(vinc, nuevaP);
+    v.appendChild(seccion('Piezas de esta lista', hijosP));
     function piezaNueva() {
       var costeEl = h('input', { type: 'text', inputmode: 'decimal', maxlength: '16', 'data-f': 'coste', autocomplete: 'off' });
       var monEl = h('input', { type: 'text', maxlength: '3', 'data-f': 'moneda', autocomplete: 'off', value: monedaInstancia() });
@@ -1561,6 +1572,13 @@
   function accionListas(a, el) {
     var prod = E.listaSel || null;
     if (a === 'tl-l-basica') return lEscribe(el, 'taller_lista_basica', {});
+    if (a === 'tl-l-pieza-modo') {
+      var m = el.getAttribute('data-modo') === 'nueva' ? 'nueva' : 'existente';
+      E.piezaModo = m;
+      oculta($v('l-vincula'), m !== 'existente'); oculta($v('l-pieza-nueva'), m !== 'nueva');
+      [].forEach.call($v('l-pieza-modo').querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-modo') === m ? 'true' : 'false'); });
+      return;
+    }
     if (a === 'tl-l-rev-edita' || a === 'tl-l-rev-cancela') {
       var rv = revListaDe(el.getAttribute('data-rev-id')); if (!rv) return;
       [].forEach.call($v('l-revisiones').querySelectorAll('tr[data-l-editando]'), function (g) { var o = revListaDe(g.getAttribute('data-l-rev')); if (o) g.replaceWith(filaRev(o, false)); });   // una fila a la vez

@@ -825,6 +825,15 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await espera(p, () => !document.querySelector('[data-tl="l-clave"]').classList.contains('axw-oculto'));
     ok('S4 · la base rechaza la clave: sale el campo con la propuesta escrita', (await p.inputValue('[data-tl="l-clave"] input')) === 'brakes');
     B.revs.splice(B.revs.findIndex(x => x.id === 'rev-de-otra-sesion'), 1);
+    // «Piezas de esta lista»: con algo en el catálogo que añadir, un formulario cada vez (verificador del tren 4f: eran 5 campos juntos)
+    B.recambios.push({ id: 'rec-catalogo-suelta', ref: 'KMP-1', nombre_id: 'Kampas rem', nombre_en: 'Brake pads', activa: true });
+    await p.evaluate(() => document.querySelector('[data-accion="tl-tab-listas"]').click());
+    await espera(p, () => !!document.querySelector('[data-tl="l-pieza-modo"]'));
+    const piezasVistas = async () => (await vistos('[data-tl="l-vincula"]')).concat(await vistos('[data-tl="l-pieza-nueva"]'));
+    ok('S4 · piezas: con catálogo, «Del catálogo» primero y como mucho 3 campos a la vista (la pieza y su revisión sugerida)', JSON.stringify(await piezasVistas()) === '["recambio","revision"]', JSON.stringify(await piezasVistas()));
+    await p.click('[data-tl="l-pieza-modo"] [data-modo="nueva"]');
+    ok('S4 · piezas: «Pieza nueva» enseña sus 3 campos y esconde el catálogo', JSON.stringify(await piezasVistas()) === '["ref","nombre_id","nombre_en"]' && (await p.getAttribute('[data-tl="l-pieza-modo"] [data-modo="nueva"]', 'aria-pressed')) === 'true', JSON.stringify(await piezasVistas()));
+    B.recambios.splice(B.recambios.findIndex(x => x.id === 'rec-catalogo-suelta'), 1);
     await sinScroll(p, 'listas (1440)'); await sinTraducir(p, 'admin id');
     await ctx.close();
 
