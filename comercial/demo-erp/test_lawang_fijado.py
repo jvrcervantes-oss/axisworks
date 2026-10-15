@@ -145,6 +145,57 @@ L.poda(otra)
 q = carpetas()
 ok(len(q) == L.CONSERVA and fij in q and otra in q, 'la poda deja %d carpetas con la fijada y la recién usada (%d)' % (L.CONSERVA, len(q)))
 
+# `pendientes` (15-oct-2026): la cola se CALCULA del fijado y de origin/main; un portado a mano se marca por sha; los merges y lo que no
+# es de RUTAS no cuentan. Se construye sobre `dos` (= origin/main) tres commits más: uno de RUTAS, otro solo de fuera.txt, otro de RUTAS.
+g('checkout', '-q', '-B', 'cola', dos)
+open(os.path.join(repo, 'intranet', 'v4', 'nav.js'), 'w', newline='\n').write('var MENU = 4;\n')
+g('commit', '-q', '-am', 'tres: menu 4')
+tres = g('rev-parse', 'HEAD')
+open(os.path.join(repo, 'fuera.txt'), 'w').write('otra cosa\n')
+g('commit', '-q', '-am', 'cuatro: solo fuera')
+open(os.path.join(repo, 'contracts', 'tokens.json'), 'w', newline='\n').write('{"sections": [1]}\n')
+g('commit', '-q', '-am', 'cinco: tokens')
+cinco = g('rev-parse', 'HEAD')
+g('update-ref', 'refs/remotes/origin/main', cinco)
+L.PORTADOS = os.path.join(tmp, 'portados.json')
+
+fija(cinco)
+p = L.pendientes()
+ok(p['commits'] == [] and p['se_quitan'] == [] and p['caducados'] == [], '`pendientes` con el fijado en origin/main: cola vacía')
+ok(L.linea_aterrizaje(L.pendientes(rango_aterrizaje=dos + '..' + cinco)) == '', 'con la cola vacía el aviso del aterrizaje no sale (no hay nada pendiente que contar)')
+fija(dos)
+p = L.pendientes()
+ok([c['sha'] for c in p['commits']] == [cinco, tres], '`pendientes` lista por sha, el más nuevo primero, solo lo que toca RUTAS (no «solo fuera»): %s'
+   % [c['asunto'] for c in p['commits']])
+ok(p['commits'][1]['rutas'] == ['intranet/v4/nav.js'] and p['commits'][0]['rutas'] == ['contracts/tokens.json'], '`pendientes` trae las rutas de cada commit')
+ok(all(c['portado'] is None for c in p['commits']) and p['se_quitan'] == [], 'sin registro, ninguno está portado y no cae ningún parche')
+open(L.PORTADOS, 'w', encoding='utf-8').write(json.dumps({tres[:12]: {'parche': 'MENU_A_MANO', 'quitar': 'el bloque MENU_A_MANO de build.py'}}))
+p = L.pendientes()
+ok(p['commits'][1]['portado'] and p['commits'][0]['portado'] is None, 'un commit portado a mano sale marcado y el otro no')
+ok(len(p['se_quitan']) == 1 and p['se_quitan'][0]['parche'] == 'MENU_A_MANO' and p['se_quitan'][0]['shas'] == [tres],
+   'al subir el fijado cae el parche del portado (con su sha completo)')
+ok(p['caducados'] == [], 'un portado que aún no está en el fijado no está caducado')
+fija(tres)
+p = L.pendientes()
+ok(len(p['commits']) == 1 and p['caducados'] == [{'sha': tres, 'parche': 'MENU_A_MANO'}] and p['se_quitan'] == [],
+   'un portado cuyo sha ya está en el fijado sale CADUCADO (el parche debía quitarse)')
+fija(dos)
+open(L.PORTADOS, 'w', encoding='utf-8').write(json.dumps({'0' * 12: {'parche': 'X', 'quitar': 'y'}}))
+ok(aborta(L.pendientes), 'un sha del registro que no existe en Lawang → aborta (no se calla un registro roto)')
+open(L.PORTADOS, 'w', encoding='utf-8').write(json.dumps({tres[:12]: {'parche': 'X'}}))
+ok(aborta(L.pendientes), 'una fila del registro sin «quitar» → aborta')
+os.remove(L.PORTADOS)
+ok(L.pendientes()['se_quitan'] == [], 'sin fichero de registro = nada portado (no aborta)')
+a = L.pendientes(rango_aterrizaje=tres + '..' + cinco)
+ok('NO le llega hasta subir el fijado' in L.linea_aterrizaje(a) and '2 commits pendientes' in L.linea_aterrizaje(a),
+   'el aviso del aterrizaje sale cuando lo subido toca RUTAS, con el número de pendientes')
+b = L.pendientes(rango_aterrizaje=cinco + '..' + cinco)
+ok(L.linea_aterrizaje(b) == '', 'el aviso NO sale si lo subido no toca RUTAS')
+# El registro real: cada parche que nombra existe de verdad en build.py (si alguien renombra el parche, el registro no queda apuntando al aire).
+real = json.load(open(os.path.join(AQUI, 'lawang_portados.json'), encoding='utf-8'))
+build = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
+ok(real and all(('%s = (' % f['parche']) in build for f in real.values()), 'lawang_portados.json: cada parche nombrado existe en build.py')
+
 import shutil  # noqa: E402
 shutil.rmtree(tmp, ignore_errors=True)   # solo la carpeta temporal de esta prueba
 print('\n%d fallo(s)' % len(fallos))
