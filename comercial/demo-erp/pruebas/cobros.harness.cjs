@@ -45,7 +45,7 @@ const EDGE_TS = [process.env.AXW_AGENCIA_RAIZ, 'C:/Users/jvrce/Desktop/ClaudeCod
 // los textos de sin_a_quien_avisar de la edge nueva (index.ts de bbm-p34), copiados tal cual: la pantalla los enseña (y los traduce por su frase exacta)
 // (comprobados contra el index.ts de la agencia en cuanto la edge nueva esté allí: abajo, «textos del servidor»)
 const SQA = {
-  correo: 'El servidor de correo ha cambiado hace menos de 24 horas: para cobrar de verdad espera a que pasen y vuelve a intentarlo. No se ha guardado nada.',
+  correo: 'El servidor de correo ha cambiado hace menos de 24 horas o no lo ha puesto un super admin activo: para cobrar de verdad, un super admin tiene que guardarlo en Ajustes › Correo y, desde entonces, esperar 24 horas. No se ha guardado nada.',
   testigo: 'Para cobrar de verdad tiene que haber alguien más a quien avisar desde hace al menos 24 horas: otro super admin activo o un buzón de avisos de sistema de tu dominio (Ajustes › Correo) que no haya cambiado en ese tiempo. No se ha guardado nada.'
 };
 
@@ -417,7 +417,7 @@ const C = '[data-axw-cobros-caja]';
   await ctx.close();
   b = base({ puede: false });
   ({ p, ctx } = await abre(nav, b, { tipo: 'asistente', url: '/ajustes/configurar/?modulo=reservas-producto&paso=cobros' }));
-  ok('asistente, operario: «solo el administrador principal» y sin edge', ((await txt(p, '[data-axw-as="tarjeta"]')) || '').includes('Solo el administrador principal') && b.edge.length === 0);
+  ok('asistente, operario: «solo un administrador» (B2) y sin edge', ((await txt(p, '[data-axw-as="tarjeta"]')) || '').includes('Solo un administrador puede configurar') && b.edge.length === 0);
   await ctx.close();
 
   // 13. con el ajustes.js REAL: la pestaña se abre por clic y por la URL; sin paso en la base, #cobros cae en Empresa y nadie llama a la edge

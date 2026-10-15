@@ -1288,7 +1288,7 @@
     if (/\/maps\/dir\//i.test(u)) return '';
     var N = '([+-]?\\d{1,3}\\.\\d+)', S = '[,\\s+]+';
     var m = new RegExp('!3d' + N + '!4d' + N).exec(u)                                          // el sitio marcado (su ficha)
-         || new RegExp('[?&](?:q|query|ll)=' + N + S + N).exec(u)
+         || new RegExp('[?&](?:q|query)=' + N + S + N).exec(u)
          || new RegExp('/(?:place|search)/' + N + S + N).exec(u);
     return m ? Number(m[1]) + ', ' + Number(m[2]) : '';
   }

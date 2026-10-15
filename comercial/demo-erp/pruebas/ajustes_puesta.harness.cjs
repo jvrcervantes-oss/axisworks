@@ -139,7 +139,7 @@ const txt = async (p, sel) => (await p.$(sel)) ? (await p.$eval(sel, e => e.text
   await ctx.close();
 
   ({ p, ctx } = await abre(nav, base('no_configura')));
-  ok('quien no configura: estado por módulo, sin pasos, y lo dice', (await p.$$('section[data-pm-modulo]')).length === 4 && !(await p.$('[data-pm-fila]')) && ((await txt(p, '#lw-aj-puesta')) || '').includes('Solo el administrador principal'));
+  ok('quien no configura: estado por módulo, sin pasos, y lo dice', (await p.$$('section[data-pm-modulo]')).length === 4 && !(await p.$('[data-pm-fila]')) && ((await txt(p, '#lw-aj-puesta')) || '').includes('Solo un administrador puede configurar'));
   await ctx.close();
   ({ p, ctx } = await abre(nav, base('sin_configurar', { noExiste: true })));
   ok('función ausente: se dice, con Reintentar, nunca «todo configurado»', !!(await p.$('[data-accion="pm-reintentar"]')) && ((await txt(p, '#lw-aj-puesta')) || '').includes('todavía no está disponible'));

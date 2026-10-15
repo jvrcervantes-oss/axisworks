@@ -68,6 +68,9 @@ for nombre, ok in (('pasa con la forma de Lawang', r == 'pasa'), ('entra la pant
                    ('el hub cambia', "herr:'asistente_peticiones'" in h),
                    # (1) un admin pasa sin casilla en las tres puertas, y solo en la del asistente de peticiones (el agente sigue necesitándola)
                    ('la puerta (guard) deja pasar al admin SOLO con asistente_peticiones', rg == 'pasa' and "LW_ROL.esSuperGlobal(ficha) || (ficha && ficha.rol === 'admin' && HERRAMIENTA === 'asistente_peticiones')" in g),
+                   # M3 (owner 15-oct, 20261015190000): la misma puerta deja pasar al admin a /taller/ (la base decide si hay mecánico); a nada más
+                   ('la puerta (guard) deja pasar al admin a taller (M3)', g.count("(ficha && ficha.rol === 'admin' && HERRAMIENTA === 'taller')") == 1
+                    and g.count("ficha.rol === 'admin' && HERRAMIENTA ===") == 2),
                    ('el menú deja pasar al admin solo en la entrada asistente', "(path === 'asistente' && ficha.rol === 'admin')" in n),
                    ('la tarjeta del hub deja pasar al admin solo en asistente_peticiones', "(t.herr === 'asistente_peticiones' && ficha.rol === 'admin')" in h),
                    # (4) el editor explica los campos que ya no se piden

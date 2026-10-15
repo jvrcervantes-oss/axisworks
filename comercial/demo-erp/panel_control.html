@@ -118,6 +118,16 @@ body.ax-app{background:var(--aw-chalk);color:var(--aw-night);font-family:var(--a
 .ax-prop button{min-height:44px}
 .ax-prop .ax-btn-sec{background:var(--aw-white);color:var(--aw-night);border-color:var(--aw-control)}
 .ax-buzon{margin-top:10px;font-weight:500}.ax-buzon summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+/* Techo del AaaS (16-oct-2026): tres campos con su rótulo visible, en una fila que se parte a 390 */
+.ax-techo{align-items:flex-end}
+.ax-campo{display:flex;flex-direction:column;gap:4px;flex:1 1 150px;min-width:0;font-size:13px;color:var(--aw-text3)}
+.ax-prop .ax-campo input,.ax-campo select{flex:none;width:100%;min-height:44px;padding:0 12px;border:1.5px solid var(--aw-control);border-radius:10px;font:500 15px var(--aw-f-sans);color:var(--aw-night);background:var(--aw-white)}
+.ax-campo input::placeholder{color:var(--aw-text3);opacity:1}
+.ax-campo input[aria-invalid="true"]{border-color:var(--aw-err)}
+.ax-aten{color:var(--aw-caution)}
+.ax-techo-estado span{display:block}
+/* a 390 la etiqueta va encima del valor: la columna de 120 px dejaba los campos en 171 px (Diseño, 16-oct) */
+@media (max-width:480px){.ax-kv{grid-template-columns:minmax(0,1fr);gap:2px 0}.ax-kv dd{margin-bottom:12px}}
 .ax-h3s{margin:0 0 12px;color:var(--aw-text3)}
 .ax-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
 .ax-modc{display:flex;flex-direction:column;gap:10px;padding:20px;min-height:168px;border-radius:var(--aw-r-tile);background:var(--aw-white);border:1px solid var(--aw-line)}
@@ -891,7 +901,7 @@ window.AXW_ASIS = (function () {
   /* Setup por módulo (F3, 12-oct-2026, erp-panel-2; owner: «módulo primero y setup después»). Lo pone build.py (setup_para_panel):
      `textos` (título de cada paso en es/en, de setup_modulos.js), `registro` (SETUP de erp/modulos.py: SOLO para el mapa S00) y `en`
      (nombres EN de módulos y tipos). Los pasos y el estado de UNA instancia los da su base por erp_control_estado (forma de Backend,
-     bbm-p21, 12-oct): por módulo `setup` = erp_modulos.setup tal cual ({pasos:[…]} | {ninguno: motivo} | null = sin declarar) y, en
+     12-oct): por módulo `setup` = erp_modulos.setup tal cual ({pasos:[…]} | {ninguno: motivo} | null = sin declarar) y, en
      los encendidos con pasos, `setup_estado` = {estado: sin_configurar|configurado, hechos, total} (total = obligatorios). */
   var SETUP = __AXW_SETUP__;
   var tieneCampo = function (o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k); };
@@ -988,6 +998,7 @@ window.AXW_ASIS = (function () {
       fila('Intranet', esc(f.url_intranet || '—'), '') +
       fila('Administrador principal', propietarioHtml(i, e), 'El primer administrador del cliente: lo invitas aquí y él pone su contraseña desde el correo. Es uno solo y nunca una cuenta del estudio.') +
       fila('Buzón del estudio', buzonHtml(i, e), 'Con él salen la invitación del administrador principal y el primer código de Ajustes › Correo. Es del estudio; el cliente pone después el suyo.') +
+      fila('Techo del AaaS', techoHtml(i, e), 'Lo máximo que el estudio deja gastar al agente de este negocio. Dentro de él, el dueño pone su tope en su asistente.') +
       fila('Superadmin', admins, 'Todas las cuentas con todos los permisos, también las del estudio.') +
       '</dl>' + (avisos.length ? '<p class="ax-err-t" style="margin:12px 0 0;font-size:14px">' + avisos.join(' ') + '</p>' : '');
   }
@@ -1044,7 +1055,7 @@ window.AXW_ASIS = (function () {
     }).catch(function (e) { toast(e.message); }).then(function () { ocupado = false; });
   }
 
-  /* Buzón del estudio (B3, 15-oct-2026, bbm-correo; revisión previa #360). Vive en la base de cada instancia (Vault) y lo reparte el mando: aquí se
+  /* Buzón del estudio (B3, 15-oct-2026; revisión previa #360). Vive en la base de cada instancia (Vault) y lo reparte el mando: aquí se
      enseña lo que dice la base de ESTA instancia (`estado.buzon_estudio`, sin contraseña) frente al del mando (`buzon_mando`, su versión), y se
      pide poner (en todas), copiar (a esta) o quitar (de esta). La pantalla no decide nada: el mando lo comprueba (DNS, tope, login real) y cada
      base lo vuelve a validar. La contraseña va solo en la petición de «poner» y el campo se vacía al enviarla; nunca vuelve. */
@@ -1109,6 +1120,108 @@ window.AXW_ASIS = (function () {
           } else toast(accion === 'copia' ? 'Buzón copiado a ' + inst.marca + '.' : 'Buzón quitado de ' + inst.marca + '.');
           return carga(true);
         }
+        toast(d.mensaje || 'Respuesta inesperada (' + d.__estado + '). Recargo el estado para ver qué quedó.');
+        return carga(true);
+      });
+    }).catch(function (e) { toast(e.message); }).then(function () { ocupado = false; });
+  }
+
+  /* Techo del AaaS (16-oct-2026, aaas-equipo; acciones techo_aaas_estado y techo_aaas_pon de erp-control, migración 20261015194000). Es el límite
+     que pone el estudio al módulo de pago; dentro de él el dueño del negocio pone su tope en /agente/. Se enseña lo que dice la base de ESTA
+     instancia (`estado.aaas`) y, antes de confirmar, se vuelve a leer con techo_aaas_estado para enseñar «antes → después» al día. La pantalla
+     no decide nada: erp-control comprueba el operador, las claves y que sean enteros ≥ 0; la base, el nivel 0-3 y la cordura, fusiona y deja el
+     rastro con el operador verificado. Solo se mandan los campos escritos (la base fusiona: un campo en blanco no cambia, no es 0). El dinero
+     del AaaS va siempre en euros: aquí se escribe en euros y viaja en céntimos. Tope vigente 0 = el agente puede estar encendido pero no gasta
+     nada y el paso «Tope mensual» de su asistente no se completa; el aviso dice de quién es arreglarlo (el estudio aquí, o el dueño allí). */
+  function eur(c) {
+    return typeof c === 'number' && isFinite(c) ? (c / 100).toLocaleString('es-ES', { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 }) + ' €' : '—';
+  }
+  function centimos(txt) {   // null = en blanco (no cambia); NaN = no es un importe; si no, céntimos enteros
+    var s = String(txt == null ? '' : txt).replace(/\s/g, '');
+    if (!s) return null;
+    if (!/^\d{1,9}([.,]\d{1,2})?$/.test(s)) return NaN;
+    return Math.round(parseFloat(s.replace(',', '.')) * 100);
+  }
+  // `leve` (ámbar, no rojo): lo que no es una avería del estudio ahora mismo. Con el agente APAGADO, que no pueda gastar no es un fallo:
+  // se avisa de lo que faltará al encenderlo (revisor del Techo, 16-oct: en una instancia que no ha encendido el agente salía rojo).
+  function causaTope0(a) {
+    if (typeof a.tope_vigente_cent === 'number' && a.tope_vigente_cent > 0) return null;
+    var t = a.techos || {}, apagado = a.encendido === false;
+    if (!a.techo_puesto || !(t.tope_mensual_cent > 0)) return { clave: 'sin_techo', leve: apagado, txt: apagado
+      ? 'El agente está apagado. Antes de encenderlo falta el techo del estudio' + (a.techo_puesto ? ' (está a 0)' : '') +
+        ': sin él no podrá gastar nada ni el dueño completar el paso «Tope mensual» de su asistente. Ponlo aquí abajo.'
+      : 'Ahora el agente no puede gastar nada: falta el techo del estudio' + (a.techo_puesto ? ' (está a 0)' : '') +
+        '. Ponlo aquí abajo; sin él el dueño no puede completar el paso «Tope mensual» de su asistente.' };
+    if (!(a.tope_ficha_cent > 0)) return { clave: 'sin_tope_dueno', leve: true, txt: 'Ahora el agente no puede gastar nada: el techo ya está puesto, pero el dueño no ha puesto su tope mensual. ' +
+      'Lo pone él en su asistente; el estudio no tiene que hacer nada.' + (a.hay_owner ? '' : ' Y este negocio aún no tiene dueño del agente.') };
+    return { clave: 'otro', txt: 'Algo no cuadra: con el techo y el tope puestos, ahora vale 0. Recarga; si sigue igual, es un fallo del estudio, no del dueño.' };
+  }
+  function techoHtml(i, e) {
+    if (!Object.prototype.hasOwnProperty.call(e, 'aaas') || !e.aaas || typeof e.aaas !== 'object')
+      return '<span class="ax-err-t" data-techo-estado="sin_dato">La base de esta instancia aún no tiene el techo del AaaS (le falta la actualización del estudio).</span>';
+    var a = e.aaas, t = a.techos || {}, causa = causaTope0(a);
+    var html = (a.techo_puesto
+      ? '<span class="ax-techo-estado" data-techo-estado="puesto"><span>Al mes: ' + esc(eur(t.tope_mensual_cent)) + '</span><span>Por módulo: ' + esc(eur(t.tope_modulo_cent)) +
+        '</span><span>Nivel máximo del equipo: ' + esc(String(t.equipo_nivel_max == null ? 0 : t.equipo_nivel_max)) + '</span></span>'
+      : '<span class="ax-err-t" data-techo-estado="sin_techo">Sin techo.</span>') +
+      '<small>Tope del dueño: ' + esc(typeof a.tope_ficha_cent === 'number' ? eur(a.tope_ficha_cent) : 'sin poner') + ' · lo que vale ahora: ' + esc(eur(a.tope_vigente_cent)) +
+      (typeof a.subida_pendiente_cent === 'number' ? ' · subida a ' + esc(eur(a.subida_pendiente_cent)) + ' pendiente (entra a las 24 h)' : '') + '.</small>' +
+      (causa ? '<small class="' + (causa.leve ? 'ax-aten' : 'ax-err-t') + '" data-techo-aviso="' + causa.clave + '">' + esc(causa.txt) + '</small>' : '');
+    if (!i.editable) return html;
+    var ph = function (c) { return typeof c === 'number' ? ' placeholder="ahora ' + esc(eur(c)) + '"' : ' placeholder="en euros"'; };
+    return html + '<details class="ax-buzon" data-techo-form' + (causa && causa.clave === 'sin_techo' ? ' open' : '') + '><summary>' + (a.techo_puesto ? 'Cambiar el techo' : 'Poner el techo') + '</summary>' +
+      '<small>Rellena solo lo que quieras cambiar; lo que dejes en blanco se queda como está. Importes en euros: escribe 1500, no 1.500.</small>' +
+      '<span class="ax-prop ax-techo">' +
+      '<label class="ax-campo"><span>Tope mensual (€)</span><input id="techo-mensual" type="text" inputmode="decimal" autocomplete="off" maxlength="13"' + ph(t.tope_mensual_cent) + '></label>' +
+      '<label class="ax-campo"><span>Tope por módulo (€)</span><input id="techo-modulo" type="text" inputmode="decimal" autocomplete="off" maxlength="13"' + ph(t.tope_modulo_cent) + '></label>' +
+      '<label class="ax-campo"><span>Nivel máximo del equipo</span><select id="techo-nivel"><option value="">Sin cambiar</option>' +
+      [0, 1, 2, 3].map(function (n) { return '<option value="' + n + '">' + n + (n === 0 ? ' · ningún agente decide solo' : n === 3 ? ' · el máximo' : '') + '</option>'; }).join('') + '</select></label>' +
+      '<button type="button" class="ax-btn-dark" data-techo="pon">Poner techo</button></span>' +
+      '<small class="ax-err-t" role="alert" data-techo-error hidden></small></details>';
+  }
+  var ROTULO_TECHO = { tope_mensual_cent: 'Tope mensual', tope_modulo_cent: 'Tope por módulo', equipo_nivel_max: 'Nivel máximo del equipo' };
+  function valorTecho(k, v) { return v == null ? 'sin poner' : k === 'equipo_nivel_max' ? String(v) : eur(v); }
+  // El fallo se queda junto al formulario (no en el aviso flotante, que se va a los 4 s y tapa los campos a 390) y lo escrito no se pierde
+  function techoError(txt, campo) {
+    var el = document.querySelector('#ficha [data-techo-error]');
+    if (el) { el.hidden = !txt; el.textContent = txt || ''; } else if (txt) toast(txt);
+    [].forEach.call(document.querySelectorAll('#ficha .ax-techo [aria-invalid]'), function (x) { x.removeAttribute('aria-invalid'); });
+    if (campo && $(campo)) { $(campo).setAttribute('aria-invalid', 'true'); $(campo).focus(); }
+  }
+  function techo() {
+    if (ocupado || !actual || !actual.editable || !actual.estado) return;
+    var inst = actual, techos = {}, mal = [], primero = null;
+    [['tope_mensual_cent', 'techo-mensual', 'el tope mensual'], ['tope_modulo_cent', 'techo-modulo', 'el tope por módulo']].forEach(function (c) {
+      var v = centimos(($(c[1]) || {}).value);
+      if (v === null) return;
+      if (isNaN(v)) { mal.push(c[2]); primero = primero || c[1]; } else techos[c[0]] = v;
+    });
+    var nv = ($('techo-nivel') || {}).value;
+    if (nv) techos.equipo_nivel_max = Number(nv);
+    if (mal.length) { techoError('Escribe ' + listaY(mal) + ' en euros: 1500, no 1.500 (con céntimos, 19,99).', primero); return; }
+    if (!Object.keys(techos).length) { techoError('Rellena al menos un campo: lo que dejes en blanco se queda como está.', 'techo-mensual'); return; }
+    techoError('');
+    ocupado = true;
+    // lo de ahora, leído de la base en este momento (no lo que se cargó al abrir el panel); si no responde, lo del último estado
+    pide({ accion: 'techo_aaas_estado', instancia: inst.nombre }).then(function (d) {
+      var a = d.__estado === 200 && d.techo && typeof d.techo === 'object' ? d.techo : (inst.estado.aaas || {});
+      var ahora = a.techos || {};
+      var filas = Object.keys(techos).map(function (k) {
+        return '<div class="ax-row" data-techo-cambio="' + k + '"><div class="ax-grow"><b>' + ROTULO_TECHO[k] + '</b><div class="ax-md">' +
+          esc(valorTecho(k, a.techo_puesto || k !== 'tope_mensual_cent' ? ahora[k] : null)) + ' → ' + esc(valorTecho(k, techos[k])) + '</div></div></div>';
+      }).join('');
+      return dialogo('<p>Se pone el techo del AaaS de <b>' + esc(inst.marca) + '</b>. Es el máximo: el dueño elige su tope dentro de él, y si su tope es mayor, vale el techo.</p>' + filas +
+        (techos.tope_mensual_cent === 0 ? '<p class="ax-aviso" data-techo-aviso="cero">Con el tope mensual a 0 el agente no gasta nada y el paso «Tope mensual» de su asistente no se completa.</p>' : '') +
+        '<p class="ax-md">La base lo vuelve a comprobar y deja apuntado quién lo puso.</p>', 'Poner techo', null, 'Techo del AaaS', 'Techo · ' + inst.marca);
+    }).then(function (v) {
+      if (v !== 'ok') return;
+      return pide({ accion: 'techo_aaas_pon', instancia: inst.nombre, techos: techos }).then(function (d) {
+        if (d.__estado === 200 && d.ok) {
+          toast(d.techo && d.techo.cambia === false ? 'Sin cambios: el techo ya era ese.' : 'Techo puesto en ' + inst.marca + '.');
+          return carga(true);
+        }
+        // rechazado (400/409 con su mensaje): no se guardó nada; se dice junto al formulario y lo escrito se queda para corregirlo
+        if ((d.__estado === 400 || d.__estado === 409) && d.mensaje && actual === inst) { techoError(d.mensaje); return; }
         toast(d.mensaje || 'Respuesta inesperada (' + d.__estado + '). Recargo el estado para ver qué quedó.');
         return carga(true);
       });
@@ -1449,7 +1562,7 @@ window.AXW_ASIS = (function () {
       if (cf.length) bloqueos.push(cf.map(function (k) { var v = s.condiciones_faltan[k];
         return esc(nombre(k)) + ' no se puede encender todavía: le falta ' + esc(Array.isArray(v) ? v.join(', ') : String(v)) + ' (lo pide la base).'; }).join(' '));
       // A14 (20261014096000): lo que frenaría un disparador de la base (otro tipo, de pago, sin declarar…) va en `rechazo`. Va ANTES y TAPA la falta de
-      // ensayo (EU4, 15-oct, rama de bbm): un rechazo así no lo arregla ningún ensayo, y pedir uno sería trabajo para nada
+      // ensayo (EU4, 15-oct): un rechazo así no lo arregla ningún ensayo, y pedir uno sería trabajo para nada
       var faltan = s.faltan_dependencias || {}, fk = Object.keys(faltan);
       if (s.rechazo && typeof s.rechazo === 'object') bloqueos.push(textoRechazo(s.rechazo));
       else if (s.regla_sin_mirar) bloqueos.push('La base no pudo comprobar este cambio (' + esc(SIN_MIRAR[s.regla_sin_mirar] || String(s.regla_sin_mirar)) +
@@ -1575,7 +1688,7 @@ window.AXW_ASIS = (function () {
   }
 
   document.addEventListener('click', function (ev) {
-    var t = ev.target.closest && ev.target.closest('[data-accion],[data-mod],[data-inst],#reintenta,[data-mapa-tipo],[data-prop],[data-buzon]');
+    var t = ev.target.closest && ev.target.closest('[data-accion],[data-mod],[data-inst],#reintenta,[data-mapa-tipo],[data-prop],[data-buzon],[data-techo]');
     if (!t) return;
     if (t.hasAttribute('data-mapa-tipo')) {   // del asistente al mapa con su tipo marcado (vistaActual cierra el asistente)
       ev.preventDefault();
@@ -1585,6 +1698,7 @@ window.AXW_ASIS = (function () {
     }
     if (t.hasAttribute('data-prop')) { ev.preventDefault(); if (!t.disabled) propietario(t.getAttribute('data-prop')); return; }
     if (t.hasAttribute('data-buzon')) { ev.preventDefault(); if (!t.disabled) buzon(t.getAttribute('data-buzon')); return; }
+    if (t.hasAttribute('data-techo')) { ev.preventDefault(); if (!t.disabled) techo(); return; }
     if (t.hasAttribute('data-accion')) { ev.preventDefault(); if (!t.disabled) asisAccion(t); }
     else if (t.id === 'reintenta') carga(true).catch(function (e) { toast(e.message); });
     else if (t.hasAttribute('data-inst')) elige(t.getAttribute('data-inst'));
@@ -1592,8 +1706,10 @@ window.AXW_ASIS = (function () {
   });
   $('sel-instancia').addEventListener('change', function () { elige(this.value); });
   $('asis-form').addEventListener('submit', function (ev) { ev.preventDefault(); });   // Enter dispara el clic del botón de enviar (data-accion), no el submit
-  // un solo oyente de entrada para todo el asistente: texto, selects, radios y casillas; el campo lo dice data-campo / data-opc
+  // un solo oyente de entrada para todo el asistente: texto, selects, radios y casillas; el campo lo dice data-campo / data-opc.
+  // También quita la marca de error de un campo del Techo del AaaS en cuanto se vuelve a escribir en él.
   document.addEventListener('input', function (ev) {
+    if (ev.target && ev.target.closest && ev.target.closest('#ficha .ax-techo')) { ev.target.removeAttribute('aria-invalid'); return; }
     var c = ev.target.closest && ev.target.closest('#asis [data-campo],#asis [data-opc]');
     if (!c || !asis) return;
     if (c.hasAttribute('data-opc')) asis.despacha({ t: 'opc', modulo: c.getAttribute('data-opc'), on: c.checked });

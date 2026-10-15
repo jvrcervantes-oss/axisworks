@@ -272,13 +272,22 @@
       return U(v === 'si' ? 'ejemplo_dentro' : 'ejemplo_fuera', { v: n + mon });
     })
   };
+  // Los tres pasos del AaaS (N5) se hacen en el asistente de Ajustes de su ventana (agente.html, 15-oct-2026; revisión previa #383 punto 6: un solo
+  // camino de entrada): el enlace abre ESE paso (#ajustes-<paso>), no la ventana en general. La base da `donde` = '/agente/'; aquí solo se añade el ancla.
+  var AAAS_PASO = { tope_aaas: 'tope', contexto_aaas: 'negocio', limites_aaas: 'limites' };
+  function dondeDe(paso) {
+    var d = String(paso.donde || '');
+    if (!/^\/[a-z0-9\-\/]*$/i.test(d)) return null;
+    return AAAS_PASO[paso.clave] && /\/agente\/$/.test(d) ? d + '#ajustes-' + AAAS_PASO[paso.clave] : d;
+  }
   // Pasos que se hacen en otra pantalla (Flota, Entrega) y cualquier clave que esta pantalla no conozca todavía
   var EXTERNO = {
     externo: true,
+    enlace: dondeDe,   // Ajustes › Configurar (ajustes_puesta.js) usa el mismo enlace que el asistente
     pinta: function (caja, ctx) {
       caja.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', text: U('otra_pantalla') }));
-      var d = String(ctx.paso.donde || '');
-      if (/^\/[a-z0-9\-\/]*$/i.test(d)) {
+      var d = dondeDe(ctx.paso);
+      if (d) {
         caja.appendChild(el('a', { href: d, 'data-axw-accion': 'abrir-externo', class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant font-label-md text-label-md text-deep-lagoon axw-btn',
                                    style: 'min-height:44px', text: U('abrir', { pantalla: S().texto('paso', ctx.paso.clave, 0) }) }));
       }
@@ -294,7 +303,7 @@
    *  · Guarda con usuario_guarda_permisos, la RPC de la ficha de Usuarios, que REEMPLAZA el array entero: por eso relee el `herramientas` de
    *    cada persona justo antes y manda ESE array con solo esta herramienta puesta o quitada (nunca el leído al pintar ni una lista filtrada).
    *  · «Puede crear / solo ver» del diseño no se pinta: la base no tiene niveles por herramienta (lista de Backend). Invitar = alta de Usuarios. */
-  var COLS_USUARIO = 'user_id,nombre,email,rol,activo,herramientas,creado_por';
+  var COLS_USUARIO = 'user_id,nombre,email,rol,activo,herramientas,creado_por,es_propietario';   // es_propietario: B1 (098000, en todas)
   // M5 de la auditoría del setup de bbm (15-oct-2026): la cuenta del estudio salía como otro «Administrador principal» y Noelia no sabía quién era.
   // Se rotula «Soporte de AxisWorks», sin casilla y sin contar, como hace la base (098100: _modulo_setup_pasos no cuenta las cuentas del estudio).
   // La MISMA regla que _es_cuenta_estudio (098000): dominio exacto tras la última @ = axisworks.studio, sin mayúsculas ni espacios; y lo creado por
@@ -339,8 +348,11 @@
       caja.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('quien_nota') }));
       function recuenta() {
         if (!st.lista) return;
-        // la regla de la base: en un módulo operativo el administrador principal no cuenta; en uno administrativo, sí
-        var n = (operativo(ctx.paso.modulo) ? 0 : st.lista.filter(function (u) { return u.rol === 'super_admin' && !esEstudio(u); }).length)
+        // la regla de la base (_modulo_setup_pasos; B1, owner 15-oct, 20261015190000): en un módulo operativo cuenta la dueña (es_propietario) y no
+        // otro administrador principal; en uno administrativo, cualquier administrador principal. Nunca una cuenta del estudio. Es solo el número que
+        // se enseña mientras se marcan casillas: si el paso está hecho lo dice la base (ctx.paso.hecho).
+        var op = operativo(ctx.paso.modulo);
+        var n = st.lista.filter(function (u) { return !esEstudio(u) && (op ? u.es_propietario === true : u.rol === 'super_admin'); }).length
               + lista.querySelectorAll('input[data-axw-quien-usuario]:checked').length;
         cuenta.textContent = n === 1 ? U('quien_uno', { m: m }) : U('quien_n', { n: String(n), m: m });
       }
@@ -374,7 +386,8 @@
               el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', style: 'overflow-wrap:anywhere', text: estudio ? U('quien_estudio') : principal ? U('quien_principal') : String(u.email || '') })]),
             der]));
         });
-        if (!st.lista.some(function (u) { return u.rol !== 'super_admin' && !esEstudio(u); }))
+        // «Aún no hay nadie más»: solo si la base no da el paso por hecho (con B1, en un módulo operativo la dueña sola ya lo cumple)
+        if (!ctx.paso.hecho && !st.lista.some(function (u) { return u.rol !== 'super_admin' && !esEstudio(u); }))
           lista.appendChild(el('li', { class: 'px-4 py-3 border-t border-outline-variant font-body-md text-body-md text-on-surface-variant', 'data-axw-quien': 'solo-tu', text: U('quien_solo_tu') }));
         recuenta();
       }); }

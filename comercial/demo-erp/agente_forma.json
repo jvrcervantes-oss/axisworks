@@ -95,25 +95,34 @@
    "args": {},
    "devuelve": "[{proveedor: 'claude' | 'meta' | 'google', estado: 'sin_comprobar' | 'conectada' | 'caducada' | 'error' | 'desconectada', ultimos4, version, guardada_en, por, comprobada_en, ultimo_error, ajustes}] — NUNCA el secreto",
    "quien": "herramienta agente; la cuenta de pruebas → 42501 hint cuenta_pruebas"
+  },
+  "agente_owner_estado": {
+   "transporte": "sb.rpc (paso 0 del asistente; agencia erp/migraciones 20261015194000; núcleo: contesta con el módulo apagado; sin la migración → 404 PGRST202 y el paso 0 no se enseña)",
+   "args": {},
+   "devuelve": {
+    "hay_owner": "bool",
+    "owner_activo": "bool",
+    "soy_owner": "bool",
+    "soy_propietario": "bool",
+    "puedo_poner": "bool: la persona propietaria y no la cuenta de pruebas",
+    "owner_nombre": "texto | null",
+    "owner_numero": "texto | null (USR-00001)",
+    "cambiado_en": "instante | null: el último cambio de dueño",
+    "cambios_24h": "entero: cambios de dueño en las últimas 24 h (freno 3)",
+    "ya_no_eres_owner": "bool: quien llama lo era antes del último cambio",
+    "candidatos": "[{user_id, numero_usuario, nombre, es_estudio}] por nombre: activas, sin la cuenta de pruebas (nunca), con las del estudio marcadas es_estudio true (se pueden elegir; la pantalla lo rotula), sin correo; SOLO con puedo_poner (si no, []). Sin la clave (base sin el cambio de Backend, 16-oct) la pantalla ofrece solo «Lo llevo yo»"
+   },
+   "quien": "cualquier usuario activo por la API (42501 hint solo_api | sin_usuario); nunca el correo de nadie, y los uid solo en candidatos y solo para la persona propietaria"
   }
  },
  "escrituras": {
-  "agente_nota_decide": {
+  "agente_owner_pon": {
    "args": {
-    "p_id": "entero",
-    "p_decision": "'hecha' | 'descartada'"
+    "p_user_id": "uuid de un usuario ACTIVO de esta base (de agente_owner_estado.candidatos, o el uid de la propia sesión para «Lo llevo yo»); la base lo comprueba",
+    "p_motivo": "texto 3-300 (la pantalla pone MOTIVO_AJ.quien)"
    },
-   "devuelve": "{ok: true, decision}",
-   "quien": "herramienta agente, sin la cuenta de pruebas"
-  },
-  "agente_propuesta_decide": {
-   "args": {
-    "p_id": "entero",
-    "p_decision": "'aceptada' | 'rechazada'",
-    "p_nota": "texto 0-500 | null"
-   },
-   "devuelve": "{ok: true, estado}",
-   "quien": "owner de la ficha (una propuesta con toca_guarda cambia los límites del AaaS; #313)"
+   "devuelve": "{ok: true, cambia: bool, owner: {nombre, numero_usuario}, telegram_borrado: bool, subida_cancelada: bool}",
+   "quien": "SOLO la persona propietaria (42501 hint solo_propietario); nunca la cuenta de pruebas, ni para llamar ni como elegida (42501 hint cuenta_pruebas); usuario que no vale → 22023 hint usuario_no_valido; motivo → 22023 hint motivo; freno 1/min y 3/24 h → P0001 hint agente_freno"
   },
   "agente_para": {
    "args": {},
@@ -202,6 +211,26 @@
    },
    "devuelve": "{ok: true, tipo, quita, cambia} | {ok: false, motivo: 'forma' | 'linea' | 'nombre' | 'dominio' | 'dominio_compartido' | 'url' | 'demasiadas' | 'demasiados' | 'tiene_imagenes'}",
    "quien": "SOLO el dueño de la ficha"
+  }
+ },
+ "escrituras_sin_llamador": {
+  "_que": "Siguen en la base pero el panel ya no las llama desde el 15-oct-2026 (Hoy y Propuestas de cambio salieron del panel: plan aaas-equipo, revisión previa #383 punto 8). No se revocan en este cambio: antes Backend confirma que nada genera esas filas. test_agente.py comprueba que el panel NO las nombra.",
+  "agente_nota_decide": {
+   "args": {
+    "p_id": "entero",
+    "p_decision": "'hecha' | 'descartada'"
+   },
+   "devuelve": "{ok: true, decision}",
+   "quien": "herramienta agente, sin la cuenta de pruebas"
+  },
+  "agente_propuesta_decide": {
+   "args": {
+    "p_id": "entero",
+    "p_decision": "'aceptada' | 'rechazada'",
+    "p_nota": "texto 0-500 | null"
+   },
+   "devuelve": "{ok: true, estado}",
+   "quien": "owner de la ficha (una propuesta con toca_guarda cambia los límites del AaaS; #313)"
   }
  },
  "items_por_trabajo": {
@@ -295,6 +324,8 @@
   "sin_owner": "42501 hint 'agente_solo_owner'",
   "cuenta_pruebas": "42501 hint 'cuenta_pruebas'",
   "modulo_fuera": "22023 hint 'agente_modulo_fuera' (ese módulo no puede llevar límite en este ERP)",
-  "contexto_forma": "22023 hint 'agente_contexto_forma' (contexto con claves o largos fuera de lo admitido)"
+  "contexto_forma": "22023 hint 'agente_contexto_forma' (contexto con claves o largos fuera de lo admitido)",
+  "solo_propietario": "42501 hint 'solo_propietario' (agente_owner_pon: solo la persona propietaria nombra a quien lleva el equipo)",
+  "usuario_no_valido": "22023 hint 'usuario_no_valido' (agente_owner_pon: no es un usuario activo de esta base)"
  }
 }

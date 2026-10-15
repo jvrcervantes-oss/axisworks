@@ -672,7 +672,7 @@ async function rellenaAlquiler(p, o = {}) {
 
   // ── 9. Quien no configura; una lectura que falla ───────────────────────────────────────────────────────────────────────────────────────
   ({ p, ctx } = await abre(nav, base({ noConfigura: true })));
-  ok('no configura: «solo el administrador principal», sin pasos', ((await txt(p, '[data-axw-as="tarjeta"]')) || '').includes('Solo el administrador principal') && !(await p.$('[data-axw-sr]')));
+  ok('no configura: «solo un administrador» (B2), sin pasos', ((await txt(p, '[data-axw-as="tarjeta"]')) || '').includes('Solo un administrador puede configurar') && !(await p.$('[data-axw-sr]')));
   await ctx.close();
   ({ p, ctx } = await abre(nav, base({ noConfigura: true }), { pag: 'ajustes' }));
   ok('no configura en Ajustes: el estado del módulo, sin pasos', !!(await p.$('[data-pm-modulo="reservas-producto"]')) && !(await p.$('[data-pm-fila]')));

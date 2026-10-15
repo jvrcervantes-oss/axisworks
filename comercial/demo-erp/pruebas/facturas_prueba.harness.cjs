@@ -40,7 +40,7 @@ const DOC = {
   solo: 'function documentoHTML(d, opts) { return "<p>x</p>"; }',
 };
 const pagina = (o) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
-<main><table><tbody>${(o.filas || ['p1', 'r1']).map(id => `<tr data-lw-id="${id}"><td>${id}</td><td>1.000.000</td></tr>`).join('')}</tbody></table>
+<main${o.noInstalado ? ' data-axw-pantalla="no-instalado"' : ''}><table><tbody>${(o.filas || ['p1', 'r1']).map(id => `<tr data-lw-id="${id}"><td>${id}</td><td>1.000.000</td></tr>`).join('')}</tbody></table>
 <div id="papel"></div></main>
 <script>
 window.LW_IDIOMA = '${o.idioma || 'es'}'; window.AXW_IDIOMAS_DOC = ${JSON.stringify(o.doc || ['id', 'en'])};
@@ -131,6 +131,12 @@ window.abrePagina = function (numero) { return usa('documentoPagina', numero); }
   {
     const { p, ctx } = await abre({ resp: { data: BIEN, error: null }, ruta: '/contratos/' });
     ok('/contratos/ (sin cifras de facturas): sin franja', (await franja(p)) === null);
+    await ctx.close();
+  }
+  // 2c. «Módulo no instalado» (finanzas apagado): sin cifras, sin franja, ni con pruebas ni con la lectura caída (verificador de bbm, 16-oct)
+  for (const [nombre, resp] of [['con pruebas', { data: BIEN, error: null }], ['con la lectura caída', { data: null, error: { code: '503', message: 'x' } }]]) {
+    const { p, ctx } = await abre({ resp, ruta: '/finanzas/', noInstalado: true });
+    ok('/finanzas/ no instalado ' + nombre + ': sin franja', (await franja(p)) === null, String(await franja(p)));
     await ctx.close();
   }
   // 3. sin facturas de prueba: ni franja ni pastillas

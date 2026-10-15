@@ -2365,6 +2365,8 @@ MENU_I18N = {
     'Taller': {'en': 'Workshop', 'id': 'Bengkel'},
     'Entrega': {'en': 'Delivery', 'id': 'Antar'},
     'Flota y tarifas': {'en': 'Fleet and rates', 'id': 'Armada dan tarif'},
+    # la ventana del equipo de agentes (/agente/, 15-oct-2026): su rótulo de menú, que antes era «AaaS» (igual en los tres idiomas)
+    'Agentes': {'en': 'Agents', 'id': 'Agen'},
     'Ventas': {'en': 'Sales', 'id': 'Penjualan'},
     # el menú de una instancia con "aaas": true (aaas_en_paquete, tren 5 de bbm, 15-oct): «AaaS» es el nombre del producto, igual en los tres
     # idiomas (owner, 13-oct; ya en IGUALES_EN_ID), pero sin entrada aquí lwT lo contaba como sin traducir en las 54 pantallas (LW_T_MISSES)
@@ -4312,7 +4314,16 @@ def taller_pantalla():
                  "      claves:'taller orden de trabajo moto reparacion mecanico mantenimiento revision fotos bloquear reservas bengkel servis workshop repair mechanic maintenance inspection work order' });" + '\n' +
                  "  /*AXW_FIN_TARJETA_TALLER*/" + '\n' + "}",
                  'herramientas.js tarjeta Taller')
+    # M3 (owner 15-oct, base de bbm-resumen 20261015190000): mientras no haya mecánico, un administrador hace los partes (_taller_exige/_taller_puede).
+    # La pantalla no sabe si hay mecánico (lo sabe la base): el admin ve la entrada y la tarjeta y entra; con un mecánico, la base le niega los datos y
+    # Taller dice «No tienes acceso a Taller». Mismo patrón que /asistente/ (asistente_maestro y guard_asistente_admin): rol === 'admin' exacto.
+    h = _una_vez(h, "(t.herr === 'asistente_peticiones' && ficha.rol === 'admin') ||",
+                 "(t.herr === 'asistente_peticiones' && ficha.rol === 'admin') || (t.herr === 'taller' && ficha.rol === 'admin') ||", 'herramientas.js lwPermitida (taller, M3)')
     open(her, 'w', encoding='utf-8', newline='').write(h)
+    n = open(nav, encoding='utf-8').read()
+    n = _una_vez(n, "(path === 'asistente' && ficha.rol === 'admin')) return true;",
+                 "(path === 'asistente' && ficha.rol === 'admin') || (path === 'taller' && ficha.rol === 'admin')) return true;", 'nav.js puedeVer (taller, M3)')
+    open(nav, 'w', encoding='utf-8', newline='').write(n)
 
 
 def entrega_pantalla():
@@ -4433,15 +4444,16 @@ def agente_pantalla():
     Va DESPUÉS de flota_pantalla(): sus anclas son las líneas que esa deja. No añade ningún ancla nueva sobre texto de Lawang. Solo se toca lo copiado en DIST.
     La pantalla NO se declara pantalla del módulo `agente` en el mapa de apagados: con el módulo apagado tiene que verse para poder encenderlo (la base decide quién)."""
     v4 = os.path.join(DIST, 'intranet', 'v4')
-    _pantalla_bot(v4, 'agente.html', 'agente', 'AaaS', puerta='data-herramienta="agente"')
+    # el rótulo VISIBLE es «Agentes» (Experiencia M4, 15-oct-2026: «AaaS» es jerga para el dueño); ids, ruta, clave de menú y herramienta siguen siendo `agente`
+    _pantalla_bot(v4, 'agente.html', 'agente', 'Agentes', puerta='data-herramienta="agente"')
     nav = os.path.join(v4, 'assets', 'nav.js')
     n = open(nav, encoding='utf-8').read()
     n = _una_vez(n, "      { path: 'flota', texto: 'Flota y tarifas', clave: 'flota', nucleo: true }] },",
                  "      { path: 'flota', texto: 'Flota y tarifas', clave: 'flota', nucleo: true }," + '\n' +
-                 "      { path: 'agente', texto: 'AaaS', clave: 'agente', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (agente)')
+                 "      { path: 'agente', texto: 'Agentes', clave: 'agente', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (agente)')
     n = _una_vez(n, "    { path: 'flota', tras: 'entrega', icono: 'two_wheeler', texto: 'Flota y tarifas', nucleo: true },",
                  "    { path: 'flota', tras: 'entrega', icono: 'two_wheeler', texto: 'Flota y tarifas', nucleo: true }," + '\n' +
-                 "    { path: 'agente', tras: 'flota', icono: 'smart_toy', texto: 'AaaS', nucleo: true },", 'nav.js INJERTOS agente')
+                 "    { path: 'agente', tras: 'flota', icono: 'smart_toy', texto: 'Agentes', nucleo: true },", 'nav.js INJERTOS agente')
     n = _una_vez(n, "    flota: 'flota',",
                  "    flota: 'flota'," + '\n' + "    agente: 'agente',", 'nav.js CLAVE_MENU agente')
     open(nav, 'w', encoding='utf-8', newline='').write(n)
@@ -4452,8 +4464,8 @@ def agente_pantalla():
                  "  /*AXW_FIN_TARJETA_FLOTA*/" + '\n' +
                  "  /* AaaS (EP.5, 13-oct-2026): el panel del AaaS de operaciones. Permiso propio `agente`; sin esta tarjeta la casilla no existiría en Usuarios. Encender, apagar, el tope y los trabajos los exige además la base al dueño de la ficha. */" + '\n' +
                  "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'flota') + 1, 0," + '\n' +
-                 "    { grupo:'Seguimiento', nombre:'AaaS', icon:'ph-robot', href:'/intranet/v4/agente/', herr:'agente'," + '\n' +
-                 "      para:'Dos veces al día mira el negocio y deja avisos con su prueba: motos paradas en el taller, salidas sin moto, reservas que caducan. No toca nada; las personas deciden.'," + '\n' +
+                 "    { grupo:'Seguimiento', nombre:'Agentes', icon:'ph-robot', href:'/intranet/v4/agente/', herr:'agente'," + '\n' +
+                 "      para:'Tu equipo de agentes: qué han hecho y por qué, cuánto pueden gastar y hasta dónde llega cada uno. Los paras cuando quieras.'," + '\n' +
                  "      claves:'AaaS agente autonomo avisos operaciones pasada encender apagar pausa tope trabajos propuestas AaaS agent alerts operations pause cap jobs proposals' });" + '\n' +
                  "  /*AXW_FIN_TARJETA_AGENTE*/" + '\n' + "}",
                  'herramientas.js tarjeta AaaS')
@@ -4499,6 +4511,9 @@ def guard_asistente_admin():
     t = open(g, encoding='utf-8').read()
     t = _una_vez(t, "var sinLimite = LW_ROL.esSuperGlobal(ficha);",
                  "var sinLimite = LW_ROL.esSuperGlobal(ficha) || (ficha && ficha.rol === 'admin' && HERRAMIENTA === 'asistente_peticiones');", 'guard.js sinLimite')
+    # M3 (owner 15-oct, 20261015190000): /taller/ igual, el admin entra a la cáscara y la base decide (sin mecánico, hace partes; con él, 42501)
+    t = _una_vez(t, "HERRAMIENTA === 'asistente_peticiones');",
+                 "HERRAMIENTA === 'asistente_peticiones') || (ficha && ficha.rol === 'admin' && HERRAMIENTA === 'taller');", 'guard.js sinLimite (taller, M3)')
     open(g, 'w', encoding='utf-8', newline='').write(t)
 
 
@@ -6147,6 +6162,9 @@ def comprueba_pantallas_idiomas(dist, idiomas):
     r = subprocess.run(['node', os.path.join(AQUI, 'pruebas', 'idiomas_pantallas.harness.cjs'), dist], capture_output=True, text=True,
                        encoding='utf-8', env=entorno)
     sal = (r.stdout or '') + (r.stderr or '')
+    if r.returncode == 2:   # «no he podido mirar» (sin navegador, sin paquete…): tampoco es un verde, pero no es «hay español» (16-oct-2026)
+        aborta('idiomas: el arnés NO HA PODIDO MIRAR las pantallas en %s (salida 2): no es un verde; el motivo:\n%s'
+               % ('+'.join(lenguas), sal[-3000:]))
     if r.returncode != 0:
         aborta('idiomas: hay pantallas con texto en español en %s (salida %d del arnés):\n%s' % ('+'.join(lenguas), r.returncode, sal[-3000:]))
     print('idiomas: ' + ' · '.join(l for l in sal.splitlines() if l.strip() and not l.startswith('FALLA'))[-300:])
@@ -6414,11 +6432,21 @@ def alias_htaccess(destino):
         reglas.append(get + '  RewriteRule ^%s$ /%s/ [R=302,L,QSA]\n' % (re.escape(en), en))
         reglas.append('  RewriteRule ^%s/(.*)$ %s/$1 [L]\n' % (re.escape(en), clave))
     # el charset SIEMPRE (también sin ninguna carpeta del mapa): el ayudante va en todas las páginas, delante del <meta charset> (code-review, 15-oct)
-    cab = 'AddDefaultCharset UTF-8\n'
+    cab = CHARSET_HTACCESS
     if not reglas:
         return cab
     return ('# Rutas en el idioma de la instancia: /workshop/x se sirve desde taller/x (sin redirigir: el navegador canoniza la barra).\n'
             + cab + '<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteBase /\n' + ''.join(reglas) + '</IfModule>\n')
+
+
+CHARSET_HTACCESS = 'AddDefaultCharset UTF-8\n'
+
+
+def htaccess_idioma(destino, rutas_on):
+    """Lo del idioma en el .htaccess de la instancia: las rutas inglesas (con su charset) o, con las rutas apagadas, SOLO el charset. Al apagar las
+    rutas (95590f5, hasta su ensayo) el charset se fue con ellas y bbm servía text/html sin charset (verificador, 15-oct-2026): el ayudante va
+    delante del <meta charset> y las páginas de la v4 lo llevan pasado el primer KB, así que el charset no puede depender de las rutas."""
+    return alias_htaccess(destino) if rutas_on else CHARSET_HTACCESS
 
 
 def instancia(nombre):
@@ -6686,7 +6714,7 @@ def instancia(nombre):
         s_ = os.path.join(DIST, x)
         shutil.copytree(s_, os.path.join(destino, x)) if os.path.isdir(s_) else shutil.copy2(s_, destino)
     open(os.path.join(destino, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(HTACCESS_INSTANCIA.format(
-        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino) + (alias_htaccess(destino) if rutas_on else ''),   # rutas inglesas DETRÁS del legado
+        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino) + htaccess_idioma(destino, rutas_on),   # rutas inglesas DETRÁS del legado
         dominio_re='(' + '|'.join(re.escape(d) for d in [dominio] + _instancia_alias(nombre)) + ')'))
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(destino)
@@ -6831,6 +6859,11 @@ def rechaza_retiradas(argv):
 
 
 def main():
+    # 16-oct-2026 (owner publicando bbm): en su consola de Windows (cp1252) `aborta()` reventaba con UnicodeEncodeError al imprimir el motivo
+    # («←», tildes) y el build paraba SIN decir por qué. La salida va en utf-8 y lo que la consola no pinte sale como «?», nunca un traceback.
+    for flujo in (sys.stdout, sys.stderr):
+        if hasattr(flujo, 'reconfigure'):
+            flujo.reconfigure(encoding='utf-8', errors='replace')
     rechaza_retiradas(sys.argv)   # antes de vaciar dist/ ni tocar nada
     packs_casan()
     if not os.path.isfile(DOBLE_QA):

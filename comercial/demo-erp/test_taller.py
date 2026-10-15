@@ -101,6 +101,10 @@ if r == 'pasa':
          nav.count("{ path: 'taller', texto: 'Taller', clave: 'taller', nucleo: true }") == 1
          and nav.count("{ path: 'taller', tras: 'reservas-producto'") == 1 and nav.count("taller: 'taller',") == 1)
     mira('herramientas.js: la tarjeta taller una vez, tras la de Reservas de producto', her.count("herr:'taller'") == 1 and her.index("herr:'taller'") > her.index("herr:'reservas-producto'"))
+    # M3 (owner 15-oct, 20261015190000): el admin ve la entrada y la tarjeta de Taller sin la casilla (la base decide si hay mecánico); nadie más
+    mira('M3: el menú deja pasar al admin a Taller (rol admin exacto)', nav.count("(path === 'taller' && ficha.rol === 'admin')") == 1)
+    mira('M3: la tarjeta del hub deja pasar al admin a Taller', her.count("(t.herr === 'taller' && ficha.rol === 'admin')") == 1)
+    # la puerta de guard.js (guard_asistente_admin) la mide test_asistente_maestro.py sobre el guard.js construido
 
 # -- (2) si algo cambia, el build PARA
 ORIGINAL = {f: open(os.path.join(build.LAWANG, *f.split('/')), encoding='utf-8').read() for f in FICHEROS}
