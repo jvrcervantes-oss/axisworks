@@ -154,6 +154,25 @@ function axwComun(raiz, T) {
     if (!new RegExp('^\\d+(?:[.,]\\d{1,' + (dec || 4) + '})?$').test(s)) return { e: 'formato' };
     return { v: Number(s.replace(',', '.')) };
   }
+  /* Un importe tecleado con los separadores DEL IDIOMA de la página (15-oct-2026, Ajustes del AaaS; revisión previa #383: «acepta el separador de
+     miles del idioma»). Los da Intl con locale(): en es/id «5.000.000» y «37,5»; en en «5,000,000» y «37.5». El de miles solo vale entre grupos de
+     EXACTAMENTE tres cifras; el otro signo es el decimal. «37.5» en es o id no es 375: es {e:'formato'} (es dinero: nunca se adivina). */
+  function separadores() {
+    var g = '.', d = ',';
+    try {
+      new Intl.NumberFormat(locale()).formatToParts(1234567.5).forEach(function (p) { if (p.type === 'group') g = p.value; if (p.type === 'decimal') d = p.value; });
+    } catch (e) { /* MUDO A PROPOSITO: sin Intl se usan los de es; un importe con otro separador sale como error de formato, nunca mal leído */ }
+    return { g: /^[\s  ]$/.test(g) ? '' : g, d: d };
+  }
+  function importeIdioma(raw, dec) {
+    var s = String(raw == null ? '' : raw).replace(/[\s  ]+/g, '');
+    if (s === '') return { vacio: true };
+    var sp = separadores(), x = function (c) { return c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
+    var ent = sp.g ? '\\d{1,3}(?:' + x(sp.g) + '\\d{3})+|\\d+' : '\\d+';
+    var m = new RegExp('^(' + ent + ')(?:' + x(sp.d) + '(\\d{1,' + (dec || 2) + '}))?$').exec(s);
+    if (!m) return { e: 'formato' };
+    return { v: Number(m[1].split(sp.g || '\u0000').join('') + (m[2] ? '.' + m[2] : '')) };
+  }
 
   function ocupa(btn, texto) {
     if (ocupado) return false;
@@ -209,5 +228,5 @@ function axwComun(raiz, T) {
   }
 
   return { EN: EN, ID: ID, h: h, vacia: vacia, oculta: oculta, boton: boton, chip: chip, celda: celda, tabla: tabla, campo: campo, resumen: resumen, locale: locale, dinero: dinero,
-           fechaDia: fechaDia, fechaHora: fechaHora, clasifica: clasifica, mensaje: mensaje, autorDe: autorDe, quienDe: quienDe, motivoDe: motivoDe, importe: importe, ocupa: ocupa, libera: libera, dialogo: dialogo, pliegue: pliegue };
+           fechaDia: fechaDia, fechaHora: fechaHora, clasifica: clasifica, mensaje: mensaje, autorDe: autorDe, quienDe: quienDe, motivoDe: motivoDe, importe: importe, importeIdioma: importeIdioma, ocupa: ocupa, libera: libera, dialogo: dialogo, pliegue: pliegue };
 }

@@ -272,13 +272,22 @@
       return U(v === 'si' ? 'ejemplo_dentro' : 'ejemplo_fuera', { v: n + mon });
     })
   };
+  // Los tres pasos del AaaS (N5) se hacen en el asistente de Ajustes de su ventana (agente.html, 15-oct-2026; revisión previa #383 punto 6: un solo
+  // camino de entrada): el enlace abre ESE paso (#ajustes-<paso>), no la ventana en general. La base da `donde` = '/agente/'; aquí solo se añade el ancla.
+  var AAAS_PASO = { tope_aaas: 'tope', contexto_aaas: 'negocio', limites_aaas: 'limites' };
+  function dondeDe(paso) {
+    var d = String(paso.donde || '');
+    if (!/^\/[a-z0-9\-\/]*$/i.test(d)) return null;
+    return AAAS_PASO[paso.clave] && /\/agente\/$/.test(d) ? d + '#ajustes-' + AAAS_PASO[paso.clave] : d;
+  }
   // Pasos que se hacen en otra pantalla (Flota, Entrega) y cualquier clave que esta pantalla no conozca todavía
   var EXTERNO = {
     externo: true,
+    enlace: dondeDe,   // Ajustes › Configurar (ajustes_puesta.js) usa el mismo enlace que el asistente
     pinta: function (caja, ctx) {
       caja.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', text: U('otra_pantalla') }));
-      var d = String(ctx.paso.donde || '');
-      if (/^\/[a-z0-9\-\/]*$/i.test(d)) {
+      var d = dondeDe(ctx.paso);
+      if (d) {
         caja.appendChild(el('a', { href: d, 'data-axw-accion': 'abrir-externo', class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-outline-variant font-label-md text-label-md text-deep-lagoon axw-btn',
                                    style: 'min-height:44px', text: U('abrir', { pantalla: S().texto('paso', ctx.paso.clave, 0) }) }));
       }

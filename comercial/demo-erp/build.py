@@ -2365,6 +2365,8 @@ MENU_I18N = {
     'Taller': {'en': 'Workshop', 'id': 'Bengkel'},
     'Entrega': {'en': 'Delivery', 'id': 'Antar'},
     'Flota y tarifas': {'en': 'Fleet and rates', 'id': 'Armada dan tarif'},
+    # la ventana del equipo de agentes (/agente/, 15-oct-2026): su rótulo de menú, que antes era «AaaS» (igual en los tres idiomas)
+    'Agentes': {'en': 'Agents', 'id': 'Agen'},
     'Ventas': {'en': 'Sales', 'id': 'Penjualan'},
     # el menú de una instancia con "aaas": true (aaas_en_paquete, tren 5 de bbm, 15-oct): «AaaS» es el nombre del producto, igual en los tres
     # idiomas (owner, 13-oct; ya en IGUALES_EN_ID), pero sin entrada aquí lwT lo contaba como sin traducir en las 54 pantallas (LW_T_MISSES)
@@ -4439,15 +4441,16 @@ def agente_pantalla():
     Va DESPUÉS de flota_pantalla(): sus anclas son las líneas que esa deja. No añade ningún ancla nueva sobre texto de Lawang. Solo se toca lo copiado en DIST.
     La pantalla NO se declara pantalla del módulo `agente` en el mapa de apagados: con el módulo apagado tiene que verse para poder encenderlo (la base decide quién)."""
     v4 = os.path.join(DIST, 'intranet', 'v4')
-    _pantalla_bot(v4, 'agente.html', 'agente', 'AaaS', puerta='data-herramienta="agente"')
+    # el rótulo VISIBLE es «Agentes» (Experiencia M4, 15-oct-2026: «AaaS» es jerga para el dueño); ids, ruta, clave de menú y herramienta siguen siendo `agente`
+    _pantalla_bot(v4, 'agente.html', 'agente', 'Agentes', puerta='data-herramienta="agente"')
     nav = os.path.join(v4, 'assets', 'nav.js')
     n = open(nav, encoding='utf-8').read()
     n = _una_vez(n, "      { path: 'flota', texto: 'Flota y tarifas', clave: 'flota', nucleo: true }] },",
                  "      { path: 'flota', texto: 'Flota y tarifas', clave: 'flota', nucleo: true }," + '\n' +
-                 "      { path: 'agente', texto: 'AaaS', clave: 'agente', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (agente)')
+                 "      { path: 'agente', texto: 'Agentes', clave: 'agente', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (agente)')
     n = _una_vez(n, "    { path: 'flota', tras: 'entrega', icono: 'two_wheeler', texto: 'Flota y tarifas', nucleo: true },",
                  "    { path: 'flota', tras: 'entrega', icono: 'two_wheeler', texto: 'Flota y tarifas', nucleo: true }," + '\n' +
-                 "    { path: 'agente', tras: 'flota', icono: 'smart_toy', texto: 'AaaS', nucleo: true },", 'nav.js INJERTOS agente')
+                 "    { path: 'agente', tras: 'flota', icono: 'smart_toy', texto: 'Agentes', nucleo: true },", 'nav.js INJERTOS agente')
     n = _una_vez(n, "    flota: 'flota',",
                  "    flota: 'flota'," + '\n' + "    agente: 'agente',", 'nav.js CLAVE_MENU agente')
     open(nav, 'w', encoding='utf-8', newline='').write(n)
@@ -4458,8 +4461,8 @@ def agente_pantalla():
                  "  /*AXW_FIN_TARJETA_FLOTA*/" + '\n' +
                  "  /* AaaS (EP.5, 13-oct-2026): el panel del AaaS de operaciones. Permiso propio `agente`; sin esta tarjeta la casilla no existiría en Usuarios. Encender, apagar, el tope y los trabajos los exige además la base al dueño de la ficha. */" + '\n' +
                  "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'flota') + 1, 0," + '\n' +
-                 "    { grupo:'Seguimiento', nombre:'AaaS', icon:'ph-robot', href:'/intranet/v4/agente/', herr:'agente'," + '\n' +
-                 "      para:'Dos veces al día mira el negocio y deja avisos con su prueba: motos paradas en el taller, salidas sin moto, reservas que caducan. No toca nada; las personas deciden.'," + '\n' +
+                 "    { grupo:'Seguimiento', nombre:'Agentes', icon:'ph-robot', href:'/intranet/v4/agente/', herr:'agente'," + '\n' +
+                 "      para:'Tu equipo de agentes: qué han hecho y por qué, cuánto pueden gastar y hasta dónde llega cada uno. Los paras cuando quieras.'," + '\n' +
                  "      claves:'AaaS agente autonomo avisos operaciones pasada encender apagar pausa tope trabajos propuestas AaaS agent alerts operations pause cap jobs proposals' });" + '\n' +
                  "  /*AXW_FIN_TARJETA_AGENTE*/" + '\n' + "}",
                  'herramientas.js tarjeta AaaS')
