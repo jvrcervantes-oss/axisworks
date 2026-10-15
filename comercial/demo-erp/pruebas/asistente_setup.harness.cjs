@@ -160,6 +160,7 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   ok('«Facturas · Paso 1 de 2» en la cabeza del paso (la moneda de base ya está hecha: no cuenta)', (await txt(p, '[data-axw-as="meta"]')) === 'Facturas · Paso 1 de 2', await txt(p, '[data-axw-as="meta"]'));
   ok('arriba, el total de pasos hechos de todos los módulos (barra del diseño S10-S60)', (await txt(p, '[data-axw-as="progreso"]')) === '2 de 6 pasos hechos', await txt(p, '[data-axw-as="progreso"]'));
   ok('la URL lleva el paso', (await p.evaluate(() => location.search)).includes('paso=sociedad'));
+  ok('S1c paso 1 de 2: «Atrás» no se ve (revisor S1c: con la piel, `hidden` perdía ante .inline-flex)', !(await p.isVisible('[data-axw-accion="atras"]')));
   await clic(p, 'enviar');
   ok('vacío: dice qué falta y no envía', (await txt(p, '[data-axw-as="error"]')).includes('Razón social') && llamadas(b, 'sociedad_guarda').length === 0);
   ok('S20: sin razón social la muestra impresa no se enseña (no inventa datos)', !(await p.isVisible('[data-axw-muestra="impresa"]')));

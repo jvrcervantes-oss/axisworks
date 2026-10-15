@@ -141,6 +141,12 @@
       sr_dias_antes: '%n días de antelación',
       sr_bot: 'Límites del bot',
       sr_mas_reglas: 'Más reglas',
+      sr_p_que: '¿Qué alquilas y a cuánto el día?',
+      sr_p_semana: '¿Y por semana o por mes? (opcional)',
+      sr_p_seguro: '¿Ofreces seguro?',
+      sr_p_fianza: '¿Pides fianza?',
+      sr_mas_seguro: 'Seguro de más días',
+      sr_hoy: 'hoy',
       sr_max_tel: 'Reservas sin pagar por teléfono',
       sr_max_act: 'Reservas sin pagar a la vez, en total',
       sr_por_defecto: 'Aún no se ha guardado: si lo dejas así, se usan estos valores.',
@@ -282,7 +288,7 @@
     'Pasado ese tiempo sin pagar, la reserva se libera y la unidad vuelve a estar libre. Solo afecta a las reservas nuevas.': 'After that time without payment, the booking is released and the unit is free again. It only affects new bookings.',
     'Alquiler más corto': 'Shortest rental', 'Alquiler más largo': 'Longest rental', 'Un día menos': 'One day less', 'Un día más': 'One day more', 'Uno menos': 'One less', 'Uno más': 'One more',
     'Se puede reservar con': 'Bookable up to', 'Sin límite': 'No limit', '%n meses de antelación': '%n months ahead', '%n días de antelación': '%n days ahead',
-    'Límites del bot': 'Bot limits', 'Más reglas': 'More rules', 'Reservas sin pagar por teléfono': 'Unpaid bookings per phone', 'Reservas sin pagar a la vez, en total': 'Unpaid bookings at once, in total',
+    'Límites del bot': 'Bot limits', 'Más reglas': 'More rules', '¿Qué alquilas y a cuánto el día?': 'What do you rent, and how much per day?', '¿Y por semana o por mes? (opcional)': 'And per week or per month? (optional)', '¿Ofreces seguro?': 'Do you offer insurance?', '¿Pides fianza?': 'Do you ask for a deposit?', 'Seguro de más días': 'Insurance for longer rentals', 'hoy': 'today', 'Reservas sin pagar por teléfono': 'Unpaid bookings per phone', 'Reservas sin pagar a la vez, en total': 'Unpaid bookings at once, in total',
     'Aún no se ha guardado: si lo dejas así, se usan estos valores.': 'Not saved yet: if you leave it like this, these values are used.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar a las %h se libera.': 'Example: a booking made at 10:00 and still unpaid at %h is released.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar se libera al día siguiente a las %h.': 'Example: a booking made at 10:00 and still unpaid is released the next day at %h.',
@@ -391,7 +397,7 @@
     'Pasado ese tiempo sin pagar, la reserva se libera y la unidad vuelve a estar libre. Solo afecta a las reservas nuevas.': 'Setelah waktu itu lewat tanpa pembayaran, booking dilepas dan unit kembali tersedia. Hanya berlaku untuk booking baru.',
     'Alquiler más corto': 'Sewa terpendek', 'Alquiler más largo': 'Sewa terpanjang', 'Un día menos': 'Kurangi satu hari', 'Un día más': 'Tambah satu hari', 'Uno menos': 'Kurangi satu', 'Uno más': 'Tambah satu',
     'Se puede reservar con': 'Bisa booking paling jauh', 'Sin límite': 'Tanpa batas', '%n meses de antelación': '%n bulan sebelumnya', '%n días de antelación': '%n hari sebelumnya',
-    'Límites del bot': 'Batas bot', 'Más reglas': 'Aturan lain', 'Reservas sin pagar por teléfono': 'Booking belum dibayar per nomor telepon', 'Reservas sin pagar a la vez, en total': 'Total booking belum dibayar sekaligus',
+    'Límites del bot': 'Batas bot', 'Más reglas': 'Aturan lain', '¿Qué alquilas y a cuánto el día?': 'Apa yang Anda sewakan, dan berapa per hari?', '¿Y por semana o por mes? (opcional)': 'Lalu per minggu atau per bulan? (opsional)', '¿Ofreces seguro?': 'Apakah Anda menawarkan asuransi?', '¿Pides fianza?': 'Apakah Anda meminta deposit?', 'Seguro de más días': 'Asuransi untuk sewa lebih lama', 'hoy': 'hari ini', 'Reservas sin pagar por teléfono': 'Booking belum dibayar per nomor telepon', 'Reservas sin pagar a la vez, en total': 'Total booking belum dibayar sekaligus',
     'Aún no se ha guardado: si lo dejas así, se usan estos valores.': 'Belum tersimpan: jika dibiarkan, nilai-nilai ini yang dipakai.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar a las %h se libera.': 'Contoh: booking dibuat pukul 10:00 dan belum dibayar pada pukul %h akan dilepas.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar se libera al día siguiente a las %h.': 'Contoh: booking dibuat pukul 10:00 dan belum dibayar akan dilepas keesokan harinya pukul %h.',
@@ -682,8 +688,21 @@
         var zona = el('div', { class: 'flex flex-col gap-5 min-w-0', 'data-axw-sr': def.clave });
         caja.appendChild(zona);
         st.zona = zona;
+        // S1c: un paso en partes (S.partes) pregunta a su propia validación qué falla y dónde, para no dejar seguir con un error de esta parte
+        st.errores = function () { var r = def.valores(st); return r.ok ? [] : (r.errores || [{ t: r.error }]); };
+        var ctl = {
+          valores: function () {
+            if (!st.listo) return { ok: false, error: U('cargando') };
+            var r = def.valores(st);
+            if (r.ok) r.v.__st = st;
+            else if (st.partes && r.errores) st.partes.irA(r.errores);   // en la última parte, un error de una anterior lleva a la suya
+            return r;
+          },
+          boton: def.boton ? U(def.boton) : null,
+          partes: null   // el contrato con el anfitrión (S.partes): lo pone dibuja() si el paso va en partes
+        };
         st.recarga = function () {
-          st.listo = false; st.motivo = null;
+          st.listo = false; st.motivo = null; st.partes = null; ctl.partes = null;
           var viejo = ctx.lado && ctx.lado.querySelector('[data-axw-lado-de="' + def.clave + '"]');
           if (viejo) viejo.parentNode.removeChild(viejo);   // lo que el paso puso de lado no se queda mientras relee (ni si la relectura falla)
           vacia(zona).appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', 'data-axw-sr-estado': 'cargando', text: U('cargando') }));
@@ -698,8 +717,9 @@
             }
             st.datos = r.datos;
             var b0 = BORRADOR[def.clave];
-            if (b0) st.filas = b0.filas || {};
+            if (b0) { st.filas = b0.filas || {}; if (b0.parte) st.parte = b0.parte; }   // tras un fallo se vuelve a la parte en la que estaba
             def.dibuja(zona, st);
+            ctl.partes = st.partes || null;
             if (b0) { restaura(zona, b0); if (def.refresca) def.refresca(st); }
             var av = AVISO[def.clave];
             if (av) { zona.insertBefore(el('p', { role: 'status', 'data-axw-sr-aviso': '1', class: 'rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-sm text-body-sm text-on-surface', text: av }), zona.firstChild); }   // sigue hasta el próximo guardado: el asistente repinta el paso al fallar
@@ -707,20 +727,12 @@
           });
         };
         st.recarga();
-        return {
-          valores: function () {
-            if (!st.listo) return { ok: false, error: U('cargando') };
-            var r = def.valores(st);
-            if (r.ok) r.v.__st = st;
-            return r;
-          },
-          boton: def.boton ? U(def.boton) : null
-        };
+        return ctl;
       },
       guarda: function (sb, v) {
         var st = v.__st;
         if (!st) return Promise.resolve({ ok: false, error: { hint: 'axw_no_confirma' } });
-        BORRADOR[def.clave] = instantanea(st.zona); delete AVISO[def.clave];
+        BORRADOR[def.clave] = instantanea(st.zona); BORRADOR[def.clave].parte = st.parte || null; delete AVISO[def.clave];
         return def.guarda(sb, v, st).then(function (r) {
           if (r.ok) { delete BORRADOR[def.clave]; delete AVISO[def.clave]; return { ok: true, sigue: r.sigue || null }; }
           if (r.hechos && r.hechos.length) AVISO[def.clave] = U('sr_parcial', { h: r.hechos.join(', '), f: r.falla || '—' });
@@ -798,31 +810,45 @@
       var d = st.datos, p = d.p, mon = (st.ctx.datos && st.ctx.datos.moneda) || '';
       var g0 = p ? d.setup.garantias.filter(function (x) { return x.producto_id === p.id; })[0] || null : null;
       var seg0 = p ? d.setup.seguro_tramos.filter(function (x) { return x.producto_id === p.id; }) : [];
-      campo(zona, 'nombre', U('sr_nombre'), p ? p.nombre : '', { max: 120, ayuda: U('sr_nombre_ayuda') });
-      // Precios
-      var gp = grupo(zona, U('sr_precios'), U('sr_precios_ayuda')), rp = rejilla(160);
-      TRAMOS_PRECIO.forEach(function (t) {
+      // S1c (owner 15-oct: «1, 2 o 3 campos a rellenar por paso»): el alta en 4 partes de 1-3 campos (S.partes). Se valida y se guarda TODO en la
+      // última, como antes: lo que se manda a la base no cambia. 1 qué y a cuánto el día + matrículas · 2 semana y mes · 3 seguro · 4 fianza (+ motivo)
+      var PT = S.partes({ padre: zona, marca: 'flota', inicio: st.parte, errores: st.errores, alCambiar: function (k) { st.parte = k; } });
+      st.partes = PT;
+      var z1 = PT.nueva(U('sr_p_que')), z2 = PT.nueva(U('sr_p_semana')), z3 = PT.nueva(U('sr_p_seguro')), z4 = PT.nueva(U('sr_p_fianza'));
+      function precio(caja, t) {
         var x = p ? p.tarifas.filter(function (y) { return Number(y.dias) === t[0]; })[0] : null;
-        campo(rp, 'tarifa_' + t[0], U(t[1]), x ? fmt(x.precio) : '', { modo: 'decimal', antes: mon, max: 20 });
-      });
-      gp.appendChild(rp);
+        campo(caja, 'tarifa_' + t[0], U(t[1]), x ? fmt(x.precio) : '', { modo: 'decimal', antes: mon, max: 20 });
+      }
+      campo(z1, 'nombre', U('sr_nombre'), p ? p.nombre : '', { max: 120, ayuda: U('sr_nombre_ayuda') });
+      precio(z1, TRAMOS_PRECIO[0]);
+      // Precios de 7 y 30 días
+      var rp = rejilla(160);
+      precio(rp, TRAMOS_PRECIO[1]); precio(rp, TRAMOS_PRECIO[2]);
+      z2.appendChild(rp);
+      nota(z2, U('sr_precios_ayuda'));
       var otros = p ? p.tarifas.filter(function (y) { return [1, 7, 30].indexOf(Number(y.dias)) < 0; }).map(function (y) { return String(y.dias); }) : [];
-      if (otros.length) nota(gp, U('sr_otros_tramos', { d: otros.join(', ') }));
-      // Seguro (por tramo) y fianza
-      var gs = grupo(zona, U('sr_seguro'), U('sr_seguro_ayuda')), rs = rejilla(160);
-      TRAMOS_SEGURO.forEach(function (dd) {
+      if (otros.length) nota(z2, U('sr_otros_tramos', { d: otros.join(', ') }));
+      // Seguro (por tramo): el de un día y «toda reserva lleva seguro» a la vista; los de 30 y 365 días, plegados con su resumen
+      nota(z3, U('sr_seguro_ayuda'));
+      function seguro(caja, dd) {
         var x = seg0.filter(function (y) { return Number(y.dias) === dd; })[0];
-        campo(rs, 'seguro_' + dd, txtTramo(dd), x ? fmt(x.precio) : '', { modo: 'decimal', antes: mon, max: 20 });
-      });
-      gs.appendChild(rs);
+        campo(caja, 'seguro_' + dd, txtTramo(dd), x ? fmt(x.precio) : '', { modo: 'decimal', antes: mon, max: 20 });
+      }
+      seguro(z3, TRAMOS_SEGURO[0]);
+      interruptor(z3, 'seguro_obligatorio', U('sr_seguro_oblig'), g0 && g0.seguro_obligatorio === true);
+      var ps = S.plegado({ padre: z3, marca: 'seguro-mas', rotulo: U('sr_mas_seguro'), resumen: function () {
+        return TRAMOS_SEGURO.slice(1).map(function (dd) { var x = val(zona, 'seguro_' + dd); return x ? txtTramo(dd) + ': ' + x : null; }); } });
+      var rs = rejilla(160);
+      TRAMOS_SEGURO.slice(1).forEach(function (dd) { seguro(rs, dd); });
+      ps.cuerpo.appendChild(rs); ps.actualiza();
       var segOtros = seg0.filter(function (y) { return TRAMOS_SEGURO.indexOf(Number(y.dias)) < 0; }).map(function (y) { return String(y.dias); });
-      if (segOtros.length) nota(gs, U('sr_otros_tramos', { d: segOtros.join(', ') }));
-      interruptor(gs, 'seguro_obligatorio', U('sr_seguro_oblig'), g0 && g0.seguro_obligatorio === true);
-      campo(zona, 'fianza', U('sr_fianza'), g0 && g0.fianza != null ? fmt(g0.fianza) : '', { modo: 'decimal', antes: mon, max: 20, ayuda: U('sr_fianza_ayuda') });
-      seg(zona, 'fianza_con_seguro', U('sr_fianza_o'), [['no', U('sr_fianza_o_no')], ['si', U('sr_fianza_o_si')]], g0 ? (g0.fianza_con_seguro ? 'si' : 'no') : 'no');
+      if (segOtros.length) nota(z3, U('sr_otros_tramos', { d: segOtros.join(', ') }));
+      campo(z4, 'fianza', U('sr_fianza'), g0 && g0.fianza != null ? fmt(g0.fianza) : '', { modo: 'decimal', antes: mon, max: 20, ayuda: U('sr_fianza_ayuda') });
+      seg(z4, 'fianza_con_seguro', U('sr_fianza_o'), [['no', U('sr_fianza_o_no')], ['si', U('sr_fianza_o_si')]], g0 ? (g0.fianza_con_seguro ? 'si' : 'no') : 'no');
       // Unidades (diseño S41): una tabla «# · Matrícula · Quitar». Las que ya hay, fijas y numeradas; las nuevas, una fila por matrícula.
       // La cuenta de la cabecera sigue a las filas. El color de la unidad del diseño no se pinta: la base no lo guarda.
-      var gu = grupo(zona, U('sr_unidades'), U('sr_unidades_ayuda'));
+      var gu = grupo(z1, U('sr_unidades'), U('sr_unidades_ayuda'));
+      gu.setAttribute('data-axw-error-de', 'unidades');   // «añade al menos una unidad» lleva a esta parte aunque no quede ninguna fila
       var ya = p ? p.unidades : [];
       var COLS = 'display:grid;grid-template-columns:2.5rem minmax(0,1fr) 44px;gap:8px;align-items:center';
       var cuenta = el('p', { class: 'font-label-md text-label-md text-on-surface-variant', 'data-axw-sr-cuenta': 'unidades' });
@@ -868,41 +894,43 @@
       var mas = el('button', { type: 'button', 'data-axw-sr-accion': 'anadir-unidad', class: CLS_BTN2 + ' self-start', style: ALTO, text: '+ ' + U('sr_anadir_unidad') });
       mas.addEventListener('click', function () { fila().focus(); });
       gu.appendChild(mas);
-      var pie = el('p', { class: CLS_AYUDA }, [U('sr_mas_alquileres') + ' ']);
-      zona.appendChild(pie);
-      if (p) campoMotivo(zona, st);
+      if (p) campoMotivo(z4, st);
+      z4.appendChild(el('p', { class: CLS_AYUDA }, [U('sr_mas_alquileres') + ' ']));
+      PT.listo();
     },
     valores: function (st) {
-      var z = st.zona, d = st.datos, p = d.p, v = { tarifas: {}, seguros: {}, nuevas: [] }, er = [];
+      var z = st.zona, d = st.datos, p = d.p, v = { tarifas: {}, seguros: {}, nuevas: [] }, er = [], ec = [];
+      // cada error dice de qué campo es (S1c): las partes llevan a la suya y abren su plegado al llegar (un error nunca se esconde)
+      function mal(c, t) { er.push(t); ec.push({ c: c, t: t }); }
       v.nombre = val(z, 'nombre');
-      if (!v.nombre) er.push(U('sr_falta_nombre'));
-      TRAMOS_PRECIO.forEach(function (t) { var r = leeImporte(z, 'tarifa_' + t[0], U(t[1])); if (r.e) er.push(r.e); else v.tarifas[t[0]] = r.v; });
-      if (v.tarifas[1] == null && !er.length) er.push(U('sr_falta_dia'));
+      if (!v.nombre) mal('nombre', U('sr_falta_nombre'));
+      TRAMOS_PRECIO.forEach(function (t) { var r = leeImporte(z, 'tarifa_' + t[0], U(t[1])); if (r.e) mal('tarifa_' + t[0], r.e); else v.tarifas[t[0]] = r.v; });
+      if (v.tarifas[1] == null && !er.length) mal('tarifa_1', U('sr_falta_dia'));
       // ayuda, no garantía: la base vuelve a comprobar «más días no cuesta menos en total»
       var tt = [1, 7, 30].map(function (k) { return v.tarifas[k]; });
-      if ((tt[1] != null && tt[0] != null && tt[1] < tt[0]) || (tt[2] != null && ((tt[1] != null && tt[2] < tt[1]) || (tt[0] != null && tt[2] < tt[0])))) er.push(U('sr_tramo_menos'));
-      TRAMOS_SEGURO.forEach(function (dd) { var r = leeImporte(z, 'seguro_' + dd, txtTramo(dd)); if (r.e) er.push(r.e); else v.seguros[dd] = r.v; });
+      if ((tt[1] != null && tt[0] != null && tt[1] < tt[0]) || (tt[2] != null && ((tt[1] != null && tt[2] < tt[1]) || (tt[0] != null && tt[2] < tt[0])))) mal('tarifa_7', U('sr_tramo_menos'));
+      TRAMOS_SEGURO.forEach(function (dd) { var r = leeImporte(z, 'seguro_' + dd, txtTramo(dd)); if (r.e) mal('seguro_' + dd, r.e); else v.seguros[dd] = r.v; });
       var sv = TRAMOS_SEGURO.map(function (k) { return v.seguros[k]; }).filter(function (x) { return x != null; });
-      for (var i = 1; i < sv.length; i++) if (sv[i] < sv[i - 1]) { er.push(U('sr_tramo_menos')); break; }
-      var fz = leeImporte(z, 'fianza', U('sr_fianza')); if (fz.e) er.push(fz.e); else v.fianza = fz.v;
+      for (var i = 1; i < sv.length; i++) if (sv[i] < sv[i - 1]) { mal('seguro_' + TRAMOS_SEGURO[1], U('sr_tramo_menos')); break; }
+      var fz = leeImporte(z, 'fianza', U('sr_fianza')); if (fz.e) mal('fianza', fz.e); else v.fianza = fz.v;
       v.seguro_obligatorio = !!(z.querySelector('[data-axw-campo="seguro_obligatorio"]') || {}).checked;
       v.fianza_con_seguro = marcado(z, 'fianza_con_seguro') === 'si';
       var segurosTras = TRAMOS_SEGURO.some(function (k) { return v.seguros[k] != null; }) || (p && d.setup.seguro_tramos.some(function (x) { return x.producto_id === p.id && TRAMOS_SEGURO.indexOf(Number(x.dias)) < 0; }));
-      if (v.seguro_obligatorio && !segurosTras) er.push(U('sr_seguro_sin_precio'));
+      if (v.seguro_obligatorio && !segurosTras) mal('seguro_' + TRAMOS_SEGURO[0], U('sr_seguro_sin_precio'));
       var ya = (p ? p.unidades : []).map(function (u) { return normMat(u.identificador); }), vistos = {};
       z.querySelectorAll('[data-axw-sr-fila] input[data-axw-campo^="mat_"]').forEach(function (inp) {
-        var m = normMat(inp.value);
+        var m = normMat(inp.value), c = inp.getAttribute('data-axw-campo');
         if (!m) return;
-        if (ya.indexOf(m) >= 0 || vistos[m]) { er.push(U('sr_matricula_repe', { m: m })); return; }
+        if (ya.indexOf(m) >= 0 || vistos[m]) { mal(c, U('sr_matricula_repe', { m: m })); return; }
         var tm = d.flota.topes && d.flota.topes.identificador;
-        if (esObj(tm) && ((num(tm.min) != null && m.length < tm.min) || (num(tm.max) != null && m.length > tm.max))) { er.push(U('sr_matricula_largo', { m: m })); return; }
+        if (esObj(tm) && ((num(tm.min) != null && m.length < tm.min) || (num(tm.max) != null && m.length > tm.max))) { mal(c, U('sr_matricula_largo', { m: m })); return; }
         vistos[m] = 1; v.nuevas.push(m);
       });
-      if (!ya.length && !v.nuevas.length) er.push(U('sr_sin_unidades'));
-      if (er.length) return { ok: false, error: er.filter(function (x, i2) { return er.indexOf(x) === i2; }).join(' ') };
+      if (!ya.length && !v.nuevas.length) mal('unidades', U('sr_sin_unidades'));
+      if (er.length) return { ok: false, error: er.filter(function (x, i2) { return er.indexOf(x) === i2; }).join(' '), errores: ec };
       v.plan = planAlquiler(st, v);
       var m = motivo(st, !!(p && v.plan.cambia));
-      if (m.e) return { ok: false, error: m.e };
+      if (m.e) return { ok: false, error: m.e, errores: [{ c: 'sr_motivo', t: m.e }] };
       v.motivo = m.v;
       return { ok: true, v: v };
     },
@@ -1028,7 +1056,8 @@
       sel.value = hz == null ? '' : String(hz);
       // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): a la vista las 3 que exige la base; la antelación y los límites del bot, bajo «Más reglas»
       var mas = S.plegado({ padre: zona, marca: 'reglas', rotulo: U('sr_mas_reglas'), resumen: function () {
-        var s1 = sel.options[sel.selectedIndex]; return [U('sr_horizonte') + ': ' + (s1 ? s1.text : '—'), U('sr_bot')]; } });
+        var s1 = sel.options[sel.selectedIndex];
+        return [U('sr_horizonte') + ': ' + (s1 ? s1.text : '—'), U('sr_max_tel') + ': ' + (val(zona, 'max_por_telefono') || '—'), U('sr_max_act') + ': ' + (val(zona, 'max_activos') || '—')]; } });
       mas.cuerpo.appendChild(el('div', { class: 'flex flex-col gap-1.5 min-w-0', 'data-axw-fila': 'horizonte_dias', style: 'max-width:22rem' }, [el('label', { for: sel.id, class: CLS_ETQ, text: U('sr_horizonte') }), sel]));
       var r3 = rejilla(200);
       stepper(r3, 'max_por_telefono', U('sr_max_tel'), efectiva(d, 'max_por_telefono'), RANGOS.max_por_telefono);
@@ -1055,7 +1084,10 @@
       v.bloqueo_minutos = Number(b);
       ['dias_min', 'dias_max', 'max_por_telefono', 'max_activos'].forEach(function (k) {
         var raw = val(z, k), n = Number(raw);
-        if (!/^\d+$/.test(raw) || n < RANGOS[k][0] || n > RANGOS[k][1]) er.push(U(ETQ_REGLA[k]) + ': ' + U('sr_rango', { a: String(RANGOS[k][0]), b: String(RANGOS[k][1]) }));
+        if (!/^\d+$/.test(raw) || n < RANGOS[k][0] || n > RANGOS[k][1]) {
+          er.push(U(ETQ_REGLA[k]) + ': ' + U('sr_rango', { a: String(RANGOS[k][0]), b: String(RANGOS[k][1]) }));
+          var dp = z.querySelector('[data-axw-campo="' + k + '"]'); dp = dp && dp.closest('details[data-axw-plegado]'); if (dp) dp.open = true;   // un error nunca se esconde
+        }
         else v[k] = n;
       });
       if (v.dias_min != null && v.dias_max != null && v.dias_max < v.dias_min) er.push(U('sr_max_menor'));
@@ -1121,10 +1153,15 @@
         sel.appendChild(el('option', { value: '', text: U('elige') }));
         d.unidades.forEach(function (u) { sel.appendChild(el('option', { value: u.id, text: u.identificador + (u.producto ? ' · ' + u.producto : '') })); });
         r.appendChild(el('div', { class: 'flex flex-col gap-1.5 min-w-0' }, [el('label', { for: sid, class: CLS_ETQ, text: U('sr_unidad') }), sel]));
-        campo(r, 'pd_' + n, U('sr_desde'), '', { tipo: 'date', maxv: hoy, min: hoyISO(-366) });
         campo(r, 'ph_' + n, U('sr_hasta'), '', { tipo: 'date', min: hoyISO(1) });
-        campo(r, 'pc_' + n, U('sr_cliente'), '', { max: 120, ph: U('sr_cliente_ph') });
         f.appendChild(r);
+        // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): «desde» es hoy salvo que salió antes, y el cliente es opcional: plegados con su resumen
+        var pl = S.plegado({ padre: f, marca: 'previo-' + n, resumen: function () {
+          var de = val(f, 'pd_' + n), c = val(f, 'pc_' + n); return [U('sr_desde') + ': ' + (de === hoy ? U('sr_hoy') : (de ? diaMes(de) : '—')), c]; } });
+        var r2 = rejilla(150);
+        campo(r2, 'pd_' + n, U('sr_desde'), hoy, { tipo: 'date', maxv: hoy, min: hoyISO(-366) });
+        campo(r2, 'pc_' + n, U('sr_cliente'), '', { max: 120, ph: U('sr_cliente_ph') });
+        pl.cuerpo.appendChild(r2); pl.actualiza();
         var q = el('button', { type: 'button', 'data-axw-sr-accion': 'quitar-fila', class: CLS_BTN2 + ' self-start', style: ALTO, text: U('sr_quitar_fila') });
         q.addEventListener('click', function () { lista.removeChild(f); tiles(); });
         f.appendChild(q);
@@ -1171,12 +1208,12 @@
       z.querySelectorAll('[data-axw-sr-filas="previos"] [data-axw-sr-fila]').forEach(function (fl) {
         var k = fl.getAttribute('data-axw-sr-fila');
         var u = val(fl, 'pu_' + k), de = val(fl, 'pd_' + k), ha = val(fl, 'ph_' + k), c = val(fl, 'pc_' + k);
-        if (!u && !de && !ha && !c) return;   // fila vacía: no cuenta
+        if (!u && !ha && !c && (!de || de === hoy)) return;   // fila vacía: no cuenta («desde» viene puesto a hoy)
         if (!u) { er.push(U('sr_fila_unidad')); return; }
         var uu = d.unidades.filter(function (x) { return x.id === u; })[0], mat = uu ? uu.identificador : u;
         if (usadas[u] != null) { er.push(U('sr_fila_repe', { m: mat })); return; }
         usadas[u] = mat;
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(de) || de > hoy || de < min) er.push(U('sr_fila_desde'));
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(de) || de > hoy || de < min) { er.push(U('sr_fila_desde')); var dp = fl.querySelector('details[data-axw-plegado]'); if (dp) dp.open = true; }   // un error nunca se esconde
         if (!/^\d{4}-\d{2}-\d{2}$/.test(ha) || ha <= hoy) er.push(U('sr_fila_hasta'));
         lista.push({ unidad_id: u, desde: de, hasta: ha, cliente_ref: c || null });
       });

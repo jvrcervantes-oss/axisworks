@@ -2576,6 +2576,12 @@ MENU_I18N.update({
         'en': 'Pending: the client signs it with the studio, and the studio marks it here when it arrives. Without it the bot does not switch on.',
         'id': 'Menunggu: klien menandatanganinya bersama studio, dan studio menandainya di sini setelah diterima. Tanpa itu bot tidak dapat dinyalakan.'},
     'alta': {'en': 'sign-up', 'id': 'pendaftaran'},   # el tramo del menú «Bot de WhatsApp · alta»
+    # El velo de carga de la v4 (datos.js de Lawang, f1d931ff3): solo se ve mientras queda una consulta en vuelo, así que el barrido lo caza
+    # o no según lo que tarde la pantalla (tren de bbm, 15-oct: /finanzas/ en «vacía», en inglés). Lawang lo escribe sin tildes.
+    'Trayendo los datos de la pantalla': {'en': 'Loading the data for this screen', 'id': 'Memuat data untuk layar ini'},
+    'Sigue viniendo — la consulta esta tardando mas de lo normal': {
+        'en': 'Still loading — the request is taking longer than usual',
+        'id': 'Masih memuat — permintaan ini memakan waktu lebih lama dari biasanya'},
 })
 
 # Traducciones de Lawang que en INGLÉS dejan dentro el nombre español de una casilla o un permiso («tick «Gastos y proveedores»»): en la instancia
@@ -5383,7 +5389,10 @@ IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis', 'Panel', 'Bot',
                  # 13-oct (editores.js al indonesio): «Closer» y «Setter» son los nombres de los roles de venta, que el equipo usa tal
                  # cual en indonesio
                  'Closer', 'Setter',
-                 'AaaS')   # AaaS: nombre del producto, igual en los tres idiomas (owner, 13-oct)
+                 'AaaS',   # AaaS: nombre del producto, igual en los tres idiomas (owner, 13-oct)
+                 # 15-oct (panel V2 del AaaS, agente.html): «Radar» es el nombre del agente de precios (como Closer/Setter, un nombre,
+                 # no una palabra que traducir); Facebook, Instagram y Google Business son marcas
+                 'Radar', 'Facebook', 'Instagram', 'Google Business')
 # Lo que hay que tocar en el front copiado: (fichero en DIST, trozo de Lawang, sustituto). Cada trozo tiene que aparecer EXACTAMENTE una vez.
 IDIOMAS_PARCHES = (
     ('contracts/assets/idioma.js', "  window.LW_IDIOMA = (v === 'en') ? 'en' : 'es';",

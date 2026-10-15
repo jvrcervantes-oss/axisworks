@@ -62,12 +62,184 @@
 .ag-niveles+.ag-sub,.ag-niveles+fieldset,.ag-niveles+p{margin-top:8px}
 @media (max-width:720px){.ag-limite{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}.ag-limite-nombre{grid-column:1 / -1}.ag-niveles{grid-template-columns:minmax(0,1fr)}.ag-niveles dd{margin-bottom:6px}}
 @media (max-width:520px){.ag-limite{grid-template-columns:minmax(0,1fr)}}
+/* ── Panel V2 del AaaS autónomo (15-oct-2026, diseño aprobado por el owner: «correcto para una primera versión»). Oscuro POR DISEÑO y todo
+   bajo .ag2: nada de esto toca el resto de la cáscara. Las fuentes las sirve el propio dominio (sistema «axisworks»); sin ellas, las del sistema. */
+.ag2{--ink:#07081A;--panel:rgba(17,19,41,.74);--line:rgba(140,149,255,.24);--line-soft:#1E2140;--text:#CBCEDC;--text-hi:#F2F3F7;--text-lo:#A9ADC2;--text-mute:#8D92AB;
+  --indigo:#2E3BEB;--lilac:#8C95FF;--lime:#C8F04A;--amber:#FF7A45;--ease:cubic-bezier(.22,1,.36,1);
+  --display:'Unbounded','Segoe UI',system-ui,sans-serif;--body:'Manrope','Segoe UI',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,'Cascadia Mono',monospace;
+  color-scheme:dark;background-color:var(--ink);background-image:radial-gradient(900px 620px at 50% 38%,rgba(46,59,235,.28),rgba(46,59,235,0) 70%);
+  color:var(--text);font-family:var(--body);font-size:15px;line-height:1.5;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:20px;min-width:0}
+.ag2 *{box-sizing:border-box}
+.ag2 button{font:inherit;cursor:pointer}
+.ag2 button:disabled{cursor:not-allowed;opacity:.7}
+.ag2 :focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+.ag2 a{color:var(--lilac);text-decoration:underline;text-underline-offset:3px}
+.ag2-mono{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.ag2-card{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:20px;min-width:0}
+.ag2-card h3{margin:0 4px 12px;font-family:var(--mono);font-weight:500;font-size:11px;letter-spacing:.14em;color:var(--text-hi);text-transform:uppercase}
+.ag2-cab{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.ag2-cab h2{margin:0;font-family:var(--display);font-weight:500;font-size:22px;letter-spacing:-.03em;color:var(--text-hi)}
+.ag2-reloj{font-family:var(--mono);font-size:13px;color:var(--text-hi);font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
+.ag2-msg{margin:0;font-size:14px;border-radius:14px;padding:10px 14px}
+.ag2-msg[data-tono="ok"]{background:rgba(200,240,74,.12);color:var(--lime)}
+.ag2-msg[data-tono="mal"]{background:rgba(255,122,69,.14);color:#FFB08F}
+.ag2-msg[data-tono="neutro"]{background:rgba(140,149,255,.14);color:var(--text-hi)}
+.ag2-band{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:12px;align-items:stretch}
+.ag2-stat{background:rgba(11,12,30,.6);border:1px solid var(--line-soft);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.ag2-stat .ag2-mono{color:var(--text-lo)}
+.ag2-v{font-family:var(--display);font-weight:500;font-size:28px;letter-spacing:-.04em;color:var(--text-hi);line-height:1.1;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.ag2-v small{font-family:var(--body);font-weight:400;font-size:14px;letter-spacing:0;color:var(--text-mute)}
+.ag2-v[data-vacio="1"]{font-size:20px}
+.ag2-nota{font-size:13px;color:var(--text-lo);margin:0}
+.ag2-gana .ag2-v{color:var(--lime)}
+.ag2-barra{height:4px;border-radius:999px;background:#222645;overflow:hidden}
+.ag2-barra span{display:block;height:100%;width:0;background:var(--lilac)}
+.ag2-para{display:flex;flex-direction:column;gap:8px;min-width:0;max-width:260px}
+.ag2-todos{flex:1 1 auto;border:0;border-radius:22px;padding:0 28px;min-height:88px;background:var(--amber);color:#0B0C1E;font-weight:600;font-size:17px;display:flex;align-items:center;justify-content:center;gap:12px;text-align:left}
+.ag2-todos .ag2-sq{width:14px;height:14px;border-radius:3px;background:#0B0C1E;flex:none}
+.ag2-todos[aria-pressed="true"]{background:var(--lime)}
+.ag2-todos[aria-pressed="true"] .ag2-sq{border-radius:50%}
+.ag2-fila{display:flex;flex-wrap:wrap;gap:20px;align-items:stretch}
+.ag2-col{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:20px}
+.ag2-equipo{display:flex;flex-direction:column;gap:4px}
+.ag2-ag{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:8px 10px;border-radius:14px;background:transparent;border:1px solid transparent;color:var(--text);min-height:44px;transition:background 320ms var(--ease),border-color 320ms var(--ease)}
+.ag2-ag:hover{background:rgba(46,59,235,.12);border-color:rgba(140,149,255,.35)}
+.ag2-ag[aria-pressed="true"]{background:rgba(46,59,235,.28);border-color:var(--lilac)}
+.ag2-tile{width:40px;height:40px;flex:none;border-radius:12px;background:#181B36;border:1px solid #2A2E4F;display:flex;align-items:center;justify-content:center;color:var(--text)}
+.ag2-ag[aria-pressed="true"] .ag2-tile{background:var(--indigo);border-color:var(--indigo);color:var(--text-hi)}
+.ag2-nm{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 auto}
+.ag2-nm b{font-weight:600;color:var(--text-hi)}
+.ag2-est{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-lo)}
+.ag2-dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--c,var(--text-mute))}
+.ag2-dot.ag2-respira{animation:ag2-breath 1.8s ease-in-out infinite}
+.ag2-escena{flex:999 1 560px;min-width:0;position:relative;overflow:hidden;background:rgba(17,19,41,.5);border:1px solid rgba(140,149,255,.28);border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.ag2-escena-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;position:relative;z-index:3}
+.ag2-quien{display:inline-flex;align-items:center;gap:12px;padding:10px 18px 10px 12px;border-radius:999px;background:rgba(46,59,235,.22);border:1px solid rgba(140,149,255,.45);min-width:0;flex-wrap:wrap}
+.ag2-quien h3{margin:0;font-family:var(--display);font-weight:500;font-size:20px;letter-spacing:-.03em;color:var(--text-hi);text-transform:none}
+.ag2-quien .ag2-mini{width:32px;height:32px;border-radius:50%;background:var(--indigo);display:flex;align-items:center;justify-content:center;color:var(--text-hi);flex:none}
+.ag2-papel{color:var(--lilac)}
+.ag2-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(11,12,30,.6);border:1px solid var(--line)}
+.ag2-rejilla{display:grid;grid-template-columns:minmax(0,1fr) 240px minmax(0,1fr);gap:16px;align-items:center;position:relative;z-index:2}
+.ag2-lado{position:relative;z-index:1;background:rgba(17,19,41,.82);border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.ag2-lado.l{justify-self:end;max-width:190px}
+.ag2-lado.r{justify-self:start;max-width:270px}
+.ag2-big{font-family:var(--display);font-weight:500;font-size:30px;letter-spacing:-.04em;color:var(--text-hi);line-height:1;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.ag2-dice{margin:0;min-height:72px;color:var(--text);overflow-wrap:anywhere}
+.ag2-dice .ag2-ya{color:var(--text-hi)}
+.ag2-dice .ag2-falta{color:transparent}
+.ag2-dice .ag2-caret{display:inline-block;width:2px;height:1em;margin-left:2px;vertical-align:-.12em;background:var(--acc,var(--lilac));animation:ag2-blink 1s steps(1) infinite}
+.ag2-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ag2-orbe{width:240px;height:280px;position:relative;display:flex;align-items:center;justify-content:center;justify-self:center}
+.ag2-orbe-in{position:relative;width:200px;height:200px;perspective:900px;animation:ag2-float 6s ease-in-out infinite}
+/* la bola respira con el estado REAL del equipo: las capas CSS solo cambian de velocidad; el canvas pone halo, partículas y una onda por fila nueva
+   del registro (pulso()). Es decoración (aria-hidden): cada dato está escrito en otro sitio y no espera a la animación. */
+.ag2-cv{position:absolute;left:50%;top:50%;width:var(--cv,360px);height:var(--cv,360px);margin:calc(var(--cv,360px) / -2) 0 0 calc(var(--cv,360px) / -2);pointer-events:none}
+.ag2-ring{position:absolute;border-radius:50%}
+.ag2-ring.a{inset:-32px;border:1.5px solid var(--ring,rgba(200,240,74,.75));animation:ag2-orbA 9s linear infinite}
+.ag2-ring.a::after{content:"";position:absolute;left:50%;top:-5px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--acc,var(--lime))}
+.ag2-ring.b{inset:-20px;border:1px solid rgba(140,149,255,.55);animation:ag2-orbB 14s linear infinite}
+.ag2-ring.c{inset:-44px;border:1px dashed rgba(140,149,255,.4);animation:ag2-orbC 22s linear infinite}
+.ag2-core{position:absolute;inset:0;border-radius:50%;overflow:hidden;border:1.5px solid rgba(140,149,255,.7);display:flex;align-items:center;justify-content:center;color:var(--text-hi);
+  background:radial-gradient(circle at 50% 38%,var(--core1,rgba(46,59,235,.85)) 0%,var(--core2,rgba(46,59,235,.25)) 58%,rgba(11,12,30,.2) 100%);animation:ag2-flick 5s linear infinite,ag2-swell 6s ease-in-out infinite}
+.ag2-core::before{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(242,243,247,.07) 0 1px,transparent 1px 4px)}
+.ag2-core::after{content:"";position:absolute;left:0;right:0;top:0;height:22%;background:linear-gradient(180deg,rgba(140,149,255,0),rgba(140,149,255,.28),rgba(140,149,255,0));transform:translateY(-100%);animation:ag2-scan 3.2s linear infinite}
+.ag2-core svg{position:relative;z-index:1}
+.ag2-dais{position:relative;height:110px;margin:-40px -24px 0;z-index:1}
+.ag2-dais span{position:absolute;left:50%;border-radius:50%;transform:translateX(-50%)}
+.ag2-dais .d1{bottom:-46px;width:560px;height:140px;background:#0C0E25;border:1px solid rgba(140,149,255,.3)}
+.ag2-dais .d2{bottom:-10px;width:420px;height:96px;background:#0F1230;border:1px solid rgba(140,149,255,.35)}
+.ag2-dais .d3{bottom:16px;width:300px;height:64px;border:2px solid var(--ring,rgba(200,240,74,.75))}
+.ag2-dais .d4{bottom:30px;width:160px;height:32px;border:1.5px solid var(--ring,rgba(200,240,74,.75));animation:ag2-ripple 2.6s var(--ease) infinite}
+.ag2-chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;position:relative;z-index:3}
+.ag2-chips li{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 14px;border-radius:12px;background:rgba(17,19,41,.85);border:1px solid rgba(140,149,255,.4);color:var(--text-hi)}
+.ag2-desc{margin:0 4px 12px;color:var(--text-lo);font-size:14px}
+.ag2-llaves{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ag2-llaves li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-hi)}
+.ag2-llaves li.lim{color:var(--text-lo)}
+.ag2-llaves .k{width:28px;height:28px;flex:none;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(46,59,235,.25);border:1px solid rgba(140,149,255,.5);color:var(--lime)}
+.ag2-llaves li.lim .k{background:#181B36;border-color:#2A2E4F;color:var(--text-lo)}
+.ag2-modos{display:flex;flex-wrap:wrap;gap:4px;padding:4px;background:#181B36;border-radius:999px;align-self:flex-start;margin-top:14px}
+.ag2-modos button{min-height:40px;padding:0 14px;border-radius:999px;border:0;background:transparent;color:var(--text-hi);font-weight:600;font-size:13px}
+.ag2-modos button[aria-pressed="true"]{background:var(--indigo)}
+.ag2-modos button[data-modo="parado"][aria-pressed="true"]{background:#4A4E66}
+.ag2-nota-modo{margin:8px 4px 0;font-size:13px;color:var(--text-mute)}
+.ag2-vacio{display:flex;flex-direction:column;gap:10px;align-items:flex-start;padding:6px 4px}
+.ag2-vacio .ag2-glifo{width:44px;height:44px;border-radius:14px;border:1px dashed rgba(140,149,255,.5);display:flex;align-items:center;justify-content:center;color:var(--lilac)}
+.ag2-vacio p{margin:0;color:var(--text-lo);font-size:14px}
+.ag2-vacio ul{margin:0;padding-left:18px;color:var(--text-lo);font-size:13px;display:flex;flex-direction:column;gap:4px}
+.ag2-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;max-height:560px;overflow-y:auto}
+.ag2-lista li{display:flex;flex-direction:column;gap:4px;padding:12px 4px;border-bottom:1px solid var(--line-soft);font-size:14px;min-width:0;overflow-wrap:anywhere}
+.ag2-lista li:last-child{border-bottom:0}
+.ag2-lista .ag2-l1{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;font-size:12px;color:var(--text-mute)}
+.ag2-lista .ag2-que{color:var(--text-hi);font-weight:600;margin:0}
+.ag2-lista .ag2-por{color:var(--text-lo);margin:0}
+.ag2-lista .ag2-num{font-size:13px;color:var(--text-lo);margin:0;font-variant-numeric:tabular-nums}
+.ag2-chip{display:inline-flex;align-items:center;min-height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:#2A2E4F;color:var(--text-hi)}
+.ag2-chip[data-tono="ok"]{background:rgba(200,240,74,.18);color:var(--lime)}
+.ag2-chip[data-tono="espera"]{background:rgba(140,149,255,.2);color:var(--lilac)}
+.ag2-chip[data-tono="mal"]{background:rgba(255,122,69,.18);color:#FFB08F}
+.ag2-abajo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:20px}
+.ag2-areas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ag2-area{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:16px;background:rgba(11,12,30,.6);border:1px solid var(--line-soft);color:var(--text-hi);text-align:left;min-width:0}
+.ag2-area>span:first-child{min-width:0;overflow-wrap:anywhere}
+.ag2-area small{display:block;color:var(--text-mute);font-size:12px}
+.ag2-area small.cap{color:var(--lilac);margin-top:2px}
+.ag2-sw{flex:none;width:40px;height:24px;border-radius:999px;background:#2A2E4F;position:relative;transition:background 240ms var(--ease)}
+.ag2-sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--text-lo);transition:transform 240ms var(--ease),background 240ms var(--ease)}
+.ag2-area[aria-pressed="true"] .ag2-sw{background:rgba(200,240,74,.3)}
+.ag2-area[aria-pressed="true"] .ag2-sw::after{transform:translateX(16px);background:var(--lime)}
+.ag2-conns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ag2-conn{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:16px;background:rgba(11,12,30,.6);border:1px solid var(--line-soft);color:var(--text-hi);min-width:0;overflow-wrap:anywhere}
+.ag2-conn .s{font-size:12px;color:var(--amber)}
+.ag2-conn[data-ok="1"] .s{color:var(--lime)}
+.ag2-paso{margin-top:14px;padding:16px;border-radius:18px;border:1px solid rgba(140,149,255,.35);background:rgba(46,59,235,.12);display:flex;flex-direction:column;gap:10px;min-width:0}
+.ag2-paso label{font-weight:600;color:var(--text-hi)}
+.ag2-paso .ag2-pista{font-size:13px;color:var(--text-lo);margin:0}
+.ag2-paso .ag2-in{display:flex;gap:8px;flex-wrap:wrap}
+.ag2 .ag2-paso input,.ag2 .ag2-paso select{width:100%;min-width:0;min-height:48px;padding:0 14px;border-radius:12px;background:var(--ink);border:1px solid #4A4E7A!important;color:var(--text-hi);font:inherit}
+.ag2 .ag2-paso .ag2-in input,.ag2 .ag2-paso .ag2-in select{flex:1 1 200px;width:auto}
+.ag2 .ag2-paso input:focus,.ag2 .ag2-paso select:focus{border-color:var(--lime)!important}
+.ag2-btn{min-height:48px;padding:0 22px;border-radius:999px;border:0;background:var(--lime);color:#0B0C1E;font-weight:600}
+.ag2-btn2{min-height:40px;padding:0 16px;border-radius:999px;border:1px solid rgba(140,149,255,.55);background:transparent;color:var(--text-hi);font-weight:600;font-size:13px}
+.ag2-cosas{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ag2-cosas li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding:8px 12px;border-radius:12px;background:rgba(11,12,30,.6);border:1px solid var(--line-soft);font-size:14px;color:var(--text-hi);min-width:0;overflow-wrap:anywhere}
+.ag2-cosas li>span{min-width:0}
+.ag2-altavoz{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.ag2-altavoz>div{min-width:0;display:flex;flex-direction:column;gap:10px}
+.ag2-altavoz h4{margin:0;font-weight:600;color:var(--text-hi);font-size:15px}
+@keyframes ag2-breath{0%,100%{opacity:.3}50%{opacity:1}}
+@keyframes ag2-blink{50%{opacity:0}}
+@keyframes ag2-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes ag2-orbA{from{transform:rotateX(74deg) rotateZ(0)}to{transform:rotateX(74deg) rotateZ(360deg)}}
+@keyframes ag2-orbB{from{transform:rotateY(72deg) rotateZ(0)}to{transform:rotateY(72deg) rotateZ(-360deg)}}
+@keyframes ag2-orbC{from{transform:rotateX(58deg) rotateY(34deg) rotateZ(0)}to{transform:rotateX(58deg) rotateY(34deg) rotateZ(360deg)}}
+@keyframes ag2-scan{from{transform:translateY(-100%)}to{transform:translateY(500%)}}
+@keyframes ag2-swell{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+@keyframes ag2-flick{0%,48%,52%,100%{opacity:.9}50%{opacity:.6}}
+@keyframes ag2-ripple{0%{transform:translateX(-50%) scale(.6);opacity:.9}100%{transform:translateX(-50%) scale(1.9);opacity:0}}
+@keyframes ag2-appear{from{opacity:.4;transform:scale(.96);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+.ag2-aparece{animation:ag2-appear 560ms var(--ease)}
+/* movimiento reducido o pestaña oculta: nada se mueve; cada valor ya está escrito */
+@media (prefers-reduced-motion:reduce){.ag2 *,.ag2 *::before,.ag2 *::after{animation:none!important;transition:none!important}}
+.ag2.ag2-quieto *,.ag2.ag2-quieto *::before,.ag2.ag2-quieto *::after{animation:none!important;transition:none!important}
+@media (max-width:980px){.ag2-band{grid-template-columns:repeat(2,minmax(0,1fr))}.ag2-para{grid-column:1 / -1;max-width:none}.ag2-todos{min-height:64px}.ag2-abajo,.ag2-altavoz{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){
+  .ag2{padding:16px 12px;border-radius:22px}
+  .ag2-gana{grid-column:1 / -1}
+  .ag2-rejilla{grid-template-columns:minmax(0,1fr)}
+  .ag2-lado.l,.ag2-lado.r{justify-self:stretch;max-width:none}
+  .ag2-lado.l{order:2}.ag2-orbe{order:1;height:250px;--cv:300px}.ag2-lado.r{order:3}
+  .ag2-dais{display:none}
+  .ag2-escena{padding:16px}
+  .ag2-areas,.ag2-conns{grid-template-columns:minmax(0,1fr)}
+  .ag2-v{font-size:24px}
+}
 </style>
 
 <div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
 <div class="flex flex-col gap-2 max-w-3xl">
 <h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>AaaS</h1>
-<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Dos veces al día mira el negocio y deja aquí avisos con su prueba. No toca nada ni habla con nadie: las personas deciden.</p>
+<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Tus agentes trabajan solos dentro de sus límites y aquí te dicen qué han hecho y por qué. Los paras cuando quieras: a todos, por área o de uno en uno.</p>
 </div>
 </div>
 
@@ -75,6 +247,161 @@
 <p class="axw-error axw-oculto" data-ag="error" role="alert"></p>
 <div data-ag="carga" data-tipo="cargando" class="axw-vacio"></div>
 <p class="axw-aviso axw-oculto" data-ag="pendientes" role="status"></p>
+
+<!-- PANEL V2 (15-oct-2026): lo pinta pintaV2() con agente_panel_autonomo() y agente_conexiones_estado(). Solo lectura salvo las palancas, la llave
+     y los Ajustes del Altavoz, que van por sus RPC. Todo lo que viene de la base o de la IA entra con textContent. -->
+<section class="ag2 axw-oculto" data-ag="v2" aria-labelledby="ag2-t">
+<div class="ag2-cab">
+<h2 id="ag2-t" data-lwt>Agentes</h2>
+<span class="ag2-reloj" data-ag="v2-reloj"></span>
+</div>
+<p class="ag2-msg axw-oculto" data-ag="v2-ok" data-tono="ok" role="status"></p>
+<p class="ag2-msg axw-oculto" data-ag="v2-error" data-tono="mal" role="alert"></p>
+<div class="axw-oculto" data-ag="v2-cuerpo" style="display:flex;flex-direction:column;gap:20px;min-width:0">
+
+<section class="ag2-band" aria-labelledby="ag2-t-mes">
+<h3 class="ag2-sr" id="ag2-t-mes" data-lwt>Este mes</h3>
+<div class="ag2-stat ag2-gana">
+<span class="ag2-mono" data-ag="v2-gana-t"></span>
+<span class="ag2-v" data-ag="v2-gana"></span>
+<p class="ag2-nota" data-ag="v2-gana-nota"></p>
+</div>
+<div class="ag2-stat">
+<span class="ag2-mono" data-ag="v2-gasta-t"></span>
+<span class="ag2-v" data-ag="v2-gasta"></span>
+<p class="ag2-nota" data-lwt>Cada céntimo se aparta antes de una llamada y se liquida después.</p>
+</div>
+<div class="ag2-stat">
+<span class="ag2-mono" data-ag="v2-tope-t"></span>
+<span class="ag2-v" data-ag="v2-tope"></span>
+<div class="ag2-barra" aria-hidden="true"><span data-ag="v2-tope-barra"></span></div>
+<p class="ag2-nota" data-ag="v2-tope-nota"></p>
+</div>
+<div class="ag2-para">
+<button type="button" class="ag2-todos" data-accion="ag-v2-todos" aria-pressed="false" aria-describedby="ag2-nota-bot"><span class="ag2-sq" aria-hidden="true"></span><span data-ag="v2-todos-txt"></span></button>
+<p class="ag2-nota" id="ag2-nota-bot" data-ag="v2-todos-nota"></p>
+</div>
+</section>
+
+<div class="ag2-fila">
+<div class="ag2-col">
+<section class="ag2-card" aria-labelledby="ag2-t-equipo">
+<h3 id="ag2-t-equipo" data-ag="v2-equipo-t"></h3>
+<div class="ag2-equipo" data-ag="v2-equipo"></div>
+</section>
+</div>
+
+<section class="ag2-escena" data-ag="v2-escena" aria-labelledby="ag2-t-agente">
+<div class="ag2-escena-top">
+<div class="ag2-quien"><span class="ag2-mini" data-ag="v2-ico-mini" aria-hidden="true"></span><h3 id="ag2-t-agente" data-ag="v2-nombre"></h3><span class="ag2-mono ag2-papel" data-ag="v2-papel"></span></div>
+<span class="ag2-pill ag2-mono"><span class="ag2-dot" data-ag="v2-pill-dot"></span><span data-ag="v2-pill"></span></span>
+</div>
+<div class="ag2-rejilla">
+<div class="ag2-lado l" data-ag="v2-lado-l">
+<span class="ag2-big" data-ag="v2-big"></span>
+<span class="ag2-mono" style="color:var(--text-lo);line-height:1.4" data-ag="v2-big-t"></span>
+</div>
+<div class="ag2-orbe" data-ag="v2-orbe" aria-hidden="true">
+<div class="ag2-orbe-in">
+<canvas class="ag2-cv" data-ag="v2-cv" aria-hidden="true"></canvas>
+<span class="ag2-ring c"></span><span class="ag2-ring b"></span><span class="ag2-ring a"></span>
+<div class="ag2-core" data-ag="v2-ico-grande"></div>
+</div>
+</div>
+<div class="ag2-lado r" data-ag="v2-lado-r">
+<p style="margin:0;color:var(--text-hi);font-size:16px" data-ag="v2-hola"></p>
+<p class="ag2-dice" data-ag="v2-dice"><span class="ag2-ya" aria-hidden="true"></span><span class="ag2-falta" aria-hidden="true"></span><span class="ag2-caret" aria-hidden="true"></span><span class="ag2-sr" data-ag="v2-dice-sr"></span></p>
+</div>
+</div>
+<div class="ag2-dais" aria-hidden="true"><span class="d1"></span><span class="d2"></span><span class="d3"></span><span class="d4"></span></div>
+<ul class="ag2-chips ag2-mono" data-ag="v2-chips"></ul>
+</section>
+
+<div class="ag2-col">
+<section class="ag2-card" aria-labelledby="ag2-t-hace">
+<h3 id="ag2-t-hace" data-ag="v2-hace-t"></h3>
+<p class="ag2-desc" data-ag="v2-desc"></p>
+<ul class="ag2-llaves" data-ag="v2-llaves"></ul>
+<div class="ag2-modos" role="group" data-ag="v2-modos" aria-labelledby="ag2-t-hace">
+<button type="button" data-accion="ag-v2-modo" data-modo="actua" aria-pressed="true"><span data-lwt>Actúa y te avisa</span></button>
+<button type="button" data-accion="ag-v2-modo" data-modo="parado" aria-pressed="false"><span data-lwt>Parado</span></button>
+</div>
+<p class="ag2-nota-modo" data-ag="v2-nota-modo"></p>
+</section>
+<section class="ag2-card" aria-labelledby="ag2-t-hecho" style="flex:1 1 auto">
+<h3 id="ag2-t-hecho" data-lwt>Lo que han hecho</h3>
+<div data-ag="v2-registro"></div>
+</section>
+<section class="ag2-card" aria-labelledby="ag2-t-cola">
+<h3 id="ag2-t-cola" data-lwt>Para publicar</h3>
+<div data-ag="v2-cola"></div>
+</section>
+</div>
+</div>
+
+<div class="ag2-abajo">
+<section class="ag2-card" aria-labelledby="ag2-t-areas">
+<h3 id="ag2-t-areas" data-lwt>Parar por área</h3>
+<div class="ag2-areas" data-ag="v2-areas"></div>
+<p class="ag2-nota-modo" data-lwt>Encendido quiere decir que el área trabaja. Parar surte efecto antes del siguiente gasto o llamada a la IA.</p>
+</section>
+<section class="ag2-card" aria-labelledby="ag2-t-con">
+<h3 id="ag2-t-con" data-lwt>Conexiones</h3>
+<p class="ag2-msg axw-oculto" data-ag="v2-con-error" data-tono="mal" role="alert"></p>
+<div class="ag2-conns" data-ag="v2-conns"></div>
+<p class="ag2-nota-modo axw-oculto" data-ag="v2-con-nota"></p>
+<form class="ag2-paso axw-oculto" data-ag="v2-form-llave" autocomplete="off" novalidate>
+<span class="ag2-mono" style="color:var(--lilac)" data-lwt>Conectar la IA (Claude)</span>
+<label for="ag2-llave" data-lwt>Pega tu llave de la API de Claude</label>
+<p class="ag2-pista" data-lwt>Se guarda cifrada en la base de este negocio y nadie puede volver a leerla, ni tú. Los agentes nunca la ven.</p>
+<div class="ag2-in"><input id="ag2-llave" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" aria-describedby="ag2-llave-aviso" data-campo="v2-llave"><button type="submit" class="ag2-btn"><span data-lwt>Guardar la llave</span></button></div>
+<p class="ag2-pista" id="ag2-llave-aviso" data-ag="v2-llave-aviso" aria-live="polite"></p>
+</form>
+</section>
+</div>
+
+<section class="ag2-card" aria-labelledby="ag2-t-alt">
+<h3 id="ag2-t-alt" data-lwt>Ajustes del Altavoz</h3>
+<p class="ag2-desc" data-lwt>Con qué puede publicar el Altavoz: tus líneas de producto, los dominios propios a los que puede enlazar y tus imágenes. Sin ellos no tiene con qué publicar.</p>
+<p class="ag2-msg axw-oculto" data-ag="v2-alt-ok" data-tono="ok" role="status"></p>
+<p class="ag2-msg axw-oculto" data-ag="v2-alt-error" data-tono="mal" role="alert"></p>
+<p class="ag2-nota-modo axw-oculto" data-ag="v2-alt-nota"></p>
+<div class="ag2-altavoz">
+<div>
+<h4 data-lwt>Líneas de producto</h4>
+<ul class="ag2-cosas" data-ag="v2-lineas"></ul>
+<form class="ag2-paso" data-ag="v2-form-linea" autocomplete="off" novalidate>
+<label for="ag2-linea" data-lwt>Clave de la línea</label>
+<p class="ag2-pista" data-lwt>En minúsculas y sin espacios, por ejemplo scooters.</p>
+<input id="ag2-linea" type="text" autocomplete="off" spellcheck="false" maxlength="31" data-campo="v2-linea">
+<label for="ag2-linea-nombre" data-lwt>Nombre que se ve</label>
+<div class="ag2-in"><input id="ag2-linea-nombre" type="text" autocomplete="off" maxlength="60" data-campo="v2-linea-nombre"><button type="submit" class="ag2-btn"><span data-lwt>Añadir</span></button></div>
+</form>
+</div>
+<div>
+<h4 data-lwt>Dominios propios</h4>
+<ul class="ag2-cosas" data-ag="v2-dominios"></ul>
+<form class="ag2-paso" data-ag="v2-form-dominio" autocomplete="off" novalidate>
+<label for="ag2-dominio" data-lwt>Dominio</label>
+<p class="ag2-pista" data-lwt>Sin https:// ni barras, por ejemplo minegocio.com.</p>
+<div class="ag2-in"><input id="ag2-dominio" type="text" inputmode="url" autocomplete="off" spellcheck="false" maxlength="100" data-campo="v2-dominio"><button type="submit" class="ag2-btn"><span data-lwt>Añadir</span></button></div>
+</form>
+</div>
+<div>
+<h4 data-lwt>Imágenes propias</h4>
+<ul class="ag2-cosas" data-ag="v2-imagenes"></ul>
+<form class="ag2-paso" data-ag="v2-form-imagen" autocomplete="off" novalidate>
+<label for="ag2-imagen" data-lwt>Dirección de la imagen</label>
+<p class="ag2-pista" data-lwt>Una dirección https que acabe en .jpg o .jpeg.</p>
+<input id="ag2-imagen" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="260" data-campo="v2-imagen">
+<label for="ag2-imagen-linea" data-lwt>Línea</label>
+<div class="ag2-in"><select id="ag2-imagen-linea" data-campo="v2-imagen-linea"></select><button type="submit" class="ag2-btn"><span data-lwt>Añadir</span></button></div>
+</form>
+</div>
+</div>
+</section>
+</div>
+</section>
 
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-estado">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Estado</h2>
@@ -105,7 +432,7 @@
 <div class="flex flex-col gap-3" data-ag="propuestas"></div>
 </section>
 
-<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-ajustes">
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-ajustes" id="ag-ajustes">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Trabajos y tope</h2>
 <p class="ag-sub axw-oculto" data-ag="motivo-ajustes"></p>
 <fieldset class="flex flex-col gap-3" data-ag="ajustes" style="border:0;padding:0;margin:0;min-width:0">
@@ -178,7 +505,7 @@
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4 axw-oculto" data-ag="bloque-mas">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Más adelante</h2>
 <div class="ag-estado">
-<div class="ag-dato ag-apagado"><span data-lwt>Clave de IA</span><strong data-lwt>Aún no se usa</strong><span class="ag-sub" data-lwt>Sus trabajos no llaman a la IA: las cuentas las hace el propio sistema.</span></div>
+<div class="ag-dato"><span data-lwt>Clave de IA</span><strong data-lwt>En Conexiones, arriba</strong><span class="ag-sub" data-lwt>La pega el dueño una vez y nadie puede volver a leerla. Los avisos de Ruta no la usan: esas cuentas las hace el propio sistema.</span></div>
 <div class="ag-dato ag-apagado"><span data-lwt>Avisos por Telegram</span><strong data-lwt>Aún no se usa</strong><span class="ag-sub" data-lwt>Los avisos están en este panel.</span></div>
 </div>
 </section>
@@ -189,14 +516,12 @@
   'use strict';
   var EN_AG = {
     'AaaS': 'AaaS',
-    'Dos veces al día mira el negocio y deja aquí avisos con su prueba. No toca nada ni habla con nadie: las personas deciden.': 'Twice a day it looks at the business and leaves alerts here with their evidence. It changes nothing and talks to no one: people decide.',
     'Estado': 'Status', 'Hoy': 'Today', 'Propuestas de cambio': 'Proposed changes',
     'Cambios que el AaaS propone para el sistema. Los acepta o los rechaza el dueño de la ficha.': 'Changes the AaaS proposes for the system. The owner of the AaaS settings accepts or rejects them.',
-    'Trabajos y tope': 'Jobs and spending cap', 'Qué trabajos hace': 'Which jobs it does', 'Nivel de Ruta': 'Ruta level',
+    'Trabajos y tope': 'Jobs and spending cap', 'Qué trabajos hace': 'Which jobs it does', 'Nivel de Ruta': 'Route level',
     '0 · No hace la pasada': '0 · Does not run', '1 · Mira y avisa': '1 · Looks and alerts',
     'Tope de gasto al mes': 'Monthly spending cap', 'Motivo del cambio (obligatorio)': 'Reason for the change (required)', 'Guardar': 'Save',
     'Más adelante': 'Later', 'Clave de IA': 'AI key', 'Aún no se usa': 'Not used yet',
-    'Sus trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'Its jobs do not call the AI: the system itself does the counting.',
     'Avisos por Telegram': 'Telegram alerts', 'Los avisos están en este panel.': 'Alerts are on this panel.',
     'Módulo': 'Module', 'Encendido': 'On', 'Apagado': 'Off', 'Trabajo': 'Work', 'Trabajando': 'Working', 'En pausa': 'Paused',
     'El AaaS es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.': 'The AaaS is a paid service: turning it on means hiring it on the terms agreed with the studio.',
@@ -255,7 +580,7 @@
     'Aviso de un tipo que esta pantalla aún no conoce.': 'An alert of a type this screen does not know yet.',
     'Escribe un importe con cifras y, si hace falta, un punto o una coma para los céntimos.': 'Write an amount in figures, with a dot or a comma for cents if needed.',
     'Ese número es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 37 o 37.50.': 'That number is ambiguous (thousands or decimals?): write it without a thousands separator, for example 37 or 37.50.',
-    'Elige al menos un trabajo, o pon el nivel de Ruta a 0.': 'Choose at least one job, or set the Ruta level to 0.',
+    'Elige al menos un trabajo, o pon el nivel de Ruta a 0.': 'Choose at least one job, or set the Route level to 0.',
     'Subir el tope tarda 24 h en entrar; bajarlo es inmediato.': 'Raising the cap takes 24 h to apply; lowering it is immediate.',
     'Unos {u} USD al cambio de hoy.': 'About {u} USD at today’s rate.',
     'Guardado.': 'Saved.', 'Parado: el AaaS no hará nada hasta que se reanude.': 'Paused: the AaaS will do nothing until it is resumed.', 'Reanudado.': 'Resumed.',
@@ -299,7 +624,7 @@
     'Trabajos': 'Jobs',
     'Tope mensual': 'Monthly cap',
     'Subida de tope': 'Cap increase',
-    'Ruta': 'Ruta level',
+    'Ruta': 'Route',
     'Capital': 'Capital',
     'Objetivo de margen': 'Margin target',
     'IVA de proveedores': 'Supplier VAT',
@@ -358,18 +683,231 @@
     'La regla {n} pasa de 200 caracteres.': 'Rule {n} is over 200 characters.',
     'Contexto guardado.': 'Context saved.',
     'El tope se queda en {x} y la subida a {y} no entrará.': 'The cap stays at {x} and the increase to {y} will not apply.',
-    'Subida cancelada: el tope no cambia.': 'Increase cancelled: the cap does not change.'
+    'Subida cancelada: el tope no cambia.': 'Increase cancelled: the cap does not change.',
+    /* Panel V2 del AaaS autónomo (15-oct-2026) */
+    'Tus agentes trabajan solos dentro de sus límites y aquí te dicen qué han hecho y por qué. Los paras cuando quieras: a todos, por área o de uno en uno.': 'Your agents work on their own within their limits and tell you here what they did and why. Stop them whenever you want: all at once, by area or one by one.',
+    'En Conexiones, arriba': 'In Connections, above',
+    'La pega el dueño una vez y nadie puede volver a leerla. Los avisos de Ruta no la usan: esas cuentas las hace el propio sistema.': 'The owner pastes it once and no one can read it back. Route\'s alerts do not use it: the system itself does that counting.',
+    'Capitán': 'Captain',
+    'Dirige el equipo': 'Runs the team',
+    'Fija las prioridades del día, de una a tres, dice por qué y cuánto deberían dar, y es la única voz que te informa.': 'Sets the day\'s one to three priorities, says why and how much they should earn, and is the only voice that reports to you.',
+    'Lee todo el ERP': 'Reads the whole ERP',
+    'Fija el plan del día': 'Sets the plan of the day',
+    'Te informa, nunca pregunta caso por caso': 'Reports to you, never asks case by case',
+    'Sin acceso al dinero': 'No access to money',
+    'Única voz hacia ti': 'Only voice to you',
+    'Deja rastro': 'Leaves a trail',
+    'Operaciones~agente': 'Operations',
+    'Planifica las entregas y las devoluciones, avisa de lo que tiene que pasar por el taller y cada mañana te dice los cobros pendientes (solo totales).': 'Plans deliveries and returns, flags what is due in the workshop and tells you every morning which payments are still pending (totals only).',
+    'Lee flota, taller, reservas y totales de cobros': 'Reads fleet, workshop, bookings and payment totals',
+    'Escribe notas y avisos en las reservas': 'Writes notes and booking alerts',
+    'Sin acceso a precios': 'No access to prices',
+    'Nunca contacta a clientes: no ve nombres ni teléfonos': 'Never contacts customers: sees no names or phones',
+    'Flota y entregas': 'Fleet and deliveries',
+    'Sin precios': 'No prices',
+    'Tesorero': 'Treasurer',
+    'Código, no IA': 'Code, not AI',
+    'Código simple, no un modelo de lenguaje. Aparta cada céntimo que gastan los agentes antes de que salga y corta en el tope del mes. Solo el gasto de los agentes: los pagos de los clientes no son cosa suya.': 'Plain code, not a language model. Sets aside every cent the agents spend before it goes out and stops at the monthly cap. Only the agents\' spend: customer payments are not its business.',
+    'Comprueba cada gasto antes de que salga': 'Checks every spend before it goes out',
+    'Corta el gasto en el tope': 'Stops spending at the cap',
+    'Solo el gasto de los agentes, nunca pagos de clientes': 'Only the agents\' spend, never customer payments',
+    'Ningún agente puede reescribirlo': 'No agent can rewrite it',
+    'Código simple': 'Plain code',
+    'Corta en el tope': 'Stops at the cap',
+    'Cifras': 'Figures',
+    'Mide': 'Measures',
+    'Mide la ocupación por modelo, lo que rinde cada unidad y lo que de verdad dio cada acción de los agentes, y dice qué doblar y qué dejar.': 'Measures occupancy by model, revenue per unit and what each agent\'s action actually earned, and says what to double and what to drop.',
+    'Lee reservas, pagos y flota': 'Reads bookings, payments and fleet',
+    'Escribe informes': 'Writes reports',
+    'No cambia nada en las reservas': 'Changes nothing in bookings',
+    'Solo lectura': 'Read only',
+    'Radar': 'Radar',
+    'Precios': 'Prices',
+    'Mira la demanda y la ocupación y mueve las tarifas de cada modelo dentro del margen que tú fijas.': 'Watches demand and occupancy and moves the rates of each model within the range you set.',
+    'Lee tarifas, ocupación y demanda': 'Reads rates, occupancy and demand',
+    'Cambia tarifas': 'Changes rates',
+    'Solo dentro del margen que fijas': 'Only inside the range you set',
+    'Fija precios': 'Sets prices',
+    'Dentro de tu margen': 'Inside your range',
+    'Altavoz': 'Loudspeaker',
+    'Redes': 'Social',
+    'Escribe y publica en la página de Facebook y el Instagram del propio negocio, con la etiqueta de IA que pone el código. Solo enlaza a tus propios dominios.': 'Writes and publishes posts on the business\'s own Facebook page and Instagram, with the AI label added by code. Links only to your own domains.',
+    'Publica en tus propias páginas': 'Publishes on your own pages',
+    'Etiqueta de IA automática': 'AI label added automatically',
+    'Sin teléfonos ni enlaces de fuera': 'No phone numbers or outside links',
+    'Solo tus páginas': 'Your pages only',
+    'Etiqueta de IA': 'AI label',
+    'Parado': 'Stopped',
+    'De guardia': 'On guard',
+    'Aplicada': 'Applied',
+    'Propuesta': 'Proposed',
+    'Parada': 'Stopped',
+    'Estaba parado: no hizo nada.': 'It was stopped: it did nothing.',
+    'Pidió una acción que no existe.': 'It asked for an action that does not exist.',
+    'Esa acción no es de su papel.': 'That action is not part of its role.',
+    'Al comprobarlo, los datos no cuadraban: no se hizo.': 'When checked, the data did not match: it was not done.',
+    'Ese trabajo está apagado.': 'That job is switched off.',
+    'El límite de ese módulo no lo permite.': 'That module\'s limit does not allow it.',
+    'Ya había hecho todas las de hoy.': 'It had already done all of today\'s.',
+    'Habría pasado del tope de gasto.': 'It would have gone over the spending cap.',
+    'Otro motivo.': 'Another reason.',
+    'Prioridades del día': 'The day\'s priorities',
+    'Publicación en redes': 'Social media post',
+    'Aviso en una reserva': 'Alert on a booking',
+    'En cola': 'Queued',
+    'Enviando': 'Sending',
+    'Publicada': 'Published',
+    'Falló': 'Failed',
+    'Dudosa: revísala': 'Unclear: check it',
+    'Simulada, sin publicar': 'Simulated, not published',
+    'Facebook': 'Facebook',
+    'Instagram': 'Instagram',
+    'IA (Claude)': 'AI (Claude)',
+    'Facebook e Instagram': 'Facebook and Instagram',
+    'Google Business': 'Google Business',
+    'guardada, sin comprobar todavía': 'saved, not checked yet',
+    'conectada': 'connected',
+    'caducada: pega una nueva': 'expired: paste a new one',
+    'con error': 'with an error',
+    'desconectada': 'disconnected',
+    'la llave no es válida': 'the key is not valid',
+    'la llave no tiene permiso': 'the key has no permission',
+    'la llave caducó': 'the key expired',
+    'no hubo red': 'there was no network',
+    'llegó al límite de uso': 'it hit its usage limit',
+    'otro error': 'another error',
+    'Ese proveedor no se puede conectar aquí.': 'That provider cannot be connected here.',
+    'La llave de Claude empieza por sk-ant- y no lleva espacios. Está en la consola de Anthropic, en API keys.': 'A Claude key starts with sk-ant- and has no spaces. You find it in the Anthropic console under API keys.',
+    'Los ajustes de la conexión no son válidos.': 'The connection settings are not valid.',
+    'Esta base no tiene la caja fuerte para guardar llaves: avisa al estudio.': 'This database has no vault to store keys: tell the studio.',
+    'No se ha podido guardar la llave. Prueba otra vez o avisa al estudio.': 'The key could not be saved. Try again or tell the studio.',
+    'La base no conoce ese agente o esa área: recarga la página.': 'The database does not know that agent or area: reload the page.',
+    'La base no ha entendido el dato: recarga y vuelve a probar.': 'The database did not understand it: reload and try again.',
+    'Ese dominio no vale: escríbelo sin https:// ni barras, por ejemplo minegocio.com.': 'That domain is not valid: write it without https:// or slashes, for example mybusiness.com.',
+    'La imagen tiene que ser una dirección https que acabe en .jpg o .jpeg.': 'The image must be an https address ending in .jpg or .jpeg.',
+    'El nombre tiene que tener entre 2 y 60 caracteres.': 'The name must be 2 to 60 characters long.',
+    'Ya hay 20 dominios: quita uno antes.': 'There are already 20 domains: remove one first.',
+    'Esa línea tiene imágenes: quítalas antes.': 'That line has images: remove them first.',
+    'La clave de la línea va en minúsculas, empieza por una letra y tiene de 3 a 31 caracteres (letras, números o _).': 'The line key is lowercase, starts with a letter and has 3 to 31 characters (letters, numbers or _).',
+    'Esa línea no existe: elígela de la lista.': 'That line does not exist: choose it from the list.',
+    'Ya hay 30 líneas: quita una antes.': 'There are already 30 lines: remove one first.',
+    'Ya hay 200 imágenes: quita una antes.': 'There are already 200 images: remove one first.',
+    'Agentes': 'Agents',
+    'Este mes': 'This month',
+    'Cada céntimo se aparta antes de una llamada y se liquida después.': 'Every cent is set aside before a call and settled after it.',
+    'Actúa y te avisa': 'Acts and tells you',
+    'Lo que han hecho': 'What they\'ve done',
+    'Para publicar': 'Waiting to be published',
+    'Parar por área': 'Stop by area',
+    'Encendido quiere decir que el área trabaja. Parar surte efecto antes del siguiente gasto o llamada a la IA.': 'On means the area works. Stopping takes effect before the next spend or AI call.',
+    'Conexiones': 'Connections',
+    'Conectar la IA (Claude)': 'Connect the AI (Claude)',
+    'Pega tu llave de la API de Claude': 'Paste your Claude API key',
+    'Se guarda cifrada en la base de este negocio y nadie puede volver a leerla, ni tú. Los agentes nunca la ven.': 'It is stored encrypted in this business\'s own database and can never be read back, not even by you. The agents never see it.',
+    'Guardar la llave': 'Save the key',
+    'Ajustes del Altavoz': 'Loudspeaker settings',
+    'Con qué puede publicar el Altavoz: tus líneas de producto, los dominios propios a los que puede enlazar y tus imágenes. Sin ellos no tiene con qué publicar.': 'What the Loudspeaker can publish with: your product lines, your own domains it may link to and your images. Without them it has nothing to publish with.',
+    'Líneas de producto': 'Product lines',
+    'Clave de la línea': 'Line key',
+    'En minúsculas y sin espacios, por ejemplo scooters.': 'Lowercase and without spaces, for example scooters.',
+    'Nombre que se ve': 'Name people see',
+    'Añadir': 'Add',
+    'Dominios propios': 'Your own domains',
+    'Dominio': 'Domain',
+    'Sin https:// ni barras, por ejemplo minegocio.com.': 'Without https:// or slashes, for example mybusiness.com.',
+    'Imágenes propias': 'Your own images',
+    'Dirección de la imagen': 'Image address',
+    'Una dirección https que acabe en .jpg o .jpeg.': 'An https address ending in .jpg or .jpeg.',
+    'Línea': 'Line',
+    'Cobrado · {x} · en {m}': 'Collected · {x} · in {m}',
+    'Cobrado (solo reservas) · {x} · en {m}': 'Collected (bookings only) · {x} · in {m}',
+    'Cobrado (solo recibís) · {x} · en {m}': 'Collected (receipts only) · {x} · in {m}',
+    'Sin acceso o sin datos': 'No access or no data',
+    'Puede que tu usuario no vea las reservas o los recibís, o que esta base aún no tenga cobros que contar este mes. No quiere decir que sea 0.': 'Your user may not see bookings or receipts, or this database has no payments to count this month yet. It does not mean it is 0.',
+    'Solo lo que tu usuario puede ver: las reservas o los recibís que no ves no están sumados. Es lo que entró, no lo que dicen los agentes.': 'Only what your user can see: bookings or receipts you cannot see are not added. It is what came in, not what the agents claim.',
+    'Ya estaba así: no había nada que cambiar.': 'It was already like that: nothing to change.',
+    'Usa tu propio dominio: las plataformas compartidas y los acortadores de enlaces pueden llevar a cualquier sitio.': 'Use your own domain; shared platforms and link shorteners can point anywhere.',
+    'Pagos reales del ERP este mes: {r} reservas pagadas y {f} recibís. Es lo que entró, no lo que dicen los agentes.': 'Real payments in the ERP this month: {r} paid bookings and {f} receipts. It is what came in, not what the agents claim.',
+    'Gastado · {x} · en {m}': 'Spent · {x} · in {m}',
+    'en IA': 'on AI',
+    'Tope del mes · en {m}': 'Monthly cap · in {m}',
+    'Sin fijar todavía': 'Not set yet',
+    'Lo cambias en «Trabajos y tope», más abajo. En el tope, el gasto para solo.': 'You change it in “Jobs and spending cap”, below. At the cap, spending stops by itself.',
+    'Lo cambia el dueño en «Trabajos y tope». En el tope, el gasto para solo.': 'The owner changes it in “Jobs and spending cap”. At the cap, spending stops by itself.',
+    '{p} % usado.': '{p} % used.',
+    'Ir a Trabajos y tope': 'Go to Jobs and spending cap',
+    'Todos parados · ponerlos en marcha': 'All stopped · start again',
+    'Parar a todos los agentes': 'Stop all agents',
+    'Solo el dueño los vuelve a poner en marcha.': 'Only the owner can start them again.',
+    'No para el bot de WhatsApp: va por su cuenta.': 'Does not stop the WhatsApp bot: it runs on its own.',
+    'Tu equipo · {n} agentes': 'Your team · {n} agents',
+    'Este ERP aún no tiene agentes en su equipo.': 'This ERP has no agents in its team yet.',
+    'Hola, soy {x}.': 'Hi, I\'m {x}.',
+    'El tope del mes está en 0: ningún agente puede gastar nada.': 'The monthly cap is 0: no agent can spend anything.',
+    'gastado en IA este mes': 'spent on AI this month',
+    'acciones hoy': 'actions today',
+    'Este mes los agentes llevan {x} gastados de un tope de {y}. Al llegar al tope, corto el gasto.': 'This month the agents have spent {x} of a {y} cap. At the cap, I stop the spending.',
+    'No hay tope fijado: hasta que el dueño lo ponga, ningún agente puede gastar.': 'No cap is set: until the owner sets one, no agent can spend.',
+    'Todo el equipo está parado: no gasto nada ni aplico nada hasta que nos pongan en marcha.': 'The whole team is stopped: I spend nothing and apply nothing until we are started again.',
+    'Estoy parado: no gasto nada ni aplico nada hasta que me pongan en marcha.': 'I am stopped: I spend nothing and apply nothing until I am started again.',
+    'Mi área ({x}) está parada: no gasto nada ni aplico nada hasta que la pongan en marcha.': 'My area ({x}) is stopped: I spend nothing and apply nothing until it is started again.',
+    'No trabajo hasta que la configuración esté completa.': 'I do not work until the setup is complete.',
+    'Lo último que he hecho: {x}': 'The last thing I did: {x}',
+    'Todavía no he hecho nada. Lo que haga aparecerá en «Lo que han hecho», con su porqué.': 'I have not done anything yet. Whatever I do will show up in “What they\'ve done”, with the reason.',
+    'Qué puede hacer {x}': 'What {x} can do',
+    'Esta pantalla aún no conoce a este agente.': 'This screen does not know this agent yet.',
+    'Código simple: nunca se pausa, así el tope siempre aguanta.': 'Plain code: it is never paused, so the cap always holds.',
+    'Parado con su palanca: no gasta, no llama a la IA y no aplica nada.': 'Stopped with its own switch: it spends nothing, makes no AI call and applies nothing.',
+    'Parado con su palanca. Solo el dueño lo vuelve a poner en marcha.': 'Stopped with its own switch. Only the owner can start it again.',
+    'Su palanca está en marcha, pero ahora lo para la pausa general.': 'Its own switch is on, but the general pause stops it right now.',
+    'Su palanca está en marcha, pero ahora lo para su área.': 'Its own switch is on, but its area stops it right now.',
+    'Por defecto: decide dentro de sus límites y te dice qué ha hecho.': 'Default: it decides inside its limits and tells you what it did.',
+    'Nada todavía. Cada acción aparece aquí en el momento:': 'Nothing yet. Every action lands here at once:',
+    'qué hizo el agente y por qué,': 'what the agent did and why,',
+    'cuánto espera ganar y lo que gastó,': 'how much it expects to earn, and what it spent,',
+    'si se aplicó, se paró o la rechazaron sus límites,': 'applied, stopped or rejected by its limits,',
+    'y «Reanudar» cuando lo parado se puede volver a poner en marcha.': 'and “Resume” when what was stopped can be started again.',
+    'Por qué': 'Why',
+    'Espera ganar {x}': 'Expects to earn {x}',
+    'Gastó {x}': 'Spent {x}',
+    'Lo reanuda el dueño.': 'The owner resumes it.',
+    'Nada esperando para publicarse.': 'Nothing waiting to be published.',
+    'Pararla nunca levanta el tope de gasto.': 'Stopping it never lifts the spending cap.',
+    'sin conectar': 'not connected',
+    'más adelante': 'later',
+    'Desconectar': 'Disconnect',
+    'guardada el {x}': 'saved on {x}',
+    'La llave la pega el dueño de la ficha del AaaS.': 'The owner of the AaaS settings pastes the key.',
+    'Cuenta de demostración: solo mirar. Las conexiones no se enseñan a esta cuenta.': 'Demo account: view only. Connections are not shown to this account.',
+    'Cuenta de demostración: solo mirar. El panel de los agentes no se enseña a esta cuenta.': 'Demo account: view only. The agents\' panel is not shown to this account.',
+    'Ninguna línea todavía.': 'No lines yet.',
+    'Ningún dominio todavía.': 'No domains yet.',
+    'Ninguna imagen todavía.': 'No images yet.',
+    'Quitar': 'Remove',
+    'Primero añade una línea.': 'Add a line first.',
+    'Escribe la clave y el nombre.': 'Write the key and the name.',
+    'Escribe el dominio.': 'Write the domain.',
+    'Escribe la dirección y elige la línea.': 'Write the address and choose the line.',
+    'Pega la llave antes de guardar.': 'Paste the key before saving.',
+    'Llave guardada: queda «sin comprobar» hasta que el equipo la pruebe.': 'Key saved: it stays “not checked” until the team tries it.',
+    'Desconectar la IA': 'Disconnect the AI',
+    'Los agentes dejan de llamar a la IA en el acto. Para volver, el dueño pega la llave otra vez.': 'The agents stop calling the AI at once. To come back, the owner pastes the key again.',
+    'Desconectada.': 'Disconnected.',
+    'Todos los agentes parados.': 'All agents stopped.',
+    'En marcha otra vez.': 'Running again.',
+    'Agente parado.': 'Agent stopped.',
+    'Área parada.': 'Area stopped.',
+    'Quitado.': 'Removed.',
+    'La base no lo ha aceptado ({x}).': 'The database did not accept it ({x}).'
   };
   var ID_AG = {
     'AaaS': 'AaaS',
-    'Dos veces al día mira el negocio y deja aquí avisos con su prueba. No toca nada ni habla con nadie: las personas deciden.': 'Dua kali sehari memeriksa usaha dan meninggalkan peringatan di sini beserta buktinya. Tidak mengubah apa pun dan tidak berbicara dengan siapa pun: manusia yang memutuskan.',
     'Estado': 'Status', 'Hoy': 'Hari ini', 'Propuestas de cambio': 'Usulan perubahan',
     'Cambios que el AaaS propone para el sistema. Los acepta o los rechaza el dueño de la ficha.': 'Perubahan yang diusulkan AaaS untuk sistem. Pemilik pengaturan AaaS yang menerima atau menolaknya.',
-    'Trabajos y tope': 'Tugas dan batas biaya', 'Qué trabajos hace': 'Tugas yang dikerjakan', 'Nivel de Ruta': 'Level Ruta',
+    'Trabajos y tope': 'Tugas dan batas biaya', 'Qué trabajos hace': 'Tugas yang dikerjakan', 'Nivel de Ruta': 'Level Rute',
     '0 · No hace la pasada': '0 · Tidak berjalan', '1 · Mira y avisa': '1 · Memeriksa dan memberi peringatan',
     'Tope de gasto al mes': 'Batas biaya per bulan', 'Motivo del cambio (obligatorio)': 'Alasan perubahan (wajib)', 'Guardar': 'Simpan',
     'Más adelante': 'Nanti', 'Clave de IA': 'Kunci AI', 'Aún no se usa': 'Belum digunakan',
-    'Sus trabajos no llaman a la IA: las cuentas las hace el propio sistema.': 'Tugas-tugasnya tidak memanggil AI: perhitungannya dilakukan oleh sistem sendiri.',
     'Avisos por Telegram': 'Peringatan lewat Telegram', 'Los avisos están en este panel.': 'Peringatan ada di panel ini.',
     'Módulo': 'Modul', 'Encendido': 'Aktif', 'Apagado': 'Nonaktif', 'Trabajo': 'Kerja', 'Trabajando': 'Bekerja', 'En pausa': 'Dijeda',
     'El AaaS es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.': 'AaaS adalah layanan berbayar: menyalakannya berarti menggunakannya sesuai kesepakatan dengan studio.',
@@ -428,7 +966,7 @@
     'Aviso de un tipo que esta pantalla aún no conoce.': 'Peringatan dengan jenis yang belum dikenal layar ini.',
     'Escribe un importe con cifras y, si hace falta, un punto o una coma para los céntimos.': 'Tulis jumlah berupa angka, dengan titik atau koma untuk sen bila perlu.',
     'Ese número es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 37 o 37.50.': 'Angka itu ambigu (ribuan atau desimal?): tulis tanpa pemisah ribuan, misalnya 37 atau 37.50.',
-    'Elige al menos un trabajo, o pon el nivel de Ruta a 0.': 'Pilih setidaknya satu tugas, atau atur level Ruta ke 0.',
+    'Elige al menos un trabajo, o pon el nivel de Ruta a 0.': 'Pilih setidaknya satu tugas, atau atur level Rute ke 0.',
     'Subir el tope tarda 24 h en entrar; bajarlo es inmediato.': 'Menaikkan batas berlaku setelah 24 jam; menurunkannya langsung berlaku.',
     'Unos {u} USD al cambio de hoy.': 'Sekitar {u} USD dengan kurs hari ini.',
     'Guardado.': 'Tersimpan.', 'Parado: el AaaS no hará nada hasta que se reanude.': 'Dijeda: AaaS tidak akan melakukan apa pun sampai dilanjutkan.', 'Reanudado.': 'Dilanjutkan.',
@@ -472,7 +1010,7 @@
     'Trabajos': 'Tugas',
     'Tope mensual': 'Batas bulanan',
     'Subida de tope': 'Kenaikan batas',
-    'Ruta': 'Level Ruta',
+    'Ruta': 'Rute',
     'Capital': 'Modal',
     'Objetivo de margen': 'Target margin',
     'IVA de proveedores': 'PPN pemasok',
@@ -531,9 +1069,225 @@
     'La regla {n} pasa de 200 caracteres.': 'Aturan {n} lebih dari 200 karakter.',
     'Contexto guardado.': 'Konteks tersimpan.',
     'El tope se queda en {x} y la subida a {y} no entrará.': 'Batas tetap {x} dan kenaikan ke {y} tidak akan berlaku.',
-    'Subida cancelada: el tope no cambia.': 'Kenaikan dibatalkan: batas tidak berubah.'
+    'Subida cancelada: el tope no cambia.': 'Kenaikan dibatalkan: batas tidak berubah.',
+    /* Panel V2 del AaaS autónomo (15-oct-2026) */
+    'Tus agentes trabajan solos dentro de sus límites y aquí te dicen qué han hecho y por qué. Los paras cuando quieras: a todos, por área o de uno en uno.': 'Agen Anda bekerja sendiri dalam batasnya dan di sini memberi tahu apa yang sudah dikerjakan dan alasannya. Hentikan kapan saja: semuanya, per area, atau satu per satu.',
+    'En Conexiones, arriba': 'Di Koneksi, di atas',
+    'La pega el dueño una vez y nadie puede volver a leerla. Los avisos de Ruta no la usan: esas cuentas las hace el propio sistema.': 'Pemilik menempelkannya sekali dan tidak ada yang bisa membacanya lagi. Peringatan Rute tidak memakainya: perhitungan itu dilakukan sistem sendiri.',
+    'Capitán': 'Kapten',
+    'Dirige el equipo': 'Memimpin tim',
+    'Fija las prioridades del día, de una a tres, dice por qué y cuánto deberían dar, y es la única voz que te informa.': 'Menetapkan satu sampai tiga prioritas hari ini, menjelaskan alasannya dan berapa hasil yang diharapkan, dan hanya dia yang melapor kepada Anda.',
+    'Lee todo el ERP': 'Membaca seluruh ERP',
+    'Fija el plan del día': 'Menetapkan rencana hari ini',
+    'Te informa, nunca pregunta caso por caso': 'Melapor kepada Anda, tidak bertanya kasus per kasus',
+    'Sin acceso al dinero': 'Tidak punya akses ke uang',
+    'Única voz hacia ti': 'Satu-satunya yang melapor',
+    'Deja rastro': 'Meninggalkan jejak',
+    'Operaciones~agente': 'Operasional',
+    'Planifica las entregas y las devoluciones, avisa de lo que tiene que pasar por el taller y cada mañana te dice los cobros pendientes (solo totales).': 'Merencanakan serah terima dan motor yang kembali, menandai yang perlu masuk bengkel, dan setiap pagi memberi tahu pembayaran yang masih tertunda (hanya totalnya).',
+    'Lee flota, taller, reservas y totales de cobros': 'Membaca armada, bengkel, booking, dan total pembayaran',
+    'Escribe notas y avisos en las reservas': 'Menulis catatan dan peringatan di booking',
+    'Sin acceso a precios': 'Tidak punya akses ke harga',
+    'Nunca contacta a clientes: no ve nombres ni teléfonos': 'Tidak pernah menghubungi pelanggan: tidak melihat nama atau nomor telepon',
+    'Flota y entregas': 'Armada dan pengantaran',
+    'Sin precios': 'Tanpa harga',
+    'Tesorero': 'Bendahara',
+    'Código, no IA': 'Kode, bukan AI',
+    'Código simple, no un modelo de lenguaje. Aparta cada céntimo que gastan los agentes antes de que salga y corta en el tope del mes. Solo el gasto de los agentes: los pagos de los clientes no son cosa suya.': 'Kode biasa, bukan model bahasa. Mencadangkan setiap sen yang dibelanjakan agen sebelum keluar dan berhenti di batas bulanan. Hanya pengeluaran agen: pembayaran pelanggan bukan urusannya.',
+    'Comprueba cada gasto antes de que salga': 'Memeriksa setiap pengeluaran sebelum keluar',
+    'Corta el gasto en el tope': 'Menghentikan pengeluaran di batas',
+    'Solo el gasto de los agentes, nunca pagos de clientes': 'Hanya pengeluaran agen, bukan pembayaran pelanggan',
+    'Ningún agente puede reescribirlo': 'Tidak ada agen yang bisa mengubahnya',
+    'Código simple': 'Kode biasa',
+    'Corta en el tope': 'Berhenti di batas',
+    'Cifras': 'Angka',
+    'Mide': 'Mengukur',
+    'Mide la ocupación por modelo, lo que rinde cada unidad y lo que de verdad dio cada acción de los agentes, y dice qué doblar y qué dejar.': 'Mengukur okupansi per model, pendapatan per unit, dan hasil nyata dari setiap tindakan agen, lalu memberi tahu apa yang perlu dilipatgandakan dan apa yang perlu dihentikan.',
+    'Lee reservas, pagos y flota': 'Membaca booking, pembayaran, dan armada',
+    'Escribe informes': 'Menulis laporan',
+    'No cambia nada en las reservas': 'Tidak mengubah apa pun di booking',
+    'Solo lectura': 'Hanya membaca',
+    'Radar': 'Radar',
+    'Precios': 'Harga',
+    'Mira la demanda y la ocupación y mueve las tarifas de cada modelo dentro del margen que tú fijas.': 'Memantau permintaan dan okupansi lalu menggeser tarif setiap model dalam rentang yang Anda tetapkan.',
+    'Lee tarifas, ocupación y demanda': 'Membaca tarif, okupansi, dan permintaan',
+    'Cambia tarifas': 'Mengubah tarif',
+    'Solo dentro del margen que fijas': 'Hanya dalam rentang yang Anda tetapkan',
+    'Fija precios': 'Menetapkan harga',
+    'Dentro de tu margen': 'Dalam rentang Anda',
+    'Altavoz': 'Pengeras Suara',
+    'Redes': 'Media sosial',
+    'Escribe y publica en la página de Facebook y el Instagram del propio negocio, con la etiqueta de IA que pone el código. Solo enlaza a tus propios dominios.': 'Menulis dan menerbitkan posting di halaman Facebook dan Instagram milik usaha sendiri, dengan label AI yang ditambahkan oleh kode. Hanya menautkan ke domain Anda sendiri.',
+    'Publica en tus propias páginas': 'Menerbitkan di halaman Anda sendiri',
+    'Etiqueta de IA automática': 'Label AI otomatis',
+    'Sin teléfonos ni enlaces de fuera': 'Tanpa nomor telepon atau tautan luar',
+    'Solo tus páginas': 'Hanya halaman Anda',
+    'Etiqueta de IA': 'Label AI',
+    'Parado': 'Berhenti',
+    'De guardia': 'Berjaga',
+    'Aplicada': 'Diterapkan',
+    'Propuesta': 'Diusulkan',
+    'Parada': 'Dihentikan',
+    'Estaba parado: no hizo nada.': 'Sedang berhenti: tidak melakukan apa pun.',
+    'Pidió una acción que no existe.': 'Meminta tindakan yang tidak ada.',
+    'Esa acción no es de su papel.': 'Tindakan itu bukan bagian dari perannya.',
+    'Al comprobarlo, los datos no cuadraban: no se hizo.': 'Saat diperiksa, datanya tidak cocok: tidak dijalankan.',
+    'Ese trabajo está apagado.': 'Tugas itu dimatikan.',
+    'El límite de ese módulo no lo permite.': 'Batas modul itu tidak mengizinkannya.',
+    'Ya había hecho todas las de hoy.': 'Sudah menjalankan semua jatah hari ini.',
+    'Habría pasado del tope de gasto.': 'Akan melewati batas biaya.',
+    'Otro motivo.': 'Alasan lain.',
+    'Prioridades del día': 'Prioritas hari ini',
+    'Publicación en redes': 'Posting media sosial',
+    'Aviso en una reserva': 'Peringatan di booking',
+    'En cola': 'Dalam antrean',
+    'Enviando': 'Mengirim',
+    'Publicada': 'Diterbitkan',
+    'Falló': 'Gagal',
+    'Dudosa: revísala': 'Tidak pasti: periksa',
+    'Simulada, sin publicar': 'Simulasi, tidak diterbitkan',
+    'Facebook': 'Facebook',
+    'Instagram': 'Instagram',
+    'IA (Claude)': 'AI (Claude)',
+    'Facebook e Instagram': 'Facebook dan Instagram',
+    'Google Business': 'Google Business',
+    'guardada, sin comprobar todavía': 'tersimpan, belum diperiksa',
+    'conectada': 'terhubung',
+    'caducada: pega una nueva': 'kedaluwarsa: tempel yang baru',
+    'con error': 'ada kesalahan',
+    'desconectada': 'terputus',
+    'la llave no es válida': 'kunci tidak valid',
+    'la llave no tiene permiso': 'kunci tidak punya izin',
+    'la llave caducó': 'kunci kedaluwarsa',
+    'no hubo red': 'tidak ada jaringan',
+    'llegó al límite de uso': 'mencapai batas pemakaian',
+    'otro error': 'kesalahan lain',
+    'Ese proveedor no se puede conectar aquí.': 'Penyedia itu tidak bisa dihubungkan di sini.',
+    'La llave de Claude empieza por sk-ant- y no lleva espacios. Está en la consola de Anthropic, en API keys.': 'Kunci Claude diawali sk-ant- dan tanpa spasi. Ada di konsol Anthropic, bagian API keys.',
+    'Los ajustes de la conexión no son válidos.': 'Pengaturan koneksi tidak valid.',
+    'Esta base no tiene la caja fuerte para guardar llaves: avisa al estudio.': 'Database ini tidak punya brankas untuk menyimpan kunci: beri tahu studio.',
+    'No se ha podido guardar la llave. Prueba otra vez o avisa al estudio.': 'Kunci tidak bisa disimpan. Coba lagi atau beri tahu studio.',
+    'La base no conoce ese agente o esa área: recarga la página.': 'Database tidak mengenal agen atau area itu: muat ulang halaman.',
+    'La base no ha entendido el dato: recarga y vuelve a probar.': 'Database tidak memahami datanya: muat ulang lalu coba lagi.',
+    'Ese dominio no vale: escríbelo sin https:// ni barras, por ejemplo minegocio.com.': 'Domain itu tidak valid: tulis tanpa https:// atau garis miring, misalnya usahaku.com.',
+    'La imagen tiene que ser una dirección https que acabe en .jpg o .jpeg.': 'Gambar harus berupa alamat https yang diakhiri .jpg atau .jpeg.',
+    'El nombre tiene que tener entre 2 y 60 caracteres.': 'Nama harus 2 sampai 60 karakter.',
+    'Ya hay 20 dominios: quita uno antes.': 'Sudah ada 20 domain: hapus satu dulu.',
+    'Esa línea tiene imágenes: quítalas antes.': 'Lini itu punya gambar: hapus gambarnya dulu.',
+    'La clave de la línea va en minúsculas, empieza por una letra y tiene de 3 a 31 caracteres (letras, números o _).': 'Kunci lini huruf kecil, diawali huruf, dan 3 sampai 31 karakter (huruf, angka, atau _).',
+    'Esa línea no existe: elígela de la lista.': 'Lini itu tidak ada: pilih dari daftar.',
+    'Ya hay 30 líneas: quita una antes.': 'Sudah ada 30 lini: hapus satu dulu.',
+    'Ya hay 200 imágenes: quita una antes.': 'Sudah ada 200 gambar: hapus satu dulu.',
+    'Agentes': 'Agen',
+    'Este mes': 'Bulan ini',
+    'Cada céntimo se aparta antes de una llamada y se liquida después.': 'Setiap sen dicadangkan sebelum panggilan dan diselesaikan setelahnya.',
+    'Actúa y te avisa': 'Bertindak dan memberi tahu',
+    'Lo que han hecho': 'Yang sudah dikerjakan',
+    'Para publicar': 'Menunggu diterbitkan',
+    'Parar por área': 'Hentikan per area',
+    'Encendido quiere decir que el área trabaja. Parar surte efecto antes del siguiente gasto o llamada a la IA.': 'Aktif berarti area itu bekerja. Penghentian berlaku sebelum pengeluaran atau panggilan AI berikutnya.',
+    'Conexiones': 'Koneksi',
+    'Conectar la IA (Claude)': 'Hubungkan AI (Claude)',
+    'Pega tu llave de la API de Claude': 'Tempel kunci API Claude Anda',
+    'Se guarda cifrada en la base de este negocio y nadie puede volver a leerla, ni tú. Los agentes nunca la ven.': 'Disimpan terenkripsi di database usaha ini dan tidak bisa dibaca lagi oleh siapa pun, termasuk Anda. Agen tidak pernah melihatnya.',
+    'Guardar la llave': 'Simpan kunci',
+    'Ajustes del Altavoz': 'Pengaturan Pengeras Suara',
+    'Con qué puede publicar el Altavoz: tus líneas de producto, los dominios propios a los que puede enlazar y tus imágenes. Sin ellos no tiene con qué publicar.': 'Bahan yang bisa dipakai Pengeras Suara untuk posting: lini produk Anda, domain sendiri yang boleh ditautkan, dan gambar Anda. Tanpa itu, ia tidak punya bahan untuk diterbitkan.',
+    'Líneas de producto': 'Lini produk',
+    'Clave de la línea': 'Kunci lini',
+    'En minúsculas y sin espacios, por ejemplo scooters.': 'Huruf kecil tanpa spasi, misalnya scooters.',
+    'Nombre que se ve': 'Nama yang ditampilkan',
+    'Añadir': 'Tambah',
+    'Dominios propios': 'Domain sendiri',
+    'Dominio': 'Domain',
+    'Sin https:// ni barras, por ejemplo minegocio.com.': 'Tanpa https:// atau garis miring, misalnya usahaku.com.',
+    'Imágenes propias': 'Gambar sendiri',
+    'Dirección de la imagen': 'Alamat gambar',
+    'Una dirección https que acabe en .jpg o .jpeg.': 'Alamat https yang diakhiri .jpg atau .jpeg.',
+    'Línea': 'Lini',
+    'Cobrado · {x} · en {m}': 'Masuk · {x} · dalam {m}',
+    'Cobrado (solo reservas) · {x} · en {m}': 'Masuk (hanya booking) · {x} · dalam {m}',
+    'Cobrado (solo recibís) · {x} · en {m}': 'Masuk (hanya kuitansi) · {x} · dalam {m}',
+    'Sin acceso o sin datos': 'Tanpa akses atau belum ada data',
+    'Puede que tu usuario no vea las reservas o los recibís, o que esta base aún no tenga cobros que contar este mes. No quiere decir que sea 0.': 'Mungkin pengguna Anda tidak bisa melihat booking atau kuitansi, atau database ini belum punya pembayaran untuk dihitung bulan ini. Bukan berarti 0.',
+    'Solo lo que tu usuario puede ver: las reservas o los recibís que no ves no están sumados. Es lo que entró, no lo que dicen los agentes.': 'Hanya yang bisa dilihat pengguna Anda: booking atau kuitansi yang tidak Anda lihat tidak dijumlahkan. Ini uang yang masuk, bukan klaim agen.',
+    'Ya estaba así: no había nada que cambiar.': 'Sudah seperti itu: tidak ada yang perlu diubah.',
+    'Usa tu propio dominio: las plataformas compartidas y los acortadores de enlaces pueden llevar a cualquier sitio.': 'Gunakan domain Anda sendiri; platform bersama dan pemendek tautan bisa mengarah ke mana saja.',
+    'Pagos reales del ERP este mes: {r} reservas pagadas y {f} recibís. Es lo que entró, no lo que dicen los agentes.': 'Pembayaran nyata di ERP bulan ini: {r} booking terbayar dan {f} kuitansi. Ini uang yang masuk, bukan klaim agen.',
+    'Gastado · {x} · en {m}': 'Terpakai · {x} · dalam {m}',
+    'en IA': 'untuk AI',
+    'Tope del mes · en {m}': 'Batas bulanan · dalam {m}',
+    'Sin fijar todavía': 'Belum diatur',
+    'Lo cambias en «Trabajos y tope», más abajo. En el tope, el gasto para solo.': 'Ubah di «Tugas dan batas biaya», di bawah. Di batas itu, pengeluaran berhenti sendiri.',
+    'Lo cambia el dueño en «Trabajos y tope». En el tope, el gasto para solo.': 'Pemilik mengubahnya di «Tugas dan batas biaya». Di batas itu, pengeluaran berhenti sendiri.',
+    '{p} % usado.': '{p} % terpakai.',
+    'Ir a Trabajos y tope': 'Ke Tugas dan batas biaya',
+    'Todos parados · ponerlos en marcha': 'Semua berhenti · jalankan lagi',
+    'Parar a todos los agentes': 'Hentikan semua agen',
+    'Solo el dueño los vuelve a poner en marcha.': 'Hanya pemilik yang bisa menjalankannya lagi.',
+    'No para el bot de WhatsApp: va por su cuenta.': 'Tidak menghentikan bot WhatsApp: bot itu berjalan sendiri.',
+    'Tu equipo · {n} agentes': 'Tim Anda · {n} agen',
+    'Este ERP aún no tiene agentes en su equipo.': 'ERP ini belum punya agen di timnya.',
+    'Hola, soy {x}.': 'Halo, saya {x}.',
+    'El tope del mes está en 0: ningún agente puede gastar nada.': 'Batas bulanan 0: tidak ada agen yang bisa membelanjakan apa pun.',
+    'gastado en IA este mes': 'terpakai untuk AI bulan ini',
+    'acciones hoy': 'tindakan hari ini',
+    'Este mes los agentes llevan {x} gastados de un tope de {y}. Al llegar al tope, corto el gasto.': 'Bulan ini agen sudah membelanjakan {x} dari batas {y}. Begitu sampai batas, saya hentikan pengeluarannya.',
+    'No hay tope fijado: hasta que el dueño lo ponga, ningún agente puede gastar.': 'Belum ada batas: sampai pemilik mengaturnya, tidak ada agen yang bisa membelanjakan.',
+    'Todo el equipo está parado: no gasto nada ni aplico nada hasta que nos pongan en marcha.': 'Seluruh tim berhenti: saya tidak membelanjakan atau menerapkan apa pun sampai kami dijalankan lagi.',
+    'Estoy parado: no gasto nada ni aplico nada hasta que me pongan en marcha.': 'Saya berhenti: saya tidak membelanjakan atau menerapkan apa pun sampai dijalankan lagi.',
+    'Mi área ({x}) está parada: no gasto nada ni aplico nada hasta que la pongan en marcha.': 'Area saya ({x}) berhenti: saya tidak membelanjakan atau menerapkan apa pun sampai area itu dijalankan lagi.',
+    'No trabajo hasta que la configuración esté completa.': 'Saya tidak bekerja sampai pengaturannya lengkap.',
+    'Lo último que he hecho: {x}': 'Yang terakhir saya kerjakan: {x}',
+    'Todavía no he hecho nada. Lo que haga aparecerá en «Lo que han hecho», con su porqué.': 'Saya belum mengerjakan apa pun. Apa pun yang saya kerjakan akan muncul di «Yang sudah dikerjakan», beserta alasannya.',
+    'Qué puede hacer {x}': 'Yang bisa dilakukan {x}',
+    'Esta pantalla aún no conoce a este agente.': 'Layar ini belum mengenal agen ini.',
+    'Código simple: nunca se pausa, así el tope siempre aguanta.': 'Kode biasa: tidak pernah dijeda, jadi batasnya selalu berlaku.',
+    'Parado con su palanca: no gasta, no llama a la IA y no aplica nada.': 'Dihentikan dengan sakelarnya sendiri: tidak membelanjakan, tidak memanggil AI, dan tidak menerapkan apa pun.',
+    'Parado con su palanca. Solo el dueño lo vuelve a poner en marcha.': 'Dihentikan dengan sakelarnya sendiri. Hanya pemilik yang bisa menjalankannya lagi.',
+    'Su palanca está en marcha, pero ahora lo para la pausa general.': 'Sakelarnya aktif, tetapi saat ini jeda umum menghentikannya.',
+    'Su palanca está en marcha, pero ahora lo para su área.': 'Sakelarnya aktif, tetapi saat ini areanya menghentikannya.',
+    'Por defecto: decide dentro de sus límites y te dice qué ha hecho.': 'Bawaan: memutuskan dalam batasnya dan memberi tahu apa yang dikerjakan.',
+    'Nada todavía. Cada acción aparece aquí en el momento:': 'Belum ada. Setiap tindakan langsung muncul di sini:',
+    'qué hizo el agente y por qué,': 'apa yang dikerjakan agen dan alasannya,',
+    'cuánto espera ganar y lo que gastó,': 'berapa yang diharapkan dan berapa yang dibelanjakan,',
+    'si se aplicó, se paró o la rechazaron sus límites,': 'diterapkan, dihentikan, atau ditolak oleh batasnya,',
+    'y «Reanudar» cuando lo parado se puede volver a poner en marcha.': 'dan «Lanjutkan» bila yang dihentikan bisa dijalankan lagi.',
+    'Por qué': 'Alasan',
+    'Espera ganar {x}': 'Diharapkan menghasilkan {x}',
+    'Gastó {x}': 'Membelanjakan {x}',
+    'Lo reanuda el dueño.': 'Pemilik yang melanjutkannya.',
+    'Nada esperando para publicarse.': 'Tidak ada yang menunggu diterbitkan.',
+    'Pararla nunca levanta el tope de gasto.': 'Menghentikannya tidak pernah mencabut batas biaya.',
+    'sin conectar': 'belum terhubung',
+    'más adelante': 'nanti',
+    'Desconectar': 'Putuskan',
+    'guardada el {x}': 'disimpan pada {x}',
+    'La llave la pega el dueño de la ficha del AaaS.': 'Pemilik pengaturan AaaS yang menempelkan kuncinya.',
+    'Cuenta de demostración: solo mirar. Las conexiones no se enseñan a esta cuenta.': 'Akun demo: hanya melihat. Koneksi tidak ditampilkan untuk akun ini.',
+    'Cuenta de demostración: solo mirar. El panel de los agentes no se enseña a esta cuenta.': 'Akun demo: hanya melihat. Panel agen tidak ditampilkan untuk akun ini.',
+    'Ninguna línea todavía.': 'Belum ada lini.',
+    'Ningún dominio todavía.': 'Belum ada domain.',
+    'Ninguna imagen todavía.': 'Belum ada gambar.',
+    'Quitar': 'Hapus',
+    'Primero añade una línea.': 'Tambahkan lini dulu.',
+    'Escribe la clave y el nombre.': 'Tulis kunci dan namanya.',
+    'Escribe el dominio.': 'Tulis domainnya.',
+    'Escribe la dirección y elige la línea.': 'Tulis alamatnya dan pilih lininya.',
+    'Pega la llave antes de guardar.': 'Tempel kuncinya sebelum menyimpan.',
+    'Llave guardada: queda «sin comprobar» hasta que el equipo la pruebe.': 'Kunci tersimpan: statusnya «belum diperiksa» sampai tim mencobanya.',
+    'Desconectar la IA': 'Putuskan AI',
+    'Los agentes dejan de llamar a la IA en el acto. Para volver, el dueño pega la llave otra vez.': 'Agen langsung berhenti memanggil AI. Untuk kembali, pemilik menempelkan kunci lagi.',
+    'Desconectada.': 'Terputus.',
+    'Todos los agentes parados.': 'Semua agen dihentikan.',
+    'En marcha otra vez.': 'Berjalan lagi.',
+    'Agente parado.': 'Agen dihentikan.',
+    'Área parada.': 'Area dihentikan.',
+    'Quitado.': 'Dihapus.',
+    'La base no lo ha aceptado ({x}).': 'Database tidak menerimanya ({x}).'
   };
-  var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
+  // sin lwT, como lwT en español: lo de antes del «~» ('Operaciones~agente' → 'Operaciones')
+  var T = typeof window.lwT === 'function' ? window.lwT : function (s) { s = String(s); var c = s.indexOf('~'); return c < 0 ? s : s.slice(0, c); };
   var traduce = function (r) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(r); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
   var raiz = document.querySelector('[data-ag="raiz"]');
   /*AXW_COMUN_JS*/
@@ -561,7 +1315,7 @@
   var NIVELES = { 0: 'Nunca', 1: 'Lo propone y decide el dueño', 2: 'Lo hace, sin pasar del tope', 3: 'Lo hace solo' };
   /* Historial: el NOMBRE de cada campo de la ficha que cambió (la base nunca da valores). Uno desconocido se enseña tal cual. */
   var CAMPO = { niveles: 'Límites', niveles_en: 'Límites', topes_cent: 'Topes', contexto: 'Contexto del negocio', trabajos: 'Trabajos', tope_mensual_cent: 'Tope mensual',
-                tope_propuesto_cent: 'Subida de tope', tope_propuesto_desde: 'Subida de tope', nivel_ruta: 'Ruta', capital_cent: 'Capital', objetivo_margen_cent: 'Objetivo de margen',
+                tope_propuesto_cent: 'Subida de tope', tope_propuesto_desde: 'Subida de tope', nivel_ruta: 'Nivel de Ruta', capital_cent: 'Capital', objetivo_margen_cent: 'Objetivo de margen',
                 bot_telegram: 'Avisos por Telegram', iva_proveedores: 'IVA de proveedores', fijos: 'Gastos fijos', freno_perdida_cent: 'Freno por pérdidas' };
   /* Acciones que propone el AaaS (agente_notas_datos.acciones y agente_accion_decide) */
   var ACC_ESTADO = { pendiente: 'Pendiente', aceptada: 'Aceptada', rechazada: 'Rechazada', anulada: 'Anulada', caducada: 'Caducada' };
@@ -618,7 +1372,14 @@
     agente_modulo_cambia: function (a) { return SB.rpc('agente_modulo_cambia', a); },
     agente_ficha_limites: function (a) { return SB.rpc('agente_ficha_limites', a); },
     agente_ficha_contexto: function (a) { return SB.rpc('agente_ficha_contexto', a); },
-    agente_accion_decide: function (a) { return SB.rpc('agente_accion_decide', a); }
+    agente_accion_decide: function (a) { return SB.rpc('agente_accion_decide', a); },
+    /* Panel V2 del AaaS autónomo (agencia erp/migraciones 20261015100000 y 20261015101000). Ninguna es *_datos: van por sb.rpc. */
+    agente_panel_autonomo: function () { return SB.rpc('agente_panel_autonomo', {}); },
+    agente_conexiones_estado: function () { return SB.rpc('agente_conexiones_estado', {}); },
+    agente_palanca: function (a) { return SB.rpc('agente_palanca', a); },
+    agente_conexion_guarda: function (a) { return SB.rpc('agente_conexion_guarda', a); },
+    agente_conexion_desconecta: function (a) { return SB.rpc('agente_conexion_desconecta', a); },
+    agente_ajuste_altavoz: function (a) { return SB.rpc('agente_ajuste_altavoz', a); }
   };
   function llama(nombre, args) {
     var p;
@@ -973,28 +1734,701 @@
       .forEach(function (a) { caja.appendChild(tarjetaAccion(a, dueno)); });
   }
 
+  /* ══ Panel V2 del AaaS autónomo (15-oct-2026; agencia encargos/20261015_aaas_axisworks_autonomo.md, diseño aprobado por el owner) ══
+     Lee agente_panel_autonomo() (equipo, áreas, registro, cola, dinero y Ajustes del Altavoz) y agente_conexiones_estado(). Escribe SOLO por sus RPC:
+     palancas (agente_para / agente_reanuda / agente_palanca), la llave (agente_conexion_guarda / _desconecta) y el Altavoz (agente_ajuste_altavoz).
+     Quién puede qué lo dice la base: parar, quien tenga la herramienta; reanudar, pegar la llave y el Altavoz, solo el dueño (42501 si no).
+     Lo que viene de la IA o de la base (que, porque, texto de la cola, nombres de área) entra SIEMPRE con textContent. No hay «Deshacer» de una acción
+     aplicada (no existe la RPC): lo único que se deshace es una parada, con «Reanudar». Lo ganado y lo gastado van en DOS monedas y no se suman. */
+  function idioma() { var l = window.LW_IDIOMA; return l === 'en' || l === 'id' ? l : 'es'; }
+  /* Qué es y qué puede hacer cada agente, por su id (agente_miembros.agente). Texto de la pantalla (EN_AG / ID_AG); un id que no está aquí se enseña
+     con su id y sin descripción inventada. k: [frase, 1 = es un límite]. */
+  var PAPEL = {
+    capitan: { n: 'Capitán', r: 'Dirige el equipo', d: 'Fija las prioridades del día, de una a tres, dice por qué y cuánto deberían dar, y es la única voz que te informa.',
+               k: [['Lee todo el ERP', 0], ['Fija el plan del día', 0], ['Te informa, nunca pregunta caso por caso', 0], ['Sin acceso al dinero', 1]], c: ['Única voz hacia ti', 'Deja rastro'] },
+    ruta: { n: 'Ruta', r: 'Operaciones~agente', d: 'Planifica las entregas y las devoluciones, avisa de lo que tiene que pasar por el taller y cada mañana te dice los cobros pendientes (solo totales).',
+            k: [['Lee flota, taller, reservas y totales de cobros', 0], ['Escribe notas y avisos en las reservas', 0], ['Sin acceso a precios', 1], ['Nunca contacta a clientes: no ve nombres ni teléfonos', 1]],
+            c: ['Flota y entregas', 'Sin precios', 'Deja rastro'] },
+    tesorero: { n: 'Tesorero', r: 'Código, no IA', d: 'Código simple, no un modelo de lenguaje. Aparta cada céntimo que gastan los agentes antes de que salga y corta en el tope del mes. Solo el gasto de los agentes: los pagos de los clientes no son cosa suya.',
+                k: [['Comprueba cada gasto antes de que salga', 0], ['Corta el gasto en el tope', 0], ['Solo el gasto de los agentes, nunca pagos de clientes', 1], ['Ningún agente puede reescribirlo', 1]],
+                c: ['Código simple', 'Corta en el tope', 'Deja rastro'] },
+    cifras: { n: 'Cifras', r: 'Mide', d: 'Mide la ocupación por modelo, lo que rinde cada unidad y lo que de verdad dio cada acción de los agentes, y dice qué doblar y qué dejar.',
+              k: [['Lee reservas, pagos y flota', 0], ['Escribe informes', 0], ['No cambia nada en las reservas', 1]], c: ['Mide', 'Solo lectura', 'Deja rastro'] },
+    radar: { n: 'Radar', r: 'Precios', d: 'Mira la demanda y la ocupación y mueve las tarifas de cada modelo dentro del margen que tú fijas.',
+             k: [['Lee tarifas, ocupación y demanda', 0], ['Cambia tarifas', 0], ['Solo dentro del margen que fijas', 1]], c: ['Fija precios', 'Dentro de tu margen', 'Deja rastro'] },
+    altavoz: { n: 'Altavoz', r: 'Redes', d: 'Escribe y publica en la página de Facebook y el Instagram del propio negocio, con la etiqueta de IA que pone el código. Solo enlaza a tus propios dominios.',
+               k: [['Publica en tus propias páginas', 0], ['Etiqueta de IA automática', 0], ['Sin teléfonos ni enlaces de fuera', 1]], c: ['Solo tus páginas', 'Etiqueta de IA', 'Deja rastro'] }
+  };
+  var ICONO = {
+    capitan: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z M15.5 8.5l-2 5-5 2 2-5Z',
+    ruta: 'M6 20a2 2 0 1 0 0-4a2 2 0 1 0 0 4Z M18 8a2 2 0 1 0 0-4a2 2 0 1 0 0 4Z M8 18h6.5a3 3 0 0 0 0-6h-5a3 3 0 0 1 0-6H16',
+    tesorero: 'M12 3l7 3v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6Z M9.2 12.2l2 2 3.6-4',
+    cifras: 'M4 20h16 M7 16v-4 M12 16V7 M17 16v-7',
+    radar: 'M21 12a9 9 0 1 1-9-9 M17 12a5 5 0 1 1-5-5 M12 12l6.5-6.5',
+    altavoz: 'M4 10v4h3l6 4V6L7 10Z M16.5 9a4 4 0 0 1 0 6 M19 6.5a7.5 7.5 0 0 1 0 11',
+    _otro: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z M9 10h.01 M15 10h.01 M9 15h6',
+    _ok: 'M5 12.5l4.5 4.5L19 7', _candado: 'M6 11h12v9H6Z M8.5 11V8a3.5 3.5 0 0 1 7 0v3', _lista: 'M4 6h16 M4 12h11 M4 18h7'
+  };
+  var EST_AG = { activo: 'Trabajando', parado: 'Parado', sin_config: 'Sin configurar', guardia: 'De guardia' };
+  /* colores y energía de la bola por estado (0 quieta .. 1 actuando); solo un agente que de verdad trabaja va intenso */
+  var ORB = {
+    activo: { c: '#C8F04A', ring: 'rgba(200,240,74,.75)', acc: '#C8F04A', core1: 'rgba(46,59,235,.85)', core2: 'rgba(46,59,235,.25)', vivo: true, e: .8 },
+    parado: { c: '#8D92AB', ring: 'rgba(130,135,160,.55)', acc: '#8D92AB', core1: 'rgba(42,46,79,.85)', core2: 'rgba(42,46,79,.25)', vivo: false, e: .08 },
+    sin_config: { c: '#FF7A45', ring: 'rgba(255,122,69,.7)', acc: '#FF7A45', core1: 'rgba(255,122,69,.4)', core2: 'rgba(46,59,235,.2)', vivo: true, e: .14 },
+    guardia: { c: '#8C95FF', ring: 'rgba(140,149,255,.5)', acc: '#8C95FF', core1: 'rgba(46,59,235,.45)', core2: 'rgba(46,59,235,.12)', vivo: false, e: .2 }
+  };
+  var REG_ESTADO = { aplicada: 'Aplicada', propuesta: 'Propuesta', rechazada: 'Rechazada', parada: 'Parada' };
+  var REG_TONO = { aplicada: 'ok', propuesta: 'espera', rechazada: 'mal', parada: 'neutro' };
+  /* motivo de agente_registro (los que pone la puerta agente_actua en 20261015100000); uno nuevo se enseña con su clave */
+  var REG_MOTIVO = { parado: 'Estaba parado: no hizo nada.', accion: 'Pidió una acción que no existe.', rol: 'Esa acción no es de su papel.',
+                     datos: 'Al comprobarlo, los datos no cuadraban: no se hizo.', trabajo: 'Ese trabajo está apagado.', nivel: 'El límite de ese módulo no lo permite.',
+                     cupo: 'Ya había hecho todas las de hoy.', tope: 'Habría pasado del tope de gasto.', otro: 'Otro motivo.' };
+  var ACCION_NOMBRE = { prioridades_dia: 'Prioridades del día', publica_post: 'Publicación en redes', aviso_reserva: 'Aviso en una reserva' };
+  var COLA_ESTADO = { pendiente: 'En cola', enviando: 'Enviando', enviada: 'Publicada', fallida: 'Falló', dudosa: 'Dudosa: revísala', simulada: 'Simulada, sin publicar', parada: 'Parada' };
+  var COLA_TONO = { pendiente: 'espera', enviando: 'espera', enviada: 'ok', fallida: 'mal', dudosa: 'mal', simulada: 'neutro', parada: 'neutro' };
+  var CANAL = { facebook: 'Facebook', instagram: 'Instagram' };
+  var PROVEEDOR = { claude: 'IA (Claude)', meta: 'Facebook e Instagram', google: 'Google Business' };
+  var CON_ESTADO = { sin_comprobar: 'guardada, sin comprobar todavía', conectada: 'conectada', caducada: 'caducada: pega una nueva', error: 'con error', desconectada: 'desconectada' };
+  var CON_ERROR = { llave_invalida: 'la llave no es válida', sin_permiso: 'la llave no tiene permiso', caducada: 'la llave caducó', red: 'no hubo red', limite: 'llegó al límite de uso', otro: 'otro error' };
+  /* {ok:false, motivo} de cada escritura: su frase. La base es quien decide si vale; la pantalla solo lo cuenta. */
+  var CON_MOTIVO = { proveedor: 'Ese proveedor no se puede conectar aquí.', formato: 'La llave de Claude empieza por sk-ant- y no lleva espacios. Está en la consola de Anthropic, en API keys.',
+                     ajustes: 'Los ajustes de la conexión no son válidos.', sin_vault: 'Esta base no tiene la caja fuerte para guardar llaves: avisa al estudio.',
+                     error: 'No se ha podido guardar la llave. Prueba otra vez o avisa al estudio.' };
+  var PALANCA_MOTIVO = { clave: 'La base no conoce ese agente o esa área: recarga la página.' };
+  var ALT_MOTIVO = { forma: 'La base no ha entendido el dato: recarga y vuelve a probar.', dominio: 'Ese dominio no vale: escríbelo sin https:// ni barras, por ejemplo minegocio.com.',
+                     url: 'La imagen tiene que ser una dirección https que acabe en .jpg o .jpeg.', nombre: 'El nombre tiene que tener entre 2 y 60 caracteres.',
+                     demasiados: 'Ya hay 20 dominios: quita uno antes.', tiene_imagenes: 'Esa línea tiene imágenes: quítalas antes.',
+                     linea_linea: 'La clave de la línea va en minúsculas, empieza por una letra y tiene de 3 a 31 caracteres (letras, números o _).',
+                     imagen_linea: 'Esa línea no existe: elígela de la lista.', linea_demasiadas: 'Ya hay 30 líneas: quita una antes.', imagen_demasiadas: 'Ya hay 200 imágenes: quita una antes.',
+                     /* Seguridad, 15-oct: acortadores y plataformas donde cada uno tiene su página (bit.ly, instagram.com, linktr.ee…) */
+                     dominio_compartido: 'Usa tu propio dominio: las plataformas compartidas y los acortadores de enlaces pueden llevar a cualquier sitio.' };
+
+  var V = { d: null, con: null, sel: null, maxId: null, texto: '', tecleo: 0, ocupado: false, sondeo: 0, reloj: 0, orbe: null, lectura: 0, sinSondeo: false };
+  function reduceMov() {
+    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* MUDO A PROPOSITO: sin matchMedia se mueve como siempre; los datos no dependen de ello */ return false; }
+  }
+  function icono(d, s, grueso) {
+    var NS = 'http://www.w3.org/2000/svg', sv = document.createElementNS(NS, 'svg'), p = document.createElementNS(NS, 'path');
+    [['viewBox', '0 0 24 24'], ['width', String(s)], ['height', String(s)], ['fill', 'none'], ['stroke', 'currentColor'], ['stroke-width', String(grueso || 1.75)],
+     ['stroke-linecap', 'round'], ['stroke-linejoin', 'round'], ['aria-hidden', 'true'], ['focusable', 'false'], ['data-ag-icono', '']].forEach(function (x) { sv.setAttribute(x[0], x[1]); });
+    p.setAttribute('d', d); sv.appendChild(p);
+    return sv;
+  }
+  function v2Ok(d) {
+    return esObj(d) && typeof d.pausa === 'boolean' && Array.isArray(d.areas) && Array.isArray(d.equipo) && Array.isArray(d.registro) && Array.isArray(d.cola)
+      && esObj(d.dinero) && esObj(d.altavoz);
+  }
+  function soyDueno() { return !!(E.estado && E.estado.soy_dueno === true); }
+  function puedo() { return !!(E.estado && E.estado.puedo_decidir === true); }
+  function nombreAg(id) { return PAPEL[id] ? T(PAPEL[id].n) : String(id == null ? '' : id); }
+  /* El nombre de un área es un DATO de la base ({en, es, id}): se elige por idioma y nunca pasa por T(). Sin nombre, su id. */
+  function nombreArea(a) {
+    var n = a && esObj(a.nombre) ? a.nombre : {}, l = idioma();
+    var s = [n[l], n.en, n.es, n.id].filter(function (x) { return typeof x === 'string' && x; })[0];
+    return s || String(a && a.id != null ? a.id : '');
+  }
+  function areaDe(id) { return V.d.areas.filter(function (a) { return esObj(a) && a.id === id; })[0] || null; }
+  function miembro(id) { return V.d.equipo.filter(function (m) { return esObj(m) && m.agente === id; })[0] || null; }
+  /* por qué está parado un agente AHORA (lo mismo que mira _agente_parado_para): la pausa general, su palanca o la de su área */
+  function porQueParado(id) {
+    var m = miembro(id), a = m ? areaDe(m.area) : null;
+    if (V.d.pausa) return 'pausa';
+    if (m && m.parado === true) return 'agente';
+    if (a && a.parado === true) return 'area';
+    return null;
+  }
+  function estadoAg(id) {
+    if (id === 'tesorero') return 'guardia';     // código, no IA: el freno del gasto no es una palanca
+    if (porQueParado(id)) return 'parado';
+    if (V.d.falta_configurar) return 'sin_config';
+    return 'activo';
+  }
+  function diaEnZona(x) {
+    try { return new Intl.DateTimeFormat('en-CA', { timeZone: V.d.zona || 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(x)); }
+    catch (e) { /* MUDO A PROPOSITO: una fecha o zona que no se entiende no cuenta como de hoy; el registro se sigue enseñando entero */ return ''; }
+  }
+  function cifra(cent, m) { return ent(cent) ? C.dinero(cent / 100, m || null) : null; }
+  function mesNombre() {
+    try { return new Date(String(V.d.hoy).slice(0, 10) + 'T12:00:00').toLocaleDateString(C.locale(), { month: 'long' }); }
+    catch (e) { /* MUDO A PROPOSITO: sin el nombre del mes el rótulo sigue diciendo la moneda */ return ''; }
+  }
+
+  /* ── la bola: decoración (aria-hidden). Cada número y cada fila están escritos antes y sin ella; si el canvas falla, el panel funciona igual.
+     Las capas CSS (anillos, flotar, núcleo) solo cambian de velocidad; el canvas pone halo, partículas y una onda por pulso(). Un solo bucle rAF,
+     parado con la pestaña oculta, la bola fuera de pantalla o «reducir movimiento» (entonces se dibuja un fotograma quieto y nada se repite). ── */
+  function creaOrbe() {
+    var host = $a('v2-orbe'), cv = $a('v2-cv'), dais = raiz.querySelector('.ag2-dais');
+    var ctx = null;
+    try { ctx = cv.getContext('2d'); } catch (e) { /* MUDO A PROPOSITO: sin canvas queda la bola CSS sola, sin nada que avisar */ }
+    var W = 0, H = 0, dpr = 1, raf = 0, last = 0, enPantalla = true;
+    var e = ORB.parado.e, objetivo = e, flash = 0, fase = 0, ritmoAt = 0, ritmoVal = -1;
+    var col = [141, 146, 171], colObj = col.slice(), parts = [], ondas = [];
+    function rgb(hex) { var n = parseInt(hex.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+    function siembra(n) {
+      parts = [];
+      for (var i = 0; i < n; i++) {
+        var p = Math.random() * Math.PI;
+        parts.push({ r: 108 + Math.random() * 56, a: Math.random() * 6.2832, w: (.16 + Math.random() * .34) * (i % 2 ? -1 : 1), k: .2 + Math.random() * .55, c: Math.cos(p), s: Math.sin(p), z: i % 5 ? 1.4 : 2.2 });
+      }
+    }
+    function mide() {
+      if (!ctx) return;
+      W = cv.clientWidth; H = cv.clientHeight; dpr = Math.min(2, window.devicePixelRatio || 1);
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      siembra(W < 340 ? 26 : 40);
+    }
+    function dibuja(dt) {
+      var f = 1 - Math.exp(-dt / .7);
+      e += (objetivo - e) * f; flash *= Math.exp(-dt / .45);
+      for (var i = 0; i < 3; i++) col[i] += (colObj[i] - col[i]) * (1 - Math.exp(-dt / .4));
+      var en = Math.min(1, e + flash * .5), vel = .2 + 2.3 * en;
+      fase += dt * (.8 + 2.8 * en);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+      var cx = W / 2, cy = H / 2, R = 100, borde = W / 2 - 3, b = Math.sin(fase);
+      var c = (col[0] | 0) + ',' + (col[1] | 0) + ',' + (col[2] | 0);
+      ctx.globalCompositeOperation = 'lighter';
+      var g = ctx.createRadialGradient(cx, cy, R * .75, cx, cy, Math.max(R, borde));
+      g.addColorStop(0, 'rgba(' + c + ',' + (.14 + .3 * en + .06 * b + .25 * flash).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(' + c + ',0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(' + c + ',' + (.28 + .62 * en).toFixed(3) + ')';
+      ctx.beginPath();
+      var empuje = flash * 16;
+      for (var j = 0; j < parts.length; j++) {
+        var q = parts[j]; q.a += q.w * dt * vel;
+        var r = Math.min(borde - 4, q.r + empuje), x = r * Math.cos(q.a), y = r * Math.sin(q.a) * q.k;
+        ctx.rect(cx + x * q.c - y * q.s - q.z / 2, cy + x * q.s + y * q.c - q.z / 2, q.z, q.z);
+      }
+      ctx.fill();
+      for (var m = ondas.length - 1; m >= 0; m--) {                               // una onda por acción nueva, 1,5 s cada una
+        var o = ondas[m]; o.t += dt; var t = o.t / 1.5;
+        if (t >= 1) { ondas.splice(m, 1); continue; }
+        var k = 1 - Math.pow(1 - t, 3);
+        ctx.lineWidth = 2.5 - 1.5 * t; ctx.strokeStyle = 'rgba(' + o.c + ',' + (.9 * (1 - t) * (1 - t)).toFixed(3) + ')';
+        ctx.beginPath(); ctx.arc(cx, cy, R + Math.max(0, borde - R) * k, 0, 6.2832); ctx.stroke();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      return en;
+    }
+    function ritmo(en, ahora) {                                                   // las capas CSS siguen la misma energía
+      if (ahora - ritmoAt < 200) return;
+      var v = Math.round((.3 + 2 * en) * 20) / 20;
+      if (v === ritmoVal) return;
+      ritmoAt = ahora; ritmoVal = v;
+      try {
+        host.getAnimations({ subtree: true }).concat(dais ? dais.getAnimations({ subtree: true }) : []).forEach(function (an) { an.updatePlaybackRate(v); });
+      } catch (err) { /* MUDO A PROPOSITO: un navegador sin getAnimations deja las velocidades CSS; es decoración */ }
+    }
+    function corre() { return !!ctx && W > 0 && !reduceMov() && enPantalla && !document.hidden; }
+    var acum = 0;
+    function vuelta(ahora) {
+      raf = 0;
+      var dt = last ? Math.min(.05, (ahora - last) / 1000) : 1 / 60; last = ahora;
+      /* en calma (parada o de guardia, sin ondas ni destello) se dibuja a ~20 fps: lo mismo a la vista, un tercio de trabajo y de batería */
+      acum += dt;
+      if (objetivo < .25 && e < .3 && !ondas.length && flash < .02 && acum < .05) { arranca(); return; }
+      ritmo(dibuja(Math.min(.15, acum)), ahora); acum = 0;
+      arranca();
+    }
+    function arranca() { if (!raf && corre()) raf = requestAnimationFrame(vuelta); }
+    function para() { if (raf) cancelAnimationFrame(raf); raf = 0; last = 0; }
+    function quieto() { if (!ctx || !W) return; para(); e = objetivo; flash = 0; ondas = []; col = colObj.slice(); dibuja(0); }
+    function pulso() {
+      // se llama DESPUÉS de pintar una fila nueva del registro: nunca retrasa ni condiciona el dato; con «reducir movimiento» o la pestaña oculta, nada
+      try {
+        if (!ctx || reduceMov() || document.hidden) return;
+        if (ondas.length >= 4) ondas.shift();
+        ondas.push({ t: 0, c: (col[0] | 0) + ',' + (col[1] | 0) + ',' + (col[2] | 0) });
+        flash = Math.min(1, flash + .7);
+        arranca();
+      } catch (err) { /* MUDO A PROPOSITO: onda decorativa; la fila ya está en pantalla */ }
+    }
+    function estado(k, energia) {
+      var o = ORB[k] || ORB.parado;
+      objetivo = typeof energia === 'number' ? energia : o.e; colObj = rgb(o.acc);
+      if (reduceMov()) quieto(); else arranca();
+    }
+    function vista() { if (!W) mide(); if (corre()) { ritmoVal = -1; arranca(); } else { para(); if (reduceMov()) quieto(); } }
+    mide();
+    if ('IntersectionObserver' in window) {
+      try { new IntersectionObserver(function (es) { enPantalla = es[es.length - 1].isIntersecting; vista(); }).observe(host); }
+      catch (err) { /* MUDO A PROPOSITO: sin IntersectionObserver la bola se considera siempre en pantalla */ }
+    }
+    try {
+      var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (mq.addEventListener) mq.addEventListener('change', function () { ritmoVal = -1; vista(); });
+    } catch (err) { /* MUDO A PROPOSITO: sin la consulta en vivo vale la de cada fotograma (reduceMov) */ }
+    var t0 = 0;
+    window.addEventListener('resize', function () { clearTimeout(t0); t0 = setTimeout(function () { mide(); vista(); }, 150); });
+    return { estado: estado, pulso: pulso, vista: vista, mide: mide };
+  }
+  window.orbe = { pulso: function () { if (V.orbe) V.orbe.pulso(); } };
+
+  /* el texto del agente se escribe ENTERO en el DOM (lo leen los lectores de pantalla); el tecleo solo lo va destapando */
+  function escribe(texto) {
+    var t = $a('v2-dice'), ya = t.querySelector('.ag2-ya'), falta = t.querySelector('.ag2-falta');
+    if (texto === V.texto) return;
+    V.texto = texto;
+    $a('v2-dice-sr').textContent = texto;
+    clearInterval(V.tecleo);
+    if (reduceMov() || document.hidden) { ya.textContent = texto; falta.textContent = ''; return; }
+    var n = 0;
+    V.tecleo = setInterval(function () {
+      n = Math.min(texto.length, n + 1);
+      ya.textContent = texto.slice(0, n); falta.textContent = texto.slice(n);
+      if (n >= texto.length) clearInterval(V.tecleo);
+    }, 26);
+  }
+  function reloj() {
+    var el = $a('v2-reloj');
+    if (!V.d) { el.textContent = ''; clearInterval(V.reloj); V.reloj = 0; return; }
+    try { el.textContent = new Date().toLocaleTimeString(C.locale(), { timeZone: V.d.zona || 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' · ' + (V.d.zona || 'UTC'); }
+    catch (e) { /* MUDO A PROPOSITO: una zona que el navegador no conoce deja el reloj vacío, no uno con la hora de otro sitio */ el.textContent = ''; }
+  }
+
+  function pintaBanda() {
+    var din = V.d.dinero, mes = mesNombre();
+    var mg = typeof din.moneda_ganado === 'string' && din.moneda_ganado ? din.moneda_ganado : null;
+    var mgas = typeof din.moneda_gasto === 'string' && din.moneda_gasto ? din.moneda_gasto : null;
+    /* LO COBRADO: pagos reales del ERP (reservas pagadas + recibís), en la moneda de la instancia. null = la base no tiene con qué contarlo O quien mira
+       no tiene permiso de verlo (Seguridad, 15-oct: sin Reservas de producto no ve las reservas; sin ser admin, los recibís): nunca se pinta como 0 */
+    $a('v2-gana-t').textContent = Tf('Cobrado · {x} · en {m}', { x: mes, m: mg || '—' });
+    var gana = $a('v2-gana'), g = cifra(din.ganado_mes_cent, mg);
+    var parcial = g != null && (!ent(din.ganado_reservas_cent) || !ent(din.ganado_recibis_cent));
+    /* parcial = solo una de las dos fuentes (Seguridad, 15-oct): el rótulo lo dice, nunca se presenta como el total */
+    if (parcial) $a('v2-gana-t').textContent = Tf(ent(din.ganado_reservas_cent) ? 'Cobrado (solo reservas) · {x} · en {m}' : 'Cobrado (solo recibís) · {x} · en {m}', { x: mes, m: mg || '—' });
+    gana.textContent = g == null ? T('Sin acceso o sin datos') : g;
+    gana.setAttribute('data-vacio', g == null ? '1' : '0');
+    $a('v2-gana-nota').textContent = g == null ? T('Puede que tu usuario no vea las reservas o los recibís, o que esta base aún no tenga cobros que contar este mes. No quiere decir que sea 0.')
+      : parcial ? T('Solo lo que tu usuario puede ver: las reservas o los recibís que no ves no están sumados. Es lo que entró, no lo que dicen los agentes.')
+      : Tf('Pagos reales del ERP este mes: {r} reservas pagadas y {f} recibís. Es lo que entró, no lo que dicen los agentes.', { r: din.reservas_pagadas_mes, f: din.recibis_mes });
+    /* LO GASTADO en IA: otra moneda (la del Tesorero). Se rotula aparte y no se suma a lo cobrado */
+    $a('v2-gasta-t').textContent = Tf('Gastado · {x} · en {m}', { x: mes, m: mgas || '—' });
+    var gas = vacia($a('v2-gasta'));
+    gas.appendChild(document.createTextNode(cifra(din.gastado_mes_cent, mgas) || '—'));
+    gas.appendChild(h('small', { text: ' ' + T('en IA') }));
+    /* EL TOPE del mes (en la moneda del gasto). Se cambia en «Trabajos y tope» con agente_ficha_ajusta: aquí no hay otro formulario */
+    $a('v2-tope-t').textContent = Tf('Tope del mes · en {m}', { m: mgas || '—' });
+    var tope = $a('v2-tope'), sinTope = !ent(din.tope_mensual_cent) || V.d.falta_configurar === 'tope_aaas';
+    tope.textContent = sinTope ? T('Sin fijar todavía') : cifra(din.tope_mensual_cent, mgas);
+    tope.setAttribute('data-vacio', sinTope ? '1' : '0');
+    var pct = !sinTope && din.tope_mensual_cent > 0 && ent(din.gastado_mes_cent) ? Math.min(100, Math.round(din.gastado_mes_cent * 100 / din.tope_mensual_cent)) : 0;
+    $a('v2-tope-barra').style.width = pct + '%';
+    var nota = vacia($a('v2-tope-nota'));
+    var txt = soyDueno() ? T('Lo cambias en «Trabajos y tope», más abajo. En el tope, el gasto para solo.') : T('Lo cambia el dueño en «Trabajos y tope». En el tope, el gasto para solo.');
+    if (!sinTope && din.tope_mensual_cent === 0) txt = T('tope 0: no puede gastar') + '. ' + txt;
+    else if (!sinTope) txt = Tf('{p} % usado.', { p: pct }) + ' ' + txt;
+    nota.appendChild(document.createTextNode(txt + ' '));
+    nota.appendChild(h('a', { href: '#ag-ajustes', 'data-ag': 'v2-ir-tope', text: T('Ir a Trabajos y tope') }));
+    /* Parar a todos: agente_para (quien tenga la herramienta); ponerlos en marcha: agente_reanuda (solo el dueño) */
+    var b = raiz.querySelector('[data-accion="ag-v2-todos"]');
+    b.setAttribute('aria-pressed', String(V.d.pausa));
+    $a('v2-todos-txt').textContent = V.d.pausa ? T('Todos parados · ponerlos en marcha') : T('Parar a todos los agentes');
+    b.disabled = V.ocupado || (V.d.pausa ? !soyDueno() : !puedo());
+    $a('v2-todos-nota').textContent = V.d.pausa && !soyDueno() ? T('Solo el dueño los vuelve a poner en marcha.') : T('No para el bot de WhatsApp: va por su cuenta.');
+  }
+  function pintaEquipo() {
+    /* en el orden de las áreas (agente_areas.orden: Dirección primero), y dentro de cada una por id; un área desconocida, al final */
+    var orden = function (m) { var a = areaDe(m.area); return a && typeof a.orden === 'number' ? a.orden : 9999; };
+    var caja = vacia($a('v2-equipo')), lista = V.d.equipo.filter(function (m) { return esObj(m) && typeof m.agente === 'string' && m.agente; })
+      .sort(function (x, y) { return orden(x) - orden(y) || (x.agente < y.agente ? -1 : 1); });
+    $a('v2-equipo-t').textContent = Tf('Tu equipo · {n} agentes', { n: lista.length });
+    if (!lista.length) { caja.appendChild(h('p', { class: 'ag2-nota', 'data-ag': 'v2-sin-equipo', text: T('Este ERP aún no tiene agentes en su equipo.') })); return; }
+    lista.forEach(function (m) {
+      var k = estadoAg(m.agente), o = ORB[k];
+      var tile = h('span', { class: 'ag2-tile', 'aria-hidden': 'true' }, [icono(ICONO[m.agente] || ICONO._otro, 20)]);
+      var dot = h('span', { class: 'ag2-dot' + (o.vivo ? ' ag2-respira' : '') }); dot.style.setProperty('--c', o.c);
+      var papel = PAPEL[m.agente] ? ' · ' + T(PAPEL[m.agente].r) : '';
+      caja.appendChild(h('button', { type: 'button', class: 'ag2-ag', 'data-accion': 'ag-v2-agente', 'data-clave': m.agente, 'aria-pressed': String(m.agente === V.sel) }, [tile,
+        h('span', { class: 'ag2-nm' }, [h('b', { text: nombreAg(m.agente) }), h('span', { class: 'ag2-est' }, [dot, T(EST_AG[k]) + papel])])]));
+    });
+  }
+  function filasDe(id) { return V.d.registro.filter(function (r) { return esObj(r) && r.agente === id; }); }
+  function fraseAgente(id) {
+    var pq = porQueParado(id), din = V.d.dinero;
+    if (id === 'tesorero') {
+      if (ent(din.tope_mensual_cent) && din.tope_mensual_cent === 0 && V.d.falta_configurar !== 'tope_aaas') return T('El tope del mes está en 0: ningún agente puede gastar nada.');
+      return ent(din.tope_mensual_cent) && din.tope_mensual_cent > 0 && V.d.falta_configurar !== 'tope_aaas'
+        ? Tf('Este mes los agentes llevan {x} gastados de un tope de {y}. Al llegar al tope, corto el gasto.', { x: cifra(din.gastado_mes_cent, din.moneda_gasto) || '—', y: cifra(din.tope_mensual_cent, din.moneda_gasto) })
+        : T('No hay tope fijado: hasta que el dueño lo ponga, ningún agente puede gastar.');
+    }
+    if (pq === 'pausa') return T('Todo el equipo está parado: no gasto nada ni aplico nada hasta que nos pongan en marcha.');
+    if (pq === 'agente') return T('Estoy parado: no gasto nada ni aplico nada hasta que me pongan en marcha.');
+    if (pq === 'area') { var m = miembro(id); return Tf('Mi área ({x}) está parada: no gasto nada ni aplico nada hasta que la pongan en marcha.', { x: nombreArea(areaDe(m.area)) }); }
+    if (V.d.falta_configurar) return T('No trabajo hasta que la configuración esté completa.') + ' ' + textoFalta(V.d.falta_configurar);
+    var ult = filasDe(id).filter(function (r) { return typeof r.que === 'string' && r.que; })[0];
+    return ult ? Tf('Lo último que he hecho: {x}', { x: ult.que }) : T('Todavía no he hecho nada. Lo que haga aparecerá en «Lo que han hecho», con su porqué.');
+  }
+  function pintaEscena(cambio) {
+    var id = V.sel, p = PAPEL[id] || null, k = estadoAg(id), o = ORB[k];
+    var esc = $a('v2-escena');
+    esc.setAttribute('data-st', k);
+    ['ring', 'acc', 'core1', 'core2'].forEach(function (v) { esc.style.setProperty('--' + v, o[v]); });
+    vacia($a('v2-ico-mini')).appendChild(icono(ICONO[id] || ICONO._otro, 18));
+    vacia($a('v2-ico-grande')).appendChild(icono(ICONO[id] || ICONO._otro, 96, 1.1));
+    $a('v2-nombre').textContent = nombreAg(id);
+    $a('v2-papel').textContent = p ? T(p.r) : '';
+    $a('v2-pill').textContent = T(EST_AG[k]);
+    var dot = $a('v2-pill-dot'); dot.className = 'ag2-dot' + (o.vivo ? ' ag2-respira' : ''); dot.style.setProperty('--c', o.c);
+    var hoy = String(V.d.hoy || '').slice(0, 10), filas = filasDe(id);
+    if (id === 'tesorero') {
+      $a('v2-big').textContent = cifra(V.d.dinero.gastado_mes_cent, V.d.dinero.moneda_gasto) || '—';
+      $a('v2-big-t').textContent = T('gastado en IA este mes');
+    } else {
+      var n = filas.filter(function (r) { return diaEnZona(r.en) === hoy; }).length;
+      /* el registro trae las 50 últimas: si las 50 son de hoy, puede haber más */
+      var ultima = V.d.registro[V.d.registro.length - 1];
+      $a('v2-big').textContent = String(n) + (V.d.registro.length >= 50 && esObj(ultima) && diaEnZona(ultima.en) === hoy ? '+' : '');
+      $a('v2-big-t').textContent = T('acciones hoy');
+    }
+    $a('v2-hola').textContent = Tf('Hola, soy {x}.', { x: nombreAg(id) });
+    escribe(fraseAgente(id));
+    var ch = vacia($a('v2-chips'));
+    (p ? p.c : []).forEach(function (c) { ch.appendChild(h('li', { text: T(c) })); });
+    $a('v2-hace-t').textContent = Tf('Qué puede hacer {x}', { x: nombreAg(id) });
+    $a('v2-desc').textContent = p ? T(p.d) : T('Esta pantalla aún no conoce a este agente.');
+    var ul = vacia($a('v2-llaves'));
+    (p ? p.k : []).forEach(function (kk) {
+      ul.appendChild(h('li', { class: kk[1] ? 'lim' : null }, [h('span', { class: 'k', 'aria-hidden': 'true' }, [icono(kk[1] ? ICONO._candado : ICONO._ok, 15)]), T(kk[0])]));
+    });
+    /* «Actúa y te avisa» o «Parado» = SU palanca (agente_palanca). «Propone y espera» no entra en esta versión (aplazada por el owner). */
+    var m = miembro(id), propia = !!(m && m.parado === true), pq = porQueParado(id);
+    Array.prototype.forEach.call(raiz.querySelectorAll('[data-accion="ag-v2-modo"]'), function (b) {
+      var parar = b.getAttribute('data-modo') === 'parado';
+      b.setAttribute('aria-pressed', String(parar === propia));
+      b.disabled = V.ocupado || id === 'tesorero' || !m || (parar ? !puedo() : (propia && !soyDueno()));
+    });
+    $a('v2-nota-modo').textContent = id === 'tesorero' ? T('Código simple: nunca se pausa, así el tope siempre aguanta.')
+      : propia ? (soyDueno() ? T('Parado con su palanca: no gasta, no llama a la IA y no aplica nada.') : T('Parado con su palanca. Solo el dueño lo vuelve a poner en marcha.'))
+      : pq === 'pausa' ? T('Su palanca está en marcha, pero ahora lo para la pausa general.')
+      : pq === 'area' ? T('Su palanca está en marcha, pero ahora lo para su área.')
+      : T('Por defecto: decide dentro de sus límites y te dice qué ha hecho.');
+    if (cambio && !reduceMov()) { ['v2-lado-l', 'v2-lado-r'].forEach(function (n2) { var el = $a(n2); el.classList.remove('ag2-aparece'); void el.offsetWidth; el.classList.add('ag2-aparece'); }); }
+    /* la bola respira con el estado REAL: el del agente elegido; trabajando, más viva cuantos más del equipo trabajan */
+    if (V.orbe) {
+      var ia = V.d.equipo.filter(function (x) { return esObj(x) && x.agente !== 'tesorero'; });
+      var activos = ia.filter(function (x) { return estadoAg(x.agente) === 'activo'; }).length;
+      V.orbe.estado(k, k === 'activo' ? .35 + .45 * (ia.length ? activos / ia.length : 0) : undefined);
+    }
+  }
+  function nombreAccion(a) { return ACCION_NOMBRE[a] ? T(ACCION_NOMBRE[a]) : String(a == null ? '' : a); }
+  function pintaRegistro() {
+    var caja = vacia($a('v2-registro')), filas = V.d.registro.filter(esObj);
+    if (!filas.length) {
+      caja.appendChild(h('div', { class: 'ag2-vacio', 'data-ag': 'v2-sin-registro' }, [
+        h('span', { class: 'ag2-glifo', 'aria-hidden': 'true' }, [icono(ICONO._lista, 20)]),
+        h('p', { text: T('Nada todavía. Cada acción aparece aquí en el momento:') }),
+        h('ul', {}, [h('li', { text: T('qué hizo el agente y por qué,') }), h('li', { text: T('cuánto espera ganar y lo que gastó,') }),
+                     h('li', { text: T('si se aplicó, se paró o la rechazaron sus límites,') }), h('li', { text: T('y «Reanudar» cuando lo parado se puede volver a poner en marcha.') })])]));
+      return;
+    }
+    var ul = h('ul', { class: 'ag2-lista' }), reanudable = {};
+    filas.forEach(function (r) {
+      var est = String(r.estado);
+      var li = h('li', { 'data-ag': 'v2-fila', 'data-id': r.id, 'data-estado': est }, [
+        h('div', { class: 'ag2-l1' }, [h('span', { text: C.fechaHora(r.en) + ' · ' + nombreAg(r.agente) + ' · ' + nombreAccion(r.accion) }),
+          h('span', { class: 'ag2-chip', 'data-tono': REG_TONO[est] || 'neutro', text: REG_ESTADO[est] ? T(REG_ESTADO[est]) : est })]),
+        h('p', { class: 'ag2-que', text: typeof r.que === 'string' && r.que ? r.que : nombreAccion(r.accion) })]);
+      if (typeof r.porque === 'string' && r.porque) li.appendChild(h('p', { class: 'ag2-por', text: T('Por qué') + ': ' + r.porque }));
+      /* dos monedas en la misma fila: lo que el agente ESPERA ganar (moneda de la instancia, es su estimación) y lo que GASTÓ (moneda del gasto) */
+      var num = [];
+      if (ent(r.valor_esperado_cent)) num.push(Tf('Espera ganar {x}', { x: cifra(r.valor_esperado_cent, V.d.moneda) }));
+      if (ent(r.gastado_cent)) num.push(Tf('Gastó {x}', { x: cifra(r.gastado_cent, V.d.dinero.moneda_gasto) }));
+      if (num.length) li.appendChild(h('p', { class: 'ag2-num', text: num.join(' · ') }));
+      if (typeof r.motivo === 'string' && r.motivo) li.appendChild(h('p', { class: 'ag2-num', text: T('Motivo') + ': ' + (REG_MOTIVO[r.motivo] ? T(REG_MOTIVO[r.motivo]) : r.motivo) }));
+      /* lo único que se puede deshacer es una PARADA que sigue puesta: «Reanudar» quita lo que hoy lo para, UNA vez por cosa parada (la pausa, un área
+         o un agente), en la fila más reciente */
+      var pq = est === 'parada' ? porQueParado(r.agente) : null, m = pq ? miembro(r.agente) : null;
+      var clave = pq === 'agente' ? r.agente : (pq === 'area' && m ? m.area : '');
+      if (pq && !reanudable[pq + ':' + clave]) {
+        reanudable[pq + ':' + clave] = true;
+        if (soyDueno()) {
+          li.appendChild(h('div', {}, [h('button', { type: 'button', class: 'ag2-btn2', 'data-accion': 'ag-v2-reanuda', 'data-ambito': pq,
+            'data-clave': clave, disabled: V.ocupado, text: T('Reanudar') })]));
+        } else li.appendChild(h('p', { class: 'ag2-num', text: T('Lo reanuda el dueño.') }));
+      }
+      ul.appendChild(li);
+    });
+    caja.appendChild(ul);
+  }
+  function pintaCola() {
+    var caja = vacia($a('v2-cola')), filas = V.d.cola.filter(esObj);
+    if (!filas.length) { caja.appendChild(h('p', { class: 'ag2-nota', 'data-ag': 'v2-sin-cola', text: T('Nada esperando para publicarse.') })); return; }
+    var ul = h('ul', { class: 'ag2-lista' });
+    filas.forEach(function (c) {
+      var est = String(c.estado);
+      ul.appendChild(h('li', { 'data-ag': 'v2-salida', 'data-id': c.id }, [
+        h('div', { class: 'ag2-l1' }, [h('span', { text: C.fechaHora(c.creada) + ' · ' + nombreAg(c.agente) + ' · ' + (CANAL[c.canal] ? T(CANAL[c.canal]) : String(c.canal)) }),
+          h('span', { class: 'ag2-chip', 'data-tono': COLA_TONO[est] || 'neutro', text: COLA_ESTADO[est] ? T(COLA_ESTADO[est]) : est })]),
+        h('p', { class: 'ag2-por', text: typeof c.texto === 'string' && c.texto ? c.texto : '—' })]));
+    });
+    caja.appendChild(ul);
+  }
+  function pintaAreas() {
+    var caja = vacia($a('v2-areas'));
+    V.d.areas.filter(function (a) { return esObj(a) && typeof a.id === 'string'; }).forEach(function (a) {
+      var quienes = V.d.equipo.filter(function (m) { return esObj(m) && m.area === a.id; }).map(function (m) { return nombreAg(m.agente); }).join(' · ');
+      var parada = a.parado === true;
+      var txt = h('span', {}, [nombreArea(a), quienes ? h('small', { text: quienes }) : null,
+        a.id === 'dinero' ? h('small', { class: 'cap', text: T('Pararla nunca levanta el tope de gasto.') }) : null]);
+      caja.appendChild(h('button', { type: 'button', class: 'ag2-area', 'data-accion': 'ag-v2-area', 'data-clave': a.id, 'aria-pressed': String(!parada),
+        disabled: V.ocupado || (parada ? !soyDueno() : !puedo()) }, [txt, h('span', { class: 'ag2-sw', 'aria-hidden': 'true' })]));
+    });
+  }
+  function pintaConexiones(conErr) {
+    var caja = vacia($a('v2-conns'));
+    msgV2('v2-con-error', conErr || '', V.conDemo ? 'neutro' : null);
+    var lista = Array.isArray(V.con) ? V.con.filter(esObj) : null;
+    ['claude', 'meta', 'google'].forEach(function (pv) {
+      var fila = lista ? lista.filter(function (c) { return c.proveedor === pv; })[0] || null : null;
+      var ok = !!(fila && fila.estado === 'conectada');
+      var s = !lista ? '—' : fila ? (CON_ESTADO[fila.estado] ? T(CON_ESTADO[fila.estado]) : String(fila.estado)) : T('sin conectar');
+      if (fila && typeof fila.ultimos4 === 'string' && fila.ultimos4) s += ' · …' + fila.ultimos4;
+      if (fila && fila.guardada_en && fila.estado !== 'desconectada') s += ' · ' + Tf('guardada el {x}', { x: C.fechaHora(fila.guardada_en) });
+      if (fila && fila.ultimo_error) s += ' · ' + (CON_ERROR[fila.ultimo_error] ? T(CON_ERROR[fila.ultimo_error]) : String(fila.ultimo_error));
+      if (pv !== 'claude') s += ' · ' + T('más adelante');
+      var tarjeta = h('div', { class: 'ag2-conn', 'data-ag': 'v2-conn', 'data-proveedor': pv, 'data-ok': ok ? '1' : '0' }, [h('span', { text: T(PROVEEDOR[pv]) }), h('span', { class: 's', text: s })]);
+      if (pv === 'claude' && fila && fila.estado !== 'desconectada' && puedo()) {
+        tarjeta.appendChild(h('div', {}, [h('button', { type: 'button', class: 'ag2-btn2', 'data-accion': 'ag-v2-desconecta', 'data-clave': pv, disabled: V.ocupado, text: T('Desconectar') })]));
+      }
+      caja.appendChild(tarjeta);
+    });
+    /* pegar la llave: solo el dueño (la base lo exige igual). El campo es de SOLO ESCRITURA: nunca se rellena con lo guardado. */
+    oculta($a('v2-form-llave'), !soyDueno() || !lista);
+    var nota = $a('v2-con-nota');
+    nota.textContent = soyDueno() || !lista ? '' : T('La llave la pega el dueño de la ficha del AaaS.');
+    oculta(nota, !nota.textContent);
+  }
+  function pintaAltavoz() {
+    var alt = V.d.altavoz, dueno = soyDueno();
+    var lineas = Array.isArray(alt.lineas) ? alt.lineas.filter(esObj) : [], dominios = Array.isArray(alt.dominios) ? alt.dominios.filter(function (x) { return typeof x === 'string'; }) : [],
+        imagenes = Array.isArray(alt.imagenes) ? alt.imagenes.filter(esObj) : [];
+    var quita = function (tipo, clave) { return dueno ? h('button', { type: 'button', class: 'ag2-btn2', 'data-accion': 'ag-v2-quita', 'data-tipo': tipo, 'data-clave': clave, disabled: V.ocupado, text: T('Quitar') }) : null; };
+    var pon = function (n, filas, vacioTxt) {
+      var ul = vacia($a(n));
+      if (!filas.length) ul.appendChild(h('li', { 'data-ag': n + '-vacio', text: T(vacioTxt) }));
+      filas.forEach(function (f) { ul.appendChild(h('li', {}, [h('span', { text: f[0] }), f[1]])); });
+    };
+    pon('v2-lineas', lineas.map(function (l) { return [String(l.nombre) + ' (' + String(l.linea) + ')', quita('linea', String(l.linea))]; }), 'Ninguna línea todavía.');
+    pon('v2-dominios', dominios.map(function (d) { return [d, quita('dominio', d)]; }), 'Ningún dominio todavía.');
+    pon('v2-imagenes', imagenes.map(function (i) { return [String(i.url) + ' · ' + String(i.linea), quita('imagen', String(i.url))]; }), 'Ninguna imagen todavía.');
+    var sel = F('v2-imagen-linea'), antes = sel.value;
+    vacia(sel);
+    if (!lineas.length) sel.appendChild(h('option', { value: '', text: T('Primero añade una línea.') }));
+    lineas.forEach(function (l) { sel.appendChild(h('option', { value: String(l.linea), text: String(l.nombre) })); });
+    if (antes && lineas.some(function (l) { return String(l.linea) === antes; })) sel.value = antes;
+    ['v2-form-linea', 'v2-form-dominio', 'v2-form-imagen'].forEach(function (f) { oculta($a(f), !dueno); });
+    var nota = $a('v2-alt-nota');
+    nota.textContent = dueno ? '' : T('Solo lo cambia el dueño de la ficha del AaaS.');
+    oculta(nota, dueno);
+  }
+  function pintaV2(cambio, conErr) {
+    var d = V.d;
+    if (!V.sel || !miembro(V.sel)) { var prim = d.equipo.filter(function (m) { return esObj(m) && typeof m.agente === 'string'; }); V.sel = miembro('capitan') ? 'capitan' : (prim[0] ? prim[0].agente : null); }
+    oculta($a('v2-cuerpo'), false);
+    if (!V.orbe) V.orbe = creaOrbe();
+    pintaBanda(); pintaEquipo(); pintaRegistro(); pintaCola(); pintaAreas(); pintaConexiones(conErr); pintaAltavoz();
+    var esc = $a('v2-escena');
+    oculta(esc, !V.sel);
+    if (V.sel) pintaEscena(cambio);
+    V.orbe.vista();
+    reloj();
+    if (!V.reloj) V.reloj = setInterval(reloj, 1000);
+    /* una onda por cada fila NUEVA del registro desde la última lectura (la primera lectura solo marca dónde estamos) */
+    var ids = d.registro.filter(function (r) { return esObj(r) && ent(r.id); }).map(function (r) { return r.id; });
+    var max = ids.length ? Math.max.apply(null, ids) : 0;
+    if (V.maxId != null) {
+      var nuevas = ids.filter(function (x) { return x > V.maxId; }).length;
+      for (var i = 0; i < Math.min(nuevas, 4); i++) setTimeout(window.orbe.pulso, i * 350);
+    }
+    V.maxId = V.maxId == null ? max : Math.max(V.maxId, max);
+  }
+  function msgV2(n, m, tono) {
+    var e = $a(n);
+    if (!e.hasAttribute('data-tono-base')) e.setAttribute('data-tono-base', e.getAttribute('data-tono') || 'mal');
+    e.setAttribute('data-tono', tono || e.getAttribute('data-tono-base'));
+    e.textContent = m || ''; oculta(e, !m);
+  }
+  /* la cuenta de pruebas recibe 42501 (hint cuenta_pruebas) al leer el panel y las conexiones: tiene su propio estado, no un error */
+  function esDemo(err) { return !!(err && err.hint === 'cuenta_pruebas'); }
+  function textoLectura(err, que) {
+    if (esDemo(err)) return que === 'con' ? T('Cuenta de demostración: solo mirar. Las conexiones no se enseñan a esta cuenta.') : T('Cuenta de demostración: solo mirar. El panel de los agentes no se enseña a esta cuenta.');
+    return textoError(err, true);
+  }
+  /* Lee el panel V2. Un fallo aquí se dice EN el panel (no he podido mirar ≠ no hay nada) y no tumba el resto de la pantalla. */
+  function leeV2() {
+    var caja = $a('v2'), n = ++V.lectura;
+    oculta(caja, false);
+    return Promise.all([llama('agente_panel_autonomo'), llama('agente_conexiones_estado')]).then(function (rs) {
+      /* una lectura más vieja que otra ya lanzada (el sondeo mientras una escritura recarga) no pinta encima de la nueva */
+      if (n !== V.lectura) return;
+      var r = rs[0], rc = rs[1];
+      /* cuenta de pruebas o módulo apagado: no cambia en un minuto; el sondeo deja de preguntar hasta recargar */
+      var hint = r.error && r.error.hint;
+      V.sinSondeo = hint === 'cuenta_pruebas' || hint === 'modulo_apagado';
+      if (r.error || !v2Ok(r.data)) {
+        msgV2('v2-error', r.error ? textoLectura(r.error, 'panel') : T(NO_MIRADO), esDemo(r.error) ? 'neutro' : null);
+        oculta($a('v2-cuerpo'), true);
+        V.d = null; reloj();
+        return;
+      }
+      msgV2('v2-error', '');
+      V.d = r.data;
+      V.con = rc.error || !Array.isArray(rc.data) ? null : rc.data;
+      V.conDemo = esDemo(rc.error);
+      pintaV2(false, rc.error ? textoLectura(rc.error, 'con') : (Array.isArray(rc.data) ? '' : T(NO_MIRADO)));
+    });
+  }
+  /* Sondeo ligero: solo agente_panel_autonomo y sus conexiones, cada minuto, con la pestaña a la vista y sin una escritura en vuelo. Los formularios
+     no se repintan (son marcado fijo): lo que alguien está tecleando no se pierde. */
+  function programaSondeo() {
+    clearTimeout(V.sondeo);
+    V.sondeo = setTimeout(function () {
+      /* también tras una lectura fallida (V.d null): el siguiente minuto vuelve a mirar, no se queda en «no he podido mirar» para siempre */
+      if (V.sinSondeo) return;
+      if (document.hidden || V.ocupado || !E.estado || !E.estado.encendido) { programaSondeo(); return; }
+      leeV2().then(programaSondeo, programaSondeo);
+    }, 60000);
+  }
+
+  /* ── escribir desde el panel V2 ── */
+  function ocupaV2(el) {
+    if (V.ocupado || !C.ocupa(null)) return false;
+    V.ocupado = true; el.disabled = true; el.setAttribute('aria-busy', 'true');
+    return true;
+  }
+  function sueltaV2(el) { V.ocupado = false; C.libera(null); el.disabled = false; el.removeAttribute('aria-busy'); }
+  /* zona: '' (arriba del panel), 'alt' (Ajustes del Altavoz) o 'llave'. motivo(k): la frase de un {ok:false, motivo:k}. Lo hecho se comprueba con la
+     respuesta de la base y se repinta todo con carga(): la pantalla no da nada por hecho. */
+  function escribeV2(el, promesa, okTexto, motivo, zona, alAcabar) {
+    var dlg = zona && typeof zona === 'object' ? zona : null;   // un diálogo: el error va dentro de él
+    var ok = zona === 'alt' ? 'v2-alt-ok' : (zona === 'llave' ? 'v2-llave-aviso' : 'v2-ok'), mal = dlg ? 'dlg' : (zona === 'alt' ? 'v2-alt-error' : (zona === 'llave' ? 'v2-llave-aviso' : 'v2-error'));
+    var dice = function (n, m) { if (n === 'dlg') dlg.error(m || ''); else if (n === 'v2-llave-aviso') $a(n).textContent = m || ''; else msgV2(n, m); };
+    dice(ok, ''); dice(mal, '');
+    return promesa.then(function (r) {
+      sueltaV2(el);
+      if (r.error) { dice(mal, textoError(r.error, false)); return false; }
+      if (!esObj(r.data)) { dice(mal, T('La base no confirmó el cambio: recarga antes de repetir.')); return false; }
+      if (r.data.ok === false) {
+        var k = String(r.data.motivo || ''), f = motivo ? motivo(k) : null;
+        dice(mal, f ? T(f) : Tf('La base no lo ha aceptado ({x}).', { x: k || '—' }));
+        return false;
+      }
+      if (alAcabar) alAcabar();
+      /* agente_ajuste_altavoz dice `cambia`: false = ya estaba así (no se ha tocado nada) */
+      var texto = r.data.cambia === false ? T('Ya estaba así: no había nada que cambiar.') : okTexto;
+      return carga().then(function () { dice(ok, texto); return true; });
+    });
+  }
+  function palanca(el, ambito, clave, parado) {
+    if (!ocupaV2(el)) return;
+    escribeV2(el, llama('agente_palanca', { p_ambito: ambito, p_clave: clave, p_parado: parado, p_motivo: null }),
+      parado ? T(ambito === 'area' ? 'Área parada.' : 'Agente parado.') : T('En marcha otra vez.'), function (k) { return PALANCA_MOTIVO[k]; });
+  }
+  function todos(el) {
+    if (!V.d || !ocupaV2(el)) return;
+    if (V.d.pausa) escribeV2(el, llama('agente_reanuda', {}), T('En marcha otra vez.'));
+    else escribeV2(el, llama('agente_para', {}), T('Todos los agentes parados.'));
+  }
+  function ajusteAltavoz(el, tipo, dato, quita, alAcabar) {
+    if (!ocupaV2(el)) return;
+    escribeV2(el, llama('agente_ajuste_altavoz', { p_tipo: tipo, p_dato: dato, p_quita: quita }), T(quita ? 'Quitado.' : 'Guardado.'),
+      function (k) { return ALT_MOTIVO[tipo + '_' + k] || ALT_MOTIVO[k]; }, 'alt', alAcabar);
+  }
+  function quitaAltavoz(el) {
+    var tipo = el.getAttribute('data-tipo'), clave = el.getAttribute('data-clave') || '';
+    var dato = tipo === 'linea' ? { linea: clave } : (tipo === 'dominio' ? { dominio: clave } : { url: clave });
+    if (tipo === 'linea' || tipo === 'dominio' || tipo === 'imagen') ajusteAltavoz(el, tipo, dato, true);
+  }
+  function desconecta(el) {
+    var prov = el.getAttribute('data-clave');
+    C.dialogo(T('Desconectar la IA'), [h('p', { class: 'ag-sub', text: T('Los agentes dejan de llamar a la IA en el acto. Para volver, el dueño pega la llave otra vez.') })], [
+      { texto: T('Confirmar'), accion: 'ag-modal-confirmar', peligro: true, alclic: function (bt, dlg) {
+        if (!ocupaV2(bt)) return;
+        escribeV2(bt, llama('agente_conexion_desconecta', { p_proveedor: prov }), T('Desconectada.'), function (k) { return CON_MOTIVO[k]; }, dlg).then(function (hecho) { if (hecho) dlg.cierra(); });
+      } },
+      { texto: T('Cancelar'), accion: 'ag-modal-cerrar', cierra: true }
+    ]);
+  }
+  function alEnviar(ev) {
+    var f = ev.target, k = f && f.getAttribute ? f.getAttribute('data-ag') : null;
+    if (!k || k.indexOf('v2-form-') !== 0) return;
+    ev.preventDefault();
+    var btn = f.querySelector('button[type="submit"]');
+    if (!btn || !V.d || !soyDueno()) return;
+    if (k === 'v2-form-llave') {
+      var llave = F('v2-llave').value.trim();
+      if (!llave) { $a('v2-llave-aviso').textContent = T('Pega la llave antes de guardar.'); return; }
+      if (!ocupaV2(btn)) return;
+      var envio = llama('agente_conexion_guarda', { p_proveedor: 'claude', p_secreto: llave, p_ajustes: {} });
+      F('v2-llave').value = '';   // la llave no se queda en la página: ni en el campo ni en una variable que viva más que este envío
+      llave = '';
+      escribeV2(btn, envio, T('Llave guardada: queda «sin comprobar» hasta que el equipo la pruebe.'), function (m) { return CON_MOTIVO[m]; }, 'llave');
+    } else if (k === 'v2-form-linea') {
+      var li = F('v2-linea').value.trim(), no = F('v2-linea-nombre').value.trim();
+      if (!li || !no) { msgV2('v2-alt-error', T('Escribe la clave y el nombre.')); return; }
+      ajusteAltavoz(btn, 'linea', { linea: li, nombre: no }, false, function () { F('v2-linea').value = ''; F('v2-linea-nombre').value = ''; });
+    } else if (k === 'v2-form-dominio') {
+      var dom = F('v2-dominio').value.trim();
+      if (!dom) { msgV2('v2-alt-error', T('Escribe el dominio.')); return; }
+      ajusteAltavoz(btn, 'dominio', { dominio: dom }, false, function () { F('v2-dominio').value = ''; });
+    } else if (k === 'v2-form-imagen') {
+      var url = F('v2-imagen').value.trim(), lin = F('v2-imagen-linea').value;
+      if (!url || !lin) { msgV2('v2-alt-error', T('Escribe la dirección y elige la línea.')); return; }
+      ajusteAltavoz(btn, 'imagen', { url: url, linea: lin }, false, function () { F('v2-imagen').value = ''; });
+    }
+  }
+  function alClicV2(el, a) {
+    if (a === 'ag-v2-todos') todos(el);
+    else if (a === 'ag-v2-agente') { var c = el.getAttribute('data-clave'); if (V.d && c !== V.sel) { V.sel = c; pintaEquipo(); pintaEscena(true); } }
+    else if (a === 'ag-v2-modo') {
+      var parar = el.getAttribute('data-modo') === 'parado', m = V.d ? miembro(V.sel) : null;
+      if (m && V.sel !== 'tesorero' && (m.parado === true) !== parar) palanca(el, 'agente', V.sel, parar);
+    } else if (a === 'ag-v2-area') {
+      var ar = V.d ? areaDe(el.getAttribute('data-clave')) : null;
+      if (ar) palanca(el, 'area', ar.id, ar.parado !== true);
+    } else if (a === 'ag-v2-reanuda') {
+      var amb = el.getAttribute('data-ambito');
+      if (amb === 'pausa') { if (ocupaV2(el)) escribeV2(el, llama('agente_reanuda', {}), T('En marcha otra vez.')); }
+      else if (amb === 'agente' || amb === 'area') palanca(el, amb, el.getAttribute('data-clave'), false);
+    } else if (a === 'ag-v2-desconecta') desconecta(el);
+    else if (a === 'ag-v2-quita') quitaAltavoz(el);
+  }
+  document.addEventListener('visibilitychange', function () {
+    var caja = $a('v2');
+    caja.classList.toggle('ag2-quieto', document.hidden);
+    if (document.hidden) {
+      clearInterval(V.tecleo);
+      var t = $a('v2-dice'); t.querySelector('.ag2-ya').textContent = $a('v2-dice-sr').textContent; t.querySelector('.ag2-falta').textContent = '';
+    }
+    if (V.orbe) V.orbe.vista();
+  });
+
   /* ── cargar ── */
   function carga() {
     var est = $a('carga');
     est.className = 'axw-vacio'; est.setAttribute('data-tipo', 'cargando'); est.textContent = T('Cargando…'); oculta(est, false);
     return llama('agente_panel_estado').then(function (r) {
-      if (r.error) { est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = textoError(r.error, true); return; }
+      /* sin estado no se sabe si el módulo sigue encendido: el panel V2 no se queda enseñando datos de antes */
+      if (r.error) { est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = textoError(r.error, true); oculta($a('v2'), true); return; }
       /* null: solo si agente_panel_estado quedara registrada en el módulo `agente` (apagados_instancia.js contesta null a las funciones de un módulo apagado).
          NO es lo esperado: esa función y agente_modulo_cambia van al núcleo (erp/modulos.py, con su prueba), si no Encender nunca llegaría a la base.
          Defensa: se pinta «apagado» y una escritura sin respuesta se dice «no confirmada». */
       var d = r.data == null ? { encendido: false, soy_dueno: null, puedo_decidir: false } : r.data;
-      if (!estadoOk(d)) { est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'); return; }
+      if (!estadoOk(d)) { est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.'); oculta($a('v2'), true); return; }
       E.estado = d;
       oculta(est, true); est.setAttribute('data-tipo', 'listo');
       pintaEstado(d);
       avisoPendientes(d);
       ['bloque-hoy', 'bloque-acciones', 'bloque-propuestas', 'bloque-ajustes', 'bloque-limites', 'bloque-contexto', 'bloque-historial', 'bloque-mas'].forEach(function (b) { oculta($a(b), true); });
-      if (!d.encendido) return;
+      /* el panel V2 solo con el módulo encendido (sus RPC exigen el módulo: apagado, la base las rechaza) */
+      if (!d.encendido) { oculta($a('v2'), true); V.d = null; reloj(); return; }
+      var v2 = leeV2();
       pintaAjustes(d);
       pintaLimites(d);
       pintaContexto(d);
       pintaHistorial(d);
-      return llama('agente_notas_datos', { p_dia: null }).then(function (rn) {
+      return Promise.all([v2, llama('agente_notas_datos', { p_dia: null }).then(function (rn) {
         msg('error-hoy', '');
         if (rn.error || !notasOk(rn.data)) {
           var t = rn.error ? textoError(rn.error, true) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.');
@@ -1008,7 +2442,7 @@
         pintaHoy(rn.data);
         pintaAcciones(rn.data);
         pintaPropuestas(rn.data);
-      });
+      })]);
     });
   }
 
@@ -1147,6 +2581,7 @@
     if (!el || !raiz.contains(el)) return;
     var a = el.getAttribute('data-accion');
     if (a.indexOf('ag-modal') === 0) return;
+    if (a.indexOf('ag-v2-') === 0) { alClicV2(el, a); return; }
     var id = el.hasAttribute('data-id') ? Number(el.getAttribute('data-id')) : null;
     if (a === 'ag-parar') hazYRecarga(el, 'agente_para', {}, T('Parado: el AaaS no hará nada hasta que se reanude.'));
     else if (a === 'ag-reanudar') hazYRecarga(el, 'agente_reanuda', {}, T('Reanudado.'));
@@ -1182,7 +2617,8 @@
     };
     raiz.addEventListener('input', alEscribir);
     raiz.addEventListener('change', alEscribir);
-    carga();
+    raiz.addEventListener('submit', alEnviar);
+    carga().then(programaSondeo, programaSondeo);
   }
   function arranca() {
     if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { var est = $a('carga'); est.className = 'axw-error'; est.setAttribute('data-tipo', 'error'); est.textContent = T('Sin sesión: recarga la página o vuelve a entrar.'); return; }

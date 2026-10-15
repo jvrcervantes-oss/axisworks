@@ -139,11 +139,20 @@
       caja.appendChild(h('div', { class: 'flex flex-col gap-1.5' }, [h('label', { for: 'pm-motivo-' + p.clave, class: 'font-label-md text-label-md text-on-surface', text: U('motivo') }), motivo,
         h('span', { class: 'font-body-sm text-body-sm text-outline', text: U('motivo_ayuda') })]));
     }
+    // S1c: un paso en partes (ctl.partes, AXW_SETUP.partes) va de parte en parte con «Atrás» y «Siguiente»; en la última, «Guardar»
+    var gBtn = h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-guardar', 'data-pm-paso': p.clave, class: BTN1, text: U('guardar') });
+    var aBtn = h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-atras', 'data-pm-paso': p.clave, class: BTN2, text: U('atras') });
+    aBtn.hidden = true;
+    caja.addEventListener('axw-parte', function (ev) {
+      var d = ev.detail || {};
+      gBtn.textContent = d.k < d.m ? U('siguiente') : U('guardar');
+      aBtn.hidden = !(d.k > 1);
+    });
     var v = S.ventana({
       padre: li, marca: ['data-pm-ventana', p.clave], cuerpo: caja, cls2: BTN2,
       etiqueta: S.nombreModulo(p.modulo), titulo: S.texto('paso', p.clave, 0),
       ayuda: p.hecho ? S.texto('paso', p.clave, 1) : (p.falta ? S.textoFalta(p.falta) : S.texto('paso', p.clave, 1)),
-      botones: [h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-guardar', 'data-pm-paso': p.clave, class: BTN1, text: U('guardar') })],
+      botones: [aBtn, gBtn],
       ocupado: function () { return ocupado; },
       alCerrar: function () { if (ctl && typeof ctl.descarta === 'function') ctl.descarta(); },
       vuelta: function () { return document.querySelector('[data-pm-cambiar="' + p.clave + '"]'); }
@@ -157,8 +166,11 @@
     var p = li._paso, caja = li.querySelector('[data-pm-editor]'), dlg = li.querySelector('dialog[data-pm-ventana]');
     if (!caja || !dlg || !caja._v) return;
     var botones = dlg.querySelectorAll('button');
-    var est = caja._estado, r = caja._ctl.valores();
+    var est = caja._estado;
     function di(t, mal) { est.className = 'font-body-sm text-body-sm ' + (mal ? 'text-error' : 'text-outline'); est.textContent = t; }
+    var pt = caja._ctl && caja._ctl.partes;
+    if (pt && pt.k < pt.m) { var ra = pt.avanza(); di(ra.ok ? '' : ra.error, !ra.ok); return; }   // S1c: antes de la última parte, «Siguiente»
+    var r = caja._ctl.valores();
     if (!r.ok) { di(r.error, true); return; }
     var motivo = caja._motivo ? caja._motivo.value.trim() : '';
     if (caja._motivo && (motivo.match(/\p{L}/gu) || []).length < 3) { di(U('motivo_corto'), true); caja._motivo.focus(); return; }
@@ -206,6 +218,11 @@
       if (a === 'pm-reintentar') { ev.stopPropagation(); carga(); }
       else if (a === 'pm-editar' && li) { ev.stopPropagation(); editor(li); }
       else if (a === 'pm-guardar' && li) { ev.stopPropagation(); guarda(li); }
+      else if (a === 'pm-atras' && li) {
+        ev.stopPropagation();
+        var ce = li.querySelector('[data-pm-editor]'), pa = ce && ce._ctl && ce._ctl.partes;
+        if (pa && !ocupado && pa.retrocede() && ce._estado) ce._estado.textContent = '';
+      }
     });
     if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { errorLectura({ code: '42501' }); return; }
     window.LW_AUTH.then(function (aut) {
