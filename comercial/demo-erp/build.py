@@ -6159,6 +6159,9 @@ def comprueba_pantallas_idiomas(dist, idiomas):
     r = subprocess.run(['node', os.path.join(AQUI, 'pruebas', 'idiomas_pantallas.harness.cjs'), dist], capture_output=True, text=True,
                        encoding='utf-8', env=entorno)
     sal = (r.stdout or '') + (r.stderr or '')
+    if r.returncode == 2:   # «no he podido mirar» (sin navegador, sin paquete…): tampoco es un verde, pero no es «hay español» (16-oct-2026)
+        aborta('idiomas: el arnés NO HA PODIDO MIRAR las pantallas en %s (salida 2): no es un verde; el motivo:\n%s'
+               % ('+'.join(lenguas), sal[-3000:]))
     if r.returncode != 0:
         aborta('idiomas: hay pantallas con texto en español en %s (salida %d del arnés):\n%s' % ('+'.join(lenguas), r.returncode, sal[-3000:]))
     print('idiomas: ' + ' · '.join(l for l in sal.splitlines() if l.strip() and not l.startswith('FALLA'))[-300:])
@@ -6853,6 +6856,11 @@ def rechaza_retiradas(argv):
 
 
 def main():
+    # 16-oct-2026 (owner publicando bbm): en su consola de Windows (cp1252) `aborta()` reventaba con UnicodeEncodeError al imprimir el motivo
+    # («←», tildes) y el build paraba SIN decir por qué. La salida va en utf-8 y lo que la consola no pinte sale como «?», nunca un traceback.
+    for flujo in (sys.stdout, sys.stderr):
+        if hasattr(flujo, 'reconfigure'):
+            flujo.reconfigure(encoding='utf-8', errors='replace')
     rechaza_retiradas(sys.argv)   # antes de vaciar dist/ ni tocar nada
     packs_casan()
     if not os.path.isfile(DOBLE_QA):
