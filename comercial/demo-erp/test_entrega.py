@@ -232,8 +232,11 @@ mira('ninguna clave repetida en EN_ENT' + (' (' + ', '.join(repetidas) + ')' if 
 # Historial, por marcador explícito (agencia-c0, 15-oct-2026, medido en la base de bbm): siembra (vacío, postgres, «migración …», sistema:sql) =
 # «Sistema · Configuración inicial»; @axisworks.studio = «AxisWorks (soporte)», los dos sin su motivo; otro sistema:<rol> = «Sistema» con su motivo;
 # una persona, tal cual (también si firma con un nombre: no se oculta por descarte).
-m_aut = re.search(r'\n  function autorDe\(q\) \{.*?\n  \}', JS, re.S)
-mira('el historial clasifica al autor (autorDe)', bool(m_aut))
+# La regla vive en la capa común (_compartido/pantalla_comun.js, bbm-idioma-total 15-oct): Flota y Entrega la comparten; test_autor_registro.py
+# comprueba que las demás copias (whatsapp_bot, Registro de Ajustes) clasifican igual.
+COMUN = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '_compartido', 'pantalla_comun.js'), encoding='utf-8').read()
+m_aut = re.search(r'\n  function autorDe\(q\) \{.*?\n  \}', COMUN, re.S)
+mira('el historial clasifica al autor (C.autorDe de la capa común)', bool(m_aut) and 'C.autorDe(x && x.quien)' in CODIGO)
 if m_aut:
     casos_aut = {'admin@bbm.com': 'persona', 'a"<svg onload="x">@x.com': 'persona', '0b0f6a9e-1c2d-4e5f-8a9b-0c1d2e3f4a5b': 'persona', 'Dion': 'persona',
                  'migración 20261008138500': 'inicial', 'postgres': 'inicial', 'Postgres': 'inicial', 'sistema:sql': 'inicial', '': 'inicial',
@@ -244,7 +247,7 @@ if m_aut:
     quiere = list(casos_aut.values()) + ['inicial']
     mira('autorDe: persona / inicial / soporte / sistema por marcador explícito' + ('' if obt == quiere else ' (sale %r)' % obt), obt == quiere)
 mira('la fila pinta «Sistema» o «AxisWorks (soporte)» en vez del autor, y el motivo solo de una persona o de un sistema:<rol>',
-     "C.celda(QUIEN_DE[au] ? T(QUIEN_DE[au]) : x && x.quien)" in CODIGO and "C.celda(au === 'inicial' ? T('Configuración inicial') : au === 'soporte' ? '—' : x && x.motivo)" in CODIGO)
+     "C.celda(C.quienDe(x && x.quien))" in CODIGO and "C.celda(C.motivoDe(x && x.quien, x && x.motivo))" in CODIGO)
 
 if fallos:
     print('FALLOS (%d de %d):\n  ' % (len(fallos), casos) + '\n  '.join(fallos))

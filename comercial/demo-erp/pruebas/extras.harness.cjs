@@ -90,6 +90,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   const campo = n => '[data-campo="' + n + '"]';
   const dlgError = p => txt(p, '[data-axw="dialogo"] .axw-error');
   const confirmar = p => p.click('[data-accion="ex-modal-confirmar"]');
+  const abrePliegue = p => p.evaluate(() => document.querySelectorAll('[data-axw="dialogo"] [data-axw="mas-datos"]').forEach(d => { d.open = true; }));
   const cerrado = p => p.waitForFunction(() => !document.querySelector('[data-axw="dialogo"]'), null, { timeout: 5000 });
   const desborde = p => p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
   const limpio = async p => (await p.evaluate(() => window.__errores.length)) === 0 && (await p.evaluate(() => window.__xss)) === undefined && (await p.$$('[data-ex="raiz"] img, [data-ex="raiz"] svg')).length === 0;
@@ -146,7 +147,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('precio ambiguo (25.000): pide escribirlo sin separador, no adivina', (await dlgError(p)).includes('ambiguo') && guardas(base).length === 0);
     await p.fill(campo('precio'), '25000,5'); await confirmar(p);
     ok('decimales que la moneda no admite (IDR): lo dice antes de enviar', (await dlgError(p)).includes('decimales') && guardas(base).length === 0);
-    await p.fill(campo('precio'), '25000'); await p.selectOption(campo('impuesto_id'), 'i1'); await confirmar(p); await cerrado(p);
+    await p.fill(campo('precio'), '25000'); await abrePliegue(p); await p.selectOption(campo('impuesto_id'), 'i1'); await confirmar(p); await cerrado(p);
     const g = guardas(base);
     ok('crea con producto_guarda(p_id null) y clase «servicio» (nunca alquiler), sin campos vacíos', g.length === 1 && g[0][2].p_id === null
        && J(g[0][2].p_datos) === J({ nombre: 'Impermeable', unidad: 'ud', precio: 25000, moneda: 'IDR', impuesto_id: 'i1', activo: true, clase: 'servicio' }), J(g));
@@ -214,6 +215,27 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
       await ctx.close();
     }
   }
+  // S4 (bbm-comodidad, 15-oct-2026): como mucho 3 campos a la vista en el alta y al editar, a 1440 y 390; lo plegado no se ve y no cuenta
+  for (const ancho of [1440, 390]) {
+    const { p, ctx } = await abre({ ancho });
+    const cuenta = () => p.evaluate(() => [...document.querySelectorAll('[data-axw="dialogo"] input, [data-axw="dialogo"] select, [data-axw="dialogo"] textarea')]
+      .filter(e => e.checkVisibility({ contentVisibilityAuto: true, visibilityProperty: true })).map(e => e.getAttribute('data-campo')));
+    await p.click('[data-accion="ex-nuevo"]'); await p.waitForSelector('[data-axw="dialogo"] ' + campo('nombre'));
+    const alta = await cuenta();
+    ok(ancho + ' px · S4 extra nuevo: a la vista nombre y precio, con la moneda y la unidad en la etiqueta y en el resumen del plegado', J(alta) === J(['nombre', 'precio'])
+       && (await p.textContent('label[for="ex-f-precio"]')).includes('(IDR / ud)') && (await p.textContent('[data-axw="dialogo"] [data-axw="pliegue-resumen"]')).includes('ud · IDR'), J(alta));
+    await p.fill(campo('nombre'), 'Casco'); await p.fill(campo('precio'), '20000'); await abrePliegue(p); await p.fill(campo('unidad'), '');
+    await p.evaluate(() => { document.querySelector('[data-axw="dialogo"] [data-axw="mas-datos"]').open = false; });
+    await confirmar(p);
+    ok(ancho + ' px · S4 la unidad vacía (plegada) abre el plegado con su error', (await dlgError(p)).includes('Falta la unidad') && await p.isVisible(campo('unidad')));
+    await p.click('[data-accion="ex-modal-cerrar"]'); await cerrado(p);
+    await p.click('[data-accion="ex-editar"][data-producto-id="s1"]'); await p.waitForSelector('[data-axw="dialogo"] ' + campo('nombre'));
+    const edita = await cuenta();
+    ok(ancho + ' px · S4 editar extra: nombre, precio y «activo» (3)', edita.length <= 3 && edita.includes('activo'), J(edita));
+    console.log('  campos a la vista ' + ancho + ' px: alta ' + J(alta) + ' · editar ' + J(edita));
+    await ctx.close();
+  }
+  console.log('  toques S4 extra nuevo: nombre + precio + «Crear extra» (antes 7 campos a la vista, ahora 2; la unidad y la moneda ya venían puestas)');
   await nav.close();
   console.log(fallos ? 'FALLOS: ' + fallos : 'TODO EN VERDE');
   process.exit(fallos ? 1 : 0);

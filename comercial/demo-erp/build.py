@@ -2319,7 +2319,10 @@ def capa_modulos_hub(interruptores):
     if len(cargas) != 1:
         aborta('hub: index.html no tiene UNA carga de /contracts/assets/instancia.js (la capa de módulos va justo antes)')
     os.makedirs(os.path.dirname(os.path.join(DIST, HUB_CAPA)), exist_ok=True)
-    open(os.path.join(DIST, HUB_CAPA), 'w', encoding='utf-8', newline='').write(interruptores)
+    # Con la marca de instancia, como guard.js en el resto de pantallas: sin ella herramientas.js no añade las herramientas de la instancia
+    # (Productos, Flota, Taller…) y la página «sin permiso» de /productos/ decía «You do not have access to “this tool”» (bbm-idioma-total,
+    # 15-oct-2026, barrido en vivo con la cuenta de pruebas). Va antes de instancia.js y de herramientas.js.
+    open(os.path.join(DIST, HUB_CAPA), 'w', encoding='utf-8', newline='').write('window.AXW_NUCLEO_OPERACION = true;\n' + interruptores)
     t = t.replace(cargas[0], '<script src="/%s"></script>%s' % (HUB_CAPA, cargas[0]))
     open(hub, 'w', encoding='utf-8', newline='').write(t)
 
@@ -2394,9 +2397,25 @@ MENU_I18N = {
     'Ej. Reserva R-0012 — Honda PCX': {'en': 'e.g. Booking R-0012 — Honda PCX', 'id': 'Contoh: Booking R-0012 — Honda PCX'},
     'Ej. Reserva R-0012': {'en': 'e.g. Booking R-0012', 'id': 'Contoh: Booking R-0012'},
     'Buscar por número, cliente o reserva…': {'en': 'Search by number, client or booking…', 'id': 'Cari nomor, pelanggan, atau booking…'},
-    'Lo que el sistema aplica solo y no hace falta tocar en el código: el nombre y la zona horaria de la instalación, el correo y el modo mantenimiento. Cambiarlos aquí vale desde ese momento, y cada cambio queda en el registro.': {
-        'en': 'What the system applies by itself, with no need to touch the code: the installation name and time zone, email and maintenance mode. Changes made here apply from that moment, and every change is logged.',
-        'id': 'Yang diterapkan sistem secara otomatis, tanpa perlu mengubah kode: nama dan zona waktu instalasi, email, dan mode pemeliharaan. Perubahan di sini langsung berlaku, dan setiap perubahan tercatat.'},
+    # M7 (bbm-comodidad, 15-oct-2026): Ajustes sin jerga (ver TEXTOS_INSTANCIA y TEXTOS_ALQUILER)
+    'Aquí se cambian el nombre y la zona horaria del negocio, el correo y el modo mantenimiento. Cada cambio vale desde ese momento y queda en el registro.': {
+        'en': 'Here you change the business name and time zone, email and maintenance mode. Each change applies from that moment and is logged.',
+        'id': 'Di sini Anda mengubah nama dan zona waktu bisnis, email, dan mode pemeliharaan. Setiap perubahan langsung berlaku dan tercatat.'},
+    '. Cada ajuste tiene su formato y su rango: fuera de él no se guarda. Pausar los envíos y cerrar la intranet, en cambio, los puede hacer cualquier admin.': {
+        'en': '. Each setting has its own format and range: outside it, it is not saved. Pausing sending and closing the intranet, on the other hand, any admin can do.',
+        'id': '. Setiap pengaturan punya format dan rentangnya sendiri: di luar itu tidak disimpan. Sebaliknya, menjeda pengiriman dan menutup intranet bisa dilakukan admin mana pun.'},
+    'El ERP ya lo usa por dentro, pero aún no todas las pantallas ni los correos lo enseñan.': {
+        'en': 'The ERP already uses it internally, but not every screen or email shows it yet.',
+        'id': 'ERP sudah menggunakannya secara internal, tetapi belum semua layar dan email menampilkannya.'},
+    'Se guarda y queda en el registro, pero todavía no cambia nada en el ERP.': {
+        'en': 'It is saved and logged, but it does not change anything in the ERP yet.',
+        'id': 'Tersimpan dan tercatat, tetapi belum mengubah apa pun di ERP.'},
+    'En pausa no sale ningún correo: ni invitaciones, ni avisos, ni comunicados. Lo que quede en cola espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.': {
+        'en': 'While paused no email goes out: no invitations, no alerts, no announcements. Whatever is queued waits and goes out by itself on resume. Pause and resume: any admin.',
+        'id': 'Saat dijeda, tidak ada email yang terkirim: tidak ada undangan, peringatan, maupun pengumuman. Yang masuk antrean akan menunggu dan terkirim otomatis saat dilanjutkan. Menjeda dan melanjutkan: admin mana pun.'},
+    'Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. No cambia lo que cada uno puede hacer. Cerrar y reabrir: cualquier admin.': {
+        'en': 'When closed, only admins get in: the rest of the team sees a maintenance screen with the reason, and anyone inside gets a warning and is signed out after 3 minutes. It does not change what each person can do. Closing and reopening: any admin.',
+        'id': 'Saat ditutup, hanya admin yang bisa masuk: anggota tim lainnya melihat layar pemeliharaan beserta alasannya, dan yang sedang di dalam menerima peringatan lalu dikeluarkan setelah 3 menit. Tidak mengubah apa yang boleh dilakukan setiap orang. Menutup dan membuka kembali: admin mana pun.'},
     'Impuestos': {'en': 'Taxes', 'id': 'Pajak'},
     'Plazos': {'en': 'Time limits', 'id': 'Batas waktu'},
     # rótulos FIJOS que build.py pone en el HTML de Ajustes (pestañas y cabeceras): su traducción tiene que estar ANTES de que la página traduzca el
@@ -2479,12 +2498,6 @@ MENU_I18N = {
     'Preselección según el rol elegido arriba — editable. Solo aparecen las herramientas que tienes tú.': {
         'en': 'Preselected from the role chosen above — editable. Only the tools you have yourself appear.',
         'id': 'Dipilih otomatis sesuai peran di atas — bisa diubah. Hanya alat yang Anda miliki yang muncul.'},
-    'En pausa no sale ningún email: ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.': {
-        'en': 'While paused no email goes out: no invitations, no alerts, no announcements. The server blocks it, not this screen. Whatever is queued in Communication waits and goes out by itself on resume. Pause and resume: any admin.',
-        'id': 'Saat dijeda, tidak ada email yang terkirim: tidak ada undangan, peringatan, maupun pengumuman. Server yang memblokirnya, bukan layar ini. Yang masuk antrean di Komunikasi akan menunggu dan terkirim otomatis saat dilanjutkan. Menjeda dan melanjutkan: admin mana pun.'},
-    'Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. Cerrar y reabrir: cualquier admin.': {
-        'en': 'When closed, only admins get in: the rest of the team sees a maintenance screen with the reason, and anyone inside gets a warning and is signed out after 3 minutes. It is a screen gate: it does not change database permissions. Closing and reopening: any admin.',
-        'id': 'Saat ditutup, hanya admin yang bisa masuk: anggota tim lain melihat layar pemeliharaan beserta alasannya, dan siapa pun yang sedang berada di dalam menerima peringatan lalu dikeluarkan setelah 3 menit. Ini hanya pintu di layar: izin basis data tidak berubah. Menutup dan membuka kembali: admin mana pun.'},
 }
 
 
@@ -2495,6 +2508,8 @@ MENU_I18N = {
 # perusahaan, kuitansi, invoice). Traducción automática SIN REVISAR por un hablante nativo (departamentos/idiomas: ISO 18587); la valida el
 # equipo de Dion como el resto del glosario. Lo que ya tenía inglés en Lawang solo recibe aquí su indonesio (una clave EN existente no se pisa).
 MENU_I18N.update({
+    # el número fiscal indonesio se llama igual en todos los idiomas (lo cazó el modo clics del arnés en Gastos, bbm-idioma-total, 15-oct)
+    'NPWP': {'en': 'NPWP', 'id': 'NPWP'},
     # historiales: lo que firma el sistema o el estudio (verificador de bbm, 15-oct)
     'Sistema': {'en': 'System', 'id': 'Sistem'},
     'Configuración inicial': {'en': 'Initial setup', 'id': 'Konfigurasi awal'},
@@ -2628,6 +2643,13 @@ PISA_I18N = {
     'Sin la casilla «Gastos y proveedores» el gráfico enseña solo lo que entra.': {
         'en': 'Without the «Expenses and suppliers» permission the chart shows only inflows.',
         'id': 'Tanpa izin «Pengeluaran dan pemasok», grafik hanya menampilkan uang masuk.'},
+    # «Seguimiento» es el título de la sección del menú (MENU_V4, nav-montaje, herramientas.js, la barra estática de cada página): en Lawang es
+    # «Pipeline» porque ahí cuelgan los leads; en una instancia cuelgan reservas, taller, entrega y flota (M8 de la auditoría del setup de bbm,
+    # 15-oct-2026; término revisado por Idiomas). «Seguimientos enviados» de Leads es otra clave y no cambia. Las pantallas del maestro con
+    # diccionario propio (flota, portada_reservas, reservas_producto) e i18n_id.json dicen lo mismo (test_rotulos_editores.py).
+    'Seguimiento': {'en': 'Operations', 'id': 'Operasional'},
+    # lleva a la pantalla que en inglés se llama «Deals»: con «Operations» en el menú, el inglés de Lawang mandaría a otra sección (Idiomas, 15-oct)
+    'Ver en Operaciones': {'en': 'See in Deals', 'id': 'Lihat di Transaksi'},
 }
 
 # Frases de Lawang montadas con un dato (traduce_instancia.js): regex sobre el texto entero → molde por idioma; {n} = grupo n, traducido si es una
@@ -2638,6 +2660,8 @@ PATRONES_INSTANCIA = [
     ['^(\\d+) dadas de baja$', {'en': '{1} deactivated', 'id': '{1} dinonaktifkan'}],
     ['^de (\\d+) tipos en el catálogo · (\\d+) archivados$', {'en': 'of {1} types in the catalogue · {2} archived', 'id': 'dari {1} jenis di katalog · {2} diarsipkan'}],
     ['^Comunicados: (.+)$', {'en': 'Announcements: {1}', 'id': 'Pengumuman: {1}'}],
+    # el formulario de Lawang pinta un campo obligatorio como «<rótulo> *» en el mismo nodo de texto (bbm-idioma-total, 15-oct)
+    ['^(.+) \\*$', {'en': '{1} *', 'id': '{1} *'}],
 ]
 
 
@@ -2659,14 +2683,44 @@ def traduce_instancia_js():
     open(ruta, 'w', encoding='utf-8', newline='').write(t.rstrip() + '\n' + pisa + js.rstrip() + '\n')
 
 
+def i18n_editores():
+    """Los rótulos de las ventanas de edición en en/id: {texto español: {en, id}} de i18n_editores.json. PARA si una entrada viene vacía (saldría
+    en blanco) o el fichero no se lee: es la fuente que comprueba pruebas/rotulos_editores.cjs sobre el paquete."""
+    f = os.path.join(AQUI, 'i18n_editores.json')
+    try:
+        textos = json.load(open(f, encoding='utf-8'))['textos']
+    except (OSError, ValueError, KeyError) as e:
+        aborta('i18n_editores.json no se puede leer (%s)' % e)
+    malos = [k for k, v in textos.items() if not isinstance(v, dict) or not str(v.get('en') or '').strip() or not str(v.get('id') or '').strip()]
+    if malos:
+        aborta('i18n_editores.json: entrada sin en o sin id: ' + ' | '.join(malos[:5]))
+    return textos
+
+
+def comprueba_rotulos_editores(dist, idiomas):
+    """Sobre el paquete construido: cada rótulo de una ventana de edición (label, ayuda, placeholder, atajos y opciones del formulario de Lawang)
+    tiene su traducción en los idiomas de la instancia que no son el español. No abre navegador: lo corre también el gate de push."""
+    if not [x for x in (idiomas or []) if x != 'es']:
+        return
+    r = subprocess.run(['node', os.path.join(AQUI, 'pruebas', 'rotulos_editores.cjs'), dist], capture_output=True, text=True, encoding='utf-8')
+    if r.returncode != 0:
+        aborta('idiomas: rótulos de editor sin traducir (salida %d de pruebas/rotulos_editores.cjs; añádelos a i18n_editores.json):\n%s'
+               % (r.returncode, (r.stdout or r.stderr or '')[-3000:]))
+    print('idiomas: ' + ' · '.join((r.stdout or '').strip().splitlines()[-2:]))
+
+
 def menu_i18n():
     """Añade MENU_I18N a LW_EN y LW_ID al final de i18n.js de la copia (toda instancia; sin indonesio, LW_ID no existe y se salta)."""
     ruta = os.path.join(DIST, 'contracts', 'assets', 'i18n.js')
     t = open(ruta, encoding='utf-8').read()
     if 'window.LW_EN = EN;' not in t:
         aborta('menu_i18n: i18n.js de Lawang ya no expone window.LW_EN (los rótulos del menú no se podrían traducir)')
+    # Y los rótulos de las ventanas de edición (i18n_editores.json, de Idiomas; bbm-idioma-total 15-oct-2026: el verificador vio «Nuevo gasto» en
+    # inglés en la vista indonesia y «Nueva cuenta de cobro» en español). MENU_I18N manda si los dos tienen la misma clave; ninguno pisa lo de Lawang.
+    d = dict(i18n_editores())
+    d.update(MENU_I18N)
     bloque = ('(function(){var D=%s,E=window.LW_EN,I=window.LW_ID;for(var k in D){if(E&&!Object.prototype.hasOwnProperty.call(E,k))E[k]=D[k].en;'
-              'if(I&&!Object.prototype.hasOwnProperty.call(I,k))I[k]=D[k].id;}})();\n') % json.dumps(MENU_I18N, ensure_ascii=False, sort_keys=True)
+              'if(I&&!Object.prototype.hasOwnProperty.call(I,k))I[k]=D[k].id;}})();\n') % json.dumps(d, ensure_ascii=False, sort_keys=True)
     open(ruta, 'w', encoding='utf-8', newline='').write(t.rstrip() + '\n' + bloque)
 
 
@@ -5063,8 +5117,18 @@ TEXTOS_INSTANCIA = (
     # (fichero en DIST, trozo de Lawang, sustituto, veces que aparece)
     ('intranet/v4/assets/editores.js', "label: 'Proyecto / unidad'", "label: 'Referencia'", 2),
     ('intranet/v4/facturas/index.html', 'placeholder="Buscar por número, cliente, contrato o proyecto…"', 'placeholder="Buscar por número, cliente o reserva…"', 1),
-    ('intranet/v4/ajustes/index.html', 'el correo, el modo mantenimiento y los plazos de las Cartas de Reserva. Cambiarlos aquí',
-     'el correo y el modo mantenimiento. Cambiarlos aquí', 1),
+    # M7 de la auditoría del setup de bbm (15-oct-2026): la cabecera de Ajustes hablaba de «tocar el código» y de «la instalación»; ahora dice
+    # en llano qué se cambia aquí (antes ya se quitaban las Cartas de Reserva, que en una instancia no existen)
+    ('intranet/v4/ajustes/index.html', 'data-lwt>Lo que el sistema aplica solo y no hace falta tocar en el código: el nombre y la zona horaria de la instalación, el correo, el modo mantenimiento y los plazos de las Cartas de Reserva. Cambiarlos aquí vale desde ese momento, y cada cambio queda en el registro.</p>',
+     'data-lwt>Aquí se cambian el nombre y la zona horaria del negocio, el correo y el modo mantenimiento. Cada cambio vale desde ese momento y queda en el registro.</p>', 1),
+    # M7: el aviso del candado decía «lo comprueba la base de datos, no esta pantalla» (cierto, pero jerga para quien usa el ERP)
+    ('intranet/v4/ajustes/index.html', '</b>, y lo comprueba la base de datos, no esta pantalla. Cada ajuste tiene su formato',
+     '</b>. Cada ajuste tiene su formato', 1),
+    # M7: lo que se dice debajo de cada ajuste hablaba de «funciones de la base» y de «la fase siguiente»
+    ('intranet/v4/assets/ajustes.js', "  var TEXTO_LEE = 'Ya lo leen funciones de la base de este ERP. La pantalla, el menú y los demás correos lo leerán en la fase siguiente.';",
+     "  var TEXTO_LEE = 'El ERP ya lo usa por dentro, pero aún no todas las pantallas ni los correos lo enseñan.';", 1),
+    ('intranet/v4/assets/ajustes.js', "  var TEXTO_NO_LEE = 'Se guarda y queda en el registro, pero todavía no lo lee ninguna pantalla ni correo de esta instalación: llegará con la fase siguiente.';",
+     "  var TEXTO_NO_LEE = 'Se guarda y queda en el registro, pero todavía no cambia nada en el ERP.';", 1),
     ('intranet/v4/ajustes/index.html', '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Reservas</span>\n'
      '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Vencimiento, gracia y prórrogas de las Cartas de Reserva</h2>',
      '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Ajustes</span>\n'
@@ -5095,6 +5159,29 @@ TEXTOS_INSTANCIA = (
 # en TEXTOS_INSTANCIA, que solo cambia texto). Mismo formato y misma función (textos_instancia): cada trozo las veces dichas o el build para.
 # Prueba: test_comodidad_instancia.py. Lawang no pasa por aquí.
 COMODIDAD_INSTANCIA = (
+    # verificador del tren 4h (15-oct-2026): a 390, en «Documento nuevo» de factura y de recibí, «Nº de documento» (solo lectura) medía 147 px y su
+    # texto «Lo asigna la base al guardar» 232-245: las filas de dos campos del editor eran 1fr 1fr fijas. Ahora dos columnas solo si caben
+    # (cada una ≥ 200 px); si no, una debajo de otra. A 1440 no cambia nada. Las cinco filas de dos del editor salen de esta función.
+    ('intranet/v4/assets/editores.js', "    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px';\n",
+     "    row.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px';\n", 1),
+    # M6 de la auditoría del setup de bbm (15-oct-2026): Ajustes › «Usuarios y roles» era una pestaña que solo decía «Próximamente: todavía no se
+    # puede cambiar nada desde esta pestaña». Fuera la pestaña, su panel y su nombre de PESTANAS en la instancia (los usuarios siguen en /usuarios/):
+    # sin esto último, un #usuarios viejo dejaba Ajustes en blanco (desdeHash solo cae a «empresa» con un nombre fuera de la lista; revisor de b6bd9a8).
+    # Lawang la conserva.
+    ('intranet/v4/assets/ajustes.js', "'correo', 'usuarios', 'mantenimiento',",   # ancla sin el principio: ajustes_puesta() ya puso 'puesta' delante
+     "'correo', 'mantenimiento',", 1),
+    ('intranet/v4/ajustes/index.html',
+     '<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors" role="tab" type="button" id="lw-tab-usuarios" aria-controls="lw-panel-usuarios" aria-selected="false" tabindex="-1" data-lw-tab="usuarios" data-lwt>Usuarios y roles</button>',
+     '', 1),
+    ('intranet/v4/ajustes/index.html',
+     '<section id="lw-panel-usuarios" role="tabpanel" aria-labelledby="lw-tab-usuarios" data-lw-panel="usuarios" class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">\n'
+     '<div class="px-8 pt-8 pb-4 flex flex-col gap-1 border-b border-outline-variant/40">\n'
+     '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Usuarios y roles</span>\n'
+     '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Quién puede qué</h2>\n'
+     '<p class="font-body-sm text-body-sm text-outline" data-lwt>Los permisos por rol y la política de sesión y contraseña se moverán aquí desde la herramienta Usuarios.</p>\n'
+     '</div>\n'
+     '<p class="px-8 py-6 font-body-md text-body-md text-on-surface-variant" data-lwt>Próximamente: todavía no se puede cambiar nada desde esta pestaña. Los usuarios y sus permisos se siguen gestionando en la herramienta Usuarios.</p>\n'
+     '</section>\n', '', 1),
     # bbm-comodidad F4 (15-oct-2026, medido en bbm real): con UNA sola empresa emisora, «Sociedad que factura/cobra» empezaba en «— elige —» en
     # cada factura y cada recibí (2 clics más, y los impuestos esperaban a elegirla). Con una sola se preselecciona; con dos o más, como siempre.
     # Los impuestos y la previa leen el valor vivo del select al montarse (montaImpuestosDoc.socActual), así que salen ya con esa empresa.
@@ -5107,6 +5194,17 @@ COMODIDAD_INSTANCIA = (
      "          if (f0.fecha_vencimiento) campoSimpleDoc(filaF, { k: 'fecha_vencimiento', label: 'Vencimiento (opcional)', tipo: 'date', valor: f0.fecha_vencimiento });\n\n"
      "          var secEmisor = seccionPlegableDoc(host, 'Emisor', true, { resumen: resumenEmisorDoc });\n"
      "          campoSimpleDoc(secEmisor, { k: 'sociedad', label: 'Sociedad que cobra',", 1),
+    # bbm-comodidad S5 (15-oct-2026, encargo 20261015_erp_formularios_1a3_campos): con UNA sola cuenta de cobro, la factura y el recibí NUEVOS
+    # nacen con ella en «Cuenta donde se cobra/cobró» (un clic menos y el bloque Emisor se pliega «completo»). Solo en uno nuevo: uno ya guardado
+    # sin cuenta, o una copia, siguen como estaban (reguardarlo no le pone una cuenta que no tenía). Con dos o más, «— sin datos bancarios —».
+    ('intranet/v4/assets/editores.js', "{ k: 'cuenta', label: 'Cuenta donde se cobra', tipo: 'select', valor: f0.cuenta || '', opciones: opcionesCuentaDoc() }",
+     "{ k: 'cuenta', label: 'Cuenta donde se cobra', tipo: 'select', valor: f0.cuenta || (!existente && !copia && Object.keys(CUENTAS_BANCARIAS).length === 1 ? Object.keys(CUENTAS_BANCARIAS)[0] : ''), opciones: opcionesCuentaDoc() }", 1),
+    ('intranet/v4/assets/editores.js', "{ k: 'cuenta', label: 'Cuenta donde se cobró', tipo: 'select', valor: f0.cuenta || '', opciones: opcionesCuentaDoc(true) }",
+     "{ k: 'cuenta', label: 'Cuenta donde se cobró', tipo: 'select', valor: f0.cuenta || (!existente && Object.keys(CUENTAS_BANCARIAS).length === 1 ? Object.keys(CUENTAS_BANCARIAS)[0] : ''), opciones: opcionesCuentaDoc(true) }", 1),
+    # bbm-comodidad S5: una cuenta NUEVA nace «De la sociedad (caja propia)» en «¿De quién es esta cuenta?» (antes «Sin marcar»: Finanzas no la
+    # contaba como caja y un gasto no se podía pagar desde ella hasta editarla). Se puede cambiar; editar una cuenta no cambia nada.
+    ('intranet/v4/assets/editores.js', "{ k: 'es_propia', tipo: 'select', valor: '', label: '¿De quién es esta cuenta?',",
+     "{ k: 'es_propia', tipo: 'select', valor: 'si', label: '¿De quién es esta cuenta?',", 1),
     # bbm-comodidad F10 (15-oct-2026, medido en bbm a 1440): el robot del Asistente (fijo abajo a la derecha, 88 px; 72 px en móvil) tapaba lo último
     # de cada página: «Nuevo modelo» en Flota, la columna Acciones en Facturas, «Configurar» en Ajustes. Se reserva su hueco al final de <main> para
     # que se pueda bajar más allá del robot. Solo en pantalla y solo donde se pinta el robot (la regla viaja en la hoja que inyecta mascota.js).
@@ -5136,8 +5234,8 @@ GASTOS_INSTANCIA = (
     ('intranet/v4/assets/ajustes.js', "esc(f.motivo || '—') + '</td></tr>';",
      "esc(axwAutor(f.quien) === 'inicial' ? T('Configuración inicial') : axwAutor(f.quien) === 'soporte' ? '—' : (f.motivo || '—')) + '</td></tr>';", 1),
     ('intranet/v4/assets/ajustes.js', "    window.lwDatos('ajustes_log_datos', { p_limit: 200 }).then(function (r) {\n",
-     "    function axwAutor(q) { q = String(q == null ? '' : q).trim(); if (!q || /^(postgres|sistema:sql)$/i.test(q) || /^migraci[oó]n(\\s|$)/i.test(q)) return 'inicial';"
-     " if (/@axisworks\\.studio$/i.test(q)) return 'soporte'; return /^sistema:/i.test(q) ? 'sistema' : 'persona'; }\n"
+     "    function axwAutor(q) { q = String(q == null ? '' : q).trim(); if (!q || /^(postgres|sistema:sql)$/i.test(q) || /^migraci[oó]n(\\s|$)/i.test(q) || /^erp:/i.test(q)) return 'inicial';"
+     " if (/@axisworks\\.studio(\\s*\\(panel\\))?$/i.test(q)) return 'soporte'; return /^sistema:/i.test(q) ? 'sistema' : 'persona'; }\n"
      "    window.lwDatos('ajustes_log_datos', { p_limit: 200 }).then(function (r) {\n", 1),
     # Ajustes › Impuestos (agencia-c0, 15-oct-2026: «art. 20.Uno LIVA» en bbm, una empresa indonesia): el maestro siembra los impuestos de España e
     # Indonesia en toda instancia (20260926170000; en bbm, 090500 desactiva los de España sin borrarlos). No se pintan los de un país en el que no
@@ -5212,6 +5310,20 @@ GASTOS_INSTANCIA = (
     ('intranet/v4/assets/panel-gastos.js',
      "T('No hay categorías de gasto dadas de alta: sin ellas no se puede registrar un gasto. Pídelo a administración.')",
      "T('Aún no hay categorías de gasto: la primera se crea al pulsar «Nuevo gasto».')", 1),
+    # bbm-comodidad S5 (15-oct-2026, encargo 20261015_erp_formularios_1a3_campos; medido en bbm: una sola sociedad): con UNA sola sociedad
+    # activa, «Sociedad que paga» no se pregunta (ya venía elegida y no había otra); el envío lleva esa única. Un gasto ya guardado de OTRA
+    # sociedad (una desactivada) sigue enseñando el campo: no se cambia su sociedad al reguardarlo. Con dos o más, como siempre. La base sigue
+    # comprobando la sociedad (el backend no se cree el front). Retoca el texto ya parcheado de «Proyecto» (va después en esta tupla).
+    ('intranet/v4/assets/panel-gastos.js',
+     "    var sinProy = !g.proyecto_id && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false;\n    return [\n",
+     "    var sinProy = !g.proyecto_id && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false;\n"
+     "    var socUnica = socs.length === 1 && (!g.sociedad || g.sociedad === socs[0]);\n    return [\n", 1),
+    ('intranet/v4/assets/panel-gastos.js',
+     "    ].filter(function (c) { return !(sinProy && c.k === 'proyecto_id'); });\n",
+     "    ].filter(function (c) { return !(sinProy && c.k === 'proyecto_id') && !(socUnica && c.k === 'sociedad'); });\n", 1),
+    ('intranet/v4/assets/panel-gastos.js',
+     "sociedad: v.sociedad, proyecto_id: v.proyecto_id || null,",
+     "sociedad: v.sociedad || (sociedades().length === 1 ? sociedades()[0] : v.sociedad), proyecto_id: v.proyecto_id || null,", 1),
 )
 # Solo en las instancias de alquileres (portada «reservas»): el ejemplo del campo y la pestaña «Reservas» de Ajustes, que en ellas solo lleva los impuestos
 TEXTOS_ALQUILER = (
@@ -5220,8 +5332,8 @@ TEXTOS_ALQUILER = (
     # bbm-p39 (13-oct, barrido en bbm real): Recibos hablaba de titular, contrato y proyecto; Mantenimiento de contratos para firmar y del portal de compradores
     ('intranet/v4/recibos/index.html', '<th class="py-3.5 px-4 font-semibold" data-lwt>Titular / Pagador</th>', '<th class="py-3.5 px-4 font-semibold" data-lwt>Cliente</th>', 1),
     ('intranet/v4/recibos/index.html', 'placeholder="Buscar por número, cliente, contrato o proyecto…"', 'placeholder="Número, cliente, factura o referencia…"', 1),
-    ('intranet/v4/ajustes/index.html', 'data-lwt>En pausa no sale ningún email: ni contratos para firmar, ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 'data-lwt>En pausa no sale ningún email: ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 1),
-    ('intranet/v4/ajustes/index.html', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. El portal de compradores sigue abierto. Cerrar y reabrir: cualquier admin.</p>', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. Cerrar y reabrir: cualquier admin.</p>', 1),
+    ('intranet/v4/ajustes/index.html', 'data-lwt>En pausa no sale ningún email: ni contratos para firmar, ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 'data-lwt>En pausa no sale ningún correo: ni invitaciones, ni avisos, ni comunicados. Lo que quede en cola espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 1),
+    ('intranet/v4/ajustes/index.html', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. El portal de compradores sigue abierto. Cerrar y reabrir: cualquier admin.</p>', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. No cambia lo que cada uno puede hacer. Cerrar y reabrir: cualquier admin.</p>', 1),
 )
 TEXTOS_OTRA = (   # el resto de instancias: un ejemplo neutro, sin la villa de Lawang
     ('intranet/v4/assets/editores.js', "placeholder: 'Ej. Proyecto — Villa 2BR S2'", "placeholder: 'Ej. Reserva R-0012'", 2),
@@ -5234,6 +5346,10 @@ TEXTOS_OTRA = (   # el resto de instancias: un ejemplo neutro, sin la villa de L
 # fila plantilla del HTML, que plantillaFilas() de datos.js clona con sus atributos: no cambia ningún índice de columna de datos.js. Lawang no pasa por aquí.
 OCULTA_POR_MODULO = (
     # (fichero en DIST, trozo de Lawang, el mismo trozo marcado)
+    # bbm-comodidad S5 (15-oct-2026): «Ajustar hito» de Vencimientos sin el módulo contratos llevaba a «No hay hitos» (un hito nace del
+    # calendario de un contrato, sincroniza_vencimientos): un callejón. Se oculta por el módulo, no por el cliente.
+    ('intranet/v4/vencimientos/index.html', '<button data-accion="registrar-hito" data-lwt-nodos class="',
+     '<button data-accion="registrar-hito" data-axw-sin="contratos" data-lwt-nodos class="'),
     # bbm-p40 (13-oct): la columna «Proyectos» de Usuarios (cuántos proyectos tiene cada persona) sin el módulo proyectos
     ('intranet/v4/usuarios/index.html', '<th class="py-3 px-3" data-lwt>Proyectos</th>',
      '<th class="py-3 px-3" data-axw-sin="proyectos" data-lwt>Proyectos</th>'),
@@ -5533,7 +5649,10 @@ IDIOMAS_PARCHES = (
     ('contracts/assets/topbar.js', "'<span>' + (otro === 'en' ? 'English' : 'Español') + '</span>';",
      "'<span>' + (otro === 'en' ? 'English' : otro === 'id' ? 'Bahasa Indonesia' : 'Español') + '</span>';"),
     ('contracts/assets/topbar.js', "  boton.title = otro === 'en' ? 'Switch interface to English' : 'Cambiar la interfaz a español';",
-     "  boton.title = otro === 'en' ? 'Switch interface to English' : otro === 'id' ? 'Ganti bahasa ke Bahasa Indonesia' : 'Cambiar la interfaz a español';"),
+     # el botón entero (rótulo y title) está en el idioma AL QUE cambia: lleva su lang (W3C i18n; el barrido en vivo de bbm, 15-oct, contaba
+     # «Bahasa Indonesia» como texto sin traducir en la vista inglesa)
+     "  boton.title = otro === 'en' ? 'Switch interface to English' : otro === 'id' ? 'Ganti bahasa ke Bahasa Indonesia' : 'Cambiar la interfaz a español';"
+     " boton.setAttribute('lang', otro);"),
     ('contracts/assets/version.js', "          boton: 'Reload' }\n  };",
      "          boton: 'Reload' }\n  };\n"
      "  TEXTOS.id = { msg: 'Ada versi baru halaman ini. Muat ulang untuk melanjutkan (Ctrl/Cmd+Shift+R).',\n"
@@ -5553,13 +5672,19 @@ IDIOMAS_PARCHES = (
     ('intranet/index.html', "  const sin = new URLSearchParams(location.search).get('sin_permiso');\n",
      "  const sin = new URLSearchParams(location.search).get('sin_permiso');\n"
      "  function axwNombreSinPermiso(x){   // por la clave de la herramienta (herr), nunca la clave en bruto\n"
+     # guard.js manda una LISTA cuando la pantalla vale con cualquiera de varias (/ventas/: «facturas,operaciones,reservas-producto»; modo
+     # sinpermiso del arnés, bbm-idioma-total 15-oct): cada una por su nombre
+     "    if (/^[a-z0-9_-]+(,[a-z0-9_-]+)+$/.test(x)) return x.split(',').map(axwNombreSinPermiso).filter((n, i, a) => a.indexOf(n) === i).join(' / ');\n"
      "    const h = (typeof HERRAMIENTAS !== 'undefined' ? HERRAMIENTAS : []).find(t => [].concat(t.herr).includes(x));   // herr puede ser una lista (Creatividades)\n"
      "    if(h) return lwT(h.nombre);\n"
      "    return /^[a-z0-9_-]+$/.test(x) ? lwT('esta herramienta') : lwT(x);\n"
      "  }\n"),
 )
 # Fechas y números escritos a mano en español: 'es-ES' → el locale del idioma elegido. Un 'es-ES' usado como CLAVE de objeto no se puede envolver: para.
-ES_ES_ENVUELTO = {"'": "(window.LW_IDIOMA === 'id' ? 'id-ID' : 'es-ES')", '"': '(window.LW_IDIOMA === "id" ? "id-ID" : "es-ES")'}
+# En inglés, en-GB (día/mes/año, punto decimal): con 'es-ES' la vista inglesa de bbm decía «Last change: 29/9/2026, 17:41:32» y «×0,916667»
+# (barrido en vivo de bbm.axisworks.studio, bbm-idioma-total, 15-oct-2026). El núcleo id-ID sigue igual.
+ES_ES_ENVUELTO = {"'": "(window.LW_IDIOMA === 'id' ? 'id-ID' : window.LW_IDIOMA === 'en' ? 'en-GB' : 'es-ES')",
+                  '"': '(window.LW_IDIOMA === "id" ? "id-ID" : window.LW_IDIOMA === "en" ? "en-GB" : "es-ES")'}
 # Los 'es-ES' que NO son de interfaz y se quedan como están (revisión, 12-oct): cambiarlos con el idioma de quien mira cambiaría un dato, no un rótulo.
 ES_ES_FIJOS = {
     'contracts/assets/dinero.js': 'lwImporteCanonico escribe el importe DENTRO de un campo editable que lwParseImporte vuelve a leer: id-ID agrupa «1.500» donde es-ES deja «1500»',
@@ -5971,6 +6096,275 @@ def comprueba_pantallas_idiomas(dist, idiomas):
     print('idiomas: ' + ' · '.join(l for l in sal.splitlines() if l.strip() and not l.startswith('FALLA'))[-300:])
 
 
+# ── Rutas en el idioma de la instancia (bbm-idioma-total, 15-oct-2026; owner: «la barra de dirección sigue diciendo palabras en español») ──────
+# spec_R1R2 + su adenda (revisiones previas #353 y #355). Las CARPETAS del paquete no cambian: /taller/ sigue siendo la carpeta y la CLAVE INTERNA con
+# la que decide el código, así que reraiz, legado_htaccess, ruta_limpia, los avisos y la retirada de huérfanos no se tocan y Lawang y la demo salen
+# byte a byte iguales (todo esto solo corre en instancia()). Lo que cambia es lo que se ve: el servidor sirve también la ruta inglesa (alias_htaccess,
+# reescritura INTERNA, sin redirigir el español: sin bucles) y rutas_idioma.js, primer <script> de cada página, pone la barra y los enlaces en el idioma
+# de rutas de la instancia (el de pantalla de Ajustes › Idiomas, en la base; 'es' → español, cualquier otro → inglés). Las lecturas de la barra del
+# código (location.pathname/search/hash) pasan por el ayudante y ven SIEMPRE la clave interna (rutas_idioma_paquete).
+# Nombres: Idiomas (#355). productos → products por el encargo del owner (/products/; Idiomas proponía extras, que es el rótulo visible): decisión
+# por defecto, reversible cambiando este valor.
+RUTAS_IDIOMA = {
+    'ajustes': 'settings', 'usuarios': 'users', 'reservas-producto': 'bookings', 'taller': 'workshop', 'entrega': 'delivery',
+    'flota': 'fleet', 'facturas': 'invoices', 'ventas': 'sales', 'recibos': 'receipts', 'vencimientos': 'payment-schedule',
+    'compradores': 'clients', 'productos': 'products', 'operaciones': 'deals', 'finanzas': 'finance', 'gastos': 'expenses',
+    'bancos': 'banks', 'cuentas': 'bank-accounts', 'sociedades': 'companies', 'comunicacion': 'announcements',
+    'crea-contrasena': 'create-password', 'whatsapp-bot-alta': 'whatsapp-bot-signup',
+    'reservas': 'reservations',   # reservado: hoy solo el aviso «pantalla no incluida»; va en el mapa para que nadie más use ese nombre
+    # Las demás pantallas del paquete (en bbm, de módulos apagados: «pantalla no incluida»), para que tampoco salgan en español si alguien llega
+    # por un enlace viejo o el módulo se enciende desde Ajustes (Idiomas, bbm-idioma-total 15-oct). contracts y templates ya son carpetas: por eso
+    # agreements y contract-templates. leads ya es inglés y no entra (un nombre igual a su clave no hace falta).
+    'proyectos': 'projects', 'proyectos-cuentas': 'project-accounts', 'documentacion': 'documents', 'asistente': 'assistant',
+    'asistente-correos': 'reply-assistant', 'agente': 'agent', 'comisiones': 'commissions', 'comision-admin': 'management-fee',
+    'condiciones': 'commission-terms', 'reparto': 'commission-split', 'equipos-venta': 'sales-teams', 'contratos': 'agreements',
+    'contratos-inversor': 'investor-agreements', 'emitir': 'issue-contract', 'plantillas': 'contract-templates',
+    'generador-contratos': 'contract-builder', 'textos-contrato': 'contract-texts', 'creatividades': 'creatives', 'modelos': 'house-models',
+    'obra': 'construction', 'soporte': 'support',
+}
+# Segundo tramo: solo bajo una pantalla del mapa. Una subcarpeta con index.html que no esté aquí PARA el build (saldría por el nombre español).
+RUTAS_SUB = {'ajustes': {'configurar': 'setup'}}
+# Hash por pantalla (clave interna). Las pestañas de Ajustes: PESTANAS de assets/ajustes.js (Lawang) + las que añade el build (puesta, comisiones,
+# cobros). Una pestaña sin nombre aquí PARA el build (rutas_idioma_paquete) y el test.
+HASHES = {'ajustes': {'puesta': 'setup', 'empresa': 'company', 'sociedades': 'companies', 'idiomas': 'languages', 'correo': 'email',
+                      'usuarios': 'users', 'mantenimiento': 'maintenance', 'reservas': 'reservations', 'servicios': 'services',
+                      'registro': 'log', 'cobros': 'payments', 'comisiones': 'commissions'}}
+# Consulta: sin_permiso=<clave> (guard.js → el hub) sale como no_access=<nombre inglés>; next=<ruta> (la puerta) lleva la ruta visible.
+RUTAS_BUSCA = {'sin_permiso': 'no_access'}
+RUTAS_BUSCA_RUTA = ('next',)
+RUTA_FORMA = re.compile(r'^[a-z]+(-[a-z]+)*$')
+RUTAS_RESERVADAS = RAIZ_RESERVADA | {'contracts', 'assets', 'entrar', 'portal', 'panel', 'clasico', 'home', 'templates'}
+RUTAS_JS = os.path.join(AQUI, 'rutas_idioma.js')
+RUTAS_SCRIPT = '<script id="axw-rutas">'
+# Una lectura de la barra: location.pathname/search/hash, con window./document. delante o sin nada (raiz.location.pathname NO: otro objeto). No
+# casa dentro de la forma ya envuelta: la pasada es idempotente.
+LECTURA_BARRA = re.compile(r'(?<![\w$.])(?<!\|\|String\)\()((?:window\.|document\.)?location\.(pathname|search|hash))(?![\w$])')
+ASIGNACION_JS = re.compile(r'\s*(?:>>>|<<|>>|\*\*|&&|\|\||\?\?|[-+*/%&|^])?=(?!=)')
+ENVOLTORIO_BARRA = {'pathname': 'axwRutaInterna', 'search': 'axwBuscaInterna', 'hash': 'axwHashInterno'}
+BARRA_ENVUELTA = re.compile(r'\(globalThis\.axw(?:RutaInterna|BuscaInterna|HashInterno)\|\|String\)\((?:window\.|document\.)?location\.(?:pathname|search|hash)\)')
+BARRA_ESCRITA = re.compile(r'(?<![\w$.])(?:window\.|document\.)?location\.(?:search|hash)' + ASIGNACION_JS.pattern)
+BARRA_RESTO = re.compile(r'([\w$]+\s*\.\s*)?location\s*\.\s*(pathname|search|hash)(?![\w$])')
+# Otras formas de leer la barra que la pasada NO envuelve (code-review, 15-oct): hoy no hay ninguna en los paquetes; si aparece, PARA y se decide.
+# new URL(location.href) para tocar la consulta y volver a escribirla con replaceState sí vale (lo traduce el envoltorio de history): lo que
+# para es leer de ahí una ruta o un parámetro del mapa.
+BARRA_OTRAS = re.compile(r'''location\s*\?\.\s*(?:pathname|search|hash)|\bdocument\.URL\b|\blocation\.href\s*\.\s*(?:indexOf|lastIndexOf|match|search|replace|split|slice|substring|startsWith|endsWith|includes)\b'''
+                         r'''|searchParams\.get\(\s*["'](?:sin_permiso|no_access|next)["']|\{\s*(?:pathname|search|hash)\b[^{}]*\}\s*=\s*(?:window\.|document\.)?location\b'''
+                         r'''|new URL\(\s*(?:window\.|document\.)?location(?:\.href)?\s*\)\s*\.\s*pathname''')
+# Lecturas de la barra que se quedan sin envolver, cada una con su porqué (la trampa para con cualquier otra).
+BARRA_LISTA_BLANCA = {
+    ('contracts/assets/version.js', 'raiz.location.pathname'): 'pide al servidor la PROPIA página para ver si cambió su versión y la apunta en '
+                                                              'sessionStorage para compararla con la misma lectura: cualquiera de las dos rutas la sirve',
+}
+# Quien lee un href para DECIDIR por su ruta tiene que normalizarlo con axwRutaInterna (en apagados_instancia.js: interna(...)).
+HREF_DECIDE = re.compile(r'''getAttribute\(\s*["']href["']\s*\)|\.href\s*\)\s*\.\s*pathname|new URL\([^;]{0,200}?\)\s*\.\s*pathname''')
+HREF_NORMALIZADO = re.compile(r'''\binterna\(new URL\([^;]{0,200}?\)\s*\.\s*pathname\)|setAttribute\(\s*["']href["']\s*,\s*[\w$.\[\]]+\.getAttribute\(\s*["']href["']\s*\)\s*\)''')
+HREF_LISTA_BLANCA = {}   # {fichero del paquete: motivo}; vacía a propósito
+
+
+def problemas_mapa_rutas(carpetas=()):
+    """Lo que está mal en los mapas de rutas (lista vacía = bien). `carpetas`: las de pantalla que ya existen (el paquete o el árbol de Lawang):
+    un nombre inglés que choca con una carpeta real serviría la carpeta y no el alias."""
+    malos, vistos = [], {}
+    for clave, en in sorted(RUTAS_IDIOMA.items()):
+        if not RUTA_FORMA.match(en):
+            malos.append('%s → %r: no es ^[a-z]+(-[a-z]+)*$' % (clave, en))
+        if en == clave:
+            malos.append('%s → %s: el nombre inglés es la propia clave' % (clave, en))
+        if en in vistos:
+            malos.append('%s y %s → %s: el mismo nombre para dos pantallas' % (vistos[en], clave, en))
+        vistos[en] = clave
+        if en in RUTAS_IDIOMA:
+            malos.append('%s → %s: el nombre inglés es la clave de otra pantalla' % (clave, en))
+        if en in RUTAS_RESERVADAS:
+            malos.append('%s → %s: carpeta reservada de la raíz' % (clave, en))
+        if en in carpetas:
+            malos.append('%s → %s: ya es una carpeta de pantalla del paquete' % (clave, en))
+    for nombre, mapa in (('RUTAS_SUB', RUTAS_SUB), ('HASHES', HASHES)):
+        for clave, sub in sorted(mapa.items()):
+            if clave not in RUTAS_IDIOMA:
+                malos.append('%s[%s]: la pantalla no está en RUTAS_IDIOMA' % (nombre, clave))
+            vs = {}
+            for k, v in sorted(sub.items()):
+                if not RUTA_FORMA.match(v) or v == k or v in sub or v in vs:
+                    malos.append('%s[%s]: %s → %r no vale (forma, igual a una clave o repetido)' % (nombre, clave, k, v))
+                vs[v] = k
+    for k, v in RUTAS_BUSCA.items():
+        if not re.match(r'^[a-z]+(_[a-z]+)*$', v) or v == k or v in RUTAS_BUSCA or v in RUTAS_BUSCA_RUTA:
+            malos.append('RUTAS_BUSCA: %s → %r no vale' % (k, v))
+    return malos
+
+
+def rutas_idioma_script(idioma_build):
+    """El ayudante en línea: rutas_idioma.js sin comentarios, con los mapas y el idioma de pantalla del build. Solo ASCII: va delante del <meta charset>
+    de las pantallas de la v4 y la instancia sirve text/html sin charset."""
+    t = open(RUTAS_JS, encoding='utf-8').read()
+    t = re.sub(r'/\*.*?\*/', '', t, flags=re.S)
+    t = re.sub(r'^\s*//[^\n]*\n', '', t, flags=re.M)
+    for hueco in ('__AXW_RUTAS__', '__AXW_IDIOMA_BUILD__'):
+        if t.count(hueco) != 1:
+            aborta('rutas_idioma.js sin el hueco %s en el código (una vez)' % hueco)
+    datos = {'r': RUTAS_IDIOMA, 's': RUTAS_SUB, 'h': HASHES, 'q': RUTAS_BUSCA, 'qr': list(RUTAS_BUSCA_RUTA)}
+    t = (t.replace('__AXW_RUTAS__', json.dumps(datos, ensure_ascii=True, sort_keys=True))
+         .replace('__AXW_IDIOMA_BUILD__', json.dumps(idioma_build or 'es')))
+    if '</' in t or not t.isascii():
+        aborta('rutas_idioma.js: el ayudante en línea no puede llevar «</» ni nada que no sea ASCII')
+    return RUTAS_SCRIPT + '\n' + t.strip() + '\n</script>'
+
+
+def envuelve_lecturas_barra(t):
+    """Cada lectura de location.pathname/search/hash → (globalThis.axwXInterna||String)(location.x): la clave interna con el ayudante, lo de siempre
+    sin él (un documento sin la página alrededor no revienta). globalThis y no window (un worker no tiene window) ni self (mascota.js tiene una
+    variable `self`); sin comillas, por si la lectura va en un atributo onclick="…" (code-review, 15-oct). Devuelve (texto, envueltas, asignaciones a pathname). Las asignaciones a search o hash se
+    quedan: navegan (o disparan hashchange) y la página de llegada ya se canoniza."""
+    n, malos = [0], []
+
+    def uno(m):
+        if ASIGNACION_JS.match(t, m.end()):
+            if m.group(2) == 'pathname':
+                malos.append(t[max(0, m.start() - 40):m.end() + 20])
+            return m.group(0)
+        n[0] += 1
+        return '(globalThis.%s||String)(%s)' % (ENVOLTORIO_BARRA[m.group(2)], m.group(1))
+    return LECTURA_BARRA.sub(uno, t), n[0], malos
+
+
+def trampas_barra(t, donde):
+    """Lo que queda en `t` (ya envuelto) que lee la barra o un href para decidir sin pasar por el ayudante (lista vacía = bien)."""
+    malos = []
+    s = BARRA_ESCRITA.sub('', BARRA_ENVUELTA.sub('', t))
+    for m in BARRA_RESTO.finditer(s):
+        expr = re.sub(r'\s+', '', m.group(0))
+        if (donde, expr) not in BARRA_LISTA_BLANCA:
+            malos.append('%s: lectura de la barra sin envolver: …%s…' % (donde, s[max(0, m.start() - 50):m.end() + 20]))
+    for m in BARRA_OTRAS.finditer(s):
+        malos.append('%s: lee la barra por otra vía que la pasada no envuelve: …%s…' % (donde, s[max(0, m.start() - 40):m.end() + 20]))
+    if donde not in HREF_LISTA_BLANCA:
+        for m in HREF_DECIDE.finditer(HREF_NORMALIZADO.sub('', t)):
+            malos.append('%s: lee un href para decidir sin axwRutaInterna: …%s…' % (donde, m.group(0)[:80]))
+    return malos
+
+
+def inyecta_rutas(t, script):
+    """El ayudante como PRIMER <script> del documento: tras <meta charset> si va antes que cualquier script, si no justo delante del primero; sin
+    <head> (los redirectores /entrar/ y /portal/), igual. Un documento con dos <head> PARA (no se sabe cuál es)."""
+    if RUTAS_SCRIPT in t:
+        aborta('rutas_idioma: el ayudante ya estaba en la página (¿dos pasadas?)')
+    heads = list(re.finditer(r'<head(?:\s[^>]*)?>', t, re.I))
+    if len(heads) > 1:
+        return None
+    s = re.search(r'<script\b', t, re.I)
+    meta = re.search(r'<meta\s+charset=[^>]*>', t, re.I)
+    if meta and (not s or meta.end() <= s.start()):
+        pos = meta.end()
+    elif s:
+        pos = s.start()
+    elif heads:
+        pos = heads[0].end()
+    else:
+        d = re.match(r'\s*<!doctype[^>]*>', t, re.I)
+        pos = d.end() if d else 0
+    return t[:pos] + script + t[pos:]
+
+
+def rutas_idioma_paquete(dist, idioma_build):
+    """La pasada de rutas del paquete de la instancia: va DESPUÉS de todo lo que escribe páginas o injerta código (pantallas, _una_vez, PORTADA_SEG,
+    textos_instancia, no_instalado, crea-contrasena, entrar/portal, panel) y ANTES de versiona(). El código ya va sin comentarios (limpia_publico.js
+    corre al principio de instancia(): «antes de minificar» no se puede cumplir a la vez que «después de los injertos»; terser va sin mangle, así que
+    los nombres siguen ahí). 1) envuelve las lecturas de la barra en todo .js y en todo .html (menos el ayudante, que se mete después); 2) PARA si
+    queda una sin envolver, una asignación a location.pathname o un href leído para decidir; 3) mete el ayudante en cada .html; 4) PARA si una
+    pantalla del mapa tiene una subcarpeta con index.html que no está en RUTAS_SUB, si una pestaña de Ajustes no tiene nombre inglés, si un nombre
+    inglés choca con una carpeta real o si algo de lo tocado deja de ser JavaScript válido."""
+    carpetas = {d for d in os.listdir(dist) if os.path.isdir(os.path.join(dist, d))}
+    malos = problemas_mapa_rutas(carpetas - set(RUTAS_IDIOMA))
+    for clave in sorted(RUTAS_IDIOMA):
+        base = os.path.join(dist, clave)
+        if not os.path.isdir(base):
+            continue
+        for raiz, _d, fichs in os.walk(base):
+            if raiz != base and 'index.html' in fichs:
+                sub = os.path.relpath(raiz, base).replace(os.sep, '/')
+                if sub not in (RUTAS_SUB.get(clave) or {}):
+                    malos.append('/%s/%s/ es una subcarpeta con página que no está en RUTAS_SUB: /%s/%s/ saldría por el nombre español'
+                                 % (clave, sub, RUTAS_IDIOMA[clave], sub))
+    aj = os.path.join(dist, 'assets', 'ajustes.js')
+    if os.path.isfile(aj) and 'ajustes' in HASHES:
+        m = re.search(r'PESTANAS\s*=\s*\[([^\]]*)\]', open(aj, encoding='utf-8').read())
+        if not m:
+            malos.append('assets/ajustes.js sin su lista PESTANAS: no se puede comprobar que cada pestaña tiene nombre inglés')
+        else:
+            for tab in re.findall(r'''["']([^"']+)["']''', m.group(1)):
+                if tab not in HASHES['ajustes']:
+                    malos.append('la pestaña de Ajustes «%s» no tiene nombre inglés en HASHES[ajustes]' % tab)
+    script = rutas_idioma_script(idioma_build)
+    tocados, envueltas, sin_head = [], 0, []
+    for raiz, _d, fichs in os.walk(dist):
+        for f in fichs:
+            if not f.endswith(('.js', '.html')):
+                continue
+            p = os.path.join(raiz, f)
+            donde = os.path.relpath(p, dist).replace(os.sep, '/')
+            t = open(p, encoding='utf-8').read()
+            t2, n, asignadas = envuelve_lecturas_barra(t)
+            malos += ['%s: asigna location.pathname (navegaría por la ruta interna sin pasar por el ayudante): …%s…' % (donde, a) for a in asignadas]
+            malos += trampas_barra(t2, donde)
+            if f.endswith('.html'):
+                t3 = inyecta_rutas(t2, script)
+                if t3 is None:
+                    sin_head.append(donde)
+                    continue
+                t2 = t3
+            if t2 != t:
+                open(p, 'w', encoding='utf-8', newline='').write(t2)
+                tocados.append(p)
+                envueltas += n
+    malos += ['%s: más de un <head>, no se sabe dónde va el ayudante' % x for x in sin_head]
+    malos += ['sintaxis tras la pasada de rutas: ' + x for x in _sintaxis(tocados)]
+    if malos:
+        aborta('rutas en el idioma de la instancia:\n  ' + '\n  '.join(malos[:40]))
+    print('rutas: %d lecturas de la barra envueltas, ayudante en %d ficheros (idioma de rutas del build: %s)'
+          % (envueltas, len(tocados), 'es' if (idioma_build or 'es') == 'es' else 'en'))
+
+
+def rutas_en_idioma(nombre):
+    """¿Esta instancia sale con las rutas en su idioma? Apagadas por defecto (agencia-c0, 15-oct-2026): el simulador de .htaccess no es el LiteSpeed
+    de Hostinger y las reglas nuevas no se han ensayado en él; hasta el verde del ensayo los textos salen solos y la barra sigue en español. Se
+    encienden con «rutas_idioma»: true en erp/instancias.json. AXW_RUTAS_IDIOMA=1 las enciende SOLO en un paquete de prueba (AXW_PRUEBA_DESPLIEGUE),
+    para el arnés de rutas y el propio ensayo: el paquete que se publica no puede salir distinto de lo que dice el registro."""
+    if os.environ.get('AXW_RUTAS_IDIOMA') == '1':
+        if not os.environ.get('AXW_PRUEBA_DESPLIEGUE'):
+            aborta('AXW_RUTAS_IDIOMA=1 solo vale con AXW_PRUEBA_DESPLIEGUE: el paquete real enciende las rutas por erp/instancias.json')
+        return True
+    v = _instancia_registro(nombre).get('rutas_idioma', False)
+    if not isinstance(v, bool):
+        aborta('«rutas_idioma» en erp/instancias.json (%s) tiene que ser true o false, no %r' % (nombre, v))
+    return v
+
+
+def alias_htaccess(destino):
+    """Bloque de .htaccess con las rutas inglesas de la instancia (va DETRÁS del legado). Por cada par del mapa cuya carpeta exista: la ruta inglesa
+    se sirve por dentro desde la carpeta (sin R: la barra no cambia y no hay bucle con el ayudante, que canoniza en el navegador) y la ruta sin barra
+    final redirige (302) a la misma con barra (si no, mod_dir mandaría a la carpeta española). Los submapas, ANTES que su pantalla. Patrones
+    cerrados: el primer tramo del destino es siempre una carpeta de la lista y el resto va detrás, así que ninguna entrada produce un destino fuera
+    del dominio. Solo instancias: legado_htaccess (la demo) no se toca. AddDefaultCharset: el ayudante va delante del <meta charset>."""
+    get = '  RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$\n'
+    reglas = []
+    for clave, en in sorted(RUTAS_IDIOMA.items(), key=lambda x: x[1]):
+        if not os.path.isdir(os.path.join(destino, clave)):
+            continue
+        for sub, sub_en in sorted((RUTAS_SUB.get(clave) or {}).items()):
+            if os.path.isdir(os.path.join(destino, clave, sub)):
+                reglas.append(get + '  RewriteRule ^%s/%s$ /%s/%s/ [R=302,L,QSA]\n' % (re.escape(en), re.escape(sub_en), en, sub_en))
+                reglas.append('  RewriteRule ^%s/%s/(.*)$ %s/%s/$1 [L]\n' % (re.escape(en), re.escape(sub_en), clave, sub))
+        reglas.append(get + '  RewriteRule ^%s$ /%s/ [R=302,L,QSA]\n' % (re.escape(en), en))
+        reglas.append('  RewriteRule ^%s/(.*)$ %s/$1 [L]\n' % (re.escape(en), clave))
+    # el charset SIEMPRE (también sin ninguna carpeta del mapa): el ayudante va en todas las páginas, delante del <meta charset> (code-review, 15-oct)
+    cab = 'AddDefaultCharset UTF-8\n'
+    if not reglas:
+        return cab
+    return ('# Rutas en el idioma de la instancia: /workshop/x se sirve desde taller/x (sin redirigir: el navegador canoniza la barra).\n'
+            + cab + '<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteBase /\n' + ''.join(reglas) + '</IfModule>\n')
+
+
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
@@ -6184,6 +6578,13 @@ def instancia(nombre):
     # bbm-p42b: los colores de Lawang que quedan a fuego (editores, cajones, papel) a la piel; tras TODO lo que escribe páginas
     # (pagina_no_instalado también lleva el verde) y antes de versiona(), para que el ?v= cambie con ellos
     print('colores de Lawang a la piel: %d' % piel_colores_lawang(DIST, nombre))
+    # bbm-idioma-total (15-oct): las rutas en el idioma de la instancia. DETRÁS de todo lo que escribe páginas o injerta código y antes de versiona(),
+    # para que el ?v= recoja las lecturas envueltas. Idioma de rutas del build: el de pantalla del registro, si no el primero de sus idiomas, si no 'es'.
+    rutas_on = rutas_en_idioma(nombre)
+    if rutas_on:
+        rutas_idioma_paquete(DIST, pantalla or (idiomas[0] if idiomas else 'es'))
+    else:
+        print('rutas: apagadas en %s (sin «rutas_idioma»: true en erp/instancias.json): carpetas y barra en español, como antes' % nombre)
     # ?v= con la huella de lo que SALE de este build, como en la demo pública (28-sep-2026). Sin esto, la v4 llevaba el
     # ?v= del fichero de Lawang (guard.js se reescribe entero aquí: mapa de módulos + ficha) y /panel/ iba sin versión:
     # Hostinger cachea 7 días y el verificador vio el guard.js viejo en /panel/ tras publicar.
@@ -6204,6 +6605,7 @@ def instancia(nombre):
     if idiomas:
         comprueba_idiomas(DIST, idiomas)
         comprueba_documento_idiomas(DIST, idiomas)
+        comprueba_rotulos_editores(DIST, idiomas)   # sin navegador: también en el gate de push
         comprueba_pantallas_idiomas(DIST, idiomas)
     comprueba_resultado(DIST)
     # 4. Copia al clon del repo privado de la instancia (gitignored en la agencia).
@@ -6228,7 +6630,7 @@ def instancia(nombre):
         s_ = os.path.join(DIST, x)
         shutil.copytree(s_, os.path.join(destino, x)) if os.path.isdir(s_) else shutil.copy2(s_, destino)
     open(os.path.join(destino, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(HTACCESS_INSTANCIA.format(
-        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino),
+        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino) + (alias_htaccess(destino) if rutas_on else ''),   # rutas inglesas DETRÁS del legado
         dominio_re='(' + '|'.join(re.escape(d) for d in [dominio] + _instancia_alias(nombre)) + ')'))
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(destino)

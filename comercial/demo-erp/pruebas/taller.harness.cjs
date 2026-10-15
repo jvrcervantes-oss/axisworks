@@ -89,7 +89,9 @@ function nuevaBase(o = {}) {
               { id: uuid(), numero: 'OT-00002', unidad_id: U.m5, estado: 'abierta', paso: null, km: null, gasolina: null, motivo_tipo: null, resultado: null, abierta_por: 'admin', abierta_en: 3, oculta: true }],
     revs: [{ id: uuid(), producto_id: null, clave: 'neumaticos', nombre_id: 'Ban', nombre_en: 'Tyres', orden: 10, activa: true },
            { id: uuid(), producto_id: null, clave: 'aceite', nombre_id: XSS_REV, nombre_en: XSS_REV, orden: 20, activa: true },
-           { id: uuid(), producto_id: P1, clave: 'cadena', nombre_id: 'Rantai', nombre_en: 'Chain', orden: 30, activa: true }],
+           { id: uuid(), producto_id: P1, clave: 'cadena', nombre_id: 'Rantai', nombre_en: 'Chain', orden: 30, activa: true },
+           { id: uuid(), producto_id: P1, clave: 'luces', nombre_id: 'Lampu', nombre_en: 'Lights', orden: 40, activa: true },
+           { id: uuid(), producto_id: P1, clave: 'espejos', nombre_id: 'Spion', nombre_en: 'Mirrors', orden: 50, activa: true }],
     respuestas: [], fotos: [], recambios: [], vinculos: [] };
   return B;
 }
@@ -666,7 +668,7 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     ok('sin red en fotos → Siguiente: no avanza', (await paso(p)) === 'fotos');
     ctx.__sinRed = false; await ctx.setOffline(false);
     await p.click('[data-accion="tl-reintentar"]'); await enPaso(p, 'revisiones');
-    ok('paso 5: tres revisiones (dos comunes y una del modelo) con su nombre en indonesio', (await p.$$('[data-rev]')).length === 3 && (await p.$eval('[data-tl="paso-cuerpo"]', e => e.textContent)).includes('Rantai'));
+    ok('paso 5: cinco revisiones (dos comunes y tres del modelo; «luces» y «espejos» son para S2) con su nombre en indonesio', (await p.$$('[data-rev]')).length === 5 && (await p.$eval('[data-tl="paso-cuerpo"]', e => e.textContent)).includes('Rantai'));
     await sinInyeccion(p, 'paso 5');
 
     // Atrás del navegador y recarga a mitad
@@ -675,6 +677,8 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.reload(); await enPaso(p, 'revisiones');
     ok('recarga a mitad: manda el paso de la BASE (revisiones), no el de la URL (fotos)', (await p.evaluate(() => location.hash)).endsWith('&p=revisiones'));
     const revs = B.revs;
+    // S2: «Todo bien» a la vista mientras haya revisiones sin contestar, con cuántas
+    ok('S2 · «Todo bien» a la vista con las revisiones sin contestar contadas', await p.isVisible('[data-accion="tl-rev-todo-bien"]') && /\b5\b/.test(await p.$eval('[data-accion="tl-rev-todo-bien"]', e => e.textContent)), await p.$eval('[data-accion="tl-rev-todo-bien"]', e => e.textContent));
     // revisiones: guardar al pulsar, doble toque, sin red, respuesta cortada
     B.latencia = 800;
     await p.dblclick(`[data-rev-id="${revs[0].id}"][data-res="bien"]`);
@@ -698,6 +702,24 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.click(`[data-accion="tl-rev-nota"][data-rev-id="${revs[1].id}"]`);
     await espera(p, id => document.querySelector(`[data-rev-estado="${id}"]`).textContent === 'Tersimpan', revs[1].id);
     ok('la nota de «Rusak» se guarda con la revisión', /aceite/.test(B.respuestas.find(a => a.revision_id === revs[1].id).nota || ''));
+    // S2: «Todo bien» contesta solo la que nadie ha tocado (luces), en un toque, por la llamada de siempre; «Rusak» sigue en «Rusak»
+    // y lo que el mecánico marca MIENTRAS corre no se pisa: la cadena va lenta con «luces» (1,5 s) y él pone «Rusak» en «espejos», que se guarda
+    // antes de que la cadena llegue (revisor de f33ef3f: sin volver a mirar cada una, la cadena la pisaba con «Baik»)
+    const rLuces = revs.find(x => x.clave === 'luces'), rEsp = revs.find(x => x.clave === 'espejos');
+    B.latencia = 1500;
+    await p.click('[data-accion="tl-rev-todo-bien"]');
+    await p.waitForTimeout(300); B.latencia = 0;
+    await p.click(`[data-rev-id="${rEsp.id}"][data-res="mal"]`);
+    await espera(p, ids => ids.every(id => document.querySelector(`[data-rev-estado="${id}"]`).textContent === 'Tersimpan'), [rLuces.id, rEsp.id]);
+    await espera(p, () => !document.querySelector('[data-accion="tl-rev-todo-bien"]').disabled);
+    ok('S2 · «Todo bien» en un toque: marca «Bien» la sin contestar y no toca las contestadas',
+       B.respuestas.find(a => a.revision_id === rLuces.id).resultado === 'bien' && B.respuestas.find(a => a.revision_id === revs[1].id).resultado === 'mal');
+    ok('S2 · lo que se marca a mano mientras corre «Todo bien» no se pisa («espejos» sigue en «Rusak», una sola llamada)',
+       B.respuestas.find(a => a.revision_id === rEsp.id).resultado === 'mal' && llamadas(B, 'taller_revision_marca').filter(x => x[1].p_revision === rEsp.id).length === 1,
+       JSON.stringify(llamadas(B, 'taller_revision_marca').filter(x => x[1].p_revision === rEsp.id)));
+    await espera(p, () => document.querySelector('[data-accion="tl-rev-todo-bien"]').closest('.axw-acciones').classList.contains('axw-oculto'));
+    ok('S2 · con todo contestado, «Todo bien» se esconde', !(await p.isVisible('[data-accion="tl-rev-todo-bien"]')));
+    console.log('  toques S2 taller: antes 1 por revisión (' + revs.filter(x => !x.producto_id || x.producto_id === P1).length + ' en este modelo); ahora 1 para todas las que van bien + 1 por cada una que no');
     await sinInyeccion(p, 'revisiones'); await sinScroll(p, 'paso 5 (390)');
     await shot(p, 'paso5_390_id.png', true);
     await sig(p); await enPaso(p, 'resultado');
@@ -750,9 +772,104 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     // pestaña Listas por modelo
     await p.click('[data-accion="tl-tab-listas"]'); await espera(p, () => !!document.querySelector('[data-tl="l-revisiones"]') || !!document.querySelector('[data-accion="tl-l-basica"]') || !!document.querySelector('[data-tl="l-nueva"]'));
     ok('Listas por modelo: URL #listas y lista común', (await p.evaluate(() => location.hash)) === '#listas' && (await p.$$('[data-l-rev]')).length === 2);
-    await p.fill('[data-tl="l-nueva"] [data-f="clave"]', 'luces'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Lampu'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Lights');
+    // escribir en Listas y esperar a que se haya vuelto a leer y PINTAR: tras cada escritura se repinta la pestaña entera, y escribir en ese
+    // hueco deja lo tecleado en la pestaña vieja (intermitente con la máquina cargada). La señal es el «Guardado» que pinta lEscribe al final.
+    const escribeLista = async sel => {
+      await p.evaluate(() => { const e = document.querySelector('[data-tl="l-estado"]'); if (e) e.textContent = ''; });
+      await p.click(sel);
+      await espera(p, () => !!document.querySelector('[data-tl="l-estado"] .axw-ok'));
+    };
+    const vistos = sel => p.evaluate(s => [...document.querySelectorAll(s + ' input, ' + s + ' select, ' + s + ' textarea')]
+      .filter(e => e.checkVisibility({ contentVisibilityAuto: true, visibilityProperty: true })).map(e => e.getAttribute('data-f')), sel);
+    ok('S4 · revisión nueva: a la vista solo los dos nombres (la clave sale sola, la posición plegada)', JSON.stringify(await vistos('[data-tl="l-nueva"]')) === '["nombre_id","nombre_en"]', JSON.stringify(await vistos('[data-tl="l-nueva"]')));
+    ok('S4 · pieza nueva: referencia y los dos nombres (coste, moneda y revisión sugerida plegados)', JSON.stringify(await vistos('[data-tl="l-pieza-nueva"]')) === '["ref","nombre_id","nombre_en"]', JSON.stringify(await vistos('[data-tl="l-pieza-nueva"]')));
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Lampu'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Lights');
     await p.click('[data-accion="tl-l-rev-nueva"]'); await espera(p, () => document.querySelectorAll('[data-l-rev]').length === 3);
     ok('añadir revisión a la lista común: taller_revision_guarda con producto nulo', llamadas(B, 'taller_revision_guarda').slice(-1)[0][1].p_datos.producto_id === null);
+    ok('S4 · la clave sale del nombre en inglés: «Lights» → lights', llamadas(B, 'taller_revision_guarda').slice(-1)[0][1].p_datos.clave === 'lights');
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Lampu belakang'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Lights');
+    await p.click('[data-accion="tl-l-rev-nueva"]'); await espera(p, () => document.querySelectorAll('[data-l-rev]').length === 4);
+    ok('S4 · si ya hay una con esa clave en la lista, lleva _2 (no choca)', llamadas(B, 'taller_revision_guarda').slice(-1)[0][1].p_datos.clave === 'lights_2');
+    // la fila de una revisión se lee; «Editar» abre 3 casillas (dos nombres y posición); «Desactivar» es un toque; la llamada es la de siempre
+    ok('S4 · las revisiones se leen: ninguna casilla a la vista en la tabla', JSON.stringify(await vistos('[data-tl="l-revisiones"]')) === '[]', JSON.stringify(await vistos('[data-tl="l-revisiones"]')));
+    const idRev = await p.$eval('[data-l-rev]', e => e.getAttribute('data-l-rev'));
+    const rev0 = B.revs.find(x => String(x.id) === idRev), activa0 = rev0.activa === true;
+    // a 390 (verificador del tren 4g: la tabla medía 564 px en 326 y los botones salían en vertical): cada revisión es una tarjeta que cabe
+    const tarjeta390 = async () => { await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(150);
+      const m = await p.evaluate(() => { const t = document.querySelector('[data-tl="l-revisiones"]'), caja = t.parentNode;
+        const bots = [...t.querySelectorAll('.axw-boton')].map(b => b.getBoundingClientRect());
+        return { tabla: Math.round(t.scrollWidth), caja: Math.round(caja.clientWidth), docX: document.documentElement.scrollWidth > innerWidth,
+                 botonAlto: Math.round(Math.max(...bots.map(b => b.height))), botonFuera: bots.some(b => b.right > innerWidth + 0.5),
+                 clave: [...t.querySelectorAll('td[data-l-col="clave"]')].some(e => e.checkVisibility()), fila: Math.round(Math.max(...[...t.querySelectorAll('tr[data-l-rev]')].map(e => e.getBoundingClientRect().height))) }; });
+      await p.setViewportSize({ width: 1440, height: 900 }); await p.waitForTimeout(150); return m; };
+    const m390 = await tarjeta390();
+    ok('Listas a 390: cada revisión cabe (sin scroll dentro de la tabla), sin la clave, botones de una línea y a la vista, fila de ≤ 200 px',
+       m390.tabla <= m390.caja && !m390.docX && !m390.clave && m390.botonAlto <= 60 && !m390.botonFuera && m390.fila <= 200, JSON.stringify(m390));
+    await p.click(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-edita"]`);
+    ok('S4 · «Editar» abre 3 casillas en esa fila: los dos nombres y la posición', JSON.stringify(await vistos('[data-tl="l-revisiones"]')) === '["nombre_id","nombre_en","orden"]', JSON.stringify(await vistos('[data-tl="l-revisiones"]')));
+    const e390 = await tarjeta390();
+    ok('Listas a 390 editando: las tres casillas caben, con los botones a la vista', e390.tabla <= e390.caja && !e390.docX && e390.botonAlto <= 60 && !e390.botonFuera, JSON.stringify(e390));
+    const otra = await p.$$eval('[data-l-rev]', es => es[1] && es[1].getAttribute('data-l-rev'));
+    await p.click(`[data-l-rev="${otra}"] [data-accion="tl-l-rev-edita"]`);
+    ok('S4 · una fila a la vez: editar otra cierra la primera', JSON.stringify(await vistos('[data-tl="l-revisiones"]')) === '["nombre_id","nombre_en","orden"]' && !(await p.$(`[data-l-rev="${idRev}"] input`)));
+    await p.click(`[data-l-rev="${otra}"] [data-accion="tl-l-rev-cancela"]`);
+    ok('S4 · «Cancelar» vuelve a la lectura sin llamar a la base', JSON.stringify(await vistos('[data-tl="l-revisiones"]')) === '[]');
+    await p.click(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-edita"]`);
+    await p.fill(`[data-l-rev="${idRev}"] [data-f="nombre_en"]`, 'Oil change');
+    const nG = llamadas(B, 'taller_revision_guarda').length;
+    await escribeLista(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-guarda"]`);
+    const g1 = llamadas(B, 'taller_revision_guarda').slice(-1)[0][1];
+    ok('S4 · «Guardar» de la fila: la llamada de siempre, con el nombre nuevo y la activa como estaba', g1.p_id === idRev && g1.p_datos.nombre_en === 'Oil change' && g1.p_datos.activa === activa0 && Object.keys(g1.p_datos).sort().join() === 'activa,nombre_en,nombre_id,orden', JSON.stringify(g1));
+    const txtAct = await p.$eval(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-activa"]`, e => e.textContent);
+    await escribeLista(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-activa"]`);
+    const g2 = llamadas(B, 'taller_revision_guarda').slice(-1)[0][1];
+    ok('S4 · «Desactivar»/«Activar» en un toque: cambia solo la activa', g2.p_id === idRev && g2.p_datos.activa === !activa0 && g2.p_datos.nombre_en === 'Oil change', JSON.stringify(g2));
+    ok('S4 · tras «Desactivar»/«Activar» el botón dice lo contrario', (await p.$eval(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-activa"]`, e => e.textContent)) !== txtAct);
+    await sinScroll(p, 'listas con la fila editable (1440)');
+    await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_id"]', 'Busi'); await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_en"]', 'Spark plug');
+    await escribeLista('[data-accion="tl-l-rec-nueva"]');
+    const pz = llamadas(B, 'taller_recambio_guarda').slice(-1)[0][1].p_datos;
+    ok('S4 · pieza sin coste: ni coste ni moneda (la moneda puesta solo viaja con un coste)', pz.coste_ref === null && pz.moneda === null, JSON.stringify(pz));
+    // la moneda de la instancia (lwMonedaBase, de su base) sale puesta en la pieza nueva y viaja con el coste
+    await p.evaluate(() => { window.lwMonedaBase = () => 'IDR'; document.querySelector('[data-accion="tl-tab-listas"]').click(); });
+    await espera(p, () => { const e = document.querySelector('[data-tl="l-pieza-nueva"] [data-f="moneda"]'); return e && e.value === 'IDR'; });
+    await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_id"]', 'Oli'); await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_en"]', 'Oil');
+    await p.evaluate(() => { document.querySelector('[data-tl="l-pieza-nueva"] [data-axw="mas-datos"]').open = true; });
+    await p.fill('[data-tl="l-pieza-nueva"] [data-f="coste"]', '45000');
+    const nPz = llamadas(B, 'taller_recambio_guarda').length;
+    await escribeLista('[data-accion="tl-l-rec-nueva"]');
+    const pz2 = llamadas(B, 'taller_recambio_guarda').slice(-1)[0][1].p_datos;
+    ok('S4 · pieza con coste: viaja con la moneda de la instancia ya puesta (IDR)', pz2.coste_ref === 45000 && pz2.moneda === 'IDR', JSON.stringify(pz2));
+    // un nombre sin letras ni cifras: no se envía y sale el campo de la clave, para escribirla a mano
+    await espera(p, () => !!document.querySelector('[data-tl="l-nueva"]'));
+    const nRev = llamadas(B, 'taller_revision_guarda').length;
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', '***'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', '!!!');
+    await p.click('[data-accion="tl-l-rev-nueva"]');
+    ok('S4 · nombre sin letras ni cifras: no se envía y sale el campo de la clave', llamadas(B, 'taller_revision_guarda').length === nRev
+       && await p.$eval('[data-tl="l-clave"]', e => !e.classList.contains('axw-oculto')));
+    // los nombres vacíos dicen lo de los nombres, no lo de la clave
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', ''); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', '');
+    await p.click('[data-accion="tl-l-rev-nueva"]');
+    ok('S4 · sin nombres: el error es el de los nombres', llamadas(B, 'taller_revision_guarda').length === nRev && /línea|baris|line/i.test(await p.$eval('[data-tl="l-estado"]', e => e.textContent)), await p.$eval('[data-tl="l-estado"]', e => e.textContent));
+    // la base rechaza la clave (otra persona acaba de crear «brakes» y esta pantalla aún no la ve): sale el campo con la propuesta, para cambiarla
+    await p.evaluate(() => document.querySelector('[data-accion="tl-tab-listas"]').click());
+    await espera(p, () => { const c = document.querySelector('[data-tl="l-clave"]'); return c && c.classList.contains('axw-oculto'); });
+    B.revs.push({ id: 'rev-de-otra-sesion', producto_id: null, clave: 'brakes', nombre_id: 'Rem', nombre_en: 'Brakes', orden: 100, activa: true });
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Rem'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Brakes');
+    await p.click('[data-accion="tl-l-rev-nueva"]');
+    await espera(p, () => !document.querySelector('[data-tl="l-clave"]').classList.contains('axw-oculto'));
+    ok('S4 · la base rechaza la clave: sale el campo con la propuesta escrita', (await p.inputValue('[data-tl="l-clave"] input')) === 'brakes');
+    B.revs.splice(B.revs.findIndex(x => x.id === 'rev-de-otra-sesion'), 1);
+    // «Piezas de esta lista»: con algo en el catálogo que añadir, un formulario cada vez (verificador del tren 4f: eran 5 campos juntos)
+    B.recambios.push({ id: 'rec-catalogo-suelta', ref: 'KMP-1', nombre_id: 'Kampas rem', nombre_en: 'Brake pads', activa: true });
+    await p.evaluate(() => document.querySelector('[data-accion="tl-tab-listas"]').click());
+    await espera(p, () => !!document.querySelector('[data-tl="l-pieza-modo"]'));
+    const piezasVistas = async () => (await vistos('[data-tl="l-vincula"]')).concat(await vistos('[data-tl="l-pieza-nueva"]'));
+    ok('S4 · piezas: con catálogo, «Del catálogo» primero, con 2 campos a la vista (la pieza y su revisión sugerida)', JSON.stringify(await piezasVistas()) === '["recambio","revision"]', JSON.stringify(await piezasVistas()));
+    await p.click('[data-tl="l-pieza-modo"] [data-modo="nueva"]');
+    ok('S4 · piezas: «Pieza nueva» enseña sus 3 campos y esconde el catálogo', JSON.stringify(await piezasVistas()) === '["ref","nombre_id","nombre_en"]' && (await p.getAttribute('[data-tl="l-pieza-modo"] [data-modo="nueva"]', 'aria-pressed')) === 'true', JSON.stringify(await piezasVistas()));
+    ok('S4 · piezas: con los dos botones, el formulario no repite el título «Pieza nueva»', (await p.$$eval('[data-tl="l-pieza-nueva"] strong', es => es.length)) === 0);
+    B.recambios.splice(B.recambios.findIndex(x => x.id === 'rec-catalogo-suelta'), 1);
     await sinScroll(p, 'listas (1440)'); await sinTraducir(p, 'admin id');
     await ctx.close();
 
@@ -1110,7 +1227,7 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
         ok('S9 ' + pre + 'el parte dice moto, número, km, quién lo cerró y la nota', det.includes('DK 5555 CC') && det.includes('OT-10029') && /1[.,]029 km/.test(det) && det.includes('mec1@taller.test') && det.includes('Semua baik'), det.slice(0, 300));
         ok('S9 ' + pre + 'el foco va al título del parte', await p.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-tl') === 'parte-titulo'));
         ok('S9 ' + pre + 'fotos: 5 fijas + 1 de daño, el cuentakm sin foto', (await p.$$eval('[data-tl="parte-fotos"] li', l => l.length)) === 6 && (await p.$$eval('[data-accion="tl-parte-foto"]', l => l.length)) === 5);
-        ok('S9 ' + pre + 'revisiones: 3, con lo contestado y lo que no', (await p.$$eval('[data-tl="parte-revisiones"] li', l => l.length)) === 3 && (await p.$eval('[data-tl="parte-revisiones"]', e => e.textContent)).includes('Kencangkan'));
+        ok('S9 ' + pre + 'revisiones: 5 (con «luces» y «espejos», del modelo), con lo contestado y lo que no', (await p.$$eval('[data-tl="parte-revisiones"] li', l => l.length)) === 5 && (await p.$eval('[data-tl="parte-revisiones"]', e => e.textContent)).includes('Kencangkan'));
         ok('S9 ' + pre + 'SOLO LECTURA: ni una casilla en la vista y solo botones de mirar', await p.$eval('[data-tl="vista-partes"]', v => !v.querySelector('input,select,textarea') && Array.from(v.querySelectorAll('button')).every(b => ['tl-partes-lista', 'tl-parte-foto'].includes(b.getAttribute('data-accion')))));
         await sinScroll(p, 'S9 parte ' + pre); await sinTraducir(p, 'S9 parte ' + pre);
         await shot(p, 'partes_parte_' + anchoS9 + '_' + idioma + '.png', true);

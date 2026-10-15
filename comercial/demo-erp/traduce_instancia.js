@@ -25,8 +25,11 @@
  */
 (function () {
   if (typeof document === 'undefined' || typeof window.lwT !== 'function') return;
+  // El idioma se lee al ARRANCAR (DOMContentLoaded), no al cargar este fichero: la raíz del panel (/index.html de Lawang) carga i18n.js ANTES
+  // que idioma.js, así que aquí LW_IDIOMA aún no existía, este fichero se salía y la página «sin permiso» (/?sin_permiso=…) quedaba con el
+  // aria-label «Herramientas» del menú en español (bbm-idioma-total, 15-oct-2026, barrido en vivo de bbm.axisworks.studio en en e id).
   var L = window.LW_IDIOMA;
-  if (!L || L === 'es') return;
+  function idiomaListo() { L = window.LW_IDIOMA; return !!L && L !== 'es'; }
   var E = window.LW_EN || {}, I = window.LW_ID || {}, tiene = Object.prototype.hasOwnProperty;
   // Frases montadas con un dato: [regex sobre el texto entero, {en, id}]. {1}, {2}… son los grupos; un grupo que sea una clave se traduce.
   var PATRONES = __AXW_PATRONES__;
@@ -128,6 +131,7 @@
   }
   function todo() { if (document.body) arbol(document.body); titulo(); }
   function arranca() {
+    if (!idiomaListo()) { delete window.axwTraduceTexto; return; }   // en español no se toca el DOM
     todo();
     // Lo que pintan después las pantallas (listas, avisos, ventanas). Se traduce lo AÑADIDO; los cambios de texto que hace este fichero no
     // vuelven a disparar nada (sin characterData). Un nodo ya traducido ya no es una clave: volver a pasar por él no cambia nada.
@@ -143,6 +147,6 @@
     var te = document.querySelector('title');
     if (te) new MutationObserver(titulo).observe(te, { childList: true });
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca);
+  if (document.readyState === 'loading') { if (L === 'es') { delete window.axwTraduceTexto; return; } document.addEventListener('DOMContentLoaded', arranca); }
   else arranca();
 })();

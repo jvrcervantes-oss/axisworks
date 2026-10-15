@@ -90,7 +90,7 @@ async function servidor(s, nombre, a) {
   return err('42883', 'funcion desconocida ' + nombre);
 }
 
-const pagina = (idioma) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
+const pagina = (idioma, o = {}) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
 ${MARCADO}
 <script>
 window.__xss = undefined; window.__fromLlamado = 0; window.__fetchLlamado = 0; window.__sinEn = []; window.__errores = [];
@@ -104,6 +104,7 @@ window.LW_AUTH = Promise.resolve({ sb: sb, ficha: { rol: 'agente', herramientas:
 window.lwDatos = function (n, a) { return Promise.resolve(sb.rpc(n, a)).then(function (r) { return { data: r.data, error: r.error }; }); };
 window.LW_IDIOMA = '${idioma}';
 window.LW_EN = {};
+${o.sinMoneda ? '' : "window.lwMonedaBase = function () { return 'IDR'; };"}   // la moneda de la instancia (de su base); sinMoneda: una instancia que no la sabe
 window.lwLocale = function () { return window.LW_IDIOMA === 'en' ? 'en-GB' : 'es-ES'; };
 window.lwT = function (s) { s = String(s); if (window.LW_IDIOMA === 'en') { if (Object.prototype.hasOwnProperty.call(window.LW_EN, s)) return window.LW_EN[s]; if (!/^[\\s\u2014\u00b70-9.,%():\u2265\u2264-]*$/.test(s)) window.__sinEn.push(s); } return s; };
 window.lwIdiomaAplicar = function (raiz) { Array.prototype.forEach.call(raiz.querySelectorAll('[data-lwt]'), function (e) { e.textContent = window.lwT(e.textContent); }); };
@@ -119,8 +120,17 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const ctx = await nav.newContext({ viewport: { width: opts.ancho || 1440, height: 1000 } });
     const p = await ctx.newPage();
     await p.exposeFunction('__srv', (n, a) => servidor(base, n, a));
-    await p.setContent(pagina(opts.idioma || 'es'), { waitUntil: 'load' });
+    await p.setContent(pagina(opts.idioma || 'es', opts), { waitUntil: 'load' });
     if (!opts.sinEspera) await p.waitForFunction(() => document.querySelector('[data-en="estado"]').getAttribute('data-tipo') !== 'cargando', null, { timeout: 5000 });
+    // S4 (15-oct-2026): la página va en 3 pasos con lo opcional plegado. Antes de escribir en un campo de otro paso, se pulsa su botón de paso y se abre
+    // su plegado, como la persona. Las pruebas de siempre miden lo mismo.
+    const revela = sel => p.evaluate(s => {
+      const el = document.querySelector(s); if (!el) return;
+      const sec = el.closest('[data-en^="bloque-"]'), paso = { 'bloque-sede': 1, 'bloque-tarifa': 2, 'bloque-limites': 3, 'bloque-activar': 3, 'bloque-guardar': 3 }[sec && sec.getAttribute('data-en')];
+      if (paso && sec.classList.contains('axw-oculto')) { const b = document.querySelector('[data-accion="en-ir-paso"][data-paso="' + paso + '"]'); if (b) b.click(); }
+      const d = el.closest('details'); if (d && !d.open) d.open = true;
+    }, sel);
+    for (const m of ['fill', 'selectOption', 'check', 'uncheck', 'click']) { const orig = p[m].bind(p); p[m] = async (sel, ...r) => { if (typeof sel === 'string') await revela(sel); return orig(sel, ...r); }; }
     return { base, p, ctx };
   }
   const txt = (p, sel) => p.$eval(sel, e => e.textContent);
@@ -206,7 +216,8 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   // 3. «lat, lng»: lo malformado se rechaza sin llamar; lo bueno viaja como numeros
   for (const [v, texto] of [['abc', 'No se entienden'], ['-8.65', 'No se entienden'], ['8,115', 'No se entienden'], ['-8,65,115,21', 'No se entienden'], ['-8,65, 115,21', 'No se entienden'],
     ['-8.65, 115,21', 'No se entienden'], ['8, 115', 'No se entienden'], ['91.5, 10.5', 'La latitud va de -90 a 90'], ['10.5, 190.5', 'La longitud'.replace('La longitud', 'La latitud va de -90 a 90')], ['120.5, 10.5', '¿Están al revés?'],
-    ['N 8.65, E 115.2', 'No se entienden'], ['8.65 115.2 3.3', 'No se entienden']]) {
+    ['N 8.65, E 115.2', 'No se entienden'], ['8.65 115.2 3.3', 'No se entienden'],
+    ['https://maps.app.goo.gl/AbCdEf123', 'Ese enlace no marca la tienda'], ['https://www.google.com/maps/@-8.65,115.21,15z', 'Ese enlace no marca la tienda']]) {   // M4 (15-oct): el enlace corto de «Compartir» no lleva el punto
     const { base, p, ctx } = await abre();
     await p.fill(campo('sede_coord'), v); await p.fill(campo('motivo'), 'Alta de la sede');
     await guardar(p);
@@ -215,7 +226,9 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await ctx.close();
   }
   for (const [v, lat, lng] of [['-8.65, 115.21', -8.65, 115.21], ['-8.65,115.21', -8.65, 115.21], ['-8,65 115,21', -8.65, 115.21], ['-8,65; 115,21', -8.65, 115.21], ['\u22128.65, 115.21', -8.65, 115.21],
-    ['  +8.123456789 ,  -179.9 ', 8.123457, -179.9], ['-8.65\u00b0, 115.21\u00b0', -8.65, 115.21], ['-90.0, 180.0', -90, 180]]) {
+    ['  +8.123456789 ,  -179.9 ', 8.123457, -179.9], ['-8.65\u00b0, 115.21\u00b0', -8.65, 115.21], ['-90.0, 180.0', -90, 180],
+    // M4 (15-oct): un enlace de Google Maps viaja como sus números (el sitio marcado, !3d!4d, gana al centro del mapa, @)
+    ['https://www.google.com/maps/place/Tienda/@-8.6512,115.1300,17z/data=!3m1!4b1!8m2!3d-8.6501!4d115.1312', -8.6501, 115.1312]]) {
     const { base, p, ctx } = await abre();
     await p.fill(campo('sede_coord'), v); await p.fill(campo('motivo'), 'Alta de la sede');
     await guardar(p);
@@ -334,7 +347,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('con la entrega activa la sede esta bloqueada desde el primer momento', (await p.$eval(campo('sede_coord'), e => e.readOnly)) && (await txt(p, '[data-en="sede-bloqueo"]')).includes('Apaga la entrega'));
     await p.evaluate(() => { document.querySelector('[data-campo="sede_coord"]').value = '-1.0, 1.0'; });   // como si lo cambiaran desde las herramientas del navegador: la pantalla no lo manda
     await p.fill(campo('tope_dia'), '70'); await p.fill(campo('motivo'), 'Subo el tope en caliente'); await guardar(p);
-    ok('cambiar algo con la entrega ACTIVA tambien pide confirmacion', (await txt(p, '[data-axw="dialogo"]')).includes('Esto cambia el precio al bot desde ya') && (await txt(p, '[data-axw="dialogo"]')).includes('Límites y política') && escritas(base).length === 0);
+    ok('cambiar algo con la entrega ACTIVA tambien pide confirmacion', (await txt(p, '[data-axw="dialogo"]')).includes('Esto cambia el precio al bot desde ya') && (await txt(p, '[data-axw="dialogo"]')).includes('Recogida y límites') && escritas(base).length === 0);
     await p.click('[data-accion="en-modal-confirmar"]');
     await espera(p, () => document.querySelector('[data-en="exito"]:not(.axw-oculto)'));
     ok('el cambio de la sede en un campo bloqueado NO viaja (la sede sigue siendo la de la base)', J(escritas(base)[0][1].p_datos) === J({ tope_dia: 70 }), J(escritas(base)));
@@ -568,6 +581,59 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     if (SHOT) await p.screenshot({ path: SHOT + '_390_solo_admin.png', fullPage: true });
     await ctx.close();
   }
+
+  // S4 (bbm-comodidad, 15-oct-2026): la página en 3 pasos, como mucho 3 campos a la vista en cada uno, a 1440 y 390; un error lleva al paso de su campo
+  for (const ancho of [1440, 390]) {
+    const { p, ctx } = await abre({ ancho, base: { configurada: true, conServicio: true } });
+    const cuenta = () => p.evaluate(() => [...document.querySelectorAll('[data-en="form"] input, [data-en="form"] select, [data-en="form"] textarea')]
+      .filter(e => e.checkVisibility({ contentVisibilityAuto: true, visibilityProperty: true })).map(e => e.getAttribute('data-campo')));
+    const linea = () => txt(p, '[data-en="paso-linea"]');
+    const m = {};
+    m.paso1 = await cuenta(); const l1 = await linea();
+    await p.evaluate(() => document.querySelector('[data-accion="en-siguiente"]').click()); m.paso2 = await cuenta(); const l2 = await linea();
+    await p.evaluate(() => document.querySelector('[data-accion="en-siguiente"]').click()); m.paso3 = await cuenta(); const l3 = await linea();
+    ok(ancho + ' px · S4 entrega: «Paso k de 3» con su pregunta y como mucho 3 campos a la vista en cada paso', l1.includes('Paso 1 de 3') && l2.includes('Paso 2 de 3') && l3.includes('Paso 3 de 3')
+       && J(m.paso1) === J(['sede_nombre', 'sede_coord']) && J(m.paso2) === J(['precio_km', 'km_max']) && J(m.paso3) === J(['cobra_recogida', 'activa', 'motivo']), J(m));
+    ok(ancho + ' px · S4 entrega: en el paso 3 no hay «Siguiente» y sí «Guardar»; en el 1 no hay «Atrás»', !(await p.isVisible('[data-accion="en-siguiente"]')) && await p.isVisible('[data-accion="en-guardar"]'));
+    await p.evaluate(() => document.querySelector('[data-accion="en-ir-paso"][data-paso="2"]').click());
+    await p.evaluate(() => { const e = document.querySelector('[data-campo="precio_km"]'); e.value = 'abc'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    await p.evaluate(() => document.querySelector('[data-accion="en-ir-paso"][data-paso="3"]').click());
+    await p.evaluate(() => { const e = document.querySelector('[data-campo="motivo"]'); e.value = 'Prueba de pasos'; });
+    await p.evaluate(() => document.querySelector('[data-accion="en-guardar"]').click());
+    ok(ancho + ' px · S4 entrega: un error del paso 2 (precio por km) lleva al paso 2 con el campo marcado y nada se envía', (await linea()).includes('Paso 2 de 3')
+       && (await p.getAttribute(campo('precio_km'), 'aria-invalid')) === 'true' && await p.isVisible(campo('precio_km')));
+    const d = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth })); ok(ancho + ' px · S4 entrega: sin scroll horizontal con los pasos', d.sw <= d.cw, J(d));
+    console.log('  campos a la vista ' + ancho + ' px: ' + J(m));
+    await ctx.close();
+  }
+  {
+    // sin tarifa todavía: la moneda de la instancia sale puesta (plegada y junto al precio) y la primera tarifa pide solo el precio
+    const { base, p, ctx } = await abre({ base: { conServicio: true } });
+    ok('S4 entrega: sin tarifa, «Precio por km (IDR)» con la moneda de la instancia ya puesta', (await txt(p, 'label[for="en-f-precio_km"]')) === 'Precio por km (IDR)' && (await p.inputValue(campo('moneda'))) === 'IDR');
+    await p.fill(campo('sede_coord'), '-8.65, 115.21'); await p.fill(campo('precio_km'), '2500'); await p.fill(campo('motivo'), 'Primera tarifa'); await guardar(p);
+    await espera(p, () => document.querySelector('[data-en="exito"]:not(.axw-oculto)'));
+    const w = escritas(base).filter(x => x[0] === 'entrega_tarifa_guarda');
+    ok('S4 entrega: la primera tarifa se guarda con solo el precio, en la moneda de la instancia', w.length === 1 && w[0][1].p_datos.moneda === 'IDR' && w[0][1].p_datos.precio_km === 2500, J(w));
+    await ctx.close();
+  }
+  {
+    // una instancia que no sabe su moneda y sin tarifa: el precio solo no basta; el error lleva al paso 2 y abre el plegado con la moneda
+    const { base, p, ctx } = await abre({ base: { conServicio: true }, sinMoneda: true });
+    ok('S4 entrega: sin moneda de la instancia, el rótulo es «Precio por km» sin moneda', (await txt(p, 'label[for="en-f-precio_km"]')) === 'Precio por km');
+    await p.fill(campo('sede_coord'), '-8.65, 115.21'); await p.fill(campo('precio_km'), '2500'); await p.fill(campo('motivo'), 'Primera tarifa'); await guardar(p);
+    ok('S4 entrega: sin moneda, no se envía la tarifa y vuelve al paso 2 con «Más datos» abierto y la moneda a la vista', (await txt(p, '[data-en="paso-linea"]')).includes('Paso 2 de 3')
+       && await p.$eval('[data-en="bloque-tarifa"] [data-axw="mas-datos"]', d => d.open) && await p.isVisible(campo('moneda')) && escritas(base).every(x => x[0] !== 'entrega_tarifa_guarda'), J(escritas(base)));
+    await ctx.close();
+  }
+  {
+    // guardar solo la sede, sin tarifa: la moneda puesta no cuenta como un cambio de tarifa
+    const { base, p, ctx } = await abre({ base: { conServicio: true } });
+    await p.fill(campo('sede_coord'), '-8.65, 115.21'); await p.fill(campo('motivo'), 'Solo la sede'); await guardar(p);
+    await espera(p, () => document.querySelector('[data-en="exito"]:not(.axw-oculto)'));
+    ok('S4 entrega: guardar solo la sede no intenta una tarifa por la moneda ya puesta', escritas(base).every(x => x[0] !== 'entrega_tarifa_guarda'), J(escritas(base)));
+    await ctx.close();
+  }
+  console.log('  toques S4 entrega: antes 13 campos en una página; ahora 2 + 2 + 3 con «Siguiente» (2 toques más) o saltando con los botones de paso');
 
   await nav.close();
   console.log(fallos ? '\n' + fallos + ' FALLO(S)' : '\nTODO EN VERDE');

@@ -311,8 +311,11 @@ build.DIST = paquete({'contracts/assets/i18n.js': '(function(){var EN={"Hola":"H
 build.menu_i18n()
 i18n = open(os.path.join(build.DIST, 'contracts', 'assets', 'i18n.js'), encoding='utf-8').read()
 build.DIST = viejo_dist
-r = subprocess.run(['node', '-e', 'var window={};' + i18n + ';console.log(JSON.stringify([window.LW_EN.Taller,window.LW_ID.Taller,window.LW_EN.Ventas,window.LW_ID["Flota y tarifas"],window.LW_EN.Hola]))'],
-                   capture_output=True, text=True, encoding='utf-8')
+# a un fichero y no por `node -e`: con los rótulos de los editores (i18n_editores.json, 15-oct) el bloque pasa del límite de 32 K de la línea de
+# órdenes de Windows (WinError 206 en el gate de push)
+f_menu = os.path.join(tempfile.mkdtemp(), 'menu_i18n.js')
+open(f_menu, 'w', encoding='utf-8').write('var window={};' + i18n + ';console.log(JSON.stringify([window.LW_EN.Taller,window.LW_ID.Taller,window.LW_EN.Ventas,window.LW_ID["Flota y tarifas"],window.LW_EN.Hola]))')
+r = subprocess.run(['node', f_menu], capture_output=True, text=True, encoding='utf-8')
 mira('menú: Taller/Flota entran en LW_EN y LW_ID y una clave que ya existe no se pisa',
      r.returncode == 0 and json.loads(r.stdout.strip() or 'null') == ['Workshop', 'Bengkel', 'Ya', 'Armada dan tarif', 'Hello'])
 if r.returncode != 0:
@@ -364,7 +367,8 @@ HUB = ('<script src="https://cdn/supabase.min.js"></script><script src="/contrac
        '<script>const sb=window.supabase.createClient(a,b);window.LW_SB=sb;</script>')
 r, sal, capa = hub(HUB)
 mira('hub: la capa va en su fichero y se carga justo antes de instancia.js',
-     r == 'pasa' and capa == '/*capa*/window.fetch=window.fetch;'
+     # el hub es pantalla del núcleo de operación (bbm-idioma-total, 15-oct: sin la marca, «sin permiso» decía «this tool» en vez del nombre)
+     r == 'pasa' and capa == 'window.AXW_NUCLEO_OPERACION = true;\n/*capa*/window.fetch=window.fetch;'
      and '<script src="/%s"></script><script src="/contracts/assets/instancia.js?v=1"></script>' % build.HUB_CAPA in sal)
 mira('hub sin window.LW_SB = sb: PARA', hub(HUB.replace('window.LW_SB=sb;', ''))[0] == 'para')
 mira('hub con dos cargas de instancia.js: PARA', hub(HUB + '<script src="/contracts/assets/instancia.js"></script>')[0] == 'para')
