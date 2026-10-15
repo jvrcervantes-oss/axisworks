@@ -155,8 +155,7 @@
     var li = dlg.closest('[data-pm-fila]'), clave = li && li.getAttribute('data-pm-fila');
     if (dlg.open) dlg.close();
     if (dlg.parentNode) dlg.parentNode.removeChild(dlg);
-    var b = clave && document.querySelector('[data-pm-fila="' + clave + '"] [data-accion="pm-editar"]');
-    if (b) b.focus();
+    if (clave) enfoca(clave);
   }
   function editor(li) {
     var p = li._paso, comp = P.de(p.clave, p);
@@ -228,7 +227,7 @@
     });
   }
   // guardado: se cierra la ventana, se relee la base y el foco vuelve al «Cambiar» de ese paso (pinta() vacía el contenedor)
-  function enfoca(clave) { var b = document.querySelector('[data-pm-fila="' + clave + '"] [data-accion="pm-editar"]'); if (b) b.focus(); }
+  function enfoca(clave) { var b = document.querySelector('[data-pm-fila="' + clave + '"] [data-accion="pm-editar"]'); if (b) b.focus(); }   // predeploy-ok: el botón existe, lo crea filaPaso() con h(…, { 'data-accion': 'pm-editar' }), forma que el detector no lee
   function guardadoYCierra(dlg, clave) { cierra(dlg, true); return carga().then(function () { enfoca(clave); }); }
   function arranca() {
     var c = cont();
