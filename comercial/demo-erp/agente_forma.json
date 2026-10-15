@@ -98,23 +98,6 @@
   }
  },
  "escrituras": {
-  "agente_nota_decide": {
-   "args": {
-    "p_id": "entero",
-    "p_decision": "'hecha' | 'descartada'"
-   },
-   "devuelve": "{ok: true, decision}",
-   "quien": "herramienta agente, sin la cuenta de pruebas"
-  },
-  "agente_propuesta_decide": {
-   "args": {
-    "p_id": "entero",
-    "p_decision": "'aceptada' | 'rechazada'",
-    "p_nota": "texto 0-500 | null"
-   },
-   "devuelve": "{ok: true, estado}",
-   "quien": "owner de la ficha (una propuesta con toca_guarda cambia los límites del AaaS; #313)"
-  },
   "agente_para": {
    "args": {},
    "devuelve": "{parado: true}",
@@ -202,6 +185,26 @@
    },
    "devuelve": "{ok: true, tipo, quita, cambia} | {ok: false, motivo: 'forma' | 'linea' | 'nombre' | 'dominio' | 'dominio_compartido' | 'url' | 'demasiadas' | 'demasiados' | 'tiene_imagenes'}",
    "quien": "SOLO el dueño de la ficha"
+  }
+ },
+ "escrituras_sin_llamador": {
+  "_que": "Siguen en la base pero el panel ya no las llama desde el 15-oct-2026 (Hoy y Propuestas de cambio salieron del panel: plan aaas-equipo, revisión previa #383 punto 8). No se revocan en este cambio: antes Backend confirma que nada genera esas filas. test_agente.py comprueba que el panel NO las nombra.",
+  "agente_nota_decide": {
+   "args": {
+    "p_id": "entero",
+    "p_decision": "'hecha' | 'descartada'"
+   },
+   "devuelve": "{ok: true, decision}",
+   "quien": "herramienta agente, sin la cuenta de pruebas"
+  },
+  "agente_propuesta_decide": {
+   "args": {
+    "p_id": "entero",
+    "p_decision": "'aceptada' | 'rechazada'",
+    "p_nota": "texto 0-500 | null"
+   },
+   "devuelve": "{ok: true, estado}",
+   "quien": "owner de la ficha (una propuesta con toca_guarda cambia los límites del AaaS; #313)"
   }
  },
  "items_por_trabajo": {

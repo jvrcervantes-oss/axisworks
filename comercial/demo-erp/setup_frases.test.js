@@ -192,6 +192,19 @@ function carga(idioma, fuentes) {
     ok('ID efectivo de «' + es_ + '» es el de setup_comun.js o el del diccionario', winId.LW_ID[es_] === id_ || I18N_ID[es_] !== undefined);
   }
 
+  // ── Los tres pasos del AaaS abren su paso del asistente de Ajustes de agente.html (#ajustes-<paso>, 15-oct-2026), en el asistente y en
+  //    Ajustes › Configurar (los dos leen comp.enlace); un `donde` ajeno o raro no se toca ──────────────────────────────────────────────────
+  {
+    const P = carga('es').AXW_PASOS;
+    const enl = (clave, donde) => { const c = P.de(clave, { clave, donde, modulo: 'agente' }); return c.externo && typeof c.enlace === 'function' ? c.enlace({ clave, donde }) : 'SIN ENLACE'; };
+    ok('tope_aaas → /agente/#ajustes-tope', enl('tope_aaas', '/agente/') === '/agente/#ajustes-tope', enl('tope_aaas', '/agente/'));
+    ok('contexto_aaas → /agente/#ajustes-negocio', enl('contexto_aaas', '/agente/') === '/agente/#ajustes-negocio', enl('contexto_aaas', '/agente/'));
+    ok('limites_aaas → /agente/#ajustes-limites', enl('limites_aaas', '/agente/') === '/agente/#ajustes-limites', enl('limites_aaas', '/agente/'));
+    ok('otro paso externo (clave que el asistente no conoce) conserva su donde', enl('paso_sin_componente', '/flota/') === '/flota/', enl('paso_sin_componente', '/flota/'));
+    ok('un paso del AaaS con donde que no es /agente/ no gana ancla', enl('tope_aaas', '/otra/') === '/otra/', enl('tope_aaas', '/otra/'));
+    ok('donde raro: sin enlace', enl('tope_aaas', 'javascript:alert(1)') === null, String(enl('tope_aaas', 'javascript:alert(1)')));
+  }
+
   console.log('Códigos medidos: ' + codigos.pasos.size + ' pasos, ' + codigos.faltas.size + ' faltas, ' + codigos.hints.size + ' hints, ' + codigos.campos.size + ' campos, ' + codigos.modulos.size + ' módulos' + (viva ? ' (con la lista viva de ' + raiz + ')' : ''));
   console.log((fallos ? 'FALLAN ' + fallos + ' de ' : 'OK ') + total + ' comprobaciones — setup_frases.test.js');
   process.exit(fallos ? 1 : 0);
