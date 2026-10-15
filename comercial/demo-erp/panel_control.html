@@ -144,7 +144,8 @@ body.ax-app{background:var(--aw-chalk);color:var(--aw-night);font-family:var(--a
 .ax-modc.sel .ic{background:var(--aw-ultra);color:var(--aw-white)}
 .ax-modc.dep{border:2px dashed var(--aw-ultra);padding:19px}
 .ax-modc.na{background:var(--aw-chalk);border-style:dashed}
-.ax-modc.na .ic{background:var(--aw-line);color:var(--aw-text3)}
+.ax-modc.na .ic{background:var(--aw-line);color:var(--aw-text2)}
+.ax-modc .ft .cand{display:inline-flex;align-items:center;gap:6px}
 .ax-sw{position:relative;width:46px;height:28px;flex:none;padding:0;border:0;border-radius:999px;background:var(--aw-control);cursor:pointer}
 .ax-sw::before{content:"";position:absolute;inset:-8px -4px}   /* zona de toque de 44 px alrededor del carril de 28 */
 .ax-sw>span{position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:var(--aw-white);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
@@ -1248,18 +1249,33 @@ window.AXW_ASIS = (function () {
       (base ? '<span>' + esc(nombre('base')) + ':</span>' + etiquetaEstado(estadoSetup(base)) : '') + '</div>';
   }
 
+  /* Candado por tipo (owner, 16-oct-2026): en un ERP de un tipo, lo que es solo de OTRO tipo sale con candado y sin interruptor. Sale de lo que
+     manda la base (estado.tipo y, por módulo, tipos: erp_control_tipos por la edge local, A14), nunca de una lista de este panel. Sin tipo de la
+     instancia o sin tipos del módulo (base anterior a A13, el mando) no hay candado: decide la simulación. Solo APAGADO: apagar siempre se puede
+     (A13). Quien de verdad no lo deja encender es el disparador de la base; esto solo evita ofrecer lo que la base va a rechazar. */
+  var NOMBRE_TIPO = { propiedades: 'Propiedades', reservas: 'Reservas', servicios: 'Servicios' };
+  function deOtroTipo(e, m) {
+    if (!e || typeof e.tipo !== 'string' || !Array.isArray(m.tipos) || !m.tipos.length) return null;
+    if (m.tipos.indexOf('todos') !== -1 || m.tipos.indexOf(e.tipo) !== -1) return null;
+    return 'Solo para negocios de tipo ' + m.tipos.map(function (t) { return NOMBRE_TIPO[t] || String(t); }).join(' o ');
+  }
+
   function pintaInstancia() {
     var i = actual, e = i.estado, aviso = $('aviso-instancia');
     var act = activosDe(i);
+    var conCandado = function (m) { return act.indexOf(m.modulo) === -1 && !!deOtroTipo(e, m); };
     // S01: cabecera del diseño (ceja con la instancia, título partido 600/300, cuentas a la derecha). Las cuentas salen de la base:
     // encendidos y apagados de los módulos que lista (la base aparte, como en las tarjetas) y los objetos cerrados en su base.
     var noBase = e ? (e.modulos || []).filter(function (m) { return m.modulo !== 'base'; }) : [];
     var nOn = noBase.filter(function (m) { return act.indexOf(m.modulo) !== -1; }).length;
+    var nCand = noBase.filter(conCandado).length, nOff = noBase.length - nOn - nCand;
     $('cabecera-instancia').innerHTML =
-      '<div class="ax-cab"><div style="min-width:0"><div class="ax-mono ceja">' + esc(i.marca) + ' · ' + esc(i.dominio || i.nombre) + '</div>' +
+      '<div class="ax-cab"><div style="min-width:0"><div class="ax-mono ceja">' + esc(i.marca) + ' · ' + esc(i.dominio || i.nombre) +
+      (e && typeof e.tipo === 'string' ? ' · <span data-tipo-erp="' + esc(e.tipo) + '">ERP de ' + esc(NOMBRE_TIPO[e.tipo] || e.tipo) + '</span>' : '') + '</div>' +
       '<h2>Módulos <span class="l">de este negocio</span></h2></div>' +
       (e ? '<div class="estados"><span class="ax-pill on">' + ico('ok', 's16') + nOn + (nOn === 1 ? ' encendido' : ' encendidos') + '</span>' +
-        '<span class="ax-pill off">' + (noBase.length - nOn) + (noBase.length - nOn === 1 ? ' apagado' : ' apagados') + '</span>' +
+        '<span class="ax-pill off">' + nOff + (nOff === 1 ? ' apagado' : ' apagados') + '</span>' +
+        (nCand ? '<span class="ax-pill base" data-candado-cuenta="' + nCand + '">' + ico('candado', 's16') + nCand + ' de otro tipo</span>' : '') +
         '<span class="ax-pill base">' + (e.apagados || 0) + ' objetos cerrados en la base</span></div>' : '') + '</div>' + (e ? resumenSetup(e, act) : '');
     if (!i.editable) {
       aviso.classList.remove('hidden');
@@ -1283,18 +1299,24 @@ window.AXW_ASIS = (function () {
     // de configuración va junto al interruptor (data-setup-estado al lado de data-mod): lo lee así quien mira la tarjeta y las pruebas.
     cont.innerHTML = SECCIONES.filter(function (s) { return porSeccion[s]; }).map(function (s) {
       return '<div><h2 class="ax-mono ax-h3s">' + esc(s) + '</h2><div class="ax-grid">' +
-        porSeccion[s].sort(function (a, b) { return nombre(a.modulo).localeCompare(nombre(b.modulo), 'es'); }).map(function (m) {
+        // los de candado, al final de su sección: primero lo que este negocio puede usar
+        porSeccion[s].sort(function (a, b) { return (conCandado(a) - conCandado(b)) || nombre(a.modulo).localeCompare(nombre(b.modulo), 'es'); }).map(function (m) {
           var on = act.indexOf(m.modulo) !== -1;
+          var otro = deOtroTipo(e, m), cand = !on && !!otro;
           var faltanEdges = (m.edges || []).filter(function (x) { return desplegadas.indexOf(x) === -1; });
-          var nota = !m.instalable ? 'No instalado. ' + (m.motivo || 'Este módulo aún no existe como producto para esta instancia.') : (!on && faltanEdges.length ? 'Faltan funciones por desplegar' : (m.depende.length ? 'Necesita: ' + lista(m.depende) : 'Sin dependencias'));
-          var bloqueado = !i.editable || (!on && !m.instalable);
+          var nota = cand ? otro + '.' : on && otro ? otro + ': se puede apagar, pero no volver a encender.' :
+            !m.instalable ? 'No instalado. ' + (m.motivo || 'Este módulo aún no existe como producto para esta instancia.') : (!on && faltanEdges.length ? 'Faltan funciones por desplegar' : (m.depende.length ? 'Necesita: ' + lista(m.depende) : 'Sin dependencias'));
+          var bloqueado = !i.editable || cand || (!on && !m.instalable);
           var st = on ? estadoSetup(m) : null;
-          var izq = on ? (st ? etiquetaEstado(st) : '<span class="on">' + ico('ok', 's16') + 'Encendido</span>') : '<span>' + (m.instalable ? 'Apagado' : 'No instalado') + '</span>';
-          return '<div class="ax-modc' + (!on && !m.instalable ? ' na' : '') + '" data-tarjeta="' + esc(m.modulo) + '">' +
+          var izq = on ? (st ? etiquetaEstado(st) : '<span class="on">' + ico('ok', 's16') + 'Encendido</span>') :
+            cand ? '<span class="cand">' + ico('candado', 's16') + 'Con candado</span>' : '<span>' + (m.instalable ? 'Apagado' : 'No instalado') + '</span>';
+          return '<div class="ax-modc' + (cand || (!on && !m.instalable) ? ' na' : '') + '" data-tarjeta="' + esc(m.modulo) + '"' +
+            (otro ? ' data-otro-tipo="' + esc(m.tipos.join(',')) + '"' : '') + '>' +
             '<div class="hd"><span class="ic">' + ms(rot(m.modulo)[2]) + '</span><h3>' + esc(nombre(m.modulo)) + '</h3></div>' +
             (rot(m.modulo)[3] ? '<p>' + esc(rot(m.modulo)[3]) + '</p>' : '') + '<p class="nota">' + esc(nota) + '</p>' +
             '<div class="ft">' + izq +
-            '<button class="ax-sw" type="button" role="switch" aria-checked="' + on + '" aria-label="' + (on ? 'Apagar ' : 'Encender ') + esc(nombre(m.modulo)) + '"' +
+            '<button class="ax-sw" type="button" role="switch" aria-checked="' + on + '" aria-label="' + (on ? 'Apagar ' : 'Encender ') + esc(nombre(m.modulo)) +
+            (cand ? ' (con candado: ' + esc(otro.charAt(0).toLowerCase() + otro.slice(1)) + ')' : '') + '"' +
             (bloqueado ? ' disabled' : '') + ' data-mod="' + esc(m.modulo) + '"><span></span></button></div></div>';
         }).join('') + '</div></div>';
     }).join('');
