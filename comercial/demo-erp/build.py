@@ -238,13 +238,13 @@ def copia_v4():
 
 # Contadores que dicen «0» (15-oct-2026, Calidad, encargo de agencia-c0): cuenta() de motion.js escribía «0» en el TEXTO de cada contador
 # [data-lw^="k-"] y lo subía con requestAnimationFrame; hasta el primer fotograma —y para siempre con la pestaña oculta, donde rAF no corre—
-# Usuarios decía «0 activos» con 2 en la lista (Experiencia, bbm, 14-oct). Arreglado en Lawang 8297615bb: el dato se queda siempre en el
+# Usuarios decía «0 activos» con 2 en la lista (Experiencia, bbm, 14-oct). Arreglado en Lawang (8297615bb, afinado en 671a23edf): el dato se queda siempre en el
 # texto y la cifra que sube es una capa aria-hidden encima; sin animación si la pestaña está oculta. El fijado (lawang.json) es anterior, así
 # que el bloque nuevo llega tal cual, cortado del motion.js de Lawang (motion_cuenta_lawang.js), y MOTION_V de nav.js se recalcula como lo
 # hace Lawang (8 primeros del sha1 del fichero con LF) para que ningún navegador siga con el viejo de caché.
 # El portal de clientes (solo la demo: las instancias no llevan /portal/) tenía el mismo fallo con el importe en su propio cuenta()
-# (portal/motion.js): mismo arreglo en Lawang ee3d296a8, que llega igual con motion_cuenta_portal_lawang.js y motion.js?v=20261015.
-# QUITAR (constantes, funciones, sus llamadas en main() y los dos motion_cuenta_*.js) cuando el fijado pase de Lawang ee3d296a8: el bloque
+# (portal/motion.js): mismo arreglo en Lawang (ee3d296a8, afinado en 671a23edf), que llega igual con motion_cuenta_portal_lawang.js y motion.js?v=20261015.
+# QUITAR (constantes, funciones, sus llamadas en main() y los dos motion_cuenta_*.js) cuando el fijado pase de Lawang 671a23edf: el bloque
 # viejo ya no estará y esto para el build a propósito. Prueba: test_motion_cifra.py.
 # (fichero en dist/, ancla de inicio, ancla de fin, sha1 del bloque viejo del fijado con LF, bloque nuevo)
 MOTION_CUENTA = ('intranet/v4/assets/motion.js', '  var NUM = ', '  function entra() {',
@@ -5954,7 +5954,7 @@ def main():
         p = os.path.join(DIST, x)
         shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
     copia_v4()
-    cifra_cuenta()   # 15-oct: los contadores no dicen «0» (se quita al subir el fijado de Lawang por encima de 8297615bb)
+    cifra_cuenta()   # 15-oct: los contadores no dicen «0» (se quita al subir el fijado de Lawang por encima de 671a23edf)
     if '--instancia' in sys.argv:
         # El guard real manda a la puerta (antes /intranet/, ahora la raíz tras reraiz): es la pantalla de acceso de verdad.
         copia(os.path.join(LAWANG, 'intranet', 'index.html'), os.path.join(DIST, 'intranet', 'index.html'))

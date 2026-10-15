@@ -3,16 +3,16 @@
 """python test_motion_cifra.py — los contadores del ERP no dicen «0» (cifra_cuenta() de build.py, Calidad, 15-oct-2026).
 
 Por qué: cuenta() de motion.js escribía «0» en el texto de cada contador y lo subía con requestAnimationFrame; con la pestaña oculta se
-quedaba en 0 para siempre (Usuarios de bbm, 14-oct: «0 activos» con 2 en la lista). Arreglado en Lawang 8297615bb; el fijado de lawang.json
+quedaba en 0 para siempre (Usuarios de bbm, 14-oct: «0 activos» con 2 en la lista). Arreglado en Lawang 671a23edf; el fijado de lawang.json
 es anterior y build.py trae el bloque nuevo (motion_cuenta_lawang.js) y recalcula MOTION_V de nav.js.
 
 Sobre el motion.js y el nav.js REALES del fijado (o AXW_LAWANG_RAIZ):
   · el bloque viejo es el medido (si no, el build para: toca quitar el parche);
   · motion_cifra_prueba.cjs (copia de motion.test.js de Lawang) sale ROJO con el motion.js tal cual (la prueba puede fallar: pestaña
     oculta → 0) y VERDE con el parcheado;
-  · el parcheado es el de Lawang 8297615bb letra por letra (MOTION_V 095deca9, el que lleva nav.js de Lawang) y cifra_cuenta() deja ese
+  · el parcheado es el de Lawang 671a23edf letra por letra (MOTION_V 92fedc21, el que lleva nav.js de Lawang) y cifra_cuenta() deja ese
     MOTION_V en nav.js;
-  · el portal de clientes de la demo (su propio cuenta(), con el importe; Lawang ee3d296a8): su prueba sale ROJA sin parche y VERDE con
+  · el portal de clientes de la demo (su propio cuenta(), con el importe; Lawang 671a23edf): su prueba sale ROJA sin parche y VERDE con
     él, y cifra_cuenta_portal() sube motion.js?v en el index.html del portal;
   · si el bloque viejo cambia, cifra_cuenta_motion() aborta (nunca un reemplazo a ciegas)."""
 import contextlib
@@ -27,9 +27,9 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AQUI)
 import build  # noqa: E402
 
-MOTION_V_LAWANG = '095deca9'   # nav.js de Lawang 8297615bb (motion.js con el arreglo)
+MOTION_V_LAWANG = '92fedc21'   # nav.js de Lawang 671a23edf (motion.js con el arreglo)
 ARNES = os.path.join(AQUI, 'motion_cifra_prueba.cjs')
-ARNES_PORTAL = os.path.join(AQUI, 'motion_cifra_portal_prueba.cjs')   # copia de portal/motion.test.js de Lawang ee3d296a8
+ARNES_PORTAL = os.path.join(AQUI, 'motion_cifra_portal_prueba.cjs')   # copia de portal/motion.test.js de Lawang 671a23edf
 fallos, total = [], 0
 
 
@@ -62,7 +62,7 @@ try:
     open(p, 'w', encoding='utf-8', newline='').write(nuevo)
     rc, out = arnes(p)
     ok('con parche: el arnés sale VERDE (el dato siempre en el texto)', rc == 0, out[-300:])
-    ok('el parcheado es el motion.js de Lawang 8297615bb (MOTION_V %s)' % MOTION_V_LAWANG, build._motion_v(nuevo) == MOTION_V_LAWANG,
+    ok('el parcheado es el motion.js de Lawang 671a23edf (MOTION_V %s)' % MOTION_V_LAWANG, build._motion_v(nuevo) == MOTION_V_LAWANG,
        build._motion_v(nuevo))
     ok('solo cambia cuenta(): lo de fuera del bloque, igual', nuevo.startswith(motion[:motion.find('  var NUM = ')])
        and nuevo.endswith(motion[motion.find('  function entra() {'):]))
@@ -86,7 +86,7 @@ try:
     finally:
         build.DIST = dist_real
 
-    # el portal de clientes de la demo: su propio cuenta() con el importe (Lawang ee3d296a8)
+    # el portal de clientes de la demo: su propio cuenta() con el importe (Lawang 671a23edf)
     pm = open(os.path.join(build.LAWANG, 'portal', 'motion.js'), encoding='utf-8', newline='').read()
     pi = open(os.path.join(build.LAWANG, 'portal', 'index.html'), encoding='utf-8', newline='').read()
     pd = os.path.join(tmp, 'portal')

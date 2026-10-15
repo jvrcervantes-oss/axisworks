@@ -1,7 +1,7 @@
 // La cifra que cuenta es un adorno, nunca el dato (motion.js → cuenta(), 15-oct-2026, Calidad).
 //   node motion_cifra_prueba.cjs <ruta a un motion.js>
-// Copia de intranet/v4/assets/motion.test.js de Lawang 8297615bb para el ERP (lo lanza test_motion_cifra.py sobre el motion.js del fijado,
-// con y sin cifra_cuenta() de build.py). Se borra con cifra_cuenta() cuando el fijado pase de 8297615bb.
+// Copia de intranet/v4/assets/motion.test.js de Lawang 671a23edf para el ERP (lo lanza test_motion_cifra.py sobre el motion.js del fijado,
+// con y sin cifra_cuenta() de build.py). Se borra con cifra_cuenta() cuando el fijado pase de 671a23edf.
 //
 // Por qué: cuenta() escribía «0» en el TEXTO real de cada contador [data-lw^="k-"] y lo subía con
 // requestAnimationFrame. Hasta el primer fotograma —y para siempre en una pestaña oculta, donde rAF no corre—
@@ -49,7 +49,7 @@ function mundo(oculta) {
     document, performance: { now: () => ahora },
     requestAnimationFrame: (f) => { raf.push(f); return raf.length; },
     setTimeout: (f, ms) => { timers.push({ f, en: ahora + ms }); return timers.length; },
-    getComputedStyle: () => ({ color: 'rgb(10, 20, 30)', textAlign: 'left', position: 'static' }),
+    getComputedStyle: () => ({ color: 'rgb(10, 20, 30)', textAlign: 'left', position: 'static', paddingTop: '2px', paddingRight: '8px', paddingBottom: '2px', paddingLeft: '8px' }),
     Math, String, parseInt
   };
   vm.createContext(ctx);
@@ -96,6 +96,17 @@ ok('C otra escritura: se queda el dato nuevo, sin capa ni estilos', w.el.textCon
 w = mundo(false); w.ctx.cuenta(w.el, 0); w.fotograma(16);
 w.oculta();
 ok('D se oculta a medias: termina en el acto (sin capa ni estilos)', w.el.textContent === '2' && w.limpio(), { capa: !!w.capa(), style: w.el.style });
+
+// F · la capa lleva el relleno del contador (chips px-2 py-0.5: sin él la cifra que sube iba 8 px corrida y saltaba al acabar)
+w = mundo(false); w.ctx.cuenta(w.el, 0);
+const cF = w.capa();
+ok('F la capa copia el relleno del contador', !!cF && cF.style.paddingLeft === '8px' && cF.style.paddingRight === '8px' && cF.style.paddingTop === '2px' && cF.style.paddingBottom === '2px', cF && cF.style);
+
+// G · si otro script cambia un estilo a media animación, al acabar manda el suyo (no se repone a ciegas)
+w = mundo(false); w.ctx.cuenta(w.el, 0); w.fotograma(16);
+w.el.style.color = 'red'; w.el.style.position = 'absolute';
+for (let i = 0; i < 80; i++) w.fotograma(16);
+ok('G otro script cambió color y posición: se quedan los suyos', w.el.style.color === 'red' && w.el.style.position === 'absolute' && !w.capa(), w.el.style);
 
 // E · rAF parado: el temporizador de seguridad destapa el dato
 w = mundo(false); w.ctx.cuenta(w.el, 0);

@@ -1,5 +1,5 @@
-// Copia de portal/motion.test.js de Lawang ee3d296a8 para el ERP (lo lanza test_motion_cifra.py en una carpeta temporal con el motion.js
-// del portal al lado, con y sin cifra_cuenta_portal() de build.py). Se borra con cifra_cuenta() cuando el fijado pase de ee3d296a8.
+// Copia de portal/motion.test.js de Lawang 671a23edf para el ERP (lo lanza test_motion_cifra.py en una carpeta temporal con el motion.js
+// del portal al lado, con y sin cifra_cuenta_portal() de build.py). Se borra con cifra_cuenta() cuando el fijado pase de 671a23edf.
 // motion.test.js — lo puro de motion.js: qué perfil entra en cada pantalla, cómo recorre una cifra y cuándo
 // cambia la clave que decide si se anima. Lo visual lo cubre el arnés de capturas.
 const M = require('./motion.js');
@@ -79,7 +79,7 @@ ok(M.recorte({ top: 20, right: 600, bottom: 450, left: 0 }, dest, 8) === 'inset(
       removeEventListener: (e, f) => { oyentes[e] = (oyentes[e] || []).filter((x) => x !== f); } };
     const root = { document, requestAnimationFrame: (f) => { raf.push(f); return raf.length; },
       setTimeout: (f, ms) => { timers.push({ f, en: ahora + ms }); return timers.length; },
-      getComputedStyle: () => ({ color: 'rgb(1, 2, 3)', textAlign: 'right', position: 'static' }) };
+      getComputedStyle: () => ({ color: 'rgb(1, 2, 3)', textAlign: 'right', position: 'static', paddingTop: '2px', paddingRight: '8px', paddingBottom: '2px', paddingLeft: '8px' }) };
     const ctx = { root, M: { formatoDinero: (v) => Math.round(v) + ' €' }, valorCuenta: M.valorCuenta, Math, Number, isFinite, String };
     vm.createContext(ctx);
     vm.runInContext(src.slice(a, b) + '\nthis.cuenta = cuenta;', ctx);
@@ -105,6 +105,12 @@ ok(M.recorte({ top: 20, right: 600, bottom: 450, left: 0 }, dest, 8) === 'inset(
   ok(w.el.textContent === '20.000 €' && w.limpio(), 'cuenta: si se repinta a medias, manda lo nuevo y no queda capa');
   w = mundo(false); w.cuenta(w.el, 0); w.fotograma(16); w.oculta();
   ok(w.el.textContent === '19.000 €' && w.limpio(), 'cuenta: si la pestaña se oculta a medias, termina en el acto');
+  w = mundo(false); w.cuenta(w.el, 0);
+  const cF = w.capa();
+  ok(!!cF && cF.style.paddingLeft === '8px' && cF.style.paddingTop === '2px', 'cuenta: la capa copia el relleno del importe (si no, la cifra que sube va corrida)');
+  w = mundo(false); w.cuenta(w.el, 0); w.fotograma(16); w.el.style.color = 'red'; w.el.style.position = 'absolute';
+  for (let i = 0; i < 80; i++) w.fotograma(16);
+  ok(w.el.style.color === 'red' && w.el.style.position === 'absolute' && !w.capa(), 'cuenta: si otro script cambió un estilo a medias, se queda el suyo');
   w = mundo(false); w.cuenta(w.el, 0); w.reloj(800 + 1600);
   ok(w.el.textContent === '19.000 €' && w.limpio(), 'cuenta: sin fotogramas, el temporizador destapa el importe');
 })();
