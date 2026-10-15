@@ -1199,9 +1199,10 @@ def poda_ficheros_sin_pantalla(dist, candidatos):
     return sorted(quitados)
 
 
-def avisos_para_rotos(demo=False):
+def avisos_para_rotos(demo=False, pagina=None):
     """Cada herramienta enlazada que la demo no trae enseña el aviso, no un 404. `demo`: el de la demo para un cliente (en
-    inglés, AVISO_DEMO); sin él, el de siempre, que es el que usan las instancias."""
+    inglés, AVISO_DEMO); sin él, el de siempre, que es el que usan las instancias. `pagina(ruta)`: el aviso de la instancia en SUS idiomas
+    (bbm-idiomas, 15-oct: /contracts/ salía «Herramienta no incluida · Demo» en español en bbm, que es inglesa)."""
     if demo:
         texto = AVISO_DEMO.format(t='Not included in the demo',
                                   m='This older tool is not part of the demo: the demo shows the current version of the ERP.')
@@ -1213,7 +1214,9 @@ def avisos_para_rotos(demo=False):
             continue                                   # un fichero que falta es un fallo, no una pantalla
         d = os.path.join(DIST, ruta.strip('/').replace('/', os.sep))
         os.makedirs(d, exist_ok=True)
-        open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(texto)
+        open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(pagina('/' + ruta.strip('/') + '/') if pagina else texto)
+        if pagina:   # ya no es el AVISO verde de Lawang: LAWANG_POR_CONTEXTO no lo cuenta (como las retiradas por tipo)
+            AVISOS_SIN_PANTALLA.add(ruta.strip('/') + '/index.html')
 
 
 def comprueba_resultado(raiz_dir):
@@ -2382,6 +2385,145 @@ MENU_I18N = {
         'en': 'When closed, only admins get in: the rest of the team sees a maintenance screen with the reason, and anyone inside gets a warning and is signed out after 3 minutes. It is a screen gate: it does not change database permissions. Closing and reopening: any admin.',
         'id': 'Saat ditutup, hanya admin yang bisa masuk: anggota tim lain melihat layar pemeliharaan beserta alasannya, dan siapa pun yang sedang berada di dalam menerima peringatan lalu dikeluarkan setelah 3 menit. Ini hanya pintu di layar: izin basis data tidak berubah. Menutup dan membuka kembali: admin mana pun.'},
 }
+
+
+# bbm-idiomas (15-oct-2026, owner: «/ajustes/ no puede salir en español, ¿tengo que ir ventana a ventana avisándote?»): lo que el barrido de
+# pantallas (pruebas/idiomas_pantallas.harness.cjs, todas las del paquete, todos los módulos) encontró en español y no era una clave del
+# diccionario. Lo pinta traduce_instancia.js (el HTML de Lawang sin data-lwt) o lwT (lo que ya pasaba por él sin clave). Inglés: el término que
+# ya usa el diccionario de Lawang para lo mismo (Reparto → Routing, Escrow); indonesio: glosario_id.json (rekening para la cuenta bancaria,
+# perusahaan, kuitansi, invoice). Traducción automática SIN REVISAR por un hablante nativo (departamentos/idiomas: ISO 18587); la valida el
+# equipo de Dion como el resto del glosario. Lo que ya tenía inglés en Lawang solo recibe aquí su indonesio (una clave EN existente no se pisa).
+MENU_I18N.update({
+    # Cuentas de cobro y reparto (pantalla de Lawang sin data-lwt)
+    'Cuentas de Cobro & Reparto': {'en': 'Payment Accounts & Routing', 'id': 'Rekening Pembayaran & Alokasi'},
+    'Las cuentas a las que transfiere el cliente, y qué cuenta puede elegir el agente en cada documento y en cada proyecto.': {
+        'en': 'The accounts the client transfers to, and which account the agent can choose on each document and each project.',
+        'id': 'Rekening tujuan transfer pelanggan, dan rekening mana yang dapat dipilih agen di setiap dokumen dan setiap proyek.'},
+    'Ver el reparto lo puede cualquier admin; cambiarlo exige super admin, y el permiso lo comprueba la base. La clave de una cuenta no se edita nunca: viaja dentro de cada documento ya emitido.': {
+        'en': 'Any admin can see the routing; changing it requires a super admin, and the database checks the permission. An account key is never edited: it travels inside every document already issued.',
+        'id': 'Setiap admin dapat melihat alokasi; mengubahnya memerlukan super admin, dan izinnya diperiksa oleh basis data. Kode rekening tidak pernah diubah: kode itu ikut di setiap dokumen yang sudah diterbitkan.'},
+    'Cuentas activas': {'en': 'Active accounts', 'id': 'Rekening aktif'},
+    'dadas de alta': {'en': 'registered', 'id': 'terdaftar'},   # «de ⟨n⟩ dadas de alta»: el número va en su propio <span data-lw>
+    'Cuentas de cobro': {'en': 'Payment accounts', 'id': 'Rekening pembayaran'},
+    'Depósito en garantía': {'en': 'Escrow deposit', 'id': 'Deposit escrow'},
+    'cuentas escrow': {'en': 'escrow accounts', 'id': 'rekening escrow'},
+    'Documentos que cobran': {'en': 'Documents that collect payment', 'id': 'Dokumen yang menagih'},
+    'plantillas de pago': {'en': 'payment templates', 'id': 'templat pembayaran'},
+    'Sin cuenta marcada': {'en': 'No account selected', 'id': 'Tanpa rekening terpilih'},
+    'ningún documento vivo se queda sin cuenta': {'en': 'no live document is left without an account', 'id': 'tidak ada dokumen aktif tanpa rekening'},
+    'Nueva cuenta': {'en': 'New account', 'id': 'Rekening baru'},
+    'Por contrato': {'en': 'By contract', 'id': 'Per kontrak'},
+    'Por proyecto': {'en': 'By project', 'id': 'Per proyek'},
+    'Por cuenta': {'en': 'By account', 'id': 'Per rekening'},
+    'Reparto': {'en': 'Routing', 'id': 'Alokasi'},
+    'Qué cuentas puede elegir el agente en cada contrato': {'en': 'Which accounts the agent can choose on each contract', 'id': 'Rekening yang dapat dipilih agen di setiap kontrak'},
+    'Cuentas ofrecidas': {'en': 'Accounts offered', 'id': 'Rekening yang ditawarkan'},
+    'Ningún tipo de contrato registrado.': {'en': 'No contract type registered.', 'id': 'Belum ada jenis kontrak terdaftar.'},
+    'Las cuentas dadas de alta': {'en': 'Registered accounts', 'id': 'Rekening terdaftar'},
+    'Ninguna cuenta dada de alta.': {'en': 'No account registered.', 'id': 'Belum ada rekening terdaftar.'},
+    'Ningún proyecto activo.': {'en': 'No active project.', 'id': 'Tidak ada proyek aktif.'},
+    'Qué proyectos tienen reglas propias, fuera del reparto general': {'en': 'Which projects have their own rules, outside the general routing', 'id': 'Proyek dengan aturan sendiri, di luar alokasi umum'},
+    'En cuántos documentos se ofrece cada cuenta': {'en': 'On how many documents each account is offered', 'id': 'Di berapa dokumen setiap rekening ditawarkan'},
+    'Con contrato': {'en': 'With contract', 'id': 'Dengan kontrak'},
+    'En firma': {'en': 'Out for signing', 'id': 'Dalam penandatanganan'},
+    'Trayendo los clientes…': {'en': 'Loading clients…', 'id': 'Memuat pelanggan…'},
+    'Todos los vencimientos': {'en': 'All payments', 'id': 'Semua jatuh tempo'},
+    'Incluir sin firmar': {'en': 'Include unsigned', 'id': 'Sertakan yang belum ditandatangani'},
+    'Ver más hechos': {'en': 'See more events', 'id': 'Lihat kejadian lainnya'},
+    'Enviar': {'en': 'Send', 'id': 'Kirim'},
+    'Mes': {'en': 'Month', 'id': 'Bulan'},
+    # Comunicación
+    'Aún no hay comunicados. Escribe el primero a la izquierda.': {'en': 'No announcements yet. Write the first one on the left.', 'id': 'Belum ada pengumuman. Tulis yang pertama di sebelah kiri.'},
+    'No se pudieron traer los comunicados.': {'en': 'Could not load the announcements.', 'id': 'Pengumuman tidak dapat dimuat.'},
+    'Vista previa del email': {'en': 'Email preview', 'id': 'Pratinjau email'},
+    # Finanzas y Bancos
+    'Base sin impuesto de los gastos registrados': {'en': 'Pre-tax amount of recorded expenses', 'id': 'DPP pengeluaran yang tercatat'},
+    'Recibís cobrados menos gastos y comisiones pagados': {'en': 'Receipts collected minus expenses and commissions paid', 'id': 'Kuitansi yang tertagih dikurangi pengeluaran dan komisi yang dibayar'},
+    'Se solapa con «Firmado por cobrar»: no se suman.': {'en': 'It overlaps with «Signed, to collect»: they are not added together.', 'id': 'Tumpang tindih dengan «Ditandatangani, belum ditagih»: tidak dijumlahkan.'},
+    'Firmado por cobrar': {'en': 'Signed, to collect', 'id': 'Ditandatangani, belum ditagih'},
+    'Secciones de Finanzas': {'en': 'Finance sections', 'id': 'Bagian Keuangan'},
+    'Saldos por cuenta': {'en': 'Balances by account', 'id': 'Saldo per rekening'},
+    'cobrado por contrato': {'en': 'collected per contract', 'id': 'tertagih per kontrak'},
+    'calendario de pagos': {'en': 'payment schedule', 'id': 'jadwal pembayaran'},
+    'facturas y recibís': {'en': 'invoices and receipts', 'id': 'invoice dan kuitansi'},
+    'pendiente por factura': {'en': 'outstanding per invoice', 'id': 'sisa per invoice'},
+    'unidades': {'en': 'units', 'id': 'unit'},
+    'solicitudes de pago': {'en': 'payment requests', 'id': 'permintaan pembayaran'},
+    'comisiones': {'en': 'commissions', 'id': 'komisi'},
+    # «No se ha podido cargar «⟨qué⟩» …» (datos.js de Lawang): lo que va entre comillas, para PATRONES_INSTANCIA
+    'ajustes': {'en': 'settings', 'id': 'pengaturan'},
+    'compradores': {'en': 'clients', 'id': 'pelanggan'},
+    'cuentas bancarias': {'en': 'bank accounts', 'id': 'rekening bank'},
+    'facturas': {'en': 'invoices', 'id': 'invoice'},
+    'historial de sociedades': {'en': 'company history', 'id': 'riwayat perusahaan'},
+    'impuestos': {'en': 'taxes', 'id': 'pajak'},
+    'operaciones': {'en': 'deals', 'id': 'transaksi'},
+    'proyectos': {'en': 'projects', 'id': 'proyek'},
+    'recibís': {'en': 'receipts', 'id': 'kuitansi'},
+    'sociedades': {'en': 'companies', 'id': 'perusahaan'},
+    'tipos de contrato': {'en': 'contract types', 'id': 'jenis kontrak'},
+    # Ajustes y su asistente (setup_modulos.js y Lawang): frases que pasan por lwT sin clave
+    'Configurar': {'en': 'Configure', 'id': 'Atur'},
+    'No se ha podido mirar la configuración': {'en': 'Could not check the configuration', 'id': 'Konfigurasi tidak dapat diperiksa'},
+    'No se ha podido hacer. Si vuelve a pasar, avisa al estudio.': {'en': 'That could not be done. If it happens again, let the studio know.', 'id': 'Tidak dapat dilakukan. Jika terjadi lagi, beri tahu studio.'},
+    '«Tu reserva está confirmada.»': {'en': '«Your booking is confirmed.»', 'id': '«Booking Anda sudah dikonfirmasi.»'},
+    # Alta del bot de WhatsApp (bot_alta.html: pasa por lwT y no tenía clave)
+    'Condiciones del servicio': {'en': 'Terms of service', 'id': 'Ketentuan layanan'},
+    'Cuando todo esté completo, el estudio enciende el bot desde su panel.': {'en': 'When everything is complete, the studio switches the bot on from its panel.', 'id': 'Setelah semuanya lengkap, studio menyalakan bot dari panelnya.'},
+    'Todavía no hay condiciones publicadas: avisa al estudio.': {'en': 'No terms published yet: let the studio know.', 'id': 'Belum ada ketentuan yang diterbitkan: beri tahu studio.'},
+    'Pendiente: lo firma el cliente con el estudio y el estudio lo marca aquí cuando lo recibe. Sin él el bot no se enciende.': {
+        'en': 'Pending: the client signs it with the studio, and the studio marks it here when it arrives. Without it the bot does not switch on.',
+        'id': 'Menunggu: klien menandatanganinya bersama studio, dan studio menandainya di sini setelah diterima. Tanpa itu bot tidak dapat dinyalakan.'},
+    'alta': {'en': 'sign-up', 'id': 'pendaftaran'},   # el tramo del menú «Bot de WhatsApp · alta»
+})
+
+# Traducciones de Lawang que en INGLÉS dejan dentro el nombre español de una casilla o un permiso («tick «Gastos y proveedores»»): en la instancia
+# se dice con el rótulo que ve en inglés (el de la casilla de Usuarios). Estas SÍ pisan (menu_i18n no pisa una clave existente).
+PISA_I18N = {
+    'Solo se importan cuentas marcadas como propias en Cuentas. Si falta una (por ejemplo Statrys), dala de alta en Cuentas y márcala «De la sociedad».': {
+        'en': 'Only accounts marked as own in Accounts can be imported. If one is missing (for example Statrys), add it in Accounts and tick «Company-owned».',
+        'id': 'Hanya rekening yang ditandai milik perusahaan di Rekening yang dapat diimpor. Jika ada yang belum ada (misalnya Statrys), tambahkan di Rekening dan centang «Milik perusahaan».'},
+    'De la sociedad': {'en': 'Company-owned', 'id': 'Milik perusahaan'},
+    'Si eres admin, pide que te marquen «Gastos y proveedores» en Usuarios.': {
+        'en': 'If you are an admin, ask to have «Expenses and suppliers» ticked in Users.',
+        'id': 'Jika Anda admin, minta agar «Pengeluaran dan pemasok» dicentang di Pengguna.'},
+    'Si eres admin, pide que te marquen «Bancos» en Usuarios.': {
+        'en': 'If you are an admin, ask to have «Banks» ticked in Users.', 'id': 'Jika Anda admin, minta agar «Bank» dicentang di Pengguna.'},
+    'Falta la casilla «Gastos y proveedores» en Usuarios: sin ella no se ve lo que sale.': {
+        'en': 'The «Expenses and suppliers» permission is missing in Users: without it outflows are not visible.',
+        'id': 'Izin «Pengeluaran dan pemasok» belum dicentang di Pengguna: tanpa itu uang keluar tidak terlihat.'},
+    'Sin la casilla «Gastos y proveedores» el gráfico enseña solo lo que entra.': {
+        'en': 'Without the «Expenses and suppliers» permission the chart shows only inflows.',
+        'id': 'Tanpa izin «Pengeluaran dan pemasok», grafik hanya menampilkan uang masuk.'},
+}
+
+# Frases de Lawang montadas con un dato (traduce_instancia.js): regex sobre el texto entero → molde por idioma; {n} = grupo n, traducido si es una
+# clave. Mismo sentido que el original; «revisa sesión/permisos» se dice entero.
+PATRONES_INSTANCIA = [
+    ['^No se ha podido cargar «(.+?)»( \\([^)]*\\))? — revisa sesión/permisos\\.$',
+     {'en': 'Could not load «{1}»{2} — check your session and permissions.', 'id': 'Tidak dapat memuat «{1}»{2} — periksa sesi dan izin Anda.'}],
+    ['^(\\d+) dadas de baja$', {'en': '{1} deactivated', 'id': '{1} dinonaktifkan'}],
+    ['^de (\\d+) tipos en el catálogo · (\\d+) archivados$', {'en': 'of {1} types in the catalogue · {2} archived', 'id': 'dari {1} jenis di katalog · {2} diarsipkan'}],
+    ['^Comunicados: (.+)$', {'en': 'Announcements: {1}', 'id': 'Pengumuman: {1}'}],
+]
+
+
+def traduce_instancia_js():
+    """Pega al final del i18n.js de la COPIA (después del núcleo del indonesio y de MENU_I18N) las correcciones de PISA_I18N y
+    traduce_instancia.js con PATRONES_INSTANCIA. Solo la instancia: Lawang y la demo no pasan por aquí (instancia())."""
+    ruta = os.path.join(DIST, 'contracts', 'assets', 'i18n.js')
+    t = open(ruta, encoding='utf-8').read()
+    if 'window.LW_EN = EN;' not in t:
+        aborta('traduce_instancia: i18n.js de Lawang ya no expone window.LW_EN')
+    js = open(os.path.join(AQUI, 'traduce_instancia.js'), encoding='utf-8').read()
+    if js.count('__AXW_PATRONES__') != 1:
+        aborta('traduce_instancia.js: tiene que llevar UNA vez el hueco __AXW_PATRONES__')
+    for p, _m in PATRONES_INSTANCIA:
+        re.compile(p)   # un patrón roto para aquí y no en el navegador
+    pisa = ('(function(){var D=%s,E=window.LW_EN,I=window.LW_ID;for(var k in D){if(E)E[k]=D[k].en;if(I)I[k]=D[k].id;}})();\n'
+            % json.dumps(PISA_I18N, ensure_ascii=False, sort_keys=True))
+    js = js.replace('__AXW_PATRONES__', json.dumps(PATRONES_INSTANCIA, ensure_ascii=False))
+    open(ruta, 'w', encoding='utf-8', newline='').write(t.rstrip() + '\n' + pisa + js.rstrip() + '\n')
 
 
 def menu_i18n():
@@ -5533,6 +5675,26 @@ def comprueba_documento_idiomas(dist, idiomas):
         aborta('documento: el papel de la instancia no sale entero en %s:\n%s' % ('·'.join(idiomas), (r.stdout + r.stderr)[-1500:]))
 
 
+def comprueba_pantallas_idiomas(dist, idiomas):
+    """Sobre el paquete construido: NINGUNA pantalla sale en español en un idioma de la instancia que no sea el español (owner, 15-oct-2026, bbm:
+    «/ajustes/ no puede salir en español, ¿tengo que ir ventana a ventana avisándote?»). El arnés (pruebas/idiomas_pantallas.harness.cjs) abre
+    cada carpeta con index.html del paquete en Chromium, con la base simulada vacía y caída, en cada idioma que no sea 'es', y mira texto, <option>,
+    placeholder, title, aria-label, <title>, lo oculto que se abrirá, los diálogos, LW_T_MISSES y el paginador. Para con cualquier salida que no sea
+    0: un 2 («no he podido mirar») tampoco es un verde. Datos de la base, correos y PDF quedan fuera de este arnés (el PDF lo mira el de arriba)."""
+    lenguas = [x for x in (idiomas or []) if x != 'es']
+    if not lenguas:
+        return
+    # la agencia de ESTE build (erp/modulos.json: todos los módulos encendidos, también desde un worktree) y el informe entero si se pide
+    entorno = dict(os.environ, LENGUAS=','.join(lenguas), AXW_AGENCIA_RAIZ=AGENCIA,
+                   PARALELO=os.environ.get('PARALELO', '4'))
+    r = subprocess.run(['node', os.path.join(AQUI, 'pruebas', 'idiomas_pantallas.harness.cjs'), dist], capture_output=True, text=True,
+                       encoding='utf-8', env=entorno)
+    sal = (r.stdout or '') + (r.stderr or '')
+    if r.returncode != 0:
+        aborta('idiomas: hay pantallas con texto en español en %s (salida %d del arnés):\n%s' % ('+'.join(lenguas), r.returncode, sal[-3000:]))
+    print('idiomas: ' + ' · '.join(l for l in sal.splitlines() if l.strip() and not l.startswith('FALLA'))[-300:])
+
+
 def instancia(nombre):
     url, clave, dominio, marca = _instancia_conf(nombre)
     asistente_maestro()   # AXW-136: la pantalla de peticiones del maestro (antes de limpiar y reubicar)
@@ -5573,6 +5735,7 @@ def instancia(nombre):
         idiomas_instancia(idiomas, pantalla)   # + el idioma de pantalla por defecto (el del registro; también el de la puerta sin sesión)
         documento_idiomas(idiomas)   # BBM-65 (13-oct): el papel de factura/recibí y su correo en el par de la instancia (id·en en bbm)
     menu_i18n()   # rótulos del menú en en/id en todas las páginas (después del núcleo del indonesio)
+    traduce_instancia_js()   # bbm-idiomas (15-oct): el HTML de Lawang sin data-lwt, en el idioma de la instancia (después de MENU_I18N)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]
@@ -5741,7 +5904,8 @@ def instancia(nombre):
         d = os.path.join(DIST, *ruta.split('/'))
         os.makedirs(os.path.dirname(d), exist_ok=True)
         open(d, 'w', encoding='utf-8').write(pagina_no_instalado(no_instalado, marca, None, '/' + ruta, herramienta=herr))
-    avisos_para_rotos()
+    # con idiomas, el aviso de la instancia en sus idiomas («Pantalla no incluida»); sin ellos, el de siempre
+    avisos_para_rotos(pagina=(lambda r: pagina_no_instalado(no_instalado, marca, None, r, herramienta=r)) if AVISO_IDIOMAS else None)
     # bbm-p42b: los colores de Lawang que quedan a fuego (editores, cajones, papel) a la piel; tras TODO lo que escribe páginas
     # (pagina_no_instalado también lleva el verde) y antes de versiona(), para que el ?v= cambie con ellos
     print('colores de Lawang a la piel: %d' % piel_colores_lawang(DIST, nombre))
@@ -5765,6 +5929,7 @@ def instancia(nombre):
     if idiomas:
         comprueba_idiomas(DIST, idiomas)
         comprueba_documento_idiomas(DIST, idiomas)
+        comprueba_pantallas_idiomas(DIST, idiomas)
     comprueba_resultado(DIST)
     # 4. Copia al clon del repo privado de la instancia (gitignored en la agencia).
     destino = os.path.join(DESPLIEGUES, nombre)
