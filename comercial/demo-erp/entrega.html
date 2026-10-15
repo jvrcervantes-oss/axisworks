@@ -47,7 +47,7 @@
 <p class="en-paso-linea" data-en="paso-linea" aria-live="polite"></p>
 <div class="en-pasos-botones">
 <button class="axw-boton" type="button" data-accion="en-ir-paso" data-paso="1"><span data-lwt>1 · Sede</span></button>
-<button class="axw-boton" type="button" data-accion="en-ir-paso" data-paso="2"><span data-lwt>2 · Tarifa</span></button>
+<button class="axw-boton" type="button" data-accion="en-ir-paso" data-paso="2"><span data-lwt>2 · Precio</span></button>
 <button class="axw-boton" type="button" data-accion="en-ir-paso" data-paso="3"><span data-lwt>3 · Activar</span></button>
 </div>
 </nav>
@@ -63,10 +63,10 @@
 </section>
 
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4" data-en="bloque-tarifa">
-<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>2 · Tarifa por kilómetro</h2>
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>2 · Precio y distancia</h2>
 <div class="en-rejilla">
 <div class="axw-campo"><label for="en-f-moneda" data-lwt>Moneda (3 letras)</label><input id="en-f-moneda" type="text" data-campo="moneda" maxlength="3" autocomplete="off"></div>
-<div class="axw-campo"><label for="en-f-precio_km" data-lwt>Precio por km</label><input id="en-f-precio_km" type="text" data-campo="precio_km" inputmode="decimal" autocomplete="off"><p class="en-ayuda" data-en="rango-precio_km"></p></div>
+<div class="axw-campo"><label for="en-f-precio_km"><span data-lwt>Precio por km</span><span data-en="precio-moneda"></span></label><input id="en-f-precio_km" type="text" data-campo="precio_km" inputmode="decimal" autocomplete="off"><p class="en-ayuda" data-en="rango-precio_km"></p></div>
 <div class="axw-campo"><label for="en-f-km_gratis" data-lwt>Km gratis</label><input id="en-f-km_gratis" type="text" data-campo="km_gratis" inputmode="decimal" autocomplete="off"><p class="en-ayuda" data-en="rango-km_gratis"></p></div>
 <div class="axw-campo"><label for="en-f-minimo" data-lwt>Mínimo por entrega</label><input id="en-f-minimo" type="text" data-campo="minimo" inputmode="decimal" autocomplete="off"><p class="en-ayuda" data-en="rango-minimo"></p></div>
 </div>
@@ -75,7 +75,7 @@
 </section>
 
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4" data-en="bloque-limites">
-<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>3 · Límites y política</h2>
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>3 · Recogida y límites</h2>
 <div class="en-rejilla">
 <div class="axw-campo"><label for="en-f-km_max" data-lwt>Km máximo</label><input id="en-f-km_max" type="text" data-campo="km_max" inputmode="decimal" autocomplete="off"><p class="en-ayuda" data-en="rango-km_max"></p></div>
 <div class="axw-campo"><label for="en-f-tope_dia" data-lwt>Tope de consultas por día</label><input id="en-f-tope_dia" type="text" data-campo="tope_dia" inputmode="numeric" autocomplete="off"><p class="en-ayuda" data-en="rango-tope_dia"></p></div>
@@ -130,7 +130,7 @@
     "Otra persona ha guardado cambios mientras tú editabas. Recarga para ver los valores nuevos: lo que has escrito se conserva.": "Orang lain telah menyimpan perubahan saat Anda mengedit. Muat ulang untuk melihat nilai baru: yang sudah Anda tulis tetap tersimpan.",
     "Recargar conservando lo que escribí": "Muat ulang, simpan tulisan saya",
     "1 · Sede": "1 · Kantor",
-    "Pasos": "Langkah", "2 · Tarifa": "2 · Tarif", "3 · Activar": "3 · Aktifkan", "‹ Atrás": "‹ Kembali", "Siguiente ›": "Lanjut ›",
+    "Pasos": "Langkah", "2 · Precio": "2 · Harga", "3 · Activar": "3 · Aktifkan", "‹ Atrás": "‹ Kembali", "Siguiente ›": "Lanjut ›",
     "Paso 1 de 3 · ¿Desde dónde sale la moto?": "Langkah 1 dari 3 · Motor berangkat dari mana?",
     "Paso 2 de 3 · ¿Cuánto cobras?": "Langkah 2 dari 3 · Berapa tarifnya?",
     "Paso 3 de 3 · Recogida, activar y guardar": "Langkah 3 dari 3 · Jemput, aktifkan, dan simpan",
@@ -138,13 +138,13 @@
     "Coordenadas (lat, lng)": "Koordinat (lat, lng)",
     "La entrega está activa: la sede no se puede cambiar. Apaga la entrega, guarda, y entonces cambia la sede.": "Antar sedang aktif: kantor tidak bisa diubah. Matikan antar, simpan, lalu ubah kantor.",
     "Cómo copiarlas: en un mapa, pulsa con el botón derecho sobre la oficina y haz clic en los números que salen arriba del menú (latitud y longitud). Se pegan tal cual, por ejemplo «-8.650000, 115.216667».": "Cara menyalin: di peta, klik kanan pada kantor lalu klik angka yang muncul di bagian atas menu (lintang dan bujur). Tempel apa adanya, misalnya «-8.650000, 115.216667».",
-    "2 · Tarifa por kilómetro": "2 · Tarif per kilometer",
+    "2 · Precio y distancia": "2 · Harga dan jarak",
     "Moneda (3 letras)": "Mata uang (3 huruf)",
     "Precio por km": "Harga per km",
     "Km gratis": "Km gratis",
     "Mínimo por entrega": "Minimum per antar",
     "Guardar una tarifa crea una nueva y deja la anterior en el historial. El mínimo se aplica después de restar los km gratis. Vacío en km gratis o mínimo = 0.": "Menyimpan tarif membuat tarif baru dan menyimpan yang lama di riwayat. Minimum berlaku setelah km gratis dikurangi. Km gratis atau minimum yang kosong = 0.",
-    "3 · Límites y política": "3 · Batas dan kebijakan",
+    "3 · Recogida y límites": "3 · Jemput dan batas",
     "Km máximo": "Km maksimum",
     "Tope de consultas por día": "Batas pengecekan per hari",
     "Tope de consultas por mes": "Batas pengecekan per bulan",
@@ -243,15 +243,15 @@
     'Otra persona ha guardado cambios mientras tú editabas. Recarga para ver los valores nuevos: lo que has escrito se conserva.': 'Someone else saved changes while you were editing. Reload to see the new values: what you typed is kept.',
     'Recargar conservando lo que escribí': 'Reload and keep what I typed',
     '1 · Sede': '1 · Office',
-    'Pasos': 'Steps', '2 · Tarifa': '2 · Rate', '3 · Activar': '3 · Switch on', '‹ Atrás': '‹ Back', 'Siguiente ›': 'Next ›',
+    'Pasos': 'Steps', '2 · Precio': '2 · Price', '3 · Activar': '3 · Switch on', '‹ Atrás': '‹ Back', 'Siguiente ›': 'Next ›',
     'Paso 1 de 3 · ¿Desde dónde sale la moto?': 'Step 1 of 3 · Where does the motorbike leave from?',
     'Paso 2 de 3 · ¿Cuánto cobras?': 'Step 2 of 3 · How much do you charge?',
     'Paso 3 de 3 · Recogida, activar y guardar': 'Step 3 of 3 · Collection, switch on and save', 'Nombre de la sede': 'Office name', 'Coordenadas (lat, lng)': 'Coordinates (lat, lng)',
     'La entrega está activa: la sede no se puede cambiar. Apaga la entrega, guarda, y entonces cambia la sede.': 'Delivery is on: the office cannot be changed. Switch delivery off, save, and then change the office.',
     'Cómo copiarlas: en un mapa, pulsa con el botón derecho sobre la oficina y haz clic en los números que salen arriba del menú (latitud y longitud). Se pegan tal cual, por ejemplo «-8.650000, 115.216667».': 'How to copy them: on a map, right-click the office and click the numbers shown at the top of the menu (latitude and longitude). Paste them as they are, for example “-8.650000, 115.216667”.',
-    '2 · Tarifa por kilómetro': '2 · Price per kilometre', 'Moneda (3 letras)': 'Currency (3 letters)', 'Precio por km': 'Price per km', 'Km gratis': 'Free km', 'Mínimo por entrega': 'Minimum per delivery',
+    '2 · Precio y distancia': '2 · Price and distance', 'Moneda (3 letras)': 'Currency (3 letters)', 'Precio por km': 'Price per km', 'Km gratis': 'Free km', 'Mínimo por entrega': 'Minimum per delivery',
     'Guardar una tarifa crea una nueva y deja la anterior en el historial. El mínimo se aplica después de restar los km gratis. Vacío en km gratis o mínimo = 0.': 'Saving a price creates a new one and keeps the old one in the history. The minimum applies after the free km are subtracted. Empty free km or minimum = 0.',
-    '3 · Límites y política': '3 · Limits and policy', 'Km máximo': 'Maximum km', 'Tope de consultas por día': 'Daily lookup limit', 'Tope de consultas por mes': 'Monthly lookup limit',
+    '3 · Recogida y límites': '3 · Pick-up and limits', 'Km máximo': 'Maximum km', 'Tope de consultas por día': 'Daily lookup limit', 'Tope de consultas por mes': 'Monthly lookup limit',
     'Días de caché de una distancia': 'Days a distance stays cached', 'Recogida': 'Pick-up', 'Sin decidir': 'Undecided', 'Se cobra': 'Charged', 'No se cobra': 'Not charged',
     'Sin decidir si se cobra la recogida: mientras tanto, una reserva con recogida a domicilio se niega en vez de inventar un precio.': 'It is undecided whether pick-up is charged: until then, a booking with home pick-up is refused instead of inventing a price.',
     'Los topes cuentan las consultas al proveedor de mapas (OpenStreetMap), no las reservas: una distancia ya guardada en la caché no gasta consulta.': 'The limits count lookups to the map provider (OpenStreetMap), not bookings: a distance already in the cache does not use a lookup.',
@@ -641,9 +641,9 @@
     oculta(raiz.querySelector('[data-accion="en-atras"]'), k === 1); oculta(raiz.querySelector('[data-accion="en-siguiente"]'), k === PASOS.length);
     if (foco) { var f = $v(PASOS[k - 1].bloques[0]).querySelector('input:not([readonly]),select'); try { if (f) f.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
   }
-  function rotuloPrecio() {
-    var l = raiz.querySelector('label[for="en-f-precio_km"]'), m = F('moneda').value.replace(/\s+/g, '').toUpperCase();
-    l.textContent = T('Precio por km') + (/^[A-Z]{3}$/.test(m) ? ' (' + m + ')' : '');
+  function rotuloPrecio() {   // la moneda va en su propio span: el texto traducible del rótulo no se toca
+    var m = F('moneda').value.replace(/\s+/g, '').toUpperCase(), e = $v('precio-moneda');
+    if (e) e.textContent = /^[A-Z]{3}$/.test(m) ? ' (' + m + ')' : '';   // si alguien reescribe el rótulo entero, el hueco de la moneda puede no estar
   }
   function pasoDe(el) { for (var i = 0; i < PASOS.length; i++) if (PASOS[i].bloques.some(function (b) { return $v(b).contains(el); })) return i + 1; return PASO; }
   function limpiaInvalidos() { CAMPOS.concat(['motivo']).forEach(function (n) { F(n).removeAttribute('aria-invalid'); }); }

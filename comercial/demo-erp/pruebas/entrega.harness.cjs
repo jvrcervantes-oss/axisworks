@@ -90,7 +90,7 @@ async function servidor(s, nombre, a) {
   return err('42883', 'funcion desconocida ' + nombre);
 }
 
-const pagina = (idioma) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
+const pagina = (idioma, o = {}) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title></head><body>
 ${MARCADO}
 <script>
 window.__xss = undefined; window.__fromLlamado = 0; window.__fetchLlamado = 0; window.__sinEn = []; window.__errores = [];
@@ -104,7 +104,7 @@ window.LW_AUTH = Promise.resolve({ sb: sb, ficha: { rol: 'agente', herramientas:
 window.lwDatos = function (n, a) { return Promise.resolve(sb.rpc(n, a)).then(function (r) { return { data: r.data, error: r.error }; }); };
 window.LW_IDIOMA = '${idioma}';
 window.LW_EN = {};
-window.lwMonedaBase = function () { return 'IDR'; };   // la moneda de la instancia (de su base)
+${o.sinMoneda ? '' : "window.lwMonedaBase = function () { return 'IDR'; };"}   // la moneda de la instancia (de su base); sinMoneda: una instancia que no la sabe
 window.lwLocale = function () { return window.LW_IDIOMA === 'en' ? 'en-GB' : 'es-ES'; };
 window.lwT = function (s) { s = String(s); if (window.LW_IDIOMA === 'en') { if (Object.prototype.hasOwnProperty.call(window.LW_EN, s)) return window.LW_EN[s]; if (!/^[\\s\u2014\u00b70-9.,%():\u2265\u2264-]*$/.test(s)) window.__sinEn.push(s); } return s; };
 window.lwIdiomaAplicar = function (raiz) { Array.prototype.forEach.call(raiz.querySelectorAll('[data-lwt]'), function (e) { e.textContent = window.lwT(e.textContent); }); };
@@ -120,7 +120,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const ctx = await nav.newContext({ viewport: { width: opts.ancho || 1440, height: 1000 } });
     const p = await ctx.newPage();
     await p.exposeFunction('__srv', (n, a) => servidor(base, n, a));
-    await p.setContent(pagina(opts.idioma || 'es'), { waitUntil: 'load' });
+    await p.setContent(pagina(opts.idioma || 'es', opts), { waitUntil: 'load' });
     if (!opts.sinEspera) await p.waitForFunction(() => document.querySelector('[data-en="estado"]').getAttribute('data-tipo') !== 'cargando', null, { timeout: 5000 });
     // S4 (15-oct-2026): la página va en 3 pasos con lo opcional plegado. Antes de escribir en un campo de otro paso, se pulsa su botón de paso y se abre
     // su plegado, como la persona. Las pruebas de siempre miden lo mismo.
@@ -611,6 +611,15 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await espera(p, () => document.querySelector('[data-en="exito"]:not(.axw-oculto)'));
     const w = escritas(base).filter(x => x[0] === 'entrega_tarifa_guarda');
     ok('S4 entrega: la primera tarifa se guarda con solo el precio, en la moneda de la instancia', w.length === 1 && w[0][1].p_datos.moneda === 'IDR' && w[0][1].p_datos.precio_km === 2500, J(w));
+    await ctx.close();
+  }
+  {
+    // una instancia que no sabe su moneda y sin tarifa: el precio solo no basta; el error lleva al paso 2 y abre el plegado con la moneda
+    const { base, p, ctx } = await abre({ base: { conServicio: true }, sinMoneda: true });
+    ok('S4 entrega: sin moneda de la instancia, el rótulo es «Precio por km» sin moneda', (await txt(p, 'label[for="en-f-precio_km"]')) === 'Precio por km');
+    await p.fill(campo('sede_coord'), '-8.65, 115.21'); await p.fill(campo('precio_km'), '2500'); await p.fill(campo('motivo'), 'Primera tarifa'); await guardar(p);
+    ok('S4 entrega: sin moneda, no se envía la tarifa y vuelve al paso 2 con «Más datos» abierto y la moneda a la vista', (await txt(p, '[data-en="paso-linea"]')).includes('Paso 2 de 3')
+       && await p.$eval('[data-en="bloque-tarifa"] [data-axw="mas-datos"]', d => d.open) && await p.isVisible(campo('moneda')) && escritas(base).every(x => x[0] !== 'entrega_tarifa_guarda'), J(escritas(base)));
     await ctx.close();
   }
   {

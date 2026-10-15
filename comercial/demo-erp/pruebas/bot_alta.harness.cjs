@@ -23,7 +23,7 @@ var sb = {
   rpc: function (n, a) { window.__llamadas.push([n, a]);
     if (n === 'wab_cliente_guarda') { if (!a.p_motivo) return Promise.resolve({ data: null, error: { code: '22023', message: 'El motivo es obligatorio' } });
       // como la base (_wab_cliente_error): sin asteriscos. El mensaje NO nombra el campo, para medir que la pantalla no se guía por el texto
-      if (Object.keys(a.p_datos).some(function (k) { return /[*]/.test(a.p_datos[k]); })) return Promise.resolve({ data: null, error: { code: '22023', message: 'Data tidak valid', hint: 'cliente_no_valido' } });
+      if (Object.keys(a.p_datos).some(function (k) { return /[*<>]/.test(a.p_datos[k]) || !a.p_datos[k]; })) return Promise.resolve({ data: null, error: { code: '22023', message: 'Data tidak valid', hint: 'cliente_no_valido' } });
       DATOS.cliente = Object.assign({}, a.p_datos); return Promise.resolve({ data: { razon_social_cambia: false }, error: null }); }
     return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function' } }); }
 };
@@ -75,6 +75,11 @@ window.toast = function (m) { window.__toast = m; };
     await p.fill('[data-campo="motivo"]', 'Cambio de razón social'); await p.click('[data-accion="guardar-alta"]');
     await p.waitForFunction(() => !document.querySelector('[data-ba="error"]').classList.contains('axw-oculto') || document.querySelector('[data-ba="parte-linea"]').textContent.includes('1'));
     ok(ancho + ' px · la base rechaza la razón social (con un mensaje que no la nombra): vuelve a la parte 1 por el campo, no por el texto', (await linea()).includes('Parte 1 de 2'), await linea());
+    // en el orden de la base, campo a campo: con un < en la razón social y el contacto vacío, el rechazado es la razón social (parte 1)
+    await p.fill('[data-campo="razon_social"]', 'PT Macan <Asia>'); await p.click('[data-accion="alta-siguiente"]');
+    await p.fill('[data-campo="contacto_privacidad"]', ''); await p.click('[data-accion="guardar-alta"]');
+    await p.waitForFunction(() => document.querySelector('[data-ba="parte-linea"]').textContent.includes('1'));
+    ok(ancho + ' px · campo a campo en el orden de la base: un < en la razón social manda sobre el contacto vacío (vuelve a la parte 1)', (await linea()).includes('Parte 1 de 2'), await linea());
     const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
     ok(ancho + ' px · sin scroll horizontal', m.sw <= m.cw, J(m));
     ok(ancho + ' px · sin errores de JS', errores.length === 0, errores.join(' | '));

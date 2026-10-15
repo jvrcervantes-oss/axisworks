@@ -761,6 +761,30 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Lampu belakang'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Lights');
     await p.click('[data-accion="tl-l-rev-nueva"]'); await espera(p, () => document.querySelectorAll('[data-l-rev]').length === 4);
     ok('S4 · si ya hay una con esa clave en la lista, lleva _2 (no choca)', llamadas(B, 'taller_revision_guarda').slice(-1)[0][1].p_datos.clave === 'lights_2');
+    // la fila de una revisión se lee; «Editar» abre 3 casillas (dos nombres y posición); «Desactivar» es un toque; la llamada es la de siempre
+    ok('S4 · las revisiones se leen: ninguna casilla a la vista en la tabla', JSON.stringify(await vistos('[data-tl="l-revisiones"]')) === '[]', JSON.stringify(await vistos('[data-tl="l-revisiones"]')));
+    const idRev = await p.$eval('[data-l-rev]', e => e.getAttribute('data-l-rev'));
+    const rev0 = B.revs.find(x => String(x.id) === idRev), activa0 = rev0.activa === true;
+    await p.click(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-edita"]`);
+    ok('S4 · «Editar» abre 3 casillas en esa fila: los dos nombres y la posición', JSON.stringify(await vistos('[data-tl="l-revisiones"]')) === '["nombre_id","nombre_en","orden"]', JSON.stringify(await vistos('[data-tl="l-revisiones"]')));
+    const otra = await p.$$eval('[data-l-rev]', es => es[1] && es[1].getAttribute('data-l-rev'));
+    await p.click(`[data-l-rev="${otra}"] [data-accion="tl-l-rev-edita"]`);
+    ok('S4 · una fila a la vez: editar otra cierra la primera', JSON.stringify(await vistos('[data-tl="l-revisiones"]')) === '["nombre_id","nombre_en","orden"]' && !(await p.$(`[data-l-rev="${idRev}"] input`)));
+    await p.click(`[data-l-rev="${otra}"] [data-accion="tl-l-rev-cancela"]`);
+    ok('S4 · «Cancelar» vuelve a la lectura sin llamar a la base', JSON.stringify(await vistos('[data-tl="l-revisiones"]')) === '[]');
+    await p.click(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-edita"]`);
+    await p.fill(`[data-l-rev="${idRev}"] [data-f="nombre_en"]`, 'Oil change');
+    const nG = llamadas(B, 'taller_revision_guarda').length;
+    await p.click(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-guarda"]`); for (let i = 0; i < 100 && llamadas(B, 'taller_revision_guarda').length === nG; i++) await p.waitForTimeout(50);
+    const g1 = llamadas(B, 'taller_revision_guarda').slice(-1)[0][1];
+    ok('S4 · «Guardar» de la fila: la llamada de siempre, con el nombre nuevo y la activa como estaba', g1.p_id === idRev && g1.p_datos.nombre_en === 'Oil change' && g1.p_datos.activa === activa0 && Object.keys(g1.p_datos).sort().join() === 'activa,nombre_en,nombre_id,orden', JSON.stringify(g1));
+    await espera(p, id => !!document.querySelector(`[data-l-rev="${id}"] [data-accion="tl-l-rev-activa"]`), idRev);
+    const txtAct = await p.$eval(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-activa"]`, e => e.textContent);
+    await p.click(`[data-l-rev="${idRev}"] [data-accion="tl-l-rev-activa"]`); for (let i = 0; i < 100 && llamadas(B, 'taller_revision_guarda').length === nG + 1; i++) await p.waitForTimeout(50);
+    const g2 = llamadas(B, 'taller_revision_guarda').slice(-1)[0][1];
+    ok('S4 · «Desactivar»/«Activar» en un toque: cambia solo la activa', g2.p_id === idRev && g2.p_datos.activa === !activa0 && g2.p_datos.nombre_en === 'Oil change', JSON.stringify(g2));
+    await espera(p, a => { const e = document.querySelector(`[data-l-rev="${a[0]}"] [data-accion="tl-l-rev-activa"]`); return !!e && e.textContent !== a[1]; }, [idRev, txtAct]);   // la lista ya se ha vuelto a leer
+    await sinScroll(p, 'listas con la fila editable (1440)');
     await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_id"]', 'Busi'); await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_en"]', 'Spark plug');
     await p.click('[data-accion="tl-l-rec-nueva"]'); for (let i = 0; i < 100 && !llamadas(B, 'taller_recambio_guarda').length; i++) await p.waitForTimeout(50);   // la cuenta de llamadas vive en Node
     const pz = llamadas(B, 'taller_recambio_guarda').slice(-1)[0][1].p_datos;

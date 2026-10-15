@@ -88,6 +88,7 @@
 .tl-fg .fg-pendientes{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
 .tl-fg .fg-mini{font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid rgb(var(--tema-outline-variant, 197 200 188));background:rgb(var(--tema-surface-container-lowest, 255 255 255));cursor:pointer}
 .tl-tabla-l input[type="text"],.tl-tabla-l input:not([type]){min-width:120px}
+.tl-fila-acc{display:flex;flex-wrap:wrap;gap:6px}
 .tl-casilla{display:flex;align-items:center;gap:10px;min-height:48px}
 .tl-casilla input{width:22px;height:22px}
 .tl-varias{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:4px 16px}
@@ -228,6 +229,7 @@
     'Lista común (todos los modelos)': 'Common list (all models)', 'Elige la lista': 'Choose the list',
     'No se han podido mirar las listas': 'The lists could not be checked',
     'Clave': 'Key', 'Nombre (indonesio)': 'Name (Indonesian)', 'Nombre (inglés)': 'Name (English)', 'Activa': 'Active',
+    'Editar': 'Edit', 'Activar': 'Turn on', 'Desactivar': 'Turn off',
     'Añadir revisión': 'Add check', 'Esta lista no tiene revisiones.': 'This list has no checks.', 'Cargar la lista básica': 'Load the basic list',
     'Copiar de otro modelo': 'Copy from another model', 'Copiar': 'Copy', 'Copiadas: {r} revisiones y {v} piezas.': 'Copied: {r} checks and {v} parts.',
     'Piezas de esta lista': 'Parts in this list', 'Esta lista no tiene piezas.': 'This list has no parts.', 'Quitar': 'Remove', 'Revisión sugerida': 'Suggested check',
@@ -348,6 +350,7 @@
     'Lista común (todos los modelos)': 'Daftar umum (semua model)', 'Elige la lista': 'Pilih daftar',
     'No se han podido mirar las listas': 'Daftar tidak dapat diperiksa',
     'Clave': 'Kode', 'Nombre (indonesio)': 'Nama (Indonesia)', 'Nombre (inglés)': 'Nama (Inggris)', 'Activa': 'Aktif',
+    'Editar': 'Ubah', 'Activar': 'Aktifkan', 'Desactivar': 'Nonaktifkan',
     'Añadir revisión': 'Tambah pemeriksaan', 'Esta lista no tiene revisiones.': 'Daftar ini belum punya pemeriksaan.', 'Cargar la lista básica': 'Muat daftar dasar',
     'Copiar de otro modelo': 'Salin dari model lain', 'Copiar': 'Salin', 'Copiadas: {r} revisiones y {v} piezas.': 'Disalin: {r} pemeriksaan dan {v} suku cadang.',
     'Piezas de esta lista': 'Suku cadang di daftar ini', 'Esta lista no tiene piezas.': 'Daftar ini belum punya suku cadang.', 'Quitar': 'Hapus', 'Revisión sugerida': 'Pemeriksaan terkait',
@@ -1468,21 +1471,31 @@
     try { m = typeof window.lwMonedaBase === 'function' ? window.lwMonedaBase() : null; } catch (e) { /* MUDO A PROPOSITO: sin moneda de la instancia, se escribe a mano */ }
     return /^[A-Z]{3}$/.test(m || '') ? m : '';
   }
+  /* S4 (bbm-comodidad, 15-oct-2026, «1, 2 o 3 campos por paso»): cada revisión se LEE (nombres, posición, activa) y se toca con «Editar» (los dos
+     nombres y la posición: 3 casillas, con «Guardar» y «Cancelar») o con «Desactivar» / «Activar» (un toque). Antes eran 4 casillas por fila y todas a la
+     vez. La llamada es la de siempre (taller_revision_guarda con los cuatro datos): lo que no se edita viaja como lo leyó la base. Una fila a la vez. */
+  function revListaDe(id) { return ((E.listas && E.listas.revisiones) || []).filter(function (x) { return String(x.id) === String(id); })[0] || null; }
+  function filaRev(r, editando) {
+    var tr = h('tr', { 'data-l-rev': String(r.id) }), id = String(r.id);
+    var b = function (acc, txt, prim) { return h('button', { class: 'axw-boton', type: 'button', 'data-accion': acc, 'data-rev-id': id, 'data-primario': prim ? '1' : null, text: T(txt) }); };
+    var celdas = editando
+      ? [h('td', null, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_id', value: String(r.nombre_id || ''), 'aria-label': T('Nombre (indonesio)') })]),
+         h('td', null, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_en', value: String(r.nombre_en || ''), 'aria-label': T('Nombre (inglés)') })]),
+         h('td', null, [h('input', { type: 'text', inputmode: 'numeric', maxlength: '4', 'data-f': 'orden', value: String(r.orden), 'aria-label': T('Posición') })]),
+         h('td', { text: T(r.activa === true ? 'Sí' : 'No') }),
+         h('td', null, [h('div', { class: 'tl-fila-acc' }, [b('tl-l-rev-guarda', 'Guardar', true), b('tl-l-rev-cancela', 'Cancelar')])])]
+      : [h('td', { text: String(r.nombre_id || '') }), h('td', { text: String(r.nombre_en || '') }), h('td', { text: String(r.orden) }),
+         h('td', { text: T(r.activa === true ? 'Sí' : 'No') }),
+         h('td', null, [h('div', { class: 'tl-fila-acc' }, [b('tl-l-rev-edita', 'Editar'), b('tl-l-rev-activa', r.activa === true ? 'Desactivar' : 'Activar')])])];
+    [h('td', { text: String(r.clave) })].concat(celdas).forEach(function (td) { tr.appendChild(td); });
+    return tr;
+  }
   function pintaListas(v, d) {
     var sel = opcionesModelos(h('select', { 'data-tl': 'l-modelo' }), d, true, E.listaSel);
     v.appendChild(h('section', { class: 'tl-tarjeta' }, [campoL('Elige la lista', sel), h('div', { 'data-tl': 'l-estado', class: 'tl-estado', role: 'status' })]));
     if (d.recortado === true) v.appendChild(h('p', { class: 'axw-aviso', text: T('Solo se ven los primeros 500 modelos o piezas.') }));
     // revisiones
-    var filas = d.revisiones.map(function (r) {
-      var tr = h('tr', { 'data-l-rev': String(r.id) });
-      [h('td', { text: String(r.clave) }),
-       h('td', null, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_id', value: String(r.nombre_id || ''), 'aria-label': T('Nombre (indonesio)') })]),
-       h('td', null, [h('input', { type: 'text', maxlength: '80', 'data-f': 'nombre_en', value: String(r.nombre_en || ''), 'aria-label': T('Nombre (inglés)') })]),
-       h('td', null, [h('input', { type: 'text', inputmode: 'numeric', maxlength: '4', 'data-f': 'orden', value: String(r.orden), 'aria-label': T('Posición') })]),
-       h('td', null, [h('input', { type: 'checkbox', 'data-f': 'activa', checked: r.activa === true, 'aria-label': T('Activa') })]),
-       h('td', null, [h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-l-rev-guarda', 'data-rev-id': String(r.id), text: T('Guardar') })])].forEach(function (td) { tr.appendChild(td); });
-      return tr;
-    });
+    var filas = d.revisiones.map(function (r) { return filaRev(r, false); });
     var tabla = h('table', { class: 'axw-tabla tl-tabla-l', 'data-tl': 'l-revisiones' });
     var hijosRev = [];
     if (filas.length) { C.tabla(tabla, [['Clave'], ['Nombre (indonesio)'], ['Nombre (inglés)'], ['Posición'], ['Activa'], ['']], filas); hijosRev.push(h('div', { class: 'axw-tabla-caja' }, [tabla])); }
@@ -1547,10 +1560,25 @@
   function accionListas(a, el) {
     var prod = E.listaSel || null;
     if (a === 'tl-l-basica') return lEscribe(el, 'taller_lista_basica', {});
+    if (a === 'tl-l-rev-edita' || a === 'tl-l-rev-cancela') {
+      var rv = revListaDe(el.getAttribute('data-rev-id')); if (!rv) return;
+      [].forEach.call($v('l-revisiones').querySelectorAll('[data-accion="tl-l-rev-guarda"]'), function (g) { var o = revListaDe(g.getAttribute('data-rev-id')); if (o) g.closest('tr').replaceWith(filaRev(o, false)); });   // una fila a la vez
+      var nueva = filaRev(rv, a === 'tl-l-rev-edita'), vieja = $v('l-revisiones').querySelector('[data-l-rev="' + String(rv.id).replace(/["\\]/g, '') + '"]');
+      if (vieja) vieja.replaceWith(nueva);
+      lEstado('', '');
+      var foco = nueva.querySelector(a === 'tl-l-rev-edita' ? '[data-f="nombre_id"]' : '[data-accion="tl-l-rev-edita"]'); try { if (foco) foco.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ }
+      return;
+    }
+    if (a === 'tl-l-rev-activa') {
+      var ra = revListaDe(el.getAttribute('data-rev-id')); if (!ra) return;
+      return lEscribe(el, 'taller_revision_guarda', { p_id: el.getAttribute('data-rev-id'), p_datos: { nombre_id: String(ra.nombre_id || ''), nombre_en: String(ra.nombre_en || ''), orden: Number(ra.orden), activa: ra.activa !== true } });
+    }
     if (a === 'tl-l-rev-guarda') {
-      var tr = el.closest('tr'), orden = fv(tr, 'orden');
+      var tr = el.closest('tr'), orden = fv(tr, 'orden'), rg = revListaDe(el.getAttribute('data-rev-id'));
+      if (!rg) return;
+      if (!fv(tr, 'nombre_id') || !fv(tr, 'nombre_en')) { lEstado('error', T('Los nombres van en una línea (hasta 80 caracteres).')); return; }
       if (!/^\d{1,4}$/.test(orden)) { lEstado('error', T('El orden es un número de 0 a 9999.')); return; }
-      return lEscribe(el, 'taller_revision_guarda', { p_id: el.getAttribute('data-rev-id'), p_datos: { nombre_id: fv(tr, 'nombre_id'), nombre_en: fv(tr, 'nombre_en'), orden: Number(orden), activa: fv(tr, 'activa') } });
+      return lEscribe(el, 'taller_revision_guarda', { p_id: el.getAttribute('data-rev-id'), p_datos: { nombre_id: fv(tr, 'nombre_id'), nombre_en: fv(tr, 'nombre_en'), orden: Number(orden), activa: rg.activa === true } });
     }
     if (a === 'tl-l-rev-nueva') {
       var c = $v('l-nueva'), ord = fv(c, 'orden'), campoCl = c.querySelector('[data-tl="l-clave"]'), aMano = campoCl && !campoCl.classList.contains('axw-oculto');
