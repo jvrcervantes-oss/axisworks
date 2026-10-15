@@ -6863,7 +6863,8 @@ def rechaza_retiradas(argv):
 
 def main():
     # 16-oct-2026 (owner publicando bbm): en su consola de Windows (cp1252) `aborta()` reventaba con UnicodeEncodeError al imprimir el motivo
-    # («←», tildes) y el build paraba SIN decir por qué. La salida va en utf-8 y lo que la consola no pinte sale como «?», nunca un traceback.
+    # («←», tildes) y el build paraba SIN decir por qué. La salida va en utf-8: una consola cp1252 ve
+    # letras raras en «←» o las tildes (mojibake), pero el motivo se lee y nunca hay traceback.
     for flujo in (sys.stdout, sys.stderr):
         if hasattr(flujo, 'reconfigure'):
             flujo.reconfigure(encoding='utf-8', errors='replace')

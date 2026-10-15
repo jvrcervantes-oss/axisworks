@@ -12,6 +12,8 @@ Con navegador, CONTRAPRUEBA sobre un paquete ya construido (AXW_PAQUETE_IDIOMAS=
   · el paquete tal cual da 0 en /home/;
   · con «← Anteriores» de vuelta en el paginador y un texto español crudo (visible y en un aria-label oculto) en /home/, da 1 y nombra los tres;
   · con una carpeta que no es un paquete, da 2."""
+import contextlib
+import io
 import json
 import os
 import re
@@ -54,6 +56,15 @@ def para(f):
     return False
 
 
+def dice(f):
+    """Lo que el build imprime al parar (aborta() escribe en stdout); '' si no para."""
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        if not para(f):
+            return ''
+    return buf.getvalue()
+
+
 real = build.subprocess.run
 try:
     for idiomas in (None, [], ['es']):
@@ -70,9 +81,12 @@ try:
     mira('AXW_AGENCIA_RAIZ = la agencia de este build (todos los módulos de erp/modulos.json)',
          llamadas and llamadas[0][1].get('AXW_AGENCIA_RAIZ') == build.AGENCIA)
     build.subprocess.run = corre_con(1)
-    mira('salida 1 (hay español): el build PARA', para(lambda: build.comprueba_pantallas_idiomas('dist', ['id', 'en'])))
+    msg = dice(lambda: build.comprueba_pantallas_idiomas('dist', ['id', 'en']))
+    mira('salida 1 (hay español): el build PARA y lo dice', 'hay pantallas con texto en español' in msg and 'NO HA PODIDO MIRAR' not in msg)
     build.subprocess.run = corre_con(2)
-    mira('salida 2 (no ha podido mirar): el build PARA también', para(lambda: build.comprueba_pantallas_idiomas('dist', ['id', 'en'])))
+    msg = dice(lambda: build.comprueba_pantallas_idiomas('dist', ['id', 'en']))
+    mira('salida 2 (no ha podido mirar): el build PARA también y dice que NO HA PODIDO MIRAR, no «hay español»',
+         'NO HA PODIDO MIRAR' in msg and 'hay pantallas con texto en español' not in msg)
     llamadas.clear()
     build.subprocess.run = corre_con(1)
     os.environ['AXW_IDIOMAS_SIN_NAVEGADOR'] = '1'
