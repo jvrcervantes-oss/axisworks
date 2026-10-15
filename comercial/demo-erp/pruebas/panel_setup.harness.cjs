@@ -30,7 +30,10 @@ const PERFILES = { tipos: Object.entries(PERF).map(([tipo, p]) => ({ tipo, nombr
   modulos_opcionales: p.modulos_opcionales, comprobado: p.comprobado, motivo_bloqueo: p.comprobado ? null : (p.motivo_bloqueo ?? null) })),
   ajustes: sinPorQue(PAQ.ajustes_permitidos), ajustes_reglas: sinPorQue(PAQ.ajustes_reglas), tope_modulos: PAQ.tope_modulos };
 // setup tal como lo siembra erp_modulos.setup (sin rpc ni ajustes, como dice el plan): pasos o {ninguno}
-const sembrado = k => { const d = REG.setup.modulos[k]; if (d == null) return null; if (typeof d === 'string') return { ninguno: d.replace(/^ninguno:?\s*/, '') };
+// «sin declarar» es un caso del DOBLE, no del registro: desde N4 (14-oct) el registro real ya declara bancos y sociedades, y el arnés dejaba de
+// medir ese camino del panel (erp-eu4-2, 15-oct). Estas dos se siembran sin declaración a propósito
+const SIN_DECLARAR = ['bancos', 'sociedades'];
+const sembrado = k => { const d = SIN_DECLARAR.indexOf(k) !== -1 ? null : REG.setup.modulos[k]; if (d == null) return null; if (typeof d === 'string') return { ninguno: d.replace(/^ninguno:?\s*/, '') };
   return { estado: d.estado, pasos: d.pasos.map(p => ({ clave: p.clave, obligatorio: p.obligatorio, irreversible: p.irreversible, donde: p.donde, modulo_requerido: p.modulo_requerido })) }; };
 const DEPENDE = { facturas: ['recibos', 'sociedades'], recibos: [], sociedades: [], 'reservas-producto': ['productos'], productos: [], bancos: [], gastos: [], 'whatsapp-bot': [], base: [] };
 const MODS = Object.keys(DEPENDE);
