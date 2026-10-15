@@ -125,6 +125,8 @@ const MIRA = () => {
   const ES = /[áéíóúñÁÉÍÓÚÑ¿¡]|\b(de|del|las|los|para|por|una|que|sin|con|el|y|todos|todas|nuevo|nueva|cuenta|cuentas|gasto|gastos|proyecto|proyectos|contrato|cliente|clientes|cerrar|guardar|buscar|estado|fecha|importe|ventas|recibos|taller|pagos|siguientes|anteriores|vencimientos|ajustes|usuarios|empresa|empresas|herramienta|incluida|volver|entrar|reservas|flota|entrega|inicio|ayuda|borrar|editar|cancelar|aceptar|nombre|correo|contraseña|idioma|idiomas)\b/i;
   // ¿Es una clave española del diccionario que en este idioma se dice de otra forma? lwT lo sabe; se le pregunta sin dejar rastro en LW_T_MISSES.
   const fallosAntes = window.LW_T_MISSES ? new Set(window.LW_T_MISSES) : null;
+  // y en indonesio, lo que cayó al INGLÉS por faltar su clave en LW_ID (i18n_id_nucleo.js lo apunta en LW_T_CAIDA_EN). Se guarda antes de preguntar a lwT.
+  const caidasAntes = window.LW_T_CAIDA_EN ? new Set(window.LW_T_CAIDA_EN) : null;
   const esClave = t => { try { return typeof window.lwT === 'function' && /[A-Za-zÀ-ÿ]/.test(t) && window.lwT(t) !== t; } catch (e) { return false; } };
   const oculto = e => { for (let x = e; x && x.nodeType === 1; x = x.parentElement) { const s = getComputedStyle(x); if (s.display === 'none' || s.visibility === 'hidden' || x.hidden) return true; } return !(e.getClientRects && e.getClientRects().length > 0); };
   // Lo apagado por módulo no se enseña nunca en esta instancia (apagados_instancia.js + data-axw-sin): no cuenta
@@ -152,11 +154,14 @@ const MIRA = () => {
   }
   apunta(document.title, 'title-pagina', false);
   if (fallosAntes) { window.LW_T_MISSES.clear(); fallosAntes.forEach(x => window.LW_T_MISSES.add(x)); }
+  if (caidasAntes) { window.LW_T_CAIDA_EN.clear(); caidasAntes.forEach(x => window.LW_T_CAIDA_EN.add(x)); }
   // Una falta de lwT que ya es una traducción (un valor de LW_EN/LW_ID: «Users») o que la pantalla enseña traducida (traduce_instancia.js la
   // reconoce) no es español a la vista; lo que de verdad sale en español ya lo ha contado el recorrido de arriba.
   const valores = new Set([].concat(Object.values(window.LW_EN || {}), Object.values(window.LW_ID || {})));
   const yaVa = s => valores.has(s.trim()) || (typeof window.axwTraduceTexto === 'function' && window.axwTraduceTexto(s) !== s);
-  return { lang: document.documentElement.lang, fallos: fallosAntes ? [...fallosAntes].filter(s => !yaVa(s)) : null, sale };
+  // una caída que es una traducción india ya hecha por otra vía (axwTraduceTexto) no se ve en inglés: no cuenta
+  const caidas = caidasAntes ? [...caidasAntes].filter(s => !(typeof window.axwTraduceTexto === 'function' && window.axwTraduceTexto(s) !== s)) : [];
+  return { lang: document.documentElement.lang, fallos: fallosAntes ? [...fallosAntes].filter(s => !yaVa(s)) : null, caidas, sale };
 };
 const PIE = () => {
   if (typeof lwPaginador !== 'function') return null;
@@ -255,12 +260,17 @@ async function mira(ctx, pant, errores, clics) {
       miradas++;
       const quedan = r.sale.filter(x => !EXCEPCIONES.some(([rx]) => rx.test(x.t)));
       const fallos = (r.fallos || []).filter(t => !EXCEPCIONES.some(([rx]) => rx.test(t)));
+      // En indonesio, caer al inglés tampoco vale (verificador de deploy-axw, 15-oct-2026: «Nuevo gasto» y 91 frases de Gastos en inglés dentro de
+      // la interfaz en indonesio). Antes se toleraba «mientras se traduce el resto»; desde hoy es rojo como el español.
+      const caidas = lengua === 'id' ? (r.caidas || []).filter(t => !EXCEPCIONES.some(([rx]) => rx.test(t))) : [];
       const clave = lengua + ' ' + modo + ' /' + (pant ? pant + '/' : '');
-      informe[clave] = { lang: r.lang, sin_traducir: fallos, en_espanol: quedan, pulsados: r.pulsados };
-      const n = quedan.length + fallos.length;
+      informe[clave] = { lang: r.lang, sin_traducir: fallos, en_espanol: quedan, en_ingles: caidas, pulsados: r.pulsados };
+      const n = quedan.length + fallos.length + caidas.length;
       total += n;
       if (n || process.env.VERBOSO) console.log((n ? 'FALLA  ' : 'ok     ') + clave + ': ' + quedan.length + ' en español, ' + fallos.length + ' sin traducir (LW_T_MISSES)'
-        + (n ? ' → ' + quedan.slice(0, 4).map(x => x.donde + ':' + x.t.slice(0, 60)).concat(fallos.slice(0, 3).map(t => 'lwT:' + t.slice(0, 50))).join(' | ') : ''));
+        + (lengua === 'id' ? ', ' + caidas.length + ' en inglés (LW_T_CAIDA_EN)' : '')
+        + (n ? ' → ' + quedan.slice(0, 4).map(x => x.donde + ':' + x.t.slice(0, 60)).concat(fallos.slice(0, 3).map(t => 'lwT:' + t.slice(0, 50)))
+          .concat(caidas.slice(0, 3).map(t => 'en:' + t.slice(0, 50))).join(' | ') : ''));
     }
     if (modo === MODOS[0]) {
       // el paginador con 60 filas: con la base vacía ninguna pantalla lo enseña
