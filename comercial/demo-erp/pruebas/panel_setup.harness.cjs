@@ -39,8 +39,21 @@ const DEPENDE = { facturas: ['recibos', 'sociedades'], recibos: [], sociedades: 
 const MODS = Object.keys(DEPENDE);
 const ESTADO_MOD = { base: { estado: 'configurado', hechos: 1, total: 1 }, 'reservas-producto': { estado: 'sin_configurar', hechos: 1, total: 4 },
   productos: null, bancos: null, 'whatsapp-bot': { estado: 'raro' } };
+// Techo del AaaS (16-oct-2026): la forma de agente_techos_estado (20261015194000). Arranca SIN techo (tope vigente 0, lo arregla el estudio);
+// techo_aaas_pon fusiona como la base y rechaza la cordura (> 100.000.000 céntimos) con el código que erp-control traduce. La base vieja no lo trae.
+const AAAS = { techos: { tope_mensual_cent: 0, tope_modulo_cent: 0, equipo_nivel_max: 0 }, techo_puesto: false, encendido: false, tope_ficha_cent: null,
+  subida_pendiente_cent: null, tope_vigente_cent: 0, hay_owner: true, owner_cambiado_en: null, cambios_owner_24h: 0 };
+const CORDURA_MSG = 'Ese tope pasa del límite de cordura (100.000.000 céntimos): revisa la cifra.';
+function techoPon(t) {
+  if (['tope_mensual_cent', 'tope_modulo_cent'].some(k => k in t && t[k] > 100000000)) return { __st: 400, error: 'cordura', mensaje: CORDURA_MSG };
+  const antes = JSON.stringify(AAAS.techos);
+  Object.assign(AAAS.techos, t);
+  if ('tope_mensual_cent' in t) AAAS.techo_puesto = true;
+  AAAS.tope_vigente_cent = Math.min(AAAS.tope_ficha_cent || 0, AAAS.techos.tope_mensual_cent);
+  return { ok: true, techo: { ...AAAS, cambia: JSON.stringify(AAAS.techos) !== antes } };
+}
 function estadoInst(activos, conSetup) {
-  return { activos: activos.slice(), marca: 'Sample Rentals', apagados: 3, edges_desplegadas: [], log: [],
+  return { activos: activos.slice(), marca: 'Sample Rentals', apagados: 3, edges_desplegadas: [], log: [], ...(conSetup ? { aaas: AAAS } : {}),
     ficha: { marca: 'Sample Rentals', dominio_web: 'sample.test', url_intranet: 'https://erp.sample.test', super_admins: [{ correo: 'admin@sample.test', confirmado: true, difiere: false }] },
     modulos: MODS.map(k => { const m = { modulo: k, depende: DEPENDE[k], instalable: true, edges: [], motivo: null };
       if (!conSetup) return m;
@@ -76,6 +89,8 @@ function edge(cuerpo) {
     perfiles: PERFILES };
   if (cuerpo.accion === 'simula') return { simulacion: simula(ACT0, cuerpo.activos) };
   if (cuerpo.accion === 'alta') return { solicitud: 7 };
+  if (cuerpo.accion === 'techo_aaas_estado') return cuerpo.instancia === 'sample-rentals' ? { ok: true, techo: AAAS } : { __st: 409, error: 'sin_migracion' };
+  if (cuerpo.accion === 'techo_aaas_pon') return cuerpo.instancia === 'sample-rentals' ? techoPon(cuerpo.techos || {}) : { __st: 409, error: 'sin_migracion' };
   if (cuerpo.accion === 'cambia') return { aplicado: { enciende: cuerpo.activos.filter(k => ACT0.indexOf(k) === -1), apaga: [] } };
   return { error: 'accion' };
 }
@@ -112,7 +127,9 @@ const ajena = [], marcaGoogle = [];
     if (/supabase-js/.test(url)) return route.fulfill({ status: 200, contentType: 'application/javascript', body: FALSO });
     if (/\.supabase\.co\/functions\/v1\/erp-control$/.test(url)) {
       if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' } });
-      return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(edge(JSON.parse(req.postData() || '{}'))) });
+      const r = edge(JSON.parse(req.postData() || '{}')), st = r.__st || 200;
+      delete r.__st;
+      return route.fulfill({ status: st, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(r) });
     }
     if (/supabase\.co/.test(url)) { ajena.push(url); return route.abort(); }
     if (/fonts\.(googleapis|gstatic)\.com/.test(url)) { if (/Unbounded|Manrope|IBM\+Plex/i.test(url)) marcaGoogle.push(url); return route.continue(); }
@@ -250,12 +267,71 @@ const ajena = [], marcaGoogle = [];
   await p.click('#dlg button[value="no"]');
   ok('EU4: ni el bloqueo ni el rechazo aplican nada', llamadas.filter(c => c.accion === 'cambia').length === 1);
 
+  // ── Techo del AaaS (16-oct-2026): en la ficha, sin techo avisa de quién lo arregla; solo se manda lo escrito; la base valida ─────────────
+  const techoVe = () => p.evaluate(() => ({ estado: (document.querySelector('#ficha [data-techo-estado]') || {}).getAttribute && document.querySelector('#ficha [data-techo-estado]').getAttribute('data-techo-estado'),
+    aviso: document.querySelector('#ficha [data-techo-aviso]') && document.querySelector('#ficha [data-techo-aviso]').getAttribute('data-techo-aviso'),
+    avisoTxt: (document.querySelector('#ficha [data-techo-aviso]') || {}).textContent || '', abierto: !!document.querySelector('#ficha details[open] [data-techo]'),
+    form: !!document.querySelector('#ficha [data-techo="pon"]') }));
+  const t0 = await techoVe();
+  ok('techo: sin techo lo dice, con el aviso de tope 0 que arregla el estudio, y el formulario abierto', t0.estado === 'sin_techo' && t0.aviso === 'sin_techo' &&
+    /no gasta nada/.test(t0.avisoTxt) && /Lo pones aquí/.test(t0.avisoTxt) && t0.abierto, JSON.stringify(t0));
+  const nTecho = () => llamadas.filter(c => /^techo_aaas_/.test(c.accion)).length;
+  let n0 = nTecho();
+  await p.click('[data-techo="pon"]');
+  await p.waitForTimeout(300);
+  ok('techo: todo en blanco no llama al servidor', nTecho() === n0 && await p.evaluate(() => !document.getElementById('dlg').open));
+  await p.fill('#techo-mensual', '1.000');
+  await p.click('[data-techo="pon"]');
+  await p.waitForTimeout(300);
+  ok('techo: «1.000» (separador de miles) no se manda', nTecho() === n0 && /sin separador de miles/.test(await p.evaluate(() => document.getElementById('toast').textContent)));
+  await p.fill('#techo-mensual', '19,99');
+  await p.selectOption('#techo-nivel', '2');
+  await p.click('[data-techo="pon"]');
+  await p.waitForSelector('#dlg[open]');
+  const td = await p.evaluate(() => ({ t: document.getElementById('dlg-titulo').textContent, ok: document.getElementById('dlg-ok').textContent,
+    filas: [...document.querySelectorAll('#dlg [data-techo-cambio]')].map(e => e.getAttribute('data-techo-cambio') + ':' + e.textContent), cero: !!document.querySelector('#dlg [data-techo-aviso="cero"]') }));
+  ok('techo: antes de confirmar relee el techo de la base (techo_aaas_estado de esa instancia)', llamadas.slice(-1)[0].accion === 'techo_aaas_estado' && llamadas.slice(-1)[0].instancia === 'sample-rentals');
+  ok('techo: el diálogo enseña solo lo escrito, antes → después, en euros', td.t === 'Techo del AaaS' && td.ok === 'Poner techo' && td.filas.length === 2 &&
+    /tope_mensual_cent:Tope mensualsin poner → 19,99 €/.test(td.filas[0]) && /equipo_nivel_max:Nivel máximo del equipo0 → 2/.test(td.filas[1]) && !td.cero, JSON.stringify(td));
+  { const ct = await contraste(); ok('contraste del diálogo del techo', ct.length === 0, ct.join(' | ')); }
+  if (SHOT) await p.screenshot({ path: SHOT + '_techo_dlg_1440.png' });
+  await p.click('#dlg button[value="no"]');
+  await p.waitForTimeout(200);
+  ok('techo: Cancelar no pone nada', !llamadas.some(c => c.accion === 'techo_aaas_pon'));
+  await p.click('[data-techo="pon"]');
+  await p.waitForSelector('#dlg[open]');
+  await p.click('#dlg-ok');
+  await p.waitForTimeout(800);
+  const pon = llamadas.filter(c => c.accion === 'techo_aaas_pon');
+  ok('techo: manda SOLO lo escrito, en céntimos enteros, por la clave de la instancia', pon.length === 1 && pon[0].instancia === 'sample-rentals' &&
+    JSON.stringify(pon[0].techos) === JSON.stringify({ tope_mensual_cent: 1999, equipo_nivel_max: 2 }), JSON.stringify(pon));
+  const t1 = await techoVe();
+  ok('techo: puesto, el aviso pasa al dueño (su tope en su asistente, no el estudio)', t1.estado === 'puesto' && t1.aviso === 'sin_tope_dueno' &&
+    /Lo pone él/.test(t1.avisoTxt) && !t1.abierto, JSON.stringify(t1));
+  ok('techo: la ficha enseña lo que guardó la base', /Mensual 19,99 € · por módulo 0 € · nivel máximo del equipo 2/.test(await p.evaluate(() => document.querySelector('[data-techo-estado]').textContent)));
+  await p.click('#ficha details[data-techo-form] summary');
+  await p.fill('#techo-modulo', '2000000');
+  await p.click('[data-techo="pon"]');
+  await p.waitForSelector('#dlg[open]');
+  await p.click('#dlg-ok');
+  await p.waitForTimeout(800);
+  ok('techo: lo que rechaza la base sale con su mensaje (cordura) y no cambia nada',
+    (await p.evaluate(() => document.getElementById('toast').textContent)) === CORDURA_MSG && AAAS.techos.tope_modulo_cent === 0);
+  await p.click('#ficha details[data-techo-form] summary');
+  await p.fill('#techo-mensual', '0');
+  await p.click('[data-techo="pon"]');
+  await p.waitForSelector('#dlg[open]');
+  ok('techo: poner el mensual a 0 avisa de que el agente no gastará', await p.evaluate(() => !!document.querySelector('#dlg [data-techo-aviso="cero"]')));
+  await p.click('#dlg button[value="no"]');
+  await p.waitForTimeout(200);
+
   // ── una base que aún no manda `setup` ─────────────────────────────────────────────────────────────────────────────────────────
   await p.click('#lista-instancias [data-inst="old-base"]');
   await p.waitForTimeout(300);
   const r2 = await p.evaluate(() => ({ resumen: (document.querySelector('[data-setup-resumen]') || {}).getAttribute && document.querySelector('[data-setup-resumen]').getAttribute('data-setup-resumen'),
     etiquetas: document.querySelectorAll('#modulos [data-setup-estado]').length }));
   ok('base vieja: lo dice una vez y las tarjetas no inventan estado', r2.resumen === 'sin_dato' && r2.etiquetas === 0, JSON.stringify(r2));
+  { const tv = await techoVe(); ok('base vieja: el techo dice que la base aún no lo tiene, sin formulario', tv.estado === 'sin_dato' && !tv.form && !tv.aviso, JSON.stringify(tv)); }
   await p.click('#modulos [data-mod="facturas"]');
   await p.waitForSelector('#dlg[open]');
   const d2 = await p.evaluate(() => ({ sinDato: !!document.querySelector('#dlg [data-setup="sin_dato"]'), sinDecl: document.querySelectorAll('#dlg [data-setup="sin_declarar"]').length,
@@ -278,6 +354,11 @@ const ajena = [], marcaGoogle = [];
   await p.click('#dlg button[value="no"]');
   await p.waitForTimeout(200);
   { const c2 = await contraste(); ok('contraste S01 a 390', c2.length === 0, c2.join(' | ')); }
+  await p.click('#ficha details[data-techo-form] summary');
+  await p.waitForTimeout(200);
+  { const a = await anchos(); ok('techo a 390: con el formulario abierto la página no se desborda', a.sw <= a.w && !a.fuera.length, JSON.stringify(a)); }
+  { const ct = await contraste(); ok('contraste de la ficha con el techo a 390', ct.length === 0, ct.join(' | ')); }
+  if (SHOT) await p.screenshot({ path: SHOT + '_techo_390.png', fullPage: true });
   if (SHOT) await p.screenshot({ path: SHOT + '_s01mods_390.png', fullPage: true });
 
   // ── S00: mapa de la instalación ───────────────────────────────────────────────────────────────────────────────────────────────
