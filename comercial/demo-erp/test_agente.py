@@ -76,7 +76,7 @@ pagina = lee(d, 'intranet/v4/agente/index.html') if r == 'pasa' else ''
 nav = lee(d, 'intranet/v4/assets/nav.js') if r == 'pasa' else ''
 her = lee(d, 'contracts/assets/herramientas.js') if r == 'pasa' else ''
 mira('la pagina lleva la puerta de la herramienta agente y ya no la del asistente', 'data-herramienta="agente"' in pagina and 'data-herramienta="asistente"' not in pagina)
-mira('el titulo es AaaS', '<title data-lw-titulo>AaaS</title>' in pagina)
+mira('el titulo visible es Agentes (Experiencia M4, 15-oct: «AaaS» es jerga para el dueño)', '<title data-lw-titulo>Agentes</title>' in pagina)
 mira('el marcado y el script de la fuente entran una vez', pagina.count('<div class="flex flex-col w-full gap-8" data-ag="raiz">') == 1 and pagina.count('var EN_AG = {') == 1 and pagina.count('var ID_AG = {') == 1)
 mira('las ayudas comunes se pegan UNA vez (js y css) y las marcas no quedan en la pagina',
      pagina.count('function axwComun(raiz, T)') == 1 and pagina.count('.axw-boton{') == 1 and '/*AXW_COMUN_' not in pagina)
@@ -89,7 +89,7 @@ if r == 'pasa':
         c2 = compila(cod, nombre)
         mira('el %s resultante compila%s' % (nombre, (': ' + c2.stderr.strip()[:300]) if c2.returncode else ''), c2.returncode == 0)
     mira('nav.js: entrada de menu, injerto y casilla del AaaS, una vez cada uno',
-         nav.count("{ path: 'agente', texto: 'AaaS', clave: 'agente', nucleo: true }") == 1 and nav.count("{ path: 'agente', tras: 'flota'") == 1 and nav.count("agente: 'agente',") == 1)
+         nav.count("{ path: 'agente', texto: 'Agentes', clave: 'agente', nucleo: true }") == 1 and nav.count("{ path: 'agente', tras: 'flota'") == 1 and nav.count("agente: 'agente',") == 1)
     mira('el injerto del AaaS viene DESPUES del de Flota', nav.index("path: 'flota', tras: 'entrega'") < nav.index("path: 'agente', tras: 'flota'"))
     mira('puedeVer no deja pasar sin la casilla: CLAVE_MENU de agente existe antes de la linea que la usa', nav.index("agente: 'agente',") < nav.index('var k = CLAVE_MENU[path];'))
     mira('herramientas.js: la tarjeta agente esta UNA vez, tras la de Flota, entre las dos marcas',
@@ -140,7 +140,7 @@ def mapa(nombre):
     return dict(re.findall(r"(?:\b|')([a-z0-9_]+)'?:\s*'((?:[^'\\]|\\.)*)'", trozo))
 mira('cada trabajo del catálogo de Reservas (agente_forma.json) tiene su nombre en NOMBRE', set(FORMA['trabajos']) <= set(mapa('NOMBRE')))
 mira('un trabajo sin nombre se enseña tal cual (sin T(), que lo daría por frase sin traducir)', "NOMBRE[t] ? T(NOMBRE[t]) : String(t)" in CODIGO)
-mira('trabajos_orden vacío lo dice', "T('Este ERP aún no tiene trabajos del AaaS para su tipo de negocio.')" in CODIGO)
+mira('trabajos_orden vacío lo dice', "T('Ruta aún no tiene nada que revisar en tu tipo de negocio.')" in CODIGO)
 
 # -- (3c) ventana de configuración (14-oct) y Ajustes como asistente (15-oct): claves LEÍDAS del contrato, no copiadas a mano
 EST = FORMA['lecturas']['agente_panel_estado']['devuelve']
@@ -171,8 +171,8 @@ mira('cada nivel 0-3 tiene su nombre', set(mapa('NIVELES')) == {'0', '1', '2', '
 mira('guardar límites manda TODAS las filas de `limites` (nunca limites_fuera) y los topes GUARDADOS viajan tal cual (la RPC los sustituye)',
      'L.forEach(function (l) {' in CODIGO and 'niveles[l.modulo] = n;' in CODIGO and 'if (ent(l.tope_cent)) topes[l.modulo] = l.tope_cent;' in CODIGO
      and not re.search(r'limites_fuera[^;]*(niveles|topes)\[[^\]]+\]\s*=(?!=)', CODIGO))
-mira('los topes por módulo (paso Trabajos) viajan con los niveles GUARDADOS (l.nivel), nunca los efectivos',
-     'L.forEach(function (l) { niveles[l.modulo] = l.nivel; });' in CODIGO and 'niveles[l.modulo] = l.nivel_efectivo' not in CODIGO)
+mira('el paso Trabajos ya no escribe topes por módulo (Experiencia M6: hoy no frenan el gasto); niveles_efectivos nunca viajan',
+     'aj-topes' not in MARCADO and 'MOTIVO_AJ.topes' not in CODIGO and 'niveles[l.modulo] = l.nivel_efectivo' not in CODIGO)
 mira('«Cancelar la subida»: el tope VIGENTE explícito y null en trabajos y nivel; solo con subida pendiente y solo el dueño',
      "llama('agente_ficha_ajusta', { p_tope_mensual_cent: vigente, p_trabajos: null, p_nivel_ruta: null, p_motivo: MOTIVO_AJ.subida })" in CODIGO
      and 'var vigente = d.tope_mensual_cent;' in CODIGO and "if (!d || !d.soy_dueno || !ent(d.tope_propuesto_cent)) return;" in CODIGO
@@ -190,7 +190,7 @@ mira('cada parte que no puede leer lo dice en su sitio (no mirado ≠ vacío): l
 mira('«Esperan tu OK» distingue hay algo / no hay nada / no se ha podido mirar', all(s in CODIGO for s in ("'v2-esperan-error'", "'v2-esperan-vacio'", "'data-ag': 'accion'")))
 mira('con un módulo en nivel 1, «Esperan tu OK» se ve aunque esté vacía y dice en qué módulos (caso negativo: no se esconde lo que espera)',
      "filter(function (l) { return l.nivel_efectivo === 1; })" in CODIGO and "oculta(caja, !E.notasError && !pend.length && !nivel1.length);" in CODIGO)
-mira('apagar y encender piden motivo y confirmacion en un dialogo', "conMotivo(T(enc ? 'Encender el AaaS' : 'Apagar el AaaS')" in CODIGO and "accion: 'ag-modal-confirmar'" in CODIGO)
+mira('apagar y encender piden motivo y confirmacion en un dialogo', "conMotivo(T(enc ? 'Encender a tu equipo' : 'Apagar a tu equipo')" in CODIGO and "accion: 'ag-modal-confirmar'" in CODIGO)
 mira('doble clic: un solo envio a la vez (ocupa/libera)', 'C.ocupa(btn)' in CODIGO and 'C.libera(btn)' in CODIGO)
 mira('enganche por data-accion/data-ag/data-campo; ningun texto de boton se usa para encontrar nada', not re.search(r'textContent\s*===|innerText|\.placeholder', CODIGO))
 acciones = (set(re.findall(r"C\.boton\([^;]*?, '(ag-[a-z-]+)'", CODIGO)) | set(re.findall(r'data-accion="(ag-[a-z-]+)"', MARCADO))
@@ -201,7 +201,7 @@ mira('toda accion tiene manejador (' + ', '.join(sorted(a for a in acciones if (
 PASOS_AJ = ('tope', 'negocio', 'limites', 'trabajos')
 mira('no queda ningún bloque viejo de configuración (Estado, Hoy, Historial, Más adelante, Acciones, Propuestas de cambio…)', 'data-ag="bloque-' not in MARCADO)
 mira('ningún campo «motivo» en Ajustes: el motivo que piden las RPC lo pone la pantalla (MOTIVO_AJ)',
-     not re.search(r'data-campo="motivo', MARCADO) and all(('MOTIVO_AJ.' + k) in CODIGO for k in ('tope', 'negocio', 'limites', 'trabajos', 'topes', 'subida')))
+     not re.search(r'data-campo="motivo', MARCADO) and all(('MOTIVO_AJ.' + k) in CODIGO for k in ('tope', 'negocio', 'limites', 'trabajos', 'subida')))
 mira('cada paso tiene su formulario y su enlace #ajustes-<paso>, y la pantalla final el suyo',
      all(('data-ag="aj-f-' + p + '"') in MARCADO and ('href="#ajustes-' + p + '"') in MARCADO for p in PASOS_AJ) and 'data-ag="aj-listo"' in MARCADO)
 mira('la ruta por hash abre Ajustes y escucha hashchange', r"/^ajustes(?:-([a-z]+))?$/" in CODIGO and "addEventListener('hashchange'" in CODIGO)
@@ -210,10 +210,9 @@ mira('cada paso llama con sus argumentos LITERALES',
          "llama('agente_ficha_ajusta', { p_tope_mensual_cent: v, p_trabajos: null, p_nivel_ruta: null, p_motivo: MOTIVO_AJ.tope })",
          "llama('agente_ficha_contexto', { p_contexto: ctx, p_motivo: MOTIVO_AJ.negocio })",
          "llama('agente_ficha_limites', { p_niveles: niveles, p_topes: topes, p_motivo: MOTIVO_AJ.limites })",
-         "llama('agente_ficha_ajusta', { p_tope_mensual_cent: null, p_trabajos: marcados, p_nivel_ruta: nivel, p_motivo: MOTIVO_AJ.trabajos })",
-         "llama('agente_ficha_limites', { p_niveles: niveles, p_topes: topes, p_motivo: MOTIVO_AJ.topes })")))
+         "llama('agente_ficha_ajusta', { p_tope_mensual_cent: null, p_trabajos: marcados, p_nivel_ruta: nivel, p_motivo: MOTIVO_AJ.trabajos })")))
 mira('lo que no cambió no viaja (el freno de la base no salta por repetir): tope, negocio, límites y trabajos',
-     all(s in CODIGO for s in ('if (v === pedido) {', 'if (huellaCtx(ctx) === huellaCtx(d.contexto)) {', 'if (igual) {', 'if (!cambiaTrab && !cambiaTopes) {')))
+     all(s in CODIGO for s in ('if (v === pedido) {', 'if (huellaCtx(ctx) === huellaCtx(d.contexto)) {', 'if (igual) {', 'if (!cambiaTrab) {')))
 mira('«Usar lo recomendado» pone el nivel 2 en todos con un clic', 'var NIVEL_REC = 2;' in CODIGO and "a === 'ag-aj-recomendado') guardaLimites(el, true)" in CODIGO)
 mira('los importes se leen con el separador del idioma (C.importeIdioma) y nunca con C.importe', 'C.importeIdioma(' in CODIGO and 'C.importe(' not in CODIGO)
 mira('el tope no pasa del techo del estudio y 0 no vale', 'if (v > techo) {' in CODIGO and 'Math.round(imp.v * 100) <= 0' in CODIGO)
@@ -228,7 +227,7 @@ mira('el paso del tope dice el aviso de las 24 h y trae un valor sugerido', "T('
      and "Tf('Sugerido: {x}, el máximo que ha fijado el estudio para tu plan.'" in CODIGO)
 mira('la pantalla final dice lo primero que hará cada agente (PRIMERO, por id de agente)', 'var PRIMERO = {' in CODIGO and "data-ag=\"aj-listo-primero\"" in MARCADO)
 mira('el aviso «Falta X» lleva botón que abre su paso; quien no es dueño lee quién lo hace',
-     'data-ag="v2-falta-ir"' in MARCADO and 'PASO_DE_FALTA[' in CODIGO and "T('Lo completa el dueño de la ficha del AaaS.')" in CODIGO)
+     'data-ag="v2-falta-ir"' in MARCADO and 'PASO_DE_FALTA[' in CODIGO and "T('Lo completa la persona que lleva el equipo.')" in CODIGO)
 mira('agente_nota_decide y agente_propuesta_decide siguen en el contrato como «sin llamador» y la pantalla no las llama',
      set(FORMA.get('escrituras_sin_llamador', {})) - {'_que'} == {'agente_nota_decide', 'agente_propuesta_decide'}
      and not any(n in CODIGO for n in ('agente_nota_decide', 'agente_propuesta_decide')))

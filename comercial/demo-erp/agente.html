@@ -193,6 +193,9 @@
 .ag2 .ag2-aj-paso h3{margin:0;font-family:var(--display);font-weight:500;font-size:20px;letter-spacing:-.02em;color:var(--text-hi);text-transform:none;line-height:1.25}
 .ag2-aj-paso h3:focus{outline:none}
 .ag2-aj-paso fieldset{border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:14px}
+.ag2-campo>.ag2-sugerido{align-self:flex-start;min-height:44px;padding:0 18px}
+.ag2-interruptor{font-weight:600;padding:8px 12px;border-radius:14px;background:rgba(11,12,30,.6);border:1px solid var(--line-soft)}
+.ag2-tag{display:inline-flex;align-items:center;padding:1px 8px;border-radius:999px;background:rgba(200,240,70,.14);border:1px solid rgba(200,240,70,.45);color:var(--text-hi);font-size:11px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
 .ag2-etapa{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--lilac)}
 .ag2-why{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
 .ag2-why>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:14px;background:rgba(11,12,30,.6);border:1px solid var(--line-soft);min-width:0}
@@ -269,6 +272,8 @@
   .ag2-lims{gap:4px}
   .ag2-lim{padding:6px 10px;gap:0 12px}
   .ag2-lim .s{font-size:12px}
+  /* el selector de nivel ocupa la fila entera: el texto del nivel no se corta (Experiencia M5, medido en el arnés a 390 px) */
+  .ag2 .ag2-lim select{flex-basis:100%;max-width:none}
   .ag2-aj-cab .ag2-msg{padding:8px 12px}
   /* los botones de un paso, de dos en dos y a lo ancho (el texto largo del indonesio parte dentro del botón, no baja el botón a otra fila) */
   .ag2-aj-paso .ag2-acc>.ag2-btn,.ag2-aj-paso .ag2-acc>.ag2-btn2{flex:1 1 120px;min-width:0;padding:6px 12px;text-align:center}
@@ -279,7 +284,7 @@
 
 <div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
 <div class="flex flex-col gap-2 max-w-3xl">
-<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>AaaS</h1>
+<h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Agentes</h1>
 <p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Tus agentes trabajan solos dentro de sus límites y aquí te dicen qué han hecho y por qué. Los paras cuando quieras: a todos, por área o de uno en uno.</p>
 </div>
 </div>
@@ -292,7 +297,7 @@
      sustituye a los bloques viejos (Estado, Hoy, Acciones, Propuestas, Trabajos y tope, Límites, Contexto, Historial, Más adelante). -->
 <section class="ag2 axw-oculto" data-ag="v2" data-vista="equipo" aria-labelledby="ag2-t">
 <div class="ag2-cab">
-<h2 id="ag2-t" data-lwt>Agentes</h2>
+<h2 class="ag2-sr" id="ag2-t" data-lwt>Agentes</h2>
 <nav class="ag2-tabs" aria-labelledby="ag2-t" data-ag="v2-tabs">
 <a href="#equipo" data-ag="v2-tab-equipo" aria-current="page"><span data-lwt>Equipo</span></a>
 <a href="#ajustes" data-ag="v2-tab-ajustes"><span data-lwt>Ajustes</span></a>
@@ -461,6 +466,11 @@
 </div>
 </div>
 </section>
+<!-- apagar a todo el equipo: solo en la vista Equipo, al final (Experiencia, 15-oct: no al pie de cada paso del asistente); solo el dueño -->
+<div class="ag2-zona axw-oculto" data-ag="v2-apagar">
+<p data-lwt>Tu equipo deja de mirar y de hacer cosas al momento. Lo que ya hizo se queda aquí.</p>
+<button type="button" class="ag2-btn-peligro" data-accion="ag-apagar"><span data-lwt>Apagar a tu equipo</span></button>
+</div>
 </div>
 
 <!-- AJUSTES (15-oct-2026, plan aaas-equipo con la revisión previa #383): el asistente que sustituye a los bloques viejos. Un paso a la vista
@@ -480,16 +490,17 @@
 </div>
 
 <form class="ag2-aj-paso" data-ag="aj-f-tope" data-paso="tope" autocomplete="off" novalidate hidden aria-labelledby="ag2-aj-h-tope">
-<span class="ag2-etapa" data-lwt>Paso 1 de 3</span>
+<span class="ag2-etapa" data-lwt>Paso 1 de 3 (más 1 opcional)</span>
 <h3 id="ag2-aj-h-tope" tabindex="-1" data-lwt>¿Cuánto pueden gastar al mes?</h3>
 <dl class="ag2-why">
-<div><dt data-lwt>Para qué sirve</dt><dd data-lwt>Es lo máximo que tus agentes gastan en IA en un mes. Al llegar, el Tesorero corta el gasto.</dd></div>
+<div><dt data-lwt>Para qué sirve</dt><dd data-lwt>Es lo máximo que tu equipo gasta en IA en un mes. Al llegar, el Tesorero, el agente que lleva el dinero, corta el gasto.</dd></div>
 <div data-salta><dt data-lwt>Si lo saltas</dt><dd data-lwt>Con el tope en 0 ningún agente puede gastar, y tu equipo no empieza.</dd></div>
 </dl>
 <fieldset data-ag="aj-fs-tope">
 <div class="ag2-campo">
 <label for="ag2-aj-tope" data-ag="aj-tope-etq"></label>
 <input id="ag2-aj-tope" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="ag2-aj-tope-ayuda ag2-aj-tope-msg" data-campo="aj-tope">
+<button type="button" class="ag2-btn2 ag2-sugerido axw-oculto" data-accion="ag-aj-tope-sugerido" data-ag="aj-tope-sugerido"></button>
 <p class="ag2-pista" id="ag2-aj-tope-ayuda" data-ag="aj-tope-ayuda"></p>
 </div>
 <div class="ag2-msg ag2-subida axw-oculto" data-ag="aj-subida" data-tono="neutro">
@@ -502,7 +513,7 @@
 </form>
 
 <form class="ag2-aj-paso" data-ag="aj-f-negocio" data-paso="negocio" autocomplete="off" novalidate hidden aria-labelledby="ag2-aj-h-negocio">
-<span class="ag2-etapa" data-lwt>Paso 2 de 3</span>
+<span class="ag2-etapa" data-lwt>Paso 2 de 3 (más 1 opcional)</span>
 <h3 id="ag2-aj-h-negocio" tabindex="-1" data-lwt>¿Quién es tu negocio?</h3>
 <dl class="ag2-why">
 <div><dt data-lwt>Para qué sirve</dt><dd data-lwt>Tus agentes lo leen antes de hacer nada: así saben con quién trabajan y cómo hablar. No pueden cambiarlo.</dd></div>
@@ -537,14 +548,15 @@
 </form>
 
 <form class="ag2-aj-paso" data-ag="aj-f-limites" data-paso="limites" autocomplete="off" novalidate hidden aria-labelledby="ag2-aj-h-limites">
-<span class="ag2-etapa" data-lwt>Paso 3 de 3</span>
+<span class="ag2-etapa" data-lwt>Paso 3 de 3 (más 1 opcional)</span>
 <h3 id="ag2-aj-h-limites" tabindex="-1" data-lwt>¿Hasta dónde llega cada agente?</h3>
 <dl class="ag2-why">
-<div><dt data-lwt>Para qué sirve</dt><dd data-lwt>En cada parte del ERP, si tus agentes no hacen nada, te lo proponen o lo hacen solos dentro del tope.</dd></div>
+<div><dt data-lwt>Para qué sirve</dt><dd data-lwt>En cada parte de tu negocio, si tus agentes no hacen nada, te lo proponen o lo hacen solos.</dd></div>
 <div data-salta><dt data-lwt>Si lo saltas</dt><dd data-lwt>Sin límites, tu equipo no empieza.</dd></div>
 </dl>
 <fieldset data-ag="aj-fs-limites">
 <p class="ag2-msg axw-oculto" data-ag="aj-lim-error" data-tono="mal" role="alert"></p>
+<p class="ag2-pista axw-oculto" data-ag="aj-lim-rec"><span class="ag2-tag" data-lwt>Recomendado</span> <span data-ag="aj-lim-rec-n"></span></p>
 <ul class="ag2-lims" data-ag="aj-lim-lista"></ul>
 <p class="ag2-pista axw-oculto" data-ag="aj-lim-fuera"></p>
 <details class="ag2-mas">
@@ -552,8 +564,8 @@
 <dl class="ag2-niveles">
 <dt data-lwt>Nunca</dt><dd data-lwt>No hace nada en ese módulo.</dd>
 <dt data-lwt>Lo propone y decide el dueño</dt><dd data-lwt>Te deja la acción en «Esperan tu OK» y no la hace hasta que la aceptas.</dd>
-<dt data-lwt>Lo hace, sin pasar del tope</dt><dd data-lwt>La hace sin preguntar mientras no gaste más que el tope de ese módulo. Es lo recomendado.</dd>
-<dt data-lwt>Lo hace solo</dt><dd data-lwt>La hace sin preguntar.</dd>
+<dt><span data-lwt>Lo hace solo y te lo cuenta</span> <span class="ag2-tag" data-lwt>Recomendado</span></dt><dd data-lwt>La hace sin preguntarte y la ves en «Lo que han hecho».</dd>
+<dt data-lwt>Lo hace solo, sin tope propio</dt><dd data-lwt>Hoy funciona igual que el anterior: el tope por módulo aún no frena nada; lo que frena el gasto es el tope del mes.</dd>
 </dl>
 </details>
 <p class="ag2-msg axw-oculto" data-ag="aj-msg-limites" data-tono="mal" role="alert"></p>
@@ -569,27 +581,16 @@
 <span class="ag2-etapa" data-lwt>Opcional</span>
 <h3 id="ag2-aj-h-trabajos" tabindex="-1" data-lwt>¿Qué trabajos hace Ruta?</h3>
 <dl class="ag2-why">
-<div><dt data-lwt>Para qué sirve</dt><dd data-lwt>Lo que Ruta revisa cada día en tu negocio y te avisa.</dd></div>
-<div data-salta><dt data-lwt>Si lo saltas</dt><dd data-lwt>Hace los trabajos que ya están marcados.</dd></div>
+<div><dt data-lwt>Para qué sirve</dt><dd data-lwt>Ruta, el agente de operaciones, revisa cada día lo que marques aquí y te avisa de lo que falta.</dd></div>
+<div data-salta><dt data-lwt>Si lo saltas</dt><dd data-ag="aj-trab-salta"></dd></div>
 </dl>
 <fieldset data-ag="aj-fs-trabajos">
+<label class="ag2-check ag2-interruptor" for="ag2-aj-nivel"><input id="ag2-aj-nivel" type="checkbox" role="switch" data-campo="nivel_ruta"><span data-lwt>Ruta revisa tu negocio cada día</span></label>
 <fieldset class="ag2-checks-fs">
-<legend class="ag2-check-t" data-lwt>Qué trabajos hace</legend>
+<legend class="ag2-check-t" data-lwt>Qué revisa</legend>
 <div class="ag2-checks" data-ag="trabajos"></div>
 <p class="ag2-pista axw-oculto" data-ag="sin-trabajos"></p>
 </fieldset>
-<div class="ag2-campo">
-<label for="ag2-aj-nivel" data-lwt>Nivel de Ruta</label>
-<select id="ag2-aj-nivel" data-campo="nivel_ruta"><option value="0" data-lwt>0 · No hace la pasada</option><option value="1" data-lwt>1 · Mira y avisa</option></select>
-</div>
-<details class="ag2-mas" data-ag="aj-topes">
-<summary data-lwt>Avanzado: tope por módulo (opcional)</summary>
-<div>
-<p class="ag2-pista" data-ag="topes-ayuda"></p>
-<p class="ag2-pista" data-lwt>Hoy las acciones del AaaS no gastan dinero: el tope de cada módulo es orientativo. Lo que frena el gasto es el tope del mes.</p>
-<div data-ag="aj-topes-lista"></div>
-</div>
-</details>
 <p class="ag2-msg axw-oculto" data-ag="aj-msg-trabajos" data-tono="mal" role="alert"></p>
 <div class="ag2-acc"><button type="submit" class="ag2-btn"><span data-lwt>Guardar</span></button><a class="ag2-btn2" href="#ajustes-listo" data-ag="aj-saltar"><span data-lwt>Saltar</span></a></div>
 </fieldset>
@@ -598,7 +599,7 @@
 <section class="ag2-aj-paso" data-ag="aj-listo" hidden aria-labelledby="ag2-aj-h-listo">
 <h3 id="ag2-aj-h-listo" tabindex="-1" data-ag="aj-listo-t"></h3>
 <p class="ag2-pista" data-ag="aj-listo-txt"></p>
-<p class="ag2-check-t axw-oculto" data-ag="aj-listo-primero-t" data-lwt>Lo primero que va a hacer:</p>
+<p class="ag2-check-t axw-oculto" data-ag="aj-listo-primero-t"></p>
 <ul class="ag2-listo" data-ag="aj-listo-primero"></ul>
 <div class="ag2-acc" data-ag="aj-listo-acc">
 <a class="ag2-btn axw-oculto" data-ag="aj-listo-completar" href="#ajustes"><span data-lwt>Completar ahora</span></a>
@@ -606,11 +607,6 @@
 <a class="ag2-btn2" href="#ajustes-trabajos" data-ag="aj-listo-trabajos"><span data-lwt>Elegir los trabajos (opcional)</span></a>
 </div>
 </section>
-
-<div class="ag2-zona axw-oculto" data-ag="aj-apagar">
-<p data-lwt>Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.</p>
-<button type="button" class="ag2-btn-peligro" data-accion="ag-apagar"><span data-lwt>Apagar el AaaS</span></button>
-</div>
 </section>
 </section>
 </div>
@@ -620,49 +616,45 @@
   'use strict';
   var EN_AG = {
     'AaaS': 'AaaS',
-    'Qué trabajos hace': 'Which jobs it does', 'Nivel de Ruta': 'Route level',
-    '0 · No hace la pasada': '0 · Does not run', '1 · Mira y avisa': '1 · Looks and alerts',
     'Tope de gasto al mes': 'Monthly spending cap', 'Guardar': 'Save',
     'Trabajando': 'Working',
-    'El AaaS es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.': 'The AaaS is a paid service: turning it on means hiring it on the terms agreed with the studio.',
-    'Hoy las acciones del AaaS no gastan dinero: el tope de cada módulo es orientativo. Lo que frena el gasto es el tope del mes.': "Today the AaaS actions don't spend money: each module's cap is a guide. What stops spending is the monthly cap.",
+    'Tu equipo es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.': 'Your team is a paid service: switching it on means hiring it on the terms agreed with the studio.',
     'Como mucho {x}: es el máximo que ha fijado el estudio.': 'At most {x}: the maximum set by the studio.', 'Sin configurar': 'Not set up',
     'Le falta el tope mensual.': 'The monthly cap is missing.', 'Le falta el contexto del negocio: quién es.': 'The business context is missing: who the business is.',
     'Le faltan los límites por módulo.': 'The limits per module are missing.',
-    'Esta instancia aún no trae la configuración del AaaS: la pone el estudio.': 'This instance does not have the AaaS setup yet: the studio adds it.',
-    'El estudio aún no ha preparado la ficha del AaaS en esta instancia: la crea con el alta.': 'The studio has not prepared the AaaS profile on this instance yet: it creates it at sign-up.',
-    'Le falta un paso de la configuración del ERP ({x}).': 'A step of the ERP setup is missing ({x}).',
-    'No se ha podido leer la configuración del AaaS. Avisa al estudio.': 'The AaaS setup could not be read. Tell the studio.',
+    'Tu negocio aún no trae la configuración de tu equipo: la pone el estudio.': 'Your business does not have your team’s setup yet: the studio adds it.',
+    'El estudio aún no ha preparado a tu equipo: lo hace con el alta.': 'The studio has not set up your team yet: it does so at sign-up.',
+    'Falta un paso de la configuración de tu negocio ({x}).': 'A step of your business setup is missing ({x}).',
+    'No se ha podido leer la configuración de tu equipo. Avisa al estudio.': 'Your team’s setup could not be read. Tell the studio.',
     'tope 0: no puede gastar': 'cap 0: it cannot spend',
-    'Reanudar': 'Resume', 'Encender el AaaS': 'Switch the AaaS on', 'Apagar el AaaS': 'Switch the AaaS off',
-    'El AaaS está apagado: no mira nada ni escribe nada.': 'The AaaS is off: it reads nothing and writes nothing.',
-    'Lo enciende el dueño de la ficha del AaaS.': 'The owner of the AaaS settings switches it on.',
-    'Solo lo cambia el dueño de la ficha del AaaS.': 'Only the owner of the AaaS settings can change this.',
-    'Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.': 'Switching the AaaS off stops it reading and writing at once. Its notes stay here.',
+    'Reanudar': 'Resume', 'Encender a tu equipo': 'Switch your team on', 'Apagar a tu equipo': 'Switch your team off',
+    'Tu equipo está apagado: no mira nada ni hace nada.': 'Your team is off: it looks at nothing and does nothing.',
+    'Lo enciende la persona que lleva el equipo.': 'The person who runs the team switches it on.',
+    'Esto lo configura la persona que lleva el equipo.': 'This is set up by the person who runs the team.',
+    'Tu equipo deja de mirar y de hacer cosas al momento. Lo que ya hizo se queda aquí.': 'Your team stops looking and doing things straight away. What it already did stays here.',
     'Motivo': 'Reason', 'Escribe el motivo (entre 3 y 300 caracteres).': 'Write the reason (3 to 300 characters).',
     'Confirmar': 'Confirm', 'Hecho': 'Done', 'Aceptar': 'Accept', 'Rechazar': 'Reject',
     'Pendiente': 'Pending', 'Aceptada': 'Accepted', 'Rechazada': 'Rejected',
     'Flota y taller': 'Fleet and workshop', 'Salidas y recogidas de mañana': "Tomorrow's handovers and pick-ups", 'Motos que no han vuelto': 'Bikes not back yet',
     'Reservas sin pagar que caducan': 'Unpaid bookings about to expire', 'Cobros por cuadrar': 'Payments to reconcile', 'Qué sacar primero del taller': 'What to get out of the workshop first',
     'Modelos siempre llenos o vacíos': 'Models always full or empty', 'Cierre del día': 'Day close',
-    'Elige al menos un trabajo, o pon el nivel de Ruta a 0.': 'Choose at least one job, or set the Route level to 0.',
     'Subir el tope tarda 24 h en entrar; bajarlo es inmediato.': 'Raising the cap takes 24 h to apply; lowering it is immediate.',
     'Unos {u} USD al cambio de hoy.': 'About {u} USD at today’s rate.',
     'Guardado.': 'Saved.',
-    'AaaS encendido.': 'AaaS switched on.', 'AaaS apagado.': 'AaaS switched off.',
+    'Equipo encendido.': 'Team switched on.', 'Equipo apagado.': 'Team switched off.',
     'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).': 'Too many changes in a row: wait a minute (at most 10 a day).',
-    'Esto solo lo puede hacer el dueño de la ficha del AaaS.': 'Only the owner of the AaaS settings can do this.',
-    'Este ERP aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender el AaaS.': 'This ERP does not yet know which modules fit its type of business: the studio sets that up before the AaaS is switched on.',
+    'Esto solo lo puede hacer la persona que lleva el equipo.': 'Only the person who runs the team can do this.',
+    'Tu negocio aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender a tu equipo.': 'Your business does not yet know which modules fit its type of business: the studio sets that up before your team is switched on.',
         'La cuenta de pruebas no puede cambiar nada aquí.': 'The test account cannot change anything here.',
     'No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.': 'You do not have the “AaaS” tool: ask the main administrator for it in Users.',
-    'El AaaS está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'The AaaS is off: its alerts cannot be read until it is switched on. This does NOT mean there are none.',
+    'Tu equipo está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'Your team is off: its alerts cannot be read until it is switched on. This does NOT mean there are none.',
     'La base no confirmó el cambio: recarga antes de repetir.': 'The database did not confirm the change: reload before trying again.',
     'Nunca': 'Never',
     'No hace nada en ese módulo.': 'It does nothing in that module.',
     'Lo propone y decide el dueño': 'Proposes it, the owner decides',
-    'Lo hace, sin pasar del tope': 'Does it, within the cap',
-    'Lo hace solo': 'Does it on its own',
-    'La hace sin preguntar.': 'It does it without asking.',
+    'Lo hace solo y te lo cuenta': 'Does it alone and tells you',
+    'Lo hace solo, sin tope propio': 'Does it alone, no own cap',
+    'Hoy funciona igual que el anterior: el tope por módulo aún no frena nada; lo que frena el gasto es el tope del mes.': 'Today it works the same as the one above: the per-module cap does not stop anything yet; what stops spending is the monthly cap.',
     'Guardar los límites': 'Save the limits',
     'Quién es el negocio': 'Who the business is',
     'Límites': 'Limits',
@@ -679,42 +671,40 @@
     'No se ha hecho: ya no se cumplía.': 'Not done: it no longer applied.',
     'No se ha hecho: el límite de ese módulo ya no lo permite.': 'Not done: that module’s limit no longer allows it.',
     'No se ha hecho: había caducado.': 'Not done: it had expired.',
-    'El AaaS es un módulo de pago: lo enciende el estudio cuando el negocio lo contrata.': 'The AaaS is a paid module: the studio switches it on once the business signs up for it.',
-    'Este módulo no es para el tipo de negocio de este ERP.': 'This module is not for the type of business of this ERP.',
-    'Este ERP no tiene la lista de módulos encendidos: la pone el estudio. Avísale.': 'This ERP has no list of switched-on modules: the studio sets it. Tell them.',
-    'Uno de los módulos ya no puede llevar límite en este ERP: recarga la página y vuelve a guardar.': 'One of the modules can no longer have a limit in this ERP: reload the page and save again.',
+    'Tu equipo es un módulo de pago: lo enciende el estudio cuando el negocio lo contrata.': 'Your team is a paid module: the studio switches it on when the business hires it.',
+    'Este módulo no es para tu tipo de negocio.': 'This module is not for your type of business.',
+    'Tu negocio no tiene la lista de módulos encendidos: la pone el estudio. Avísale.': 'Your business does not have the list of modules switched on: the studio adds it. Let it know.',
+    'Una parte de tu negocio ya no admite límites: recarga la página y vuelve a guardar.': 'One part of your business no longer takes limits: reload the page and save again.',
     'El contexto no se ha guardado: no puede llevar enlaces, y como mucho 600 caracteres en «Quién es el negocio», 300 en los horarios, 200 en el tono y 20 reglas de 200.': 'The context was not saved: it cannot contain links, and it allows at most 600 characters in “Who the business is”, 300 in the opening hours, 200 in the tone and 20 rules of 200.',
     'Alguien ya lo decidió: así ha quedado.': 'Someone already decided it: this is how it ended up.',
-    'Este ERP aún no tiene trabajos del AaaS para su tipo de negocio.': 'This ERP does not have AaaS jobs for its type of business yet.',
+    'Ruta aún no tiene nada que revisar en tu tipo de negocio.': 'Route has nothing to check for your type of business yet.',
     'Cancelar la subida': 'Cancel the increase',
     'Este módulo se apagó después de guardar su límite: ahora no se aplica, hasta que el dueño vuelva a guardar los límites.': 'This module was switched off after its limit was saved: it does not apply now, until the owner saves the limits again.',
-    'Ningún módulo de este ERP puede llevar límite ahora mismo.': 'No module of this ERP can have a limit right now.',
-    'El tope de cada módulo va en {m}. Entre todos no pueden pasar del tope mensual ({x}). Déjalo vacío si ese módulo no lleva tope propio.': 'Each module’s cap is in {m}. Together they cannot go over the monthly cap ({x}). Leave it empty if that module has no cap of its own.',
+    'Ahora mismo ninguna parte de tu negocio admite límites.': 'Right now no part of your business takes limits.',
     '{n} de {m} caracteres': '{n} of {m} characters',
     '{n} de 20 reglas': '{n} of 20 rules',
-    'El AaaS propone una acción que espera tu decisión.': 'The AaaS proposes an action that is waiting for your decision.',
-    'El AaaS propone una acción que espera la decisión del dueño.': 'The AaaS proposes an action that is waiting for the owner’s decision.',
-    'El AaaS propone {n} acciones que esperan tu decisión.': 'The AaaS proposes {n} actions that are waiting for your decision.',
-    'El AaaS propone {n} acciones que esperan la decisión del dueño.': 'The AaaS proposes {n} actions that are waiting for the owner’s decision.',
+    'Tu equipo propone una acción que espera tu decisión.': 'Your team proposes an action that is waiting for your decision.',
+    'El equipo propone una acción que espera la decisión de quien lo lleva.': 'The team proposes an action that is waiting for the decision of the person who runs it.',
+    'Tu equipo propone {n} acciones que esperan tu decisión.': 'Your team proposes {n} actions waiting for your decision.',
+    'El equipo propone {n} acciones que esperan la decisión de quien lo lleva.': 'The team proposes {n} actions waiting for the decision of the person who runs it.',
     'Ver las acciones': 'See the actions',
     'sin número en este sistema': 'no number in this system',
     'Acción de un tipo que esta pantalla aún no conoce.': 'An action of a kind this screen does not know yet.',
     'Propuesta el': 'Proposed on',
     'Caduca el': 'Expires on',
-    'Las acepta o las rechaza el dueño de la ficha del AaaS.': 'The owner of the AaaS settings accepts or rejects them.',
+    'Las acepta o las rechaza la persona que lleva el equipo.': 'The person who runs the team accepts or rejects them.',
     'La pantalla no tiene todos los módulos: recarga la página antes de guardar.': 'The screen does not have all the modules: reload the page before saving.',
     'Algún campo pasa de su largo máximo: mira el contador de cada uno.': 'A field is over its maximum length: check the counter under each one.',
     'Como mucho 20 reglas, y hay {n}.': 'At most 20 rules, and there are {n}.',
     'La regla {n} pasa de 200 caracteres.': 'Rule {n} is over 200 characters.',
     'Subida cancelada: el tope no cambia.': 'Increase cancelled: the cap does not change.',
     'El tope se queda en {x} y la subida a {y} no entrará.': 'The cap stays at {x} and the increase to {y} will not apply.',
-    'Antes vuelve a guardar los límites en el paso 3: hay módulos que cambiaron desde la última vez.': 'First save the limits again in step 3: some modules changed since last time.',
     /* Panel V2 del AaaS autónomo (15-oct-2026) */
     'Tus agentes trabajan solos dentro de sus límites y aquí te dicen qué han hecho y por qué. Los paras cuando quieras: a todos, por área o de uno en uno.': 'Your agents work on their own within their limits and tell you here what they did and why. Stop them whenever you want: all at once, by area or one by one.',
     'Capitán': 'Captain',
     'Dirige el equipo': 'Runs the team',
     'Fija las prioridades del día, de una a tres, dice por qué y cuánto deberían dar, y es la única voz que te informa.': 'Sets the day\'s one to three priorities, says why and how much they should earn, and is the only voice that reports to you.',
-    'Lee todo el ERP': 'Reads the whole ERP',
+    'Lee todo tu negocio': 'Reads your whole business',
     'Fija el plan del día': 'Sets the plan of the day',
     'Te informa, nunca pregunta caso por caso': 'Reports to you, never asks case by case',
     'Sin acceso al dinero': 'No access to money',
@@ -850,7 +840,7 @@
     'Solo lo que tu usuario puede ver: las reservas o los recibís que no ves no están sumados. Es lo que entró, no lo que dicen los agentes.': 'Only what your user can see: bookings or receipts you cannot see are not added. It is what came in, not what the agents claim.',
     'Ya estaba así: no había nada que cambiar.': 'It was already like that: nothing to change.',
     'Usa tu propio dominio: las plataformas compartidas y los acortadores de enlaces pueden llevar a cualquier sitio.': 'Use your own domain; shared platforms and link shorteners can point anywhere.',
-    'Pagos reales del ERP este mes: {r} reservas pagadas y {f} recibís. Es lo que entró, no lo que dicen los agentes.': 'Real payments in the ERP this month: {r} paid bookings and {f} receipts. It is what came in, not what the agents claim.',
+    'Pagos reales de tu negocio este mes: {r} reservas pagadas y {f} recibís. Es lo que entró, no lo que dicen los agentes.': 'Real payments in your business this month: {r} paid bookings and {f} receipts. It is what came in, not what the agents claim.',
     'Gastado · {x} · en {m}': 'Spent · {x} · in {m}',
     'en IA': 'on AI',
     'Tope del mes · en {m}': 'Monthly cap · in {m}',
@@ -861,7 +851,7 @@
     'Solo el dueño los vuelve a poner en marcha.': 'Only the owner can start them again.',
     'No para el bot de WhatsApp: va por su cuenta.': 'Does not stop the WhatsApp bot: it runs on its own.',
     'Tu equipo · {n} agentes': 'Your team · {n} agents',
-    'Este ERP aún no tiene agentes en su equipo.': 'This ERP has no agents in its team yet.',
+    'Tu negocio aún no tiene agentes en su equipo.': 'Your business has no agents on its team yet.',
     'Hola, soy {x}.': 'Hi, I\'m {x}.',
     'El tope del mes está en 0: ningún agente puede gastar nada.': 'The monthly cap is 0: no agent can spend anything.',
     'gastado en IA este mes': 'spent on AI this month',
@@ -897,7 +887,7 @@
     'más adelante': 'later',
     'Desconectar': 'Disconnect',
     'guardada el {x}': 'saved on {x}',
-    'La llave la pega el dueño de la ficha del AaaS.': 'The owner of the AaaS settings pastes the key.',
+    'La llave la pega la persona que lleva el equipo.': 'The person who runs the team pastes the key.',
     'Cuenta de demostración: solo mirar. Las conexiones no se enseñan a esta cuenta.': 'Demo account: view only. Connections are not shown to this account.',
     'Cuenta de demostración: solo mirar. El panel de los agentes no se enseña a esta cuenta.': 'Demo account: view only. The agents\' panel is not shown to this account.',
     'Ninguna línea todavía.': 'No lines yet.',
@@ -929,42 +919,37 @@
     'Ajustar por módulo': 'Adjust per module',
     'Ajustes': 'Settings',
     'Al encenderlo, tus agentes vuelven a trabajar dentro de sus límites y te dicen aquí qué han hecho.': 'Once it is on, your agents go back to work within their limits and tell you here what they did.',
-    'Avanzado: tope por módulo (opcional)': 'Advanced: cap per module (optional)',
     'Aún falta un paso': 'One step is still missing',
     'Cada cosa que haga aparecerá en «Lo que han hecho», con su porqué.': 'Everything they do will show up in “What they\'ve done”, with the reason.',
     'Cambiar el tope': 'Change the cap',
     'Completar ahora': 'Finish it now',
     'Con 0 tu equipo no puede gastar nada y no empieza: pon más de 0.': 'With 0 your team cannot spend anything and does not start: enter more than 0.',
-    'El estudio aún no ha fijado el máximo de gasto de este ERP: hasta entonces no se puede poner un tope. Avísale.': 'The studio has not set this ERP\'s spending maximum yet: until then no cap can be set. Tell the studio.',
-    'El tope de «{x}» no se entiende: escríbelo con cifras, como {y}.': 'The cap for “{x}” is not clear: write it in figures, like {y}.',
+    'El estudio aún no ha fijado el máximo de gasto de tu negocio: hasta entonces no se puede poner un tope. Avísale.': 'The studio has not set the maximum spend for your business yet: until then no cap can be set. Let it know.',
     'Elegir los trabajos (opcional)': 'Choose the jobs (optional)',
-    'En cada parte del ERP, si tus agentes no hacen nada, te lo proponen o lo hacen solos dentro del tope.': 'In each part of the ERP: whether your agents do nothing, propose it to you, or do it themselves within the cap.',
+    'En cada parte de tu negocio, si tus agentes no hacen nada, te lo proponen o lo hacen solos.': 'In each part of your business: whether your agents do nothing, propose it to you, or do it themselves.',
     'En {m} el límite es «Lo propone y decide el dueño»: lo que harían espera aquí.': 'In {m} the limit is “Proposes it, the owner decides”: what they would do waits here.',
     'Equipo': 'Team',
-    'Es lo máximo que tus agentes gastan en IA en un mes. Al llegar, el Tesorero corta el gasto.': 'It is the most your agents spend on AI in a month. At that point, the Treasurer stops the spending.',
+    'Es lo máximo que tu equipo gasta en IA en un mes. Al llegar, el Tesorero, el agente que lleva el dinero, corta el gasto.': 'It is the most your team spends on AI in a month. At that point the Treasurer, the agent who handles the money, stops the spending.',
     'Escribe el importe con cifras, como {x}.': 'Write the amount in figures, like {x}.',
     'Escribe quién es el negocio: sin eso tu equipo no empieza.': 'Write who the business is: without it your team does not start.',
     'Esperan tu OK': 'Waiting for your OK',
     'Falta': 'Missing',
     'Guardar y seguir': 'Save and continue',
-    'Hace los trabajos que ya están marcados.': 'It does the jobs that are already ticked.',
     'Hacerlo ahora': 'Do it now',
     'Hay una subida pendiente a {x}: entra el {f}.': 'There is a pending increase to {x}: it applies on {f}.',
     'Horarios (opcional)': 'Opening hours (optional)',
-    'La hace sin preguntar mientras no gaste más que el tope de ese módulo. Es lo recomendado.': 'It does it without asking, as long as it spends no more than that module\'s cap. This is the recommended one.',
+    'La hace sin preguntarte y la ves en «Lo que han hecho».': 'It does it without asking you, and you see it in “What they’ve done”.',
     'Lo cambia el dueño en Ajustes. En el tope, el gasto para solo.': 'The owner changes it in Settings. At the cap, spending stops by itself.',
     'Lo cambias en Ajustes. En el tope, el gasto para solo.': 'You change it in Settings. At the cap, spending stops by itself.',
-    'Lo completa el dueño de la ficha del AaaS.': 'The owner of the AaaS settings completes it.',
+    'Lo completa la persona que lleva el equipo.': 'The person who runs the team completes it.',
     'Lo primero que va a hacer:': 'The first thing it will do:',
-    'Lo que Ruta revisa cada día en tu negocio y te avisa.': 'What Route checks in your business every day and alerts you about.',
     'Lo que el equipo propone y espera la decisión del dueño.': 'What the team proposes and is waiting for the owner\'s decision.',
-    'Lo que necesita la IA empieza el {f}, cuando entra el tope: subirlo tarda 24 h.': 'Whatever needs the AI starts on {f}, when the cap applies: raising it takes 24 h.',
     'Nada esperando tu OK ahora mismo.': 'Nothing waiting for your OK right now.',
     'Opcional': 'Optional',
     'Para qué sirve': 'What it\'s for',
-    'Paso 1 de 3': 'Step 1 of 3',
-    'Paso 2 de 3': 'Step 2 of 3',
-    'Paso 3 de 3': 'Step 3 of 3',
+    'Paso 1 de 3 (más 1 opcional)': 'Step 1 of 3 (plus 1 optional)',
+    'Paso 2 de 3 (más 1 opcional)': 'Step 2 of 3 (plus 1 optional)',
+    'Paso 3 de 3 (más 1 opcional)': 'Step 3 of 3 (plus 1 optional)',
     'Qué quiere decir cada nivel': 'What each level means',
     'Recomendado': 'Recommended',
     'Reglas que tiene que seguir (opcional)': 'Rules it must follow (optional)',
@@ -985,68 +970,78 @@
     'Una regla por línea: como mucho 20, de hasta 200 caracteres cada una. Sin enlaces.': 'One rule per line: at most 20, up to 200 characters each. No links.',
     'Usar lo recomendado': 'Use the recommended',
     'Ver el equipo': 'See the team',
-    'Ya no están en este ERP y se retiran al guardar: {m}.': 'No longer in this ERP, removed when you save: {m}.',
+    'Ya no están en tu negocio y se retiran al guardar: {m}.': 'No longer in your business, removed when you save: {m}.',
     'aparta cada gasto antes de que salga y corta en el tope.': 'sets aside every spend before it goes out and stops at the cap.',
     'fija las prioridades de hoy y te dice por qué.': 'sets today\'s priorities and tells you why.',
     'mide qué modelos se alquilan y cuánto rinden.': 'measures which models get rented and how much they earn.',
     'mira la demanda y mueve las tarifas dentro de tu margen.': 'watches demand and moves rates within your range.',
     'mira las salidas y las vueltas de mañana y avisa de lo que falta.': 'checks tomorrow\'s handovers and returns and flags what is missing.',
     'prepara publicaciones para tus redes.': 'prepares posts for your social media.',
-    'recomendado': 'recommended',
     '{x}: guardado.': '{x}: saved.',
     '¿Cuánto pueden gastar al mes?': 'How much can they spend a month?',
     '¿Hasta dónde llega cada agente?': 'How far does each agent go?',
     '¿Quién es tu negocio?': 'Who is your business?',
-    '¿Qué trabajos hace Ruta?': 'Which jobs does Route do?'
+    '¿Qué trabajos hace Ruta?': 'Which jobs does Route do?',
+    'Ruta, el agente de operaciones, revisa cada día lo que marques aquí y te avisa de lo que falta.': 'Route, the operations agent, checks what you tick here every day and tells you what is missing.',
+    'Ruta revisa tu negocio cada día': 'Route checks your business every day',
+    'Qué revisa': 'What it checks',
+    'Ruta sigue revisando lo que ya está marcado.': 'Route keeps checking what is already ticked.',
+    'Ruta no revisa nada hasta que lo enciendas aquí.': 'Route checks nothing until you switch it on here.',
+    'Marca al menos una cosa que revisar, o apaga la revisión de Ruta.': 'Tick at least one thing to check, or switch Route’s check off.',
+    'Tu equipo empieza el {f}': 'Your team starts on {f}',
+    'Tu equipo empieza en 24 h': 'Your team starts in 24 h',
+    'Hasta entonces no gasta nada. Subir el tope por primera vez tarda 24 h: es una protección por si alguien entra en tu cuenta.': 'Until then it spends nothing. Raising the cap for the first time takes 24 h: it protects you in case someone gets into your account.',
+    'Lo primero que hará desde el {f}:': 'The first thing it will do from {f}:',
+    'Lo primero que hará:': 'The first thing it will do:',
+    'Usar {x}': 'Use {x}',
+    'Escribe cuánto pueden gastar al mes, por ejemplo {x}.': 'Write how much they can spend a month, for example {x}.',
+    'Hoy ya se han hecho los 10 cambios que caben aquí: podrás guardar mañana. Lo escrito se queda.': 'The 10 changes allowed here today are used up: you can save tomorrow. What you wrote stays.',
+    'Podrás guardar en {s} s: lo escrito se queda.': 'You can save in {s} s: what you wrote stays.'
   };
   var ID_AG = {
     'AaaS': 'AaaS',
-    'Qué trabajos hace': 'Tugas yang dikerjakan', 'Nivel de Ruta': 'Level Rute',
-    '0 · No hace la pasada': '0 · Tidak berjalan', '1 · Mira y avisa': '1 · Memeriksa dan memberi peringatan',
-    'Tope de gasto al mes': 'Batas biaya per bulan', 'Guardar': 'Simpan',
+    'Tope de gasto al mes': 'Anggaran bulanan', 'Guardar': 'Simpan',
     'Trabajando': 'Bekerja',
-    'El AaaS es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.': 'AaaS adalah layanan berbayar: menyalakannya berarti menggunakannya sesuai kesepakatan dengan studio.',
-    'Hoy las acciones del AaaS no gastan dinero: el tope de cada módulo es orientativo. Lo que frena el gasto es el tope del mes.': 'Saat ini tindakan AaaS tidak mengeluarkan uang: batas tiap modul hanya panduan. Yang menahan pengeluaran adalah batas bulanan.',
-    'Como mucho {x}: es el máximo que ha fijado el estudio.': 'Paling banyak {x}: batas maksimum dari studio.', 'Sin configurar': 'Belum diatur',
-    'Le falta el tope mensual.': 'Batas bulanan belum diisi.', 'Le falta el contexto del negocio: quién es.': 'Konteks bisnis belum diisi: siapa bisnisnya.',
-    'Le faltan los límites por módulo.': 'Batas per modul belum diisi.',
-    'Esta instancia aún no trae la configuración del AaaS: la pone el estudio.': 'Instans ini belum punya pengaturan AaaS: studio yang menambahkannya.',
-    'El estudio aún no ha preparado la ficha del AaaS en esta instancia: la crea con el alta.': 'Studio belum menyiapkan profil AaaS di instans ini: dibuat saat pendaftaran.',
-    'Le falta un paso de la configuración del ERP ({x}).': 'Ada langkah pengaturan ERP yang belum selesai ({x}).',
-    'No se ha podido leer la configuración del AaaS. Avisa al estudio.': 'Pengaturan AaaS tidak bisa dibaca. Beri tahu studio.',
-    'tope 0: no puede gastar': 'batas 0: tidak bisa membelanjakan',
-    'Reanudar': 'Lanjutkan', 'Encender el AaaS': 'Aktifkan AaaS', 'Apagar el AaaS': 'Matikan AaaS',
-    'El AaaS está apagado: no mira nada ni escribe nada.': 'AaaS nonaktif: tidak membaca dan tidak menulis apa pun.',
-    'Lo enciende el dueño de la ficha del AaaS.': 'Yang mengaktifkannya adalah pemilik pengaturan AaaS.',
-    'Solo lo cambia el dueño de la ficha del AaaS.': 'Hanya pemilik pengaturan AaaS yang dapat mengubahnya.',
-    'Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.': 'Mematikan AaaS langsung menghentikannya membaca dan menulis. Catatannya tetap di sini.',
+    'Tu equipo es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.': 'Tim Anda adalah layanan berbayar: menyalakannya berarti menggunakannya sesuai kesepakatan dengan studio.',
+    'Como mucho {x}: es el máximo que ha fijado el estudio.': 'Paling banyak {x}: anggaran maksimum dari studio.', 'Sin configurar': 'Belum diatur',
+    'Le falta el tope mensual.': 'Anggaran bulanan belum diisi.', 'Le falta el contexto del negocio: quién es.': 'Konteks bisnis belum diisi: siapa bisnisnya.',
+    'Le faltan los límites por módulo.': 'Wewenang tiap modul belum diisi.',
+    'Tu negocio aún no trae la configuración de tu equipo: la pone el estudio.': 'Usaha Anda belum memiliki pengaturan tim: studio yang menambahkannya.',
+    'El estudio aún no ha preparado a tu equipo: lo hace con el alta.': 'Studio belum menyiapkan tim Anda: dilakukan saat pendaftaran.',
+    'Falta un paso de la configuración de tu negocio ({x}).': 'Ada langkah pengaturan usaha Anda yang belum selesai ({x}).',
+    'No se ha podido leer la configuración de tu equipo. Avisa al estudio.': 'Pengaturan tim Anda tidak bisa dibaca. Beri tahu studio.',
+    'tope 0: no puede gastar': 'anggaran 0: tidak bisa membelanjakan',
+    'Reanudar': 'Lanjutkan', 'Encender a tu equipo': 'Nyalakan tim Anda', 'Apagar a tu equipo': 'Matikan tim Anda',
+    'Tu equipo está apagado: no mira nada ni hace nada.': 'Tim Anda mati: tidak memantau dan tidak mengerjakan apa pun.',
+    'Lo enciende la persona que lleva el equipo.': 'Yang menyalakannya adalah orang yang mengelola tim.',
+    'Esto lo configura la persona que lleva el equipo.': 'Ini diatur oleh orang yang mengelola tim.',
+    'Tu equipo deja de mirar y de hacer cosas al momento. Lo que ya hizo se queda aquí.': 'Tim Anda langsung berhenti memantau dan bekerja. Yang sudah dikerjakan tetap ada di sini.',
     'Motivo': 'Alasan', 'Escribe el motivo (entre 3 y 300 caracteres).': 'Tulis alasannya (3 sampai 300 karakter).',
     'Confirmar': 'Konfirmasi', 'Hecho': 'Selesai', 'Aceptar': 'Terima', 'Rechazar': 'Tolak',
     'Pendiente': 'Tertunda', 'Aceptada': 'Diterima', 'Rechazada': 'Ditolak',
     'Flota y taller': 'Armada dan bengkel', 'Salidas y recogidas de mañana': 'Serah terima dan penjemputan besok', 'Motos que no han vuelto': 'Motor yang belum kembali',
     'Reservas sin pagar que caducan': 'Booking belum dibayar yang akan kedaluwarsa', 'Cobros por cuadrar': 'Pembayaran yang perlu dicocokkan', 'Qué sacar primero del taller': 'Yang perlu dikeluarkan dulu dari bengkel',
     'Modelos siempre llenos o vacíos': 'Model yang selalu penuh atau kosong', 'Cierre del día': 'Tutup hari',
-    'Elige al menos un trabajo, o pon el nivel de Ruta a 0.': 'Pilih setidaknya satu tugas, atau atur level Rute ke 0.',
-    'Subir el tope tarda 24 h en entrar; bajarlo es inmediato.': 'Menaikkan batas berlaku setelah 24 jam; menurunkannya langsung berlaku.',
+    'Subir el tope tarda 24 h en entrar; bajarlo es inmediato.': 'Menaikkan anggaran berlaku setelah 24 jam; menurunkannya langsung berlaku.',
     'Unos {u} USD al cambio de hoy.': 'Sekitar {u} USD dengan kurs hari ini.',
     'Guardado.': 'Tersimpan.',
-    'AaaS encendido.': 'AaaS aktif.', 'AaaS apagado.': 'AaaS dimatikan.',
+    'Equipo encendido.': 'Tim dinyalakan.', 'Equipo apagado.': 'Tim dimatikan.',
     'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).': 'Terlalu banyak perubahan berturut-turut: tunggu satu menit (maksimal 10 per hari).',
-    'Esto solo lo puede hacer el dueño de la ficha del AaaS.': 'Ini hanya bisa dilakukan oleh pemilik pengaturan AaaS.',
-    'Este ERP aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender el AaaS.': 'ERP ini belum tahu modul mana yang cocok untuk jenis usahanya: studio menyiapkannya sebelum AaaS diaktifkan.',
+    'Esto solo lo puede hacer la persona que lleva el equipo.': 'Hanya orang yang mengelola tim yang bisa melakukannya.',
+    'Tu negocio aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender a tu equipo.': 'Usaha Anda belum tahu modul mana yang cocok untuk jenis usahanya: studio menyiapkannya sebelum tim Anda dinyalakan.',
         'La cuenta de pruebas no puede cambiar nada aquí.': 'Akun uji coba tidak dapat mengubah apa pun di sini.',
     'No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.': 'Anda tidak punya alat «AaaS»: mintalah kepada admin utama di Pengguna.',
-    'El AaaS está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'AaaS nonaktif: peringatannya tidak bisa dibaca sampai diaktifkan. Ini BUKAN berarti tidak ada.',
+    'Tu equipo está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'Tim Anda mati: peringatannya tidak bisa dibaca sampai dinyalakan. Ini BUKAN berarti tidak ada.',
     'La base no confirmó el cambio: recarga antes de repetir.': 'Database tidak mengonfirmasi perubahan: muat ulang sebelum mengulang.',
     'Nunca': 'Tidak pernah',
     'No hace nada en ese módulo.': 'Tidak melakukan apa pun di modul itu.',
-    'Lo propone y decide el dueño': 'Diusulkan, pemilik yang memutuskan',
-    'Lo hace, sin pasar del tope': 'Dijalankan, tanpa melewati batas',
-    'Lo hace solo': 'Dijalankan sendiri',
-    'La hace sin preguntar.': 'Dijalankan tanpa bertanya.',
-    'Guardar los límites': 'Simpan batas',
+    'Lo propone y decide el dueño': 'Diusulkan, pemilik memutuskan',
+    'Lo hace solo y te lo cuenta': 'Dikerjakan lalu dilaporkan',
+    'Lo hace solo, sin tope propio': 'Sendiri, tanpa anggaran modul',
+    'Hoy funciona igual que el anterior: el tope por módulo aún no frena nada; lo que frena el gasto es el tope del mes.': 'Saat ini sama dengan sebelumnya: anggaran per modul belum menahan apa pun; yang menahan pengeluaran adalah anggaran bulanan.',
+    'Guardar los límites': 'Simpan wewenang',
     'Quién es el negocio': 'Tentang usaha ini',
-    'Límites': 'Batas',
+    'Límites': 'Wewenang tiap modul',
     'Trabajos': 'Tugas',
     'Ruta': 'Rute',
     'Anulada': 'Dibatalkan',
@@ -1058,44 +1053,42 @@
     'Acción aceptada y hecha.': 'Tindakan diterima dan dijalankan.',
     'Acción rechazada.': 'Tindakan ditolak.',
     'No se ha hecho: ya no se cumplía.': 'Tidak dijalankan: sudah tidak berlaku.',
-    'No se ha hecho: el límite de ese módulo ya no lo permite.': 'Tidak dijalankan: batas modul itu sudah tidak mengizinkannya.',
+    'No se ha hecho: el límite de ese módulo ya no lo permite.': 'Tidak dijalankan: wewenang modul itu sudah tidak mengizinkannya.',
     'No se ha hecho: había caducado.': 'Tidak dijalankan: sudah kedaluwarsa.',
-    'El AaaS es un módulo de pago: lo enciende el estudio cuando el negocio lo contrata.': 'AaaS adalah modul berbayar: studio yang mengaktifkannya setelah usaha ini berlangganan.',
-    'Este módulo no es para el tipo de negocio de este ERP.': 'Modul ini bukan untuk jenis usaha ERP ini.',
-    'Este ERP no tiene la lista de módulos encendidos: la pone el estudio. Avísale.': 'ERP ini belum punya daftar modul yang aktif: studio yang mengaturnya. Beri tahu mereka.',
-    'Uno de los módulos ya no puede llevar límite en este ERP: recarga la página y vuelve a guardar.': 'Salah satu modul sudah tidak bisa diberi batas di ERP ini: muat ulang halaman lalu simpan lagi.',
+    'Tu equipo es un módulo de pago: lo enciende el estudio cuando el negocio lo contrata.': 'Tim Anda adalah modul berbayar: studio menyalakannya saat usaha menggunakannya.',
+    'Este módulo no es para tu tipo de negocio.': 'Modul ini bukan untuk jenis usaha Anda.',
+    'Tu negocio no tiene la lista de módulos encendidos: la pone el estudio. Avísale.': 'Usaha Anda belum punya daftar modul yang aktif: studio yang menambahkannya. Beri tahu studio.',
+    'Una parte de tu negocio ya no admite límites: recarga la página y vuelve a guardar.': 'Salah satu bagian usaha Anda sudah tidak bisa diberi wewenang: muat ulang halaman lalu simpan lagi.',
     'El contexto no se ha guardado: no puede llevar enlaces, y como mucho 600 caracteres en «Quién es el negocio», 300 en los horarios, 200 en el tono y 20 reglas de 200.': 'Konteks tidak tersimpan: tidak boleh ada tautan, dan maksimal 600 karakter di «Tentang usaha ini», 300 di jam buka, 200 di nada bicara, dan 20 aturan masing-masing 200.',
     'Alguien ya lo decidió: así ha quedado.': 'Sudah ada yang memutuskannya: beginilah hasilnya.',
-    'Este ERP aún no tiene trabajos del AaaS para su tipo de negocio.': 'ERP ini belum punya tugas AaaS untuk jenis usahanya.',
+    'Ruta aún no tiene nada que revisar en tu tipo de negocio.': 'Rute belum punya yang bisa diperiksa untuk jenis usaha Anda.',
     'Cancelar la subida': 'Batalkan kenaikan',
-    'Este módulo se apagó después de guardar su límite: ahora no se aplica, hasta que el dueño vuelva a guardar los límites.': 'Modul ini dimatikan setelah batasnya disimpan: sekarang tidak berlaku, sampai pemilik menyimpan batas lagi.',
-    'Ningún módulo de este ERP puede llevar límite ahora mismo.': 'Saat ini tidak ada modul di ERP ini yang bisa diberi batas.',
-    'El tope de cada módulo va en {m}. Entre todos no pueden pasar del tope mensual ({x}). Déjalo vacío si ese módulo no lleva tope propio.': 'Batas setiap modul dalam {m}. Jumlah semuanya tidak boleh melebihi batas bulanan ({x}). Kosongkan jika modul itu tidak punya batas sendiri.',
+    'Este módulo se apagó después de guardar su límite: ahora no se aplica, hasta que el dueño vuelva a guardar los límites.': 'Modul ini dimatikan setelah wewenangnya disimpan: sekarang tidak berlaku, sampai pemilik menyimpan wewenang lagi.',
+    'Ahora mismo ninguna parte de tu negocio admite límites.': 'Saat ini belum ada bagian usaha Anda yang bisa diberi wewenang.',
     '{n} de {m} caracteres': '{n} dari {m} karakter',
     '{n} de 20 reglas': '{n} dari 20 aturan',
-    'El AaaS propone una acción que espera tu decisión.': 'AaaS mengusulkan satu tindakan yang menunggu keputusan Anda.',
-    'El AaaS propone una acción que espera la decisión del dueño.': 'AaaS mengusulkan satu tindakan yang menunggu keputusan pemilik.',
-    'El AaaS propone {n} acciones que esperan tu decisión.': 'AaaS mengusulkan {n} tindakan yang menunggu keputusan Anda.',
-    'El AaaS propone {n} acciones que esperan la decisión del dueño.': 'AaaS mengusulkan {n} tindakan yang menunggu keputusan pemilik.',
+    'Tu equipo propone una acción que espera tu decisión.': 'Tim Anda mengusulkan satu tindakan yang menunggu keputusan Anda.',
+    'El equipo propone una acción que espera la decisión de quien lo lleva.': 'Tim mengusulkan satu tindakan yang menunggu keputusan pengelola tim.',
+    'Tu equipo propone {n} acciones que esperan tu decisión.': 'Tim Anda mengusulkan {n} tindakan yang menunggu keputusan Anda.',
+    'El equipo propone {n} acciones que esperan la decisión de quien lo lleva.': 'Tim mengusulkan {n} tindakan yang menunggu keputusan pengelola tim.',
     'Ver las acciones': 'Lihat tindakannya',
     'sin número en este sistema': 'tanpa nomor di sistem ini',
     'Acción de un tipo que esta pantalla aún no conoce.': 'Tindakan jenis yang belum dikenal layar ini.',
     'Propuesta el': 'Diusulkan pada',
     'Caduca el': 'Kedaluwarsa pada',
-    'Las acepta o las rechaza el dueño de la ficha del AaaS.': 'Pemilik pengaturan AaaS yang menerima atau menolaknya.',
+    'Las acepta o las rechaza la persona que lleva el equipo.': 'Diterima atau ditolak oleh orang yang mengelola tim.',
     'La pantalla no tiene todos los módulos: recarga la página antes de guardar.': 'Layar ini tidak memuat semua modul: muat ulang halaman sebelum menyimpan.',
     'Algún campo pasa de su largo máximo: mira el contador de cada uno.': 'Ada kolom yang melebihi panjang maksimal: lihat penghitung di bawah setiap kolom.',
     'Como mucho 20 reglas, y hay {n}.': 'Maksimal 20 aturan, dan ada {n}.',
     'La regla {n} pasa de 200 caracteres.': 'Aturan {n} lebih dari 200 karakter.',
-    'Subida cancelada: el tope no cambia.': 'Kenaikan dibatalkan: batas tidak berubah.',
-    'El tope se queda en {x} y la subida a {y} no entrará.': 'Batas tetap {x} dan kenaikan ke {y} tidak akan berlaku.',
-    'Antes vuelve a guardar los límites en el paso 3: hay módulos que cambiaron desde la última vez.': 'Simpan lagi batas modul di langkah 3 dulu: ada modul yang berubah sejak terakhir kali.',
+    'Subida cancelada: el tope no cambia.': 'Kenaikan dibatalkan: anggaran tidak berubah.',
+    'El tope se queda en {x} y la subida a {y} no entrará.': 'Anggaran tetap {x} dan kenaikan ke {y} tidak akan berlaku.',
     /* Panel V2 del AaaS autónomo (15-oct-2026) */
     'Tus agentes trabajan solos dentro de sus límites y aquí te dicen qué han hecho y por qué. Los paras cuando quieras: a todos, por área o de uno en uno.': 'Agen Anda bekerja sendiri dalam batasnya dan di sini memberi tahu apa yang sudah dikerjakan dan alasannya. Hentikan kapan saja: semuanya, per area, atau satu per satu.',
     'Capitán': 'Kapten',
     'Dirige el equipo': 'Memimpin tim',
     'Fija las prioridades del día, de una a tres, dice por qué y cuánto deberían dar, y es la única voz que te informa.': 'Menetapkan satu sampai tiga prioritas hari ini, menjelaskan alasannya dan berapa hasil yang diharapkan, dan hanya dia yang melapor kepada Anda.',
-    'Lee todo el ERP': 'Membaca seluruh ERP',
+    'Lee todo tu negocio': 'Membaca seluruh usaha Anda',
     'Fija el plan del día': 'Menetapkan rencana hari ini',
     'Te informa, nunca pregunta caso por caso': 'Melapor kepada Anda, tidak bertanya kasus per kasus',
     'Sin acceso al dinero': 'Tidak punya akses ke uang',
@@ -1111,13 +1104,13 @@
     'Sin precios': 'Tanpa harga',
     'Tesorero': 'Bendahara',
     'Código, no IA': 'Kode, bukan AI',
-    'Código simple, no un modelo de lenguaje. Aparta cada céntimo que gastan los agentes antes de que salga y corta en el tope del mes. Solo el gasto de los agentes: los pagos de los clientes no son cosa suya.': 'Kode biasa, bukan model bahasa. Mencadangkan setiap sen yang dibelanjakan agen sebelum keluar dan berhenti di batas bulanan. Hanya pengeluaran agen: pembayaran pelanggan bukan urusannya.',
+    'Código simple, no un modelo de lenguaje. Aparta cada céntimo que gastan los agentes antes de que salga y corta en el tope del mes. Solo el gasto de los agentes: los pagos de los clientes no son cosa suya.': 'Kode biasa, bukan model bahasa. Mencadangkan setiap sen yang dibelanjakan agen sebelum keluar dan berhenti saat anggaran bulanan habis. Hanya pengeluaran agen: pembayaran pelanggan bukan urusannya.',
     'Comprueba cada gasto antes de que salga': 'Memeriksa setiap pengeluaran sebelum keluar',
-    'Corta el gasto en el tope': 'Menghentikan pengeluaran di batas',
+    'Corta el gasto en el tope': 'Menghentikan pengeluaran saat anggaran habis',
     'Solo el gasto de los agentes, nunca pagos de clientes': 'Hanya pengeluaran agen, bukan pembayaran pelanggan',
     'Ningún agente puede reescribirlo': 'Tidak ada agen yang bisa mengubahnya',
     'Código simple': 'Kode biasa',
-    'Corta en el tope': 'Berhenti di batas',
+    'Corta en el tope': 'Berhenti saat anggaran habis',
     'Cifras': 'Angka',
     'Mide': 'Mengukur',
     'Mide la ocupación por modelo, lo que rinde cada unidad y lo que de verdad dio cada acción de los agentes, y dice qué doblar y qué dejar.': 'Mengukur okupansi per model, pendapatan per unit, dan hasil nyata dari setiap tindakan agen, lalu memberi tahu apa yang perlu dilipatgandakan dan apa yang perlu dihentikan.',
@@ -1151,9 +1144,9 @@
     'Esa acción no es de su papel.': 'Tindakan itu bukan bagian dari perannya.',
     'Al comprobarlo, los datos no cuadraban: no se hizo.': 'Saat diperiksa, datanya tidak cocok: tidak dijalankan.',
     'Ese trabajo está apagado.': 'Tugas itu dimatikan.',
-    'El límite de ese módulo no lo permite.': 'Batas modul itu tidak mengizinkannya.',
+    'El límite de ese módulo no lo permite.': 'Wewenang modul itu tidak mengizinkannya.',
     'Ya había hecho todas las de hoy.': 'Sudah menjalankan semua jatah hari ini.',
-    'Habría pasado del tope de gasto.': 'Akan melewati batas biaya.',
+    'Habría pasado del tope de gasto.': 'Akan melewati anggaran.',
     'Otro motivo.': 'Alasan lain.',
     'Prioridades del día': 'Prioritas hari ini',
     'Publicación en redes': 'Posting media sosial',
@@ -1231,10 +1224,10 @@
     'Solo lo que tu usuario puede ver: las reservas o los recibís que no ves no están sumados. Es lo que entró, no lo que dicen los agentes.': 'Hanya yang bisa dilihat pengguna Anda: booking atau kuitansi yang tidak Anda lihat tidak dijumlahkan. Ini uang yang masuk, bukan klaim agen.',
     'Ya estaba así: no había nada que cambiar.': 'Sudah seperti itu: tidak ada yang perlu diubah.',
     'Usa tu propio dominio: las plataformas compartidas y los acortadores de enlaces pueden llevar a cualquier sitio.': 'Gunakan domain Anda sendiri; platform bersama dan pemendek tautan bisa mengarah ke mana saja.',
-    'Pagos reales del ERP este mes: {r} reservas pagadas y {f} recibís. Es lo que entró, no lo que dicen los agentes.': 'Pembayaran nyata di ERP bulan ini: {r} booking terbayar dan {f} kuitansi. Ini uang yang masuk, bukan klaim agen.',
+    'Pagos reales de tu negocio este mes: {r} reservas pagadas y {f} recibís. Es lo que entró, no lo que dicen los agentes.': 'Pembayaran nyata di usaha Anda bulan ini: {r} booking terbayar dan {f} kuitansi. Ini uang yang masuk, bukan klaim agen.',
     'Gastado · {x} · en {m}': 'Terpakai · {x} · dalam {m}',
     'en IA': 'untuk AI',
-    'Tope del mes · en {m}': 'Batas bulanan · dalam {m}',
+    'Tope del mes · en {m}': 'Anggaran bulanan · dalam {m}',
     'Sin fijar todavía': 'Belum diatur',
     '{p} % usado.': '{p} % terpakai.',
     'Todos parados · ponerlos en marcha': 'Semua berhenti · jalankan lagi',
@@ -1242,13 +1235,13 @@
     'Solo el dueño los vuelve a poner en marcha.': 'Hanya pemilik yang bisa menjalankannya lagi.',
     'No para el bot de WhatsApp: va por su cuenta.': 'Tidak menghentikan bot WhatsApp: bot itu berjalan sendiri.',
     'Tu equipo · {n} agentes': 'Tim Anda · {n} agen',
-    'Este ERP aún no tiene agentes en su equipo.': 'ERP ini belum punya agen di timnya.',
+    'Tu negocio aún no tiene agentes en su equipo.': 'Usaha Anda belum punya agen di timnya.',
     'Hola, soy {x}.': 'Halo, saya {x}.',
-    'El tope del mes está en 0: ningún agente puede gastar nada.': 'Batas bulanan 0: tidak ada agen yang bisa membelanjakan apa pun.',
+    'El tope del mes está en 0: ningún agente puede gastar nada.': 'Anggaran bulanan 0: tidak ada agen yang bisa membelanjakan apa pun.',
     'gastado en IA este mes': 'terpakai untuk AI bulan ini',
     'acciones hoy': 'tindakan hari ini',
-    'Este mes los agentes llevan {x} gastados de un tope de {y}. Al llegar al tope, corto el gasto.': 'Bulan ini agen sudah membelanjakan {x} dari batas {y}. Begitu sampai batas, saya hentikan pengeluarannya.',
-    'No hay tope fijado: hasta que el dueño lo ponga, ningún agente puede gastar.': 'Belum ada batas: sampai pemilik mengaturnya, tidak ada agen yang bisa membelanjakan.',
+    'Este mes los agentes llevan {x} gastados de un tope de {y}. Al llegar al tope, corto el gasto.': 'Bulan ini agen sudah membelanjakan {x} dari anggaran {y}. Begitu anggaran habis, saya hentikan pengeluarannya.',
+    'No hay tope fijado: hasta que el dueño lo ponga, ningún agente puede gastar.': 'Belum ada anggaran: sampai pemilik mengaturnya, tidak ada agen yang bisa membelanjakan.',
     'Todo el equipo está parado: no gasto nada ni aplico nada hasta que nos pongan en marcha.': 'Seluruh tim berhenti: saya tidak membelanjakan atau menerapkan apa pun sampai kami dijalankan lagi.',
     'Estoy parado: no gasto nada ni aplico nada hasta que me pongan en marcha.': 'Saya berhenti: saya tidak membelanjakan atau menerapkan apa pun sampai dijalankan lagi.',
     'Mi área ({x}) está parada: no gasto nada ni aplico nada hasta que la pongan en marcha.': 'Area saya ({x}) berhenti: saya tidak membelanjakan atau menerapkan apa pun sampai area itu dijalankan lagi.',
@@ -1257,7 +1250,7 @@
     'Todavía no he hecho nada. Lo que haga aparecerá en «Lo que han hecho», con su porqué.': 'Saya belum mengerjakan apa pun. Apa pun yang saya kerjakan akan muncul di «Yang sudah dikerjakan», beserta alasannya.',
     'Qué puede hacer {x}': 'Yang bisa dilakukan {x}',
     'Esta pantalla aún no conoce a este agente.': 'Layar ini belum mengenal agen ini.',
-    'Código simple: nunca se pausa, así el tope siempre aguanta.': 'Kode biasa: tidak pernah dijeda, jadi batasnya selalu berlaku.',
+    'Código simple: nunca se pausa, así el tope siempre aguanta.': 'Kode biasa: tidak pernah dijeda, jadi anggarannya selalu berlaku.',
     'Parado con su palanca: no gasta, no llama a la IA y no aplica nada.': 'Dihentikan dengan sakelarnya sendiri: tidak membelanjakan, tidak memanggil AI, dan tidak menerapkan apa pun.',
     'Parado con su palanca. Solo el dueño lo vuelve a poner en marcha.': 'Dihentikan dengan sakelarnya sendiri. Hanya pemilik yang bisa menjalankannya lagi.',
     'Su palanca está en marcha, pero ahora lo para la pausa general.': 'Sakelarnya aktif, tetapi saat ini jeda umum menghentikannya.',
@@ -1273,12 +1266,12 @@
     'Gastó {x}': 'Membelanjakan {x}',
     'Lo reanuda el dueño.': 'Pemilik yang melanjutkannya.',
     'Nada esperando para publicarse.': 'Tidak ada yang menunggu diterbitkan.',
-    'Pararla nunca levanta el tope de gasto.': 'Menghentikannya tidak pernah mencabut batas biaya.',
+    'Pararla nunca levanta el tope de gasto.': 'Menghentikannya tidak pernah mencabut anggaran.',
     'sin conectar': 'belum terhubung',
     'más adelante': 'nanti',
     'Desconectar': 'Putuskan',
     'guardada el {x}': 'disimpan pada {x}',
-    'La llave la pega el dueño de la ficha del AaaS.': 'Pemilik pengaturan AaaS yang menempelkan kuncinya.',
+    'La llave la pega la persona que lleva el equipo.': 'Kuncinya ditempel oleh orang yang mengelola tim.',
     'Cuenta de demostración: solo mirar. Las conexiones no se enseñan a esta cuenta.': 'Akun demo: hanya melihat. Koneksi tidak ditampilkan untuk akun ini.',
     'Cuenta de demostración: solo mirar. El panel de los agentes no se enseña a esta cuenta.': 'Akun demo: hanya melihat. Panel agen tidak ditampilkan untuk akun ini.',
     'Ninguna línea todavía.': 'Belum ada lini.',
@@ -1301,64 +1294,59 @@
     'Quitado.': 'Dihapus.',
     'La base no lo ha aceptado ({x}).': 'Database tidak menerimanya ({x}).',
     /* Ajustes como asistente (15-oct-2026, plan aaas-equipo + revisión previa #383) */
-    '1 · Tope': '1 · Batas biaya',
+    '1 · Tope': '1 · Anggaran',
     '2 · Tu negocio': '2 · Usaha Anda',
-    '3 · Límites': '3 · Batas modul',
+    '3 · Límites': '3 · Wewenang',
     '4 · Trabajos': '4 · Tugas',
     'Ahora': 'Sekarang',
     'Ahora todo el equipo está parado: ponlo en marcha en «Equipo».': 'Saat ini seluruh tim dihentikan: jalankan lagi di «Tim».',
     'Ajustar por módulo': 'Atur per modul',
     'Ajustes': 'Pengaturan',
     'Al encenderlo, tus agentes vuelven a trabajar dentro de sus límites y te dicen aquí qué han hecho.': 'Setelah aktif, agen Anda kembali bekerja dalam batasnya dan memberi tahu Anda di sini apa yang sudah dikerjakan.',
-    'Avanzado: tope por módulo (opcional)': 'Lanjutan: batas per modul (opsional)',
     'Aún falta un paso': 'Masih ada satu langkah',
     'Cada cosa que haga aparecerá en «Lo que han hecho», con su porqué.': 'Semua yang mereka kerjakan akan muncul di «Yang sudah dikerjakan», beserta alasannya.',
-    'Cambiar el tope': 'Ubah batas',
+    'Cambiar el tope': 'Ubah anggaran',
     'Completar ahora': 'Selesaikan sekarang',
     'Con 0 tu equipo no puede gastar nada y no empieza: pon más de 0.': 'Dengan 0 tim Anda tidak bisa membelanjakan apa pun dan tidak mulai: isi lebih dari 0.',
-    'El estudio aún no ha fijado el máximo de gasto de este ERP: hasta entonces no se puede poner un tope. Avísale.': 'Studio belum menetapkan batas maksimum biaya ERP ini: sampai saat itu batas belum bisa diisi. Beri tahu studio.',
-    'El tope de «{x}» no se entiende: escríbelo con cifras, como {y}.': 'Batas untuk «{x}» tidak jelas: tulis dengan angka, misalnya {y}.',
+    'El estudio aún no ha fijado el máximo de gasto de tu negocio: hasta entonces no se puede poner un tope. Avísale.': 'Studio belum menetapkan anggaran maksimum untuk usaha Anda: sampai saat itu anggaran belum bisa diisi. Beri tahu studio.',
     'Elegir los trabajos (opcional)': 'Pilih tugas (opsional)',
-    'En cada parte del ERP, si tus agentes no hacen nada, te lo proponen o lo hacen solos dentro del tope.': 'Di setiap bagian ERP: apakah agen Anda tidak melakukan apa pun, mengusulkannya kepada Anda, atau mengerjakannya sendiri dalam batas.',
-    'En {m} el límite es «Lo propone y decide el dueño»: lo que harían espera aquí.': 'Di {m} batasnya «Diusulkan, pemilik yang memutuskan»: yang akan mereka kerjakan menunggu di sini.',
+    'En cada parte de tu negocio, si tus agentes no hacen nada, te lo proponen o lo hacen solos.': 'Di setiap bagian usaha Anda: apakah agen Anda tidak melakukan apa pun, mengusulkannya kepada Anda, atau mengerjakannya sendiri.',
+    'En {m} el límite es «Lo propone y decide el dueño»: lo que harían espera aquí.': 'Di {m} wewenangnya «Diusulkan, pemilik memutuskan»: yang akan mereka kerjakan menunggu di sini.',
     'Equipo': 'Tim',
-    'Es lo máximo que tus agentes gastan en IA en un mes. Al llegar, el Tesorero corta el gasto.': 'Ini jumlah maksimum yang dibelanjakan agen Anda untuk AI dalam sebulan. Saat tercapai, Bendahara menghentikan pengeluaran.',
+    'Es lo máximo que tu equipo gasta en IA en un mes. Al llegar, el Tesorero, el agente que lleva el dinero, corta el gasto.': 'Ini anggaran maksimum tim Anda untuk AI dalam sebulan. Saat tercapai, Bendahara, agen yang mengurus uang, menghentikan pengeluaran.',
     'Escribe el importe con cifras, como {x}.': 'Tulis jumlahnya dengan angka, misalnya {x}.',
     'Escribe quién es el negocio: sin eso tu equipo no empieza.': 'Tulis tentang usaha ini: tanpa itu tim Anda tidak mulai.',
     'Esperan tu OK': 'Menunggu persetujuan Anda',
     'Falta': 'Belum',
     'Guardar y seguir': 'Simpan dan lanjut',
-    'Hace los trabajos que ya están marcados.': 'Mengerjakan tugas yang sudah dicentang.',
     'Hacerlo ahora': 'Kerjakan sekarang',
     'Hay una subida pendiente a {x}: entra el {f}.': 'Ada kenaikan tertunda ke {x}: berlaku pada {f}.',
     'Horarios (opcional)': 'Jam buka (opsional)',
-    'La hace sin preguntar mientras no gaste más que el tope de ese módulo. Es lo recomendado.': 'Dijalankan tanpa bertanya selama tidak melebihi batas modul itu. Ini yang disarankan.',
-    'Lo cambia el dueño en Ajustes. En el tope, el gasto para solo.': 'Pemilik mengubahnya di Pengaturan. Di batas itu, pengeluaran berhenti sendiri.',
-    'Lo cambias en Ajustes. En el tope, el gasto para solo.': 'Ubah di Pengaturan. Di batas itu, pengeluaran berhenti sendiri.',
-    'Lo completa el dueño de la ficha del AaaS.': 'Pemilik pengaturan AaaS yang melengkapinya.',
+    'La hace sin preguntarte y la ves en «Lo que han hecho».': 'Dikerjakan tanpa bertanya, dan Anda melihatnya di «Yang sudah dikerjakan».',
+    'Lo cambia el dueño en Ajustes. En el tope, el gasto para solo.': 'Pemilik mengubahnya di Pengaturan. Saat anggaran habis, pengeluaran berhenti sendiri.',
+    'Lo cambias en Ajustes. En el tope, el gasto para solo.': 'Ubah di Pengaturan. Saat anggaran habis, pengeluaran berhenti sendiri.',
+    'Lo completa la persona que lleva el equipo.': 'Dilengkapi oleh orang yang mengelola tim.',
     'Lo primero que va a hacer:': 'Yang pertama akan dikerjakan:',
-    'Lo que Ruta revisa cada día en tu negocio y te avisa.': 'Yang diperiksa Rute di usaha Anda setiap hari lalu diberitahukan kepada Anda.',
     'Lo que el equipo propone y espera la decisión del dueño.': 'Yang diusulkan tim dan menunggu keputusan pemilik.',
-    'Lo que necesita la IA empieza el {f}, cuando entra el tope: subirlo tarda 24 h.': 'Yang memerlukan AI mulai pada {f}, saat batasnya berlaku: menaikkannya butuh 24 jam.',
     'Nada esperando tu OK ahora mismo.': 'Tidak ada yang menunggu persetujuan Anda saat ini.',
     'Opcional': 'Opsional',
     'Para qué sirve': 'Fungsinya',
-    'Paso 1 de 3': 'Langkah 1 dari 3',
-    'Paso 2 de 3': 'Langkah 2 dari 3',
-    'Paso 3 de 3': 'Langkah 3 dari 3',
+    'Paso 1 de 3 (más 1 opcional)': 'Langkah 1 dari 3 (+1 opsional)',
+    'Paso 2 de 3 (más 1 opcional)': 'Langkah 2 dari 3 (+1 opsional)',
+    'Paso 3 de 3 (más 1 opcional)': 'Langkah 3 dari 3 (+1 opsional)',
     'Qué quiere decir cada nivel': 'Arti setiap level',
     'Recomendado': 'Disarankan',
     'Reglas que tiene que seguir (opcional)': 'Aturan yang harus diikuti (opsional)',
     'Más detalles: horarios, tono y reglas (opcional)': 'Detail lain: jam buka, nada bicara, dan aturan (opsional)',
     'Saltar': 'Lewati',
     'Si lo saltas': 'Jika dilewati',
-    'Sin límites, tu equipo no empieza.': 'Tanpa batas, tim Anda tidak mulai.',
+    'Sin límites, tu equipo no empieza.': 'Tanpa wewenang, tim Anda tidak mulai.',
     'Sin saber quién es el negocio, tu equipo no empieza.': 'Tanpa tahu tentang usaha ini, tim Anda tidak mulai.',
-    'Con el tope en 0 ningún agente puede gastar, y tu equipo no empieza.': 'Dengan batas 0 tidak ada agen yang bisa membelanjakan, dan tim Anda tidak mulai.',
-    'Sugerido: {x}, el máximo que ha fijado el estudio para tu plan.': 'Disarankan: {x}, batas maksimum dari studio untuk paket Anda.',
+    'Con el tope en 0 ningún agente puede gastar, y tu equipo no empieza.': 'Dengan anggaran 0 tidak ada agen yang bisa membelanjakan, dan tim Anda tidak mulai.',
+    'Sugerido: {x}, el máximo que ha fijado el estudio para tu plan.': 'Disarankan: {x}, anggaran maksimum dari studio untuk paket Anda.',
     'Te deja la acción en «Esperan tu OK» y no la hace hasta que la aceptas.': 'Tindakan ditaruh di «Menunggu persetujuan Anda» dan baru dijalankan setelah Anda terima.',
     'Tono (opcional)': 'Nada bicara (opsional)',
-    'Tope del mes': 'Batas biaya bulanan',
+    'Tope del mes': 'Anggaran bulanan',
     'Tu equipo no empieza hasta completarlo.': 'Tim Anda tidak mulai sampai ini selesai.',
     'Tu equipo ya trabaja': 'Tim Anda sudah bekerja',
     'Tu negocio': 'Usaha Anda',
@@ -1366,19 +1354,33 @@
     'Una regla por línea: como mucho 20, de hasta 200 caracteres cada una. Sin enlaces.': 'Satu aturan per baris: paling banyak 20, masing-masing sampai 200 karakter. Tanpa tautan.',
     'Usar lo recomendado': 'Pakai yang disarankan',
     'Ver el equipo': 'Lihat tim',
-    'Ya no están en este ERP y se retiran al guardar: {m}.': 'Sudah tidak ada di ERP ini dan dihapus saat disimpan: {m}.',
-    'aparta cada gasto antes de que salga y corta en el tope.': 'menyisihkan setiap pengeluaran sebelum keluar dan berhenti di batas.',
+    'Ya no están en tu negocio y se retiran al guardar: {m}.': 'Sudah tidak ada di usaha Anda dan dihapus saat disimpan: {m}.',
+    'aparta cada gasto antes de que salga y corta en el tope.': 'menyisihkan setiap pengeluaran sebelum keluar dan berhenti saat anggaran habis.',
     'fija las prioridades de hoy y te dice por qué.': 'menetapkan prioritas hari ini dan memberi tahu alasannya.',
     'mide qué modelos se alquilan y cuánto rinden.': 'mengukur model mana yang disewa dan berapa hasilnya.',
     'mira la demanda y mueve las tarifas dentro de tu margen.': 'memantau permintaan dan menggeser tarif dalam rentang Anda.',
     'mira las salidas y las vueltas de mañana y avisa de lo que falta.': 'memeriksa serah terima dan pengembalian besok lalu memberi tahu yang kurang.',
     'prepara publicaciones para tus redes.': 'menyiapkan unggahan untuk media sosial Anda.',
-    'recomendado': 'disarankan',
     '{x}: guardado.': '{x}: tersimpan.',
     '¿Cuánto pueden gastar al mes?': 'Berapa yang boleh dibelanjakan per bulan?',
     '¿Hasta dónde llega cada agente?': 'Sejauh mana tiap agen boleh bertindak?',
     '¿Quién es tu negocio?': 'Seperti apa usaha Anda?',
-    '¿Qué trabajos hace Ruta?': 'Tugas apa yang dikerjakan Rute?'
+    '¿Qué trabajos hace Ruta?': 'Tugas apa yang dikerjakan Rute?',
+    'Ruta, el agente de operaciones, revisa cada día lo que marques aquí y te avisa de lo que falta.': 'Rute, agen operasional, setiap hari memeriksa yang Anda centang di sini dan memberi tahu yang kurang.',
+    'Ruta revisa tu negocio cada día': 'Rute memeriksa usaha Anda setiap hari',
+    'Qué revisa': 'Yang diperiksa',
+    'Ruta sigue revisando lo que ya está marcado.': 'Rute tetap memeriksa yang sudah dicentang.',
+    'Ruta no revisa nada hasta que lo enciendas aquí.': 'Rute tidak memeriksa apa pun sampai Anda menyalakannya di sini.',
+    'Marca al menos una cosa que revisar, o apaga la revisión de Ruta.': 'Centang setidaknya satu hal untuk diperiksa, atau matikan pemeriksaan Rute.',
+    'Tu equipo empieza el {f}': 'Tim Anda mulai pada {f}',
+    'Tu equipo empieza en 24 h': 'Tim Anda mulai dalam 24 jam',
+    'Hasta entonces no gasta nada. Subir el tope por primera vez tarda 24 h: es una protección por si alguien entra en tu cuenta.': 'Sampai saat itu tim tidak membelanjakan apa pun. Menaikkan anggaran pertama kali butuh 24 jam: ini perlindungan jika ada orang lain yang masuk ke akun Anda.',
+    'Lo primero que hará desde el {f}:': 'Yang pertama akan dikerjakan mulai {f}:',
+    'Lo primero que hará:': 'Yang pertama akan dikerjakan:',
+    'Usar {x}': 'Pakai {x}',
+    'Escribe cuánto pueden gastar al mes, por ejemplo {x}.': 'Tulis berapa yang boleh dibelanjakan per bulan, misalnya {x}.',
+    'Hoy ya se han hecho los 10 cambios que caben aquí: podrás guardar mañana. Lo escrito se queda.': 'Sudah 10 perubahan hari ini, batas di sini: Anda bisa menyimpan besok. Yang sudah ditulis tetap ada.',
+    'Podrás guardar en {s} s: lo escrito se queda.': 'Anda bisa menyimpan dalam {s} detik: yang sudah ditulis tetap ada.'
   };
   // sin lwT, como lwT en español: lo de antes del «~» ('Operaciones~agente' → 'Operaciones')
   var T = typeof window.lwT === 'function' ? window.lwT : function (s) { s = String(s); var c = s.indexOf('~'); return c < 0 ? s : s.slice(0, c); };
@@ -1404,7 +1406,7 @@
   var NOMBRE = { /* Reservas */ flota: 'Flota y taller', salidas: 'Salidas y recogidas de mañana', vueltas: 'Motos que no han vuelto', bloqueos: 'Reservas sin pagar que caducan',
                  cobros: 'Cobros por cuadrar', taller: 'Qué sacar primero del taller', ocupacion: 'Modelos siempre llenos o vacíos', cierre: 'Cierre del día' };
   /* Límites por módulo (agente_ficha_limites): 0..3, lo mismo que guarda la base en agente_ficha.niveles. */
-  var NIVELES = { 0: 'Nunca', 1: 'Lo propone y decide el dueño', 2: 'Lo hace, sin pasar del tope', 3: 'Lo hace solo' };
+  var NIVELES = { 0: 'Nunca', 1: 'Lo propone y decide el dueño', 2: 'Lo hace solo y te lo cuenta', 3: 'Lo hace solo, sin tope propio' };
   /* «Esperan tu OK» (agente_notas_datos.acciones y agente_accion_decide) */
   var ACC_ESTADO = { pendiente: 'Pendiente', aceptada: 'Aceptada', rechazada: 'Rechazada', anulada: 'Anulada', caducada: 'Caducada' };
   var ACC_AVISO = { unidad_en_taller: 'Aviso en la reserva {r}: moto en el taller', unidad_de_baja: 'Aviso en la reserva {r}: moto dada de baja',
@@ -1413,24 +1415,24 @@
                         nivel: 'No se ha hecho: el límite de ese módulo ya no lo permite.', caducada: 'No se ha hecho: había caducado.' };
   var PROPIOS = {
     sin_permiso: T('No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.'),
-    modulo_apagado: T('El AaaS está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.')
+    modulo_apagado: T('Tu equipo está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.')
   };
-  var POR_HINT = { agente_freno: 'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).', agente_solo_owner: 'Esto solo lo puede hacer el dueño de la ficha del AaaS.',
+  var POR_HINT = { agente_freno: 'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).', agente_solo_owner: 'Esto solo lo puede hacer la persona que lleva el equipo.',
                    cuenta_pruebas: 'La cuenta de pruebas no puede cambiar nada aquí.',
                    /* A13 de erp-alta (20261014021000): el interruptor de módulos no deja encender uno de pago ni uno de tipo sin sembrar */
-                   tipos_sin_sembrar: 'Este ERP aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender el AaaS.',
-                   modulo_de_pago: 'El AaaS es un módulo de pago: lo enciende el estudio cuando el negocio lo contrata.',
-                   modulo_de_otro_tipo: 'Este módulo no es para el tipo de negocio de este ERP.',
+                   tipos_sin_sembrar: 'Tu negocio aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender a tu equipo.',
+                   modulo_de_pago: 'Tu equipo es un módulo de pago: lo enciende el estudio cuando el negocio lo contrata.',
+                   modulo_de_otro_tipo: 'Este módulo no es para tu tipo de negocio.',
                    /* 060500 (revisor, 3.ª vuelta de aaas-2): sin la lista de módulos encendidos la ventana no guarda */
-                   modulos_activos_forma: 'Este ERP no tiene la lista de módulos encendidos: la pone el estudio. Avísale.',
+                   modulos_activos_forma: 'Tu negocio no tiene la lista de módulos encendidos: la pone el estudio. Avísale.',
                    /* la ventana de configuración (060500) */
-                   agente_modulo_fuera: 'Uno de los módulos ya no puede llevar límite en este ERP: recarga la página y vuelve a guardar.',
+                   agente_modulo_fuera: 'Una parte de tu negocio ya no admite límites: recarga la página y vuelve a guardar.',
                    agente_contexto_forma: 'El contexto no se ha guardado: no puede llevar enlaces, y como mucho 600 caracteres en «Quién es el negocio», 300 en los horarios, 200 en el tono y 20 reglas de 200.',
                    ya_decidida: 'Alguien ya lo decidió: así ha quedado.' };
 
   var SB = null;
   /* sucio: el dueño está escribiendo en ese paso; recargar (tras otro botón o el sondeo) no le borra lo que lleva. notasError: «no se ha podido mirar» las acciones */
-  var E = { estado: null, notas: null, notasError: '', sucio: { tope: false, negocio: false, limites: false, trabajos: false, topes: false } };
+  var E = { estado: null, notas: null, notasError: '', sucio: { tope: false, negocio: false, limites: false, trabajos: false } };
 
   /* Una entrada por RPC, con el nombre LITERAL (erp/contrato_front.py extrae `.rpc('x')` y `lwDatos('x')`). agente_notas_datos es *_datos (dueña erp_lector) y va por lwDatos;
      agente_panel_estado NO lo es (dueña postgres: responde con el módulo apagado) y va por sb.rpc, igual que las que escriben.
@@ -1496,10 +1498,10 @@
     if (k === 'tope_aaas') return T('Le falta el tope mensual.');
     if (k === 'contexto_aaas') return T('Le falta el contexto del negocio: quién es.');
     if (k === 'limites_aaas') return T('Le faltan los límites por módulo.');
-    if (k === 'sin_ficha') return T('El estudio aún no ha preparado la ficha del AaaS en esta instancia: la crea con el alta.');
-    if (k === 'setup_sin_sembrar') return T('Esta instancia aún no trae la configuración del AaaS: la pone el estudio.');
-    if (k === 'setup_roto') return T('No se ha podido leer la configuración del AaaS. Avisa al estudio.');
-    return Tf('Le falta un paso de la configuración del ERP ({x}).', { x: String(k) });
+    if (k === 'sin_ficha') return T('El estudio aún no ha preparado a tu equipo: lo hace con el alta.');
+    if (k === 'setup_sin_sembrar') return T('Tu negocio aún no trae la configuración de tu equipo: la pone el estudio.');
+    if (k === 'setup_roto') return T('No se ha podido leer la configuración de tu equipo. Avisa al estudio.');
+    return Tf('Falta un paso de la configuración de tu negocio ({x}).', { x: String(k) });
   }
 
   /* ══ Ajustes: el asistente (15-oct-2026, plan aaas-equipo con la revisión previa #383 de Experiencia y Producto) ══
@@ -1513,7 +1515,7 @@
   /* el nivel recomendado: el que «lo hace dentro de sus límites» (revisión previa #383, punto 1); ni 0 «Nunca» ni 1 «Lo propone y decide el dueño» */
   var NIVEL_REC = 2;
   var MOTIVO_AJ = { tope: 'Asistente de Ajustes: tope', negocio: 'Asistente de Ajustes: tu negocio', limites: 'Asistente de Ajustes: límites',
-                    trabajos: 'Asistente de Ajustes: trabajos', topes: 'Asistente de Ajustes: topes por módulo', subida: 'Asistente de Ajustes: cancelar la subida' };
+                    trabajos: 'Asistente de Ajustes: trabajos', subida: 'Asistente de Ajustes: cancelar la subida' };
   /* lo primero que hace cada agente cuando el equipo empieza (pantalla final); un agente que no está aquí no se nombra */
   var PRIMERO = { capitan: 'fija las prioridades de hoy y te dice por qué.', ruta: 'mira las salidas y las vueltas de mañana y avisa de lo que falta.',
                   tesorero: 'aparta cada gasto antes de que salga y corta en el tope.', cifras: 'mide qué modelos se alquilan y cuánto rinden.',
@@ -1548,7 +1550,7 @@
     var p = orden.filter(function (x) { return !hechoPaso(x, d); })[0];
     return p || 'listo';
   }
-  function msgAj(n, m) { var e = $a(n); e.textContent = m || ''; oculta(e, !m); }
+  function msgAj(n, m) { var e = $a(n); e.removeAttribute('data-freno'); e.textContent = m || ''; oculta(e, !m); }
 
   /* importes: con el separador de miles del IDIOMA de la página (revisión previa #383, punto 3): 5.000.000 en id/es, 5,000,000 en en */
   function numTxt(n) {
@@ -1572,13 +1574,17 @@
     var pedido = pendiente ? d.tope_propuesto_cent : d.tope_mensual_cent;   // lo último que pidió el dueño
     $a('aj-tope-etq').textContent = T('Tope de gasto al mes') + ' (' + d.moneda + ')';
     if (!E.sucio.tope) F('aj-tope').value = pedido > 0 ? numTxt(pedido / 100) : '';
-    if (techo > 0) F('aj-tope').setAttribute('placeholder', numTxt(techo / 100)); else F('aj-tope').removeAttribute('placeholder');
+    /* sin pista dentro del campo (Experiencia M1, 15-oct: el «40» gris se leía como escrito): el sugerido va en un botón que lo rellena.
+       El único sugerido que da la base es el techo del estudio (tope_techo_cent; agente_forma.json no trae otro) */
+    var sug = $a('aj-tope-sugerido');
+    oculta(sug, !(techo > 0 && pedido <= 0));
+    sug.textContent = techo > 0 ? Tf('Usar {x}', { x: eur(techo, d) }) : '';
     var ayuda = [];
     if (pedido <= 0 && techo > 0) ayuda.push(Tf('Sugerido: {x}, el máximo que ha fijado el estudio para tu plan.', { x: eur(techo, d) }));
     else if (techo > 0) ayuda.push(Tf('Como mucho {x}: es el máximo que ha fijado el estudio.', { x: eur(techo, d) }));
     ayuda.push(T('Subir el tope tarda 24 h en entrar; bajarlo es inmediato.'));
     if (typeof d.usd_por_eur === 'number' && d.usd_por_eur > 0 && pedido > 0) ayuda.push(Tf('Unos {u} USD al cambio de hoy.', { u: Math.round(pedido / 100 * d.usd_por_eur) }));
-    if (techo <= 0) ayuda = [T('El estudio aún no ha fijado el máximo de gasto de este ERP: hasta entonces no se puede poner un tope. Avísale.')];
+    if (techo <= 0) ayuda = [T('El estudio aún no ha fijado el máximo de gasto de tu negocio: hasta entonces no se puede poner un tope. Avísale.')];
     $a('aj-tope-ayuda').textContent = ayuda.join(' ');
     /* una subida pendiente se dice aquí, con su «Cancelar la subida» (solo el dueño): manda el tope VIGENTE (pedir el mismo la cancela, sin bajarlo) */
     oculta($a('aj-subida'), !pendiente);
@@ -1609,19 +1615,22 @@
   function pintaLimites(d) {
     var L = limitesDe(d), ul = $a('aj-lim-lista'), hecho = hechoPaso('limites', d);
     msgAj('aj-lim-error', '');
-    if (!L) { vacia(ul); oculta($a('aj-lim-acc'), true); msgAj('aj-lim-error', T(NO_MIRADO)); return; }
+    if (!L) { vacia(ul); oculta($a('aj-lim-acc'), true); oculta($a('aj-lim-rec'), true); msgAj('aj-lim-error', T(NO_MIRADO)); return; }
     oculta($a('aj-lim-acc'), !L.length);
     var aj = raiz.querySelector('[data-accion="ag-aj-ajustar"]');
     aj.setAttribute('aria-expanded', String(AJ.modoLim));
     oculta($a('aj-lim-guardar'), !AJ.modoLim);
     /* ajustando a mano, «Usar lo recomendado» pisaría lo elegido con un clic: se esconde y queda un solo botón principal (Guardar los límites) */
     oculta(raiz.querySelector('[data-accion="ag-aj-recomendado"]'), AJ.modoLim);
+    oculta($a('aj-lim-rec'), !AJ.modoLim || !L.length);
+    $a('aj-lim-rec-n').textContent = T(NIVELES[NIVEL_REC]);
     if (!E.sucio.limites) {
       vacia(ul);
-      if (!L.length) ul.appendChild(h('li', { class: 'ag2-pista', 'data-ag': 'sin-limites', text: T('Ningún módulo de este ERP puede llevar límite ahora mismo.') }));
+      if (!L.length) ul.appendChild(h('li', { class: 'ag2-pista', 'data-ag': 'sin-limites', text: T('Ahora mismo ninguna parte de tu negocio admite límites.') }));
       L.forEach(function (l, i) {
         var id = 'ag2-aj-l-' + i, sel = h('select', { id: id, 'data-limite': 'nivel' });
-        [0, 1, 2, 3].forEach(function (n) { sel.appendChild(h('option', { value: String(n), text: T(NIVELES[n]) + (n === NIVEL_REC ? ' · ' + T('recomendado') : '') })); });
+        /* «Recomendado» va en su etiqueta, encima de la lista (aj-lim-rec), no dentro de la opción: así el texto del nivel cabe a 390 px (Experiencia M5) */
+        [0, 1, 2, 3].forEach(function (n) { sel.appendChild(h('option', { value: String(n), text: T(NIVELES[n]) })); });
         sel.value = String(hecho ? l.nivel : NIVEL_REC);
         var fila = h('li', { class: 'ag2-lim', 'data-ag': 'aj-lim', 'data-modulo': l.modulo }, [
           AJ.modoLim ? h('label', { for: id, text: nombreModulo(l.modulo) }) : h('b', { text: nombreModulo(l.modulo) }),
@@ -1632,12 +1641,12 @@
       });
     }
     var fuera = d.limites_fuera.filter(esObj).map(function (f) { return nombreModulo(f.modulo); });
-    msgAj('aj-lim-fuera', fuera.length ? Tf('Ya no están en este ERP y se retiran al guardar: {m}.', { m: fuera.join(', ') }) : '');
+    msgAj('aj-lim-fuera', fuera.length ? Tf('Ya no están en tu negocio y se retiran al guardar: {m}.', { m: fuera.join(', ') }) : '');
   }
   /* ── paso 4 (opcional): los trabajos de Ruta, su nivel y, plegados, los topes por módulo ── */
   function pintaTrabajos(d) {
     var orden = ordenDe(d), sin = $a('sin-trabajos');
-    sin.textContent = !orden ? T(NO_MIRADO) : (orden.length ? '' : T('Este ERP aún no tiene trabajos del AaaS para su tipo de negocio.'));
+    sin.textContent = !orden ? T(NO_MIRADO) : (orden.length ? '' : T('Ruta aún no tiene nada que revisar en tu tipo de negocio.'));
     oculta(sin, !!(orden && orden.length));
     if (!E.sucio.trabajos) {
       var cj = vacia($a('trabajos'));
@@ -1646,33 +1655,32 @@
         cb.checked = d.trabajos[tr] === true;
         cj.appendChild(h('label', { class: 'ag2-check', for: id }, [cb, h('span', { text: nombreTrabajo(tr) })]));
       });
-      F('nivel_ruta').value = d.nivel_ruta === 1 ? '1' : '0';
+      F('nivel_ruta').checked = d.nivel_ruta === 1;
     }
-    var L = limitesDe(d);
-    /* sin límites guardados, los topes no se ofrecen: guardarlos mandaría los niveles 0 y daría el paso 3 por hecho con «Nunca» en todo */
-    oculta($a('aj-topes'), !L || !L.length || !hechoPaso('limites', d));
-    $a('topes-ayuda').textContent = Tf('El tope de cada módulo va en {m}. Entre todos no pueden pasar del tope mensual ({x}). Déjalo vacío si ese módulo no lleva tope propio.', { m: d.moneda, x: eur(d.tope_mensual_cent, d) });
-    if (L && !E.sucio.topes) {
-      var caja = vacia($a('aj-topes-lista'));
-      L.forEach(function (l, i) {
-        var id = 'ag2-aj-tp-' + i, inp = h('input', { id: id, type: 'text', inputmode: 'decimal', autocomplete: 'off', 'data-limite': 'tope' });
-        inp.value = ent(l.tope_cent) ? numTxt(l.tope_cent / 100) : '';
-        caja.appendChild(h('div', { class: 'ag2-campo', 'data-ag': 'aj-tope-mod', 'data-modulo': l.modulo }, [h('label', { for: id, text: nombreModulo(l.modulo) + ' (' + d.moneda + ')' }), inp]));
-      });
-    }
+    /* la base da nivel_ruta 0 si nadie lo ha encendido (equipo '{}' por defecto: agencia erp/migraciones 20261014060500, agente_panel_estado) */
+    $a('aj-trab-salta').textContent = d.nivel_ruta === 1 ? T('Ruta sigue revisando lo que ya está marcado.') : T('Ruta no revisa nada hasta que lo enciendas aquí.');
   }
   /* ── pantalla final: «Tu equipo ya trabaja», con lo primero que va a hacer (revisión previa #383, punto 7) ── */
   function pintaListo(d) {
     var falta = typeof d.falta_configurar === 'string' && d.falta_configurar ? d.falta_configurar : null;
-    $a('aj-listo-t').textContent = falta ? T('Aún falta un paso') : T('Tu equipo ya trabaja');
-    var txt;
-    if (falta) txt = textoFalta(falta) + ' ' + (PASO_DE_FALTA[falta] ? T('Tu equipo no empieza hasta completarlo.') : '');
-    /* subir el tope desde 0 también espera 24 h (trigger del tope, 20261001130000): el equipo empieza, pero lo que pasa por la IA no gasta hasta entonces */
-    else if (ent(d.tope_propuesto_cent) && d.tope_mensual_cent === 0) txt = Tf('Lo que necesita la IA empieza el {f}, cuando entra el tope: subirlo tarda 24 h.', { f: d.tope_propuesto_desde ? C.fechaHora(d.tope_propuesto_desde) : '—' });
-    else txt = T('Cada cosa que haga aparecerá en «Lo que han hecho», con su porqué.');
+    /* subir el tope DESDE 0 espera 24 h (trigger del tope, 20261001130000; es de seguridad y vive en la base): hasta entonces el equipo no gasta nada,
+       así que la pantalla no dice «ya trabaja» sino cuándo empieza (Experiencia B1, 15-oct) */
+    var espera = !falta && ent(d.tope_propuesto_cent) && d.tope_mensual_cent === 0;
+    var f = espera && d.tope_propuesto_desde ? C.fechaHora(d.tope_propuesto_desde) : '—';
+    if (f === '—') f = null;
+    var tit, txt, cab;
+    if (falta) { tit = T('Aún falta un paso'); txt = textoFalta(falta) + ' ' + (PASO_DE_FALTA[falta] ? T('Tu equipo no empieza hasta completarlo.') : ''); }
+    else if (espera) {
+      tit = f ? Tf('Tu equipo empieza el {f}', { f: f }) : T('Tu equipo empieza en 24 h');
+      txt = T('Hasta entonces no gasta nada. Subir el tope por primera vez tarda 24 h: es una protección por si alguien entra en tu cuenta.');
+      cab = f ? Tf('Lo primero que hará desde el {f}:', { f: f }) : T('Lo primero que hará:');
+    } else { tit = T('Tu equipo ya trabaja'); txt = T('Cada cosa que haga aparecerá en «Lo que han hecho», con su porqué.'); }
     if (!falta && d.parado) txt += ' ' + T('Ahora todo el equipo está parado: ponlo en marcha en «Equipo».');
+    $a('aj-listo-t').textContent = tit;
     $a('aj-listo-txt').textContent = txt.trim();
-    var ul = vacia($a('aj-listo-primero')), eq = V.d && Array.isArray(V.d.equipo) ? V.d.equipo.filter(function (m) { return esObj(m) && PRIMERO[m.agente]; }) : [];
+    $a('aj-listo-primero-t').textContent = cab || T('Lo primero que va a hacer:');
+    /* Ruta solo se nombra si su revisión está encendida (nivel_ruta 1): con el 0 de la base no hace nada y decirlo sería falso */
+    var ul = vacia($a('aj-listo-primero')), eq = V.d && Array.isArray(V.d.equipo) ? V.d.equipo.filter(function (m) { return esObj(m) && PRIMERO[m.agente] && (m.agente !== 'ruta' || d.nivel_ruta === 1); }) : [];
     if (!falta) eq.forEach(function (m) { ul.appendChild(h('li', { text: nombreAg(m.agente) + ': ' + T(PRIMERO[m.agente]) })); });
     oculta($a('aj-listo-primero-t'), falta || !eq.length);
     var ir = $a('aj-listo-completar'), p = falta ? PASO_DE_FALTA[falta] : null;
@@ -1686,8 +1694,7 @@
     pintaPasosNav(d);
     PASOS.concat(['listo']).forEach(function (p) { var f = $a(p === 'listo' ? 'aj-listo' : 'aj-f-' + p); f.hidden = AJ.paso !== p; });
     ['aj-fs-tope', 'aj-fs-negocio', 'aj-fs-limites', 'aj-fs-trabajos'].forEach(function (n) { $a(n).disabled = !dueno; });
-    msgAj('aj-solo-dueno', dueno ? '' : T('Solo lo cambia el dueño de la ficha del AaaS.'));
-    oculta($a('aj-apagar'), !dueno);
+    msgAj('aj-solo-dueno', dueno ? '' : T('Esto lo configura la persona que lleva el equipo.'));
     pintaTope(d); pintaNegocio(d); pintaLimites(d); pintaTrabajos(d);
     if (AJ.paso === 'listo') pintaListo(d);
   }
@@ -1701,6 +1708,7 @@
   /* tras guardar: se relee todo (la pantalla no da nada por hecho), la bola late y se va al siguiente paso que falte */
   function trasGuardar(paso, sucios, btn) {
     sucios.forEach(function (k) { E.sucio[k] = false; });
+    if (GESTO[paso]) GUARDADO_EN[GESTO[paso]] = Date.now();
     return carga().then(function () {
       C.libera(btn);
       /* sin estado releído (la lectura falló) no se adivina el siguiente paso, y quien se fue a «Equipo» mientras tanto no vuelve a Ajustes */
@@ -1709,6 +1717,42 @@
       ir('#ajustes-' + (paso === 'trabajos' ? 'listo' : siguiente(paso, E.estado)));
       msgAj('aj-ok', Tf('{x}: guardado.', { x: T(NOMBRE_PASO[paso]) }));
     });
+  }
+  /* ── el freno de la base (_agente_freno: 1 cambio por minuto y 10 al día por gesto; en Ajustes, «tu negocio» y «límites») ──
+     No se dice «espera un minuto» a secas (Experiencia M2, 15-oct): si el último cambio de ese gesto en esta pestaña fue hace menos de 60 s, cuenta
+     atrás y el botón se reactiva solo, sin reenviar; lo escrito no se toca. Si el historial ya trae 10 cambios de ese campo en 24 h, es el tope del día
+     y una cuenta atrás mentiría. Si no se sabe (otra pestaña, otra persona), 60 s: lo más que puede faltar para el freno del minuto. */
+  var GESTO = { negocio: 'contexto', limites: 'niveles' }, GUARDADO_EN = {}, FRENO = { t: null, msg: null, btn: null, fin: 0 };
+  function frenado(r) { return !!(r && r.error && r.error.hint === 'agente_freno'); }
+  function paraFreno() {
+    if (FRENO.t) clearInterval(FRENO.t);
+    /* el aviso se quita solo si sigue siendo el del freno (otro mensaje en esa zona no se borra) */
+    if (FRENO.msg) { FRENO.msg.removeAttribute('aria-live'); if (FRENO.msg.hasAttribute('data-freno')) { FRENO.msg.removeAttribute('data-freno'); FRENO.msg.textContent = ''; oculta(FRENO.msg, true); } }
+    if (FRENO.btn) FRENO.btn.disabled = false;
+    FRENO.t = null; FRENO.msg = null; FRENO.btn = null;
+  }
+  function frena(paso, zona, btn) {
+    var campo = GESTO[paso], ahora = Date.now(), ult = GUARDADO_EN[campo] || 0, s = 60;
+    C.libera(btn);
+    paraFreno();
+    if (ult && ahora - ult < 60000) s = Math.max(1, Math.ceil((60000 - (ahora - ult)) / 1000));
+    else {
+      var hist = E.estado && Array.isArray(E.estado.historial) ? E.estado.historial : [];
+      var hoy = hist.filter(function (x) { var t = esObj(x) && Array.isArray(x.campos) && x.campos.indexOf(campo) >= 0 ? Date.parse(x.cuando) : NaN; return isFinite(t) && ahora - t < 86400000; }).length;
+      if (hoy >= 10) { msgAj(zona, T('Hoy ya se han hecho los 10 cambios que caben aquí: podrás guardar mañana. Lo escrito se queda.')); return; }
+    }
+    var m = $a(zona), texto = function (q) { return Tf('Podrás guardar en {s} s: lo escrito se queda.', { s: q }); };
+    msgAj(zona, texto(s));
+    btn.disabled = true;
+    m.setAttribute('data-freno', '1');
+    FRENO.msg = m; FRENO.btn = btn; FRENO.fin = ahora + s * 1000;
+    FRENO.t = setInterval(function () {
+      var q = Math.ceil((FRENO.fin - Date.now()) / 1000);
+      if (q <= 0 || !m.hasAttribute('data-freno')) { paraFreno(); return; }
+      /* el aviso ya se leyó una vez (role=alert): los segundos que bajan no se vuelven a leer en voz alta */
+      m.setAttribute('aria-live', 'off');
+      m.textContent = texto(q);
+    }, 1000);
   }
   /* ir a un paso: se pinta YA (pushState no espera al hashchange, que llegaría después y borraría el «guardado»); atrás del navegador sigue
      funcionando porque recorrer entradas con otro fragmento dispara hashchange */
@@ -1725,9 +1769,11 @@
     var malTope = function (m) { msgAj('aj-msg-tope', m); F('aj-tope').setAttribute('aria-invalid', 'true'); F('aj-tope').focus(); };
     F('aj-tope').removeAttribute('aria-invalid');
     if (imp.e) { malTope(errImporte(imp.e)); return; }
-    if (imp.vacio || Math.round(imp.v * 100) <= 0) { malTope(T('Con 0 tu equipo no puede gastar nada y no empieza: pon más de 0.')); return; }
+    if (techo <= 0) { malTope(T('El estudio aún no ha fijado el máximo de gasto de tu negocio: hasta entonces no se puede poner un tope. Avísale.')); return; }
+    if (imp.vacio) { malTope(Tf('Escribe cuánto pueden gastar al mes, por ejemplo {x}.', { x: numTxt(techo / 100) })); return; }
+    if (Math.round(imp.v * 100) <= 0) { malTope(T('Con 0 tu equipo no puede gastar nada y no empieza: pon más de 0.')); return; }
     var v = Math.round(imp.v * 100);
-    if (v > techo) { malTope(techo > 0 ? Tf('Como mucho {x}: es el máximo que ha fijado el estudio.', { x: eur(techo, d) }) : T('El estudio aún no ha fijado el máximo de gasto de este ERP: hasta entonces no se puede poner un tope. Avísale.')); return; }
+    if (v > techo) { malTope(Tf('Como mucho {x}: es el máximo que ha fijado el estudio.', { x: eur(techo, d) })); return; }
     /* lo que ya pidió el dueño no se reenvía: una subida pendiente no vuelve a empezar sus 24 h por pulsar otra vez */
     var pedido = ent(d.tope_propuesto_cent) ? d.tope_propuesto_cent : d.tope_mensual_cent;
     if (v === pedido) { E.sucio.tope = false; msgAj('aj-msg-tope', ''); ir('#ajustes-' + siguiente('tope', d)); return; }
@@ -1736,6 +1782,17 @@
     llama('agente_ficha_ajusta', { p_tope_mensual_cent: v, p_trabajos: null, p_nivel_ruta: null, p_motivo: MOTIVO_AJ.tope }).then(function (r) {
       if (resultado('aj-msg-tope', r)) trasGuardar('tope', ['tope'], btn); else C.libera(btn);
     });
+  }
+  /* «Usar 40,00 EUR»: rellena el campo con el sugerido (el techo del estudio) y NO guarda: el dueño lo ve escrito y pulsa «Guardar y seguir» */
+  function usaSugerido() {
+    var d = E.estado, techo = d && ent(d.tope_techo_cent) ? d.tope_techo_cent : 0;
+    if (!d || !d.soy_dueno || techo <= 0) return;
+    var c = F('aj-tope');
+    c.value = numTxt(techo / 100);
+    E.sucio.tope = true;
+    c.removeAttribute('aria-invalid');
+    msgAj('aj-msg-tope', '');
+    c.focus();
   }
   /* «Cancelar la subida»: el tope VIGENTE explícito (pedir el mismo la cancela sin bajarlo); trabajos y nivel en null (no cambian) */
   function cancelaSubida() {
@@ -1787,7 +1844,8 @@
     if (!C.ocupa(btn)) return;
     msgAj('aj-msg-negocio', '');
     llama('agente_ficha_contexto', { p_contexto: ctx, p_motivo: MOTIVO_AJ.negocio }).then(function (r) {
-      if (resultado('aj-msg-negocio', r)) trasGuardar('negocio', ['negocio'], btn); else C.libera(btn);
+      if (frenado(r)) frena('negocio', 'aj-msg-negocio', btn);
+      else if (resultado('aj-msg-negocio', r)) trasGuardar('negocio', ['negocio'], btn); else C.libera(btn);
     });
   }
   /* Límites: la lista ENTERA de `limites` (lo que no se manda, la base lo retira; `limites_fuera` no se manda nunca). La RPC sustituye también los
@@ -1815,56 +1873,28 @@
     if (!C.ocupa(btn)) return;
     msgAj('aj-msg-limites', '');
     llama('agente_ficha_limites', { p_niveles: niveles, p_topes: topes, p_motivo: MOTIVO_AJ.limites }).then(function (r) {
+      if (frenado(r)) { frena('limites', 'aj-msg-limites', btn); return; }
       if (!resultado('aj-msg-limites', r)) { C.libera(btn); return; }
       AJ.modoLim = false;
       trasGuardar('limites', ['limites'], btn);
     });
   }
-  /* Trabajos (opcional): agente_ficha_ajusta con el tope en null; y, si se tocaron, los topes por módulo por agente_ficha_limites con los niveles
-     GUARDADOS (no los efectivos). Solo viaja lo que cambió: el freno de límites no salta por los trabajos. */
+  /* Trabajos (opcional): agente_ficha_ajusta con el tope en null (sin freno en la base). Los topes por módulo ya no se ofrecen aquí (Experiencia M6,
+     15-oct: hoy no tienen efecto en el gasto, la base no los aplica al apartar); los guardados siguen viajando tal cual con los límites (guardaLimites). */
   function guardaTrabajos(btn) {
     var d = E.estado; if (!d || !d.soy_dueno) return;
-    var orden = ordenDe(d) || [], L = limitesDe(d) || [];
+    var orden = ordenDe(d) || [];
     msgAj('aj-ok', '');
     var marcados = Array.prototype.filter.call(raiz.querySelectorAll('[data-ag="trabajos"] input[type="checkbox"][data-trabajo]'), function (c) { return c.checked; })
       .map(function (c) { return c.getAttribute('data-trabajo'); });
-    var nivel = F('nivel_ruta').value === '1' ? 1 : 0;
-    if (nivel === 1 && !marcados.length) { msgAj('aj-msg-trabajos', T('Elige al menos un trabajo, o pon el nivel de Ruta a 0.')); return; }
+    var nivel = F('nivel_ruta').checked ? 1 : 0;
+    if (nivel === 1 && !marcados.length) { msgAj('aj-msg-trabajos', T('Marca al menos una cosa que revisar, o apaga la revisión de Ruta.')); return; }
     var cambiaTrab = nivel !== d.nivel_ruta || orden.some(function (t) { return (marcados.indexOf(t) >= 0) !== (d.trabajos[t] === true); });
-    var topes = {}, malo = '', cambiaTopes = false;
-    if (hechoPaso('limites', d)) {
-      var filas = {};
-      Array.prototype.forEach.call(raiz.querySelectorAll('[data-ag="aj-tope-mod"]'), function (f) { filas[f.getAttribute('data-modulo')] = f; });
-      L.forEach(function (l) {
-        var m = l.modulo, guardado = ent(l.tope_cent) ? l.tope_cent : null, f = filas[m];
-        if (malo) return;
-        if (!f) { if (guardado != null) topes[m] = guardado; return; }
-        var imp = C.importeIdioma(f.querySelector('[data-limite="tope"]').value, 2);
-        if (imp.e) { malo = Tf('El tope de «{x}» no se entiende: escríbelo con cifras, como {y}.', { x: nombreModulo(m), y: numTxt(1500.5) }); return; }
-        var v = imp.vacio ? null : Math.round(imp.v * 100);
-        if (v != null) topes[m] = v;
-        if (v !== guardado) cambiaTopes = true;
-      });
-      if (!malo && cambiaTopes && (d.limites_fuera.length || L.some(function (l) { return l.nivel_efectivo !== l.nivel; })))
-        malo = T('Antes vuelve a guardar los límites en el paso 3: hay módulos que cambiaron desde la última vez.');
-    }
-    if (malo) { $a('aj-topes').open = true; msgAj('aj-msg-trabajos', malo); return; }
-    if (!cambiaTrab && !cambiaTopes) { E.sucio.trabajos = false; E.sucio.topes = false; msgAj('aj-msg-trabajos', ''); ir('#ajustes-listo'); return; }
+    if (!cambiaTrab) { E.sucio.trabajos = false; msgAj('aj-msg-trabajos', ''); ir('#ajustes-listo'); return; }
     if (!C.ocupa(btn)) return;
     msgAj('aj-msg-trabajos', '');
-    var primero = cambiaTrab ? llama('agente_ficha_ajusta', { p_tope_mensual_cent: null, p_trabajos: marcados, p_nivel_ruta: nivel, p_motivo: MOTIVO_AJ.trabajos })
-                             : Promise.resolve({ data: {}, error: null });
-    primero.then(function (r) {
-      if (!resultado('aj-msg-trabajos', r)) { C.libera(btn); return; }
-      if (!cambiaTopes) { trasGuardar('trabajos', ['trabajos'], btn); return; }
-      var niveles = {};
-      L.forEach(function (l) { niveles[l.modulo] = l.nivel; });
-      llama('agente_ficha_limites', { p_niveles: niveles, p_topes: topes, p_motivo: MOTIVO_AJ.topes }).then(function (r2) {
-        if (resultado('aj-msg-trabajos', r2)) { trasGuardar('trabajos', ['trabajos', 'topes'], btn); return; }
-        /* los trabajos sí quedaron guardados: se relee (lo tecleado en los topes se conserva) y el aviso del freno sigue a la vista */
-        if (cambiaTrab) { E.sucio.trabajos = false; var m = $a('aj-msg-trabajos').textContent; carga().then(function () { C.libera(btn); msgAj('aj-msg-trabajos', m); }); }
-        else C.libera(btn);
-      });
+    llama('agente_ficha_ajusta', { p_tope_mensual_cent: null, p_trabajos: marcados, p_nivel_ruta: nivel, p_motivo: MOTIVO_AJ.trabajos }).then(function (r) {
+      if (resultado('aj-msg-trabajos', r)) trasGuardar('trabajos', ['trabajos'], btn); else C.libera(btn);
     });
   }
 
@@ -1888,7 +1918,7 @@
         p = siguiente(null, d);
         try { history.replaceState(null, '', '#ajustes-' + p); } catch (e) { /* MUDO A PROPOSITO: sin replaceState la barra se queda en #ajustes; el paso se pinta igual */ }
       }
-      if (AJ.paso !== p) { if (AJ.paso === 'limites') { AJ.modoLim = false; E.sucio.limites = false; } msgAj('aj-ok', ''); }
+      if (AJ.paso !== p) { if (AJ.paso === 'limites') { AJ.modoLim = false; E.sucio.limites = false; } msgAj('aj-ok', ''); paraFreno(); }
       AJ.paso = p;
       pintaAjustes();
       if (mueve) {
@@ -1897,6 +1927,7 @@
         if (t) t.focus({ preventScroll: true });
       }
     } else {
+      if (AJ.paso) paraFreno();
       AJ.paso = null;
       if (mueve && r.ancla) {
         var el = document.getElementById(r.ancla);
@@ -1910,7 +1941,7 @@
     oculta($a('v2-falta'), !falta);
     if (!falta) return;
     var t = textoFalta(falta);
-    if (p) t += ' ' + T('Tu equipo no empieza hasta completarlo.') + (d.soy_dueno === true ? '' : ' ' + T('Lo completa el dueño de la ficha del AaaS.'));
+    if (p) t += ' ' + T('Tu equipo no empieza hasta completarlo.') + (d.soy_dueno === true ? '' : ' ' + T('Lo completa la persona que lleva el equipo.'));
     $a('v2-falta-txt').textContent = t;
     var a = $a('v2-falta-ir');
     oculta(a, !p || d.soy_dueno !== true);
@@ -1923,8 +1954,8 @@
     oculta(caja, n <= 0);
     if (n <= 0) return;
     var t;
-    if (n === 1) t = d.soy_dueno ? T('El AaaS propone una acción que espera tu decisión.') : T('El AaaS propone una acción que espera la decisión del dueño.');
-    else t = d.soy_dueno ? Tf('El AaaS propone {n} acciones que esperan tu decisión.', { n: n }) : Tf('El AaaS propone {n} acciones que esperan la decisión del dueño.', { n: n });
+    if (n === 1) t = d.soy_dueno ? T('Tu equipo propone una acción que espera tu decisión.') : T('El equipo propone una acción que espera la decisión de quien lo lleva.');
+    else t = d.soy_dueno ? Tf('Tu equipo propone {n} acciones que esperan tu decisión.', { n: n }) : Tf('El equipo propone {n} acciones que esperan la decisión de quien lo lleva.', { n: n });
     caja.appendChild(document.createTextNode(t + ' '));
     caja.appendChild(h('a', { href: '#esperan-ok', 'data-ag': 'ir-acciones', text: T('Ver las acciones') }));
   }
@@ -1943,7 +1974,7 @@
     var pend = !E.notasError && E.notas ? E.notas.acciones.filter(function (a) { return esObj(a) && a.estado === 'pendiente' && Date.parse(a.expira_en) > Date.now(); }) : [];
     oculta(caja, !E.notasError && !pend.length && !nivel1.length);
     $a('v2-esperan-desc').textContent = (nivel1.length ? Tf('En {m} el límite es «Lo propone y decide el dueño»: lo que harían espera aquí.', { m: nivel1.join(', ') })
-      : T('Lo que el equipo propone y espera la decisión del dueño.')) + (d.soy_dueno ? '' : ' ' + T('Las acepta o las rechaza el dueño de la ficha del AaaS.'));
+      : T('Lo que el equipo propone y espera la decisión del dueño.')) + (d.soy_dueno ? '' : ' ' + T('Las acepta o las rechaza la persona que lleva el equipo.'));
     if (E.notasError) { lista.appendChild(h('p', { class: 'ag2-msg', 'data-tono': 'mal', 'data-ag': 'v2-esperan-error', text: E.notasError })); return; }
     if (!pend.length) { lista.appendChild(h('p', { class: 'ag2-nota', 'data-ag': 'v2-esperan-vacio', text: T('Nada esperando tu OK ahora mismo.') })); return; }
     var ul = h('ul', { class: 'ag2-lista' });
@@ -1983,9 +2014,9 @@
   }
   /* ── módulo apagado: la tarjeta de encender (el dueño, o quien no se sabe si lo es: la base decide) ── */
   function pintaApagado(d) {
-    $a('v2-apagado-txt').textContent = T('El AaaS está apagado: no mira nada ni escribe nada.') + (d.soy_dueno === true ? '' : ' ' + T('Lo enciende el dueño de la ficha del AaaS.'));
+    $a('v2-apagado-txt').textContent = T('Tu equipo está apagado: no mira nada ni hace nada.') + (d.soy_dueno === true ? '' : ' ' + T('Lo enciende la persona que lleva el equipo.'));
     var acc = vacia($a('v2-apagado-acc'));
-    if (d.soy_dueno !== false) acc.appendChild(h('button', { type: 'button', class: 'ag2-btn', 'data-accion': 'ag-encender', text: T('Encender el AaaS') }));
+    if (d.soy_dueno !== false) acc.appendChild(h('button', { type: 'button', class: 'ag2-btn', 'data-accion': 'ag-encender', text: T('Encender a tu equipo') }));
     oculta($a('v2-falta'), true);
     oculta($a('pendientes'), true);
     oculta($a('v2-esperan'), true);
@@ -2002,7 +2033,7 @@
      con su id y sin descripción inventada. k: [frase, 1 = es un límite]. */
   var PAPEL = {
     capitan: { n: 'Capitán', r: 'Dirige el equipo', d: 'Fija las prioridades del día, de una a tres, dice por qué y cuánto deberían dar, y es la única voz que te informa.',
-               k: [['Lee todo el ERP', 0], ['Fija el plan del día', 0], ['Te informa, nunca pregunta caso por caso', 0], ['Sin acceso al dinero', 1]], c: ['Única voz hacia ti', 'Deja rastro'] },
+               k: [['Lee todo tu negocio', 0], ['Fija el plan del día', 0], ['Te informa, nunca pregunta caso por caso', 0], ['Sin acceso al dinero', 1]], c: ['Única voz hacia ti', 'Deja rastro'] },
     ruta: { n: 'Ruta', r: 'Operaciones~agente', d: 'Planifica las entregas y las devoluciones, avisa de lo que tiene que pasar por el taller y cada mañana te dice los cobros pendientes (solo totales).',
             k: [['Lee flota, taller, reservas y totales de cobros', 0], ['Escribe notas y avisos en las reservas', 0], ['Sin acceso a precios', 1], ['Nunca contacta a clientes: no ve nombres ni teléfonos', 1]],
             c: ['Flota y entregas', 'Sin precios', 'Deja rastro'] },
@@ -2258,7 +2289,7 @@
     gana.setAttribute('data-vacio', g == null ? '1' : '0');
     $a('v2-gana-nota').textContent = g == null ? T('Puede que tu usuario no vea las reservas o los recibís, o que esta base aún no tenga cobros que contar este mes. No quiere decir que sea 0.')
       : parcial ? T('Solo lo que tu usuario puede ver: las reservas o los recibís que no ves no están sumados. Es lo que entró, no lo que dicen los agentes.')
-      : Tf('Pagos reales del ERP este mes: {r} reservas pagadas y {f} recibís. Es lo que entró, no lo que dicen los agentes.', { r: din.reservas_pagadas_mes, f: din.recibis_mes });
+      : Tf('Pagos reales de tu negocio este mes: {r} reservas pagadas y {f} recibís. Es lo que entró, no lo que dicen los agentes.', { r: din.reservas_pagadas_mes, f: din.recibis_mes });
     /* LO GASTADO en IA: otra moneda (la del Tesorero). Se rotula aparte y no se suma a lo cobrado */
     $a('v2-gasta-t').textContent = Tf('Gastado · {x} · en {m}', { x: mes, m: mgas || '—' });
     var gas = vacia($a('v2-gasta'));
@@ -2290,7 +2321,7 @@
     var caja = vacia($a('v2-equipo')), lista = V.d.equipo.filter(function (m) { return esObj(m) && typeof m.agente === 'string' && m.agente; })
       .sort(function (x, y) { return orden(x) - orden(y) || (x.agente < y.agente ? -1 : 1); });
     $a('v2-equipo-t').textContent = Tf('Tu equipo · {n} agentes', { n: lista.length });
-    if (!lista.length) { caja.appendChild(h('p', { class: 'ag2-nota', 'data-ag': 'v2-sin-equipo', text: T('Este ERP aún no tiene agentes en su equipo.') })); return; }
+    if (!lista.length) { caja.appendChild(h('p', { class: 'ag2-nota', 'data-ag': 'v2-sin-equipo', text: T('Tu negocio aún no tiene agentes en su equipo.') })); return; }
     lista.forEach(function (m) {
       var k = estadoAg(m.agente), o = ORB[k];
       var tile = h('span', { class: 'ag2-tile', 'aria-hidden': 'true' }, [icono(ICONO[m.agente] || ICONO._otro, 20)]);
@@ -2453,7 +2484,7 @@
     /* pegar la llave: solo el dueño (la base lo exige igual). El campo es de SOLO ESCRITURA: nunca se rellena con lo guardado. */
     oculta($a('v2-form-llave'), !soyDueno() || !lista);
     var nota = $a('v2-con-nota');
-    nota.textContent = soyDueno() || !lista ? '' : T('La llave la pega el dueño de la ficha del AaaS.');
+    nota.textContent = soyDueno() || !lista ? '' : T('La llave la pega la persona que lleva el equipo.');
     oculta(nota, !nota.textContent);
   }
   function pintaAltavoz() {
@@ -2476,7 +2507,7 @@
     if (antes && lineas.some(function (l) { return String(l.linea) === antes; })) sel.value = antes;
     ['v2-form-linea', 'v2-form-dominio', 'v2-form-imagen'].forEach(function (f) { oculta($a(f), !dueno); });
     var nota = $a('v2-alt-nota');
-    nota.textContent = dueno ? '' : T('Solo lo cambia el dueño de la ficha del AaaS.');
+    nota.textContent = dueno ? '' : T('Esto lo configura la persona que lleva el equipo.');
     oculta(nota, dueno);
   }
   function pintaV2(cambio, conErr) {
@@ -2689,6 +2720,7 @@
       if (!d.encendido) { V.d = null; reloj(); E.notas = null; E.notasError = ''; pintaApagado(d); aplicaRuta(false); return; }
       pintaFalta(d);
       pintaPendientes(d);
+      oculta($a('v2-apagar'), d.soy_dueno !== true);
       var v2 = leeV2();
       aplicaRuta(false);
       return Promise.all([v2, llama('agente_notas_datos', { p_dia: null }).then(function (rn) {
@@ -2731,11 +2763,12 @@
     if (a === 'ag-aj-recomendado') guardaLimites(el, true);
     else if (a === 'ag-aj-ajustar') { AJ.modoLim = !AJ.modoLim; E.sucio.limites = false; pintaLimites(E.estado); }
     else if (a === 'ag-aj-cancelar-subida') cancelaSubida();
+    else if (a === 'ag-aj-tope-sugerido') usaSugerido();
     else if (a === 'ag-acc-aceptar' || a === 'ag-acc-rechazar') { if (E.estado && E.estado.soy_dueno) decideAccion(el, id, a === 'ag-acc-aceptar'); }
     else if (a === 'ag-apagar' || a === 'ag-encender') {
       var enc = a === 'ag-encender';
-      conMotivo(T(enc ? 'Encender el AaaS' : 'Apagar el AaaS'), (enc ? T('Al encenderlo, tus agentes vuelven a trabajar dentro de sus límites y te dicen aquí qué han hecho.') + ' ' + T('El AaaS es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.') : T('Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.')),
-        !enc, function (m) { return llama('agente_modulo_cambia', { p_encender: enc, p_motivo: m }).then(function (r) { if (!r.error && esObj(r.data)) msgV2('v2-ok', T(enc ? 'AaaS encendido.' : 'AaaS apagado.')); return r; }); });
+      conMotivo(T(enc ? 'Encender a tu equipo' : 'Apagar a tu equipo'), (enc ? T('Al encenderlo, tus agentes vuelven a trabajar dentro de sus límites y te dicen aquí qué han hecho.') + ' ' + T('Tu equipo es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.') : T('Tu equipo deja de mirar y de hacer cosas al momento. Lo que ya hizo se queda aquí.')),
+        !enc, function (m) { return llama('agente_modulo_cambia', { p_encender: enc, p_motivo: m }).then(function (r) { if (!r.error && esObj(r.data)) msgV2('v2-ok', T(enc ? 'Equipo encendido.' : 'Equipo apagado.')); return r; }); });
     }
   }
   /* los pasos del asistente se envían como formularios (Intro en un campo = «Guardar y seguir») */
@@ -2760,7 +2793,6 @@
       var f = ev.target && ev.target.closest ? ev.target.closest('form[data-ag]') : null;
       var k = f ? PASO_FORM[f.getAttribute('data-ag')] : null;
       if (!k) return;
-      if (k === 'trabajos' && ev.target.closest('[data-ag="aj-topes-lista"]')) k = 'topes';
       E.sucio[k] = true;
       if (k === 'negocio') cuentas();
     };
