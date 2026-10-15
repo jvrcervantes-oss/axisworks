@@ -236,7 +236,7 @@ m_aut = re.search(r'\n  function autorDe\(q\) \{.*?\n  \}', JS, re.S)
 mira('el historial clasifica al autor (autorDe)', bool(m_aut))
 if m_aut:
     casos_aut = {'admin@bbm.com': 'persona', 'a"<svg onload="x">@x.com': 'persona', '0b0f6a9e-1c2d-4e5f-8a9b-0c1d2e3f4a5b': 'persona', 'Dion': 'persona',
-                 'migración 20261008138500': 'inicial', 'postgres': 'inicial', 'sistema:sql': 'inicial', '': 'inicial',
+                 'migración 20261008138500': 'inicial', 'postgres': 'inicial', 'Postgres': 'inicial', 'sistema:sql': 'inicial', '': 'inicial',
                  'soporte@axisworks.studio': 'soporte', 'sistema:aaas': 'sistema'}
     r_aut = subprocess.run(['node', '-e', m_aut.group(0) + ';process.stdout.write(JSON.stringify(' + json.dumps(list(casos_aut)) + '.map(autorDe).concat([autorDe(null)])))'],
                            capture_output=True, text=True, encoding='utf-8')

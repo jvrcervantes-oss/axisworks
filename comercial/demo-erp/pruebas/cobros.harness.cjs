@@ -544,6 +544,41 @@ const C = '[data-axw-cobros-caja]';
     await p.crudo.click('[data-axw-cobros="reemplazar-aviso"]'); await p.waitForTimeout(80);
     ok('S2: reemplazar una clave = sin partes (modo + 1 campo)', !(await p.crudo.$('[data-axw-cobros-parte]')) && (await aLaVista(p)) === 2);
     await ctx.close();
+    // Remates del revisor de 1287ecd. (2) en real, «Reemplazar» dos claves sin LIVE tecleado: a la parte del modo, donde está LIVE
+    b = base({ nuevo: true, conf: { creacion: 1, lectura: 1, aviso: 1 }, modo: 'live' });
+    ({ p, ctx } = await abre(nav, b));
+    await p.crudo.click('[data-axw-cobros="reemplazar-creacion"]'); await p.waitForTimeout(80);
+    await p.crudo.click('[data-axw-cobros="reemplazar-lectura"]'); await p.waitForTimeout(80);
+    ok('S2 remate: en real, reemplazar dos claves sin LIVE → parte 1 con el campo LIVE a la vista', (await parte(p)) === '1' && !!(await p.crudo.$('[data-axw-campo="confirma_live"]')), String(await parte(p)));
+    await p.crudo.fill('[data-axw-campo="confirma_live"]', 'LIVE');
+    await p.crudo.click('[data-axw-cobros="siguiente"]'); await p.waitForTimeout(80);
+    // (3) «Dejar la de ahora» que no cambia el modo se queda en las claves
+    await p.crudo.click('[data-axw-cobros="dejar-lectura"]'); await p.waitForTimeout(80);
+    ok('S2 remate: «Dejar la de ahora» sin cambio de modo no mueve de parte', !(await p.crudo.$('[data-axw-cobros-parte]')) || (await parte(p)) === '2');
+    await ctx.close();
+    // (3) «Dejar la de ahora» que DEVUELVE el modo al guardado: a la parte del modo, para que se vea
+    b = base({ nuevo: true, conf: { creacion: 1, lectura: 1, aviso: 1 }, modo: 'test' });
+    ({ p, ctx } = await abre(nav, b));
+    await p.crudo.click('[data-axw-cobros="modo-live"]'); await p.waitForTimeout(80);   // cambio de modo: las tres a reemplazar (5 campos con LIVE)
+    await p.crudo.click('[data-axw-cobros="siguiente"]'); await p.waitForTimeout(80);
+    await p.crudo.click('[data-axw-cobros="dejar-aviso"]'); await p.waitForTimeout(80);
+    ok('S2 remate: «Dejar la de ahora» que vuelve al modo guardado → se ve el modo (prueba) marcado', (await p.crudo.getAttribute('[data-axw-cobros="modo-test"]', 'aria-checked')) === 'true'
+       && (!(await p.crudo.$('[data-axw-cobros-parte]')) || (await parte(p)) === '1'));
+    await ctx.close();
+    // (1) mientras se pide el código: el modo no cambia y el resumen dice el modo PEDIDO
+    b = base({ live: true });
+    ({ p, ctx } = await abre(nav, b));
+    { let suelta; b.retenPedir = { p: new Promise(r => { suelta = r; }) };
+      await p.crudo.click('[data-axw-cobros="siguiente"]'); await p.waitForTimeout(80);
+      await p.crudo.fill('[data-axw-campo="creacion"]', CANARIO_C); await p.crudo.fill('[data-axw-campo="lectura"]', CANARIO_L); await p.crudo.fill('[data-axw-campo="aviso"]', CANARIO_A);
+      await p.crudo.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(100);
+      await p.evaluate(() => { const a = document.querySelector('[data-axw-cobros="atras"]'); if (a) a.click(); });   // «Atrás» con la petición en camino
+      await p.waitForTimeout(80);
+      const parteEnVuelo = await parte(p);
+      suelta(); b.retenPedir = null; await p.waitForTimeout(300);
+      ok('S2 remate: con «Pedir el código» en camino, «Atrás» no hace nada', parteEnVuelo === '2', String(parteEnVuelo));
+      ok('S2 remate: el resumen dice el modo pedido (prueba)', ((await txt(p, '[data-axw-cobros-resumen]')) || '').includes('modo prueba') && (await p.crudo.getAttribute('[data-axw-cobros-resumen]', 'data-axw-cobros-resumen')) === 'test'); }
+    await ctx.close();
     // Medida de toques (Experiencia, S0), «poner las claves la primera vez»: antes todo a la vista; un toque = un clic o un campo
     //   prueba: antes 3 claves + pedir = 4 · ahora Siguiente + 3 claves + pedir = 5
     //   real:   antes modo + 3 claves + LIVE + pedir = 6 · ahora modo + LIVE + Siguiente + 3 claves + pedir = 7

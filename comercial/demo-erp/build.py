@@ -5123,7 +5123,7 @@ GASTOS_INSTANCIA = (
     ('intranet/v4/assets/ajustes.js', "esc(f.motivo || '—') + '</td></tr>';",
      "esc(axwAutor(f.quien) === 'inicial' ? T('Configuración inicial') : axwAutor(f.quien) === 'soporte' ? '—' : (f.motivo || '—')) + '</td></tr>';", 1),
     ('intranet/v4/assets/ajustes.js', "    window.lwDatos('ajustes_log_datos', { p_limit: 200 }).then(function (r) {\n",
-     "    function axwAutor(q) { q = String(q == null ? '' : q).trim(); if (!q || q === 'postgres' || /^migraci[oó]n(\\s|$)/i.test(q) || q === 'sistema:sql') return 'inicial';"
+     "    function axwAutor(q) { q = String(q == null ? '' : q).trim(); if (!q || /^(postgres|sistema:sql)$/i.test(q) || /^migraci[oó]n(\\s|$)/i.test(q)) return 'inicial';"
      " if (/@axisworks\\.studio$/i.test(q)) return 'soporte'; return /^sistema:/i.test(q) ? 'sistema' : 'persona'; }\n"
      "    window.lwDatos('ajustes_log_datos', { p_limit: 200 }).then(function (r) {\n", 1),
     # Ajustes › Impuestos (agencia-c0, 15-oct-2026: «art. 20.Uno LIVA» en bbm, una empresa indonesia): el maestro siembra los impuestos de España e

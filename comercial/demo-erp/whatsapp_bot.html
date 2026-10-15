@@ -389,7 +389,7 @@
   // motivo, que es interno y en español. Otro sistema:<rol> (edges, AaaS) sale «Sistema» con su motivo; una persona, tal cual.
   function autorDe(q) {   // 'inicial' | 'soporte' | 'sistema' | 'persona'
     q = String(q == null ? '' : q).trim();
-    if (!q || q === 'postgres' || /^migraci[oó]n(\s|$)/i.test(q) || q === 'sistema:sql') return 'inicial';
+    if (!q || /^(postgres|sistema:sql)$/i.test(q) || /^migraci[oó]n(\s|$)/i.test(q)) return 'inicial';
     if (/@axisworks\.studio$/i.test(q)) return 'soporte';
     if (/^sistema:/i.test(q)) return 'sistema';
     return 'persona';

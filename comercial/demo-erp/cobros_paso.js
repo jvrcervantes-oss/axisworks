@@ -216,8 +216,8 @@
     if (parte) raiz.appendChild(el('p', { class: 'font-label-md text-label-md text-on-surface-variant', 'aria-live': 'polite', 'data-axw-cobros-parte': String(parte),
                                           text: S().ui('parte_de', { k: String(parte), m: '2' }) }));
     if (!editar) {   // con el código pedido: lo que se va a guardar en una línea, y solo el código y la contraseña (las claves ya van en M.mandadas)
-      raiz.appendChild(el('p', { class: 'rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface', 'data-axw-cobros-resumen': M.modo,
-                                 text: C('resumen', { m: nombreModo(M.modo), c: Object.keys(M.mandadas || {}).map(function (k) { return C(k); }).join(' · ') }) }));
+      raiz.appendChild(el('p', { class: 'rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface', 'data-axw-cobros-resumen': M.modoMandado || M.modo,
+                                 text: C('resumen', { m: nombreModo(M.modoMandado || M.modo), c: Object.keys(M.mandadas || {}).map(function (k) { return C(k); }).join(' · ') }) }));
       if (M.pideCodigo) pintaCodigo(raiz);
       pie(raiz, est);
       return;
@@ -242,7 +242,7 @@
                              style: 'min-height:44px' + (bloqueado ? ';opacity:.5' : ''), text: o[1] });
       if (o[0] === 'live') b.appendChild(el('span', { class: 'px-2 py-0.5 rounded-full font-label-md text-[12px] bg-error-container text-on-error-container', text: C('dinero_real') }));
       if (bloqueado || !editar) b.disabled = true;
-      b.addEventListener('click', function () { if (M.fase !== 'editar') return; M.modo = o[0]; M.confirma = ''; fuerzaModo(); M.aviso = ''; M.parte = 1; dibuja(raiz); });
+      b.addEventListener('click', function () { if (M.fase !== 'editar' || M.pidiendo) return; M.modo = o[0]; M.confirma = ''; fuerzaModo(); M.aviso = ''; M.parte = 1; dibuja(raiz); });
       seg.appendChild(b);
     });
     modo.appendChild(seg);
@@ -271,7 +271,7 @@
       var fila = el('div', { class: 'flex flex-wrap gap-2' });
       if (parte === 2) {
         var atr = boton(S().ui('atras'), 'atras', BTN_PEQ);
-        atr.addEventListener('click', function () { M.parte = 1; M.aviso = ''; dibuja(raiz); enfoca(raiz, '[data-axw-cobros^="modo-"][aria-checked="true"]'); });
+        atr.addEventListener('click', function () { if (M.pidiendo) return; M.parte = 1; M.aviso = ''; dibuja(raiz); enfoca(raiz, '[data-axw-cobros^="modo-"][aria-checked="true"]'); });
         fila.appendChild(atr);
       }
       if (M.pideCodigo && hayCampos) {   // con todo guardado y nada que reemplazar no hay nada que pedir
@@ -283,6 +283,7 @@
     }
     pie(raiz, est);
   }
+  function faltaLive() { return M.modo === 'live' && !liveCerrado(M.est) && String(M.confirma || '').trim() !== 'LIVE'; }
   function enfoca(raiz, sel) { var e = raiz.querySelector(sel); if (e) e.focus(); }
 
   // Confirmación expresa en TODO cambio con modo final real (S90 «No way back»; contrato 20261012233000: también estando ya en real y cambiando solo
@@ -320,7 +321,7 @@
           c.puesta_por ? el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant break-words', text: C('puesta_por', { p: corto(c.puesta_por, 120) }) }) : null])]);
       if (editar && M.pideCodigo) {
         var r = boton(C('reemplazar'), 'reemplazar-' + k, BTN_PEQ + ' self-start');
-        r.addEventListener('click', function () { M.reemplaza[k] = true; M.aviso = ''; M.parte = 2; dibuja(raiz); var i = raiz.querySelector('[data-axw-campo="' + k + '"]'); if (i) i.focus(); });
+        r.addEventListener('click', function () { M.reemplaza[k] = true; M.aviso = ''; M.parte = faltaLive() ? 1 : 2; dibuja(raiz); var i = raiz.querySelector('[data-axw-campo="' + k + '"]'); if (i) i.focus(); });
         caja.appendChild(r);
       }
       fila.appendChild(caja);
@@ -337,7 +338,7 @@
       fila.appendChild(el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: C(k + '_d') + ' ' + C('pega') }));
       if (c.configurada && editar) {
         var d = boton(C('dejar'), 'dejar-' + k, BTN_PEQ + ' self-start');
-        d.addEventListener('click', function () { M.reemplaza[k] = false; M.valores[k] = ''; if (M.est.modo && M.modo !== M.est.modo) { M.modo = M.est.modo; } dibuja(raiz); });
+        d.addEventListener('click', function () { M.reemplaza[k] = false; M.valores[k] = ''; if (M.est.modo && M.modo !== M.est.modo) { M.modo = M.est.modo; M.parte = 1; } dibuja(raiz); });
         fila.appendChild(d);
       }
     }
@@ -380,16 +381,19 @@
     var cuerpo = { accion: 'pedir_codigo' };
     Object.keys(r.v).forEach(function (k) { cuerpo[k] = r.v[k]; });
     if (confirma !== null) cuerpo.confirmar_live = confirma;   // modo final de prueba: el campo no va (volver a prueba no lo pide)
-    var mia = vueltas;
+    var mia = vueltas, modoPedido = M.modo;
+    M.pidiendo = true;
     llama(cuerpo).then(function (res) {
+      if (M) M.pidiendo = false;
       if (mia !== vueltas) return;   // se cerró sin guardar mientras tanto: el código pedido caduca solo y las claves no vuelven
       if (res.d && res.d.ok === true && res.codigo === 'codigo_enviado') {
-        M.fase = 'codigo'; M.mandadas = r.v; M.confirmaMandada = confirma; M.codigo = ''; M.correo = corto(res.d.correo_enmascarado, 120); M.aviso = '';
+        M.fase = 'codigo'; M.mandadas = r.v; M.confirmaMandada = confirma; M.modoMandado = modoPedido; M.codigo = ''; M.correo = corto(res.d.correo_enmascarado, 120); M.aviso = '';
         dibuja(raiz);
         var c = raiz.querySelector('[data-axw-campo="codigo"]'); if (c) c.focus();
         return;
       }
       M.aviso = textoRespuesta(res);
+      if (res.codigo === 'live_no_permitido' || res.codigo === 'falta_confirmar_live') M.parte = 1;   // su campo (o su nota) está en la parte del modo
       if (res.d && Array.isArray(res.d.campos)) M.faltan = res.d.campos.filter(function (k) { return CAMPOS.indexOf(k) >= 0; });
       if (res.d && CAMPOS.indexOf(res.d.campo) >= 0) M.faltan = [res.d.campo];
       // falta_confirmar_live sin que esta página lo esperase: la instancia ya está en real (otro administrador la pasó con esta página abierta).

@@ -58,7 +58,7 @@ def node(js):
 
 # autor → clase esperada (las cuatro clases y sus bordes)
 AUTORES = {'dion@balibestmotorcycle.com': 'persona', '0b0f6a9e-1c2d-4e5f-8a9b-0c1d2e3f4a5b': 'persona', 'Dion': 'persona',
-           'migración 20261008138500': 'inicial', 'migracion': 'inicial', 'postgres': 'inicial', 'sistema:sql': 'inicial', '': 'inicial',
+           'migración 20261008138500': 'inicial', 'migracion': 'inicial', 'postgres': 'inicial', 'Postgres': 'inicial', 'sistema:sql': 'inicial', 'SISTEMA:SQL': 'inicial', '': 'inicial',
            'equipo@axisworks.studio': 'soporte', 'sistema:aaas': 'sistema', 'sistema:service_role': 'sistema',
            'migraciones-fan@x.com': 'persona'}
 
