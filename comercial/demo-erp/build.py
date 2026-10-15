@@ -46,6 +46,45 @@ import subprocess
 import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
+
+
+def node_modules_de_fuera(aqui=AQUI):
+    """El node_modules de ESTA carpeta en el clon principal, si aquí no hay uno completo; o None (15-oct-2026, deploy-axw).
+    node_modules no va en git: una copia de AxisWorks (cualquier `git worktree`: `proyectos/_sesiones/…` o el scratchpad) no lo
+    trae y limpia_publico.js caía con «Cannot find module 'terser'» (calidad-gastos lo pasó a mano con NODE_PATH). El clon
+    principal es el padre del git-common-dir, como en el gate (tools/test.py). Completo = con `.package-lock.json`."""
+    if os.path.isfile(os.path.join(aqui, 'node_modules', '.package-lock.json')):
+        return None
+    try:
+        g = lambda *a: subprocess.run(['git', *a], cwd=aqui, capture_output=True, text=True, encoding='utf-8',
+                                      timeout=15).stdout.strip()
+        rel = os.path.relpath(aqui, g('rev-parse', '--show-toplevel'))
+        nm = os.path.join(os.path.dirname(g('rev-parse', '--path-format=absolute', '--git-common-dir')), rel, 'node_modules')
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    return nm if os.path.isfile(os.path.join(nm, '.package-lock.json')) else None
+
+
+# Todos los `node` que lanza el build heredan la ruta (solo AÑADE una ruta de búsqueda: no cambia nada si aquí ya está completo).
+_NM_FUERA = node_modules_de_fuera()
+if _NM_FUERA:
+    os.environ['NODE_PATH'] = os.pathsep.join([_NM_FUERA] + ([os.environ['NODE_PATH']] if os.environ.get('NODE_PATH') else []))
+
+
+def limpia_publico(dist):
+    """`node limpia_publico.js <dist>`; sin sus módulos lo dice claro en vez de dejar solo la traza de node."""
+    r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), dist], cwd=AQUI, capture_output=True, text=True,
+                       encoding='utf-8', errors='replace')
+    sys.stdout.write(r.stdout or '')
+    sys.stderr.write(r.stderr or '')
+    if r.returncode != 0:
+        falta = re.search(r"Cannot find module '([^']+)'", (r.stderr or '') + (r.stdout or ''))
+        if falta:
+            aborta("limpia_publico.js no encuentra el módulo '%s': falta node_modules en %s y tampoco hay uno completo en el clon "
+                   "principal. Instálalo con `npm ci` en %s (o en esa carpeta del clon principal)." % (falta.group(1), AQUI, AQUI))
+        aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
+
+
 # AXW_AGENCIA_RAIZ: raíz de la AGENCIA (donde viven erp/, tools/, private/ y proyectos/Lawang) cuando se construye desde una copia de
 # sesión de AxisWorks, que vive en _sesiones/<id>/AxisWorks y no cuatro niveles bajo la agencia: apunta a la copia de sesión de la agencia.
 AGENCIA = os.path.abspath(os.environ.get('AXW_AGENCIA_RAIZ') or os.path.join(AQUI, '..', '..', '..', '..'))
@@ -234,6 +273,68 @@ def copia_v4():
     # El CRM de leads (v3) está en el menú de la v4.
     for f in ('index.html', 'leads.css', 'leads.js'):
         copia(os.path.join(LAWANG, 'intranet', 'leads', f), os.path.join(DIST, 'intranet', 'leads', f))
+
+
+# Contadores que dicen «0» (15-oct-2026, Calidad, encargo de agencia-c0): cuenta() de motion.js escribía «0» en el TEXTO de cada contador
+# [data-lw^="k-"] y lo subía con requestAnimationFrame; hasta el primer fotograma —y para siempre con la pestaña oculta, donde rAF no corre—
+# Usuarios decía «0 activos» con 2 en la lista (Experiencia, bbm, 14-oct). Arreglado en Lawang (8297615bb, afinado en 671a23edf): el dato se queda siempre en el
+# texto y la cifra que sube es una capa aria-hidden encima; sin animación si la pestaña está oculta. El fijado (lawang.json) es anterior, así
+# que el bloque nuevo llega tal cual, cortado del motion.js de Lawang (motion_cuenta_lawang.js), y MOTION_V de nav.js se recalcula como lo
+# hace Lawang (8 primeros del sha1 del fichero con LF) para que ningún navegador siga con el viejo de caché.
+# El portal de clientes (solo la demo: las instancias no llevan /portal/) tenía el mismo fallo con el importe en su propio cuenta()
+# (portal/motion.js): mismo arreglo en Lawang (ee3d296a8, afinado en 671a23edf), que llega igual con motion_cuenta_portal_lawang.js y motion.js?v=20261015.
+# QUITAR (constantes, funciones, sus llamadas en main() y los dos motion_cuenta_*.js) cuando el fijado pase de Lawang 671a23edf: el bloque
+# viejo ya no estará y esto para el build a propósito. Prueba: test_motion_cifra.py.
+# (fichero en dist/, ancla de inicio, ancla de fin, sha1 del bloque viejo del fijado con LF, bloque nuevo)
+MOTION_CUENTA = ('intranet/v4/assets/motion.js', '  var NUM = ', '  function entra() {',
+                 'e26238648f7d4c9629bd0f9353b2bb3f11ab3b86', os.path.join(AQUI, 'motion_cuenta_lawang.js'))
+MOTION_CUENTA_PORTAL = ('portal/motion.js', '  /* El dinero que se recorre', '  /* Entrada de una pantalla',
+                        'c5abfcfc03ecdb53c974aed69286df95500a44de', os.path.join(AQUI, 'motion_cuenta_portal_lawang.js'))
+PORTAL_MOTION_V = ('/portal/motion.js?v=20261009', '/portal/motion.js?v=20261015')
+
+
+def _motion_v(texto):
+    return hashlib.sha1(texto.replace('\r\n', '\n').encode('utf-8')).hexdigest()[:8]
+
+
+def cifra_cuenta_motion(texto, cual=MOTION_CUENTA):
+    """motion.js del fijado → con el cuenta() arreglado de Lawang. Para si el bloque viejo no es el medido el 15-oct."""
+    donde, ini, fin, sha, fuente = cual
+    a, b = texto.find(ini), texto.find(fin)
+    if a < 0 or b < a:
+        aborta('%s: no encuentro cuenta() (%r … %r)%s' % (donde, ini, fin, quien_cambio_lawang(donde)))
+    viejo = texto[a:b]
+    if hashlib.sha1(viejo.replace('\r\n', '\n').encode('utf-8')).hexdigest() != sha:
+        aborta('%s: cuenta() del fijado ya no es la medida el 15-oct; si el fijado ya trae el arreglo, quita cifra_cuenta() y '
+               'motion_cuenta_*.js%s' % (donde, quien_cambio_lawang(donde)))
+    nuevo = open(fuente, encoding='utf-8', newline='').read().replace('\r\n', '\n')
+    if '\r\n' in viejo:
+        nuevo = nuevo.replace('\n', '\r\n')
+    return texto[:a] + nuevo + texto[b:]
+
+
+def cifra_cuenta_portal():
+    """El cuenta() arreglado en dist/portal/motion.js y su ?v= en dist/portal/index.html (solo la demo, tras portal_lawang())."""
+    m = os.path.join(DIST, 'portal', 'motion.js')
+    texto = cifra_cuenta_motion(open(m, encoding='utf-8', newline='').read(), MOTION_CUENTA_PORTAL)   # leer ANTES de abrir para escribir
+    open(m, 'w', encoding='utf-8', newline='').write(texto)
+    p = os.path.join(DIST, 'portal', 'index.html')
+    texto = _una_vez(open(p, encoding='utf-8', newline='').read(), *PORTAL_MOTION_V, 'portal/index.html')
+    open(p, 'w', encoding='utf-8', newline='').write(texto)
+
+
+def cifra_cuenta():
+    """Aplica cifra_cuenta_motion() al motion.js de dist/ y sube MOTION_V en nav.js (demo e instancias: los dos pasan por copia_v4())."""
+    assets = os.path.join(DIST, 'intranet', 'v4', 'assets')
+    m, n = os.path.join(assets, 'motion.js'), os.path.join(assets, 'nav.js')
+    texto = cifra_cuenta_motion(open(m, encoding='utf-8', newline='').read())
+    open(m, 'w', encoding='utf-8', newline='').write(texto)
+    nav = open(n, encoding='utf-8', newline='').read()
+    v = re.findall(r"var MOTION_V = '([0-9a-f]{8})';", nav)
+    if len(v) != 1:
+        aborta('nav.js: esperaba una sola `var MOTION_V = \'…\';` y hay %d%s' % (len(v), quien_cambio_lawang('nav.js')))
+    nav = _una_vez(nav, "var MOTION_V = '%s';" % v[0], "var MOTION_V = '%s';" % _motion_v(texto), 'nav.js')
+    open(n, 'w', encoding='utf-8', newline='').write(nav)
 
 
 def cierra_referencias():
@@ -3025,9 +3126,7 @@ def publica():
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json (repo privado del estudio): sin él no se puede anonimizar la demo')
     quita_limpieza_en_vivo()
-    r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), DIST], cwd=AQUI)
-    if r.returncode != 0:
-        aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
+    limpia_publico(DIST)
     # Nombres de fichero primero (el logo, la hoja lawang.css…), después el texto que los nombra.
     for raiz, dirs, fichs in os.walk(DIST, topdown=False):
         for f in fichs + dirs:
@@ -5742,9 +5841,7 @@ def instancia(nombre):
     # 0. Sin comentarios, como la pública: los de Lawang cuentan sociedades, personas e incidentes.
     shutil.copy2(os.path.join(LAWANG, 'contracts', 'assets', 'guard.js'), os.path.join(DIST, 'contracts', 'assets', 'guard.js'))
     guard_asistente_admin()   # AXW-136: el admin entra a /asistente/ sin la casilla (como la base)
-    r = subprocess.run(['node', os.path.join(AQUI, 'limpia_publico.js'), DIST], cwd=AQUI)
-    if r.returncode != 0:
-        aborta('limpia_publico.js no pudo quitar los comentarios de algún fichero (ver arriba)')
+    limpia_publico(DIST)
     # 1. Guard REAL: el de Lawang tal cual, con la base de la instancia.
     g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
     for raiz, _d, fichs in os.walk(DIST):
@@ -6109,6 +6206,7 @@ def main():
         p = os.path.join(DIST, x)
         shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
     copia_v4()
+    cifra_cuenta()   # 15-oct: los contadores no dicen «0» (se quita al subir el fijado de Lawang por encima de 671a23edf)
     if '--instancia' in sys.argv:
         # El guard real manda a la puerta (antes /intranet/, ahora la raíz tras reraiz): es la pantalla de acceso de verdad.
         copia(os.path.join(LAWANG, 'intranet', 'index.html'), os.path.join(DIST, 'intranet', 'index.html'))
@@ -6121,6 +6219,7 @@ def main():
         return instancia(sys.argv[i + 1])
     # Solo la demo: el portal de clientes del ERP con los datos del doble (las instancias no llevan /portal/ propio).
     portal_lawang()
+    cifra_cuenta_portal()   # 15-oct: el importe del portal no dice «0» (se quita con cifra_cuenta() al subir el fijado)
     faltan |= cierra_referencias()
     g = os.path.join(DIST, 'contracts', 'assets', 'guard.js')
     os.makedirs(os.path.dirname(g), exist_ok=True)
