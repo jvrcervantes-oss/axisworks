@@ -264,7 +264,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     "Flota y tarifas": "Armada dan tarif",
     "Sin impuesto por defecto": "Tanpa pajak bawaan", "Impuesto por defecto": "Pajak bawaan", "Desactivado": "Nonaktif", "Impuesto que ya no está en la lista": "Pajak yang sudah tidak ada di daftar",
     "No se ha podido saber qué productos son de alquiler: puede que en la lista salga algún extra.": "Tidak dapat diketahui produk mana yang disewakan: mungkin ada ekstra yang muncul di daftar.",
-    "Seguimiento": "Tindak lanjut", "Lo que el bot puede alquilar.": "Yang bisa disewakan bot.", "No están en taller ni de baja": "Tidak di bengkel dan tidak dinonaktifkan",
+    "Seguimiento": "Operasional", "Lo que el bot puede alquilar.": "Yang bisa disewakan bot.", "No están en taller ni de baja": "Tidak di bengkel dan tidak dinonaktifkan",
     "De %n motos en total": "Dari %n motor seluruhnya", "Modelos · %n": "Model · %n", "%n motos": "%n motor", "1 moto": "1 motor", "Matrícula": "Plat nomor",
     "Sin tarifas: no se podrá cotizar. Pon los precios para que el bot pueda ofrecerla.": "Belum ada tarif: belum bisa dikutip. Isi harganya agar bot bisa menawarkannya.",
     "Las motos de cada producto y lo que cuesta alquilarlas según los días. Lo que cambies aquí es lo que el bot cotiza y cobra.": "Motor untuk setiap produk dan biaya sewanya berdasarkan jumlah hari. Yang diubah di sini adalah yang dikutip dan ditagih bot.",
@@ -412,7 +412,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     'Flota y tarifas': 'Fleet and rates',
     'Sin impuesto por defecto': 'No default tax', 'Impuesto por defecto': 'Default tax', 'Desactivado': 'Deactivated', 'Impuesto que ya no está en la lista': 'Tax no longer on the list',
     'No se ha podido saber qué productos son de alquiler: puede que en la lista salga algún extra.': "We couldn't tell which products are for rent: an extra may show up in the list.",
-    'Seguimiento': 'Pipeline', 'Lo que el bot puede alquilar.': 'What the bot can rent out.', 'No están en taller ni de baja': 'Not in the workshop or retired',
+    'Seguimiento': 'Operations', 'Lo que el bot puede alquilar.': 'What the bot can rent out.', 'No están en taller ni de baja': 'Not in the workshop or retired',
     'De %n motos en total': 'Out of %n bikes in total', 'Modelos · %n': 'Models · %n', '%n motos': '%n bikes', '1 moto': '1 bike', 'Matrícula': 'Plate',
     'Sin tarifas: no se podrá cotizar. Pon los precios para que el bot pueda ofrecerla.': 'No rates: it cannot be quoted. Set the prices so the bot can offer it.',
     'Las motos de cada producto y lo que cuesta alquilarlas según los días. Lo que cambies aquí es lo que el bot cotiza y cobra.': 'The bikes of each product and what they cost to rent by number of days. What you change here is what the bot quotes and charges.',
@@ -949,7 +949,10 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
       var cols = [['Cuándo'], ['Quién'], ['Tabla']].concat(conQue ? [['Qué']] : []).concat([['Motivo']]);
       C.tabla(t, cols, v.map(function (x) {
         var tb = x && x.tabla, tabla = TABLAS[tb] ? T(TABLAS[tb]) : tb;
-        return h('tr', null, [C.celda(C.fechaHora(x && x.cuando), 'axw-nw'), C.celda(x && x.quien), C.celda(tabla)].concat(conQue ? [C.celda(x && x.que)] : []).concat([C.celda(x && x.motivo)]));
+        // la carga inicial la hizo el estudio con un motivo interno en español («… la hace AxisWorks por SQL», visto en bbm en en/id, 15-oct):
+        // quién y motivo por la regla común (C.autorDe), la misma de Entrega y del Registro de Ajustes
+        return h('tr', { 'data-autor': C.autorDe(x && x.quien) }, [C.celda(C.fechaHora(x && x.cuando), 'axw-nw'), C.celda(C.quienDe(x && x.quien)), C.celda(tabla)]
+          .concat(conQue ? [C.celda(x && x.que)] : []).concat([C.celda(C.motivoDe(x && x.quien, x && x.motivo))]));
       }));
     }
     oculta($v('contenido'), false);

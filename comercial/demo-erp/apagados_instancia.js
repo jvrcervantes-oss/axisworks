@@ -71,6 +71,10 @@
   };
 
   // ── la pantalla actual ──────────────────────────────────────────────────────────────────────
+  /* Rutas en el idioma de la instancia (bbm-idioma-total, 15-oct-2026): la barra y los href pueden ir en inglés (/workshop/); M.p, M.xp y M.r
+     hablan con la ruta INTERNA (la carpeta, /taller/). Todo lo que se lee de un href pasa por aquí; RUTA (location.pathname) ya llega interna
+     por la pasada de build.py. Sin el ayudante (rutas_idioma.js), la ruta tal cual. */
+  function interna(r) { return r != null && window.axwRutaInterna ? window.axwRutaInterna(r) : r; }
   function moduloDeRuta(ruta) {
     var mejor = null, largo = 0;
     for (var p in M.p) if (ruta.indexOf(p) === 0 && p.length > largo) { mejor = M.p[p]; largo = p.length; }
@@ -87,8 +91,11 @@
   // ── hoja: todo lo de módulo tapado hasta saber ──────────────────────────────────────────────
   var hoja = document.createElement('style');
   hoja.id = 'axw-modulos';
+  // cada ruta interna en las formas en que puede estar pintada en un href: la interna y la visible del ayudante (/taller/ y /workshop/)
   function reglas(prefijos) {
-    return prefijos.map(function (p) { return 'a[href^="' + p.replace(/"/g, '') + '"]{display:none!important}'; }).join('\n');
+    var todas = [];
+    prefijos.forEach(function (p) { todas = todas.concat(window.axwRutaAlias ? window.axwRutaAlias(p) : [p]); });
+    return todas.map(function (p) { return 'a[href^="' + String(p).replace(/"/g, '') + '"]{display:none!important}'; }).join('\n');
   }
   var todosPrefijos = Object.keys(M.p).concat(M.xp || []);
   hoja.textContent = reglas(todosPrefijos) + (MOD_PAGINA ? '\nhtml.axw-mod-pend{visibility:hidden!important}' : '');
@@ -228,7 +235,7 @@
     var as = document.querySelectorAll('a[href]');
     for (var i = 0; i < as.length; i++) {
       var ruta;
-      try { ruta = new URL(as[i].getAttribute('href'), location.href).pathname; } catch (e) { continue; }
+      try { ruta = interna(new URL(as[i].getAttribute('href'), location.href).pathname); } catch (e) { continue; }
       var m = esExtraRuta(ruta) ? '(no portado)' : moduloDeRuta(ruta);
       if (m && !activo(m) && as[i].style.display !== 'none') as[i].style.display = 'none';
     }
@@ -259,7 +266,7 @@
     }
   }
   function rutaDe(a) {
-    try { return new URL(a.getAttribute('href'), location.href).pathname; } catch (e) { return null; }
+    try { return interna(new URL(a.getAttribute('href'), location.href).pathname); } catch (e) { return null; }
   }
   function vivo(a) {
     var ruta = rutaDe(a);

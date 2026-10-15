@@ -23,7 +23,7 @@ const MAPA = {
 const PLANTILLA = fs.readFileSync(path.join(__dirname, 'no_instalado.html'), 'utf8')
   .replace(/<!--[\s\S]*?-->\s*/g, '').replace('{{marca}}', 'Prueba ERP').replace('{{sello}}', '<svg></svg>');
 
-function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, build, guardado, recargado, viendo, elegido, puente, mapa }) {
+function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, build, guardado, recargado, viendo, elegido, puente, mapa, enlaces, rutas }) {
   const red = [];
   const clases = new Set();
   const doc = {
@@ -33,7 +33,7 @@ function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, bu
     title: '',
     body: { innerHTML: 'pantalla' },
     createElement: () => ({}),
-    querySelectorAll: () => [],
+    querySelectorAll: (sel) => (sel === 'a[href]' && enlaces ? enlaces : []),
     getElementById: () => null,
     addEventListener() {},
   };
@@ -50,6 +50,11 @@ function escenario({ activos, ruta = '/home/', fallaActivos = false, idiomas, bu
   if (elegido) globalThis.AXW_IDIOMA_GUARDADO = elegido; else delete globalThis.AXW_IDIOMA_GUARDADO;
   if (puente) globalThis.AXW_IDIOMA_PANTALLA_BUILD = puente; else delete globalThis.AXW_IDIOMA_PANTALLA_BUILD;
   global.MutationObserver = class { observe() {} };
+  // rutas en el idioma de la instancia (15-oct): el ayudante de verdad lo prueba pruebas/rutas_idioma_dom.cjs; aquí, su contrato (interna y alias)
+  if (rutas) {
+    globalThis.axwRutaInterna = (p) => (p.indexOf('/invoices/') === 0 ? '/facturas/' + p.slice('/invoices/'.length) : p);
+    globalThis.axwRutaAlias = (p) => (p === '/facturas/' ? ['/facturas/', '/invoices/'] : [p]);
+  } else { delete globalThis.axwRutaInterna; delete globalThis.axwRutaAlias; }
   global.console = Object.assign(Object.create(console), { info() {}, warn() {} });
   global.window = globalThis;
   delete globalThis.LW_SB;
@@ -308,6 +313,26 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     E = escenario({ activos: null, build: null, idiomas: { ofrecidos: ['es', 'en'], defecto: 'es' } });
     E.publica(); await globalThis.AXW_MODULOS_LISTOS;
     ok(doc() === '["es","en"]', 'papel: también se apunta en un paquete sin idiomas del build (el selector solo existe si el build lo puso)');
+  }
+
+  // 10. Rutas en inglés (bbm-idioma-total, 15-oct): la hoja tapa la ruta interna Y la inglesa; un href /invoices/ se juzga por /facturas/.
+  //     Contraprueba: sin el ayudante (axwRutaInterna ausente) el mismo enlace inglés no se reconoce y se queda a la vista.
+  {
+    const a = () => ({ h: '/invoices/x/', style: { display: '' }, getAttribute(k) { return k === 'href' ? this.h : null; } });
+    let enl = [a()];
+    let E = escenario({ activos: [], rutas: true, enlaces: enl });
+    ok(E.doc._hoja.textContent.includes('a[href^="/facturas/"]') && E.doc._hoja.textContent.includes('a[href^="/invoices/"]'), 'rutas: la hoja tapa /facturas/ y /invoices/ hasta saber');
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS; await espera(5);
+    ok(E.doc._hoja.textContent.includes('a[href^="/invoices/"]'), 'rutas: con facturas apagado, la hoja sigue tapando la ruta inglesa');
+    ok(enl[0].style.display === 'none', 'rutas: un href /invoices/ se oculta por su módulo (facturas)');
+    enl = [a()];
+    E = escenario({ activos: [], rutas: false, enlaces: enl });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS; await espera(5);
+    ok(enl[0].style.display === '' && !E.doc._hoja.textContent.includes('/invoices/'), 'contraprueba: sin el ayudante el href inglés no se reconoce (por eso la normalización)');
+    enl = [a()];
+    E = escenario({ activos: ['facturas'], rutas: true, enlaces: enl });
+    E.publica(); await globalThis.AXW_MODULOS_LISTOS; await espera(5);
+    ok(enl[0].style.display === '' && !E.doc._hoja.textContent.includes('/invoices/'), 'rutas: con facturas encendido, el href inglés queda a la vista');
   }
 
   console.log('OK apagados_instancia: ' + n + '/' + n);
