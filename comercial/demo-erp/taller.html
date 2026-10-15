@@ -179,7 +179,7 @@
     'Hay fotos sin subir: se suben solas al volver la red.': 'Some photos are not uploaded: they upload by themselves when the network is back.',
     'Quedan fotos sin subir: espera a que suban o pulsa Reintentar.': 'Some photos are not uploaded yet: wait for them or tap Retry.',
     'Quedan fotos sin subir: pulsa Reintentar o Descartar en las que no suban.': 'Some photos are not uploaded: tap Retry, or Discard the ones that do not upload.',
-    'Revisiones': 'Checks', 'Bien': 'Good', 'Atención': 'Needs check', 'Mal': 'Bad', 'Contestadas {n} de {t}': '{n} of {t} answered',
+    'Revisiones': 'Checks', 'Bien': 'Good', 'Atención': 'Needs check', 'Mal': 'Bad', 'Contestadas {n} de {t}': '{n} of {t} answered', 'Todo bien: marcar «Bien» las {n} sin contestar': 'All good: mark the {n} unanswered as «Good»',
     'Este modelo no tiene revisiones en su lista. Avisa a la administración.': 'This model has no checks in its list. Tell the administration.',
     'Guardando…': 'Saving…', 'Guardado': 'Saved', 'No guardado': 'Not saved', 'Reintentar': 'Retry', 'Guardar nota': 'Save note',
     'Espera a que se guarden las revisiones.': 'Wait until the checks are saved.',
@@ -300,7 +300,7 @@
     'Hay fotos sin subir: se suben solas al volver la red.': 'Ada foto yang belum terunggah: akan terunggah sendiri saat sinyal kembali.',
     'Quedan fotos sin subir: espera a que suban o pulsa Reintentar.': 'Masih ada foto yang belum terunggah: tunggu atau ketuk Coba lagi.',
     'Quedan fotos sin subir: pulsa Reintentar o Descartar en las que no suban.': 'Masih ada foto yang belum terunggah: ketuk Coba lagi, atau Buang yang tidak terunggah.',
-    'Revisiones': 'Pemeriksaan', 'Bien': 'Baik', 'Atención': 'Perlu dicek', 'Mal': 'Rusak', 'Contestadas {n} de {t}': '{n} dari {t} sudah diisi',
+    'Revisiones': 'Pemeriksaan', 'Bien': 'Baik', 'Atención': 'Perlu dicek', 'Mal': 'Rusak', 'Contestadas {n} de {t}': '{n} dari {t} sudah diisi', 'Todo bien: marcar «Bien» las {n} sin contestar': 'Semua baik: tandai {n} yang belum diisi sebagai «Baik»',
     'Este modelo no tiene revisiones en su lista. Avisa a la administración.': 'Model ini belum punya daftar pemeriksaan. Beri tahu admin.',
     'Guardando…': 'Menyimpan…', 'Guardado': 'Tersimpan', 'No guardado': 'Belum tersimpan', 'Reintentar': 'Coba lagi', 'Guardar nota': 'Simpan catatan',
     'Espera a que se guarden las revisiones.': 'Tunggu sampai pemeriksaan tersimpan.',
@@ -1148,11 +1148,27 @@
     var revs = E.orden.revisiones;
     if (!revs.length) { c.appendChild(h('p', { class: 'axw-aviso', text: T('Este modelo no tiene revisiones en su lista. Avisa a la administración.') })); siguiente('Siguiente', false); return; }
     c.appendChild(h('p', { class: 'tl-sub', 'data-tl': 'rev-cuenta', role: 'status' }));
+    // S2 (bbm-comodidad, 15-oct-2026): «Todo bien» marca «Bien» las que nadie ha contestado, en un toque (antes uno por revisión). No toca las ya
+    // contestadas ni las que están guardándose o se quedaron sin guardar (alguien eligió algo y hay que reintentarlo). Cada una va por la llamada de
+    // siempre (taller_revision_marca, una detrás de otra): lo que la base no acepte se queda en su tarjeta con «Reintentar», como al pulsar a mano.
+    c.appendChild(h('div', { class: 'axw-acciones' }, [h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-rev-todo-bien', 'data-tl': 'rev-todo-bien', 'data-primario': '1' })]));
     revs.forEach(function (r) { c.appendChild(tarjetaRev(r)); });
     cuentaRev();
     siguiente('Siguiente', false);
   }
-  function cuentaRev() { var e = $v('rev-cuenta'); if (!e) return; var revs = E.orden.revisiones; e.textContent = TT('Contestadas {n} de {t}', { n: revs.filter(function (r) { return !!r.resultado; }).length, t: revs.length }); }
+  function sinTocar(r) { return !r.resultado && !E.revGuardando[r.id] && !E.revError[r.id]; }
+  function cuentaRev() {
+    var e = $v('rev-cuenta'); if (!e) return; var revs = E.orden.revisiones;
+    e.textContent = TT('Contestadas {n} de {t}', { n: revs.filter(function (r) { return !!r.resultado; }).length, t: revs.length });
+    var b = $v('rev-todo-bien'), n = revs.filter(sinTocar).length;
+    if (b) { if (!b.disabled) b.textContent = TT('Todo bien: marcar «Bien» las {n} sin contestar', { n: n }); oculta(b.parentNode, !n && !b.disabled); }
+  }
+  function todoBien(btn) {
+    var pend = E.orden.revisiones.filter(sinTocar);
+    if (!pend.length || !C.ocupa(btn)) return;
+    pend.reduce(function (p, r) { return p.then(function () { return marca(r.id, 'bien'); }); }, Promise.resolve())
+      .then(function () { C.libera(btn); cuentaRev(); });
+  }
   function revDe(id) { return E.orden.revisiones.filter(function (r) { return r.id === id; })[0]; }
   function tarjetaRev(r) {
     var g = h('div', { class: 'tl-res', role: 'radiogroup', 'aria-label': nombreDe(r) }, REV.map(function (x) {
@@ -1193,7 +1209,7 @@
     if (n && (n.length > 200 || /[\u0000-\u001f\u007f]/.test(n))) { E.revError[id] = { texto: T('La nota es demasiado larga o tiene saltos de línea.'), res: res, nota: null }; repintaRev(id); return; }
     E.revGuardando[id] = res; delete E.revError[id];
     repintaRev(id);
-    llama('taller_revision_marca', { p_orden: E.orden.orden.id, p_revision: id, p_resultado: res, p_nota: n || null }).then(function (x) {
+    return llama('taller_revision_marca', { p_orden: E.orden.orden.id, p_revision: id, p_resultado: res, p_nota: n || null }).then(function (x) {
       delete E.revGuardando[id];
       if (x.error || !x.data || x.data.resultado !== res) {
         // sin respuesta puede haberse guardado; repetir es seguro (upsert por orden y revisión)
@@ -1546,7 +1562,7 @@
       var costeEl = h('input', { type: 'text', inputmode: 'decimal', maxlength: '16', 'data-f': 'coste', autocomplete: 'off' });
       var monEl = h('input', { type: 'text', maxlength: '3', 'data-f': 'moneda', autocomplete: 'off', value: monedaInstancia() });
       var revEl = revOpts();
-      return h('div', { 'data-tl': 'l-pieza-nueva' }, [h('div', { class: 'axw-barra' }, [h('strong', { text: T('Pieza nueva') }),
+      return h('div', { 'data-tl': 'l-pieza-nueva' }, [h('div', { class: 'axw-barra' }, [hayCat ? null : h('strong', { text: T('Pieza nueva') }),   // con los botones a la vista, el título ya lo dice el botón
         campoL('Referencia', h('input', { type: 'text', maxlength: '60', 'data-f': 'ref', autocomplete: 'off' })),
         campoL('Nombre (indonesio)', h('input', { type: 'text', maxlength: '120', 'data-f': 'nombre_id', autocomplete: 'off' })),
         campoL('Nombre (inglés)', h('input', { type: 'text', maxlength: '120', 'data-f': 'nombre_en', autocomplete: 'off' })),
@@ -1706,6 +1722,7 @@
       return;
     }
     if (a === 'tl-rev') { marca(el.getAttribute('data-rev-id'), el.getAttribute('data-res')); return; }
+    if (a === 'tl-rev-todo-bien') { todoBien(el); return; }
     if (a === 'tl-rev-reintentar') { var er = E.revError[el.getAttribute('data-rev-id')]; if (er) marca(el.getAttribute('data-rev-id'), er.res, er.nota); return; }
     if (a === 'tl-rev-nota') {
       var id = el.getAttribute('data-rev-id'), r = revDe(id), inp = raiz.querySelector('[data-rev-nota="' + id + '"]');
@@ -1782,7 +1799,7 @@
     raiz.addEventListener('click', alClic);
     raiz.addEventListener('input', function (ev) { if (ev.target === $v('buscar')) pintaBusqueda(); });
     raiz.addEventListener('change', function (ev) {
-      if (ev.target === $v('l-modelo')) { E.listaSel = ev.target.value; abreListas(); return; }
+      if (ev.target === $v('l-modelo')) { E.listaSel = ev.target.value; E.piezaModo = null; abreListas(); return; }   // otro modelo: «Del catálogo» / «Pieza nueva» vuelve a la de partida
       var vid = ev.target.getAttribute && ev.target.getAttribute('data-varias-id');
       if (vid && E.varias) { if (ev.target.checked) E.varias.sel[vid] = true; else delete E.varias.sel[vid]; variasCuenta(); }
     });

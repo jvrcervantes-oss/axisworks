@@ -89,7 +89,8 @@ function nuevaBase(o = {}) {
               { id: uuid(), numero: 'OT-00002', unidad_id: U.m5, estado: 'abierta', paso: null, km: null, gasolina: null, motivo_tipo: null, resultado: null, abierta_por: 'admin', abierta_en: 3, oculta: true }],
     revs: [{ id: uuid(), producto_id: null, clave: 'neumaticos', nombre_id: 'Ban', nombre_en: 'Tyres', orden: 10, activa: true },
            { id: uuid(), producto_id: null, clave: 'aceite', nombre_id: XSS_REV, nombre_en: XSS_REV, orden: 20, activa: true },
-           { id: uuid(), producto_id: P1, clave: 'cadena', nombre_id: 'Rantai', nombre_en: 'Chain', orden: 30, activa: true }],
+           { id: uuid(), producto_id: P1, clave: 'cadena', nombre_id: 'Rantai', nombre_en: 'Chain', orden: 30, activa: true },
+           { id: uuid(), producto_id: P1, clave: 'luces', nombre_id: 'Lampu', nombre_en: 'Lights', orden: 40, activa: true }],
     respuestas: [], fotos: [], recambios: [], vinculos: [] };
   return B;
 }
@@ -666,7 +667,7 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     ok('sin red en fotos → Siguiente: no avanza', (await paso(p)) === 'fotos');
     ctx.__sinRed = false; await ctx.setOffline(false);
     await p.click('[data-accion="tl-reintentar"]'); await enPaso(p, 'revisiones');
-    ok('paso 5: tres revisiones (dos comunes y una del modelo) con su nombre en indonesio', (await p.$$('[data-rev]')).length === 3 && (await p.$eval('[data-tl="paso-cuerpo"]', e => e.textContent)).includes('Rantai'));
+    ok('paso 5: cuatro revisiones (dos comunes y dos del modelo; la 4.ª, «luces», la contesta «Todo bien» en S2) con su nombre en indonesio', (await p.$$('[data-rev]')).length === 4 && (await p.$eval('[data-tl="paso-cuerpo"]', e => e.textContent)).includes('Rantai'));
     await sinInyeccion(p, 'paso 5');
 
     // Atrás del navegador y recarga a mitad
@@ -675,6 +676,8 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.reload(); await enPaso(p, 'revisiones');
     ok('recarga a mitad: manda el paso de la BASE (revisiones), no el de la URL (fotos)', (await p.evaluate(() => location.hash)).endsWith('&p=revisiones'));
     const revs = B.revs;
+    // S2: «Todo bien» a la vista mientras haya revisiones sin contestar, con cuántas
+    ok('S2 · «Todo bien» a la vista con las revisiones sin contestar contadas', await p.isVisible('[data-accion="tl-rev-todo-bien"]') && /\b4\b/.test(await p.$eval('[data-accion="tl-rev-todo-bien"]', e => e.textContent)), await p.$eval('[data-accion="tl-rev-todo-bien"]', e => e.textContent));
     // revisiones: guardar al pulsar, doble toque, sin red, respuesta cortada
     B.latencia = 800;
     await p.dblclick(`[data-rev-id="${revs[0].id}"][data-res="bien"]`);
@@ -698,6 +701,15 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.click(`[data-accion="tl-rev-nota"][data-rev-id="${revs[1].id}"]`);
     await espera(p, id => document.querySelector(`[data-rev-estado="${id}"]`).textContent === 'Tersimpan', revs[1].id);
     ok('la nota de «Rusak» se guarda con la revisión', /aceite/.test(B.respuestas.find(a => a.revision_id === revs[1].id).nota || ''));
+    // S2: «Todo bien» contesta solo la que nadie ha tocado (luces), en un toque, por la llamada de siempre; «Rusak» sigue en «Rusak»
+    const rLuces = revs.find(x => x.clave === 'luces'), nMarca = llamadas(B, 'taller_revision_marca').length;
+    await p.click('[data-accion="tl-rev-todo-bien"]');
+    await espera(p, id => document.querySelector(`[data-rev-estado="${id}"]`).textContent === 'Tersimpan', rLuces.id);
+    ok('S2 · «Todo bien» en un toque: marca «Bien» la sin contestar y no toca las contestadas',
+       llamadas(B, 'taller_revision_marca').length === nMarca + 1 && B.respuestas.find(a => a.revision_id === rLuces.id).resultado === 'bien' && B.respuestas.find(a => a.revision_id === revs[1].id).resultado === 'mal');
+    await espera(p, () => document.querySelector('[data-accion="tl-rev-todo-bien"]').closest('.axw-acciones').classList.contains('axw-oculto'));
+    ok('S2 · con todo contestado, «Todo bien» se esconde', !(await p.isVisible('[data-accion="tl-rev-todo-bien"]')));
+    console.log('  toques S2 taller: antes 1 por revisión (' + revs.filter(x => !x.producto_id || x.producto_id === P1).length + ' en este modelo); ahora 1 para todas las que van bien + 1 por cada una que no');
     await sinInyeccion(p, 'revisiones'); await sinScroll(p, 'paso 5 (390)');
     await shot(p, 'paso5_390_id.png', true);
     await sig(p); await enPaso(p, 'resultado');
@@ -830,9 +842,10 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.evaluate(() => document.querySelector('[data-accion="tl-tab-listas"]').click());
     await espera(p, () => !!document.querySelector('[data-tl="l-pieza-modo"]'));
     const piezasVistas = async () => (await vistos('[data-tl="l-vincula"]')).concat(await vistos('[data-tl="l-pieza-nueva"]'));
-    ok('S4 · piezas: con catálogo, «Del catálogo» primero y como mucho 3 campos a la vista (la pieza y su revisión sugerida)', JSON.stringify(await piezasVistas()) === '["recambio","revision"]', JSON.stringify(await piezasVistas()));
+    ok('S4 · piezas: con catálogo, «Del catálogo» primero, con 2 campos a la vista (la pieza y su revisión sugerida)', JSON.stringify(await piezasVistas()) === '["recambio","revision"]', JSON.stringify(await piezasVistas()));
     await p.click('[data-tl="l-pieza-modo"] [data-modo="nueva"]');
     ok('S4 · piezas: «Pieza nueva» enseña sus 3 campos y esconde el catálogo', JSON.stringify(await piezasVistas()) === '["ref","nombre_id","nombre_en"]' && (await p.getAttribute('[data-tl="l-pieza-modo"] [data-modo="nueva"]', 'aria-pressed')) === 'true', JSON.stringify(await piezasVistas()));
+    ok('S4 · piezas: con los dos botones, el formulario no repite el título «Pieza nueva»', (await p.$$eval('[data-tl="l-pieza-nueva"] strong', es => es.length)) === 0);
     B.recambios.splice(B.recambios.findIndex(x => x.id === 'rec-catalogo-suelta'), 1);
     await sinScroll(p, 'listas (1440)'); await sinTraducir(p, 'admin id');
     await ctx.close();
@@ -1191,7 +1204,7 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
         ok('S9 ' + pre + 'el parte dice moto, número, km, quién lo cerró y la nota', det.includes('DK 5555 CC') && det.includes('OT-10029') && /1[.,]029 km/.test(det) && det.includes('mec1@taller.test') && det.includes('Semua baik'), det.slice(0, 300));
         ok('S9 ' + pre + 'el foco va al título del parte', await p.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-tl') === 'parte-titulo'));
         ok('S9 ' + pre + 'fotos: 5 fijas + 1 de daño, el cuentakm sin foto', (await p.$$eval('[data-tl="parte-fotos"] li', l => l.length)) === 6 && (await p.$$eval('[data-accion="tl-parte-foto"]', l => l.length)) === 5);
-        ok('S9 ' + pre + 'revisiones: 3, con lo contestado y lo que no', (await p.$$eval('[data-tl="parte-revisiones"] li', l => l.length)) === 3 && (await p.$eval('[data-tl="parte-revisiones"]', e => e.textContent)).includes('Kencangkan'));
+        ok('S9 ' + pre + 'revisiones: 4 (con «luces», del modelo), con lo contestado y lo que no', (await p.$$eval('[data-tl="parte-revisiones"] li', l => l.length)) === 4 && (await p.$eval('[data-tl="parte-revisiones"]', e => e.textContent)).includes('Kencangkan'));
         ok('S9 ' + pre + 'SOLO LECTURA: ni una casilla en la vista y solo botones de mirar', await p.$eval('[data-tl="vista-partes"]', v => !v.querySelector('input,select,textarea') && Array.from(v.querySelectorAll('button')).every(b => ['tl-partes-lista', 'tl-parte-foto'].includes(b.getAttribute('data-accion')))));
         await sinScroll(p, 'S9 parte ' + pre); await sinTraducir(p, 'S9 parte ' + pre);
         await shot(p, 'partes_parte_' + anchoS9 + '_' + idioma + '.png', true);
