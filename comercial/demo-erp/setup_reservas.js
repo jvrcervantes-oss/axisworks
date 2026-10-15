@@ -146,6 +146,9 @@
       sr_p_seguro: '¿Ofreces seguro?',
       sr_p_fianza: '¿Pides fianza?',
       sr_mas_seguro: 'Seguro de más días',
+      sr_p_donde: '¿Desde dónde sale?',
+      sr_p_cuanto: '¿Cuánto cuesta llevarla?',
+      sr_p_final: '¿Y al final del alquiler?',
       sr_hoy: 'hoy',
       sr_max_tel: 'Reservas sin pagar por teléfono',
       sr_max_act: 'Reservas sin pagar a la vez, en total',
@@ -288,7 +291,7 @@
     'Pasado ese tiempo sin pagar, la reserva se libera y la unidad vuelve a estar libre. Solo afecta a las reservas nuevas.': 'After that time without payment, the booking is released and the unit is free again. It only affects new bookings.',
     'Alquiler más corto': 'Shortest rental', 'Alquiler más largo': 'Longest rental', 'Un día menos': 'One day less', 'Un día más': 'One day more', 'Uno menos': 'One less', 'Uno más': 'One more',
     'Se puede reservar con': 'Bookable up to', 'Sin límite': 'No limit', '%n meses de antelación': '%n months ahead', '%n días de antelación': '%n days ahead',
-    'Límites del bot': 'Bot limits', 'Más reglas': 'More rules', '¿Qué alquilas y a cuánto el día?': 'What do you rent, and how much per day?', '¿Y por semana o por mes? (opcional)': 'And per week or per month? (optional)', '¿Ofreces seguro?': 'Do you offer insurance?', '¿Pides fianza?': 'Do you ask for a deposit?', 'Seguro de más días': 'Insurance for longer rentals', 'hoy': 'today', 'Reservas sin pagar por teléfono': 'Unpaid bookings per phone', 'Reservas sin pagar a la vez, en total': 'Unpaid bookings at once, in total',
+    'Límites del bot': 'Bot limits', 'Más reglas': 'More rules', '¿Qué alquilas y a cuánto el día?': 'What do you rent, and how much per day?', '¿Y por semana o por mes? (opcional)': 'And per week or per month? (optional)', '¿Ofreces seguro?': 'Do you offer insurance?', '¿Pides fianza?': 'Do you ask for a deposit?', 'Seguro de más días': 'Insurance for longer rentals', '¿Desde dónde sale?': 'Where does it leave from?', '¿Cuánto cuesta llevarla?': 'How much does delivery cost?', '¿Y al final del alquiler?': 'And at the end of the rental?', 'hoy': 'today', 'Reservas sin pagar por teléfono': 'Unpaid bookings per phone', 'Reservas sin pagar a la vez, en total': 'Unpaid bookings at once, in total',
     'Aún no se ha guardado: si lo dejas así, se usan estos valores.': 'Not saved yet: if you leave it like this, these values are used.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar a las %h se libera.': 'Example: a booking made at 10:00 and still unpaid at %h is released.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar se libera al día siguiente a las %h.': 'Example: a booking made at 10:00 and still unpaid is released the next day at %h.',
@@ -397,7 +400,7 @@
     'Pasado ese tiempo sin pagar, la reserva se libera y la unidad vuelve a estar libre. Solo afecta a las reservas nuevas.': 'Setelah waktu itu lewat tanpa pembayaran, booking dilepas dan unit kembali tersedia. Hanya berlaku untuk booking baru.',
     'Alquiler más corto': 'Sewa terpendek', 'Alquiler más largo': 'Sewa terpanjang', 'Un día menos': 'Kurangi satu hari', 'Un día más': 'Tambah satu hari', 'Uno menos': 'Kurangi satu', 'Uno más': 'Tambah satu',
     'Se puede reservar con': 'Bisa booking paling jauh', 'Sin límite': 'Tanpa batas', '%n meses de antelación': '%n bulan sebelumnya', '%n días de antelación': '%n hari sebelumnya',
-    'Límites del bot': 'Batas bot', 'Más reglas': 'Aturan lain', '¿Qué alquilas y a cuánto el día?': 'Apa yang Anda sewakan, dan berapa per hari?', '¿Y por semana o por mes? (opcional)': 'Lalu per minggu atau per bulan? (opsional)', '¿Ofreces seguro?': 'Apakah Anda menawarkan asuransi?', '¿Pides fianza?': 'Apakah Anda meminta deposit?', 'Seguro de más días': 'Asuransi untuk sewa lebih lama', 'hoy': 'hari ini', 'Reservas sin pagar por teléfono': 'Booking belum dibayar per nomor telepon', 'Reservas sin pagar a la vez, en total': 'Total booking belum dibayar sekaligus',
+    'Límites del bot': 'Batas bot', 'Más reglas': 'Aturan lain', '¿Qué alquilas y a cuánto el día?': 'Apa yang Anda sewakan, dan berapa per hari?', '¿Y por semana o por mes? (opcional)': 'Lalu per minggu atau per bulan? (opsional)', '¿Ofreces seguro?': 'Apakah Anda menawarkan asuransi?', '¿Pides fianza?': 'Apakah Anda meminta deposit?', 'Seguro de más días': 'Asuransi untuk sewa lebih lama', '¿Desde dónde sale?': 'Berangkat dari mana?', '¿Cuánto cuesta llevarla?': 'Berapa biaya antarnya?', '¿Y al final del alquiler?': 'Dan di akhir masa sewa?', 'hoy': 'hari ini', 'Reservas sin pagar por teléfono': 'Booking belum dibayar per nomor telepon', 'Reservas sin pagar a la vez, en total': 'Total booking belum dibayar sekaligus',
     'Aún no se ha guardado: si lo dejas así, se usan estos valores.': 'Belum tersimpan: jika dibiarkan, nilai-nilai ini yang dipakai.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar a las %h se libera.': 'Contoh: booking dibuat pukul 10:00 dan belum dibayar pada pukul %h akan dilepas.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar se libera al día siguiente a las %h.': 'Contoh: booking dibuat pukul 10:00 dan belum dibayar akan dilepas keesokan harinya pukul %h.',
@@ -1304,8 +1307,12 @@
       var bloques = el('div', { id: 'axw-sr-entrega-bloques', class: 'flex flex-col gap-6 min-w-0', 'data-axw-sr-bloques': 'entrega' });
       sw.setAttribute('aria-controls', bloques.id);
       zona.appendChild(bloques);
-      function bloque(texto) { var b = el('section', { class: 'flex flex-col gap-4 min-w-0' }, [el('h3', { class: 'font-label-md text-[11px] tracking-[0.14em] uppercase text-outline', text: texto })]); bloques.appendChild(b); return b; }
-      var b1 = bloque(U('sr_b_donde')), b2 = bloque(U('sr_b_cuanto')), b3 = bloque(U('sr_b_final'));
+      // S1d (owner 15-oct: «1, 2 o 3 campos a rellenar por paso»): los tres bloques son ahora 3 partes (S.partes), y el interruptor queda arriba
+      // a la vista. 1 la tienda y sus coordenadas · 2 precio por km y km gratis, con la distancia máxima y el mínimo plegados · 3 la recogida (+ motivo).
+      // Apagada y sin nada, una sola parte (PT.solo): el botón del anfitrión no dice «Siguiente» hacia partes que no se ven. Se guarda igual que antes.
+      var PT = S.partes({ padre: bloques, marca: 'entrega', inicio: st.parte, errores: st.errores, alCambiar: function (k) { st.parte = k; } });
+      st.partes = PT;
+      var b1 = PT.nueva(U('sr_p_donde')), b2 = PT.nueva(U('sr_p_cuanto')), b3 = PT.nueva(U('sr_p_final'));
       var r1 = rejilla(220);
       campo(r1, 'sede_nombre', U('sr_sede_nombre'), c.sede_nombre, { max: 120, soloLee: c.activa });
       campo(r1, 'sede_coord', U('sr_sede_coord'), c.sede_lat == null ? '' : c.sede_lat + ', ' + c.sede_lng, { max: 60, soloLee: c.activa, ayuda: c.activa ? U('sr_sede_fija') : U('sr_sede_coord_ayuda') });
@@ -1313,9 +1320,15 @@
       var r2 = rejilla(160);
       campo(r2, 'precio_km', U('sr_precio_km'), fmt(c.precio_km), { modo: 'decimal', antes: mon, max: 20 });
       campo(r2, 'km_gratis', U('sr_gratis'), c.precio_km == null && !c.km_gratis ? '' : fmt(c.km_gratis), { modo: 'decimal', despues: 'km', max: 8 });
-      campo(r2, 'km_max', U('sr_km_max'), fmt(c.km_max), { modo: 'decimal', despues: 'km', max: 8 });
-      campo(r2, 'minimo', U('sr_minimo'), c.precio_km == null && !c.minimo ? '' : fmt(c.minimo), { modo: 'decimal', antes: mon, max: 20, ayuda: U('sr_minimo_ayuda') });
       b2.appendChild(r2);
+      // la distancia máxima trae valor de la base (60) y el mínimo es opcional: plegados con su resumen; un error en ellos abre el plegado
+      var pm = S.plegado({ padre: b2, marca: 'entrega-mas', resumen: function () {
+        var kx = val(zona, 'km_max'), mi = val(zona, 'minimo');
+        return [kx ? U('sr_km_max') + ': ' + kx + ' km' : null, mi ? U('sr_minimo') + ': ' + mi : null]; } });
+      var r2b = rejilla(160);
+      campo(r2b, 'km_max', U('sr_km_max'), fmt(c.km_max), { modo: 'decimal', despues: 'km', max: 8 });
+      campo(r2b, 'minimo', U('sr_minimo'), c.precio_km == null && !c.minimo ? '' : fmt(c.minimo), { modo: 'decimal', antes: mon, max: 20, ayuda: U('sr_minimo_ayuda') });
+      pm.cuerpo.appendChild(r2b); pm.actualiza();
       // Ilustración (S45): la tienda, la zona gratis y la de pago. Sin escala ni precio de ejemplo: el importe lo calcula la base, no la pantalla.
       var NS = 'http://www.w3.org/2000/svg';
       function svg(tag, a) { var e = document.createElementNS(NS, tag); Object.keys(a).forEach(function (k) { e.setAttribute(k, a[k]); }); return e; }
@@ -1341,8 +1354,9 @@
       zona.addEventListener('input', leyenda); leyenda();
       st.refrescaFig = leyenda;
       seg(b3, 'cobra_recogida', U('sr_recogida'), [['si', U('sr_recogida_si')], ['no', U('sr_recogida_no')]], c.cobra_recogida === true ? 'si' : (c.cobra_recogida === false ? 'no' : ''));
-      bloques.appendChild(el('a', { href: RAIZ + 'entrega/', class: 'font-label-md text-label-md text-deep-lagoon underline self-start', style: 'min-height:24px', 'data-axw-sr-accion': 'abrir-entrega', text: U('sr_mas_entrega') }));
-      if (c.sede_nombre || c.precio_km != null || c.activa) campoMotivo(zona, st);
+      if (c.sede_nombre || c.precio_km != null || c.activa) campoMotivo(b3, st);
+      b3.appendChild(el('a', { href: RAIZ + 'entrega/', class: 'font-label-md text-label-md text-deep-lagoon underline self-start', style: 'min-height:24px', 'data-axw-sr-accion': 'abrir-entrega', text: U('sr_mas_entrega') }));
+      PT.listo();
       // Abierto por lo GUARDADO (km_max no cuenta: la base lo trae a 60 por defecto) o por lo TECLEADO respecto a lo pintado (el borrador restaurado cuenta)
       var guardado = c.activa || !!c.sede_nombre || c.sede_lat != null || c.tarifa_id != null || c.cobra_recogida != null;
       var campos = [].slice.call(bloques.querySelectorAll('input'));
@@ -1352,9 +1366,10 @@
         var abierto = sw.checked || guardado || tecleado();
         if (st.ctx.falta) st.ctx.falta.style.display = (sw.checked || c.activa) ? '' : 'none';   // apagada, «Falta: entrega encendida…» no dice nada útil
         bloques.style.display = abierto ? '' : 'none'; sw.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+        PT.solo(!abierto);
         if (ayudaSw) ayudaSw.hidden = abierto;
         fig.style.display = abierto ? '' : 'none';   // sin tienda ni precio, la ilustración solo diría «hasta 0 km»
-        if (porUsuario && sw.checked) { var f = bloques.querySelector('input:not([readonly])'); if (f) f.focus(); }   // el foco, solo si lo enciende la persona
+        if (porUsuario && sw.checked) { var f = bloques.querySelector('[data-axw-parte]:not([hidden]) input:not([readonly])'); if (f) f.focus(); }   // el foco, solo si lo enciende la persona
       };
       sw.addEventListener('change', function () { st.aplicaEntrega(true); });
       st.aplicaEntrega(false);
@@ -1362,27 +1377,31 @@
     refresca: function (st) { if (st.refrescaFig) st.refrescaFig(); if (st.aplicaEntrega) st.aplicaEntrega(false); },
     valores: function (st) {
       if (st.datos.noPreparada) return { ok: false, error: U('sr_no_preparada') };
-      var z = st.zona, c = st.datos.c, v = {}, er = [];
+      var z = st.zona, c = st.datos.c, v = {}, er = [], ec = [];
+      function mal(k, t) { er.push(t); ec.push({ c: k, t: t }); }   // S1d: cada error dice su campo; las partes llevan a la suya
       v.activa = !!(z.querySelector('[data-axw-campo="activa"]') || {}).checked;
       if (c.activa) { v.sede_nombre = c.sede_nombre; v.sede_lat = c.sede_lat; v.sede_lng = c.sede_lng; }
       else {
         v.sede_nombre = val(z, 'sede_nombre');
         var co = parseCoord(val(z, 'sede_coord'));
-        if (co.e) er.push(co.e);
+        if (co.e) mal('sede_coord', co.e);
         v.sede_lat = co.vacio ? null : co.lat; v.sede_lng = co.vacio ? null : co.lng;
       }
-      var pk = leeImporte(z, 'precio_km', U('sr_precio_km')); if (pk.e) er.push(pk.e); else v.precio_km = pk.v;
-      var mi = leeImporte(z, 'minimo', U('sr_minimo')); if (mi.e) er.push(mi.e); else v.minimo = mi.v == null ? 0 : mi.v;
-      var kg = leeKm(z, 'km_gratis', U('sr_gratis')); if (kg.e) er.push(kg.e); else v.km_gratis = kg.v == null ? 0 : kg.v;
-      var kx = leeKm(z, 'km_max', U('sr_km_max')); if (kx.e) er.push(kx.e); else v.km_max = kx.v;
+      var pk = leeImporte(z, 'precio_km', U('sr_precio_km')); if (pk.e) mal('precio_km', pk.e); else v.precio_km = pk.v;
+      var mi = leeImporte(z, 'minimo', U('sr_minimo')); if (mi.e) mal('minimo', mi.e); else v.minimo = mi.v == null ? 0 : mi.v;
+      var kg = leeKm(z, 'km_gratis', U('sr_gratis')); if (kg.e) mal('km_gratis', kg.e); else v.km_gratis = kg.v == null ? 0 : kg.v;
+      var kx = leeKm(z, 'km_max', U('sr_km_max')); if (kx.e) mal('km_max', kx.e); else v.km_max = kx.v;
       var rc = marcado(z, 'cobra_recogida'); v.cobra_recogida = rc === 'si' ? true : (rc === 'no' ? false : null);
-      if (!er.length && v.km_max != null && v.km_gratis >= v.km_max && (v.km_gratis > 0)) er.push(U('sr_gratis_mayor'));
-      if (!er.length && v.activa && (!v.sede_nombre || v.sede_lat == null || v.precio_km == null || v.km_max == null || v.cobra_recogida == null)) er.push(U('sr_activa_falta'));
-      if (er.length) return { ok: false, error: er.join(' ') };
+      if (!er.length && v.km_max != null && v.km_gratis >= v.km_max && (v.km_gratis > 0)) mal('km_gratis', U('sr_gratis_mayor'));
+      if (!er.length && v.activa) {   // la frase dice todo lo que falta; lleva a la parte del primer hueco
+        var hueco = !v.sede_nombre ? 'sede_nombre' : v.sede_lat == null ? 'sede_coord' : v.precio_km == null ? 'precio_km' : v.km_max == null ? 'km_max' : v.cobra_recogida == null ? 'cobra_recogida' : null;
+        if (hueco) mal(hueco, U('sr_activa_falta'));
+      }
+      if (er.length) return { ok: false, error: er.join(' '), errores: ec };
       v.plan = planEntrega(c, v, (st.ctx.datos && st.ctx.datos.moneda) || c.moneda);
       var hay = v.plan.pasos.length > 0;
       var m = motivo(st, hay && !!st.motivo);
-      if (m.e) return { ok: false, error: m.e };
+      if (m.e) return { ok: false, error: m.e, errores: [{ c: 'sr_motivo', t: m.e }] };
       v.motivo = m.v;
       return { ok: true, v: v };
     },

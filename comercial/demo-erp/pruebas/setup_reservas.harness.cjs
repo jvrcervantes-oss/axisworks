@@ -593,21 +593,36 @@ async function rellenaAlquiler(p, o = {}) {
     await p.screenshot({ path: path.join(SHOT, 'p5_entrega_apagada_390.png'), fullPage: true });
     await p.setViewportSize({ width: 1440, height: 900 }); await p.waitForTimeout(150);
   }
+  ok('S1d entrega apagada y vacía: una sola parte, el botón NO dice «Siguiente»', (await txt(p, '[data-axw-accion="enviar"]')) !== 'Siguiente', await txt(p, '[data-axw-accion="enviar"]'));
   await p.check('[data-axw-campo="activa"]');
   const p5b = await p.evaluate(() => ({ visible: getComputedStyle(document.querySelector('[data-axw-sr-bloques="entrega"]')).display !== 'none',
     exp: document.querySelector('[data-axw-campo="activa"]').getAttribute('aria-expanded'), foco: document.activeElement && document.activeElement.getAttribute('data-axw-campo'),
     n: document.querySelectorAll('[data-axw-sr-bloques="entrega"] h3').length, fig: getComputedStyle(document.querySelector('[data-axw-sr-figura]')).display }));
   ok('P5 al encenderla: tres bloques numerados, la ilustración y el foco en «Sale desde»', p5b.visible && p5b.exp === 'true' && p5b.foco === 'sede_nombre' && p5b.n === 3 && p5b.fig !== 'none', JSON.stringify(p5b));
+  // S1d (owner 15-oct: «1, 2 o 3 campos a rellenar por paso»): encendida, 3 partes; el interruptor sigue arriba a la vista
+  ok('S1d encendida: «Parte 1 de 3», el interruptor + la tienda y sus coordenadas (3 a la vista), y «Siguiente»', (await parteVista(p)) === 1
+     && (await txt(p, '[data-axw-parte]:not([hidden]) [data-axw-parte-de]')) === 'Parte 1 de 3' && (await visibles(p, '[data-axw-sr="entrega"]')) === 3
+     && (await visLista(p)) === 'activa,sede_nombre,sede_coord' && (await txt(p, '[data-axw-accion="enviar"]')) === 'Siguiente', await visLista(p));
+  if (SHOT) await (await p.$('[data-axw-sr="entrega"]')).screenshot({ path: path.join(SHOT, 's1d_entrega_p1_1440.png') });
   await clic(p, 'enviar');
-  ok('S45 encender sin datos: dice lo que falta y no envía', ((await errorTxt(p)) || '').includes('hacen falta la tienda') && escrituras(b).length === 0, await errorTxt(p));
+  ok('S45 encender sin datos: dice lo que falta y no envía', ((await errorTxt(p)) || '').includes('hacen falta la tienda') && escrituras(b).length === 0 && (await parteVista(p)) === 1, await errorTxt(p));
   await p.fill('[data-axw-campo="sede_nombre"]', 'Tienda Canggu'); await p.fill('[data-axw-campo="sede_coord"]', '-8.65, 115.13');
-  await p.fill('[data-axw-campo="precio_km"]', '5.000'); await p.fill('[data-axw-campo="km_gratis"]', '80'); await p.fill('[data-axw-campo="km_max"]', '80'); await p.fill('[data-axw-campo="minimo"]', '15.000');
-  await p.check('[data-axw-campo="cobra_recogida"][value="si"]'); await clic(p, 'enviar');
-  ok('S45 km gratis ≥ km máximo: se dice antes de enviar', ((await errorTxt(p)) || '').includes('por debajo de la distancia máxima') && escrituras(b).length === 0, await errorTxt(p));
+  await clic(p, 'enviar');
+  ok('S1d parte 2: precio por km y km gratis a la vista (3 con el interruptor); distancia máxima (60) y mínimo plegados con su resumen', (await parteVista(p)) === 2
+     && (await visLista(p, await visibles(p, '[data-axw-sr="entrega"]'))) === 'activa,precio_km,km_gratis'
+     && await p.$eval('details[data-axw-plegado="entrega-mas"]', d => !d.open && d.querySelector('[data-axw-plegado-resumen]').textContent.includes('60 km')), await visLista(p));
+  if (SHOT) await (await p.$('[data-axw-sr="entrega"]')).screenshot({ path: path.join(SHOT, 's1d_entrega_p2_1440.png') });
+  await p.fill('[data-axw-campo="precio_km"]', '5.000'); await p.fill('[data-axw-campo="km_gratis"]', '80'); await llena(p, 'km_max', '80'); await llena(p, 'minimo', '15.000');
+  await clic(p, 'enviar');
+  ok('S45 km gratis ≥ km máximo: se dice antes de seguir (en su parte) y no envía', ((await errorTxt(p)) || '').includes('por debajo de la distancia máxima') && escrituras(b).length === 0 && (await parteVista(p)) === 2, await errorTxt(p));
   await p.fill('[data-axw-campo="km_gratis"]', '3'); await p.waitForTimeout(80);
   ok('S45 la leyenda de la ilustración sigue a lo tecleado, sin precio de ejemplo', ((await txt(p, '[data-axw-sr-figura]')) || '').includes('Gratis · hasta 3 km') && ((await txt(p, '[data-axw-sr-figura]')) || '').includes('Mínimo por trayecto: IDR 15.000'), await txt(p, '[data-axw-sr-figura]'));
   ok('S45: las partes de la leyenda van separadas (gap-x-5 no está compilado en la instancia)', (await p.$eval('figcaption', e => getComputedStyle(e).columnGap)) === '20px');
   if (SHOT) await p.screenshot({ path: path.join(SHOT, 's45_1440.png'), fullPage: true });
+  await clic(p, 'enviar');
+  ok('S1d parte 3: la recogida, y el botón vuelve al de siempre', (await parteVista(p)) === 3 && (await visLista(p, await visibles(p, '[data-axw-sr="entrega"]'))) === 'activa,r:axw-sr-cobra_recogida'
+     && (await txt(p, '[data-axw-accion="enviar"]')) !== 'Siguiente', await visLista(p));
+  await p.check('[data-axw-campo="cobra_recogida"][value="si"]');
   await clic(p, 'enviar'); await p.waitForTimeout(500);
   const ord = escrituras(b).map(x => x[0] + (x[1].p_datos && 'activa' in x[1].p_datos ? ':activa' : ''));
   ok('S45 orden: ajustes (sube km_max) → tarifa → encender', JSON.stringify(ord) === JSON.stringify(['entrega_ajustes_guarda', 'entrega_tarifa_guarda', 'entrega_ajustes_guarda:activa']), JSON.stringify(ord));
@@ -621,7 +636,7 @@ async function rellenaAlquiler(p, o = {}) {
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=entrega' }));
   await clic(p, 'cambiar'); await p.waitForSelector('[data-axw-sr="entrega"] [data-axw-campo="sede_nombre"]');
   ok('S45 encendida: la tienda es de solo lectura y pide motivo', await p.$eval('[data-axw-campo="sede_nombre"]', e => e.readOnly) && !!(await p.$('[data-axw-sr="entrega"] [data-axw-campo="sr_motivo"]')));
-  await p.fill('[data-axw-campo="precio_km"]', '6.000'); await p.fill('[data-axw-sr="entrega"] [data-axw-campo="sr_motivo"]', 'Sube la gasolina'); await clic(p, 'enviar'); await p.waitForTimeout(400);
+  await llena(p, 'precio_km', '6.000'); await llena(p, 'sr_motivo', 'Sube la gasolina'); await clic(p, 'enviar'); await p.waitForTimeout(400);
   ok('S45 40001 entrega_cambio: «otra persona ha cambiado esto»', ((await errorTxt(p)) || '').includes('Otra persona ha cambiado'), await errorTxt(p));
   await ctx.close();
 
@@ -678,9 +693,10 @@ async function rellenaAlquiler(p, o = {}) {
     if (paso === 'flota') { await p.click('[data-axw-sr-accion="anadir-unidad"]'); await p.fill('[data-axw-campo="tarifa_1"]', 'x'); }
     if (paso === 'clase') await p.check('[data-axw-campo="clase"][value="servicio"]');   // «servicio» no avanza: lleva a Productos con su aviso
     if (paso === 'reglas_reserva') await p.fill('[data-axw-campo="dias_min"]', '0');   // type=number: no admite letras; 0 está por debajo del mínimo
-    if (paso === 'entrega') { await p.check('[data-axw-campo="activa"]'); await p.fill('[data-axw-campo="precio_km"]', 'x'); }   // P5: los campos salen al encenderla
+    if (paso === 'entrega') { await p.check('[data-axw-campo="activa"]'); await p.fill('[data-axw-campo="sede_coord"]', 'x'); }   // P5: los campos salen al encenderla; S1d: la 1.ª parte
     await clic(p, 'enviar');   // que también salga el texto de error
     ok(paso + ' ' + idioma + ' ' + ancho + ': se mide esta pantalla (no la siguiente)', !!(await p.$('[data-axw-sr="' + paso + '"]')));
+    if (paso === 'entrega') ok('S1d entrega ' + idioma + ' ' + ancho + ': ≤ 3 campos a la vista en la parte en curso', (await visibles(p, '[data-axw-sr="entrega"]')) <= 3, await visLista(p));
     if (paso === 'flota') ok('S1c flota ' + idioma + ' ' + ancho + ': ≤ 3 campos a la vista en la parte en curso', (await visibles(p, '[data-axw-sr="flota"]')) <= 3, await visLista(p));
     {   // P5: a 390 la explicación va DESPUÉS de los campos; a 1440, a su derecha
       const g = await p.evaluate(() => { const i = document.querySelector('[data-axw-as="izq"]').getBoundingClientRect(), l = document.querySelector('[data-axw-as="lado"]').getBoundingClientRect(); return { iR: i.right, iB: i.bottom, lL: l.left, lT: l.top }; });

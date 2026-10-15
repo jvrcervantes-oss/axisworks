@@ -901,7 +901,7 @@
   // Cada cambio avisa con el evento 'axw-parte' {k, m}, que burbujea, para que el anfitrión cambie sus botones. avanza() mira los errores de esta
   // parte y de las de antes (errores() → [{c: campo, t: texto}]; un error sin campo, o con uno que no está, cuenta como de la última): si hay, salta
   // a la primera parte con error y no sigue. o = { padre, marca, errores(), inicio (la parte que sobrevive a una relectura), alCambiar(k) }
-  // → { nueva(titulo) → caja, listo(), avanza() → {ok}|{ok:false, error}, retrocede(), irA(errores), k, m }
+  // → { nueva(titulo) → caja, listo(), avanza() → {ok}|{ok:false, error}, retrocede(), irA(errores), solo(si), k, m }
   function partes(o) {
     function nodo(tag, attrs, txt) {
       var e = document.createElement(tag);
@@ -950,6 +950,11 @@
       return { ok: false, error: ts.join(' ') };
     };
     api.retrocede = function () { if (api.k <= 1) return false; ir(api.k - 1, true); return true; };
+    // un paso que esconde sus partes (la entrega apagada y sin nada) cuenta como de una sola: el anfitrión vuelve a su botón de siempre
+    api.solo = function (si) {
+      var m = si ? 1 : lista.length;
+      if (m !== api.m) { api.m = m; ir(1, false); }
+    };
     api.irA = function (errores) {
       var ps = (errores || []).map(function (e) { return parteDe(e.c); });
       if (ps.length) { var k = Math.min.apply(null, ps); ir(k, true); abreErrores(errores, k); }
