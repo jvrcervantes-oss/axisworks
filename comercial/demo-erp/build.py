@@ -4830,6 +4830,16 @@ TEXTOS_OTRA = (   # el resto de instancias: un ejemplo neutro, sin la villa de L
 # fila plantilla del HTML, que plantillaFilas() de datos.js clona con sus atributos: no cambia ningún índice de columna de datos.js. Lawang no pasa por aquí.
 OCULTA_POR_MODULO = (
     # (fichero en DIST, trozo de Lawang, el mismo trozo marcado)
+    # Owner 15-oct-2026 (bbm): «Si no está el módulo del asistente, ¿por qué aparece ahí?». nav.js cargaba el robot del Asistente (mascota.js)
+    # mirando solo el ROL; ahora también el módulo `asistente` de ESTA instancia, el que da su base (modulos_activos_datos, apagados_instancia.js).
+    # Se espera a saberlo (axwModuloActivo falla abierto mientras carga) y, si no se pudo comprobar, no sale: es un acceso, no un dato.
+    # Prueba: test_comodidad_instancia.py (con la forma vieja el robot sale con el módulo apagado).
+    ('intranet/v4/assets/nav.js',
+     "        sm.src = ROOT + 'assets/mascota.js?v=' + MASCOTA_V;\n        document.head.appendChild(sm);\n",
+     "        sm.src = ROOT + 'assets/mascota.js?v=' + MASCOTA_V;\n"
+     "        (window.AXW_MODULOS_LISTOS || Promise.resolve(false)).then(function (sabido) {   // ERP: solo con el módulo asistente encendido\n"
+     "          if (sabido && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('asistente')) document.head.appendChild(sm);\n"
+     "        });\n"),
     # bbm-p40 (13-oct): la columna «Proyectos» de Usuarios (cuántos proyectos tiene cada persona) sin el módulo proyectos
     ('intranet/v4/usuarios/index.html', '<th class="py-3 px-3" data-lwt>Proyectos</th>',
      '<th class="py-3 px-3" data-axw-sin="proyectos" data-lwt>Proyectos</th>'),

@@ -85,6 +85,36 @@ for rel_, viejo, nuevo, veces in otros:
         tt2 = tt.replace(viejo, nuevo)
         ok('F12: fuera el botón «Recibos» de la cabecera y «Nuevo documento» sigue', 'href="/intranet/v4/recibos/"' not in tt2.split('data-path="recibos"')[-1] and tt2.count('data-accion="nuevo-documento"') == tt.count('data-accion="nuevo-documento"'))
 
+# Robot del Asistente solo con su módulo (owner 15-oct): el bloque REAL de nav.js, parcheado y sin parchear, corrido en Node con la base
+# diciendo encendido / apagado / sin poder comprobar. La forma vieja tiene que fallar la regla (el robot sale con el módulo apagado).
+REL_NAV = 'intranet/v4/assets/nav.js'
+masc = [x for x in build.OCULTA_POR_MODULO if x[0] == REL_NAV and "axwModuloActivo('asistente')" in x[2]]
+ok('robot: en OCULTA_POR_MODULO (todas las instancias)', len(masc) == 1, len(masc))
+if masc:
+    nav = open(os.path.join(build.LAWANG, *REL_NAV.split('/')), encoding='utf-8').read()
+    ok('robot: el trozo está una vez en el nav.js de Lawang', nav.count(masc[0][1]) == 1, nav.count(masc[0][1]))
+    def bloque(t):
+        i = t.index("if (aut && aut.ficha && puedeVer('asistente', aut.ficha) &&")
+        return t[i:t.index('/* El pop-up de novedades', i)]
+    viejo_b, nuevo_b = bloque(nav), bloque(nav.replace(masc[0][1], masc[0][2]))
+    CASOS_M = [('módulo encendido', True, True, True), ('módulo apagado', False, True, True), ('sin poder comprobar los módulos', True, False, True),
+               ('sin permiso asistente', True, True, False)]
+    js = ('async function corre(b, activo, sabido, rol) { const puestos = [];'
+          ' const window = { AXW_MODULOS_LISTOS: Promise.resolve(sabido), axwModuloActivo: function (m) { return m === "asistente" ? activo : true; } };'
+          ' const document = { createElement: function () { return {}; }, head: { appendChild: function (x) { puestos.push(x); } } };'
+          ' const location = { pathname: "/intranet/v4/flota/" }, aut = { ficha: { rol: "super_admin" } }, ROOT = "/intranet/v4/", MASCOTA_V = "1";'
+          ' const puedeVer = function () { return rol; };'
+          ' eval(b); await new Promise(function (r) { setTimeout(r, 0); }); return puestos.length; }\n'
+          '(async function () { const B = %s, r = {}; for (const k of Object.keys(B)) { r[k] = []; for (const c of %s) r[k].push(await corre(B[k], c[1], c[2], c[3])); }'
+          ' console.log(JSON.stringify(r)); })();' % (json.dumps({'viejo': viejo_b, 'nuevo': nuevo_b}), json.dumps(CASOS_M)))
+    sal = subprocess.run(['node', '-e', js], capture_output=True, text=True, encoding='utf-8')
+    ok('robot: node corre el bloque de nav.js', sal.returncode == 0, sal.stderr[-300:])
+    if sal.returncode == 0:
+        res = json.loads(sal.stdout)
+        for (nombre, _, _, _), dio, esperado in zip(CASOS_M, res['nuevo'], (1, 0, 0, 0)):
+            ok('robot · ' + nombre + (' → sale' if esperado else ' → no sale'), dio == esperado, dio)
+        ok('robot: con la forma vieja la regla falla (sale con el módulo apagado)', res['viejo'][1] == 1, res['viejo'])
+
 if fallos:
     print('MAL test_comodidad_instancia: %d/%d' % (total - len(fallos), total))
     for f in fallos:
