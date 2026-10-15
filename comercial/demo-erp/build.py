@@ -6017,6 +6017,15 @@ RUTAS_IDIOMA = {
     'bancos': 'banks', 'cuentas': 'bank-accounts', 'sociedades': 'companies', 'comunicacion': 'announcements',
     'crea-contrasena': 'create-password', 'whatsapp-bot-alta': 'whatsapp-bot-signup',
     'reservas': 'reservations',   # reservado: hoy solo el aviso «pantalla no incluida»; va en el mapa para que nadie más use ese nombre
+    # Las demás pantallas del paquete (en bbm, de módulos apagados: «pantalla no incluida»), para que tampoco salgan en español si alguien llega
+    # por un enlace viejo o el módulo se enciende desde Ajustes (Idiomas, bbm-idioma-total 15-oct). contracts y templates ya son carpetas: por eso
+    # agreements y contract-templates. leads ya es inglés y no entra (un nombre igual a su clave no hace falta).
+    'proyectos': 'projects', 'proyectos-cuentas': 'project-accounts', 'documentacion': 'documents', 'asistente': 'assistant',
+    'asistente-correos': 'reply-assistant', 'agente': 'agent', 'comisiones': 'commissions', 'comision-admin': 'management-fee',
+    'condiciones': 'commission-terms', 'reparto': 'commission-split', 'equipos-venta': 'sales-teams', 'contratos': 'agreements',
+    'contratos-inversor': 'investor-agreements', 'emitir': 'issue-contract', 'plantillas': 'contract-templates',
+    'generador-contratos': 'contract-builder', 'textos-contrato': 'contract-texts', 'creatividades': 'creatives', 'modelos': 'house-models',
+    'obra': 'construction', 'soporte': 'support',
 }
 # Segundo tramo: solo bajo una pantalla del mapa. Una subcarpeta con index.html que no esté aquí PARA el build (saldría por el nombre español).
 RUTAS_SUB = {'ajustes': {'configurar': 'setup'}}
