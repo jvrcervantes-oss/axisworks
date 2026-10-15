@@ -177,6 +177,8 @@
       sr_ninguna_libre: 'No hay ninguna unidad que se pueda apuntar: da de alta las unidades primero.',
       // S45
       sr_ofrecer: 'Ofrecer entrega a domicilio',
+      sr_ofrecer_ayuda: 'Actívalo si llevas las motos a la puerta del cliente. Si no, salta este paso.',
+      sr_b_donde: '1 · Desde dónde sale', sr_b_cuanto: '2 · Cuánto cuesta', sr_b_final: '3 · Al final del alquiler',
       sr_sede_nombre: 'Sale desde (nombre de la tienda)',
       sr_sede_coord: 'Coordenadas de la tienda (lat, lng)',
       sr_sede_coord_ayuda: 'Cópialas de Google Maps: clic derecho sobre la tienda y pulsa las cifras. Por ejemplo: -8.65, 115.13',
@@ -307,7 +309,8 @@
     'Gratis · hasta %k km': 'Free · up to %k km', '%p por km después · hasta %k km': '%p per km after that · up to %k km', 'Mínimo por trayecto: %p': 'Minimum per trip: %p',
     'Ilustración · sin escala': 'Illustration · not to scale', 'Tienda': 'Shop',
     'Ilustración: la tienda en el centro, la zona gratis alrededor y la zona de pago hasta la distancia máxima.': 'Illustration: the shop in the centre, the free zone around it and the paid zone up to the maximum distance.',
-    'Más ajustes en Entrega': 'More delivery settings',
+    'Más ajustes en Entrega': 'More delivery settings', 'Actívalo si llevas las motos a la puerta del cliente. Si no, salta este paso.': 'Switch it on if you take the bikes to the customer’s door. If not, skip this step.',
+    '1 · Desde dónde sale': '1 · Where it leaves from', '2 · Cuánto cuesta': '2 · What it costs', '3 · Al final del alquiler': '3 · At the end of the rental',
     'Escribe las coordenadas como «-8.65, 115.13».': 'Write the coordinates like «-8.65, 115.13».',
     'Los km gratis tienen que quedar por debajo de la distancia máxima.': 'The free km have to stay below the maximum distance.',
     'Para ofrecer la entrega hacen falta la tienda, sus coordenadas, el precio por km, la distancia máxima y decidir la recogida.': 'To offer delivery you need the shop, its coordinates, the price per km, the maximum distance and a decision on collection.',
@@ -415,7 +418,8 @@
     'Gratis · hasta %k km': 'Gratis · sampai %k km', '%p por km después · hasta %k km': '%p per km setelahnya · sampai %k km', 'Mínimo por trayecto: %p': 'Minimum per perjalanan: %p',
     'Ilustración · sin escala': 'Ilustrasi · tidak berskala', 'Tienda': 'Toko',
     'Ilustración: la tienda en el centro, la zona gratis alrededor y la zona de pago hasta la distancia máxima.': 'Ilustrasi: toko di tengah, zona gratis di sekitarnya, dan zona berbayar sampai jarak maksimum.',
-    'Más ajustes en Entrega': 'Pengaturan lain di Pengantaran',
+    'Más ajustes en Entrega': 'Pengaturan lain di Pengantaran', 'Actívalo si llevas las motos a la puerta del cliente. Si no, salta este paso.': 'Aktifkan jika Anda mengantar motor ke depan pintu pelanggan. Jika tidak, lewati langkah ini.',
+    '1 · Desde dónde sale': '1 · Berangkat dari mana', '2 · Cuánto cuesta': '2 · Berapa biayanya', '3 · Al final del alquiler': '3 · Di akhir sewa',
     'Escribe las coordenadas como «-8.65, 115.13».': 'Tulis koordinat seperti «-8.65, 115.13».',
     'Los km gratis tienen que quedar por debajo de la distancia máxima.': 'Km gratis harus di bawah jarak maksimum.',
     'Para ofrecer la entrega hacen falta la tienda, sus coordenadas, el precio por km, la distancia máxima y decidir la recogida.': 'Untuk menawarkan pengantaran diperlukan toko, koordinatnya, harga per km, jarak maksimum, dan keputusan soal penjemputan.',
@@ -540,6 +544,16 @@
   function grupo(caja, titulo, ayuda) {
     var g = el('div', { class: 'flex flex-col gap-3 min-w-0' }, [el('span', { class: CLS_ETQ, style: 'font-weight:600', text: titulo }), ayuda ? el('span', { class: CLS_AYUDA, text: ayuda }) : null]);
     caja.appendChild(g); return g;
+  }
+  // P5: el interruptor se ve como interruptor (Diseño, 15-oct): pista de pastilla, sin sombras; colores solo por token de la piel
+  function estiloInterruptor() {
+    if (document.getElementById('axw-sr-estilo')) return;
+    var s = document.createElement('style'); s.id = 'axw-sr-estilo';
+    s.textContent = '.axw-sr-switch{-webkit-appearance:none;appearance:none;width:44px!important;height:24px!important;flex:none;margin:0;border-radius:999px;position:relative;cursor:pointer;background:rgb(var(--tema-outline-variant))}'
+      + '.axw-sr-switch::before{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:999px;background:rgb(var(--tema-surface-container-lowest));transition:transform .15s}'
+      + '.axw-sr-switch:checked{background:rgb(var(--tema-primary-container))}.axw-sr-switch:checked::before{transform:translateX(20px)}'
+      + '.axw-sr-switch:focus-visible{outline:2px solid rgb(var(--tema-primary));outline-offset:2px}';
+    document.head.appendChild(s);
   }
   function nota(caja, texto, tipo) { var p = el('p', { class: 'font-body-sm text-body-sm ' + (tipo === 'error' ? 'text-error' : 'text-on-surface-variant'), 'data-axw-sr-nota': tipo || 'info', text: texto }); caja.appendChild(p); return p; }
   function campoMotivo(caja, st) {
@@ -669,6 +683,8 @@
         st.zona = zona;
         st.recarga = function () {
           st.listo = false; st.motivo = null;
+          var viejo = ctx.lado && ctx.lado.querySelector('[data-axw-lado-de="' + def.clave + '"]');
+          if (viejo) viejo.parentNode.removeChild(viejo);   // lo que el paso puso de lado no se queda mientras relee (ni si la relectura falla)
           vacia(zona).appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', 'data-axw-sr-estado': 'cargando', text: U('cargando') }));
           return def.lee(ctx).then(function (r) {
             vacia(zona);
@@ -1237,22 +1253,34 @@
     dibuja: function (zona, st) {
       if (st.datos.noPreparada) { nota(zona, U('sr_no_preparada'), 'error'); return; }
       var c = st.datos.c, mon = (st.ctx.datos && st.ctx.datos.moneda) || c.moneda || '';
-      interruptor(zona, 'activa', U('sr_ofrecer'), c.activa);
+      // P5 (owner, 15-oct-2026: «mostrando datos poco a poco»; Diseño consultado): primero solo el interruptor; los tres bloques salen al encenderlo
+      // o si ya hay algo guardado. Todos los campos siguen en el DOM (mismos data-axw-campo, mismo guardado); con algo escrito no se esconden.
+      estiloInterruptor();
+      var sw = interruptor(zona, 'activa', U('sr_ofrecer'), c.activa);
+      sw.setAttribute('role', 'switch'); sw.classList.add('axw-sr-switch');
+      var ayudaSw = c.activa ? null : nota(zona, U('sr_ofrecer_ayuda'));
       if (c.activa) nota(zona, U('sr_activa_nota'));
+      var bloques = el('div', { id: 'axw-sr-entrega-bloques', class: 'flex flex-col gap-6 min-w-0', 'data-axw-sr-bloques': 'entrega' });
+      sw.setAttribute('aria-controls', bloques.id);
+      zona.appendChild(bloques);
+      function bloque(texto) { var b = el('section', { class: 'flex flex-col gap-4 min-w-0' }, [el('h3', { class: 'font-label-md text-[11px] tracking-[0.14em] uppercase text-outline', text: texto })]); bloques.appendChild(b); return b; }
+      var b1 = bloque(U('sr_b_donde')), b2 = bloque(U('sr_b_cuanto')), b3 = bloque(U('sr_b_final'));
       var r1 = rejilla(220);
       campo(r1, 'sede_nombre', U('sr_sede_nombre'), c.sede_nombre, { max: 120, soloLee: c.activa });
       campo(r1, 'sede_coord', U('sr_sede_coord'), c.sede_lat == null ? '' : c.sede_lat + ', ' + c.sede_lng, { max: 60, soloLee: c.activa, ayuda: c.activa ? U('sr_sede_fija') : U('sr_sede_coord_ayuda') });
-      zona.appendChild(r1);
+      b1.appendChild(r1);
       var r2 = rejilla(160);
       campo(r2, 'precio_km', U('sr_precio_km'), fmt(c.precio_km), { modo: 'decimal', antes: mon, max: 20 });
       campo(r2, 'km_gratis', U('sr_gratis'), c.precio_km == null && !c.km_gratis ? '' : fmt(c.km_gratis), { modo: 'decimal', despues: 'km', max: 8 });
       campo(r2, 'km_max', U('sr_km_max'), fmt(c.km_max), { modo: 'decimal', despues: 'km', max: 8 });
       campo(r2, 'minimo', U('sr_minimo'), c.precio_km == null && !c.minimo ? '' : fmt(c.minimo), { modo: 'decimal', antes: mon, max: 20, ayuda: U('sr_minimo_ayuda') });
-      zona.appendChild(r2);
+      b2.appendChild(r2);
       // Ilustración (S45): la tienda, la zona gratis y la de pago. Sin escala ni precio de ejemplo: el importe lo calcula la base, no la pantalla.
       var NS = 'http://www.w3.org/2000/svg';
       function svg(tag, a) { var e = document.createElementNS(NS, tag); Object.keys(a).forEach(function (k) { e.setAttribute(k, a[k]); }); return e; }
-      var fig = el('figure', { class: 'flex flex-col gap-2 text-deep-lagoon', style: 'margin:0', 'data-axw-sr-figura': '1' });
+      var lado = st.ctx.lado, vieja = lado && lado.querySelector('[data-axw-lado-de="entrega"]');
+      if (vieja) vieja.parentNode.removeChild(vieja);   // al releer, una sola ilustración
+      var fig = el('figure', { class: 'flex flex-col gap-2 text-deep-lagoon', style: 'margin:0', 'data-axw-sr-figura': '1', 'data-axw-lado-de': 'entrega' });
       var s = svg('svg', { viewBox: '0 0 680 200', role: 'img', 'aria-label': U('sr_fig_alt'), style: 'width:100%;height:auto;display:block' });
       s.appendChild(svg('circle', { cx: '340', cy: '100', r: '92', fill: 'currentColor', 'fill-opacity': '0.06', stroke: 'currentColor', 'stroke-opacity': '0.4', 'stroke-dasharray': '6 6' }));
       s.appendChild(svg('circle', { cx: '340', cy: '100', r: '30', fill: 'currentColor', 'fill-opacity': '0.16' }));
@@ -1260,7 +1288,7 @@
       var tx = svg('text', { x: '340', y: '150', 'text-anchor': 'middle', 'font-size': '14', fill: 'currentColor' }); tx.textContent = U('sr_fig_tienda'); s.appendChild(tx);
       fig.appendChild(s);
       var cap = el('figcaption', { class: 'flex flex-wrap gap-y-1 font-body-sm text-body-sm text-on-surface-variant', style: 'column-gap:20px' });   // gap-x-5 no está compilado
-      fig.appendChild(cap); zona.appendChild(fig);
+      fig.appendChild(cap); (lado || b2).appendChild(fig);   // P5: en el asistente, de lado; en Ajustes, con su precio
       function leyenda() {
         var pk = importe(val(zona, 'precio_km')), kg = val(zona, 'km_gratis') || '0', km = val(zona, 'km_max') || '—', mi = importe(val(zona, 'minimo'));
         vacia(cap);
@@ -1271,11 +1299,26 @@
       }
       zona.addEventListener('input', leyenda); leyenda();
       st.refrescaFig = leyenda;
-      seg(zona, 'cobra_recogida', U('sr_recogida'), [['si', U('sr_recogida_si')], ['no', U('sr_recogida_no')]], c.cobra_recogida === true ? 'si' : (c.cobra_recogida === false ? 'no' : ''));
-      zona.appendChild(el('a', { href: RAIZ + 'entrega/', class: 'font-label-md text-label-md text-deep-lagoon underline self-start', style: 'min-height:24px', 'data-axw-sr-accion': 'abrir-entrega', text: U('sr_mas_entrega') }));
+      seg(b3, 'cobra_recogida', U('sr_recogida'), [['si', U('sr_recogida_si')], ['no', U('sr_recogida_no')]], c.cobra_recogida === true ? 'si' : (c.cobra_recogida === false ? 'no' : ''));
+      bloques.appendChild(el('a', { href: RAIZ + 'entrega/', class: 'font-label-md text-label-md text-deep-lagoon underline self-start', style: 'min-height:24px', 'data-axw-sr-accion': 'abrir-entrega', text: U('sr_mas_entrega') }));
       if (c.sede_nombre || c.precio_km != null || c.activa) campoMotivo(zona, st);
+      // Abierto por lo GUARDADO (km_max no cuenta: la base lo trae a 60 por defecto) o por lo TECLEADO respecto a lo pintado (el borrador restaurado cuenta)
+      var guardado = c.activa || !!c.sede_nombre || c.sede_lat != null || c.tarifa_id != null || c.cobra_recogida != null;
+      var campos = [].slice.call(bloques.querySelectorAll('input'));
+      var inicial = campos.map(function (i) { return (i.type === 'radio' || i.type === 'checkbox') ? i.checked : i.value; });
+      function tecleado() { return campos.some(function (i, k) { return ((i.type === 'radio' || i.type === 'checkbox') ? i.checked : i.value) !== inicial[k]; }); }
+      st.aplicaEntrega = function (porUsuario) {
+        var abierto = sw.checked || guardado || tecleado();
+        if (st.ctx.falta) st.ctx.falta.style.display = (sw.checked || c.activa) ? '' : 'none';   // apagada, «Falta: entrega encendida…» no dice nada útil
+        bloques.style.display = abierto ? '' : 'none'; sw.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+        if (ayudaSw) ayudaSw.hidden = abierto;
+        fig.style.display = abierto ? '' : 'none';   // sin tienda ni precio, la ilustración solo diría «hasta 0 km»
+        if (porUsuario && sw.checked) { var f = bloques.querySelector('input:not([readonly])'); if (f) f.focus(); }   // el foco, solo si lo enciende la persona
+      };
+      sw.addEventListener('change', function () { st.aplicaEntrega(true); });
+      st.aplicaEntrega(false);
     },
-    refresca: function (st) { if (st.refrescaFig) st.refrescaFig(); },
+    refresca: function (st) { if (st.refrescaFig) st.refrescaFig(); if (st.aplicaEntrega) st.aplicaEntrega(false); },
     valores: function (st) {
       if (st.datos.noPreparada) return { ok: false, error: U('sr_no_preparada') };
       var z = st.zona, c = st.datos.c, v = {}, er = [];

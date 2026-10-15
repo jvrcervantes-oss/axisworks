@@ -116,7 +116,7 @@
       } else if (p.irreversible || comp.soloAsistente) {   // la clase (S40) no guarda sola: se elige en el asistente, camino del primer alquiler
         acciones.appendChild(h('a', { href: enlaceAsistente(p.modulo, p.clave), 'data-pm-asistente-paso': p.clave, class: BTN2, text: U('abrir_asistente') }));
       } else {
-        acciones.appendChild(h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-editar', 'data-pm-paso': p.clave, 'data-pm-modulo': p.modulo, class: BTN2, text: p.hecho ? U('cambiar') : S.texto('general', 'configurar') }));
+        acciones.appendChild(h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-editar', 'data-pm-cambiar': p.clave, 'data-pm-paso': p.clave, 'data-pm-modulo': p.modulo, class: BTN2, text: p.hecho ? U('cambiar') : S.texto('general', 'configurar') }));
       }
     }
     var li = h('li', { class: 'py-3 flex flex-col gap-3 border-t border-outline-variant/20', 'data-pm-fila': p.clave }, [
@@ -124,9 +124,12 @@
     li._paso = p;
     return li;
   }
+  // ── «Cambiar»/«Configurar» abren la ventana emergente común (AXW_SETUP.ventana; owner 15-oct: «si le doy a change aquí… me abra un pop up con la
+  // info»). Vive DENTRO de la fila (li[data-pm-fila]): se pinta en la capa de arriba igual y el clic de Guardar sigue llegando a la delegación de
+  // #lw-aj-puesta con su fila. Cerrar la borra del DOM y le pide al componente que descarte lo escrito (cobros guarda claves en memoria).
   function editor(li) {
     var p = li._paso, comp = P.de(p.clave, p);
-    var viejo = li.querySelector('[data-pm-editor]'); if (viejo) { li.removeChild(viejo); return; }
+    var viejo = li.querySelector('dialog[data-pm-ventana]'); if (viejo) return;
     var caja = h('div', { class: 'flex flex-col gap-3', 'data-pm-editor': p.clave });
     var ctl = comp.pinta(caja, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: p.hecho });
     var motivo = null;
@@ -136,27 +139,35 @@
       caja.appendChild(h('div', { class: 'flex flex-col gap-1.5' }, [h('label', { for: 'pm-motivo-' + p.clave, class: 'font-label-md text-label-md text-on-surface', text: U('motivo') }), motivo,
         h('span', { class: 'font-body-sm text-body-sm text-outline', text: U('motivo_ayuda') })]));
     }
-    var estado = h('span', { role: 'status', 'aria-live': 'polite', class: 'font-body-sm text-body-sm text-outline', 'data-pm-estado': p.clave });
-    caja.appendChild(h('div', { class: 'flex flex-col md:flex-row md:items-center gap-3' }, [
-      h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-guardar', 'data-pm-paso': p.clave, class: BTN1, text: U('guardar') }), estado]));
-    caja._ctl = ctl; caja._motivo = motivo; caja._estado = estado;
-    li.appendChild(caja);
+    var v = S.ventana({
+      padre: li, marca: ['data-pm-ventana', p.clave], cuerpo: caja, cls2: BTN2,
+      etiqueta: S.nombreModulo(p.modulo), titulo: S.texto('paso', p.clave, 0),
+      ayuda: p.hecho ? S.texto('paso', p.clave, 1) : (p.falta ? S.textoFalta(p.falta) : S.texto('paso', p.clave, 1)),
+      botones: [h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-guardar', 'data-pm-paso': p.clave, class: BTN1, text: U('guardar') })],
+      ocupado: function () { return ocupado; },
+      alCerrar: function () { if (ctl && typeof ctl.descarta === 'function') ctl.descarta(); },
+      vuelta: function () { return document.querySelector('[data-pm-cambiar="' + p.clave + '"]'); }
+    });
+    v.estado.setAttribute('data-pm-estado', p.clave);
+    caja._ctl = ctl; caja._motivo = motivo; caja._estado = v.estado; caja._v = v;
+    v.abre();
   }
   function guarda(li) {
     if (ocupado) return;
-    var p = li._paso, caja = li.querySelector('[data-pm-editor]');
-    if (!caja) return;
+    var p = li._paso, caja = li.querySelector('[data-pm-editor]'), dlg = li.querySelector('dialog[data-pm-ventana]');
+    if (!caja || !dlg || !caja._v) return;
+    var botones = dlg.querySelectorAll('button');
     var est = caja._estado, r = caja._ctl.valores();
     function di(t, mal) { est.className = 'font-body-sm text-body-sm ' + (mal ? 'text-error' : 'text-outline'); est.textContent = t; }
     if (!r.ok) { di(r.error, true); return; }
     var motivo = caja._motivo ? caja._motivo.value.trim() : '';
     if (caja._motivo && (motivo.match(/\p{L}/gu) || []).length < 3) { di(U('motivo_corto'), true); caja._motivo.focus(); return; }
     ocupado = true; di(U('cargando'), false);
-    caja.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+    Array.prototype.forEach.call(botones, function (b) { b.disabled = true; });
     P.de(p.clave, p).guarda(sb, r.v, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad }, false, motivo || null).then(function (res) {
-      if (res.ok) { ocupado = false; return carga(); }
+      if (res.ok) { ocupado = false; return guardadoYCierra(caja._v, p.clave); }
       if (!res.sinRespuesta) {   // con código de la base: «no se guardó», y por qué
-        ocupado = false; caja.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+        ocupado = false; Array.prototype.forEach.call(botones, function (b) { b.disabled = false; });
         di(U('no_se_guardo', { e: S.explica(res.error, true).texto }), true); return;
       }
       di(U('comprobando'), false);   // sin respuesta: se relee la base; nada se reenvía solo
@@ -166,12 +177,18 @@
         var comp = P.de(p.clave, p);
         var ahora = rr.ok && rr.ctx.datos.pasos.filter(function (x) { return x.clave === p.clave && x.modulo === p.modulo; })[0];
         var guardado = rr.ok && (comp.comprueba ? comp.comprueba(r.v, rr.ctx) : !!(ahora && ahora.hecho && !p.hecho));
-        if (guardado) { ctx = rr.ctx; pinta(); return; }
-        caja.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+        if (guardado) { ctx = rr.ctx; caja._v.cierra(true); pinta(); enfoca(p.clave); return; }
+        Array.prototype.forEach.call(botones, function (b) { b.disabled = false; });
         di(rr.ok ? U('no_guardado') : U('no_mirar'), true);
       });
+    }).catch(function () {   // un componente que rechaza (no devuelve {ok:false}) no deja la ventana sin salida
+      ocupado = false; Array.prototype.forEach.call(botones, function (b) { b.disabled = false; });
+      if (dlg.parentNode) di(U('no_mirar'), true);
     });
   }
+  // guardado: se cierra la ventana, se relee la base y el foco vuelve al «Cambiar» de ese paso (pinta() vacía el contenedor)
+  function enfoca(clave) { var b = document.querySelector('[data-pm-cambiar="' + clave + '"]'); if (b) b.focus(); }
+  function guardadoYCierra(v, clave) { v.cierra(true); return carga().then(function () { enfoca(clave); }); }
   function arranca() {
     var c = cont();
     if (!c) return;

@@ -131,6 +131,15 @@
     cajas.forEach(function (c) { if (document.body.contains(c)) dibuja(c); });
   });
 
+  // Cerrar la ventana sin guardar (S10): lo escrito sale de los <input> Y de la memoria, y las demás cajas abiertas se repintan con lo vaciado.
+  // Sin esto una clave descartada volvía al reabrir (inp.value = M.valores[k]) y recoge() la habría mandado con el siguiente «pedir código».
+  function descarta() {
+    limpia();
+    if (!M) return;
+    M.fase = 'editar'; M.correo = ''; M.codigo = ''; M.confirma = ''; M.confirmaMandada = null; M.aviso = ''; M.fallo = null; M.faltan = [];
+    if (M.est) { M.modo = M.est.modo || 'test'; CAMPOS.forEach(function (k) { M.reemplaza[k] = !M.est.claves[k].configurada; }); }
+    cajas.forEach(function (c) { if (document.body.contains(c) && M.est) dibuja(c); });
+  }
   function nuevoM(est, pide) {
     var r = {};
     CAMPOS.forEach(function (k) { r[k] = !est.claves[k].configurada; });
@@ -171,7 +180,8 @@
         if (!/^[0-9]{6}$/.test(cod) || !pass) return { ok: false, error: C('escribe_codigo') };
         M.raiz = raiz;   // guarda() lee el código y la contraseña de ESTA caja (en /ajustes/ puede haber dos: la pestaña y Configurar módulos)
         return { ok: true, v: {} };   // los secretos NO salen de este fichero: el anfitrión guarda v en su estado
-      }
+      },
+      descarta: descarta
     };
   }
 
@@ -788,8 +798,21 @@
         return;
       }
       var paso = datos.pasos.filter(function (p) { return p.clave === 'cobros'; })[0];
-      var cuerpo = el('div', { class: 'flex flex-col gap-5', style: 'padding:24px clamp(16px,3vw,32px)' });
-      panel.appendChild(cuerpo);
+      // S10 (owner 15-oct: «si le doy a change aquí… me abra un pop up con la info»): en la pestaña, el estado del paso y UN botón; el componente
+      // va en la ventana común (AXW_SETUP.ventana), montado ya y cerrado: una sola llamada a `estado`, y el bloque del bot sale sin abrirla
+      var hecho = !!(paso && paso.hecho);
+      var abrir = boton(hecho ? S().ui('cambiar') : S().texto('general', 'configurar'), 'host-abrir', hecho ? BTN2 : BTN1);
+      abrir.setAttribute('data-axw-cobros-host', 'abrir');
+      panel.appendChild(el('div', { class: 'rounded-2xl border border-outline-variant px-5 py-5 flex flex-col md:flex-row md:items-center justify-between gap-3',
+        style: 'margin:12px clamp(16px,3vw,32px)', 'data-axw-cobros-host': 'resumen' }, [
+        el('div', { class: 'flex flex-col gap-1 min-w-0' }, [
+          el('span', { class: 'font-label-md text-label-md text-on-surface', text: S().texto('paso', 'cobros', 0) }),
+          el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant break-words',
+            text: !hecho && paso && paso.falta ? S().textoFalta(paso.falta) : S().texto('paso', 'cobros', 1) })]),
+        el('div', { class: 'flex items-center gap-3' }, [
+          el('span', { class: 'shrink-0 px-3 py-1 rounded-full font-label-md text-[13px] ' + (hecho ? 'bg-primary-container text-on-primary' : 'bg-surface-container-high text-on-surface'),
+            'data-axw-cobros-hecho': hecho ? '1' : '0', text: S().ui(hecho ? 'hecho' : 'pendiente') }), abrir])]));
+      var cuerpo = el('div', { class: 'flex flex-col gap-5' });
       var bot = el('div', { 'data-axw-bot-backend': 'bloque', class: 'rounded-2xl border border-outline-variant bg-surface-container-low px-5 py-5 flex flex-col gap-4',
         style: 'margin:0 clamp(16px,3vw,32px) 24px;min-width:0' });
       bot.hidden = true;
@@ -801,25 +824,35 @@
         bloqueBot(bot, b, datos.pasos);
       });
       var ctl = pinta(cuerpo, { paso: paso, datos: datos });
-      var est = el('p', { role: 'status', 'aria-live': 'polite', class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-cobros-host': 'estado' });
       var g = boton(C('probar_guardar'), 'host-guardar', BTN1);
       g.setAttribute('data-axw-cobros-host', 'guardar');
-      var pie = el('div', { class: 'flex flex-col md:flex-row md:items-center gap-3', style: 'padding:0 clamp(16px,3vw,32px) 24px' }, [g, est]);
-      panel.appendChild(pie);
+      var guardando = false;
+      var v = S().ventana({ padre: panel, marca: ['data-axw-cobros-ventana', '1'], cuerpo: cuerpo, cls2: BTN2, conserva: true,
+        titulo: C('titulo'), ayuda: C('lead'), botones: [g],
+        ocupado: function () { return guardando; },
+        alCerrar: function () { ctl.descarta(); },   // lo escrito sale de los <input> y de la memoria del componente
+        vuelta: function () { return abrir; } });
+      var est = v.estado;
+      est.setAttribute('data-axw-cobros-host', 'estado');
+      abrir.addEventListener('click', function () { v.abre(); });
       g.hidden = true;
       cuerpo.addEventListener('axw-cobros-fase', function (ev) { g.hidden = !(ev.detail && ev.detail.fase === 'codigo'); if (g.hidden) est.textContent = ''; });
       g.addEventListener('click', function () {
         var r = ctl.valores();
         if (!r.ok) { est.className = 'font-body-sm text-body-sm text-error'; est.textContent = r.error; return; }
-        g.disabled = true; est.className = 'font-body-sm text-body-sm text-on-surface-variant'; est.textContent = S().ui('cargando');
+        g.disabled = true; guardando = true; est.className = 'font-body-sm text-body-sm text-on-surface-variant'; est.textContent = S().ui('cargando');
         guarda(null, r.v, { paso: paso, datos: datos }).then(function (res) {
-          g.disabled = false;
-          if (res.ok) {   // se relee todo: lo que se ve lo dice la base
+          g.disabled = false; guardando = false;
+          if (res.ok) {   // se relee todo: lo que se ve lo dice la base (la ventana se cierra; monta() la rehace cerrada)
+            v.cierra(true);
             S().estado(true).then(function (e) { if (e.ok) datos = e.datos; montado = false; monta(); });
             return;
           }
           est.className = 'font-body-sm text-body-sm text-error';
           est.textContent = S().ui('no_se_guardo', { e: S().explica(res.error, true).texto });
+        }).catch(function () {   // un rechazo no deja la ventana sin salida (no se puede cerrar mientras `guardando`)
+          g.disabled = false; guardando = false;
+          est.className = 'font-body-sm text-body-sm text-error'; est.textContent = S().ui('no_mirar');
         });
       });
     }
