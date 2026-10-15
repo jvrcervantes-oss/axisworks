@@ -2263,6 +2263,22 @@ MENU_I18N = {
     '← Anteriores': {'en': '← Previous', 'id': '← Sebelumnya'},
     'Siguientes →': {'en': 'Next →', 'id': 'Berikutnya →'},
     'de': {'en': 'of', 'id': 'dari'},
+    # cabecera del CSV de Gastos, ahora por T (bbm-cola-2 T1, 15-oct): las que el diccionario de Lawang no tenía, y el indonesio de todas
+    'Nº factura': {'en': 'Invoice no.', 'id': 'No. invoice'},
+    'Impuesto': {'en': 'Tax', 'id': 'Pajak'},
+    'Tipo PPh': {'en': 'PPh type', 'id': 'Jenis PPh'},
+    'Cuenta de pago': {'en': 'Payment account', 'id': 'Rekening pembayaran'},
+    'Motivo anulación': {'en': 'Cancellation reason', 'id': 'Alasan pembatalan'},
+    'Proveedor': {'en': 'Supplier', 'id': 'Pemasok'},
+    'Categoría': {'en': 'Category', 'id': 'Kategori'},
+    'Concepto': {'en': 'Concept', 'id': 'Keterangan'},
+    'Base': {'en': 'Base', 'id': 'DPP'},
+    'Total': {'en': 'Total', 'id': 'Total'},
+    'Retención PPh': {'en': 'PPh withholding', 'id': 'Pemotongan PPh'},
+    'Retención ingresada': {'en': 'Withholding paid', 'id': 'Pemotongan disetor'},
+    'Moneda': {'en': 'Currency', 'id': 'Mata uang'},
+    'Vence': {'en': 'Due', 'id': 'Jatuh tempo'},
+    'Pagado el': {'en': 'Paid on', 'id': 'Dibayar pada'},
     'Reservas de producto': {'en': 'Product bookings', 'id': 'Booking sewa motor'},
     'Configurar módulos': {'en': 'Module setup', 'id': 'Penyiapan modul'},
     'Interruptores de comisiones': {'en': 'Commission switches', 'id': 'Sakelar komisi'},
@@ -4817,6 +4833,25 @@ COMODIDAD_INSTANCIA = (
     ('intranet/v4/assets/nav.js', '    if (cab && cab.parentNode) cab.parentNode.insertBefore(barra, cab.nextSibling);\n    else main.insertBefore(barra, main.firstChild);',
      '    if (mias.length < 2) { /* una sola pestaña: sin barra */ } else if (cab && cab.parentNode) cab.parentNode.insertBefore(barra, cab.nextSibling);\n'
      '    else main.insertBefore(barra, main.firstChild);', 1),
+    # bbm-cola-2 T1 (15-oct-2026, owner por agencia-c0: Gastos «lleva textos de Lawang» en un negocio de alquiler de motos). Con el módulo
+    # proyectos APAGADO (dato de la base: axwModuloActivo devuelve false solo entonces; sin saber, todo como siempre):
+    #   · el formulario no ofrece «Proyecto» (un gasto ya guardado CON proyecto lo sigue enseñando: no se pierde el dato); sin el campo,
+    #     el envío manda proyecto_id null, igual que elegir «General (sin proyecto)»;
+    #   · la celda de la lista lleva data-axw-sin="proyectos" (la regla CSS va en gastos/index.html, OCULTA_POR_MODULO);
+    #   · la ficha no enseña «Proyecto: General (sin proyecto)».
+    # Y la cabecera del CSV pasa por T (en Lawang era español fijo en toda lengua; en español no cambia).
+    ('intranet/v4/assets/panel-gastos.js', "  function camposGasto(g) {\n    g = g || {};\n    var socs = sociedades();\n    return [\n",
+     "  function camposGasto(g) {\n    g = g || {};\n    var socs = sociedades();\n"
+     "    var sinProy = !g.proyecto_id && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false;\n    return [\n", 1),
+    ('intranet/v4/assets/panel-gastos.js', "      { k: 'notas', label: T('Notas'), tipo: 'textarea', valor: g.notas || '' }\n    ];\n",
+     "      { k: 'notas', label: T('Notas'), tipo: 'textarea', valor: g.notas || '' }\n    ].filter(function (c) { return !(sinProy && c.k === 'proyecto_id'); });\n", 1),
+    ('intranet/v4/assets/panel-gastos.js', "'<td class=\"px-5 py-3 font-body-sm text-body-sm\">' + esc(proy) + '</td>' +",
+     "'<td class=\"px-5 py-3 font-body-sm text-body-sm\" data-axw-sin=\"proyectos\">' + esc(proy) + '</td>' +", 1),
+    ('intranet/v4/assets/panel-gastos.js', "H.dato(T('Proyecto'), proy) +",
+     "(!g.proyecto_id && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false ? '' : H.dato(T('Proyecto'), proy)) +", 1),
+    ('intranet/v4/assets/panel-gastos.js', "    var filas = [['Fecha', 'Sociedad', 'Proyecto', 'Proveedor', 'Categoría', 'Concepto', 'Nº factura', 'Base', 'Impuesto', 'Total', 'Retención PPh', 'Tipo PPh', 'Retención ingresada', 'Moneda', 'Estado', 'Vence', 'Pagado el', 'Cuenta de pago', 'Motivo anulación']]\n",
+     "    var filas = [['Fecha', 'Sociedad', 'Proyecto', 'Proveedor', 'Categoría', 'Concepto', 'Nº factura', 'Base', 'Impuesto', 'Total', 'Retención PPh', 'Tipo PPh', 'Retención ingresada', 'Moneda', 'Estado', 'Vence', 'Pagado el', 'Cuenta de pago', 'Motivo anulación'].map(T)]\n", 1),
+    ('intranet/v4/assets/panel-gastos.js', "proyPorId[g.proyecto_id].nombre : 'General',", "proyPorId[g.proyecto_id].nombre : T('General'),", 1),
     # bbm-comodidad F12: Facturas tenía el botón «Recibos» en la cabecera Y la pestaña «Recibos» justo debajo (la barra del grupo Cobros). Quien
     # puede abrir Recibos tiene la pestaña; quien no, tampoco podía usar el botón. Se quita el botón.
     ('intranet/v4/facturas/index.html', '<a class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors shadow-sm font-label-md text-label-md" href="/intranet/v4/recibos/">\n'
@@ -4866,6 +4901,10 @@ OCULTA_POR_MODULO = (
      '<li data-axw-sin="proyectos" data-lwt>La compra de suelo es inversión, no gasto de explotación: Finanzas la enseña aparte. Nunca se paga un gasto desde una cuenta de escrow.</li>'),
     ('intranet/v4/gastos/index.html', '<select id="lw-gas-f-proyecto" class="',
      '<select id="lw-gas-f-proyecto" data-axw-sin="proyectos" class="'),
+    # bbm-cola-2 T1 (15-oct-2026, owner por agencia-c0: Gastos «lleva textos de Lawang»): la columna «Proyecto» de la lista; su celda la pinta
+    # panel-gastos.js con la misma marca (COMODIDAD_INSTANCIA), y la regla CSS de esta página la cubre
+    ('intranet/v4/gastos/index.html', '<th class="px-5 py-3 font-label-md text-[11px] uppercase tracking-wider text-outline" data-lwt>Proyecto</th>',
+     '<th class="px-5 py-3 font-label-md text-[11px] uppercase tracking-wider text-outline" data-axw-sin="proyectos" data-lwt>Proyecto</th>'),
 )
 # El editor de factura de una instancia SIN el módulo contratos y cuya empresa permite facturar sin contrato nace en el modo «sin contrato» que ya
 # existe (el cliente se elige en el editor) y no enseña el selector de contrato, que solo podía ofrecer «— sin contrato —». Mismo camino que pulsar
