@@ -2366,6 +2366,9 @@ MENU_I18N = {
     'Entrega': {'en': 'Delivery', 'id': 'Antar'},
     'Flota y tarifas': {'en': 'Fleet and rates', 'id': 'Armada dan tarif'},
     'Ventas': {'en': 'Sales', 'id': 'Penjualan'},
+    # el menú de una instancia con "aaas": true (aaas_en_paquete, tren 5 de bbm, 15-oct): «AaaS» es el nombre del producto, igual en los tres
+    # idiomas (owner, 13-oct; ya en IGUALES_EN_ID), pero sin entrada aquí lwT lo contaba como sin traducir en las 54 pantallas (LW_T_MISSES)
+    'AaaS': {'en': 'AaaS', 'id': 'AaaS'},
     # paginador común (bbm-cola-2 T1, 15-oct): el inglés ya está en el diccionario de Lawang y no se pisa; aquí entra el indonesio
     '← Anteriores': {'en': '← Previous', 'id': '← Sebelumnya'},
     'Siguientes →': {'en': 'Next →', 'id': 'Berikutnya →'},
