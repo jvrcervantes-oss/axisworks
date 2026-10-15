@@ -88,8 +88,9 @@ for rel_, viejo, nuevo, veces in otros:
 # Robot del Asistente solo con su módulo (owner 15-oct): el bloque REAL de nav.js, parcheado y sin parchear, corrido en Node con la base
 # diciendo encendido / apagado / sin poder comprobar. La forma vieja tiene que fallar la regla (el robot sale con el módulo apagado).
 REL_NAV = 'intranet/v4/assets/nav.js'
-masc = [x for x in build.OCULTA_POR_MODULO if x[0] == REL_NAV and "axwModuloActivo('asistente')" in x[2]]
-ok('robot: en OCULTA_POR_MODULO (todas las instancias)', len(masc) == 1, len(masc))
+masc = [x for x in build.ACCESOS_POR_MODULO if x[0] == REL_NAV and "axwModuloActivo('asistente')" in x[2]]
+ok('robot: en ACCESOS_POR_MODULO (todas las instancias, la aplica oculta_por_modulo)', len(masc) == 1, len(masc))
+ok('robot: oculta_por_modulo() recorre ACCESOS_POR_MODULO', '+ PERMISOS_POR_MODULO + ACCESOS_POR_MODULO:' in open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read())
 if masc:
     nav = open(os.path.join(build.LAWANG, *REL_NAV.split('/')), encoding='utf-8').read()
     ok('robot: el trozo está una vez en el nav.js de Lawang', nav.count(masc[0][1]) == 1, nav.count(masc[0][1]))
