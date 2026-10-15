@@ -683,6 +683,47 @@ async function rellenaAlquiler(p, o = {}) {
 
   // ── 10. Cada paso a 390 y 1440 en es/en/id: sin scroll horizontal, sin español en en/id; ningún código sin frase ──────────────────────────
   const PANTALLAS = [['clase', {}], ['flota', { conProducto: true }], ['reglas_reserva', { conProducto: true, conPrevio: true }], ['alquileres_previos', { conProducto: true }], ['entrega', { conProducto: true, conPrevio: true }]];
+  // ── S1 · medida de toques (Experiencia, S0): «setup de un cliente nuevo: reglas, una moto alquilada hasta el viernes, Entrega». Un toque = un
+  // clic o un campo rellenado por la persona; abrir la página no cuenta. El «antes» (todo a la vista, código anterior a S1a) se cuenta con los
+  // mismos datos: reglas 1 (guardar lo que trae la base) · ya alquilado 5 (¿alguna fuera?, moto, desde, hasta, guardar) · entrega 6 (encender,
+  // tienda, coordenadas, precio por km, recogida, guardar). Las partes suman sus «Siguiente»; lo que viene puesto (desde = hoy) los resta.
+  {
+    const T = { reglas: 0, previos: 0, entrega: 0 };
+    const toque = async (k, f) => { T[k]++; await f(); };
+    b = base({ conProducto: true });
+    ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=reglas_reserva' }));
+    await p.waitForSelector('[data-axw-sr="reglas_reserva"] [data-axw-campo="dias_min"]');
+    await toque('reglas', () => clic(p, 'enviar')); await p.waitForTimeout(300);
+    const okReglas = llamadas(b, 'reservas_reglas_guarda').length === 1;
+    await ctx.close();
+    ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=alquileres_previos' }));
+    await p.waitForSelector('[data-axw-sr="alquileres_previos"] [data-axw-campo="fuera"]');
+    const viernes = hoy(((5 - new Date().getDay() + 7) % 7) || 7);
+    await toque('previos', () => p.check('[data-axw-campo="fuera"][value="si"]')); await p.waitForTimeout(80);
+    const uni = await p.$eval('[data-axw-campo="pu_0"]', s => [...s.options].map(o => o.value).filter(Boolean)[0]);
+    await toque('previos', () => p.selectOption('[data-axw-campo="pu_0"]', uni));
+    await toque('previos', () => p.fill('[data-axw-campo="ph_0"]', viernes));
+    await toque('previos', () => clic(p, 'enviar')); await p.waitForTimeout(300);
+    const okPrevios = llamadas(b, 'reservas_previas_guarda').length === 1;
+    await ctx.close();
+    ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=entrega' }));
+    await p.waitForSelector('[data-axw-sr="entrega"] [data-axw-campo="activa"]');
+    await toque('entrega', () => p.check('[data-axw-campo="activa"]'));
+    await toque('entrega', () => p.fill('[data-axw-campo="sede_nombre"]', 'Tienda Canggu'));
+    await toque('entrega', () => p.fill('[data-axw-campo="sede_coord"]', '-8.65, 115.13'));
+    await toque('entrega', () => clic(p, 'enviar'));   // Siguiente
+    await toque('entrega', () => p.fill('[data-axw-campo="precio_km"]', '5.000'));
+    await toque('entrega', () => clic(p, 'enviar'));   // Siguiente (km máximo: el que trae la base)
+    await toque('entrega', () => p.check('[data-axw-campo="cobra_recogida"][value="si"]'));
+    await toque('entrega', () => clic(p, 'enviar')); await p.waitForTimeout(500);
+    const okEntrega = b.entrega.ajustes.activa === true;
+    console.log('MEDIDA S1 toques (antes → después): reglas 1 → ' + T.reglas + ' · ya alquilado 5 → ' + T.previos + ' · entrega 6 → ' + T.entrega
+      + ' · total 12 → ' + (T.reglas + T.previos + T.entrega));
+    ok('S1 toques: la tarea se completa (reglas, una moto fuera hasta el viernes, entrega encendida) con 1 + 4 + 8 toques', okReglas && okPrevios && okEntrega
+       && T.reglas === 1 && T.previos === 4 && T.entrega === 8, JSON.stringify({ T, okReglas, okPrevios, okEntrega }));
+    await ctx.close();
+  }
+
   for (const [paso, o] of PANTALLAS) for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
     b = base(o);
     ({ p, ctx } = await abre(nav, b, { idioma, ancho, url: '/ajustes/configurar/?modulo=reservas-producto&paso=' + paso }));
