@@ -675,7 +675,7 @@
      → Promise<{ok}|{ok:false, error}>, soloAsistente?}. st = {clave, ctx, datos, zona, motivo, filas, recarga()}. */
   function autonomo(def) {
     return {
-      sinMotivo: true, soloAsistente: !!def.soloAsistente, sinFalta: !!def.sinFalta,
+      sinMotivo: true, soloAsistente: !!def.soloAsistente,
       pinta: function (caja, ctx) {
         var st = { clave: def.clave, ctx: ctx, listo: false, filas: {} };
         var zona = el('div', { class: 'flex flex-col gap-5 min-w-0', 'data-axw-sr': def.clave });
@@ -683,6 +683,8 @@
         st.zona = zona;
         st.recarga = function () {
           st.listo = false; st.motivo = null;
+          var viejo = ctx.lado && ctx.lado.querySelector('[data-axw-lado-de="' + def.clave + '"]');
+          if (viejo) viejo.parentNode.removeChild(viejo);   // lo que el paso puso de lado no se queda mientras relee (ni si la relectura falla)
           vacia(zona).appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', 'data-axw-sr-estado': 'cargando', text: U('cargando') }));
           return def.lee(ctx).then(function (r) {
             vacia(zona);
@@ -1239,7 +1241,6 @@
   }
   var entrega = autonomo({
     clave: 'entrega',
-    sinFalta: true,   // P5: apagada, la falta de la base («entrega encendida, punto de entrega…») no tiene sentido; el paso lo dice él
     lee: function () {
       return lee('entrega_datos', {}).then(function (r) {
         if (!r.ok) return r;
@@ -1277,9 +1278,9 @@
       // Ilustración (S45): la tienda, la zona gratis y la de pago. Sin escala ni precio de ejemplo: el importe lo calcula la base, no la pantalla.
       var NS = 'http://www.w3.org/2000/svg';
       function svg(tag, a) { var e = document.createElementNS(NS, tag); Object.keys(a).forEach(function (k) { e.setAttribute(k, a[k]); }); return e; }
-      var lado = st.ctx.lado, vieja = lado && lado.querySelector('[data-axw-sr-figura]');
+      var lado = st.ctx.lado, vieja = lado && lado.querySelector('[data-axw-lado-de="entrega"]');
       if (vieja) vieja.parentNode.removeChild(vieja);   // al releer, una sola ilustración
-      var fig = el('figure', { class: 'flex flex-col gap-2 text-deep-lagoon', style: 'margin:0', 'data-axw-sr-figura': '1' });
+      var fig = el('figure', { class: 'flex flex-col gap-2 text-deep-lagoon', style: 'margin:0', 'data-axw-sr-figura': '1', 'data-axw-lado-de': 'entrega' });
       var s = svg('svg', { viewBox: '0 0 680 200', role: 'img', 'aria-label': U('sr_fig_alt'), style: 'width:100%;height:auto;display:block' });
       s.appendChild(svg('circle', { cx: '340', cy: '100', r: '92', fill: 'currentColor', 'fill-opacity': '0.06', stroke: 'currentColor', 'stroke-opacity': '0.4', 'stroke-dasharray': '6 6' }));
       s.appendChild(svg('circle', { cx: '340', cy: '100', r: '30', fill: 'currentColor', 'fill-opacity': '0.16' }));
@@ -1301,9 +1302,14 @@
       seg(b3, 'cobra_recogida', U('sr_recogida'), [['si', U('sr_recogida_si')], ['no', U('sr_recogida_no')]], c.cobra_recogida === true ? 'si' : (c.cobra_recogida === false ? 'no' : ''));
       bloques.appendChild(el('a', { href: RAIZ + 'entrega/', class: 'font-label-md text-label-md text-deep-lagoon underline self-start', style: 'min-height:24px', 'data-axw-sr-accion': 'abrir-entrega', text: U('sr_mas_entrega') }));
       if (c.sede_nombre || c.precio_km != null || c.activa) campoMotivo(zona, st);
-      function hayDatos() { return [].some.call(bloques.querySelectorAll('input'), function (i) { return (i.type === 'radio' || i.type === 'checkbox') ? i.checked : !!String(i.value).trim(); }); }
+      // Abierto por lo GUARDADO (km_max no cuenta: la base lo trae a 60 por defecto) o por lo TECLEADO respecto a lo pintado (el borrador restaurado cuenta)
+      var guardado = c.activa || !!c.sede_nombre || c.sede_lat != null || c.tarifa_id != null || c.cobra_recogida != null;
+      var campos = [].slice.call(bloques.querySelectorAll('input'));
+      var inicial = campos.map(function (i) { return (i.type === 'radio' || i.type === 'checkbox') ? i.checked : i.value; });
+      function tecleado() { return campos.some(function (i, k) { return ((i.type === 'radio' || i.type === 'checkbox') ? i.checked : i.value) !== inicial[k]; }); }
       st.aplicaEntrega = function (porUsuario) {
-        var abierto = sw.checked || hayDatos();
+        var abierto = sw.checked || guardado || tecleado();
+        if (st.ctx.falta) st.ctx.falta.style.display = (sw.checked || c.activa) ? '' : 'none';   // apagada, «Falta: entrega encendida…» no dice nada útil
         bloques.style.display = abierto ? '' : 'none'; sw.setAttribute('aria-expanded', abierto ? 'true' : 'false');
         if (ayudaSw) ayudaSw.hidden = abierto;
         fig.style.display = abierto ? '' : 'none';   // sin tienda ni precio, la ilustración solo diría «hasta 0 km»

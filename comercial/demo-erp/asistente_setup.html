@@ -103,6 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function cargando() { var t = $('tarjeta'); t.setAttribute('aria-busy', 'true'); vacia(t).appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: U('cargando') })); }
   function fallo(texto, reintento) {
+    $('tarjeta').removeAttribute('data-axw-vista');   // P5: la caja de fallo no se ensancha
     sinCarril(); if (st.vista === 'duda') $('salir').style.display = 'none';
     var t = $('tarjeta'); t.setAttribute('aria-busy', 'false'); vacia(t);
     // S90: lo que ha pasado, en su caja, y la única cosa que hacer (Reintentar vuelve a MIRAR, nunca reenvía)
@@ -366,9 +367,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // enseña de lado (ctx.lado: la muestra impresa de Facturas, la ilustración de la Entrega). Un componente sin ctx.lado (Ajustes) pinta como siempre.
     var izq = el('div', { class: 'axw-izq', 'data-axw-as': 'izq' }), lado = el('aside', { class: 'axw-lado', 'data-axw-as': 'lado' }, [porQue(p)]);
     t.appendChild(el('div', { class: 'axw-dos', 'data-axw-as': 'dos' }, [izq, lado]));
+    var faltaEl = null;   // se le pasa al componente (ctx.falta): Entrega la esconde mientras está apagada (la base no distingue apagada de incompleta)
     if (p.hecho) izq.appendChild(el('span', { class: 'self-start px-3 py-1 rounded-full font-label-md text-[13px] bg-primary-container text-on-primary', 'data-axw-hecho': '1', text: U('hecho') }));
-    else if (p.falta && !P.de(p.clave, p).sinFalta) {   // sinFalta: el paso dice su propio estado (Entrega apagada: «si no, salta este paso»)
-      izq.appendChild(el('p', { class: 'font-body-sm text-body-sm text-outline', 'data-axw-falta': p.falta.codigo, text: S.textoFalta(p.falta) }));
+    else if (p.falta) {
+      faltaEl = el('p', { class: 'font-body-sm text-body-sm text-outline', 'data-axw-falta': p.falta.codigo, text: S.textoFalta(p.falta) });
+      izq.appendChild(faltaEl);
       // Solo las faltas que el paso NO puede resolver llevan a su pestaña de Ajustes (impuestos en «reservas», varias empresas en «sociedades»);
       // en el resto el formulario de aquí ya es el sitio, y los pasos de otra pantalla traen su propio botón (revisor 12-oct, 2.ª vuelta)
       var dnd = FALTA_FUERA[p.falta.codigo];
@@ -385,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var comp = P.de(p.clave, p), cuerpo = el('div', { class: 'flex flex-col gap-4', 'data-axw-as': 'cuerpo' });
     var editando = !p.hecho || st.cambia;
     var ctl = null;
-    if (editando || comp.externo) ctl = comp.pinta(cuerpo, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: st.cambia, lado: lado });
+    if (editando || comp.externo) ctl = comp.pinta(cuerpo, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: st.cambia, lado: lado, falta: faltaEl });
     // Un paso hecho que ya no se cambia (la moneda, irreversible) enseña lo que quedó fijado (Experiencia, 15-oct: «no enseña cuál se eligió»)
     if (!editando && !comp.externo && comp.actual) {
       var va = comp.actual({ datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad });
@@ -437,6 +440,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function pintaDuda() {
     var t = $('tarjeta');
+    t.removeAttribute('data-axw-vista');   // P5: «comprobando» no pasa por cabecera(): tampoco se ensancha
     t.setAttribute('aria-busy', 'true');
     t.appendChild(el('p', { class: 'font-body-md text-body-md text-on-surface', 'data-axw-estado': 'duda', text: U('comprobando') }));   // sin botones: no se reenvía ni se sale
   }

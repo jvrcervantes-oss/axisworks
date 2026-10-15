@@ -39,7 +39,7 @@ const RANGOS = { bloqueo_minutos: [10, 10080], dias_min: [1, 366], dias_max: [1,
 function base(o = {}) {
   const b = { o, llamadas: [], moneda: 'IDR', valores: { reservas_sin_impuesto: 'no', precio_incluye_impuesto: 'si' }, productos: [], garantias: [], seguros: [],
     reglas: { bloqueo_minutos: null, dias_min: null, dias_max: null, horizonte_dias: null, max_por_telefono: null, max_activos: null }, previos: [], revisado: null,
-    entrega: { ajustes: { activa: false, sede_nombre: null, sede_lat: null, sede_lng: null, km_max: null, cobra_recogida: null, tope_dia: 200, tope_mes: 3000, cache_dias: 30 }, version: 1, tarifa: null },
+    entrega: { ajustes: { activa: false, sede_nombre: null, sede_lat: null, sede_lng: null, km_max: 60, cobra_recogida: null, tope_dia: 200, tope_mes: 3000, cache_dias: 30 }, version: 1, tarifa: null },
     falla: Object.assign({}, o.falla || {}), pierde: Object.assign({}, o.pierde || {}) };
   if (o.conProducto) {
     b.productos.push({ id: 'p-honda', numero: 'P-1', nombre: 'Honda Scoopy', activo: true, clase: 'alquiler', precio: 90000, moneda: 'IDR',
@@ -496,9 +496,10 @@ async function rellenaAlquiler(p, o = {}) {
   // P5 (owner, 15-oct: «mostrando datos poco a poco»): apagada y sin nada guardado, solo el interruptor; a 1440, dos columnas
   const p5a = await p.evaluate(() => { const b = document.querySelector('[data-axw-sr-bloques="entrega"]'), s = document.querySelector('[data-axw-campo="activa"]');
     return { oculto: getComputedStyle(b).display === 'none', exp: s.getAttribute('aria-expanded'), rol: s.getAttribute('role'),
-             falta: !!document.querySelector('[data-axw-falta]'), fig: getComputedStyle(document.querySelector('[data-axw-sr-figura]')).display }; });
-  ok('P5 entrega apagada y vacía: solo el interruptor (role=switch, aria-expanded=false); sin bloques, sin «Falta completar» y sin ilustración',
-     p5a.oculto && p5a.exp === 'false' && p5a.rol === 'switch' && !p5a.falta && p5a.fig === 'none', JSON.stringify(p5a));
+             falta: [...document.querySelectorAll('[data-axw-falta]')].some(e => getComputedStyle(e).display !== 'none'), fig: getComputedStyle(document.querySelector('[data-axw-sr-figura]')).display,
+             km: document.querySelector('[data-axw-campo="km_max"]').value }; });
+  ok('P5 entrega apagada y vacía (con el km_max 60 que trae la base): solo el interruptor (role=switch, aria-expanded=false); sin bloques, sin «Falta completar» y sin ilustración',
+     p5a.oculto && p5a.exp === 'false' && p5a.rol === 'switch' && !p5a.falta && p5a.fig === 'none' && p5a.km === '60', JSON.stringify(p5a));
   const p5l = await p.evaluate(() => { const i = document.querySelector('[data-axw-as="izq"]').getBoundingClientRect(), l = document.querySelector('[data-axw-as="lado"]').getBoundingClientRect();
     return { lado: l.left >= i.right, fig: !!document.querySelector('[data-axw-as="lado"] [data-axw-sr-figura]'), why: !!document.querySelector('[data-axw-as="lado"] .axw-why') }; });   // la ilustración vive a la derecha aunque esté oculta
   ok('P5 1440: dos columnas — a la derecha «para qué sirve» y la ilustración', p5l.lado && p5l.fig && p5l.why, JSON.stringify(p5l));
@@ -516,7 +517,7 @@ async function rellenaAlquiler(p, o = {}) {
   await clic(p, 'enviar');
   ok('S45 encender sin datos: dice lo que falta y no envía', ((await errorTxt(p)) || '').includes('hacen falta la tienda') && escrituras(b).length === 0, await errorTxt(p));
   await p.fill('[data-axw-campo="sede_nombre"]', 'Tienda Canggu'); await p.fill('[data-axw-campo="sede_coord"]', '-8.65, 115.13');
-  await p.fill('[data-axw-campo="precio_km"]', '5.000'); await p.fill('[data-axw-campo="km_gratis"]', '20'); await p.fill('[data-axw-campo="km_max"]', '20'); await p.fill('[data-axw-campo="minimo"]', '15.000');
+  await p.fill('[data-axw-campo="precio_km"]', '5.000'); await p.fill('[data-axw-campo="km_gratis"]', '80'); await p.fill('[data-axw-campo="km_max"]', '80'); await p.fill('[data-axw-campo="minimo"]', '15.000');
   await p.check('[data-axw-campo="cobra_recogida"][value="si"]'); await clic(p, 'enviar');
   ok('S45 km gratis ≥ km máximo: se dice antes de enviar', ((await errorTxt(p)) || '').includes('por debajo de la distancia máxima') && escrituras(b).length === 0, await errorTxt(p));
   await p.fill('[data-axw-campo="km_gratis"]', '3'); await p.waitForTimeout(80);
