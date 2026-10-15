@@ -83,7 +83,7 @@ function nuevaBase(o = {}) {
   if (o.limpio) { s.fuera = []; s.limites.forEach(l => { l.nivel_efectivo = l.nivel; }); }
   if (o.sinLimites) { s.limites = []; s.fuera = []; }
   if (o.xss) s.contexto.quien = XSS;
-  s.ow = o.ow ? clon(o.ow) : null;   // paso 0: {prop, yo, owner, inactivo, cambios, cambiado, yaNo, freno, roto, usuariosRotos}; sin él, las funciones del paso 0 dan 404
+  s.ow = o.ow ? clon(o.ow) : null;   // paso 0: {prop, yo, owner, inactivo, cambios, cambiado, yaNo, freno, roto, candRotos, candVacio, sinCand, conPruebas, sinSesion}; sin él, las funciones del paso 0 dan 404
   // Panel V2 (15-oct-2026): la forma de agente_panel_autonomo / agente_conexiones_estado (agente_forma.json). Áreas y equipo como los siembra 20261015100000.
   const X = t => o.xss ? XSS : t;
   s.v2 = {
@@ -189,8 +189,8 @@ function propuestas(s) {
   return [p];
 }
 const err = (code, message, hint) => ({ data: null, error: { code, message, hint: hint || null, details: null } });
-// paso 0: las personas activas de la base (la lectura de `usuarios` de la pantalla); la tercera es la cuenta de pruebas (la base no la deja elegir)
-const NOELIA = U(7001), DION = U(7002), PRUEBAS_UID = U(7003);
+// paso 0: las personas activas de la base; la tercera es la cuenta de pruebas (la base no la da en candidatos ni la deja elegir)
+const NOELIA = U(7001), DION = U(7002), PRUEBAS_UID = U(7003), ESTUDIO_UID = U(7005);
 const PERSONAS = [{ user_id: DION, numero_usuario: 'USR-00002', nombre: 'Dion' }, { user_id: NOELIA, numero_usuario: 'USR-00001', nombre: 'Noelia' },
                   { user_id: PRUEBAS_UID, numero_usuario: 'USR-00003', nombre: 'Cuenta de pruebas' }];
 function estado(s) {
@@ -219,27 +219,33 @@ async function servidor(s, nombre, a) {
   const o = s.o;
   if (o.lento) await new Promise(r => setTimeout(r, o.lento));
   // ── paso 0 (20261015194000), núcleo: contesta sin la herramienta y con el módulo apagado. Sin o.ow la base aún no tiene las funciones: 404 PGRST202, como hoy en producción hasta el tren 6 ──
-  if (nombre === 'agente_owner_estado' || nombre === 'agente_owner_pon' || nombre === 'from:usuarios') {
+  if (nombre === 'agente_owner_estado' || nombre === 'agente_owner_pon') {
     const w = s.ow;
-    if (!w && nombre !== 'from:usuarios') return err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
-    if (nombre === 'from:usuarios') {
-      if (w && w.usuariosRotos) return err('42501', 'permission denied for table usuarios');
-      const lista = o.mismoNombre ? PERSONAS.concat([{ user_id: U(7004), numero_usuario: 'USR-00004', nombre: 'Dion' }]) : PERSONAS;
-      return { data: o.xss ? lista.map(u => Object.assign({}, u, { nombre: XSS + ' ' + u.nombre })) : clon(lista), error: null };
-    }
+    if (!w) return err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
     if (nombre === 'agente_owner_estado') {
       if (w.roto) return err('XX000', 'algo se rompió');
-      const ow = PERSONAS.find(u => u.user_id === w.owner);
-      return { data: { hay_owner: w.owner != null, owner_activo: !!w.owner && !w.inactivo, soy_owner: !!w.owner && w.owner === w.yo, soy_propietario: !!w.prop,
-        puedo_poner: !!w.prop && !o.pruebas, owner_nombre: ow ? (o.xss ? XSS : ow.nombre) : null, owner_numero: ow ? ow.numero_usuario : null, cambiado_en: w.cambiado || null,
-        cambios_24h: w.cambios || 0, ya_no_eres_owner: !!w.yaNo }, error: null };
+      const ow = PERSONAS.find(u => u.user_id === w.owner), puede = !!w.prop && !o.pruebas;
+      const d = { hay_owner: w.owner != null, owner_activo: !!w.owner && !w.inactivo, soy_owner: !!w.owner && w.owner === w.yo, soy_propietario: !!w.prop,
+        puedo_poner: puede, owner_nombre: ow ? (o.xss ? XSS : ow.nombre) : null, owner_numero: ow ? ow.numero_usuario : null, cambiado_en: w.cambiado || null,
+        cambios_24h: w.cambios || 0, ya_no_eres_owner: !!w.yaNo };
+      // candidatos (Backend, 16-oct): activas por nombre, sin la cuenta de pruebas ni las del estudio, sin correo; SOLO con puedo_poner (si no, []).
+      // sinCand = la base aún sin ese cambio (la clave no viene); conPruebas = una lista vieja que aún la trae (la base la rechaza al guardar)
+      if (!w.sinCand) {
+        let lista = PERSONAS.filter(u => w.conPruebas || u.user_id !== PRUEBAS_UID);
+        if (o.mismoNombre) lista = lista.concat([{ user_id: U(7004), numero_usuario: 'USR-00004', nombre: 'Dion' }]);
+        if (w.conEstudio) lista = lista.concat([{ user_id: ESTUDIO_UID, numero_usuario: 'USR-00005', nombre: 'Javier', es_estudio: true }]);
+        lista = lista.map(u => Object.assign({ es_estudio: false }, u));
+        if (o.xss) lista = lista.map(u => Object.assign({}, u, { nombre: XSS + ' ' + u.nombre }));
+        d.candidatos = !puede || w.candVacio ? [] : (w.candRotos ? 'x' : clon(lista));
+      }
+      return { data: d, error: null };
     }
     // agente_owner_pon, con las mismas comprobaciones y el mismo orden que la base
     if (o.pruebas) return err('42501', 'la cuenta de pruebas solo mira', 'cuenta_pruebas');
     if (!w.prop) return err('42501', 'solo el propietario', 'solo_propietario');
     if (typeof a.p_motivo !== 'string' || a.p_motivo.trim().length < 3 || a.p_motivo.trim().length > 300) return err('22023', 'di el motivo', 'motivo');
     if (a.p_user_id === PRUEBAS_UID) return err('42501', 'la cuenta de pruebas no puede llevar el AaaS', 'cuenta_pruebas');
-    const nuevo = PERSONAS.find(u => u.user_id === a.p_user_id);
+    const nuevo = PERSONAS.concat([{ user_id: ESTUDIO_UID, numero_usuario: 'USR-00005', nombre: 'Javier' }]).find(u => u.user_id === a.p_user_id);
     if (!nuevo) return err('22023', 'no es un usuario activo', 'usuario_no_valido');
     const owner = { nombre: nuevo.nombre, numero_usuario: nuevo.numero_usuario };
     if (w.owner === a.p_user_id) return { data: { ok: true, cambia: false, owner, telegram_borrado: false, subida_cancelada: false }, error: null };
@@ -364,16 +370,11 @@ window.__xss = undefined; window.__fromLlamado = 0; window.__fetchLlamado = 0; w
 window.fetch = function () { window.__fetchLlamado++; return Promise.reject(new Error('fetch')); };
 var sb = {
   rpc: function (n, a) { return { then: function (f, g) { return window.__srv(n, a || {}).then(f, g); } }; },
-  /* la única lectura de tabla permitida: la lista de personas del paso 0 (usuarios); cualquier otra cuenta como fallo */
-  from: function (t) {
-    if (t !== 'usuarios') { window.__fromLlamado++; throw new Error('el navegador no toca la base'); }
-    var q = { tabla: t, select: null, eq: [], order: null };
-    var b = { select: function (c) { q.select = c; return b; }, eq: function (k, v) { q.eq.push([k, v]); return b; }, order: function (k) { q.order = k; return b; },
-              then: function (f, g) { return window.__srv('from:usuarios', q).then(f, g); } };
-    return b;
-  }
+  /* el navegador no lee ninguna tabla (la lista del paso 0 viene en agente_owner_estado.candidatos): cualquier .from() cuenta como fallo */
+  from: function () { window.__fromLlamado++; throw new Error('el navegador no toca la base'); }
 };
-window.LW_AUTH = Promise.resolve({ sb: sb, ficha: { rol: 'admin', herramientas: ['agente'] } });
+/* la sesión como la da guard.js (LW_AUTH.session.user.id): solo el uid de quien mira, para «Lo llevo yo» */
+window.LW_AUTH = Promise.resolve({ sb: sb, session: window.__yo ? { user: { id: window.__yo } } : null, ficha: { rol: 'admin', herramientas: ['agente'] } });
 window.lwDatos = function (n, a) { if (!/^[a-z][a-z0-9_]*_datos$/.test(n)) throw new Error('lwDatos solo *_datos'); return Promise.resolve(sb.rpc(n, a)).then(function (r) { return { data: r.data, error: r.error }; }); };
 window.LW_IDIOMA = '${idioma}';
 /* Como en Lawang (i18n.js / i18n_id.json): «Operaciones» ya es Deals/Transaksi y la fusión de agente.html no lo pisa; por eso el papel de Ruta usa 'Operaciones~agente' */
@@ -410,6 +411,8 @@ const TODAS = [];
     TODAS.push(base);
     const ctx = await nav.newContext({ viewport: { width: opts.ancho || 1440, height: opts.alto || 1000 }, reducedMotion: opts.mov || 'no-preference' });
     if (opts.reloj) await ctx.clock.install();   // reloj falso (avanza solo; fastForward salta): la cuenta atrás del freno sin esperar 60 s de verdad
+    const ow = (opts.base || {}).ow;
+    if (ow && ow.yo && !ow.sinSesion) await ctx.addInitScript(y => { window.__yo = y; }, ow.yo);
     const p = await ctx.newPage();
     await p.exposeFunction('__srv', (n, a) => opts.srv ? opts.srv(base, n, a) : servidor(base, n, a));
     const html = pagina(opts.idioma || 'es');
@@ -928,39 +931,39 @@ const TODAS = [];
     ok('sin moneda en la respuesta: error de forma, no un «EUR» puesto por la pantalla', (await txt(p, '[data-ag="carga"]')).includes('algo inesperado') && !(await visible(p, '[data-ag="v2"]')));
     await ctx.close();
   }
-  // 5b. PASO 0 «¿Quién lleva el equipo?» (agencia 20261015194000): agente_owner_estado / agente_owner_pon + la lista de personas (la lectura de Ajustes › Usuarios)
+  // 5b. PASO 0 «¿Quién lleva el equipo?» (agencia 20261015194000): agente_owner_estado (con candidatos) / agente_owner_pon; la pantalla no lee ninguna tabla
   const MOT_QUIEN = 'Asistente de Ajustes: quién lleva el equipo';
   const SEL_QUIEN = '#ag2-aj-quien-sel';
   const conPersonas = p => p.waitForFunction(s => document.querySelector(s).options.length > 1, SEL_QUIEN, { timeout: 4000 }).then(() => true, () => false);
   const vOk = p => p.waitForFunction(() => { const e = document.querySelector('[data-ag="v2-ok"]'); return e && e.textContent && !e.classList.contains('axw-oculto'); }, null, { timeout: 4000 }).then(() => true, () => false);
-  const lecturasUsuarios = b => llamadas(b, 'from:usuarios');
+  const fromes = p => p.evaluate(() => window.__fromLlamado);
+  const opciones = p => p.$$eval(SEL_QUIEN + ' option', os => os.map(o => o.textContent));
+  ok('paso 0 · agente.html no lee ninguna tabla: ni un .from( en la página', !/\.from\(/.test(fs.readFileSync(path.join(__dirname, '..', 'agente.html'), 'utf8')));
   // dos personas que se llaman igual: solo esas dos llevan su número (es lo único que las distingue)
   {
     const { p, ctx } = await abre({ base: { herramienta: true, apagado: true, mismoNombre: true, ow: { prop: true, yo: NOELIA, owner: null } }, hash: '#ajustes-quien' });
     ok('paso 0 · dos «Dion»: el número sale SOLO en esas dos', (await conPersonas(p))
-       && J(await p.$$eval(SEL_QUIEN + ' option', os => os.map(o => o.textContent))) === J(['Elige una persona', 'Dion · USR-00002', 'Noelia', 'Cuenta de pruebas', 'Dion · USR-00004']),
+       && J(await p.$$eval(SEL_QUIEN + ' option', os => os.map(o => o.textContent))) === J(['Elige una persona', 'Dion · USR-00002', 'Noelia', 'Dion · USR-00004']),
        J(await p.$$eval(SEL_QUIEN + ' option', os => os.map(o => o.textContent))));
     await ctx.close();
   }
   // la propietaria (Noelia), sin nadie al frente, con el equipo APAGADO: solo el paso 0; lo elige y vuelve a la tarjeta, ya con «Encender»
   {
-    const { p, base, ctx } = await abre({ base: { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null } } });
+    const { p, base, ctx } = await abre({ base: { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null, conPruebas: true } } });
     const t0 = await txt(p, '[data-ag="v2-apagado-txt"]');
     ok('paso 0 · propietaria sin dueño, apagado: la tarjeta dice que no hay nadie al frente y ofrece elegirlo, sin «Encender»', (await vista(p)) === 'apagado'
        && t0.includes('Aún no hay nadie al frente del equipo.') && t0.includes('Antes de encenderlo, elige quién lleva el equipo.') && !t0.includes('Lo nombra')
        && (await visible(p, '[data-ag="v2-apagado-quien"]')) && (await hay(p, '[data-accion="ag-encender"]')) === 0, t0);
-    ok('paso 0 · la lista de personas NO se pide hasta abrir el paso', lecturasUsuarios(base).length === 0);
     await p.click('[data-ag="v2-apagado-quien"]');
     await enHash(p, '#ajustes-quien');
     ok('paso 0 · con el equipo apagado, #ajustes-quien enseña SOLO ese paso (sin pestañas ni barra de pasos) y le da el foco',
        (await p.$eval('[data-ag="v2"]', e => e.getAttribute('data-solo'))) === 'quien' && (await vista(p)) === 'ajustes' && (await pasoVisible(p, 'quien'))
        && !(await visible(p, '[data-ag="v2-tabs"]')) && !(await visible(p, '[data-ag="aj-pasos"]')) && (await foco(p)) === 'ag2-aj-h-quien', J(await estadoRuta(p)));
-    ok('paso 0 · la lista llega: «Elige una persona» + las 3 activas, en el orden de la base, sin número (ningún nombre se repite)', (await conPersonas(p))
-       && J(await p.$$eval(SEL_QUIEN + ' option', os => os.map(o => o.textContent))) === J(['Elige una persona', 'Dion', 'Noelia', 'Cuenta de pruebas']));
+    ok('paso 0 · la lista es la de candidatos: «Elige una persona» + las de la base, en su orden, sin número (ningún nombre se repite); ella ya está, sin «Lo llevo yo»', (await conPersonas(p))
+       && J(await opciones(p)) === J(['Elige una persona', 'Dion', 'Noelia', 'Cuenta de pruebas']), J(await opciones(p)));
     ok('paso 0 · la pista dice solo la primera frase; lo de la subida anulada no sale (no hay subida pendiente)', (await txt(p, '#ag2-aj-quien-p')) === 'Cualquier persona activa de tu equipo, también tú.'
        && !(await visible(p, '[data-ag="aj-quien-subida"]')) && (await txt(p, '[data-ag="aj-quien-subida"]')) === '');
-    ok('paso 0 · UNA lectura de usuarios: user_id, número y nombre de los activos, por nombre (sin correo)', lecturasUsuarios(base).length === 1
-       && J(lecturasUsuarios(base)[0][1]) === J({ tabla: 'usuarios', select: 'user_id,numero_usuario,nombre', eq: [['activo', true]], order: 'nombre' }), J(lecturasUsuarios(base)));
+    ok('paso 0 · la lista sale del estado: ninguna lectura de tabla y agente_owner_estado una sola vez', (await fromes(p)) === 0 && llamadas(base, 'agente_owner_estado').length === 1);
     ok('paso 0 · sin nadie al frente: «Antes de empezar» y «Si lo saltas» a la vista', (await visible(p, '[data-ag="aj-quien-etapa"]')) && (await visible(p, '[data-ag="aj-quien-salta"]')));
     ok('paso 0 · un solo campo y un botón', (await p.$$eval('[data-ag="aj-f-quien"] input, [data-ag="aj-f-quien"] select, [data-ag="aj-f-quien"] textarea', e => e.length)) === 1
        && (await p.$$eval('[data-ag="aj-f-quien"] button', e => e.length)) === 1);
@@ -1074,14 +1077,15 @@ const TODAS = [];
        && !(await visible(p, '[data-ag="aj-quien-cambiar"]')) && (await txt(p, '[data-ag="aj-solo-dueno"]')) === 'Esto lo configura Noelia, que lleva el equipo.');
     await p.evaluate(() => { location.hash = '#ajustes-quien'; }); await p.waitForTimeout(200);
     ok('paso 0 · no propietario: #ajustes-quien no abre el paso 0 (lo lleva a un paso suyo) y nunca pide la lista de personas',
-       (await hash(p)) !== '#ajustes-quien' && !(await pasoVisible(p, 'quien')) && lecturasUsuarios(base).length === 0 && llamadas(base, 'agente_owner_pon').length === 0, J(await estadoRuta(p)));
+       (await hash(p)) !== '#ajustes-quien' && !(await pasoVisible(p, 'quien')) && (await fromes(p)) === 0 && llamadas(base, 'agente_owner_pon').length === 0
+       && (await p.$$eval(SEL_QUIEN + ' option', os => os.length)) === 0, J(await estadoRuta(p)));
     await ctx.close();
   }
   {
     const { p, base, ctx } = await abre({ base: { herramienta: true, ow: { yo: DION, owner: null } } });
     ok('paso 0 · no propietario sin dueño: «Aún no hay nadie al frente del equipo. Lo nombra la persona propietaria de la cuenta.», sin botón',
        (await txt(p, '[data-ag="v2-falta-txt"]')) === 'Aún no hay nadie al frente del equipo. Lo nombra la persona propietaria de la cuenta. Sin alguien al frente, tu equipo no empieza.'
-       && !(await visible(p, '[data-ag="v2-falta-quien"]')) && !(await visible(p, '[data-ag="v2-falta-ir"]')) && lecturasUsuarios(base).length === 0);
+       && !(await visible(p, '[data-ag="v2-falta-quien"]')) && !(await visible(p, '[data-ag="v2-falta-ir"]')) && (await fromes(p)) === 0);
     await ctx.close();
   }
   for (const [nombre, ow, frase] of [['con dueño', { yo: DION, owner: NOELIA }, 'Lo enciende Noelia, que lleva el equipo.'], ['sin dueño', { yo: DION, owner: null }, 'Aún no hay nadie al frente del equipo. Lo nombra la persona propietaria de la cuenta.']]) {
@@ -1115,7 +1119,7 @@ const TODAS = [];
     const { p, base, ctx } = await abre({ base: { dueno: true }, hash: '#ajustes-quien' });
     ok('paso 0 · 404: se pregunta una vez, #ajustes-quien lleva a un paso normal, ni línea de quién ni lista de personas, sin errores',
        llamadas(base, 'agente_owner_estado').length === 1 && (await hash(p)) !== '#ajustes-quien' && !(await pasoVisible(p, 'quien')) && !(await visible(p, '[data-ag="aj-quien-linea"]'))
-       && lecturasUsuarios(base).length === 0 && !(await visible(p, '[data-ag="v2-falta-quien"]')) && (await sinErrores(p)), J(await estadoRuta(p)));
+       && !(await visible(p, '[data-ag="v2-falta-quien"]')) && (await sinErrores(p)), J(await estadoRuta(p)));
     await ctx.close();
   }
   {
@@ -1132,11 +1136,69 @@ const TODAS = [];
     await ctx.close();
   }
   {
-    const { p, ctx } = await abre({ base: { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null, usuariosRotos: true } }, hash: '#ajustes-quien' });
+    const { p, ctx } = await abre({ base: { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null, candRotos: true } }, hash: '#ajustes-quien' });
     await p.waitForFunction(() => /lista de personas/.test(document.querySelector('[data-ag="aj-msg-quien"]').textContent), null, { timeout: 4000 }).catch(() => {});
-    ok('paso 0 · la lista de personas no se lee: lo dice («No es que esté vacía») y el campo queda apagado', (await txt(p, '[data-ag="aj-msg-quien"]')).includes('No es que esté vacía')
+    ok('paso 0 · candidatos con otra forma: lo dice («No es que esté vacía») y el campo queda apagado', (await txt(p, '[data-ag="aj-msg-quien"]')).includes('No es que esté vacía')
        && (await p.$eval(SEL_QUIEN, e => e.disabled)));
     await ctx.close();
+  }
+  // una cuenta del estudio (es_estudio): se puede elegir y se rotula en llano en los tres idiomas
+  for (const [idioma, rot] of [['es', 'Javier · equipo de AxisWorks'], ['en', 'Javier · AxisWorks team'], ['id', 'Javier · tim AxisWorks']]) {
+    const { p, base, ctx } = await abre({ idioma, base: { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null, conEstudio: true } }, hash: '#ajustes-quien' });
+    await conPersonas(p);
+    const os = await opciones(p);
+    ok(idioma + ' · paso 0 · cuenta del estudio: «' + rot + '», las demás sin rótulo', os.length === 4 && os[1] === 'Dion' && os[2] === 'Noelia' && os[3] === rot, J(os));
+    if (idioma === 'es') {
+      await p.selectOption(SEL_QUIEN, ESTUDIO_UID); await enviar(p, 'quien');
+      await hasta(() => llamadas(base, 'agente_owner_pon').length === 1);
+      ok('paso 0 · la cuenta del estudio se puede elegir: viaja su uid', J(llamadas(base, 'agente_owner_pon')[0][1]) === J({ p_user_id: ESTUDIO_UID, p_motivo: MOT_QUIEN }));
+    }
+    await ctx.close();
+  }
+  // candidatos vacío (la base no da a nadie más): lo dice en llano y queda «Lo llevo yo», que se puede guardar
+  {
+    const { p, base, ctx } = await abre({ base: { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null, candVacio: true } }, hash: '#ajustes-quien' });
+    await conPersonas(p);
+    ok('paso 0 · candidatos vacío: «Elige una persona» + «Lo llevo yo», y dice que no hay nadie más (no «no se ha podido mirar»)', J(await opciones(p)) === J(['Elige una persona', 'Lo llevo yo'])
+       && (await txt(p, '[data-ag="aj-msg-quien"]')) === 'No hay nadie más que pueda llevar el equipo: puedes llevarlo tú, o añadir a alguien en Ajustes › Usuarios.'
+       && !(await p.$eval(SEL_QUIEN, e => e.disabled)), J(await opciones(p)));
+    await p.selectOption(SEL_QUIEN, NOELIA); await enviar(p, 'quien');
+    await hasta(() => llamadas(base, 'agente_owner_pon').length === 1);
+    await vOk(p);
+    ok('paso 0 · «Lo llevo yo» manda el uid de la propia sesión y la base lo confirma', J(llamadas(base, 'agente_owner_pon')[0][1]) === J({ p_user_id: NOELIA, p_motivo: MOT_QUIEN })
+       && (await txt(p, '[data-ag="v2-ok"]')) === 'Ahora lleva el equipo Noelia.' && (await fromes(p)) === 0, J(llamadas(base, 'agente_owner_pon')));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null, candVacio: true, sinSesion: true } }, hash: '#ajustes-quien' });
+    await p.waitForFunction(() => !document.querySelector('[data-ag="aj-msg-quien"]').classList.contains('axw-oculto'), null, { timeout: 4000 }).catch(() => {});
+    ok('paso 0 · candidatos vacío y sin sesión legible: «No hay ninguna persona activa…» y el campo apagado', (await txt(p, '[data-ag="aj-msg-quien"]')) === 'No hay ninguna persona activa en tu equipo: añádela en Ajustes › Usuarios.'
+       && (await p.$eval(SEL_QUIEN, e => e.disabled)));
+    await ctx.close();
+  }
+  // sin la clave candidatos (la base aún sin el cambio de Backend): solo «Lo llevo yo», con la pista que lo dice; sin sesión, el paso 0 no se enseña
+  {
+    const { p, base, ctx } = await abre({ base: { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null, sinCand: true } }, hash: '#ajustes-quien' });
+    await conPersonas(p);
+    ok('paso 0 · sin candidatos en la respuesta: solo «Lo llevo yo», la pista lo explica y ningún error', J(await opciones(p)) === J(['Elige una persona', 'Lo llevo yo'])
+       && (await txt(p, '#ag2-aj-quien-p')) === 'De momento solo puedes ponerte tú: la lista de tu equipo aún no está disponible.'
+       && !(await visible(p, '[data-ag="aj-msg-quien"]')) && (await fromes(p)) === 0, J(await opciones(p)));
+    await p.selectOption(SEL_QUIEN, NOELIA); await enviar(p, 'quien');
+    await hasta(() => llamadas(base, 'agente_owner_pon').length === 1);
+    ok('paso 0 · sin candidatos: «Lo llevo yo» guarda con su uid', J(llamadas(base, 'agente_owner_pon')[0][1]) === J({ p_user_id: NOELIA, p_motivo: MOT_QUIEN }));
+    await ctx.close();
+  }
+  {
+    const { p, base, ctx } = await abre({ base: { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null, sinCand: true, sinSesion: true } }, hash: '#ajustes-quien' });
+    ok('paso 0 · sin candidatos y sin sesión: el paso 0 no se enseña (la tarjeta de apagado, como con 404) ni se ofrece elegir, y nada se rompe', (await vista(p)) === 'apagado' && !(await pasoVisible(p, 'quien'))
+       && !(await visible(p, '[data-ag="v2-apagado-quien"]')) && llamadas(base, 'agente_owner_pon').length === 0 && (await sinErrores(p)), J(await estadoRuta(p)));
+    await ctx.close();
+  }
+  // no propietario: la base le da candidatos [] y la pantalla no enseña lista
+  {
+    const b = nuevaBase({ herramienta: true, ow: { yo: DION, owner: NOELIA } });
+    const r = (await servidor(b, 'agente_owner_estado', {})).data;
+    ok('doble: sin puedo_poner, candidatos es [] (la base no da la lista)', r.puedo_poner === false && Array.isArray(r.candidatos) && r.candidatos.length === 0, J(r.candidatos));
   }
   {
     const { p, ctx } = await abre({ base: { herramienta: true, apagado: true, xss: true, ow: { prop: true, yo: NOELIA, owner: DION, inactivo: true } }, hash: '#ajustes-quien' });
@@ -1148,6 +1210,13 @@ const TODAS = [];
     const b = nuevaBase({ ow: { prop: true, yo: NOELIA, owner: NOELIA } });
     const r = (await servidor(b, 'agente_owner_estado', {})).data;
     ok('doble: agente_owner_estado devuelve exactamente las claves del contrato', J(Object.keys(r).sort()) === J(Object.keys(FORMA.lecturas.agente_owner_estado.devuelve).sort()), J(Object.keys(r).sort()));
+  }
+  // 5c. la pantalla final con «Completar ahora» a la vista, a 390 px: el botón principal arriba, los fantasma debajo (sin CSS order: el del marcado)
+  for (const idioma of ['es', 'id']) {
+    const { p, ctx } = await abre({ idioma, ancho: 390, alto: 844, base: { dueno: true, falta: 'contexto_aaas' }, hash: '#ajustes-listo' });
+    const m = await p.evaluate(() => ['aj-listo-completar', 'aj-listo-equipo', 'aj-listo-trabajos'].map(k => { const e = document.querySelector('[data-ag="' + k + '"]'); const r = e.getBoundingClientRect(); return { k, top: Math.round(r.top), w: Math.round(r.width), vis: !e.classList.contains('axw-oculto') && r.height > 0 }; }));
+    ok(idioma + ' · 390 · final con «Completar ahora»: el principal arriba y a lo ancho, los otros dos debajo', m[0].vis && m[0].top < m[1].top && m[1].top < m[2].top && m[0].w === m[1].w, J(m));
+    await ctx.close();
   }
   // 6. XSS: lo que viene de la base entra como texto
   {
@@ -1173,7 +1242,9 @@ const TODAS = [];
                    ['no propietario sin dueño', { herramienta: true, ow: { yo: DION, owner: null } }, ''], ['no propietario con dueño', { herramienta: true, ow: { yo: DION, owner: NOELIA } }, '#ajustes-tope'],
                    ['no propietario apagado sin dueño', { herramienta: true, apagado: true, ow: { yo: DION, owner: null } }, ''], ['dueño inactivo', { herramienta: true, ow: { yo: DION, owner: NOELIA, inactivo: true } }, '#ajustes-tope'],
                    ['ya no lo lleva', { herramienta: true, ow: { yo: DION, owner: NOELIA, yaNo: true } }, ''], ['quién: no se pudo mirar', { dueno: true, ow: { prop: true, yo: NOELIA, owner: NOELIA, roto: true } }, '#ajustes-tope'],
-                   ['lista de personas rota', { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null, usuariosRotos: true } }, '#ajustes-quien']];
+                   ['lista de personas rota', { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null, candRotos: true } }, '#ajustes-quien'],
+                   ['paso 0 candidatos vacío', { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null, candVacio: true } }, '#ajustes-quien'],
+                   ['paso 0 sin candidatos', { herramienta: true, apagado: true, ow: { prop: true, yo: NOELIA, owner: null, sinCand: true } }, '#ajustes-quien']];
   for (const idioma of ['en', 'id']) {
     for (const [nombre, base, hs] of ESTADOS) {
       const { p, ctx } = await abre({ idioma, base, hash: hs });

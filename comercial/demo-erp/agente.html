@@ -533,8 +533,8 @@
 <p class="ag2-nota-modo axw-oculto" data-ag="aj-solo-dueno"></p>
 </div>
 
-<!-- PASO 0 (15-oct-2026, migración 20261015194000): quién lleva el equipo. Lo elige la persona propietaria de la cuenta entre los usuarios activos
-     (la misma lectura de la tabla `usuarios` que Ajustes › Usuarios, solo user_id, número y nombre) y lo guarda agente_owner_pon. -->
+<!-- PASO 0 (15-oct-2026, migración 20261015194000): quién lleva el equipo. Lo elige la persona propietaria de la cuenta entre las personas que da
+     la base en agente_owner_estado.candidatos (user_id, número y nombre; la pantalla no lee ninguna tabla) o «Lo llevo yo», y lo guarda agente_owner_pon. -->
 <form class="ag2-aj-paso" data-ag="aj-f-quien" data-paso="quien" autocomplete="off" novalidate hidden aria-labelledby="ag2-aj-h-quien">
 <span class="ag2-etapa" data-ag="aj-quien-etapa" data-lwt>Antes de empezar</span>
 <h3 id="ag2-aj-h-quien" tabindex="-1" data-lwt>¿Quién lleva el equipo?</h3>
@@ -546,7 +546,7 @@
 <div class="ag2-campo">
 <label for="ag2-aj-quien-sel" data-lwt>Quién lleva el equipo</label>
 <select id="ag2-aj-quien-sel" data-campo="quien_owner" aria-describedby="ag2-aj-quien-p ag2-aj-quien-subida ag2-aj-quien-msg"></select>
-<p class="ag2-pista" id="ag2-aj-quien-p" data-lwt>Cualquier persona activa de tu equipo, también tú.</p>
+<p class="ag2-pista" id="ag2-aj-quien-p" data-ag="aj-quien-pista"></p>
 <p class="ag2-pista axw-oculto" id="ag2-aj-quien-subida" data-ag="aj-quien-subida"></p>
 </div>
 <p class="ag2-msg axw-oculto" id="ag2-aj-quien-msg" data-ag="aj-msg-quien" data-tono="mal" role="alert"></p>
@@ -1094,6 +1094,10 @@
     'Ya no llevas el equipo: tú ya no cambias estos ajustes.': 'You no longer run the team: you no longer change these settings.',
     'No se ha podido leer la lista de personas. No es que esté vacía: recarga la página.': 'The list of people could not be read. It is not that it is empty: reload the page.',
     'Elige una persona': 'Choose a person',
+    'Lo llevo yo': 'I will lead it',
+    'equipo de AxisWorks': 'AxisWorks team',
+    'De momento solo puedes ponerte tú: la lista de tu equipo aún no está disponible.': 'For now you can only choose yourself: your team list is not available yet.',
+    'No hay nadie más que pueda llevar el equipo: puedes llevarlo tú, o añadir a alguien en Ajustes › Usuarios.': 'Nobody else can lead the team: you can lead it yourself, or add someone in Settings › Users.',
     'No hay ninguna persona activa en tu equipo: añádela en Ajustes › Usuarios.': 'There is nobody active on your team: add them in Settings › Users.',
     'Hoy ya se ha cambiado 3 veces quién lleva el equipo, el máximo: podrás cambiarlo mañana.': 'Who runs the team has already been changed 3 times today, the maximum: you can change it tomorrow.',
     'Elige quién lleva el equipo.': 'Choose who runs the team.',
@@ -1518,6 +1522,10 @@
     'Ya no llevas el equipo: tú ya no cambias estos ajustes.': 'Anda tidak lagi mengelola tim: Anda tidak lagi mengubah pengaturan ini.',
     'No se ha podido leer la lista de personas. No es que esté vacía: recarga la página.': 'Daftar orang tidak bisa dibaca. Bukan berarti kosong: muat ulang halaman.',
     'Elige una persona': 'Pilih seseorang',
+    'Lo llevo yo': 'Saya yang memimpin',
+    'equipo de AxisWorks': 'tim AxisWorks',
+    'De momento solo puedes ponerte tú: la lista de tu equipo aún no está disponible.': 'Untuk sementara Anda hanya bisa memilih diri sendiri: daftar tim Anda belum tersedia.',
+    'No hay nadie más que pueda llevar el equipo: puedes llevarlo tú, o añadir a alguien en Ajustes › Usuarios.': 'Tidak ada orang lain yang bisa memimpin tim: Anda bisa memimpinnya sendiri, atau tambahkan seseorang di Pengaturan › Pengguna.',
     'No hay ninguna persona activa en tu equipo: añádela en Ajustes › Usuarios.': 'Belum ada orang aktif di tim Anda: tambahkan di Pengaturan › Pengguna.',
     'Hoy ya se ha cambiado 3 veces quién lleva el equipo, el máximo: podrás cambiarlo mañana.': 'Pengelola tim sudah diganti 3 kali hari ini, batas maksimumnya: Anda bisa menggantinya besok.',
     'Elige quién lleva el equipo.': 'Pilih siapa yang mengelola tim.',
@@ -1598,9 +1606,6 @@
     /* paso 0 (20261015194000): núcleo, contestan también con el módulo apagado */
     agente_owner_estado: function () { return SB.rpc('agente_owner_estado', {}); },
     agente_owner_pon: function (a) { return SB.rpc('agente_owner_pon', a); },
-    /* la lista de personas del paso 0: la misma lectura de la tabla que Ajustes › Usuarios (RLS «el admin todas»), solo id, número y nombre, sin correo.
-       Única lectura directa de tabla de esta pantalla; solo se hace si quien mira puede nombrar (puedo_poner) */
-    usuarios_activos: function () { return SB.from('usuarios').select('user_id,numero_usuario,nombre').eq('activo', true).order('nombre'); },
     agente_notas_datos: function (a) { return window.lwDatos('agente_notas_datos', a); },
     agente_para: function () { return SB.rpc('agente_para', {}); },
     agente_reanuda: function () { return SB.rpc('agente_reanuda', {}); },
@@ -1697,7 +1702,7 @@
   /* ¿está hecho el paso? Lo mismo que mira la base en _agente_setup_estado (060500), con lo que da agente_panel_estado. */
   function hechoPaso(p, d) {
     /* paso 0: hecho si hay alguien activo al frente; sin la función en la base (404) o para quien no puede nombrarlo, no se pide */
-    if (p === 'quien') return !OW.d || !OW.d.puedo_poner || ownerOk(OW.d);
+    if (p === 'quien') return !puedeQuien() || ownerOk(OW.d);
     if (!d || !d.encendido) return false;
     if (p === 'tope') {
       var pedido = Math.max(d.tope_mensual_cent, ent(d.tope_propuesto_cent) ? d.tope_propuesto_cent : 0);
@@ -1897,8 +1902,17 @@
 
   /* ── PASO 0: quién lleva el equipo (agente_owner_estado / agente_owner_pon; agencia erp/migraciones 20261015194000) ──
      OW.d = lo que da agente_owner_estado. Sin la función en la base (404: la migración aún no ha llegado) OW.d es null y OW.err vacío: el paso 0 no
-     existe y todo funciona como antes. Si se ha podido preguntar pero no leer, OW.err lo dice (no se confunde con «no hay nadie»). */
-  var OW = { d: null, err: '', usuarios: null, usuariosErr: false, leyendo: false };
+     existe y todo funciona como antes. Si se ha podido preguntar pero no leer, OW.err lo dice (no se confunde con «no hay nadie»).
+     La lista de personas la da la base dentro del estado (candidatos: activas, sin la cuenta de pruebas, sin correo; es_estudio marca las del estudio; solo si
+     puedo_poner): la pantalla no lee ninguna tabla (revisor 16-oct; gate escrituras_front). OW.cand: array = la lista; null = la base aún no la da
+     (antes de su migración: solo «Lo llevo yo», con el uid de la propia sesión); OW.candErr = la da con otra forma («no he podido mirar»).
+     OW.yo = el uid de la sesión (LW_AUTH.session.user.id): solo para «Lo llevo yo»; la base comprueba que es un usuario activo y quién llama. */
+  var OW = { d: null, err: '', cand: null, candErr: false, yo: null };
+  var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  function candOk(x) {
+    return Array.isArray(x) && x.every(function (u) { return esObj(u) && typeof u.user_id === 'string' && UUID.test(u.user_id)
+      && (u.nombre == null || typeof u.nombre === 'string') && (u.numero_usuario == null || typeof u.numero_usuario === 'string') && (u.es_estudio == null || typeof u.es_estudio === 'boolean'); });
+  }
   function ownerOk(d) { return !!(d && d.hay_owner === true && d.owner_activo === true); }
   function owEstadoOk(x) {
     return esObj(x) && ['hay_owner', 'owner_activo', 'soy_owner', 'soy_propietario', 'puedo_poner', 'ya_no_eres_owner'].every(function (k) { return typeof x[k] === 'boolean'; })
@@ -1910,9 +1924,13 @@
       if (r.error) { OW.d = null; OW.err = noExiste(r.error) ? '' : textoError(r.error, true); return; }
       if (!owEstadoOk(r.data)) { OW.d = null; OW.err = T(NO_MIRADO); return; }
       OW.d = r.data; OW.err = '';
+      var c = r.data.candidatos;
+      OW.candErr = c !== undefined && !candOk(c); OW.cand = candOk(c) ? c : null;
     });
   }
-  function puedeQuien() { return !!(OW.d && OW.d.puedo_poner === true); }
+  /* puede nombrar (lo dice la base) y tiene a quién ofrecer: la lista de la base o, si la base aún no la da, a sí misma con el uid de su sesión.
+     Sin ninguna de las dos el paso 0 no se enseña y lo demás sigue igual. */
+  function puedeQuien() { return !!(OW.d && OW.d.puedo_poner === true && (OW.cand || OW.candErr || OW.yo)); }
   /* el nombre es un dato (nombre, o su número si no tiene): nunca pasa por T() */
   function nombreOwner(d) { return d.owner_nombre || d.owner_numero || T('alguien del equipo'); }
   function textoQuien(d) {
@@ -1929,16 +1947,6 @@
     y.textContent = !ya ? '' : (ownerOk(OW.d) ? Tf('Ahora lleva el equipo {n}: tú ya no cambias estos ajustes.', { n: nombreOwner(OW.d) }) : T('Ya no llevas el equipo: tú ya no cambias estos ajustes.'));
     oculta(y, !ya);
   }
-  function leeUsuarios() {
-    if (OW.leyendo) return;
-    OW.leyendo = true;
-    llama('usuarios_activos').then(function (r) {
-      OW.leyendo = false;
-      var ok = !r.error && Array.isArray(r.data) && r.data.every(function (u) { return esObj(u) && typeof u.user_id === 'string' && /^[0-9a-f-]{36}$/i.test(u.user_id); });
-      OW.usuarios = ok ? r.data : null; OW.usuariosErr = !ok;
-      if (AJ.paso === 'quien') pintaQuienPaso();
-    });
-  }
   function pintaQuienPaso() {
     var s = F('quien_owner');
     $a('aj-fs-quien').disabled = !puedeQuien();
@@ -1952,21 +1960,31 @@
     if (E.sucio.quien) return;
     vacia(s);
     msgAj('aj-msg-quien', '');
-    if (OW.usuariosErr) { s.appendChild(h('option', { value: '', text: '—' })); s.disabled = true; msgAj('aj-msg-quien', T('No se ha podido leer la lista de personas. No es que esté vacía: recarga la página.')); return; }
-    if (!OW.usuarios) { s.appendChild(h('option', { value: '', text: T('Cargando…') })); s.disabled = true; if (puedeQuien()) leeUsuarios(); return; }
-    s.disabled = false;
+    /* sin la lista de la base solo se puede ofrecer «Lo llevo yo»: la pista no dice «cualquier persona» si no hay a quién más elegir */
+    $a('aj-quien-pista').textContent = OW.cand || OW.candErr ? T('Cualquier persona activa de tu equipo, también tú.') : T('De momento solo puedes ponerte tú: la lista de tu equipo aún no está disponible.');
+    if (OW.candErr) { s.appendChild(h('option', { value: '', text: '—' })); s.disabled = true; msgAj('aj-msg-quien', T('No se ha podido leer la lista de personas. No es que esté vacía: recarga la página.')); return; }
+    var lista = OW.cand || [];
+    var yoFuera = !!OW.yo && !lista.some(function (u) { return u.user_id === OW.yo; });
+    s.disabled = !lista.length && !yoFuera;
     s.appendChild(h('option', { value: '', text: T('Elige una persona') }));
+    /* «Lo llevo yo»: quien mira (la persona propietaria) si no viene ya en la lista; su uid es el de su sesión y la base lo vuelve a comprobar */
+    if (yoFuera) s.appendChild(h('option', { value: OW.yo, text: T('Lo llevo yo') }));
     /* el número de usuario solo cuando dos personas comparten nombre (Diseño, 16-oct): es lo único que las distingue */
     var etq = function (u) { return String(u.nombre || u.numero_usuario || u.user_id); }, clave = function (u) { return etq(u).trim().toLowerCase(); }, veces = {};
-    OW.usuarios.forEach(function (u) { var k = clave(u); veces[k] = (veces[k] || 0) + 1; });
-    OW.usuarios.forEach(function (u) {
+    lista.forEach(function (u) { var k = clave(u); veces[k] = (veces[k] || 0) + 1; });
+    lista.forEach(function (u) {
       var rep = veces[clave(u)] > 1, extra = rep ? (u.nombre && u.numero_usuario ? u.numero_usuario : u.user_id.slice(0, 8)) : '';
-      s.appendChild(h('option', { value: u.user_id, text: etq(u) + (extra ? ' · ' + extra : '') }));
+      /* una cuenta del estudio se puede elegir, pero se dice en llano de quién es (es_estudio lo pone la base) */
+      s.appendChild(h('option', { value: u.user_id, text: etq(u) + (extra ? ' · ' + extra : '') + (u.es_estudio === true ? ' · ' + T('equipo de AxisWorks') : '') }));
     });
-    if (!OW.usuarios.length) msgAj('aj-msg-quien', T('No hay ninguna persona activa en tu equipo: añádela en Ajustes › Usuarios.'));
-    /* quien lo lleva ahora, marcado por su número de usuario (fijo, lo pone la base) */
-    var act = OW.d && OW.d.owner_numero ? OW.usuarios.filter(function (u) { return u.numero_usuario === OW.d.owner_numero; })[0] : null;
-    if (act && ownerOk(OW.d)) s.value = act.user_id;
+    /* lista vacía (la base no da a nadie más): se dice en llano, y lo que queda es «Lo llevo yo» si se puede */
+    if (OW.cand && !lista.length) msgAj('aj-msg-quien', yoFuera ? T('No hay nadie más que pueda llevar el equipo: puedes llevarlo tú, o añadir a alguien en Ajustes › Usuarios.')
+                                                              : T('No hay ninguna persona activa en tu equipo: añádela en Ajustes › Usuarios.'));
+    /* quien lo lleva ahora: si es quien mira, por su uid; si no, por su número de usuario (fijo, lo pone la base) */
+    if (!ownerOk(OW.d)) return;
+    if (OW.d.soy_owner && OW.yo) { s.value = OW.yo; return; }
+    var act = OW.d.owner_numero ? lista.filter(function (u) { return u.numero_usuario === OW.d.owner_numero; })[0] : null;
+    if (act) s.value = act.user_id;
   }
   /* el freno de agente_owner_pon (1 por minuto y 3 en 24 h) se sabe EXACTO con lo que da agente_owner_estado: cuándo fue el último cambio y cuántos hoy */
   function frenoQuien() {
@@ -1995,7 +2013,7 @@
       var m = res.cambia === false ? Tf('{n} ya llevaba el equipo.', { n: n }) : Tf('Ahora lleva el equipo {n}.', { n: n });
       if (res.subida_cancelada === true) m += ' ' + T('La subida del tope que estaba pendiente se ha anulado: la decide quien lleva ahora el equipo.');
       if (res.cambia !== false) GUARDADO_EN.quien = Date.now();
-      E.sucio.quien = false; OW.usuarios = null; OW.usuariosErr = false;
+      E.sucio.quien = false;
       carga().then(function () {
         C.libera(btn);
         if ($a('carga').getAttribute('data-tipo') !== 'listo' || rutaActual().vista !== 'ajustes') return;
@@ -3133,6 +3151,9 @@
   }
   function init(aut) {
     SB = aut.sb;
+    /* el uid de la propia sesión (para «Lo llevo yo»): un identificador, nunca un permiso; la base decide */
+    var uid = aut && aut.session && aut.session.user ? aut.session.user.id : null;
+    OW.yo = typeof uid === 'string' && UUID.test(uid) ? uid : null;
     raiz.addEventListener('click', alClic);
     /* lo que el dueño escribe en un paso no lo borra un repintado (otro botón, el sondeo): ver E.sucio */
     var PASO_FORM = { 'aj-f-quien': 'quien', 'aj-f-tope': 'tope', 'aj-f-negocio': 'negocio', 'aj-f-limites': 'limites', 'aj-f-trabajos': 'trabajos' };

@@ -109,15 +109,16 @@
     "owner_numero": "texto | null (USR-00001)",
     "cambiado_en": "instante | null: el último cambio de dueño",
     "cambios_24h": "entero: cambios de dueño en las últimas 24 h (freno 3)",
-    "ya_no_eres_owner": "bool: quien llama lo era antes del último cambio"
+    "ya_no_eres_owner": "bool: quien llama lo era antes del último cambio",
+    "candidatos": "[{user_id, numero_usuario, nombre, es_estudio}] por nombre: activas, sin la cuenta de pruebas (nunca), con las del estudio marcadas es_estudio true (se pueden elegir; la pantalla lo rotula), sin correo; SOLO con puedo_poner (si no, []). Sin la clave (base sin el cambio de Backend, 16-oct) la pantalla ofrece solo «Lo llevo yo»"
    },
-   "quien": "cualquier usuario activo por la API (42501 hint solo_api | sin_usuario); sin uid ni correo de nadie"
+   "quien": "cualquier usuario activo por la API (42501 hint solo_api | sin_usuario); nunca el correo de nadie, y los uid solo en candidatos y solo para la persona propietaria"
   }
  },
  "escrituras": {
   "agente_owner_pon": {
    "args": {
-    "p_user_id": "uuid de un usuario ACTIVO de esta base (de la lectura de `usuarios` de la pantalla, como Ajustes › Usuarios)",
+    "p_user_id": "uuid de un usuario ACTIVO de esta base (de agente_owner_estado.candidatos, o el uid de la propia sesión para «Lo llevo yo»); la base lo comprueba",
     "p_motivo": "texto 3-300 (la pantalla pone MOTIVO_AJ.quien)"
    },
    "devuelve": "{ok: true, cambia: bool, owner: {nombre, numero_usuario}, telegram_borrado: bool, subida_cancelada: bool}",

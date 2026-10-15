@@ -116,10 +116,9 @@ mira('Lawang no se toco: los ficheros siguen igual', all(open(os.path.join(build
 mira('ningun innerHTML ni insertAdjacentHTML ni outerHTML ni document.write', not re.search(r'innerHTML|insertAdjacentHTML|outerHTML|document\.write|\.append\(\s*`', CODIGO))
 mira('no usa el esc() de Lawang', not re.search(r'\besc\(|lwCajonHtml', CODIGO))
 mira('ningun console.log', 'console.log' not in CODIGO)
-# la ÚNICA lectura directa de tabla: la lista de personas del paso 0, la misma de Ajustes › Usuarios (RLS «el admin todas»), sin correo (15-oct)
-LEE_USUARIOS = "SB.from('usuarios').select('user_id,numero_usuario,nombre').eq('activo', true).order('nombre')"
-mira('una sola lectura de tabla (la lista de personas del paso 0: user_id, número y nombre de los activos, sin correo)', CODIGO.count(LEE_USUARIOS) == 1)
-mira('el navegador no toca tablas ni almacenamiento: ni otro .from( ni insert/update/upsert/delete ni storage', not re.search(r'\.from\(|\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.storage\b|localStorage|sessionStorage', CODIGO.replace(LEE_USUARIOS, '')))
+# ninguna lectura de tabla: la lista de personas del paso 0 la da la base en agente_owner_estado.candidatos (revisor 16-oct; gate escrituras_front)
+mira('agente.html no lee ninguna tabla: 0 SB.from', CODIGO.count('SB.from') == 0 and '.from(' not in JS + MARCADO)
+mira('el navegador no toca tablas ni almacenamiento: ni .from( ni insert/update/upsert/delete ni storage', not re.search(r'\.from\(|\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.storage\b|localStorage|sessionStorage', CODIGO))
 mira('no nombra claves de servicio', not re.search(r'service_role|sb_secret_', JS + MARCADO))
 mira('no trae un rol cableado: quien es dueño lo dice la base (soy_dueno / puedo_decidir)', not re.search(r"rol\s*===|\.rol\b|es_admin|esAdmin|LW_ROL|super_admin", CODIGO) and 'soy_dueno' in CODIGO)
 CONTRATO = set(FORMA['lecturas']) | set(FORMA['escrituras'])
@@ -242,7 +241,8 @@ mira('el paso 0 lee cada clave de agente_owner_estado del contrato' + (' (no lee
 mira('paso 0: un formulario con UN campo (la persona), enlazable por #ajustes-quien, y fuera de la barra de pasos',
      'data-ag="aj-f-quien"' in MARCADO and controles_fuera_de_details('quien') == 1 and 'href="#ajustes-quien"' in MARCADO and 'data-paso="quien"' not in MARCADO.split('data-ag="aj-pasos"')[1].split('</ol>')[0])
 mira('paso 0: sin la función en la base (404 / PGRST202) no se enseña y nada se rompe', "err.code === 'PGRST202'" in CODIGO and "OW.err = noExiste(r.error) ? '' :" in CODIGO)
-mira('paso 0: la lista de personas solo se pide si quien mira puede nombrar', 'if (puedeQuien()) leeUsuarios();' in CODIGO and "llama('usuarios_activos')" in CODIGO)
+mira('paso 0: la lista de personas sale de agente_owner_estado.candidatos (con su forma comprobada) y «Lo llevo yo» del uid de la sesión',
+     'r.data.candidatos' in CODIGO and 'candOk(c)' in CODIGO and 'aut.session.user.id' in CODIGO and "T('Lo llevo yo')" in CODIGO)
 mira('paso 0: el freno exacto sale de lo que da la base (cambiado_en y cambios_24h)', 'function frenoQuien()' in CODIGO and 'd.cambios_24h >= 3' in CODIGO)
 mira('paso 0: subida_cancelada se le dice a quien lo cambia', "res.subida_cancelada === true" in CODIGO)
 mira('agente_nota_decide y agente_propuesta_decide siguen en el contrato como «sin llamador» y la pantalla no las llama',
