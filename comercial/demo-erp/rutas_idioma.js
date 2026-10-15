@@ -96,8 +96,9 @@
       var nk = kd, nv = vd;
       var param = has(Q, kd) ? kd : (has(Q_ES, kd) ? Q_ES[kd] : null);
       if (param) {
-        var vi = claveDe(vd) || vd;
-        if (haciaVisible && EN) { nk = Q[param]; nv = has(R, vi) ? R[vi] : vi; } else { nk = param; nv = vi; }
+        // el valor puede ser una lista (data-herramienta="facturas,operaciones,reservas-producto" de /ventas/): cada clave por su lado
+        var vi = vd.split(',').map(function (x) { return claveDe(x) || x; }).join(',');
+        if (haciaVisible && EN) { nk = Q[param]; nv = vi.split(',').map(function (x) { return has(R, x) ? R[x] : x; }).join(','); } else { nk = param; nv = vi; }
       } else if (QR.indexOf(kd) >= 0) {
         nv = haciaVisible ? visible(vd) : interna(vd);
       } else continue;

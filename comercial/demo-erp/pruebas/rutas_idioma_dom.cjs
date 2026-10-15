@@ -76,10 +76,12 @@ function mundo(js, { ruta = '/home/', almacen = {}, enlaces = [], state = null }
   ok(JSON.stringify(c.axwRutaAlias('/facturas/')) === '["/facturas/","/invoices/"]' && JSON.stringify(c.axwRutaAlias('/home/')) === '["/home/"]', 'alias para las hojas', [c.axwRutaAlias('/facturas/'), c.axwRutaAlias('/home/')]);
   const busca = [['?sin_permiso=taller', '?no_access=workshop'], ['?sin_permiso=Panel%20de%20control', '?no_access=Panel%20de%20control'],
     ['?a=1+2&sin_permiso=gastos&b=%41', '?a=1+2&no_access=expenses&b=%41'], ['?next=%2Ftaller%2F%3Fid%3D3', '?next=%2Fworkshop%2F%3Fid%3D3'], ['?id=1', '?id=1'], ['', ''], ['?', '?'],
-    ['?no_access=workshop', '?no_access=workshop'], ['?sin_permiso=crm', '?no_access=crm']];
+    ['?no_access=workshop', '?no_access=workshop'], ['?sin_permiso=crm', '?no_access=crm'],
+    ['?sin_permiso=facturas%2Coperaciones%2Creservas-producto', '?no_access=invoices%2Cdeals%2Cbookings']];
   for (const [i, v] of busca) ok(c.axwBuscaVisible(i) === v, 'busca visible ' + i, c.axwBuscaVisible(i));
   const buscaI = [['?no_access=workshop', '?sin_permiso=taller'], ['?sin_permiso=taller', '?sin_permiso=taller'], ['?next=%2Fworkshop%2F', '?next=%2Ftaller%2F'],
-    ['?a=1+2&no_access=expenses&b=%41', '?a=1+2&sin_permiso=gastos&b=%41'], ['?no_access=%E0%A4', '?no_access=%E0%A4']];
+    ['?a=1+2&no_access=expenses&b=%41', '?a=1+2&sin_permiso=gastos&b=%41'], ['?no_access=%E0%A4', '?no_access=%E0%A4'],
+    ['?no_access=invoices%2Cdeals%2Cbookings', '?sin_permiso=facturas%2Coperaciones%2Creservas-producto']];
   for (const [i, v] of buscaI) ok(c.axwBuscaInterna(i) === v, 'busca interna ' + i, c.axwBuscaInterna(i));
   ok(c.axwHashInterno('#companies', '/settings/') === '#sociedades' && c.axwHashInterno('#sociedades', '/ajustes/') === '#sociedades', 'hash interno en Ajustes');
   ok(c.axwHashVisible('#sociedades', '/ajustes/') === '#companies' && c.axwHashVisible('#puesta', '/settings/') === '#setup', 'hash visible en Ajustes');
