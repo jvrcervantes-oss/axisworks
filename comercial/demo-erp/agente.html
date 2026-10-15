@@ -168,11 +168,11 @@
 .ag2 .ag2-tabs a[aria-current="page"]{background:var(--indigo)}
 .ag2[data-vista="ajustes"] [data-ag="v2-cuerpo"],.ag2[data-vista="apagado"] [data-ag="v2-cuerpo"]{display:none!important}
 .ag2:not([data-vista="ajustes"]) [data-ag="v2-ajustes"]{display:none}
-.ag2[data-vista="apagado"] .ag2-tabs,.ag2[data-vista="apagado"] .ag2-reloj{display:none}
+.ag2[data-vista="apagado"] .ag2-tabs,.ag2[data-vista="apagado"] .ag2-reloj,.ag2[data-vista="ajustes"] .ag2-reloj{display:none}
 .ag2:not([data-vista="apagado"]) [data-ag="v2-apagado"]{display:none}
-.ag2[data-vista="ajustes"] [data-ag="v2-falta"]{display:none}
-.ag2-falta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:18px;background:rgba(255,122,69,.14);border:1px solid rgba(255,122,69,.5);color:var(--text-hi)}
-.ag2-falta p{margin:0;min-width:0;flex:1 1 240px;overflow-wrap:anywhere}
+.ag2[data-vista="ajustes"] [data-ag="v2-falta"],.ag2[data-vista="ajustes"] [data-ag="v2-esperan"]{display:none}
+.ag2-aviso-falta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:18px;background:rgba(255,122,69,.14);border:1px solid rgba(255,122,69,.5);color:var(--text-hi)}
+.ag2-aviso-falta p{margin:0;min-width:0;flex:1 1 240px;overflow-wrap:anywhere}
 .ag2 a.ag2-btn,.ag2 a.ag2-btn2{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;text-align:center}
 .ag2 a.ag2-btn{color:#0B0C1E}
 .ag2 a.ag2-btn2{color:var(--text-hi)}
@@ -258,8 +258,19 @@
   .ag2-escena{padding:16px}
   .ag2-areas,.ag2-conns{grid-template-columns:minmax(0,1fr)}
   .ag2-v{font-size:24px}
-  .ag2-why{grid-template-columns:minmax(0,1fr)}
-  .ag2-aj-paso{padding:16px}
+  .ag2-why{grid-template-columns:minmax(0,1fr);gap:6px}
+  /* en móvil «Para qué sirve: …» va en un solo párrafo: cada paso cabe en una pantalla de 844 px (medida en indonesio, el idioma más largo) */
+  .ag2-why>div{display:block;padding:8px 10px}
+  .ag2-why dt,.ag2-why dd{display:inline}
+  .ag2-why dt::after{content:': '}
+  .ag2-aj-paso{padding:16px;gap:12px}
+  .ag2-aj-paso fieldset{gap:12px}
+  .ag2-lims{gap:4px}
+  .ag2-lim{padding:6px 10px;gap:0 12px}
+  .ag2-lim .s{font-size:12px}
+  .ag2-aj-cab .ag2-msg{padding:8px 12px}
+  /* los botones de un paso, de dos en dos y a lo ancho (el texto largo del indonesio parte dentro del botón, no baja el botón a otra fila) */
+  .ag2-aj-paso .ag2-acc>.ag2-btn,.ag2-aj-paso .ag2-acc>.ag2-btn2{flex:1 1 120px;min-width:0;padding:6px 12px;text-align:center}
   .ag2 .ag2-pasos a{padding:8px}
   .ag2-niveles{grid-template-columns:minmax(0,1fr)}
 }
@@ -290,7 +301,7 @@
 <p class="ag2-msg axw-oculto" data-ag="v2-ok" data-tono="ok" role="status"></p>
 <p class="ag2-msg axw-oculto" data-ag="v2-error" data-tono="mal" role="alert"></p>
 <!-- Lo que le falta al equipo para empezar (falta_configurar de agente_panel_estado), con el botón que abre ese paso -->
-<div class="ag2-falta axw-oculto" data-ag="v2-falta" role="status">
+<div class="ag2-aviso-falta axw-oculto" data-ag="v2-falta" role="status">
 <p data-ag="v2-falta-txt"></p>
 <a class="ag2-btn axw-oculto" data-ag="v2-falta-ir" href="#ajustes"><span data-lwt>Hacerlo ahora</span></a>
 </div>
@@ -502,6 +513,8 @@
 <textarea id="ag2-aj-quien" rows="3" maxlength="600" data-campo="ctx_quien" data-tope="600" aria-describedby="ag2-aj-quien-c"></textarea>
 <p class="ag2-cuenta" id="ag2-aj-quien-c" data-ag="cuenta-ctx_quien"></p>
 </div>
+<details class="ag2-mas" data-ag="aj-reglas">
+<summary data-lwt>Más detalles: horarios, tono y reglas (opcional)</summary>
 <div class="ag2-campo">
 <label for="ag2-aj-horarios" data-lwt>Horarios (opcional)</label>
 <input id="ag2-aj-horarios" type="text" autocomplete="off" maxlength="300" data-campo="ctx_horarios" data-tope="300">
@@ -510,10 +523,8 @@
 <label for="ag2-aj-tono" data-lwt>Tono (opcional)</label>
 <input id="ag2-aj-tono" type="text" autocomplete="off" maxlength="200" data-campo="ctx_tono" data-tope="200">
 </div>
-<details class="ag2-mas" data-ag="aj-reglas">
-<summary data-lwt>Reglas que tiene que seguir (opcional)</summary>
 <div class="ag2-campo">
-<label class="ag2-sr" for="ag2-aj-reglas" data-lwt>Reglas que tiene que seguir</label>
+<label for="ag2-aj-reglas" data-lwt>Reglas que tiene que seguir (opcional)</label>
 <textarea id="ag2-aj-reglas" rows="4" data-campo="ctx_reglas" aria-describedby="ag2-aj-reglas-p"></textarea>
 <p class="ag2-pista" id="ag2-aj-reglas-p" data-lwt>Una regla por línea: como mucho 20, de hasta 200 caracteres cada una. Sin enlaces.</p>
 <p class="ag2-cuenta" data-ag="cuenta-ctx_reglas"></p>
@@ -608,12 +619,10 @@
   'use strict';
   var EN_AG = {
     'AaaS': 'AaaS',
-    'Estado': 'Status', 'Hoy': 'Today',
-    'Trabajos y tope': 'Jobs and spending cap', 'Qué trabajos hace': 'Which jobs it does', 'Nivel de Ruta': 'Route level',
+    'Qué trabajos hace': 'Which jobs it does', 'Nivel de Ruta': 'Route level',
     '0 · No hace la pasada': '0 · Does not run', '1 · Mira y avisa': '1 · Looks and alerts',
     'Tope de gasto al mes': 'Monthly spending cap', 'Guardar': 'Save',
-    'Más adelante': 'Later',
-    'Módulo': 'Module', 'Encendido': 'On', 'Trabajo': 'Work', 'Trabajando': 'Working',
+    'Trabajando': 'Working',
     'El AaaS es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.': 'The AaaS is a paid service: turning it on means hiring it on the terms agreed with the studio.',
     'Hoy las acciones del AaaS no gastan dinero: el tope de cada módulo es orientativo. Lo que frena el gasto es el tope del mes.': "Today the AaaS actions don't spend money: each module's cap is a guide. What stops spending is the monthly cap.",
     'Como mucho {x}: es el máximo que ha fijado el estudio.': 'At most {x}: the maximum set by the studio.', 'Sin configurar': 'Not set up',
@@ -623,16 +632,14 @@
     'El estudio aún no ha preparado la ficha del AaaS en esta instancia: la crea con el alta.': 'The studio has not prepared the AaaS profile on this instance yet: it creates it at sign-up.',
     'Le falta un paso de la configuración del ERP ({x}).': 'A step of the ERP setup is missing ({x}).',
     'No se ha podido leer la configuración del AaaS. Avisa al estudio.': 'The AaaS setup could not be read. Tell the studio.',
-    'Tope': 'Cap',
     'tope 0: no puede gastar': 'cap 0: it cannot spend',
-    'Parar': 'Pause', 'Reanudar': 'Resume', 'Encender el AaaS': 'Switch the AaaS on', 'Apagar el AaaS': 'Switch the AaaS off',
+    'Reanudar': 'Resume', 'Encender el AaaS': 'Switch the AaaS on', 'Apagar el AaaS': 'Switch the AaaS off',
     'El AaaS está apagado: no mira nada ni escribe nada.': 'The AaaS is off: it reads nothing and writes nothing.',
     'Lo enciende el dueño de la ficha del AaaS.': 'The owner of the AaaS settings switches it on.',
     'Solo lo cambia el dueño de la ficha del AaaS.': 'Only the owner of the AaaS settings can change this.',
     'Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.': 'Switching the AaaS off stops it reading and writing at once. Its notes stay here.',
     'Motivo': 'Reason', 'Escribe el motivo (entre 3 y 300 caracteres).': 'Write the reason (3 to 300 characters).',
     'Confirmar': 'Confirm', 'Hecho': 'Done', 'Aceptar': 'Accept', 'Rechazar': 'Reject',
-    'el': 'on',
     'Pendiente': 'Pending', 'Aceptada': 'Accepted', 'Rechazada': 'Rejected',
     'Flota y taller': 'Fleet and workshop', 'Salidas y recogidas de mañana': "Tomorrow's handovers and pick-ups", 'Motos que no han vuelto': 'Bikes not back yet',
     'Reservas sin pagar que caducan': 'Unpaid bookings about to expire', 'Cobros por cuadrar': 'Payments to reconcile', 'Qué sacar primero del taller': 'What to get out of the workshop first',
@@ -654,14 +661,10 @@
     'No hace nada en ese módulo.': 'It does nothing in that module.',
     'Lo propone y decide el dueño': 'Proposes it, the owner decides',
     'Lo hace, sin pasar del tope': 'Does it, within the cap',
-    'La hace sin preguntar mientras no gaste más que el tope de ese módulo.': 'It does it without asking, as long as it spends no more than that module’s cap.',
     'Lo hace solo': 'Does it on its own',
     'La hace sin preguntar.': 'It does it without asking.',
     'Guardar los límites': 'Save the limits',
     'Quién es el negocio': 'Who the business is',
-    'Horarios': 'Opening hours',
-    'Reglas que tiene que seguir': 'Rules it must follow',
-    'Tono': 'Tone',
     'Límites': 'Limits',
     'Trabajos': 'Jobs',
     'Ruta': 'Route',
@@ -963,6 +966,7 @@
     'Qué quiere decir cada nivel': 'What each level means',
     'Recomendado': 'Recommended',
     'Reglas que tiene que seguir (opcional)': 'Rules it must follow (optional)',
+    'Más detalles: horarios, tono y reglas (opcional)': 'More details: hours, tone and rules (optional)',
     'Saltar': 'Skip',
     'Si lo saltas': 'If you skip it',
     'Sin límites, tu equipo no empieza.': 'Without limits, your team does not start.',
@@ -995,12 +999,10 @@
   };
   var ID_AG = {
     'AaaS': 'AaaS',
-    'Estado': 'Status', 'Hoy': 'Hari ini',
-    'Trabajos y tope': 'Tugas dan batas biaya', 'Qué trabajos hace': 'Tugas yang dikerjakan', 'Nivel de Ruta': 'Level Rute',
+    'Qué trabajos hace': 'Tugas yang dikerjakan', 'Nivel de Ruta': 'Level Rute',
     '0 · No hace la pasada': '0 · Tidak berjalan', '1 · Mira y avisa': '1 · Memeriksa dan memberi peringatan',
     'Tope de gasto al mes': 'Batas biaya per bulan', 'Guardar': 'Simpan',
-    'Más adelante': 'Nanti',
-    'Módulo': 'Modul', 'Encendido': 'Aktif', 'Trabajo': 'Kerja', 'Trabajando': 'Bekerja',
+    'Trabajando': 'Bekerja',
     'El AaaS es un servicio de pago: encenderlo es contratarlo según lo acordado con el estudio.': 'AaaS adalah layanan berbayar: menyalakannya berarti menggunakannya sesuai kesepakatan dengan studio.',
     'Hoy las acciones del AaaS no gastan dinero: el tope de cada módulo es orientativo. Lo que frena el gasto es el tope del mes.': 'Saat ini tindakan AaaS tidak mengeluarkan uang: batas tiap modul hanya panduan. Yang menahan pengeluaran adalah batas bulanan.',
     'Como mucho {x}: es el máximo que ha fijado el estudio.': 'Paling banyak {x}: batas maksimum dari studio.', 'Sin configurar': 'Belum diatur',
@@ -1010,16 +1012,14 @@
     'El estudio aún no ha preparado la ficha del AaaS en esta instancia: la crea con el alta.': 'Studio belum menyiapkan profil AaaS di instans ini: dibuat saat pendaftaran.',
     'Le falta un paso de la configuración del ERP ({x}).': 'Ada langkah pengaturan ERP yang belum selesai ({x}).',
     'No se ha podido leer la configuración del AaaS. Avisa al estudio.': 'Pengaturan AaaS tidak bisa dibaca. Beri tahu studio.',
-    'Tope': 'Batas',
     'tope 0: no puede gastar': 'batas 0: tidak bisa membelanjakan',
-    'Parar': 'Jeda', 'Reanudar': 'Lanjutkan', 'Encender el AaaS': 'Aktifkan AaaS', 'Apagar el AaaS': 'Matikan AaaS',
+    'Reanudar': 'Lanjutkan', 'Encender el AaaS': 'Aktifkan AaaS', 'Apagar el AaaS': 'Matikan AaaS',
     'El AaaS está apagado: no mira nada ni escribe nada.': 'AaaS nonaktif: tidak membaca dan tidak menulis apa pun.',
     'Lo enciende el dueño de la ficha del AaaS.': 'Yang mengaktifkannya adalah pemilik pengaturan AaaS.',
     'Solo lo cambia el dueño de la ficha del AaaS.': 'Hanya pemilik pengaturan AaaS yang dapat mengubahnya.',
     'Apagar el AaaS deja de verlo y de escribir en el acto. Sus notas se quedan aquí.': 'Mematikan AaaS langsung menghentikannya membaca dan menulis. Catatannya tetap di sini.',
     'Motivo': 'Alasan', 'Escribe el motivo (entre 3 y 300 caracteres).': 'Tulis alasannya (3 sampai 300 karakter).',
     'Confirmar': 'Konfirmasi', 'Hecho': 'Selesai', 'Aceptar': 'Terima', 'Rechazar': 'Tolak',
-    'el': 'pada',
     'Pendiente': 'Tertunda', 'Aceptada': 'Diterima', 'Rechazada': 'Ditolak',
     'Flota y taller': 'Armada dan bengkel', 'Salidas y recogidas de mañana': 'Serah terima dan penjemputan besok', 'Motos que no han vuelto': 'Motor yang belum kembali',
     'Reservas sin pagar que caducan': 'Booking belum dibayar yang akan kedaluwarsa', 'Cobros por cuadrar': 'Pembayaran yang perlu dicocokkan', 'Qué sacar primero del taller': 'Yang perlu dikeluarkan dulu dari bengkel',
@@ -1041,14 +1041,10 @@
     'No hace nada en ese módulo.': 'Tidak melakukan apa pun di modul itu.',
     'Lo propone y decide el dueño': 'Diusulkan, pemilik yang memutuskan',
     'Lo hace, sin pasar del tope': 'Dijalankan, tanpa melewati batas',
-    'La hace sin preguntar mientras no gaste más que el tope de ese módulo.': 'Dijalankan tanpa bertanya selama biayanya tidak melebihi batas modul itu.',
     'Lo hace solo': 'Dijalankan sendiri',
     'La hace sin preguntar.': 'Dijalankan tanpa bertanya.',
     'Guardar los límites': 'Simpan batas',
     'Quién es el negocio': 'Tentang usaha ini',
-    'Horarios': 'Jam buka',
-    'Reglas que tiene que seguir': 'Aturan yang harus diikuti',
-    'Tono': 'Nada bicara',
     'Límites': 'Batas',
     'Trabajos': 'Tugas',
     'Ruta': 'Rute',
@@ -1350,6 +1346,7 @@
     'Qué quiere decir cada nivel': 'Arti setiap level',
     'Recomendado': 'Disarankan',
     'Reglas que tiene que seguir (opcional)': 'Aturan yang harus diikuti (opsional)',
+    'Más detalles: horarios, tono y reglas (opcional)': 'Detail lain: jam buka, nada bicara, dan aturan (opsional)',
     'Saltar': 'Lewati',
     'Si lo saltas': 'Jika dilewati',
     'Sin límites, tu equipo no empieza.': 'Tanpa batas, tim Anda tidak mulai.',
@@ -1601,7 +1598,7 @@
       F('ctx_horarios').value = typeof c.horarios === 'string' ? c.horarios : '';
       F('ctx_tono').value = typeof c.tono === 'string' ? c.tono : '';
       F('ctx_reglas').value = Array.isArray(c.reglas) ? c.reglas.filter(function (r) { return typeof r === 'string'; }).join('\n') : '';
-      $a('aj-reglas').open = !!F('ctx_reglas').value;
+      $a('aj-reglas').open = !!(F('ctx_reglas').value || F('ctx_horarios').value || F('ctx_tono').value);
     }
     cuentas();
   }
@@ -1614,6 +1611,8 @@
     var aj = raiz.querySelector('[data-accion="ag-aj-ajustar"]');
     aj.setAttribute('aria-expanded', String(AJ.modoLim));
     oculta($a('aj-lim-guardar'), !AJ.modoLim);
+    /* ajustando a mano, «Usar lo recomendado» pisaría lo elegido con un clic: se esconde y queda un solo botón principal (Guardar los límites) */
+    oculta(raiz.querySelector('[data-accion="ag-aj-recomendado"]'), AJ.modoLim);
     if (!E.sucio.limites) {
       vacia(ul);
       if (!L.length) ul.appendChild(h('li', { class: 'ag2-pista', 'data-ag': 'sin-limites', text: T('Ningún módulo de este ERP puede llevar límite ahora mismo.') }));
@@ -1705,7 +1704,14 @@
       msgAj('aj-ok', Tf('{x}: guardado.', { x: T(NOMBRE_PASO[paso]) }));
     });
   }
-  function ir(hash) { if (location.hash === hash) aplicaRuta(true); else location.hash = hash; }
+  /* ir a un paso: se pinta YA (pushState no espera al hashchange, que llegaría después y borraría el «guardado»); atrás del navegador sigue
+     funcionando porque recorrer entradas con otro fragmento dispara hashchange */
+  function ir(hash) {
+    if (location.hash !== hash) {
+      try { history.pushState(null, '', hash); } catch (e) { /* MUDO A PROPOSITO: sin pushState se navega por el hash y lo pinta el hashchange */ location.hash = hash; return; }
+    }
+    aplicaRuta(true);
+  }
   function guardaTope(btn) {
     var d = E.estado; if (!d || !d.soy_dueno) return;
     var imp = C.importeIdioma(F('aj-tope').value, 2), techo = ent(d.tope_techo_cent) ? d.tope_techo_cent : 0;
@@ -1761,7 +1767,7 @@
     else if (ctx.quien.length > 600 || (ctx.horarios || '').length > 300 || (ctx.tono || '').length > 200) malo = T('Algún campo pasa de su largo máximo: mira el contador de cada uno.');
     else if (reglas.length > 20) malo = Tf('Como mucho 20 reglas, y hay {n}.', { n: reglas.length });
     else if (larga >= 0) malo = Tf('La regla {n} pasa de 200 caracteres.', { n: larga + 1 });
-    if (malo) { if (reglas.length > 20 || larga >= 0) $a('aj-reglas').open = true; msgAj('aj-msg-negocio', malo); return; }
+    if (malo) { if (ctx.quien) $a('aj-reglas').open = true; msgAj('aj-msg-negocio', malo); return; }
     if (huellaCtx(ctx) === huellaCtx(d.contexto)) { E.sucio.negocio = false; msgAj('aj-msg-negocio', ''); ir('#ajustes-' + siguiente('negocio', d)); return; }
     if (!C.ocupa(btn)) return;
     msgAj('aj-msg-negocio', '');
@@ -2489,6 +2495,13 @@
     return textoError(err, true);
   }
   /* Lee el panel V2. Un fallo aquí se dice EN el panel (no he podido mirar ≠ no hay nada) y no tumba el resto de la pantalla. */
+  /* «Esperan tu OK» vive en «Lo que han hecho»; si el panel no se puede leer (y se esconde), las decisiones pendientes no dependen de él: la caja
+     sale arriba, junto al aviso de pendientes, y vuelve a su sitio en cuanto el panel se lee. Se mueve el MISMO nodo (sin copias). */
+  function sitioEsperan(fuera) {
+    var s = $a('v2-esperan'), ancla = fuera ? $a('pendientes') : $a('v2-registro');
+    if (fuera) { if (s.previousElementSibling !== ancla) ancla.parentNode.insertBefore(s, ancla.nextSibling); }
+    else if (s.nextElementSibling !== ancla) ancla.parentNode.insertBefore(s, ancla);
+  }
   function leeV2() {
     var caja = $a('v2'), n = ++V.lectura;
     oculta(caja, false);
@@ -2502,10 +2515,12 @@
       if (r.error || !v2Ok(r.data)) {
         msgV2('v2-error', r.error ? textoLectura(r.error, 'panel') : T(NO_MIRADO), esDemo(r.error) ? 'neutro' : null);
         oculta($a('v2-cuerpo'), true);
+        sitioEsperan(true);
         V.d = null; reloj();
         return;
       }
       msgV2('v2-error', '');
+      sitioEsperan(false);
       V.d = r.data;
       V.con = rc.error || !Array.isArray(rc.data) ? null : rc.data;
       V.conDemo = esDemo(rc.error);
