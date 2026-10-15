@@ -294,7 +294,7 @@
    *  · Guarda con usuario_guarda_permisos, la RPC de la ficha de Usuarios, que REEMPLAZA el array entero: por eso relee el `herramientas` de
    *    cada persona justo antes y manda ESE array con solo esta herramienta puesta o quitada (nunca el leído al pintar ni una lista filtrada).
    *  · «Puede crear / solo ver» del diseño no se pinta: la base no tiene niveles por herramienta (lista de Backend). Invitar = alta de Usuarios. */
-  var COLS_USUARIO = 'user_id,nombre,email,rol,activo,herramientas,creado_por';
+  var COLS_USUARIO = 'user_id,nombre,email,rol,activo,herramientas,creado_por,es_propietario';   // es_propietario: B1 (098000, en todas)
   // M5 de la auditoría del setup de bbm (15-oct-2026): la cuenta del estudio salía como otro «Administrador principal» y Noelia no sabía quién era.
   // Se rotula «Soporte de AxisWorks», sin casilla y sin contar, como hace la base (098100: _modulo_setup_pasos no cuenta las cuentas del estudio).
   // La MISMA regla que _es_cuenta_estudio (098000): dominio exacto tras la última @ = axisworks.studio, sin mayúsculas ni espacios; y lo creado por
@@ -339,8 +339,11 @@
       caja.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('quien_nota') }));
       function recuenta() {
         if (!st.lista) return;
-        // la regla de la base: en un módulo operativo el administrador principal no cuenta; en uno administrativo, sí
-        var n = (operativo(ctx.paso.modulo) ? 0 : st.lista.filter(function (u) { return u.rol === 'super_admin' && !esEstudio(u); }).length)
+        // la regla de la base (_modulo_setup_pasos; B1, owner 15-oct, 20261015190000): en un módulo operativo cuenta la dueña (es_propietario) y no
+        // otro administrador principal; en uno administrativo, cualquier administrador principal. Nunca una cuenta del estudio. Es solo el número que
+        // se enseña mientras se marcan casillas: si el paso está hecho lo dice la base (ctx.paso.hecho).
+        var op = operativo(ctx.paso.modulo);
+        var n = st.lista.filter(function (u) { return !esEstudio(u) && (op ? u.es_propietario === true : u.rol === 'super_admin'); }).length
               + lista.querySelectorAll('input[data-axw-quien-usuario]:checked').length;
         cuenta.textContent = n === 1 ? U('quien_uno', { m: m }) : U('quien_n', { n: String(n), m: m });
       }
@@ -374,7 +377,8 @@
               el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', style: 'overflow-wrap:anywhere', text: estudio ? U('quien_estudio') : principal ? U('quien_principal') : String(u.email || '') })]),
             der]));
         });
-        if (!st.lista.some(function (u) { return u.rol !== 'super_admin' && !esEstudio(u); }))
+        // «Aún no hay nadie más»: solo si la base no da el paso por hecho (con B1, en un módulo operativo la dueña sola ya lo cumple)
+        if (!ctx.paso.hecho && !st.lista.some(function (u) { return u.rol !== 'super_admin' && !esEstudio(u); }))
           lista.appendChild(el('li', { class: 'px-4 py-3 border-t border-outline-variant font-body-md text-body-md text-on-surface-variant', 'data-axw-quien': 'solo-tu', text: U('quien_solo_tu') }));
         recuenta();
       }); }

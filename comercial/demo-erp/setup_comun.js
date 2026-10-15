@@ -66,7 +66,7 @@
       co_correo_sin_clave: 'Falta una clave del servidor: el correo todavía no se puede configurar desde el ERP. Avisa al estudio.',
       co_correo_como: 'El servidor, el remitente y la prueba se hacen en Ajustes › Correo: te mandamos un código a tu correo, pruebas el servidor con un envío real y solo si llega se guarda.',
       co_correo_abrir: 'Configurar el correo y enviar una prueba',
-      co_correo_solo_admin: 'El correo de salida lo configura el administrador principal.',
+      co_correo_solo_admin: 'El correo de salida lo configura un administrador.',
       co_taller_necesario: 'Necesario para abrir el Taller',
       co_taller_nota: 'Estos pasos no frenan las reservas. El Taller se abre al equipo cuando tiene las revisiones y un mecánico.',
       co_taller_listas: 'Se hace en el Taller, en la pestaña de listas.',
@@ -110,7 +110,7 @@
     'Falta una clave del servidor: el correo todavía no se puede configurar desde el ERP. Avisa al estudio.': 'A server key is missing: email cannot be set up from the ERP yet. Tell the studio.',
     'El servidor, el remitente y la prueba se hacen en Ajustes › Correo: te mandamos un código a tu correo, pruebas el servidor con un envío real y solo si llega se guarda.': 'The server, the sender and the test are done in Settings › Email: we send a code to your email, you test the server with a real email, and it is saved only if it arrives.',
     'Configurar el correo y enviar una prueba': 'Set up email and send a test',
-    'El correo de salida lo configura el administrador principal.': 'Outgoing email is set up by the main administrator.',
+    'El correo de salida lo configura un administrador.': 'Outgoing email is set up by an administrator.',
     'Necesario para abrir el Taller': 'Needed to open the Workshop',
     'Estos pasos no frenan las reservas. El Taller se abre al equipo cuando tiene las revisiones y un mecánico.': 'These steps do not hold up bookings. The Workshop opens to the team once it has the checks and a mechanic.',
     'Se hace en el Taller, en la pestaña de listas.': 'Done in the Workshop, in the lists tab.',
@@ -150,7 +150,7 @@
     'Falta una clave del servidor: el correo todavía no se puede configurar desde el ERP. Avisa al estudio.': 'Ada kunci server yang belum diisi: email belum bisa diatur dari ERP. Beri tahu studio.',
     'El servidor, el remitente y la prueba se hacen en Ajustes › Correo: te mandamos un código a tu correo, pruebas el servidor con un envío real y solo si llega se guarda.': 'Server, pengirim, dan uji coba diatur di Pengaturan › Email: kami mengirim kode ke email Anda, Anda menguji server dengan email sungguhan, dan baru tersimpan jika email itu sampai.',
     'Configurar el correo y enviar una prueba': 'Atur email dan kirim uji coba',
-    'El correo de salida lo configura el administrador principal.': 'Email keluar diatur oleh admin utama.',
+    'El correo de salida lo configura un administrador.': 'Email keluar diatur oleh admin.',
     'Necesario para abrir el Taller': 'Diperlukan untuk membuka bengkel',
     'Estos pasos no frenan las reservas. El Taller se abre al equipo cuando tiene las revisiones y un mecánico.': 'Langkah-langkah ini tidak menghambat booking. Bengkel dibuka untuk tim setelah ada daftar pemeriksaan dan seorang mekanik.',
     'Se hace en el Taller, en la pestaña de listas.': 'Dilakukan di Bengkel, pada tab daftar.',
@@ -595,15 +595,14 @@
   // Sugeridas (owner vía agencia-c0, 15-oct-2026: «¿por qué Expense categories es obligatorio?»): con CERO categorías, el paso propone una lista ya
   // hecha para el tipo de negocio, todas marcadas, y el botón principal dice «Usar estas». La lista la da LA BASE (agencia-c0, decisión por defecto:
   // «nada del ERP fuera de su base», como taller_lista_basica): gasto_categorias_sugeridas() → [{nombre, grupo}], con el nombre ya en los idiomas de
-  // la instancia; la escribe Backend (bbm-resumen). Mientras no exista en la base, la pantalla no la llama (el contrato front↔base pararía la
-  // publicación) y el paso se queda con el campo libre de siempre: el punto de enganche es PS.sugeridasGasto (una función → promesa de esa lista),
-  // que hoy solo pone el arnés. Lo que llegue se vuelve a mirar aquí (nombre 1-80 sin = + - @ al principio, grupo de la lista, sin repetidos) y la
-  // base comprueba cada alta.
+  // la instancia; la escribe Backend (bbm-resumen, 20261015190000). Si la base no la tiene o falla, el paso se queda con el campo libre de siempre.
+  // Lo que llegue se vuelve a mirar aquí (nombre 1-80 sin = + - @ al principio, grupo de la lista, sin repetidos) y la base comprueba cada alta.
   function nombreValido(n) { return !!n && n.length <= 80 && !/^[=+\-@]/.test(n); }
   function sugeridas() {
-    var f = typeof PS.sugeridasGasto === 'function' ? PS.sugeridasGasto : null;
-    if (!f) return Promise.resolve(null);
-    return Promise.resolve().then(f).then(function (l) {
+    return sesion().then(function (sb) {
+      if (!sb) return null;
+      return resultado(sb.rpc('gasto_categorias_sugeridas')).then(function (r) { return r.ok ? r.data : null; });
+    }).then(function (l) {
       if (!Array.isArray(l)) return null;
       var vistos = {};
       return l.map(function (e) {

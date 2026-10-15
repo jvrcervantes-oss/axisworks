@@ -417,7 +417,7 @@ const C = '[data-axw-cobros-caja]';
   await ctx.close();
   b = base({ puede: false });
   ({ p, ctx } = await abre(nav, b, { tipo: 'asistente', url: '/ajustes/configurar/?modulo=reservas-producto&paso=cobros' }));
-  ok('asistente, operario: «solo el administrador principal» y sin edge', ((await txt(p, '[data-axw-as="tarjeta"]')) || '').includes('Solo el administrador principal') && b.edge.length === 0);
+  ok('asistente, operario: «solo un administrador» (B2) y sin edge', ((await txt(p, '[data-axw-as="tarjeta"]')) || '').includes('Solo un administrador puede configurar') && b.edge.length === 0);
   await ctx.close();
 
   // 13. con el ajustes.js REAL: la pestaña se abre por clic y por la URL; sin paso en la base, #cobros cae en Empresa y nadie llama a la edge

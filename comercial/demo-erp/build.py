@@ -4243,7 +4243,16 @@ def taller_pantalla():
                  "      claves:'taller orden de trabajo moto reparacion mecanico mantenimiento revision fotos bloquear reservas bengkel servis workshop repair mechanic maintenance inspection work order' });" + '\n' +
                  "  /*AXW_FIN_TARJETA_TALLER*/" + '\n' + "}",
                  'herramientas.js tarjeta Taller')
+    # M3 (owner 15-oct, base de bbm-resumen 20261015190000): mientras no haya mecánico, un administrador hace los partes (_taller_exige/_taller_puede).
+    # La pantalla no sabe si hay mecánico (lo sabe la base): el admin ve la entrada y la tarjeta y entra; con un mecánico, la base le niega los datos y
+    # Taller dice «No tienes acceso a Taller». Mismo patrón que /asistente/ (asistente_maestro y guard_asistente_admin): rol === 'admin' exacto.
+    h = _una_vez(h, "(t.herr === 'asistente_peticiones' && ficha.rol === 'admin') ||",
+                 "(t.herr === 'asistente_peticiones' && ficha.rol === 'admin') || (t.herr === 'taller' && ficha.rol === 'admin') ||", 'herramientas.js lwPermitida (taller, M3)')
     open(her, 'w', encoding='utf-8', newline='').write(h)
+    n = open(nav, encoding='utf-8').read()
+    n = _una_vez(n, "(path === 'asistente' && ficha.rol === 'admin')) return true;",
+                 "(path === 'asistente' && ficha.rol === 'admin') || (path === 'taller' && ficha.rol === 'admin')) return true;", 'nav.js puedeVer (taller, M3)')
+    open(nav, 'w', encoding='utf-8', newline='').write(n)
 
 
 def entrega_pantalla():
@@ -4430,6 +4439,9 @@ def guard_asistente_admin():
     t = open(g, encoding='utf-8').read()
     t = _una_vez(t, "var sinLimite = LW_ROL.esSuperGlobal(ficha);",
                  "var sinLimite = LW_ROL.esSuperGlobal(ficha) || (ficha && ficha.rol === 'admin' && HERRAMIENTA === 'asistente_peticiones');", 'guard.js sinLimite')
+    # M3 (owner 15-oct, 20261015190000): /taller/ igual, el admin entra a la cáscara y la base decide (sin mecánico, hace partes; con él, 42501)
+    t = _una_vez(t, "HERRAMIENTA === 'asistente_peticiones');",
+                 "HERRAMIENTA === 'asistente_peticiones') || (ficha && ficha.rol === 'admin' && HERRAMIENTA === 'taller');", 'guard.js sinLimite (taller, M3)')
     open(g, 'w', encoding='utf-8', newline='').write(t)
 
 

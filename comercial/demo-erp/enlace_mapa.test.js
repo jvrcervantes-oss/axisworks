@@ -28,6 +28,7 @@ const CASOS = [
   ['https://www.google.com/maps/dir/-8.70,115.20/Tienda/@-8.68,115.18,13z/data=!4m2!4m1!3e0', ''],   // una ruta: su primer punto es quien pregunta
   ['https://www.google.com/maps/search/motos+canggu/@-8.65,115.13,12z', ''],   // una búsqueda sin números: solo el centro
   ['https://maps.google.com/?q=-8.65,115.13', '-8.65, 115.13'],
+  ['https://maps.google.com/?ll=-8.6478,115.1385&z=15', ''],   // revisor de d5920fd: ll= es el centro del mapa, no la tienda
   ['https://www.google.com/maps?q=-8.650000,+115.216667', '-8.65, 115.216667'],
   ['https://www.google.com/maps/search/?api=1&query=-8.65%2C115.13', '-8.65, 115.13'],
   ['https://www.google.com/maps/place/-8.65,115.13', '-8.65, 115.13'],

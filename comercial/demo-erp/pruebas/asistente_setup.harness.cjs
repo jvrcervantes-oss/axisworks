@@ -62,7 +62,9 @@ function servidor(b, n, a) {
     if (b.permRed && b.permRed.veces > 0) { b.permRed.veces--; if (b.permRed.aplica) u.herramientas = a.p_cambios.herramientas.slice(); return { red: true }; }
     u.herramientas = a.p_cambios.herramientas.slice();
     const pu = b.d.pasos.find(x => x.clave === 'usuarios' && x.modulo === 'reservas-producto');
-    if (pu) pu.hecho = b.usuarios.some(x => x.activo && x.rol !== 'super_admin' && x.creado_por !== 'estudio:cuenta-pruebas' && x.herramientas.includes('reservas-producto'));
+    // la regla de la base con B1 (20261015190000): en un módulo operativo también cuenta la dueña (es_propietario), nunca una cuenta del estudio
+    if (pu) pu.hecho = b.usuarios.some(x => x.activo && x.creado_por !== 'estudio:cuenta-pruebas' && !/@axisworks\.studio\s*$/i.test(x.email || '')
+                                         && (x.es_propietario === true || (x.rol !== 'super_admin' && x.herramientas.includes('reservas-producto'))));
     return { data: null, error: null };
   }
   const guarda = () => {
@@ -295,7 +297,7 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
 
   // 5. Quien no configura; 6. función que aún no existe
   ({ p, ctx } = await abre(nav, base('no_configura')));
-  ok('quien no configura: «solo el administrador principal», sin pasos', ((await txt(p, '[data-axw-as="tarjeta"]')) || '').includes('Solo el administrador principal') && !(await p.$('[data-axw-paso]')));
+  ok('quien no configura: «solo un administrador» (B2), sin pasos', ((await txt(p, '[data-axw-as="tarjeta"]')) || '').includes('Solo un administrador puede configurar') && !(await p.$('[data-axw-paso]')));
   await ctx.close();
   ({ p, ctx } = await abre(nav, base('sin_configurar', { noExiste: true })));
   ok('función ausente: «no se ha podido mirar» con Reintentar, nunca «todo listo»', ((await txt(p, '[data-axw-as="tarjeta"]')) || '').includes('todavía no está disponible') && (await p.$('[data-axw-accion="releer"]')) && !(await p.$('[data-axw-estado="todo-listo"]')));
@@ -557,6 +559,23 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
        && fe.filter(t => /Administrador principal/.test(t)).length === 1, JSON.stringify(fe));
     ok('M5: sin casilla para la cuenta del estudio', !(await p.$('[data-axw-quien-usuario="u-estudio"]')));
     ok('M5: no cuenta en el recuento (sigue «2 personas usan Facturas»)', (await txt(p, '[data-axw-quien="cuenta"]')) === '2 personas usan Facturas', await txt(p, '[data-axw-quien="cuenta"]'));
+    await ctx.close();
+    // B1 (owner 15-oct): en un módulo operativo la dueña cuenta; con ella sola la base da el paso por hecho y no sale «Aún no hay nadie más»
+    const bd = base('sin_configurar'); bd.d.pasos.push(Object.assign({}, pasoU)); bd.usuarios = equipo().map(u => u.user_id === 'u-dion' ? Object.assign({}, u, { es_propietario: true }) : u);
+    ({ p, ctx } = await abre(nav, bd, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
+    ok('B1: en un módulo operativo la dueña cuenta (Putu + Dion = «2 personas usan Reservas de producto»)', (await txt(p, '[data-axw-quien="cuenta"]')) === '2 personas usan Reservas de producto', await txt(p, '[data-axw-quien="cuenta"]'));
+    ok('B1: la dueña sigue sin casilla', !(await p.$('[data-axw-quien-usuario="u-dion"]')));
+    await ctx.close();
+    // la base (B1) lo da por hecho con la dueña sola
+    const bd1 = base('sin_configurar'); bd1.d.pasos.push(Object.assign({}, pasoU, { hecho: true, falta: null })); bd1.usuarios = [Object.assign({}, equipo()[0], { es_propietario: true }), estudio()];
+    ({ p, ctx } = await abre(nav, bd1, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-hecho]', { timeout: 8000 }).catch(() => {});
+    ok('B1: con la dueña sola la base da el paso por hecho', !!(await p.$('[data-axw-hecho]')));
+    await clic(p, 'cambiar');   // un paso hecho enseña «Hecho»; la lista sale al cambiarlo
+    await p.waitForSelector('[data-axw-quien="lista"] li', { timeout: 8000 }).catch(() => {});   // el contador existe antes de que llegue la lista
+    ok('B1: al cambiarlo, «1 persona usa…» (la dueña) y sin «Aún no hay nadie más»', (await txt(p, '[data-axw-quien="cuenta"]')) === '1 persona usa Reservas de producto'
+       && !(await p.$('[data-axw-quien="solo-tu"]')), await txt(p, '[data-axw-quien="cuenta"]'));
     await ctx.close();
     // M5: solo Dion y la cuenta del estudio → «Aún no hay nadie más»: el estudio no es «alguien del equipo»
     const bs = base('sin_configurar'); bs.d.pasos.push(Object.assign({}, pasoU)); bs.usuarios = [equipo()[0], estudio()];

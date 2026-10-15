@@ -141,10 +141,9 @@ window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' 
   if (d) { if (Object.prototype.hasOwnProperty.call(d, s)) v = d[s]; else if (!/^[\\s0-9.:]*$/.test(s)) window.__sinTrad.push(s); }
   if (hu) for (var k in hu) v = v.split('%' + k).join(hu[k]); return v; };
 </script>`;
-const ENGANCHE_SUG = `<script>window.AXW_PASOS.sugeridasGasto = function () { return window.__srv('gasto_categorias_sugeridas', {}).then(function (r) { if (r && r.error) throw r.error; return r && r.data; }); };</script>`;
-const asistente = (idioma, url, build) => cabeza(idioma) + `<main>${HTML[0]}</main>` + sesion(idioma, url, build) + `<script>${NUCLEO}</script><script>${PASOS}</script>${ENGANCHE_SUG}<script>${COMUN}</script>${HTML[1]}</body></html>`;
+const asistente = (idioma, url, build) => cabeza(idioma) + `<main>${HTML[0]}</main>` + sesion(idioma, url, build) + `<script>${NUCLEO}</script><script>${PASOS}</script><script>${COMUN}</script>${HTML[1]}</body></html>`;
 const ajustes = (idioma, build) => cabeza(idioma) + `<main><section data-lw-panel="puesta"><div id="lw-aj-puesta"><p>…</p></div></section></main>` + sesion(idioma, '/ajustes/', build) +
-  `<script>${NUCLEO}</script><script>${PASOS}</script>${ENGANCHE_SUG}<script>${COMUN}</script><script>${PUESTA}</script></body></html>`;
+  `<script>${NUCLEO}</script><script>${PASOS}</script><script>${COMUN}</script><script>${PUESTA}</script></body></html>`;
 
 async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=base', ancho = 1440, pag = 'asistente', build = ['id', 'en'] } = {}) {
   const ctx = await nav.newContext({ viewport: { width: ancho, height: 900 } });
