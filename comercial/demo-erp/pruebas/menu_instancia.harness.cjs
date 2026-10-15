@@ -36,13 +36,25 @@ const FALSO = `(function(){
     storage:{ from:function(){ return { createSignedUrl:function(){return Promise.resolve({data:null,error:null});} }; } } };
   window.supabase = { createClient:function(){ return cli; } };
 })();`;
+// Rutas en el idioma de la instancia (bbm-idioma-total, 15-oct-2026): el servidor sirve /invoices/x desde facturas/x (alias_htaccess). Aquí, lo mismo,
+// con el mapa del ayudante en línea (rutas_idioma.js); sin ayudante (paquete anterior), nada que traducir.
+const ALIAS = (() => { try {
+  const m = /<script id="axw-rutas">[\s\S]*?var D = (\{.*?\});\n/.exec(fs.readFileSync(path.join(RAIZ, 'home', 'index.html'), 'utf8'));
+  if (!m) return [];
+  const D = JSON.parse(m[1]), pares = [];
+  for (const [k, subs] of Object.entries(D.s || {})) for (const [s, en] of Object.entries(subs)) pares.push(['/' + D.r[k] + '/' + en + '/', '/' + k + '/' + s + '/']);
+  for (const [k, en] of Object.entries(D.r)) pares.push(['/' + en + '/', '/' + k + '/']);
+  return pares;
+} catch (e) { return []; } })();
 function fichero(url) {
   let p = decodeURIComponent(new URL(url).pathname);
+  for (const [de, a] of ALIAS) if (p.startsWith(de)) { p = a + p.slice(de.length); break; }
   if (p.endsWith('/')) p += 'index.html';
   const f = path.join(RAIZ, p);
   return f.startsWith(RAIZ) && fs.existsSync(f) && fs.statSync(f).isFile() ? f : null;
 }
 const MIDE = () => {
+  const interna = (p) => (window.axwRutaInterna ? window.axwRutaInterna(p) : p);   // el href pintado puede ir en inglés (/invoices/)
   const vis = e => !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden';
   const nav = [...document.querySelectorAll('aside nav')].find(n => n.querySelector('a[data-path="home"]'));
   const secciones = nav ? [...nav.children].filter(s => s.querySelector(':scope > a[data-path]')).map(s => ({
@@ -50,7 +62,7 @@ const MIDE = () => {
     entradas: [...s.querySelectorAll(':scope > a[data-path]')].filter(vis).map(a => a.getAttribute('data-path')) })) : [];
   const cobros = document.querySelector('aside a[data-path="cobros"]');
   const texto = p => { const a = document.querySelector('aside a[data-path="' + p + '"]'); return a ? a.textContent.replace(/\s+/g, ' ').trim() : null; };
-  return { lang: document.documentElement.lang, secciones, cobrosVisible: vis(cobros), cobrosHref: cobros ? new URL(cobros.getAttribute('href'), location.href).pathname : null,
+  return { lang: document.documentElement.lang, secciones, cobrosVisible: vis(cobros), cobrosHref: cobros ? interna(new URL(cobros.getAttribute('href'), location.href).pathname) : null,
     taller: texto('taller'), entrega: texto('entrega'), flota: texto('flota') };
 };
 (async () => {
@@ -105,7 +117,7 @@ const MIDE = () => {
     ok(lengua + ': al abrir «Cobros» salen Facturas y Recibos y no Vencimientos', !!sub && sub.indexOf('facturas') !== -1 && sub.indexOf('recibos') !== -1 && sub.indexOf('vencimientos') === -1, JSON.stringify(sub));
     // tipo Reservas (erp-front, 14-oct): /productos/ es «Extras y servicios» en todo enlace del menú, cambiado por la RUTA (no por el rótulo de nav.js)
     const EXTRAS = { id: 'Ekstra dan layanan', en: 'Extras and services' }[lengua];
-    const prodTxt = await p.evaluate(() => [...document.querySelectorAll('aside a[href], nav a[href]')].filter(a => new URL(a.href).pathname === '/productos/').map(a => a.textContent.replace(/\s+/g, ' ').trim()));
+    const prodTxt = await p.evaluate(() => [...document.querySelectorAll('aside a[href], nav a[href]')].filter(a => (window.axwRutaInterna || String)(new URL(a.href).pathname) === '/productos/').map(a => a.textContent.replace(/\s+/g, ' ').trim()));
     ok(lengua + ': todo enlace del menú a /productos/ dice «' + EXTRAS + '» y ninguno «Products/Produk»', prodTxt.length > 0 && prodTxt.every(x => x.indexOf(EXTRAS) !== -1 && !/Products|Produk|Productos/.test(x)), JSON.stringify(prodTxt));
     if (SHOT) await p.screenshot({ path: `${SHOT}_1440_${lengua}.png` });
   }
@@ -129,7 +141,7 @@ const MIDE = () => {
   await p.goto(ORIGEN + '/productos/', { waitUntil: 'load' });
   await p.waitForTimeout(2500);
   const ex = await p.evaluate(() => ({ raiz: !!document.querySelector('[data-ex="raiz"]'), lawang: !!document.getElementById('lw-prd-lista'),
-    tit: (document.querySelector('.ex-h1') || {}).textContent || '', menu: [...document.querySelectorAll('aside a[href], nav a[href]')].filter(a => new URL(a.href).pathname === '/productos/').map(a => a.textContent.replace(/\s+/g, ' ').trim()) }));
+    tit: (document.querySelector('.ex-h1') || {}).textContent || '', menu: [...document.querySelectorAll('aside a[href], nav a[href]')].filter(a => (window.axwRutaInterna || String)(new URL(a.href).pathname) === '/productos/').map(a => a.textContent.replace(/\s+/g, ' ').trim()) }));
   ok('/productos/ es la pantalla «Extras y servicios» (sin la tabla de Lawang) y su menú dice lo mismo', ex.raiz && !ex.lawang && /Ekstra dan layanan/.test(ex.tit)
      && ex.menu.length > 0 && ex.menu.every(x => x.indexOf('Ekstra dan layanan') !== -1), JSON.stringify(ex));
   if (SHOT) await p.screenshot({ path: `${SHOT}_1440_productos_id.png` });

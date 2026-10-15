@@ -46,6 +46,41 @@ class Htaccess:
             return (int([f for f in flags if f.startswith('R=')][0][2:]), destino)
         return None
 
+    def resuelve(self, ruta, metodo='GET', host='demo.axisworks.studio', consulta='', vueltas=10):
+        """Como mod_rewrite en un .htaccess (contexto de directorio), con las reglas internas (sin R=) además de las redirecciones: las reglas van en
+        orden; una interna con [L] reescribe la ruta y el fichero se vuelve a pasar ENTERO por las reglas (la vuelta por directorio), hasta que ninguna
+        casa o la ruta no cambia. Devuelve ('redirige', código, Location), ('sirve', '/ruta servida') o ('bucle', ruta) tras `vueltas` pasadas.
+        Sin RewriteBase distinto de /: un destino relativo cuelga de la raíz. Rutas inglesas de las instancias (bbm-idioma-total, 15-oct-2026)."""
+        camino = unquote(ruta).lstrip('/')
+        for _ in range(vueltas):
+            nuevo = None
+            for patron, destino, flags, conds in self.reglas:
+                cumple = True
+                for var, pat, fl in conds:
+                    valor = {'HTTP_HOST': host, 'REQUEST_METHOD': metodo, 'QUERY_STRING': consulta}[var]
+                    neg = pat.startswith('!')
+                    casa = re.search(pat.lstrip('!'), valor, re.I if 'NC' in fl else 0) is not None
+                    if casa == neg:
+                        cumple = False
+                        break
+                m = re.search(patron, camino) if cumple else None
+                if not m:
+                    continue
+                d = re.sub(r'\$(\d)', lambda g: m.group(int(g.group(1))) or '', destino)
+                if any(f.startswith('R=30') for f in flags):
+                    if consulta and '?' not in d:
+                        d += '?' + consulta
+                    return ('redirige', int([f for f in flags if f.startswith('R=')][0][2:]), d)
+                camino_d = d.lstrip('/')
+                if 'L' in flags:
+                    nuevo = camino_d
+                    break
+                camino = camino_d
+            if nuevo is None or nuevo == camino:
+                return ('sirve', '/' + (nuevo if nuevo is not None else camino))
+            camino = nuevo
+        return ('bucle', '/' + camino)
+
 def mismo_dominio(loc):
     """Un Location relativo de ruta no sale del dominio: empieza por UNA barra y no por `//` ni `/\\`."""
     return loc.startswith('/') and not loc.startswith('//') and not loc.startswith('/\\')
