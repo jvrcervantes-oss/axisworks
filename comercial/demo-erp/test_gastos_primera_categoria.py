@@ -74,7 +74,7 @@ CODIGO = '\n'.join([
 ARNES = r"""
 const vm = require('vm');
 const codigo = JSON.parse(require('fs').readFileSync(0, 'utf8'));
-function mundo(cats, rpcError) {
+function mundo(cats, rpcError, clave, cargaFalla) {
   const ventanas = [], rpcs = [];
   const ctx = {
     window: { lwMonedaBase: function () { return 'IDR'; }, lwVentana: function (t, c, b, f, o) { ventanas.push({ t: t, c: c, b: b, f: f, o: o || {} }); } },
@@ -84,8 +84,8 @@ function mundo(cats, rpcError) {
     campoCuenta: function () { return { k: 'cuenta_pago' }; },
     rpcOk: function (r, m) { return { error: { message: m } }; },
     pintaTodo: function () { ctx.__pintado = (ctx.__pintado || 0) + 1; },
-    cargar: function () { ctx.D.categorias.push({ clave: 'gasolina', nombre: 'Gasolina', activa: true }); return Promise.resolve(); },
-    sb: { rpc: function (n, a) { rpcs.push([n, a]); return Promise.resolve(rpcError ? { data: null, error: { message: 'no' } } : { data: 'gasolina', error: null }); } },
+    cargar: function () { if (cargaFalla) return Promise.reject(new Error('red')); ctx.D.categorias.push({ clave: clave || 'gasolina', nombre: clave ? 'Gasolina (base)' : 'Gasolina', activa: true }); return Promise.resolve(); },
+    sb: { rpc: function (n, a) { rpcs.push([n, a]); return Promise.resolve(rpcError ? { data: null, error: { message: 'no' } } : { data: clave || 'gasolina', error: null }); } },
     payloadDe: function () { return { p: {} }; }, subeJustificante: function () { return Promise.resolve({}); },
     sessionStorage: { setItem: function () {} }
   };
@@ -114,6 +114,11 @@ const campo = function (v, k) { return v.c.filter(function (c) { return c.k === 
   // 4. solo una categoría desactivada: cuenta como ninguna
   m = mundo([{ clave: 'vieja', nombre: 'Vieja', activa: false }]); m.ctx.nuevoGasto();
   r.inactiva = m.ventanas.map(function (x) { return x.t; });
+  // 5. la base retoca la clave (ya había una «gasolina» desactivada con otro nombre): se abre con la que devuelve, no por el nombre
+  m = mundo([], false, 'gasolina_2'); m.ctx.nuevoGasto(); await m.ventanas[0].f({ nombre: 'Gasolina' });
+  r.clave_base = m.ventanas[1] ? campo(m.ventanas[1], 'categoria').valor : null;
+  // 6. creada pero la relectura falla: lo dice (se creó) y no abre el gasto
+  m = mundo([], false, null, true); m.ctx.nuevoGasto(); r.relee = await m.ventanas[0].f({ nombre: 'Gasolina' }); r.relee_ventanas = m.ventanas.length;
   console.log(JSON.stringify(r));
 })().catch(function (e) { console.error(e && e.stack || e); process.exit(1); });
 """
@@ -131,6 +136,10 @@ if p.returncode == 0:
     ok('creada: relee, repinta y abre «Nuevo gasto» con ella ya elegida', r['ventanas'] == ['Primero, una categoría', 'Nuevo gasto'] and r['cat_elegida'] == 'gasolina' and r['pintado'] >= 1 and r['fin'] is None, repr(r))
     ok('si la base dice que no: lo dice y no abre el gasto', bool(r['error'] and r['error'].get('error')) and r['error_ventanas'] == 1, repr(r['error']))
     ok('con categorías: «Nuevo gasto» va directo, como siempre', r['directo'] == ['Nuevo gasto'], repr(r['directo']))
+    if not SIN_PARCHE:
+        ok('el gasto se abre con la clave que devuelve la base, no buscando por el nombre', r.get('clave_base') == 'gasolina_2', repr(r.get('clave_base')))
+        rl = (r.get('relee') or {}).get('error') or {}
+        ok('si la relectura falla: dice que la categoría SÍ se creó y no abre el gasto', 'se creó' in (rl.get('message') or '') and r.get('relee_ventanas') == 1, repr(r.get('relee')))
     ok('una categoría desactivada cuenta como ninguna', r['inactiva'] == ['Primero, una categoría'], repr(r['inactiva']))
 
 nombre = 'test_gastos_primera_categoria' + (' --sin-parche' if SIN_PARCHE else '')

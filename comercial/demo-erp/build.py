@@ -2495,6 +2495,14 @@ MENU_I18N = {
 # perusahaan, kuitansi, invoice). Traducción automática SIN REVISAR por un hablante nativo (departamentos/idiomas: ISO 18587); la valida el
 # equipo de Dion como el resto del glosario. Lo que ya tenía inglés en Lawang solo recibe aquí su indonesio (una clave EN existente no se pisa).
 MENU_I18N.update({
+    # verificador de bbm (15-oct): la tarjeta «Asistente» de herramientas.js no tenía su frase en ningún diccionario
+    'Pide lo que no puedes hacer tú: cambiar un dato, anular o borrar un documento, borrar una operación. Lo aprueba dirección.': {
+        'en': "Ask for what you can't do yourself: change a detail, void or delete a document, delete a transaction. Management approves it.",
+        'id': 'Minta hal yang tidak bisa Anda lakukan sendiri: mengubah data, membatalkan atau menghapus dokumen, menghapus transaksi. Disetujui manajemen.'},
+    'esta herramienta': {'en': 'this tool', 'id': 'alat ini'},
+    'La categoría se creó, pero no se pudo releer la lista: recarga la página y pulsa «Nuevo gasto».': {
+        'en': 'The category was created, but the list could not be reloaded: reload the page and press «New expense».',
+        'id': 'Kategori sudah dibuat, tetapi daftarnya tidak dapat dimuat ulang: muat ulang halaman dan tekan «Pengeluaran baru».'},
     # Gastos: la primera categoría al vuelo (agencia-c0, 15-oct; GASTOS_INSTANCIA)
     'Primero, una categoría': {'en': 'First, a category', 'id': 'Pertama, satu kategori'},
     'Cada gasto va en una categoría y aún no hay ninguna. Crea la primera: después podrás añadir más.': {
@@ -5122,7 +5130,9 @@ GASTOS_INSTANCIA = (
     # agencia-c0, 15-oct-2026 (bbm vivo: «Categoría» salía en «— elige —» sin ninguna y el aviso decía «Pídelo a administración»): sin ninguna
     # categoría activa, «Nuevo gasto» pide ANTES la primera, aquí mismo y en un solo campo (el nombre; grupo «general», que el paso del asistente
     # deja elegir), con la misma función de la base que ese paso (gasto_categoria_guarda: la clave la saca la base del nombre y ella decide quién
-    # puede). Creada, se releen los datos y se abre el gasto con ella ya elegida, sin recargar la página. Prueba: test_gastos_primera_categoria.py.
+    # puede). Creada, se releen los datos y se abre el gasto con ella ya elegida (por la clave que devuelve la base), sin recargar la página.
+    # Solo la ve quien puede crearla: la pantalla es de admin y sin la herramienta «Gastos» no carga (= _gasto_puede de la base). Prueba:
+    # test_gastos_primera_categoria.py.
     ('intranet/v4/assets/panel-gastos.js', "  function nuevoGasto() {\n    var campos = camposGasto().concat([\n",
      "  function axwPrimeraCategoria() {\n"
      "    window.lwVentana(T('Primero, una categoría'), [\n"
@@ -5133,11 +5143,13 @@ GASTOS_INSTANCIA = (
      "      if (!n || n.length > 80 || /^[-=+@]/.test(n)) return { error: { message: T('El nombre va de 1 a 80 caracteres y no empieza por = + - @.') } };\n"
      "      return sb.rpc('gasto_categoria_guarda', { p_clave: null, p_datos: { nombre: n, grupo: 'general' } }).then(function (r) {\n"
      "        if (r.error) return rpcOk(r, T('No se pudo crear la categoría'));\n"
+     "        var clave = typeof r.data === 'string' ? r.data : null;   // la clave la decide la base y la devuelve: se apunta por ella, no por el nombre\n"
      "        return cargar().then(function () {\n"
      "          pintaTodo();\n"
-     "          var c = D.categorias.filter(function (x) { return x.activa && x.nombre === n; })[0];\n"
-     "          nuevoGasto(c ? c.clave : null);   // abre el gasto: el editor ya no es este y no se recarga (sinRecarga)\n"
+     "          nuevoGasto(clave);   // abre el gasto: el editor ya no es este y no se recarga (sinRecarga)\n"
      "          return null;\n"
+     "        }, function () {\n"
+     "          return { error: { message: T('La categoría se creó, pero no se pudo releer la lista: recarga la página y pulsa «Nuevo gasto».') } };\n"
      "        });\n"
      "      });\n"
      "    }, { sub: T('Gastos y proveedores'), sinRecarga: true });\n"
@@ -5481,6 +5493,18 @@ IDIOMAS_PARCHES = (
     ('intranet/v4/assets/mascota.js', "(window.LW_IDIOMA === 'en' ? 'EN' : 'ES')", "String(window.LW_IDIOMA || 'es').toUpperCase()"),
     # la puerta: la pregunta del pie no llevaba marca de idioma (lo cazó la prueba de las páginas de entrada, 12-oct)
     ('intranet/index.html', '<p class="pie">¿Eres cliente? <a href="/portal/"', '<p class="pie"><span data-lwt>¿Eres cliente?</span> <a href="/portal/"'),
+    # el aviso de sin permiso enseñaba la clave de ?sin_permiso= en bruto («You do not have access to “gastos”», verificador de bbm, 15-oct):
+    # se busca la herramienta por su clave y sale su nombre traducido; guard.js manda a veces un nombre («Panel de control»), que se traduce
+    # tal cual; una clave que no está en la lista no se enseña (sale «esta herramienta»). Prueba: test_sin_permiso_nombre.py.
+    ('intranet/index.html', "lwT('No tienes acceso a «%h».', { h: esc(sin) })",
+     "lwT('No tienes acceso a «%h».', { h: esc(axwNombreSinPermiso(sin)) })"),
+    ('intranet/index.html', "  const sin = new URLSearchParams(location.search).get('sin_permiso');\n",
+     "  const sin = new URLSearchParams(location.search).get('sin_permiso');\n"
+     "  function axwNombreSinPermiso(x){   // por la clave de la herramienta (herr), nunca la clave en bruto\n"
+     "    const h = (typeof HERRAMIENTAS !== 'undefined' ? HERRAMIENTAS : []).find(t => t.herr === x);\n"
+     "    if(h) return lwT(h.nombre);\n"
+     "    return /^[a-z0-9_-]+$/.test(x) ? lwT('esta herramienta') : lwT(x);\n"
+     "  }\n"),
 )
 # Fechas y números escritos a mano en español: 'es-ES' → el locale del idioma elegido. Un 'es-ES' usado como CLAVE de objeto no se puede envolver: para.
 ES_ES_ENVUELTO = {"'": "(window.LW_IDIOMA === 'id' ? 'id-ID' : 'es-ES')", '"': '(window.LW_IDIOMA === "id" ? "id-ID" : "es-ES")'}
