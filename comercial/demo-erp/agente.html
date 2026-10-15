@@ -305,12 +305,13 @@
   .ag2-lim{padding:6px 10px;gap:0 12px}
   .ag2-lim .s{font-size:12px}
   /* el selector de nivel ocupa la fila entera: el texto del nivel no se corta (Experiencia M5, medido en el arnés a 390 px) */
-  .ag2 .ag2-lim select{flex-basis:100%;max-width:none}
+  .ag2 .ag2-lim select{flex-basis:100%;max-width:none;padding-left:10px;padding-right:10px}   /* «Diusulkan, pemilik memutuskan» cabe con Manrope (medido con FUENTES_REALES, 16-oct) */
   .ag2-aj-cab .ag2-msg{padding:8px 12px}
   /* los botones de un paso, en columna y a lo ancho: el principal arriba y el fantasma debajo (Diseño, 16-oct; ningún texto parte en es/en/id) */
   .ag2-aj-paso .ag2-acc{flex-direction:column;align-items:stretch}
   .ag2-aj-paso .ag2-acc>.ag2-btn,.ag2-aj-paso .ag2-acc>.ag2-btn2{width:100%;min-width:0;padding:6px 16px;text-align:center}
-  .ag2 .ag2-pasos a{padding:8px 6px}
+  .ag2-pasos{gap:4px}
+  .ag2 .ag2-pasos a{padding:8px 4px}   /* con Manrope «Wewenang» mide 63 px y el hueco era 61 (FUENTES_REALES, 16-oct) */
   .ag2-pasos b{font-size:12px}   /* «3 · Wewenang» cabe sin partir la palabra en 4 columnas a 390 px (lo mide el arnés) */
   .ag2-niveles{grid-template-columns:minmax(0,1fr)}
 }
