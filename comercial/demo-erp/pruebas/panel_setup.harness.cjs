@@ -243,10 +243,15 @@ const ajena = [], marcaGoogle = [];
       t.nota === 'Sin tipo de negocio asignado en la base: se puede apagar, pero no volver a encender.', JSON.stringify({ t, x })); }
   { const t = await tarjeta('deck');
     ok('nombre del tipo: uno que el panel no conoce sale del propio tipo, legible (ni crudo ni «undefined»)', !!t && t.off && t.nota === 'Solo para negocios de tipo Alquiler largo.', JSON.stringify(t)); }
-  ok('nombre del tipo: el panel no lleva una lista propia de tipos', !/\b(propiedades|reservas|servicios)\s*:\s*['"]/.test(html), (html.match(/\b(propiedades|reservas|servicios)\s*:\s*['"][^'"]*/) || [])[0]);
+  // sobre la FUENTE del panel (el paquete lleva inyectados los rótulos de módulos, donde «reservas» → "Reservas" es el MÓDULO Reservas, no el tipo):
+  // ni un nombre de tipo escrito como texto suelto ('Reservas'), ni un par clave → nombre en objeto, Map o lista ({ 'reservas': …, [['reservas', …)
+  { const fuente = fs.readFileSync(path.join(__dirname, '..', 'panel_control.html'), 'utf8');
+    const lit = fuente.match(/['"](Propiedades|Reservas|Servicios)['"]|['"]?\b(propiedades|reservas|servicios)\b['"]?\s*[:,]\s*['"][A-ZÁÉÍÓÚ]/);
+    ok('nombre del tipo: el panel no lleva una lista propia de tipos', !lit, lit && lit[0]); }
   { const t = await tarjeta('compradores'), x = await tarjetaMas('compradores');
     ok('depende de un candado: la tarjeta libre lo avisa en llano y nombra el módulo', !!t && !t.cand && t.on === 'false' && x.dep === 'proyectos' &&
-      t.nota === 'Necesita Proyectos y parcelas, que lleva candado en este negocio: por eso este tampoco se podrá encender.', JSON.stringify({ t, x })); }
+      t.nota === 'Necesita Proyectos y parcelas, que lleva candado en este negocio: por eso este tampoco se podrá encender.' &&
+      /necesita Proyectos y parcelas, con candado en este negocio/.test(t.aria), JSON.stringify({ t, x })); }
   { const t = await tarjeta('reservas-producto'), x = await tarjetaMas('reservas-producto');
     ok('depende de un candado: lo que depende de algo libre no lleva el aviso', !!t && x.dep === null && !/candado/.test(t.nota), JSON.stringify({ t, x })); }
   // los de candado al final de SU sección: dentro de cada rejilla, ninguna tarjeta libre después de una con candado; y al menos una sección
@@ -501,10 +506,13 @@ const ajena = [], marcaGoogle = [];
   // perfil) ─ sale del `nombre` de ese perfil, no del propio tipo. Se cambia el nombre en el doble para que la prueba distinga las dos fuentes
   { const g = PERFILES.tipos.find(t => t.tipo === 'generalista'), antesNombre = g.nombre;
     g.tipo_erp = 'reservas'; g.nombre = 'Reservas con fecha';
-    await p.reload({ waitUntil: 'load' });
-    await p.waitForSelector('#modulos [data-mod]', { timeout: 15000 });
-    const tx = await p.evaluate(() => (document.querySelector('#cabecera-instancia [data-tipo-erp]') || {}).textContent);
-    delete g.tipo_erp; g.nombre = antesNombre;
+    let tx = null;
+    try {
+      await p.reload({ waitUntil: 'load' });
+      await p.waitForSelector('#modulos [data-mod]', { timeout: 15000 });
+      tx = await p.evaluate(() => (document.querySelector('#cabecera-instancia [data-tipo-erp]') || {}).textContent);
+    } catch (err) { tx = 'no se ha podido mirar: ' + err.message; }
+    finally { delete g.tipo_erp; g.nombre = antesNombre; }
     ok('nombre del tipo: si el perfil trae su tipo de ERP, el nombre sale del perfil', tx === 'ERP de Reservas con fecha', tx); }
 
   ok('ninguna petición a una base real (solo el doble de erp-control)', ajena.length === 0, ajena.join(', '));
