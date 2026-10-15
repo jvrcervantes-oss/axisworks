@@ -305,11 +305,12 @@ var sb = {
 window.LW_AUTH = Promise.resolve({ sb: sb, ficha: { rol: 'admin', herramientas: ['agente'] } });
 window.lwDatos = function (n, a) { if (!/^[a-z][a-z0-9_]*_datos$/.test(n)) throw new Error('lwDatos solo *_datos'); return Promise.resolve(sb.rpc(n, a)).then(function (r) { return { data: r.data, error: r.error }; }); };
 window.LW_IDIOMA = '${idioma}';
-window.LW_EN = {}; window.LW_ID = {};
+/* Como en Lawang (i18n.js / i18n_id.json): «Operaciones» ya es Deals/Transaksi y la fusión de agente.html no lo pisa; por eso el papel de Ruta usa 'Operaciones~agente' */
+window.LW_EN = { 'Operaciones': 'Deals' }; window.LW_ID = { 'Operaciones': 'Transaksi' };
 window.AXW_MAPA_MODULOS = { n: ${JSON.stringify(ROTULOS).replace(/</g, '\\u003c')} };
 window.lwLocale = function () { return window.LW_IDIOMA === 'en' ? 'en-GB' : (window.LW_IDIOMA === 'id' ? 'id-ID' : 'es-ES'); };
 window.lwT = function (s) { s = String(s); var d = window.LW_IDIOMA === 'en' ? window.LW_EN : (window.LW_IDIOMA === 'id' ? window.LW_ID : null);
-  if (d) { if (Object.prototype.hasOwnProperty.call(d, s)) return d[s]; if (!/^[\\s\u2014\u00b70-9.,%():\u2265\u2264-]*$/.test(s)) window.__sinTr.push(s); } return s; };
+  if (d) { if (Object.prototype.hasOwnProperty.call(d, s)) return d[s]; if (!/^[\\s\u2014\u00b70-9.,%():\u2265\u2264-]*$/.test(s)) window.__sinTr.push(s); } var c = s.indexOf('~'); return c < 0 ? s : s.slice(0, c); };
 window.lwIdiomaAplicar = function (raiz) { Array.prototype.forEach.call(raiz.querySelectorAll('[data-lwt]'), function (e) { e.textContent = window.lwT(e.textContent); }); };
 window.onerror = function (m) { window.__errores.push(String(m)); };
 </script>
@@ -812,6 +813,15 @@ const MUESTRA = (() => {
       if (SHOT && idioma === 'es') await p.screenshot({ path: SHOT + '_' + idioma + '_' + ancho + '_apagar.png' });
       await ctx.close();
     }
+  }
+  // 6b. el papel de Ruta va por su clave 'Operaciones~agente': en es sale sin el «~», en en/id no lo pisa el «Operaciones» de Lawang (Deals/Transaksi)
+  for (const [idioma, esperado] of [['es', 'Operaciones'], ['en', 'Operations'], ['id', 'Operasional']]) {
+    const { p, ctx } = await abre({ idioma, base: { dueno: true } });
+    await p.click('[data-accion="ag-v2-agente"][data-clave="ruta"]');
+    await p.waitForFunction(e => document.querySelector('[data-ag="v2-papel"]').textContent === e, esperado, { timeout: 3000 }).catch(() => {});
+    const papel = await txt(p, '[data-ag="v2-papel"]');
+    ok(idioma + ' · V2: el papel de Ruta sale «' + esperado + '»', papel === esperado, papel);
+    await ctx.close();
   }
   // 7. PANEL V2 del AaaS autónomo (15-oct-2026)
   const v2txt = p => p.$eval('[data-ag="v2"]', e => e.textContent);
