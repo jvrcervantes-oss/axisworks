@@ -5134,13 +5134,28 @@ PERMISOS_POR_MODULO = (
      "              tipos.length ? H.chips(tipos) : H.nota('Sin restricción: vacío = TODOS los tipos (al revés que Proyectos).')) : '');\n"),
 )
 
+# Accesos que solo existen con su módulo encendido en ESTA instancia (no marcado: comportamiento; OCULTA_POR_MODULO solo añade
+# data-axw-sin al marcado y test_oculta_por_modulo lo exige). Mismo formato y la misma oculta_por_modulo().
+ACCESOS_POR_MODULO = (
+    # Owner 15-oct-2026 (bbm): «Si no está el módulo del asistente, ¿por qué aparece ahí?». nav.js cargaba el robot del Asistente (mascota.js)
+    # mirando solo el ROL; ahora también el módulo `asistente` de ESTA instancia, el que da su base (modulos_activos_datos, apagados_instancia.js).
+    # Se espera a saberlo (axwModuloActivo falla abierto mientras carga) y, si no se pudo comprobar, no sale: es un acceso, no un dato.
+    # Prueba: test_comodidad_instancia.py (con la forma vieja el robot sale con el módulo apagado).
+    ('intranet/v4/assets/nav.js',
+     "        sm.src = ROOT + 'assets/mascota.js?v=' + MASCOTA_V;\n        document.head.appendChild(sm);\n",
+     "        sm.src = ROOT + 'assets/mascota.js?v=' + MASCOTA_V;\n"
+     "        (window.AXW_MODULOS_LISTOS || Promise.resolve(false)).then(function (sabido) {   // ERP: solo con el módulo asistente encendido\n"
+     "          if (sabido && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('asistente')) document.head.appendChild(sm);\n"
+     "        });\n"),
+)
+
 
 def oculta_por_modulo():
     """Marca en la copia lo que sobra con un módulo apagado (OCULTA_POR_MODULO) y pone en cada página su regla; y el editor de factura sin
     contrato (EDITOR_SIN_CONTRATO), el correo de factura sin contratos (CORREO_DOC_SIN_CONTRATOS), el alta de usuario sin contratos (ALTA_SIN_CONTRATOS) y Usuarios solo con las herramientas de módulos
     encendidos (PERMISOS_POR_MODULO). Cada trozo exactamente una vez o el build para."""
     reglas = {}
-    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO + CORREO_DOC_SIN_CONTRATOS + ALTA_SIN_CONTRATOS + PERMISOS_POR_MODULO:
+    for rel_, viejo, nuevo in OCULTA_POR_MODULO + EDITOR_SIN_CONTRATO + CORREO_DOC_SIN_CONTRATOS + ALTA_SIN_CONTRATOS + PERMISOS_POR_MODULO + ACCESOS_POR_MODULO:
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
         open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, viejo, nuevo, 'oculta_por_modulo ' + rel_))

@@ -18,13 +18,19 @@
     'Configurar módulos': 'Module setup',
     'Lo que hace falta para que cada módulo funcione': 'What each module needs in order to work',
     'Cada módulo encendido, con sus pasos. Se cambian aquí o con el asistente, paso a paso.': 'Every module that is switched on, with its steps. Change them here or with the wizard, step by step.',
-    'Trayendo la configuración…': 'Loading the setup…'
+    'Trayendo la configuración…': 'Loading the setup…',
+    'Cerrar': 'Close',
+    'Cancelar': 'Cancel',
+    'Tienes cambios sin guardar. Vuelve a pulsar Cancelar para descartarlos.': 'You have unsaved changes. Press Cancel again to discard them.'
   };
   var ID_PM = {
     'Configurar módulos': 'Penyiapan modul',
     'Lo que hace falta para que cada módulo funcione': 'Yang dibutuhkan setiap modul agar berfungsi',
     'Cada módulo encendido, con sus pasos. Se cambian aquí o con el asistente, paso a paso.': 'Setiap modul yang aktif, beserta langkah-langkahnya. Ubah di sini atau dengan panduan, langkah demi langkah.',
-    'Trayendo la configuración…': 'Memuat pengaturan…'
+    'Trayendo la configuración…': 'Memuat pengaturan…',
+    'Cerrar': 'Tutup',
+    'Cancelar': 'Batalkan',
+    'Tienes cambios sin guardar. Vuelve a pulsar Cancelar para descartarlos.': 'Ada perubahan yang belum disimpan. Tekan Batal sekali lagi untuk membuangnya.'
   };
   var S = null, P = null, sb = null, ctx = null, ocupado = false;
   function U(k, h) { return S.ui(k, h); }
@@ -116,7 +122,7 @@
       } else if (p.irreversible || comp.soloAsistente) {   // la clase (S40) no guarda sola: se elige en el asistente, camino del primer alquiler
         acciones.appendChild(h('a', { href: enlaceAsistente(p.modulo, p.clave), 'data-pm-asistente-paso': p.clave, class: BTN2, text: U('abrir_asistente') }));
       } else {
-        acciones.appendChild(h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-editar', 'data-pm-paso': p.clave, 'data-pm-modulo': p.modulo, class: BTN2, text: p.hecho ? U('cambiar') : S.texto('general', 'configurar') }));
+        acciones.appendChild(h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-editar', 'data-pm-cambiar': p.clave, 'data-pm-paso': p.clave, 'data-pm-modulo': p.modulo, class: BTN2, text: p.hecho ? U('cambiar') : S.texto('general', 'configurar') }));
       }
     }
     var li = h('li', { class: 'py-3 flex flex-col gap-3 border-t border-outline-variant/20', 'data-pm-fila': p.clave }, [
@@ -124,9 +130,37 @@
     li._paso = p;
     return li;
   }
+  // ── La ventana (S10, owner 15-oct: «quiero que si le doy a change aquí o lo que sea me abra un pop up con la info»). Un <dialog> nativo con
+  // showModal(): Esc, foco dentro y el resto de la página inerte, sin JS propio. Vive DENTRO de la fila (li[data-pm-fila]) a propósito: se pinta
+  // en la capa de arriba igual, y el clic sigue llegando a la delegación de #lw-aj-puesta con su fila. Cerrar la BORRA del DOM (no la esconde):
+  // cobros deja las claves solo en sus <input> y promete vaciarlas. Mientras guarda no se cierra (el resultado se perdería y parecería cancelado).
+  function TP(s) { return typeof window.lwT === 'function' ? window.lwT(s) : s; }
+  function estiloVentana() {
+    if (document.getElementById('axw-pm-ventana-css')) return;
+    var st = document.createElement('style'); st.id = 'axw-pm-ventana-css';
+    st.textContent = 'dialog[data-pm-ventana]{width:min(560px,calc(100vw - 32px));max-width:none;max-height:min(88vh,880px);padding:0;overflow:auto;margin:auto}' +
+      'dialog[data-pm-ventana]::backdrop{background:rgba(0,0,0,.45)}' +
+      '[data-pm-pie]{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:12px}[data-pm-pie] [role=status]{flex:1 1 100%}[data-pm-pie] [role=status]:empty{display:none}';
+    document.head.appendChild(st);
+  }
+  function cierra(dlg, sinAviso) {
+    if (!dlg || ocupado) return;
+    // lo escrito no se tira sin decirlo (Experiencia, 15-oct): el primer intento lo avisa dentro de la ventana; el segundo descarta
+    if (!sinAviso && dlg._tocado && !dlg._avisado) {
+      dlg._avisado = true;
+      var est = dlg.querySelector('[data-pm-estado]');
+      if (est) { est.className = 'font-body-sm text-body-sm text-error'; est.textContent = TP('Tienes cambios sin guardar. Vuelve a pulsar Cancelar para descartarlos.'); }
+      return;
+    }
+    var li = dlg.closest('[data-pm-fila]'), clave = li && li.getAttribute('data-pm-fila');
+    if (dlg.open) dlg.close();
+    if (dlg.parentNode) dlg.parentNode.removeChild(dlg);
+    if (clave) enfoca(clave);
+  }
   function editor(li) {
     var p = li._paso, comp = P.de(p.clave, p);
-    var viejo = li.querySelector('[data-pm-editor]'); if (viejo) { li.removeChild(viejo); return; }
+    var viejo = li.querySelector('dialog[data-pm-ventana]'); if (viejo) { if (!viejo.open) viejo.showModal(); return; }
+    estiloVentana();
     var caja = h('div', { class: 'flex flex-col gap-3', 'data-pm-editor': p.clave });
     var ctl = comp.pinta(caja, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: p.hecho });
     var motivo = null;
@@ -137,26 +171,46 @@
         h('span', { class: 'font-body-sm text-body-sm text-outline', text: U('motivo_ayuda') })]));
     }
     var estado = h('span', { role: 'status', 'aria-live': 'polite', class: 'font-body-sm text-body-sm text-outline', 'data-pm-estado': p.clave });
-    caja.appendChild(h('div', { class: 'flex flex-col md:flex-row md:items-center gap-3' }, [
-      h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-guardar', 'data-pm-paso': p.clave, class: BTN1, text: U('guardar') }), estado]));
     caja._ctl = ctl; caja._motivo = motivo; caja._estado = estado;
-    li.appendChild(caja);
+    var idTit = 'pm-ventana-tit-' + p.clave;
+    var ayuda = p.hecho ? S.texto('paso', p.clave, 1) : (p.falta ? S.textoFalta(p.falta) : S.texto('paso', p.clave, 1));
+    var dlg = h('dialog', { 'data-pm-ventana': p.clave, 'aria-labelledby': idTit, class: 'rounded-2xl border border-outline-variant bg-surface-container-lowest text-on-surface' }, [
+      h('div', { class: 'flex flex-col gap-4', style: 'padding:24px clamp(16px,4vw,32px)' }, [
+        h('div', { class: 'flex justify-between gap-3' }, [
+          h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
+            h('span', { class: 'font-label-md text-label-md text-outline', text: S.nombreModulo(p.modulo) }),
+            h('h2', { id: idTit, class: 'font-headline-sm text-headline-sm text-deep-lagoon', text: S.texto('paso', p.clave, 0) })]),
+          h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-cerrar', 'aria-label': TP('Cerrar'), class: 'self-start ' + BTN2, text: '×' })]),
+        h('p', { class: 'font-body-md text-body-md text-on-surface-variant break-words', text: ayuda }),
+        caja,
+        h('div', { 'data-pm-pie': p.clave }, [estado,
+          h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-cerrar', class: BTN2, text: TP('Cancelar') }),
+          h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-guardar', 'data-pm-paso': p.clave, class: BTN1, text: U('guardar') })])])]);
+    dlg.addEventListener('cancel', function (ev) { ev.preventDefault(); cierra(dlg); });   // Esc: la misma salida que Cancelar
+    dlg.addEventListener('click', function (ev) { if (ev.target === dlg) cierra(dlg); });   // clic en el fondo
+    dlg.addEventListener('input', function () { dlg._tocado = true; dlg._avisado = false; });
+    dlg.addEventListener('change', function () { dlg._tocado = true; dlg._avisado = false; });
+    li.appendChild(dlg);
+    dlg.showModal();
+    var primero = caja.querySelector('input:not([type=hidden]):not([disabled]),select,textarea,[role=switch],[role=radio]');
+    if (primero) primero.focus();
   }
   function guarda(li) {
     if (ocupado) return;
-    var p = li._paso, caja = li.querySelector('[data-pm-editor]');
-    if (!caja) return;
+    var p = li._paso, caja = li.querySelector('[data-pm-editor]'), dlg = li.querySelector('dialog[data-pm-ventana]');
+    if (!caja || !dlg) return;
+    var botones = dlg.querySelectorAll('button');
     var est = caja._estado, r = caja._ctl.valores();
     function di(t, mal) { est.className = 'font-body-sm text-body-sm ' + (mal ? 'text-error' : 'text-outline'); est.textContent = t; }
     if (!r.ok) { di(r.error, true); return; }
     var motivo = caja._motivo ? caja._motivo.value.trim() : '';
     if (caja._motivo && (motivo.match(/\p{L}/gu) || []).length < 3) { di(U('motivo_corto'), true); caja._motivo.focus(); return; }
     ocupado = true; di(U('cargando'), false);
-    caja.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+    Array.prototype.forEach.call(botones, function (b) { b.disabled = true; });
     P.de(p.clave, p).guarda(sb, r.v, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad }, false, motivo || null).then(function (res) {
-      if (res.ok) { ocupado = false; return carga(); }
+      if (res.ok) { ocupado = false; return guardadoYCierra(dlg, p.clave); }
       if (!res.sinRespuesta) {   // con código de la base: «no se guardó», y por qué
-        ocupado = false; caja.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+        ocupado = false; Array.prototype.forEach.call(botones, function (b) { b.disabled = false; });
         di(U('no_se_guardo', { e: S.explica(res.error, true).texto }), true); return;
       }
       di(U('comprobando'), false);   // sin respuesta: se relee la base; nada se reenvía solo
@@ -166,12 +220,15 @@
         var comp = P.de(p.clave, p);
         var ahora = rr.ok && rr.ctx.datos.pasos.filter(function (x) { return x.clave === p.clave && x.modulo === p.modulo; })[0];
         var guardado = rr.ok && (comp.comprueba ? comp.comprueba(r.v, rr.ctx) : !!(ahora && ahora.hecho && !p.hecho));
-        if (guardado) { ctx = rr.ctx; pinta(); return; }
-        caja.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+        if (guardado) { ctx = rr.ctx; cierra(dlg, true); pinta(); enfoca(p.clave); return; }
+        Array.prototype.forEach.call(botones, function (b) { b.disabled = false; });
         di(rr.ok ? U('no_guardado') : U('no_mirar'), true);
       });
     });
   }
+  // guardado: se cierra la ventana, se relee la base y el foco vuelve al «Cambiar» de ese paso (pinta() vacía el contenedor)
+  function enfoca(clave) { var b = document.querySelector('[data-pm-cambiar="' + clave + '"]'); if (b) b.focus(); }
+  function guardadoYCierra(dlg, clave) { cierra(dlg, true); return carga().then(function () { enfoca(clave); }); }
   function arranca() {
     var c = cont();
     if (!c) return;
@@ -189,6 +246,7 @@
       if (a === 'pm-reintentar') { ev.stopPropagation(); carga(); }
       else if (a === 'pm-editar' && li) { ev.stopPropagation(); editor(li); }
       else if (a === 'pm-guardar' && li) { ev.stopPropagation(); guarda(li); }
+      else if (a === 'pm-cerrar' && li) { ev.stopPropagation(); cierra(li.querySelector('dialog[data-pm-ventana]')); }
     });
     if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { errorLectura({ code: '42501' }); return; }
     window.LW_AUTH.then(function (aut) {
