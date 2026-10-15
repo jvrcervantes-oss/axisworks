@@ -257,7 +257,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     if (!(await p.isVisible(campo('motivo'))) && await p.$('[data-fl="parte-1"]')) await p.click(accion('fl-modal-confirmar'));
     return p.fill(campo('motivo'), v);
   };
-  const abrePliegue = p => p.evaluate(() => document.querySelectorAll('[data-axw="dialogo"] [data-fl="mas-datos"]').forEach(d => { d.open = true; }));
+  const abrePliegue = p => p.evaluate(() => document.querySelectorAll('[data-axw="dialogo"] [data-axw="mas-datos"]').forEach(d => { d.open = true; }));
   const rellena = async (p, n, v) => { await abrePliegue(p); return p.fill(campo(n), v); };
   const prod = id => '[data-producto-id="' + id + '"]';
   const nLineas = n => Array.from({ length: n }, (_, i) => '  dk ' + String(1000 + i) + ' ab  ').join('\n');
@@ -1058,7 +1058,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
       const m = {};
       await abreTarifa(p); await p.waitForSelector('[data-axw="dialogo"] ' + campo('dias')); m.tarifaNueva = await cuenta(p);
       ok(ancho + ' px · S3 tarifa: la moneda sale como texto junto al precio y va plegada con la etiqueta', (await txt(p, 'label[for="fl-f-precio"]')).includes('(IDR)')
-         && !(await p.isVisible(campo('moneda'))) && !(await p.isVisible(campo('etiqueta'))) && (await txt(p, '[data-axw="dialogo"] [data-fl="pliegue-resumen"]')).includes('IDR'));
+         && !(await p.isVisible(campo('moneda'))) && !(await p.isVisible(campo('etiqueta'))) && (await txt(p, '[data-axw="dialogo"] [data-axw="pliegue-resumen"]')).includes('IDR'));
       await cierra(p);
       const t1 = base.productos.find(x => x.id === 'p1').tarifas[0].id;
       await p.click(accion('fl-tarifa-cambiar', '[data-tarifa-id="' + t1 + '"]')); await p.waitForSelector('[data-axw="dialogo"] ' + campo('precio')); m.tarifaCambiar = await cuenta(p);
@@ -1085,6 +1085,13 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     }
     // tarea de Experiencia: «sube el precio por día de 150.000 a 170.000» → «Cambiar» + precio + motivo + «Confirmar y guardar»: 2 toques y 2 campos, como antes;
     // la moneda y la etiqueta ya no ocupan sitio. Fianza nueva: un toque más («Siguiente») a cambio de no ver 4 campos a la vez.
+    {   // remate 3: un modelo sin tramos arranca en la moneda de la instancia (USD aquí; la primera de los topes es IDR)
+      const { p, ctx } = await abre({ base: { sinAmbos: true } });
+      await p.evaluate(() => { window.lwMonedaBase = () => 'USD'; });
+      await abreTarifa(p, 'p3'); await p.waitForSelector('[data-axw="dialogo"] ' + campo('precio'));
+      ok('S3 remate: tramo nuevo de un modelo sin tramos, en la moneda de la instancia', (await p.$eval(campo('moneda'), e => e.value)) === 'USD' && (await txt(p, 'label[for="fl-f-precio"]')).includes('(USD)'));
+      await ctx.close();
+    }
     console.log('  toques S3: subir el precio por día = 2 toques + precio + motivo (igual que antes); fianza = 3 toques (antes 2) con 3 campos por parte (antes 4)');
     // la fianza en dos partes manda exactamente lo mismo, en una sola llamada
     const { base, p, ctx } = await abre({ base: { soloUno: true } });

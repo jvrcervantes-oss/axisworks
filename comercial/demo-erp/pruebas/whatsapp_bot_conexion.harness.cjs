@@ -108,6 +108,7 @@ window.toast = function (m) { window.__toast = m; };
   ok('3.1 cerrar el popup deja un mensaje claro y el botón libre', (await p.textContent('[data-wb="conexion-error"]')).includes('cerrado la ventana') && await p.isEnabled('[data-accion="conectar"]'));
 
   // 3b. ficha nueva: los idiomas marcados son los de la instancia (su base: id + en), nunca un español fijo (agencia-c0, 15-oct-2026)
+  await p.waitForFunction(() => document.querySelectorAll('[data-campo="idiomas"] input[data-idioma]:checked').length > 0, null, { timeout: 5000 }).catch(() => {});   // se marcan al llegar, sin frenar la ficha
   const marcados = await p.$$eval('[data-campo="idiomas"] input[data-idioma]', cs => cs.filter(c => c.checked).map(c => c.getAttribute('data-idioma')).sort().join());
   ok('3.2 ficha nueva: marca los idiomas de la instancia leídos de la base (en + id), no «es»', marcados === 'en,id', marcados);
 

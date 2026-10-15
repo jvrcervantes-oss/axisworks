@@ -38,16 +38,7 @@
 .fl-modal textarea{font-family:inherit}
 .fl-check{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px;min-width:0;word-break:break-word}
 .fl-check input{width:18px;height:18px;flex:none}
-/* bbm-comodidad S3 (15-oct-2026): el plegado común de S0 (Diseño) en Flota y la línea «Parte k de m» de un paso partido */
-.fl-pliegue{grid-column:1/-1;border-top:1px solid rgb(var(--tema-filete, 218 220 230));padding-top:12px;margin-top:4px;min-width:0}
-.fl-pliegue>summary{list-style:none;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:24px}
-.fl-pliegue>summary::-webkit-details-marker{display:none}
-.fl-pliegue-linea{display:flex;justify-content:space-between;gap:12px;font-weight:600;font-size:14px}
-.fl-pliegue-res{font-size:13px;color:rgb(var(--tema-on-surface-variant, 68 72 63));word-break:break-word}
-.fl-pliegue[open]>summary .fl-pliegue-res{display:none}
-.fl-pliegue-cuerpo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:0 14px;margin-top:12px}
-.fl-pliegue-cuerpo .axw-campo input,.fl-pliegue-cuerpo .axw-campo select{width:100%;min-width:0;box-sizing:border-box}
-.fl-pliegue-cuerpo .fl-ancho{grid-column:1/-1}
+/* bbm-comodidad S3 (15-oct-2026): la línea «Parte k de m» de un paso partido (el plegado está en pantalla_comun.css) */
 .fl-parte{margin:0;font:600 12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:rgb(var(--tema-on-surface-variant, 68 72 63))}
 .fl-pregunta{margin:2px 0 8px;font-size:15px;font-weight:600}
 details.fl-versiones summary{cursor:pointer;font-weight:600}
@@ -326,7 +317,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     "De baja": "Dikeluarkan",
     "Motivo del cambio (obligatorio)": "Alasan perubahan (wajib)",
     "El motivo es obligatorio": "Alasan wajib diisi",
-    "Más datos (opcional)": "Data lainnya (opsional)", "Parte 1 de 2": "Bagian 1 dari 2", "Parte 2 de 2": "Bagian 2 dari 2", "Siguiente": "Lanjut", "Atrás": "Kembali",
+    "Parte 1 de 2": "Bagian 1 dari 2", "Parte 2 de 2": "Bagian 2 dari 2", "Siguiente": "Lanjut", "Atrás": "Kembali",
     "¿Qué fianza pides?": "Berapa deposit yang diminta?", "¿Por qué lo cambias?": "Kenapa diubah?",
     "en una sola línea": "dalam satu baris",
     "caracteres": "karakter",
@@ -454,7 +445,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     'día': 'day', 'días': 'days', 'Sin notas': 'No notes',
     'Disponible': 'Available', 'En taller': 'In the workshop', 'De baja': 'Retired',
     'Motivo del cambio (obligatorio)': 'Reason for the change (required)',
-    'Más datos (opcional)': 'More details (optional)', 'Parte 1 de 2': 'Part 1 of 2', 'Parte 2 de 2': 'Part 2 of 2', 'Siguiente': 'Next', 'Atrás': 'Back',
+    'Parte 1 de 2': 'Part 1 of 2', 'Parte 2 de 2': 'Part 2 of 2', 'Siguiente': 'Next', 'Atrás': 'Back',
     '¿Qué fianza pides?': 'What deposit do you ask for?', '¿Por qué lo cambias?': 'Why are you changing it?',
     'El motivo es obligatorio': 'The reason is required', 'en una sola línea': 'on a single line', 'caracteres': 'characters',
     'Entre': 'Between', 'y': 'and', 'Fuera de rango': 'Out of range',
@@ -729,7 +720,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     var diasEl = h('input', { type: 'text', id: 'fl-f-dias', 'data-campo': 'dias', inputmode: 'numeric', autocomplete: 'off' });
     var precioEl = h('input', { type: 'text', id: 'fl-f-precio', 'data-campo': 'precio', inputmode: 'decimal', autocomplete: 'off' });
     var monEl = h('select', { id: 'fl-f-moneda', 'data-campo': 'moneda' }, monedas.map(function (m) { return h('option', { value: m, text: m }); }));
-    var usada = previo ? previo.moneda : ((segurosDe(pid)[0] || p.tarifas[0] || {}).moneda);
+    var usada = previo ? previo.moneda : ((segurosDe(pid)[0] || p.tarifas[0] || {}).moneda || monedaInstancia(monedas));
     if (usada && monedas.indexOf(usada) === -1) monEl.appendChild(h('option', { value: usada, text: usada }));
     if (usada) monEl.value = usada;
     var notaMonS = h('p', { class: 'fl-ayuda', 'data-fl': 'nota-moneda' });
@@ -1110,21 +1101,11 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
   }
   /* Abre una ventana de edición DENTRO del cajón (misma interfaz que el diálogo de pantalla_comun: cuerpo, botones, error, cierra): un solo editor a la vez
      (doble clic en «Añadir…» no abre dos) y el indicador se baja siempre al cerrarlo (botón, Esc o tras guardar). */
-  /* bbm-comodidad S3 (15-oct-2026), regla del owner «1, 2 o 3 campos a rellenar por paso» con el S0 de Diseño: lo opcional (y lo que ya trae valor,
-     como la moneda) va bajo un <details> nativo «Más datos (opcional) +» con un resumen tenue de lo de dentro (máximo 2 y «+n más»); lo plegado no
-     cuenta en el recuento. Un obligatorio sin valor nunca va plegado. Quien valida lo abre si el error es de dentro (det.open = true). */
-  function pliegue(nodos, resumen) {
-    var signo = h('span', { 'aria-hidden': 'true', text: '+' }), res = h('span', { class: 'fl-pliegue-res', 'data-fl': 'pliegue-resumen' });
-    var det = h('details', { class: 'fl-pliegue', 'data-fl': 'mas-datos' }, [h('summary', null, [h('span', { class: 'fl-pliegue-linea' }, [h('span', { text: T('Más datos (opcional)') }), signo]), res]),
-      h('div', { class: 'fl-pliegue-cuerpo' }, nodos)]);
-    det.actualiza = function () {
-      var l = (resumen() || []).filter(function (x) { return x != null && String(x).replace(/^\s+|\s+$/g, '') !== ''; });
-      res.textContent = l.slice(0, 2).join(' · ') + (l.length > 2 ? ' +' + (l.length - 2) + ' ' + T('más') : '');
-      oculta(res, !l.length); signo.textContent = det.open ? '−' : '+';
-    };
-    ['toggle', 'input', 'change'].forEach(function (ev) { det.addEventListener(ev, det.actualiza); });
-    det.actualiza();
-    return det;
+  var pliegue = C.pliegue;   // S3: el plegado común de S0 (_compartido/pantalla_comun.js)
+  function monedaInstancia(admitidas) {   // la moneda ya no se ve como campo: la de partida tiene que ser la de la instancia, si se admite
+    var m = null;
+    try { m = typeof window.lwMonedaBase === 'function' ? window.lwMonedaBase() : null; } catch (e) { /* MUDO A PROPOSITO: sin moneda de la instancia, la primera admitida, como antes */ }
+    return /^[A-Z]{3}$/.test(m || '') && admitidas.indexOf(m) >= 0 ? m : null;
   }
   function abre(titulo, nodos, botones) {
     if (E.dialogo || !E.cajon) return null;
@@ -1177,6 +1158,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     if (c.hint === 'sin_herramienta') { d.error(T('No tienes la herramienta «Flota y tarifas»: pídesela al administrador principal en Usuarios.')); return; }
     if (c.tipo === 'sin_permiso') { d.error(T('Solo la administración puede cambiar la flota y las tarifas.')); return; }
     d.error((prefijo ? prefijo + ' ' : '') + C.mensaje(err, false, PROPIOS));
+    if (c.tipo === 'regla' && d.cuerpo) [].forEach.call(d.cuerpo.querySelectorAll('[data-axw="mas-datos"]'), function (x) { x.open = true; });   // S3: lo plegado puede ser lo rechazado
   }
   /* Escribe y RELEE de la base (nada de estado optimista): la lista que se ve es la que la base devuelve. */
   function envia(nombre, args, btn, d, prefijo) {
@@ -1445,6 +1427,7 @@ details.fl-versiones summary{cursor:pointer;font-weight:600}
     existentes.forEach(function (m) { if (monedas.indexOf(m) === -1) monEl.appendChild(h('option', { value: m, text: m })); });   // una moneda ya usada que la base ya no admite sigue visible
     if (previa) { diasEl.value = String(previa.t.dias); diasEl.readOnly = true; precioEl.value = previa.t.precio == null ? '' : String(previa.t.precio); etqEl.value = previa.t.etiqueta == null ? '' : String(previa.t.etiqueta); monEl.value = String(previa.t.moneda); }
     else if (existentes.length === 1) monEl.value = existentes[0];
+    else if (!existentes.length && monedaInstancia(monedas)) monEl.value = monedaInstancia(monedas);
     var visT = previa ? { precio: previa.t.precio == null ? '' : String(previa.t.precio), moneda: String(previa.t.moneda), etiqueta: previa.t.etiqueta == null ? '' : String(previa.t.etiqueta) } : null, tocadoT = {};
     if (previa) [precioEl, monEl, etqEl].forEach(function (el) { ['input', 'change'].forEach(function (ev) { el.addEventListener(ev, function () { tocadoT[el.getAttribute('data-campo')] = true; }); }); });
     var motEl = campoMotivo();

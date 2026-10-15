@@ -30,3 +30,13 @@
 .axw-resumen{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
 .axw-resumen dt{color:rgb(var(--tema-outline, 117 120 110))}
 .axw-resumen dd{margin:0;word-break:break-word}
+/* Plegado común (S0 de Diseño, 15-oct-2026): filete arriba, «Más datos (opcional) +», resumen tenue que se esconde al abrir */
+.axw-pliegue{grid-column:1/-1;border-top:1px solid rgb(var(--tema-filete, 218 220 230));padding-top:12px;margin-top:4px;min-width:0}
+.axw-pliegue>summary{list-style:none;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:24px}
+.axw-pliegue>summary::-webkit-details-marker{display:none}
+.axw-pliegue-linea{display:flex;justify-content:space-between;gap:12px;font-weight:600;font-size:14px}
+.axw-pliegue-res{font-size:13px;color:rgb(var(--tema-on-surface-variant, 68 72 63));word-break:break-word}
+.axw-pliegue[open]>summary .axw-pliegue-res{display:none}
+.axw-pliegue-cuerpo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:0 14px;margin-top:12px}
+.axw-pliegue-cuerpo .axw-campo input,.axw-pliegue-cuerpo .axw-campo select,.axw-pliegue-cuerpo .axw-campo textarea{width:100%;min-width:0;box-sizing:border-box}
+.axw-pliegue-cuerpo .fl-ancho,.axw-pliegue-cuerpo .ex-ancho{grid-column:1/-1}
