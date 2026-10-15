@@ -5345,7 +5345,11 @@ MONEDA_GASTOS_PARCHES = (
      "  var MONEDAS = [['EUR', 'EUR'], ['IDR', 'IDR'], ['USD', 'USD']];\n"
      "  /* AxisWorks (calidad-gastos, 15-oct-2026): la moneda de los gastos es la de Ajustes (lwMonedaBase), no 'EUR' escrito a mano. */\n"
      "  function axwMonedaGastos() { var m = typeof window.lwMonedaBase === 'function' ? window.lwMonedaBase() : null; return /^[A-Z]{3}$/.test(m || '') ? m : null; }\n"
-     "  function axwMonedasGastos() { var m = axwMonedaGastos(); if (!m) return [['', T('— elige —')]].concat(MONEDAS); return MONEDAS.some(function (x) { return x[0] === m; }) ? MONEDAS : [[m, m]].concat(MONEDAS); }\n"
+     "  function axwMonedasGastos(actual) {   // la de Ajustes y la que ya tiene el gasto que se edita, aunque no estén en la lista de Lawang\n"
+     "    var m = axwMonedaGastos(), out = MONEDAS.slice(), mete = function (x) { if (x && !out.some(function (y) { return y[0] === x; })) out.unshift([x, x]); };\n"
+     "    mete(/^[A-Z]{3}$/.test(actual || '') ? actual : null); mete(m);\n"
+     "    return m || actual ? out : [['', T('— elige —')]].concat(out);\n"
+     "  }\n"
      "  var axwMonedaGastosEsperada = false;\n"
      "  function axwTrasMonedaGastos(fn) {\n"
      "    var p = window.AXW_MODULOS_LISTOS;\n"
@@ -5359,7 +5363,7 @@ MONEDA_GASTOS_PARCHES = (
      "    var monedas = Object.keys(calc); if (!monedas.length) { var mbG = axwMonedaGastos(); monedas = mbG ? [mbG] : []; if (!mbG) axwTrasMonedaGastos(pintaKpis); }\n"
      "    var linea = function (k) { return monedas.length ? monedas.map(function (m) { return fmt((calc[m] || {})[k] || 0, m); }).join(' · ') : '—'; };\n"),
     ('intranet/v4/assets/panel-gastos.js', "tipo: 'select', medio: 1, valor: g.moneda || 'EUR', opciones: MONEDAS }",
-     "tipo: 'select', req: true, medio: 1, valor: g.moneda || axwMonedaGastos() || '', opciones: axwMonedasGastos() }"),
+     "tipo: 'select', req: true, medio: 1, valor: g.moneda || axwMonedaGastos() || '', opciones: axwMonedasGastos(g.moneda) }"),
     ('intranet/v4/assets/panel-gastos.js', "moneda: v.moneda || 'EUR', fecha: v.fecha,",
      "moneda: v.moneda || axwMonedaGastos() || null, fecha: v.fecha,"),
 )

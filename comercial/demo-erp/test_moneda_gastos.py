@@ -121,6 +121,13 @@ function envio(ctx) { return ctx.payloadDe({ sociedad: 'emisor', categoria: 'otr
   c = mundo('AUD', [], Promise.resolve(true));
   const fa = campoMoneda(c);
   r.aud_alta = fa.valor; r.aud_opciones = fa.opciones.map(function (x) { return x[0]; });
+  // 3b. editar un gasto en AUD: la ofrece siempre (con IDR en Ajustes y sin moneda decidida) — BAJA del revisor de f40a491
+  c = mundo('IDR', [], Promise.resolve(true));
+  let fe = c.camposGasto({ moneda: 'AUD' }).filter(function (x) { return x.k === 'moneda'; })[0];
+  r.edita_idr = { valor: fe.valor, op: fe.opciones.map(function (x) { return x[0]; }) };
+  c = mundo(null, [], Promise.resolve(true));
+  fe = c.camposGasto({ moneda: 'AUD' }).filter(function (x) { return x.k === 'moneda'; })[0];
+  r.edita_null = { valor: fe.valor, op: fe.opciones.map(function (x) { return x[0]; }) };
   // 4. con gastos en dos monedas: suma por moneda (no debe cambiar)
   c = mundo('IDR', [
     { estado: 'pendiente', moneda: 'EUR', total: 100, base: 100, pph_retenido: 0, fecha: '2026-10-01', sociedad: 'emisor' },
@@ -149,6 +156,9 @@ if p.returncode == 0:
     ok('al llegar la capa de módulos con IDR: se repinta en IDR', r['null_tras'].get('k-pendiente') == '0 IDR', repr(r['null_tras'].get('k-pendiente')))
     ok('AUD: el alta la elige', r['aud_alta'] == 'AUD', repr(r['aud_alta']))
     ok('AUD: el alta la ofrece aunque no esté en la lista de Lawang', 'AUD' in r['aud_opciones'], repr(r['aud_opciones']))
+    e1, e2 = r['edita_idr'], r['edita_null']
+    ok('editar un gasto AUD con Ajustes IDR: lo ofrece y lo deja elegido (y también IDR)', e1['valor'] == 'AUD' and 'AUD' in e1['op'] and 'IDR' in e1['op'], repr(e1))
+    ok('editar un gasto AUD sin moneda decidida: lo ofrece, elegido, sin «— elige —» delante', e2['valor'] == 'AUD' and 'AUD' in e2['op'] and e2['op'][0] != '', repr(e2))
     d = r['dos_kpis'].get('k-pendiente', '')
     ok('con gastos EUR+IDR: suma por moneda, como antes', 'EUR' in d and 'IDR' in d and '100 EUR' in d and '500000 IDR' in d, repr(d))
 
