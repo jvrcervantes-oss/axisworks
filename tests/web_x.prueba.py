@@ -56,4 +56,16 @@ else:
 r = subprocess.run([sys.executable, os.path.join(RAIZ, 'tools', 'web_x', 'traduce_js.py'), '--check'], capture_output=True, text=True)
 print(('OK   ' if r.returncode == 0 else 'MAL  ') + 'los .es.js casan con su fuente: ' + r.stdout.strip().replace('\n', '; '))
 mal += r.returncode != 0
+
+# Cada rótulo de nodo del diagrama de la portada tiene su traducción (15-oct-2026, revisor): si no la tiene, traduce_js
+# lo deja en inglés en la portada española y el --check de arriba sale verde igual (solo compara con lo que generaría).
+sys.path.insert(0, os.path.join(RAIZ, 'tools', 'web_x'))
+import traduce_js  # noqa: E402
+fuente = open(os.path.join(RAIZ, 'assets', 'x', 'home.js'), encoding='utf-8').read()
+rotulos = re.findall(r"\['\w+', '([^']+)', '[a-z]'\]", fuente)
+sin = [x for x in rotulos if x not in traduce_js.HOME and x not in ('AI CEO',)]
+sin = [x for x in sin if x not in ('Frontend', 'Backend', 'Bots', 'Legal', 'Marketing', 'Deploy', 'ERP', 'AaaS')]
+print(('OK   ' if not sin else 'MAL  ') + 'rótulos de nodo de la portada con traducción: %d' % len(rotulos)
+      + ('' if not sin else ' — sin traducir: ' + ', '.join(sin)))
+mal += bool(sin)
 sys.exit(1 if mal else 0)

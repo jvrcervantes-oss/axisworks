@@ -1,5 +1,14 @@
+"""equipo.py -- bustos de los departamentos del organigrama (PIL, sin credito).
+
+    python tools/equipo.py <carpeta de salida> [db,costs]     (sin lista: todos; con lista: solo esos)
+
+Escribe dep-<cara>.webp en la salida, y prev_<cara>.png y sheet.png (hoja de contacto) en el directorio actual.
+El dibujo de cada busto sale de su posicion en NAMES (semilla): un glifo nuevo va AL FINAL o cambian los demas.
+"""
 import numpy as np, math, random, sys
 from PIL import Image, ImageDraw
+if len(sys.argv) < 2:
+    sys.exit(__doc__)
 S=720; SS=3; W=S*SS
 yy,xx=np.mgrid[0:S,0:S].astype(float)
 COL=(244,242,236)
@@ -92,8 +101,9 @@ for i,nm in enumerate(NAMES):
     im.save(f'{out}/dep-{nm}.webp','WEBP',quality=80,method=6)
     im.save(f'prev_{nm}.png')
 from PIL import Image as I
-sheet=I.new('RGB',(360*7,360*3),(240,240,240))
+FILAS=(len(NAMES)+6)//7   # la hoja crece con NAMES: con 3 filas fijas el busto 22.º se perdia sin aviso
+sheet=I.new('RGB',(360*7,360*FILAS),(240,240,240))
 for i,nm in enumerate(NAMES):
     if SOLO and nm not in SOLO: continue
     sheet.paste(I.open(f'prev_{nm}.png'),((i%7)*360,(i//7)*360))
-sheet.resize((1260,540)).save('sheet.png')
+sheet.resize((1260,180*FILAS)).save('sheet.png')

@@ -148,7 +148,7 @@ $AAAS = [
   'sx'=>[
     ['In testing now',['One pilot, on our own product, in shadow mode: it decides without executing.','The agent module inside the ERP.']],
     ['Being completed',['The rest of the nine-agent pack.','Two more businesses planned.']],
-    ['Planned',['AI Tools for pilots: video styles, carousels, a researcher and plot maps.','Not available yet, and not for sale until it is.']],
+    ['Planned',['AI Tools for autonomous agents: video styles, carousels, a researcher and plot maps.','Not available yet, and not for sale until it is.']],
   ],
   'cl_h2'=>'Want to know if an agent pack fits your business?',
   'cl_p'=>'Tell us about your business and we will tell you whether it could work for you, and when.',
@@ -191,7 +191,7 @@ $AAAS = [
   'sx'=>[
     ['En pruebas ahora',['Un piloto, en un producto nuestro, en modo sombra: decide sin ejecutar.','El módulo de agente dentro del ERP.']],
     ['Completándose',['El resto del pack de nueve agentes.','Dos negocios más previstos.']],
-    ['Previsto',['AI Tools para los pilotos: estilos de vídeo, carruseles, un investigador y mapas de parcelas.','Todavía no disponible, y no se vende hasta que lo esté.']],
+    ['Previsto',['AI Tools para los agentes autónomos: estilos de vídeo, carruseles, un investigador y mapas de parcelas.','Todavía no disponible, y no se vende hasta que lo esté.']],
   ],
   'cl_h2'=>'¿Quieres saber si un pack de agentes encaja en tu negocio?',
   'cl_p'=>'Cuéntanos a qué se dedica tu negocio y te diremos si podría funcionar para ti y cuándo.',

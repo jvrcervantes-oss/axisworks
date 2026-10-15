@@ -59,9 +59,9 @@ rows: [
 ['DECIDE', [['ceo', 'AI CEO', 'c']]],
 ['SPAWNED', [['revprev', 'Pre-review', 's'], ['explore', 'Exploration', 's'], ['plan', 'Planning', 's'], ['encargo', 'Subtask', 's']]],
 ['REVIEW', [['seguridad', 'Security', 'd'], ['legal', 'Legal', 'd'], ['administracion', 'Admin', 'd'], ['costes', 'Costs', 'd'], ['organizacion', 'Organisation', 'd'], ['idiomas', 'Languages', 'd']]],
-['BUILD', [['producto', 'Product', 'd'], ['frontend', 'Frontend', 'd'], ['experiencia', 'UX', 'd'], ['backend', 'Backend', 'd'], ['bots', 'Bots', 'd'], ['pilotos', 'Pilots', 'd']]],
+['BUILD', [['producto', 'Product', 'd'], ['frontend', 'Frontend', 'd'], ['experiencia', 'UX', 'd'], ['backend', 'Backend', 'd'], ['bots', 'Bots', 'd'], ['pilotos', 'Agents', 'd']]],
 ['CREATE', [['diseno', 'Design', 'd'], ['arquitectura', 'Architecture', 'd'], ['modelado', '3D Modeling', 'd'], ['videojuegos', 'Games', 'd'], ['marketing', 'Marketing', 'd'], ['comunicacion', 'Comms', 'd']]],
-['GATES', [['calidad', 'Quality', 'd'], ['revisor', 'Code reviewer', 'g'], ['consulta', 'Deploy consult', 's'], ['humano', 'Oversight', 'h']]],
+['GATES', [['calidad', 'Quality', 'd'], ['basedatos', 'Databases', 'd'], ['revisor', 'Code reviewer', 'g'], ['consulta', 'Deploy consult', 's'], ['humano', 'Oversight', 'h']]],
 ['PUBLISH · VERIFY', [['deploy', 'Deploy', 'd'], ['documentacion', 'Docs', 'd'], ['verificador', 'Verifier', 's'], ['trampas', 'Trap plans', 's']]],
 ['PRODUCTS', [['aaas', 'AaaS', 'x'], ['erp', 'ERP', 'x'], ['webs', 'Websites', 'x']]],
 ['OUTPUT', [['entrega', 'Delivery', 'p'], ['soporte', 'Support', 'd']]]
@@ -71,13 +71,13 @@ ceo: '/assets/images/team-pepito.webp', frontend: '/assets/images/dep-dev.webp',
 arquitectura: '/assets/images/dep-arch.webp', deploy: '/assets/images/dep-deploy.webp', videojuegos: '/assets/images/dep-games.webp', modelado: '/assets/images/dep-models.webp',
 pilotos: '/assets/images/dep-pilots.webp', diseno: '/assets/images/dep-design.webp', marketing: '/assets/images/dep-marketing.webp', comunicacion: '/assets/images/dep-comms.webp',
 seguridad: '/assets/images/dep-security.webp', calidad: '/assets/images/dep-quality.webp', legal: '/assets/images/dep-legal.webp', administracion: '/assets/images/dep-admin.webp',
-documentacion: '/assets/images/dep-docs.webp', organizacion: '/assets/images/dep-org.webp'
+documentacion: '/assets/images/dep-docs.webp', organizacion: '/assets/images/dep-org.webp', basedatos: '/assets/images/dep-db.webp'
 },
 desc: {
 frontend: 'What the visitor sees and touches: pages, mobile and accessibility.', backend: 'Databases, functions and integrations: what you do not see.', bots: 'WhatsApp assistants that serve customers.', pilotos: 'Autonomous agents that run a business within hard limits.',
 seguridad: 'Checks that everything is secure before and after publishing.', legal: 'Contracts, legal texts and regulation.', administracion: 'The studio’s invoicing and tax.', organizacion: 'Looks after the studio’s structure and retires what is not needed.',
 diseno: 'Art direction, identity and graphic pieces.', arquitectura: '3D homes and plot maps from plans and photos.', modelado: 'Characters, props and environments for games.', videojuegos: 'The studio’s own engine and game.', marketing: 'Ads, SEO and lead generation.', comunicacion: 'Press releases and media relations.',
-calidad: 'Checks in production that what was promised really works. Can block a delivery.', deploy: 'Takes work to production and keeps services running.', documentacion: 'Proposals, reports and deliverables in PDF.',
+calidad: 'Checks in production that what was promised really works. Can block a delivery.', basedatos: 'Checks that every database is linked by id, well built and safe.', deploy: 'Takes work to production and keeps services running.', documentacion: 'Proposals, reports and deliverables in PDF.',
 producto: 'Decides what gets built next in our own software.', experiencia: 'Makes everyday tools comfortable to use.', idiomas: 'Translation and terminology in Spanish, English and Indonesian.',
 costes: 'Measures and trims what the studio spends to run.', soporte: 'Onboarding, training and support for each client after delivery.',
 erp: 'AxisWorks’ management product to run a business: bookings, contracts, invoices and operations. Demo available.', aaas: 'Agents that run a business within hard limits (autonomous agents and Bots).', webs: 'Custom websites and landing pages for customers.',
@@ -89,10 +89,10 @@ work: {
 backend: 'adjusting a database', seguridad: 'reviewing a plan', calidad: 'verifying in production', frontend: 'building a page', diseno: 'reviewing a design', deploy: 'publishing a change', bots: 'tuning an assistant', legal: 'reviewing a text',
 marketing: 'preparing content', documentacion: 'preparing a document', organizacion: 'reviewing the structure', pilotos: 'running an agent', arquitectura: 'modelling a home in 3D', modelado: 'modelling a game asset',
 videojuegos: 'working on the engine', comunicacion: 'drafting a press note', administracion: 'preparing an invoice',
-producto: 'ordering the roadmap', experiencia: 'reviewing a screen', idiomas: 'reviewing a translation', costes: 'reviewing running costs', soporte: 'helping a client'
+producto: 'ordering the roadmap', experiencia: 'reviewing a screen', idiomas: 'reviewing a translation', costes: 'reviewing running costs', basedatos: 'auditing a database', soporte: 'helping a client'
 },
 kinds: { d: 'AI DEPARTMENT', s: 'SUBAGENT', p: 'STEP', c: 'AI CEO', g: 'GATE', h: 'HUMAN', x: 'PRODUCT' },
-depts: ['seguridad', 'legal', 'administracion', 'organizacion', 'frontend', 'backend', 'bots', 'pilotos', 'diseno', 'arquitectura', 'modelado', 'videojuegos', 'marketing', 'comunicacion', 'calidad', 'deploy', 'documentacion', 'producto', 'experiencia', 'idiomas', 'costes', 'soporte']
+depts: ['seguridad', 'legal', 'administracion', 'organizacion', 'frontend', 'backend', 'bots', 'pilotos', 'diseno', 'arquitectura', 'modelado', 'videojuegos', 'marketing', 'comunicacion', 'calidad', 'deploy', 'documentacion', 'producto', 'experiencia', 'idiomas', 'costes', 'soporte', 'basedatos']
 };
 }
 activeAt(t, D) {

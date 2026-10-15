@@ -24,7 +24,7 @@ HOME = {
  'working on the engine': 'trabajando en el motor', 'modelling a game asset': 'una pieza del juego', 'weighing in on a plan': 'opinando sobre un plan',
  'seal approved': 'sello aprobado',
  # nombres de nodos
- 'Autonomous agents': 'Agentes autónomos', 'Security': 'Seguridad', 'Quality': 'Calidad', 'Design': 'Diseño', 'Docs': 'Documentación', 'Admin': 'Administración',
+ 'Autonomous agents': 'Agentes autónomos', 'Agents': 'Agentes', 'Databases': 'Base de datos', 'Security': 'Seguridad', 'Quality': 'Calidad', 'Design': 'Diseño', 'Docs': 'Documentación', 'Admin': 'Administración',
  'Architecture': 'Arquitectura', 'Comms': 'Comunicación', 'Organisation': 'Organización', 'Games': 'Videojuegos', 'Game 3D': 'Modelado 3D',
  'Pre-review': 'Revisión previa', 'Code reviewer': 'Revisor de código', 'Request': 'Encargo', 'AI CEO': 'CEO de IA', 'Exploration': 'Exploración',
  'Planning': 'Plan', 'Subtask': 'Subtarea', '3D Modeling': 'Modelado 3D', 'Deploy consult': 'Consulta de deploy', 'Oversight': 'Supervisión',
@@ -63,7 +63,7 @@ HOME = {
  'Measures and trims what the studio spends to run.': 'Mide y recorta lo que cuesta mantener el estudio.',
  'Onboarding, training and support for each client after delivery.': 'Alta, formación y soporte de cada cliente tras la entrega.',
  'ordering the roadmap': 'ordenando la hoja de ruta', 'reviewing a screen': 'revisando una pantalla', 'reviewing a translation': 'revisando una traducción',
- 'reviewing running costs': 'revisando los costes', 'helping a client': 'atendiendo a un cliente',
+ 'reviewing running costs': 'revisando los costes', 'auditing a database': 'auditando una base de datos', 'Checks that every database is linked by id, well built and safe.': 'Vigila que cada base esté conectada por su id, bien construida y segura.', 'helping a client': 'atendiendo a un cliente',
  'AxisWorks’ management product to run a business: bookings, contracts, invoices and operations. Demo available.': 'El producto de gestión de AxisWorks para llevar un negocio: reservas, contratos, facturas y operaciones. Con demo.',
  'Agents that run a business within hard limits (autonomous agents and Bots).': 'Agentes que llevan un negocio dentro de límites fijos (agentes autónomos y Bots).',
  'Custom websites and landing pages for customers.': 'Webs y landings a medida para clientes.',

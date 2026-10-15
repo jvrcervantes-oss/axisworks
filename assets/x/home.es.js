@@ -60,9 +60,9 @@ rows: [
 ['DECIDE', [['ceo', 'CEO de IA', 'c']]],
 ['SUBAGENTES', [['revprev', 'Revisión previa', 's'], ['explore', 'Exploración', 's'], ['plan', 'Plan', 's'], ['encargo', 'Subtarea', 's']]],
 ['REVISIÓN', [['seguridad', 'Seguridad', 'd'], ['legal', 'Legal', 'd'], ['administracion', 'Administración', 'd'], ['costes', 'Costes', 'd'], ['organizacion', 'Organización', 'd'], ['idiomas', 'Idiomas', 'd']]],
-['CONSTRUIR', [['producto', 'Producto', 'd'], ['frontend', 'Frontend', 'd'], ['experiencia', 'Experiencia', 'd'], ['backend', 'Backend', 'd'], ['bots', 'Bots', 'd'], ['pilotos', 'Pilots', 'd']]],
+['CONSTRUIR', [['producto', 'Producto', 'd'], ['frontend', 'Frontend', 'd'], ['experiencia', 'Experiencia', 'd'], ['backend', 'Backend', 'd'], ['bots', 'Bots', 'd'], ['pilotos', 'Agentes', 'd']]],
 ['CREAR', [['diseno', 'Diseño', 'd'], ['arquitectura', 'Arquitectura', 'd'], ['modelado', 'Modelado 3D', 'd'], ['videojuegos', 'Videojuegos', 'd'], ['marketing', 'Marketing', 'd'], ['comunicacion', 'Comunicación', 'd']]],
-['PUERTAS', [['calidad', 'Calidad', 'd'], ['revisor', 'Revisor de código', 'g'], ['consulta', 'Consulta de deploy', 's'], ['humano', 'Supervisión', 'h']]],
+['PUERTAS', [['calidad', 'Calidad', 'd'], ['basedatos', 'Base de datos', 'd'], ['revisor', 'Revisor de código', 'g'], ['consulta', 'Consulta de deploy', 's'], ['humano', 'Supervisión', 'h']]],
 ['PUBLICAR · VERIFICAR', [['deploy', 'Deploy', 'd'], ['documentacion', 'Documentación', 'd'], ['verificador', 'Verificador', 's'], ['trampas', 'Planes trampa', 's']]],
 ['PRODUCTOS', [['aaas', 'AaaS', 'x'], ['erp', 'ERP', 'x'], ['webs', 'Webs', 'x']]],
 ['SALIDA', [['entrega', 'Entrega', 'p'], ['soporte', 'Soporte', 'd']]]
@@ -72,13 +72,13 @@ ceo: '/assets/images/team-pepito.webp', frontend: '/assets/images/dep-dev.webp',
 arquitectura: '/assets/images/dep-arch.webp', deploy: '/assets/images/dep-deploy.webp', videojuegos: '/assets/images/dep-games.webp', modelado: '/assets/images/dep-models.webp',
 pilotos: '/assets/images/dep-pilots.webp', diseno: '/assets/images/dep-design.webp', marketing: '/assets/images/dep-marketing.webp', comunicacion: '/assets/images/dep-comms.webp',
 seguridad: '/assets/images/dep-security.webp', calidad: '/assets/images/dep-quality.webp', legal: '/assets/images/dep-legal.webp', administracion: '/assets/images/dep-admin.webp',
-documentacion: '/assets/images/dep-docs.webp', organizacion: '/assets/images/dep-org.webp'
+documentacion: '/assets/images/dep-docs.webp', organizacion: '/assets/images/dep-org.webp', basedatos: '/assets/images/dep-db.webp'
 },
 desc: {
 frontend: 'Lo que el visitante ve y toca: páginas, móvil y accesibilidad.', backend: 'Bases de datos, funciones e integraciones: lo que no se ve.', bots: 'Asistentes de WhatsApp que atienden a los clientes.', pilotos: 'Agentes autónomos que llevan un negocio dentro de límites fijos.',
 seguridad: 'Comprueba que todo es seguro antes y después de publicar.', legal: 'Contratos, textos legales y normativa.', administracion: 'La facturación y los impuestos del estudio.', organizacion: 'Cuida la estructura del estudio y retira lo que sobra.',
 diseno: 'Dirección de arte, identidad y piezas gráficas.', arquitectura: 'Viviendas en 3D y planos de parcelas a partir de planos y fotos.', modelado: 'Personajes, objetos y escenarios para juegos.', videojuegos: 'El motor y el juego propios del estudio.', marketing: 'Anuncios, SEO y captación de contactos.', comunicacion: 'Notas de prensa y relación con medios.',
-calidad: 'Comprueba en la web publicada que lo prometido funciona. Puede frenar una entrega.', deploy: 'Publica el trabajo y mantiene los servicios en marcha.', documentacion: 'Propuestas, informes y entregables en PDF.',
+calidad: 'Comprueba en la web publicada que lo prometido funciona. Puede frenar una entrega.', basedatos: 'Vigila que cada base esté conectada por su id, bien construida y segura.', deploy: 'Publica el trabajo y mantiene los servicios en marcha.', documentacion: 'Propuestas, informes y entregables en PDF.',
 producto: 'Decide qué se construye después en nuestro propio software.', experiencia: 'Hace cómodas de usar las herramientas del día a día.', idiomas: 'Traducción y terminología en español, inglés e indonesio.',
 costes: 'Mide y recorta lo que cuesta mantener el estudio.', soporte: 'Alta, formación y soporte de cada cliente tras la entrega.',
 erp: 'El producto de gestión de AxisWorks para llevar un negocio: reservas, contratos, facturas y operaciones. Con demo.', aaas: 'Agentes que llevan un negocio dentro de límites fijos (agentes autónomos y Bots).', webs: 'Webs y landings a medida para clientes.',
@@ -90,10 +90,10 @@ work: {
 backend: 'ajustando datos', seguridad: 'revisando un plan', calidad: 'probando lo publicado', frontend: 'montando una página', diseno: 'revisando un diseño', deploy: 'publicando un cambio', bots: 'afinando un asistente', legal: 'revisando un texto',
 marketing: 'preparando contenido', documentacion: 'un documento', organizacion: 'repasa la estructura', pilotos: 'probando un agente', arquitectura: 'una casa en 3D', modelado: 'una pieza del juego',
 videojuegos: 'trabajando en el motor', comunicacion: 'nota de prensa', administracion: 'preparando una factura',
-producto: 'ordenando la hoja de ruta', experiencia: 'revisando una pantalla', idiomas: 'revisando una traducción', costes: 'revisando los costes', soporte: 'atendiendo a un cliente'
+producto: 'ordenando la hoja de ruta', experiencia: 'revisando una pantalla', idiomas: 'revisando una traducción', costes: 'revisando los costes', basedatos: 'auditando una base de datos', soporte: 'atendiendo a un cliente'
 },
 kinds: { d: 'DEPARTAMENTO DE IA', s: 'SUBAGENTE', p: 'PASO', c: 'CEO de IA', g: 'PUERTA', h: 'PERSONA', x: 'PRODUCTO' },
-depts: ['seguridad', 'legal', 'administracion', 'organizacion', 'frontend', 'backend', 'bots', 'pilotos', 'diseno', 'arquitectura', 'modelado', 'videojuegos', 'marketing', 'comunicacion', 'calidad', 'deploy', 'documentacion', 'producto', 'experiencia', 'idiomas', 'costes', 'soporte']
+depts: ['seguridad', 'legal', 'administracion', 'organizacion', 'frontend', 'backend', 'bots', 'pilotos', 'diseno', 'arquitectura', 'modelado', 'videojuegos', 'marketing', 'comunicacion', 'calidad', 'deploy', 'documentacion', 'producto', 'experiencia', 'idiomas', 'costes', 'soporte', 'basedatos']
 };
 }
 activeAt(t, D) {
