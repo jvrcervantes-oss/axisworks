@@ -182,8 +182,21 @@ async function abre(nav, b, { idioma = 'es', ancho = 1440, url = '/ajustes/#cobr
   await p.goto('http://local.test' + url); await p.waitForTimeout(500);
   // S10: la pestaña enseña el estado y un botón; el componente vive en una ventana. Las pruebas de siempre trabajan con ella abierta
   if (!sinAbrir && tipo !== 'asistente') { const ab = await p.$('[data-axw-cobros-host="abrir"]'); if (ab && await ab.isVisible()) { await ab.click(); await p.waitForTimeout(200); } }
+  // S2 (formularios de 1-3 campos, 15-oct-2026): el cambio va en dos partes (1 modo y LIVE · 2 claves y «Pedir el código»). Las pruebas de
+  // siempre van primero a la parte donde está lo que tocan, pulsando Siguiente/Atrás como la persona; las de S2 usan p.crudo, sin ese paso.
+  p.crudo = {};
+  for (const m of ['fill', 'click', '$eval', '$$eval', '$', '$$', 'getAttribute']) {
+    const orig = p[m].bind(p); p.crudo[m] = orig;
+    p[m] = async (sel, ...r) => { const n = typeof sel === 'string' ? parteDe(sel) : 0; if (n) await aParte(p, n); return orig(sel, ...r); };
+  }
   return { p, ctx };
 }
+const parteDe = s => /confirma_live|data-axw-cobros="modo-|data-axw-cobros-live|data-axw-cobros-modo|data-axw-cobros-proveedor/.test(s) ? 1
+  : /data-axw-campo="(creacion|lectura|aviso)"|data-axw-cobros="(pedir|reemplazar-|dejar-)|input\[type="password"\]|data-axw-cobros-fila|data-axw-cobros-puesta|data-axw-cobros-fallo/.test(s) ? 2 : 0;
+// en cada caja con partes (puede haber dos: pestaña y Configurar módulos, la otra en una ventana cerrada) se pulsa su botón en el DOM
+const aParte = (p, n) => p.evaluate(n => { document.querySelectorAll('[data-axw-cobros-caja]').forEach(c => {
+  const et = c.querySelector('[data-axw-cobros-parte]'); if (!et || Number(et.getAttribute('data-axw-cobros-parte')) === n) return;
+  const b = c.querySelector(n === 2 ? '[data-axw-cobros="siguiente"]' : '[data-axw-cobros="atras"]'); if (b) b.click(); }); }, n);
 const txt = async (p, sel) => (await p.$(sel)) ? (await p.$eval(sel, e => e.textContent.trim())) : null;
 const sinCanario = async p => { const h = await p.evaluate(() => document.documentElement.outerHTML); const vals = await p.evaluate(() => Array.from(document.querySelectorAll('input')).map(i => i.value).join('|'));
   return !/CANARIO/.test(h) && !/CANARIO/.test(vals) && !p.__consola.some(t => /CANARIO|xnd_/.test(t)); };
@@ -230,7 +243,8 @@ const C = '[data-axw-cobros-caja]';
   const pedir = b.edge.filter(x => x.accion === 'pedir_codigo')[0];
   ok('pedir_codigo manda las tres claves', pedir && pedir.creacion === CANARIO_C && pedir.lectura === CANARIO_L && pedir.aviso === CANARIO_A, JSON.stringify(pedir && Object.keys(pedir)));
   ok('código enviado: dice a qué correo (enmascarado)', ((await txt(p, '[data-axw-cobros-enviado]')) || '').includes('d***@balibestmotorcycle.com'));
-  ok('con el código pedido, las claves quedan de solo lectura', await p.$eval('[data-axw-campo="creacion"]', i => i.readOnly));
+  ok('con el código pedido: las claves no se enseñan, va su resumen y solo el código y la contraseña (S2)', !(await p.crudo.$('[data-axw-campo="creacion"]'))
+     && ((await txt(p, '[data-axw-cobros-resumen]')) || '').includes('Clave de creación') && (await p.crudo.$$eval(`${C} input`, l => l.map(i => i.getAttribute('data-axw-campo')).join(','))) === 'codigo,contrasena');
   ok('el texto de la edge en español no se pinta nunca', !/texto en español/.test(await p.evaluate(() => document.body.textContent)));
   await p.fill('[data-axw-campo="codigo"]', '123456'); await p.fill('[data-axw-campo="contrasena"]', 'mala');
   await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(300);
@@ -476,6 +490,67 @@ const C = '[data-axw-cobros-caja]';
   ok('cambio de modo sin token nuevo: lo pide y no gasta un código', ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').includes('token de avisos') && b.edge.filter(x => x.accion === 'pedir_codigo').length === 0);
   await ctx.close();
 
+  // ── S2 · formularios de 1-3 campos (owner 15-oct; encargo 20261015_erp_formularios_1a3_campos): Cobros en dos partes ─────────────────────
+  {
+    // campos a la vista = inputs visibles + el grupo del modo (un radiogroup cuenta como UN campo)
+    const aLaVista = p => p.evaluate(() => { const c = [...document.querySelectorAll('[data-axw-cobros-caja]')].find(x => x.offsetParent !== null); if (!c) return -1;
+      return [...c.querySelectorAll('input')].filter(i => i.offsetParent !== null).length + [...c.querySelectorAll('[role="radiogroup"]')].filter(g => g.offsetParent !== null).length; });
+    const parte = async p => (await p.crudo.$('[data-axw-cobros-parte]')) ? p.crudo.getAttribute('[data-axw-cobros-parte]', 'data-axw-cobros-parte') : null;
+    for (const ancho of [390, 1440]) for (const idioma of ['es', 'id']) {
+      b = base({ live: true });
+      ({ p, ctx } = await abre(nav, b, { idioma, ancho }));
+      const n1 = await aLaVista(p), e1 = await parte(p), et = await txt(p, '[data-axw-cobros-parte]');
+      await p.crudo.click('[data-axw-cobros="modo-live"]'); await p.waitForTimeout(80);
+      const n1l = await aLaVista(p);
+      await p.crudo.click('[data-axw-cobros="siguiente"]'); await p.waitForTimeout(80);
+      const n2 = await aLaVista(p), e2 = await parte(p), foco = await p.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-axw-campo'));
+      ok(`S2 ${idioma} ${ancho}: primera vez, parte 1 = el modo (≤3 a la vista; en real con LIVE) y «${et}»`, e1 === '1' && n1 >= 1 && n1 <= 3 && n1l <= 3 && (idioma === 'es' ? et === 'Parte 1 de 2' : !/Parte/.test(et || '')), JSON.stringify({ n1, n1l, e1, et }));
+      ok(`S2 ${idioma} ${ancho}: parte 2 = las tres claves y «Pedir el código», con el foco en la primera`, e2 === '2' && n2 === 3 && foco === 'creacion' && !!(await p.crudo.$('[data-axw-cobros="pedir"]')) && !!(await p.crudo.$('[data-axw-cobros="atras"]')), JSON.stringify({ n2, e2, foco }));
+      ok(`S2 ${idioma} ${ancho}: sin scroll horizontal`, (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho);
+      await ctx.close();
+    }
+    // lo tecleado vive en la memoria del componente: ir y volver no lo pierde; el cuerpo de pedir_codigo es el de siempre
+    b = base({ live: true });
+    ({ p, ctx } = await abre(nav, b));
+    await p.crudo.click('[data-axw-cobros="modo-live"]'); await p.waitForTimeout(80);
+    await p.crudo.click('[data-axw-cobros="siguiente"]'); await p.waitForTimeout(80);
+    await p.crudo.fill('[data-axw-campo="creacion"]', PROD_C); await p.crudo.fill('[data-axw-campo="lectura"]', PROD_L); await p.crudo.fill('[data-axw-campo="aviso"]', CANARIO_A);
+    await p.crudo.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(200);
+    ok('S2: sin LIVE, «Pedir el código» vuelve a la parte 1 con su aviso y no llama a la edge', (await parte(p)) === '1' && b.edge.filter(x => x.accion === 'pedir_codigo').length === 0
+       && ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').includes('no coincide') && !!(await p.crudo.$('[data-axw-campo="confirma_live"]')));
+    await p.crudo.fill('[data-axw-campo="confirma_live"]', 'LIVE');
+    await p.crudo.click('[data-axw-cobros="siguiente"]'); await p.waitForTimeout(80);
+    ok('S2: al volver a las claves siguen tecleadas', (await p.crudo.$eval('[data-axw-campo="creacion"]', i => i.value)) === PROD_C && (await p.crudo.$eval('[data-axw-campo="aviso"]', i => i.value)) === CANARIO_A);
+    await p.crudo.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
+    const pc = b.edge.filter(x => x.accion === 'pedir_codigo')[0];
+    ok('S2: pedir_codigo lleva lo de siempre (las tres claves y confirmar_live), nada más', !!pc && pc.creacion === PROD_C && pc.lectura === PROD_L && pc.aviso === CANARIO_A && pc.confirmar_live === 'LIVE'
+       && Object.keys(pc).sort().join(',') === 'accion,aviso,confirmar_live,creacion,lectura', JSON.stringify(pc && Object.keys(pc)));
+    ok('S2: fase del código sin partes ni claves: 2 campos a la vista', !(await p.crudo.$('[data-axw-cobros-parte]')) && (await aLaVista(p)) === 2);
+    await p.crudo.click('[data-axw-cobros="reescribir"]'); await p.waitForTimeout(100);
+    ok('S2: «Cambiar lo escrito» vuelve a las claves (parte 2) con lo tecleado', (await parte(p)) === '2' && (await p.crudo.$eval('[data-axw-campo="lectura"]', i => i.value)) === PROD_L);
+    await ctx.close();
+    // cerrar la ventana sin guardar: al reabrir, parte 1 y vacío (S10)
+    b = base();
+    ({ p, ctx } = await abre(nav, b));
+    await p.crudo.click('#lw-aj-cobros [data-axw-cobros="siguiente"]'); await p.waitForTimeout(80);
+    await p.crudo.fill('#lw-aj-cobros [data-axw-campo="creacion"]', CANARIO_C);
+    await p.keyboard.press('Escape'); await p.waitForTimeout(100); await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+    await p.crudo.click('[data-axw-cobros-host="abrir"]'); await p.waitForTimeout(200);
+    ok('S2: cerrar sin guardar y reabrir → parte 1, sin claves', (await parte(p)) === '1' && await sinCanario(p));
+    await ctx.close();
+    // reemplazar una sola clave: 2 campos, todo junto (sin partes); en real, modo + clave + LIVE = 3, también junto
+    b = base({ conf: { creacion: 1, lectura: 1, aviso: 1 }, modo: 'test' });
+    ({ p, ctx } = await abre(nav, b));
+    await p.crudo.click('[data-axw-cobros="reemplazar-aviso"]'); await p.waitForTimeout(80);
+    ok('S2: reemplazar una clave = sin partes (modo + 1 campo)', !(await p.crudo.$('[data-axw-cobros-parte]')) && (await aLaVista(p)) === 2);
+    await ctx.close();
+    // Medida de toques (Experiencia, S0), «poner las claves la primera vez»: antes todo a la vista; un toque = un clic o un campo
+    //   prueba: antes 3 claves + pedir = 4 · ahora Siguiente + 3 claves + pedir = 5
+    //   real:   antes modo + 3 claves + LIVE + pedir = 6 · ahora modo + LIVE + Siguiente + 3 claves + pedir = 7
+    // (el código, la contraseña y guardar son los mismos 3 en los dos)
+    console.log('MEDIDA S2 toques (antes → después), claves la primera vez: prueba 4 → 5 · real 6 → 7 (más 3 de código, contraseña y guardar en los dos)');
+  }
+
   // ── SERVIDOR NUEVO (20261012233000, «el cliente solo») ─────────────────────────────────────────────────────────────────────────────────────
   // 16. de prueba a real, de punta a punta: botón encendido sin nota del estudio, LIVE tecleado viaja IGUAL en las dos llamadas, modo_desde al volver
   b = base({ nuevo: true });
@@ -574,7 +649,10 @@ const C = '[data-axw-cobros-caja]';
   await p.fill('[data-axw-campo="confirma_live"]', 'LIVE'); await p.click('[data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
   await p.fill('[data-axw-campo="codigo"]', '123456'); await p.fill('[data-axw-campo="contrasena"]', 'buena');
   await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(500);
-  ok('falta_confirmar_live: se vuelve a escribir, con el campo LIVE y su frase', !!(await p.$('[data-axw-cobros="pedir"]')) && !!(await p.$('[data-axw-campo="confirma_live"]')) && ((await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '').includes('escribir LIVE'));
+  // S2: vuelve a la parte 1, donde está LIVE; el aviso se lee ANTES de moverse (Siguiente/Atrás lo limpian al cambiar de parte)
+  const aviso21 = (await txt(p, `${C} [data-axw-cobros-error="aviso"]`)) || '', parte21 = await p.crudo.getAttribute('[data-axw-cobros-parte]', 'data-axw-cobros-parte');
+  ok('falta_confirmar_live: se vuelve a escribir, en la parte del modo con el campo LIVE y su frase', parte21 === '1' && !!(await p.crudo.$('[data-axw-campo="confirma_live"]')) && aviso21.includes('escribir LIVE')
+     && !!(await p.$('[data-axw-cobros="pedir"]')), JSON.stringify({ parte21, aviso21 }));
   await ctx.close();
 
   // 21b. otro administrador pasa la instancia a real con esta página abierta: pedir_codigo da falta_confirmar_live, se relee y sale el campo LIVE

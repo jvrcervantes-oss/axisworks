@@ -125,7 +125,7 @@
   }
   window.addEventListener('pagehide', function () {
     limpia();
-    if (M) { M.fase = 'editar'; M.correo = ''; M.codigo = ''; M.confirma = ''; M.confirmaMandada = null; }
+    if (M) { M.fase = 'editar'; M.correo = ''; M.codigo = ''; M.confirma = ''; M.confirmaMandada = null; M.parte = 1; }
   });
   window.addEventListener('pageshow', function (ev) {   // vuelta desde la caché del navegador: se repinta con lo vaciado
     if (!ev.persisted || !M || !M.est) return;
@@ -138,14 +138,14 @@
     vueltas++;
     limpia();
     if (!M) return;
-    M.fase = 'editar'; M.correo = ''; M.codigo = ''; M.confirma = ''; M.confirmaMandada = null; M.aviso = ''; M.fallo = null; M.faltan = [];
+    M.fase = 'editar'; M.correo = ''; M.codigo = ''; M.confirma = ''; M.confirmaMandada = null; M.aviso = ''; M.fallo = null; M.faltan = []; M.parte = 1;
     if (M.est) { M.modo = M.est.modo || 'test'; CAMPOS.forEach(function (k) { M.reemplaza[k] = !M.est.claves[k].configurada; }); }
     cajas.forEach(function (c) { if (document.body.contains(c) && M.est) dibuja(c); });
   }
   function nuevoM(est, pide) {
     var r = {};
     CAMPOS.forEach(function (k) { r[k] = !est.claves[k].configurada; });
-    return { est: est, pideCodigo: pide, modo: est.modo || 'test', reemplaza: r, valores: {}, fase: 'editar', mandadas: null, correo: '', codigo: '', fallo: null, faltan: [], aviso: '', confirma: '', confirmaMandada: null };
+    return { est: est, pideCodigo: pide, modo: est.modo || 'test', reemplaza: r, valores: {}, fase: 'editar', mandadas: null, correo: '', codigo: '', fallo: null, faltan: [], aviso: '', confirma: '', confirmaMandada: null, parte: 1 };
   }
   // Cambiar de modo (con claves ya puestas) obliga a reemplazar las TRES: el modo sale de la de creación y la de lectura, y Xendit da un token de
   // avisos distinto en prueba y en real (con el de prueba, reservas-pago rechazaría los avisos de los pagos reales)
@@ -205,6 +205,25 @@
       raiz.appendChild(el('p', { role: 'alert', class: 'font-body-md text-body-md text-error', 'data-axw-cobros-error': 'codigo_no_disponible', text: textoError('codigo_no_disponible') }));
     }
 
+    // Formularios de 1-3 campos (owner 15-oct; encargo 20261015_erp_formularios_1a3_campos S2): con más de 3 campos a la vista (la primera vez: modo + 3
+    // claves, y en real además LIVE) el cambio va en dos partes: 1) modo (y LIVE, junto a su aviso: S90 «No way back»), 2) las claves y «Pedir el
+    // código». La parte vive en M (dibuja() lo rehace todo en cada clic) y la mueven los botones del componente: el anfitrión no la ve (sin axw-parte),
+    // porque aquí avanza «Pedir el código», no su botón. Lo no visible sigue en M.valores / M.confirma: lo que se manda a la edge no cambia.
+    var hayCampos = CAMPOS.some(function (k) { return !est.claves[k].configurada || M.reemplaza[k]; });
+    var verLive = editar && M.modo === 'live' && !liveCerrado(est) && hayCampos && M.pideCodigo;
+    var nCampos = 1 + CAMPOS.filter(function (k) { return !est.claves[k].configurada || M.reemplaza[k]; }).length + (verLive ? 1 : 0);
+    var parte = editar && M.pideCodigo && nCampos > 3 ? (M.parte === 2 ? 2 : 1) : 0;   // 0 = todo junto, como siempre
+    if (parte) raiz.appendChild(el('p', { class: 'font-label-md text-label-md text-on-surface-variant', 'aria-live': 'polite', 'data-axw-cobros-parte': String(parte),
+                                          text: S().ui('parte_de', { k: String(parte), m: '2' }) }));
+    if (!editar) {   // con el código pedido: lo que se va a guardar en una línea, y solo el código y la contraseña (las claves ya van en M.mandadas)
+      raiz.appendChild(el('p', { class: 'rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface', 'data-axw-cobros-resumen': M.modo,
+                                 text: C('resumen', { m: nombreModo(M.modo), c: Object.keys(M.mandadas || {}).map(function (k) { return C(k); }).join(' · ') }) }));
+      if (M.pideCodigo) pintaCodigo(raiz);
+      pie(raiz, est);
+      return;
+    }
+
+    if (parte !== 2) {
     // Proveedor: solo el que da la base (hoy Xendit). El nombre es una marca: no se traduce.
     var prov = el('fieldset', { class: 'flex flex-col gap-2' }, [el('legend', { class: 'font-label-md text-label-md text-on-surface', style: 'margin-bottom:8px', text: C('proveedor') })]);
     prov.appendChild(el('div', { class: 'rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 flex flex-col gap-1', 'data-axw-cobros-proveedor': est.proveedor === 'xendit' ? 'xendit' : 'otro' }, [
@@ -223,7 +242,7 @@
                              style: 'min-height:44px' + (bloqueado ? ';opacity:.5' : ''), text: o[1] });
       if (o[0] === 'live') b.appendChild(el('span', { class: 'px-2 py-0.5 rounded-full font-label-md text-[12px] bg-error-container text-on-error-container', text: C('dinero_real') }));
       if (bloqueado || !editar) b.disabled = true;
-      b.addEventListener('click', function () { if (M.fase !== 'editar') return; M.modo = o[0]; M.confirma = ''; fuerzaModo(); M.aviso = ''; dibuja(raiz); });
+      b.addEventListener('click', function () { if (M.fase !== 'editar') return; M.modo = o[0]; M.confirma = ''; fuerzaModo(); M.aviso = ''; M.parte = 1; dibuja(raiz); });
       seg.appendChild(b);
     });
     modo.appendChild(seg);
@@ -237,30 +256,48 @@
                                  text: typeof md.por === 'string' && md.por ? C('modo_desde_por', { f: fecha(md.en), p: corto(md.por, 120) }) : C('modo_desde', { f: fecha(md.en) }) }));
     }
     raiz.appendChild(modo);
-
-    // Una fila por clave: guardada («Configurada el…», Reemplazar) o campo secreto
-    CAMPOS.forEach(function (k) { raiz.appendChild(filaClave(raiz, k, editar)); });
-
-    // Confirmación expresa en TODO cambio con modo final real (S90 «No way back»; contrato 20261012233000: también estando ya en real y cambiando solo
-    // el token de avisos). Se teclea LIVE y lo tecleado viaja como confirmar_live: la garantía es la edge y la base, que lo vuelven a mirar.
-    var hayCampos = CAMPOS.some(function (k) { return !est.claves[k].configurada || M.reemplaza[k]; });
-    // solo si hay algo que mandar: con todo guardado y nada que reemplazar no hay código que pedir y el campo quedaría muerto
-    if (editar && M.modo === 'live' && !liveCerrado(est) && hayCampos && M.pideCodigo) {
-      var idc = 'axw-cb-live-' + raiz.getAttribute('data-axw-cobros-caja');
-      var conf = el('input', { id: idc, type: 'text', autocomplete: 'off', spellcheck: 'false', 'data-axw-campo': 'confirma_live', class: CLS_INPUT });
-      conf.value = M.confirma || '';
-      conf.addEventListener('input', function () { M.confirma = conf.value; });
-      raiz.appendChild(el('div', { class: 'flex flex-col gap-1.5' }, [el('label', { for: idc, class: 'font-label-md text-label-md text-on-surface', text: S().ui('teclea', { v: 'LIVE' }) }), conf,
-        el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: C('live_confirma_d') })]));
     }
 
-    if (M.pideCodigo && (hayCampos || !editar)) {   // con todo guardado y nada que reemplazar no hay nada que pedir
-      if (editar) {
-        var pedir = boton(C('pedir'), 'pedir', BTN2 + ' self-start');
+    if (parte === 1) {   // la parte 1 acaba en el modo (y LIVE): «Siguiente» lleva a las claves
+      if (verLive) pintaLive(raiz);
+      var sig = boton(S().ui('siguiente'), 'siguiente', BTN2 + ' self-start');
+      // «Siguiente» no frena: LIVE lo mira pideCodigo (y la edge y la base) y, si falta, vuelve aquí con su aviso y lo tecleado intacto
+      sig.addEventListener('click', function () { M.parte = 2; M.aviso = ''; dibuja(raiz); enfoca(raiz, 'input[data-axw-campo]'); });
+      raiz.appendChild(sig);
+    } else {
+      // Una fila por clave: guardada («Configurada el…», Reemplazar) o campo secreto
+      CAMPOS.forEach(function (k) { raiz.appendChild(filaClave(raiz, k, editar)); });
+      if (verLive && !parte) pintaLive(raiz);
+      var fila = el('div', { class: 'flex flex-wrap gap-2' });
+      if (parte === 2) {
+        var atr = boton(S().ui('atras'), 'atras', BTN_PEQ);
+        atr.addEventListener('click', function () { M.parte = 1; M.aviso = ''; dibuja(raiz); enfoca(raiz, '[data-axw-cobros^="modo-"][aria-checked="true"]'); });
+        fila.appendChild(atr);
+      }
+      if (M.pideCodigo && hayCampos) {   // con todo guardado y nada que reemplazar no hay nada que pedir
+        var pedir = boton(C('pedir'), 'pedir', BTN2);
         pedir.addEventListener('click', function () { pideCodigo(raiz, pedir); });
-        raiz.appendChild(pedir);
-      } else pintaCodigo(raiz);
+        fila.appendChild(pedir);
+      }
+      if (fila.firstChild) raiz.appendChild(fila);
     }
+    pie(raiz, est);
+  }
+  function enfoca(raiz, sel) { var e = raiz.querySelector(sel); if (e) e.focus(); }
+
+  // Confirmación expresa en TODO cambio con modo final real (S90 «No way back»; contrato 20261012233000: también estando ya en real y cambiando solo
+  // el token de avisos). Se teclea LIVE y lo tecleado viaja como confirmar_live: la garantía es la edge y la base, que lo vuelven a mirar.
+  // Solo si hay algo que mandar: con todo guardado y nada que reemplazar no hay código que pedir y el campo quedaría muerto (verLive en dibuja).
+  function pintaLive(raiz) {
+    var idc = 'axw-cb-live-' + raiz.getAttribute('data-axw-cobros-caja');
+    var conf = el('input', { id: idc, type: 'text', autocomplete: 'off', spellcheck: 'false', 'data-axw-campo': 'confirma_live', class: CLS_INPUT });
+    conf.value = M.confirma || '';
+    conf.addEventListener('input', function () { M.confirma = conf.value; });
+    raiz.appendChild(el('div', { class: 'flex flex-col gap-1.5' }, [el('label', { for: idc, class: 'font-label-md text-label-md text-on-surface', text: S().ui('teclea', { v: 'LIVE' }) }), conf,
+      el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: C('live_confirma_d') })]));
+  }
+
+  function pie(raiz, est) {
     raiz.appendChild(el('p', { role: 'alert', class: 'font-body-sm text-body-sm text-error', 'data-axw-cobros-error': M.aviso ? 'aviso' : '', text: M.aviso || '' }));
     raiz.appendChild(el('p', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: C('prueba_nota') }));
     if (typeof est.intentos_recientes === 'number' && typeof est.intentos_max === 'number' && est.intentos_recientes > 0) {
@@ -283,7 +320,7 @@
           c.puesta_por ? el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant break-words', text: C('puesta_por', { p: corto(c.puesta_por, 120) }) }) : null])]);
       if (editar && M.pideCodigo) {
         var r = boton(C('reemplazar'), 'reemplazar-' + k, BTN_PEQ + ' self-start');
-        r.addEventListener('click', function () { M.reemplaza[k] = true; M.aviso = ''; dibuja(raiz); var i = raiz.querySelector('[data-axw-campo="' + k + '"]'); if (i) i.focus(); });
+        r.addEventListener('click', function () { M.reemplaza[k] = true; M.aviso = ''; M.parte = 2; dibuja(raiz); var i = raiz.querySelector('[data-axw-campo="' + k + '"]'); if (i) i.focus(); });
         caja.appendChild(r);
       }
       fila.appendChild(caja);
@@ -335,9 +372,9 @@
     if (p) { M.aviso = p; dibuja(raiz); return; }
     // exacto tras recortar espacios, y se manda lo tecleado (no 'LIVE' fijo): así la comprobación del servidor mide lo que escribió la persona
     // servidor viejo sin live_permitido y la instancia ya en real (nunca debería darse): no hay dónde teclear LIVE, se dice lo que dice la base
-    if (M.modo === 'live' && liveCerrado(M.est)) { M.aviso = textoError('live_no_permitido'); dibuja(raiz); return; }
+    if (M.modo === 'live' && liveCerrado(M.est)) { M.aviso = textoError('live_no_permitido'); M.parte = 1; dibuja(raiz); return; }
     var confirma = M.modo === 'live' ? String(M.confirma || '').trim() : null;
-    if (confirma !== null && confirma !== 'LIVE') { M.aviso = S().ui('no_coincide'); dibuja(raiz); return; }
+    if (confirma !== null && confirma !== 'LIVE') { M.aviso = S().ui('no_coincide'); M.parte = 1; dibuja(raiz); return; }
     btn.disabled = true;
     btn.textContent = S().ui('cargando');
     var cuerpo = { accion: 'pedir_codigo' };
@@ -360,6 +397,7 @@
       // (un token de avisos de prueba puesto en real haría rechazar los avisos de pago) y se dice qué ha pasado (revisor, 2.ª vuelta).
       if (res.codigo === 'falta_confirmar_live' && confirma === null) {
         var antes = M.est && M.est.modo;
+        M.parte = 1;   // el campo LIVE está en la parte del modo
         llama({ accion: 'estado' }).then(function (r2) {
           if (!M) return;
           var e2 = r2.d && r2.d.ok === true && r2.d.estado;
@@ -393,7 +431,7 @@
     bloque.appendChild(el('div', { class: 'flex flex-col gap-1.5' }, [el('label', { for: 'axw-cb-pass-' + n, class: 'font-label-md text-label-md text-on-surface', text: C('contrasena') }), pass,
       el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: C('contrasena_d') })]));
     var otra = boton(C('volver_a_escribir'), 'reescribir', BTN_PEQ + ' self-start');
-    otra.addEventListener('click', function () { M.fase = 'editar'; M.mandadas = null; M.confirmaMandada = null; M.correo = ''; M.codigo = ''; M.aviso = ''; dibuja(raiz); });
+    otra.addEventListener('click', function () { M.fase = 'editar'; M.mandadas = null; M.confirmaMandada = null; M.correo = ''; M.codigo = ''; M.aviso = ''; M.parte = 2; dibuja(raiz); });
     bloque.appendChild(otra);
     raiz.appendChild(bloque);
   }
@@ -434,7 +472,7 @@
       // pedir (las claves tecleadas se quedan). falta_confirmar_live: el campo LIVE solo está al escribir, así que también se vuelve ahí.
       // sin_a_quien_avisar: no se arregla en los 10 minutos del código, y cada reintento volvería a probar contra Xendit y a sumar un intento
       // hasta demasiados_intentos (revisor, BAJA 3): se vuelve a escribir; el código no se gastó, pero hará falta pedir otro.
-      if (res.codigo === 'codigo_no_valido' || res.codigo === 'prueba_caducada' || res.codigo === 'prueba_fallida' || res.codigo === 'demasiados_intentos' || res.codigo === 'falta_confirmar_live' || res.codigo === 'sin_a_quien_avisar') { M.fase = 'editar'; M.mandadas = null; M.confirmaMandada = null; M.correo = ''; M.codigo = ''; }
+      if (res.codigo === 'codigo_no_valido' || res.codigo === 'prueba_caducada' || res.codigo === 'prueba_fallida' || res.codigo === 'demasiados_intentos' || res.codigo === 'falta_confirmar_live' || res.codigo === 'sin_a_quien_avisar') { M.fase = 'editar'; M.mandadas = null; M.confirmaMandada = null; M.correo = ''; M.codigo = ''; M.parte = res.codigo === 'falta_confirmar_live' ? 1 : 2; }
       return fallo(res.codigo || 'respuesta_ilegible', textoRespuesta(res));
     });
     function exito(est, avisado) {
