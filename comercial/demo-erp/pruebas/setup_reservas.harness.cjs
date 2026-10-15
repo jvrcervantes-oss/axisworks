@@ -224,7 +224,7 @@ function servidor(b, n, a) {
 
 // ── las páginas: el asistente y Ajustes › Configurar módulos, con la sesión y el idioma simulados ─────────────────────────────────────────────
 const cabeza = (idioma) => `<!doctype html><html lang="${idioma}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}[hidden]{display:none!important}</style><style>${CSS_PIEL}</style><style>${FUENTES}${PIEL_VARS}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}">`;
+<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}${CSS_PIEL ? '' : '[hidden]{display:none!important}'}</style><style>${CSS_PIEL}</style><style>${FUENTES}${PIEL_VARS}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}">`;
 const sesion = (idioma, url) => `<script>
 history.replaceState(null, '', '${url}');
 window.__sinTrad = []; window.__errores = [];
@@ -291,7 +291,7 @@ async function rellenaAlquiler(p, o = {}) {
   await p.fill('[data-axw-campo="tarifa_7"]', '550.000'); await p.fill('[data-axw-campo="tarifa_30"]', '1.800.000');
   await clic(p, 'enviar');
   await p.fill('[data-axw-campo="seguro_1"]', '30.000'); await p.check('[data-axw-campo="seguro_obligatorio"]');
-  await p.click('details[data-axw-plegado="seguro-mas"] > summary'); await p.fill('[data-axw-campo="seguro_30"]', '600.000'); await p.fill('[data-axw-campo="seguro_365"]', '1.800.000');
+  await llena(p, 'seguro_30', '600.000'); await p.fill('[data-axw-campo="seguro_365"]', '1.800.000');
   await clic(p, 'enviar');
   await p.fill('[data-axw-campo="fianza"]', '1.000.000');
 }
@@ -304,6 +304,7 @@ async function rellenaAlquiler(p, o = {}) {
   b = base();
   ({ p, ctx } = await abre(nav, b));
   ok('S40 abre en la clase (primer paso que falta)', (await pasoActual(p)) === 'clase', await pasoActual(p));
+  ok('S1c primer paso: «Atrás» no se ve (con la piel de la instancia, `hidden` pierde ante .inline-flex si no se fuerza)', !(await p.isVisible('[data-axw-accion="atras"]')));
   ok('S40 «salida con plazas» se ve pero no se puede elegir (sin base)', await p.$eval('[data-axw-campo="clase"][value="salida"]', e => e.disabled));
   ok('S40 alquiler marcado de salida y botón «Continuar»', (await p.$eval('[data-axw-campo="clase"][value="alquiler"]', e => e.checked)) && (await txt(p, '[data-axw-accion="enviar"]')) === 'Continuar');
   await p.check('[data-axw-campo="clase"][value="servicio"]'); await p.waitForTimeout(100);
@@ -339,6 +340,12 @@ async function rellenaAlquiler(p, o = {}) {
     ok('S1c parte 3: el seguro de un día y «toda reserva lleva seguro»; 30 y 365 días plegados', (await parteVista(p)) === 3
        && await p.$eval('details[data-axw-plegado="seguro-mas"]', d => !d.open && !!d.querySelector('[data-axw-campo="seguro_365"]')), cuenta[1]);
     if (SHOT) await (await p.$('[data-axw-sr="flota"]')).screenshot({ path: path.join(SHOT, 's1c_flota_p3_1440.png') });
+    await p.fill('[data-axw-campo="seguro_1"]', '30.000'); await p.evaluate(() => { document.querySelector('[data-axw-campo="seguro_30"]').value = '10.000'; });   // como lo deja un borrador
+    await clic(p, 'enviar');
+    ok('S1c parte 3: un error de un campo plegado (30 días más barato que 1) no deja seguir y abre SU plegado', (await parteVista(p)) === 3
+       && await p.$eval('details[data-axw-plegado="seguro-mas"]', d => d.open) && ((await errorTxt(p)) || '').includes('no puede costar menos'), await errorTxt(p));
+    await p.fill('[data-axw-campo="seguro_30"]', ''); await p.fill('[data-axw-campo="seguro_1"]', '');
+    await p.click('details[data-axw-plegado="seguro-mas"] > summary');
     await clic(p, 'enviar');
     cuenta.push(await visibles(p, '[data-axw-sr="flota"]') + ':' + await visLista(p));
     ok('S1c parte 4: fianza y «¿fianza también con seguro?»; el botón vuelve a «Guardar y seguir»', (await parteVista(p)) === 4 && (await boton()) === 'Guardar y seguir', cuenta[2] + ' · ' + await boton());

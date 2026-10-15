@@ -900,11 +900,8 @@
     },
     valores: function (st) {
       var z = st.zona, d = st.datos, p = d.p, v = { tarifas: {}, seguros: {}, nuevas: [] }, er = [], ec = [];
-      // cada error dice de qué campo es (S1c): las partes llevan a la suya, y si el campo está plegado se abre (un error nunca se esconde)
-      function mal(c, t) {
-        er.push(t); ec.push({ c: c, t: t });
-        var dp = c && z.querySelector('[data-axw-campo="' + c + '"]'); dp = dp && dp.closest('details[data-axw-plegado]'); if (dp) dp.open = true;
-      }
+      // cada error dice de qué campo es (S1c): las partes llevan a la suya y abren su plegado al llegar (un error nunca se esconde)
+      function mal(c, t) { er.push(t); ec.push({ c: c, t: t }); }
       v.nombre = val(z, 'nombre');
       if (!v.nombre) mal('nombre', U('sr_falta_nombre'));
       TRAMOS_PRECIO.forEach(function (t) { var r = leeImporte(z, 'tarifa_' + t[0], U(t[1])); if (r.e) mal('tarifa_' + t[0], r.e); else v.tarifas[t[0]] = r.v; });

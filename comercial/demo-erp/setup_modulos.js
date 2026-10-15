@@ -756,12 +756,14 @@
   }
 
   // Botones del setup (banda, asistente y Ajustes): a todo lo ancho en el móvil, a su ancho desde 768 px. md:w-auto no está compilado en el
-  // CSS de la instancia, por eso va aquí y una sola vez por página. Solo tamaño, ningún color (marca blanca).
+  // CSS de la instancia, por eso va aquí y una sola vez por página. Solo tamaño, ningún color (marca blanca). Y lo que se oculta con `hidden` se
+  // oculta de verdad: en tw.css `[hidden]` pesa como una clase y .flex/.inline-flex, que van después, le ganan (revisor S1c, 15-oct).
   (function () {
     if (typeof document === 'undefined' || !document.head || document.getElementById('axw-setup-estilo')) return;
     var st = document.createElement('style');
     st.id = 'axw-setup-estilo';
-    st.textContent = '.axw-btn{width:100%}@media (min-width:768px){.axw-btn{width:auto;align-self:flex-start}}';
+    st.textContent = '.axw-btn{width:100%}@media (min-width:768px){.axw-btn{width:auto;align-self:flex-start}}'
+      + '.axw-btn[hidden],[data-axw-parte][hidden],[data-accion="pm-atras"][hidden]{display:none!important}';
     document.head.appendChild(st);
   })();
 
@@ -913,6 +915,13 @@
       var e = c ? o.padre.querySelector('[data-axw-campo="' + c + '"],[data-axw-error-de="' + c + '"]') : null, caja = e && e.closest('[data-axw-parte]');
       return caja ? Number(caja.getAttribute('data-axw-parte')) : lista.length;
     }
+    // un error de un campo plegado abre su plegado al llegar a su parte (no antes: no se abren plegados de partes que no se ven)
+    function abreErrores(er, k) {
+      er.forEach(function (e) {
+        var c = e.c && o.padre.querySelector('[data-axw-campo="' + e.c + '"]'), d = c && c.closest('details[data-axw-plegado]');
+        if (d && parteDe(e.c) === k) d.open = true;
+      });
+    }
     function ir(k, foco) {
       api.k = Math.max(1, Math.min(k, api.m));
       lista.forEach(function (x, i) { x.caja.hidden = i !== api.k - 1; x.eti.textContent = ui('parte_de', { k: String(i + 1), m: String(api.m) }); });
@@ -921,7 +930,7 @@
       if (foco && lista[api.k - 1]) lista[api.k - 1].tit.focus();
     }
     api.nueva = function (titulo) {
-      var eti = nodo('span', { class: 'font-label-md text-[11px] tracking-[0.12em] uppercase text-on-surface-variant', 'data-axw-parte-de': '' });
+      var eti = nodo('span', { class: 'font-label-md text-[11px] tracking-[0.12em] uppercase text-on-surface-variant', 'data-axw-parte-de': '', 'aria-live': 'polite' });
       var tit = nodo('h3', { tabindex: '-1', class: 'font-headline-sm text-headline-sm text-deep-lagoon', style: 'font-size:20px;line-height:1.25' }, titulo);
       var cab = nodo('div', { class: 'flex flex-col gap-1' }); cab.appendChild(eti); cab.appendChild(tit);
       var caja = nodo('div', { class: 'flex flex-col gap-5 min-w-0', 'data-axw-parte': String(lista.length + 1) });
@@ -932,18 +941,18 @@
     };
     api.listo = function () { ir(o.inicio || 1, false); };
     api.avanza = function () {
-      var er = (typeof o.errores === 'function' ? o.errores() || [] : []).map(function (e) { return { p: parteDe(e.c), t: e.t }; })
+      var er = (typeof o.errores === 'function' ? o.errores() || [] : []).map(function (e) { return { p: parteDe(e.c), t: e.t, c: e.c }; })
         .filter(function (e) { return e.p <= api.k; });
       if (!er.length) { ir(api.k + 1, true); return { ok: true }; }
       var pri = Math.min.apply(null, er.map(function (e) { return e.p; })), ts = [];
       er.forEach(function (e) { if (e.p === pri && ts.indexOf(e.t) < 0) ts.push(e.t); });
-      ir(pri, true);
+      ir(pri, true); abreErrores(er.map(function (e) { return { c: e.c }; }), pri);
       return { ok: false, error: ts.join(' ') };
     };
     api.retrocede = function () { if (api.k <= 1) return false; ir(api.k - 1, true); return true; };
     api.irA = function (errores) {
       var ps = (errores || []).map(function (e) { return parteDe(e.c); });
-      if (ps.length) ir(Math.min.apply(null, ps), true);
+      if (ps.length) { var k = Math.min.apply(null, ps); ir(k, true); abreErrores(errores, k); }
     };
     return api;
   }
