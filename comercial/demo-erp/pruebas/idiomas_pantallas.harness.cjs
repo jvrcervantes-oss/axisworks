@@ -94,8 +94,19 @@ const falso = modo => `(function(){
     storage:{ from:function(){ return { createSignedUrl:function(){return Promise.resolve({data:null,error:null});}, list:function(){return Promise.resolve({data:[],error:null});} }; } } };
   window.supabase = { createClient:function(){ return cli; } };
 })();`;
+// Rutas en el idioma de la instancia (bbm-idioma-total, 15-oct-2026): la barra pasa a /workshop/ y lo que se pida por ahí (version.js pide la propia
+// página) el servidor lo sirve desde taller/ (alias_htaccess). Aquí, lo mismo, con el mapa del ayudante en línea; sin ayudante, nada que traducir.
+const ALIAS = (() => { try {
+  const m = /<script id="axw-rutas">[\s\S]*?var D = (\{.*?\});\n/.exec(fs.readFileSync(path.join(RAIZ, 'home', 'index.html'), 'utf8'));
+  if (!m) return [];
+  const D = JSON.parse(m[1]), pares = [];
+  for (const [k, subs] of Object.entries(D.s || {})) for (const [s, en] of Object.entries(subs)) pares.push(['/' + D.r[k] + '/' + en + '/', '/' + k + '/' + s + '/']);
+  for (const [k, en] of Object.entries(D.r)) pares.push(['/' + en + '/', '/' + k + '/']);
+  return pares;
+} catch (e) { return []; } })();
 function fichero(url) {
   let p = decodeURIComponent(new URL(url).pathname);
+  for (const [de, a] of ALIAS) if (p.startsWith(de)) { p = a + p.slice(de.length); break; }
   if (p.endsWith('/')) p += 'index.html';
   const f = path.join(RAIZ, p);
   return f.startsWith(RAIZ) && fs.existsSync(f) && fs.statSync(f).isFile() ? f : null;
