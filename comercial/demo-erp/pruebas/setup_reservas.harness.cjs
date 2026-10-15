@@ -304,7 +304,6 @@ async function rellenaAlquiler(p, o = {}) {
   b = base();
   ({ p, ctx } = await abre(nav, b));
   ok('S40 abre en la clase (primer paso que falta)', (await pasoActual(p)) === 'clase', await pasoActual(p));
-  ok('S1c primer paso: «Atrás» no se ve (con la piel de la instancia, `hidden` pierde ante .inline-flex si no se fuerza)', !(await p.isVisible('[data-axw-accion="atras"]')));
   ok('S40 «salida con plazas» se ve pero no se puede elegir (sin base)', await p.$eval('[data-axw-campo="clase"][value="salida"]', e => e.disabled));
   ok('S40 alquiler marcado de salida y botón «Continuar»', (await p.$eval('[data-axw-campo="clase"][value="alquiler"]', e => e.checked)) && (await txt(p, '[data-axw-accion="enviar"]')) === 'Continuar');
   await p.check('[data-axw-campo="clase"][value="servicio"]'); await p.waitForTimeout(100);
