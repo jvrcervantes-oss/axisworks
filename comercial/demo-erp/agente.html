@@ -38,6 +38,8 @@
 .ag2-msg[data-tono="ok"]{background:rgba(200,240,74,.12);color:var(--lime)}
 .ag2-msg[data-tono="mal"]{background:rgba(255,122,69,.14);color:#FFB08F}
 .ag2-msg[data-tono="neutro"]{background:rgba(140,149,255,.14);color:var(--text-hi)}
+/* el freno de la base no es un error: se espera y se sigue (Diseño, 16-oct); va después de [data-tono] para ganarle */
+.ag2-msg[data-freno]{background:rgba(140,149,255,.14);color:var(--text-hi)}
 .ag2-band{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:12px;align-items:stretch}
 .ag2-stat{background:rgba(11,12,30,.6);border:1px solid var(--line-soft);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .ag2-stat .ag2-mono{color:var(--text-lo)}
@@ -153,8 +155,14 @@
 .ag2 .ag2-paso input,.ag2 .ag2-paso select{width:100%;min-width:0;min-height:48px;padding:0 14px;border-radius:12px;background:var(--ink);border:1px solid #62679A!important;color:var(--text-hi);font:inherit}
 .ag2 .ag2-paso .ag2-in input,.ag2 .ag2-paso .ag2-in select{flex:1 1 200px;width:auto}
 .ag2 .ag2-paso input:focus,.ag2 .ag2-paso select:focus{border-color:var(--lime)!important}
-.ag2-btn{min-height:48px;padding:0 22px;border-radius:999px;border:0;background:var(--lime);color:#0B0C1E;font-weight:600}
-.ag2-btn2{min-height:40px;padding:0 16px;border-radius:999px;border:1px solid rgba(140,149,255,.55);background:transparent;color:var(--text-hi);font-weight:600;font-size:13px}
+.ag2-btn{min-height:48px;padding:0 22px;border-radius:999px;border:0;background:var(--lime);color:#0B0C1E;font-weight:600;transition:background 160ms var(--ease),transform 120ms var(--ease)}
+.ag2-btn2{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid rgba(140,149,255,.55);background:transparent;color:var(--text-hi);font-weight:600;font-size:13px;transition:background 160ms var(--ease),border-color 160ms var(--ease)}
+/* respuesta al tocar (Diseño, 16-oct): hover solo con ratón; un botón apagado (freno, solo lectura) no reacciona */
+@media (hover:hover){.ag2 .ag2-btn:not(:disabled):hover{background:#D6F66A}.ag2 .ag2-btn2:not(:disabled):hover{border-color:var(--lilac);background:rgba(140,149,255,.14)}.ag2 .ag2-pasos a:not([aria-current]):hover{border-color:rgba(140,149,255,.5)}.ag2-mas summary:hover{color:var(--text-hi)}}
+.ag2 .ag2-btn:not(:disabled):active{background:#B6DB3A;transform:translateY(1px)}
+.ag2 .ag2-btn2:not(:disabled):active{background:rgba(140,149,255,.26)}
+.ag2 .ag2-pasos a:active{background:rgba(140,149,255,.14)}
+.ag2-mas summary:active{color:var(--text-hi)}
 .ag2-cosas{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .ag2-cosas li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding:8px 12px;border-radius:12px;background:rgba(11,12,30,.6);border:1px solid var(--line-soft);font-size:14px;color:var(--text-hi);min-width:0;overflow-wrap:anywhere}
 .ag2-cosas li>span{min-width:0}
@@ -175,7 +183,7 @@
 .ag2[data-solo="quien"] .ag2-tabs,.ag2[data-solo="quien"] [data-ag="aj-pasos"],.ag2[data-solo="quien"] [data-ag="aj-quien-linea"]{display:none!important}
 .ag2-quien-linea{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:10px 14px;border-radius:14px;background:rgba(11,12,30,.6);border:1px solid var(--line-soft);min-width:0}
 .ag2-quien-linea p{margin:0;flex:1 1 200px;min-width:0;color:var(--text-hi);overflow-wrap:anywhere}
-.ag2 .ag2-quien-linea a.ag2-btn2{min-height:40px;padding:0 16px}
+.ag2 .ag2-quien-linea a.ag2-btn2{min-height:44px;padding:0 16px}
 .ag2[data-vista="ajustes"] [data-ag="v2-falta"],.ag2[data-vista="ajustes"] [data-ag="v2-esperan"]{display:none}
 .ag2-aviso-falta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:18px;background:rgba(255,122,69,.14);border:1px solid rgba(255,122,69,.5);color:var(--text-hi)}
 .ag2-aviso-falta p{margin:0;min-width:0;flex:1 1 240px;overflow-wrap:anywhere}
@@ -196,18 +204,30 @@
 .ag2-pasos [data-st="falta"] .ag2-dot{--c:var(--amber)}
 .ag2-aj-paso{display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:24px;background:var(--panel);border:1px solid var(--line);min-width:0;margin:0}
 .ag2-aj-paso[hidden]{display:none}
+.ag2 .ag2-aj-paso p{margin:0}
 .ag2 .ag2-aj-paso h3{margin:0;font-family:var(--display);font-weight:500;font-size:20px;letter-spacing:-.02em;color:var(--text-hi);text-transform:none;line-height:1.25}
 .ag2-aj-paso h3:focus{outline:none}
 .ag2-aj-paso fieldset{border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:14px}
 .ag2-campo>.ag2-sugerido{align-self:flex-start;min-height:44px;padding:0 18px}
-.ag2-interruptor{font-weight:600;padding:8px 12px;border-radius:14px;background:rgba(11,12,30,.6);border:1px solid var(--line-soft)}
+/* el interruptor de Ruta se pinta como los de «Parar por área» (.ag2-sw), con un checkbox de verdad escondido (role=switch) */
+.ag2-interruptor{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:8px 12px;border-radius:14px;background:rgba(11,12,30,.6);border:1px solid var(--line-soft);font-weight:600;font-size:14px;color:var(--text-hi);cursor:pointer}
+.ag2-interruptor>span:first-child{min-width:0}
+.ag2-interruptor .ag2-sr:checked+.ag2-sw{background:rgba(200,240,74,.3)}
+.ag2-interruptor .ag2-sr:checked+.ag2-sw::after{transform:translateX(16px);background:var(--lime)}
+.ag2-interruptor .ag2-sr:focus-visible+.ag2-sw{outline:2px solid var(--lime);outline-offset:3px}
+.ag2-interruptor .ag2-sr:disabled+.ag2-sw{opacity:.5}
+.ag2-mas[data-apagado]>fieldset{opacity:.5}
+.ag2-listo-h{display:flex;align-items:center;gap:10px}
+.ag2-listo-h .ag2-dot{width:10px;height:10px;--c:var(--lime)}
+.ag2-listo-h[data-st="falta"] .ag2-dot{--c:var(--amber)}
 .ag2-tag{display:inline-flex;align-items:center;padding:1px 8px;border-radius:999px;background:rgba(200,240,70,.14);border:1px solid rgba(200,240,70,.45);color:var(--text-hi);font-size:11px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
 .ag2-etapa{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--lilac)}
-.ag2-why{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
-.ag2-why>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:14px;background:rgba(11,12,30,.6);border:1px solid var(--line-soft);min-width:0}
-.ag2-why>[data-salta]{background:rgba(255,122,69,.1);border-color:rgba(255,122,69,.4)}
-.ag2-why dt{font-weight:700;font-size:14px;color:var(--text-hi)}
-.ag2-why dd{margin:0;font-size:13px;line-height:1.45;color:var(--text)}
+/* «Para qué sirve / Si lo saltas» sin cajas dentro de la tarjeta (Diseño, 16-oct); ámbar solo si el paso es obligatorio y se intentó seguir con él vacío (data-vacio) */
+.ag2-why{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px;margin:0}
+.ag2-why>div{display:flex;flex-direction:column;gap:2px;padding:0;background:none;border:0;min-width:0}
+.ag2-why dt{font-weight:600;font-size:14px;color:var(--text-hi)}
+.ag2-why dd{margin:0;font-size:13px;line-height:1.45;color:var(--text-lo)}
+.ag2-aj-paso[data-vacio] .ag2-why>[data-salta] dt,.ag2-aj-paso[data-vacio] .ag2-why>[data-salta] dd{color:#FFB08F}
 .ag2-campo{display:flex;flex-direction:column;gap:6px;min-width:0}
 .ag2-campo>label,.ag2-check-t{font-weight:600;color:var(--text-hi)}
 .ag2 .ag2-campo input,.ag2 .ag2-campo select,.ag2 .ag2-campo textarea,.ag2 .ag2-lim select{width:100%;min-width:0;min-height:48px;padding:10px 14px;border-radius:12px;background:var(--ink);border:1px solid #62679A;color:var(--text-hi);font:inherit}
@@ -215,9 +235,14 @@
 .ag2-lim select{max-width:420px}
 .ag2 .ag2-campo input:focus,.ag2 .ag2-campo select:focus,.ag2 .ag2-campo textarea:focus,.ag2 .ag2-lim select:focus{border-color:var(--lime)}
 .ag2-pista{font-size:13px;line-height:1.45;color:var(--text-lo);margin:0}
-.ag2-cuenta{font-size:12px;color:var(--text-mute);margin:0;font-variant-numeric:tabular-nums}
+.ag2-cuenta{font-size:12px;color:var(--text-mute);margin:0;font-variant-numeric:tabular-nums;text-align:right}
 .ag2-acc{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.ag2-mas summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;color:var(--lilac);font-weight:600}
+.ag2-aj-paso .ag2-acc>.ag2-btn2{order:1}   /* el principal siempre delante del fantasma, sea cual sea el orden del marcado */
+.ag2-mas summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;color:var(--lilac);font-weight:600;list-style:none}
+.ag2-mas summary::-webkit-details-marker{display:none}
+/* señal de desplegable (Diseño, 16-oct): + cerrado, − abierto; el texto alternativo vacío la calla en el lector de pantalla */
+.ag2-mas summary::after{content:"+";content:"+" / "";margin-left:auto;padding-left:12px;color:var(--text-lo);font-weight:500;font-size:20px;line-height:1}
+.ag2-mas[open]>summary::after{content:"\2212";content:"\2212" / ""}
 .ag2-mas[open] summary{margin-bottom:8px}
 .ag2-mas>div{display:flex;flex-direction:column;gap:12px}
 .ag2-checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:2px 14px}
@@ -257,6 +282,7 @@
 /* movimiento reducido o pestaña oculta: nada se mueve; cada valor ya está escrito */
 @media (prefers-reduced-motion:reduce){.ag2 *,.ag2 *::before,.ag2 *::after{animation:none!important;transition:none!important}}
 .ag2.ag2-quieto *,.ag2.ag2-quieto *::before,.ag2.ag2-quieto *::after{animation:none!important;transition:none!important}
+@media (min-width:980px){.ag2 .ag2-aj-paso .ag2-campo{max-width:640px}.ag2 .ag2-campo #ag2-aj-tope{max-width:280px}}
 @media (max-width:980px){.ag2-band{grid-template-columns:repeat(2,minmax(0,1fr))}.ag2-para{grid-column:1 / -1;max-width:none}.ag2-todos{min-height:64px}.ag2-abajo,.ag2-altavoz{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:640px){
   .ag2{padding:16px 12px;border-radius:22px}
@@ -270,7 +296,7 @@
   .ag2-v{font-size:24px}
   .ag2-why{grid-template-columns:minmax(0,1fr);gap:6px}
   /* en móvil «Para qué sirve: …» va en un solo párrafo: cada paso cabe en una pantalla de 844 px (medida en indonesio, el idioma más largo) */
-  .ag2-why>div{display:block;padding:8px 10px}
+  .ag2-why>div{display:block;padding:0}
   .ag2-why dt,.ag2-why dd{display:inline}
   .ag2-why dt::after{content:': '}
   .ag2-aj-paso{padding:16px;gap:12px}
@@ -281,8 +307,9 @@
   /* el selector de nivel ocupa la fila entera: el texto del nivel no se corta (Experiencia M5, medido en el arnés a 390 px) */
   .ag2 .ag2-lim select{flex-basis:100%;max-width:none}
   .ag2-aj-cab .ag2-msg{padding:8px 12px}
-  /* los botones de un paso, de dos en dos y a lo ancho (el texto largo del indonesio parte dentro del botón, no baja el botón a otra fila) */
-  .ag2-aj-paso .ag2-acc>.ag2-btn,.ag2-aj-paso .ag2-acc>.ag2-btn2{flex:1 1 120px;min-width:0;padding:6px 12px;text-align:center}
+  /* los botones de un paso, en columna y a lo ancho: el principal arriba y el fantasma debajo (Diseño, 16-oct; ningún texto parte en es/en/id) */
+  .ag2-aj-paso .ag2-acc{flex-direction:column;align-items:stretch}
+  .ag2-aj-paso .ag2-acc>.ag2-btn,.ag2-aj-paso .ag2-acc>.ag2-btn2{width:100%;min-width:0;padding:6px 16px;text-align:center}
   .ag2 .ag2-pasos a{padding:8px 6px}
   .ag2-pasos b{font-size:12px}   /* «3 · Wewenang» cabe sin partir la palabra en 4 columnas a 390 px (lo mide el arnés) */
   .ag2-niveles{grid-template-columns:minmax(0,1fr)}
@@ -518,8 +545,9 @@
 <fieldset data-ag="aj-fs-quien">
 <div class="ag2-campo">
 <label for="ag2-aj-quien-sel" data-lwt>Quién lleva el equipo</label>
-<select id="ag2-aj-quien-sel" data-campo="quien_owner" aria-describedby="ag2-aj-quien-p ag2-aj-quien-msg"></select>
-<p class="ag2-pista" id="ag2-aj-quien-p" data-lwt>Cualquier persona activa de tu equipo, también tú. Si cambias de persona y había una subida del tope pendiente, se anula: la decide quien lo lleve.</p>
+<select id="ag2-aj-quien-sel" data-campo="quien_owner" aria-describedby="ag2-aj-quien-p ag2-aj-quien-subida ag2-aj-quien-msg"></select>
+<p class="ag2-pista" id="ag2-aj-quien-p" data-lwt>Cualquier persona activa de tu equipo, también tú.</p>
+<p class="ag2-pista axw-oculto" id="ag2-aj-quien-subida" data-ag="aj-quien-subida" data-lwt>Hay una subida del tope pendiente: si cambias de persona, se anula y la decide quien lleve el equipo.</p>
 </div>
 <p class="ag2-msg axw-oculto" id="ag2-aj-quien-msg" data-ag="aj-msg-quien" data-tono="mal" role="alert"></p>
 <div class="ag2-acc"><button type="submit" class="ag2-btn"><span data-lwt>Guardar y seguir</span></button><a class="ag2-btn2" href="#equipo" data-ag="aj-quien-volver"><span data-lwt>Volver</span></a></div>
@@ -559,8 +587,9 @@
 <fieldset data-ag="aj-fs-negocio">
 <div class="ag2-campo">
 <label for="ag2-aj-quien" data-lwt>Quién es el negocio</label>
-<textarea id="ag2-aj-quien" rows="3" maxlength="600" data-campo="ctx_quien" data-tope="600" aria-describedby="ag2-aj-quien-c ag2-aj-negocio-msg"></textarea>
-<p class="ag2-cuenta" id="ag2-aj-quien-c" data-ag="cuenta-ctx_quien"></p>
+<p class="ag2-pista" id="ag2-aj-quien-pista" data-lwt>Una o dos frases: qué hacéis y dónde.</p>
+<textarea id="ag2-aj-quien" rows="3" maxlength="600" data-campo="ctx_quien" data-tope="600" aria-describedby="ag2-aj-quien-pista ag2-aj-quien-c ag2-aj-negocio-msg"></textarea>
+<p class="ag2-cuenta axw-oculto" id="ag2-aj-quien-c" data-ag="cuenta-ctx_quien"></p>
 </div>
 <details class="ag2-mas" data-ag="aj-reglas">
 <summary data-lwt>Más detalles: horarios, tono y reglas (opcional)</summary>
@@ -611,6 +640,8 @@
 <button type="button" class="ag2-btn2" data-accion="ag-aj-ajustar" aria-expanded="false"><span data-lwt>Ajustar por módulo</span></button>
 <button type="submit" class="ag2-btn axw-oculto" data-ag="aj-lim-guardar"><span data-lwt>Guardar los límites</span></button>
 </div>
+<!-- sin ninguna parte con límites (o sin poder leerlos) el paso no tiene nada que guardar: una salida para no dejar un callejón -->
+<div class="ag2-acc axw-oculto" data-ag="aj-lim-salida"><a class="ag2-btn" href="#equipo" data-ag="aj-lim-equipo"><span data-lwt>Ver el equipo</span></a></div>
 </fieldset>
 </form>
 
@@ -622,19 +653,23 @@
 <div data-salta><dt data-lwt>Si lo saltas</dt><dd data-ag="aj-trab-salta"></dd></div>
 </dl>
 <fieldset data-ag="aj-fs-trabajos">
-<label class="ag2-check ag2-interruptor" for="ag2-aj-nivel"><input id="ag2-aj-nivel" type="checkbox" role="switch" data-campo="nivel_ruta"><span data-lwt>Ruta revisa tu negocio cada día</span></label>
-<fieldset class="ag2-checks-fs">
-<legend class="ag2-check-t" data-lwt>Qué revisa</legend>
+<label class="ag2-interruptor" for="ag2-aj-nivel"><span data-lwt>Ruta revisa tu negocio cada día</span><input id="ag2-aj-nivel" class="ag2-sr" type="checkbox" role="switch" data-campo="nivel_ruta"><span class="ag2-sw" aria-hidden="true"></span></label>
+<!-- las casillas, plegadas (Diseño, 16-oct): el resumen dice cuántas hay marcadas; con Ruta apagada se atenúan y no se pueden tocar -->
+<details class="ag2-mas" data-ag="aj-trab-mas">
+<summary data-ag="aj-trab-cuenta"></summary>
+<fieldset class="ag2-checks-fs" data-ag="aj-trab-fs">
+<legend class="ag2-sr" data-lwt>Qué revisa</legend>
 <div class="ag2-checks" data-ag="trabajos"></div>
-<p class="ag2-pista axw-oculto" data-ag="sin-trabajos"></p>
 </fieldset>
+</details>
+<p class="ag2-pista axw-oculto" data-ag="sin-trabajos"></p>
 <p class="ag2-msg axw-oculto" data-ag="aj-msg-trabajos" data-tono="mal" role="alert"></p>
 <div class="ag2-acc"><button type="submit" class="ag2-btn"><span data-lwt>Guardar</span></button><a class="ag2-btn2" href="#ajustes-listo" data-ag="aj-saltar"><span data-lwt>Saltar</span></a></div>
 </fieldset>
 </form>
 
 <section class="ag2-aj-paso" data-ag="aj-listo" hidden aria-labelledby="ag2-aj-h-listo">
-<h3 id="ag2-aj-h-listo" tabindex="-1" data-ag="aj-listo-t"></h3>
+<h3 id="ag2-aj-h-listo" class="ag2-listo-h" tabindex="-1" data-ag="aj-listo-h"><span class="ag2-dot" aria-hidden="true"></span><span data-ag="aj-listo-t"></span></h3>
 <p class="ag2-pista" data-ag="aj-listo-txt"></p>
 <p class="ag2-check-t axw-oculto" data-ag="aj-listo-primero-t"></p>
 <ul class="ag2-listo" data-ag="aj-listo-primero"></ul>
@@ -1028,7 +1063,6 @@
     'Tu equipo empieza el {f}': 'Your team starts on {f}',
     'Tu equipo empieza en 24 h': 'Your team starts in 24 h',
     'Hasta entonces no gasta nada. Subir el tope por primera vez tarda 24 h: es una protección por si alguien entra en tu cuenta.': 'Until then it spends nothing. Raising the cap for the first time takes 24 h: it protects you in case someone gets into your account.',
-    'Lo primero que hará desde el {f}:': 'The first thing it will do from {f}:',
     'Lo primero que hará:': 'The first thing it will do:',
     'Usar {x}': 'Use {x}',
     'Escribe cuánto pueden gastar al mes, por ejemplo {x}.': 'Write how much they can spend a month, for example {x}.',
@@ -1042,7 +1076,11 @@
     'Esa persona enciende el equipo, pone el tope y decide hasta dónde llega cada agente. Solo ella cambia estos ajustes.': 'That person switches the team on, sets the cap and decides how far each agent goes. Only they change these settings.',
     'Sin nadie al frente, el equipo no se puede encender ni configurar.': 'With nobody in charge, the team cannot be switched on or set up.',
     'Quién lleva el equipo': 'Who runs the team',
-    'Cualquier persona activa de tu equipo, también tú. Si cambias de persona y había una subida del tope pendiente, se anula: la decide quien lo lleve.': 'Anyone active on your team, including you. If you change person and a cap increase was pending, it is cancelled: whoever runs it decides.',
+    'Cualquier persona activa de tu equipo, también tú.': 'Anyone active on your team, including you.',
+    'Hay una subida del tope pendiente: si cambias de persona, se anula y la decide quien lleve el equipo.': 'A cap increase is pending: if you change person, it is cancelled and whoever runs the team decides.',
+    'Una o dos frases: qué hacéis y dónde.': 'One or two sentences: what you do and where.',
+    'Qué revisa ({n} de {m})': 'What it checks ({n} of {m})',
+    'No he podido leer tus límites ahora mismo. No es que no haya: prueba en un momento.': 'I couldn’t read your limits just now. It doesn’t mean there are none: try again in a moment.',
     'alguien del equipo': 'someone on the team',
     'Llevas tú el equipo.': 'You run the team.',
     'Lleva el equipo {n}.': '{n} runs the team.',
@@ -1449,7 +1487,6 @@
     'Tu equipo empieza el {f}': 'Tim Anda mulai pada {f}',
     'Tu equipo empieza en 24 h': 'Tim Anda mulai dalam 24 jam',
     'Hasta entonces no gasta nada. Subir el tope por primera vez tarda 24 h: es una protección por si alguien entra en tu cuenta.': 'Sampai saat itu tim tidak membelanjakan apa pun. Menaikkan anggaran pertama kali butuh 24 jam: ini perlindungan jika ada orang lain yang masuk ke akun Anda.',
-    'Lo primero que hará desde el {f}:': 'Yang pertama akan dikerjakan mulai {f}:',
     'Lo primero que hará:': 'Yang pertama akan dikerjakan:',
     'Usar {x}': 'Pakai {x}',
     'Escribe cuánto pueden gastar al mes, por ejemplo {x}.': 'Tulis berapa yang boleh dibelanjakan per bulan, misalnya {x}.',
@@ -1463,7 +1500,11 @@
     'Esa persona enciende el equipo, pone el tope y decide hasta dónde llega cada agente. Solo ella cambia estos ajustes.': 'Orang itu menyalakan tim, mengatur anggaran, dan menentukan sejauh mana tiap agen bertindak. Hanya dia yang mengubah pengaturan ini.',
     'Sin nadie al frente, el equipo no se puede encender ni configurar.': 'Tanpa pengelola, tim tidak bisa dinyalakan atau diatur.',
     'Quién lleva el equipo': 'Pengelola tim',
-    'Cualquier persona activa de tu equipo, también tú. Si cambias de persona y había una subida del tope pendiente, se anula: la decide quien lo lleve.': 'Siapa pun yang aktif di tim Anda, termasuk Anda. Jika Anda mengganti orang dan ada kenaikan anggaran yang tertunda, kenaikan itu dibatalkan: pengelola baru yang memutuskan.',
+    'Cualquier persona activa de tu equipo, también tú.': 'Siapa pun yang aktif di tim Anda, termasuk Anda.',
+    'Hay una subida del tope pendiente: si cambias de persona, se anula y la decide quien lleve el equipo.': 'Ada kenaikan anggaran yang tertunda: jika Anda mengganti orang, kenaikan itu dibatalkan dan pengelola tim yang memutuskan.',
+    'Una o dos frases: qué hacéis y dónde.': 'Satu atau dua kalimat: apa usaha Anda dan di mana.',
+    'Qué revisa ({n} de {m})': 'Yang diperiksa ({n} dari {m})',
+    'No he podido leer tus límites ahora mismo. No es que no haya: prueba en un momento.': 'Saya belum bisa membaca wewenang Anda saat ini. Bukan berarti tidak ada: coba lagi sebentar lagi.',
     'alguien del equipo': 'seseorang di tim',
     'Llevas tú el equipo.': 'Anda yang mengelola tim.',
     'Lleva el equipo {n}.': 'Tim dikelola oleh {n}.',
@@ -1600,15 +1641,22 @@
   }
   function accionesOk(d) { return esObj(d) && Array.isArray(d.acciones) && esObj(d.nombres); }
   var NO_MIRADO = 'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.';
+  /* los límites, en llano y en primera persona (Diseño/Experiencia, 16-oct): «no he podido leer» ≠ «no hay ninguno» */
+  var NO_MIRADO_LIM = 'No he podido leer tus límites ahora mismo. No es que no haya: prueba en un momento.';
   function ordenDe(d) { return d && Array.isArray(d.trabajos_orden) && d.trabajos_orden.every(function (t) { return typeof t === 'string' && t; }) ? d.trabajos_orden : null; }
   function limiteOk(l) { return esObj(l) && typeof l.modulo === 'string' && l.modulo && ent(l.nivel) && l.nivel >= 0 && l.nivel <= 3 && ent(l.nivel_efectivo) && (l.tope_cent == null || ent(l.tope_cent)); }
   function limitesDe(d) { return d && Array.isArray(d.limites) && d.limites.every(limiteOk) && Array.isArray(d.limites_fuera) ? d.limites : null; }
   function nombreTrabajo(t) { return NOMBRE[t] ? T(NOMBRE[t]) : String(t); }
   /* El nombre de un módulo es el rótulo del registro (modulos_rotulos.json → window.AXW_MAPA_MODULOS.n, que deja la capa de módulos en guard.js), en
-     español; lwTSuave lo traduce solo si el diccionario lo tiene. Es un dato: nunca pasa por T(). Sin rótulo, su id. */
+     español; lwTSuave lo traduce solo si el diccionario lo tiene. Es un dato: nunca pasa por T(). Sin rótulo, su id en llano (Diseño, 16-oct):
+     guiones y guiones bajos a espacio y mayúscula inicial («modulo-sin-rotulo» → «Modulo sin rotulo»). */
+  function slugLlano(m) {
+    var s = String(m == null ? '' : m).replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  }
   function nombreModulo(m) {
     var M = window.AXW_MAPA_MODULOS, n = M && esObj(M.n) ? M.n[m] : null;
-    var s = Array.isArray(n) && typeof n[0] === 'string' && n[0] ? n[0] : String(m == null ? '' : m);
+    var s = Array.isArray(n) && typeof n[0] === 'string' && n[0] ? n[0] : slugLlano(m);
     return typeof window.lwTSuave === 'function' ? window.lwTSuave(s) : s;
   }
   function eur(cent, d) { return C.dinero(cent / 100, d.moneda); }
@@ -1674,7 +1722,9 @@
     var p = orden.filter(function (x) { return !hechoPaso(x, d); })[0];
     return p || 'listo';
   }
-  function msgAj(n, m) { var e = $a(n); e.removeAttribute('data-freno'); e.textContent = m || ''; oculta(e, !m); }
+  /* un mensaje nuevo en un paso quita el ámbar de «Si lo saltas» (data-vacio): solo vuelve si quien llama lo marca con vacioAj */
+  function msgAj(n, m) { var e = $a(n), f = e.closest('.ag2-aj-paso'); e.removeAttribute('data-freno'); e.textContent = m || ''; oculta(e, !m); if (f) f.removeAttribute('data-vacio'); }
+  function vacioAj(n) { var f = $a(n).closest('.ag2-aj-paso'); if (f) f.setAttribute('data-vacio', '1'); }
 
   /* importes: con el separador de miles del IDIOMA de la página (revisión previa #383, punto 3): 5.000.000 en id/es, 5,000,000 en en */
   function numTxt(n) {
@@ -1718,8 +1768,9 @@
   /* ── paso 2: tu negocio (agente_ficha_contexto; manda las cuatro claves: lo que no viaja, la base lo quita) ── */
   function lineasReglas() { return String(F('ctx_reglas').value || '').split(/\r?\n/).map(function (s) { return s.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim(); }).filter(function (s) { return s; }); }
   function cuentas() {
-    var q = F('ctx_quien');
-    $a('cuenta-ctx_quien').textContent = Tf('{n} de {m} caracteres', { n: q.value.length, m: q.getAttribute('data-tope') });
+    var q = F('ctx_quien'), cq = $a('cuenta-ctx_quien');
+    cq.textContent = Tf('{n} de {m} caracteres', { n: q.value.length, m: q.getAttribute('data-tope') });
+    oculta(cq, !E.sucio.negocio);   // el contador solo mientras se teclea (Diseño, 16-oct): con el campo quieto no dice nada útil
     $a('cuenta-ctx_reglas').textContent = Tf('{n} de 20 reglas', { n: lineasReglas().length });
   }
   function pintaNegocio(d) {
@@ -1739,7 +1790,8 @@
   function pintaLimites(d) {
     var L = limitesDe(d), ul = $a('aj-lim-lista'), hecho = hechoPaso('limites', d);
     msgAj('aj-lim-error', '');
-    if (!L) { vacia(ul); oculta($a('aj-lim-acc'), true); oculta($a('aj-lim-rec'), true); msgAj('aj-lim-error', T(NO_MIRADO)); return; }
+    oculta($a('aj-lim-salida'), !!(L && L.length));
+    if (!L) { vacia(ul); oculta($a('aj-lim-acc'), true); oculta($a('aj-lim-rec'), true); msgAj('aj-lim-error', T(NO_MIRADO_LIM)); return; }
     oculta($a('aj-lim-acc'), !L.length);
     var aj = raiz.querySelector('[data-accion="ag-aj-ajustar"]');
     aj.setAttribute('aria-expanded', String(AJ.modoLim));
@@ -1772,6 +1824,7 @@
     var orden = ordenDe(d), sin = $a('sin-trabajos');
     sin.textContent = !orden ? T(NO_MIRADO) : (orden.length ? '' : T('Ruta aún no tiene nada que revisar en tu tipo de negocio.'));
     oculta(sin, !!(orden && orden.length));
+    oculta($a('aj-trab-mas'), !(orden && orden.length));   // sin catálogo no hay «(0 de 0)» que enseñar
     if (!E.sucio.trabajos) {
       var cj = vacia($a('trabajos'));
       (orden || []).forEach(function (tr, i) {
@@ -1781,8 +1834,18 @@
       });
       F('nivel_ruta').checked = d.nivel_ruta === 1;
     }
+    cuentaTrab();
     /* la base da nivel_ruta 0 si nadie lo ha encendido (equipo '{}' por defecto: agencia erp/migraciones 20261014060500, agente_panel_estado) */
     $a('aj-trab-salta').textContent = d.nivel_ruta === 1 ? T('Ruta sigue revisando lo que ya está marcado.') : T('Ruta no revisa nada hasta que lo enciendas aquí.');
+  }
+  /* el resumen del grupo plegado («Qué revisa (N de M)») y su estado sale de lo que hay EN PANTALLA (interruptor y casillas), no de la base: un repintado
+     mientras el dueño cambia algo no le apaga las casillas que acaba de encender */
+  function cuentaTrab() {
+    var cbs = raiz.querySelectorAll('[data-ag="trabajos"] input[type="checkbox"][data-trabajo]');
+    var n = Array.prototype.filter.call(cbs, function (c) { return c.checked; }).length, on = F('nivel_ruta').checked;
+    $a('aj-trab-cuenta').textContent = Tf('Qué revisa ({n} de {m})', { n: n, m: cbs.length });
+    $a('aj-trab-fs').disabled = !on;
+    if (on) $a('aj-trab-mas').removeAttribute('data-apagado'); else $a('aj-trab-mas').setAttribute('data-apagado', '1');
   }
   /* ── pantalla final: «Tu equipo ya trabaja», con lo primero que va a hacer (revisión previa #383, punto 7) ── */
   function pintaListo(d) {
@@ -1796,10 +1859,11 @@
     else if (espera) {
       tit = f ? Tf('Tu equipo empieza el {f}', { f: f }) : T('Tu equipo empieza en 24 h');
       txt = T('Hasta entonces no gasta nada. Subir el tope por primera vez tarda 24 h: es una protección por si alguien entra en tu cuenta.');
-      cab = f ? Tf('Lo primero que hará desde el {f}:', { f: f }) : T('Lo primero que hará:');
+      cab = T('Lo primero que hará:');   // la fecha ya va en el título: no se repite (Diseño, 16-oct)
     } else { tit = T('Tu equipo ya trabaja'); txt = T('Cada cosa que haga aparecerá en «Lo que han hecho», con su porqué.'); }
     if (!falta && d.parado) txt += ' ' + T('Ahora todo el equipo está parado: ponlo en marcha en «Equipo».');
     $a('aj-listo-t').textContent = tit;
+    $a('aj-listo-h').setAttribute('data-st', falta ? 'falta' : 'ok');
     $a('aj-listo-txt').textContent = txt.trim();
     $a('aj-listo-primero-t').textContent = cab || T('Lo primero que va a hacer:');
     /* Ruta solo se nombra si su revisión está encendida (nivel_ruta 1): con el 0 de la base no hace nada y decirlo sería falso */
@@ -1809,6 +1873,8 @@
     var ir = $a('aj-listo-completar'), p = falta ? PASO_DE_FALTA[falta] : null;
     oculta(ir, !p || !d.soy_dueno);
     if (p) ir.setAttribute('href', '#ajustes-' + p);
+    /* un solo botón principal: «Ver el equipo» lo es salvo que «Completar ahora» esté a la vista (Diseño, 16-oct) */
+    $a('aj-listo-equipo').className = p && d.soy_dueno ? 'ag2-btn2' : 'ag2-btn';
   }
   function pintaAjustes() {
     var d = E.estado;
@@ -1876,6 +1942,8 @@
     $a('aj-fs-quien').disabled = !puedeQuien();
     /* cambiar a quien ya lo lleva no es «antes de empezar» y saltarlo no deja a nadie sin dueño: esas dos frases solo cuando no hay nadie */
     oculta($a('aj-quien-etapa'), ownerOk(OW.d)); oculta($a('aj-quien-salta'), ownerOk(OW.d));
+    /* lo de la subida anulada solo si hay una pendiente (con el equipo apagado la base no la da: no se dice) */
+    oculta($a('aj-quien-subida'), !(E.estado && ent(E.estado.tope_propuesto_cent)));
     if (E.sucio.quien) return;
     vacia(s);
     msgAj('aj-msg-quien', '');
@@ -1883,9 +1951,12 @@
     if (!OW.usuarios) { s.appendChild(h('option', { value: '', text: T('Cargando…') })); s.disabled = true; if (puedeQuien()) leeUsuarios(); return; }
     s.disabled = false;
     s.appendChild(h('option', { value: '', text: T('Elige una persona') }));
+    /* el número de usuario solo cuando dos personas comparten nombre (Diseño, 16-oct): es lo único que las distingue */
+    var clave = function (u) { return String(u.nombre || '').trim().toLowerCase(); }, veces = {};
+    OW.usuarios.forEach(function (u) { var k = clave(u); if (k) veces[k] = (veces[k] || 0) + 1; });
     OW.usuarios.forEach(function (u) {
       var n = u.nombre || u.numero_usuario || u.user_id;
-      s.appendChild(h('option', { value: u.user_id, text: n + (u.numero_usuario && u.nombre ? ' · ' + u.numero_usuario : '') }));
+      s.appendChild(h('option', { value: u.user_id, text: n + (u.numero_usuario && u.nombre && veces[clave(u)] > 1 ? ' · ' + u.numero_usuario : '') }));
     });
     if (!OW.usuarios.length) msgAj('aj-msg-quien', T('No hay ninguna persona activa en tu equipo: añádela en Ajustes › Usuarios.'));
     /* quien lo lleva ahora, marcado por su número de usuario (fijo, lo pone la base) */
@@ -1903,7 +1974,7 @@
     var s = F('quien_owner'), v = s.value;
     msgAj('aj-ok', '');
     s.removeAttribute('aria-invalid');
-    if (!v) { msgAj('aj-msg-quien', T('Elige quién lleva el equipo.')); s.setAttribute('aria-invalid', 'true'); s.focus(); return; }
+    if (!v) { msgAj('aj-msg-quien', T('Elige quién lleva el equipo.')); vacioAj('aj-msg-quien'); s.setAttribute('aria-invalid', 'true'); s.focus(); return; }
     if (!C.ocupa(btn)) return;
     msgAj('aj-msg-quien', '');
     llama('agente_owner_pon', { p_user_id: v, p_motivo: MOTIVO_AJ.quien }).then(function (r) {
@@ -1988,7 +2059,8 @@
       dia = dia || hoy >= 10;
       if (ult && ahora - ult < 60000) s = Math.max(1, Math.ceil((60000 - (ahora - ult)) / 1000));
     }
-    if (dia) { msgAj(zona, info && info.diaTxt ? info.diaTxt : T('Hoy ya se han hecho los 10 cambios que caben aquí: podrás guardar mañana. Lo escrito se queda.')); return; }
+    /* el tope del día también es el freno, no un error: tono neutro (data-freno «dia»; no lleva cuenta atrás, así que FRENO no lo sigue) */
+    if (dia) { msgAj(zona, info && info.diaTxt ? info.diaTxt : T('Hoy ya se han hecho los 10 cambios que caben aquí: podrás guardar mañana. Lo escrito se queda.')); $a(zona).setAttribute('data-freno', 'dia'); return; }
     var m = $a(zona), texto = function (q) { return Tf('Podrás guardar en {s} s: lo escrito se queda.', { s: q }); };
     msgAj(zona, texto(s));
     var btns = botonesQueGuardan(paso);
@@ -2020,8 +2092,8 @@
     F('aj-tope').removeAttribute('aria-invalid');
     if (imp.e) { malTope(errImporte(imp.e)); return; }
     if (techo <= 0) { malTope(T('El estudio aún no ha fijado el máximo de gasto de tu negocio: hasta entonces no se puede poner un tope. Avísale.')); return; }
-    if (imp.vacio) { malTope(Tf('Escribe cuánto pueden gastar al mes, por ejemplo {x}.', { x: numTxt(techo / 100) })); return; }
-    if (Math.round(imp.v * 100) <= 0) { malTope(T('Con 0 tu equipo no puede gastar nada y no empieza: pon más de 0.')); return; }
+    if (imp.vacio) { malTope(Tf('Escribe cuánto pueden gastar al mes, por ejemplo {x}.', { x: numTxt(techo / 100) })); vacioAj('aj-msg-tope'); return; }
+    if (Math.round(imp.v * 100) <= 0) { malTope(T('Con 0 tu equipo no puede gastar nada y no empieza: pon más de 0.')); vacioAj('aj-msg-tope'); return; }
     var v = Math.round(imp.v * 100);
     if (v > techo) { malTope(Tf('Como mucho {x}: es el máximo que ha fijado el estudio.', { x: eur(techo, d) })); return; }
     /* lo que ya pidió el dueño no se reenvía: una subida pendiente no vuelve a empezar sus 24 h por pulsar otra vez */
@@ -2090,7 +2162,7 @@
     else if (reglas.length > 20) malo = Tf('Como mucho 20 reglas, y hay {n}.', { n: reglas.length });
     else if (larga >= 0) malo = Tf('La regla {n} pasa de 200 caracteres.', { n: larga + 1 });
     F('ctx_quien').removeAttribute('aria-invalid');
-    if (malo) { if (ctx.quien) $a('aj-reglas').open = true; else { F('ctx_quien').setAttribute('aria-invalid', 'true'); F('ctx_quien').focus(); } msgAj('aj-msg-negocio', malo); return; }
+    if (malo) { if (ctx.quien) $a('aj-reglas').open = true; else { F('ctx_quien').setAttribute('aria-invalid', 'true'); F('ctx_quien').focus(); } msgAj('aj-msg-negocio', malo); if (!ctx.quien) vacioAj('aj-msg-negocio'); return; }
     if (huellaCtx(ctx) === huellaCtx(d.contexto)) { E.sucio.negocio = false; msgAj('aj-msg-negocio', ''); ir('#ajustes-' + siguiente('negocio', d)); return; }
     if (!C.ocupa(btn)) return;
     msgAj('aj-msg-negocio', '');
@@ -2139,7 +2211,8 @@
     var marcados = Array.prototype.filter.call(raiz.querySelectorAll('[data-ag="trabajos"] input[type="checkbox"][data-trabajo]'), function (c) { return c.checked; })
       .map(function (c) { return c.getAttribute('data-trabajo'); });
     var nivel = F('nivel_ruta').checked ? 1 : 0;
-    if (nivel === 1 && !marcados.length) { msgAj('aj-msg-trabajos', T('Marca al menos una cosa que revisar, o apaga la revisión de Ruta.')); return; }
+    /* el error apunta a las casillas: se despliegan para que se vean (plegadas, sería un callejón) */
+    if (nivel === 1 && !marcados.length) { $a('aj-trab-mas').open = true; msgAj('aj-msg-trabajos', T('Marca al menos una cosa que revisar, o apaga la revisión de Ruta.')); return; }
     var cambiaTrab = nivel !== d.nivel_ruta || orden.some(function (t) { return (marcados.indexOf(t) >= 0) !== (d.trabajos[t] === true); });
     if (!cambiaTrab) { E.sucio.trabajos = false; msgAj('aj-msg-trabajos', ''); ir('#ajustes-listo'); return; }
     if (!C.ocupa(btn)) return;
@@ -3064,6 +3137,7 @@
       if (!k) return;
       E.sucio[k] = true;
       if (k === 'negocio') cuentas();
+      if (k === 'trabajos') cuentaTrab();
     };
     raiz.addEventListener('input', alEscribir);
     raiz.addEventListener('change', alEscribir);

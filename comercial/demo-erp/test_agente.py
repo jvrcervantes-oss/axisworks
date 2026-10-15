@@ -191,7 +191,7 @@ mira('los cuatro pasos de Ajustes: el dueño escribe; el resto los ve en solo le
      and all(('data-ag="aj-fs-' + p + '"') in MARCADO for p in ('tope', 'negocio', 'limites', 'trabajos')))
 mira('el nombre de un módulo es un dato (rótulo del registro o su id), nunca pasa por T()', 'window.AXW_MAPA_MODULOS' in CODIGO and not re.search(r'T\(nombreModulo', CODIGO))
 mira('cada parte que no puede leer lo dice en su sitio (no mirado ≠ vacío): límites, negocio, trabajos y «Esperan tu OK»',
-     all(s in CODIGO for s in ("msgAj('aj-lim-error', T(NO_MIRADO))", "msgAj('aj-msg-negocio', T(NO_MIRADO))", "!orden ? T(NO_MIRADO)", "'data-ag': 'v2-esperan-error'"))
+     all(s in CODIGO for s in ("msgAj('aj-lim-error', T(NO_MIRADO_LIM))", "msgAj('aj-msg-negocio', T(NO_MIRADO))", "!orden ? T(NO_MIRADO)", "'data-ag': 'v2-esperan-error'"))
      and "E.notasError = rn.error ? textoError(rn.error, true) : T(NO_MIRADO);" in CODIGO)
 mira('«Esperan tu OK» distingue hay algo / no hay nada / no se ha podido mirar', all(s in CODIGO for s in ("'v2-esperan-error'", "'v2-esperan-vacio'", "'data-ag': 'accion'")))
 mira('con un módulo en nivel 1, «Esperan tu OK» se ve aunque esté vacía y dice en qué módulos (caso negativo: no se esconde lo que espera)',
