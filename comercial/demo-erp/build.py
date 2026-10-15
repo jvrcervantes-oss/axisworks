@@ -4097,6 +4097,19 @@ def _pantalla_bot(v4, archivo, carpeta, titulo, puerta='data-rol="admin"'):
     open(os.path.join(v4, carpeta, 'index.html'), 'w', encoding='utf-8', newline='').write(t)
 
 
+def resumen_pantalla():
+    """Pantalla /finanzas/ (Resumen) de TODA instancia del maestro (E4.3, sesión bbm-resumen, 15-oct-2026; revisión previa #369 con Producto y Experiencia).
+    Sustituye la de Lawang (finanzas/index.html + panel-finanzas.js: contratos, unidades, comisiones y cuentas, calculado en el navegador) por `resumen.html`
+    sobre la cáscara de /asistente/, que pide UNA lectura (finanzas_resumen_datos) y pinta un bloque por módulo encendido en la base. Misma puerta que tenía
+    la página (data-rol="admin"); la base la vuelve a exigir. El menú no cambia: «Resumen» ya apunta a /finanzas/. datos.js no tiene manejador para
+    «finanzas» (es de las PROPIAS: velo y contador de red), así que no hay que desviarle el segmento como en la portada. El registro lo sabe por
+    SUSTITUIDA_MAESTRO de erp/modulos.py (la agencia). Solo se toca lo copiado en DIST, nunca el repo de Lawang. Revertir: quitar la llamada en instancia()."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    if not os.path.isfile(os.path.join(v4, 'finanzas', 'index.html')):
+        aborta('resumen_pantalla: no está /finanzas/ copiada de Lawang (intranet/v4/finanzas/index.html): ¿cambió su sitio?')
+    _pantalla_bot(v4, 'resumen.html', 'finanzas', 'Resumen')
+
+
 def ventas_pantalla():
     """Pantalla /ventas/ del ERP maestro (F4 «Pantalla de factura», 8-oct-2026; encargos/20261008_erp_f4_pantalla_factura_plan.md v2).
     No existe en Lawang: la crea el build clonando la CÁSCARA de /asistente/ con el contenido de `ventas.html`, igual que whatsapp_bot_pantalla.
@@ -5968,6 +5981,7 @@ def instancia(nombre):
     taller_pantalla()   # F8 pieza 2 (8-oct-2026): Taller — órdenes de trabajo ligeras (tras reservas de producto: sus anclas de nav.js)
     entrega_pantalla()   # F8 pieza 8 (10-oct-2026): Entrega — sede, tarifa por km y límites (tras taller: sus anclas de nav.js y herramientas.js)
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
+    resumen_pantalla()   # E4.3 (15-oct-2026): /finanzas/ = el Resumen que suma solo lo encendido (sustituye el panel inmobiliario de Lawang)
     if aaas_en_paquete(nombre):
         agente_pantalla()   # EP.5 (13-oct-2026): AaaS — su ventana (tras flota: sus anclas de nav.js y la marca de herramientas.js)
     asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)

@@ -1,0 +1,367 @@
+<!-- Resumen (/finanzas/) del ERP MAESTRO (E4.3, sesión bbm-resumen, 15-oct-2026; plan único, encargo bbm-resumen; revisión previa #369 con Producto y Experiencia).
+     Sustituye en TODA instancia del maestro al panel inmobiliario de Lawang (panel-finanzas.js), que calculaba en el navegador sobre contratos y unidades.
+     Lawang (independiente del maestro) sigue con el suyo. Registro: erp/modulos.py SUSTITUIDA_MAESTRO.
+     NO es una página entera: build.py (resumen_pantalla) la inyecta en la cáscara de /asistente/ de Lawang, como taller.html, con la misma puerta que tenía la
+     página (data-rol="admin"); la base la vuelve a exigir (finanzas_resumen_datos: sesión + es_admin()).
+     Qué hace: UNA lectura (finanzas_resumen_datos) que devuelve un bloque por módulo ENCENDIDO en la base. La pantalla no suma ni deduce nada de dinero: pinta lo que
+     llega, una tarjeta por bloque, en el orden de las preguntas del dueño (¿cuánto ha entrado?, ¿cuánto me deben?, ¿cuánto debo?). Un bloque sin permiso lo dice; un
+     módulo apagado no tiene tarjeta y el pie dice qué se ha sumado; cargando o sin poder leer, las cifras dicen «—», nunca 0. No escribe nada. Todo texto de la base
+     va por textContent. Se engancha por data-accion / data-rs, nunca por un rótulo. Idioma: diccionarios EN_RS e ID_RS (se fusionan en window.LW_EN / LW_ID). -->
+<div class="flex flex-col w-full gap-6 rs" data-rs="raiz">
+<style>
+/*AXW_COMUN_CSS*/
+.rs{--rs-tinta:var(--tema-on-surface, 27 28 25);--rs-tinta2:var(--tema-on-surface-variant, 68 72 63);--rs-filete:var(--tema-filete, 218 220 230);
+  --rs-acento:var(--tema-burnt-earth, 46 59 235);--rs-noche:var(--tema-primary-container, 11 12 30);--rs-volt:var(--tema-on-primary, 200 240 74);
+  --rs-fondo:var(--tema-surface, 242 243 247);--rs-blanco:var(--tema-surface-container-lowest, 255 255 255)}
+a.axw-boton{text-decoration:none}
+.rs .rs-cab.lw-cabecera{background:transparent!important;padding:0 0 8px!important;border-radius:0!important;box-shadow:none!important}
+.rs-ante{margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:rgb(var(--rs-acento))}
+.rs .rs-h1{margin:16px 0 0;font-weight:600;font-size:clamp(28px,2.7vw,40px);line-height:1.04;letter-spacing:-.05em;color:rgb(var(--rs-tinta))}
+.rs-lede{margin:12px 0 0;max-width:60ch;font-size:17px;line-height:1.6;color:rgb(var(--rs-tinta2))}
+.rs-periodo{display:inline-flex;flex-wrap:wrap;gap:0;padding:4px;border-radius:999px;background:rgb(var(--rs-blanco));border:1px solid rgb(var(--rs-filete));align-self:flex-start}
+html main .rs .rs-periodo .axw-boton.axw-boton{min-height:40px;padding:0 18px;font-size:14px;font-weight:600;background:transparent;box-shadow:none;color:rgb(var(--rs-tinta));white-space:nowrap}
+html main .rs .rs-periodo .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(var(--rs-noche));color:rgb(var(--rs-volt))}
+.rs-rango{margin:-12px 0 0;font-size:14px;color:rgb(var(--rs-tinta2))}
+.rs-cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.rs-cifra{background:rgb(var(--rs-blanco));border:1px solid rgb(var(--rs-filete));border-radius:20px;padding:20px 22px;min-width:0;container-type:inline-size;display:flex;flex-direction:column;gap:10px}
+.rs-cifra h2{margin:0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--rs-tinta2))}
+.rs .rs-num{font-weight:600;font-size:28px;line-height:1.1;letter-spacing:-.04em;color:rgb(var(--rs-tinta));font-variant-numeric:tabular-nums;overflow-wrap:normal;white-space:nowrap}
+@container (max-width:300px){.rs .rs-num{font-size:23px}}
+@container (max-width:240px){.rs .rs-num{font-size:19px}}
+.rs .rs-num[data-tono="espera"]{color:rgb(var(--tema-aviso, 143 70 0))}
+.rs .rs-num[data-tono="mal"]{color:rgb(var(--tema-error, 163 38 26))}
+.rs-sub{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px;color:rgb(var(--rs-tinta2))}
+.rs-sub:empty{display:none}
+.rs-cifra a.rs-ir{margin-top:auto;font-size:13px;font-weight:600;color:rgb(var(--rs-acento));text-decoration:none;align-self:flex-start;min-height:24px;display:inline-flex;align-items:center}
+.rs-cifra a.rs-ir:hover{text-decoration:underline}
+.rs-cifra a.rs-ir:focus-visible{outline:2px solid rgb(var(--rs-acento));outline-offset:2px;border-radius:4px}
+.rs-aviso{background:rgb(var(--rs-blanco));border:1px solid rgb(var(--rs-filete));border-radius:20px;padding:20px 22px;display:flex;flex-direction:column;gap:12px}
+.rs-aviso p{margin:0;font-size:15px;line-height:1.5;color:rgb(var(--rs-tinta))}
+.rs-aviso .axw-acciones{display:flex;flex-wrap:wrap;gap:10px}
+.rs-error{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.rs-error small{font-size:12px;opacity:.8}
+.rs-mes{background:rgb(var(--rs-blanco));border:1px solid rgb(var(--rs-filete));border-radius:20px;padding:20px 22px 8px;overflow-x:auto}
+.rs-mes h2{margin:0 0 8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--rs-tinta2))}
+.rs-mes table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.rs-mes th{text-align:left;font-weight:600;font-size:12px;color:rgb(var(--rs-tinta2));padding:6px 12px 6px 0;border-bottom:1px solid rgb(var(--rs-filete))}
+.rs-mes td{padding:7px 12px 7px 0;border-bottom:1px solid rgb(var(--rs-filete));white-space:nowrap}
+.rs-mes th.rs-d,.rs-mes td.rs-d{text-align:right}
+.rs-mes tr[data-hoy="1"] td{font-weight:600}
+.rs-pie{margin:0;font-size:13px;color:rgb(var(--rs-tinta2))}
+@media (max-width:599px){
+  .rs-periodo{align-self:stretch;justify-content:space-between}
+  html main .rs .rs-periodo .axw-boton.axw-boton{padding:0 12px;flex:1 1 auto}
+  .rs-cifra{padding:18px}
+}
+</style>
+
+<div class="lw-cabecera rs-cab">
+<p class="rs-ante font-label-md uppercase"><span data-lwt>Finanzas</span></p>
+<h1 class="rs-h1 font-headline-lg" data-lwt>Resumen</h1>
+<p class="rs-lede" data-lwt>Lo que ha entrado, lo que te deben y lo que debes, en el periodo que elijas.</p>
+</div>
+
+<div class="rs-periodo" role="group" data-rs="periodo">
+<button class="axw-boton" type="button" data-accion="rs-periodo" data-periodo="mes" aria-pressed="true"><span data-lwt>Este mes</span></button>
+<button class="axw-boton" type="button" data-accion="rs-periodo" data-periodo="anterior" aria-pressed="false"><span data-lwt>Mes pasado</span></button>
+<button class="axw-boton" type="button" data-accion="rs-periodo" data-periodo="anio" aria-pressed="false"><span data-lwt>Este año</span></button>
+</div>
+<p class="rs-rango" data-rs="rango" aria-live="polite"></p>
+
+<div class="axw-error rs-error axw-oculto" data-rs="error" role="alert"></div>
+<div class="rs-aviso axw-oculto" data-rs="primer-dia"></div>
+
+<div class="rs-cifras" data-rs="cifras" aria-live="polite"></div>
+
+<section class="rs-mes axw-oculto" data-rs="meses" aria-labelledby="rs-t-meses">
+<h2 id="rs-t-meses" class="font-label-md uppercase" data-lwt>Mes a mes, últimos 12 meses</h2>
+<table data-rs="tabla-meses"></table>
+</section>
+
+<p class="rs-pie" data-rs="pie"></p>
+
+</div>
+<!--AXW_SCRIPT-->
+<script>
+(function () {
+  'use strict';
+  var EN_RS = {
+    'Finanzas': 'Finance', 'Resumen': 'Summary',
+    'Lo que ha entrado, lo que te deben y lo que debes, en el periodo que elijas.': 'What has come in, what you are owed and what you owe, for the period you choose.',
+    'Este mes': 'This month', 'Mes pasado': 'Last month', 'Este año': 'This year',
+    'Ha entrado': 'Money in', 'Te deben': 'You are owed', 'Por facturar': 'Not invoiced yet', 'Debes': 'You owe', 'Ha salido': 'Money out',
+    'Te queda': 'Left over', 'Bancos': 'Banks',
+    '%n cobros': '%n payments', '1 cobro': '1 payment', 'Devuelto: %x': 'Refunded: %x',
+    '%n facturas sin cobrar del todo': '%n invoices not fully paid', '1 factura sin cobrar del todo': '1 invoice not fully paid',
+    'Facturado en el periodo: %x': 'Invoiced in the period: %x', 'Nada pendiente de cobro': 'Nothing waiting to be paid',
+    '%n reservas sin factura del todo': '%n bookings not fully invoiced', '1 reserva sin factura del todo': '1 booking not fully invoiced',
+    'Reservas que empiezan en el periodo: %n · %x': 'Bookings starting in the period: %n · %x',
+    '%n gastos sin pagar': '%n unpaid expenses', '1 gasto sin pagar': '1 unpaid expense', 'Vencido: %x': 'Overdue: %x',
+    'Nada que pagar': 'Nothing to pay', 'Gastos del periodo: %x': 'Expenses in the period: %x', '%n pagos': '%n payments', '1 pago': '1 payment',
+    'Lo que ha entrado menos lo que ha salido en el periodo.': 'Money in minus money out in the period.',
+    'Saldo de %n cuentas · entradas %e · salidas %s (año %a)': 'Balance of %n accounts · in %e · out %s (year %a)',
+    'Saldo de 1 cuenta · entradas %e · salidas %s (año %a)': 'Balance of 1 account · in %e · out %s (year %a)',
+    'Sin saldo leído todavía': 'No balance read yet',
+    '%n en otra moneda, no sumados aquí': '%n in another currency, not added here', '1 en otra moneda, no sumado aquí': '1 in another currency, not added here',
+    'Ver ventas': 'See sales', 'Ver gastos': 'See expenses', 'Ver bancos': 'See banks',
+    'Necesitas el permiso de %m para ver esta cifra.': 'You need the %m permission to see this figure.',
+    'Gastos': 'Expenses', 'Reservas de producto': 'Bookings', 'Facturas': 'Invoices', 'Cobros': 'Payments',
+    'Todavía no hay movimientos. Las cifras se llenan solas con la primera reserva, factura o gasto.': 'No activity yet. The figures fill in on their own with the first booking, invoice or expense.',
+    'Registrar un gasto': 'Record an expense', 'Nueva venta': 'New sale',
+    'Del %d al %h': 'From %d to %h', 'Mes a mes, últimos 12 meses': 'Month by month, last 12 months', 'Mes': 'Month',
+    'Suma: %l.': 'Adds up: %l.', 'Nada que sumar: ninguna de estas secciones está encendida (facturas, cobros, gastos, reservas, bancos).': 'Nothing to add up: none of these sections is turned on (invoices, payments, expenses, bookings, banks).',
+    'reservas': 'bookings', 'facturas': 'invoices', 'cobros': 'payments', 'gastos': 'expenses', 'bancos': 'banks', ' y ': ' and ',
+    'No se han podido cargar las cifras. No es que estén a cero.': 'The figures could not be loaded. This does not mean they are zero.',
+    'Reintentar': 'Try again', 'Solo la administración ve el Resumen.': 'Only administrators can see the Summary.'
+  };
+  var ID_RS = {
+    'Finanzas': 'Keuangan', 'Resumen': 'Ringkasan',
+    'Lo que ha entrado, lo que te deben y lo que debes, en el periodo que elijas.': 'Uang yang masuk, tagihan yang belum dibayar pelanggan, dan yang masih harus Anda bayar, pada periode yang Anda pilih.',
+    'Este mes': 'Bulan ini', 'Mes pasado': 'Bulan lalu', 'Este año': 'Tahun ini',
+    'Ha entrado': 'Uang masuk', 'Te deben': 'Belum dibayar pelanggan', 'Por facturar': 'Belum di-invoice', 'Debes': 'Harus Anda bayar', 'Ha salido': 'Uang keluar',
+    'Te queda': 'Sisa', 'Bancos': 'Bank',
+    '%n cobros': '%n pembayaran', '1 cobro': '1 pembayaran', 'Devuelto: %x': 'Dikembalikan: %x',
+    '%n facturas sin cobrar del todo': '%n invoice belum lunas', '1 factura sin cobrar del todo': '1 invoice belum lunas',
+    'Facturado en el periodo: %x': 'Ditagih pada periode ini: %x', 'Nada pendiente de cobro': 'Tidak ada yang belum dibayar',
+    '%n reservas sin factura del todo': '%n booking belum di-invoice penuh', '1 reserva sin factura del todo': '1 booking belum di-invoice penuh',
+    'Reservas que empiezan en el periodo: %n · %x': 'Booking yang mulai pada periode ini: %n · %x',
+    '%n gastos sin pagar': '%n pengeluaran belum dibayar', '1 gasto sin pagar': '1 pengeluaran belum dibayar', 'Vencido: %x': 'Lewat jatuh tempo: %x',
+    'Nada que pagar': 'Tidak ada yang harus dibayar', 'Gastos del periodo: %x': 'Pengeluaran pada periode ini: %x', '%n pagos': '%n pembayaran', '1 pago': '1 pembayaran',
+    'Lo que ha entrado menos lo que ha salido en el periodo.': 'Uang masuk dikurangi uang keluar pada periode ini.',
+    'Saldo de %n cuentas · entradas %e · salidas %s (año %a)': 'Saldo %n rekening · masuk %e · keluar %s (tahun %a)',
+    'Saldo de 1 cuenta · entradas %e · salidas %s (año %a)': 'Saldo 1 rekening · masuk %e · keluar %s (tahun %a)',
+    'Sin saldo leído todavía': 'Belum ada saldo yang terbaca',
+    '%n en otra moneda, no sumados aquí': '%n dalam mata uang lain, tidak dijumlahkan di sini', '1 en otra moneda, no sumado aquí': '1 dalam mata uang lain, tidak dijumlahkan di sini',
+    'Ver ventas': 'Lihat penjualan', 'Ver gastos': 'Lihat pengeluaran', 'Ver bancos': 'Lihat bank',
+    'Necesitas el permiso de %m para ver esta cifra.': 'Anda perlu akses %m untuk melihat angka ini.',
+    'Gastos': 'Pengeluaran', 'Reservas de producto': 'Booking sewa motor', 'Facturas': 'Invoice', 'Cobros': 'Penerimaan',
+    'Todavía no hay movimientos. Las cifras se llenan solas con la primera reserva, factura o gasto.': 'Belum ada transaksi. Angka terisi sendiri saat ada booking, invoice, atau pengeluaran pertama.',
+    'Registrar un gasto': 'Catat pengeluaran', 'Nueva venta': 'Penjualan baru',
+    'Del %d al %h': '%d sampai %h', 'Mes a mes, últimos 12 meses': 'Per bulan, 12 bulan terakhir', 'Mes': 'Bulan',
+    'Suma: %l.': 'Yang dijumlahkan: %l.', 'Nada que sumar: ninguna de estas secciones está encendida (facturas, cobros, gastos, reservas, bancos).': 'Tidak ada yang dijumlahkan: tidak ada bagian yang aktif (invoice, pembayaran, pengeluaran, booking, bank).',
+    'reservas': 'booking', 'facturas': 'invoice', 'cobros': 'penerimaan', 'gastos': 'pengeluaran', 'bancos': 'bank', ' y ': ' dan ',
+    'No se han podido cargar las cifras. No es que estén a cero.': 'Angka tidak bisa dimuat. Ini bukan berarti nol.',
+    'Reintentar': 'Coba lagi', 'Solo la administración ve el Resumen.': 'Hanya admin yang bisa melihat Ringkasan.'
+  };
+  var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
+  var traduce = function (r) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(r); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
+  var raiz = document.querySelector('[data-rs="raiz"]');
+  /*AXW_COMUN_JS*/
+  var C = axwComun(raiz, T);
+  if (window.LW_EN && typeof window.LW_EN === 'object') {
+    [EN_RS, C.EN].forEach(function (d) { Object.keys(d).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = d[k]; }); });
+  }
+  if (window.LW_ID && typeof window.LW_ID === 'object') {
+    [ID_RS, C.ID || {}].forEach(function (d) { Object.keys(d).forEach(function (k) { if (!(k in window.LW_ID)) window.LW_ID[k] = d[k]; }); });
+  }
+  traduce(raiz);
+  var $v = function (n) { return raiz.querySelector('[data-rs="' + n + '"]'); };
+  var h = C.h, vacia = C.vacia, oculta = C.oculta;
+
+  /* Una entrada por RPC, con el nombre LITERAL (erp/contrato_front.py extrae `lwDatos('x')` y comprueba contra la base que existe). Es una lectura: va por lwDatos. */
+  var RPC = {
+    finanzas_resumen_datos: function (a) { return window.lwDatos('finanzas_resumen_datos', a); }
+  };
+  function llama(nombre, args) {
+    var p;
+    try { p = RPC[nombre](args || {}); } catch (e) { return Promise.resolve({ data: null, error: e }); }
+    return Promise.resolve(p).then(function (r) { return { data: r ? r.data : null, error: r ? r.error : { message: 'sin respuesta' } }; },
+                                   function (e) { return { data: null, error: e }; });
+  }
+
+  var DIA_RE = /^\d{4}-\d{2}-\d{2}$/;
+  var E = { hoy: null, periodo: 'mes', moneda: '' };
+  // lo que da la base se lee como CLAVE PROPIA (un bloque «constructor» no casa con lo heredado de Object)
+  function de(o, k) { return o && Object.prototype.hasOwnProperty.call(o, k) ? o[k] : null; }
+  function num(x) { var n = Number(x); return x == null || x === '' || isNaN(n) ? null : n; }
+  function dinero(x) { return C.dinero(num(x), E.moneda); }
+  function plural(n, uno, varios) { return n === 1 ? T(uno) : T(varios).replace('%n', String(n)); }
+  // Periodos: aritmética de calendario sobre el HOY que dio la base (zona de la instancia), nunca el reloj del navegador.
+  function partes(s) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s); return [Number(m[1]), Number(m[2]), Number(m[3])]; }
+  function iso(a, m, d) { return a + '-' + (m < 10 ? '0' : '') + m + '-' + (d < 10 ? '0' : '') + d; }
+  function rango(per) {
+    if (!E.hoy) return null;
+    var p = partes(E.hoy);
+    if (per === 'anterior') {
+      var a = p[1] === 1 ? p[0] - 1 : p[0], m = p[1] === 1 ? 12 : p[1] - 1;
+      return { desde: iso(a, m, 1), hasta: iso(a, m, new Date(Date.UTC(a, m, 0)).getUTCDate()) };
+    }
+    if (per === 'anio') return { desde: iso(p[0], 1, 1), hasta: E.hoy };
+    return { desde: iso(p[0], p[1], 1), hasta: E.hoy };
+  }
+  function nombreMes(ym) {
+    var m = /^(\d{4})-(\d{2})$/.exec(String(ym || ''));
+    if (!m) return String(ym || '');
+    try { return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString(C.locale(), { month: 'short', year: 'numeric' }); } catch (e) { /* MUDO A PROPOSITO: sin Intl el mes sale como AAAA-MM */ return String(ym); }
+  }
+
+  // Una tarjeta: título, cifra grande, líneas de debajo y el enlace a su pantalla. `tono` solo acompaña al texto: el color solo no se lee.
+  function tarjeta(clave, titulo, cifra, subs, enlace, tono) {
+    var n = h('div', { class: 'rs-num font-headline-sm', 'data-rs': 'n-' + clave, text: cifra });
+    if (tono) n.setAttribute('data-tono', tono);
+    var sub = h('div', { class: 'rs-sub' });
+    (subs || []).forEach(function (s) { if (s) sub.appendChild(typeof s === 'string' ? h('span', { text: s }) : s); });
+    var hijos = [h('h2', { class: 'font-label-md uppercase', text: T(titulo) }), n, sub];
+    if (enlace) hijos.push(h('a', { class: 'rs-ir', href: enlace[1], 'data-accion': 'rs-ir', text: T(enlace[0]) + ' ›' }));
+    return h('section', { class: 'rs-cifra', 'data-rs': 'c-' + clave }, hijos);
+  }
+  function sinPermiso(clave, titulo, modulo) {
+    return tarjeta(clave, titulo, '—', [T('Necesitas el permiso de %m para ver esta cifra.').replace('%m', T(modulo))], null, null);
+  }
+  function otras(b) {
+    var n = num(de(b, 'otras_monedas')) || 0;
+    return n ? C.chip(plural(n, '1 en otra moneda, no sumado aquí', '%n en otra moneda, no sumados aquí'), 'espera') : null;
+  }
+
+  function pintaTarjetas(d) {
+    var B = d.bloques || {}, cifras = $v('cifras'), out = [];
+    var rec = de(B, 'recibos'), fac = de(B, 'facturas'), res = de(B, 'reservas-producto'), gas = de(B, 'gastos'), caja = de(B, 'caja'), ban = de(B, 'bancos');
+    if (rec) {
+      var nr = num(rec.n) || 0, dev = num(rec.devuelto) || 0;
+      out.push(tarjeta('entrado', 'Ha entrado', dinero(rec.neto),
+        [plural(nr, '1 cobro', '%n cobros'), dev ? T('Devuelto: %x').replace('%x', dinero(dev)) : null, otras(rec)], ['Ver ventas', '/intranet/v4/ventas/']));
+    }
+    if (fac) {
+      var np = num(fac.n_pendiente) || 0;
+      out.push(tarjeta('deben', 'Te deben', dinero(fac.pendiente),
+        [np ? plural(np, '1 factura sin cobrar del todo', '%n facturas sin cobrar del todo') : T('Nada pendiente de cobro'),
+         T('Facturado en el periodo: %x').replace('%x', dinero(fac.facturado_base)), otras(fac)],
+        ['Ver ventas', '/intranet/v4/ventas/'], np ? 'espera' : null));
+    }
+    if (res) {
+      if (res.sin_permiso) out.push(sinPermiso('facturar', 'Por facturar', 'Reservas de producto'));
+      else {
+        var nf = num(res.n_por_facturar) || 0;
+        out.push(tarjeta('facturar', 'Por facturar', dinero(res.por_facturar),
+          [nf ? plural(nf, '1 reserva sin factura del todo', '%n reservas sin factura del todo') : null,
+           T('Reservas que empiezan en el periodo: %n · %x').replace('%n', String(num(res.n) || 0)).replace('%x', dinero(res.importe)), otras(res)],
+          ['Ver ventas', '/intranet/v4/ventas/'], nf ? 'espera' : null));
+      }
+    }
+    if (gas) {
+      if (gas.sin_permiso) { out.push(sinPermiso('debes', 'Debes', 'Gastos')); out.push(sinPermiso('salido', 'Ha salido', 'Gastos')); }
+      else {
+        var ng = num(gas.n_pendiente) || 0, venc = num(gas.vencido) || 0, npg = num(gas.n_pagado) || 0;
+        out.push(tarjeta('debes', 'Debes', dinero(gas.pendiente),
+          [ng ? plural(ng, '1 gasto sin pagar', '%n gastos sin pagar') : T('Nada que pagar'),
+           venc ? C.chip(T('Vencido: %x').replace('%x', dinero(venc)), 'mal') : null, otras(gas)],
+          ['Ver gastos', '/intranet/v4/gastos/'], venc ? 'mal' : (ng ? 'espera' : null)));
+        out.push(tarjeta('salido', 'Ha salido', dinero(gas.pagado),
+          [plural(npg, '1 pago', '%n pagos'), T('Gastos del periodo: %x').replace('%x', dinero(gas.gastado))], ['Ver gastos', '/intranet/v4/gastos/']));
+      }
+    }
+    if (caja) {
+      var r = num(caja.resultado);
+      out.push(tarjeta('queda', 'Te queda', dinero(r), [T('Lo que ha entrado menos lo que ha salido en el periodo.')], null, r != null && r < 0 ? 'mal' : null));
+    }
+    if (ban) {
+      if (ban.sin_permiso) out.push(sinPermiso('bancos', 'Bancos', 'Bancos'));
+      else {
+        var nc = num(ban.cuentas) || 0;
+        out.push(tarjeta('bancos', 'Bancos', ban.saldo == null ? '—' : dinero(ban.saldo),
+          [nc ? T(nc === 1 ? 'Saldo de 1 cuenta · entradas %e · salidas %s (año %a)' : 'Saldo de %n cuentas · entradas %e · salidas %s (año %a)')
+                  .replace('%n', String(nc)).replace('%e', dinero(ban.entradas)).replace('%s', dinero(ban.salidas)).replace('%a', String(ban.anio || ''))
+              : T('Sin saldo leído todavía'), otras(ban)],
+          ['Ver bancos', '/intranet/v4/bancos/']));
+      }
+    }
+    vacia(cifras);
+    out.forEach(function (t) { cifras.appendChild(t); });
+  }
+
+  // Primer día: ningún bloque legible tiene NADA (hay_alguno = false en todos). Un solo aviso con salida, no cinco tarjetas a cero (Experiencia #369).
+  function primerDia(d) {
+    var B = d.bloques || {}, claves = (d.sumados || []).filter(function (k) { var b = de(B, k); return b && !b.sin_permiso; });
+    return claves.length > 0 && claves.every(function (k) { return de(B, k).hay_alguno === false; });
+  }
+  function pintaPrimerDia(d) {
+    var el = $v('primer-dia'), s = d.sumados || [];
+    vacia(el);
+    el.appendChild(h('p', { text: T('Todavía no hay movimientos. Las cifras se llenan solas con la primera reserva, factura o gasto.') }));
+    var acc = h('div', { class: 'axw-acciones' });
+    if (s.indexOf('gastos') >= 0) acc.appendChild(h('a', { class: 'axw-boton', href: '/intranet/v4/gastos/', 'data-accion': 'rs-ir', text: T('Registrar un gasto') }));
+    if (s.indexOf('facturas') >= 0) acc.appendChild(h('a', { class: 'axw-boton', 'data-primario': '1', href: '/intranet/v4/ventas/', 'data-accion': 'rs-ir', text: T('Nueva venta') }));
+    if (acc.firstChild) el.appendChild(acc);
+    oculta(el, false);
+  }
+
+  function pintaMeses(d) {
+    var serie = (d.bloques || {}).serie, sec = $v('meses'), tb = $v('tabla-meses');
+    if (!Array.isArray(serie) || !serie.length) { oculta(sec, true); return; }
+    var conC = serie.some(function (x) { return x.cobrado != null; }), conP = serie.some(function (x) { return x.pagado != null; });
+    var cab = [['Mes']];
+    if (conC) cab.push(['Ha entrado', 'rs-d']);
+    if (conP) cab.push(['Ha salido', 'rs-d']);
+    var filas = serie.slice().reverse().map(function (x, i) {
+      var tr = h('tr', i === 0 ? { 'data-hoy': '1' } : null, [C.celda(nombreMes(x.mes))]);
+      if (conC) tr.appendChild(C.celda(dinero(x.cobrado), 'rs-d'));
+      if (conP) tr.appendChild(C.celda(dinero(x.pagado), 'rs-d'));
+      return tr;
+    });
+    C.tabla(tb, cab, filas);
+    oculta(sec, false);
+  }
+
+  var NOMBRE = { facturas: 'facturas', recibos: 'cobros', gastos: 'gastos', 'reservas-producto': 'reservas', bancos: 'bancos' };
+  function pintaPie(d) {
+    var s = (d.sumados || []).map(function (k) { return T(de(NOMBRE, k) || k); });
+    if (!s.length) { $v('pie').textContent = T('Nada que sumar: ninguna de estas secciones está encendida (facturas, cobros, gastos, reservas, bancos).'); return; }
+    var lista = s.length === 1 ? s[0] : s.slice(0, -1).join(', ') + T(' y ') + s[s.length - 1];
+    $v('pie').textContent = T('Suma: %l.').replace('%l', lista);
+  }
+
+  // Cargando o «no se ha podido mirar»: nada de tarjetas a cero
+  function sinDato() { vacia($v('cifras')); oculta($v('meses'), true); oculta($v('primer-dia'), true); $v('pie').textContent = ''; }
+  function error(r) {
+    var el = $v('error');
+    vacia(el);
+    if (!r) { oculta(el, true); return; }
+    var c = r.error ? C.clasifica(r.error) : null;
+    var texto = c && c.tipo === 'sin_permiso' ? T('Solo la administración ve el Resumen.')
+      : (c && (c.tipo === 'sin_sesion' || c.tipo === 'no_disponible') ? C.mensaje(r.error, true) : T('No se han podido cargar las cifras. No es que estén a cero.'));
+    el.appendChild(h('span', { text: texto }));
+    if (!c || (c.tipo !== 'sin_permiso' && c.tipo !== 'sin_sesion')) el.appendChild(C.boton(T('Reintentar'), 'rs-reintentar'));
+    var cod = r.error && (r.error.code || r.error.hint) ? String(r.error.code || '') + (r.error.hint ? ' · ' + r.error.hint : '') : '';
+    if (cod) el.appendChild(h('small', { text: cod }));
+    oculta(el, false);
+  }
+
+  var PETICION = 0;
+  function carga() {
+    var yo = ++PETICION, rg = rango(E.periodo);
+    error(null); sinDato();
+    $v('cifras').appendChild(h('p', { class: 'axw-vacio', role: 'status', text: T('Cargando…') }));
+    return llama('finanzas_resumen_datos', rg ? { p_desde: rg.desde, p_hasta: rg.hasta } : {}).then(function (r) {
+      if (yo !== PETICION) return;   // llegó tarde: ya se pidió otro periodo y ese manda
+      var d = r.data;
+      if (r.error || !d || typeof d !== 'object' || !DIA_RE.test(String(d.hoy || '')) || !Array.isArray(d.sumados) || !d.bloques || typeof d.bloques !== 'object') {
+        sinDato(); error(r.error ? r : { error: null }); return;
+      }
+      E.hoy = String(d.hoy); E.moneda = String(d.moneda || '');
+      $v('rango').textContent = T('Del %d al %h').replace('%d', C.fechaDia(d.desde)).replace('%h', C.fechaDia(d.hasta));
+      vacia($v('cifras'));
+      if (primerDia(d)) pintaPrimerDia(d);
+      else { pintaTarjetas(d); pintaMeses(d); }
+      pintaPie(d);
+    });
+  }
+  function alClic(ev) {
+    var el = ev.target.closest ? ev.target.closest('[data-accion]') : null;
+    if (!el || !raiz.contains(el)) return;
+    var a = el.getAttribute('data-accion');
+    if (a === 'rs-periodo') {
+      var p = el.getAttribute('data-periodo');
+      if (['mes', 'anterior', 'anio'].indexOf(p) < 0 || (p !== 'mes' && !E.hoy)) return;
+      E.periodo = p;
+      $v('periodo').querySelectorAll('[data-accion="rs-periodo"]').forEach(function (b) { b.setAttribute('aria-pressed', b === el ? 'true' : 'false'); });
+      carga();
+    } else if (a === 'rs-reintentar') carga();
+  }
+  function arranca() {
+    if (!window.LW_AUTH || typeof window.LW_AUTH.then !== 'function') { error({ error: { code: '42501', hint: 'sin_sesion', message: 'Sin sesión' } }); return; }
+    window.LW_AUTH.then(function () { raiz.addEventListener('click', alClic); carga(); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca);
+  else arranca();
+})();
+</script>
