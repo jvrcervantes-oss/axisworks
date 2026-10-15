@@ -2401,9 +2401,9 @@ MENU_I18N = {
     '. Cada ajuste tiene su formato y su rango: fuera de él no se guarda. Pausar los envíos y cerrar la intranet, en cambio, los puede hacer cualquier admin.': {
         'en': '. Each setting has its own format and range: outside it, it is not saved. Pausing sending and closing the intranet, on the other hand, any admin can do.',
         'id': '. Setiap pengaturan punya format dan rentangnya sendiri: di luar itu tidak disimpan. Sebaliknya, menjeda pengiriman dan menutup intranet bisa dilakukan admin mana pun.'},
-    'Ya se aplica en el ERP. Alguna pantalla puede no enseñarlo todavía.': {
-        'en': 'It already applies in the ERP. Some screens may not show it yet.',
-        'id': 'Sudah berlaku di ERP. Beberapa layar mungkin belum menampilkannya.'},
+    'El ERP ya lo usa por dentro, pero aún no todas las pantallas ni los correos lo enseñan.': {
+        'en': 'The ERP already uses it internally, but not every screen or email shows it yet.',
+        'id': 'ERP sudah menggunakannya secara internal, tetapi belum semua layar dan email menampilkannya.'},
     'Se guarda y queda en el registro, pero todavía no cambia nada en el ERP.': {
         'en': 'It is saved and logged, but it does not change anything in the ERP yet.',
         'id': 'Tersimpan dan tercatat, tetapi belum mengubah apa pun di ERP.'},
@@ -5069,7 +5069,7 @@ TEXTOS_INSTANCIA = (
      '</b>. Cada ajuste tiene su formato', 1),
     # M7: lo que se dice debajo de cada ajuste hablaba de «funciones de la base» y de «la fase siguiente»
     ('intranet/v4/assets/ajustes.js', "  var TEXTO_LEE = 'Ya lo leen funciones de la base de este ERP. La pantalla, el menú y los demás correos lo leerán en la fase siguiente.';",
-     "  var TEXTO_LEE = 'Ya se aplica en el ERP. Alguna pantalla puede no enseñarlo todavía.';", 1),
+     "  var TEXTO_LEE = 'El ERP ya lo usa por dentro, pero aún no todas las pantallas ni los correos lo enseñan.';", 1),
     ('intranet/v4/assets/ajustes.js', "  var TEXTO_NO_LEE = 'Se guarda y queda en el registro, pero todavía no lo lee ninguna pantalla ni correo de esta instalación: llegará con la fase siguiente.';",
      "  var TEXTO_NO_LEE = 'Se guarda y queda en el registro, pero todavía no cambia nada en el ERP.';", 1),
     ('intranet/v4/ajustes/index.html', '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Reservas</span>\n'
@@ -5108,8 +5108,11 @@ COMODIDAD_INSTANCIA = (
     ('intranet/v4/assets/editores.js', "    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px';\n",
      "    row.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px';\n", 1),
     # M6 de la auditoría del setup de bbm (15-oct-2026): Ajustes › «Usuarios y roles» era una pestaña que solo decía «Próximamente: todavía no se
-    # puede cambiar nada desde esta pestaña». Fuera la pestaña y su panel en la instancia (los usuarios siguen en /usuarios/). ajustes.js ya lo
-    # aguanta: #usuarios sin botón abre «empresa» (desdeHash). Lawang la conserva.
+    # puede cambiar nada desde esta pestaña». Fuera la pestaña, su panel y su nombre de PESTANAS en la instancia (los usuarios siguen en /usuarios/):
+    # sin esto último, un #usuarios viejo dejaba Ajustes en blanco (desdeHash solo cae a «empresa» con un nombre fuera de la lista; revisor de b6bd9a8).
+    # Lawang la conserva.
+    ('intranet/v4/assets/ajustes.js', "  var PESTANAS = ['empresa', 'sociedades', 'idiomas', 'correo', 'usuarios', 'mantenimiento',",
+     "  var PESTANAS = ['empresa', 'sociedades', 'idiomas', 'correo', 'mantenimiento',", 1),
     ('intranet/v4/ajustes/index.html',
      '<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors" role="tab" type="button" id="lw-tab-usuarios" aria-controls="lw-panel-usuarios" aria-selected="false" tabindex="-1" data-lw-tab="usuarios" data-lwt>Usuarios y roles</button>',
      '', 1),

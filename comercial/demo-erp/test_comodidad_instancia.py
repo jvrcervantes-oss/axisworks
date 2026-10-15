@@ -63,7 +63,7 @@ if sal.returncode == 0:
 
 # F10 y F12 (15-oct): cada trozo está en el fichero REAL de Lawang las veces dichas y el sustituto hace lo que dice
 S5 = [x for x in build.COMODIDAD_INSTANCIA if 'CUENTAS_BANCARIAS).length === 1' in x[2] or "valor: 'si', label: '¿De quién es esta cuenta?'" in x[2]]
-M6DOC = [x for x in build.COMODIDAD_INSTANCIA if 'minmax(min(100%,200px),1fr)' in x[2] or 'lw-tab-usuarios' in x[1]]
+M6DOC = [x for x in build.COMODIDAD_INSTANCIA if 'minmax(min(100%,200px),1fr)' in x[2] or 'lw-tab-usuarios' in x[1] or 'var PESTANAS' in x[1]]
 otros = [x for x in build.COMODIDAD_INSTANCIA if x not in mios and x not in S5 and x not in M6DOC]
 ok('F10 y F12 en COMODIDAD_INSTANCIA (mascota.js, nav.js, facturas)', sorted(x[0] for x in otros) == sorted(['intranet/v4/assets/mascota.js', 'intranet/v4/assets/nav.js', 'intranet/v4/facturas/index.html']), [x[0] for x in otros])
 for rel_, viejo, nuevo, veces in otros:
@@ -193,7 +193,7 @@ ok('S5 · «Ajustar hito» en OCULTA_POR_MODULO por contratos, y el botón está
    hito and tv.count(hito[0][1]))
 
 # 4h + M6 (bbm-comodidad, 15-oct-2026): filas de dos campos del editor que se apilan si no caben; sin la pestaña vacía «Usuarios y roles»
-ok('4h/M6: tres tuplas (fila de dos, botón y panel de Usuarios y roles)', len(M6DOC) == 3, len(M6DOC))
+ok('4h/M6: cuatro tuplas (fila de dos, botón, panel y nombre en PESTANAS de Usuarios y roles)', len(M6DOC) == 4, len(M6DOC))
 for rel_, viejo, nuevo, veces in M6DOC:
     t_ = open(os.path.join(build.LAWANG, *rel_.split('/')), encoding='utf-8').read()
     ok('4h/M6 · %s: el trozo de Lawang está las veces dichas (%d)' % (viejo[:60], veces), t_.count(viejo) == veces, t_.count(viejo))
@@ -205,8 +205,12 @@ for rel_, viejo, nuevo, veces in M6DOC:
     if rel_.endswith('ajustes/index.html'): ah_ = ah_.replace(viejo, nuevo)
 ok('M6: en la instancia no queda ni rastro de la pestaña ni del panel', 'usuarios' not in ah_.split('data-lw-tab=')[1:] and 'lw-panel-usuarios' not in ah_ and 'lw-tab-usuarios' not in ah_)
 aj_ = open(os.path.join(build.LAWANG, 'intranet', 'v4', 'assets', 'ajustes.js'), encoding='utf-8').read()
-ok('M6: ajustes.js abre «empresa» si el hash pide una pestaña sin botón (desdeHash)', "var bt = PESTANAS.indexOf(h) >= 0 ? document.querySelector('[data-lw-tab=\"' + h + '\"]') : null;" in aj_
-   and "return PESTANAS.indexOf(h) >= 0 ? h : 'empresa';" in aj_)
+for rel_, viejo, nuevo, veces in M6DOC:
+    if rel_.endswith('ajustes.js'): aj_ = aj_.replace(viejo, nuevo)
+pest_ = aj_[aj_.index('var PESTANAS = ['):].split(']')[0]
+# revisor de b6bd9a8: desdeHash solo cae a «empresa» con un nombre FUERA de PESTANAS; con 'usuarios' dentro y sin botón, Ajustes salía en blanco
+ok('M6: en la instancia «usuarios» ya no está en PESTANAS (un #usuarios viejo abre «empresa»)', "'usuarios'" not in pest_ and "'empresa'" in pest_
+   and "return PESTANAS.indexOf(h) >= 0 ? h : 'empresa';" in aj_, pest_)
 
 # M7 (bbm-comodidad, 15-oct-2026): Ajustes sin jerga. Cada trozo está en Lawang las veces dichas (el build pararía si no), ninguna frase nueva
 # vuelve a decir «base de datos», «código», «servidor», «fase siguiente» ni «no esta pantalla», y todas tienen su inglés y su indonesio.

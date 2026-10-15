@@ -138,7 +138,7 @@
     "Ubicación de la sede": "Lokasi kantor",
     "La entrega está activa: la sede no se puede cambiar. Apaga la entrega, guarda, y entonces cambia la sede.": "Antar sedang aktif: kantor tidak bisa diubah. Matikan antar, simpan, lalu ubah kantor.",
     "Pega el enlace de Google Maps de la sede (la dirección que sale arriba, en la barra del navegador) o sus números, por ejemplo «-8.650000, 115.216667». En el móvil: mantén pulsado sobre la sede en Google Maps y copia los números que salen arriba.": "Tempel tautan Google Maps kantor (alamat di bilah atas peramban) atau angkanya, misalnya «-8.650000, 115.216667». Di ponsel: tekan lama lokasi kantor di Google Maps lalu salin angka yang muncul di atas.",
-    "Ese enlace no trae la ubicación (pasa con los enlaces cortos de «Compartir»). Abre el sitio en Google Maps y copia la dirección completa de la barra del navegador, o pega los números.": "Tautan itu tidak memuat lokasi (terjadi pada tautan pendek dari «Bagikan»). Buka tempatnya di Google Maps lalu salin alamat lengkap dari bilah peramban, atau tempel angkanya.",
+    "Ese enlace no marca la tienda: abre su ficha en Google Maps (que salga su nombre) y copia la dirección de la barra del navegador, o pega los números.": "Tautan itu tidak menandai toko: buka halamannya di Google Maps (sampai namanya muncul) lalu salin alamat dari bilah peramban, atau tempel angkanya.",
     "2 · Precio y distancia": "2 · Harga dan jarak",
     "Moneda (3 letras)": "Mata uang (3 huruf)",
     "Precio por km": "Harga per km",
@@ -250,7 +250,7 @@
     'Paso 3 de 3 · Recogida, activar y guardar': 'Step 3 of 3 · Collection, switch on and save', 'Nombre de la sede': 'Office name', 'Ubicación de la sede': 'Office location',
     'La entrega está activa: la sede no se puede cambiar. Apaga la entrega, guarda, y entonces cambia la sede.': 'Delivery is on: the office cannot be changed. Switch delivery off, save, and then change the office.',
     'Pega el enlace de Google Maps de la sede (la dirección que sale arriba, en la barra del navegador) o sus números, por ejemplo «-8.650000, 115.216667». En el móvil: mantén pulsado sobre la sede en Google Maps y copia los números que salen arriba.': 'Paste the Google Maps link of the office (the address shown at the top, in the browser bar) or its numbers, for example “-8.650000, 115.216667”. On a phone: press and hold the office in Google Maps and copy the numbers shown at the top.',
-    'Ese enlace no trae la ubicación (pasa con los enlaces cortos de «Compartir»). Abre el sitio en Google Maps y copia la dirección completa de la barra del navegador, o pega los números.': 'That link does not include the location (this happens with the short links from “Share”). Open the place in Google Maps and copy the full address from the browser bar, or paste the numbers.',
+    'Ese enlace no marca la tienda: abre su ficha en Google Maps (que salga su nombre) y copia la dirección de la barra del navegador, o pega los números.': 'That link does not mark the shop: open its page in Google Maps (so its name shows) and copy the address from the browser bar, or paste the numbers.',
     '2 · Precio y distancia': '2 · Price and distance', 'Moneda (3 letras)': 'Currency (3 letters)', 'Precio por km': 'Price per km', 'Km gratis': 'Free km', 'Mínimo por entrega': 'Minimum per delivery',
     'Guardar una tarifa crea una nueva y deja la anterior en el historial. El mínimo se aplica después de restar los km gratis. Vacío en km gratis o mínimo = 0.': 'Saving a price creates a new one and keeps the old one in the history. The minimum applies after the free km are subtracted. Empty free km or minimum = 0.',
     '3 · Recogida y límites': '3 · Pick-up and limits', 'Km máximo': 'Maximum km', 'Tope de consultas por día': 'Daily lookup limit', 'Tope de consultas por mes': 'Monthly lookup limit',
@@ -515,25 +515,27 @@
   }
 
   /* ── lo que se escribe: el análisis es solo una ayuda, la base revalida ── */
-  // M4 de la auditoría del setup de bbm (15-oct-2026): Noelia y Dion piensan en un sitio, no en números. Un enlace de Google Maps lleva el punto
-  // dentro: se saca de ahí y sigue el camino de siempre (lo que se guarda son lat y lng, y la base los revalida). '' = es un enlace pero no trae el
-  // punto (los cortos de «Compartir», maps.app.goo.gl: abrirlos para ver adónde llevan exigiría pedírselo a Google desde el servidor).
+  // M4 de la auditoría del setup de bbm (15-oct-2026): Noelia y Dion piensan en un sitio, no en números. Un enlace de Google Maps que MARCA un sitio
+  // lleva el punto dentro: se saca de ahí y sigue el camino de siempre (lo que se guarda son lat y lng, y la base los revalida). Solo esas formas:
+  // la ficha del sitio (!3d…!4d…), q=/query=/ll= y /place/ o /search/ con los números. NUNCA una ruta (/dir/: su primer punto es quien pregunta) ni
+  // el centro del mapa (@lat,lng): el precio por km y la distancia máxima se miden desde aquí, y un punto equivocado no lo vería nadie (revisor de
+  // b6bd9a8). '' = es un enlace de mapas pero no marca un sitio (también los cortos de «Compartir»: abrirlos exigiría pedírselo a Google desde el servidor).
   // Copia idéntica en entrega.html y setup_reservas.js (enlace_mapa.test.js).
   function coordDeEnlace(t) {
     t = String(t || '').trim();
     if (!/^(https?:\/\/)?([a-z0-9-]+\.)*(google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|goo\.gl\/maps|maps\.app\.goo\.gl)/i.test(t)) return null;
     var u = t; try { u = decodeURIComponent(t); } catch (e) { u = t; }
+    if (/\/maps\/dir\//i.test(u)) return '';
     var N = '([+-]?\\d{1,3}\\.\\d+)', S = '[,\\s+]+';
-    var m = new RegExp('!3d' + N + '!4d' + N).exec(u)                                          // el sitio marcado
-         || new RegExp('[?&](?:q|query|ll|destination|center)=' + N + S + N).exec(u)
-         || new RegExp('/(?:place|search|dir)/' + N + S + N).exec(u)
-         || new RegExp('@' + N + ',' + N).exec(u);                                              // el centro del mapa
+    var m = new RegExp('!3d' + N + '!4d' + N).exec(u)                                          // el sitio marcado (su ficha)
+         || new RegExp('[?&](?:q|query|ll)=' + N + S + N).exec(u)
+         || new RegExp('/(?:place|search)/' + N + S + N).exec(u);
     return m ? Number(m[1]) + ', ' + Number(m[2]) : '';
   }
   var TOKEN = /^[+-]?\d{1,3}[.,]\d+$/;
   function parseCoord(raw) {
     var en = coordDeEnlace(raw);
-    if (en === '') return { e: T('Ese enlace no trae la ubicación (pasa con los enlaces cortos de «Compartir»). Abre el sitio en Google Maps y copia la dirección completa de la barra del navegador, o pega los números.') };
+    if (en === '') return { e: T('Ese enlace no marca la tienda: abre su ficha en Google Maps (que salga su nombre) y copia la dirección de la barra del navegador, o pega los números.') };
     if (en) raw = en;
     var s = String(raw).replace(/[−–—]/g, '-').replace(/°/g, '').replace(/\s+/g, ' ').replace(/^ | $/g, '');
     if (s === '') return { vacio: true };

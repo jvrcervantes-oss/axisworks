@@ -23,13 +23,15 @@ const CASOS = [
   // [entrada, esperado] — null: no es un enlace (sigue el análisis de números); '': enlace sin punto
   ['-8.65, 115.13', null],
   ['abc', null],
-  ['https://www.google.com/maps/place/Bali+Best+Motorcycle/@-8.6512345,115.1300000,17z/data=!3m1!4b1!4m6!3m5!1s0x0:0x0!8m2!3d-8.6501234!4d115.1312345!16s', '-8.6501234, 115.1312345'],
-  ['https://www.google.com/maps/@-8.6478,115.1385,15z', '-8.6478, 115.1385'],
+  ['https://www.google.com/maps/place/Bali+Best+Motorcycle/@-8.6512345,115.1300000,17z/data=!3m1!4b1!4m6!3m5!1s0x0:0x0!8m2!3d-8.6501234!4d115.1312345!16s', '-8.6501234, 115.1312345'],   // la ficha gana al centro (@)
+  ['https://www.google.com/maps/@-8.6478,115.1385,15z', ''],   // revisor de b6bd9a8: el centro del mapa NO es la tienda
+  ['https://www.google.com/maps/dir/-8.70,115.20/Tienda/@-8.68,115.18,13z/data=!4m2!4m1!3e0', ''],   // una ruta: su primer punto es quien pregunta
+  ['https://www.google.com/maps/search/motos+canggu/@-8.65,115.13,12z', ''],   // una búsqueda sin números: solo el centro
   ['https://maps.google.com/?q=-8.65,115.13', '-8.65, 115.13'],
   ['https://www.google.com/maps?q=-8.650000,+115.216667', '-8.65, 115.216667'],
   ['https://www.google.com/maps/search/?api=1&query=-8.65%2C115.13', '-8.65, 115.13'],
   ['https://www.google.com/maps/place/-8.65,115.13', '-8.65, 115.13'],
-  ['google.co.id/maps/@-8.70,115.17,14z', '-8.7, 115.17'],
+  ['google.co.id/maps/search/-8.70,+115.17', '-8.7, 115.17'],
   ['https://maps.app.goo.gl/AbCdEf123', ''],
   ['https://goo.gl/maps/AbCdEf123', ''],
   ['https://www.google.com/maps/place/Canggu', ''],

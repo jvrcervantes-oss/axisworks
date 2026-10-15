@@ -209,7 +209,7 @@
       sr_fig_alt: 'Ilustración: la tienda en el centro, la zona gratis alrededor y la zona de pago hasta la distancia máxima.',
       sr_mas_entrega: 'Más ajustes en Entrega',
       sr_coord_mal: 'Pega el enlace de Google Maps o escribe los números como «-8.65, 115.13».',
-      sr_coord_corto: 'Ese enlace no trae la ubicación (pasa con los enlaces cortos de «Compartir»). Abre el sitio en Google Maps y copia la dirección completa de la barra del navegador, o pega los números.',
+      sr_coord_corto: 'Ese enlace no marca la tienda: abre su ficha en Google Maps (que salga su nombre) y copia la dirección de la barra del navegador, o pega los números.',
       sr_gratis_mayor: 'Los km gratis tienen que quedar por debajo de la distancia máxima.',
       sr_activa_falta: 'Para ofrecer la entrega hacen falta la tienda, sus coordenadas, el precio por km, la distancia máxima y decidir la recogida.',
       sr_activa_nota: 'Está encendida: lo que guardes cambia desde ya el precio que da el bot.',
@@ -322,7 +322,7 @@
     'Ilustración: la tienda en el centro, la zona gratis alrededor y la zona de pago hasta la distancia máxima.': 'Illustration: the shop in the centre, the free zone around it and the paid zone up to the maximum distance.',
     'Más ajustes en Entrega': 'More delivery settings', 'Actívalo si llevas las motos a la puerta del cliente. Si no, salta este paso.': 'Switch it on if you take the bikes to the customer’s door. If not, skip this step.',
     '1 · Desde dónde sale': '1 · Where it leaves from', '2 · Cuánto cuesta': '2 · What it costs', '3 · Al final del alquiler': '3 · At the end of the rental',
-    'Pega el enlace de Google Maps o escribe los números como «-8.65, 115.13».': 'Paste the Google Maps link or write the numbers like «-8.65, 115.13».', 'Ese enlace no trae la ubicación (pasa con los enlaces cortos de «Compartir»). Abre el sitio en Google Maps y copia la dirección completa de la barra del navegador, o pega los números.': 'That link does not include the location (this happens with the short links from “Share”). Open the place in Google Maps and copy the full address from the browser bar, or paste the numbers.',
+    'Pega el enlace de Google Maps o escribe los números como «-8.65, 115.13».': 'Paste the Google Maps link or write the numbers like «-8.65, 115.13».', 'Ese enlace no marca la tienda: abre su ficha en Google Maps (que salga su nombre) y copia la dirección de la barra del navegador, o pega los números.': 'That link does not mark the shop: open its page in Google Maps (so its name shows) and copy the address from the browser bar, or paste the numbers.',
     'Los km gratis tienen que quedar por debajo de la distancia máxima.': 'The free km have to stay below the maximum distance.',
     'Para ofrecer la entrega hacen falta la tienda, sus coordenadas, el precio por km, la distancia máxima y decidir la recogida.': 'To offer delivery you need the shop, its coordinates, the price per km, the maximum distance and a decision on collection.',
     'Está encendida: lo que guardes cambia desde ya el precio que da el bot.': 'It is on: what you save changes the price the bot quotes right away.',
@@ -431,7 +431,7 @@
     'Ilustración: la tienda en el centro, la zona gratis alrededor y la zona de pago hasta la distancia máxima.': 'Ilustrasi: toko di tengah, zona gratis di sekitarnya, dan zona berbayar sampai jarak maksimum.',
     'Más ajustes en Entrega': 'Pengaturan lain di Pengantaran', 'Actívalo si llevas las motos a la puerta del cliente. Si no, salta este paso.': 'Aktifkan jika Anda mengantar motor ke depan pintu pelanggan. Jika tidak, lewati langkah ini.',
     '1 · Desde dónde sale': '1 · Berangkat dari mana', '2 · Cuánto cuesta': '2 · Berapa biayanya', '3 · Al final del alquiler': '3 · Di akhir sewa',
-    'Pega el enlace de Google Maps o escribe los números como «-8.65, 115.13».': 'Tempel tautan Google Maps atau tulis angkanya seperti «-8.65, 115.13».', 'Ese enlace no trae la ubicación (pasa con los enlaces cortos de «Compartir»). Abre el sitio en Google Maps y copia la dirección completa de la barra del navegador, o pega los números.': 'Tautan itu tidak memuat lokasi (terjadi pada tautan pendek dari «Bagikan»). Buka tempatnya di Google Maps lalu salin alamat lengkap dari bilah peramban, atau tempel angkanya.',
+    'Pega el enlace de Google Maps o escribe los números como «-8.65, 115.13».': 'Tempel tautan Google Maps atau tulis angkanya seperti «-8.65, 115.13».', 'Ese enlace no marca la tienda: abre su ficha en Google Maps (que salga su nombre) y copia la dirección de la barra del navegador, o pega los números.': 'Tautan itu tidak menandai toko: buka halamannya di Google Maps (sampai namanya muncul) lalu salin alamat dari bilah peramban, atau tempel angkanya.',
     'Los km gratis tienen que quedar por debajo de la distancia máxima.': 'Km gratis harus di bawah jarak maksimum.',
     'Para ofrecer la entrega hacen falta la tienda, sus coordenadas, el precio por km, la distancia máxima y decidir la recogida.': 'Untuk menawarkan pengantaran diperlukan toko, koordinatnya, harga per km, jarak maksimum, dan keputusan soal penjemputan.',
     'Está encendida: lo que guardes cambia desde ya el precio que da el bot.': 'Pengantaran aktif: yang Anda simpan langsung mengubah harga yang diberikan bot.',
@@ -1275,19 +1275,21 @@
       moneda: t && t.moneda ? String(t.moneda).toUpperCase() : '', precio_km: t ? num(t.precio_km) : null, km_gratis: t ? (num(t.km_gratis) || 0) : 0, minimo: t ? (num(t.minimo) || 0) : 0,
       km_max: num(a.km_max), cobra_recogida: a.cobra_recogida === true ? true : (a.cobra_recogida === false ? false : null), activa: a.activa === true, tarifa_id: t ? t.id : null };
   }
-  // M4 de la auditoría del setup de bbm (15-oct-2026): Noelia y Dion piensan en un sitio, no en números. Un enlace de Google Maps lleva el punto
-  // dentro: se saca de ahí y sigue el camino de siempre (lo que se guarda son lat y lng, y la base los revalida). '' = es un enlace pero no trae el
-  // punto (los cortos de «Compartir», maps.app.goo.gl: abrirlos para ver adónde llevan exigiría pedírselo a Google desde el servidor).
+  // M4 de la auditoría del setup de bbm (15-oct-2026): Noelia y Dion piensan en un sitio, no en números. Un enlace de Google Maps que MARCA un sitio
+  // lleva el punto dentro: se saca de ahí y sigue el camino de siempre (lo que se guarda son lat y lng, y la base los revalida). Solo esas formas:
+  // la ficha del sitio (!3d…!4d…), q=/query=/ll= y /place/ o /search/ con los números. NUNCA una ruta (/dir/: su primer punto es quien pregunta) ni
+  // el centro del mapa (@lat,lng): el precio por km y la distancia máxima se miden desde aquí, y un punto equivocado no lo vería nadie (revisor de
+  // b6bd9a8). '' = es un enlace de mapas pero no marca un sitio (también los cortos de «Compartir»: abrirlos exigiría pedírselo a Google desde el servidor).
   // Copia idéntica en entrega.html y setup_reservas.js (enlace_mapa.test.js).
   function coordDeEnlace(t) {
     t = String(t || '').trim();
     if (!/^(https?:\/\/)?([a-z0-9-]+\.)*(google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|goo\.gl\/maps|maps\.app\.goo\.gl)/i.test(t)) return null;
     var u = t; try { u = decodeURIComponent(t); } catch (e) { u = t; }
+    if (/\/maps\/dir\//i.test(u)) return '';
     var N = '([+-]?\\d{1,3}\\.\\d+)', S = '[,\\s+]+';
-    var m = new RegExp('!3d' + N + '!4d' + N).exec(u)                                          // el sitio marcado
-         || new RegExp('[?&](?:q|query|ll|destination|center)=' + N + S + N).exec(u)
-         || new RegExp('/(?:place|search|dir)/' + N + S + N).exec(u)
-         || new RegExp('@' + N + ',' + N).exec(u);                                              // el centro del mapa
+    var m = new RegExp('!3d' + N + '!4d' + N).exec(u)                                          // el sitio marcado (su ficha)
+         || new RegExp('[?&](?:q|query|ll)=' + N + S + N).exec(u)
+         || new RegExp('/(?:place|search)/' + N + S + N).exec(u);
     return m ? Number(m[1]) + ', ' + Number(m[2]) : '';
   }
   function parseCoord(s) {
