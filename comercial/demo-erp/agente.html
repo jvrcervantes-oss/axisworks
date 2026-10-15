@@ -203,6 +203,7 @@
 .ag2-campo>label,.ag2-check-t{font-weight:600;color:var(--text-hi)}
 .ag2 .ag2-campo input,.ag2 .ag2-campo select,.ag2 .ag2-campo textarea,.ag2 .ag2-lim select{width:100%;min-width:0;min-height:48px;padding:10px 14px;border-radius:12px;background:var(--ink);border:1px solid #4A4E7A;color:var(--text-hi);font:inherit}
 .ag2 .ag2-campo textarea{resize:vertical;line-height:1.45}
+.ag2-lim select{max-width:420px}
 .ag2 .ag2-campo input:focus,.ag2 .ag2-campo select:focus,.ag2 .ag2-campo textarea:focus,.ag2 .ag2-lim select:focus{border-color:var(--lime)}
 .ag2-pista{font-size:13px;line-height:1.45;color:var(--text-lo);margin:0}
 .ag2-cuenta{font-size:12px;color:var(--text-mute);margin:0;font-variant-numeric:tabular-nums}
@@ -488,14 +489,14 @@
 <fieldset data-ag="aj-fs-tope">
 <div class="ag2-campo">
 <label for="ag2-aj-tope" data-ag="aj-tope-etq"></label>
-<input id="ag2-aj-tope" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="ag2-aj-tope-ayuda" data-campo="aj-tope">
+<input id="ag2-aj-tope" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="ag2-aj-tope-ayuda ag2-aj-tope-msg" data-campo="aj-tope">
 <p class="ag2-pista" id="ag2-aj-tope-ayuda" data-ag="aj-tope-ayuda"></p>
 </div>
 <div class="ag2-msg ag2-subida axw-oculto" data-ag="aj-subida" data-tono="neutro">
 <p data-ag="aj-subida-txt"></p>
 <button type="button" class="ag2-btn2" data-accion="ag-aj-cancelar-subida" data-ag="aj-cancelar-subida"><span data-lwt>Cancelar la subida</span></button>
 </div>
-<p class="ag2-msg axw-oculto" data-ag="aj-msg-tope" data-tono="mal" role="alert"></p>
+<p class="ag2-msg axw-oculto" id="ag2-aj-tope-msg" data-ag="aj-msg-tope" data-tono="mal" role="alert"></p>
 <div class="ag2-acc"><button type="submit" class="ag2-btn"><span data-lwt>Guardar y seguir</span></button></div>
 </fieldset>
 </form>
@@ -510,7 +511,7 @@
 <fieldset data-ag="aj-fs-negocio">
 <div class="ag2-campo">
 <label for="ag2-aj-quien" data-lwt>Quién es el negocio</label>
-<textarea id="ag2-aj-quien" rows="3" maxlength="600" data-campo="ctx_quien" data-tope="600" aria-describedby="ag2-aj-quien-c"></textarea>
+<textarea id="ag2-aj-quien" rows="3" maxlength="600" data-campo="ctx_quien" data-tope="600" aria-describedby="ag2-aj-quien-c ag2-aj-negocio-msg"></textarea>
 <p class="ag2-cuenta" id="ag2-aj-quien-c" data-ag="cuenta-ctx_quien"></p>
 </div>
 <details class="ag2-mas" data-ag="aj-reglas">
@@ -530,7 +531,7 @@
 <p class="ag2-cuenta" data-ag="cuenta-ctx_reglas"></p>
 </div>
 </details>
-<p class="ag2-msg axw-oculto" data-ag="aj-msg-negocio" data-tono="mal" role="alert"></p>
+<p class="ag2-msg axw-oculto" id="ag2-aj-negocio-msg" data-ag="aj-msg-negocio" data-tono="mal" role="alert"></p>
 <div class="ag2-acc"><button type="submit" class="ag2-btn"><span data-lwt>Guardar y seguir</span></button></div>
 </fieldset>
 </form>
@@ -1716,10 +1717,12 @@
     var d = E.estado; if (!d || !d.soy_dueno) return;
     var imp = C.importeIdioma(F('aj-tope').value, 2), techo = ent(d.tope_techo_cent) ? d.tope_techo_cent : 0;
     msgAj('aj-ok', '');
-    if (imp.e) { msgAj('aj-msg-tope', errImporte(imp.e)); return; }
-    if (imp.vacio || Math.round(imp.v * 100) <= 0) { msgAj('aj-msg-tope', T('Con 0 tu equipo no puede gastar nada y no empieza: pon más de 0.')); return; }
+    var malTope = function (m) { msgAj('aj-msg-tope', m); F('aj-tope').setAttribute('aria-invalid', 'true'); F('aj-tope').focus(); };
+    F('aj-tope').removeAttribute('aria-invalid');
+    if (imp.e) { malTope(errImporte(imp.e)); return; }
+    if (imp.vacio || Math.round(imp.v * 100) <= 0) { malTope(T('Con 0 tu equipo no puede gastar nada y no empieza: pon más de 0.')); return; }
     var v = Math.round(imp.v * 100);
-    if (v > techo) { msgAj('aj-msg-tope', techo > 0 ? Tf('Como mucho {x}: es el máximo que ha fijado el estudio.', { x: eur(techo, d) }) : T('El estudio aún no ha fijado el máximo de gasto de este ERP: hasta entonces no se puede poner un tope. Avísale.')); return; }
+    if (v > techo) { malTope(techo > 0 ? Tf('Como mucho {x}: es el máximo que ha fijado el estudio.', { x: eur(techo, d) }) : T('El estudio aún no ha fijado el máximo de gasto de este ERP: hasta entonces no se puede poner un tope. Avísale.')); return; }
     /* lo que ya pidió el dueño no se reenvía: una subida pendiente no vuelve a empezar sus 24 h por pulsar otra vez */
     var pedido = ent(d.tope_propuesto_cent) ? d.tope_propuesto_cent : d.tope_mensual_cent;
     if (v === pedido) { E.sucio.tope = false; msgAj('aj-msg-tope', ''); ir('#ajustes-' + siguiente('tope', d)); return; }
@@ -1767,7 +1770,8 @@
     else if (ctx.quien.length > 600 || (ctx.horarios || '').length > 300 || (ctx.tono || '').length > 200) malo = T('Algún campo pasa de su largo máximo: mira el contador de cada uno.');
     else if (reglas.length > 20) malo = Tf('Como mucho 20 reglas, y hay {n}.', { n: reglas.length });
     else if (larga >= 0) malo = Tf('La regla {n} pasa de 200 caracteres.', { n: larga + 1 });
-    if (malo) { if (ctx.quien) $a('aj-reglas').open = true; msgAj('aj-msg-negocio', malo); return; }
+    F('ctx_quien').removeAttribute('aria-invalid');
+    if (malo) { if (ctx.quien) $a('aj-reglas').open = true; else { F('ctx_quien').setAttribute('aria-invalid', 'true'); F('ctx_quien').focus(); } msgAj('aj-msg-negocio', malo); return; }
     if (huellaCtx(ctx) === huellaCtx(d.contexto)) { E.sucio.negocio = false; msgAj('aj-msg-negocio', ''); ir('#ajustes-' + siguiente('negocio', d)); return; }
     if (!C.ocupa(btn)) return;
     msgAj('aj-msg-negocio', '');
