@@ -2495,6 +2495,19 @@ MENU_I18N = {
 # perusahaan, kuitansi, invoice). Traducción automática SIN REVISAR por un hablante nativo (departamentos/idiomas: ISO 18587); la valida el
 # equipo de Dion como el resto del glosario. Lo que ya tenía inglés en Lawang solo recibe aquí su indonesio (una clave EN existente no se pisa).
 MENU_I18N.update({
+    # Gastos: la primera categoría al vuelo (agencia-c0, 15-oct; GASTOS_INSTANCIA)
+    'Primero, una categoría': {'en': 'First, a category', 'id': 'Pertama, satu kategori'},
+    'Cada gasto va en una categoría y aún no hay ninguna. Crea la primera: después podrás añadir más.': {
+        'en': 'Every expense goes into a category and there are none yet. Create the first one: you can add more later.',
+        'id': 'Setiap pengeluaran masuk ke satu kategori dan belum ada satu pun. Buat yang pertama: nanti Anda bisa menambah lagi.'},
+    'Nombre de la categoría': {'en': 'Category name', 'id': 'Nama kategori'},
+    'Crear y seguir': {'en': 'Create and continue', 'id': 'Buat dan lanjut'},
+    'El nombre va de 1 a 80 caracteres y no empieza por = + - @.': {
+        'en': "The name must be 1 to 80 characters and can't start with = + - @.", 'id': 'Nama 1 sampai 80 karakter dan tidak diawali = + - @.'},
+    'No se pudo crear la categoría': {'en': 'The category could not be created', 'id': 'Kategori tidak dapat dibuat'},
+    'Aún no hay categorías de gasto: la primera se crea al pulsar «Nuevo gasto».': {
+        'en': 'There are no expense categories yet: the first one is created when you press «New expense».',
+        'id': 'Belum ada kategori pengeluaran: yang pertama dibuat saat Anda menekan «Pengeluaran baru».'},
     # Cuentas de cobro y reparto (pantalla de Lawang sin marca de diccionario)
     'Cuentas de Cobro & Reparto': {'en': 'Payment Accounts & Routing', 'id': 'Rekening Pembayaran & Alokasi'},
     'Las cuentas a las que transfiere el cliente, y qué cuenta puede elegir el agente en cada documento y en cada proyecto.': {
@@ -5106,6 +5119,35 @@ GASTOS_INSTANCIA = (
     ('intranet/v4/assets/panel-gastos.js', "    var filas = [['Fecha', 'Sociedad', 'Proyecto', 'Proveedor', 'Categoría', 'Concepto', 'Nº factura', 'Base', 'Impuesto', 'Total', 'Retención PPh', 'Tipo PPh', 'Retención ingresada', 'Moneda', 'Estado', 'Vence', 'Pagado el', 'Cuenta de pago', 'Motivo anulación']]\n",
      "    var filas = [['Fecha', 'Sociedad', 'Proyecto', 'Proveedor', 'Categoría', 'Concepto', 'Nº factura', 'Base', 'Impuesto', 'Total', 'Retención PPh', 'Tipo PPh', 'Retención ingresada', 'Moneda', 'Estado', 'Vence', 'Pagado el', 'Cuenta de pago', 'Motivo anulación'].map(T)]\n", 1),
     ('intranet/v4/assets/panel-gastos.js', "proyPorId[g.proyecto_id].nombre : 'General',", "proyPorId[g.proyecto_id].nombre : T('General'),", 1),
+    # agencia-c0, 15-oct-2026 (bbm vivo: «Categoría» salía en «— elige —» sin ninguna y el aviso decía «Pídelo a administración»): sin ninguna
+    # categoría activa, «Nuevo gasto» pide ANTES la primera, aquí mismo y en un solo campo (el nombre; grupo «general», que el paso del asistente
+    # deja elegir), con la misma función de la base que ese paso (gasto_categoria_guarda: la clave la saca la base del nombre y ella decide quién
+    # puede). Creada, se releen los datos y se abre el gasto con ella ya elegida, sin recargar la página. Prueba: test_gastos_primera_categoria.py.
+    ('intranet/v4/assets/panel-gastos.js', "  function nuevoGasto() {\n    var campos = camposGasto().concat([\n",
+     "  function axwPrimeraCategoria() {\n"
+     "    window.lwVentana(T('Primero, una categoría'), [\n"
+     "      { tipo: 'nota', label: T('Cada gasto va en una categoría y aún no hay ninguna. Crea la primera: después podrás añadir más.') },\n"
+     "      { k: 'nombre', label: T('Nombre de la categoría'), req: true, valor: '' }\n"
+     "    ], T('Crear y seguir'), function (v) {\n"
+     "      var n = String(v.nombre || '').trim();\n"
+     "      if (!n || n.length > 80 || /^[-=+@]/.test(n)) return { error: { message: T('El nombre va de 1 a 80 caracteres y no empieza por = + - @.') } };\n"
+     "      return sb.rpc('gasto_categoria_guarda', { p_clave: null, p_datos: { nombre: n, grupo: 'general' } }).then(function (r) {\n"
+     "        if (r.error) return rpcOk(r, T('No se pudo crear la categoría'));\n"
+     "        return cargar().then(function () {\n"
+     "          pintaTodo();\n"
+     "          var c = D.categorias.filter(function (x) { return x.activa && x.nombre === n; })[0];\n"
+     "          nuevoGasto(c ? c.clave : null);   // abre el gasto: el editor ya no es este y no se recarga (sinRecarga)\n"
+     "          return null;\n"
+     "        });\n"
+     "      });\n"
+     "    }, { sub: T('Gastos y proveedores'), sinRecarga: true });\n"
+     "  }\n"
+     "  function nuevoGasto(axwCat) {\n"
+     "    if (!D.categorias.some(function (c) { return c.activa; })) { axwPrimeraCategoria(); return; }\n"
+     "    var campos = camposGasto(axwCat ? { categoria: axwCat } : null).concat([\n", 1),
+    ('intranet/v4/assets/panel-gastos.js',
+     "T('No hay categorías de gasto dadas de alta: sin ellas no se puede registrar un gasto. Pídelo a administración.')",
+     "T('Aún no hay categorías de gasto: la primera se crea al pulsar «Nuevo gasto».')", 1),
 )
 # Solo en las instancias de alquileres (portada «reservas»): el ejemplo del campo y la pestaña «Reservas» de Ajustes, que en ellas solo lleva los impuestos
 TEXTOS_ALQUILER = (
@@ -5674,16 +5716,25 @@ def moneda_documento():
 # 15-oct: ningún EUR por defecto a fuego). Se lee la base EN EJECUCIÓN (config_instancia.moneda vía modulos_activos_datos): el paquete no
 # guarda ninguna moneda. El servidor tampoco la supone: gasto_guarda (migración de calidad-gastos) usa la de Ajustes o da error.
 # Con gastos, la suma por moneda de siempre. Toda instancia; Lawang no pasa por aquí (allí EUR es su moneda). Parte de BBM-64.
+# Y el alta ofrece SOLO la moneda de Ajustes (agencia-c0, 15-oct, visto en bbm vivo: ofrecía también EUR y USD, y la base rechaza cualquier
+# otra con «La moneda de la instancia es IDR»: Dion rellenaría todo para chocar al guardar). Con una sola posible no hay desplegable: «Moneda:
+# IDR» como texto fijo (tipo 'nota' de modal) y payloadDe manda la de Ajustes. Al editar un gasto en otra moneda, se ofrecen esa y la de Ajustes.
 # Prueba: test_moneda_gastos.py (aplica esto al Lawang fijado y ejecuta pintaKpis/camposGasto/payloadDe en Node; sin el parche, rojo).
 MONEDA_GASTOS_PARCHES = (
     ('intranet/v4/assets/panel-gastos.js', "  var MONEDAS = [['EUR', 'EUR'], ['IDR', 'IDR'], ['USD', 'USD']];\n",
      "  var MONEDAS = [['EUR', 'EUR'], ['IDR', 'IDR'], ['USD', 'USD']];\n"
      "  /* AxisWorks (calidad-gastos, 15-oct-2026): la moneda de los gastos es la de Ajustes (lwMonedaBase), no 'EUR' escrito a mano. */\n"
      "  function axwMonedaGastos() { var m = typeof window.lwMonedaBase === 'function' ? window.lwMonedaBase() : null; return /^[A-Z]{3}$/.test(m || '') ? m : null; }\n"
-     "  function axwMonedasGastos(actual) {   // la de Ajustes y la que ya tiene el gasto que se edita, aunque no estén en la lista de Lawang\n"
-     "    var m = axwMonedaGastos(), out = MONEDAS.slice(), mete = function (x) { if (x && !out.some(function (y) { return y[0] === x; })) out.unshift([x, x]); };\n"
-     "    mete(/^[A-Z]{3}$/.test(actual || '') ? actual : null); mete(m);\n"
-     "    return m || actual ? out : [['', T('— elige —')]].concat(out);\n"
+     "  function axwMonedasGastos(actual) {   // SOLO la de Ajustes (la base rechaza otra) y la que ya tiene el gasto que se edita\n"
+     "    var m = axwMonedaGastos(), a = /^[A-Z]{3}$/.test(actual || '') ? actual : null;\n"
+     "    if (m) return a && a !== m ? [[m, m], [a, a]] : [[m, m]];\n"
+     "    var out = MONEDAS.slice(); if (a && !out.some(function (y) { return y[0] === a; })) out.unshift([a, a]);   // sin moneda decidida: la base dirá cuál\n"
+     "    return a ? out : [['', T('— elige —')]].concat(out);\n"
+     "  }\n"
+     "  function axwCampoMoneda(actual) {   // una sola posible: texto fijo, sin desplegable que ofrezca lo que la base rechaza\n"
+     "    var m = axwMonedaGastos(), ops = axwMonedasGastos(actual);\n"
+     "    if (m && ops.length === 1) return { tipo: 'nota', axwMoneda: m, label: T('Moneda') + ': ' + m };\n"
+     "    return { k: 'moneda', label: T('Moneda'), tipo: 'select', req: true, medio: 1, valor: actual || m || '', opciones: ops };\n"
      "  }\n"
      "  var axwMonedaGastosEsperada = false;\n"
      "  function axwTrasMonedaGastos(fn) {\n"
@@ -5697,8 +5748,8 @@ MONEDA_GASTOS_PARCHES = (
      "    var linea = function (k) { return monedas.map(function (m) { return fmt((calc[m] || {})[k] || 0, m); }).join(' · '); };\n",
      "    var monedas = Object.keys(calc); if (!monedas.length) { var mbG = axwMonedaGastos(); monedas = mbG ? [mbG] : []; if (!mbG) axwTrasMonedaGastos(pintaKpis); }\n"
      "    var linea = function (k) { return monedas.length ? monedas.map(function (m) { return fmt((calc[m] || {})[k] || 0, m); }).join(' · ') : '—'; };\n"),
-    ('intranet/v4/assets/panel-gastos.js', "tipo: 'select', medio: 1, valor: g.moneda || 'EUR', opciones: MONEDAS }",
-     "tipo: 'select', req: true, medio: 1, valor: g.moneda || axwMonedaGastos() || '', opciones: axwMonedasGastos(g.moneda) }"),
+    ('intranet/v4/assets/panel-gastos.js', "{ k: 'moneda', label: T('Moneda'), tipo: 'select', medio: 1, valor: g.moneda || 'EUR', opciones: MONEDAS }",
+     "axwCampoMoneda(g.moneda)"),
     ('intranet/v4/assets/panel-gastos.js', "moneda: v.moneda || 'EUR', fecha: v.fecha,",
      "moneda: v.moneda || axwMonedaGastos() || null, fecha: v.fecha,"),
 )

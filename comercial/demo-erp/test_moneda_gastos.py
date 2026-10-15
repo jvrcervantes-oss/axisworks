@@ -99,7 +99,9 @@ function mundo(moneda, gastos, modulosListos) {
   vm.runInContext(finanzas + '\n;' + codigo + '\n;this.pintaKpis = pintaKpis; this.camposGasto = camposGasto; this.payloadDe = payloadDe;', ctx);
   return ctx;
 }
-function campoMoneda(ctx) { return ctx.camposGasto({}).filter(function (c) { return c.k === 'moneda'; })[0]; }
+// el campo de la moneda: un desplegable (k 'moneda') o, con una sola posible, el texto fijo (tipo 'nota' con axwMoneda)
+function campoMoneda(ctx, g) { return ctx.camposGasto(g || {}).filter(function (c) { return c.k === 'moneda' || c.axwMoneda; })[0]; }
+function resumen(f) { return { tipo: f.tipo, valor: f.valor || f.axwMoneda || '', op: (f.opciones || []).map(function (x) { return x[0]; }), label: f.label || '' }; }
 function envio(ctx) { return ctx.payloadDe({ sociedad: 'emisor', categoria: 'otros', concepto: 'x', fecha: '2026-10-15', base: '100' }).p; }
 (async function () {
   const r = {};
@@ -107,7 +109,8 @@ function envio(ctx) { return ctx.payloadDe({ sociedad: 'emisor', categoria: 'otr
   let c = mundo('IDR', [], Promise.resolve(true));
   c.pintaKpis();
   r.idr_kpis = Object.assign({}, c.out);
-  r.idr_alta = campoMoneda(c).valor; r.idr_envio = envio(c).moneda;
+  r.idr_alta = resumen(campoMoneda(c)).valor; r.idr_envio = envio(c).moneda;
+  r.idr_campo = resumen(campoMoneda(c)); r.idr_edita_idr = resumen(campoMoneda(c, { moneda: 'IDR' }));
   // 2. sin moneda decidida; la capa de módulos llega después con IDR
   let suelta; const llega = new Promise(function (res) { suelta = res; });
   c = mundo(null, [], llega);
@@ -120,7 +123,7 @@ function envio(ctx) { return ctx.payloadDe({ sociedad: 'emisor', categoria: 'otr
   // 3. AUD (no está en la lista de Lawang)
   c = mundo('AUD', [], Promise.resolve(true));
   const fa = campoMoneda(c);
-  r.aud_alta = fa.valor; r.aud_opciones = fa.opciones.map(function (x) { return x[0]; });
+  r.aud_alta = resumen(fa).valor; r.aud_campo = resumen(fa);
   // 3b. editar un gasto en AUD: la ofrece siempre (con IDR en Ajustes y sin moneda decidida) — BAJA del revisor de f40a491
   c = mundo('IDR', [], Promise.resolve(true));
   let fe = c.camposGasto({ moneda: 'AUD' }).filter(function (x) { return x.k === 'moneda'; })[0];
@@ -155,9 +158,13 @@ if p.returncode == 0:
     ok('sin moneda decidida: no se envía EUR por defecto', r['null_envio'] is None, repr(r['null_envio']))
     ok('al llegar la capa de módulos con IDR: se repinta en IDR', r['null_tras'].get('k-pendiente') == '0 IDR', repr(r['null_tras'].get('k-pendiente')))
     ok('AUD: el alta la elige', r['aud_alta'] == 'AUD', repr(r['aud_alta']))
-    ok('AUD: el alta la ofrece aunque no esté en la lista de Lawang', 'AUD' in r['aud_opciones'], repr(r['aud_opciones']))
+    ok('AUD: la ofrece aunque no esté en la lista de Lawang (sola: texto fijo)', r['aud_campo']['tipo'] == 'nota' and r['aud_campo']['label'] == 'Moneda: AUD', repr(r['aud_campo']))
+    # agencia-c0, 15-oct (bbm vivo): el alta ofrecía EUR y USD y la base los rechaza. Con una sola posible, ni desplegable
+    ic = r['idr_campo']
+    ok('IDR: el alta NO ofrece EUR ni USD: «Moneda: IDR» como texto fijo, sin desplegable', ic['tipo'] == 'nota' and ic['label'] == 'Moneda: IDR' and not ic['op'], repr(ic))
+    ok('IDR: editar un gasto que ya es IDR, igual: texto fijo', r['idr_edita_idr']['tipo'] == 'nota', repr(r['idr_edita_idr']))
     e1, e2 = r['edita_idr'], r['edita_null']
-    ok('editar un gasto AUD con Ajustes IDR: lo ofrece y lo deja elegido (y también IDR)', e1['valor'] == 'AUD' and 'AUD' in e1['op'] and 'IDR' in e1['op'], repr(e1))
+    ok('editar un gasto AUD con Ajustes IDR: lo ofrece y lo deja elegido (y también IDR), y NADA más', e1['valor'] == 'AUD' and sorted(e1['op']) == ['AUD', 'IDR'], repr(e1))
     ok('editar un gasto AUD sin moneda decidida: lo ofrece, elegido, sin «— elige —» delante', e2['valor'] == 'AUD' and 'AUD' in e2['op'] and e2['op'][0] != '', repr(e2))
     d = r['dos_kpis'].get('k-pendiente', '')
     ok('con gastos EUR+IDR: suma por moneda, como antes', 'EUR' in d and 'IDR' in d and '100 EUR' in d and '500000 IDR' in d, repr(d))
