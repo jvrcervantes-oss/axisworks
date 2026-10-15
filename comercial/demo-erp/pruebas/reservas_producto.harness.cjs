@@ -430,8 +430,13 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await sig(p);
     ok('E6 · a domicilio sin direccion: no avanza y lo dice', (await dlg(p)).includes('Escribe la dirección de entrega') && !!(await p.$('[data-paso="entrega"]')));
     ok('E6 · avisa de que el coste de la entrega no se suma desde aqui', (await dlg(p)).includes('NO se suma'));
-    await p.fill('[data-as="dirEntrega"]', XSS_DIR); await sig(p); await enPaso(p, 'resumen');
+    await p.fill('[data-as="dirEntrega"]', XSS_DIR); await sig(p);
+    ok('S4 · entrega a domicilio: la parte 2 pregunta la devolución con «En la misma dirección» ya marcada',
+       (await txt(p, '.rp-as-progreso')).includes('Parte 2 de 2') && (await p.getAttribute('[data-campo="recogida"][data-valor="misma"]', 'aria-pressed')) === 'true'
+       && !(await p.$('[data-as="dirEntrega"]')) && !(await p.$('[data-as="dirRecogida"]')));
+    await sig(p); await enPaso(p, 'resumen');
     const res = await dlg(p);
+    ok('S4 · resumen: la devolución dice «En la misma dirección»', res.includes('En la misma dirección'));
     ok('resumen: total de la base, base e impuesto, dias de la base y telefono normalizado a +62', res.includes('200.000') && res.includes('PPN 11%') && /= 2 días/.test(res) && res.includes('+6281234567890'), res.slice(0, 300));
     ok('E6 · junto al total: la entrega a domicilio NO incluida', !!(await p.$('[data-rp="as-total"] [data-rp="as-sin-entrega"]')));
     ok('la direccion con etiquetas sale como texto', res.includes(XSS_DIR) && await sinInyeccion(p));
@@ -440,14 +445,15 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('E7 · el boton dice lo que hace («Apartar 24 h»)', (await txt(p, '[data-accion="rp-modal-as-confirma"]')).includes('Apartar 24 h'));
     await p.click('[data-accion="rp-modal-as-paso"][data-paso="fechas"]'); await enPaso(p, 'fechas');
     ok('«Cambiar» del resumen salta a su paso sin perder nada', (await p.$$('[data-accion="rp-modal-as-dia"][aria-pressed="true"]')).length === 2);
-    for (const s of ['moto', 'cliente', 'entrega', 'resumen']) { await sig(p); await enPaso(p, s); if (s === 'moto') await motosListas(p); }
+    for (const s of ['moto', 'cliente', 'entrega', 'resumen']) { await sig(p); if (s === 'resumen') await sig(p); await enPaso(p, s); if (s === 'moto') await motosListas(p); }
     await p.fill('[data-as="notas"]', 'recoge a las 10:00');
     await confirma(p, 'confirmada');
     await espera(p, () => document.querySelector('[data-rp="as-hecha"]'));
     const cr = llamadas(base, 'reserva_producto_crea');
     const pd = cr[0] && cr[0][1].p_datos;
     ok('crear llama UNA vez con producto, fechas, clave, nombre, telefono normalizado, direccion y notas; SIN precio, total, estado ni moneda',
-       cr.length === 1 && JSON.stringify(Object.keys(pd).sort()) === JSON.stringify(['clave', 'contacto_nombre', 'contacto_telefono', 'desde', 'entrega_direccion', 'hasta', 'notas', 'producto_id'])
+       cr.length === 1 && JSON.stringify(Object.keys(pd).sort()) === JSON.stringify(['clave', 'contacto_nombre', 'contacto_telefono', 'desde', 'entrega_direccion', 'hasta', 'notas', 'producto_id', 'recogida_direccion'])
+       && pd.recogida_direccion === pd.entrega_direccion
        && pd.contacto_telefono === '+6281234567890' && /^equipo-[a-z0-9]+$/.test(pd.clave) && cr[0][1].p_bloqueo_minutos === null, JSON.stringify(cr));
     const he = await txt(p, '[data-rp="as-hecha"]');
     ok('tras confirmar: numero, total de la base y que pasa con el cobro, en una frase', he.includes('RSV-11') && he.includes('200.000') && he.includes('Cobro: pendiente'), he);
@@ -897,7 +903,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await dia(p, mas(20)); await dia(p, mas(22)); await sig(p); await enPaso(p, 'moto'); await motosListas(p); await sig(p);
     await p.click('[data-accion="rp-modal-as-moto"][data-producto-id="p1"]'); await sig(p); await enPaso(p, 'cliente');
     await p.fill('[data-as="numero"]', 'x'); await sig(p); await p.fill('[data-as="numero"]', '0812 3456 7890'); await p.fill('[data-as="nombre"]', 'Dewi'); await sig(p); await enPaso(p, 'entrega');
-    await p.click('[data-accion="rp-modal-as-opcion"][data-campo="entrega"][data-valor="domicilio"]'); await sig(p); await p.fill('[data-as="dirEntrega"]', 'Jl. Raya Canggu 1'); await sig(p); await enPaso(p, 'resumen');
+    await p.click('[data-accion="rp-modal-as-opcion"][data-campo="entrega"][data-valor="domicilio"]'); await sig(p); await p.fill('[data-as="dirEntrega"]', 'Jl. Raya Canggu 1'); await sig(p); await sig(p); await enPaso(p, 'resumen');
     await p.click('[data-accion="rp-modal-as-cerrar"]'); await p.click('[data-accion="rp-modal-as-seguir"]');
     await confirma(p); await espera(p, () => document.querySelector('[data-rp="as-hecha"]'));
     const sin = await p.evaluate(x => x === 'id' ? window.__sinId : window.__sinEn, idioma);
@@ -955,6 +961,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
       await sig(p); await enPaso(p, 'cliente'); await p.fill('[data-as="numero"]', '12'); await sig(p); await mide('3-cliente-error');
       await p.fill('[data-as="numero"]', '0812 3456 7890'); await p.fill('[data-as="nombre"]', 'Dewi Lestari'); await sig(p); await enPaso(p, 'entrega');
       await p.click('[data-accion="rp-modal-as-opcion"][data-campo="entrega"][data-valor="domicilio"]'); await p.fill('[data-as="dirEntrega"]', 'Jl. Raya Canggu No. 12, Berawa (dekat Indomaret)'); await mide('4-entrega');
+      await sig(p); await espera(p, () => document.querySelector('[data-campo="recogida"][data-valor="misma"]')); await mide('4b-devolucion');
       await sig(p); await enPaso(p, 'resumen'); await p.click('[data-accion="rp-modal-as-opcion"][data-campo="modo"][data-valor="confirmada"]'); await mide('5-resumen');
       await p.click('[data-accion="rp-modal-as-confirma"]'); await espera(p, () => document.querySelector('[data-rp="as-hecha"]'));
       const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
@@ -962,6 +969,62 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
       if (SHOT && (alto === 900 || alto === 844)) await p.screenshot({ path: SHOT + '_as_' + ancho + '_' + idioma + '_6-hecha.png' });
       await ctx.close();
     }
+  }
+
+  // 10. S4 (bbm-comodidad, 15-oct-2026): como mucho 3 campos a la vista en cada paso y parte, a 1440 y a 390, en el peor caso de cada uno.
+  //     Cuenta: input, select, textarea y cada grupo de opciones = 1; el teléfono (país + número, una sola etiqueta) = 1; «Buscar cliente» es un filtro y no cuenta.
+  {
+    const muchos = [{ id: 'c1', nombre: 'Ana' }, { id: 'c2', nombre: 'Bob' }, { id: 'c3', nombre: 'Kadek Ayu' }, { id: 'c4', nombre: 'Ketut Ayu' },
+      { id: 'c5', nombre: 'José Martínez' }, { id: 'c6', nombre: 'Wayan' }, { id: 'c7', nombre: 'Made' }];
+    const cuenta = p => p.evaluate(() => {
+      const zona = document.querySelector('[data-rp="dialogo"] .rp-as-cuerpo'), vis = e => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
+      let n = zona.querySelectorAll('.rp-as-opciones').length;
+      zona.querySelectorAll('input, select, textarea').forEach(e => { if (!vis(e) || e.type === 'search' || e.closest('.rp-as-opciones')) return; if (e.closest('.rp-as-tel') && e.tagName === 'SELECT') return; n++; });
+      return n;
+    });
+    for (const ancho of [1440, 390]) {
+      const { base, p, ctx } = await abre({ ancho, base: { clientes: muchos } });
+      const medidas = {};
+      await hastaCliente(p); await espera(p, () => document.querySelector('[data-as="filtroCliente"]'));
+      medidas.cliente = await cuenta(p);
+      const tel = await p.evaluate(() => { const a = document.querySelector('[data-as="prefijo"]').getBoundingClientRect(), b = document.querySelector('[data-as="numero"]').getBoundingClientRect(); return Math.abs(a.top - b.top) < 4; });
+      ok(ancho + ' px · S4 cliente: país y número en la misma fila (se leen como un solo campo)', tel);
+      await p.fill('[data-as="numero"]', '0812 3456 7890'); await p.fill('[data-as="nombre"]', 'Dewi Lestari'); await sig(p); await enPaso(p, 'entrega');
+      const op = (c, v) => p.click('[data-accion="rp-modal-as-opcion"][data-campo="' + c + '"][data-valor="' + v + '"]');
+      await op('recogida', 'domicilio'); medidas.entregaTienda = await cuenta(p);   // en la tienda + la recogemos: entrega, devolución, su dirección
+      await op('entrega', 'domicilio'); medidas.parte1 = await cuenta(p);
+      ok(ancho + ' px · S4 entrega a domicilio: parte 1 con la entrega y su dirección; la devolución que eligió la persona no cambia sola',
+         (await txt(p, '.rp-as-progreso')).includes('Parte 1 de 2') && !(await p.$('[data-campo="recogida"]')));
+      await p.fill('[data-as="dirEntrega"]', 'Jl. Pantai Berawa 7'); await sig(p);
+      ok(ancho + ' px · S4 parte 2: la devolución elegida antes se respeta (otra dirección)', (await p.getAttribute('[data-campo="recogida"][data-valor="domicilio"]', 'aria-pressed')) === 'true');
+      medidas.parte2 = await cuenta(p);
+      await sig(p);
+      ok(ancho + ' px · S4 parte 2: otra dirección vacía no avanza y lo dice', (await dlg(p)).includes('Escribe la dirección de recogida') && (await txt(p, '.rp-as-progreso')).includes('Parte 2 de 2'));
+      await p.click('[data-accion="rp-modal-as-atras"]');
+      ok(ancho + ' px · S4 «Atrás» en la parte 2 vuelve a la 1 con la dirección puesta', (await txt(p, '.rp-as-progreso')).includes('Parte 1 de 2') && (await p.inputValue('[data-as="dirEntrega"]')) === 'Jl. Pantai Berawa 7');
+      await sig(p); await op('recogida', 'tienda'); await sig(p); await enPaso(p, 'resumen');
+      await p.click('[data-accion="rp-modal-as-paso"][data-paso="entrega"][data-parte="2"]');
+      ok(ancho + ' px · S4 «Cambiar» de la devolución abre la parte 2', (await txt(p, '.rp-as-progreso')).includes('Parte 2 de 2'));
+      await sig(p); await enPaso(p, 'resumen'); await confirma(p); await espera(p, () => document.querySelector('[data-rp="as-hecha"]'));
+      const pd = (llamadas(base, 'reserva_producto_crea')[0] || [])[1];
+      ok(ancho + ' px · S4 a domicilio y devuelta en la tienda: sin recogida_direccion', pd && pd.p_datos.entrega_direccion === 'Jl. Pantai Berawa 7' && !('recogida_direccion' in pd.p_datos), JSON.stringify(pd));
+      ok(ancho + ' px · S4 ningún paso ni parte pasa de 3 campos a la vista', Object.values(medidas).every(n => n >= 1 && n <= 3), JSON.stringify(medidas));
+      console.log('  campos a la vista ' + ancho + ' px: ' + JSON.stringify(medidas));
+      await ctx.close();
+    }
+    // la entrega a domicilio y vuelta a la tienda en la parte 1: «misma» no se queda colgada
+    const { base, p, ctx } = await abre();
+    await hastaCliente(p); await p.fill('[data-as="numero"]', '0812 3456 7890'); await p.fill('[data-as="nombre"]', 'Dewi Lestari'); await sig(p); await enPaso(p, 'entrega');
+    await p.click('[data-accion="rp-modal-as-opcion"][data-campo="entrega"][data-valor="domicilio"]');
+    await p.click('[data-accion="rp-modal-as-opcion"][data-campo="entrega"][data-valor="tienda"]');
+    ok('S4 · vuelta a «En la tienda»: la devolución vuelve a la tienda y el paso es uno solo', (await p.getAttribute('[data-campo="recogida"][data-valor="tienda"]', 'aria-pressed')) === 'true' && !(await txt(p, '.rp-as-progreso')).includes('Parte'));
+    await sig(p); await enPaso(p, 'resumen'); await confirma(p); await espera(p, () => document.querySelector('[data-rp="as-hecha"]'));
+    const pd = (llamadas(base, 'reserva_producto_crea')[0] || [])[1];
+    ok('S4 · en la tienda las dos: sin direcciones', pd && !('entrega_direccion' in pd.p_datos) && !('recogida_direccion' in pd.p_datos), JSON.stringify(pd));
+    await ctx.close();
+    // Toques (Experiencia), entregar y recoger en el mismo sitio: antes «A domicilio» + dirección + «La recogemos nosotros» + la dirección otra vez + Siguiente;
+    // ahora «A domicilio» + dirección + Siguiente + Siguiente (los mismos toques y una dirección menos que escribir). Entregar en la tienda: igual que antes.
+    console.log('  toques S4 entrega+recogida en el mismo sitio: antes 3 toques + 2 direcciones · ahora 3 toques + 1 dirección; a domicilio y devuelta en la tienda: antes 2 toques, ahora 4; las dos en la tienda: 1 toque, como antes');
   }
 
   await nav.close();
