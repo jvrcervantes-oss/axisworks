@@ -763,7 +763,7 @@
     var st = document.createElement('style');
     st.id = 'axw-setup-estilo';
     st.textContent = '.axw-btn{width:100%}@media (min-width:768px){.axw-btn{width:auto;align-self:flex-start}}'
-      + '.axw-btn[hidden],[data-axw-parte][hidden],[data-accion="pm-atras"][hidden]{display:none!important}';
+      + '.axw-btn[hidden],[data-axw-parte][hidden]{display:none!important}';   // el «Atrás» de Ajustes no lleva clase de display: `hidden` ya basta
     document.head.appendChild(st);
   })();
 
