@@ -36,12 +36,17 @@ const SIN_DECLARAR = ['bancos', 'sociedades'];
 const sembrado = k => { const d = SIN_DECLARAR.indexOf(k) !== -1 ? null : REG.setup.modulos[k]; if (d == null) return null; if (typeof d === 'string') return { ninguno: d.replace(/^ninguno:?\s*/, '') };
   return { estado: d.estado, pasos: d.pasos.map(p => ({ clave: p.clave, obligatorio: p.obligatorio, irreversible: p.irreversible, donde: p.donde, modulo_requerido: p.modulo_requerido })) }; };
 const DEPENDE = { facturas: ['recibos', 'sociedades'], recibos: [], sociedades: [], 'reservas-producto': ['productos'], productos: [], bancos: [], gastos: [], 'whatsapp-bot': [], base: [],
-  contratos: [], comisiones: [], 'cuota-servicio': [] };
+  contratos: [], comisiones: [], 'cuota-servicio': [], finanzas: [], comunicacion: [], proyectos: [], compradores: ['proyectos'], deck: [] };
 // Candado por tipo (16-oct-2026): `tipo` de la instancia y `tipos` de cada pieza como los manda la edge local (erp_control_tipos, A14). Valores
 // medidos en la base de una instancia de Reservas (erp_modulos.tipos); `cuota-servicio` es inventado: hoy no hay ninguna pieza solo de Servicios.
-// Comisiones va ENCENDIDA siendo de otro tipo (lo que ya estaba encendido se queda, A13): se puede apagar, nunca candado
+// Comisiones va ENCENDIDA siendo de otro tipo (lo que ya estaba encendido se queda, A13): se puede apagar, nunca candado.
+// Casos del DOBLE (2.ª vuelta, 16-oct), no del registro: `finanzas` y `comunicacion` sin tipo sembrado (tipos vacío: la base los rechaza con
+// tipo puesto, A13), la primera apagada y la segunda encendida; `finanzas` («Resumen de finanzas») va en Finanzas con piezas libres que se ordenan
+// DESPUÉS por nombre («Sociedades emisoras»), para que el orden «candado al final de su sección» se pueda medir; `compradores` (libre) depende de
+// `proyectos` (Propiedades, con candado); `deck` es de un tipo que el panel no conoce (el nombre sale del propio tipo, nunca de una lista)
 const TIPOS_MOD = { base: ['todos'], facturas: ['todos'], recibos: ['todos'], sociedades: ['todos'], productos: ['todos'], bancos: ['todos'], gastos: ['todos'],
-  'whatsapp-bot': ['todos'], 'reservas-producto': ['reservas'], contratos: ['propiedades'], comisiones: ['propiedades'], 'cuota-servicio': ['servicios'] };
+  'whatsapp-bot': ['todos'], 'reservas-producto': ['reservas'], contratos: ['propiedades'], comisiones: ['propiedades'], 'cuota-servicio': ['servicios'],
+  finanzas: [], comunicacion: [], proyectos: ['propiedades'], compradores: ['todos'], deck: ['alquiler_largo'] };
 const MODS = Object.keys(DEPENDE);
 const ESTADO_MOD = { base: { estado: 'configurado', hechos: 1, total: 1 }, 'reservas-producto': { estado: 'sin_configurar', hechos: 1, total: 4 },
   productos: null, bancos: null, 'whatsapp-bot': { estado: 'raro' } };
@@ -70,7 +75,7 @@ function estadoInst(activos, conSetup) {
       else if (activos.indexOf(k) !== -1) m.setup_estado = null;
       return m; }) };
 }
-const ACT0 = ['base', 'productos', 'reservas-producto', 'bancos', 'whatsapp-bot', 'comisiones'];
+const ACT0 = ['base', 'productos', 'reservas-producto', 'bancos', 'whatsapp-bot', 'comisiones', 'comunicacion'];
 const llamadas = [];
 function cierra(set) { const s = new Set(set); let cambia = true; while (cambia) { cambia = false; for (const k of [...s]) for (const d of DEPENDE[k] || []) if (!s.has(d)) { s.add(d); cambia = true; } } return [...s]; }
 // EU4 (20261014097000) y A14 (096000) en el doble: encender exige un ensayo del conjunto EXACTO (con base, ordenado); sin él, `sin_ensayo` con
@@ -225,7 +230,34 @@ const ajena = [], marcaGoogle = [];
   { const cab = await p.evaluate(() => ({ tipo: (document.querySelector('#cabecera-instancia [data-tipo-erp]') || {}).textContent,
       cuenta: (document.querySelector('#cabecera-instancia [data-candado-cuenta]') || { getAttribute: () => null }).getAttribute('data-candado-cuenta'),
       orden: [...document.querySelectorAll('#modulos [data-tarjeta]')].map(c => c.getAttribute('data-tarjeta')) }));
-    ok('candado: la cabecera dice el tipo del ERP y cuántos llevan candado (2)', cab.tipo === 'ERP de Reservas' && cab.cuenta === '2', JSON.stringify(cab)); }
+    // 5 con candado (2.ª vuelta, 16-oct): contratos, cuota-servicio, proyectos y deck de otro tipo, y finanzas sin tipo. Antes 2
+    ok('candado: la cabecera dice el tipo del ERP y cuántos llevan candado (5)', cab.tipo === 'ERP de Reservas' && cab.cuenta === '5', JSON.stringify(cab)); }
+  // ── 2.ª vuelta del candado (revisor, 16-oct) ─────────────────────────────────────────────────────────────────────────────────────
+  const tarjetaMas = k => p.evaluate(k => { const c = document.querySelector('#modulos [data-tarjeta="' + k + '"]');
+    return c && { sin: c.hasAttribute('data-sin-tipo'), dep: c.getAttribute('data-depende-candado') }; }, k);
+  { const t = await tarjeta('finanzas'), x = await tarjetaMas('finanzas');
+    ok('sin tipo: un módulo con tipos vacío en un ERP con tipo lleva candado (la base lo rechaza) y lo dice en llano', !!t && x.sin && t.otro === null && t.na && t.off && t.cand &&
+      t.nota === 'Sin tipo de negocio asignado en la base: no se puede encender hasta que se le asigne uno.' && /con candado: sin tipo de negocio/.test(t.aria), JSON.stringify({ t, x })); }
+  { const t = await tarjeta('comunicacion'), x = await tarjetaMas('comunicacion');
+    ok('sin tipo: si ya está encendido no lleva candado: se puede apagar y lo dice', !!t && x.sin && t.on === 'true' && !t.off && !t.cand &&
+      t.nota === 'Sin tipo de negocio asignado en la base: se puede apagar, pero no volver a encender.', JSON.stringify({ t, x })); }
+  { const t = await tarjeta('deck');
+    ok('nombre del tipo: uno que el panel no conoce sale del propio tipo, legible (ni crudo ni «undefined»)', !!t && t.off && t.nota === 'Solo para negocios de tipo Alquiler largo.', JSON.stringify(t)); }
+  ok('nombre del tipo: el panel no lleva una lista propia de tipos', !/\b(propiedades|reservas|servicios)\s*:\s*['"]/.test(html), (html.match(/\b(propiedades|reservas|servicios)\s*:\s*['"][^'"]*/) || [])[0]);
+  { const t = await tarjeta('compradores'), x = await tarjetaMas('compradores');
+    ok('depende de un candado: la tarjeta libre lo avisa en llano y nombra el módulo', !!t && !t.cand && t.on === 'false' && x.dep === 'proyectos' &&
+      t.nota === 'Necesita Proyectos y parcelas, que lleva candado en este negocio: por eso este tampoco se podrá encender.', JSON.stringify({ t, x })); }
+  { const t = await tarjeta('reservas-producto'), x = await tarjetaMas('reservas-producto');
+    ok('depende de un candado: lo que depende de algo libre no lleva el aviso', !!t && x.dep === null && !/candado/.test(t.nota), JSON.stringify({ t, x })); }
+  // los de candado al final de SU sección: dentro de cada rejilla, ninguna tarjeta libre después de una con candado; y al menos una sección
+  // mezclada donde, por nombre, la de candado iría ANTES que una libre (si no, el orden alfabético solo ya lo pasaría y no se mediría nada)
+  { const secs = await p.evaluate(() => [...document.querySelectorAll('#modulos .ax-grid')].map(g => ({ sec: g.previousElementSibling && g.previousElementSibling.textContent,
+      cartas: [...g.querySelectorAll('[data-tarjeta]')].map(c => ({ k: c.getAttribute('data-tarjeta'), cand: !!c.querySelector('.ft .cand'), nombre: c.querySelector('h3').textContent })) })));
+    const malas = secs.filter(s => s.cartas.some((c, i) => c.cand && s.cartas.slice(i + 1).some(d => !d.cand))).map(s => s.sec);
+    const mezcla = secs.filter(s => s.cartas.some(c => c.cand && s.cartas.some(d => !d.cand && c.nombre.localeCompare(d.nombre, 'es') < 0))).map(s => s.sec);
+    ok('orden: en cada sección, los de candado van al final', secs.length > 0 && malas.length === 0, JSON.stringify(malas.length ? secs.filter(s => malas.includes(s.sec)) : secs.map(s => s.sec)));
+    ok('orden: hay una sección mezclada donde el candado iría antes por nombre (Finanzas: Resumen antes que Sociedades)', mezcla.indexOf('Finanzas') !== -1, JSON.stringify(mezcla)); }
+  if (SHOT) await (await p.$('#modulos')).screenshot({ path: SHOT + '_candado_1440.png' });
   const etiqueta = k => p.evaluate(k => { const b = document.querySelector('#modulos [data-mod="' + k + '"]'); const c = b && b.parentElement;
     const e = c && c.querySelector('[data-setup-estado]'); return e ? e.textContent.trim() : null; }, k);
   ok('estado: reservas-producto a medias (1 de 4)', (await etiqueta('reservas-producto')) === 'A medias · 1 de 4', await etiqueta('reservas-producto'));
@@ -376,7 +408,7 @@ const ajena = [], marcaGoogle = [];
   const r2 = await p.evaluate(() => ({ resumen: (document.querySelector('[data-setup-resumen]') || {}).getAttribute && document.querySelector('[data-setup-resumen]').getAttribute('data-setup-resumen'),
     etiquetas: document.querySelectorAll('#modulos [data-setup-estado]').length }));
   ok('base vieja: lo dice una vez y las tarjetas no inventan estado', r2.resumen === 'sin_dato' && r2.etiquetas === 0, JSON.stringify(r2));
-  { const t = await tarjeta('contratos'), n = await p.evaluate(() => document.querySelectorAll('#modulos [data-otro-tipo],#cabecera-instancia [data-tipo-erp],#cabecera-instancia [data-candado-cuenta]').length);
+  { const t = await tarjeta('contratos'), n = await p.evaluate(() => document.querySelectorAll('#modulos [data-otro-tipo],#modulos [data-sin-tipo],#modulos [data-depende-candado],#cabecera-instancia [data-tipo-erp],#cabecera-instancia [data-candado-cuenta]').length);
     ok('base sin tipo: ningún candado ni tipo inventado (decide la simulación)', n === 0 && !!t && !t.off, JSON.stringify({ n, t })); }
   { const tv = await techoVe(); ok('base vieja: el techo dice que la base aún no lo tiene, sin formulario', tv.estado === 'sin_dato' && !tv.form && !tv.aviso, JSON.stringify(tv)); }
   await p.click('#modulos [data-mod="facturas"]');
@@ -391,6 +423,8 @@ const ajena = [], marcaGoogle = [];
   await p.setViewportSize({ width: 390, height: 844 });
   await p.selectOption('#sel-instancia', 'sample-rentals');
   await p.waitForTimeout(300);
+  { const a = await anchos(); ok('candado a 390: las tarjetas con candado y sus notas no desbordan la página', a.sw <= a.w && !a.fuera.length, JSON.stringify(a)); }
+  if (SHOT) await (await p.$('#modulos')).screenshot({ path: SHOT + '_candado_390.png' });
   await p.click('#modulos [data-mod="facturas"]');
   await p.waitForSelector('#dlg[open]');
   const c390 = await anchos();
@@ -462,6 +496,16 @@ const ajena = [], marcaGoogle = [];
   await p.evaluate(() => { location.hash = ''; });
   await p.waitForTimeout(300);
   ok('S00: quitar #mapa vuelve a los módulos', await p.evaluate(() => document.getElementById('mapa').classList.contains('hidden') && !document.getElementById('vista').classList.contains('hidden')));
+
+  // ── el nombre del tipo, el día que la edge mande el tipo de ERP de cada perfil (`tipo_erp`; hoy no lo manda: la clave de un perfil es la del
+  // perfil) ─ sale del `nombre` de ese perfil, no del propio tipo. Se cambia el nombre en el doble para que la prueba distinga las dos fuentes
+  { const g = PERFILES.tipos.find(t => t.tipo === 'generalista'), antesNombre = g.nombre;
+    g.tipo_erp = 'reservas'; g.nombre = 'Reservas con fecha';
+    await p.reload({ waitUntil: 'load' });
+    await p.waitForSelector('#modulos [data-mod]', { timeout: 15000 });
+    const tx = await p.evaluate(() => (document.querySelector('#cabecera-instancia [data-tipo-erp]') || {}).textContent);
+    delete g.tipo_erp; g.nombre = antesNombre;
+    ok('nombre del tipo: si el perfil trae su tipo de ERP, el nombre sale del perfil', tx === 'ERP de Reservas con fecha', tx); }
 
   ok('ninguna petición a una base real (solo el doble de erp-control)', ajena.length === 0, ajena.join(', '));
   ok('0 errores de consola', errores.length === 0, errores.join(' | '));

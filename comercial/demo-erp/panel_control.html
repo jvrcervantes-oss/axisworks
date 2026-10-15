@@ -1252,18 +1252,44 @@ window.AXW_ASIS = (function () {
   /* Candado por tipo (owner, 16-oct-2026): en un ERP de un tipo, lo que es solo de OTRO tipo sale con candado y sin interruptor. Sale de lo que
      manda la base (estado.tipo y, por módulo, tipos: erp_control_tipos por la edge local, A14), nunca de una lista de este panel. Sin tipo de la
      instancia o sin tipos del módulo (base anterior a A13, el mando) no hay candado: decide la simulación. Solo APAGADO: apagar siempre se puede
-     (A13). Quien de verdad no lo deja encender es el disparador de la base; esto solo evita ofrecer lo que la base va a rechazar. */
-  var NOMBRE_TIPO = { propiedades: 'Propiedades', reservas: 'Reservas', servicios: 'Servicios' };
-  function deOtroTipo(e, m) {
-    if (!e || typeof e.tipo !== 'string' || !Array.isArray(m.tipos) || !m.tipos.length) return null;
+     (A13). Quien de verdad no lo deja encender es el disparador de la base; esto solo evita ofrecer lo que la base va a rechazar.
+     Un módulo con `tipos` VACÍO también lleva candado (revisor, 16-oct): la base lo rechaza con tipo puesto («tipos_sin_sembrar», A13). */
+  // El nombre de un tipo de ERP. Sin lista propia en esta página: si los perfiles de la edge traen el tipo de ERP de cada perfil (`tipo_erp`),
+  // se usa el `nombre` de ese perfil; si no (hoy la clave de un perfil es la del PERFIL —inmobiliario, generalista, servicios—, no la del
+  // tipo, y cruzarlas por coincidencia de texto sería enganchar por rótulo), el propio tipo con mayúscula.
+  function nombreTipo(x) {
+    var s = String(x == null ? '' : x);
+    var p = ((perfiles && perfiles.tipos) || []).filter(function (t) { return t && t.tipo_erp === s && typeof t.nombre === 'string' && t.nombre; })[0];
+    if (p) return p.nombre;
+    s = s.replace(/[_-]+/g, ' ').trim();
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  // null = sin candado; si no, { sin: tipos vacíos, motivo (frase corta, también para el lector de pantalla), nota (la de la tarjeta apagada) }
+  function candadoTipo(e, m) {
+    if (!e || typeof e.tipo !== 'string' || !Array.isArray(m.tipos)) return null;
+    if (!m.tipos.length) return { sin: true, motivo: 'Sin tipo de negocio asignado en la base',
+      nota: 'Sin tipo de negocio asignado en la base: no se puede encender hasta que se le asigne uno.' };
     if (m.tipos.indexOf('todos') !== -1 || m.tipos.indexOf(e.tipo) !== -1) return null;
-    return 'Solo para negocios de tipo ' + m.tipos.map(function (t) { return NOMBRE_TIPO[t] || String(t); }).join(' o ');
+    var motivo = 'Solo para negocios de tipo ' + m.tipos.map(nombreTipo).join(' o ');
+    return { sin: false, motivo: motivo, nota: motivo + '.' };
+  }
+  // Los módulos con candado de los que depende `m`, directa o indirectamente, según las dependencias que manda la base (m.depende)
+  function dependeDeCandado(m, porClave, candado) {
+    var vistos = {}, malos = [], cola = (m.depende || []).slice();
+    while (cola.length) {
+      var k = cola.shift();
+      if (vistos[k]) continue;
+      vistos[k] = true;
+      if (candado(k)) malos.push(k);
+      else if (porClave[k]) cola = cola.concat(porClave[k].depende || []);
+    }
+    return malos;
   }
 
   function pintaInstancia() {
     var i = actual, e = i.estado, aviso = $('aviso-instancia');
     var act = activosDe(i);
-    var conCandado = function (m) { return act.indexOf(m.modulo) === -1 && !!deOtroTipo(e, m); };
+    var conCandado = function (m) { return act.indexOf(m.modulo) === -1 && !!candadoTipo(e, m); };
     // S01: cabecera del diseño (ceja con la instancia, título partido 600/300, cuentas a la derecha). Las cuentas salen de la base:
     // encendidos y apagados de los módulos que lista (la base aparte, como en las tarjetas) y los objetos cerrados en su base.
     var noBase = e ? (e.modulos || []).filter(function (m) { return m.modulo !== 'base'; }) : [];
@@ -1271,11 +1297,11 @@ window.AXW_ASIS = (function () {
     var nCand = noBase.filter(conCandado).length, nOff = noBase.length - nOn - nCand;
     $('cabecera-instancia').innerHTML =
       '<div class="ax-cab"><div style="min-width:0"><div class="ax-mono ceja">' + esc(i.marca) + ' · ' + esc(i.dominio || i.nombre) +
-      (e && typeof e.tipo === 'string' ? ' · <span data-tipo-erp="' + esc(e.tipo) + '">ERP de ' + esc(NOMBRE_TIPO[e.tipo] || e.tipo) + '</span>' : '') + '</div>' +
+      (e && typeof e.tipo === 'string' ? ' · <span data-tipo-erp="' + esc(e.tipo) + '">ERP de ' + esc(nombreTipo(e.tipo)) + '</span>' : '') + '</div>' +
       '<h2>Módulos <span class="l">de este negocio</span></h2></div>' +
       (e ? '<div class="estados"><span class="ax-pill on">' + ico('ok', 's16') + nOn + (nOn === 1 ? ' encendido' : ' encendidos') + '</span>' +
         '<span class="ax-pill off">' + nOff + (nOff === 1 ? ' apagado' : ' apagados') + '</span>' +
-        (nCand ? '<span class="ax-pill base" data-candado-cuenta="' + nCand + '">' + ico('candado', 's16') + nCand + ' de otro tipo</span>' : '') +
+        (nCand ? '<span class="ax-pill base" data-candado-cuenta="' + nCand + '">' + ico('candado', 's16') + nCand + ' con candado</span>' : '') +
         '<span class="ax-pill base">' + (e.apagados || 0) + ' objetos cerrados en la base</span></div>' : '') + '</div>' + (e ? resumenSetup(e, act) : '');
     if (!i.editable) {
       aviso.classList.remove('hidden');
@@ -1290,7 +1316,9 @@ window.AXW_ASIS = (function () {
     var cont = $('modulos');
     if (!e) { cont.innerHTML = ''; $('historial').innerHTML = ''; return; }
     var desplegadas = e.edges_desplegadas || [];
-    var porSeccion = {};
+    var porSeccion = {}, porClave = {};
+    (e.modulos || []).forEach(function (m) { porClave[m.modulo] = m; });
+    var claveConCandado = function (k) { return !!porClave[k] && conCandado(porClave[k]); };
     noBase.forEach(function (m) {
       var s = rot(m.modulo)[1];
       (porSeccion[s] = porSeccion[s] || []).push(m);
@@ -1302,21 +1330,26 @@ window.AXW_ASIS = (function () {
         // los de candado, al final de su sección: primero lo que este negocio puede usar
         porSeccion[s].sort(function (a, b) { return (conCandado(a) - conCandado(b)) || nombre(a.modulo).localeCompare(nombre(b.modulo), 'es'); }).map(function (m) {
           var on = act.indexOf(m.modulo) !== -1;
-          var otro = deOtroTipo(e, m), cand = !on && !!otro;
+          var tc = candadoTipo(e, m), cand = !on && !!tc;
           var faltanEdges = (m.edges || []).filter(function (x) { return desplegadas.indexOf(x) === -1; });
-          var nota = cand ? otro + '.' : on && otro ? otro + ': se puede apagar, pero no volver a encender.' :
-            !m.instalable ? 'No instalado. ' + (m.motivo || 'Este módulo aún no existe como producto para esta instancia.') : (!on && faltanEdges.length ? 'Faltan funciones por desplegar' : (m.depende.length ? 'Necesita: ' + lista(m.depende) : 'Sin dependencias'));
+          // libre pero apagado y depende de algo con candado: al encenderlo la base tendría que encender también eso, y no le deja
+          var depCand = !on && !tc && m.instalable ? dependeDeCandado(m, porClave, claveConCandado) : [];
+          var nota = cand ? tc.nota : on && tc ? tc.motivo + ': se puede apagar, pero no volver a encender.' :
+            !m.instalable ? 'No instalado. ' + (m.motivo || 'Este módulo aún no existe como producto para esta instancia.') :
+            depCand.length ? 'Necesita ' + listaY(depCand) + (depCand.length === 1 ? ', que lleva' : ', que llevan') + ' candado en este negocio: por eso este tampoco se podrá encender.' :
+            (!on && faltanEdges.length ? 'Faltan funciones por desplegar' : ((m.depende || []).length ? 'Necesita: ' + lista(m.depende) : 'Sin dependencias'));
           var bloqueado = !i.editable || cand || (!on && !m.instalable);
           var st = on ? estadoSetup(m) : null;
           var izq = on ? (st ? etiquetaEstado(st) : '<span class="on">' + ico('ok', 's16') + 'Encendido</span>') :
             cand ? '<span class="cand">' + ico('candado', 's16') + 'Con candado</span>' : '<span>' + (m.instalable ? 'Apagado' : 'No instalado') + '</span>';
           return '<div class="ax-modc' + (cand || (!on && !m.instalable) ? ' na' : '') + '" data-tarjeta="' + esc(m.modulo) + '"' +
-            (otro ? ' data-otro-tipo="' + esc(m.tipos.join(',')) + '"' : '') + '>' +
+            (tc && !tc.sin ? ' data-otro-tipo="' + esc(m.tipos.join(',')) + '"' : '') + (tc && tc.sin ? ' data-sin-tipo=""' : '') +
+            (depCand.length ? ' data-depende-candado="' + esc(depCand.join(',')) + '"' : '') + '>' +
             '<div class="hd"><span class="ic">' + ms(rot(m.modulo)[2]) + '</span><h3>' + esc(nombre(m.modulo)) + '</h3></div>' +
             (rot(m.modulo)[3] ? '<p>' + esc(rot(m.modulo)[3]) + '</p>' : '') + '<p class="nota">' + esc(nota) + '</p>' +
             '<div class="ft">' + izq +
             '<button class="ax-sw" type="button" role="switch" aria-checked="' + on + '" aria-label="' + (on ? 'Apagar ' : 'Encender ') + esc(nombre(m.modulo)) +
-            (cand ? ' (con candado: ' + esc(otro.charAt(0).toLowerCase() + otro.slice(1)) + ')' : '') + '"' +
+            (cand ? ' (con candado: ' + esc(tc.motivo.charAt(0).toLowerCase() + tc.motivo.slice(1)) + ')' : '') + '"' +
             (bloqueado ? ' disabled' : '') + ' data-mod="' + esc(m.modulo) + '"><span></span></button></div></div>';
         }).join('') + '</div></div>';
     }).join('');
