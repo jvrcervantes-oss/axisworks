@@ -262,17 +262,38 @@ async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=
 }
 const txt = async (p, sel) => (await p.$(sel)) ? (await p.$eval(sel, e => e.textContent.trim())) : null;
 const clic = async (p, accion) => { await p.click('[data-axw-accion="' + accion + '"]'); await p.waitForTimeout(350); };
+
+// S1c: la flota va en 4 partes (AXW_SETUP.partes). Se va a la parte de un campo con el «Atrás»/«Siguiente» DE VERDAD del asistente
+const parteVista = p => p.$eval('[data-axw-partes] > [data-axw-parte]:not([hidden])', e => Number(e.getAttribute('data-axw-parte'))).catch(() => 0);
+async function aParte(p, k) {
+  for (let i = 0; i < 8; i++) { const a = await parteVista(p); if (!a || a === k) return a; await clic(p, a > k ? 'atras' : 'enviar'); }
+  return parteVista(p);
+}
+async function llena(p, campo, v) {
+  const sel = '[data-axw-campo="' + campo + '"]';
+  const k = await p.$eval(sel, e => { const c = e.closest('[data-axw-parte]'); return c ? Number(c.getAttribute('data-axw-parte')) : 0; });
+  if (k) await aParte(p, k);
+  const pl = await p.$eval(sel, e => { const d = e.closest('details[data-axw-plegado]'); return d && !d.open ? d.getAttribute('data-axw-plegado') : null; });
+  if (pl) await p.click('details[data-axw-plegado="' + pl + '"] > summary');
+  await p.fill(sel, v);
+}
 const pasoActual = p => p.getAttribute('[data-axw-paso]', 'data-axw-paso').catch(() => null);
 const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
 const escrituras = b => b.llamadas.filter(x => !/(_datos|modulos_setup_estado)$/.test(x[0]));
 const errorTxt = p => txt(p, '[data-axw-as="error"]');
 const sinErroresJs = async (p, n) => ok(n + ': sin errores de página', (await p.evaluate(() => window.__errores)).length === 0, JSON.stringify(await p.evaluate(() => window.__errores)));
+// S1c: parte a parte con «Siguiente»; acaba en la 4.ª (fianza), donde el botón ya es «Guardar y seguir»
 async function rellenaAlquiler(p, o = {}) {
-  await p.fill('[data-axw-campo="nombre"]', o.nombre || 'Honda Vario 125');
-  await p.fill('[data-axw-campo="tarifa_1"]', '90.000'); await p.fill('[data-axw-campo="tarifa_7"]', '550.000'); await p.fill('[data-axw-campo="tarifa_30"]', '1.800.000');
-  await p.fill('[data-axw-campo="seguro_1"]', '30.000'); await p.fill('[data-axw-campo="seguro_30"]', '600.000'); await p.fill('[data-axw-campo="seguro_365"]', '1.800.000');
-  await p.fill('[data-axw-campo="fianza"]', '1.000.000'); await p.check('[data-axw-campo="seguro_obligatorio"]');
+  await aParte(p, 1);
+  await p.fill('[data-axw-campo="nombre"]', o.nombre || 'Honda Vario 125'); await p.fill('[data-axw-campo="tarifa_1"]', '90.000');
   await p.fill('[data-axw-campo="mat_0"]', 'dk 1234 ab'); await p.click('[data-axw-sr-accion="anadir-unidad"]'); await p.fill('[data-axw-campo="mat_1"]', 'DK 5678 CD');
+  await clic(p, 'enviar');
+  await p.fill('[data-axw-campo="tarifa_7"]', '550.000'); await p.fill('[data-axw-campo="tarifa_30"]', '1.800.000');
+  await clic(p, 'enviar');
+  await p.fill('[data-axw-campo="seguro_1"]', '30.000'); await p.check('[data-axw-campo="seguro_obligatorio"]');
+  await p.click('details[data-axw-plegado="seguro-mas"] > summary'); await p.fill('[data-axw-campo="seguro_30"]', '600.000'); await p.fill('[data-axw-campo="seguro_365"]', '1.800.000');
+  await clic(p, 'enviar');
+  await p.fill('[data-axw-campo="fianza"]', '1.000.000');
 }
 
 (async () => {
@@ -296,8 +317,43 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S41 vacío: el color de la unidad y los dos niveles de seguro NO se pintan (sin base)', !(await p.$('[data-axw-campo*="color"]')) && !(await p.$('[data-axw-campo*="basic"]')));
   await clic(p, 'enviar');
   ok('S41 vacío: dice qué falta y no envía', ((await errorTxt(p)) || '').includes('nombre del producto') && escrituras(b).length === 0, await errorTxt(p));
+  // S1c (owner 15-oct: «1, 2 o 3 campos a rellenar por paso»): 4 partes; en cada una ≤ 3 campos a la vista, «Parte k de m», «Siguiente» hasta la última
+  {
+    const parteTxt = () => txt(p, '[data-axw-parte]:not([hidden]) [data-axw-parte-de]');
+    const boton = () => txt(p, '[data-axw-accion="enviar"]');
+    const cuenta = [];
+    ok('S1c parte 1: «Parte 1 de 4», nombre + precio del día + la primera matrícula, y el botón dice «Siguiente»', (await parteVista(p)) === 1 && (await parteTxt()) === 'Parte 1 de 4'
+       && (await visibles(p, '[data-axw-sr="flota"]')) === 3 && (await visLista(p)) === 'nombre,tarifa_1,mat_0' && (await boton()) === 'Siguiente', (await parteTxt()) + ' · ' + await visLista(p) + ' · ' + await boton());
+    if (SHOT) await (await p.$('[data-axw-sr="flota"]')).screenshot({ path: path.join(SHOT, 's1c_flota_p1_1440.png') });
+    await p.fill('[data-axw-campo="nombre"]', 'Honda Vario 125'); await p.fill('[data-axw-campo="mat_0"]', 'DK 1234 AB'); await clic(p, 'enviar');
+    ok('S1c parte 1 sin precio del día: no sigue, lo dice y no envía', (await parteVista(p)) === 1 && ((await errorTxt(p)) || '').includes('precio por día') && escrituras(b).length === 0, await errorTxt(p));
+    await p.fill('[data-axw-campo="tarifa_1"]', '90.000'); await clic(p, 'enviar');
+    ok('S1c «Siguiente»: pasa a la parte 2, borra el error y el foco va a su pregunta', (await parteVista(p)) === 2 && !((await errorTxt(p)) || '').trim()
+       && await p.evaluate(() => document.activeElement && document.activeElement.matches('[data-axw-parte="2"] h3')), await errorTxt(p));
+    cuenta.push(await visibles(p, '[data-axw-sr="flota"]') + ':' + await visLista(p));
+    if (SHOT) await (await p.$('[data-axw-sr="flota"]')).screenshot({ path: path.join(SHOT, 's1c_flota_p2_1440.png') });
+    await p.fill('[data-axw-campo="tarifa_7"]', '50.000'); await clic(p, 'enviar');
+    ok('S1c parte 2: una semana más barata que un día no deja seguir', (await parteVista(p)) === 2 && ((await errorTxt(p)) || '').includes('no puede costar menos'), await errorTxt(p));
+    await p.fill('[data-axw-campo="tarifa_7"]', ''); await clic(p, 'enviar');
+    cuenta.push(await visibles(p, '[data-axw-sr="flota"]') + ':' + await visLista(p));
+    ok('S1c parte 3: el seguro de un día y «toda reserva lleva seguro»; 30 y 365 días plegados', (await parteVista(p)) === 3
+       && await p.$eval('details[data-axw-plegado="seguro-mas"]', d => !d.open && !!d.querySelector('[data-axw-campo="seguro_365"]')), cuenta[1]);
+    if (SHOT) await (await p.$('[data-axw-sr="flota"]')).screenshot({ path: path.join(SHOT, 's1c_flota_p3_1440.png') });
+    await clic(p, 'enviar');
+    cuenta.push(await visibles(p, '[data-axw-sr="flota"]') + ':' + await visLista(p));
+    ok('S1c parte 4: fianza y «¿fianza también con seguro?»; el botón vuelve a «Guardar y seguir»', (await parteVista(p)) === 4 && (await boton()) === 'Guardar y seguir', cuenta[2] + ' · ' + await boton());
+    if (SHOT) await (await p.$('[data-axw-sr="flota"]')).screenshot({ path: path.join(SHOT, 's1c_flota_p4_1440.png') });
+    ok('S1c recuento: 2, 2 y 2 campos a la vista en las partes 2, 3 y 4', JSON.stringify(cuenta) === JSON.stringify(['2:tarifa_7,tarifa_30', '2:seguro_1,seguro_obligatorio', '2:fianza,r:axw-sr-fianza_con_seguro']), JSON.stringify(cuenta));
+    await clic(p, 'atras');
+    ok('S1c «Atrás» del asistente: vuelve a la parte 3, sin salir del paso', (await parteVista(p)) === 3 && (await pasoActual(p)) === 'flota', await pasoActual(p));
+    await aParte(p, 4);
+    await p.evaluate(() => { document.querySelector('[data-axw-campo="nombre"]').value = ''; });   // lo de una parte anterior que ya no vale
+    await clic(p, 'enviar');
+    ok('S1c en la última: un error de una parte anterior lleva a esa parte y no envía', (await parteVista(p)) === 1 && ((await errorTxt(p)) || '').includes('nombre del producto') && escrituras(b).length === 0, await errorTxt(p));
+  }
   await rellenaAlquiler(p);
   ok('S41 la matrícula se escribe en mayúsculas', (await p.inputValue('[data-axw-campo="mat_0"]')) === 'DK 1234 AB');
+  await aParte(p, 1);
   // Diseño S41: tabla «# · Matrícula · Quitar» con la cuenta arriba; quitar una fila renumera (número, etiqueta y clave)
   const nums = () => p.$$eval('[data-axw-sr-filas="unidades"] [data-axw-sr-num]', ls => ls.map(l => l.textContent));
   ok('S41 tabla: filas numeradas y la cuenta arriba', JSON.stringify(await nums()) === '["1","2"]' && (await txt(p, '[data-axw-sr-cuenta="unidades"]')) === '2 unidades', JSON.stringify(await nums()));
@@ -311,7 +367,7 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S41 quitar y luego añadir: la nueva es mat_2, sin repetir', JSON.stringify(tras) === '["mat_0","mat_1","mat_2"]', JSON.stringify(tras));
   await p.click('[data-axw-sr-fila="2"] [data-axw-sr-accion="quitar-unidad"]');
   await p.fill('[data-axw-campo="mat_1"]', 'DK 5678 CD');
-  await clic(p, 'enviar'); await p.waitForTimeout(400);
+  await aParte(p, 4); await clic(p, 'enviar'); await p.waitForTimeout(400);
   const orden = escrituras(b).map(x => x[0] + (x[1].p_dias ? ':' + x[1].p_dias : ''));
   ok('S41 orden: producto, 3 tarifas, garantía, 3 seguros, lote de unidades', JSON.stringify(orden) === JSON.stringify(['producto_guarda', 'producto_tarifa_guarda:1', 'producto_tarifa_guarda:7', 'producto_tarifa_guarda:30', 'producto_garantia_guarda', 'producto_seguro_guarda:1', 'producto_seguro_guarda:30', 'producto_seguro_guarda:365', 'producto_unidades_alta_lote']), JSON.stringify(orden));
   const pg = llamadas(b, 'producto_guarda')[0][1];
@@ -363,6 +419,7 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S41 error con motivo: la frase del código (datos), no el mensaje de la base', ((await errorTxt(p)) || '').includes('Algún dato no vale') && !((await errorTxt(p)) || '').includes('NO lee'), await errorTxt(p));
   ok('S41 a medias: dice qué se guardó y qué no', ((await txt(p, '[data-axw-sr-aviso]')) || '').includes('No se guardó: el seguro de 30 días'), await txt(p, '[data-axw-sr-aviso]'));
   ok('S41 a medias: lo tecleado sigue ahí', (await p.inputValue('[data-axw-campo="seguro_30"]')) === '600.000' && (await p.inputValue('[data-axw-campo="mat_1"]')) === 'DK 5678 CD');
+  ok('S1c a medias: se sigue en la última parte (la de «Guardar y seguir»)', (await parteVista(p)) === 4, String(await parteVista(p)));
   const antes = escrituras(b).length;
   await clic(p, 'enviar'); await p.waitForTimeout(500);
   const despues = escrituras(b).slice(antes).map(x => x[0] + (x[1].p_dias ? ':' + x[1].p_dias : ''));
@@ -391,7 +448,9 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S41 hecho: «Hecho» y «Cambiar», sin formulario', !!(await p.$('[data-axw-hecho]')) && !!(await p.$('[data-axw-accion="cambiar"]')) && !(await p.$('[data-axw-sr="flota"]')));
   await clic(p, 'cambiar'); await p.waitForSelector('[data-axw-sr="flota"] [data-axw-campo="nombre"]');
   ok('S41 editar: trae el producto, sus unidades y avisa del tramo de 3 días', (await p.inputValue('[data-axw-campo="nombre"]')) === 'Honda Scoopy' && ((await txt(p, '[data-axw-sr="flota"]')) || '').includes('DK 1111 AA') && ((await txt(p, '[data-axw-sr="flota"]')) || '').includes('(3 días)'));
-  await p.fill('[data-axw-campo="tarifa_1"]', '95.000'); await clic(p, 'enviar');
+  await p.fill('[data-axw-campo="tarifa_1"]', '95.000'); await aParte(p, 4);
+  ok('S1c editar: la parte 4 lleva también el motivo (3 campos a la vista)', (await visibles(p, '[data-axw-sr="flota"]')) === 3 && (await visLista(p)).endsWith('sr_motivo'), await visLista(p));
+  await clic(p, 'enviar');
   ok('S41 cambiar un precio guardado sin motivo: no envía', ((await errorTxt(p)) || '').includes('motivo') && escrituras(b).length === 0, await errorTxt(p));
   const esp0 = b.productos[0].tarifas[0].actualizado_en;
   await p.fill('[data-axw-sr="flota"] [data-axw-campo="sr_motivo"]', 'Subida de temporada'); await clic(p, 'enviar'); await p.waitForTimeout(400);
@@ -412,7 +471,7 @@ async function rellenaAlquiler(p, o = {}) {
     ok('S41 con unidades: las de antes, numeradas en la tabla; la nueva sigue la cuenta', nya > 0 && ya[0].startsWith('1') && num0 === String(nya + 1)
        && (await txt(p, '[data-axw-sr-cuenta="unidades"]')) === (nya + 1) + ' unidades', JSON.stringify(ya) + ' ' + num0);
   }
-  await p.fill('[data-axw-campo="mat_0"]', 'DK 4444 DD'); await clic(p, 'enviar'); await p.waitForTimeout(400);
+  await p.fill('[data-axw-campo="mat_0"]', 'DK 4444 DD'); await aParte(p, 4); await clic(p, 'enviar'); await p.waitForTimeout(400);
   const lt = llamadas(b, 'producto_unidades_alta_lote')[0];
   ok('S41 añadir unidades a lo existente: solo el lote, con «Añadido desde el asistente»', escrituras(b).length === 1 && lt && lt[1].p_motivo === 'Añadido desde el asistente de configuración' && JSON.stringify(lt[1].p_identificadores) === '["DK 4444 DD"]', JSON.stringify(escrituras(b)));
   await ctx.close();
@@ -420,15 +479,15 @@ async function rellenaAlquiler(p, o = {}) {
   b = base({ conProducto: true, pierde: { producto_guarda: 'despues' } });
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=flota' }));
   await clic(p, 'cambiar'); await p.waitForSelector('[data-axw-sr="flota"] [data-axw-campo="nombre"]');
-  await p.fill('[data-axw-campo="nombre"]', 'Honda Scoopy 2024'); await p.fill('[data-axw-campo="tarifa_7"]', '500.000');
-  await p.fill('[data-axw-sr="flota"] [data-axw-campo="sr_motivo"]', 'Nombre del modelo nuevo'); await clic(p, 'enviar'); await p.waitForTimeout(600);
+  await p.fill('[data-axw-campo="nombre"]', 'Honda Scoopy 2024'); await llena(p, 'tarifa_7', '500.000');
+  await llena(p, 'sr_motivo', 'Nombre del modelo nuevo'); await clic(p, 'enviar'); await p.waitForTimeout(600);
   ok('S41 duda al renombrar: se reconoce por el nombre releído y sigue con el tramo', b.productos[0].nombre === 'Honda Scoopy 2024' && llamadas(b, 'producto_guarda').length === 1 && llamadas(b, 'producto_tarifa_guarda').some(x => x[1].p_dias === 7), JSON.stringify(escrituras(b)));
   await ctx.close();
   // conflicto de versión: 40001 flota_cambio
   b = base({ conProducto: true, falla: { 'producto_tarifa_guarda:1': ['40001', 'flota_cambio'] } });
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=flota' }));
   await clic(p, 'cambiar'); await p.waitForSelector('[data-axw-sr="flota"] [data-axw-campo="nombre"]');
-  await p.fill('[data-axw-campo="tarifa_1"]', '95.000'); await p.fill('[data-axw-sr="flota"] [data-axw-campo="sr_motivo"]', 'Subida de temporada'); await clic(p, 'enviar'); await p.waitForTimeout(400);
+  await p.fill('[data-axw-campo="tarifa_1"]', '95.000'); await llena(p, 'sr_motivo', 'Subida de temporada'); await clic(p, 'enviar'); await p.waitForTimeout(400);
   ok('S41 40001 flota_cambio: «otra persona ha cambiado esto»', ((await errorTxt(p)) || '').includes('Otra persona ha cambiado'), await errorTxt(p));
   await ctx.close();
   // la herramienta: 42501 sin_herramienta
@@ -570,6 +629,16 @@ async function rellenaAlquiler(p, o = {}) {
   ok('Ajustes: guardar llama a la misma función y repinta con «Hecho»', llamadas(b, 'reservas_reglas_guarda').length === 1 && (await p.getAttribute('[data-pm-fila="reglas_reserva"] [data-pm-hecho]', 'data-pm-hecho')) === '1');
   await p.click('[data-pm-fila="flota"] [data-accion="pm-editar"]'); await p.waitForSelector('[data-pm-fila="flota"] [data-axw-sr="flota"] [data-axw-campo="nombre"]');
   ok('Ajustes: Flota abre el alquiler con el producto ya dado de alta', (await p.inputValue('[data-pm-fila="flota"] [data-axw-campo="nombre"]')) === 'Honda Scoopy');
+  {   // S1c: la ventana de Ajustes también va de parte en parte con su «Atrás» y su botón principal
+    const F = '[data-pm-fila="flota"] ', gtxt = () => txt(p, F + '[data-accion="pm-guardar"]'), nEsc = escrituras(b).length;
+    ok('S1c Ajustes: Flota en partes: la 1.ª, el botón dice «Siguiente» y no hay «Atrás»', (await parteVista(p)) === 1 && (await gtxt()) === 'Siguiente' && !(await p.isVisible(F + '[data-accion="pm-atras"]')), await gtxt());
+    await p.click(F + '[data-accion="pm-guardar"]'); await p.waitForTimeout(300);
+    ok('S1c Ajustes: «Siguiente» pasa a la parte 2, sale «Atrás» y no guarda nada', (await parteVista(p)) === 2 && await p.isVisible(F + '[data-accion="pm-atras"]') && escrituras(b).length === nEsc, String(await parteVista(p)));
+    await p.click(F + '[data-accion="pm-atras"]'); await p.waitForTimeout(300);
+    ok('S1c Ajustes: «Atrás» vuelve a la parte 1 sin cerrar la ventana', (await parteVista(p)) === 1 && !!(await p.$('dialog[data-pm-ventana="flota"][open]')), String(await parteVista(p)));
+    for (let i = 0; i < 3; i++) { await p.click(F + '[data-accion="pm-guardar"]'); await p.waitForTimeout(300); }
+    ok('S1c Ajustes: en la última parte el botón vuelve a «Guardar»', (await parteVista(p)) === 4 && (await gtxt()) === 'Guardar' && escrituras(b).length === nEsc, await gtxt());
+  }
   for (const ancho of [390, 1440]) {
     await p.setViewportSize({ width: ancho, height: 900 }); await p.waitForTimeout(100);
     ok('Ajustes ' + ancho + ': sin scroll horizontal', (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho);
@@ -606,6 +675,7 @@ async function rellenaAlquiler(p, o = {}) {
     if (paso === 'entrega') { await p.check('[data-axw-campo="activa"]'); await p.fill('[data-axw-campo="precio_km"]', 'x'); }   // P5: los campos salen al encenderla
     await clic(p, 'enviar');   // que también salga el texto de error
     ok(paso + ' ' + idioma + ' ' + ancho + ': se mide esta pantalla (no la siguiente)', !!(await p.$('[data-axw-sr="' + paso + '"]')));
+    if (paso === 'flota') ok('S1c flota ' + idioma + ' ' + ancho + ': ≤ 3 campos a la vista en la parte en curso', (await visibles(p, '[data-axw-sr="flota"]')) <= 3, await visLista(p));
     {   // P5: a 390 la explicación va DESPUÉS de los campos; a 1440, a su derecha
       const g = await p.evaluate(() => { const i = document.querySelector('[data-axw-as="izq"]').getBoundingClientRect(), l = document.querySelector('[data-axw-as="lado"]').getBoundingClientRect(); return { iR: i.right, iB: i.bottom, lL: l.left, lT: l.top }; });
       ok(paso + ' ' + idioma + ' ' + ancho + ': ' + (ancho === 390 ? 'la explicación debajo de los campos' : 'dos columnas'), ancho === 390 ? g.lT >= g.iB : g.lL >= g.iR, JSON.stringify(g));
