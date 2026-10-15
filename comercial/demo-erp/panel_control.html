@@ -122,6 +122,12 @@ body.ax-app{background:var(--aw-chalk);color:var(--aw-night);font-family:var(--a
 .ax-techo{align-items:flex-end}
 .ax-campo{display:flex;flex-direction:column;gap:4px;flex:1 1 150px;min-width:0;font-size:13px;color:var(--aw-text3)}
 .ax-prop .ax-campo input,.ax-campo select{flex:none;width:100%;min-height:44px;padding:0 12px;border:1.5px solid var(--aw-control);border-radius:10px;font:500 15px var(--aw-f-sans);color:var(--aw-night);background:var(--aw-white)}
+.ax-campo input::placeholder{color:var(--aw-text3);opacity:1}
+.ax-campo input[aria-invalid="true"]{border-color:var(--aw-err)}
+.ax-aten{color:var(--aw-caution)}
+.ax-techo-estado span{display:block}
+/* a 390 la etiqueta va encima del valor: la columna de 120 px dejaba los campos en 171 px (Diseño, 16-oct) */
+@media (max-width:480px){.ax-kv{grid-template-columns:minmax(0,1fr);gap:2px 0}.ax-kv dd{margin-bottom:12px}}
 .ax-h3s{margin:0 0 12px;color:var(--aw-text3)}
 .ax-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
 .ax-modc{display:flex;flex-direction:column;gap:10px;padding:20px;min-height:168px;border-radius:var(--aw-r-tile);background:var(--aw-white);border:1px solid var(--aw-line)}
@@ -1139,47 +1145,57 @@ window.AXW_ASIS = (function () {
   function causaTope0(a) {
     if (typeof a.tope_vigente_cent === 'number' && a.tope_vigente_cent > 0) return null;
     var t = a.techos || {};
-    if (!a.techo_puesto || !(t.tope_mensual_cent > 0)) return { clave: 'sin_techo', txt: 'Tope vigente 0: falta el techo del estudio' + (a.techo_puesto ? ' (está a 0)' : '') +
-      '. El agente puede estar encendido pero no gasta nada, y el paso «Tope mensual» de su asistente no se completa. Lo pones aquí.' };
-    if (!(a.tope_ficha_cent > 0)) return { clave: 'sin_tope_dueno', txt: 'Tope vigente 0: el techo está puesto, pero el dueño aún no ha puesto su tope mensual. Lo pone él en su asistente, no el estudio' +
-      (a.hay_owner ? '.' : '; y este negocio aún no tiene dueño del agente.') };
-    return { clave: 'otro', txt: 'Tope vigente 0 con techo y tope puestos: la base no lo da por bueno. Recarga el estado.' };
+    if (!a.techo_puesto || !(t.tope_mensual_cent > 0)) return { clave: 'sin_techo', txt: 'Ahora el agente no puede gastar nada: falta el techo del estudio' + (a.techo_puesto ? ' (está a 0)' : '') +
+      '. Ponlo aquí abajo; sin él el dueño no puede completar el paso «Tope mensual» de su asistente.' };
+    if (!(a.tope_ficha_cent > 0)) return { clave: 'sin_tope_dueno', txt: 'Ahora el agente no puede gastar nada: el techo ya está puesto, pero el dueño no ha puesto su tope mensual. ' +
+      'Lo pone él en su asistente; el estudio no tiene que hacer nada.' + (a.hay_owner ? '' : ' Y este negocio aún no tiene dueño del agente.') };
+    return { clave: 'otro', txt: 'Algo no cuadra: con el techo y el tope puestos, ahora vale 0. Recarga; si sigue igual, es un fallo del estudio, no del dueño.' };
   }
   function techoHtml(i, e) {
     if (!Object.prototype.hasOwnProperty.call(e, 'aaas') || !e.aaas || typeof e.aaas !== 'object')
       return '<span class="ax-err-t" data-techo-estado="sin_dato">La base de esta instancia aún no tiene el techo del AaaS (le falta la actualización del estudio).</span>';
     var a = e.aaas, t = a.techos || {}, causa = causaTope0(a);
     var html = (a.techo_puesto
-      ? '<span data-techo-estado="puesto">Mensual ' + esc(eur(t.tope_mensual_cent)) + ' · por módulo ' + esc(eur(t.tope_modulo_cent)) + ' · nivel máximo del equipo ' + esc(String(t.equipo_nivel_max == null ? 0 : t.equipo_nivel_max)) + '</span>'
+      ? '<span class="ax-techo-estado" data-techo-estado="puesto"><span>Al mes: ' + esc(eur(t.tope_mensual_cent)) + '</span><span>Por módulo: ' + esc(eur(t.tope_modulo_cent)) +
+        '</span><span>Nivel máximo del equipo: ' + esc(String(t.equipo_nivel_max == null ? 0 : t.equipo_nivel_max)) + '</span></span>'
       : '<span class="ax-err-t" data-techo-estado="sin_techo">Sin techo.</span>') +
-      '<small>Tope del dueño: ' + esc(typeof a.tope_ficha_cent === 'number' ? eur(a.tope_ficha_cent) : 'sin poner') + ' · vigente: ' + esc(eur(a.tope_vigente_cent)) +
+      '<small>Tope del dueño: ' + esc(typeof a.tope_ficha_cent === 'number' ? eur(a.tope_ficha_cent) : 'sin poner') + ' · lo que vale ahora: ' + esc(eur(a.tope_vigente_cent)) +
       (typeof a.subida_pendiente_cent === 'number' ? ' · subida a ' + esc(eur(a.subida_pendiente_cent)) + ' pendiente (entra a las 24 h)' : '') + '.</small>' +
-      (causa ? '<small class="ax-err-t" data-techo-aviso="' + causa.clave + '">' + esc(causa.txt) + '</small>' : '');
+      (causa ? '<small class="' + (causa.clave === 'sin_tope_dueno' ? 'ax-aten' : 'ax-err-t') + '" data-techo-aviso="' + causa.clave + '">' + esc(causa.txt) + '</small>' : '');
     if (!i.editable) return html;
     var ph = function (c) { return typeof c === 'number' ? ' placeholder="ahora ' + esc(eur(c)) + '"' : ' placeholder="en euros"'; };
     return html + '<details class="ax-buzon" data-techo-form' + (causa && causa.clave === 'sin_techo' ? ' open' : '') + '><summary>' + (a.techo_puesto ? 'Cambiar el techo' : 'Poner el techo') + '</summary>' +
+      '<small>Rellena solo lo que quieras cambiar; lo que dejes en blanco se queda como está. Importes en euros: escribe 1500, no 1.500.</small>' +
       '<span class="ax-prop ax-techo">' +
       '<label class="ax-campo"><span>Tope mensual (€)</span><input id="techo-mensual" type="text" inputmode="decimal" autocomplete="off" maxlength="13"' + ph(t.tope_mensual_cent) + '></label>' +
       '<label class="ax-campo"><span>Tope por módulo (€)</span><input id="techo-modulo" type="text" inputmode="decimal" autocomplete="off" maxlength="13"' + ph(t.tope_modulo_cent) + '></label>' +
       '<label class="ax-campo"><span>Nivel máximo del equipo</span><select id="techo-nivel"><option value="">Sin cambiar</option>' +
       [0, 1, 2, 3].map(function (n) { return '<option value="' + n + '">' + n + (n === 0 ? ' · ningún agente decide solo' : n === 3 ? ' · el máximo' : '') + '</option>'; }).join('') + '</select></label>' +
       '<button type="button" class="ax-btn-dark" data-techo="pon">Poner techo</button></span>' +
-      '<small>Lo que dejes en blanco no cambia. Importes en euros, sin separador de miles (50 o 19,99).</small></details>';
+      '<small class="ax-err-t" role="alert" data-techo-error hidden></small></details>';
   }
   var ROTULO_TECHO = { tope_mensual_cent: 'Tope mensual', tope_modulo_cent: 'Tope por módulo', equipo_nivel_max: 'Nivel máximo del equipo' };
   function valorTecho(k, v) { return v == null ? 'sin poner' : k === 'equipo_nivel_max' ? String(v) : eur(v); }
+  // El fallo se queda junto al formulario (no en el aviso flotante, que se va a los 4 s y tapa los campos a 390) y lo escrito no se pierde
+  function techoError(txt, campo) {
+    var el = document.querySelector('#ficha [data-techo-error]');
+    if (el) { el.hidden = !txt; el.textContent = txt || ''; } else if (txt) toast(txt);
+    [].forEach.call(document.querySelectorAll('#ficha .ax-techo [aria-invalid]'), function (x) { x.removeAttribute('aria-invalid'); });
+    if (campo && $(campo)) { $(campo).setAttribute('aria-invalid', 'true'); $(campo).focus(); }
+  }
   function techo() {
     if (ocupado || !actual || !actual.editable || !actual.estado) return;
-    var inst = actual, techos = {}, mal = [];
+    var inst = actual, techos = {}, mal = [], primero = null;
     [['tope_mensual_cent', 'techo-mensual', 'el tope mensual'], ['tope_modulo_cent', 'techo-modulo', 'el tope por módulo']].forEach(function (c) {
       var v = centimos(($(c[1]) || {}).value);
       if (v === null) return;
-      if (isNaN(v)) mal.push(c[2]); else techos[c[0]] = v;
+      if (isNaN(v)) { mal.push(c[2]); primero = primero || c[1]; } else techos[c[0]] = v;
     });
     var nv = ($('techo-nivel') || {}).value;
     if (nv) techos.equipo_nivel_max = Number(nv);
-    if (mal.length) { toast('Escribe ' + listaY(mal) + ' en euros, sin separador de miles (50 o 19,99).'); return; }
-    if (!Object.keys(techos).length) { toast('Escribe al menos un techo: lo que dejes en blanco no cambia.'); return; }
+    if (mal.length) { techoError('Escribe ' + listaY(mal) + ' en euros: 1500, no 1.500 (con céntimos, 19,99).', primero); return; }
+    if (!Object.keys(techos).length) { techoError('Rellena al menos un campo: lo que dejes en blanco se queda como está.', 'techo-mensual'); return; }
+    techoError('');
     ocupado = true;
     // lo de ahora, leído de la base en este momento (no lo que se cargó al abrir el panel); si no responde, lo del último estado
     pide({ accion: 'techo_aaas_estado', instancia: inst.nombre }).then(function (d) {
@@ -1199,6 +1215,8 @@ window.AXW_ASIS = (function () {
           toast(d.techo && d.techo.cambia === false ? 'Sin cambios: el techo ya era ese.' : 'Techo puesto en ' + inst.marca + '.');
           return carga(true);
         }
+        // rechazado (400/409 con su mensaje): no se guardó nada; se dice junto al formulario y lo escrito se queda para corregirlo
+        if ((d.__estado === 400 || d.__estado === 409) && d.mensaje && actual === inst) { techoError(d.mensaje); return; }
         toast(d.mensaje || 'Respuesta inesperada (' + d.__estado + '). Recargo el estado para ver qué quedó.');
         return carga(true);
       });
@@ -1682,6 +1700,7 @@ window.AXW_ASIS = (function () {
     else if (!t.disabled) alterna(t.getAttribute('data-mod'));
   });
   $('sel-instancia').addEventListener('change', function () { elige(this.value); });
+  document.addEventListener('input', function (ev) { if (ev.target && ev.target.closest && ev.target.closest('#ficha .ax-techo')) ev.target.removeAttribute('aria-invalid'); });
   $('asis-form').addEventListener('submit', function (ev) { ev.preventDefault(); });   // Enter dispara el clic del botón de enviar (data-accion), no el submit
   // un solo oyente de entrada para todo el asistente: texto, selects, radios y casillas; el campo lo dice data-campo / data-opc
   document.addEventListener('input', function (ev) {

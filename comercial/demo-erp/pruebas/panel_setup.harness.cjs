@@ -274,7 +274,7 @@ const ajena = [], marcaGoogle = [];
     form: !!document.querySelector('#ficha [data-techo="pon"]') }));
   const t0 = await techoVe();
   ok('techo: sin techo lo dice, con el aviso de tope 0 que arregla el estudio, y el formulario abierto', t0.estado === 'sin_techo' && t0.aviso === 'sin_techo' &&
-    /no gasta nada/.test(t0.avisoTxt) && /Lo pones aquí/.test(t0.avisoTxt) && t0.abierto, JSON.stringify(t0));
+    /no puede gastar nada/.test(t0.avisoTxt) && /Ponlo aquí abajo/.test(t0.avisoTxt) && t0.abierto, JSON.stringify(t0));
   const nTecho = () => llamadas.filter(c => /^techo_aaas_/.test(c.accion)).length;
   let n0 = nTecho();
   await p.click('[data-techo="pon"]');
@@ -283,7 +283,8 @@ const ajena = [], marcaGoogle = [];
   await p.fill('#techo-mensual', '1.000');
   await p.click('[data-techo="pon"]');
   await p.waitForTimeout(300);
-  ok('techo: «1.000» (separador de miles) no se manda', nTecho() === n0 && /sin separador de miles/.test(await p.evaluate(() => document.getElementById('toast').textContent)));
+  { const e1 = await p.evaluate(() => { const e = document.querySelector('#ficha [data-techo-error]'); return { txt: e && !e.hidden ? e.textContent : '', inv: document.getElementById('techo-mensual').getAttribute('aria-invalid') }; });
+    ok('techo: «1.000» no se manda; el error se queda junto al formulario y marca el campo', nTecho() === n0 && /1500, no 1\.500/.test(e1.txt) && e1.inv === 'true', JSON.stringify(e1)); }
   await p.fill('#techo-mensual', '19,99');
   await p.selectOption('#techo-nivel', '2');
   await p.click('[data-techo="pon"]');
@@ -308,16 +309,18 @@ const ajena = [], marcaGoogle = [];
   const t1 = await techoVe();
   ok('techo: puesto, el aviso pasa al dueño (su tope en su asistente, no el estudio)', t1.estado === 'puesto' && t1.aviso === 'sin_tope_dueno' &&
     /Lo pone él/.test(t1.avisoTxt) && !t1.abierto, JSON.stringify(t1));
-  ok('techo: la ficha enseña lo que guardó la base', /Mensual 19,99 € · por módulo 0 € · nivel máximo del equipo 2/.test(await p.evaluate(() => document.querySelector('[data-techo-estado]').textContent)));
+  ok('techo: la ficha enseña lo que guardó la base', /Al mes: 19,99 €Por módulo: 0 €Nivel máximo del equipo: 2/.test(await p.evaluate(() => document.querySelector('#ficha [data-techo-estado]').textContent)));
+  ok('techo: el aviso que es del dueño no se pinta como error del estudio', await p.evaluate(() => document.querySelector('#ficha [data-techo-aviso]').classList.contains('ax-aten')));
   await p.click('#ficha details[data-techo-form] summary');
   await p.fill('#techo-modulo', '2000000');
   await p.click('[data-techo="pon"]');
   await p.waitForSelector('#dlg[open]');
   await p.click('#dlg-ok');
   await p.waitForTimeout(800);
-  ok('techo: lo que rechaza la base sale con su mensaje (cordura) y no cambia nada',
-    (await p.evaluate(() => document.getElementById('toast').textContent)) === CORDURA_MSG && AAAS.techos.tope_modulo_cent === 0);
-  await p.click('#ficha details[data-techo-form] summary');
+  { const e2 = await p.evaluate(() => { const e = document.querySelector('#ficha [data-techo-error]'); return { txt: e && !e.hidden ? e.textContent : '', valor: (document.getElementById('techo-modulo') || {}).value }; });
+    ok('techo: lo que rechaza la base sale con su mensaje junto al formulario, sin perder lo escrito ni cambiar nada',
+      e2.txt === CORDURA_MSG && e2.valor === '2000000' && AAAS.techos.tope_modulo_cent === 0, JSON.stringify(e2)); }
+  await p.fill('#techo-modulo', '');
   await p.fill('#techo-mensual', '0');
   await p.click('[data-techo="pon"]');
   await p.waitForSelector('#dlg[open]');
