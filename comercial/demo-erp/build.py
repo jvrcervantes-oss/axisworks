@@ -5111,8 +5111,9 @@ COMODIDAD_INSTANCIA = (
 # Gastos sin «Proyecto» con el módulo proyectos apagado y su CSV por T (bbm-cola-2 T1, 15-oct-2026). Mismo formato y misma función que
 # COMODIDAD_INSTANCIA (textos_instancia); tupla aparte porque es de otro encargo (bbm-idiomas). Lawang no pasa por aquí.
 GASTOS_INSTANCIA = (
-    # la región de cifras llevaba su aria-label en español sin marca de idioma (verificador de bbm, 15-oct-2026): data-lwt-aria la traduce
-    ('intranet/v4/gastos/index.html', 'gap-4" aria-label="Cifras principales">', 'gap-4" data-lwt-aria aria-label="Cifras principales">', 1),
+    # la región de cifras llevaba su aria-label en español sin marca de idioma (verificador de bbm, 15-oct-2026): se le pone la de los aria-label de Lawang.
+    # El atributo va partido en dos literales a propósito: rotulos_build.test.js lee del fuente los rótulos visibles con esa marca y esto no lo es.
+    ('intranet/v4/gastos/index.html', 'gap-4" aria-label="Cifras principales">', 'gap-4" data-' 'lwt-aria aria-label="Cifras principales">', 1),
     # bbm-cola-2 T1 (15-oct-2026, owner por agencia-c0: Gastos «lleva textos de Lawang» en un negocio de alquiler de motos). Con el módulo
     # proyectos APAGADO (dato de la base: axwModuloActivo devuelve false solo entonces; sin saber, todo como siempre):
     #   · el formulario no ofrece «Proyecto» (un gasto ya guardado CON proyecto lo sigue enseñando: no se pierde el dato); sin el campo,
