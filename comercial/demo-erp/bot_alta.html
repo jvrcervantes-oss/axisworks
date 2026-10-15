@@ -42,6 +42,8 @@
 .ba-boton:disabled{opacity:.5;cursor:not-allowed}
 .ba-texto{max-height:420px;overflow:auto;padding:16px 18px;border:1px solid #c5c8bc;border-radius:10px;background:#faf9f5;font-size:14px;line-height:1.55}
 .ba-texto p{margin:0 0 10px}
+.ba-texto details{margin:0 0 8px;border-top:1px solid #e4e2dd;padding-top:8px}
+.ba-texto summary{cursor:pointer;font-weight:600;margin:0 0 8px}
 .ba-huella{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#75786e;word-break:break-all}
 .ba-casilla{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45}
 .ba-casilla input{margin-top:3px;width:18px;height:18px;flex:none}
@@ -100,7 +102,7 @@
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4" data-ba="seccion-terminos">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>2 · Condiciones del servicio</h2>
 <p class="ba-vacio ba-oculto" data-ba="terminos-bloqueado"></p>
-<div class="ba-texto" data-ba="texto" tabindex="0" role="document" aria-label="Condiciones del servicio" lang="es"></div>
+<div class="ba-texto" data-ba="texto" tabindex="0" role="document" aria-label="Condiciones del servicio" data-lwt-aria="Condiciones del servicio"></div>
 <p class="ba-huella" data-ba="huella"></p>
 <label class="ba-casilla"><input type="checkbox" data-campo="acepto"><span data-ba="rotulo-acepto"></span></label>
 <div class="flex flex-wrap items-center justify-between gap-3">
@@ -135,12 +137,60 @@
     'Aceptaciones registradas': 'Recorded acceptances',
     'Los datos del negocio': 'Your business details', 'Aceptar las condiciones (versión vigente)': 'Accept the terms (current version)', 'Contrato marco firmado (lo confirma el estudio)': 'Signed framework agreement (confirmed by the studio)',
     'Todo listo: el estudio ya puede encender tu bot.': 'All set: the studio can now switch your bot on.', 'Falta algo': 'Something is missing',
-    'El texto legal se muestra en español, que es la versión que aceptas.': 'The legal text is shown in Spanish, which is the version you accept.',
     'Todavía no hay aceptaciones.': 'There are no acceptances yet.', 'Datos guardados.': 'Details saved.', 'Condiciones aceptadas.': 'Terms accepted.',
-    'Huella del texto que se te muestra (SHA-256):': 'Fingerprint of the text shown to you (SHA-256):'
+    'Huella del texto que se te muestra (SHA-256):': 'Fingerprint of the text shown to you (SHA-256):',
+    /* 15-oct-2026 (legal-bot-bbm): lo que faltaba en inglés. El rótulo de la casilla es el que cita la cláusula 16 de las Condiciones v3 en cada lengua. */
+    'He leído y acepto las condiciones del servicio de bots de WhatsApp, versión': 'I have read and accept the WhatsApp bot service terms, version',
+    'Condiciones del servicio': 'Service terms', 'Aceptadas por': 'Accepted by', 'Firmado': 'Signed', 'confirmado por': 'confirmed by',
+    'Completa y guarda los datos del negocio (arriba): las condiciones llevan tu razón social y tu nombre y hasta entonces no se pueden mostrar.': 'Complete and save the business details (above): the terms include your company name and your name, and until then they cannot be shown.',
+    'Cuando todo esté completo, el estudio enciende el bot desde su panel.': 'When everything is complete, the studio switches the bot on from its panel.',
+    'Cuenta en una frase qué has cambiado: queda en el registro.': 'Say in one sentence what you changed: it is kept in the log.',
+    'El texto que se muestra no coincide con su huella: recarga la página. No se puede aceptar.': 'The text shown does not match its fingerprint: reload the page. It cannot be accepted.',
+    'Falta publicar las condiciones: avisa al estudio.': 'The terms have not been published yet: let the studio know.',
+    'Has cambiado la razón social: las condiciones que ya habías aceptado dejan de valer y hay que aceptarlas otra vez antes de volver a encender el bot.': 'You changed the company name: the terms you had accepted no longer apply and must be accepted again before the bot can be switched on again.',
+    'La base no ha respondido: prueba otra vez en un rato.': 'The database did not respond: try again in a while.',
+    'No tienes permiso: esta pantalla es solo para el administrador de tu instancia.': 'You do not have permission: this screen is only for the administrator of your instance.',
+    'Pendiente: lo firma el cliente con el estudio y el estudio lo marca aquí cuando lo recibe. Sin él el bot no se enciende.': 'Pending: the client signs it with the studio, and the studio marks it here when it receives it. Without it the bot cannot be switched on.',
+    'Sin sesión: recarga la página o vuelve a entrar.': 'No session: reload the page or sign in again.',
+    'Todavía no hay condiciones publicadas: avisa al estudio.': 'No terms have been published yet: let the studio know.'
+  };
+  /* Indonesio (instancias con "idiomas": ["id", "en"], hoy bbm). Misma clave en español; se fusiona en window.LW_ID solo si existe (15-oct-2026,
+     legal-bot-bbm: antes la pantalla entera caía al inglés o al español). Traducción de modelo revisada por Idiomas, sin posedición humana. */
+  var ID_BA = {
+    'Bot de WhatsApp · alta y condiciones': 'Bot WhatsApp · pendaftaran dan ketentuan',
+    'Antes de encender tu bot hace falta que completes los datos de tu negocio, aceptes las condiciones del servicio y que el estudio confirme el contrato marco firmado. Aquí ves qué falta y lo haces.': 'Sebelum bot Anda dapat dinyalakan, Anda perlu melengkapi data usaha Anda, menerima ketentuan layanan, dan studio harus mengonfirmasi perjanjian induk yang sudah ditandatangani. Di sini Anda melihat apa yang masih kurang dan melengkapinya.',
+    'Qué falta para encender el bot': 'Yang masih kurang untuk menyalakan bot',
+    '1 · Datos de tu negocio para las condiciones': '1 · Data usaha Anda untuk ketentuan',
+    'Estos datos aparecen en las condiciones y en el aviso de privacidad que ven las personas que escriben a tu bot. Escríbelos tal cual los quieres ahí: tú respondes de que sean ciertos.': 'Data ini muncul di ketentuan dan di pemberitahuan privasi yang dilihat orang yang menulis ke bot Anda. Tulis persis seperti yang Anda inginkan di sana: Anda bertanggung jawab atas kebenarannya.',
+    'Razón social (nombre legal de la empresa)': 'Nama badan usaha (nama resmi perusahaan)', 'Nombre del negocio (cómo te conocen)': 'Nama usaha (nama yang dikenal orang)',
+    'Domicilio de la empresa': 'Alamat perusahaan', 'Contacto de privacidad (un correo o un teléfono)': 'Kontak privasi (email atau nomor telepon)',
+    'Cuánto tiempo guardas las conversaciones': 'Berapa lama Anda menyimpan percakapan', 'Por ejemplo: «24 meses desde el último mensaje»': 'Contoh: «24 bulan sejak pesan terakhir»',
+    '¿Qué has cambiado? (queda en el registro)': 'Apa yang Anda ubah? (tercatat di log)', 'Descartar los cambios': 'Buang perubahan', 'Guardar los datos': 'Simpan data',
+    '2 · Condiciones del servicio': '2 · Ketentuan layanan', 'Aceptar las condiciones': 'Terima ketentuan', '3 · Contrato marco': '3 · Perjanjian induk',
+    'Aceptaciones registradas': 'Penerimaan yang tercatat',
+    'Los datos del negocio': 'Data usaha', 'Aceptar las condiciones (versión vigente)': 'Menerima ketentuan (versi yang berlaku)', 'Contrato marco firmado (lo confirma el estudio)': 'Perjanjian induk yang ditandatangani (dikonfirmasi oleh studio)',
+    'Todo listo: el estudio ya puede encender tu bot.': 'Semua siap: studio sekarang dapat menyalakan bot Anda.', 'Falta algo': 'Masih ada yang kurang',
+    'Todavía no hay aceptaciones.': 'Belum ada penerimaan.', 'Datos guardados.': 'Data tersimpan.', 'Condiciones aceptadas.': 'Ketentuan diterima.',
+    'Huella del texto que se te muestra (SHA-256):': 'Sidik jari teks yang ditampilkan kepada Anda (SHA-256):',
+    'He leído y acepto las condiciones del servicio de bots de WhatsApp, versión': 'Saya telah membaca dan menerima ketentuan layanan bot WhatsApp, versi',
+    'Condiciones del servicio': 'Ketentuan layanan', 'Aceptadas por': 'Diterima oleh', 'Firmado': 'Ditandatangani', 'confirmado por': 'dikonfirmasi oleh',
+    'Completa y guarda los datos del negocio (arriba): las condiciones llevan tu razón social y tu nombre y hasta entonces no se pueden mostrar.': 'Lengkapi dan simpan data usaha (di atas): ketentuan memuat nama badan usaha dan nama Anda, dan sampai saat itu belum dapat ditampilkan.',
+    'Cuando todo esté completo, el estudio enciende el bot desde su panel.': 'Setelah semuanya lengkap, studio menyalakan bot dari panelnya.',
+    'Cuenta en una frase qué has cambiado: queda en el registro.': 'Jelaskan dalam satu kalimat apa yang Anda ubah: akan tercatat di log.',
+    'El texto que se muestra no coincide con su huella: recarga la página. No se puede aceptar.': 'Teks yang ditampilkan tidak sesuai dengan sidik jarinya: muat ulang halaman. Ketentuan tidak dapat diterima.',
+    'Falta publicar las condiciones: avisa al estudio.': 'Ketentuan belum diterbitkan: beri tahu studio.',
+    'Has cambiado la razón social: las condiciones que ya habías aceptado dejan de valer y hay que aceptarlas otra vez antes de volver a encender el bot.': 'Anda mengubah nama badan usaha: ketentuan yang sudah Anda terima tidak berlaku lagi dan harus diterima kembali sebelum bot dapat dinyalakan lagi.',
+    'La base no ha respondido: prueba otra vez en un rato.': 'Database tidak merespons: coba lagi sebentar lagi.',
+    'No tienes permiso: esta pantalla es solo para el administrador de tu instancia.': 'Anda tidak memiliki izin: layar ini hanya untuk administrator instansi Anda.',
+    'Pendiente: lo firma el cliente con el estudio y el estudio lo marca aquí cuando lo recibe. Sin él el bot no se enciende.': 'Tertunda: klien menandatanganinya dengan studio, dan studio menandainya di sini setelah menerimanya. Tanpa itu bot tidak dapat dinyalakan.',
+    'Sin sesión: recarga la página o vuelve a entrar.': 'Sesi habis: muat ulang halaman atau masuk lagi.',
+    'Todavía no hay condiciones publicadas: avisa al estudio.': 'Belum ada ketentuan yang diterbitkan: beri tahu studio.'
   };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
     Object.keys(EN_BA).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_BA[k]; });
+  }
+  if (window.LW_ID && typeof window.LW_ID === 'object') {
+    Object.keys(ID_BA).forEach(function (k) { if (!(k in window.LW_ID)) window.LW_ID[k] = ID_BA[k]; });
   }
   var T = typeof window.lwT === 'function' ? window.lwT : function (s) { return String(s); };
   var traduce = function (raiz) { if (typeof window.lwIdiomaAplicar === 'function') { try { window.lwIdiomaAplicar(raiz); } catch (e) { /* MUDO A PROPOSITO: traducir no tumba la pantalla; queda en español */ } } };
@@ -171,9 +221,27 @@
     });
   }
 
-  /* El texto legal lleva **negrita** de markdown y párrafos separados por línea en blanco: se pinta con nodos de texto (nada de HTML). */
+  /* Desde la v3 (BOT-2026-10-15-v3) el texto lleva las tres lenguas en UN texto con UNA huella, separadas por las líneas `[[id]]`, `[[en]]`, `[[es]]`
+     (marcas estables: nada se engancha al texto de un encabezado). Se abre la sección del idioma de quien lee y las otras quedan plegadas, cada una con
+     su `lang`; lo que se acepta y se comprueba es el texto entero. Sin marcas (la v1, solo en español) se pinta como antes. */
+  var NOMBRE_IDIOMA = { id: 'Bahasa Indonesia', en: 'English', es: 'Español' };
   function pintaTexto(cont, t) {
     limpia(cont);
+    var trozos = String(t).split(/\n\[\[(id|en|es)\]\]\n/);
+    if (trozos.length < 3) { cont.setAttribute('lang', 'es'); pintaParrafos(cont, t); return; }
+    cont.removeAttribute('lang');
+    pintaParrafos(cont, trozos[0]);
+    var secc = [], mio = window.LW_IDIOMA;
+    for (var i = 1; i + 1 < trozos.length; i += 2) secc.push({ l: trozos[i], t: trozos[i + 1].replace(/^\s+|\s+$/g, '') });
+    secc = secc.filter(function (s) { return s.l === mio; }).concat(secc.filter(function (s) { return s.l !== mio; }));
+    secc.forEach(function (s, n) {
+      var d = document.createElement('details'); d.setAttribute('lang', s.l); d.setAttribute('data-idioma', s.l); d.open = n === 0;
+      var su = document.createElement('summary'); su.setAttribute('translate', 'no'); su.textContent = NOMBRE_IDIOMA[s.l] || s.l;
+      d.appendChild(su); pintaParrafos(d, s.t); cont.appendChild(d);
+    });
+  }
+  /* El texto legal lleva **negrita** de markdown y párrafos separados por línea en blanco: se pinta con nodos de texto (nada de HTML). */
+  function pintaParrafos(cont, t) {
     String(t).split(/\n{2,}/).forEach(function (par) {
       var p = document.createElement('p');
       par.split('**').forEach(function (trozo, i) {

@@ -28,7 +28,8 @@
  "excepciones": {
   "Carta de Reserva": "documento de Lawang (inmobiliaria): «Surat Booking» se mantiene",
   "Facturas sin emitir": "rótulo de Lawang ya revisado en la fase A",
-  "Reserva devuelta.": "aviso de Reservas de producto: lo que se le dice al operario es que la moto ha vuelto («Motor sudah kembali»), no el nombre del documento"
+  "Reserva devuelta.": "aviso de Reservas de producto: lo que se le dice al operario es que la moto ha vuelto («Motor sudah kembali»), no el nombre del documento",
+  "Pendiente: lo firma el cliente con el estudio y el estudio lo marca aquí cuando lo recibe. Sin él el bot no se enciende.": "alta del bot de WhatsApp (15-oct-2026): «el cliente» es el negocio que contrata al estudio («Klien», como en las Condiciones BOT-2026-10-15-v3), no su cliente final («pelanggan»)"
  },
  "_distinguir": "Pares que en una misma pantalla tienen que llevar traducciones DISTINTAS (revisor, 12-oct: «Cantidad» e «Importe» salían las dos «Jumlah» en la factura). Lo comprueba test_idiomas_instancia.py.",
  "distinguir": [
