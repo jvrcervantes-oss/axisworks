@@ -339,6 +339,13 @@ const C = '[data-axw-cobros-caja]';
   ok('/ajustes/ sin #cobros: la edge no se llama al cargar', b.edge.length === 0);
   await p.click('[data-pm-fila="cobros"] [data-accion="pm-editar"]'); await p.waitForTimeout(300);
   ok('Configurar módulos: el paso cobros pinta los mismos campos secretos', (await p.$$('[data-pm-fila="cobros"] input[type="password"]')).length === 3);
+  // S10: en ventana; cerrar con algo escrito avisa una vez y la segunda descarta, y las claves salen del DOM (no se quedan escondidas)
+  ok('S10: las claves se piden en una ventana modal', await p.$eval('[data-pm-fila="cobros"] input[type="password"]', e => !!e.closest('dialog[open]')));
+  await p.fill('[data-pm-fila="cobros"] input[type="password"]', 'xnd_development_prueba');
+  await p.keyboard.press('Escape'); await p.waitForTimeout(100);
+  ok('S10: Esc con algo escrito no lo tira sin avisar', !!(await p.$('dialog[data-pm-ventana="cobros"][open]')) && /sin guardar/.test((await p.$eval('[data-pm-estado="cobros"]', e => e.textContent)) || ''));
+  await p.keyboard.press('Escape'); await p.waitForTimeout(100);
+  ok('S10: el 2.º Esc descarta y no queda ninguna clave en la página', (await p.$$('input[type="password"]')).length === 0 && !(await p.$('dialog[data-pm-ventana]')));
   await ctx.close();
 
   // 11. El asistente: paso opcional «cobros» de reservas-producto, de punta a punta, con el botón del asistente
@@ -411,9 +418,11 @@ const C = '[data-axw-cobros-caja]';
   await p.fill('#lw-aj-cobros [data-axw-campo="creacion"]', CANARIO_C); await p.fill('#lw-aj-cobros [data-axw-campo="lectura"]', CANARIO_L); await p.fill('#lw-aj-cobros [data-axw-campo="aviso"]', CANARIO_A);
   await p.click('#lw-aj-cobros [data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
   await p.click('[data-pm-fila="cobros"] [data-accion="pm-editar"]'); await p.waitForTimeout(400);
+  // S10: la caja de Configurar módulos va en una ventana modal que deja el resto inerte: una persona la cierra antes de volver a la pestaña
+  await p.keyboard.press('Escape'); await p.waitForTimeout(100);
   await p.fill('#lw-aj-cobros [data-axw-campo="codigo"]', '123456'); await p.fill('#lw-aj-cobros [data-axw-campo="contrasena"]', 'buena');
   await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(600);
-  const u14 = b.edge.filter(x => x.accion === 'probar_y_guardar')[0];
+  const u14 =b.edge.filter(x => x.accion === 'probar_y_guardar')[0];
   ok('dos cajas: se guarda con el código de la pestaña', !!u14 && u14.codigo === '123456' && b.est.configurado, JSON.stringify(u14 && { codigo: u14.codigo }));
   await ctx.close();
 
