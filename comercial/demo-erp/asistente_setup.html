@@ -208,12 +208,17 @@ document.addEventListener('DOMContentLoaded', function () {
     $('salir').style.display = 'none';
     $('tarjeta').style.maxWidth = 'none';
   }
-  // Los pasos de este módulo en el orden de la base: delante, los obligatorios pendientes de «base» (la moneda); después, los del módulo
+  // Los pasos de este módulo en el orden de la base: delante, los obligatorios pendientes de «base» (la moneda); después, los del módulo.
+  // Auditoría del setup de bbm (15-oct-2026, «orden de los pasos de Alquileres»): un opcional que la base pone DELANTE del primer obligatorio entra en
+  // el recorrido numerado (Alquileres: «¿Qué alquilas primero?» antes de Flota). Antes salía sin número y el asistente lo saltaba. El progreso
+  // «n de t pasos hechos» sigue contando solo los obligatorios: es lo que deja el módulo listo (decisión por defecto, en el encargo).
   function lista(datos, m) {
     var pre = m === 'base' ? [] : datos.pasos.filter(function (p) { return p.modulo === 'base' && p.obligatorio && !p.hecho; });
     var mios = datos.pasos.filter(function (p) { return p.modulo === m; });
-    var ob = pre.concat(mios.filter(function (p) { return p.obligatorio; }));
-    return { obligatorios: ob, opcionales: mios.filter(function (p) { return !p.obligatorio; }) };
+    var k = -1;
+    mios.some(function (p, i) { if (p.obligatorio) { k = i; return true; } return false; });
+    var guia = mios.filter(function (p, i) { return p.obligatorio || (k > 0 && i < k); });
+    return { obligatorios: pre.concat(guia), opcionales: mios.filter(function (p) { return guia.indexOf(p) < 0; }) };
   }
   function lee() {
     cargando();

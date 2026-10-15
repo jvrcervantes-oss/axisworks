@@ -1278,7 +1278,7 @@
   // M4 de la auditoría del setup de bbm (15-oct-2026): Noelia y Dion piensan en un sitio, no en números. Un enlace de Google Maps lleva el punto
   // dentro: se saca de ahí y sigue el camino de siempre (lo que se guarda son lat y lng, y la base los revalida). '' = es un enlace pero no trae el
   // punto (los cortos de «Compartir», maps.app.goo.gl: abrirlos para ver adónde llevan exigiría pedírselo a Google desde el servidor).
-  // Copia idéntica en entrega.html y setup_reservas.js (test_m4_enlace_mapa.js).
+  // Copia idéntica en entrega.html y setup_reservas.js (enlace_mapa.test.js).
   function coordDeEnlace(t) {
     t = String(t || '').trim();
     if (!/^(https?:\/\/)?([a-z0-9-]+\.)*(google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|goo\.gl\/maps|maps\.app\.goo\.gl)/i.test(t)) return null;

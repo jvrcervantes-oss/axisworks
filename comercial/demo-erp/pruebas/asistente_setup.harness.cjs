@@ -471,6 +471,25 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     }
   }
 
+  // Orden de los pasos de Alquileres (auditoría del setup de bbm, 15-oct-2026): la base pone «¿Qué alquilas primero?» (opcional) delante de Flota; el
+  // asistente lo numera como paso 1 y lo recorre, en vez de saltarlo. El progreso sigue contando solo los obligatorios.
+  {
+    const bo = base('sin_configurar');
+    const resto = bo.d.pasos.filter(x => x.modulo !== 'reservas-producto');
+    const P = (clave, obligatorio, donde) => ({ modulo: 'reservas-producto', clave, obligatorio, irreversible: false, hecho: false, donde, falta: { codigo: 'falta_dato', campos: [] } });
+    bo.d.pasos = resto.concat([P('clase', false, '/flota/'), P('flota', true, '/flota/'), P('impuesto_pkp', true, '/ajustes/'), P('precio_con_impuesto', true, '/ajustes/'), P('entrega', false, '/entrega/')]);
+    ({ p, ctx } = await abre(nav, bo, { url: '/ajustes/configurar/?modulo=reservas-producto' }));
+    await p.waitForSelector('[data-axw-paso]', { timeout: 8000 }).catch(() => {});
+    ok('orden: abre en «clase», numerado «Reservas de producto · Paso 1 de 4»', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'clase'
+       && (await txt(p, '[data-axw-as="meta"]')) === 'Reservas de producto · Paso 1 de 4', await txt(p, '[data-axw-as="meta"]'));
+    await ctx.close();
+    ({ p, ctx } = await abre(nav, bo, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=flota' }));
+    await p.waitForSelector('[data-axw-paso]', { timeout: 8000 }).catch(() => {});
+    ok('orden: Flota es el paso 2 de 4 y tiene «Atrás»', (await txt(p, '[data-axw-as="meta"]')) === 'Reservas de producto · Paso 2 de 4' && await p.isVisible('[data-axw-accion="atras"]'), await txt(p, '[data-axw-as="meta"]'));
+    ok('orden: el progreso cuenta solo los obligatorios (0 de 3 de este módulo en su carril)', /0\/3/.test(await txt(p, '[data-axw-as="carril"]') || ''), await txt(p, '[data-axw-as="carril"]'));
+    await ctx.close();
+  }
+
   // 10. «Quién lo usa» en el propio paso (S14, bbm-p41): el equipo con UNA casilla (la herramienta de este módulo), sin la cuenta de pruebas,
   //     el administrador principal sin casilla; al guardar se relee y se manda el array ENTERO de esa persona con solo esta herramienta cambiada.
   {

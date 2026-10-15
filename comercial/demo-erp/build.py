@@ -2394,9 +2394,6 @@ MENU_I18N = {
     'Ej. Reserva R-0012 — Honda PCX': {'en': 'e.g. Booking R-0012 — Honda PCX', 'id': 'Contoh: Booking R-0012 — Honda PCX'},
     'Ej. Reserva R-0012': {'en': 'e.g. Booking R-0012', 'id': 'Contoh: Booking R-0012'},
     'Buscar por número, cliente o reserva…': {'en': 'Search by number, client or booking…', 'id': 'Cari nomor, pelanggan, atau booking…'},
-    'Lo que el sistema aplica solo y no hace falta tocar en el código: el nombre y la zona horaria de la instalación, el correo y el modo mantenimiento. Cambiarlos aquí vale desde ese momento, y cada cambio queda en el registro.': {
-        'en': 'What the system applies by itself, with no need to touch the code: the installation name and time zone, email and maintenance mode. Changes made here apply from that moment, and every change is logged.',
-        'id': 'Yang diterapkan sistem secara otomatis, tanpa perlu mengubah kode: nama dan zona waktu instalasi, email, dan mode pemeliharaan. Perubahan di sini langsung berlaku, dan setiap perubahan tercatat.'},
     # M7 (bbm-comodidad, 15-oct-2026): Ajustes sin jerga (ver TEXTOS_INSTANCIA y TEXTOS_ALQUILER)
     'Aquí se cambian el nombre y la zona horaria del negocio, el correo y el modo mantenimiento. Cada cambio vale desde ese momento y queda en el registro.': {
         'en': 'Here you change the business name and time zone, email and maintenance mode. Each change applies from that moment and is logged.',
@@ -2498,12 +2495,6 @@ MENU_I18N = {
     'Preselección según el rol elegido arriba — editable. Solo aparecen las herramientas que tienes tú.': {
         'en': 'Preselected from the role chosen above — editable. Only the tools you have yourself appear.',
         'id': 'Dipilih otomatis sesuai peran di atas — bisa diubah. Hanya alat yang Anda miliki yang muncul.'},
-    'En pausa no sale ningún email: ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.': {
-        'en': 'While paused no email goes out: no invitations, no alerts, no announcements. The server blocks it, not this screen. Whatever is queued in Communication waits and goes out by itself on resume. Pause and resume: any admin.',
-        'id': 'Saat dijeda, tidak ada email yang terkirim: tidak ada undangan, peringatan, maupun pengumuman. Server yang memblokirnya, bukan layar ini. Yang masuk antrean di Komunikasi akan menunggu dan terkirim otomatis saat dilanjutkan. Menjeda dan melanjutkan: admin mana pun.'},
-    'Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. Cerrar y reabrir: cualquier admin.': {
-        'en': 'When closed, only admins get in: the rest of the team sees a maintenance screen with the reason, and anyone inside gets a warning and is signed out after 3 minutes. It is a screen gate: it does not change database permissions. Closing and reopening: any admin.',
-        'id': 'Saat ditutup, hanya admin yang bisa masuk: anggota tim lain melihat layar pemeliharaan beserta alasannya, dan siapa pun yang sedang berada di dalam menerima peringatan lalu dikeluarkan setelah 3 menit. Ini hanya pintu di layar: izin basis data tidak berubah. Menutup dan membuka kembali: admin mana pun.'},
 }
 
 

@@ -1,6 +1,6 @@
 // M4 de la auditoría del setup de bbm (15-oct-2026): la ubicación de la tienda acepta un enlace de Google Maps además de «lat, lng».
 // coordDeEnlace vive copiada en entrega.html y setup_reservas.js (cada pantalla es independiente): aquí se comprueba que las dos copias son
-// idénticas y qué saca de cada forma de enlace. Sin navegador: node test_m4_enlace_mapa.js
+// idénticas y qué saca de cada forma de enlace. Sin navegador: node enlace_mapa.test.js
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -50,5 +50,5 @@ ok('asistente: parseCoord mira el enlace primero', /var en = coordDeEnlace\(t\);
 ok('asistente: el campo admite un enlace largo (max 2000)', s.includes("campo(r1, 'sede_coord', U('sr_sede_coord'),") && s.includes("{ max: 2000, soloLee: c.activa"));
 ok('entrega: el campo ya no abre el teclado de números (un enlace lleva letras)', !/data-campo="sede_coord" inputmode="decimal"/.test(e));
 
-if (fallos.length) { console.log('MAL test_m4_enlace_mapa: ' + (total - fallos.length) + '/' + total); fallos.forEach(f => console.log('  FALLA: ' + f)); process.exit(1); }
-console.log('OK test_m4_enlace_mapa: ' + total + '/' + total);
+if (fallos.length) { console.log('MAL enlace_mapa.test.js: ' + (total - fallos.length) + '/' + total); fallos.forEach(f => console.log('  FALLA: ' + f)); process.exit(1); }
+console.log('OK enlace_mapa.test.js: ' + total + '/' + total);
