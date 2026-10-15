@@ -153,7 +153,7 @@
     'El módulo de reservas está apagado en esta instancia: no hay taller que mirar. Esto NO quiere decir que no haya nada.': 'The bookings module is off in this instance: there is no workshop to check. This does NOT mean there is nothing.',
     'El taller aún no está listo': 'The workshop is not ready yet', 'Falta:': 'Missing:', 'Avisa a la administración.': 'Tell the administration.',
     'Falta la lista de revisión de algún modelo con motos.': 'A model with bikes has no checklist yet.', 'Falta un mecánico: una persona del equipo con la herramienta Taller (un super administrador no cuenta).': 'A mechanic is missing: someone on the team with the Workshop tool (a super administrator does not count).',
-    'Falta un paso de la configuración.': 'A setup step is missing.', 'Abrir Listas por modelo': 'Open Lists by model', 'Ir allí': 'Go there', 'Paso %a de %b': 'Step %a of %b', 'Pasos': 'Steps',
+    'Falta un paso de la configuración.': 'A setup step is missing.', 'Abrir Listas por modelo': 'Open Lists by model', 'Ir allí': 'Go there', 'La lista común tiene revisiones desactivadas: actívalas en Listas por modelo.': 'The common list has switched-off checks: switch them on in Lists by model.', 'Paso %a de %b': 'Step %a of %b', 'Pasos': 'Steps',
     'Usar la lista básica para todos los modelos': 'Use the basic list for every model', 'Invitar a un mecánico': 'Invite a mechanic',
     'Lista básica puesta para todos los modelos. Puedes cambiarla en Listas por modelo.': 'Basic list set for every model. You can change it in Lists by model.',
     'Orden de la pantalla anterior: ciérrala allí.': 'Order from the previous screen: close it there.',
@@ -268,7 +268,7 @@
     'El módulo de reservas está apagado en esta instancia: no hay taller que mirar. Esto NO quiere decir que no haya nada.': 'Modul booking tidak aktif di sistem ini: tidak ada data bengkel yang bisa diperiksa. Ini BUKAN berarti tidak ada apa-apa.',
     'El taller aún no está listo': 'Bengkel belum siap', 'Falta:': 'Yang kurang:', 'Avisa a la administración.': 'Beri tahu admin.',
     'Falta la lista de revisión de algún modelo con motos.': 'Ada model dengan motor yang belum punya daftar pemeriksaan.', 'Falta un mecánico: una persona del equipo con la herramienta Taller (un super administrador no cuenta).': 'Belum ada mekanik: anggota tim dengan akses Bengkel (super admin tidak dihitung).',
-    'Falta un paso de la configuración.': 'Ada langkah pengaturan yang belum selesai.', 'Abrir Listas por modelo': 'Buka daftar per model', 'Ir allí': 'Buka', 'Paso %a de %b': 'Langkah %a dari %b', 'Pasos': 'Langkah',
+    'Falta un paso de la configuración.': 'Ada langkah pengaturan yang belum selesai.', 'Abrir Listas por modelo': 'Buka daftar per model', 'Ir allí': 'Buka', 'La lista común tiene revisiones desactivadas: actívalas en Listas por modelo.': 'Daftar umum punya pemeriksaan yang nonaktif: aktifkan di daftar per model.', 'Paso %a de %b': 'Langkah %a dari %b', 'Pasos': 'Langkah',
     'Usar la lista básica para todos los modelos': 'Pakai daftar dasar untuk semua model', 'Invitar a un mecánico': 'Undang mekanik',
     'Lista básica puesta para todos los modelos. Puedes cambiarla en Listas por modelo.': 'Daftar dasar sudah dipasang untuk semua model. Bisa diubah di daftar per model.',
     'Orden de la pantalla anterior: ciérrala allí.': 'Order dari layar lama: tutup di sana.',
@@ -1423,6 +1423,8 @@
       error(''); exito('');
       llama('taller_lista_basica', {}).then(function (r) {
         C.libera(el);
+        // la base solo la carga con la lista común VACÍA; si tiene revisiones desactivadas, el aviso dice «falta» y la salida es activarlas en Listas
+        if (r.error && C.clasifica(r.error).hint === 'comun_no_vacia') { error(T('La lista común tiene revisiones desactivadas: actívalas en Listas por modelo.')); ir('listas', true); return; }
         if (r.error) { error(T('No guardado') + ' · ' + texto(r.error)); return; }
         exito(T('Lista básica puesta para todos los modelos. Puedes cambiarla en Listas por modelo.'));
         cargaDatos().then(function (ok) { if (ok && E.paso === 'inicio') pintaInicio(); });   // cargaDatos deja «Cargando…»: repintar como en ir()

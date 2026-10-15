@@ -493,7 +493,27 @@ async function rellenaAlquiler(p, o = {}) {
   await p.waitForSelector('[data-axw-sr="entrega"] [data-axw-campo="activa"]');
   ok('S45 el MÍNIMO por trayecto está (el diseño no lo pinta; el dato real sí)', !!(await p.$('[data-axw-campo="minimo"]')));
   ok('S45 una sola sede: no hay desplegable de sedes', !(await p.$('[data-axw-sr="entrega"] select')));
-  await p.check('[data-axw-campo="activa"]'); await clic(p, 'enviar');
+  // P5 (owner, 15-oct: «mostrando datos poco a poco»): apagada y sin nada guardado, solo el interruptor; a 1440, dos columnas
+  const p5a = await p.evaluate(() => { const b = document.querySelector('[data-axw-sr-bloques="entrega"]'), s = document.querySelector('[data-axw-campo="activa"]');
+    return { oculto: getComputedStyle(b).display === 'none', exp: s.getAttribute('aria-expanded'), rol: s.getAttribute('role'),
+             falta: !!document.querySelector('[data-axw-falta]'), fig: getComputedStyle(document.querySelector('[data-axw-sr-figura]')).display }; });
+  ok('P5 entrega apagada y vacía: solo el interruptor (role=switch, aria-expanded=false); sin bloques, sin «Falta completar» y sin ilustración',
+     p5a.oculto && p5a.exp === 'false' && p5a.rol === 'switch' && !p5a.falta && p5a.fig === 'none', JSON.stringify(p5a));
+  const p5l = await p.evaluate(() => { const i = document.querySelector('[data-axw-as="izq"]').getBoundingClientRect(), l = document.querySelector('[data-axw-as="lado"]').getBoundingClientRect();
+    return { lado: l.left >= i.right, fig: !!document.querySelector('[data-axw-as="lado"] [data-axw-sr-figura]'), why: !!document.querySelector('[data-axw-as="lado"] .axw-why') }; });   // la ilustración vive a la derecha aunque esté oculta
+  ok('P5 1440: dos columnas — a la derecha «para qué sirve» y la ilustración', p5l.lado && p5l.fig && p5l.why, JSON.stringify(p5l));
+  if (SHOT) {   // P5: el «después» de la entrega apagada, para compararlo con el «antes» (todo a la vez)
+    await p.screenshot({ path: path.join(SHOT, 'p5_entrega_apagada_1440.png'), fullPage: true });
+    await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(150);
+    await p.screenshot({ path: path.join(SHOT, 'p5_entrega_apagada_390.png'), fullPage: true });
+    await p.setViewportSize({ width: 1440, height: 900 }); await p.waitForTimeout(150);
+  }
+  await p.check('[data-axw-campo="activa"]');
+  const p5b = await p.evaluate(() => ({ visible: getComputedStyle(document.querySelector('[data-axw-sr-bloques="entrega"]')).display !== 'none',
+    exp: document.querySelector('[data-axw-campo="activa"]').getAttribute('aria-expanded'), foco: document.activeElement && document.activeElement.getAttribute('data-axw-campo'),
+    n: document.querySelectorAll('[data-axw-sr-bloques="entrega"] h3').length, fig: getComputedStyle(document.querySelector('[data-axw-sr-figura]')).display }));
+  ok('P5 al encenderla: tres bloques numerados, la ilustración y el foco en «Sale desde»', p5b.visible && p5b.exp === 'true' && p5b.foco === 'sede_nombre' && p5b.n === 3 && p5b.fig !== 'none', JSON.stringify(p5b));
+  await clic(p, 'enviar');
   ok('S45 encender sin datos: dice lo que falta y no envía', ((await errorTxt(p)) || '').includes('hacen falta la tienda') && escrituras(b).length === 0, await errorTxt(p));
   await p.fill('[data-axw-campo="sede_nombre"]', 'Tienda Canggu'); await p.fill('[data-axw-campo="sede_coord"]', '-8.65, 115.13');
   await p.fill('[data-axw-campo="precio_km"]', '5.000'); await p.fill('[data-axw-campo="km_gratis"]', '20'); await p.fill('[data-axw-campo="km_max"]', '20'); await p.fill('[data-axw-campo="minimo"]', '15.000');
@@ -563,9 +583,13 @@ async function rellenaAlquiler(p, o = {}) {
     if (paso === 'flota') { await p.click('[data-axw-sr-accion="anadir-unidad"]'); await p.fill('[data-axw-campo="tarifa_1"]', 'x'); }
     if (paso === 'clase') await p.check('[data-axw-campo="clase"][value="servicio"]');   // «servicio» no avanza: lleva a Productos con su aviso
     if (paso === 'reglas_reserva') await p.fill('[data-axw-campo="dias_min"]', '0');   // type=number: no admite letras; 0 está por debajo del mínimo
-    if (paso === 'entrega') await p.fill('[data-axw-campo="precio_km"]', 'x');
+    if (paso === 'entrega') { await p.check('[data-axw-campo="activa"]'); await p.fill('[data-axw-campo="precio_km"]', 'x'); }   // P5: los campos salen al encenderla
     await clic(p, 'enviar');   // que también salga el texto de error
     ok(paso + ' ' + idioma + ' ' + ancho + ': se mide esta pantalla (no la siguiente)', !!(await p.$('[data-axw-sr="' + paso + '"]')));
+    {   // P5: a 390 la explicación va DESPUÉS de los campos; a 1440, a su derecha
+      const g = await p.evaluate(() => { const i = document.querySelector('[data-axw-as="izq"]').getBoundingClientRect(), l = document.querySelector('[data-axw-as="lado"]').getBoundingClientRect(); return { iR: i.right, iB: i.bottom, lL: l.left, lT: l.top }; });
+      ok(paso + ' ' + idioma + ' ' + ancho + ': ' + (ancho === 390 ? 'la explicación debajo de los campos' : 'dos columnas'), ancho === 390 ? g.lT >= g.iB : g.lL >= g.iR, JSON.stringify(g));
+    }
     const anchoDoc = await p.evaluate(() => document.documentElement.scrollWidth);
     ok(paso + ' ' + idioma + ' ' + ancho + ': sin scroll horizontal', anchoDoc <= ancho, String(anchoDoc));
     if (idioma !== 'es') {
