@@ -181,6 +181,9 @@
 .ag2:not([data-vista="equipo"]) [data-ag="v2-apagar"]{display:none!important}
 /* paso 0 con el equipo apagado (#ajustes-quien): solo ese paso, sin pestañas ni barra de pasos */
 .ag2[data-solo="quien"] .ag2-tabs,.ag2[data-solo="quien"] [data-ag="aj-pasos"],.ag2[data-solo="quien"] [data-ag="aj-quien-linea"]{display:none!important}
+/* paso 0 a solas: las cabeceras vacías no dejan su caja ni su hueco arriba (Diseño, 16-oct: 52 px arriba frente a 13 a los lados); los títulos
+   ocultos (.ag2-sr) siguen en el árbol para los lectores de pantalla */
+.ag2[data-solo="quien"] .ag2-cab,.ag2[data-solo="quien"] .ag2-aj-cab{display:contents}
 .ag2-quien-linea{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:10px 14px;border-radius:14px;background:rgba(11,12,30,.6);border:1px solid var(--line-soft);min-width:0}
 .ag2-quien-linea p{margin:0;flex:1 1 200px;min-width:0;color:var(--text-hi);overflow-wrap:anywhere}
 .ag2 .ag2-quien-linea a.ag2-btn2{min-height:44px;padding:0 16px}
@@ -539,7 +542,7 @@
 <span class="ag2-etapa" data-ag="aj-quien-etapa" data-lwt>Antes de empezar</span>
 <h3 id="ag2-aj-h-quien" tabindex="-1" data-lwt>¿Quién lleva el equipo?</h3>
 <dl class="ag2-why">
-<div><dt data-lwt>Para qué sirve</dt><dd data-lwt>Esa persona enciende el equipo, pone el tope y decide hasta dónde llega cada agente. Solo ella cambia estos ajustes.</dd></div>
+<div><dt data-lwt>Para qué sirve</dt><dd data-lwt>Esa persona enciende el equipo, pone el tope y decide hasta dónde llega cada agente. Solo esa persona cambia estos ajustes.</dd></div>
 <div data-salta data-ag="aj-quien-salta"><dt data-lwt>Si lo saltas</dt><dd data-lwt>Sin nadie al frente, el equipo no se puede encender ni configurar.</dd></div>
 </dl>
 <fieldset data-ag="aj-fs-quien">
@@ -1073,7 +1076,7 @@
     'Volver': 'Back',
     'Antes de empezar': 'Before you start',
     '¿Quién lleva el equipo?': 'Who runs the team?',
-    'Esa persona enciende el equipo, pone el tope y decide hasta dónde llega cada agente. Solo ella cambia estos ajustes.': 'That person switches the team on, sets the cap and decides how far each agent goes. Only they change these settings.',
+    'Esa persona enciende el equipo, pone el tope y decide hasta dónde llega cada agente. Solo esa persona cambia estos ajustes.': 'That person switches the team on, sets the cap and decides how far each agent goes. Only they change these settings.',
     'Sin nadie al frente, el equipo no se puede encender ni configurar.': 'With nobody in charge, the team cannot be switched on or set up.',
     'Quién lleva el equipo': 'Who runs the team',
     'Cualquier persona activa de tu equipo, también tú.': 'Anyone active on your team, including you.',
@@ -1501,7 +1504,7 @@
     'Volver': 'Kembali',
     'Antes de empezar': 'Sebelum mulai',
     '¿Quién lleva el equipo?': 'Siapa yang mengelola tim?',
-    'Esa persona enciende el equipo, pone el tope y decide hasta dónde llega cada agente. Solo ella cambia estos ajustes.': 'Orang itu menyalakan tim, mengatur anggaran, dan menentukan sejauh mana tiap agen bertindak. Hanya dia yang mengubah pengaturan ini.',
+    'Esa persona enciende el equipo, pone el tope y decide hasta dónde llega cada agente. Solo esa persona cambia estos ajustes.': 'Orang itu menyalakan tim, mengatur anggaran, dan menentukan sejauh mana tiap agen bertindak. Hanya dia yang mengubah pengaturan ini.',
     'Sin nadie al frente, el equipo no se puede encender ni configurar.': 'Tanpa pengelola, tim tidak bisa dinyalakan atau diatur.',
     'Quién lleva el equipo': 'Pengelola tim',
     'Cualquier persona activa de tu equipo, también tú.': 'Siapa pun yang aktif di tim Anda, termasuk Anda.',
@@ -1921,8 +1924,9 @@
   function noExiste(err) { return !!err && (err.code === 'PGRST202' || err.status === 404 || /could not find the function/i.test(String(err.message || ''))); }
   function leeOwner() {
     return llama('agente_owner_estado').then(function (r) {
-      if (r.error) { OW.d = null; OW.err = noExiste(r.error) ? '' : textoError(r.error, true); return; }
-      if (!owEstadoOk(r.data)) { OW.d = null; OW.err = T(NO_MIRADO); return; }
+      /* si la relectura falla, la lista de antes no se queda (revisor, 16-oct: hoy puedeQuien() ya exige OW.d, pero no se fía de eso) */
+      if (r.error) { OW.d = null; OW.cand = null; OW.candErr = false; OW.err = noExiste(r.error) ? '' : textoError(r.error, true); return; }
+      if (!owEstadoOk(r.data)) { OW.d = null; OW.cand = null; OW.candErr = false; OW.err = T(NO_MIRADO); return; }
       OW.d = r.data; OW.err = '';
       var c = r.data.candidatos;
       OW.candErr = c !== undefined && !candOk(c); OW.cand = candOk(c) ? c : null;
