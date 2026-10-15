@@ -18,11 +18,17 @@ const SHOT = process.argv[2];
 let fallos = 0;
 const ok = (n, c, x = '') => { if (!c) { fallos++; console.log('FALLA  ' + n + (x ? ' -> ' + x : '')); } else console.log('ok     ' + n); };
 
+// AXW_CSS_DIST=<paquete construido>: tw.css, shell.css y la piel de la instancia (--tema-*) para mirar las capturas como el cliente (no cambia lo que se mide)
+const DIST = process.env.AXW_CSS_DIST || '';
+const CSS_PIEL = DIST ? ['tw.css', 'shell.css'].map(f => fs.readFileSync(path.join(DIST, 'assets', f), 'utf8')).join(' ') + (() => {
+  const m = /\bp=(\{[^}]*\});for\(var k in p\)s\.setProperty\("--tema-"\+k/.exec(fs.readFileSync(path.join(DIST, 'contracts', 'assets', 'instancia.js'), 'utf8'));
+  return m ? ':root{' + Object.entries(JSON.parse(m[1])).map(([k, v]) => '--tema-' + k + ':' + v).join(';') + '}' : ''; })() : '';
+const SUGERIDAS = fs.readFileSync(path.join(__dirname, '..', 'categorias_gasto_sugeridas.json'), 'utf8');
 // ── la base simulada (forma del doble de bbm-p28) ───────────────────────────────────────────────────────────────────────────────────────────
 const IDIOMAS_OK = DOBLE.idiomas.guardar.listas_validas.map(l => l.join());
 function base(o = {}) {
   return { o, llamadas: [], edge: [], valores: Object.assign({ moneda: 'IDR' }, o.valores || {}), correo: o.correo || { configurado: false },
-    pideCodigo: o.pideCodigo !== false, falla: Object.assign({}, o.falla || {}), pierde: Object.assign({}, o.pierde || {}), taller: o.taller || {}, cats: (o.cats || []).map(c => Object.assign({}, c)) };
+    pideCodigo: o.pideCodigo !== false, falla: Object.assign({}, o.falla || {}), pierde: Object.assign({}, o.pierde || {}), taller: o.taller || {}, cats: (o.cats || []).map(c => Object.assign({}, c)), nGuarda: 0 };
 }
 const err = (code, hint) => ({ data: null, error: { code, hint: hint || null, message: 'mensaje en español que el front NO lee' } });
 function pasosDe(b) {
@@ -79,7 +85,11 @@ function servidor(b, n, a) {
   if (pr) { delete b.pierde[clave]; if (pr === 'despues') guarda(b, a); return { red: true }; }
   if (n === 'ajustes_config_guardar') return guarda(b, a);
   if (n === 'gastos_panel_datos') return { data: { gastos: [], categorias: b.cats.map(c => Object.assign({}, c)) }, error: null };
+  // modulos_activos_datos: o.modAct = lo que devuelve (tipo como CLAVE de config_instancia.tipo_erp, idiomas {ofrecidos, defecto}); sin él, no existe
+  if (n === 'modulos_activos_datos') return b.o.modAct ? { data: Object.assign({ activos: null, moneda: 'IDR' }, b.o.modAct), error: null } : err('42883');
   if (n === 'gasto_categoria_guarda') {   // como 20261014050000: alta con p_clave null; la clave la saca la base del nombre
+    b.nGuarda++;
+    if (b.o.fallaEn && b.nGuarda === b.o.fallaEn[0]) return err(b.o.fallaEn[1], b.o.fallaEn[2]);   // la llamada n.º k la rechaza la base
     const d = a.p_datos || {}, nom = String(d.nombre || '').trim();
     if (a.p_clave !== null || Object.keys(d).some(k => !['nombre', 'grupo', 'orden', 'activa'].includes(k))) return err('22023', 'campo_desconocido');
     if (!nom || nom.length > 80 || /^[=+\-@]/.test(nom)) return err('22023', 'nombre_no_valido');
@@ -102,7 +112,7 @@ function edge(b, cuerpo) {
 
 // ── las páginas ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 const cabeza = (idioma) => `<!doctype html><html lang="${idioma}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}[hidden]{display:none!important}</style></head><body>`;
+<style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}[hidden]{display:none!important}</style>${CSS_PIEL ? '<style>' + CSS_PIEL + '</style>' : ''}</head><body>`;
 const sesion = (idioma, url, build) => `<script>
 history.replaceState(null, '', '${url}');
 window.__sinTrad = []; window.__errores = [];
@@ -130,6 +140,8 @@ async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=
   await p.route('**/*', r => {
     const u = r.request().url();
     if (u.includes('/edge/')) { const x = edge(b, JSON.parse(r.request().postData() || '{}')); return r.fulfill({ status: x.status, contentType: 'application/json', body: x.body }); }
+    // el catálogo de categorías sugeridas (al lado de setup_comun.js; inline aquí, así que relativo a la página): solo si el caso lo trae
+    if (u.endsWith('/categorias_gasto_sugeridas.json')) return b.o.sugeridas ? r.fulfill({ status: 200, contentType: 'application/json', body: SUGERIDAS }) : r.fulfill({ status: 404, body: '' });
     return r.fulfill({ status: 200, contentType: 'text/html', body });
   });
   await p.exposeFunction('__srv', async (n, a) => { const r = servidor(b, n, a); if (r && r.red) throw new Error('Failed to fetch'); return r; });
@@ -341,6 +353,82 @@ const sinCodigo = t => !/(c[óo]digo|code|kode)\s*:/i.test(String(t || ''));
   await p.waitForSelector('[data-axw-n4-cat="error"]', { timeout: 3000 }).catch(() => {});
   const tLee = (await txt(p, '[data-axw-n4-cat="error"]')) || '';
   ok('G lectura sin permiso: dice POR QUÉ (frase de sin_permiso), sin código ni objeto', tLee.includes('Tu sesión no tiene permiso para esto.') && !tLee.includes('[object') && sinCodigo(tLee), tLee);
+  await ctx.close();
+
+  // ── 10b. Categorías SUGERIDAS (owner vía agencia-c0, 15-oct-2026): con cero categorías, una lista ya hecha para el tipo de negocio, todas marcadas,
+  //    con «Usar estas»; se dan de alta una por llamada por gasto_categoria_guarda; se puede quitar alguna o añadir una; al menos una, como siempre
+  const SUG = JSON.parse(SUGERIDAS);
+  const vistosSug = pg => pg.evaluate(() => [...document.querySelectorAll('[data-axw-co="categorias_gasto"] input,[data-axw-co="categorias_gasto"] select')]
+    .filter(e => e.checkVisibility({ visibilityProperty: true, contentVisibilityAuto: true })).length);
+  const fichas = pg => pg.$$eval('[data-axw-n4-sug="fichas"] li', l => l.map(e => e.textContent));
+  const bbm = { sugeridas: true, gastos: true, modAct: { tipo: 'reservas', idiomas: { ofrecidos: ['id', 'en'], defecto: 'id' } }, valores: { marca: 'X', zona_horaria: 'Asia/Makassar' } };
+  for (const ancho of [390, 1440]) {
+    b = base(bbm);
+    ({ p, ctx } = await abre(nav, b, { idioma: 'id', ancho, url: '/ajustes/configurar/?modulo=gastos' }));
+    await p.waitForSelector('[data-axw-n4-cat="sugeridas"]', { timeout: 3000 }).catch(() => {});
+    const f = await fichas(p);
+    ok('SUG ' + ancho + ' bbm (reservas, id·en): la lista de alquiler, todas marcadas, cada nombre «id · en»', f.length === SUG.reservas.length && f[0] === 'Bahan bakar · Fuel' && f.includes('Pajak · Taxes'), JSON.stringify(f));
+    ok('SUG ' + ancho + ': el botón principal dice «Pakai ini» (Usar estas)', (await txt(p, '[data-axw-accion="enviar"]')) === 'Pakai ini', await txt(p, '[data-axw-accion="enviar"]'));
+    ok('SUG ' + ancho + ': ningún campo a la vista (quitar o añadir va plegado) y sin el campo libre', (await vistosSug(p)) === 0 && !(await p.$eval('[data-axw-campo="cat_nombre"]', e => e.checkVisibility())), String(await vistosSug(p)));
+    ok('SUG ' + ancho + ': sin scroll de lado', await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    if (SHOT) {
+      await p.screenshot({ path: path.join(SHOT, 'sugeridas_id_' + ancho + '.png'), fullPage: true });
+      await p.click('[data-axw-plegado="n4-sugeridas"] > summary'); await p.waitForTimeout(150);
+      await p.screenshot({ path: path.join(SHOT, 'sugeridas_abierto_id_' + ancho + '.png'), fullPage: true });
+      await p.click('[data-axw-plegado="n4-sugeridas"] > summary'); await p.waitForTimeout(150);
+    }
+    if (ancho === 1440) {
+      await clic(p, 'enviar'); await p.waitForTimeout(600);
+      const gs = catGuardadas(b);
+      ok('SUG «Usar estas» en un toque: una llamada por categoría, en orden, por gasto_categoria_guarda(null, {nombre, grupo})', gs.length === SUG.reservas.length && gs.every(x => x.p_clave === null && Object.keys(x.p_datos).join() === 'nombre,grupo')
+        && gs[0].p_datos.nombre === 'Bahan bakar · Fuel' && gs[2].p_datos.grupo === 'personal' && b.cats.length === SUG.reservas.length, JSON.stringify(gs.map(x => x.p_datos)));
+      ok('SUG hecho: Gastos listo', (await p.$('[data-axw-estado="listo"]')) !== null, await txt(p, '[data-axw-estado]'));
+    }
+    await sinErroresJs(p, 'SUG ' + ancho);
+    ok('SUG ' + ancho + ': sin frases sin traducir (id)', (await p.evaluate(() => window.__sinTrad.slice())).length === 0, JSON.stringify(await p.evaluate(() => window.__sinTrad.slice())));
+    await ctx.close();
+  }
+  // sin tipo: la lista genérica corta, en el idioma que ofrece la instancia
+  b = base(Object.assign({}, bbm, { modAct: { idiomas: { ofrecidos: ['en'], defecto: 'en' } } }));
+  ({ p, ctx } = await abre(nav, b, { idioma: 'en', url: '/ajustes/configurar/?modulo=gastos' }));
+  await p.waitForSelector('[data-axw-n4-cat="sugeridas"]', { timeout: 3000 }).catch(() => {});
+  ok('SUG sin tipo: la genérica corta, en inglés', JSON.stringify(await fichas(p)) === JSON.stringify(SUG._generico.map(x => x.en)), JSON.stringify(await fichas(p)));
+  ok('SUG sin tipo (en): «Use these»', (await txt(p, '[data-axw-accion="enviar"]')) === 'Use these', await txt(p, '[data-axw-accion="enviar"]'));
+  // todo desmarcado y nada escrito: no deja seguir y no llama
+  await p.click('[data-axw-plegado="n4-sugeridas"] > summary');
+  for (const c of await p.$$('[data-axw-plegado="n4-sugeridas"] input[type=checkbox]')) await c.uncheck();
+  ok('SUG todo desmarcado: sin fichas', (await fichas(p)).length === 0);
+  await clic(p, 'enviar');
+  ok('SUG todo desmarcado y nada escrito: lo dice y no llama', catGuardadas(b).length === 0 && ((await errorTxt(p)) || '').includes('at least one'), await errorTxt(p));
+  // dos marcadas y una propia: solo esas, la propia en «general»
+  const cks = await p.$$('[data-axw-plegado="n4-sugeridas"] input[type=checkbox]');
+  await cks[0].check(); await cks[4].check(); await p.fill('[data-axw-campo="sug_propia"]', 'Office supplies');
+  ok('SUG las fichas siguen a lo marcado y a la propia', JSON.stringify(await fichas(p)) === JSON.stringify([SUG._generico[0].en, SUG._generico[4].en, 'Office supplies']), JSON.stringify(await fichas(p)));
+  await clic(p, 'enviar'); await p.waitForTimeout(500);
+  ok('SUG solo lo marcado y la propia (en «general»)', JSON.stringify(catGuardadas(b).map(x => [x.p_datos.nombre, x.p_datos.grupo])) === JSON.stringify([['Salaries', 'personal'], ['Taxes', 'impuestos'], ['Office supplies', 'general']]),
+     JSON.stringify(catGuardadas(b).map(x => x.p_datos)));
+  await ctx.close();
+  // la base rechaza la 3.ª: la cadena para ahí con su frase; las dos de antes quedan y el paso, con ellas, hecho; al volver, la lista (no las sugeridas): no se duplica nada
+  b = base(Object.assign({}, bbm, { fallaEn: [3, '22023', 'nombre_no_valido'] }));
+  ({ p, ctx } = await abre(nav, b, { idioma: 'id', url: '/ajustes/configurar/?modulo=gastos' }));
+  await p.waitForSelector('[data-axw-n4-cat="sugeridas"]', { timeout: 3000 }).catch(() => {});
+  await clic(p, 'enviar'); await p.waitForTimeout(700);
+  ok('SUG falla la 3.ª: para ahí (3 llamadas, 2 dadas de alta) y dice la frase de la base', catGuardadas(b).length === 3 && b.cats.length === 2 && ((await errorTxt(p)) || '').includes('tidak diawali'), (await errorTxt(p)) + ' / ' + catGuardadas(b).length);
+  await p.waitForSelector('[data-axw-n4-cat-clave]', { timeout: 3000 }).catch(() => {});
+  ok('SUG tras el fallo: se ven las dos que quedaron, ya sin sugeridas (reintentar no duplica)', (await p.$$('[data-axw-n4-cat-clave]')).length === 2 && !(await p.$('[data-axw-n4-cat="sugeridas"]')));
+  await ctx.close();
+  // «ya hay una con ese nombre» a mitad de la cadena no es un error: sigue con las demás
+  b = base(Object.assign({}, bbm, { fallaEn: [2, '23505', 'nombre_repetido'] }));
+  ({ p, ctx } = await abre(nav, b, { idioma: 'id', url: '/ajustes/configurar/?modulo=gastos' }));
+  await p.waitForSelector('[data-axw-n4-cat="sugeridas"]', { timeout: 3000 }).catch(() => {});
+  await clic(p, 'enviar'); await p.waitForTimeout(700);
+  ok('SUG nombre_repetido a mitad: sigue con todas, sin error', catGuardadas(b).length === SUG.reservas.length && !(await errorTxt(p)) && (await p.$('[data-axw-estado="listo"]')) !== null, await errorTxt(p));
+  await ctx.close();
+  // sin catálogo (fichero que no está): el campo libre de siempre
+  b = base(Object.assign({}, bbm, { sugeridas: false }));
+  ({ p, ctx } = await abre(nav, b, { idioma: 'id', url: '/ajustes/configurar/?modulo=gastos' }));
+  await p.waitForSelector('[data-axw-n4-cat="ninguna"]', { timeout: 3000 }).catch(() => {});
+  ok('SUG sin catálogo: el campo libre de siempre y el botón de siempre', !(await p.$('[data-axw-n4-cat="sugeridas"]')) && (await p.$eval('[data-axw-campo="cat_nombre"]', e => e.checkVisibility())) && (await txt(p, '[data-axw-accion="enviar"]')) !== 'Pakai ini');
   await ctx.close();
 
   // ── 9. es/en/id a 390 y 1440: sin scroll horizontal, sin frases sin traducir, sin códigos sin frase ─────────────────────────────────────────

@@ -415,6 +415,9 @@ document.addEventListener('DOMContentLoaded', function () {
       atras.hidden = idx <= 0 && parteVista.k <= 1;
     }
     cuerpo.addEventListener('axw-parte', function (ev) { parteVista = ev.detail || {}; aplicaParte(); });
+    // un paso que decide su botón principal DESPUÉS de leer (las categorías sugeridas: «Usar estas») lo avisa con 'axw-boton' {texto}
+    var botonVisto = '';
+    cuerpo.addEventListener('axw-boton', function (ev) { botonVisto = String(ev.detail || ''); if (principal && botonVisto && principal.getAttribute('data-axw-accion') === 'enviar') { txtPrincipal = botonVisto; principal.textContent = botonVisto; aplicaParte(); } });
     var editando = !p.hecho || st.cambia;
     var ctl = null;
     if (editando || comp.externo) ctl = comp.pinta(cuerpo, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: st.cambia, lado: lado, falta: faltaEl });
@@ -437,6 +440,7 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (!editando) principal = boton(U('siguiente'), 'siguiente', true);
     else if (ctl && ctl.bloqueado) principal = boton(U('siguiente'), 'siguiente', true);
     else principal = boton(ctl && ctl.boton ? ctl.boton : (p.irreversible ? U('siguiente') : U('guardar_seguir')), 'enviar', true);
+    if (botonVisto && principal.getAttribute('data-axw-accion') === 'enviar') principal.textContent = botonVisto;
     txtPrincipal = principal.textContent;
     aplicaParte();
     if (atras) pie.appendChild(atras);

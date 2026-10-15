@@ -225,6 +225,13 @@
       n4_cat_cargando: 'Cargando las categorías…',
       n4_cat_no_carga: 'No se han podido leer las categorías.',
       n4_cat_otra: 'Si ya tienes las que necesitas, deja el nombre vacío y sigue.',
+      n4_sug_titulo: 'Te proponemos estas categorías',
+      n4_sug_ayuda: 'Pulsa «Usar estas» y quedan dadas de alta. Puedes quitar alguna o añadir la tuya.',
+      n4_sug_usar: 'Usar estas',
+      n4_sug_cambiar: 'Quitar alguna o añadir la tuya',
+      n4_sug_propia: 'Añadir otra (opcional)',
+      n4_sug_ninguna: 'Marca al menos una o escribe la tuya.',
+      n4_sug_n: '%n de %t marcadas',
       n4_g_general: 'General', n4_g_suelo: 'Suelo', n4_g_construccion: 'Construcción', n4_g_comercial: 'Comercial', n4_g_marketing: 'Marketing',
       n4_g_personal: 'Personal', n4_g_impuestos: 'Impuestos', n4_g_financiero: 'Financiero'
     }
@@ -265,6 +272,9 @@
     'Grupo': 'Group', 'Agrupa los gastos en el resumen. No se cambia cuando ya hay gastos en la categoría.': 'Groups expenses in the summary. It can\'t change once the category has expenses.',
     'Cargando las categorías…': 'Loading categories…', 'No se han podido leer las categorías.': 'The categories could not be loaded.',
     'Si ya tienes las que necesitas, deja el nombre vacío y sigue.': 'If you already have the ones you need, leave the name empty and continue.',
+    'Te proponemos estas categorías': 'We suggest these categories', 'Pulsa «Usar estas» y quedan dadas de alta. Puedes quitar alguna o añadir la tuya.': 'Press «Use these» and they are added. You can remove any of them or add your own.',
+    'Usar estas': 'Use these', 'Quitar alguna o añadir la tuya': 'Remove some or add your own', 'Añadir otra (opcional)': 'Add another (optional)',
+    'Marca al menos una o escribe la tuya.': 'Tick at least one or write your own.', '%n de %t marcadas': '%n of %t ticked',
     'General': 'General', 'Suelo': 'Land', 'Construcción': 'Construction', 'Comercial': 'Sales', 'Marketing': 'Marketing', 'Personal': 'Staff',
     'Impuestos': 'Taxes', 'Financiero': 'Financial'
   };
@@ -304,6 +314,9 @@
     'Grupo': 'Grup', 'Agrupa los gastos en el resumen. No se cambia cuando ya hay gastos en la categoría.': 'Mengelompokkan pengeluaran di ringkasan. Tidak bisa diubah setelah kategori punya pengeluaran.',
     'Cargando las categorías…': 'Memuat kategori…', 'No se han podido leer las categorías.': 'Kategori tidak dapat dimuat.',
     'Si ya tienes las que necesitas, deja el nombre vacío y sigue.': 'Jika kategori yang dibutuhkan sudah ada, kosongkan nama dan lanjutkan.',
+    'Te proponemos estas categorías': 'Kami sarankan kategori ini', 'Pulsa «Usar estas» y quedan dadas de alta. Puedes quitar alguna o añadir la tuya.': 'Tekan «Pakai ini» dan kategori langsung dibuat. Anda bisa menghapus salah satu atau menambah sendiri.',
+    'Usar estas': 'Pakai ini', 'Quitar alguna o añadir la tuya': 'Hapus atau tambah kategori sendiri', 'Añadir otra (opcional)': 'Tambah lainnya (opsional)',
+    'Marca al menos una o escribe la tuya.': 'Centang minimal satu atau tulis sendiri.', '%n de %t marcadas': '%n dari %t dicentang',
     'General': 'Umum', 'Suelo': 'Tanah', 'Construcción': 'Konstruksi', 'Comercial': 'Penjualan', 'Marketing': 'Pemasaran', 'Personal': 'Karyawan',
     'Impuestos': 'Pajak', 'Financiero': 'Keuangan'
   };
@@ -328,6 +341,8 @@
   }
   function vacia(e) { while (e.firstChild) e.removeChild(e.firstChild); return e; }
   var RAIZ = (function () { var p = location.pathname, i = p.indexOf('/ajustes/'); return i >= 0 ? p.slice(0, i + 1) : '/'; })();
+  // el catálogo de categorías sugeridas va al lado de este fichero (assets/); leído al cargar: después document.currentScript ya no es este
+  var URL_SUGERIDAS = ((document.currentScript && document.currentScript.src) || '').replace(/[^\/]*$/, '') + 'categorias_gasto_sugeridas.json';
   var CLS_IN = 'w-full rounded-lg border border-control-border/50 bg-surface-container-lowest px-3 py-2.5 font-body-md text-body-md';
   var CLS_ETQ = 'font-label-md text-label-md text-on-surface';
   var CLS_AYUDA = 'font-body-sm text-body-sm text-outline';
@@ -579,6 +594,37 @@
   // code + hint (nombre_repetido, nombre_no_valido, grupo_no_valido, 42501). Editar o desactivar sigue en la pantalla de Gastos.
   var GRUPOS_GASTO = ['general', 'suelo', 'construccion', 'comercial', 'marketing', 'personal', 'impuestos', 'financiero'];
   var BORRADOR_CAT = null;
+  // Sugeridas (owner vía agencia-c0, 15-oct-2026: «¿por qué Expense categories es obligatorio?»): con CERO categorías, el paso propone una lista ya hecha
+  // para el tipo de negocio, todas marcadas, y el botón principal dice «Usar estas». La lista es DATO (categorias_gasto_sugeridas.json, por
+  // config_instancia.tipo_erp, que da modulos_activos_datos().tipo como clave; sin tipo, _generico), nunca código. Cada nombre en los idiomas que
+  // ofrece la instancia («id · en» en bbm; sin idiomas, el de la página). Sin catálogo o sin lectura, el campo libre de siempre.
+  // Decisión por defecto de bbm-comodidad-2 (revertir: borrar el .json).
+  var IDIOMAS_SUG = ['es', 'en', 'id'];
+  function nombreValido(n) { return !!n && n.length <= 80 && !/^[=+\-@]/.test(n); }
+  function sugeridas() {
+    var cat = (typeof fetch === 'function' ? fetch(URL_SUGERIDAS, { cache: 'no-cache', credentials: 'same-origin' }) : Promise.reject(null))
+      .then(function (r) { return r && r.ok ? r.json() : null; }).then(null, function () { return null; });
+    var mod = sesion().then(function (sb) { return sb ? resultado(sb.rpc('modulos_activos_datos')) : { ok: false }; });
+    return Promise.all([cat, mod]).then(function (x) {
+      var c = x[0], d = x[1] && x[1].ok && x[1].data && typeof x[1].data === 'object' ? x[1].data : {};
+      if (!c || typeof c !== 'object' || Array.isArray(c)) return null;
+      var tipo = typeof d.tipo === 'string' && Array.isArray(c[d.tipo]) ? d.tipo : '_generico';
+      var ofr = d.idiomas && Array.isArray(d.idiomas.ofrecidos) ? d.idiomas.ofrecidos : [], idi = [];
+      ofr.forEach(function (i) { i = texto(i).slice(0, 2); if (IDIOMAS_SUG.indexOf(i) >= 0 && idi.indexOf(i) < 0) idi.push(i); });
+      if (!idi.length) { var pg = String(document.documentElement.lang || '').slice(0, 2); idi.push(IDIOMAS_SUG.indexOf(pg) >= 0 ? pg : 'es'); }
+      var vistos = {};
+      return (Array.isArray(c[tipo]) ? c[tipo] : []).map(function (e) {
+        if (!e || typeof e !== 'object') return null;
+        var partes = [];
+        idi.forEach(function (i) { var t = texto(e[i]).trim(); if (t && partes.indexOf(t) < 0) partes.push(t); });
+        var n = partes.join(' · ');
+        if (n.length > 80) n = partes[0] || '';
+        if (!nombreValido(n) || vistos[n.toLowerCase()]) return null;
+        vistos[n.toLowerCase()] = true;
+        return { nombre: n, grupo: GRUPOS_GASTO.indexOf(e.grupo) >= 0 ? e.grupo : 'general' };
+      }).filter(Boolean).slice(0, 20);
+    });
+  }
   var categoriasGasto = {
     sinMotivo: true,   // gasto_categoria_guarda no pide motivo (deja rastro en ajustes_log)
     pinta: function (caja, ctx) {
@@ -597,9 +643,41 @@
       var otra = el('p', { class: CLS_AYUDA, 'data-axw-n4-cat': 'otra', hidden: true, text: U('n4_cat_otra') });
       z.appendChild(otra);
       caja.appendChild(z);
-      sesion().then(function (sb) {
+      var sug = null;   // con las sugeridas a la vista: { filas: [{nombre, grupo, chk}], propia }
+      function pintaSugeridas(l) {
+        // lo de siempre (lista vacía y campo libre) se esconde; a la vista, la lista como fichas y el botón principal «Usar estas»
+        [].forEach.call(z.children, function (n) { n.hidden = true; });
+        var bloque = el('div', { class: 'flex flex-col gap-3 min-w-0', 'data-axw-n4-cat': 'sugeridas' });
+        bloque.appendChild(el('p', { class: CLS_ETQ, text: U('n4_sug_titulo') }));
+        var fichas = el('ul', { class: 'flex flex-wrap gap-2', role: 'list', 'data-axw-n4-sug': 'fichas' });
+        bloque.appendChild(fichas);
+        bloque.appendChild(el('p', { class: CLS_AYUDA, text: U('n4_sug_ayuda') }));
+        z.appendChild(bloque);
+        var pl = S.plegado({ padre: bloque, marca: 'n4-sugeridas', rotulo: U('n4_sug_cambiar'), resumen: function () { return [U('n4_sug_n', { n: String(marcadas().length), t: String(l.length) })]; } });
+        var filas = l.map(function (x, i) {
+          var id = 'axw-co-sug-' + i, chk = el('input', { id: id, type: 'checkbox', 'data-axw-campo': 'sug_' + i, style: 'width:20px;height:20px;flex:none' });
+          chk.checked = true;
+          pl.cuerpo.appendChild(el('label', { for: id, class: 'flex items-center gap-3 min-w-0', style: ALTO + ';cursor:pointer' }, [chk,
+            el('span', { class: 'font-body-md text-body-md text-on-surface min-w-0', style: 'overflow-wrap:anywhere', text: x.nombre })]));
+          return { nombre: x.nombre, grupo: x.grupo, chk: chk };
+        });
+        var propia = campo(pl.cuerpo, 'sug_propia', U('n4_sug_propia'), '', { max: 80 });
+        function marcadas() { return filas.filter(function (f) { return f.chk.checked; }); }
+        function pintaFichas() {
+          vacia(fichas);
+          marcadas().map(function (f) { return f.nombre; }).concat(propia.value.trim() ? [propia.value.trim().slice(0, 80)] : []).forEach(function (n) {
+            fichas.appendChild(el('li', { class: CLS_CHIP.replace('self-start ', ''), style: 'overflow-wrap:anywhere', text: n }));
+          });
+        }
+        pl.cuerpo.addEventListener('input', pintaFichas); pl.cuerpo.addEventListener('change', pintaFichas);
+        pintaFichas(); pl.actualiza();
+        sug = { filas: filas, propia: propia, plegado: pl };
+        caja.dispatchEvent(new CustomEvent('axw-boton', { bubbles: true, detail: U('n4_sug_usar') }));   // el anfitrión (asistente) cambia su botón principal
+      }
+      Promise.all([sesion().then(function (sb) {
         return sb ? resultado(sb.rpc('gastos_panel_datos', { p_limit: 1 })) : { ok: false };
-      }).then(function (r) {
+      }), sugeridas().then(null, function () { return null; })]).then(function (xs) {
+        var r = xs[0], l = xs[1];
         vacia(lista);
         lista.removeAttribute('aria-busy');
         var cats = r && r.ok && r.data && Array.isArray(r.data.categorias) ? r.data.categorias : null;
@@ -609,6 +687,7 @@
           return;
         }
         st.hay = cats.some(function (c) { return c && c.activa === true; });
+        if (!cats.length && l && l.length) { pintaSugeridas(l); return; }
         if (!cats.length) lista.appendChild(el('li', { class: CLS_NOTA, 'data-axw-n4-cat': 'ninguna', text: U('n4_cat_ninguna') }));
         cats.slice(0, 200).forEach(function (c) {
           var g = GRUPOS_GASTO.indexOf(texto(c.grupo)) >= 0 ? U('n4_g_' + c.grupo) : texto(c.grupo);
@@ -621,6 +700,14 @@
       });
       return {
         valores: function () {
+          if (sug) {   // las sugeridas marcadas y la propia, si la hay; al menos una, como siempre
+            var pr = sug.propia.value.trim(), lo = {}, l = [];
+            if (pr && !nombreValido(pr)) { sug.plegado.abre(); return { ok: false, error: U('n4_cat_nombre_mal') }; }
+            sug.filas.filter(function (f) { return f.chk.checked; }).map(function (f) { return { nombre: f.nombre, grupo: f.grupo }; })
+              .concat(pr ? [{ nombre: pr, grupo: 'general' }] : []).forEach(function (c) { if (!lo[c.nombre.toLowerCase()]) { lo[c.nombre.toLowerCase()] = true; l.push(c); } });
+            if (!l.length) { sug.plegado.abre(); return { ok: false, error: U('n4_sug_ninguna') }; }
+            return { ok: true, v: { lista: l } };
+          }
           var n = val(z, 'cat_nombre'), g = String(sel.value || 'general');
           BORRADOR_CAT = { nombre: n, grupo: g };
           if (!n) return st.hay ? { ok: true, v: {} } : { ok: false, error: U('n4_cat_falta') };
@@ -631,6 +718,18 @@
       };
     },
     guarda: function (sb, v) {
+      // las sugeridas: una por llamada, en orden, por la puerta de siempre. La primera que la base rechace para la cadena y sale su frase; las de
+      // antes ya están (la relectura las enseña en la lista y el paso queda hecho con una). «Ya hay una con ese nombre» no es un error: ya está.
+      if (v && Array.isArray(v.lista)) {
+        return v.lista.reduce(function (p, c) {
+          return p.then(function (r) {
+            if (!r.ok) return r;
+            return resultado(sb.rpc('gasto_categoria_guarda', { p_clave: null, p_datos: { nombre: c.nombre, grupo: c.grupo } })).then(function (x) {
+              return !x.ok && x.error && x.error.hint === 'nombre_repetido' ? { ok: true } : conHint(x);
+            });
+          });
+        }, Promise.resolve({ ok: true }));
+      }
       if (!v || !v.nombre) return Promise.resolve({ ok: true });   // ya había categorías y no se escribió otra: nada que guardar
       return resultado(sb.rpc('gasto_categoria_guarda', { p_clave: null, p_datos: { nombre: v.nombre, grupo: v.grupo } })).then(function (r) {
         if (r.ok) BORRADOR_CAT = null;

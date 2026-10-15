@@ -5034,6 +5034,8 @@ def setup_comun_pasos():
             aborta('setup_comun_pasos: setup_comun.js tiene que cargar antes que ajustes_puesta.js')
         open(pag, 'w', encoding='utf-8', newline='').write(t)
     shutil.copy2(os.path.join(AQUI, 'setup_comun.js'), os.path.join(v4, 'assets', 'setup_comun.js'))
+    # el catálogo de categorías de gasto sugeridas por tipo de negocio (lo lee setup_comun.js al lado de sí mismo; bbm-comodidad-2, 15-oct-2026)
+    shutil.copy2(os.path.join(AQUI, 'categorias_gasto_sugeridas.json'), os.path.join(v4, 'assets', 'categorias_gasto_sugeridas.json'))
     js = os.path.join(v4, 'assets', 'ajustes.js')
     a = open(js, encoding='utf-8').read()
     a = _una_vez(a, IDIOMAS_ORIGEN_LAWANG, IDIOMAS_ORIGEN_BASE, 'ajustes.js IDIOMAS_ORIGEN')

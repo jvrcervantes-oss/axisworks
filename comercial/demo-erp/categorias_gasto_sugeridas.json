@@ -1,0 +1,21 @@
+{
+  "_nota": "Categorías de gasto que el paso «Categorías de gasto» del asistente propone cuando la instancia aún no tiene NINGUNA (owner vía agencia-c0, 15-oct-2026). Clave = config_instancia.tipo_erp (la da modulos_activos_datos().tipo); sin tipo, o con un tipo que no está aquí, _generico. Cada una en es/en/id: el paso las nombra en los idiomas que ofrece la instancia («id · en» en bbm). grupo ∈ GRUPOS_GASTO (setup_comun.js). Se dan de alta una a una por gasto_categoria_guarda; la base comprueba cada nombre. Decisión por defecto de bbm-comodidad-2 (revertir: borrar este fichero y el paso vuelve al campo libre).",
+  "reservas": [
+    { "grupo": "general", "es": "Combustible", "en": "Fuel", "id": "Bahan bakar" },
+    { "grupo": "general", "es": "Recambios y taller", "en": "Spare parts and repairs", "id": "Suku cadang dan bengkel" },
+    { "grupo": "personal", "es": "Sueldos", "en": "Salaries", "id": "Gaji" },
+    { "grupo": "general", "es": "Alquiler del local", "en": "Premises rent", "id": "Sewa tempat" },
+    { "grupo": "general", "es": "Luz, agua e internet", "en": "Power, water and internet", "id": "Listrik, air dan internet" },
+    { "grupo": "marketing", "es": "Marketing y publicidad", "en": "Marketing and advertising", "id": "Pemasaran dan iklan" },
+    { "grupo": "financiero", "es": "Comisiones de pago", "en": "Payment fees", "id": "Biaya pembayaran" },
+    { "grupo": "financiero", "es": "Seguros", "en": "Insurance", "id": "Asuransi" },
+    { "grupo": "impuestos", "es": "Impuestos", "en": "Taxes", "id": "Pajak" }
+  ],
+  "_generico": [
+    { "grupo": "personal", "es": "Sueldos", "en": "Salaries", "id": "Gaji" },
+    { "grupo": "general", "es": "Alquiler del local", "en": "Premises rent", "id": "Sewa tempat" },
+    { "grupo": "general", "es": "Luz, agua e internet", "en": "Power, water and internet", "id": "Listrik, air dan internet" },
+    { "grupo": "marketing", "es": "Marketing y publicidad", "en": "Marketing and advertising", "id": "Pemasaran dan iklan" },
+    { "grupo": "impuestos", "es": "Impuestos", "en": "Taxes", "id": "Pajak" }
+  ]
+}
