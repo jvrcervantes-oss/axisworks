@@ -64,7 +64,7 @@ const e = JSON.parse(require('fs').readFileSync(0, 'utf8'));
 const EN = { 'Gastos y proveedores': 'Expenses and suppliers', 'Panel de control': 'Control panel', 'esta herramienta': 'this tool',
              'No tienes acceso a «%h».': 'You do not have access to “%h”.' };
 const r = {};
-for (const sin of ['gastos', 'creatividades_ver', 'Panel de control', 'zzz_inventada', '<img src=x>']) {
+for (const sin of ['gastos', 'creatividades_ver', 'Panel de control', 'zzz_inventada', '<img src=x>', 'gastos,facturas,gastos']) {
   const av = { innerHTML: '' };
   const ctx = { URLSearchParams: URLSearchParams, location: { search: '?sin_permiso=' + encodeURIComponent(sin) }, window: {},
     $: function () { return av; },
@@ -88,6 +88,8 @@ if p.returncode == 0:
     ok('una clave que no está en la lista no se enseña: «esta herramienta»', '“this tool”' in r['zzz_inventada'] and 'zzz' not in r['zzz_inventada'],
        r['zzz_inventada'])
     ok('lo que llega por la URL sigue escapado', '<img' not in r['<img src=x>'], r['<img src=x>'])
+    ok('una LISTA de claves (/ventas/: «facturas,operaciones,…») sale con el nombre de cada una, sin repetir ni la clave en bruto',
+       '“Expenses and suppliers / Facturas”' in r['gastos,facturas,gastos'], r['gastos,facturas,gastos'])
 
 nombre = 'test_sin_permiso_nombre' + (' --sin-parche' if SIN_PARCHE else '')
 print(('OK' if not fallos else 'MAL') + ' %s: %d/%d' % (nombre, total - len(fallos), total))

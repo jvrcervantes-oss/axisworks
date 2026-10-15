@@ -2498,6 +2498,8 @@ MENU_I18N = {
 # perusahaan, kuitansi, invoice). Traducción automática SIN REVISAR por un hablante nativo (departamentos/idiomas: ISO 18587); la valida el
 # equipo de Dion como el resto del glosario. Lo que ya tenía inglés en Lawang solo recibe aquí su indonesio (una clave EN existente no se pisa).
 MENU_I18N.update({
+    # el número fiscal indonesio se llama igual en todos los idiomas (lo cazó el modo clics del arnés en Gastos, bbm-idioma-total, 15-oct)
+    'NPWP': {'en': 'NPWP', 'id': 'NPWP'},
     # historiales: lo que firma el sistema o el estudio (verificador de bbm, 15-oct)
     'Sistema': {'en': 'System', 'id': 'Sistem'},
     'Configuración inicial': {'en': 'Initial setup', 'id': 'Konfigurasi awal'},
@@ -5575,6 +5577,9 @@ IDIOMAS_PARCHES = (
     ('intranet/index.html', "  const sin = new URLSearchParams(location.search).get('sin_permiso');\n",
      "  const sin = new URLSearchParams(location.search).get('sin_permiso');\n"
      "  function axwNombreSinPermiso(x){   // por la clave de la herramienta (herr), nunca la clave en bruto\n"
+     # guard.js manda una LISTA cuando la pantalla vale con cualquiera de varias (/ventas/: «facturas,operaciones,reservas-producto»; modo
+     # sinpermiso del arnés, bbm-idioma-total 15-oct): cada una por su nombre
+     "    if (/^[a-z0-9_-]+(,[a-z0-9_-]+)+$/.test(x)) return x.split(',').map(axwNombreSinPermiso).filter((n, i, a) => a.indexOf(n) === i).join(' / ');\n"
      "    const h = (typeof HERRAMIENTAS !== 'undefined' ? HERRAMIENTAS : []).find(t => [].concat(t.herr).includes(x));   // herr puede ser una lista (Creatividades)\n"
      "    if(h) return lwT(h.nombre);\n"
      "    return /^[a-z0-9_-]+$/.test(x) ? lwT('esta herramienta') : lwT(x);\n"

@@ -35,7 +35,7 @@ function axwComun(raiz, T) {
     'La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.': 'Database mengembalikan data yang tidak terduga. Bukan berarti kosong: datanya tidak dapat diperiksa.',
     'La base no ha aceptado el cambio.': 'Database tidak menerima perubahan ini.', 'código': 'kode',
     'La base ha devuelto un error. No es que esté vacía: no se ha podido mirar.': 'Database mengembalikan galat. Bukan berarti kosong: datanya tidak dapat diperiksa.',
-    'Sistema': 'Sistem', 'AxisWorks (soporte)': 'AxisWorks (dukungan)', 'Configuración inicial': 'Pengaturan awal'
+    'Sistema': 'Sistem', 'AxisWorks (soporte)': 'AxisWorks (dukungan)', 'Configuración inicial': 'Konfigurasi awal'
   };
 
   function h(tag, attrs, hijos) {
