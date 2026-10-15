@@ -150,7 +150,7 @@
 .ag2-paso label{font-weight:600;color:var(--text-hi)}
 .ag2-paso .ag2-pista{font-size:13px;color:var(--text-lo);margin:0}
 .ag2-paso .ag2-in{display:flex;gap:8px;flex-wrap:wrap}
-.ag2 .ag2-paso input,.ag2 .ag2-paso select{width:100%;min-width:0;min-height:48px;padding:0 14px;border-radius:12px;background:var(--ink);border:1px solid #4A4E7A!important;color:var(--text-hi);font:inherit}
+.ag2 .ag2-paso input,.ag2 .ag2-paso select{width:100%;min-width:0;min-height:48px;padding:0 14px;border-radius:12px;background:var(--ink);border:1px solid #62679A!important;color:var(--text-hi);font:inherit}
 .ag2 .ag2-paso .ag2-in input,.ag2 .ag2-paso .ag2-in select{flex:1 1 200px;width:auto}
 .ag2 .ag2-paso input:focus,.ag2 .ag2-paso select:focus{border-color:var(--lime)!important}
 .ag2-btn{min-height:48px;padding:0 22px;border-radius:999px;border:0;background:var(--lime);color:#0B0C1E;font-weight:600}
@@ -201,7 +201,7 @@
 .ag2-why dd{margin:0;font-size:13px;line-height:1.45;color:var(--text)}
 .ag2-campo{display:flex;flex-direction:column;gap:6px;min-width:0}
 .ag2-campo>label,.ag2-check-t{font-weight:600;color:var(--text-hi)}
-.ag2 .ag2-campo input,.ag2 .ag2-campo select,.ag2 .ag2-campo textarea,.ag2 .ag2-lim select{width:100%;min-width:0;min-height:48px;padding:10px 14px;border-radius:12px;background:var(--ink);border:1px solid #4A4E7A;color:var(--text-hi);font:inherit}
+.ag2 .ag2-campo input,.ag2 .ag2-campo select,.ag2 .ag2-campo textarea,.ag2 .ag2-lim select{width:100%;min-width:0;min-height:48px;padding:10px 14px;border-radius:12px;background:var(--ink);border:1px solid #62679A;color:var(--text-hi);font:inherit}
 .ag2 .ag2-campo textarea{resize:vertical;line-height:1.45}
 .ag2-lim select{max-width:420px}
 .ag2 .ag2-campo input:focus,.ag2 .ag2-campo select:focus,.ag2 .ag2-campo textarea:focus,.ag2 .ag2-lim select:focus{border-color:var(--lime)}
@@ -645,7 +645,6 @@
     'Flota y taller': 'Fleet and workshop', 'Salidas y recogidas de mañana': "Tomorrow's handovers and pick-ups", 'Motos que no han vuelto': 'Bikes not back yet',
     'Reservas sin pagar que caducan': 'Unpaid bookings about to expire', 'Cobros por cuadrar': 'Payments to reconcile', 'Qué sacar primero del taller': 'What to get out of the workshop first',
     'Modelos siempre llenos o vacíos': 'Models always full or empty', 'Cierre del día': 'Day close',
-    'Ese número es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 37 o 37.50.': 'That number is ambiguous (thousands or decimals?): write it without a thousands separator, for example 37 or 37.50.',
     'Elige al menos un trabajo, o pon el nivel de Ruta a 0.': 'Choose at least one job, or set the Route level to 0.',
     'Subir el tope tarda 24 h en entrar; bajarlo es inmediato.': 'Raising the cap takes 24 h to apply; lowering it is immediate.',
     'Unos {u} USD al cambio de hoy.': 'About {u} USD at today’s rate.',
@@ -708,6 +707,8 @@
     'Como mucho 20 reglas, y hay {n}.': 'At most 20 rules, and there are {n}.',
     'La regla {n} pasa de 200 caracteres.': 'Rule {n} is over 200 characters.',
     'Subida cancelada: el tope no cambia.': 'Increase cancelled: the cap does not change.',
+    'El tope se queda en {x} y la subida a {y} no entrará.': 'The cap stays at {x} and the increase to {y} will not apply.',
+    'Antes vuelve a guardar los límites en el paso 3: hay módulos que cambiaron desde la última vez.': 'First save the limits again in step 3: some modules changed since last time.',
     /* Panel V2 del AaaS autónomo (15-oct-2026) */
     'Tus agentes trabajan solos dentro de sus límites y aquí te dicen qué han hecho y por qué. Los paras cuando quieras: a todos, por área o de uno en uno.': 'Your agents work on their own within their limits and tell you here what they did and why. Stop them whenever you want: all at once, by area or one by one.',
     'Capitán': 'Captain',
@@ -1025,7 +1026,6 @@
     'Flota y taller': 'Armada dan bengkel', 'Salidas y recogidas de mañana': 'Serah terima dan penjemputan besok', 'Motos que no han vuelto': 'Motor yang belum kembali',
     'Reservas sin pagar que caducan': 'Booking belum dibayar yang akan kedaluwarsa', 'Cobros por cuadrar': 'Pembayaran yang perlu dicocokkan', 'Qué sacar primero del taller': 'Yang perlu dikeluarkan dulu dari bengkel',
     'Modelos siempre llenos o vacíos': 'Model yang selalu penuh atau kosong', 'Cierre del día': 'Tutup hari',
-    'Ese número es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 37 o 37.50.': 'Angka itu ambigu (ribuan atau desimal?): tulis tanpa pemisah ribuan, misalnya 37 atau 37.50.',
     'Elige al menos un trabajo, o pon el nivel de Ruta a 0.': 'Pilih setidaknya satu tugas, atau atur level Rute ke 0.',
     'Subir el tope tarda 24 h en entrar; bajarlo es inmediato.': 'Menaikkan batas berlaku setelah 24 jam; menurunkannya langsung berlaku.',
     'Unos {u} USD al cambio de hoy.': 'Sekitar {u} USD dengan kurs hari ini.',
@@ -1088,6 +1088,8 @@
     'Como mucho 20 reglas, y hay {n}.': 'Maksimal 20 aturan, dan ada {n}.',
     'La regla {n} pasa de 200 caracteres.': 'Aturan {n} lebih dari 200 karakter.',
     'Subida cancelada: el tope no cambia.': 'Kenaikan dibatalkan: batas tidak berubah.',
+    'El tope se queda en {x} y la subida a {y} no entrará.': 'Batas tetap {x} dan kenaikan ke {y} tidak akan berlaku.',
+    'Antes vuelve a guardar los límites en el paso 3: hay módulos que cambiaron desde la última vez.': 'Simpan lagi batas modul di langkah 3 dulu: ada modul yang berubah sejak terakhir kali.',
     /* Panel V2 del AaaS autónomo (15-oct-2026) */
     'Tus agentes trabajan solos dentro de sus límites y aquí te dicen qué han hecho y por qué. Los paras cuando quieras: a todos, por área o de uno en uno.': 'Agen Anda bekerja sendiri dalam batasnya dan di sini memberi tahu apa yang sudah dikerjakan dan alasannya. Hentikan kapan saja: semuanya, per area, atau satu per satu.',
     'Capitán': 'Kapten',
@@ -1553,8 +1555,7 @@
     try { return new Intl.NumberFormat(C.locale(), { maximumFractionDigits: 2 }).format(n); } catch (e) { /* MUDO A PROPOSITO: sin Intl, la cifra tal cual */ return String(n); }
   }
   function errImporte(e) {
-    return e === 'ambiguo' ? T('Ese número es ambiguo (¿miles o decimales?): escríbelo sin separador de miles, por ejemplo 37 o 37.50.')
-                           : Tf('Escribe el importe con cifras, como {x}.', { x: numTxt(1500.5) });
+    return Tf('Escribe el importe con cifras, como {x}.', { x: numTxt(1500.5) });
   }
 
   function pintaPasosNav(d) {
@@ -1570,7 +1571,8 @@
     var techo = ent(d.tope_techo_cent) ? d.tope_techo_cent : 0, pendiente = ent(d.tope_propuesto_cent);
     var pedido = pendiente ? d.tope_propuesto_cent : d.tope_mensual_cent;   // lo último que pidió el dueño
     $a('aj-tope-etq').textContent = T('Tope de gasto al mes') + ' (' + d.moneda + ')';
-    if (!E.sucio.tope) F('aj-tope').value = numTxt((pedido > 0 ? pedido : techo) / 100);
+    if (!E.sucio.tope) F('aj-tope').value = pedido > 0 ? numTxt(pedido / 100) : '';
+    if (techo > 0) F('aj-tope').setAttribute('placeholder', numTxt(techo / 100)); else F('aj-tope').removeAttribute('placeholder');
     var ayuda = [];
     if (pedido <= 0 && techo > 0) ayuda.push(Tf('Sugerido: {x}, el máximo que ha fijado el estudio para tu plan.', { x: eur(techo, d) }));
     else if (techo > 0) ayuda.push(Tf('Como mucho {x}: es el máximo que ha fijado el estudio.', { x: eur(techo, d) }));
@@ -1697,9 +1699,12 @@
     return true;
   }
   /* tras guardar: se relee todo (la pantalla no da nada por hecho), la bola late y se va al siguiente paso que falte */
-  function trasGuardar(paso, sucios) {
+  function trasGuardar(paso, sucios, btn) {
     sucios.forEach(function (k) { E.sucio[k] = false; });
     return carga().then(function () {
+      C.libera(btn);
+      /* sin estado releído (la lectura falló) no se adivina el siguiente paso, y quien se fue a «Equipo» mientras tanto no vuelve a Ajustes */
+      if ($a('carga').getAttribute('data-tipo') !== 'listo' || rutaActual().vista !== 'ajustes') return;
       if (V.orbe) V.orbe.pulso();
       ir('#ajustes-' + (paso === 'trabajos' ? 'listo' : siguiente(paso, E.estado)));
       msgAj('aj-ok', Tf('{x}: guardado.', { x: T(NOMBRE_PASO[paso]) }));
@@ -1729,22 +1734,28 @@
     if (!C.ocupa(btn)) return;
     msgAj('aj-msg-tope', '');
     llama('agente_ficha_ajusta', { p_tope_mensual_cent: v, p_trabajos: null, p_nivel_ruta: null, p_motivo: MOTIVO_AJ.tope }).then(function (r) {
-      C.libera(btn);
-      if (resultado('aj-msg-tope', r)) trasGuardar('tope', ['tope']);
+      if (resultado('aj-msg-tope', r)) trasGuardar('tope', ['tope'], btn); else C.libera(btn);
     });
   }
   /* «Cancelar la subida»: el tope VIGENTE explícito (pedir el mismo la cancela sin bajarlo); trabajos y nivel en null (no cambian) */
-  function cancelaSubida(btn) {
+  function cancelaSubida() {
     var d = E.estado; if (!d || !d.soy_dueno || !ent(d.tope_propuesto_cent)) return;
-    if (!C.ocupa(btn)) return;
     var vigente = d.tope_mensual_cent;
-    msgAj('aj-msg-tope', ''); msgAj('aj-ok', '');
-    llama('agente_ficha_ajusta', { p_tope_mensual_cent: vigente, p_trabajos: null, p_nivel_ruta: null, p_motivo: MOTIVO_AJ.subida }).then(function (r) {
-      C.libera(btn);
-      if (!resultado('aj-msg-tope', r)) return;
-      E.sucio.tope = false;
-      carga().then(function () { msgAj('aj-ok', T('Subida cancelada: el tope no cambia.')); });
-    });
+    C.dialogo(T('Cancelar la subida'), [h('p', { class: 'ag-sub', text: Tf('El tope se queda en {x} y la subida a {y} no entrará.', { x: eur(vigente, d), y: eur(d.tope_propuesto_cent, d) }) })], [
+      { texto: T('Confirmar'), accion: 'ag-modal-confirmar', peligro: true, alclic: function (bt, dlg) {
+        if (!C.ocupa(bt)) return;
+        dlg.error('');
+        llama('agente_ficha_ajusta', { p_tope_mensual_cent: vigente, p_trabajos: null, p_nivel_ruta: null, p_motivo: MOTIVO_AJ.subida }).then(function (r) {
+          if (r.error) { C.libera(bt); dlg.error(textoError(r.error, false)); return; }
+          if (!esObj(r.data)) { C.libera(bt); dlg.error(T('La base no confirmó el cambio: recarga antes de repetir.')); return; }
+          dlg.cierra();
+          E.sucio.tope = false;
+          msgAj('aj-msg-tope', ''); msgAj('aj-ok', '');
+          carga().then(function () { C.libera(bt); msgAj('aj-ok', T('Subida cancelada: el tope no cambia.')); });
+        });
+      } },
+      { texto: T('Cancelar'), accion: 'ag-modal-cerrar', cierra: true }
+    ]);
   }
   /* el contexto tal como lo pide la base: claves vacías no viajan; en quién/horarios/tono un salto de línea pasa a espacio; las reglas, una por línea */
   function contextoDelForm() {
@@ -1776,8 +1787,7 @@
     if (!C.ocupa(btn)) return;
     msgAj('aj-msg-negocio', '');
     llama('agente_ficha_contexto', { p_contexto: ctx, p_motivo: MOTIVO_AJ.negocio }).then(function (r) {
-      C.libera(btn);
-      if (resultado('aj-msg-negocio', r)) trasGuardar('negocio', ['negocio']);
+      if (resultado('aj-msg-negocio', r)) trasGuardar('negocio', ['negocio'], btn); else C.libera(btn);
     });
   }
   /* Límites: la lista ENTERA de `limites` (lo que no se manda, la base lo retira; `limites_fuera` no se manda nunca). La RPC sustituye también los
@@ -1805,10 +1815,9 @@
     if (!C.ocupa(btn)) return;
     msgAj('aj-msg-limites', '');
     llama('agente_ficha_limites', { p_niveles: niveles, p_topes: topes, p_motivo: MOTIVO_AJ.limites }).then(function (r) {
-      C.libera(btn);
-      if (!resultado('aj-msg-limites', r)) return;
+      if (!resultado('aj-msg-limites', r)) { C.libera(btn); return; }
       AJ.modoLim = false;
-      trasGuardar('limites', ['limites']);
+      trasGuardar('limites', ['limites'], btn);
     });
   }
   /* Trabajos (opcional): agente_ficha_ajusta con el tope en null; y, si se tocaron, los topes por módulo por agente_ficha_limites con los niveles
@@ -1824,15 +1833,20 @@
     var cambiaTrab = nivel !== d.nivel_ruta || orden.some(function (t) { return (marcados.indexOf(t) >= 0) !== (d.trabajos[t] === true); });
     var topes = {}, malo = '', cambiaTopes = false;
     if (hechoPaso('limites', d)) {
-      Array.prototype.forEach.call(raiz.querySelectorAll('[data-ag="aj-tope-mod"]'), function (f) {
-        var m = f.getAttribute('data-modulo'), l = L.filter(function (x) { return x.modulo === m; })[0];
-        if (malo || !l) return;
+      var filas = {};
+      Array.prototype.forEach.call(raiz.querySelectorAll('[data-ag="aj-tope-mod"]'), function (f) { filas[f.getAttribute('data-modulo')] = f; });
+      L.forEach(function (l) {
+        var m = l.modulo, guardado = ent(l.tope_cent) ? l.tope_cent : null, f = filas[m];
+        if (malo) return;
+        if (!f) { if (guardado != null) topes[m] = guardado; return; }
         var imp = C.importeIdioma(f.querySelector('[data-limite="tope"]').value, 2);
         if (imp.e) { malo = Tf('El tope de «{x}» no se entiende: escríbelo con cifras, como {y}.', { x: nombreModulo(m), y: numTxt(1500.5) }); return; }
         var v = imp.vacio ? null : Math.round(imp.v * 100);
         if (v != null) topes[m] = v;
-        if (v !== (ent(l.tope_cent) ? l.tope_cent : null)) cambiaTopes = true;
+        if (v !== guardado) cambiaTopes = true;
       });
+      if (!malo && cambiaTopes && (d.limites_fuera.length || L.some(function (l) { return l.nivel_efectivo !== l.nivel; })))
+        malo = T('Antes vuelve a guardar los límites en el paso 3: hay módulos que cambiaron desde la última vez.');
     }
     if (malo) { $a('aj-topes').open = true; msgAj('aj-msg-trabajos', malo); return; }
     if (!cambiaTrab && !cambiaTopes) { E.sucio.trabajos = false; E.sucio.topes = false; msgAj('aj-msg-trabajos', ''); ir('#ajustes-listo'); return; }
@@ -1842,14 +1856,14 @@
                              : Promise.resolve({ data: {}, error: null });
     primero.then(function (r) {
       if (!resultado('aj-msg-trabajos', r)) { C.libera(btn); return; }
-      if (!cambiaTopes) { C.libera(btn); trasGuardar('trabajos', ['trabajos']); return; }
+      if (!cambiaTopes) { trasGuardar('trabajos', ['trabajos'], btn); return; }
       var niveles = {};
       L.forEach(function (l) { niveles[l.modulo] = l.nivel; });
       llama('agente_ficha_limites', { p_niveles: niveles, p_topes: topes, p_motivo: MOTIVO_AJ.topes }).then(function (r2) {
-        C.libera(btn);
-        if (resultado('aj-msg-trabajos', r2)) { trasGuardar('trabajos', ['trabajos', 'topes']); return; }
+        if (resultado('aj-msg-trabajos', r2)) { trasGuardar('trabajos', ['trabajos', 'topes'], btn); return; }
         /* los trabajos sí quedaron guardados: se relee (lo tecleado en los topes se conserva) y el aviso del freno sigue a la vista */
-        if (cambiaTrab) { E.sucio.trabajos = false; var m = $a('aj-msg-trabajos').textContent; carga().then(function () { msgAj('aj-msg-trabajos', m); }); }
+        if (cambiaTrab) { E.sucio.trabajos = false; var m = $a('aj-msg-trabajos').textContent; carga().then(function () { C.libera(btn); msgAj('aj-msg-trabajos', m); }); }
+        else C.libera(btn);
       });
     });
   }
@@ -1874,7 +1888,7 @@
         p = siguiente(null, d);
         try { history.replaceState(null, '', '#ajustes-' + p); } catch (e) { /* MUDO A PROPOSITO: sin replaceState la barra se queda en #ajustes; el paso se pinta igual */ }
       }
-      if (AJ.paso !== p) { AJ.modoLim = false; msgAj('aj-ok', ''); }
+      if (AJ.paso !== p) { if (AJ.paso === 'limites') { AJ.modoLim = false; E.sucio.limites = false; } msgAj('aj-ok', ''); }
       AJ.paso = p;
       pintaAjustes();
       if (mueve) {
@@ -2716,7 +2730,7 @@
     var id = el.hasAttribute('data-id') ? Number(el.getAttribute('data-id')) : null;
     if (a === 'ag-aj-recomendado') guardaLimites(el, true);
     else if (a === 'ag-aj-ajustar') { AJ.modoLim = !AJ.modoLim; E.sucio.limites = false; pintaLimites(E.estado); }
-    else if (a === 'ag-aj-cancelar-subida') cancelaSubida(el);
+    else if (a === 'ag-aj-cancelar-subida') cancelaSubida();
     else if (a === 'ag-acc-aceptar' || a === 'ag-acc-rechazar') { if (E.estado && E.estado.soy_dueno) decideAccion(el, id, a === 'ag-acc-aceptar'); }
     else if (a === 'ag-apagar' || a === 'ag-encender') {
       var enc = a === 'ag-encender';

@@ -78,6 +78,7 @@ function nuevaBase(o = {}) {
     s.acciones = [{ id: 201, accion: 'aviso_reserva', modulo: 'facturas', datos: { reserva: U(502), motivo: 'unidad_de_baja', trabajo: 'salidas' }, estado: 'pendiente', motivo: null, creada_en: en(-2), expira_en: en(40), decidida_en: null, decidida_por: null }];
   }
   if (o.sinNivelGuardado) s.limites.forEach(l => { l.nivel = 0; l.nivel_efectivo = 0; });
+  if (o.limpio) { s.fuera = []; s.limites.forEach(l => { l.nivel_efectivo = l.nivel; }); }
   if (o.xss) s.contexto.quien = XSS;
   // Panel V2 (15-oct-2026): la forma de agente_panel_autonomo / agente_conexiones_estado (agente_forma.json). Áreas y equipo como los siembra 20261015100000.
   const X = t => o.xss ? XSS : t;
@@ -517,16 +518,26 @@ const TODAS = [];
   {
     const { p, base, ctx } = await abre({ base: { dueno: true, nuevo: true }, hash: '#ajustes' });
     ok('desde cero: #ajustes abre el paso 1 (el primero que falta)', (await hash(p)) === '#ajustes-tope' && (await pasoVisible(p, 'tope')));
-    ok('tope: sugerido el máximo del estudio (40) ya escrito, y la ayuda dice el porqué y las 24 h', (await p.$eval('[data-campo="aj-tope"]', e => e.value)) === '40'
+    ok('tope: vacío (un importe no se guarda por pulsar Intro sin leerlo), con el sugerido (40) como ejemplo y en la ayuda, que dice también las 24 h',
+       (await p.$eval('[data-campo="aj-tope"]', e => e.value)) === '' && (await p.$eval('[data-campo="aj-tope"]', e => e.placeholder)) === '40'
        && (await txt(p, '[data-ag="aj-tope-ayuda"]')).includes('Sugerido') && (await txt(p, '[data-ag="aj-tope-ayuda"]')).includes('24 h'));
+    await enviar(p, 'tope');
+    ok('tope vacío: no se manda, el error va ligado al campo y le da el foco', llamadas(base, 'agente_ficha_ajusta').length === 0 && (await foco(p)) === 'ag2-aj-tope'
+       && (await p.$eval('[data-campo="aj-tope"]', e => e.getAttribute('aria-invalid'))) === 'true');
+    await p.fill('[data-campo="aj-tope"]', '40');
     ok('tope: la etiqueta lleva la moneda de la base', (await txt(p, '[data-ag="aj-tope-etq"]')).includes('(EUR)'));
     await enviar(p, 'tope');
     await hasta(() => llamadas(base, 'agente_ficha_ajusta').length === 1);
     ok('tope: manda el tope en céntimos y null en trabajos y nivel, con el motivo de la pantalla', J(llamadas(base, 'agente_ficha_ajusta')[0][1]) === J({ p_tope_mensual_cent: 4000, p_trabajos: null, p_nivel_ruta: null, p_motivo: MOTIVO.tope }), J(llamadas(base, 'agente_ficha_ajusta')[0]));
     ok('tope guardado → paso 2 con el foco en su título', (await enHash(p, '#ajustes-negocio')) && (await pasoVisible(p, 'negocio')) && (await foco(p)) === 'ag2-aj-h-negocio'
        && (await txt(p, '[data-ag="aj-ok"]')).includes('guardado'), J(Object.assign(await estadoRuta(p), { ok: await txt(p, '[data-ag="aj-ok"]') })));
+    await p.goBack();
+    ok('tras guardar (pushState), «atrás» vuelve al paso anterior', (await enHash(p, '#ajustes-tope')) && (await pasoVisible(p, 'tope')));
+    await p.goForward();
+    await enHash(p, '#ajustes-negocio');
     await enviar(p, 'negocio');
-    ok('negocio vacío: no se manda y dice qué falta', llamadas(base, 'agente_ficha_contexto').length === 0 && (await txt(p, '[data-ag="aj-msg-negocio"]')).includes('Escribe quién es el negocio'));
+    ok('negocio vacío: no se manda, dice qué falta y el foco va a «quién»', llamadas(base, 'agente_ficha_contexto').length === 0 && (await txt(p, '[data-ag="aj-msg-negocio"]')).includes('Escribe quién es el negocio')
+       && (await foco(p)) === 'ag2-aj-quien');
     await p.fill('[data-campo="ctx_quien"]', 'Alquiler de motos\nen Canggu');
     ok('el contador de caracteres se mueve al escribir', (await txt(p, '[data-ag="cuenta-ctx_quien"]')) === '27 de 600 caracteres');
     await enviar(p, 'negocio');
@@ -534,8 +545,10 @@ const TODAS = [];
     ok('negocio: claves vacías no viajan y el salto de línea pasa a espacio', J(llamadas(base, 'agente_ficha_contexto')[0][1]) === J({ p_contexto: { quien: 'Alquiler de motos en Canggu' }, p_motivo: MOTIVO.negocio }), J(llamadas(base, 'agente_ficha_contexto')[0][1]));
     ok('negocio guardado → paso 3 (límites), con lo recomendado a la vista y sin selectores', (await enHash(p, '#ajustes-limites')) && (await pasoVisible(p, 'limites'))
        && (await txt(p, '[data-ag="aj-lim-lista"]')).includes('Recomendado') && (await p.$$eval('[data-ag="aj-f-limites"] select', e => e.filter(s => s.getClientRects().length).length)) === 0);
-    await p.click('[data-accion="ag-aj-recomendado"]');
-    await hasta(() => llamadas(base, 'agente_ficha_limites').length === 1);
+    await p.dblclick('[data-accion="ag-aj-recomendado"]');
+    await hasta(() => llamadas(base, 'agente_ficha_limites').length >= 1);
+    await enHash(p, '#ajustes-listo');
+    ok('doble clic en «Usar lo recomendado»: UNA escritura (el botón sigue ocupado hasta releer)', llamadas(base, 'agente_ficha_limites').length === 1, String(llamadas(base, 'agente_ficha_limites').length));
     ok('«Usar lo recomendado»: nivel 2 en TODOS los módulos de `limites`, sin topes', J(llamadas(base, 'agente_ficha_limites')[0][1]) === J({ p_niveles: { 'reservas-producto': 2, facturas: 2, 'modulo-sin-rotulo': 2 }, p_topes: {}, p_motivo: MOTIVO.limites }), J(llamadas(base, 'agente_ficha_limites')[0][1]));
     ok('límites guardados → la pantalla final', (await enHash(p, '#ajustes-listo')) && (await pasoVisible(p, 'listo')) && (await txt(p, '[data-ag="aj-listo-t"]')) === 'Tu equipo ya trabaja');
     ok('el tope subido desde 0 espera 24 h: la pantalla final dice cuándo empieza lo que pasa por la IA', (await txt(p, '[data-ag="aj-listo-txt"]')).includes('empieza el') && (await txt(p, '[data-ag="aj-listo-txt"]')).includes('24 h'));
@@ -572,8 +585,10 @@ const TODAS = [];
   }
   {
     const { p, base, ctx } = await abre({ base: { dueno: true, propuesto: true }, hash: '#ajustes-tope' });
-    ok('subida pendiente: se dice con su fecha y el campo trae lo pedido (50 > techo no: el doble pide 5000)', (await visible(p, '[data-ag="aj-subida"]')) && (await txt(p, '[data-ag="aj-subida-txt"]')).includes('Hay una subida pendiente'));
+    ok('subida pendiente: se dice con su fecha', (await visible(p, '[data-ag="aj-subida"]')) && (await txt(p, '[data-ag="aj-subida-txt"]')).includes('Hay una subida pendiente'));
     await p.click('[data-accion="ag-aj-cancelar-subida"]');
+    ok('«Cancelar la subida» pide confirmación y dice con qué tope se queda', llamadas(base, 'agente_ficha_ajusta').length === 0 && (await txt(p, '.axw-modal')).includes('El tope se queda en') && (await txt(p, '.axw-modal')).includes('no entrará'));
+    await p.click('[data-accion="ag-modal-confirmar"]');
     await hasta(() => llamadas(base, 'agente_ficha_ajusta').length === 1);
     ok('«Cancelar la subida»: manda el tope VIGENTE explícito y null en trabajos y nivel', J(llamadas(base, 'agente_ficha_ajusta')[0][1]) === J({ p_tope_mensual_cent: 3700, p_trabajos: null, p_nivel_ruta: null, p_motivo: MOTIVO.subida }), J(llamadas(base, 'agente_ficha_ajusta')[0][1]));
     await p.waitForFunction(() => document.querySelector('[data-ag="aj-ok"]').textContent.includes('Subida cancelada'), null, { timeout: 4000 }).catch(() => {});
@@ -591,6 +606,12 @@ const TODAS = [];
     ok('«Ajustar por módulo»: aparece un selector por módulo con lo guardado y el botón de guardar', (await p.$eval('[data-accion="ag-aj-ajustar"]', e => e.getAttribute('aria-expanded'))) === 'true'
        && J(await p.$$eval('[data-limite="nivel"]', e => e.filter(s => s.getClientRects().length).map(x => x.value))) === J(['1', '2', '0']) && (await visible(p, '[data-ag="aj-lim-guardar"]'))
        && !(await visible(p, '[data-accion="ag-aj-recomendado"]')));
+    await p.selectOption('[data-modulo="modulo-sin-rotulo"] [data-limite="nivel"]', '0');
+    await p.click('[data-ag="aj-ir"][data-paso="tope"]'); await enHash(p, '#ajustes-tope');
+    await p.click('[data-ag="aj-ir"][data-paso="limites"]'); await enHash(p, '#ajustes-limites');
+    ok('salir de Límites a mitad y volver: lo elegido sin guardar se descarta y la vista vuelve a «Ahora: …»', (await p.$$eval('[data-ag="aj-f-limites"] select', e => e.filter(s => s.getClientRects().length).length)) === 0
+       && (await txt(p, '[data-ag="aj-lim-lista"]')).includes('Ahora') && llamadas(base, 'agente_ficha_limites').length === 0);
+    await p.click('[data-accion="ag-aj-ajustar"]');
     await p.selectOption('[data-modulo="modulo-sin-rotulo"] [data-limite="nivel"]', '3');
     await p.click('[data-ag="aj-lim-guardar"]');
     await hasta(() => llamadas(base, 'agente_ficha_limites').length === 1);
@@ -642,13 +663,24 @@ const TODAS = [];
     await p.click('[data-ag="aj-topes"] summary');
     await p.fill('[data-ag="aj-tope-mod"][data-modulo="reservas-producto"] input', '20');
     await enviar(p, 'trabajos');
-    await hasta(() => llamadas(base, 'agente_ficha_limites').length === 1);
-    ok('topes por módulo: solo agente_ficha_limites, con los niveles GUARDADOS (facturas 2 aunque su efectivo sea 0) y todos los topes',
-       llamadas(base, 'agente_ficha_ajusta').length === 1 && J(llamadas(base, 'agente_ficha_limites')[0][1]) === J({ p_niveles: { 'reservas-producto': 1, facturas: 2, 'modulo-sin-rotulo': 0 }, p_topes: { 'reservas-producto': 2000, facturas: 1500 }, p_motivo: MOTIVO.topes }), J(llamadas(base, 'agente_ficha_limites')[0][1]));
+    await p.waitForSelector('[data-ag="aj-msg-trabajos"]:not(.axw-oculto)', { timeout: 4000 }).catch(() => {});
+    ok('topes con un módulo apagado tras su límite (o módulos de fuera): no se mandan y piden guardar antes el paso 3 (si no, se reaplicaría a escondidas)',
+       llamadas(base, 'agente_ficha_limites').length === 0 && (await txt(p, '[data-ag="aj-msg-trabajos"]')).includes('paso 3'));
     await ctx.close();
   }
   {
-    const { p, base, ctx } = await abre({ base: { dueno: true, freno: true }, hash: '#ajustes-trabajos' });
+    const { p, base, ctx } = await abre({ base: { dueno: true, limpio: true }, hash: '#ajustes-trabajos' });
+    await p.click('[data-ag="aj-topes"] summary');
+    await p.fill('[data-ag="aj-tope-mod"][data-modulo="reservas-producto"] input', '20');
+    await p.evaluate(() => { const f = document.querySelector('[data-ag="aj-tope-mod"][data-modulo="facturas"]'); f.parentNode.removeChild(f); });
+    await enviar(p, 'trabajos');
+    await hasta(() => llamadas(base, 'agente_ficha_limites').length === 1);
+    ok('topes por módulo: solo agente_ficha_limites, con los niveles GUARDADOS y TODOS los topes (una fila que no está en pantalla viaja con lo guardado)',
+       llamadas(base, 'agente_ficha_ajusta').length === 0 && J((llamadas(base, 'agente_ficha_limites')[0] || [0, 0])[1]) === J({ p_niveles: { 'reservas-producto': 1, facturas: 2, 'modulo-sin-rotulo': 0 }, p_topes: { 'reservas-producto': 2000, facturas: 1500 }, p_motivo: MOTIVO.topes }), J(llamadas(base, 'agente_ficha_limites')));
+    await ctx.close();
+  }
+  {
+    const { p, base, ctx } = await abre({ base: { dueno: true, freno: true, limpio: true }, hash: '#ajustes-trabajos' });
     await p.click('[data-ag="aj-topes"] summary');
     await p.fill('[data-ag="aj-tope-mod"][data-modulo="reservas-producto"] input', '20');
     await enviar(p, 'trabajos');
@@ -659,7 +691,7 @@ const TODAS = [];
     await ctx.close();
   }
   for (const [idioma, valor] of [['id', '1.500'], ['es', '1.500'], ['en', '1,500']]) {
-    const { p, base, ctx } = await abre({ idioma, base: { dueno: true }, hash: '#ajustes-trabajos' });
+    const { p, base, ctx } = await abre({ idioma, base: { dueno: true, limpio: true }, hash: '#ajustes-trabajos' });
     await p.click('[data-ag="aj-topes"] summary');
     await p.fill('[data-ag="aj-tope-mod"][data-modulo="reservas-producto"] input', valor);
     await enviar(p, 'trabajos');
@@ -790,13 +822,15 @@ const TODAS = [];
                pantallas: Math.max(1, Math.ceil((ultimo - arriba) / window.innerHeight)) };
     }, paso);
     const filas = [];
+    await p.fill('[data-campo="aj-tope"]', '40');
     filas.push(await mide('tope')); await enviar(p, 'tope'); await enHash(p, '#ajustes-negocio'); await p.waitForTimeout(200);
     await p.fill('[data-campo="ctx_quien"]', 'Sewa motor di Canggu');
     filas.push(await mide('negocio')); await enviar(p, 'negocio'); await enHash(p, '#ajustes-limites'); await p.waitForTimeout(200);
     filas.push(await mide('limites')); await p.click('[data-accion="ag-aj-recomendado"]'); await enHash(p, '#ajustes-listo'); await p.waitForTimeout(400);
     filas.push(await mide('listo'));
     const pant = filas.reduce((a, f) => a + f.pantallas, 0), campos = filas.reduce((a, f) => a + f.campos, 0);
-    console.log('MEDIDA DESPUÉS (id, 390×844): ' + J(filas) + ' · pantallas=' + pant + ' · campos visibles=' + campos + ' · campos tecleados=1 (quién) · guardados=3 · motivos=0');
+    const conBarra = filas.reduce((a, f) => a + Math.max(1, Math.ceil(f.hasta_el_boton_px / (844 - 64))), 0);
+    console.log('MEDIDA DESPUÉS (id, 390×844): ' + J(filas) + ' · pantallas=' + pant + ' (con la barra de 64 px de la intranet: ' + conBarra + ') · campos visibles=' + campos + ' · campos tecleados=2 (tope y quién) · guardados=3 · motivos=0');
     ok('medida: ≤4 pantallas a 390 px en indonesio (' + pant + ')', pant <= 4, J(filas));
     ok('medida: ≤6 campos a la vista en todo el recorrido (' + campos + ')', campos <= 6, J(filas));
     if (SHOT) for (const [paso, hs] of [['tope', '#ajustes-tope'], ['negocio', '#ajustes-negocio'], ['limites', '#ajustes-limites'], ['listo', '#ajustes-listo']]) {
