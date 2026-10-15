@@ -19,6 +19,7 @@ var TOPES = { nombre_negocio: 120, descripcion: 800, horario: 300, ubicacion: 30
   servicio_nombre: 80, servicio_descripcion: 300, servicio_precio: 80, pregunta: 160, respuesta: 500, tonos: ['cercano','formal','neutro'], idiomas_validos: ['es','en','id'] };
 var sb = {
   rpc: function (n, a) { window.__llamadas.push('rpc:' + n);
+    if (n === 'wab_ficha_guarda' && window.__guardaCae) return Promise.reject(new TypeError('Failed to fetch'));   // la llamada se cae del todo (sin red)
     if (n === 'wab_ficha_historial') return Promise.resolve({ data: { versiones: [] }, error: null });
     if (n === 'modulos_activos_datos') return Promise.resolve({ data: { activos: ['whatsapp_bot'], idiomas: { ofrecidos: ['en', 'id'], defecto: 'id' } }, error: null });
     return Promise.resolve({ data: { ficha: null, version: null, topes: TOPES, estado: window.__estado }, error: null }); },
@@ -112,6 +113,11 @@ window.toast = function (m) { window.__toast = m; };
   const marcados = await p.$$eval('[data-campo="idiomas"] input[data-idioma]', cs => cs.filter(c => c.checked).map(c => c.getAttribute('data-idioma')).sort().join());
   ok('3.2 ficha nueva: marca los idiomas de la instancia leídos de la base (en + id), no «es»', marcados === 'en,id', marcados);
   ok('3.3 con los idiomas ya llegados se puede guardar', await p.isEnabled('[data-accion="guardar"]'));
+  await p.evaluate(() => { window.__guardaCae = true; });
+  await p.fill('[data-campo="motivo"]', 'Primera ficha'); await p.click('[data-accion="guardar"]');
+  await p.waitForFunction(() => !document.querySelector('[data-wb="error"]').classList.contains('wb-oculto'), null, { timeout: 5000 }).catch(() => {});
+  ok('3.4 si la llamada de guardar se cae del todo, Guardar vuelve y lo dice', await p.isEnabled('[data-accion="guardar"]') && (await p.textContent('[data-wb="error"]')).includes('no ha respondido'), await p.textContent('[data-wb="error"]'));
+  await p.evaluate(() => { window.__guardaCae = false; });
 
   // 4. móvil
   await p.setViewportSize({ width: 390, height: 900 });

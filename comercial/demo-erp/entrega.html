@@ -19,6 +19,10 @@
 .axw-campo input[aria-invalid="true"],.axw-campo select[aria-invalid="true"]{border-color:#7a1a14}
 .en-check{display:flex;align-items:flex-start;gap:10px;font-size:14px}
 .en-check input{margin-top:3px}
+.en-pasos{display:flex;flex-direction:column;gap:8px}
+.en-paso-linea{margin:0;font:600 12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase}
+.en-pasos-botones{display:flex;flex-wrap:wrap;gap:8px}
+.en-pasos-botones [aria-current="step"]{font-weight:700;text-decoration:underline;text-underline-offset:4px}
 </style>
 
 <div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
@@ -39,6 +43,14 @@
 <div data-en="estado" data-tipo="cargando" class="axw-vacio"></div>
 
 <form class="flex flex-col gap-8 axw-oculto" data-en="form" novalidate>
+<nav class="en-pasos" data-en="pasos" aria-label="Pasos">
+<p class="en-paso-linea" data-en="paso-linea" aria-live="polite"></p>
+<div class="en-pasos-botones">
+<button class="axw-boton" type="button" data-accion="en-ir-paso" data-paso="1"><span data-lwt>1 · Sede</span></button>
+<button class="axw-boton" type="button" data-accion="en-ir-paso" data-paso="2"><span data-lwt>2 · Tarifa</span></button>
+<button class="axw-boton" type="button" data-accion="en-ir-paso" data-paso="3"><span data-lwt>3 · Activar</span></button>
+</div>
+</nav>
 
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4" data-en="bloque-sede">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>1 · Sede</h2>
@@ -79,7 +91,7 @@
 </section>
 
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4" data-en="bloque-activar">
-<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>4 · Activar</h2>
+<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Activar la entrega</h2>
 <ul class="en-lista" data-en="faltan"></ul>
 <label class="en-check" for="en-f-activa"><input id="en-f-activa" type="checkbox" data-campo="activa"><span data-lwt>Entrega activa: el bot cobra la entrega por km</span></label>
 <p class="en-ayuda" data-en="activa-ayuda"></p>
@@ -93,6 +105,11 @@
 </div>
 <p class="en-ayuda" data-en="ajustes-quien"></p>
 </section>
+
+<div class="axw-acciones" data-en="pasos-pie">
+<button class="axw-boton" type="button" data-accion="en-atras"><span data-lwt>‹ Atrás</span></button>
+<button class="axw-boton" type="button" data-accion="en-siguiente" data-primario="1"><span data-lwt>Siguiente ›</span></button>
+</div>
 
 <section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col gap-4" data-en="bloque-versiones">
 <h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Últimos cambios</h2>
@@ -113,6 +130,10 @@
     "Otra persona ha guardado cambios mientras tú editabas. Recarga para ver los valores nuevos: lo que has escrito se conserva.": "Orang lain telah menyimpan perubahan saat Anda mengedit. Muat ulang untuk melihat nilai baru: yang sudah Anda tulis tetap tersimpan.",
     "Recargar conservando lo que escribí": "Muat ulang, simpan tulisan saya",
     "1 · Sede": "1 · Kantor",
+    "2 · Tarifa": "2 · Tarif", "3 · Activar": "3 · Aktifkan", "‹ Atrás": "‹ Kembali", "Siguiente ›": "Lanjut ›",
+    "Paso 1 de 3 · ¿Desde dónde sale la moto?": "Langkah 1 dari 3 · Motor berangkat dari mana?",
+    "Paso 2 de 3 · ¿Cuánto cobras?": "Langkah 2 dari 3 · Berapa tarifnya?",
+    "Paso 3 de 3 · Recogida, activar y guardar": "Langkah 3 dari 3 · Jemput, aktifkan, dan simpan",
     "Nombre de la sede": "Nama kantor",
     "Coordenadas (lat, lng)": "Koordinat (lat, lng)",
     "La entrega está activa: la sede no se puede cambiar. Apaga la entrega, guarda, y entonces cambia la sede.": "Antar sedang aktif: kantor tidak bisa diubah. Matikan antar, simpan, lalu ubah kantor.",
@@ -134,7 +155,6 @@
     "No se cobra": "Tidak ditagih",
     "Sin decidir si se cobra la recogida: mientras tanto, una reserva con recogida a domicilio se niega en vez de inventar un precio.": "Belum diputuskan apakah jemput ditagih: sementara itu, booking dengan jemput ke alamat ditolak, bukan diberi harga karangan.",
     "Los topes cuentan las consultas al proveedor de mapas (OpenStreetMap), no las reservas: una distancia ya guardada en la caché no gasta consulta.": "Batas ini menghitung pengecekan ke penyedia peta (OpenStreetMap), bukan booking: jarak yang sudah tersimpan di cache tidak memakai jatah pengecekan.",
-    "4 · Activar": "4 · Aktifkan",
     "Entrega activa: el bot cobra la entrega por km": "Antar aktif: bot menagih biaya antar per km",
     "Motivo del cambio (obligatorio)": "Alasan perubahan (wajib)",
     "Guardar": "Simpan",
@@ -222,7 +242,11 @@
     'Cuánto cuesta llevar la moto al cliente: la oficina de la que se mide, el precio por kilómetro y los límites. Lo que pongas aquí es lo que el bot cobra cuando la entrega está activa.': 'What it costs to bring the bike to the customer: the office distances are measured from, the price per kilometre and the limits. What you set here is what the bot charges when delivery is on.',
     'Otra persona ha guardado cambios mientras tú editabas. Recarga para ver los valores nuevos: lo que has escrito se conserva.': 'Someone else saved changes while you were editing. Reload to see the new values: what you typed is kept.',
     'Recargar conservando lo que escribí': 'Reload and keep what I typed',
-    '1 · Sede': '1 · Office', 'Nombre de la sede': 'Office name', 'Coordenadas (lat, lng)': 'Coordinates (lat, lng)',
+    '1 · Sede': '1 · Office',
+    '2 · Tarifa': '2 · Rate', '3 · Activar': '3 · Switch on', '‹ Atrás': '‹ Back', 'Siguiente ›': 'Next ›',
+    'Paso 1 de 3 · ¿Desde dónde sale la moto?': 'Step 1 of 3 · Where does the motorbike leave from?',
+    'Paso 2 de 3 · ¿Cuánto cobras?': 'Step 2 of 3 · How much do you charge?',
+    'Paso 3 de 3 · Recogida, activar y guardar': 'Step 3 of 3 · Collection, switch on and save', 'Nombre de la sede': 'Office name', 'Coordenadas (lat, lng)': 'Coordinates (lat, lng)',
     'La entrega está activa: la sede no se puede cambiar. Apaga la entrega, guarda, y entonces cambia la sede.': 'Delivery is on: the office cannot be changed. Switch delivery off, save, and then change the office.',
     'Cómo copiarlas: en un mapa, pulsa con el botón derecho sobre la oficina y haz clic en los números que salen arriba del menú (latitud y longitud). Se pegan tal cual, por ejemplo «-8.650000, 115.216667».': 'How to copy them: on a map, right-click the office and click the numbers shown at the top of the menu (latitude and longitude). Paste them as they are, for example “-8.650000, 115.216667”.',
     '2 · Tarifa por kilómetro': '2 · Price per kilometre', 'Moneda (3 letras)': 'Currency (3 letters)', 'Precio por km': 'Price per km', 'Km gratis': 'Free km', 'Mínimo por entrega': 'Minimum per delivery',
@@ -231,7 +255,7 @@
     'Días de caché de una distancia': 'Days a distance stays cached', 'Recogida': 'Pick-up', 'Sin decidir': 'Undecided', 'Se cobra': 'Charged', 'No se cobra': 'Not charged',
     'Sin decidir si se cobra la recogida: mientras tanto, una reserva con recogida a domicilio se niega en vez de inventar un precio.': 'It is undecided whether pick-up is charged: until then, a booking with home pick-up is refused instead of inventing a price.',
     'Los topes cuentan las consultas al proveedor de mapas (OpenStreetMap), no las reservas: una distancia ya guardada en la caché no gasta consulta.': 'The limits count lookups to the map provider (OpenStreetMap), not bookings: a distance already in the cache does not use a lookup.',
-    '4 · Activar': '4 · Switch on', 'Entrega activa: el bot cobra la entrega por km': 'Delivery on: the bot charges delivery by km',
+    'Entrega activa: el bot cobra la entrega por km': 'Delivery on: the bot charges delivery by km',
     'Motivo del cambio (obligatorio)': 'Reason for the change (required)', 'Guardar': 'Save', 'Descartar los cambios': 'Discard changes',
     'Últimos cambios': 'Latest changes', 'Aún no hay cambios registrados.': 'No changes recorded yet.',
     'Versión': 'Version', 'Cuándo': 'When', 'Quién': 'Who', 'Motivo': 'Reason',
@@ -386,6 +410,7 @@
     F('motivo').value = conserva && conserva.__motivo != null ? conserva.__motivo : '';
     oculta($v('conflicto'), true);
     oculta($v('form'), false);
+    PLIEGUES.forEach(function (d) { d.actualiza(); });   // los valores se ponen por código: el resumen del plegado se repinta
     var est = $v('estado'); est.textContent = ''; est.setAttribute('data-tipo', 'listo'); est.className = 'axw-vacio axw-oculto';
   }
   function pintaFaltan(d) {
@@ -573,11 +598,48 @@
     }
     return { ajustes: Object.keys(a).length ? a : null, tarifa: tarifa, grupos: grupos };
   }
+  /* S4 (bbm-comodidad, 15-oct-2026, «1, 2 o 3 campos a rellenar por paso»; encargo 20261015_erp_formularios_1a3_campos). La página va en 3 pasos,
+     como el asistente: 1 «¿Desde dónde sale la moto?» (sede y coordenadas) · 2 «¿Cuánto cobras?» (precio por km y km máximo; moneda, km gratis y
+     mínimo plegados) · 3 «Recogida, activar y guardar» (recogida, entrega activa y el motivo; los topes de consultas y la caché, que son del proveedor
+     de mapas y no del negocio, plegados). Lo que se guarda y las llamadas no cambian: se guarda todo junto en el paso 3, y un error lleva al paso (y al
+     plegado) de su campo. Los botones de arriba saltan a cualquier paso: nada obliga a ir en orden. */
+  var PASOS = [{ bloques: ['bloque-sede'], t: 'Paso 1 de 3 · ¿Desde dónde sale la moto?' }, { bloques: ['bloque-tarifa'], t: 'Paso 2 de 3 · ¿Cuánto cobras?' },
+               { bloques: ['bloque-limites', 'bloque-activar', 'bloque-guardar'], t: 'Paso 3 de 3 · Recogida, activar y guardar' }];
+  var PASO = 1, PLIEGUES = [];
+  function campoDe(n) { return F(n).closest('.axw-campo'); }
+  function montaPasos() {
+    var rejT = $v('bloque-tarifa').querySelector('.en-rejilla');
+    rejT.appendChild(campoDe('km_max'));   // el km máximo es de «cuánto cobras»: hasta dónde se lleva
+    // los campos se toman ANTES de moverlos: el plegado pinta su resumen al crearse, cuando aún no está en la página
+    var el = {}; ['moneda', 'km_gratis', 'minimo', 'tope_dia', 'tope_mes', 'cache_dias'].forEach(function (n) { el[n] = F(n); });
+    var con = function (n, rot) { return el[n].value ? T(rot) + ' ' + el[n].value : null; };
+    var plT = C.pliegue([campoDe('moneda'), campoDe('km_gratis'), campoDe('minimo')], function () {
+      return [el.moneda.value.toUpperCase(), con('km_gratis', 'Km gratis'), con('minimo', 'Mínimo por entrega')];
+    });
+    rejT.parentNode.insertBefore(plT, rejT.nextSibling);
+    var rejL = $v('bloque-limites').querySelector('.en-rejilla');
+    var plL = C.pliegue([campoDe('tope_dia'), campoDe('tope_mes'), campoDe('cache_dias')], function () {
+      return [con('tope_dia', 'Tope de consultas por día'), con('tope_mes', 'Tope de consultas por mes'), con('cache_dias', 'Días de caché de una distancia')];
+    });
+    rejL.parentNode.insertBefore(plL, rejL.nextSibling);
+    PLIEGUES = [plT, plL];
+  }
+  function vaPaso(k, foco) {
+    PASO = k;
+    PASOS.forEach(function (p, i) { p.bloques.forEach(function (b) { oculta($v(b), i + 1 !== k); }); });
+    $v('paso-linea').textContent = T(PASOS[k - 1].t);
+    [].forEach.call(raiz.querySelectorAll('[data-accion="en-ir-paso"]'), function (b) { if (Number(b.getAttribute('data-paso')) === k) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
+    oculta(raiz.querySelector('[data-accion="en-atras"]'), k === 1); oculta(raiz.querySelector('[data-accion="en-siguiente"]'), k === PASOS.length);
+    if (foco) { var f = $v(PASOS[k - 1].bloques[0]).querySelector('input:not([readonly]),select'); try { if (f) f.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
+  }
+  function pasoDe(el) { for (var i = 0; i < PASOS.length; i++) if (PASOS[i].bloques.some(function (b) { return $v(b).contains(el); })) return i + 1; return PASO; }
   function limpiaInvalidos() { CAMPOS.concat(['motivo']).forEach(function (n) { F(n).removeAttribute('aria-invalid'); }); }
   function marcaErrores(er) {
     var primero = null, lineas = [];
     Object.keys(er).forEach(function (n) { var el = F(n); el.setAttribute('aria-invalid', 'true'); if (!primero) primero = el; lineas.push(etiquetaDe(n) + ': ' + er[n]); });
     error(T('Revisa estos campos:') + '\n' + lineas.join('\n'));
+    if (primero) { vaPaso(pasoDe(primero)); PLIEGUES.forEach(function (d) { if (d.contains(primero)) d.open = true; }); }   // al paso (y al plegado) del primer error
+    if (er.precio_km && !F('moneda').value.replace(/^\s+|\s+$/g, '')) PLIEGUES[0].open = true;   // «hacen falta la moneda y el precio»: la moneda está plegada
     if (primero && primero.focus) { try { primero.focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ } }
   }
 
@@ -672,6 +734,9 @@
     var a = el.getAttribute('data-accion');
     if (a.indexOf('en-modal') === 0) return;   // los botones del diálogo llevan su propio manejador
     if (a === 'en-guardar') alGuardar(el);
+    else if (a === 'en-siguiente') vaPaso(Math.min(PASO + 1, PASOS.length), true);
+    else if (a === 'en-atras') vaPaso(Math.max(PASO - 1, 1), true);
+    else if (a === 'en-ir-paso') vaPaso(Number(el.getAttribute('data-paso')) || 1, true);
     else if (a === 'en-descartar') { if (E.d) { error(''); exito(''); aviso(''); limpiaInvalidos(); pinta(E.d, null); raiz.querySelector('[data-accion="en-guardar"]').disabled = false; } }
     else if (a === 'en-recargar') {
       var cons = E.d ? sucios() : null;
@@ -683,6 +748,7 @@
     SB = aut.sb;
     raiz.addEventListener('click', alClic);
     raiz.addEventListener('change', function (ev) { if (ev.target === F('cobra_recogida')) ajustaRecogida(); });
+    montaPasos(); vaPaso(1);
     carga(null);
   }
   function arranca() {

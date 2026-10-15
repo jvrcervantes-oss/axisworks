@@ -370,6 +370,18 @@
   }
   function recoge() { var o = {}; CAMPOS.forEach(function (k) { o[k] = $c(k).value; }); return o; }
 
+  /* El primer dato que la base rechazaría, en SU orden (_wab_cliente_error: razón social, domicilio, contacto, plazo, nombre) y con SUS topes
+     (D.topes, que vienen de la base): vacío o largo, luego saltos de línea o asteriscos, luego el mínimo, luego el contacto sin correo ni teléfono.
+     Solo sirve para saber a qué parte volver; quien decide sigue siendo la base. */
+  function primerRechazado() {
+    var t = (D && D.topes) || {}, m = Number(t.minimo) || 1, orden = ['razon_social', 'domicilio', 'contacto_privacidad', 'plazo_conservacion', 'nombre_negocio'], i, v;
+    var limpio = function (k) { return $c(k).value.replace(/^\s+|\s+$/g, ''); };
+    for (i = 0; i < orden.length; i++) { v = $c(orden[i]).value; if (!limpio(orden[i]) || (t[orden[i]] && v.length > Number(t[orden[i]]))) return orden[i]; }
+    for (i = 0; i < orden.length; i++) if (/[\n*]/.test($c(orden[i]).value)) return orden[i];
+    for (i = 0; i < orden.length; i++) if (limpio(orden[i]).length < m) return orden[i];
+    v = $c('contacto_privacidad').value;
+    return !/@/.test(v) && !/(\d\D*){6}/.test(v) ? 'contacto_privacidad' : null;
+  }
   function guardaAlta(btn) {
     var motivo = $c('motivo').value;
     if (!motivo.trim()) { error(T('Cuenta en una frase qué has cambiado: queda en el registro.')); $c('motivo').focus(); return; }
@@ -378,8 +390,9 @@
       btn.disabled = false;
       if (r.error) {
         error(mensaje(r.error));
-        // un rechazo de un dato de la parte 1 (razón social, nombre, domicilio): se vuelve a esa parte con el mensaje a la vista
-        if (/raz[oó]n social|razon_social|nombre_negocio|nombre del negocio|domicilio/i.test(String((r.error.message || '') + ' ' + (r.error.hint || '') + ' ' + (r.error.details || '')))) vaParte(1);
+        // un rechazo de un dato de la parte 1 (razón social, nombre, domicilio): se vuelve a esa parte con el mensaje a la vista. Se decide por el
+        // campo (el hint estable de la base y su misma comprobación), nunca por el texto del mensaje, que puede cambiar o traducirse
+        if (r.error.hint === 'cliente_no_valido' && ['razon_social', 'nombre_negocio', 'domicilio'].indexOf(primerRechazado()) !== -1) vaParte(1);
         return;
       }
       ok(T('Datos guardados.'));

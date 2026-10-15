@@ -481,7 +481,7 @@
       if (r.error) { error(mensaje(r.error)); return; }
       ok(r.data && r.data.cambiado === false ? T('No había nada que cambiar.') : T('Ficha guardada.'));
       carga();
-    });
+    }, function () { btn.disabled = false; GUARDANDO = false; error(mensaje(null)); });   // la llamada se cayó del todo: Guardar vuelve y se dice
   }
   function restaura(btn) {
     var v = parseInt(btn.getAttribute('data-version'), 10);

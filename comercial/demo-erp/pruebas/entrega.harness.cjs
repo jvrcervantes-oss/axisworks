@@ -121,6 +121,15 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.exposeFunction('__srv', (n, a) => servidor(base, n, a));
     await p.setContent(pagina(opts.idioma || 'es'), { waitUntil: 'load' });
     if (!opts.sinEspera) await p.waitForFunction(() => document.querySelector('[data-en="estado"]').getAttribute('data-tipo') !== 'cargando', null, { timeout: 5000 });
+    // S4 (15-oct-2026): la página va en 3 pasos con lo opcional plegado. Antes de escribir en un campo de otro paso, se pulsa su botón de paso y se abre
+    // su plegado, como la persona. Las pruebas de siempre miden lo mismo.
+    const revela = sel => p.evaluate(s => {
+      const el = document.querySelector(s); if (!el) return;
+      const sec = el.closest('[data-en^="bloque-"]'), paso = { 'bloque-sede': 1, 'bloque-tarifa': 2, 'bloque-limites': 3, 'bloque-activar': 3, 'bloque-guardar': 3 }[sec && sec.getAttribute('data-en')];
+      if (paso && sec.classList.contains('axw-oculto')) { const b = document.querySelector('[data-accion="en-ir-paso"][data-paso="' + paso + '"]'); if (b) b.click(); }
+      const d = el.closest('details'); if (d && !d.open) d.open = true;
+    }, sel);
+    for (const m of ['fill', 'selectOption', 'check', 'uncheck', 'click']) { const orig = p[m].bind(p); p[m] = async (sel, ...r) => { if (typeof sel === 'string') await revela(sel); return orig(sel, ...r); }; }
     return { base, p, ctx };
   }
   const txt = (p, sel) => p.$eval(sel, e => e.textContent);
@@ -568,6 +577,32 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     if (SHOT) await p.screenshot({ path: SHOT + '_390_solo_admin.png', fullPage: true });
     await ctx.close();
   }
+
+  // S4 (bbm-comodidad, 15-oct-2026): la página en 3 pasos, como mucho 3 campos a la vista en cada uno, a 1440 y 390; un error lleva al paso de su campo
+  for (const ancho of [1440, 390]) {
+    const { p, ctx } = await abre({ ancho, base: { configurada: true, conServicio: true } });
+    const cuenta = () => p.evaluate(() => [...document.querySelectorAll('[data-en="form"] input, [data-en="form"] select, [data-en="form"] textarea')]
+      .filter(e => e.checkVisibility({ contentVisibilityAuto: true, visibilityProperty: true })).map(e => e.getAttribute('data-campo')));
+    const linea = () => txt(p, '[data-en="paso-linea"]');
+    const m = {};
+    m.paso1 = await cuenta(); const l1 = await linea();
+    await p.evaluate(() => document.querySelector('[data-accion="en-siguiente"]').click()); m.paso2 = await cuenta(); const l2 = await linea();
+    await p.evaluate(() => document.querySelector('[data-accion="en-siguiente"]').click()); m.paso3 = await cuenta(); const l3 = await linea();
+    ok(ancho + ' px · S4 entrega: «Paso k de 3» con su pregunta y como mucho 3 campos a la vista en cada paso', l1.includes('Paso 1 de 3') && l2.includes('Paso 2 de 3') && l3.includes('Paso 3 de 3')
+       && J(m.paso1) === J(['sede_nombre', 'sede_coord']) && J(m.paso2) === J(['precio_km', 'km_max']) && J(m.paso3) === J(['cobra_recogida', 'activa', 'motivo']), J(m));
+    ok(ancho + ' px · S4 entrega: en el paso 3 no hay «Siguiente» y sí «Guardar»; en el 1 no hay «Atrás»', !(await p.isVisible('[data-accion="en-siguiente"]')) && await p.isVisible('[data-accion="en-guardar"]'));
+    await p.evaluate(() => document.querySelector('[data-accion="en-ir-paso"][data-paso="2"]').click());
+    await p.evaluate(() => { const e = document.querySelector('[data-campo="precio_km"]'); e.value = 'abc'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    await p.evaluate(() => document.querySelector('[data-accion="en-ir-paso"][data-paso="3"]').click());
+    await p.evaluate(() => { const e = document.querySelector('[data-campo="motivo"]'); e.value = 'Prueba de pasos'; });
+    await p.evaluate(() => document.querySelector('[data-accion="en-guardar"]').click());
+    ok(ancho + ' px · S4 entrega: un error del paso 2 (precio por km) lleva al paso 2 con el campo marcado y nada se envía', (await linea()).includes('Paso 2 de 3')
+       && (await p.getAttribute(campo('precio_km'), 'aria-invalid')) === 'true' && await p.isVisible(campo('precio_km')));
+    const d = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth })); ok(ancho + ' px · S4 entrega: sin scroll horizontal con los pasos', d.sw <= d.cw, J(d));
+    console.log('  campos a la vista ' + ancho + ' px: ' + J(m));
+    await ctx.close();
+  }
+  console.log('  toques S4 entrega: antes 13 campos en una página; ahora 2 + 2 + 3 con «Siguiente» (2 toques más) o saltando con los botones de paso');
 
   await nav.close();
   console.log(fallos ? '\n' + fallos + ' FALLO(S)' : '\nTODO EN VERDE');

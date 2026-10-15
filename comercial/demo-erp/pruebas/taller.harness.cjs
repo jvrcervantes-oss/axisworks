@@ -765,6 +765,36 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.click('[data-accion="tl-l-rec-nueva"]'); for (let i = 0; i < 100 && !llamadas(B, 'taller_recambio_guarda').length; i++) await p.waitForTimeout(50);   // la cuenta de llamadas vive en Node
     const pz = llamadas(B, 'taller_recambio_guarda').slice(-1)[0][1].p_datos;
     ok('S4 · pieza sin coste: ni coste ni moneda (la moneda puesta solo viaja con un coste)', pz.coste_ref === null && pz.moneda === null, JSON.stringify(pz));
+    // la moneda de la instancia (lwMonedaBase, de su base) sale puesta en la pieza nueva y viaja con el coste
+    await p.evaluate(() => { window.lwMonedaBase = () => 'IDR'; document.querySelector('[data-accion="tl-tab-listas"]').click(); });
+    await espera(p, () => { const e = document.querySelector('[data-tl="l-pieza-nueva"] [data-f="moneda"]'); return e && e.value === 'IDR'; });
+    await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_id"]', 'Oli'); await p.fill('[data-tl="l-pieza-nueva"] [data-f="nombre_en"]', 'Oil');
+    await p.evaluate(() => { document.querySelector('[data-tl="l-pieza-nueva"] [data-axw="mas-datos"]').open = true; });
+    await p.fill('[data-tl="l-pieza-nueva"] [data-f="coste"]', '45000');
+    const nPz = llamadas(B, 'taller_recambio_guarda').length;
+    await p.click('[data-accion="tl-l-rec-nueva"]'); for (let i = 0; i < 100 && llamadas(B, 'taller_recambio_guarda').length === nPz; i++) await p.waitForTimeout(50);
+    const pz2 = llamadas(B, 'taller_recambio_guarda').slice(-1)[0][1].p_datos;
+    ok('S4 · pieza con coste: viaja con la moneda de la instancia ya puesta (IDR)', pz2.coste_ref === 45000 && pz2.moneda === 'IDR', JSON.stringify(pz2));
+    // un nombre sin letras ni cifras: no se envía y sale el campo de la clave, para escribirla a mano
+    await espera(p, () => !!document.querySelector('[data-tl="l-nueva"]'));
+    const nRev = llamadas(B, 'taller_revision_guarda').length;
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', '***'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', '!!!');
+    await p.click('[data-accion="tl-l-rev-nueva"]');
+    ok('S4 · nombre sin letras ni cifras: no se envía y sale el campo de la clave', llamadas(B, 'taller_revision_guarda').length === nRev
+       && await p.$eval('[data-tl="l-clave"]', e => !e.classList.contains('axw-oculto')));
+    // los nombres vacíos dicen lo de los nombres, no lo de la clave
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', ''); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', '');
+    await p.click('[data-accion="tl-l-rev-nueva"]');
+    ok('S4 · sin nombres: el error es el de los nombres', llamadas(B, 'taller_revision_guarda').length === nRev && /línea|baris|line/i.test(await p.$eval('[data-tl="l-estado"]', e => e.textContent)), await p.$eval('[data-tl="l-estado"]', e => e.textContent));
+    // la base rechaza la clave (otra persona acaba de crear «brakes» y esta pantalla aún no la ve): sale el campo con la propuesta, para cambiarla
+    await p.evaluate(() => document.querySelector('[data-accion="tl-tab-listas"]').click());
+    await espera(p, () => { const c = document.querySelector('[data-tl="l-clave"]'); return c && c.classList.contains('axw-oculto'); });
+    B.revs.push({ id: 'rev-de-otra-sesion', producto_id: null, clave: 'brakes', nombre_id: 'Rem', nombre_en: 'Brakes', orden: 100, activa: true });
+    await p.fill('[data-tl="l-nueva"] [data-f="nombre_id"]', 'Rem'); await p.fill('[data-tl="l-nueva"] [data-f="nombre_en"]', 'Brakes');
+    await p.click('[data-accion="tl-l-rev-nueva"]');
+    await espera(p, () => !document.querySelector('[data-tl="l-clave"]').classList.contains('axw-oculto'));
+    ok('S4 · la base rechaza la clave: sale el campo con la propuesta escrita', (await p.inputValue('[data-tl="l-clave"] input')) === 'brakes');
+    B.revs.splice(B.revs.findIndex(x => x.id === 'rev-de-otra-sesion'), 1);
     await sinScroll(p, 'listas (1440)'); await sinTraducir(p, 'admin id');
     await ctx.close();
 

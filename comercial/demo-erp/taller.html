@@ -1556,11 +1556,11 @@
       var c = $v('l-nueva'), ord = fv(c, 'orden'), campoCl = c.querySelector('[data-tl="l-clave"]'), aMano = campoCl && !campoCl.classList.contains('axw-oculto');
       var usadas = ((E.listas && E.listas.revisiones) || []).map(function (x) { return String(x.clave); });
       var datos = { producto_id: prod, clave: aMano ? fv(c, 'clave').toLowerCase() : claveDe(fv(c, 'nombre_en') || fv(c, 'nombre_id'), usadas), nombre_id: fv(c, 'nombre_id'), nombre_en: fv(c, 'nombre_en') };
+      if (!datos.nombre_id || !datos.nombre_en) { lEstado('error', T('Los nombres van en una línea (hasta 80 caracteres).')); return; }   // antes que la clave: sin nombres, la clave (oculta) no es lo que falta
       if (!/^[a-z0-9_]{2,40}$/.test(datos.clave)) {
-        if (!aMano && (datos.nombre_id || datos.nombre_en)) { campoCl.classList.remove('axw-oculto'); campoCl.querySelector('input').value = datos.clave; }   // un nombre sin letras ni cifras: la clave a mano
+        if (!aMano) { campoCl.classList.remove('axw-oculto'); campoCl.querySelector('input').value = datos.clave; }   // un nombre sin letras ni cifras: la clave a mano
         lEstado('error', T('La clave va en minúsculas, cifras o guion bajo (2 a 40).')); return;
       }
-      if (!datos.nombre_id || !datos.nombre_en) { lEstado('error', T('Los nombres van en una línea (hasta 80 caracteres).')); return; }
       if (ord) { if (!/^\d{1,4}$/.test(ord)) { var pl = c.querySelector('[data-axw="mas-datos"]'); if (pl) pl.open = true; lEstado('error', T('El orden es un número de 0 a 9999.')); return; } datos.orden = Number(ord); }
       return lEscribe(el, 'taller_revision_guarda', { p_id: null, p_datos: datos }).then(function (x) {
         // la base no la aceptó (p. ej. clave_duplicada en otra lista que esta pantalla no ve): sale el campo con la propuesta, para cambiarla
