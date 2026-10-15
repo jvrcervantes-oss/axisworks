@@ -484,6 +484,17 @@ const TODAS = [];
     await ctx.close();
   }
   {
+    const { p, ctx } = await abre({ base: { herramienta: true, nuevo: true }, hash: '#ajustes-tope' });
+    ok('no dueño con el tope en 0: no ve «Usar …» (no podría usarlo)', !(await visible(p, '[data-ag="aj-tope-sugerido"]')));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, v2Roto: true } });
+    ok('el panel del equipo no se puede leer: «Apagar a tu equipo» sigue a la vista (no vive dentro del panel)', (await visible(p, '[data-ag="v2-apagar"]')) && !(await visible(p, '[data-ag="v2-cuerpo"]')),
+       J({ apagar: await visible(p, '[data-ag="v2-apagar"]'), cuerpo: await visible(p, '[data-ag="v2-cuerpo"]') }));
+    await ctx.close();
+  }
+  {
     const { p, ctx } = await abre({ base: { herramienta: true, propuesto: true }, hash: '#ajustes-tope' });
     ok('no dueño con subida pendiente: la ve, pero sin «Cancelar la subida»', (await visible(p, '[data-ag="aj-subida"]')) && !(await visible(p, '[data-ag="aj-cancelar-subida"]')));
     await ctx.close();
@@ -529,8 +540,8 @@ const TODAS = [];
     ok('tope vacío: no se manda, dice cuánto escribir (con el sugerido de ejemplo, no «0»), el error va ligado al campo y le da el foco', llamadas(base, 'agente_ficha_ajusta').length === 0 && (await foco(p)) === 'ag2-aj-tope'
        && (await p.$eval('[data-campo="aj-tope"]', e => e.getAttribute('aria-invalid'))) === 'true' && (await txt(p, '[data-ag="aj-msg-tope"]')) === 'Escribe cuánto pueden gastar al mes, por ejemplo 40.', await txt(p, '[data-ag="aj-msg-tope"]'));
     await p.click('[data-accion="ag-aj-tope-sugerido"]');
-    ok('«Usar 40,00 EUR» rellena el campo (sin guardar) y quita el error', (await p.$eval('[data-campo="aj-tope"]', e => e.value)) === '40' && llamadas(base, 'agente_ficha_ajusta').length === 0
-       && !(await visible(p, '[data-ag="aj-msg-tope"]')) && !(await p.$eval('[data-campo="aj-tope"]', e => e.hasAttribute('aria-invalid'))));
+    ok('«Usar 40,00 EUR» rellena el campo (sin guardar), quita el error y se esconde', (await p.$eval('[data-campo="aj-tope"]', e => e.value)) === '40' && llamadas(base, 'agente_ficha_ajusta').length === 0
+       && !(await visible(p, '[data-ag="aj-msg-tope"]')) && !(await p.$eval('[data-campo="aj-tope"]', e => e.hasAttribute('aria-invalid'))) && !(await visible(p, '[data-ag="aj-tope-sugerido"]')));
     ok('tope: la etiqueta lleva la moneda de la base', (await txt(p, '[data-ag="aj-tope-etq"]')).includes('(EUR)'));
     await enviar(p, 'tope');
     await hasta(() => llamadas(base, 'agente_ficha_ajusta').length === 1);
@@ -662,6 +673,36 @@ const TODAS = [];
     await p.waitForTimeout(100);
     ok('M2: a los 0 s el aviso se va y el botón vuelve SOLO, sin reenviar nada', !(await visible(p, '[data-ag="aj-msg-negocio"]')) && !(await p.$eval(btn, e => e.disabled))
        && llamadas(base, 'agente_ficha_contexto').length === 2 && (await p.$eval('[data-campo="ctx_quien"]', e => e.value)) === 'Alquiler de motos en Canggu, Uluwatu y Ubud');
+    await enviar(p, 'negocio');
+    await hasta(() => llamadas(base, 'agente_ficha_contexto').length === 3);
+    await p.waitForTimeout(150);
+    ok('M2: si vuelve a frenar tras esperar la cuenta entera, es el tope del día: lo dice SIN cuenta atrás y el botón no queda apagado',
+       (await txt(p, '[data-ag="aj-msg-negocio"]')) === 'Hoy ya se han hecho los 10 cambios que caben aquí: podrás guardar mañana. Lo escrito se queda.' && !(await p.$eval(btn, e => e.disabled)),
+       await txt(p, '[data-ag="aj-msg-negocio"]'));
+    await ctx.close();
+  }
+  {
+    // 10 cambios de «contexto» en las últimas 24 h en el historial: el tope del día es seguro, sin pasar por una cuenta atrás falsa
+    const { p, base, ctx } = await abre({ base: { dueno: true, freno: true }, hash: '#ajustes-negocio' });
+    base.historial = Array.from({ length: 10 }, (_, i) => ({ cuando: new Date(Date.now() - (i + 1) * 600e3).toISOString(), quien: 'USR-00001', campos: ['contexto'], motivo: 'x' }));
+    await p.reload(); await p.waitForTimeout(400);   // goto a la MISMA URL con hash es navegación de fragmento: no relee el estado
+    await p.fill('[data-campo="ctx_quien"]', 'Otro texto');
+    await enviar(p, 'negocio');
+    await p.waitForSelector('[data-ag="aj-msg-negocio"]:not(.axw-oculto)', { timeout: 4000 }).catch(() => {});
+    ok('M2: con 10 cambios de ese campo hoy en el historial, dice «mañana» directamente', (await txt(p, '[data-ag="aj-msg-negocio"]')).includes('podrás guardar mañana'), await txt(p, '[data-ag="aj-msg-negocio"]'));
+    await ctx.close();
+  }
+  {
+    // con «Usar lo recomendado» frenado, el OTRO botón que guarda el paso tampoco se puede usar mientras dura la cuenta
+    const { p, base, ctx } = await abre({ base: { dueno: true, freno: true }, hash: '#ajustes-limites', reloj: true });
+    await p.click('[data-accion="ag-aj-recomendado"]');
+    await p.waitForSelector('[data-ag="aj-msg-limites"]:not(.axw-oculto)', { timeout: 4000 }).catch(() => {});
+    ok('M2: el freno apaga TODOS los botones que guardan el paso (recomendado y «Guardar los límites»)',
+       await p.$$eval('[data-ag="aj-f-limites"] button[type="submit"], [data-accion="ag-aj-recomendado"]', e => e.length === 2 && e.every(b => b.disabled)));
+    await p.click('[data-accion="ag-aj-ajustar"]');
+    await p.click('[data-ag="aj-lim-guardar"]', { force: true, timeout: 500 }).catch(() => {});
+    await p.waitForTimeout(150);
+    ok('M2: «Guardar los límites» durante la cuenta no reenvía', llamadas(base, 'agente_ficha_limites').length === 1, String(llamadas(base, 'agente_ficha_limites').length));
     await ctx.close();
   }
   {

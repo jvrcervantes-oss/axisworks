@@ -4376,8 +4376,8 @@ def agente_pantalla():
                  "  /*AXW_FIN_TARJETA_FLOTA*/" + '\n' +
                  "  /* AaaS (EP.5, 13-oct-2026): el panel del AaaS de operaciones. Permiso propio `agente`; sin esta tarjeta la casilla no existiría en Usuarios. Encender, apagar, el tope y los trabajos los exige además la base al dueño de la ficha. */" + '\n' +
                  "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'flota') + 1, 0," + '\n' +
-                 "    { grupo:'Seguimiento', nombre:'AaaS', icon:'ph-robot', href:'/intranet/v4/agente/', herr:'agente'," + '\n' +
-                 "      para:'Dos veces al día mira el negocio y deja avisos con su prueba: motos paradas en el taller, salidas sin moto, reservas que caducan. No toca nada; las personas deciden.'," + '\n' +
+                 "    { grupo:'Seguimiento', nombre:'Agentes', icon:'ph-robot', href:'/intranet/v4/agente/', herr:'agente'," + '\n' +
+                 "      para:'Tu equipo de agentes: qué han hecho y por qué, cuánto pueden gastar y hasta dónde llega cada uno. Los paras cuando quieras.'," + '\n' +
                  "      claves:'AaaS agente autonomo avisos operaciones pasada encender apagar pausa tope trabajos propuestas AaaS agent alerts operations pause cap jobs proposals' });" + '\n' +
                  "  /*AXW_FIN_TARJETA_AGENTE*/" + '\n' + "}",
                  'herramientas.js tarjeta AaaS')

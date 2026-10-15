@@ -170,6 +170,7 @@
 .ag2:not([data-vista="ajustes"]) [data-ag="v2-ajustes"]{display:none}
 .ag2[data-vista="apagado"] .ag2-tabs,.ag2[data-vista="apagado"] .ag2-reloj,.ag2[data-vista="ajustes"] .ag2-reloj{display:none}
 .ag2:not([data-vista="apagado"]) [data-ag="v2-apagado"]{display:none}
+.ag2:not([data-vista="equipo"]) [data-ag="v2-apagar"]{display:none!important}
 .ag2[data-vista="ajustes"] [data-ag="v2-falta"],.ag2[data-vista="ajustes"] [data-ag="v2-esperan"]{display:none}
 .ag2-aviso-falta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:18px;background:rgba(255,122,69,.14);border:1px solid rgba(255,122,69,.5);color:var(--text-hi)}
 .ag2-aviso-falta p{margin:0;min-width:0;flex:1 1 240px;overflow-wrap:anywhere}
@@ -466,11 +467,12 @@
 </div>
 </div>
 </section>
-<!-- apagar a todo el equipo: solo en la vista Equipo, al final (Experiencia, 15-oct: no al pie de cada paso del asistente); solo el dueño -->
+</div>
+<!-- apagar a todo el equipo: solo en la vista Equipo, al final (Experiencia, 15-oct: no al pie de cada paso del asistente); solo el dueño.
+     FUERA de v2-cuerpo a propósito (code-review 15-oct): si agente_panel_autonomo falla, leeV2 esconde v2-cuerpo y el interruptor tiene que seguir ahí -->
 <div class="ag2-zona axw-oculto" data-ag="v2-apagar">
 <p data-lwt>Tu equipo deja de mirar y de hacer cosas al momento. Lo que ya hizo se queda aquí.</p>
 <button type="button" class="ag2-btn-peligro" data-accion="ag-apagar"><span data-lwt>Apagar a tu equipo</span></button>
-</div>
 </div>
 
 <!-- AJUSTES (15-oct-2026, plan aaas-equipo con la revisión previa #383): el asistente que sustituye a los bloques viejos. Un paso a la vista
@@ -646,7 +648,7 @@
     'Esto solo lo puede hacer la persona que lleva el equipo.': 'Only the person who runs the team can do this.',
     'Tu negocio aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender a tu equipo.': 'Your business does not yet know which modules fit its type of business: the studio sets that up before your team is switched on.',
         'La cuenta de pruebas no puede cambiar nada aquí.': 'The test account cannot change anything here.',
-    'No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.': 'You do not have the “AaaS” tool: ask the main administrator for it in Users.',
+    'No tienes la herramienta «Agentes»: pídesela al administrador principal en Usuarios.': 'You do not have the “Agents” tool: ask the main administrator for it in Users.',
     'Tu equipo está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'Your team is off: its alerts cannot be read until it is switched on. This does NOT mean there are none.',
     'La base no confirmó el cambio: recarga antes de repetir.': 'The database did not confirm the change: reload before trying again.',
     'Nunca': 'Never',
@@ -1030,7 +1032,7 @@
     'Esto solo lo puede hacer la persona que lleva el equipo.': 'Hanya orang yang mengelola tim yang bisa melakukannya.',
     'Tu negocio aún no sabe qué módulos valen para su tipo de negocio: lo prepara el estudio antes de encender a tu equipo.': 'Usaha Anda belum tahu modul mana yang cocok untuk jenis usahanya: studio menyiapkannya sebelum tim Anda dinyalakan.',
         'La cuenta de pruebas no puede cambiar nada aquí.': 'Akun uji coba tidak dapat mengubah apa pun di sini.',
-    'No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.': 'Anda tidak punya alat «AaaS»: mintalah kepada admin utama di Pengguna.',
+    'No tienes la herramienta «Agentes»: pídesela al administrador principal en Usuarios.': 'Anda tidak punya alat «Agen»: mintalah kepada admin utama di Pengguna.',
     'Tu equipo está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.': 'Tim Anda mati: peringatannya tidak bisa dibaca sampai dinyalakan. Ini BUKAN berarti tidak ada.',
     'La base no confirmó el cambio: recarga antes de repetir.': 'Database tidak mengonfirmasi perubahan: muat ulang sebelum mengulang.',
     'Nunca': 'Tidak pernah',
@@ -1317,7 +1319,7 @@
     'Escribe el importe con cifras, como {x}.': 'Tulis jumlahnya dengan angka, misalnya {x}.',
     'Escribe quién es el negocio: sin eso tu equipo no empieza.': 'Tulis tentang usaha ini: tanpa itu tim Anda tidak mulai.',
     'Esperan tu OK': 'Menunggu persetujuan Anda',
-    'Falta': 'Belum',
+    'Falta': 'Belum ada',
     'Guardar y seguir': 'Simpan dan lanjut',
     'Hacerlo ahora': 'Kerjakan sekarang',
     'Hay una subida pendiente a {x}: entra el {f}.': 'Ada kenaikan tertunda ke {x}: berlaku pada {f}.',
@@ -1359,7 +1361,7 @@
     'fija las prioridades de hoy y te dice por qué.': 'menetapkan prioritas hari ini dan memberi tahu alasannya.',
     'mide qué modelos se alquilan y cuánto rinden.': 'mengukur model mana yang disewa dan berapa hasilnya.',
     'mira la demanda y mueve las tarifas dentro de tu margen.': 'memantau permintaan dan menggeser tarif dalam rentang Anda.',
-    'mira las salidas y las vueltas de mañana y avisa de lo que falta.': 'memeriksa serah terima dan pengembalian besok lalu memberi tahu yang kurang.',
+    'mira las salidas y las vueltas de mañana y avisa de lo que falta.': 'memeriksa serah terima dan motor yang kembali besok lalu memberi tahu yang kurang.',
     'prepara publicaciones para tus redes.': 'menyiapkan unggahan untuk media sosial Anda.',
     '{x}: guardado.': '{x}: tersimpan.',
     '¿Cuánto pueden gastar al mes?': 'Berapa yang boleh dibelanjakan per bulan?',
@@ -1414,7 +1416,7 @@
   var ACC_RESULTADO = { aceptada: 'Acción aceptada y hecha.', rechazada: 'Acción rechazada.', datos: 'No se ha hecho: ya no se cumplía.',
                         nivel: 'No se ha hecho: el límite de ese módulo ya no lo permite.', caducada: 'No se ha hecho: había caducado.' };
   var PROPIOS = {
-    sin_permiso: T('No tienes la herramienta «AaaS»: pídesela al administrador principal en Usuarios.'),
+    sin_permiso: T('No tienes la herramienta «Agentes»: pídesela al administrador principal en Usuarios.'),
     modulo_apagado: T('Tu equipo está apagado: sus avisos no se leen hasta que se encienda. Esto NO quiere decir que no haya ninguno.')
   };
   var POR_HINT = { agente_freno: 'Demasiados cambios seguidos: espera un minuto (como mucho 10 al día).', agente_solo_owner: 'Esto solo lo puede hacer la persona que lleva el equipo.',
@@ -1577,7 +1579,7 @@
     /* sin pista dentro del campo (Experiencia M1, 15-oct: el «40» gris se leía como escrito): el sugerido va en un botón que lo rellena.
        El único sugerido que da la base es el techo del estudio (tope_techo_cent; agente_forma.json no trae otro) */
     var sug = $a('aj-tope-sugerido');
-    oculta(sug, !(techo > 0 && pedido <= 0));
+    oculta(sug, !(techo > 0 && pedido <= 0 && d.soy_dueno === true) || E.sucio.tope);
     sug.textContent = techo > 0 ? Tf('Usar {x}', { x: eur(techo, d) }) : '';
     var ayuda = [];
     if (pedido <= 0 && techo > 0) ayuda.push(Tf('Sugerido: {x}, el máximo que ha fijado el estudio para tu plan.', { x: eur(techo, d) }));
@@ -1666,8 +1668,7 @@
     /* subir el tope DESDE 0 espera 24 h (trigger del tope, 20261001130000; es de seguridad y vive en la base): hasta entonces el equipo no gasta nada,
        así que la pantalla no dice «ya trabaja» sino cuándo empieza (Experiencia B1, 15-oct) */
     var espera = !falta && ent(d.tope_propuesto_cent) && d.tope_mensual_cent === 0;
-    var f = espera && d.tope_propuesto_desde ? C.fechaHora(d.tope_propuesto_desde) : '—';
-    if (f === '—') f = null;
+    var f = espera && d.tope_propuesto_desde ? C.fechaHora(d.tope_propuesto_desde) : null;
     var tit, txt, cab;
     if (falta) { tit = T('Aún falta un paso'); txt = textoFalta(falta) + ' ' + (PASO_DE_FALTA[falta] ? T('Tu equipo no empieza hasta completarlo.') : ''); }
     else if (espera) {
@@ -1719,36 +1720,49 @@
     });
   }
   /* ── el freno de la base (_agente_freno: 1 cambio por minuto y 10 al día por gesto; en Ajustes, «tu negocio» y «límites») ──
-     No se dice «espera un minuto» a secas (Experiencia M2, 15-oct): si el último cambio de ese gesto en esta pestaña fue hace menos de 60 s, cuenta
-     atrás y el botón se reactiva solo, sin reenviar; lo escrito no se toca. Si el historial ya trae 10 cambios de ese campo en 24 h, es el tope del día
-     y una cuenta atrás mentiría. Si no se sabe (otra pestaña, otra persona), 60 s: lo más que puede faltar para el freno del minuto. */
-  var GESTO = { negocio: 'contexto', limites: 'niveles' }, GUARDADO_EN = {}, FRENO = { t: null, msg: null, btn: null, fin: 0 };
+     La base da el MISMO hint (agente_freno) para el freno del minuto y para el del día, así que la pantalla no adivina más de lo que sabe
+     (Experiencia M2 + code-review, 15-oct):
+       · tope del día SEGURO: 10 cambios de ese campo en las últimas 24 h en el historial (si los hay, el freno del día ya ha saltado), o un segundo
+         freno del mismo gesto después de haber esperado entera una cuenta atrás (el del minuto ya no puede ser);
+       · si no, cuenta atrás hasta el minuto desde el último guardado bueno de esta pestaña, o 60 s si no lo hay (lo más que puede faltar).
+     Mientras dura, TODOS los botones que guardan ese paso se apagan y se reactivan solos, sin reenviar; lo escrito no se toca.
+     Pendiente de Backend: un hint distinto para el día (o los segundos que faltan) quitaría la deducción. */
+  var GESTO = { negocio: 'contexto', limites: 'niveles' }, GUARDADO_EN = {}, ESPERADO = {}, FRENO = { t: null, msg: null, btns: [], fin: 0, campo: null };
   function frenado(r) { return !!(r && r.error && r.error.hint === 'agente_freno'); }
-  function paraFreno() {
+  function botonesQueGuardan(paso) {
+    var f = $a('aj-f-' + paso);
+    return f ? Array.prototype.slice.call(f.querySelectorAll('button[type="submit"],[data-accion="ag-aj-recomendado"]')) : [];
+  }
+  function paraFreno(completa) {
     if (FRENO.t) clearInterval(FRENO.t);
+    if (completa && FRENO.campo) ESPERADO[FRENO.campo] = Date.now();   // se esperó entera: si vuelve a frenar, es el tope del día
     /* el aviso se quita solo si sigue siendo el del freno (otro mensaje en esa zona no se borra) */
     if (FRENO.msg) { FRENO.msg.removeAttribute('aria-live'); if (FRENO.msg.hasAttribute('data-freno')) { FRENO.msg.removeAttribute('data-freno'); FRENO.msg.textContent = ''; oculta(FRENO.msg, true); } }
-    if (FRENO.btn) FRENO.btn.disabled = false;
-    FRENO.t = null; FRENO.msg = null; FRENO.btn = null;
+    FRENO.btns.forEach(function (b) { b.disabled = false; });
+    FRENO.t = null; FRENO.msg = null; FRENO.btns = []; FRENO.campo = null;
   }
   function frena(paso, zona, btn) {
     var campo = GESTO[paso], ahora = Date.now(), ult = GUARDADO_EN[campo] || 0, s = 60;
     C.libera(btn);
-    paraFreno();
+    paraFreno(false);
+    var hist = E.estado && Array.isArray(E.estado.historial) ? E.estado.historial : [];
+    var hoy = hist.filter(function (x) {
+      var t = esObj(x) && Array.isArray(x.campos) && (x.campos.indexOf(campo) >= 0 || x.campos.indexOf(campo + '_en') >= 0) ? Date.parse(x.cuando) : NaN;
+      return isFinite(t) && ahora - t < 86400000;
+    }).length;
+    var yaEsperado = ESPERADO[campo] && ESPERADO[campo] > ult;
+    if (hoy >= 10 || yaEsperado) { msgAj(zona, T('Hoy ya se han hecho los 10 cambios que caben aquí: podrás guardar mañana. Lo escrito se queda.')); return; }
     if (ult && ahora - ult < 60000) s = Math.max(1, Math.ceil((60000 - (ahora - ult)) / 1000));
-    else {
-      var hist = E.estado && Array.isArray(E.estado.historial) ? E.estado.historial : [];
-      var hoy = hist.filter(function (x) { var t = esObj(x) && Array.isArray(x.campos) && x.campos.indexOf(campo) >= 0 ? Date.parse(x.cuando) : NaN; return isFinite(t) && ahora - t < 86400000; }).length;
-      if (hoy >= 10) { msgAj(zona, T('Hoy ya se han hecho los 10 cambios que caben aquí: podrás guardar mañana. Lo escrito se queda.')); return; }
-    }
     var m = $a(zona), texto = function (q) { return Tf('Podrás guardar en {s} s: lo escrito se queda.', { s: q }); };
     msgAj(zona, texto(s));
-    btn.disabled = true;
+    var btns = botonesQueGuardan(paso);
+    btns.forEach(function (b) { b.disabled = true; });
     m.setAttribute('data-freno', '1');
-    FRENO.msg = m; FRENO.btn = btn; FRENO.fin = ahora + s * 1000;
+    FRENO.msg = m; FRENO.btns = btns; FRENO.fin = ahora + s * 1000; FRENO.campo = campo;
     FRENO.t = setInterval(function () {
       var q = Math.ceil((FRENO.fin - Date.now()) / 1000);
-      if (q <= 0 || !m.hasAttribute('data-freno')) { paraFreno(); return; }
+      if (!m.hasAttribute('data-freno')) { paraFreno(false); return; }
+      if (q <= 0) { paraFreno(true); return; }
       /* el aviso ya se leyó una vez (role=alert): los segundos que bajan no se vuelven a leer en voz alta */
       m.setAttribute('aria-live', 'off');
       m.textContent = texto(q);
@@ -1792,6 +1806,7 @@
     E.sucio.tope = true;
     c.removeAttribute('aria-invalid');
     msgAj('aj-msg-tope', '');
+    oculta($a('aj-tope-sugerido'), true);   // ya está escrito: el botón no sigue ofreciendo lo mismo
     c.focus();
   }
   /* «Cancelar la subida»: el tope VIGENTE explícito (pedir el mismo la cancela sin bajarlo); trabajos y nivel en null (no cambian) */
