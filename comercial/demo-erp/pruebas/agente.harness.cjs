@@ -63,7 +63,62 @@ function nuevaBase(o = {}) {
       { id: 105, accion: 'aviso_reserva', modulo: 'reservas-producto', datos: { reserva: U(502), motivo: 'unidad_de_baja', trabajo: 'salidas' }, estado: 'aceptada', motivo: null, creada_en: en(-50), expira_en: en(118), decidida_en: en(-40), decidida_por: 'USR-00001' }
     ] };
   if (o.sinDatos) { s.acciones = []; s.historial = []; s.contexto = {}; }
+  // Panel V2 (15-oct-2026): la forma de agente_panel_autonomo / agente_conexiones_estado (agente_forma.json). Áreas y equipo como los siembra 20261015100000.
+  const X = t => o.xss ? XSS : t;
+  s.v2 = {
+    areas: [{ id: 'direccion', orden: 1, nombre: { en: 'Direction', es: 'Dirección', id: 'Arahan' } }, { id: 'operaciones', orden: 2, nombre: { en: 'Operations', es: 'Operaciones', id: 'Operasional' } },
+            { id: 'dinero', orden: 3, nombre: { en: 'Money', es: 'Dinero', id: 'Keuangan' } }, { id: 'precios', orden: 4, nombre: { en: 'Prices', es: 'Precios', id: 'Harga' } },
+            { id: 'captacion', orden: 5, nombre: { en: 'Social', es: 'Redes', id: 'Media sosial' } }],
+    equipo: [['altavoz', 'captacion'], ['capitan', 'direccion'], ['cifras', 'dinero'], ['radar', 'precios'], ['ruta', 'operaciones'], ['tesorero', 'dinero']].map(x => ({ agente: x[0], area: x[1] })),
+    palAg: {}, palArea: {},
+    registro: o.sinRegistro ? [] : [
+      { id: 12, en: iso(9), agente: 'capitan', area: 'direccion', accion: 'prioridades_dia', estado: 'aplicada', motivo: null, que: X('Prioridad 1: cobrar las 3 reservas que caducan mañana'), porque: X('Son la última moto libre de su modelo'), valor_esperado_cent: 150000000, gastado_cent: 12 },
+      { id: 11, en: iso(8), agente: 'altavoz', area: 'captacion', accion: 'publica_post', estado: 'parada', motivo: 'parado', que: null, porque: null, valor_esperado_cent: null, gastado_cent: null },
+      { id: 10, en: iso(7), agente: 'radar', area: 'precios', accion: 'cambia_tarifa', estado: 'rechazada', motivo: 'tope', que: null, porque: X('Ocupación del 95 %'), valor_esperado_cent: 20000000, gastado_cent: null }],
+    cola: o.sinRegistro ? [] : [{ id: 3, creada: iso(9), agente: 'altavoz', canal: 'instagram', estado: 'simulada', texto: X('Nueva Scoopy en la flota') }],
+    altavoz: { lineas: [{ linea: 'scooters', nombre: 'Scooters' }], dominios: ['minegocio.example'], imagenes: [] },
+    con: [{ proveedor: 'claude', estado: 'sin_comprobar', ultimos4: 'AbCd', version: 1, guardada_en: iso(8), por: 'USR-00001', comprobada_en: null, ultimo_error: null, ajustes: {} }]
+  };
   return s;
+}
+function panelV2(s) {
+  const o = s.o, v = s.v2, sin = !!o.sinGanado;
+  const r = { hoy: HOY, zona: 'Asia/Makassar', moneda: 'IDR', pausa: s.parado, falta_configurar: o.falta || null,
+    areas: v.areas.map(a => Object.assign(clon(a), { parado: !!v.palArea[a.id] })), equipo: v.equipo.map(m => ({ agente: m.agente, area: m.area, parado: !!v.palAg[m.agente] })),
+    registro: clon(v.registro), cola: clon(v.cola),
+    dinero: { gastado_mes_cent: 1234, moneda_gasto: 'EUR', tope_mensual_cent: s.tope, ganado_mes_cent: sin ? null : 1250000000, moneda_ganado: 'IDR',
+              ganado_reservas_cent: sin ? null : 1000000000, reservas_pagadas_mes: sin ? null : 4, ganado_recibis_cent: sin ? null : 250000000, recibis_mes: sin ? null : 1 },
+    altavoz: clon(v.altavoz) };
+  // Seguridad, 15-oct: con Reservas pero sin ser admin, ganado = solo las reservas y los recibís en null
+  if (o.soloReservas) Object.assign(r.dinero, { ganado_mes_cent: 1000000000, ganado_recibis_cent: null, recibis_mes: null });
+  return r;
+}
+// la forma de cada Ajuste del Altavoz como agente_ajuste_altavoz (20261015101000 + dominio_compartido de Seguridad, 15-oct)
+function altavoz(s, a) {
+  const v = s.v2.altavoz, d = a.p_dato || {}, quita = !!a.p_quita, no = m => ({ data: { ok: false, motivo: m }, error: null }), si = c => ({ data: { ok: true, tipo: a.p_tipo, quita, cambia: c }, error: null });
+  if (a.p_tipo === 'linea') {
+    const l = String(d.linea || '').trim().toLowerCase();
+    if (!/^[a-z][a-z0-9_]{2,30}$/.test(l)) return no('linea');
+    if (quita) { const n = v.lineas.length; v.lineas = v.lineas.filter(x => x.linea !== l); return si(n !== v.lineas.length); }
+    const nom = String(d.nombre || '').trim(); if (nom.length < 2 || nom.length > 60) return no('nombre');
+    v.lineas = v.lineas.filter(x => x.linea !== l).concat([{ linea: l, nombre: nom }]); return si(true);
+  }
+  if (a.p_tipo === 'dominio') {
+    const dm = String(d.dominio || '').trim().toLowerCase();
+    if (!/^([a-z0-9-]+\.)+[a-z]{2,}$/.test(dm)) return no('dominio');
+    if (['bit.ly', 'instagram.com', 'linktr.ee'].includes(dm)) return no('dominio_compartido');
+    if (quita) { const n = v.dominios.length; v.dominios = v.dominios.filter(x => x !== dm); return si(n !== v.dominios.length); }
+    if (v.dominios.includes(dm)) return si(false);
+    v.dominios.push(dm); return si(true);
+  }
+  if (a.p_tipo === 'imagen') {
+    const u = String(d.url || '').trim();
+    if (!/^https:\/\/([a-z0-9-]+\.)+[a-z]{2,}\/[A-Za-z0-9/_.-]{1,200}\.jpe?g$/.test(u)) return no('url');
+    if (quita) { const n = v.imagenes.length; v.imagenes = v.imagenes.filter(x => x.url !== u); return si(n !== v.imagenes.length); }
+    if (!v.lineas.some(x => x.linea === d.linea)) return no('linea');
+    v.imagenes = v.imagenes.filter(x => x.url !== u).concat([{ url: u, linea: d.linea }]); return si(true);
+  }
+  return no('forma');
 }
 const nivelDe = (s, m) => { const l = s.limites.find(x => x.modulo === m); return l ? l.nivel_efectivo : 0; };
 function notas(s) {
@@ -201,6 +256,37 @@ async function servidor(s, nombre, a) {
       return { data: { ok: true, estado: estado2, motivo: motivo2 }, error: null };
     }
   }
+  // ── panel V2 (15-oct-2026) ──
+  if (nombre === 'agente_panel_autonomo' || nombre === 'agente_conexiones_estado') {
+    if (!s.encendido) return err('42501', 'agente: módulo no activo', 'modulo_apagado');
+    if (o.pruebas) return err('42501', 'agente: la cuenta de pruebas solo mira', 'cuenta_pruebas');
+    if (o.v2Roto && nombre === 'agente_panel_autonomo') return err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
+    return { data: nombre === 'agente_panel_autonomo' ? panelV2(s) : clon(s.v2.con), error: null };
+  }
+  if (nombre === 'agente_palanca') {
+    if (a.p_parado === false) { const e = soloDueno(); if (e) return e; }
+    if (o.pruebas) return err('42501', 'cuenta de pruebas', 'cuenta_pruebas');
+    const vale = a.p_ambito === 'agente' ? s.v2.equipo.some(m => m.agente === a.p_clave) : (a.p_ambito === 'area' ? s.v2.areas.some(x => x.id === a.p_clave) : false);
+    if (!vale || typeof a.p_parado !== 'boolean') return { data: { ok: false, motivo: 'clave' }, error: null };
+    (a.p_ambito === 'agente' ? s.v2.palAg : s.v2.palArea)[a.p_clave] = a.p_parado;
+    return { data: { ok: true, ambito: a.p_ambito, clave: a.p_clave, parado: a.p_parado }, error: null };
+  }
+  if (nombre === 'agente_conexion_guarda') {
+    const e = soloDueno(); if (e) return e;
+    if (a.p_proveedor !== 'claude') return { data: { ok: false, motivo: 'proveedor' }, error: null };
+    if (!/^sk-ant-[A-Za-z0-9_-]{20,250}$/.test(String(a.p_secreto || ''))) return { data: { ok: false, motivo: 'formato' }, error: null };
+    const c = s.v2.con.find(x => x.proveedor === 'claude') || (s.v2.con.push({ proveedor: 'claude', version: 0, ajustes: {} }), s.v2.con[s.v2.con.length - 1]);
+    Object.assign(c, { estado: 'sin_comprobar', ultimos4: a.p_secreto.slice(-4), version: c.version + 1, guardada_en: ahoraIso(), ultimo_error: null });
+    return { data: { ok: true, proveedor: 'claude', estado: 'sin_comprobar', ultimos4: c.ultimos4, version: c.version }, error: null };
+  }
+  if (nombre === 'agente_conexion_desconecta') {
+    if (o.pruebas) return err('42501', 'cuenta de pruebas', 'cuenta_pruebas');
+    const c = s.v2.con.find(x => x.proveedor === a.p_proveedor);
+    if (!c) return { data: { ok: false, motivo: 'proveedor' }, error: null };
+    Object.assign(c, { estado: 'desconectada', ultimos4: null });
+    return { data: { ok: true, proveedor: a.p_proveedor, estado: 'desconectada' }, error: null };
+  }
+  if (nombre === 'agente_ajuste_altavoz') { const e = soloDueno(); if (e) return e; return altavoz(s, a); }
   return err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
 }
 
@@ -219,11 +305,12 @@ var sb = {
 window.LW_AUTH = Promise.resolve({ sb: sb, ficha: { rol: 'admin', herramientas: ['agente'] } });
 window.lwDatos = function (n, a) { if (!/^[a-z][a-z0-9_]*_datos$/.test(n)) throw new Error('lwDatos solo *_datos'); return Promise.resolve(sb.rpc(n, a)).then(function (r) { return { data: r.data, error: r.error }; }); };
 window.LW_IDIOMA = '${idioma}';
-window.LW_EN = {}; window.LW_ID = {};
+/* Como en Lawang (i18n.js / i18n_id.json): «Operaciones» ya es Deals/Transaksi y la fusión de agente.html no lo pisa; por eso el papel de Ruta usa 'Operaciones~agente' */
+window.LW_EN = { 'Operaciones': 'Deals' }; window.LW_ID = { 'Operaciones': 'Transaksi' };
 window.AXW_MAPA_MODULOS = { n: ${JSON.stringify(ROTULOS).replace(/</g, '\\u003c')} };
 window.lwLocale = function () { return window.LW_IDIOMA === 'en' ? 'en-GB' : (window.LW_IDIOMA === 'id' ? 'id-ID' : 'es-ES'); };
 window.lwT = function (s) { s = String(s); var d = window.LW_IDIOMA === 'en' ? window.LW_EN : (window.LW_IDIOMA === 'id' ? window.LW_ID : null);
-  if (d) { if (Object.prototype.hasOwnProperty.call(d, s)) return d[s]; if (!/^[\\s\u2014\u00b70-9.,%():\u2265\u2264-]*$/.test(s)) window.__sinTr.push(s); } return s; };
+  if (d) { if (Object.prototype.hasOwnProperty.call(d, s)) return d[s]; if (!/^[\\s\u2014\u00b70-9.,%():\u2265\u2264-]*$/.test(s)) window.__sinTr.push(s); } var c = s.indexOf('~'); return c < 0 ? s : s.slice(0, c); };
 window.lwIdiomaAplicar = function (raiz) { Array.prototype.forEach.call(raiz.querySelectorAll('[data-lwt]'), function (e) { e.textContent = window.lwT(e.textContent); }); };
 window.onerror = function (m) { window.__errores.push(String(m)); };
 </script>
@@ -258,7 +345,8 @@ const MUESTRA = (() => {
   const hay = (p, sel) => p.$$(sel).then(x => x.length);
   const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   const hasta = async f => { for (let i = 0; i < 100; i++) { if (f()) return true; await new Promise(r => setTimeout(r, 50)); } return false; };
-  const sinInyeccion = async p => (await p.$$('[data-ag="raiz"] img, [data-ag="raiz"] svg, [data-ag="raiz"] script')).length === 0 && (await p.evaluate(() => window.__xss)) === undefined;
+  // los iconos del panel V2 son svg que crea el propio código (createElementNS, marcados con data-ag-icono): no cuentan como inyección
+  const sinInyeccion = async p => (await p.$$('[data-ag="raiz"] img, [data-ag="raiz"] svg:not([data-ag-icono]), [data-ag="raiz"] script')).length === 0 && (await p.evaluate(() => window.__xss)) === undefined;
   const sinErrores = async p => (await p.evaluate(() => window.__errores)).length === 0 && (await p.evaluate(() => window.__fromLlamado + window.__fetchLlamado)) === 0;
   const tarjeta = (p, t) => txt(p, '[data-ag="nota"][data-trabajo="' + t + '"]');
 
@@ -723,6 +811,144 @@ const MUESTRA = (() => {
       const dlg = await p.$eval('[data-axw="dialogo"] .axw-modal', e => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, w: window.innerWidth }; });
       ok(idioma + ' ' + ancho + ' px · la confirmación de apagar cabe', dlg.l >= 0 && dlg.r <= dlg.w + 1, J(dlg));
       if (SHOT && idioma === 'es') await p.screenshot({ path: SHOT + '_' + idioma + '_' + ancho + '_apagar.png' });
+      await ctx.close();
+    }
+  }
+  // 6b. el papel de Ruta va por su clave 'Operaciones~agente': en es sale sin el «~», en en/id no lo pisa el «Operaciones» de Lawang (Deals/Transaksi)
+  for (const [idioma, esperado] of [['es', 'Operaciones'], ['en', 'Operations'], ['id', 'Operasional']]) {
+    const { p, ctx } = await abre({ idioma, base: { dueno: true } });
+    await p.click('[data-accion="ag-v2-agente"][data-clave="ruta"]');
+    await p.waitForFunction(e => document.querySelector('[data-ag="v2-papel"]').textContent === e, esperado, { timeout: 3000 }).catch(() => {});
+    const papel = await txt(p, '[data-ag="v2-papel"]');
+    ok(idioma + ' · V2: el papel de Ruta sale «' + esperado + '»', papel === esperado, papel);
+    await ctx.close();
+  }
+  // 7. PANEL V2 del AaaS autónomo (15-oct-2026)
+  const v2txt = p => p.$eval('[data-ag="v2"]', e => e.textContent);
+  {
+    const { p, base, ctx } = await abre({ base: { dueno: true } });
+    ok('V2 dueño: el panel está a la vista, lee panel y conexiones una vez cada uno', (await visible(p, '[data-ag="v2"]')) && (await visible(p, '[data-ag="v2-cuerpo"]'))
+       && llamadas(base, 'agente_panel_autonomo').length === 1 && llamadas(base, 'agente_conexiones_estado').length === 1);
+    ok('V2: un botón por agente del equipo (6), por id', (await p.$$eval('[data-accion="ag-v2-agente"]', e => e.map(x => x.getAttribute('data-clave')).sort().join())) === 'altavoz,capitan,cifras,radar,ruta,tesorero');
+    ok('V2: empieza por el Capitán', (await txt(p, '[data-ag="v2-nombre"]')) === 'Capitán');
+    const gana = await txt(p, '[data-ag="v2-gana"]'), gasta = await txt(p, '[data-ag="v2-gasta"]');
+    ok('V2: cobrado en IDR y gastado en EUR, cada uno en su sitio y sin sumarse', /IDR/.test(gana) && !/EUR/.test(gana) && /EUR/.test(gasta) && !/IDR/.test(gasta), gana + ' | ' + gasta);
+    ok('V2: el registro pinta sus 3 filas, con qué/por qué y las dos monedas', (await hay(p, '[data-ag="v2-fila"]')) === 3 && (await txt(p, '[data-ag="v2-registro"]')).includes('Son la última moto libre')
+       && (await txt(p, '[data-ag="v2-registro"]')).includes('Espera ganar') && (await txt(p, '[data-ag="v2-registro"]')).includes('Habría pasado del tope de gasto.'));
+    ok('V2: sin pausa ni palancas, nadie que reanudar (ningún «Reanudar» sin parada viva)', (await hay(p, '[data-accion="ag-v2-reanuda"]')) === 0);
+    ok('V2: la cola y las 5 áreas se pintan; la de Dinero dice que no levanta el tope', (await hay(p, '[data-ag="v2-salida"]')) === 1 && (await hay(p, '[data-accion="ag-v2-area"]')) === 5
+       && (await p.$eval('[data-accion="ag-v2-area"][data-clave="dinero"]', e => e.textContent)).includes('nunca levanta el tope'));
+    ok('V2: la conexión de la IA dice su estado y sus 4 últimos, nunca el secreto; el campo de la llave está vacío', (await p.$eval('[data-ag="v2-conn"][data-proveedor="claude"]', e => e.textContent)).includes('…AbCd')
+       && (await p.$eval('[data-campo="v2-llave"]', e => e.value)) === '');
+    ok('V2: window.orbe.pulso existe y no rompe nada', await p.evaluate(() => { try { window.orbe.pulso(); return true; } catch (e) { return false; } }));
+    // una fila nueva en el registro → un pulso de la bola al refrescar
+    await p.evaluate(() => { window.__pulsos = 0; window.orbe.pulso = function () { window.__pulsos++; }; });
+    base.v2.registro.unshift({ id: 13, en: iso(10), agente: 'ruta', area: 'operaciones', accion: 'aviso_reserva', estado: 'aplicada', motivo: null, que: 'Aviso en R-0012', porque: null, valor_esperado_cent: null, gastado_cent: null });
+    await p.click('[data-accion="ag-v2-area"][data-clave="precios"]');
+    await hasta(() => llamadas(base, 'agente_palanca').length === 1);
+    ok('V2: parar un área manda ámbito, clave por id, parado y motivo null', J(llamadas(base, 'agente_palanca')[0][1]) === J({ p_ambito: 'area', p_clave: 'precios', p_parado: true, p_motivo: null }));
+    await p.waitForFunction(() => document.querySelector('[data-accion="ag-v2-area"][data-clave="precios"]').getAttribute('aria-pressed') === 'false');
+    await p.waitForTimeout(1600);
+    ok('V2: una fila nueva del registro = un pulso de la bola', (await p.evaluate(() => window.__pulsos)) === 1, String(await p.evaluate(() => window.__pulsos)));
+    // parar a todos
+    await p.click('[data-accion="ag-v2-todos"]');
+    await hasta(() => llamadas(base, 'agente_para').length === 1);
+    await p.waitForFunction(() => document.querySelector('[data-accion="ag-v2-todos"]').getAttribute('aria-pressed') === 'true');
+    ok('V2: «Parar a todos» llama a agente_para sin argumentos y queda pulsado', J(llamadas(base, 'agente_para')[0][1]) === '{}');
+    ok('V2: con la pausa puesta, la fila parada ofrece «Reanudar» (la pausa) al dueño', (await hay(p, '[data-accion="ag-v2-reanuda"][data-ambito="pausa"]')) === 1);
+    // un agente: parado con su palanca
+    await p.click('[data-accion="ag-v2-agente"][data-clave="radar"]');
+    await p.click('[data-accion="ag-v2-modo"][data-modo="parado"]');
+    await hasta(() => llamadas(base, 'agente_palanca').length === 2);
+    ok('V2: parar un agente manda su id', J(llamadas(base, 'agente_palanca')[1][1]) === J({ p_ambito: 'agente', p_clave: 'radar', p_parado: true, p_motivo: null }));
+    // la llave: forma mala → lo dice la base, el campo se vacía
+    await p.fill('[data-campo="v2-llave"]', 'no-es-una-llave');
+    await p.click('[data-ag="v2-form-llave"] button[type="submit"]');
+    await hasta(() => llamadas(base, 'agente_conexion_guarda').length === 1);
+    await p.waitForFunction(() => document.querySelector('[data-ag="v2-llave-aviso"]').textContent.includes('sk-ant-'));
+    ok('V2: llave mal formada: manda proveedor, secreto y ajustes; dice cómo es una llave; el campo queda vacío',
+       J(Object.keys(llamadas(base, 'agente_conexion_guarda')[0][1]).sort()) === J(['p_ajustes', 'p_proveedor', 'p_secreto']) && (await p.$eval('[data-campo="v2-llave"]', e => e.value)) === '');
+    // Altavoz: un dominio compartido lo rechaza la base, con su frase
+    await p.fill('[data-campo="v2-dominio"]', 'bit.ly');
+    await p.click('[data-ag="v2-form-dominio"] button[type="submit"]');
+    await hasta(() => llamadas(base, 'agente_ajuste_altavoz').length === 1);
+    await p.waitForSelector('[data-ag="v2-alt-error"]:not(.axw-oculto)');
+    ok('V2: dominio compartido → «Usa tu propio dominio…», args tipo/dato/quita', (await txt(p, '[data-ag="v2-alt-error"]')).includes('propio dominio')
+       && J(llamadas(base, 'agente_ajuste_altavoz')[0][1]) === J({ p_tipo: 'dominio', p_dato: { dominio: 'bit.ly' }, p_quita: false }));
+    await p.click('[data-accion="ag-v2-quita"][data-tipo="dominio"]');
+    await hasta(() => llamadas(base, 'agente_ajuste_altavoz').length === 2);
+    await p.waitForSelector('[data-ag="v2-dominios-vacio"]');
+    ok('V2: quitar un dominio manda su clave con p_quita true y la lista lo dice vacía', J(llamadas(base, 'agente_ajuste_altavoz')[1][1]) === J({ p_tipo: 'dominio', p_dato: { dominio: 'minegocio.example' }, p_quita: true }));
+    ok('V2: ningún error de JS ni escritura directa', await sinErrores(p));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, xss: true } });
+    ok('V2 XSS: lo que escribe la IA sale como texto y no inyecta nada', (await sinInyeccion(p)) && (await txt(p, '[data-ag="v2-registro"]')).includes('<img src=x') && (await txt(p, '[data-ag="v2-cola"]')).includes('<img src=x'));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { herramienta: true, pausa: true } });
+    ok('V2 no dueño con la pausa: «Parar a todos» no puede reanudar y dice que es del dueño', (await p.$eval('[data-accion="ag-v2-todos"]', e => e.disabled)) && (await txt(p, '[data-ag="v2-todos-nota"]')).includes('Solo el dueño'));
+    ok('V2 no dueño: ni «Reanudar» en el registro, ni formulario de la llave ni del Altavoz', (await hay(p, '[data-accion="ag-v2-reanuda"]')) === 0 && (await txt(p, '[data-ag="v2-registro"]')).includes('Lo reanuda el dueño.')
+       && !(await visible(p, '[data-ag="v2-form-llave"]')) && !(await visible(p, '[data-ag="v2-form-dominio"]')));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, sinGanado: true, sinRegistro: true } });
+    ok('V2 sin acceso a lo cobrado: «Sin acceso o sin datos», nunca 0', (await txt(p, '[data-ag="v2-gana"]')) === 'Sin acceso o sin datos');
+    ok('V2 registro vacío: estado vacío explicado; cola vacía también', (await hay(p, '[data-ag="v2-sin-registro"]')) === 1 && (await hay(p, '[data-ag="v2-sin-cola"]')) === 1);
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { herramienta: true, soloReservas: true } });
+    ok('V2 solo reservas (sin ser admin): el rótulo dice que es parcial, nunca el total', (await txt(p, '[data-ag="v2-gana-t"]')).includes('solo reservas')
+       && (await txt(p, '[data-ag="v2-gana-nota"]')).includes('Solo lo que tu usuario puede ver'));
+    await ctx.close();
+  }
+  for (const idioma of ['en', 'id']) {
+    const { p, ctx } = await abre({ idioma, base: { herramienta: true, soloReservas: true } });
+    ok('V2 ' + idioma + ' solo reservas: traducido', (await p.evaluate(() => window.__sinTr)).length === 0 && (await txt(p, '[data-ag="v2-gana-t"]')).includes(idioma === 'en' ? 'bookings only' : 'hanya booking'));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { herramienta: true, pruebas: true } });
+    ok('V2 cuenta de pruebas: estado propio («solo mirar») y el resto de la pantalla sigue', (await txt(p, '[data-ag="v2-error"]')).includes('Cuenta de demostración') && (await visible(p, '[data-ag="bloque-hoy"]')) && !(await visible(p, '[data-ag="v2-cuerpo"]')));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ base: { dueno: true, v2Roto: true } });
+    ok('V2 sin la función en la base: «no se ha podido mirar» en el panel, el resto sigue', (await txt(p, '[data-ag="v2-error"]')).includes('no se ha podido mirar') && (await visible(p, '[data-ag="bloque-hoy"]')));
+    await ctx.close();
+  }
+  for (const idioma of ['en', 'id']) {
+    const { p, ctx } = await abre({ idioma, base: { dueno: true, pausa: true } });
+    const sin = await p.evaluate(() => window.__sinTr);
+    ok('V2 ' + idioma + ': ninguna cadena sin traducir', sin.length === 0, J(sin.slice(0, 6)));
+    ok('V2 ' + idioma + ': el área sale con el nombre de la base en su idioma', (await p.$eval('[data-accion="ag-v2-area"][data-clave="dinero"]', e => e.textContent)).includes(idioma === 'en' ? 'Money' : 'Keuangan'));
+    await ctx.close();
+  }
+  // movimiento reducido: nada se anima y el texto del agente está entero de una vez
+  for (const ancho of [1440, 390]) {
+    for (const mov of ['no-preference', 'reduce']) {
+      const base = nuevaBase({ dueno: true });
+      const ctx = await nav.newContext({ viewport: { width: ancho, height: 1000 }, reducedMotion: mov });
+      const p = await ctx.newPage();
+      await p.exposeFunction('__srv', (n, a) => servidor(base, n, a));
+      await p.setContent(pagina('es'), { waitUntil: 'load' });
+      await p.waitForFunction(() => document.querySelector('[data-ag="carga"]').getAttribute('data-tipo') !== 'cargando', null, { timeout: 5000 });
+      await p.waitForTimeout(400);
+      const an = await p.evaluate(() => document.getAnimations().filter(a => a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('.ag2') && a.playState === 'running').length);
+      const dice = await p.evaluate(() => ({ ya: document.querySelector('[data-ag="v2-dice"] .ag2-ya').textContent, sr: document.querySelector('[data-ag="v2-dice-sr"]').textContent }));
+      if (mov === 'reduce') ok('V2 ' + ancho + ' reduce: ninguna animación en marcha y el texto entero', an === 0 && dice.ya === dice.sr && dice.sr.length > 0, J({ an, dice }));
+      else ok('V2 ' + ancho + ' sin preferencia: la bola se mueve', an > 0, String(an));
+      const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
+      ok('V2 ' + ancho + ' ' + mov + ': sin scroll horizontal', m.sw <= m.cw, J(m));
+      if (SHOT) {
+        await p.waitForTimeout(mov === 'reduce' ? 0 : 1200);
+        const el = await p.$('[data-ag="v2"]');
+        await el.screenshot({ path: SHOT + '_v2_' + ancho + '_' + mov + '.png' });
+      }
       await ctx.close();
     }
   }

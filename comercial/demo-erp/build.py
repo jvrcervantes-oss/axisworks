@@ -5431,7 +5431,10 @@ IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis', 'Panel', 'Bot',
                  # 13-oct (editores.js al indonesio): «Closer» y «Setter» son los nombres de los roles de venta, que el equipo usa tal
                  # cual en indonesio
                  'Closer', 'Setter',
-                 'AaaS')   # AaaS: nombre del producto, igual en los tres idiomas (owner, 13-oct)
+                 'AaaS',   # AaaS: nombre del producto, igual en los tres idiomas (owner, 13-oct)
+                 # 15-oct (panel V2 del AaaS, agente.html): «Radar» es el nombre del agente de precios (como Closer/Setter, un nombre,
+                 # no una palabra que traducir); Facebook, Instagram y Google Business son marcas
+                 'Radar', 'Facebook', 'Instagram', 'Google Business')
 # Lo que hay que tocar en el front copiado: (fichero en DIST, trozo de Lawang, sustituto). Cada trozo tiene que aparecer EXACTAMENTE una vez.
 IDIOMAS_PARCHES = (
     ('contracts/assets/idioma.js', "  window.LW_IDIOMA = (v === 'en') ? 'en' : 'es';",

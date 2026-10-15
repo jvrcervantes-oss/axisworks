@@ -1091,8 +1091,8 @@ window.AXW_ASIS = (function () {
       previo = previo.then(function (v) { if (v === 'ok' && $('buzon-pass')) $('buzon-pass').value = ''; return v; });
     } else if (accion === 'quita') {
       cuerpo.instancia = inst.nombre;
-      previo = dialogo('<p>Se vacía el buzón del estudio de <b>' + esc(inst.marca) + '</b>: su invitación y su primer código de Ajustes dejarán de salir hasta que lo copies otra vez.</p>' +
-        '<p class="ax-md">Hazlo antes de dar al cliente acceso de administrador a su proyecto de Supabase, y después cambia la contraseña del buzón.</p>',
+      previo = dialogo('<p>Se vacía el buzón del estudio de <b>' + esc(inst.marca) + '</b> y la instancia <b>queda fuera para siempre</b>: ni «Poner en todas» ni «Copiar a esta» se lo volverán a dar. Su invitación y su primer código de Ajustes dejarán de salir.</p>' +
+        '<p class="ax-md">Hazlo antes de dar al cliente acceso de administrador a su proyecto de Supabase, y después cambia la contraseña del buzón y pulsa «Comprobar y poner en todas». Para devolvérselo hace falta una decisión del owner.</p>',
         'Quitar', null, 'Buzón del estudio', 'Quitar · ' + inst.marca);
     } else { cuerpo.instancia = inst.nombre; previo = Promise.resolve('ok'); }
     ocupado = true;

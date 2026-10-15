@@ -71,6 +71,30 @@
    "errores": {
     "42501": "módulo apagado o sin la herramienta agente"
    }
+  },
+  "agente_panel_autonomo": {
+   "transporte": "sb.rpc (panel V2 del AaaS autónomo; agencia erp/migraciones/20261015101000)",
+   "args": {},
+   "devuelve": {
+    "hoy": "fecha de la instancia",
+    "zona": "zona horaria (texto)",
+    "moneda": "texto de 3 letras | null: la de Ajustes (lo que ESPERA ganar un agente va en ella)",
+    "pausa": "bool: la pausa general (agente_para / agente_reanuda)",
+    "falta_configurar": "null | texto (como en agente_panel_estado)",
+    "areas": "[{id, orden, nombre: {en, es, id}, parado}] — nombre es DATO: se elige por idioma, nunca pasa por T()",
+    "equipo": "[{agente, area, parado}] — parado = SU palanca; la del área va en areas",
+    "registro": "[{id, en, agente, area, accion, estado: 'aplicada' | 'propuesta' | 'rechazada' | 'parada', motivo: null | 'parado' | 'accion' | 'rol' | 'datos' | 'trabajo' | 'nivel' | 'cupo' | 'tope' | 'otro', que, porque, valor_esperado_cent, gastado_cent}] (últimas 50; que/porque = texto de la IA: textContent)",
+    "cola": "[{id, creada, agente, canal: 'facebook' | 'instagram', estado: 'pendiente' | 'enviando' | 'enviada' | 'fallida' | 'dudosa' | 'simulada' | 'parada', texto}] (últimas 10; texto de la IA: textContent)",
+    "dinero": "{gastado_mes_cent, moneda_gasto, tope_mensual_cent, ganado_mes_cent | null, moneda_ganado | null, ganado_reservas_cent | null, reservas_pagadas_mes, ganado_recibis_cent | null, recibis_mes} — DOS monedas que no se suman; ganado null = sin datos o sin permiso de verlo (Seguridad, 15-oct), nunca 0",
+    "altavoz": "{lineas: [{linea, nombre}], dominios: [texto], imagenes: [{url, linea}]}"
+   },
+   "quien": "herramienta agente con el módulo encendido; la cuenta de pruebas → 42501 hint cuenta_pruebas (estado propio en el panel)"
+  },
+  "agente_conexiones_estado": {
+   "transporte": "sb.rpc",
+   "args": {},
+   "devuelve": "[{proveedor: 'claude' | 'meta' | 'google', estado: 'sin_comprobar' | 'conectada' | 'caducada' | 'error' | 'desconectada', ultimos4, version, guardada_en, por, comprobada_en, ultimo_error, ajustes}] — NUNCA el secreto",
+   "quien": "herramienta agente; la cuenta de pruebas → 42501 hint cuenta_pruebas"
   }
  },
  "escrituras": {
@@ -143,6 +167,41 @@
    },
    "devuelve": "{ok: true, estado: 'aceptada' | 'rechazada' | 'anulada' | 'caducada', motivo: null | 'datos' | 'nivel' | 'caducada'}",
    "quien": "owner de la ficha (aceptar la aplica: vuelve a mirar la forma, el nivel y la condición en la base); ya decidida → 22023 hint ya_decidida"
+  },
+  "agente_palanca": {
+   "args": {
+    "p_ambito": "'agente' | 'area'",
+    "p_clave": "id del agente (agente_miembros) o del área (agente_areas)",
+    "p_parado": "bool",
+    "p_motivo": "texto | null (el panel manda null)"
+   },
+   "devuelve": "{ok: true, ambito, clave, parado} | {ok: false, motivo: 'clave'}",
+   "quien": "parar: herramienta agente, sin freno; reanudar (p_parado false): SOLO el dueño de la ficha, con freno (42501 hint agente_solo_owner / P0001 agente_freno)"
+  },
+  "agente_conexion_guarda": {
+   "args": {
+    "p_proveedor": "'claude' (lo único que se conecta hoy)",
+    "p_secreto": "la llave tal cual la pega el dueño (la base valida su forma)",
+    "p_ajustes": "{} para claude"
+   },
+   "devuelve": "{ok: true, proveedor, estado: 'sin_comprobar', ultimos4, version} | {ok: false, motivo: 'proveedor' | 'formato' | 'ajustes' | 'sin_vault' | 'error'}",
+   "quien": "SOLO el dueño de la ficha, con freno. El campo de la llave es de solo escritura: nunca se rellena con lo guardado"
+  },
+  "agente_conexion_desconecta": {
+   "args": {
+    "p_proveedor": "'claude' | 'meta' | 'google'"
+   },
+   "devuelve": "{ok: true, proveedor, estado: 'desconectada'} | {ok: false, motivo: 'proveedor'}",
+   "quien": "herramienta agente, sin freno (apagar funciona siempre)"
+  },
+  "agente_ajuste_altavoz": {
+   "args": {
+    "p_tipo": "'linea' | 'dominio' | 'imagen'",
+    "p_dato": "linea {linea, nombre} · dominio {dominio} · imagen {url https …jpg, linea}; al quitar basta la clave",
+    "p_quita": "bool"
+   },
+   "devuelve": "{ok: true, tipo, quita, cambia} | {ok: false, motivo: 'forma' | 'linea' | 'nombre' | 'dominio' | 'dominio_compartido' | 'url' | 'demasiadas' | 'demasiados' | 'tiene_imagenes'}",
+   "quien": "SOLO el dueño de la ficha"
   }
  },
  "items_por_trabajo": {
