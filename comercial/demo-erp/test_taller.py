@@ -158,7 +158,7 @@ mira('ni la viejas orden_trabajo_abre/cierra ni las de la edge (foto_prepara/con
 mira('ninguna lectura encadenada (.rpc(...).select)', '.select(' not in CODIGO and not re.search(r"\.rpc\([^)]*\)\s*\.", CODIGO))
 # el filtro p_estado: 'cerrada' de la lectura de partes (S9) no es un estado que se escriba: se quita ESE literal y nada más antes de mirar
 mira('el navegador no manda autor, correo, número, ruta ni estado de la moto',
-     not re.search(r"p_(autor|por|email|numero|ruta|estado|unidad_estado|abierta|cerrada|user)\b", CODIGO.replace("{ p_estado: 'cerrada', p_limit: PARTES_PAGINA,", '')) and "'ruta'" not in CODIGO_FOTOS and 'ruta' not in re.sub(r"'[^']*'", '', CODIGO_FOTOS))
+     not re.search(r"p_(autor|por|email|numero|ruta|estado|unidad_estado|abierta|cerrada|user)\b", CODIGO.replace("llama('orden_trabajo_datos', { p_estado: 'cerrada', p_limit: PARTES_PAGINA,", "llama('orden_trabajo_datos', {")) and "'ruta'" not in CODIGO_FOTOS and 'ruta' not in re.sub(r"'[^']*'", '', CODIGO_FOTOS))
 mira('abrir manda SOLO moto, motivo y nota', "{ p_unidad: E.moto.id, p_motivo_tipo: E.motivo, p_nota: nota || null }" in CODIGO)
 mira('km manda orden, km entero, gasolina y la confirmación', "{ p_orden: id, p_km: n, p_gasolina: E.gas, p_confirma: !!confirma }" in CODIGO and 'inputmode: \'numeric\'' in CODIGO and "replace(/[^0-9]/g, '')" in CODIGO)
 mira('resultado manda orden, resultado, nota y motivo de excepción', "{ p_orden: id, p_resultado: res, p_nota: nota || null, p_motivo_excepcion: exc || null }" in CODIGO)

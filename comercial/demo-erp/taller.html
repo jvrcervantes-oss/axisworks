@@ -256,7 +256,7 @@
     'Devolver estas {n} a disponible': 'Make these {n} available again', 'Motivo de la vuelta (3 a 120 caracteres)': 'Reason for returning (3 to 120 characters)',
     'Escribe el motivo (3 a 120 caracteres, en una línea).': 'Write the reason (3 to 120 characters, on one line).',
     'Devueltas a disponible: {n} de {t}': 'Available again: {n} of {t}', 'Volver al taller': 'Back to the workshop',
-    'Partes hechos': 'Finished orders', 'Solo para mirar: los partes cerrados, del más reciente al más antiguo. Aquí no se cambia nada.': 'View only: closed orders, newest first. Nothing can be changed here.',
+    'Partes hechos': 'Finished orders', 'Solo para mirar: los partes cerrados, por la fecha en que se abrieron (el más reciente arriba). Aquí no se cambia nada.': 'View only: closed orders, by the date they were opened (newest first). Nothing can be changed here.',
     'Aún no hay partes cerrados.': 'There are no closed orders yet.', 'Ver más': 'Show more', 'Cerrada el {f} por {q}': 'Closed on {f} by {q}', 'Cerrada el {f}': 'Closed on {f}',
     'No se han podido mirar los partes': 'The orders could not be checked', 'No se ha podido abrir el parte': 'The order could not be opened', 'Volver a la lista': 'Back to the list',
     'Nota del motivo': 'Reason note', 'Apertura': 'Opened', 'Cierre': 'Closed', 'Nota del cierre': 'Closing note', 'Orden de la pantalla anterior': 'Order from the previous screen',
@@ -376,7 +376,7 @@
     'Devolver estas {n} a disponible': 'Jadikan {n} motor ini tersedia', 'Motivo de la vuelta (3 a 120 caracteres)': 'Alasan kembali disewa (3 sampai 120 karakter)',
     'Escribe el motivo (3 a 120 caracteres, en una línea).': 'Tulis alasannya (3 sampai 120 karakter, satu baris).',
     'Devueltas a disponible: {n} de {t}': 'Sudah tersedia: {n} dari {t}', 'Volver al taller': 'Kembali ke bengkel',
-    'Partes hechos': 'Order selesai', 'Solo para mirar: los partes cerrados, del más reciente al más antiguo. Aquí no se cambia nada.': 'Hanya untuk dilihat: order yang sudah ditutup, dari yang terbaru. Di sini tidak ada yang bisa diubah.',
+    'Partes hechos': 'Order selesai', 'Solo para mirar: los partes cerrados, por la fecha en que se abrieron (el más reciente arriba). Aquí no se cambia nada.': 'Hanya untuk dilihat: order yang sudah ditutup, menurut tanggal dibuka (yang terbaru di atas). Di sini tidak ada yang bisa diubah.',
     'Aún no hay partes cerrados.': 'Belum ada order yang ditutup.', 'Ver más': 'Tampilkan lagi', 'Cerrada el {f} por {q}': 'Ditutup {f} oleh {q}', 'Cerrada el {f}': 'Ditutup {f}',
     'No se han podido mirar los partes': 'Order tidak dapat diperiksa', 'No se ha podido abrir el parte': 'Order tidak dapat dibuka', 'Volver a la lista': 'Kembali ke daftar',
     'Nota del motivo': 'Catatan alasan', 'Apertura': 'Dibuka', 'Cierre': 'Ditutup', 'Nota del cierre': 'Catatan penutupan', 'Orden de la pantalla anterior': 'Order dari layar sebelumnya',
@@ -1329,7 +1329,8 @@
         h('div', { class: 'tl-sub', text: [String(o.producto || ''), cerradaTexto(o)].filter(Boolean).join(' · ') })]);
       ul.appendChild(h('li', null, [h('button', { class: 'tl-fila', type: 'button', 'data-accion': 'tl-parte', 'data-orden-id': String(o.id) }, [izq, chip(T('Ver'), 'neutro')])]));
     });
-    var hijos = [h('p', { class: 'tl-sub', text: T('Solo para mirar: los partes cerrados, del más reciente al más antiguo. Aquí no se cambia nada.') })];
+    // la base ordena por apertura (orden_trabajo_datos), no por cierre: el texto lo dice tal cual
+    var hijos = [h('p', { class: 'tl-sub', text: T('Solo para mirar: los partes cerrados, por la fecha en que se abrieron (el más reciente arriba). Aquí no se cambia nada.') })];
     hijos.push(P.lista.length ? ul : h('p', { class: 'axw-vacio', 'data-tl': 'partes-vacio', text: T('Aún no hay partes cerrados.') }));
     if (P.siguiente) hijos.push(h('div', { class: 'tl-acciones' }, [h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-partes-mas', text: T('Ver más') })]));
     hijos.push(h('div', { 'data-tl': 'partes-estado' }));
@@ -1343,7 +1344,7 @@
     pEstado('');
     return llama('taller_orden_datos', { p_orden: id }).then(function (r) {
       C.libera(bt);
-      if (E.partes !== P) return;
+      if (E.partes !== P || E.paso !== 'partes') return;   // llegó tras cambiar de pestaña: no se pinta ni se mueve el foco
       var d = r.data;
       if (r.error || !d || !d.orden || !d.moto || !Array.isArray(d.revisiones) || !Array.isArray(d.fotos)) {
         pEstado(T('No se ha podido abrir el parte') + ': ' + (r.error ? C.mensaje(r.error, true, PROPIOS) : T('La base ha devuelto algo inesperado. No es que esté vacía: no se ha podido mirar.')));
@@ -1577,7 +1578,7 @@
     if (a === 'tl-tab-taller') { error(''); exito(''); if (!E.enviando) { E.varias = null; ir('inicio', true); } return; }
     if (a === 'tl-tab-listas') { error(''); exito(''); if (!E.enviando && E.flota) ir('listas', true); return; }
     if (a === 'tl-tab-partes') { error(''); exito(''); if (!E.enviando && E.admin) { E.varias = null; ir('partes', true); } return; }
-    if (a === 'tl-partes-mas') { if (E.partes && E.partes.siguiente && C.ocupa(el)) cargaPartes(true).then(function () { C.libera(el); }); return; }
+    if (a === 'tl-partes-mas') { if (E.partes && E.partes.siguiente && C.ocupa(el)) { var suelta = function () { C.libera(el); }; cargaPartes(true).then(suelta, suelta); } return; }
     if (a === 'tl-parte') { abreParte(el.getAttribute('data-orden-id'), el); return; }
     if (a === 'tl-partes-lista') { cierraParte(); return; }
     if (a === 'tl-parte-foto') { verFoto(el.getAttribute('data-foto-id'), el); return; }

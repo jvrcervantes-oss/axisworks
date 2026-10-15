@@ -175,7 +175,10 @@ async function abre(nav, b, { idioma = 'es', ancho = 1440, url = '/ajustes/#cobr
   p.on('console', m => p.__consola.push(m.text()));
   await p.route('**/*', r => r.fulfill({ status: 200, contentType: 'text/html', body: tipo === 'ajustes' ? ajustes(idioma) : tipo === 'real' ? ajustesReal(idioma) : asistente(idioma, url) }));
   await p.exposeFunction('__srv', async (n, a) => { b.rpc.push(n); if (n === 'modulos_setup_estado') return { data: setupEstado(b), error: null }; if (n === 'ajustes_config_datos') { const f = b.leeFalla && b.leeFalla.length && b.leeFalla.shift(); if (f || (b.leeFallaTrasGuardar && (b.guardados || []).length)) return { data: null, error: { code: typeof f === 'string' ? f : '57014', message: 'x' } }; return { data: b.ajustes ? JSON.parse(JSON.stringify(b.ajustes)) : { valores: {} }, error: null }; } if (n === 'ajustes_config_guardar' && b.guarda) { b.guardados = (b.guardados || []).concat([a]); return b.guarda(a); } return { data: null, error: { code: '42883', message: 'x' } }; });
-  await p.exposeFunction('__edge', async (u, c) => (u.endsWith('/functions/v1/ajustes-pagos') ? edge(b, c) : { status: 404, json: null }));
+  await p.exposeFunction('__edge', async (u, c) => {
+    if (c && c.accion === 'pedir_codigo' && b.retenPedir) { b.retenPedir.visto = true; await b.retenPedir.p; }   // una respuesta que llega tarde (se suelta desde la prueba)
+    return u.endsWith('/functions/v1/ajustes-pagos') ? edge(b, c) : { status: 404, json: null };
+  });
   await p.goto('http://local.test' + url); await p.waitForTimeout(500);
   // S10: la pestaña enseña el estado y un botón; el componente vive en una ventana. Las pruebas de siempre trabajan con ella abierta
   if (!sinAbrir && tipo !== 'asistente') { const ab = await p.$('[data-axw-cobros-host="abrir"]'); if (ab && await ab.isVisible()) { await ab.click(); await p.waitForTimeout(200); } }
@@ -351,6 +354,20 @@ const C = '[data-axw-cobros-caja]';
      && (await p.$eval('#lw-aj-cobros [data-axw-campo="creacion"]', i => i.value)) === '');
   await p.click('[data-axw-cobros-host="abrir"]'); await p.waitForTimeout(200);
   ok('S10 pestaña: al reabrir, la clave descartada no vuelve (memoria vacía, ni rastro en la página)', (await p.$eval('#lw-aj-cobros [data-axw-campo="creacion"]', i => i.value)) === '' && await sinCanario(p));
+  await ctx.close();
+
+  // S10 (revisor 15-oct): «pedir código» en camino, se cierra la ventana sin guardar y la respuesta llega DESPUÉS: no resucita las claves ni la fase
+  b = base();
+  ({ p, ctx } = await abre(nav, b));
+  { let suelta; b.retenPedir = { p: new Promise(r => { suelta = r; }) };
+    await p.fill('#lw-aj-cobros [data-axw-campo="creacion"]', CANARIO_C); await p.fill('#lw-aj-cobros [data-axw-campo="lectura"]', CANARIO_L); await p.fill('#lw-aj-cobros [data-axw-campo="aviso"]', CANARIO_A);
+    await p.click('#lw-aj-cobros [data-axw-cobros="pedir"]'); await p.waitForTimeout(150);
+    await p.keyboard.press('Escape'); await p.waitForTimeout(100); await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+    ok('S10 tarde: la ventana se cierra con el código aún pedido', !(await p.$('dialog[data-axw-cobros-ventana][open]')) && b.retenPedir.visto === true);
+    suelta(); b.retenPedir = null; await p.waitForTimeout(300);
+    await p.click('[data-axw-cobros-host="abrir"]'); await p.waitForTimeout(200);
+    ok('S10 tarde: al reabrir no hay casilla de código ni claves (la respuesta tardía no manda)', !(await p.$('#lw-aj-cobros [data-axw-campo="codigo"]'))
+       && (await p.$eval('#lw-aj-cobros [data-axw-campo="creacion"]', i => i.value)) === '' && await sinCanario(p)); }
   await ctx.close();
 
   // 10. Configurar módulos: el paso cobros se edita con el MISMO componente

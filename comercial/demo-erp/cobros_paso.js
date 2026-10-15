@@ -118,6 +118,7 @@
   // M = {est, pideCodigo, modo, reemplaza: {k: bool}, valores: {k: texto}, fase: 'editar'|'codigo', mandadas, correo, fallo, faltan, aviso, confirma,
   //      confirmaMandada (lo tecleado al pedir el código: probar_y_guardar manda el MISMO valor; null = modo final de prueba, no se manda)}
   var M = null, ultimo = null, cajas = [], nCaja = 0;
+  var vueltas = 0;   // sube con cada descarta(): una respuesta pedida antes ya no manda (revisor 15-oct: volvía a poner las claves descartadas)
   function limpia() {
     if (M) { M.valores = {}; M.mandadas = null; M.codigo = ''; }
     cajas.forEach(function (c) { c.querySelectorAll('input').forEach(function (i) { if (i.type === 'password' || i.getAttribute('data-axw-campo') === 'codigo') i.value = ''; }); });
@@ -134,6 +135,7 @@
   // Cerrar la ventana sin guardar (S10): lo escrito sale de los <input> Y de la memoria, y las demás cajas abiertas se repintan con lo vaciado.
   // Sin esto una clave descartada volvía al reabrir (inp.value = M.valores[k]) y recoge() la habría mandado con el siguiente «pedir código».
   function descarta() {
+    vueltas++;
     limpia();
     if (!M) return;
     M.fase = 'editar'; M.correo = ''; M.codigo = ''; M.confirma = ''; M.confirmaMandada = null; M.aviso = ''; M.fallo = null; M.faltan = [];
@@ -341,7 +343,9 @@
     var cuerpo = { accion: 'pedir_codigo' };
     Object.keys(r.v).forEach(function (k) { cuerpo[k] = r.v[k]; });
     if (confirma !== null) cuerpo.confirmar_live = confirma;   // modo final de prueba: el campo no va (volver a prueba no lo pide)
+    var mia = vueltas;
     llama(cuerpo).then(function (res) {
+      if (mia !== vueltas) return;   // se cerró sin guardar mientras tanto: el código pedido caduca solo y las claves no vuelven
       if (res.d && res.d.ok === true && res.codigo === 'codigo_enviado') {
         M.fase = 'codigo'; M.mandadas = r.v; M.confirmaMandada = confirma; M.codigo = ''; M.correo = corto(res.d.correo_enmascarado, 120); M.aviso = '';
         dibuja(raiz);
