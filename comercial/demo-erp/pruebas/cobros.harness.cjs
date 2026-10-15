@@ -422,7 +422,7 @@ const C = '[data-axw-cobros-caja]';
   await p.keyboard.press('Escape'); await p.waitForTimeout(100);
   await p.fill('#lw-aj-cobros [data-axw-campo="codigo"]', '123456'); await p.fill('#lw-aj-cobros [data-axw-campo="contrasena"]', 'buena');
   await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(600);
-  const u14 =b.edge.filter(x => x.accion === 'probar_y_guardar')[0];
+  const u14 = b.edge.filter(x => x.accion === 'probar_y_guardar')[0];
   ok('dos cajas: se guarda con el código de la pestaña', !!u14 && u14.codigo === '123456' && b.est.configurado, JSON.stringify(u14 && { codigo: u14.codigo }));
   await ctx.close();
 

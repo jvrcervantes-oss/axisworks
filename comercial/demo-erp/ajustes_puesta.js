@@ -21,7 +21,7 @@
     'Trayendo la configuración…': 'Loading the setup…',
     'Cerrar': 'Close',
     'Cancelar': 'Cancel',
-    'Tienes cambios sin guardar. Vuelve a pulsar Cancelar para descartarlos.': 'You have unsaved changes. Press Cancel again to discard them.'
+    'Tienes cambios sin guardar: si vuelves a cerrar, se descartan.': 'You have unsaved changes: close again to discard them.'
   };
   var ID_PM = {
     'Configurar módulos': 'Penyiapan modul',
@@ -30,7 +30,7 @@
     'Trayendo la configuración…': 'Memuat pengaturan…',
     'Cerrar': 'Tutup',
     'Cancelar': 'Batalkan',
-    'Tienes cambios sin guardar. Vuelve a pulsar Cancelar para descartarlos.': 'Ada perubahan yang belum disimpan. Tekan Batal sekali lagi untuk membuangnya.'
+    'Tienes cambios sin guardar: si vuelves a cerrar, se descartan.': 'Ada perubahan yang belum disimpan: tutup sekali lagi untuk membuangnya.'
   };
   var S = null, P = null, sb = null, ctx = null, ocupado = false;
   function U(k, h) { return S.ui(k, h); }
@@ -149,7 +149,7 @@
     if (!sinAviso && dlg._tocado && !dlg._avisado) {
       dlg._avisado = true;
       var est = dlg.querySelector('[data-pm-estado]');
-      if (est) { est.className = 'font-body-sm text-body-sm text-error'; est.textContent = TP('Tienes cambios sin guardar. Vuelve a pulsar Cancelar para descartarlos.'); }
+      if (est) { est.className = 'font-body-sm text-body-sm text-error'; est.textContent = TP('Tienes cambios sin guardar: si vuelves a cerrar, se descartan.'); }
       return;
     }
     var li = dlg.closest('[data-pm-fila]'), clave = li && li.getAttribute('data-pm-fila');
@@ -188,6 +188,11 @@
           h('button', { type: 'button', 'data-real': '', 'data-accion': 'pm-guardar', 'data-pm-paso': p.clave, class: BTN1, text: U('guardar') })])])]);
     dlg.addEventListener('cancel', function (ev) { ev.preventDefault(); cierra(dlg); });   // Esc: la misma salida que Cancelar
     dlg.addEventListener('click', function (ev) { if (ev.target === dlg) cierra(dlg); });   // clic en el fondo
+    dlg.addEventListener('close', function () {   // cerrada sin pasar por cierra() (2.º Esc seguido en Chrome)
+      if (!dlg.parentNode) return;
+      if (ocupado) { try { dlg.showModal(); } catch (e) { /* MUDO A PROPOSITO: si no se puede reabrir, el guardado sigue y su resultado repinta */ } return; }
+      var li = dlg.closest('[data-pm-fila]'); dlg.parentNode.removeChild(dlg); if (li) enfoca(li.getAttribute('data-pm-fila'));
+    });
     dlg.addEventListener('input', function () { dlg._tocado = true; dlg._avisado = false; });
     dlg.addEventListener('change', function () { dlg._tocado = true; dlg._avisado = false; });
     li.appendChild(dlg);
@@ -224,6 +229,9 @@
         Array.prototype.forEach.call(botones, function (b) { b.disabled = false; });
         di(rr.ok ? U('no_guardado') : U('no_mirar'), true);
       });
+    }).catch(function () {   // un componente que rechaza (no devuelve {ok:false}) no deja la ventana sin salida
+      ocupado = false; Array.prototype.forEach.call(botones, function (b) { b.disabled = false; });
+      if (dlg.parentNode) di(U('no_mirar'), true);
     });
   }
   // guardado: se cierra la ventana, se relee la base y el foco vuelve al «Cambiar» de ese paso (pinta() vacía el contenedor)
