@@ -216,7 +216,8 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   // 3. «lat, lng»: lo malformado se rechaza sin llamar; lo bueno viaja como numeros
   for (const [v, texto] of [['abc', 'No se entienden'], ['-8.65', 'No se entienden'], ['8,115', 'No se entienden'], ['-8,65,115,21', 'No se entienden'], ['-8,65, 115,21', 'No se entienden'],
     ['-8.65, 115,21', 'No se entienden'], ['8, 115', 'No se entienden'], ['91.5, 10.5', 'La latitud va de -90 a 90'], ['10.5, 190.5', 'La longitud'.replace('La longitud', 'La latitud va de -90 a 90')], ['120.5, 10.5', '¿Están al revés?'],
-    ['N 8.65, E 115.2', 'No se entienden'], ['8.65 115.2 3.3', 'No se entienden']]) {
+    ['N 8.65, E 115.2', 'No se entienden'], ['8.65 115.2 3.3', 'No se entienden'],
+    ['https://maps.app.goo.gl/AbCdEf123', 'Ese enlace no marca la tienda'], ['https://www.google.com/maps/@-8.65,115.21,15z', 'Ese enlace no marca la tienda']]) {   // M4 (15-oct): el enlace corto de «Compartir» no lleva el punto
     const { base, p, ctx } = await abre();
     await p.fill(campo('sede_coord'), v); await p.fill(campo('motivo'), 'Alta de la sede');
     await guardar(p);
@@ -225,7 +226,9 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await ctx.close();
   }
   for (const [v, lat, lng] of [['-8.65, 115.21', -8.65, 115.21], ['-8.65,115.21', -8.65, 115.21], ['-8,65 115,21', -8.65, 115.21], ['-8,65; 115,21', -8.65, 115.21], ['\u22128.65, 115.21', -8.65, 115.21],
-    ['  +8.123456789 ,  -179.9 ', 8.123457, -179.9], ['-8.65\u00b0, 115.21\u00b0', -8.65, 115.21], ['-90.0, 180.0', -90, 180]]) {
+    ['  +8.123456789 ,  -179.9 ', 8.123457, -179.9], ['-8.65\u00b0, 115.21\u00b0', -8.65, 115.21], ['-90.0, 180.0', -90, 180],
+    // M4 (15-oct): un enlace de Google Maps viaja como sus números (el sitio marcado, !3d!4d, gana al centro del mapa, @)
+    ['https://www.google.com/maps/place/Tienda/@-8.6512,115.1300,17z/data=!3m1!4b1!8m2!3d-8.6501!4d115.1312', -8.6501, 115.1312]]) {
     const { base, p, ctx } = await abre();
     await p.fill(campo('sede_coord'), v); await p.fill(campo('motivo'), 'Alta de la sede');
     await guardar(p);

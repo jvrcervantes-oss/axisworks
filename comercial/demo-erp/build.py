@@ -2368,6 +2368,9 @@ MENU_I18N = {
     # la ventana del equipo de agentes (/agente/, 15-oct-2026): su rótulo de menú, que antes era «AaaS» (igual en los tres idiomas)
     'Agentes': {'en': 'Agents', 'id': 'Agen'},
     'Ventas': {'en': 'Sales', 'id': 'Penjualan'},
+    # el menú de una instancia con "aaas": true (aaas_en_paquete, tren 5 de bbm, 15-oct): «AaaS» es el nombre del producto, igual en los tres
+    # idiomas (owner, 13-oct; ya en IGUALES_EN_ID), pero sin entrada aquí lwT lo contaba como sin traducir en las 54 pantallas (LW_T_MISSES)
+    'AaaS': {'en': 'AaaS', 'id': 'AaaS'},
     # paginador común (bbm-cola-2 T1, 15-oct): el inglés ya está en el diccionario de Lawang y no se pisa; aquí entra el indonesio
     '← Anteriores': {'en': '← Previous', 'id': '← Sebelumnya'},
     'Siguientes →': {'en': 'Next →', 'id': 'Berikutnya →'},
@@ -2389,6 +2392,13 @@ MENU_I18N = {
     'Vence': {'en': 'Due', 'id': 'Jatuh tempo'},
     'Pagado el': {'en': 'Paid on', 'id': 'Dibayar pada'},
     'Reservas de producto': {'en': 'Product bookings', 'id': 'Booking sewa motor'},
+    # D27 (bbm-comodidad-2, 15-oct): Ajustes › Correo en solo lectura para quien no es super admin (AJUSTES_CORREO_SOLO_SUPER)
+    'El servidor de correo, el remitente y el buzón de avisos del sistema los cambia un super admin.': {
+        'en': 'The mail server, the sender and the system alerts mailbox are changed by a super admin.',
+        'id': 'Server email, pengirim, dan kotak surat notifikasi sistem diubah oleh super admin.'},
+    'Lo cambia un super admin.': {'en': 'Changed by a super admin.', 'id': 'Diubah oleh super admin.'},
+    'La cuenta de pruebas solo mira: no puede cambiar el correo.': {'en': 'The test account can only look: it cannot change the email settings.',
+                                                                    'id': 'Akun uji coba hanya bisa melihat: tidak bisa mengubah pengaturan email.'},
     'Configurar módulos': {'en': 'Module setup', 'id': 'Penyiapan modul'},
     'Interruptores de comisiones': {'en': 'Commission switches', 'id': 'Sakelar komisi'},
     # rótulos que whatsapp_bot_pantalla() injerta en el menú (idiomas-pH, 12-oct): el menú los pasa por lwT aunque estén ocultos
@@ -2399,9 +2409,25 @@ MENU_I18N = {
     'Ej. Reserva R-0012 — Honda PCX': {'en': 'e.g. Booking R-0012 — Honda PCX', 'id': 'Contoh: Booking R-0012 — Honda PCX'},
     'Ej. Reserva R-0012': {'en': 'e.g. Booking R-0012', 'id': 'Contoh: Booking R-0012'},
     'Buscar por número, cliente o reserva…': {'en': 'Search by number, client or booking…', 'id': 'Cari nomor, pelanggan, atau booking…'},
-    'Lo que el sistema aplica solo y no hace falta tocar en el código: el nombre y la zona horaria de la instalación, el correo y el modo mantenimiento. Cambiarlos aquí vale desde ese momento, y cada cambio queda en el registro.': {
-        'en': 'What the system applies by itself, with no need to touch the code: the installation name and time zone, email and maintenance mode. Changes made here apply from that moment, and every change is logged.',
-        'id': 'Yang diterapkan sistem secara otomatis, tanpa perlu mengubah kode: nama dan zona waktu instalasi, email, dan mode pemeliharaan. Perubahan di sini langsung berlaku, dan setiap perubahan tercatat.'},
+    # M7 (bbm-comodidad, 15-oct-2026): Ajustes sin jerga (ver TEXTOS_INSTANCIA y TEXTOS_ALQUILER)
+    'Aquí se cambian el nombre y la zona horaria del negocio, el correo y el modo mantenimiento. Cada cambio vale desde ese momento y queda en el registro.': {
+        'en': 'Here you change the business name and time zone, email and maintenance mode. Each change applies from that moment and is logged.',
+        'id': 'Di sini Anda mengubah nama dan zona waktu bisnis, email, dan mode pemeliharaan. Setiap perubahan langsung berlaku dan tercatat.'},
+    '. Cada ajuste tiene su formato y su rango: fuera de él no se guarda. Pausar los envíos y cerrar la intranet, en cambio, los puede hacer cualquier admin.': {
+        'en': '. Each setting has its own format and range: outside it, it is not saved. Pausing sending and closing the intranet, on the other hand, any admin can do.',
+        'id': '. Setiap pengaturan punya format dan rentangnya sendiri: di luar itu tidak disimpan. Sebaliknya, menjeda pengiriman dan menutup intranet bisa dilakukan admin mana pun.'},
+    'El ERP ya lo usa por dentro, pero aún no todas las pantallas ni los correos lo enseñan.': {
+        'en': 'The ERP already uses it internally, but not every screen or email shows it yet.',
+        'id': 'ERP sudah menggunakannya secara internal, tetapi belum semua layar dan email menampilkannya.'},
+    'Se guarda y queda en el registro, pero todavía no cambia nada en el ERP.': {
+        'en': 'It is saved and logged, but it does not change anything in the ERP yet.',
+        'id': 'Tersimpan dan tercatat, tetapi belum mengubah apa pun di ERP.'},
+    'En pausa no sale ningún correo: ni invitaciones, ni avisos, ni comunicados. Lo que quede en cola espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.': {
+        'en': 'While paused no email goes out: no invitations, no alerts, no announcements. Whatever is queued waits and goes out by itself on resume. Pause and resume: any admin.',
+        'id': 'Saat dijeda, tidak ada email yang terkirim: tidak ada undangan, peringatan, maupun pengumuman. Yang masuk antrean akan menunggu dan terkirim otomatis saat dilanjutkan. Menjeda dan melanjutkan: admin mana pun.'},
+    'Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. No cambia lo que cada uno puede hacer. Cerrar y reabrir: cualquier admin.': {
+        'en': 'When closed, only admins get in: the rest of the team sees a maintenance screen with the reason, and anyone inside gets a warning and is signed out after 3 minutes. It does not change what each person can do. Closing and reopening: any admin.',
+        'id': 'Saat ditutup, hanya admin yang bisa masuk: anggota tim lainnya melihat layar pemeliharaan beserta alasannya, dan yang sedang di dalam menerima peringatan lalu dikeluarkan setelah 3 menit. Tidak mengubah apa yang boleh dilakukan setiap orang. Menutup dan membuka kembali: admin mana pun.'},
     'Impuestos': {'en': 'Taxes', 'id': 'Pajak'},
     'Plazos': {'en': 'Time limits', 'id': 'Batas waktu'},
     # rótulos FIJOS que build.py pone en el HTML de Ajustes (pestañas y cabeceras): su traducción tiene que estar ANTES de que la página traduzca el
@@ -2484,12 +2510,6 @@ MENU_I18N = {
     'Preselección según el rol elegido arriba — editable. Solo aparecen las herramientas que tienes tú.': {
         'en': 'Preselected from the role chosen above — editable. Only the tools you have yourself appear.',
         'id': 'Dipilih otomatis sesuai peran di atas — bisa diubah. Hanya alat yang Anda miliki yang muncul.'},
-    'En pausa no sale ningún email: ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.': {
-        'en': 'While paused no email goes out: no invitations, no alerts, no announcements. The server blocks it, not this screen. Whatever is queued in Communication waits and goes out by itself on resume. Pause and resume: any admin.',
-        'id': 'Saat dijeda, tidak ada email yang terkirim: tidak ada undangan, peringatan, maupun pengumuman. Server yang memblokirnya, bukan layar ini. Yang masuk antrean di Komunikasi akan menunggu dan terkirim otomatis saat dilanjutkan. Menjeda dan melanjutkan: admin mana pun.'},
-    'Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. Cerrar y reabrir: cualquier admin.': {
-        'en': 'When closed, only admins get in: the rest of the team sees a maintenance screen with the reason, and anyone inside gets a warning and is signed out after 3 minutes. It is a screen gate: it does not change database permissions. Closing and reopening: any admin.',
-        'id': 'Saat ditutup, hanya admin yang bisa masuk: anggota tim lain melihat layar pemeliharaan beserta alasannya, dan siapa pun yang sedang berada di dalam menerima peringatan lalu dikeluarkan setelah 3 menit. Ini hanya pintu di layar: izin basis data tidak berubah. Menutup dan membuka kembali: admin mana pun.'},
 }
 
 
@@ -4084,6 +4104,47 @@ def ajustes_correo_una_copia(js, donde, con_comentarios=False):
 AJUSTES_CORREO_INSTALADOR = ("        var porQuien = textoSimple(e.puesto_por, 120);",
                              "        var porQuien = e.puesto_por === 'instalador' ? T('el instalador') : textoSimple(e.puesto_por, 120);")
 
+# D27 (bbm-comodidad-2, 15-oct-2026, pedido de agencia-c0): desde bbm-admin-puede (20261015190000) un administrador entra en Ajustes › Correo y
+# cambia «Responder a» y el buzón de soporte, pero el servidor, el remitente y el buzón de avisos de sistema siguen siendo del super admin (decisión
+# por defecto del CEO con Seguridad: por ese servidor salen los códigos y los enlaces de contraseña, y el buzón de sistema es el testigo de Cobros).
+# La pantalla ofrecía los tres y la edge contestaba 403. Ahora los pinta en solo lectura con una línea de quién los cambia, y lo decide el SERVIDOR:
+# el campo `puede` de la respuesta `estado` de la edge ajustes-correo ({servidor, email_from, …}: false = no lo puede cambiar). Sin el campo (edge
+# anterior) todo sigue como antes: la pantalla nunca calcula el rol. Reemplazos LITERALES, una vez cada uno: si Lawang cambia la línea, el build PARA.
+AJUSTES_CORREO_SOLO_SUPER = (
+    ("    if (d && 'pide_codigo' in d) srv.pideCodigo = d.pide_codigo === true;\n",
+     "    if (d && 'pide_codigo' in d) srv.pideCodigo = d.pide_codigo === true;\n"
+     "    if (d && d.puede && typeof d.puede === 'object') srv.puede = d.puede;\n"
+     "  }\n"
+     "  function puedeCorreo(k) { return !(srv.puede && srv.puede[k] === false); }   // lo dice la edge; sin el campo, como antes\n"
+     "  function soloSuperCorreo() {\n"
+     "    return T('El servidor de correo, el remitente y el buzón de avisos del sistema los cambia un super admin.');\n",
+     'aplicaRespuestaCorreo: srv.puede'),
+    ("        if (!srv.editando && !srv.pausados) filaContra.appendChild(botonSecundario('Cambiar', 'correo-servidor-editar'));",
+     "        if (!srv.editando && !srv.pausados && puedeCorreo('servidor')) filaContra.appendChild(botonSecundario('Cambiar', 'correo-servidor-editar'));",
+     'botón Cambiar del servidor'),
+    ("    if (!configurado) srv.editando = true;",
+     "    if (!puedeCorreo('servidor')) {   // sin servidor propio el formulario se abría solo: aquí no se abre\n"
+     "      srv.editando = false;\n"
+     "      cont.appendChild(nodo('p', 'px-8 py-4 font-body-sm text-body-sm text-outline border-b border-outline-variant/30', soloSuperCorreo(), { 'data-correo': 'solo-super-servidor' }));\n"
+     "      return;\n"
+     "    }\n"
+     "    if (!configurado) srv.editando = true;",
+     'formulario del servidor'),
+    ("      if (bloqueado(u)) inp.setAttribute('readonly', '');",
+     "      if (bloqueado(u)) inp.setAttribute('readonly', '');\n"
+     "      var soloLee = !puedeCorreo(d.clave);\n"
+     "      if (soloLee) inp.setAttribute('readonly', '');",
+     'direcciones: solo lectura'),
+    ("      cola.appendChild(filaB);",
+     "      if (soloLee) cola.appendChild(nodo('span', 'font-body-sm text-body-sm text-outline', T('Lo cambia un super admin.'), { 'data-correo': 'solo-super-' + d.clave }));\n"
+     "      else cola.appendChild(filaB);",
+     'direcciones: sin botones'),
+    ("    no_super_admin: 'Cambiar el correo exige ser super admin.',",
+     "    no_super_admin: 'Cambiar el correo exige ser super admin.',\n"
+     "    cuenta_pruebas_solo_mira: 'La cuenta de pruebas solo mira: no puede cambiar el correo.',",
+     'texto de cuenta_pruebas_solo_mira'),
+)
+
 
 def ajustes_correo_maestro():
     """Ajustes › Correo del ERP maestro (F3.1 del plan único, 7-oct-2026): «Servidor de salida», «Direcciones» y la casilla del asunto por
@@ -4098,6 +4159,8 @@ def ajustes_correo_maestro():
     t = open(ruta, encoding='utf-8').read()
     ajustes_correo_una_copia(t, 'el ajustes.js de Lawang', con_comentarios=True)
     t = _una_vez(t, AJUSTES_CORREO_INSTALADOR[0], AJUSTES_CORREO_INSTALADOR[1], 'ajustes.js «puesta por el instalador»')
+    for viejo, nuevo, que in AJUSTES_CORREO_SOLO_SUPER:
+        t = _una_vez(t, viejo, nuevo, 'ajustes.js D27 «' + que + '»')
     open(ruta, 'w', encoding='utf-8', newline='').write(t)
 
 
@@ -4141,6 +4204,19 @@ def _pantalla_bot(v4, archivo, carpeta, titulo, puerta='data-rol="admin"'):
     t = _una_vez(t, '<title data-lw-titulo>Asistente</title>', '<title data-lw-titulo>%s</title>' % titulo, carpeta + '/index.html título')
     os.makedirs(os.path.join(v4, carpeta), exist_ok=True)
     open(os.path.join(v4, carpeta, 'index.html'), 'w', encoding='utf-8', newline='').write(t)
+
+
+def resumen_pantalla():
+    """Pantalla /finanzas/ (Resumen) de TODA instancia del maestro (E4.3, sesión bbm-resumen, 15-oct-2026; revisión previa #369 con Producto y Experiencia).
+    Sustituye la de Lawang (finanzas/index.html + panel-finanzas.js: contratos, unidades, comisiones y cuentas, calculado en el navegador) por `resumen.html`
+    sobre la cáscara de /asistente/, que pide UNA lectura (finanzas_resumen_datos) y pinta un bloque por módulo encendido en la base. Misma puerta que tenía
+    la página (data-rol="admin"); la base la vuelve a exigir. El menú no cambia: «Resumen» ya apunta a /finanzas/. datos.js no tiene manejador para
+    «finanzas» (es de las PROPIAS: velo y contador de red), así que no hay que desviarle el segmento como en la portada. El registro lo sabe por
+    SUSTITUIDA_MAESTRO de erp/modulos.py (la agencia). Solo se toca lo copiado en DIST, nunca el repo de Lawang. Revertir: quitar la llamada en instancia()."""
+    v4 = os.path.join(DIST, 'intranet', 'v4')
+    if not os.path.isfile(os.path.join(v4, 'finanzas', 'index.html')):
+        aborta('resumen_pantalla: no está /finanzas/ copiada de Lawang (intranet/v4/finanzas/index.html): ¿cambió su sitio?')
+    _pantalla_bot(v4, 'resumen.html', 'finanzas', 'Resumen')
 
 
 def ventas_pantalla():
@@ -5097,8 +5173,18 @@ TEXTOS_INSTANCIA = (
     # (fichero en DIST, trozo de Lawang, sustituto, veces que aparece)
     ('intranet/v4/assets/editores.js', "label: 'Proyecto / unidad'", "label: 'Referencia'", 2),
     ('intranet/v4/facturas/index.html', 'placeholder="Buscar por número, cliente, contrato o proyecto…"', 'placeholder="Buscar por número, cliente o reserva…"', 1),
-    ('intranet/v4/ajustes/index.html', 'el correo, el modo mantenimiento y los plazos de las Cartas de Reserva. Cambiarlos aquí',
-     'el correo y el modo mantenimiento. Cambiarlos aquí', 1),
+    # M7 de la auditoría del setup de bbm (15-oct-2026): la cabecera de Ajustes hablaba de «tocar el código» y de «la instalación»; ahora dice
+    # en llano qué se cambia aquí (antes ya se quitaban las Cartas de Reserva, que en una instancia no existen)
+    ('intranet/v4/ajustes/index.html', 'data-lwt>Lo que el sistema aplica solo y no hace falta tocar en el código: el nombre y la zona horaria de la instalación, el correo, el modo mantenimiento y los plazos de las Cartas de Reserva. Cambiarlos aquí vale desde ese momento, y cada cambio queda en el registro.</p>',
+     'data-lwt>Aquí se cambian el nombre y la zona horaria del negocio, el correo y el modo mantenimiento. Cada cambio vale desde ese momento y queda en el registro.</p>', 1),
+    # M7: el aviso del candado decía «lo comprueba la base de datos, no esta pantalla» (cierto, pero jerga para quien usa el ERP)
+    ('intranet/v4/ajustes/index.html', '</b>, y lo comprueba la base de datos, no esta pantalla. Cada ajuste tiene su formato',
+     '</b>. Cada ajuste tiene su formato', 1),
+    # M7: lo que se dice debajo de cada ajuste hablaba de «funciones de la base» y de «la fase siguiente»
+    ('intranet/v4/assets/ajustes.js', "  var TEXTO_LEE = 'Ya lo leen funciones de la base de este ERP. La pantalla, el menú y los demás correos lo leerán en la fase siguiente.';",
+     "  var TEXTO_LEE = 'El ERP ya lo usa por dentro, pero aún no todas las pantallas ni los correos lo enseñan.';", 1),
+    ('intranet/v4/assets/ajustes.js', "  var TEXTO_NO_LEE = 'Se guarda y queda en el registro, pero todavía no lo lee ninguna pantalla ni correo de esta instalación: llegará con la fase siguiente.';",
+     "  var TEXTO_NO_LEE = 'Se guarda y queda en el registro, pero todavía no cambia nada en el ERP.';", 1),
     ('intranet/v4/ajustes/index.html', '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Reservas</span>\n'
      '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Vencimiento, gracia y prórrogas de las Cartas de Reserva</h2>',
      '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Ajustes</span>\n'
@@ -5129,6 +5215,29 @@ TEXTOS_INSTANCIA = (
 # en TEXTOS_INSTANCIA, que solo cambia texto). Mismo formato y misma función (textos_instancia): cada trozo las veces dichas o el build para.
 # Prueba: test_comodidad_instancia.py. Lawang no pasa por aquí.
 COMODIDAD_INSTANCIA = (
+    # verificador del tren 4h (15-oct-2026): a 390, en «Documento nuevo» de factura y de recibí, «Nº de documento» (solo lectura) medía 147 px y su
+    # texto «Lo asigna la base al guardar» 232-245: las filas de dos campos del editor eran 1fr 1fr fijas. Ahora dos columnas solo si caben
+    # (cada una ≥ 200 px); si no, una debajo de otra. A 1440 no cambia nada. Las cinco filas de dos del editor salen de esta función.
+    ('intranet/v4/assets/editores.js', "    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px';\n",
+     "    row.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px';\n", 1),
+    # M6 de la auditoría del setup de bbm (15-oct-2026): Ajustes › «Usuarios y roles» era una pestaña que solo decía «Próximamente: todavía no se
+    # puede cambiar nada desde esta pestaña». Fuera la pestaña, su panel y su nombre de PESTANAS en la instancia (los usuarios siguen en /usuarios/):
+    # sin esto último, un #usuarios viejo dejaba Ajustes en blanco (desdeHash solo cae a «empresa» con un nombre fuera de la lista; revisor de b6bd9a8).
+    # Lawang la conserva.
+    ('intranet/v4/assets/ajustes.js', "'correo', 'usuarios', 'mantenimiento',",   # ancla sin el principio: ajustes_puesta() ya puso 'puesta' delante
+     "'correo', 'mantenimiento',", 1),
+    ('intranet/v4/ajustes/index.html',
+     '<button class="lw-tab-btn px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-[13px] font-medium transition-colors" role="tab" type="button" id="lw-tab-usuarios" aria-controls="lw-panel-usuarios" aria-selected="false" tabindex="-1" data-lw-tab="usuarios" data-lwt>Usuarios y roles</button>',
+     '', 1),
+    ('intranet/v4/ajustes/index.html',
+     '<section id="lw-panel-usuarios" role="tabpanel" aria-labelledby="lw-tab-usuarios" data-lw-panel="usuarios" class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">\n'
+     '<div class="px-8 pt-8 pb-4 flex flex-col gap-1 border-b border-outline-variant/40">\n'
+     '<span class="font-label-md text-[11px] tracking-[0.16em] uppercase text-outline font-bold" data-lwt>Usuarios y roles</span>\n'
+     '<h2 class="font-headline-sm text-headline-sm text-deep-lagoon tracking-tight" data-lwt>Quién puede qué</h2>\n'
+     '<p class="font-body-sm text-body-sm text-outline" data-lwt>Los permisos por rol y la política de sesión y contraseña se moverán aquí desde la herramienta Usuarios.</p>\n'
+     '</div>\n'
+     '<p class="px-8 py-6 font-body-md text-body-md text-on-surface-variant" data-lwt>Próximamente: todavía no se puede cambiar nada desde esta pestaña. Los usuarios y sus permisos se siguen gestionando en la herramienta Usuarios.</p>\n'
+     '</section>\n', '', 1),
     # bbm-comodidad F4 (15-oct-2026, medido en bbm real): con UNA sola empresa emisora, «Sociedad que factura/cobra» empezaba en «— elige —» en
     # cada factura y cada recibí (2 clics más, y los impuestos esperaban a elegirla). Con una sola se preselecciona; con dos o más, como siempre.
     # Los impuestos y la previa leen el valor vivo del select al montarse (montaImpuestosDoc.socActual), así que salen ya con esa empresa.
@@ -5279,8 +5388,8 @@ TEXTOS_ALQUILER = (
     # bbm-p39 (13-oct, barrido en bbm real): Recibos hablaba de titular, contrato y proyecto; Mantenimiento de contratos para firmar y del portal de compradores
     ('intranet/v4/recibos/index.html', '<th class="py-3.5 px-4 font-semibold" data-lwt>Titular / Pagador</th>', '<th class="py-3.5 px-4 font-semibold" data-lwt>Cliente</th>', 1),
     ('intranet/v4/recibos/index.html', 'placeholder="Buscar por número, cliente, contrato o proyecto…"', 'placeholder="Número, cliente, factura o referencia…"', 1),
-    ('intranet/v4/ajustes/index.html', 'data-lwt>En pausa no sale ningún email: ni contratos para firmar, ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 'data-lwt>En pausa no sale ningún email: ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 1),
-    ('intranet/v4/ajustes/index.html', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. El portal de compradores sigue abierto. Cerrar y reabrir: cualquier admin.</p>', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. Cerrar y reabrir: cualquier admin.</p>', 1),
+    ('intranet/v4/ajustes/index.html', 'data-lwt>En pausa no sale ningún email: ni contratos para firmar, ni invitaciones, ni avisos, ni comunicados. Lo bloquea el servidor, no esta pantalla. Lo que se encola en Comunicación espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 'data-lwt>En pausa no sale ningún correo: ni invitaciones, ni avisos, ni comunicados. Lo que quede en cola espera y sale solo al reanudar. Pausar y reanudar: cualquier admin.</p>', 1),
+    ('intranet/v4/ajustes/index.html', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. Es una puerta de pantalla: no cambia los permisos de la base de datos. El portal de compradores sigue abierto. Cerrar y reabrir: cualquier admin.</p>', 'data-lwt>Cerrada, solo entran los admins: el resto del equipo ve una pantalla de mantenimiento con el motivo, y quien esté dentro recibe un aviso y se le cierra a los 3 minutos. No cambia lo que cada uno puede hacer. Cerrar y reabrir: cualquier admin.</p>', 1),
 )
 TEXTOS_OTRA = (   # el resto de instancias: un ejemplo neutro, sin la villa de Lawang
     ('intranet/v4/assets/editores.js', "placeholder: 'Ej. Proyecto — Villa 2BR S2'", "placeholder: 'Ej. Reserva R-0012'", 2),
@@ -6305,11 +6414,21 @@ def alias_htaccess(destino):
         reglas.append(get + '  RewriteRule ^%s$ /%s/ [R=302,L,QSA]\n' % (re.escape(en), en))
         reglas.append('  RewriteRule ^%s/(.*)$ %s/$1 [L]\n' % (re.escape(en), clave))
     # el charset SIEMPRE (también sin ninguna carpeta del mapa): el ayudante va en todas las páginas, delante del <meta charset> (code-review, 15-oct)
-    cab = 'AddDefaultCharset UTF-8\n'
+    cab = CHARSET_HTACCESS
     if not reglas:
         return cab
     return ('# Rutas en el idioma de la instancia: /workshop/x se sirve desde taller/x (sin redirigir: el navegador canoniza la barra).\n'
             + cab + '<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteBase /\n' + ''.join(reglas) + '</IfModule>\n')
+
+
+CHARSET_HTACCESS = 'AddDefaultCharset UTF-8\n'
+
+
+def htaccess_idioma(destino, rutas_on):
+    """Lo del idioma en el .htaccess de la instancia: las rutas inglesas (con su charset) o, con las rutas apagadas, SOLO el charset. Al apagar las
+    rutas (95590f5, hasta su ensayo) el charset se fue con ellas y bbm servía text/html sin charset (verificador, 15-oct-2026): el ayudante va
+    delante del <meta charset> y las páginas de la v4 lo llevan pasado el primer KB, así que el charset no puede depender de las rutas."""
+    return alias_htaccess(destino) if rutas_on else CHARSET_HTACCESS
 
 
 def instancia(nombre):
@@ -6322,6 +6441,7 @@ def instancia(nombre):
     taller_pantalla()   # F8 pieza 2 (8-oct-2026): Taller — órdenes de trabajo ligeras (tras reservas de producto: sus anclas de nav.js)
     entrega_pantalla()   # F8 pieza 8 (10-oct-2026): Entrega — sede, tarifa por km y límites (tras taller: sus anclas de nav.js y herramientas.js)
     flota_pantalla()   # F8 (10-oct-2026): Flota y tarifas — editor de motos y tramos de tarifa (tras entrega: sus anclas de nav.js y herramientas.js)
+    resumen_pantalla()   # E4.3 (15-oct-2026): /finanzas/ = el Resumen que suma solo lo encendido (sustituye el panel inmobiliario de Lawang)
     if aaas_en_paquete(nombre):
         agente_pantalla()   # EP.5 (13-oct-2026): AaaS — su ventana (tras flota: sus anclas de nav.js y la marca de herramientas.js)
     asistente_setup_pantalla()   # F3 (12-oct-2026): /ajustes/configurar/, el asistente de setup por módulo (todas las instancias)
@@ -6576,7 +6696,7 @@ def instancia(nombre):
         s_ = os.path.join(DIST, x)
         shutil.copytree(s_, os.path.join(destino, x)) if os.path.isdir(s_) else shutil.copy2(s_, destino)
     open(os.path.join(destino, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(HTACCESS_INSTANCIA.format(
-        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino) + (alias_htaccess(destino) if rutas_on else ''),   # rutas inglesas DETRÁS del legado
+        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino) + htaccess_idioma(destino, rutas_on),   # rutas inglesas DETRÁS del legado
         dominio_re='(' + '|'.join(re.escape(d) for d in [dominio] + _instancia_alias(nombre)) + ')'))
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(destino)

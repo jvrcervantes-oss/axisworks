@@ -100,6 +100,9 @@
   function franja() {
     var cifras = conCifras(), hay = cifras && D.ids.length > 0, fallo = cifras && D.fallo, avisa = hay || fallo || roto || dudoso || reabrir();
     var f = document.querySelector('[data-axw-prueba="franja"]');
+    // en «Módulo no instalado» no hay cifras que avisar, y su <main> es una fila flex: la franja salía como columna al lado y
+    // empujaba el aviso (verificador de bbm, 16-oct-2026)
+    if (document.querySelector('[data-axw-pantalla="no-instalado"]')) avisa = false;
     if (!avisa) { if (f) f.parentNode.removeChild(f); return; }
     var main = document.querySelector('main') || document.body;
     if (!f) {

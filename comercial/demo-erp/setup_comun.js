@@ -185,7 +185,7 @@
       plantilla_contrato: ['Plantilla de contrato activa', 'El texto con el que se generan los contratos. Una plantilla activada ya no se edita: se crea una versión nueva.'],
       carta_reserva: ['Carta de reserva', 'Qué tipo de contrato es la carta de reserva: vence y libera la unidad sola.'],
       condicion_comision: ['Comisión estándar', 'Sin condición estándar no se calcula ninguna comisión.'],
-      facturable: ['Qué vas a facturar', 'Crea al menos un producto o servicio con precio para poder facturar.'],   // paso opcional de Facturación (erp-setup-2, 14-oct)
+      facturable: ['Qué vas a facturar', 'Para facturar hace falta algo con precio: un producto o servicio, o, si alquilas, un modelo con su tarifa en Flota y tarifas.'],   // paso opcional de Facturación (erp-setup-2, 14-oct)
       // N5 (aaas-2, 14-oct): los tres pasos del AaaS, en su ventana (/agente/). Mientras falte uno, el AaaS está encendido pero no trabaja
       tope_aaas: ['Tope mensual de tu equipo', 'Lo máximo que tu equipo puede gastar en IA en un mes. Con 0 no gasta nada.'],
       contexto_aaas: ['Quién es el negocio', 'Unas líneas sobre el negocio para que tu equipo sepa con quién trabaja.'],
@@ -199,10 +199,10 @@
     },
     campo: {
       categoria: 'una categoría', cuenta_propia: 'una cuenta propia', cuenta_cobro: 'una cuenta de cobro', proyecto: 'un proyecto', tipo_vivienda: 'un tipo de unidad',
-      unidad: 'una unidad', producto: 'un producto o servicio con precio', fase: 'una fase de obra', plantilla: 'una plantilla activa', tipo_carta: 'el tipo de la carta de reserva', condicion: 'una condición de comisión',
+      unidad: 'una unidad', producto: 'algo con precio que facturar', fase: 'una fase de obra', plantilla: 'una plantilla activa', tipo_carta: 'el tipo de la carta de reserva', condicion: 'una condición de comisión',
       tope_aaas: 'el tope mensual de tu equipo', contexto_aaas: 'quién es el negocio', limites_aaas: 'los límites por módulo'   // N5 (aaas-2)
     },
-    consecuencia: { cuenta_cobro: 'Es opcional: sin ella, las facturas salen sin datos de pago.', facturable: 'Es opcional para terminar la configuración, pero sin ningún producto o servicio con precio no podrás facturar.' },
+    consecuencia: { cuenta_cobro: 'Es opcional: sin ella, las facturas salen sin datos de pago.', facturable: 'Es opcional para terminar la configuración, pero sin nada con precio no podrás facturar.' },
     hint: {
       nombre_repetido: 'Ya hay una categoría con ese nombre.',
       nombre_no_valido: 'El nombre va de 1 a 80 caracteres y no empieza por = + - @.',
@@ -225,6 +225,13 @@
       n4_cat_cargando: 'Cargando las categorías…',
       n4_cat_no_carga: 'No se han podido leer las categorías.',
       n4_cat_otra: 'Si ya tienes las que necesitas, deja el nombre vacío y sigue.',
+      n4_sug_titulo: 'Te proponemos estas categorías',
+      n4_sug_ayuda: 'Pulsa «Usar estas» y quedan dadas de alta. Puedes quitar alguna o añadir la tuya.',
+      n4_sug_usar: 'Usar estas',
+      n4_sug_cambiar: 'Quitar alguna o añadir la tuya',
+      n4_sug_propia: 'Añadir otra (opcional)',
+      n4_sug_ninguna: 'Marca al menos una o escribe la tuya.',
+      n4_sug_n: '%n de %t marcadas',
       n4_g_general: 'General', n4_g_suelo: 'Suelo', n4_g_construccion: 'Construcción', n4_g_comercial: 'Comercial', n4_g_marketing: 'Marketing',
       n4_g_personal: 'Personal', n4_g_impuestos: 'Impuestos', n4_g_financiero: 'Financiero'
     }
@@ -238,8 +245,8 @@
     'Cuenta bancaria propia': 'Your own bank account', 'La cuenta (no escrow) contra la que se importan los extractos del banco.': 'The (non-escrow) account bank statements are imported against.',
     'Cuenta de cobro': 'Payment account', 'La cuenta que sale en facturas, proformas y contratos para que te paguen.': 'The account shown on invoices, proformas and contracts so you get paid.',
     'Primer proyecto': 'First project', 'Las unidades a la venta cuelgan de un proyecto.': 'Units for sale belong to a project.',
-    'Qué vas a facturar': 'What you invoice', 'Crea al menos un producto o servicio con precio para poder facturar.': 'Create at least one product or service with a price to start invoicing.',
-    'un producto o servicio con precio': 'a product or service with a price',
+    'Qué vas a facturar': 'What you invoice', 'Para facturar hace falta algo con precio: un producto o servicio, o, si alquilas, un modelo con su tarifa en Flota y tarifas.': 'To invoice you need something with a price: a product or service or, if you rent, a model with its rate in Fleet and rates.',
+    'algo con precio que facturar': 'something with a price to invoice',
     'Tipos de unidad': 'Unit types', 'Cada unidad es de un tipo (por ejemplo, parcela o villa).': 'Each unit has a type (for example, plot or villa).',
     'Unidades a la venta': 'Units for sale', 'Lo que se reserva, se contrata y se factura.': 'What gets reserved, contracted and invoiced.',
     'Fases de obra': 'Construction stages', 'Las fases de la construcción y qué pago dispara cada una.': 'The construction stages and which payment each one triggers.',
@@ -255,7 +262,7 @@
     'un tipo de unidad': 'a unit type', 'una unidad': 'a unit', 'una fase de obra': 'a construction stage', 'una plantilla activa': 'an active template',
     'el tipo de la carta de reserva': 'the reservation letter type', 'una condición de comisión': 'a commission condition',
     'Es opcional: sin ella, las facturas salen sin datos de pago.': 'Optional: without it, invoices go out without payment details.',
-    'Es opcional para terminar la configuración, pero sin ningún producto o servicio con precio no podrás facturar.': 'Optional to finish the setup, but without any product or service with a price you will not be able to invoice.',
+    'Es opcional para terminar la configuración, pero sin nada con precio no podrás facturar.': 'Optional to finish the setup, but without anything with a price you will not be able to invoice.',
     'Ya hay una categoría con ese nombre.': 'There is already a category with that name.', 'Elige uno de los grupos de la lista.': 'Choose one of the groups in the list.',
     'Ya hay gastos en esta categoría: su grupo no se cambia.': 'This category already has expenses: its group can\'t change.', 'El orden no es válido.': 'The order is not valid.',
     'Este módulo aún no se puede encender: le falta su configuración.': 'This module can\'t be turned on yet: its setup isn\'t defined.',
@@ -265,6 +272,9 @@
     'Grupo': 'Group', 'Agrupa los gastos en el resumen. No se cambia cuando ya hay gastos en la categoría.': 'Groups expenses in the summary. It can\'t change once the category has expenses.',
     'Cargando las categorías…': 'Loading categories…', 'No se han podido leer las categorías.': 'The categories could not be loaded.',
     'Si ya tienes las que necesitas, deja el nombre vacío y sigue.': 'If you already have the ones you need, leave the name empty and continue.',
+    'Te proponemos estas categorías': 'We suggest these categories', 'Pulsa «Usar estas» y quedan dadas de alta. Puedes quitar alguna o añadir la tuya.': 'Press «Use these» and they are added. You can remove any of them or add your own.',
+    'Usar estas': 'Use these', 'Quitar alguna o añadir la tuya': 'Remove some or add your own', 'Añadir otra (opcional)': 'Add another (optional)',
+    'Marca al menos una o escribe la tuya.': 'Tick at least one or write your own.', '%n de %t marcadas': '%n of %t ticked',
     'General': 'General', 'Suelo': 'Land', 'Construcción': 'Construction', 'Comercial': 'Sales', 'Marketing': 'Marketing', 'Personal': 'Staff',
     'Impuestos': 'Taxes', 'Financiero': 'Financial'
   };
@@ -277,8 +287,8 @@
     'Cuenta bancaria propia': 'Rekening bank sendiri', 'La cuenta (no escrow) contra la que se importan los extractos del banco.': 'Rekening (bukan escrow) tempat mutasi bank diimpor.',
     'Cuenta de cobro': 'Rekening penerimaan', 'La cuenta que sale en facturas, proformas y contratos para que te paguen.': 'Rekening yang tercantum di invoice, proforma, dan kontrak untuk menerima pembayaran.',
     'Primer proyecto': 'Proyek pertama', 'Las unidades a la venta cuelgan de un proyecto.': 'Unit yang dijual berada di bawah satu proyek.',
-    'Qué vas a facturar': 'Yang Anda tagihkan', 'Crea al menos un producto o servicio con precio para poder facturar.': 'Buat minimal satu produk atau layanan dengan harga agar bisa membuat invoice.',
-    'un producto o servicio con precio': 'satu produk atau layanan dengan harga',
+    'Qué vas a facturar': 'Yang Anda tagihkan', 'Para facturar hace falta algo con precio: un producto o servicio, o, si alquilas, un modelo con su tarifa en Flota y tarifas.': 'Untuk membuat invoice perlu sesuatu yang berharga: produk atau layanan, atau, jika Anda menyewakan, model dengan tarifnya di Armada dan tarif.',
+    'algo con precio que facturar': 'sesuatu dengan harga untuk ditagihkan',
     'Tipos de unidad': 'Jenis unit', 'Cada unidad es de un tipo (por ejemplo, parcela o villa).': 'Setiap unit punya jenis (misalnya kavling atau vila).',
     'Unidades a la venta': 'Unit yang dijual', 'Lo que se reserva, se contrata y se factura.': 'Yang dipesan, dikontrakkan, dan ditagih.',
     'Fases de obra': 'Tahap pembangunan', 'Las fases de la construcción y qué pago dispara cada una.': 'Tahap pembangunan dan pembayaran yang dipicu tiap tahap.',
@@ -294,7 +304,7 @@
     'un tipo de unidad': 'satu jenis unit', 'una unidad': 'satu unit', 'una fase de obra': 'satu tahap pembangunan', 'una plantilla activa': 'satu templat aktif',
     'el tipo de la carta de reserva': 'jenis surat pemesanan', 'una condición de comisión': 'satu ketentuan komisi',
     'Es opcional: sin ella, las facturas salen sin datos de pago.': 'Opsional: tanpa ini, invoice keluar tanpa data pembayaran.',
-    'Es opcional para terminar la configuración, pero sin ningún producto o servicio con precio no podrás facturar.': 'Opsional untuk menyelesaikan penyiapan, tetapi tanpa produk atau layanan dengan harga Anda tidak bisa membuat invoice.',
+    'Es opcional para terminar la configuración, pero sin nada con precio no podrás facturar.': 'Opsional untuk menyelesaikan penyiapan, tetapi tanpa sesuatu yang berharga Anda tidak bisa membuat invoice.',
     'Ya hay una categoría con ese nombre.': 'Sudah ada kategori dengan nama itu.', 'Elige uno de los grupos de la lista.': 'Pilih salah satu grup di daftar.',
     'Ya hay gastos en esta categoría: su grupo no se cambia.': 'Kategori ini sudah punya pengeluaran: grupnya tidak bisa diubah.', 'El orden no es válido.': 'Urutannya tidak valid.',
     'Este módulo aún no se puede encender: le falta su configuración.': 'Modul ini belum bisa diaktifkan: pengaturannya belum ditentukan.',
@@ -304,6 +314,9 @@
     'Grupo': 'Grup', 'Agrupa los gastos en el resumen. No se cambia cuando ya hay gastos en la categoría.': 'Mengelompokkan pengeluaran di ringkasan. Tidak bisa diubah setelah kategori punya pengeluaran.',
     'Cargando las categorías…': 'Memuat kategori…', 'No se han podido leer las categorías.': 'Kategori tidak dapat dimuat.',
     'Si ya tienes las que necesitas, deja el nombre vacío y sigue.': 'Jika kategori yang dibutuhkan sudah ada, kosongkan nama dan lanjutkan.',
+    'Te proponemos estas categorías': 'Kami sarankan kategori ini', 'Pulsa «Usar estas» y quedan dadas de alta. Puedes quitar alguna o añadir la tuya.': 'Tekan «Pakai ini» dan kategori langsung dibuat. Anda bisa menghapus salah satu atau menambah sendiri.',
+    'Usar estas': 'Pakai ini', 'Quitar alguna o añadir la tuya': 'Hapus atau tambah kategori sendiri', 'Añadir otra (opcional)': 'Tambah lainnya (opsional)',
+    'Marca al menos una o escribe la tuya.': 'Centang minimal satu atau tulis sendiri.', '%n de %t marcadas': '%n dari %t dicentang',
     'General': 'Umum', 'Suelo': 'Tanah', 'Construcción': 'Konstruksi', 'Comercial': 'Penjualan', 'Marketing': 'Pemasaran', 'Personal': 'Karyawan',
     'Impuestos': 'Pajak', 'Financiero': 'Keuangan'
   };
@@ -579,6 +592,28 @@
   // code + hint (nombre_repetido, nombre_no_valido, grupo_no_valido, 42501). Editar o desactivar sigue en la pantalla de Gastos.
   var GRUPOS_GASTO = ['general', 'suelo', 'construccion', 'comercial', 'marketing', 'personal', 'impuestos', 'financiero'];
   var BORRADOR_CAT = null;
+  // Sugeridas (owner vía agencia-c0, 15-oct-2026: «¿por qué Expense categories es obligatorio?»): con CERO categorías, el paso propone una lista ya
+  // hecha para el tipo de negocio, todas marcadas, y el botón principal dice «Usar estas». La lista la da LA BASE (agencia-c0, decisión por defecto:
+  // «nada del ERP fuera de su base», como taller_lista_basica): gasto_categorias_sugeridas() → [{nombre, grupo}], con el nombre ya en los idiomas de
+  // la instancia; la escribe Backend (bbm-resumen). Mientras no exista en la base, la pantalla no la llama (el contrato front↔base pararía la
+  // publicación) y el paso se queda con el campo libre de siempre: el punto de enganche es PS.sugeridasGasto (una función → promesa de esa lista),
+  // que hoy solo pone el arnés. Lo que llegue se vuelve a mirar aquí (nombre 1-80 sin = + - @ al principio, grupo de la lista, sin repetidos) y la
+  // base comprueba cada alta.
+  function nombreValido(n) { return !!n && n.length <= 80 && !/^[=+\-@]/.test(n); }
+  function sugeridas() {
+    var f = typeof PS.sugeridasGasto === 'function' ? PS.sugeridasGasto : null;
+    if (!f) return Promise.resolve(null);
+    return Promise.resolve().then(f).then(function (l) {
+      if (!Array.isArray(l)) return null;
+      var vistos = {};
+      return l.map(function (e) {
+        var n = e && typeof e === 'object' ? texto(e.nombre).trim() : '';
+        if (!nombreValido(n) || vistos[n.toLowerCase()]) return null;
+        vistos[n.toLowerCase()] = true;
+        return { nombre: n, grupo: GRUPOS_GASTO.indexOf(e.grupo) >= 0 ? e.grupo : 'general' };
+      }).filter(Boolean).slice(0, 20);
+    });
+  }
   var categoriasGasto = {
     sinMotivo: true,   // gasto_categoria_guarda no pide motivo (deja rastro en ajustes_log)
     pinta: function (caja, ctx) {
@@ -597,9 +632,42 @@
       var otra = el('p', { class: CLS_AYUDA, 'data-axw-n4-cat': 'otra', hidden: true, text: U('n4_cat_otra') });
       z.appendChild(otra);
       caja.appendChild(z);
-      sesion().then(function (sb) {
+      var sug = null;   // con las sugeridas a la vista: { filas: [{nombre, grupo, chk}], propia }
+      function pintaSugeridas(l) {
+        // lo de siempre (lista vacía y campo libre) se esconde; a la vista, la lista como fichas y el botón principal «Usar estas»
+        // display:none y no solo `hidden`: en la instancia no hay regla [hidden] y las filas llevan .flex, que le gana (advisor, 15-oct)
+        [].forEach.call(z.children, function (n) { n.hidden = true; n.style.display = 'none'; });
+        var bloque = el('div', { class: 'flex flex-col gap-3 min-w-0', 'data-axw-n4-cat': 'sugeridas' });
+        bloque.appendChild(el('p', { class: CLS_ETQ, text: U('n4_sug_titulo') }));
+        var fichas = el('ul', { class: 'flex flex-wrap gap-2', role: 'list', 'data-axw-n4-sug': 'fichas' });
+        bloque.appendChild(fichas);
+        bloque.appendChild(el('p', { class: CLS_AYUDA, text: U('n4_sug_ayuda') }));
+        z.appendChild(bloque);
+        var pl = S.plegado({ padre: bloque, marca: 'n4-sugeridas', rotulo: U('n4_sug_cambiar'), resumen: function () { return [U('n4_sug_n', { n: String(marcadas().length), t: String(l.length) })]; } });
+        var filas = l.map(function (x, i) {
+          var id = 'axw-co-sug-' + i, chk = el('input', { id: id, type: 'checkbox', 'data-axw-campo': 'sug_' + i, style: 'width:20px;height:20px;flex:none' });
+          chk.checked = true;
+          pl.cuerpo.appendChild(el('label', { for: id, class: 'flex items-center gap-3 min-w-0', style: ALTO + ';cursor:pointer' }, [chk,
+            el('span', { class: 'font-body-md text-body-md text-on-surface min-w-0', style: 'overflow-wrap:anywhere', text: x.nombre })]));
+          return { nombre: x.nombre, grupo: x.grupo, chk: chk };
+        });
+        var propia = campo(pl.cuerpo, 'sug_propia', U('n4_sug_propia'), '', { max: 80 });
+        function marcadas() { return filas.filter(function (f) { return f.chk.checked; }); }
+        function pintaFichas() {
+          vacia(fichas);
+          marcadas().map(function (f) { return f.nombre; }).concat(propia.value.trim() ? [propia.value.trim().slice(0, 80)] : []).forEach(function (n) {
+            fichas.appendChild(el('li', { class: CLS_CHIP.replace('self-start ', ''), style: 'overflow-wrap:anywhere', text: n }));
+          });
+        }
+        pl.cuerpo.addEventListener('input', pintaFichas); pl.cuerpo.addEventListener('change', pintaFichas);
+        pintaFichas(); pl.actualiza();
+        sug = { filas: filas, propia: propia, plegado: pl };
+        caja.dispatchEvent(new CustomEvent('axw-boton', { bubbles: true, detail: U('n4_sug_usar') }));   // el anfitrión (asistente) cambia su botón principal
+      }
+      Promise.all([sesion().then(function (sb) {
         return sb ? resultado(sb.rpc('gastos_panel_datos', { p_limit: 1 })) : { ok: false };
-      }).then(function (r) {
+      }), sugeridas().then(null, function () { return null; })]).then(function (xs) {
+        var r = xs[0], l = xs[1];
         vacia(lista);
         lista.removeAttribute('aria-busy');
         var cats = r && r.ok && r.data && Array.isArray(r.data.categorias) ? r.data.categorias : null;
@@ -609,6 +677,7 @@
           return;
         }
         st.hay = cats.some(function (c) { return c && c.activa === true; });
+        if (!cats.length && l && l.length) { pintaSugeridas(l); return; }
         if (!cats.length) lista.appendChild(el('li', { class: CLS_NOTA, 'data-axw-n4-cat': 'ninguna', text: U('n4_cat_ninguna') }));
         cats.slice(0, 200).forEach(function (c) {
           var g = GRUPOS_GASTO.indexOf(texto(c.grupo)) >= 0 ? U('n4_g_' + c.grupo) : texto(c.grupo);
@@ -621,6 +690,14 @@
       });
       return {
         valores: function () {
+          if (sug) {   // las sugeridas marcadas y la propia, si la hay; al menos una, como siempre
+            var pr = sug.propia.value.trim(), lo = {}, l = [];
+            if (pr && !nombreValido(pr)) { sug.plegado.abre(); return { ok: false, error: U('n4_cat_nombre_mal') }; }
+            sug.filas.filter(function (f) { return f.chk.checked; }).map(function (f) { return { nombre: f.nombre, grupo: f.grupo }; })
+              .concat(pr ? [{ nombre: pr, grupo: 'general' }] : []).forEach(function (c) { if (!lo[c.nombre.toLowerCase()]) { lo[c.nombre.toLowerCase()] = true; l.push(c); } });
+            if (!l.length) { sug.plegado.abre(); return { ok: false, error: U('n4_sug_ninguna') }; }
+            return { ok: true, v: { lista: l } };
+          }
           var n = val(z, 'cat_nombre'), g = String(sel.value || 'general');
           BORRADOR_CAT = { nombre: n, grupo: g };
           if (!n) return st.hay ? { ok: true, v: {} } : { ok: false, error: U('n4_cat_falta') };
@@ -631,6 +708,18 @@
       };
     },
     guarda: function (sb, v) {
+      // las sugeridas: una por llamada, en orden, por la puerta de siempre. La primera que la base rechace para la cadena y sale su frase; las de
+      // antes ya están (la relectura las enseña en la lista y el paso queda hecho con una). «Ya hay una con ese nombre» no es un error: ya está.
+      if (v && Array.isArray(v.lista)) {
+        return v.lista.reduce(function (p, c) {
+          return p.then(function (r) {
+            if (!r.ok) return r;
+            return resultado(sb.rpc('gasto_categoria_guarda', { p_clave: null, p_datos: { nombre: c.nombre, grupo: c.grupo } })).then(function (x) {
+              return !x.ok && x.error && x.error.hint === 'nombre_repetido' ? { ok: true } : conHint(x);
+            });
+          });
+        }, Promise.resolve({ ok: true }));
+      }
       if (!v || !v.nombre) return Promise.resolve({ ok: true });   // ya había categorías y no se escribió otra: nada que guardar
       return resultado(sb.rpc('gasto_categoria_guarda', { p_clave: null, p_datos: { nombre: v.nombre, grupo: v.grupo } })).then(function (r) {
         if (r.ok) BORRADOR_CAT = null;

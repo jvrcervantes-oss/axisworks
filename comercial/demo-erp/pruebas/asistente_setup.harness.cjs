@@ -116,8 +116,8 @@ window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' 
 </script>
 <script>${NUCLEO}</script><script>${PASOS}</script>${HTML[1]}</body></html>`;
 
-async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=facturas', ancho = 1440, reloj = null, init = null } = {}) {
-  const ctx = await nav.newContext({ viewport: { width: ancho, height: 900 } });
+async function abre(nav, b, { idioma = 'es', url = '/ajustes/configurar/?modulo=facturas', ancho = 1440, alto = 900, reloj = null, init = null } = {}) {
+  const ctx = await nav.newContext({ viewport: { width: ancho, height: alto } });
   const p = await ctx.newPage();
   if (init) await p.addInitScript(init);   // algo de la página real que el arnés no carga (p. ej. lwMarca de i18n.js)
   if (reloj) await p.clock.install({ time: new Date(reloj) });   // la hora del navegador fijada (año fiscal en Nochevieja)
@@ -418,7 +418,7 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
                iconos: bl.every(b => b && b.querySelector('dt svg.axw-why-ic')), negrita: bl.every(b => +getComputedStyle(b.querySelector('dt')).fontWeight >= 600),
                fondos: bl.map(b => getComputedStyle(b).backgroundColor), ladoVacio: document.querySelector('[data-axw-as="lado"]').children.length === 0
                  ? getComputedStyle(document.querySelector('[data-axw-as="lado"]')).display === 'none' : true,
-               scrollX: document.documentElement.scrollWidth > innerWidth, alto: innerHeight };
+               campoBottom: c ? Math.round(c.bottom) : null, scrollX: document.documentElement.scrollWidth > innerWidth, alto: innerHeight };
     });
     const pq1 = await porQue(p);
     ok('1440: «Para qué sirve» y «Si lo saltas» arriba de los campos (primeros en la columna de lo que se rellena)', pq1.enIzq && pq1.encima, JSON.stringify(pq1));
@@ -427,11 +427,12 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     ok('1440: un paso sin nada de lado no deja una columna vacía a la derecha', pq1.ladoVacio, JSON.stringify(pq1));
     ok('«Dejar para luego» arriba, a la vuelta de siempre', (await p.getAttribute('[data-axw-as="salir"]', 'href')) === '/home/' && (await p.$eval('[data-axw-as="salir"]', e => getComputedStyle(e).display !== 'none')));
     await ctx.close();
-    ({ p, ctx } = await abre(nav, base('sin_configurar'), { ancho: 390 }));
+    ({ p, ctx } = await abre(nav, base('sin_configurar'), { ancho: 390, alto: 664 }));   // 390×844 con la barra del navegador enseña unos 664 (Experiencia, 15-oct)
     ok('390: sin carril (las mesas móviles no lo llevan)', await p.$eval('[data-axw-as="carril"]', e => getComputedStyle(e).display === 'none'));
     const pq3 = await porQue(p);
-    ok('390: los dos bloques arriba de los campos, sin scroll de lado, y el primer campo a la vista sin desplazar (no lo tapan)',
-       pq3.enIzq && pq3.encima && !pq3.scrollX && pq3.campoTop != null && pq3.campoTop < pq3.alto, JSON.stringify(pq3));
+    ok('390×664 (móvil real): los dos bloques arriba de los campos, sin scroll de lado, y el primer campo ENTERO a la vista sin desplazar',
+       pq3.enIzq && pq3.encima && !pq3.scrollX && pq3.campoBottom != null && pq3.campoBottom <= pq3.alto, JSON.stringify(pq3));
+    if (SHOT) { await p.evaluate(() => document.fonts && document.fonts.ready); await p.waitForTimeout(200); await p.screenshot({ path: path.join(SHOT, 'paso_es_390x664.png') }); }
     await ctx.close();
     // un opcional: su consecuencia y «Saltar este paso», que vuelve al cierre del módulo sin llamar a nada que guarde
     const bo = base('sin_configurar');
@@ -470,6 +471,25 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     }
   }
 
+  // Orden de los pasos de Alquileres (auditoría del setup de bbm, 15-oct-2026): la base pone «¿Qué alquilas primero?» (opcional) delante de Flota; el
+  // asistente lo numera como paso 1 y lo recorre, en vez de saltarlo. El progreso sigue contando solo los obligatorios.
+  {
+    const bo = base('sin_configurar');
+    const resto = bo.d.pasos.filter(x => x.modulo !== 'reservas-producto');
+    const P = (clave, obligatorio, donde) => ({ modulo: 'reservas-producto', clave, obligatorio, irreversible: false, hecho: false, donde, falta: { codigo: 'falta_dato', campos: [] } });
+    bo.d.pasos = resto.concat([P('clase', false, '/flota/'), P('flota', true, '/flota/'), P('impuesto_pkp', true, '/ajustes/'), P('precio_con_impuesto', true, '/ajustes/'), P('entrega', false, '/entrega/')]);
+    ({ p, ctx } = await abre(nav, bo, { url: '/ajustes/configurar/?modulo=reservas-producto' }));
+    await p.waitForSelector('[data-axw-paso]', { timeout: 8000 }).catch(() => {});
+    ok('orden: abre en «clase», numerado «Reservas de producto · Paso 1 de 4»', (await p.getAttribute('[data-axw-paso]', 'data-axw-paso')) === 'clase'
+       && (await txt(p, '[data-axw-as="meta"]')) === 'Reservas de producto · Paso 1 de 4', await txt(p, '[data-axw-as="meta"]'));
+    await ctx.close();
+    ({ p, ctx } = await abre(nav, bo, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=flota' }));
+    await p.waitForSelector('[data-axw-paso]', { timeout: 8000 }).catch(() => {});
+    ok('orden: Flota es el paso 2 de 4 y tiene «Atrás»', (await txt(p, '[data-axw-as="meta"]')) === 'Reservas de producto · Paso 2 de 4' && await p.isVisible('[data-axw-accion="atras"]'), await txt(p, '[data-axw-as="meta"]'));
+    ok('orden: el progreso cuenta solo los obligatorios (0 de 3 de este módulo en su carril)', /0\/3/.test(await txt(p, '[data-axw-as="carril"]') || ''), await txt(p, '[data-axw-as="carril"]'));
+    await ctx.close();
+  }
+
   // 10. «Quién lo usa» en el propio paso (S14, bbm-p41): el equipo con UNA casilla (la herramienta de este módulo), sin la cuenta de pruebas,
   //     el administrador principal sin casilla; al guardar se relee y se manda el array ENTERO de esa persona con solo esta herramienta cambiada.
   {
@@ -480,6 +500,8 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
       { user_id: 'u-putu', nombre: 'Putu', email: 'putu@x.test', rol: 'agente', activo: true, herramientas: ['reservas-producto', 'taller'], creado_por: 'dion' },
       { user_id: 'u-prueba', nombre: 'Cuenta de pruebas', email: 'p@x.test', rol: 'admin', activo: true, herramientas: [], creado_por: 'estudio:cuenta-pruebas' },
       { user_id: 'u-baja', nombre: 'Baja', email: 'b@x.test', rol: 'agente', activo: false, herramientas: [], creado_por: 'dion' }];
+    // M5 (15-oct): la cuenta del estudio (dominio axisworks.studio, con mayúsculas y espacios a propósito), super_admin como en bbm
+    const estudio = () => ({ user_id: 'u-estudio', nombre: 'Super Admin', email: ' Hello@AxisWorks.Studio ', rol: 'super_admin', activo: true, herramientas: [], creado_por: null });
     const bq = base('sin_configurar');
     bq.d.pasos.push(Object.assign({}, pasoU)); bq.usuarios = equipo();
     ({ p, ctx } = await abre(nav, bq, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
@@ -525,6 +547,22 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     ({ p, ctx } = await abre(nav, bf, { url: '/ajustes/configurar/?modulo=facturas&paso=usuarios' }));
     await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
     ok('S14: en Facturas (administrativo) el administrador principal cuenta', (await txt(p, '[data-axw-quien="cuenta"]')) === '2 personas usan Facturas', await txt(p, '[data-axw-quien="cuenta"]'));
+    await ctx.close();
+    // M5: la cuenta del estudio sale la última, como «Soporte de AxisWorks», sin casilla y sin contar (ni en Facturas, donde el principal sí cuenta)
+    const be = base('sin_configurar'); be.d.pasos.push(Object.assign({}, pasoU, { modulo: 'facturas', obligatorio: false })); be.usuarios = [estudio()].concat(equipo());
+    ({ p, ctx } = await abre(nav, be, { url: '/ajustes/configurar/?modulo=facturas&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien-estudio]', { timeout: 8000 }).catch(() => {});
+    const fe = await p.$$eval('[data-axw-quien="lista"] li', ls => ls.map(l => l.textContent));
+    ok('M5: la cuenta del estudio, la última y rotulada «Soporte de AxisWorks» (no «Administrador principal»)', fe.length === 4 && /Soporte de AxisWorks/.test(fe[3]) && /No cuenta en este paso/.test(fe[3])
+       && fe.filter(t => /Administrador principal/.test(t)).length === 1, JSON.stringify(fe));
+    ok('M5: sin casilla para la cuenta del estudio', !(await p.$('[data-axw-quien-usuario="u-estudio"]')));
+    ok('M5: no cuenta en el recuento (sigue «2 personas usan Facturas»)', (await txt(p, '[data-axw-quien="cuenta"]')) === '2 personas usan Facturas', await txt(p, '[data-axw-quien="cuenta"]'));
+    await ctx.close();
+    // M5: solo Dion y la cuenta del estudio → «Aún no hay nadie más»: el estudio no es «alguien del equipo»
+    const bs = base('sin_configurar'); bs.d.pasos.push(Object.assign({}, pasoU)); bs.usuarios = [equipo()[0], estudio()];
+    ({ p, ctx } = await abre(nav, bs, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien="solo-tu"]', { timeout: 8000 }).catch(() => {});
+    ok('M5: con solo el principal y el estudio, invita a alguien', !!(await p.$('[data-axw-quien="solo-tu"]')));
     await ctx.close();
     // revisor 13-oct: sin herramienta para el módulo en el mapa, el paso es «otra pantalla» de verdad (y guardar no se cuelga)
     const bt = base('sin_configurar'); bt.d.modulos.push({ modulo: 'taller', estado: 'sin_configurar', falta: 'usuarios' }); bt.d.pasos.push(Object.assign({}, pasoU, { modulo: 'taller' })); bt.usuarios = equipo();

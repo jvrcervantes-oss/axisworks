@@ -49,19 +49,42 @@
 .axw-why-ic{width:20px;height:20px;flex:none;color:rgb(var(--tema-deep-lagoon))}
 .axw-why>[data-axw-salta]{background:rgb(var(--tema-error-container) / .45);border-color:rgb(var(--tema-error) / .3)}
 .axw-why>[data-axw-salta] .axw-why-ic{color:rgb(var(--tema-error))}
+/* En el móvil (< 560 px; Experiencia, 15-oct: «a 390 el primer campo queda debajo de lo que se ve», condición del owner: que no tapen los campos):
+   los dos bloques en una sola caja, cada uno en una línea corrida (título en negrita y su texto detrás); el título del paso más corto; «Dejar para
+   luego» como enlace y no como botón a todo lo ancho; y fuera la línea «Falta…», que repite lo que dice «Si lo saltas» justo encima. */
+@media (max-width:559px){
+  .axw-why{gap:0;border:1px solid rgb(var(--tema-outline-variant));border-radius:14px;overflow:hidden}
+  .axw-why>div{display:block;border:0;border-radius:0;padding:9px 12px;font-size:13.5px;line-height:1.4}
+  .axw-why>div+div{border-top:1px solid rgb(var(--tema-outline-variant))}
+  .axw-why dt{display:inline-flex;vertical-align:-3px;margin-right:6px;font-size:14px}
+  .axw-why dd{display:inline}
+  .axw-why-ic{width:17px;height:17px}
+  [data-axw-as="tarjeta"] h2[data-axw-paso]{font-size:22px!important}
+  [data-axw-as="tarjeta"] header{gap:12px!important;padding-bottom:14px!important}
+  .axw-izq>[data-axw-falta]{display:none}
+  [data-axw-as="salir"]{min-height:36px!important;padding:0!important;border-color:transparent!important;align-self:flex-start;text-decoration:underline;text-underline-offset:3px}
+  /* y la cabecera de la página y la tarjeta, más prietas: medido a 390×664 con la piel de bbm, el primer campo acababa en y=743 */
+  [data-axw-setup="asistente"]{gap:12px!important}
+  [data-axw-setup="asistente"]>.lw-cabecera{padding:14px 16px!important;gap:10px!important}
+  [data-axw-as="titulo"]{font-size:24px!important;line-height:1.15!important}
+  [data-axw-as="tarjeta"]{padding:16px!important;gap:14px!important}
+  /* «2 de 6 pasos hechos» y «Dejar para luego» en la misma línea, la barra debajo (Experiencia: el enlace junto al progreso) */
+  .lw-cabecera>div:last-child{flex-direction:row!important;flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:12px}
+  .lw-cabecera>div:last-child>[aria-hidden="true"]{order:3;flex:1 1 100%}
+}
 /* P5 (bbm-comodidad, 15-oct-2026; owner: «aprovechando el espacio … mostrando datos poco a poco»; Diseño consultado): el paso en dos columnas
    cuando la TARJETA tiene sitio (container query, no media query: el carril ya come 324 px). Izquierda = lo que se rellena (≤ 640 px); derecha
    (320 px, pegajosa) = lo que el paso enseña de lado. Sin sitio, una columna. «Para qué sirve» va ARRIBA de los campos (15-oct, ver .axw-why);
-   un paso que no enseña nada de lado se queda en una columna. */
+   un paso que no enseña nada de lado (vacío, o todo lo de dentro con `hidden`) se queda en una columna. */
 [data-axw-as="tarjeta"]{container-type:inline-size}
 .axw-dos,.axw-izq,.axw-lado{display:flex;flex-direction:column;gap:20px;min-width:0}
 @media (min-width:1360px){.axw-wz[data-carril="1"] [data-axw-as="tarjeta"][data-axw-vista="paso"]{max-width:64rem!important}}
 @container (min-width:900px){
   .axw-dos{display:grid;grid-template-columns:minmax(0,640px) 320px;justify-content:space-between;align-items:start;gap:32px}
   .axw-lado{position:sticky;top:16px}
-  .axw-dos:has(>.axw-lado:empty){display:flex}
+  .axw-dos:has(>.axw-lado:not(:has(>:not([hidden])))){display:flex}
 }
-.axw-lado:empty{display:none}
+.axw-lado:not(:has(>:not([hidden]))){display:none}   /* vacía, o con todo lo de dentro oculto (hidden): sin columna en blanco (revisor de 87801b8) */
 </style>
 <div class="flex flex-col w-full gap-6" data-axw-setup="asistente">
 <div class="lw-cabecera flex flex-col md:flex-row md:items-end gap-4 bg-surface-container-lowest p-6 md:p-8 rounded-2xl border border-outline-variant">
@@ -185,12 +208,17 @@ document.addEventListener('DOMContentLoaded', function () {
     $('salir').style.display = 'none';
     $('tarjeta').style.maxWidth = 'none';
   }
-  // Los pasos de este módulo en el orden de la base: delante, los obligatorios pendientes de «base» (la moneda); después, los del módulo
+  // Los pasos de este módulo en el orden de la base: delante, los obligatorios pendientes de «base» (la moneda); después, los del módulo.
+  // Auditoría del setup de bbm (15-oct-2026, «orden de los pasos de Alquileres»): un opcional que la base pone DELANTE del primer obligatorio entra en
+  // el recorrido numerado (Alquileres: «¿Qué alquilas primero?» antes de Flota). Antes salía sin número y el asistente lo saltaba. El progreso
+  // «n de t pasos hechos» sigue contando solo los obligatorios: es lo que deja el módulo listo (decisión por defecto, en el encargo).
   function lista(datos, m) {
     var pre = m === 'base' ? [] : datos.pasos.filter(function (p) { return p.modulo === 'base' && p.obligatorio && !p.hecho; });
     var mios = datos.pasos.filter(function (p) { return p.modulo === m; });
-    var ob = pre.concat(mios.filter(function (p) { return p.obligatorio; }));
-    return { obligatorios: ob, opcionales: mios.filter(function (p) { return !p.obligatorio; }) };
+    var k = -1;
+    mios.some(function (p, i) { if (p.obligatorio) { k = i; return true; } return false; });
+    var guia = mios.filter(function (p, i) { return p.obligatorio || (k > 0 && i < k); });
+    return { obligatorios: pre.concat(guia), opcionales: mios.filter(function (p) { return guia.indexOf(p) < 0; }) };
   }
   function lee() {
     cargando();
@@ -415,6 +443,9 @@ document.addEventListener('DOMContentLoaded', function () {
       atras.hidden = idx <= 0 && parteVista.k <= 1;
     }
     cuerpo.addEventListener('axw-parte', function (ev) { parteVista = ev.detail || {}; aplicaParte(); });
+    // un paso que decide su botón principal DESPUÉS de leer (las categorías sugeridas: «Usar estas») lo avisa con 'axw-boton' {texto}
+    var botonVisto = '';
+    cuerpo.addEventListener('axw-boton', function (ev) { botonVisto = String(ev.detail || ''); if (principal && botonVisto && principal.getAttribute('data-axw-accion') === 'enviar') { txtPrincipal = botonVisto; principal.textContent = botonVisto; aplicaParte(); } });
     var editando = !p.hecho || st.cambia;
     var ctl = null;
     if (editando || comp.externo) ctl = comp.pinta(cuerpo, { paso: p, datos: ctx.datos, ajustes: ctx.ajustes, sociedad: ctx.sociedad, cambia: st.cambia, lado: lado, falta: faltaEl });
@@ -437,6 +468,7 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (!editando) principal = boton(U('siguiente'), 'siguiente', true);
     else if (ctl && ctl.bloqueado) principal = boton(U('siguiente'), 'siguiente', true);
     else principal = boton(ctl && ctl.boton ? ctl.boton : (p.irreversible ? U('siguiente') : U('guardar_seguir')), 'enviar', true);
+    if (botonVisto && principal.getAttribute('data-axw-accion') === 'enviar') principal.textContent = botonVisto;
     txtPrincipal = principal.textContent;
     aplicaParte();
     if (atras) pie.appendChild(atras);

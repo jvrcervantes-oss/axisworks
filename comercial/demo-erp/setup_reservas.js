@@ -190,8 +190,8 @@
       sr_ofrecer_ayuda: 'Actívalo si llevas las motos a la puerta del cliente. Si no, salta este paso.',
       sr_b_donde: '1 · Desde dónde sale', sr_b_cuanto: '2 · Cuánto cuesta', sr_b_final: '3 · Al final del alquiler',
       sr_sede_nombre: 'Sale desde (nombre de la tienda)',
-      sr_sede_coord: 'Coordenadas de la tienda (lat, lng)',
-      sr_sede_coord_ayuda: 'Cópialas de Google Maps: clic derecho sobre la tienda y pulsa las cifras. Por ejemplo: -8.65, 115.13',
+      sr_sede_coord: 'Ubicación de la tienda',
+      sr_sede_coord_ayuda: 'Pega el enlace de Google Maps de la tienda o sus números, por ejemplo -8.65, 115.13. En el móvil: mantén pulsado sobre la tienda en Google Maps y copia los números de arriba.',
       sr_sede_fija: 'Con la entrega encendida no se cambia la tienda: apágala primero.',
       sr_precio_km: 'Precio por km',
       sr_gratis: 'Gratis hasta',
@@ -208,7 +208,8 @@
       sr_fig_tienda: 'Tienda',
       sr_fig_alt: 'Ilustración: la tienda en el centro, la zona gratis alrededor y la zona de pago hasta la distancia máxima.',
       sr_mas_entrega: 'Más ajustes en Entrega',
-      sr_coord_mal: 'Escribe las coordenadas como «-8.65, 115.13».',
+      sr_coord_mal: 'Pega el enlace de Google Maps o escribe los números como «-8.65, 115.13».',
+      sr_coord_corto: 'Ese enlace no marca la tienda: abre su ficha en Google Maps (que salga su nombre) y copia la dirección de la barra del navegador, o pega los números.',
       sr_gratis_mayor: 'Los km gratis tienen que quedar por debajo de la distancia máxima.',
       sr_activa_falta: 'Para ofrecer la entrega hacen falta la tienda, sus coordenadas, el precio por km, la distancia máxima y decidir la recogida.',
       sr_activa_nota: 'Está encendida: lo que guardes cambia desde ya el precio que da el bot.',
@@ -311,8 +312,8 @@
     'Quitar (apuntado por error)': 'Remove (recorded by mistake)', 'Por qué se quita': 'Why it is removed',
     'Si la unidad ya volvió, no se quita: se marca como devuelta en Reservas de producto.': 'If the unit is already back, do not remove it: mark it as returned in Product bookings.',
     'No hay ninguna unidad que se pueda apuntar: da de alta las unidades primero.': 'There is no unit that can be recorded: add the units first.',
-    'Ofrecer entrega a domicilio': 'Offer home delivery', 'Sale desde (nombre de la tienda)': 'Leaves from (shop name)', 'Coordenadas de la tienda (lat, lng)': 'Shop coordinates (lat, lng)',
-    'Cópialas de Google Maps: clic derecho sobre la tienda y pulsa las cifras. Por ejemplo: -8.65, 115.13': 'Copy them from Google Maps: right-click on the shop and click the numbers. For example: -8.65, 115.13',
+    'Ofrecer entrega a domicilio': 'Offer home delivery', 'Sale desde (nombre de la tienda)': 'Leaves from (shop name)', 'Ubicación de la tienda': 'Shop location',
+    'Pega el enlace de Google Maps de la tienda o sus números, por ejemplo -8.65, 115.13. En el móvil: mantén pulsado sobre la tienda en Google Maps y copia los números de arriba.': 'Paste the Google Maps link of the shop or its numbers, for example -8.65, 115.13. On a phone: press and hold the shop in Google Maps and copy the numbers at the top.',
     'Precio por km': 'Price per km', 'Gratis hasta': 'Free up to', 'Se entrega hasta': 'Deliver up to', 'Mínimo por trayecto': 'Minimum per trip',
     'Lo menos que se cobra por llevarla, aunque esté cerca.': 'The least charged for a delivery, even when it is close.',
     'Recogida al final': 'Collection at the end', 'Se recoge al final y se cobra igual que la entrega': 'Collected at the end, same price as the delivery', 'Se recoge al final sin cobrarla': 'Collected at the end, free of charge',
@@ -321,7 +322,7 @@
     'Ilustración: la tienda en el centro, la zona gratis alrededor y la zona de pago hasta la distancia máxima.': 'Illustration: the shop in the centre, the free zone around it and the paid zone up to the maximum distance.',
     'Más ajustes en Entrega': 'More delivery settings', 'Actívalo si llevas las motos a la puerta del cliente. Si no, salta este paso.': 'Switch it on if you take the bikes to the customer’s door. If not, skip this step.',
     '1 · Desde dónde sale': '1 · Where it leaves from', '2 · Cuánto cuesta': '2 · What it costs', '3 · Al final del alquiler': '3 · At the end of the rental',
-    'Escribe las coordenadas como «-8.65, 115.13».': 'Write the coordinates like «-8.65, 115.13».',
+    'Pega el enlace de Google Maps o escribe los números como «-8.65, 115.13».': 'Paste the Google Maps link or write the numbers like «-8.65, 115.13».', 'Ese enlace no marca la tienda: abre su ficha en Google Maps (que salga su nombre) y copia la dirección de la barra del navegador, o pega los números.': 'That link does not mark the shop: open its page in Google Maps (so its name shows) and copy the address from the browser bar, or paste the numbers.',
     'Los km gratis tienen que quedar por debajo de la distancia máxima.': 'The free km have to stay below the maximum distance.',
     'Para ofrecer la entrega hacen falta la tienda, sus coordenadas, el precio por km, la distancia máxima y decidir la recogida.': 'To offer delivery you need the shop, its coordinates, the price per km, the maximum distance and a decision on collection.',
     'Está encendida: lo que guardes cambia desde ya el precio que da el bot.': 'It is on: what you save changes the price the bot quotes right away.',
@@ -420,8 +421,8 @@
     'Quitar (apuntado por error)': 'Hapus (salah catat)', 'Por qué se quita': 'Alasan dihapus',
     'Si la unidad ya volvió, no se quita: se marca como devuelta en Reservas de producto.': 'Jika unit sudah kembali, jangan dihapus: tandai sudah kembali di Booking sewa motor.',
     'No hay ninguna unidad que se pueda apuntar: da de alta las unidades primero.': 'Tidak ada unit yang bisa dicatat: daftarkan unitnya dulu.',
-    'Ofrecer entrega a domicilio': 'Tawarkan antar ke alamat', 'Sale desde (nombre de la tienda)': 'Berangkat dari (nama toko)', 'Coordenadas de la tienda (lat, lng)': 'Koordinat toko (lat, lng)',
-    'Cópialas de Google Maps: clic derecho sobre la tienda y pulsa las cifras. Por ejemplo: -8.65, 115.13': 'Salin dari Google Maps: klik kanan di lokasi toko lalu klik angkanya. Contoh: -8.65, 115.13',
+    'Ofrecer entrega a domicilio': 'Tawarkan antar ke alamat', 'Sale desde (nombre de la tienda)': 'Berangkat dari (nama toko)', 'Ubicación de la tienda': 'Lokasi toko',
+    'Pega el enlace de Google Maps de la tienda o sus números, por ejemplo -8.65, 115.13. En el móvil: mantén pulsado sobre la tienda en Google Maps y copia los números de arriba.': 'Tempel tautan Google Maps toko atau angkanya, misalnya -8.65, 115.13. Di ponsel: tekan lama lokasi toko di Google Maps lalu salin angka di atas.',
     'Precio por km': 'Harga per km', 'Gratis hasta': 'Gratis sampai', 'Se entrega hasta': 'Diantar sampai', 'Mínimo por trayecto': 'Minimum per perjalanan',
     'Lo menos que se cobra por llevarla, aunque esté cerca.': 'Biaya paling rendah untuk mengantar, meskipun dekat.',
     'Recogida al final': 'Penjemputan di akhir sewa', 'Se recoge al final y se cobra igual que la entrega': 'Dijemput di akhir sewa dengan biaya sama seperti pengantaran', 'Se recoge al final sin cobrarla': 'Dijemput di akhir sewa tanpa biaya',
@@ -430,7 +431,7 @@
     'Ilustración: la tienda en el centro, la zona gratis alrededor y la zona de pago hasta la distancia máxima.': 'Ilustrasi: toko di tengah, zona gratis di sekitarnya, dan zona berbayar sampai jarak maksimum.',
     'Más ajustes en Entrega': 'Pengaturan lain di Pengantaran', 'Actívalo si llevas las motos a la puerta del cliente. Si no, salta este paso.': 'Aktifkan jika Anda mengantar motor ke depan pintu pelanggan. Jika tidak, lewati langkah ini.',
     '1 · Desde dónde sale': '1 · Berangkat dari mana', '2 · Cuánto cuesta': '2 · Berapa biayanya', '3 · Al final del alquiler': '3 · Di akhir sewa',
-    'Escribe las coordenadas como «-8.65, 115.13».': 'Tulis koordinat seperti «-8.65, 115.13».',
+    'Pega el enlace de Google Maps o escribe los números como «-8.65, 115.13».': 'Tempel tautan Google Maps atau tulis angkanya seperti «-8.65, 115.13».', 'Ese enlace no marca la tienda: abre su ficha en Google Maps (que salga su nombre) y copia la dirección de la barra del navegador, o pega los números.': 'Tautan itu tidak menandai toko: buka halamannya di Google Maps (sampai namanya muncul) lalu salin alamat dari bilah peramban, atau tempel angkanya.',
     'Los km gratis tienen que quedar por debajo de la distancia máxima.': 'Km gratis harus di bawah jarak maksimum.',
     'Para ofrecer la entrega hacen falta la tienda, sus coordenadas, el precio por km, la distancia máxima y decidir la recogida.': 'Untuk menawarkan pengantaran diperlukan toko, koordinatnya, harga per km, jarak maksimum, dan keputusan soal penjemputan.',
     'Está encendida: lo que guardes cambia desde ya el precio que da el bot.': 'Pengantaran aktif: yang Anda simpan langsung mengubah harga yang diberikan bot.',
@@ -1274,9 +1275,29 @@
       moneda: t && t.moneda ? String(t.moneda).toUpperCase() : '', precio_km: t ? num(t.precio_km) : null, km_gratis: t ? (num(t.km_gratis) || 0) : 0, minimo: t ? (num(t.minimo) || 0) : 0,
       km_max: num(a.km_max), cobra_recogida: a.cobra_recogida === true ? true : (a.cobra_recogida === false ? false : null), activa: a.activa === true, tarifa_id: t ? t.id : null };
   }
+  // M4 de la auditoría del setup de bbm (15-oct-2026): Noelia y Dion piensan en un sitio, no en números. Un enlace de Google Maps que MARCA un sitio
+  // lleva el punto dentro: se saca de ahí y sigue el camino de siempre (lo que se guarda son lat y lng, y la base los revalida). Solo esas formas:
+  // la ficha del sitio (!3d…!4d…), q=/query=/ll= y /place/ o /search/ con los números. NUNCA una ruta (/dir/: su primer punto es quien pregunta) ni
+  // el centro del mapa (@lat,lng): el precio por km y la distancia máxima se miden desde aquí, y un punto equivocado no lo vería nadie (revisor de
+  // b6bd9a8). '' = es un enlace de mapas pero no marca un sitio (también los cortos de «Compartir»: abrirlos exigiría pedírselo a Google desde el servidor).
+  // Copia idéntica en entrega.html y setup_reservas.js (enlace_mapa.test.js).
+  function coordDeEnlace(t) {
+    t = String(t || '').trim();
+    if (!/^(https?:\/\/)?([a-z0-9-]+\.)*(google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|goo\.gl\/maps|maps\.app\.goo\.gl)/i.test(t)) return null;
+    var u = t; try { u = decodeURIComponent(t); } catch (e) { u = t; }
+    if (/\/maps\/dir\//i.test(u)) return '';
+    var N = '([+-]?\\d{1,3}\\.\\d+)', S = '[,\\s+]+';
+    var m = new RegExp('!3d' + N + '!4d' + N).exec(u)                                          // el sitio marcado (su ficha)
+         || new RegExp('[?&](?:q|query|ll)=' + N + S + N).exec(u)
+         || new RegExp('/(?:place|search)/' + N + S + N).exec(u);
+    return m ? Number(m[1]) + ', ' + Number(m[2]) : '';
+  }
   function parseCoord(s) {
     var t = String(s || '').trim();
     if (!t) return { vacio: true };
+    var en = coordDeEnlace(t);
+    if (en === '') return { e: U('sr_coord_corto') };
+    if (en) t = en;
     var m = /^(-?\d{1,3}(?:\.\d+)?)\s*[,;]\s*(-?\d{1,3}(?:\.\d+)?)$/.exec(t) || /^(-?\d{1,3}(?:\.\d+)?)\s+(-?\d{1,3}(?:\.\d+)?)$/.exec(t);
     if (!m) return { e: U('sr_coord_mal') };
     var lat = Number(m[1]), lng = Number(m[2]);
@@ -1319,7 +1340,7 @@
       var sedeDeFabrica = !c.activa && c.sede_lat == null;
       var marca = String((st.ctx.ajustes && st.ctx.ajustes.marca) || '').trim();
       campo(r1, 'sede_nombre', U('sr_sede_nombre'), sedeDeFabrica ? marca : c.sede_nombre, { max: 120, soloLee: c.activa });
-      campo(r1, 'sede_coord', U('sr_sede_coord'), c.sede_lat == null ? '' : c.sede_lat + ', ' + c.sede_lng, { max: 60, soloLee: c.activa, ayuda: c.activa ? U('sr_sede_fija') : U('sr_sede_coord_ayuda') });
+      campo(r1, 'sede_coord', U('sr_sede_coord'), c.sede_lat == null ? '' : c.sede_lat + ', ' + c.sede_lng, { max: 2000, soloLee: c.activa, ayuda: c.activa ? U('sr_sede_fija') : U('sr_sede_coord_ayuda') });
       b1.appendChild(r1);
       var r2 = rejilla(160);
       campo(r2, 'precio_km', U('sr_precio_km'), fmt(c.precio_km), { modo: 'decimal', antes: mon, max: 20 });
@@ -1373,6 +1394,7 @@
         PT.solo(!abierto);
         if (ayudaSw) ayudaSw.hidden = abierto;
         fig.style.display = abierto ? '' : 'none';   // sin tienda ni precio, la ilustración solo diría «hasta 0 km»
+        fig.hidden = !abierto;   // y con ella oculta, la columna de lado del asistente no se queda en blanco (.axw-lado sin nada a la vista)
         if (porUsuario && sw.checked) { var f = bloques.querySelector('[data-axw-parte]:not([hidden]) input:not([readonly])'); if (f) f.focus(); }   // el foco, solo si lo enciende la persona
       };
       sw.addEventListener('change', function () { st.aplicaEntrega(true); });

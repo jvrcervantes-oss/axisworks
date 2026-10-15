@@ -15,7 +15,7 @@
  "copias-firmadas": ["Copia firmada por correo", "Documentación", "mark_email_read", "Cuando la copia firmada es demasiado grande para adjuntarla, el comprador la recibe por un enlace del portal, con cola de reintentos."],
  "asistente-correos": ["Asistente de respuestas", "Documentación", "quick_phrases", "Redacta la respuesta a un cliente citando solo su propio contrato."],
  "creatividades": ["Creatividades y dossiers", "Documentación", "imagesmode", "Piezas para redes y dossiers de venta de cada proyecto."],
- "finanzas": ["Panel financiero", "Finanzas", "monitoring", "El dinero de la empresa en una pantalla, para dirección."],
+ "finanzas": ["Resumen de finanzas", "Finanzas", "monitoring", "Lo que ha entrado, lo que te deben y lo que debes, del mes o del año."],
  "facturas": ["Facturación", "Finanzas", "receipt_long", "Facturas y proformas enlazadas al contrato que las origina."],
  "recibos": ["Cobros y recibís", "Finanzas", "price_check", "Cada cobro con su justificante, aplicado a las facturas que salda."],
  "vencimientos": ["Vencimientos", "Finanzas", "event_upcoming", "Calendario de pagos por hitos de cada contrato."],
