@@ -6023,9 +6023,15 @@ RUTAS_SCRIPT = '<script id="axw-rutas">'
 LECTURA_BARRA = re.compile(r'(?<![\w$.])(?<!\|\|String\)\()((?:window\.|document\.)?location\.(pathname|search|hash))(?![\w$])')
 ASIGNACION_JS = re.compile(r'\s*(?:>>>|<<|>>|\*\*|&&|\|\||\?\?|[-+*/%&|^])?=(?!=)')
 ENVOLTORIO_BARRA = {'pathname': 'axwRutaInterna', 'search': 'axwBuscaInterna', 'hash': 'axwHashInterno'}
-BARRA_ENVUELTA = re.compile(r'\(window\.axw(?:RutaInterna|BuscaInterna|HashInterno)\|\|String\)\((?:window\.|document\.)?location\.(?:pathname|search|hash)\)')
+BARRA_ENVUELTA = re.compile(r'\(globalThis\.axw(?:RutaInterna|BuscaInterna|HashInterno)\|\|String\)\((?:window\.|document\.)?location\.(?:pathname|search|hash)\)')
 BARRA_ESCRITA = re.compile(r'(?<![\w$.])(?:window\.|document\.)?location\.(?:search|hash)' + ASIGNACION_JS.pattern)
 BARRA_RESTO = re.compile(r'([\w$]+\s*\.\s*)?location\s*\.\s*(pathname|search|hash)(?![\w$])')
+# Otras formas de leer la barra que la pasada NO envuelve (code-review, 15-oct): hoy no hay ninguna en los paquetes; si aparece, PARA y se decide.
+# new URL(location.href) para tocar la consulta y volver a escribirla con replaceState sí vale (lo traduce el envoltorio de history): lo que
+# para es leer de ahí una ruta o un parámetro del mapa.
+BARRA_OTRAS = re.compile(r'''location\s*\?\.\s*(?:pathname|search|hash)|\bdocument\.URL\b|\blocation\.href\s*\.\s*(?:indexOf|lastIndexOf|match|search|replace|split|slice|substring|startsWith|endsWith|includes)\b'''
+                         r'''|searchParams\.get\(\s*["'](?:sin_permiso|no_access|next)["']|\{\s*(?:pathname|search|hash)\b[^{}]*\}\s*=\s*(?:window\.|document\.)?location\b'''
+                         r'''|new URL\(\s*(?:window\.|document\.)?location(?:\.href)?\s*\)\s*\.\s*pathname''')
 # Lecturas de la barra que se quedan sin envolver, cada una con su porqué (la trampa para con cualquier otra).
 BARRA_LISTA_BLANCA = {
     ('contracts/assets/version.js', 'raiz.location.pathname'): 'pide al servidor la PROPIA página para ver si cambió su versión y la apunta en '
@@ -6088,8 +6094,9 @@ def rutas_idioma_script(idioma_build):
 
 
 def envuelve_lecturas_barra(t):
-    """Cada lectura de location.pathname/search/hash → (window.axwXInterna||String)(location.x): la clave interna con el ayudante, lo de siempre sin
-    él (un documento sin la página alrededor no revienta). Devuelve (texto, envueltas, asignaciones a pathname). Las asignaciones a search o hash se
+    """Cada lectura de location.pathname/search/hash → (globalThis.axwXInterna||String)(location.x): la clave interna con el ayudante, lo de siempre
+    sin él (un documento sin la página alrededor no revienta). globalThis y no window (un worker no tiene window) ni self (mascota.js tiene una
+    variable `self`); sin comillas, por si la lectura va en un atributo onclick="…" (code-review, 15-oct). Devuelve (texto, envueltas, asignaciones a pathname). Las asignaciones a search o hash se
     quedan: navegan (o disparan hashchange) y la página de llegada ya se canoniza."""
     n, malos = [0], []
 
@@ -6099,7 +6106,7 @@ def envuelve_lecturas_barra(t):
                 malos.append(t[max(0, m.start() - 40):m.end() + 20])
             return m.group(0)
         n[0] += 1
-        return '(window.%s||String)(%s)' % (ENVOLTORIO_BARRA[m.group(2)], m.group(1))
+        return '(globalThis.%s||String)(%s)' % (ENVOLTORIO_BARRA[m.group(2)], m.group(1))
     return LECTURA_BARRA.sub(uno, t), n[0], malos
 
 
@@ -6111,6 +6118,8 @@ def trampas_barra(t, donde):
         expr = re.sub(r'\s+', '', m.group(0))
         if (donde, expr) not in BARRA_LISTA_BLANCA:
             malos.append('%s: lectura de la barra sin envolver: …%s…' % (donde, s[max(0, m.start() - 50):m.end() + 20]))
+    for m in BARRA_OTRAS.finditer(s):
+        malos.append('%s: lee la barra por otra vía que la pasada no envuelve: …%s…' % (donde, s[max(0, m.start() - 40):m.end() + 20]))
     if donde not in HREF_LISTA_BLANCA:
         for m in HREF_DECIDE.finditer(HREF_NORMALIZADO.sub('', t)):
             malos.append('%s: lee un href para decidir sin axwRutaInterna: …%s…' % (donde, m.group(0)[:80]))
@@ -6215,10 +6224,12 @@ def alias_htaccess(destino):
                 reglas.append('  RewriteRule ^%s/%s/(.*)$ %s/%s/$1 [L]\n' % (re.escape(en), re.escape(sub_en), clave, sub))
         reglas.append(get + '  RewriteRule ^%s$ /%s/ [R=302,L,QSA]\n' % (re.escape(en), en))
         reglas.append('  RewriteRule ^%s/(.*)$ %s/$1 [L]\n' % (re.escape(en), clave))
+    # el charset SIEMPRE (también sin ninguna carpeta del mapa): el ayudante va en todas las páginas, delante del <meta charset> (code-review, 15-oct)
+    cab = 'AddDefaultCharset UTF-8\n'
     if not reglas:
-        return ''
+        return cab
     return ('# Rutas en el idioma de la instancia: /workshop/x se sirve desde taller/x (sin redirigir: el navegador canoniza la barra).\n'
-            'AddDefaultCharset UTF-8\n<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteBase /\n' + ''.join(reglas) + '</IfModule>\n')
+            + cab + '<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteBase /\n' + ''.join(reglas) + '</IfModule>\n')
 
 
 def instancia(nombre):

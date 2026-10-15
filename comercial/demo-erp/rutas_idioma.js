@@ -58,9 +58,10 @@
     var r = segs.join('/') + c[1];
     return r === p ? p : r;
   }
-  function visible(p) {
+  // la forma inglesa de una ruta (sea cual sea el idioma de rutas): la usan visible() y axwRutaAlias()
+  function aIngles(p) {
     var x = interna(p);
-    if (!EN || typeof x !== 'string' || x.charAt(0) !== '/') return x;
+    if (typeof x !== 'string' || x.charAt(0) !== '/') return x;
     var c = corta(x), segs = c[0].split('/');
     if (!has(R, segs[1])) return x;
     var cl = segs[1];
@@ -68,6 +69,7 @@
     if (segs.length > 2 && has(S, cl) && has(S[cl], segs[2])) segs[2] = S[cl][segs[2]];
     return segs.join('/') + c[1];
   }
+  function visible(p) { return EN ? aIngles(p) : interna(p); }
   function claveRuta(p) {
     var x = interna(typeof p === 'string' ? p : location.pathname);
     return typeof x === 'string' ? (x.split('/')[1] || '') : '';
@@ -116,16 +118,7 @@
   window.axwHashVisible = hashVisible;
   // las formas de una ruta interna que pueden estar pintadas en un href (la interna y la inglesa): para las hojas de apagados_instancia.js
   window.axwRutaAlias = function (p) {
-    var x = interna(p), en = x;
-    if (typeof x === 'string' && x.charAt(0) === '/') {
-      var segs = corta(x)[0].split('/');
-      if (has(R, segs[1])) {
-        var cl = segs[1];
-        segs[1] = R[cl];
-        if (segs.length > 2 && has(S, cl) && has(S[cl], segs[2])) segs[2] = S[cl][segs[2]];
-        en = segs.join('/') + corta(x)[1];
-      }
-    }
+    var x = interna(p), en = aIngles(p);
     return en === x ? [x] : [x, en];
   };
 
@@ -195,20 +188,29 @@
     if (t.charAt(0) === '#' || t.charAt(0) === '?') return v[0] + v[1] + v[2];
     return relativo(t, u, v) || v[0] + v[1] + v[2];
   }
+  // lo ya resuelto para esta página (la base de los relativos es la ruta actual): una lista de mil filas con el mismo enlace, un cálculo
+  var HECHO = {}, HECHO_EN = null, HECHOS = 0;
   function traduce(a) {
     var attr = a.getAttribute('href');
     if (!attr || attr === '#') return;
+    if (HECHO_EN !== location.href || HECHOS > 2000) { HECHO = {}; HECHO_EN = location.href; HECHOS = 0; }
+    if (has(HECHO, attr)) { if (HECHO[attr] !== attr) a.setAttribute('href', HECHO[attr]); return; }
+    HECHO[attr] = calcula(attr);
+    HECHOS++;
+    if (HECHO[attr] !== attr) a.setAttribute('href', HECHO[attr]);
+  }
+  function calcula(attr) {
     var u;
-    try { u = new URL(attr, location.href); } catch (e) { return; }
-    if (u.origin !== location.origin || !/^https?:$/.test(u.protocol)) return;
+    try { u = new URL(attr, location.href); } catch (e) { return attr; }
+    if (u.origin !== location.origin || !/^https?:$/.test(u.protocol)) return attr;
     var v = partes(u);
-    if (v[0] === u.pathname && v[1] === u.search && v[2] === u.hash) return;
+    if (v[0] === u.pathname && v[1] === u.search && v[2] === u.hash) return attr;
     var nuevo = enLaMismaForma(attr, u, v);
     try {
       var w = new URL(nuevo, location.href);
       if (w.pathname !== v[0] || w.search !== v[1] || w.hash !== v[2]) nuevo = v[0] + v[1] + v[2];
     } catch (e) { nuevo = v[0] + v[1] + v[2]; }
-    if (nuevo !== attr) a.setAttribute('href', nuevo);
+    return nuevo;
   }
   var SEL = 'a[href],area[href]';
   function barre(n) {

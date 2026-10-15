@@ -108,7 +108,7 @@ d = dist_juguete(pest)
 ok(not para(build.rutas_idioma_paquete, d, 'en'), 'paquete de juguete con las pestañas de verdad: la pasada no para')
 aj_html = open(os.path.join(d, 'ajustes', 'index.html'), encoding='utf-8').read()
 ok(aj_html.count(build.RUTAS_SCRIPT) == 1 and aj_html.index(build.RUTAS_SCRIPT) < aj_html.index('var t='), 'ayudante delante del primer script de Ajustes')
-ok('var t=(window.axwHashInterno||String)(location.hash);' in aj_html, 'lectura de hash envuelta en el <script> en línea')
+ok('var t=(globalThis.axwHashInterno||String)(location.hash);' in aj_html, 'lectura de hash envuelta en el <script> en línea')
 ok(para(build.rutas_idioma_paquete, d, 'en'), 'una segunda pasada sobre el mismo paquete PARA (el ayudante ya estaba)')
 shutil.rmtree(d)
 d = dist_juguete(pest + ['nueva'])
@@ -121,18 +121,18 @@ shutil.rmtree(d)
 # ── 3. La pasada sobre el código ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 env = build.envuelve_lecturas_barra
 casos = [
-    ('var seg=location.pathname.replace(/x/,"");', 'var seg=(window.axwRutaInterna||String)(location.pathname).replace(/x/,"");'),
-    ('if(window.location.pathname==="/")', 'if((window.axwRutaInterna||String)(window.location.pathname)==="/")'),
-    ('a(document.location.search)', 'a((window.axwBuscaInterna||String)(document.location.search))'),
-    ('if(location.hash!=="#"+n)location.hash=n;', 'if((window.axwHashInterno||String)(location.hash)!=="#"+n)location.hash=n;'),
+    ('var seg=location.pathname.replace(/x/,"");', 'var seg=(globalThis.axwRutaInterna||String)(location.pathname).replace(/x/,"");'),
+    ('if(window.location.pathname==="/")', 'if((globalThis.axwRutaInterna||String)(window.location.pathname)==="/")'),
+    ('a(document.location.search)', 'a((globalThis.axwBuscaInterna||String)(document.location.search))'),
+    ('if(location.hash!=="#"+n)location.hash=n;', 'if((globalThis.axwHashInterno||String)(location.hash)!=="#"+n)location.hash=n;'),
     ('location.search="?hilo="+x', 'location.search="?hilo="+x'),
     ('location.hash = "#a"', 'location.hash = "#a"'),
     ('location.hash+="b"', 'location.hash+="b"'),
     ('raiz.location.pathname+"?lwv="', 'raiz.location.pathname+"?lwv="'),
     ('x.location.hashFoo', 'x.location.hashFoo'),
-    ('new URLSearchParams(location.search).get("sin_permiso")', 'new URLSearchParams((window.axwBuscaInterna||String)(location.search)).get("sin_permiso")'),
-    ('`${location.pathname}`', '`${(window.axwRutaInterna||String)(location.pathname)}`'),
-    ('location.hash<=1||location.hash>=2', '(window.axwHashInterno||String)(location.hash)<=1||(window.axwHashInterno||String)(location.hash)>=2'),
+    ('new URLSearchParams(location.search).get("sin_permiso")', 'new URLSearchParams((globalThis.axwBuscaInterna||String)(location.search)).get("sin_permiso")'),
+    ('`${location.pathname}`', '`${(globalThis.axwRutaInterna||String)(location.pathname)}`'),
+    ('location.hash<=1||location.hash>=2', '(globalThis.axwHashInterno||String)(location.hash)<=1||(globalThis.axwHashInterno||String)(location.hash)>=2'),
 ]
 for antes, despues in casos:
     t, _n, malos = env(antes)
@@ -167,6 +167,11 @@ ok(not tr(env('var a=location.pathname;location.hash="x";')[0], 'x.js'), 'trampa
 ok(not tr('var u=raiz.location.pathname;', 'contracts/assets/version.js') and tr('var u=raiz.location.pathname;', 'assets/otro.js'),
    'trampa: raiz.location.pathname solo en version.js (lista blanca con su motivo)')
 ok(tr("r=new URL(a.getAttribute('href'),location.href).pathname;", 'x.js'), 'trampa: un href leído para decidir sin axwRutaInterna')
+for otra in ('a=location?.pathname', 'a=document.URL', 'location.href.indexOf("/taller/")', 'new URL(location.href).searchParams.get("sin_permiso")',
+             'const {pathname} = window.location', 'new URL(location.href).pathname'):
+    ok(tr(otra, 'x.js'), 'trampa: lectura por otra vía (%s)' % otra)
+ok(not tr('var u2=new URL(location.href);u2.searchParams.set("id",1);history.replaceState(null,"",u2.href)', 'x.js'),
+   'trampa: new URL(location.href) para reescribir la consulta (datos.js) no para')
 ok(not tr("r=interna(new URL(a.getAttribute('href'),location.href).pathname);g.setAttribute('href',p.getAttribute('href'));", 'x.js'),
    'trampa: normalizado con interna() o copiado tal cual, bien')
 apag = open(os.path.join(AQUI, 'apagados_instancia.js'), encoding='utf-8').read()
@@ -226,6 +231,9 @@ for hostil in ('//evil.com', '/workshop//evil.com', '/workshop/%2f%2fevil.com', 
 # contrapruebas del servidor
 H0 = Htaccess(htaccess(con_alias=False))
 ok(H0.resuelve('/workshop/', host=HOST) == ('sirve', '/workshop/'), 'contraprueba: sin el bloque, /workshop/ no llega a taller/ (404)')
+vacio = tempfile.mkdtemp(prefix='rutas_ht0_')
+ok(build.alias_htaccess(vacio) == 'AddDefaultCharset UTF-8\n', 'htaccess: el charset va aunque no haya ninguna carpeta del mapa')
+shutil.rmtree(vacio)
 # el submapa (su RewriteCond, su 302 y su regla interna) movido al final del bloque, detrás de la regla general de settings
 lineas = alias.splitlines(True)
 i_sub = [i for i, x in enumerate(lineas) if '^settings/setup' in x]
