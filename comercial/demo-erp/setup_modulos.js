@@ -853,7 +853,7 @@
 
   // ── El plegado común (S0 de Diseño, 15-oct-2026, owner: «1, 2 o 3 campos a rellenar por paso»). Lo opcional va bajo un <details> nativo: cerrado,
   // filete de 1 px arriba, «Más datos (opcional) +» y debajo un resumen tenue de lo que hay dentro (máximo 2 y «+n más»); abierto, sin resumen. Se abre
-  // solo si dentro hay un error (abre()). Lo plegado no cuenta en el recuento de campos de la parte. o = { padre, marca, rotulo (texto ya traducido;
+  // si dentro hay un error: quien valida a mano lo abre (abre() o det.open = true); un `invalid` nativo también. Lo plegado no cuenta en el recuento. o = { padre, marca, rotulo (texto ya traducido;
   // por defecto «Más datos (opcional)»), resumen() → [textos] } → { det, cuerpo, abre, actualiza }. Un obligatorio sin valor NUNCA va plegado.
   function plegado(o) {
     if (!document.getElementById('axw-plegado-css')) {

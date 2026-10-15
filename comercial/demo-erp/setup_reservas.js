@@ -141,6 +141,7 @@
       sr_dias_antes: '%n días de antelación',
       sr_bot: 'Límites del bot',
       sr_mas_reglas: 'Más reglas',
+      sr_hoy: 'hoy',
       sr_max_tel: 'Reservas sin pagar por teléfono',
       sr_max_act: 'Reservas sin pagar a la vez, en total',
       sr_por_defecto: 'Aún no se ha guardado: si lo dejas así, se usan estos valores.',
@@ -282,7 +283,7 @@
     'Pasado ese tiempo sin pagar, la reserva se libera y la unidad vuelve a estar libre. Solo afecta a las reservas nuevas.': 'After that time without payment, the booking is released and the unit is free again. It only affects new bookings.',
     'Alquiler más corto': 'Shortest rental', 'Alquiler más largo': 'Longest rental', 'Un día menos': 'One day less', 'Un día más': 'One day more', 'Uno menos': 'One less', 'Uno más': 'One more',
     'Se puede reservar con': 'Bookable up to', 'Sin límite': 'No limit', '%n meses de antelación': '%n months ahead', '%n días de antelación': '%n days ahead',
-    'Límites del bot': 'Bot limits', 'Más reglas': 'More rules', 'Reservas sin pagar por teléfono': 'Unpaid bookings per phone', 'Reservas sin pagar a la vez, en total': 'Unpaid bookings at once, in total',
+    'Límites del bot': 'Bot limits', 'Más reglas': 'More rules', 'hoy': 'today', 'Reservas sin pagar por teléfono': 'Unpaid bookings per phone', 'Reservas sin pagar a la vez, en total': 'Unpaid bookings at once, in total',
     'Aún no se ha guardado: si lo dejas así, se usan estos valores.': 'Not saved yet: if you leave it like this, these values are used.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar a las %h se libera.': 'Example: a booking made at 10:00 and still unpaid at %h is released.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar se libera al día siguiente a las %h.': 'Example: a booking made at 10:00 and still unpaid is released the next day at %h.',
@@ -391,7 +392,7 @@
     'Pasado ese tiempo sin pagar, la reserva se libera y la unidad vuelve a estar libre. Solo afecta a las reservas nuevas.': 'Setelah waktu itu lewat tanpa pembayaran, booking dilepas dan unit kembali tersedia. Hanya berlaku untuk booking baru.',
     'Alquiler más corto': 'Sewa terpendek', 'Alquiler más largo': 'Sewa terpanjang', 'Un día menos': 'Kurangi satu hari', 'Un día más': 'Tambah satu hari', 'Uno menos': 'Kurangi satu', 'Uno más': 'Tambah satu',
     'Se puede reservar con': 'Bisa booking paling jauh', 'Sin límite': 'Tanpa batas', '%n meses de antelación': '%n bulan sebelumnya', '%n días de antelación': '%n hari sebelumnya',
-    'Límites del bot': 'Batas bot', 'Más reglas': 'Aturan lain', 'Reservas sin pagar por teléfono': 'Booking belum dibayar per nomor telepon', 'Reservas sin pagar a la vez, en total': 'Total booking belum dibayar sekaligus',
+    'Límites del bot': 'Batas bot', 'Más reglas': 'Aturan lain', 'hoy': 'hari ini', 'Reservas sin pagar por teléfono': 'Booking belum dibayar per nomor telepon', 'Reservas sin pagar a la vez, en total': 'Total booking belum dibayar sekaligus',
     'Aún no se ha guardado: si lo dejas así, se usan estos valores.': 'Belum tersimpan: jika dibiarkan, nilai-nilai ini yang dipakai.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar a las %h se libera.': 'Contoh: booking dibuat pukul 10:00 dan belum dibayar pada pukul %h akan dilepas.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar se libera al día siguiente a las %h.': 'Contoh: booking dibuat pukul 10:00 dan belum dibayar akan dilepas keesokan harinya pukul %h.',
@@ -1028,7 +1029,8 @@
       sel.value = hz == null ? '' : String(hz);
       // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): a la vista las 3 que exige la base; la antelación y los límites del bot, bajo «Más reglas»
       var mas = S.plegado({ padre: zona, marca: 'reglas', rotulo: U('sr_mas_reglas'), resumen: function () {
-        var s1 = sel.options[sel.selectedIndex]; return [U('sr_horizonte') + ': ' + (s1 ? s1.text : '—'), U('sr_bot')]; } });
+        var s1 = sel.options[sel.selectedIndex];
+        return [U('sr_horizonte') + ': ' + (s1 ? s1.text : '—'), U('sr_max_tel') + ': ' + (val(zona, 'max_por_telefono') || '—'), U('sr_max_act') + ': ' + (val(zona, 'max_activos') || '—')]; } });
       mas.cuerpo.appendChild(el('div', { class: 'flex flex-col gap-1.5 min-w-0', 'data-axw-fila': 'horizonte_dias', style: 'max-width:22rem' }, [el('label', { for: sel.id, class: CLS_ETQ, text: U('sr_horizonte') }), sel]));
       var r3 = rejilla(200);
       stepper(r3, 'max_por_telefono', U('sr_max_tel'), efectiva(d, 'max_por_telefono'), RANGOS.max_por_telefono);
@@ -1055,7 +1057,10 @@
       v.bloqueo_minutos = Number(b);
       ['dias_min', 'dias_max', 'max_por_telefono', 'max_activos'].forEach(function (k) {
         var raw = val(z, k), n = Number(raw);
-        if (!/^\d+$/.test(raw) || n < RANGOS[k][0] || n > RANGOS[k][1]) er.push(U(ETQ_REGLA[k]) + ': ' + U('sr_rango', { a: String(RANGOS[k][0]), b: String(RANGOS[k][1]) }));
+        if (!/^\d+$/.test(raw) || n < RANGOS[k][0] || n > RANGOS[k][1]) {
+          er.push(U(ETQ_REGLA[k]) + ': ' + U('sr_rango', { a: String(RANGOS[k][0]), b: String(RANGOS[k][1]) }));
+          var dp = z.querySelector('[data-axw-campo="' + k + '"]'); dp = dp && dp.closest('details[data-axw-plegado]'); if (dp) dp.open = true;   // un error nunca se esconde
+        }
         else v[k] = n;
       });
       if (v.dias_min != null && v.dias_max != null && v.dias_max < v.dias_min) er.push(U('sr_max_menor'));
@@ -1121,10 +1126,15 @@
         sel.appendChild(el('option', { value: '', text: U('elige') }));
         d.unidades.forEach(function (u) { sel.appendChild(el('option', { value: u.id, text: u.identificador + (u.producto ? ' · ' + u.producto : '') })); });
         r.appendChild(el('div', { class: 'flex flex-col gap-1.5 min-w-0' }, [el('label', { for: sid, class: CLS_ETQ, text: U('sr_unidad') }), sel]));
-        campo(r, 'pd_' + n, U('sr_desde'), '', { tipo: 'date', maxv: hoy, min: hoyISO(-366) });
         campo(r, 'ph_' + n, U('sr_hasta'), '', { tipo: 'date', min: hoyISO(1) });
-        campo(r, 'pc_' + n, U('sr_cliente'), '', { max: 120, ph: U('sr_cliente_ph') });
         f.appendChild(r);
+        // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): «desde» es hoy salvo que salió antes, y el cliente es opcional: plegados con su resumen
+        var pl = S.plegado({ padre: f, marca: 'previo-' + n, resumen: function () {
+          var de = val(f, 'pd_' + n), c = val(f, 'pc_' + n); return [U('sr_desde') + ': ' + (de === hoy ? U('sr_hoy') : (de ? diaMes(de) : '—')), c]; } });
+        var r2 = rejilla(150);
+        campo(r2, 'pd_' + n, U('sr_desde'), hoy, { tipo: 'date', maxv: hoy, min: hoyISO(-366) });
+        campo(r2, 'pc_' + n, U('sr_cliente'), '', { max: 120, ph: U('sr_cliente_ph') });
+        pl.cuerpo.appendChild(r2); pl.actualiza();
         var q = el('button', { type: 'button', 'data-axw-sr-accion': 'quitar-fila', class: CLS_BTN2 + ' self-start', style: ALTO, text: U('sr_quitar_fila') });
         q.addEventListener('click', function () { lista.removeChild(f); tiles(); });
         f.appendChild(q);
@@ -1171,12 +1181,12 @@
       z.querySelectorAll('[data-axw-sr-filas="previos"] [data-axw-sr-fila]').forEach(function (fl) {
         var k = fl.getAttribute('data-axw-sr-fila');
         var u = val(fl, 'pu_' + k), de = val(fl, 'pd_' + k), ha = val(fl, 'ph_' + k), c = val(fl, 'pc_' + k);
-        if (!u && !de && !ha && !c) return;   // fila vacía: no cuenta
+        if (!u && !ha && !c && (!de || de === hoy)) return;   // fila vacía: no cuenta («desde» viene puesto a hoy)
         if (!u) { er.push(U('sr_fila_unidad')); return; }
         var uu = d.unidades.filter(function (x) { return x.id === u; })[0], mat = uu ? uu.identificador : u;
         if (usadas[u] != null) { er.push(U('sr_fila_repe', { m: mat })); return; }
         usadas[u] = mat;
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(de) || de > hoy || de < min) er.push(U('sr_fila_desde'));
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(de) || de > hoy || de < min) { er.push(U('sr_fila_desde')); var dp = fl.querySelector('details[data-axw-plegado]'); if (dp) dp.open = true; }   // un error nunca se esconde
         if (!/^\d{4}-\d{2}-\d{2}$/.test(ha) || ha <= hoy) er.push(U('sr_fila_hasta'));
         lista.push({ unidad_id: u, desde: de, hasta: ha, cliente_ref: c || null });
       });

@@ -328,7 +328,16 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S44 vacío: obliga a responder sí o no', (await errorTxt(p)) === 'Elige sí o no.' && llamadas(b, 'reservas_previas_guarda').length === 0);
   await p.check('[data-axw-campo="fuera"][value="si"]'); await p.waitForTimeout(100);
   const u1 = b.productos[0].unidades[0].id;
-  await p.selectOption('[data-axw-campo="pu_0"]', u1); await p.fill('[data-axw-campo="pd_0"]', hoy(-3)); await p.fill('[data-axw-campo="ph_0"]', hoy(0));
+  // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): por fila, la moto y la vuelta a la vista; «desde» = hoy y el cliente, plegados
+  ok('S1 ya alquilado: 3 campos a la vista (¿alguna fuera?, moto, vuelta)', (await visibles(p, '[data-axw-sr="alquileres_previos"]')) === 3, await visLista(p));
+  ok('S1 ya alquilado: «desde» viene puesto a hoy, plegado con el cliente, y el resumen lo dice', (await p.inputValue('[data-axw-campo="pd_0"]')) === hoy(0)
+     && await p.$eval('details[data-axw-plegado="previo-0"]', d => !d.open && !!d.querySelector('[data-axw-campo="pc_0"]') && /hoy/.test(d.querySelector('[data-axw-plegado-resumen]').textContent)));
+  if (SHOT) await (await p.$('[data-axw-sr="alquileres_previos"]')).screenshot({ path: path.join(SHOT, 's1_previos_1440.png') });
+  await p.selectOption('[data-axw-campo="pu_0"]', u1); await p.fill('[data-axw-campo="ph_0"]', hoy(4));
+  await p.click('details[data-axw-plegado="previo-0"] > summary'); await p.fill('[data-axw-campo="pd_0"]', hoy(2)); await p.click('details[data-axw-plegado="previo-0"] > summary');
+  await clic(p, 'enviar');
+  ok('S1 ya alquilado: un «desde» mal puesto abre su plegado (el error no se esconde) y no envía', await p.$eval('details[data-axw-plegado="previo-0"]', d => d.open) && llamadas(b, 'reservas_previas_guarda').length === 0, await errorTxt(p));
+  await p.fill('[data-axw-campo="pd_0"]', hoy(-3)); await p.fill('[data-axw-campo="ph_0"]', hoy(0));
   await clic(p, 'enviar');
   ok('S44 vuelta hoy: lo dice antes de enviar', ((await errorTxt(p)) || '').includes('después de hoy') && llamadas(b, 'reservas_previas_guarda').length === 0);
   await p.fill('[data-axw-campo="ph_0"]', hoy(5)); await p.fill('[data-axw-campo="pc_0"]', 'Ana López'); await p.waitForTimeout(100);
@@ -477,6 +486,7 @@ async function rellenaAlquiler(p, o = {}) {
   ok('S44 retomar: lo apuntado fijo y la pregunta pasa a «alguna otra»', ((await txt(p, '[data-axw-sr="alquileres_previos"]')) || '').includes('¿Hay alguna otra unidad fuera'));
   ok('S44 la unidad de baja no se ofrece', !((await p.$$eval('[data-axw-campo="pu_0"] option', os => os.map(o => o.textContent))).join('|').includes('DK 3333 CC')));
   await p.check('[data-axw-campo="fuera"][value="si"]'); await p.selectOption('[data-axw-campo="pu_0"]', 'u1');
+  await p.click('details[data-axw-plegado="previo-0"] > summary');
   await p.fill('[data-axw-campo="pd_0"]', hoy(-1)); await p.fill('[data-axw-campo="ph_0"]', hoy(3)); await clic(p, 'enviar');
   ok('S44 la misma unidad que ya está fuera: se dice antes de enviar', ((await errorTxt(p)) || '').includes('dos veces') && llamadas(b, 'reservas_previas_guarda').length === 0, await errorTxt(p));
   await p.selectOption('[data-axw-campo="pu_0"]', 'u2');
