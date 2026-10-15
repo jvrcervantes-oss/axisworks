@@ -220,6 +220,25 @@ mira('el tope solo viaja si el dueño lo cambió (null = no cambia)', "p_tope_me
 mira('«Parar» solo con puedo_decidir (la cuenta de pruebas no lo ve)', "if (!d.parado && d.puedo_decidir) acc.appendChild(C.boton(T('Parar'), 'ag-parar'));" in CODIGO)
 mira('nada visible dice «piloto»: se llama AaaS (owner, 13-oct)', not re.search(r"(?<![\w_])[Pp]iloto(?![\w_])|(?<![\w_])[Pp]ilot(?![\w_])", re.sub(r'<!--.*?-->|/\*.*?\*/', '', JS + MARCADO, flags=re.S)))
 
+# -- (3d) panel V2 del AaaS autónomo (15-oct-2026, encargo aaas-equipo)
+mira('V2: lo ganado y lo gastado nunca se suman ni se restan (dos monedas, cada una con la suya de la base)',
+     not re.search(r'ganado[a-z_]*_cent\s*[-+]|[-+]\s*[\w.]*gastado[a-z_]*_cent|gastado[a-z_]*_cent\s*[-+]', CODIGO) and 'din.moneda_gasto' in CODIGO and 'din.moneda_ganado' in CODIGO)
+mira('V2: ganado null se dice («Sin acceso o sin datos»), nunca un 0', "T('Sin acceso o sin datos')" in CODIGO and "g == null ? T('Sin acceso o sin datos') : g" in CODIGO)
+mira('V2: el texto de la IA (que, porque, texto de la cola) entra como texto (h(..., {text: ...}))',
+     "text: typeof r.que === 'string'" in CODIGO and "T('Por qué') + ': ' + r.porque" in CODIGO and "text: typeof c.texto === 'string'" in CODIGO)
+mira('V2: un {ok:false, motivo} no se da por hecho', 'r.data.ok === false' in CODIGO)
+mira('V2: la llave es de solo escritura (el campo solo se vacía, nunca se rellena)',
+     "F('v2-llave').value = '';" in CODIGO and not re.search(r"F\('v2-llave'\)\.value\s*=(?!=)(?!\s*'')", CODIGO))
+mira('V2: «Propone y espera» no entra en esta versión y no hay botón «Deshacer» sin RPC detrás',
+     'data-modo="propone"' not in MARCADO and 'Deshacer' not in re.sub(r'/\*.*?\*/', '', JS + MARCADO, flags=re.S))
+mira('V2: la bola expone window.orbe.pulso, se para con «reducir movimiento» y con la pestaña oculta',
+     'window.orbe = { pulso:' in CODIGO and 'prefers-reduced-motion' in CODIGO and 'document.hidden' in CODIGO and 'prefers-reduced-motion:reduce' in MARCADO)
+mira('V2: el CSS del panel no se sale de .ag2 (nada de :root, body ni etiquetas sueltas)',
+     not re.search(r'(^|\})\s*(:root|body|html|button|header|:focus-visible)\b', MARCADO.split('/* ── Panel V2')[1].split('</style>')[0], flags=re.M))
+mira('V2: sin fuentes de Google (las sirve el propio dominio)', 'fonts.googleapis' not in MARCADO)
+mira('V2: el nombre de un área es un dato (por idioma), nunca pasa por T()', not re.search(r'T\(nombreArea', CODIGO) and 'function nombreArea(a)' in CODIGO)
+mira('V2: la cuenta de pruebas tiene su propio estado al leer (hint cuenta_pruebas)', "err.hint === 'cuenta_pruebas'" in CODIGO)
+
 # -- (4) diccionarios EN e ID: todo texto pintable está en los dos
 bloque = JS[JS.index('var EN_AG = {'):JS.index('var T = typeof window.lwT')]
 tmp = tempfile.mkdtemp()
@@ -232,10 +251,14 @@ def lit(s):
     return s.replace("\\'", "'")
 for mm in re.finditer(r"\bT\('((?:[^'\\]|\\.)*)'\)|\bTf\('((?:[^'\\]|\\.)*)'", CODIGO):
     textos.add(lit(mm.group(1) or mm.group(2)))
-for nombre in ('NOMBRE', 'SIN_DATOS', 'RECUENTO', 'MOTIVO_TARIFA', 'RESULTADO', 'POR_HINT', 'NIVELES', 'CAMPO', 'ACC_ESTADO', 'ACC_MOTIVO', 'ACC_AVISO', 'ACC_RESULTADO'):
+for nombre in ('NOMBRE', 'SIN_DATOS', 'RECUENTO', 'MOTIVO_TARIFA', 'RESULTADO', 'POR_HINT', 'NIVELES', 'CAMPO', 'ACC_ESTADO', 'ACC_MOTIVO', 'ACC_AVISO', 'ACC_RESULTADO',
+               # panel V2 (15-oct-2026)
+               'EST_AG', 'REG_ESTADO', 'REG_MOTIVO', 'ACCION_NOMBRE', 'COLA_ESTADO', 'CANAL', 'PROVEEDOR', 'CON_ESTADO', 'CON_ERROR', 'CON_MOTIVO', 'PALANCA_MOTIVO', 'ALT_MOTIVO'):
     i = CODIGO.index('var ' + nombre + ' = {')
     trozo = CODIGO[i:CODIGO.index('};', i)]
     textos |= {lit(x) for x in re.findall(r":\s*'((?:[^'\\]|\\.)*)'", trozo)}
+# PAPEL (panel V2): nombre, papel, descripción, lo que puede y sus chips, por id de agente. Sus claves van sin comillas: todo literal es texto.
+i = CODIGO.index('var PAPEL = {'); textos |= {lit(x) for x in re.findall(r"'((?:[^'\\]|\\.)*)'", CODIGO[i:CODIGO.index('\n  };', i)])}
 i = CODIGO.index('var PANTALLA = {'); textos |= {lit(x) for x in re.findall(r"\['/[^']+', '((?:[^'\\]|\\.)*)'\]", CODIGO[i:CODIGO.index('};', i)])}
 for mm in re.finditer(r"C\.resumen\(\[(.*?)\]\)", CODIGO):
     textos |= {lit(x) for x in re.findall(r"\['([^'\\]+)',", mm.group(1))}
