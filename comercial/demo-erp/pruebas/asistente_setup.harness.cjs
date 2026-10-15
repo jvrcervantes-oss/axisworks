@@ -407,10 +407,31 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     ok('carril: cada paso enlaza con la URL de siempre', carril.href === '?modulo=facturas&paso=prefijo', String(carril.href));
     ok('«Si lo saltas» de un obligatorio: el módulo no queda listo', ((await txt(p, '[data-axw-salta="obligatorio"] dd')) || '').startsWith('Facturas no queda listo'), await txt(p, '[data-axw-salta="obligatorio"] dd'));
     ok('un obligatorio no ofrece «Saltar este paso»', !(await p.$('[data-axw-accion="saltar"]')));
+    // «Para qué sirve» / «Si lo saltas» DESTACAN (owner vía agencia-c0, 15-oct): arriba de los campos, con icono y título en negrita, y «Si lo
+    // saltas» con fondo de aviso distinto del neutro. Se mide a 1440 aquí y a 390 abajo.
+    const porQue = pg => pg.evaluate(() => {
+      const izq = document.querySelector('[data-axw-as="izq"]'), pq = document.querySelector('[data-axw-as="por-que"]');
+      const campo = [...izq.querySelectorAll('input:not([type=hidden]),select,textarea')].find(e => e.checkVisibility());
+      const bl = ['para', 'salta'].map(k => document.querySelector('[data-axw-why="' + k + '"]'));
+      const r = pq.getBoundingClientRect(), c = campo ? campo.getBoundingClientRect() : null;
+      return { enIzq: !!pq && pq.parentNode === izq && izq.firstElementChild === pq, encima: !!c && r.bottom <= c.top, campoTop: c ? Math.round(c.top) : null,
+               iconos: bl.every(b => b && b.querySelector('dt svg.axw-why-ic')), negrita: bl.every(b => +getComputedStyle(b.querySelector('dt')).fontWeight >= 600),
+               fondos: bl.map(b => getComputedStyle(b).backgroundColor), ladoVacio: document.querySelector('[data-axw-as="lado"]').children.length === 0
+                 ? getComputedStyle(document.querySelector('[data-axw-as="lado"]')).display === 'none' : true,
+               scrollX: document.documentElement.scrollWidth > innerWidth, alto: innerHeight };
+    });
+    const pq1 = await porQue(p);
+    ok('1440: «Para qué sirve» y «Si lo saltas» arriba de los campos (primeros en la columna de lo que se rellena)', pq1.enIzq && pq1.encima, JSON.stringify(pq1));
+    ok('1440: cada bloque con su icono y su título en negrita', pq1.iconos && pq1.negrita, JSON.stringify(pq1));
+    if (DIST) ok('1440 (con la piel): «Si lo saltas» con fondo de aviso, distinto del de «Para qué sirve»', pq1.fondos[0] !== pq1.fondos[1] && pq1.fondos.indexOf('rgba(0, 0, 0, 0)') === -1, JSON.stringify(pq1.fondos));
+    ok('1440: un paso sin nada de lado no deja una columna vacía a la derecha', pq1.ladoVacio, JSON.stringify(pq1));
     ok('«Dejar para luego» arriba, a la vuelta de siempre', (await p.getAttribute('[data-axw-as="salir"]', 'href')) === '/home/' && (await p.$eval('[data-axw-as="salir"]', e => getComputedStyle(e).display !== 'none')));
     await ctx.close();
     ({ p, ctx } = await abre(nav, base('sin_configurar'), { ancho: 390 }));
     ok('390: sin carril (las mesas móviles no lo llevan)', await p.$eval('[data-axw-as="carril"]', e => getComputedStyle(e).display === 'none'));
+    const pq3 = await porQue(p);
+    ok('390: los dos bloques arriba de los campos, sin scroll de lado, y el primer campo a la vista sin desplazar (no lo tapan)',
+       pq3.enIzq && pq3.encima && !pq3.scrollX && pq3.campoTop != null && pq3.campoTop < pq3.alto, JSON.stringify(pq3));
     await ctx.close();
     // un opcional: su consecuencia y «Saltar este paso», que vuelve al cierre del módulo sin llamar a nada que guarde
     const bo = base('sin_configurar');
