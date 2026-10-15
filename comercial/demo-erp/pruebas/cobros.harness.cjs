@@ -151,12 +151,12 @@ window.lwT = function (s, hu) { s = String(s); var d = window.__idioma === 'en' 
   if (d) { if (Object.prototype.hasOwnProperty.call(d, s)) v = d[s]; else if (!/^[\\s0-9.:]*$/.test(s)) window.__sinTrad.push(s); }
   if (hu) for (var k in hu) v = v.split('%' + k).join(hu[k]); return v; };`;
 // /ajustes/ como lo deja build.py: la pestaña Cobros oculta y su panel, y Configurar módulos
-const ajustes = idioma => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}[hidden]{display:none!important}</style><style>${CSS_PIEL}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>
+const ajustes = idioma => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}${CSS_PIEL ? '' : '[hidden]{display:none!important}'}</style><style>${CSS_PIEL}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>
 <nav><button type="button" data-lw-tab="cobros" hidden>Cobros en línea</button></nav>
 <section data-lw-panel="cobros"><div id="lw-aj-cobros"></div></section>
 <section data-lw-panel="puesta"><div id="lw-aj-puesta"><p>…</p></div></section></main>
 <script>${comun(idioma)}</script>${JS.map(j => '<script>' + j + '</script>').join('')}</body></html>`;
-const ajustesReal = idioma => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}[hidden]{display:none!important}</style><style>${CSS_PIEL}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>
+const ajustesReal = idioma => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}${CSS_PIEL ? '' : '[hidden]{display:none!important}'}</style><style>${CSS_PIEL}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>
 <div role="tablist"><button type="button" role="tab" id="lw-tab-empresa" data-lw-tab="empresa" data-lwt>Empresa</button>
 ${TAB_COBROS}<button type="button" role="tab" id="lw-tab-registro" data-lw-tab="registro" data-lwt>Registro de cambios</button></div>
 <section id="lw-panel-empresa" data-lw-panel="empresa"><p>empresa</p></section>

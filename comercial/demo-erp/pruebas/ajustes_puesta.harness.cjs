@@ -57,7 +57,7 @@ function servidor(b, n, a) {
   }
   return err('42883');
 }
-const pagina = idioma => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}[hidden]{display:none!important}</style><style>${CSS_PIEL}</style><style>${FUENTES}${PIEL_VARS}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}">
+const pagina = idioma => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}main{padding:16px}.hidden{display:none}${CSS_PIEL ? '' : '[hidden]{display:none!important}'}</style><style>${CSS_PIEL}</style><style>${FUENTES}${PIEL_VARS}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}">
 <main><section data-lw-panel="puesta"><div id="lw-aj-puesta"><p>…</p></div></section></main>
 <script>
 window.__sinTrad = []; window.__errores = []; window.addEventListener('error', function (e) { window.__errores.push(String(e.message)); });

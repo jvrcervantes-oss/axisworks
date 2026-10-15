@@ -89,6 +89,14 @@ const SUPABASE_FALSO = `(function(){
   let ll = await llamadas(c.p);
   ok('hash: canjea con setSession(access_token, refresh_token) y nada más', ll.length === 1 && ll[0][0] === 'setSession' && ll[0][1].access_token === TOKEN_ACC && ll[0][1].refresh_token === TOKEN_REF);
   ok('hash: sale el formulario y el correo de la sesión en el texto', await visible(c.p, 'form') && (await texto(c.p, 'intro')).includes('ana@cliente.test'));
+  // encargo 1-3 campos (owner 15-oct): lo que Dion rellena al aceptar la invitación, ≤ 3 campos a la vista a 390 y a 1440 (el usuario oculto para el
+  // gestor de contraseñas no cuenta: está fuera de pantalla, sin foco y aria-hidden)
+  for (const ancho of [390, 1440]) {
+    await c.p.setViewportSize({ width: ancho, height: 900 }); await c.p.waitForTimeout(80);
+    const vis = await c.p.evaluate(() => [...document.querySelectorAll('[data-cp=form] input:not([type=hidden]),[data-cp=form] select,[data-cp=form] textarea')]
+      .filter(e => e.checkVisibility({ visibilityProperty: true, contentVisibilityAuto: true }) && e.getAttribute('aria-hidden') !== 'true' && e.tabIndex >= 0).map(e => e.getAttribute('data-cp')));
+    ok('1-3 campos ' + ancho + ': contraseña y repetirla (2 a la vista)', vis.length <= 3 && vis.join() === 'p1,p2', vis.join());
+  }
   ok('hash: la URL queda limpia (sin hash ni query) y sin recarga', c.p.url() === ORIGEN + '/crea-contrasena/' && c.navegaciones.length === 1);
   ok('hash: el token no está en la URL, el DOM, el título ni la consola', await sinRastro(c, [TOKEN_ACC, TOKEN_REF]));
   ok('hash: ninguna petición lleva el token y no hay llamadas a /rest ni a otro origen', c.pedidas.every(u => !u.includes('rest/v1') && !u.includes(TOKEN_ACC)) && c.pedidas.every(u => /erp\.prueba\.test|cdn\.jsdelivr\.net|fonts\./.test(u)));
