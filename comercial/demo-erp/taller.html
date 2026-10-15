@@ -56,6 +56,18 @@
 .tl-rev-estado{font-size:13px;color:rgb(var(--tema-on-surface-variant, 68 72 63));display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .tl-rev-estado[data-mal="1"]{color:rgb(var(--tema-error, 186 26 26));font-weight:600}
 .tl-pie{display:flex;gap:12px}
+/* P1 (bbm-comodidad, 15-oct-2026; owner: «como el asistente de contratos de Lawang»): en el ordenador, a la izquierda, la lista de pasos con ✓
+   (calco de .asi-pasos/.asi-paso de Lawang, sin cargar su hoja); en el móvil solo la línea «Paso X de N». */
+.tl-pasos{display:none}
+@media (min-width:1024px){
+  .tl-con-pasos{display:grid;grid-template-columns:232px minmax(0,640px);gap:24px;justify-content:center;align-items:start}
+  .tl-con-pasos .tl-paso{margin:0}
+  .tl-pasos{display:flex;flex-direction:column;gap:4px;list-style:none;margin:0;padding:12px;border-radius:12px;background:rgb(var(--tema-surface-container-lowest, 255 255 255));position:sticky;top:88px}
+  .tl-pasos li{display:flex;align-items:center;gap:10px;min-height:40px;padding:6px 10px;border-radius:10px;font-size:15px;color:rgb(var(--tema-on-surface-variant, 68 72 63))}
+  .tl-pasos li[aria-current="step"]{background:rgb(var(--tema-surface-container-low, 245 244 238));color:inherit;font-weight:600}
+  .tl-pd{flex:none;width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;border:1px solid rgb(var(--tema-outline-variant, 197 200 188))}
+  .tl-pasos li[data-hecho="1"] .tl-pd{background:rgb(var(--tema-deep-lagoon, 16 76 79));color:rgb(var(--tema-on-primary, 255 255 255));border-color:transparent}
+}
 .tl-pie .axw-boton{min-height:56px;flex:1;font-size:16px;border-radius:12px}
 .tl-estado:empty{display:none}
 .tl-estado{display:flex;flex-direction:column;gap:8px}
@@ -105,6 +117,8 @@
 <section class="tl-vista" data-tl="vista-inicio" aria-label="Taller" data-lwt-aria></section>
 
 <section class="tl-vista axw-oculto" data-tl="vista-paso" data-paso="">
+<div class="tl-con-pasos">
+<ol class="tl-pasos" data-tl="pasos" aria-label="Pasos" data-lwt-aria></ol>
 <div class="tl-paso tl-tarjeta">
 <p class="tl-linea" data-tl="linea"></p>
 <h2 class="tl-titulo" tabindex="-1" data-tl="paso-titulo"></h2>
@@ -113,6 +127,7 @@
 <div class="tl-pie">
 <button class="axw-boton" type="button" data-accion="tl-atras"><span data-lwt>Volver atrás</span></button>
 <button class="axw-boton" type="button" data-accion="tl-siguiente" data-primario="1" data-tl="siguiente"></button>
+</div>
 </div>
 </div>
 </section>
@@ -137,8 +152,10 @@
     'No tienes acceso a Taller.': 'You do not have access to the Workshop.',
     'El módulo de reservas está apagado en esta instancia: no hay taller que mirar. Esto NO quiere decir que no haya nada.': 'The bookings module is off in this instance: there is no workshop to check. This does NOT mean there is nothing.',
     'El taller aún no está listo': 'The workshop is not ready yet', 'Falta:': 'Missing:', 'Avisa a la administración.': 'Tell the administration.',
-    'Falta la lista de revisión de algún modelo con motos.': 'A model with bikes has no checklist yet.', 'Nadie tiene todavía la herramienta Taller.': 'Nobody has the Workshop tool yet.',
-    'Falta un paso de la configuración.': 'A setup step is missing.', 'Abrir Listas por modelo': 'Open Lists by model', 'Ir allí': 'Go there',
+    'Falta la lista de revisión de algún modelo con motos.': 'A model with bikes has no checklist yet.', 'Falta un mecánico: una persona del equipo con la herramienta Taller (un super administrador no cuenta).': 'A mechanic is missing: someone on the team with the Workshop tool (a super administrator does not count).',
+    'Falta un paso de la configuración.': 'A setup step is missing.', 'Abrir Listas por modelo': 'Open Lists by model', 'Ir allí': 'Go there', 'La lista común tiene revisiones desactivadas: actívalas en Listas por modelo.': 'The common list has switched-off checks: switch them on in Lists by model.', 'Paso %a de %b': 'Step %a of %b', 'Pasos': 'Steps',
+    'Usar la lista básica para todos los modelos': 'Use the basic list for every model', 'Invitar a un mecánico': 'Invite a mechanic',
+    'Lista básica puesta para todos los modelos. Puedes cambiarla en Listas por modelo.': 'Basic list set for every model. You can change it in Lists by model.',
     'Orden de la pantalla anterior: ciérrala allí.': 'Order from the previous screen: close it there.',
     'Moto': 'Bike', 'Modelo': 'Model', 'Orden': 'Order', 'Abierta por': 'Opened by', 'Motivo': 'Reason', 'Nota': 'Note',
     'Disponible': 'Available', 'En taller': 'In workshop', 'De baja': 'Retired', 'Otro estado': 'Other status',
@@ -250,8 +267,10 @@
     'No tienes acceso a Taller.': 'Anda tidak punya akses ke Bengkel.',
     'El módulo de reservas está apagado en esta instancia: no hay taller que mirar. Esto NO quiere decir que no haya nada.': 'Modul booking tidak aktif di sistem ini: tidak ada data bengkel yang bisa diperiksa. Ini BUKAN berarti tidak ada apa-apa.',
     'El taller aún no está listo': 'Bengkel belum siap', 'Falta:': 'Yang kurang:', 'Avisa a la administración.': 'Beri tahu admin.',
-    'Falta la lista de revisión de algún modelo con motos.': 'Ada model dengan motor yang belum punya daftar pemeriksaan.', 'Nadie tiene todavía la herramienta Taller.': 'Belum ada pengguna dengan akses Bengkel.',
-    'Falta un paso de la configuración.': 'Ada langkah pengaturan yang belum selesai.', 'Abrir Listas por modelo': 'Buka daftar per model', 'Ir allí': 'Buka',
+    'Falta la lista de revisión de algún modelo con motos.': 'Ada model dengan motor yang belum punya daftar pemeriksaan.', 'Falta un mecánico: una persona del equipo con la herramienta Taller (un super administrador no cuenta).': 'Belum ada mekanik: anggota tim dengan akses Bengkel (super admin tidak dihitung).',
+    'Falta un paso de la configuración.': 'Ada langkah pengaturan yang belum selesai.', 'Abrir Listas por modelo': 'Buka daftar per model', 'Ir allí': 'Buka', 'La lista común tiene revisiones desactivadas: actívalas en Listas por modelo.': 'Daftar umum punya pemeriksaan yang nonaktif: aktifkan di daftar per model.', 'Paso %a de %b': 'Langkah %a dari %b', 'Pasos': 'Langkah',
+    'Usar la lista básica para todos los modelos': 'Pakai daftar dasar untuk semua model', 'Invitar a un mecánico': 'Undang mekanik',
+    'Lista básica puesta para todos los modelos. Puedes cambiarla en Listas por modelo.': 'Daftar dasar sudah dipasang untuk semua model. Bisa diubah di daftar per model.',
     'Orden de la pantalla anterior: ciérrala allí.': 'Order dari layar lama: tutup di sana.',
     'Moto': 'Motor', 'Modelo': 'Model', 'Orden': 'Order', 'Abierta por': 'Dibuka oleh', 'Motivo': 'Alasan', 'Nota': 'Catatan',
     'Disponible': 'Tersedia', 'En taller': 'Di bengkel', 'De baja': 'Dikeluarkan', 'Otro estado': 'Status lain',
@@ -373,7 +392,7 @@
   var RESULTADOS = [['lista', 'Lista para alquilar'], ['espera_recambio', 'Espera recambio'], ['fuera_servicio', 'No puede circular']];
   var REV = [['bien', 'Bien', '✓'], ['atencion', 'Atención', '!'], ['mal', 'Mal', '✕']];
   var ESTADO_MOTO = { disponible: ['Disponible', 'ok'], taller: ['En taller', 'espera'], baja: ['De baja', 'mal'] };
-  var SETUP = { revisiones: 'Falta la lista de revisión de algún modelo con motos.', mecanico: 'Nadie tiene todavía la herramienta Taller.' };
+  var SETUP = { revisiones: 'Falta la lista de revisión de algún modelo con motos.', mecanico: 'Falta un mecánico: una persona del equipo con la herramienta Taller (un super administrador no cuenta).' };
   var PORQUE = { no_existe: 'Esa moto ya no existe.', no_esta_en_taller: 'Ya no está en el taller.', orden_viva: 'Tiene una orden abierta.', no_lista_para_volver: 'Su última orden no la dejó lista.' };
   var FOTO_RANURA = { frente: 'Frente', atras: 'Parte de atrás', izquierda: 'Izquierda', derecha: 'Derecha', cuentakm: 'Cuentakilómetros' };
   // hint de la base → texto (la base habla español: en bbm no se enseña su mensaje). Los de la edge de fotos los traduce _compartido/fotos_guiadas.js.
@@ -522,7 +541,10 @@
       var lis = s.faltan.map(function (p) {
         var li = h('li', { 'data-setup': String(p.clave || '') }, [document.createTextNode(T(SETUP[p.clave] || 'Falta un paso de la configuración.'))]);
         var ruta = seguro(p.donde);
-        if (E.admin && ruta && !/#listas$/.test(ruta)) { li.appendChild(document.createTextNode(' ')); li.appendChild(h('a', { href: ruta, text: T('Ir allí') })); }
+        // P3 (bbm-comodidad, 15-oct-2026: el owner «no puedo hacer ningún parte»): cada falta se resuelve desde aquí, sin buscar otra pantalla.
+        // La lista común vale para todos los modelos (_taller_setup_estado) y taller_lista_basica solo la carga si la común está vacía.
+        if (p.clave === 'revisiones' && E.flota) { li.appendChild(document.createTextNode(' ')); li.appendChild(h('button', { class: 'axw-boton', type: 'button', 'data-accion': 'tl-setup-basica', 'data-primario': '1', text: T('Usar la lista básica para todos los modelos') })); }
+        else if (E.admin && ruta && !/#listas$/.test(ruta)) { li.appendChild(document.createTextNode(' ')); li.appendChild(h('a', { href: ruta, text: T(p.clave === 'mecanico' ? 'Invitar a un mecánico' : 'Ir allí') })); }
         return li;
       });
       var caja = h('div', { class: 'axw-aviso', role: 'alert', 'data-tl': 'setup' }, [h('strong', { text: T('El taller aún no está listo') }), h('p', { text: T('Falta:') }), h('ul', null, lis)]);
@@ -893,7 +915,8 @@
     estadoPaso(null, '');
     var i = PASOS.indexOf(paso);
     var mat = E.orden ? E.orden.moto && E.orden.moto.identificador : (E.moto && E.moto.identificador);
-    $v('linea').textContent = (i >= 0 ? (i + 1) + '/' + PASOS.length + ' · ' : '') + String(mat || '—') + (E.orden ? ' · ' + String(E.orden.orden.numero || '') : '');
+    $v('linea').textContent = (i >= 0 ? T('Paso %a de %b').replace('%a', String(i + 1)).replace('%b', String(PASOS.length)) + ' · ' : '') + String(mat || '—') + (E.orden ? ' · ' + String(E.orden.orden.numero || '') : '');
+    pintaPasos(paso === 'fin' ? PASOS.length : i);
     $v('paso-titulo').textContent = T(TITULO[paso] || 'Moto');
     var cuerpo = $v('paso-cuerpo');
     vacia(cuerpo);
@@ -903,6 +926,14 @@
     traduce(sec);
     try { $v('paso-titulo').focus(); } catch (e) { /* MUDO A PROPOSITO: el foco no es crítico */ }
     window.scrollTo(0, 0);
+  }
+  // P1: la lista de pasos del ordenador (solo se ve a ≥1024 px): hechos con ✓, el actual marcado; no navega (se vuelve con «Volver atrás»)
+  function pintaPasos(i) {
+    var ol = $v('pasos'); if (!ol) return;
+    vacia(ol);
+    PASOS.forEach(function (k, j) {
+      ol.appendChild(h('li', { 'data-hecho': j < i ? '1' : null, 'aria-current': j === i ? 'step' : null }, [h('span', { class: 'tl-pd', 'aria-hidden': 'true', text: j < i ? '✓' : String(j + 1) }), h('span', { text: T(TITULO[k] || k) })]));
+    });
   }
   function atras() {
     if (E.enviando) return;
@@ -1387,6 +1418,19 @@
     if (a === 'tl-tab-taller') { error(''); exito(''); if (!E.enviando) { E.varias = null; ir('inicio', true); } return; }
     if (a === 'tl-tab-listas') { error(''); exito(''); if (!E.enviando && E.flota) ir('listas', true); return; }
     if (a.indexOf('tl-l-') === 0) { accionListas(a, el); return; }
+    if (a === 'tl-setup-basica') {
+      if (E.enviando || !E.flota || !C.ocupa(el)) return;
+      error(''); exito('');
+      llama('taller_lista_basica', {}).then(function (r) {
+        C.libera(el);
+        // la base solo la carga con la lista común VACÍA; si tiene revisiones desactivadas, el aviso dice «falta» y la salida es activarlas en Listas
+        if (r.error && C.clasifica(r.error).hint === 'comun_no_vacia') { error(T('La lista común tiene revisiones desactivadas: actívalas en Listas por modelo.')); ir('listas', true); return; }
+        if (r.error) { error(T('No guardado') + ' · ' + texto(r.error)); return; }
+        exito(T('Lista básica puesta para todos los modelos. Puedes cambiarla en Listas por modelo.'));
+        cargaDatos().then(function (ok) { if (ok && E.paso === 'inicio') pintaInicio(); });   // cargaDatos deja «Cargando…»: repintar como en ir()
+      });
+      return;
+    }
     if (a === 'tl-moto') {
       var m = E.datos && E.datos.motos.filter(function (x) { return x.id === el.getAttribute('data-moto-id'); })[0];
       if (m) { error(''); exito(''); E.moto = m; E.orden = null; E.motivo = null; E.gas = null; E.resultado = null; ir('moto', true); }

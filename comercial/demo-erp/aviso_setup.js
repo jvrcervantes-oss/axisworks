@@ -4,7 +4,9 @@
  *  · Quien configura (la base: `puede_configurar`) y hay algún módulo sin configurar: UNA banda no bloqueante, primer hijo de <main>, no fija
  *    (revisión previa #285, Diseño): «Facturas: sin configurar» o «3 módulos sin configurar: …», un solo botón «Configurar» al asistente del
  *    primer módulo pendiente y «Ahora no», que la esconde durante la sesión (comodidad; vuelve al entrar otra vez).
- *  · Quien no configura no ve banda; solo, en la pantalla de un módulo sin configurar, la nota «aún no está listo», sin detalle.
+ *  · Quien no configura no ve banda; solo, en la pantalla de un módulo sin configurar, la nota «aún no está listo» y QUIÉN lo termina.
+ *  · Nunca un callejón sin salida (owner, 15-oct-2026: «Yo soy superadmin, debería ver el botón»): quien configura y ya pulsó «Ahora no»
+ *    sigue viendo, en la pantalla de un módulo sin configurar, la nota CON el botón «Configurar» a ese módulo.
  *  · En el propio asistente, nada.
  *  · Si no se ha podido mirar, no se pinta nada: el aviso es un extra y no afirma que esté todo listo.
  * La decisión (decide) va separada del pintado para probarla con el doble (aviso_setup.test.js). Todo por textContent; enganche por data-axw-*.
@@ -21,7 +23,10 @@
     var pend = (datos.modulos || []).filter(function (m) { return m.estado === 'sin_configurar'; });
     if (!pend.length) return null;
     if (datos.puede_configurar) {
-      if (oculto) return null;
+      if (oculto) {   // «Ahora no» esconde la banda general, no la salida de la pantalla del módulo que falta
+        if (moduloPagina && pend.some(function (m) { return m.modulo === moduloPagina; })) return { tipo: 'nota', modulo: moduloPagina, destino: RUTA_ASISTENTE + '?modulo=' + encodeURIComponent(moduloPagina) };
+        return null;
+      }
       // el primero al que llevar: un módulo de verdad antes que «base» (el asistente pone delante los pasos pendientes de base, la moneda)
       var primero = pend.filter(function (m) { return m.modulo !== 'base'; })[0] || pend[0];
       return { tipo: 'banda', modulos: pend.map(function (m) { return m.modulo; }), destino: RUTA_ASISTENTE + '?modulo=' + encodeURIComponent(primero.modulo) };
@@ -70,13 +75,16 @@
     cierra.addEventListener('click', function () { ocultaSesion(); if (caja.parentNode) caja.parentNode.removeChild(caja); });
     return caja;
   }
-  // Nota del diseño del owner (S02b): el nombre del módulo, «aún no está listo» y que no hay nada que hacer. Sin botones: quien la ve no configura.
+  // Nota del diseño del owner (S02b): el nombre del módulo y «aún no está listo». Quien no configura lee quién lo termina (sin botones); quien
+  // configura (d.destino) lee que puede terminarlo ya y tiene «Configurar» a ese módulo (owner, 15-oct-2026: nunca un callejón sin salida).
   function nota(S, d) {
-    return h('section', { role: 'status', 'data-axw-aviso': 'nota', class: 'flex flex-col gap-2 rounded-2xl border border-outline-variant bg-surface-container-lowest px-5 py-5' }, [
+    var hijos = [
       h('span', { class: 'font-label-md text-[11px] tracking-[0.14em] uppercase text-outline', text: S.nombreModulo(d.modulo) }),
       h('h2', { class: 'font-headline-sm text-headline-sm text-deep-lagoon', text: S.texto('general', 'nota_titulo') }),
-      h('p', { class: 'font-body-md text-body-md text-on-surface-variant', text: S.texto('general', 'nota_texto') })
-    ]);
+      h('p', { class: 'font-body-md text-body-md text-on-surface-variant', 'data-axw-aviso': 'texto', text: S.texto('general', d.destino ? 'nota_conf' : 'nota_texto') })
+    ];
+    if (d.destino) hijos.push(h('div', null, [h('a', { href: d.destino, 'data-axw-aviso': 'configurar', class: 'inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md axw-btn', style: 'min-height:44px', text: S.texto('general', 'configurar') })]));
+    return h('section', { role: 'status', 'data-axw-aviso': 'nota', class: 'flex flex-col gap-2 rounded-2xl border border-outline-variant bg-surface-container-lowest px-5 py-5' }, hijos);
   }
   function pon(el) {
     var main = document.querySelector('main');

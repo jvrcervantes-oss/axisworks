@@ -19,13 +19,13 @@ try { vm.runInNewContext(src, win); } catch (e) { if (process.env.DEBUG) console
 var validar = win.__T.validar;
 if (typeof validar !== 'function') { console.error('validar no quedó expuesta'); process.exit(1); }
 
-var IDS = ['dev','data','bots','arch','deploy','games','models','pilots','design','marketing','comms','security','quality','legal','admin','docs','org','product','ux','support','lang','costs'];
-var NUEVOS = ['product','ux','support','lang','costs'];  /* los 5 del 14-oct-2026: sin ellos queda el JSON de 17 que se publicaba antes */
+var IDS = ['dev','data','bots','arch','deploy','games','models','pilots','design','marketing','comms','security','quality','legal','admin','docs','org','product','ux','support','lang','costs','db'];
+var NUEVOS = ['product','ux','support','lang','costs','db'];  /* los 5 del 14-oct-2026 y Base de datos del 15-oct: sin ellos queda el JSON de 17 que se publicaba antes */
 var CAT = { dev:'construccion',data:'construccion',bots:'construccion',arch:'construccion',games:'construccion',models:'construccion',pilots:'construccion',design:'diseno',marketing:'captacion',comms:'captacion',docs:'documentacion',legal:'gestion',admin:'gestion',security:'verificacion',quality:'verificacion',deploy:'operacion',org:'operacion',
-  ux:'diseno',lang:'documentacion',product:'gestion',support:'gestion',costs:'gestion' };
+  ux:'diseno',lang:'documentacion',product:'gestion',support:'gestion',costs:'gestion',db:'verificacion' };
 var H = 3600000, gen = Date.UTC(2026, 9, 10, 10), iso = function (t) { return new Date(t).toISOString().slice(0, 19) + 'Z'; };
 function bueno() {
-  return { version: 1, generado: iso(gen), datos_hasta: iso(gen - 2 * H), valido_hasta: iso(gen + 4 * H), retraso_horas: 2, n_departamentos: 22,
+  return { version: 1, generado: iso(gen), datos_hasta: iso(gen - 2 * H), valido_hasta: iso(gen + 4 * H), retraso_horas: 2, n_departamentos: 23,
     departamentos: IDS.map(function (id) { return { id: id, categoria: CAT[id], estado: 'en_reposo' }; }), coordinacion: { estado: 'en_reposo' } };
 }
 var now = gen + H, fallos = 0;
@@ -51,7 +51,7 @@ caso('id desconocido activo sin volumen (podría ser sensible): se acepta', func
 caso('id desconocido con volumen inventado', function (j) { j.departamentos.push({ id: 'nuevo', categoria: 'gestion', estado: 'hoy', volumen: 'enorme' }); j.n_departamentos++; }, 'vol');
 caso('id desconocido con forma rara: se acepta (no se pinta)', function (j) { dep(j, 'dev').id = 'nuevo_2-dep'; }, null);
 caso('id que no es texto', function (j) { dep(j, 'dev').id = 7; }, 'id');
-caso('JSON de 17 con red.js de 22: se acepta', function (j) { j.departamentos = j.departamentos.filter(function (d) { return NUEVOS.indexOf(d.id) < 0; }); j.n_departamentos = 17; }, null);
+caso('JSON de 17 con red.js de 23: se acepta', function (j) { j.departamentos = j.departamentos.filter(function (d) { return NUEVOS.indexOf(d.id) < 0; }); j.n_departamentos = 17; }, null);
 caso('n_departamentos no cuadra con la lista', function (j) { j.n_departamentos = 21; }, 'n');
 caso('id repetido', function (j) { dep(j, 'data').id = 'dev'; }, 'id');
 caso('id desconocido repetido', function (j) { dep(j, 'dev').id = 'nuevo'; dep(j, 'data').id = 'nuevo'; }, 'id');
@@ -73,7 +73,7 @@ function aplicado(nombre, mut, comprueba) {
 aplicado('aplica: id desconocido ignorado', function (j) { dep(j, 'dev').id = 'constructor'; var d = dep(j, 'data'); d.estado = 'hoy'; d.volumen = 'alto'; }, function (RS) {
   if (RS.st !== 'ok') return 'estado ' + RS.st;
   var k = Object.keys(RS.lvl).filter(function (x) { return x !== 'revprev'; });  /* revprev = coordinación, no es departamento */
-  if (k.length !== 21) return 'esperaba 21 con estado y hay ' + k.length;
+  if (k.length !== 22) return 'esperaba 22 con estado y hay ' + k.length;
   if (['frontend', 'undefined', 'constructor'].some(function (x) { return Object.prototype.hasOwnProperty.call(RS.lvl, x); })) return 'el id desconocido dejó rastro';
   return RS.lvl.backend === 2 && RS.vol.backend === 'alto' ? true : 'backend no se aplicó';
 });

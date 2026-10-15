@@ -200,6 +200,12 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
   if (SHOT) await p.screenshot({ path: path.join(SHOT, 'listo_1440.png'), fullPage: true });
   await ctx.close();
 
+  // P5 (Experiencia, 15-oct: «la moneda no enseña cuál se eligió»): el paso hecho e irreversible dice el valor fijado
+  b = base('sin_configurar'); b.d.moneda = 'IDR';
+  ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=base&paso=moneda' }));
+  ok('P5 moneda hecha: «Ahora: IDR» junto a «Hecho», sin campo para cambiarla', (await txt(p, '[data-axw-actual="moneda"]')) === 'Ahora: IDR' && !!(await p.$('[data-axw-hecho]')) && !(await p.$('[data-axw-campo="moneda"]')), await txt(p, '[data-axw-as="tarjeta"]'));
+  await ctx.close();
+
   // 2. La moneda de «base» va delante si falta, sin valor elegido; reservas: el primer sí/no se guarda sin motivo
   b = base('sin_configurar'); b.d.pasos.find(x => x.clave === 'moneda').hecho = false;
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/configurar/?modulo=reservas-producto' }));
