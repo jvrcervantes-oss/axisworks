@@ -64,7 +64,7 @@ const e = JSON.parse(require('fs').readFileSync(0, 'utf8'));
 const EN = { 'Gastos y proveedores': 'Expenses and suppliers', 'Panel de control': 'Control panel', 'esta herramienta': 'this tool',
              'No tienes acceso a «%h».': 'You do not have access to “%h”.' };
 const r = {};
-for (const sin of ['gastos', 'Panel de control', 'zzz_inventada', '<img src=x>']) {
+for (const sin of ['gastos', 'creatividades_ver', 'Panel de control', 'zzz_inventada', '<img src=x>']) {
   const av = { innerHTML: '' };
   const ctx = { URLSearchParams: URLSearchParams, location: { search: '?sin_permiso=' + encodeURIComponent(sin) }, window: {},
     $: function () { return av; },
@@ -83,6 +83,7 @@ if p.returncode == 0:
     r = json.loads(p.stdout.strip().splitlines()[-1])
     ok('«gastos» → su nombre traducido, buscado por la clave', '“Expenses and suppliers”' in r['gastos'], r['gastos'])
     ok('«gastos» → la clave en bruto no sale', '“gastos”' not in r['gastos'], r['gastos'])
+    ok('una herramienta con varias claves (Creatividades: herr es una lista) también sale por su nombre', '“Creatividades”' in r['creatividades_ver'], r['creatividades_ver'])
     ok('un nombre de guard.js («Panel de control») se traduce tal cual', '“Control panel”' in r['Panel de control'], r['Panel de control'])
     ok('una clave que no está en la lista no se enseña: «esta herramienta»', '“this tool”' in r['zzz_inventada'] and 'zzz' not in r['zzz_inventada'],
        r['zzz_inventada'])

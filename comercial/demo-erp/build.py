@@ -5501,7 +5501,7 @@ IDIOMAS_PARCHES = (
     ('intranet/index.html', "  const sin = new URLSearchParams(location.search).get('sin_permiso');\n",
      "  const sin = new URLSearchParams(location.search).get('sin_permiso');\n"
      "  function axwNombreSinPermiso(x){   // por la clave de la herramienta (herr), nunca la clave en bruto\n"
-     "    const h = (typeof HERRAMIENTAS !== 'undefined' ? HERRAMIENTAS : []).find(t => t.herr === x);\n"
+     "    const h = (typeof HERRAMIENTAS !== 'undefined' ? HERRAMIENTAS : []).find(t => [].concat(t.herr).includes(x));   // herr puede ser una lista (Creatividades)\n"
      "    if(h) return lwT(h.nombre);\n"
      "    return /^[a-z0-9_-]+$/.test(x) ? lwT('esta herramienta') : lwT(x);\n"
      "  }\n"),
