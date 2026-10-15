@@ -317,8 +317,9 @@ html main .rs .rs-periodo .axw-boton.axw-boton[aria-pressed="true"]{background:r
     vacia(el);
     if (!r) { oculta(el, true); return; }
     var c = r.error ? C.clasifica(r.error) : null;
-    var texto = c && c.tipo === 'sin_permiso' ? T('Solo la administración ve el Resumen.')
-      : (c && (c.tipo === 'sin_sesion' || c.tipo === 'no_disponible') ? C.mensaje(r.error, true) : T('No se han podido cargar las cifras. No es que estén a cero.'));
+    // «Solo la administración» solo con el hint que pone la propia función; otro 42501 (p. ej. un permiso de tabla) lleva el texto común y su código
+    var texto = r.error && r.error.hint === 'sin_permiso' ? T('Solo la administración ve el Resumen.')
+      : (c && (c.tipo === 'sin_permiso' || c.tipo === 'sin_sesion' || c.tipo === 'no_disponible') ? C.mensaje(r.error, true) : T('No se han podido cargar las cifras. No es que estén a cero.'));
     el.appendChild(h('span', { text: texto }));
     if (!c || (c.tipo !== 'sin_permiso' && c.tipo !== 'sin_sesion')) el.appendChild(C.boton(T('Reintentar'), 'rs-reintentar'));
     var cod = r.error && (r.error.code || r.error.hint) ? String(r.error.code || '') + (r.error.hint ? ' · ' + r.error.hint : '') : '';
