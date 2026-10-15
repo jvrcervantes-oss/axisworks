@@ -415,7 +415,11 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     await p.click('[data-tl="resultados"] [data-accion="tl-moto"]');
     await enPaso(p, 'moto');
     ok('paso 1: URL #m=<moto>&p=moto y foco en el título', (await p.evaluate(() => location.hash)) === '#m=' + U.m1 + '&p=moto' && (await p.evaluate(() => document.activeElement.getAttribute('data-tl'))) === 'paso-titulo');
-    ok('paso 1: línea compacta «1/6 · DK 1234 AB»', (await p.$eval('[data-tl="linea"]', e => e.textContent)) === '1/6 · DK 1234 AB');
+    ok('paso 1: línea «Langkah 1 dari 6 · DK 1234 AB» (P1: como el asistente de contratos)', (await p.$eval('[data-tl="linea"]', e => e.textContent)) === 'Langkah 1 dari 6 · DK 1234 AB');
+    ok('P1: la lista de pasos lleva los 6 pasos, el 1.º marcado como actual y ninguno hecho; a 390 px no se ve',
+       (await p.$$eval('[data-tl="pasos"] li', ls => ls.length)) === 6 && (await p.$$eval('[data-tl="pasos"] li[aria-current="step"]', ls => ls.length)) === 1
+       && (await p.$eval('[data-tl="pasos"] li:first-child', l => l.getAttribute('aria-current'))) === 'step' && !(await p.$('[data-tl="pasos"] li[data-hecho]'))
+       && (await p.$eval('[data-tl="pasos"]', e => getComputedStyle(e).display)) === 'none');
     const pie = await p.evaluate(() => { const b = document.querySelector('.tl-pie'), r = b.getBoundingClientRect(), s = document.querySelector('[data-tl="siguiente"]').getBoundingClientRect(); return { pos: getComputedStyle(b).position, bottom: Math.round(r.bottom), h: innerHeight, bh: s.height }; });
     ok('390 px: barra Atrás/Siguiente fija abajo con botones de 56 px', pie.pos === 'fixed' && pie.bottom === pie.h && pie.bh >= 56, JSON.stringify(pie));
     ok('paso 1: solo lee (ninguna escritura)', B.llamadas.every(x => x[0].endsWith('_datos')));
@@ -629,6 +633,18 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     semillas.forEach(f => { f.estado = 'caducada'; });
     await sinScroll(p, 'paso 4 (390)');
     await shot(p, 'paso4_390_id.png', true);
+    {   // P1 (15-oct): la misma orden en el ordenador — lista de pasos a la izquierda, los 3 primeros con ✓ y «Fotos» como actual
+      const hshP1 = await p.evaluate(() => location.hash);
+      const g = await abre(B, { ancho: 1440, alto: 900, hash: hshP1 });
+      await espera(g.p, () => { const s = document.querySelector('[data-tl="vista-paso"]'); return s && s.getAttribute('data-paso') === 'fotos' && document.querySelectorAll('[data-tl="pasos"] li').length === 6; });
+      const lp = await g.p.evaluate(() => { const ol = document.querySelector('[data-tl="pasos"]'), ls = [...ol.querySelectorAll('li')];
+        return { vis: getComputedStyle(ol).display, hechos: ls.filter(l => l.getAttribute('data-hecho') === '1').length, actual: ls.findIndex(l => l.getAttribute('aria-current') === 'step'),
+                 marcas: ls.map(l => l.querySelector('.tl-pd').textContent).join(''), linea: document.querySelector('[data-tl="linea"]').textContent }; });
+      ok('P1 1440: lista de pasos visible con 3 hechos (✓), «Fotos» actual y la línea «Langkah 4 dari 6»', lp.vis === 'flex' && lp.hechos === 3 && lp.actual === 3 && lp.marcas === '✓✓✓456' && lp.linea.indexOf('Langkah 4 dari 6') === 0, JSON.stringify(lp));
+      await sinScroll(g.p, 'P1 pasos (1440)'); await sinTraducir(g.p, 'P1 pasos 1440 id');
+      await shot(g.p, 'paso4_1440_id.png', true);
+      await g.ctx.close();
+    }
     ctx.__sinRed = true; await ctx.setOffline(true);
     await sig(p); await espera(p, () => /Belum tersimpan/.test(document.querySelector('[data-tl="paso-estado"]').textContent));
     ok('sin red en fotos → Siguiente: no avanza', (await paso(p)) === 'fotos');
@@ -778,6 +794,21 @@ const FICHAS = { mec1: { rol: 'agente', herramientas: ['taller'] }, mec2: { rol:
     ({ p, ctx } = await abre(B, { usuario: 'admin' }));
     ok('setup sin hacer, admin con Flota: botón a «Listas por modelo»; enlace solo para rutas del mismo origen', !!(await p.$('[data-tl="setup"] [data-accion="tl-tab-listas"]'))
        && (await p.$$eval('[data-tl="setup"] a', as => as.map(a => a.getAttribute('href')))).join() === '/usuarios/');
+    // P3 (bbm-comodidad, 15-oct): cada falta se resuelve desde el aviso — la lista básica en un clic y «Invitar a un mecánico»
+    ok('P3: falta de revisiones → «Usar la lista básica para todos los modelos» en su línea; falta de mecánico → «Undang mekanik» a Usuarios',
+       !!(await p.$('[data-tl="setup"] [data-setup="revisiones"] [data-accion="tl-setup-basica"]'))
+       && (await p.$eval('[data-tl="setup"] [data-setup="mecanico"] a', a => a.textContent.trim())) === 'Undang mekanik');
+    const nBasica = llamadas(B, 'taller_lista_basica').length, nDatos = llamadas(B, 'taller_datos').length;
+    B.setup = { listo: true, pasos: [] };   // lo que diría la base tras cargar la lista común (y con mecánico)
+    await p.click('[data-accion="tl-setup-basica"]');
+    await espera(p, () => { const b = document.querySelector('[data-tl="buscar"]'); return !document.querySelector('[data-tl="setup"]') && b && !b.disabled; });
+    ok('P3: el botón llama UNA vez a taller_lista_basica, relee taller_datos y, configurado, se puede empezar (buscar activo)',
+       llamadas(B, 'taller_lista_basica').length === nBasica + 1 && llamadas(B, 'taller_datos').length > nDatos && !(await p.$eval('[data-tl="buscar"]', e => e.disabled))
+       && ((await p.$eval('[data-tl="raiz"]', e => e.textContent)) || '').includes('Daftar dasar sudah dipasang'));
+    await ctx.close();
+    B.setup = { listo: false, pasos: [{ clave: 'revisiones', hecho: false, obligatorio: true, detalle: 'x', donde: '/taller/#listas', fase: 1 }] };
+    ({ p, ctx } = await abre(B));
+    ok('P3: el mecánico (sin Flota) no ve el botón de la lista básica', !(await p.$('[data-accion="tl-setup-basica"]')));
     await ctx.close();
     B.setup = null;
 
