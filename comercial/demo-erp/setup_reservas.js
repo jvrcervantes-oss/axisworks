@@ -140,6 +140,7 @@
       sr_meses_n: '%n meses de antelación',
       sr_dias_antes: '%n días de antelación',
       sr_bot: 'Límites del bot',
+      sr_mas_reglas: 'Más reglas',
       sr_max_tel: 'Reservas sin pagar por teléfono',
       sr_max_act: 'Reservas sin pagar a la vez, en total',
       sr_por_defecto: 'Aún no se ha guardado: si lo dejas así, se usan estos valores.',
@@ -281,7 +282,7 @@
     'Pasado ese tiempo sin pagar, la reserva se libera y la unidad vuelve a estar libre. Solo afecta a las reservas nuevas.': 'After that time without payment, the booking is released and the unit is free again. It only affects new bookings.',
     'Alquiler más corto': 'Shortest rental', 'Alquiler más largo': 'Longest rental', 'Un día menos': 'One day less', 'Un día más': 'One day more', 'Uno menos': 'One less', 'Uno más': 'One more',
     'Se puede reservar con': 'Bookable up to', 'Sin límite': 'No limit', '%n meses de antelación': '%n months ahead', '%n días de antelación': '%n days ahead',
-    'Límites del bot': 'Bot limits', 'Reservas sin pagar por teléfono': 'Unpaid bookings per phone', 'Reservas sin pagar a la vez, en total': 'Unpaid bookings at once, in total',
+    'Límites del bot': 'Bot limits', 'Más reglas': 'More rules', 'Reservas sin pagar por teléfono': 'Unpaid bookings per phone', 'Reservas sin pagar a la vez, en total': 'Unpaid bookings at once, in total',
     'Aún no se ha guardado: si lo dejas así, se usan estos valores.': 'Not saved yet: if you leave it like this, these values are used.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar a las %h se libera.': 'Example: a booking made at 10:00 and still unpaid at %h is released.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar se libera al día siguiente a las %h.': 'Example: a booking made at 10:00 and still unpaid is released the next day at %h.',
@@ -390,7 +391,7 @@
     'Pasado ese tiempo sin pagar, la reserva se libera y la unidad vuelve a estar libre. Solo afecta a las reservas nuevas.': 'Setelah waktu itu lewat tanpa pembayaran, booking dilepas dan unit kembali tersedia. Hanya berlaku untuk booking baru.',
     'Alquiler más corto': 'Sewa terpendek', 'Alquiler más largo': 'Sewa terpanjang', 'Un día menos': 'Kurangi satu hari', 'Un día más': 'Tambah satu hari', 'Uno menos': 'Kurangi satu', 'Uno más': 'Tambah satu',
     'Se puede reservar con': 'Bisa booking paling jauh', 'Sin límite': 'Tanpa batas', '%n meses de antelación': '%n bulan sebelumnya', '%n días de antelación': '%n hari sebelumnya',
-    'Límites del bot': 'Batas bot', 'Reservas sin pagar por teléfono': 'Booking belum dibayar per nomor telepon', 'Reservas sin pagar a la vez, en total': 'Total booking belum dibayar sekaligus',
+    'Límites del bot': 'Batas bot', 'Más reglas': 'Aturan lain', 'Reservas sin pagar por teléfono': 'Booking belum dibayar per nomor telepon', 'Reservas sin pagar a la vez, en total': 'Total booking belum dibayar sekaligus',
     'Aún no se ha guardado: si lo dejas así, se usan estos valores.': 'Belum tersimpan: jika dibiarkan, nilai-nilai ini yang dipakai.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar a las %h se libera.': 'Contoh: booking dibuat pukul 10:00 dan belum dibayar pada pukul %h akan dilepas.',
     'Ejemplo: una reserva hecha a las 10:00 y sin pagar se libera al día siguiente a las %h.': 'Contoh: booking dibuat pukul 10:00 dan belum dibayar akan dilepas keesokan harinya pukul %h.',
@@ -1025,12 +1026,15 @@
         sel.appendChild(el('option', { value: String(o[0]), text: o[0] === '' ? U(o[1]) : (o[1] ? U('sr_meses_n', { n: String(o[1]) }) : U('sr_dias_antes', { n: String(o[0]) })) }));
       });
       sel.value = hz == null ? '' : String(hz);
-      zona.appendChild(el('div', { class: 'flex flex-col gap-1.5 min-w-0', 'data-axw-fila': 'horizonte_dias', style: 'max-width:22rem' }, [el('label', { for: sel.id, class: CLS_ETQ, text: U('sr_horizonte') }), sel]));
-      var det = el('details', { class: 'rounded-xl border border-outline-variant px-4 py-3', 'data-axw-sr-bot': '1' }, [el('summary', { class: CLS_ETQ, style: 'cursor:pointer;min-height:24px', text: U('sr_bot') })]);
-      var r3 = rejilla(200); r3.style.marginTop = '12px';
+      // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): a la vista las 3 que exige la base; la antelación y los límites del bot, bajo «Más reglas»
+      var mas = S.plegado({ padre: zona, marca: 'reglas', rotulo: U('sr_mas_reglas'), resumen: function () {
+        var s1 = sel.options[sel.selectedIndex]; return [U('sr_horizonte') + ': ' + (s1 ? s1.text : '—'), U('sr_bot')]; } });
+      mas.cuerpo.appendChild(el('div', { class: 'flex flex-col gap-1.5 min-w-0', 'data-axw-fila': 'horizonte_dias', style: 'max-width:22rem' }, [el('label', { for: sel.id, class: CLS_ETQ, text: U('sr_horizonte') }), sel]));
+      var r3 = rejilla(200);
       stepper(r3, 'max_por_telefono', U('sr_max_tel'), efectiva(d, 'max_por_telefono'), RANGOS.max_por_telefono);
       campo(r3, 'max_activos', U('sr_max_act'), fmt(efectiva(d, 'max_activos')), { tipo: 'number', modo: 'numeric', min: '1', maxv: '500' });
-      det.appendChild(r3); zona.appendChild(det);
+      mas.cuerpo.appendChild(el('div', { class: 'flex flex-col gap-2', 'data-axw-sr-bot': '1' }, [el('p', { class: CLS_ETQ, text: U('sr_bot') }), r3]));
+      mas.actualiza();
       var ej = el('p', { class: 'rounded-xl bg-surface-container-low px-4 py-3 font-body-sm text-body-sm text-on-surface', 'data-axw-sr-ejemplo': '1' });
       zona.appendChild(ej);
       function refresca() {

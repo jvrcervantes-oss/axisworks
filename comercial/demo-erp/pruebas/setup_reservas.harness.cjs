@@ -7,6 +7,10 @@
 // perdida (se relee, nunca se reenvía sola); el mismo componente en Ajustes; quien no configura; 390/1440 sin scroll horizontal; es/en/id sin español;
 // y que ningún código de la base se queda sin frase. La base real NO se toca: esto prueba la pantalla contra el contrato, no contra Postgres.
 const fs = require('fs');
+const visibles = (p, sel) => p.$eval(sel, z => { const vis = e => e.checkVisibility({ visibilityProperty: true, contentVisibilityAuto: true });   // lo de un <details> cerrado NO se ve (offsetWidth sí lo contaba)
+  const n = new Set(); z.querySelectorAll('input:not([type=hidden]),select,textarea').forEach(e => { if (!vis(e)) return; n.add(e.type === 'radio' ? 'r:' + e.name : e); });
+  window.__vis = [...n].map(x => typeof x === 'string' ? x : (x.getAttribute('data-axw-campo') || x.name || x.type)); return n.size; });
+const visLista = p => p.evaluate(() => (window.__vis || []).join(','));
 const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || 'C:/Users/jvrce/AppData/Roaming/npm/node_modules/@playwright/mcp/node_modules/playwright-core');
 const EXE = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
@@ -437,6 +441,11 @@ async function rellenaAlquiler(p, o = {}) {
   await p.check('[data-axw-campo="bloqueo_minutos"][value="120"]'); await p.waitForTimeout(80);
   ok('S43 el ejemplo sigue al tiempo elegido', ((await txt(p, '[data-axw-sr-ejemplo]')) || '').includes('12:00'), await txt(p, '[data-axw-sr-ejemplo]'));
   await p.click('[data-axw-sr-accion="mas-dias_min"]'); await p.click('[data-axw-sr-accion="mas-dias_min"]');
+  // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): a la vista las 3 reglas que exige la base; antelación y límites del bot bajo «Más reglas»
+  if (SHOT) await (await p.$('[data-axw-sr="reglas_reserva"]')).screenshot({ path: path.join(SHOT, 's1_reglas_1440.png') });
+  ok('S1 reglas: «Más reglas» cerrado con la antelación y los límites del bot dentro', await p.$eval('details[data-axw-plegado="reglas"]', d => !d.open && !!d.querySelector('[data-axw-campo="horizonte_dias"]') && !!d.querySelector('[data-axw-sr-bot]')));
+  ok('S1 reglas: 3 campos a la vista (tiempo sin pagar, alquiler más corto y más largo)', (await visibles(p, '[data-axw-sr="reglas_reserva"]')) === 3, await visLista(p));
+  await p.click('details[data-axw-plegado="reglas"] > summary');
   await p.selectOption('[data-axw-campo="horizonte_dias"]', '180');
   await clic(p, 'enviar'); await p.waitForTimeout(300);
   const rg = llamadas(b, 'reservas_reglas_guarda')[0];

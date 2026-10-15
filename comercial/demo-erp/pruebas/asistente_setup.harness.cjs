@@ -5,6 +5,10 @@
 // moneda de «base» delante cuando falta, el primer valor sin motivo y el cambio con motivo, la máquina de duda (respuesta perdida: guardado y no
 // guardado, sin reenviar), errores por código, quien no configura, función ausente, 390 px sin scroll horizontal, es/en/id sin español. La base real NO se toca.
 const fs = require('fs');
+const visibles = (p, sel) => p.$eval(sel, z => { const vis = e => e.checkVisibility({ visibilityProperty: true, contentVisibilityAuto: true });   // lo de un <details> cerrado NO se ve (offsetWidth sí lo contaba)
+  const n = new Set(); z.querySelectorAll('input:not([type=hidden]),select,textarea').forEach(e => { if (!vis(e)) return; n.add(e.type === 'radio' ? 'r:' + e.name : e); });
+  window.__vis = [...n].map(x => typeof x === 'string' ? x : (x.getAttribute('data-axw-campo') || x.name || x.type)); return n.size; });
+const visLista = p => p.evaluate(() => (window.__vis || []).join(','));
 const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || 'C:/Users/jvrce/AppData/Roaming/npm/node_modules/@playwright/mcp/node_modules/playwright-core');
 const EXE = process.env.CHROMIUM_EXE || 'C:/Users/jvrce/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
@@ -165,6 +169,10 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
      && (await txt(p, '[data-axw-muestra="domicilio"]')) === 'Jl. Raya 1, Denpasar' && (await txt(p, '[data-axw-muestra="npwp"]')) === 'NPWP 01.234.567.8-901.000'
      && (await p.isVisible('[data-axw-muestra="impresa"]')));
   ok('S20: sin prefijo fijado no se inventa un número: dice que sale al fijarlo', (await txt(p, '[data-axw-muestra="numero"]')) === 'El número sale al fijar el prefijo de la numeración.');
+  // S1 (owner 15-oct: «1, 2 o 3 campos por paso»): a la vista razón social, identificación fiscal y domicilio; etiqueta y representante plegados
+  ok('S1 empresa: 3 campos a la vista (razón social, identificación fiscal, domicilio)', (await visibles(p, '[data-axw-as="tarjeta"]')) === 3, await visLista(p));
+  ok('S1 empresa: etiqueta fiscal y representante plegados (cerrado) con el resumen «NPWP»', await p.$eval('details[data-axw-plegado="sociedad"]', d => !d.open && !!d.querySelector('[data-axw-campo="npwp_label"]') && !!d.querySelector('[data-axw-campo="rep"]') && d.querySelector('[data-axw-plegado-resumen]').textContent.includes('NPWP')));
+  await p.click('details[data-axw-plegado="sociedad"] > summary');
   await p.fill('[data-axw-campo="npwp_label"]', 'NIF');
   ok('S20: «15 o 16 cifras» es del NPWP: con otra etiqueta fiscal se esconde', !(await p.isVisible('[data-axw-fila="npwp"] span')));
   await p.fill('[data-axw-campo="npwp_label"]', 'NPWP');
