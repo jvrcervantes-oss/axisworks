@@ -168,7 +168,7 @@ window.lwIdiomaAplicar = function (raiz) { var r = raiz || document; var l = Arr
 const asistente = (idioma, url) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:sans-serif}main{padding:16px}</style><style>${CSS_PIEL}</style></head><body class="${CSS_PIEL ? 'lw-listo bg-background' : ''}"><main>${HTML[0]}</main>
 <script>history.replaceState(null, '', '${url}');${comun(idioma)}</script><script>${JS[0]}</script><script>${JS[1]}</script><script>${JS[2]}</script>${HTML[1]}</body></html>`;
 
-async function abre(nav, b, { idioma = 'es', ancho = 1440, url = '/ajustes/#cobros', tipo = 'ajustes' } = {}) {
+async function abre(nav, b, { idioma = 'es', ancho = 1440, url = '/ajustes/#cobros', tipo = 'ajustes', sinAbrir = false } = {}) {
   const ctx = await nav.newContext({ viewport: { width: ancho, height: 900 } });
   const p = await ctx.newPage();
   p.__consola = [];
@@ -177,6 +177,8 @@ async function abre(nav, b, { idioma = 'es', ancho = 1440, url = '/ajustes/#cobr
   await p.exposeFunction('__srv', async (n, a) => { b.rpc.push(n); if (n === 'modulos_setup_estado') return { data: setupEstado(b), error: null }; if (n === 'ajustes_config_datos') { const f = b.leeFalla && b.leeFalla.length && b.leeFalla.shift(); if (f || (b.leeFallaTrasGuardar && (b.guardados || []).length)) return { data: null, error: { code: typeof f === 'string' ? f : '57014', message: 'x' } }; return { data: b.ajustes ? JSON.parse(JSON.stringify(b.ajustes)) : { valores: {} }, error: null }; } if (n === 'ajustes_config_guardar' && b.guarda) { b.guardados = (b.guardados || []).concat([a]); return b.guarda(a); } return { data: null, error: { code: '42883', message: 'x' } }; });
   await p.exposeFunction('__edge', async (u, c) => (u.endsWith('/functions/v1/ajustes-pagos') ? edge(b, c) : { status: 404, json: null }));
   await p.goto('http://local.test' + url); await p.waitForTimeout(500);
+  // S10: la pestaña enseña el estado y un botón; el componente vive en una ventana. Las pruebas de siempre trabajan con ella abierta
+  if (!sinAbrir && tipo !== 'asistente') { const ab = await p.$('[data-axw-cobros-host="abrir"]'); if (ab && await ab.isVisible()) { await ab.click(); await p.waitForTimeout(200); } }
   return { p, ctx };
 }
 const txt = async (p, sel) => (await p.$(sel)) ? (await p.$eval(sel, e => e.textContent.trim())) : null;
@@ -333,6 +335,24 @@ const C = '[data-axw-cobros-caja]';
     await ctx.close();
   }
 
+  // S10 (owner 15-oct: «si le doy a change… me abra un pop up»): la pestaña enseña el estado y UN botón; el componente va en una ventana cerrada
+  b = base();
+  ({ p, ctx } = await abre(nav, b, { sinAbrir: true }));
+  ok('S10 pestaña: una tarjeta con el estado del paso y el botón «Configurar»', !!(await p.$('[data-axw-cobros-host="resumen"] [data-axw-cobros-host="abrir"]')) && (await txt(p, '[data-axw-cobros-host="abrir"]')) === 'Configurar',
+     await txt(p, '[data-axw-cobros-host="abrir"]'));
+  ok('S10 pestaña: el componente ya está montado y la ventana cerrada (una sola llamada a estado)', !(await p.$('dialog[data-axw-cobros-ventana][open]'))
+     && !!(await p.$('dialog[data-axw-cobros-ventana] [data-axw-campo="creacion"]')) && b.edge.filter(x => x.accion === 'estado').length === 1, JSON.stringify(b.edge.map(x => x.accion)));
+  await p.click('[data-axw-cobros-host="abrir"]'); await p.waitForTimeout(200);
+  ok('S10 pestaña: «Configurar» abre una ventana modal con las claves', await p.$eval('#lw-aj-cobros [data-axw-campo="creacion"]', e => !!e.closest('dialog[open]') && e.closest('dialog').matches(':modal')));
+  await p.fill('#lw-aj-cobros [data-axw-campo="creacion"]', CANARIO_C);
+  await p.keyboard.press('Escape'); await p.waitForTimeout(100); await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+  ok('S10 pestaña: el 2.º Esc cierra, el foco vuelve al botón y la clave sale del campo', !(await p.$('dialog[data-axw-cobros-ventana][open]'))
+     && (await p.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-axw-cobros-host'))) === 'abrir'
+     && (await p.$eval('#lw-aj-cobros [data-axw-campo="creacion"]', i => i.value)) === '');
+  await p.click('[data-axw-cobros-host="abrir"]'); await p.waitForTimeout(200);
+  ok('S10 pestaña: al reabrir, la clave descartada no vuelve (memoria vacía, ni rastro en la página)', (await p.$eval('#lw-aj-cobros [data-axw-campo="creacion"]', i => i.value)) === '' && await sinCanario(p));
+  await ctx.close();
+
   // 10. Configurar módulos: el paso cobros se edita con el MISMO componente
   b = base();
   ({ p, ctx } = await abre(nav, b, { url: '/ajustes/' }));
@@ -346,6 +366,8 @@ const C = '[data-axw-cobros-caja]';
   ok('S10: Esc con algo escrito no lo tira sin avisar', !!(await p.$('dialog[data-pm-ventana="cobros"][open]')) && /sin guardar/.test((await p.$eval('[data-pm-estado="cobros"]', e => e.textContent)) || ''));
   await p.keyboard.press('Escape'); await p.waitForTimeout(100);
   ok('S10: el 2.º Esc descarta y no queda ninguna clave en la página', (await p.$$('input[type="password"]')).length === 0 && !(await p.$('dialog[data-pm-ventana]')));
+  await p.click('[data-pm-fila="cobros"] [data-accion="pm-editar"]'); await p.waitForTimeout(300);
+  ok('S10: al reabrir, la clave descartada no vuelve (sale también de la memoria del componente)', (await p.$eval('[data-pm-fila="cobros"] [data-axw-campo="creacion"]', i => i.value)) === '');
   await ctx.close();
 
   // 11. El asistente: paso opcional «cobros» de reservas-producto, de punta a punta, con el botón del asistente
@@ -412,14 +434,15 @@ const C = '[data-axw-cobros-caja]';
   ok('502 base_no_responde tras guardar: se relee y sale configurada, un solo envío', b.edge.filter(x => x.accion === 'probar_y_guardar').length === 1 && (await p.$$('[data-axw-cobros-puesta="1"]')).length === 3);
   await ctx.close();
 
-  // 14c. dos cajas en /ajustes/ (pestaña y Configurar módulos): guardar desde la pestaña lee SU código aunque la otra se pinte después
+  // 14c. dos cajas en /ajustes/ (pestaña y Configurar módulos). S10: las dos van en ventanas modales y no pueden estar abiertas a la vez; lo que
+  // queda por medir es que la caja de Configurar módulos, pintada y cerrada antes, no estorba: la pestaña pide y guarda con SU código.
   b = base();
-  ({ p, ctx } = await abre(nav, b));
+  ({ p, ctx } = await abre(nav, b, { sinAbrir: true }));
+  await p.click('[data-pm-fila="cobros"] [data-accion="pm-editar"]'); await p.waitForTimeout(400);
+  await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+  await p.click('[data-axw-cobros-host="abrir"]'); await p.waitForTimeout(200);
   await p.fill('#lw-aj-cobros [data-axw-campo="creacion"]', CANARIO_C); await p.fill('#lw-aj-cobros [data-axw-campo="lectura"]', CANARIO_L); await p.fill('#lw-aj-cobros [data-axw-campo="aviso"]', CANARIO_A);
   await p.click('#lw-aj-cobros [data-axw-cobros="pedir"]'); await p.waitForTimeout(300);
-  await p.click('[data-pm-fila="cobros"] [data-accion="pm-editar"]'); await p.waitForTimeout(400);
-  // S10: la caja de Configurar módulos va en una ventana modal que deja el resto inerte: una persona la cierra antes de volver a la pestaña
-  await p.keyboard.press('Escape'); await p.waitForTimeout(100);
   await p.fill('#lw-aj-cobros [data-axw-campo="codigo"]', '123456'); await p.fill('#lw-aj-cobros [data-axw-campo="contrasena"]', 'buena');
   await p.click('[data-axw-cobros-host="guardar"]'); await p.waitForTimeout(600);
   const u14 = b.edge.filter(x => x.accion === 'probar_y_guardar')[0];
@@ -594,11 +617,11 @@ const C = '[data-axw-cobros-caja]';
       return x; };
     const C2 = '[data-axw-comision="bloque"]';
     // sin la clave en editables (la demo): no sale; y el componente de claves sigue igual (ningún input nuevo DENTRO de #lw-aj-cobros)
-    b = conCom({ sinClave: true }); ({ p, ctx } = await abre(nav, b));
+    b = conCom({ sinClave: true }); ({ p, ctx } = await abre(nav, b, { sinAbrir: true, sinAbrir: true }));
     ok('comisión: una base sin cobros_comision_pct en editables no enseña el bloque', !(await p.$(C2 + ':not([hidden])')));
     await ctx.close();
     for (const idioma of ['es', 'en', 'id']) {
-      b = conCom(); ({ p, ctx } = await abre(nav, b, { idioma }));
+      b = conCom(); ({ p, ctx } = await abre(nav, b, { sinAbrir: true, idioma }));
       const v = await p.$eval('[data-axw-comision="pct"]', e => e.value);
       ok(idioma + ': comisión: enseña la cifra de la base (3), fuera de #lw-aj-cobros', v === '3' && !(await p.$('#lw-aj-cobros [data-axw-comision]')));
       // «3,5» con coma (lo normal en id y es) = 3.5, número JSON; sin motivo la base lo rechaza y se dice
@@ -617,7 +640,7 @@ const C = '[data-axw-cobros-caja]';
       await ctx.close();
     }
     // cifras que no valen: no llegan a la base (y la base lo vuelve a mirar igual)
-    b = conCom(); ({ p, ctx } = await abre(nav, b));
+    b = conCom(); ({ p, ctx } = await abre(nav, b, { sinAbrir: true, sinAbrir: true }));
     for (const malo of ['3.555', '11', 'abc', '-1', '1.000', '', '10,5']) {
       await p.fill('[data-axw-comision="pct"]', malo); await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(80);
     }
@@ -629,24 +652,24 @@ const C = '[data-axw-cobros-caja]';
     ok('comisión: un solo bloque aunque el anfitrión vuelva a montar', (await p.$$(C2)).length === 1);
     await ctx.close();
     // sin red: «no sabemos si se guardó»
-    b = conCom({ red: true }); ({ p, ctx } = await abre(nav, b));
+    b = conCom({ red: true }); ({ p, ctx } = await abre(nav, b, { sinAbrir: true, sinAbrir: true }));
     await p.fill('[data-axw-comision="pct"]', '2'); await p.fill('[data-axw-comision="motivo"]', 'prueba'); await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(200);
     ok('comisión: sin respuesta de la base dice que no sabe si se guardó', ((await txt(p, '[data-axw-comision="estado"]')) || '').startsWith('La base no ha respondido'));
     await ctx.close();
     // quien no puede escribir: ve la cifra, sin botón ni motivo
-    b = conCom({ escribe: false }); ({ p, ctx } = await abre(nav, b));
+    b = conCom({ escribe: false }); ({ p, ctx } = await abre(nav, b, { sinAbrir: true, sinAbrir: true }));
     ok('comisión: sin puede_escribir se ve la cifra en solo lectura, sin guardar', await p.$eval('[data-axw-comision="pct"]', e => e.disabled && e.value === '3') && !(await p.$('[data-axw-comision="guardar"]')) && !!(await p.$('[data-axw-comision="solo-lectura"]')));
     await ctx.close();
     // la primera lectura falla: el bloque lo DICE (antes no salía y nadie lo decía; revisor, 1.ª vuelta de erp-front-cobros)
-    b = conCom(); b.leeFalla = [true]; ({ p, ctx } = await abre(nav, b));
+    b = conCom(); b.leeFalla = [true]; ({ p, ctx } = await abre(nav, b, { sinAbrir: true, sinAbrir: true }));
     ok('comisión: si no se puede leer, el bloque sale y dice «recarga la página»', ((await txt(p, '[data-axw-comision="no-leida"]')) || '').includes('recarga la página') && !(await p.$('[data-axw-comision="guardar"]')));
     await ctx.close();
     // quien no es administrador entra por la URL: 42501 no es un fallo que se arregle recargando; el bloque no sale (revisor, 2.ª vuelta, BAJA 3)
-    b = conCom(); b.leeFalla = ['42501']; ({ p, ctx } = await abre(nav, b));
+    b = conCom(); b.leeFalla = ['42501']; ({ p, ctx } = await abre(nav, b, { sinAbrir: true, sinAbrir: true }));
     ok('comisión: 42501 al leer (no administrador): ni bloque ni «recarga la página»', !(await p.$('[data-axw-comision="no-leida"]')) && !(await p.$('[data-axw-comision="bloque"]:not([hidden])')));
     await ctx.close();
     // se guarda y la relectura falla: el bloque se queda y lo dice (antes se escondía y se perdía «Comisión guardada»)
-    b = conCom(); b.leeFallaTrasGuardar = true; ({ p, ctx } = await abre(nav, b));
+    b = conCom(); b.leeFallaTrasGuardar = true; ({ p, ctx } = await abre(nav, b, { sinAbrir: true, sinAbrir: true }));
     await p.fill('[data-axw-comision="pct"]', '2'); await p.fill('[data-axw-comision="motivo"]', 'tarifa nueva'); await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(300);
     ok('comisión: guardada y sin relectura, el bloque sigue y dice «guardada, recarga para verla»', b.ajustes.valores.cobros_comision_pct === 2 && !!(await p.$(C2 + ':not([hidden])'))
        && ((await txt(p, '[data-axw-comision="estado"]')) || '').startsWith('Comisión guardada, pero no se pudo volver a leer'));
@@ -654,7 +677,7 @@ const C = '[data-axw-cobros-caja]';
     ok('comisión: y volver a pulsar con la misma cifra no la manda otra vez', (b.guardados || []).length === 1);
     await ctx.close();
     // primera vez (sin fila): se guarda sin motivo
-    b = conCom({ sinValor: true }); ({ p, ctx } = await abre(nav, b));
+    b = conCom({ sinValor: true }); ({ p, ctx } = await abre(nav, b, { sinAbrir: true, sinAbrir: true }));
     await p.fill('[data-axw-comision="pct"]', '0'); await p.click('[data-axw-comision="guardar"]'); await p.waitForTimeout(300);
     ok('comisión: sin valor previo, «0» se guarda sin motivo', b.ajustes.valores.cobros_comision_pct === 0);
     await ctx.close();
@@ -665,15 +688,15 @@ const C = '[data-axw-cobros-caja]';
     const BB = '[data-axw-bot-backend="bloque"]';
     const BOT0 = COBROS.edge.acciones.estado.respuesta_200.bot_backend;   // dion, falta cobros + usuarios
     // edge de antes de B10: sin la clave, el bloque no sale y no se llama a nada más
-    b = base(); ({ p, ctx } = await abre(nav, b));
+    b = base(); ({ p, ctx } = await abre(nav, b, { sinAbrir: true, sinAbrir: true }));
     ok('bot: edge sin bot_backend = sin bloque', !(await p.$(BB + ':not([hidden])')) && b.edge.every(x => x.accion === 'estado'));
     await ctx.close();
     // el asistente no lo enseña (solo la pestaña)
-    b = base({ bot: BOT0 }); ({ p, ctx } = await abre(nav, b, { tipo: 'asistente', url: '/ajustes/configurar/?modulo=reservas-producto&paso=cobros' }));
+    b = base({ bot: BOT0 }); ({ p, ctx } = await abre(nav, b, { sinAbrir: true, tipo: 'asistente', url: '/ajustes/configurar/?modulo=reservas-producto&paso=cobros' }));
     ok('bot: el paso del asistente no lleva el bloque', !(await p.$(BB)));
     await ctx.close();
     for (const idioma of ['es', 'en', 'id']) for (const ancho of [390, 1440]) {
-      b = base({ bot: BOT0 }); ({ p, ctx } = await abre(nav, b, { idioma, ancho }));
+      b = base({ bot: BOT0 }); ({ p, ctx } = await abre(nav, b, { sinAbrir: true, idioma, ancho }));
       ok('bot ' + idioma + ' ' + ancho + ': el bloque sale con la MISMA llamada estado', !!(await p.$(BB + ':not([hidden])')) && b.edge.filter(x => x.accion === 'estado').length === 1);
       ok('bot ' + idioma + ' ' + ancho + ': ERP apagado y dice qué falta', await p.$eval('[data-axw-bot-backend="valor-erp"]', e => e.disabled) && !!(await p.$('[data-axw-bot-falta="cobros"]')) && !!(await p.$('[data-axw-bot-falta="usuarios"]')));
       ok('bot ' + idioma + ' ' + ancho + ': sin scroll horizontal', (await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho);
@@ -686,14 +709,14 @@ const C = '[data-axw-cobros-caja]';
     }
     // guardado ERP pero va con Dion: el aviso, a 390 en indonesio
     b = base({ bot: Object.assign({}, BOT0, { guardado: 'erp', efectivo: 'dion', falta: ['modulo_no_activo', 'cobros'], ultimo_cambio: { quien: 'owner@balibestmotorcycle.com', cuando: '2026-10-14T10:00:00Z', motivo: '<b>no es marcado</b>' } }) });
-    ({ p, ctx } = await abre(nav, b, { idioma: 'id', ancho: 390 }));
+    ({ p, ctx } = await abre(nav, b, { sinAbrir: true, idioma: 'id', ancho: 390 }));
     ok('bot: «puesto en ERP, va con Dion» con lo que falta', !!(await p.$('[data-axw-bot-backend="aviso"] [data-axw-bot-falta="modulo_no_activo"]')));
     ok('bot: el motivo de otra persona sale como texto', (await txt(p, '[data-axw-bot-backend="ultimo-motivo"]')) === '<b>no es marcado</b>' && !(await p.$(BB + ' b')));
     ok('bot: 390 id con aviso, sin scroll horizontal', (await p.evaluate(() => document.documentElement.scrollWidth)) <= 390);
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'cobros_bot_aviso_id_390.png'), fullPage: true });
     await ctx.close();
     // el recorrido: ERP listo → elegir ERP, motivo, contraseña mala, buena; una petición por intento con los 4 campos; contraseña vacía tras cada uno
-    b = base({ bot: Object.assign({}, BOT0, { puede_erp: true, falta: [] }) }); ({ p, ctx } = await abre(nav, b, { ancho: 390 }));
+    b = base({ bot: Object.assign({}, BOT0, { puede_erp: true, falta: [] }) }); ({ p, ctx } = await abre(nav, b, { sinAbrir: true, ancho: 390 }));
     await p.click('[data-axw-bot-backend="valor-erp"]');
     await p.fill('[data-axw-campo="bot_motivo"]', 'Todo configurado'); await p.fill('[data-axw-campo="bot_contrasena"]', 'mala');
     await p.click('[data-axw-bot-backend="guardar"]'); await p.waitForTimeout(200);
