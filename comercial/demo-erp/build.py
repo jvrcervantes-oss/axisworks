@@ -2498,6 +2498,7 @@ MENU_I18N.update({
     # historiales: lo que firma el sistema o el estudio (verificador de bbm, 15-oct)
     'Sistema': {'en': 'System', 'id': 'Sistem'},
     'Configuración inicial': {'en': 'Initial setup', 'id': 'Konfigurasi awal'},
+    'AxisWorks (soporte)': {'en': 'AxisWorks (support)', 'id': 'AxisWorks (dukungan)'},
     'Cifras principales': {'en': 'Key figures', 'id': 'Angka utama'},
     # verificador de bbm (15-oct): la tarjeta «Asistente» de herramientas.js no tenía su frase en ningún diccionario
     'Pide lo que no puedes hacer tú: cambiar un dato, anular o borrar un documento, borrar una operación. Lo aprueba dirección.': {
@@ -5114,19 +5115,28 @@ COMODIDAD_INSTANCIA = (
 # Gastos sin «Proyecto» con el módulo proyectos apagado y su CSV por T (bbm-cola-2 T1, 15-oct-2026). Mismo formato y misma función que
 # COMODIDAD_INSTANCIA (textos_instancia); tupla aparte porque es de otro encargo (bbm-idiomas). Lawang no pasa por aquí.
 GASTOS_INSTANCIA = (
-    # Ajustes › Registro de cambios (verificador de bbm, 15-oct-2026; agencia-c0: la misma regla que el historial de /entrega/): una fila que no
-    # firma una persona (correo o id de usuario) es del sistema o del estudio y su motivo es interno: «Sistema» y «Configuración inicial».
+    # Ajustes › Registro de cambios (verificador de bbm, 15-oct-2026; agencia-c0: la misma regla que el historial de /entrega/), por marcador
+    # explícito: siembra (vacío, postgres, «migración …», sistema:sql) = «Sistema · Configuración inicial»; @axisworks.studio = «AxisWorks
+    # (soporte)», los dos sin su motivo interno; otro sistema:<rol> = «Sistema» con su motivo; una persona, tal cual.
     ('intranet/v4/assets/ajustes.js', "esc(f.quien) + '</td>' +",
-     "esc(axwDeSistema(f.quien) ? T('Sistema') : f.quien) + '</td>' +", 1),
+     "esc(axwAutor(f.quien) === 'persona' ? f.quien : T(axwAutor(f.quien) === 'soporte' ? 'AxisWorks (soporte)' : 'Sistema')) + '</td>' +", 1),
     ('intranet/v4/assets/ajustes.js', "esc(f.motivo || '—') + '</td></tr>';",
-     "esc(axwDeSistema(f.quien) ? T('Configuración inicial') : (f.motivo || '—')) + '</td></tr>';", 1),
+     "esc(axwAutor(f.quien) === 'inicial' ? T('Configuración inicial') : axwAutor(f.quien) === 'soporte' ? '—' : (f.motivo || '—')) + '</td></tr>';", 1),
     ('intranet/v4/assets/ajustes.js', "    window.lwDatos('ajustes_log_datos', { p_limit: 200 }).then(function (r) {\n",
-     "    function axwDeSistema(q) { q = String(q == null ? '' : q).trim(); return !(q.indexOf('@') > 0 || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q)); }\n"
+     "    function axwAutor(q) { q = String(q == null ? '' : q).trim(); if (!q || q === 'postgres' || /^migraci[oó]n(\\s|$)/i.test(q) || q === 'sistema:sql') return 'inicial';"
+     " if (/@axisworks\\.studio$/i.test(q)) return 'soporte'; return /^sistema:/i.test(q) ? 'sistema' : 'persona'; }\n"
      "    window.lwDatos('ajustes_log_datos', { p_limit: 200 }).then(function (r) {\n", 1),
     # Ajustes › Impuestos (agencia-c0, 15-oct-2026: «art. 20.Uno LIVA» en bbm, una empresa indonesia): el maestro siembra los impuestos de España e
     # Indonesia en toda instancia (20260926170000; en bbm, 090500 desactiva los de España sin borrarlos). No se pintan los de un país en el que no
     # hay ninguna sociedad de la instancia: el país de cada sociedad es el que usa la base al facturar (es_indonesia → ID, si no ES; b1_dinero),
     # y uno atado a una sociedad (sociedad_clave) va con ella. Sin poder leer las sociedades, todo como siempre (la lista no se queda vacía a ciegas).
+    # el editor ofrece solo los países de las sociedades y un impuesto nuevo nace con el primero (revisor de b469bb7: nacía en 'ES' y, con el
+    # filtro de la lista, desaparecía al guardarlo). Uno que se edita conserva su país aunque no sea de ninguna sociedad.
+    ('intranet/v4/assets/editores.js', "        var socs = window.LW_V4.sociedadesImpuesto;\n",
+     "        var socs = window.LW_V4.sociedadesImpuesto;\n"
+     "        var axwP = (socs || []).map(function (s) { return s.es_indonesia === true ? 'ID' : s.es_indonesia === false ? 'ES' : null; })\n"
+     "          .filter(function (pa, i, l) { return pa && l.indexOf(pa) === i; });\n"
+     "        if (axwP.length) { paises = paises.filter(function (pa) { return axwP.indexOf(pa) >= 0 || (!nuevo && pa === x.pais); }); if (nuevo) x.pais = axwP[0]; }\n", 1),
     ('intranet/v4/assets/datos.js', "vig(sb.from('sociedades').select('clave,razon,label,activa').order('orden'))",
      "vig(sb.from('sociedades').select('clave,razon,label,activa,es_indonesia').order('orden'))", 1),
     ('intranet/v4/assets/datos.js', "        var filas = r[0], socs = r[1];\n        if (!filas) return;   // fallo() ya pintó el aviso en la lista\n",

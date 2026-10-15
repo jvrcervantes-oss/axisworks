@@ -3,14 +3,18 @@
 
 Por qué (verificador de bbm en producción, 15-oct-2026; decisiones de agencia-c0):
   1. Los historiales enseñaban en en/id los motivos internos de las filas que firma el sistema o el estudio («Alta: seguimiento apagado, sin
-     plantilla», «Decisión A del owner…», quien «migración …» o postgres). Regla (la de /entrega/, a981013): una fila que no firma una persona
-     (correo, o id de usuario) sale como «Sistema · Configuración inicial» y su motivo no se pinta. Aquí: Seguimiento y la ficha del bot
-     (whatsapp_bot.html) y Ajustes › Registro de cambios (ajustes.js de Lawang, parche de instancia en build.py).
-  2. Ajustes › Impuestos pintaba los impuestos de España («art. 20.Uno LIVA») en una empresa indonesia: el maestro siembra los de los dos países
-     en toda instancia. No se pintan los de un país sin ninguna sociedad de la instancia (país por sociedad = es_indonesia, como la base al facturar).
+     plantilla», «carga inicial 10-oct…», quien «migración …», postgres o una cuenta @axisworks.studio). Regla por MARCADOR EXPLÍCITO, nunca
+     por descarte (medido en la base de bbm: sistema:sql, postgres, «migración …» y cuentas @axisworks.studio):
+       siembra (vacío, postgres, «migración …», sistema:sql) → «Sistema · Configuración inicial», sin motivo;
+       @axisworks.studio → «AxisWorks (soporte)», sin motivo;  otro sistema:<rol> → «Sistema» con su motivo;  una persona, tal cual.
+     Aquí: Seguimiento y la ficha del bot (whatsapp_bot.html) y Ajustes › Registro de cambios (ajustes.js de Lawang, parche de instancia).
+     /entrega/ lo mide test_entrega.py.
+  2. Ajustes › Impuestos pintaba los de España («art. 20.Uno LIVA») en una empresa indonesia: no se pintan los de un país sin ninguna sociedad
+     de la instancia (país por sociedad = es_indonesia, como la base al facturar), y el editor solo ofrece esos países (uno nuevo nace con el
+     primero; antes nacía en 'ES' y, con el filtro, desaparecía al guardarlo).
 
-Cómo: ejecuta en Node los trozos de verdad (las funciones de whatsapp_bot.html; ajustes.js y datos.js de Lawang en el sha fijado con los parches de
-GASTOS_INSTANCIA aplicados). Con --sin-parche (Lawang sin parchear) tiene que salir en rojo. Lawang no cambia.
+Cómo: ejecuta en Node los trozos de verdad (whatsapp_bot.html; ajustes.js, datos.js y editores.js de Lawang en el sha fijado con los parches de
+build.py aplicados). Con --sin-parche (Lawang sin parchear) sale en rojo. Lawang no cambia.
 """
 import ast
 import json
@@ -52,30 +56,36 @@ def node(js):
     return json.loads(p.stdout) if p.returncode == 0 and p.stdout.strip() else {'__error': (p.stderr or '')[-300:]}
 
 
-PERSONAS = ['dion@balibestmotorcycle.com', '0b0f6a9e-1c2d-4e5f-8a9b-0c1d2e3f4a5b']
-SISTEMA = ['migración 20261008138500', 'postgres', 'migracion', '', None]
+# autor → clase esperada (las cuatro clases y sus bordes)
+AUTORES = {'dion@balibestmotorcycle.com': 'persona', '0b0f6a9e-1c2d-4e5f-8a9b-0c1d2e3f4a5b': 'persona', 'Dion': 'persona',
+           'migración 20261008138500': 'inicial', 'migracion': 'inicial', 'postgres': 'inicial', 'sistema:sql': 'inicial', '': 'inicial',
+           'equipo@axisworks.studio': 'soporte', 'sistema:aaas': 'sistema', 'sistema:service_role': 'sistema',
+           'migraciones-fan@x.com': 'persona'}
 
 # ── 1a. whatsapp_bot.html: la ficha del bot y Seguimiento ────────────────────────────────────────────────────────────────────────────────
 wb = open(os.path.join(AQUI, 'whatsapp_bot.html'), encoding='utf-8').read()
-m = re.search(r'\n  function deSistema\(q\) \{.*?\n  function quienMotivo\(it\) \{[^\n]*\n', wb, re.S)
-ok('whatsapp_bot.html: deSistema, quienSe y quienMotivo', bool(m))
+m = re.search(r'\n  function autorDe\(q\) \{.*?\n  function quienMotivo\(it\) \{.*?\n  \}\n', wb, re.S)
+ok('whatsapp_bot.html: autorDe, quienSe y quienMotivo', bool(m))
 if m:
-    r = node("var T = function (s) { return '[' + s + ']'; };" + m.group(0) + ";process.stdout.write(JSON.stringify({"
-             "p: " + json.dumps(PERSONAS) + ".map(function (q) { return quienMotivo({ quien: q, motivo: 'Subo el tope' }); }),"
-             "s: " + json.dumps(SISTEMA) + ".map(function (q) { return quienMotivo({ quien: q, motivo: 'Alta: seguimiento apagado, sin plantilla' }); }),"
-             "v: [quienSe('dion@balibestmotorcycle.com'), quienSe('postgres')] }))")
-    ok('ficha/Seguimiento: una persona sale con su correo y su motivo', r.get('p') == [q + ' · Subo el tope' for q in PERSONAS], repr(r))
-    ok('ficha/Seguimiento: el sistema sale «Sistema · Configuración inicial», sin su motivo', r.get('s') == ['[Sistema] · [Configuración inicial]'] * len(SISTEMA), repr(r))
-    ok('ficha/Seguimiento: «Guardada … · quién» con el mismo criterio', r.get('v') == ['dion@balibestmotorcycle.com', '[Sistema]'], repr(r))
+    r = node("var T = function (s) { return '[' + s + ']'; };" + m.group(0) + ";var A = " + json.dumps(list(AUTORES)) + ";"
+             "process.stdout.write(JSON.stringify({ c: A.map(autorDe).concat([autorDe(null)]),"
+             " m: A.map(function (q) { return quienMotivo({ quien: q, motivo: 'MOTIVO' }); }), v: A.map(quienSe) }))")
+    ok('ficha/Seguimiento: clase de cada autor (por marcador explícito)', r.get('c') == list(AUTORES.values()) + ['inicial'], repr(r.get('c')))
+    quiere = {'persona': lambda q: q + ' · MOTIVO', 'inicial': lambda q: '[Sistema] · [Configuración inicial]', 'soporte': lambda q: '[AxisWorks (soporte)]',
+              'sistema': lambda q: '[Sistema] · MOTIVO'}
+    ok('ficha/Seguimiento: persona con su motivo; siembra y soporte sin motivo; sistema:<rol> con el suyo',
+       r.get('m') == [quiere[c](q) for q, c in AUTORES.items()], repr(r.get('m')))
+    ok('ficha/Seguimiento: «Guardada … · quién» con el mismo criterio',
+       r.get('v') == [q if c == 'persona' else '[AxisWorks (soporte)]' if c == 'soporte' else '[Sistema]' for q, c in AUTORES.items()], repr(r.get('v')))
 for donde in ("$w('historial')", "$w('seg-historial')"):
     i = wb.find(donde)
     ok('whatsapp_bot.html: ' + donde + ' pinta con quienMotivo', i > 0 and 'quienMotivo(it)' in wb[i:i + 900])
-ok('whatsapp_bot.html: ninguna versión pinta it.quien ni it.motivo a pelo', "(it.quien || '') + (it.motivo" not in wb.split('function quienMotivo')[0] + wb.split('function quienMotivo')[1].split('\n', 1)[1])
+ok('whatsapp_bot.html: ninguna versión pinta it.quien con it.motivo a pelo', "(it.quien || '') + (it.motivo" not in wb)
 
 # ── 1b y 2. Lawang con los parches de instancia ─────────────────────────────────────────────────────────────────────────────────────────
 L = lawang()
 src = {}
-for rel in ('intranet/v4/assets/ajustes.js', 'intranet/v4/assets/datos.js'):
+for rel in ('intranet/v4/assets/ajustes.js', 'intranet/v4/assets/datos.js', 'intranet/v4/assets/editores.js'):
     src[rel] = open(os.path.join(L, *rel.split('/')), encoding='utf-8').read()
 if not SIN_PARCHE:
     for rel, viejo, nuevo, veces in tupla_de_build('TEXTOS_INSTANCIA') + tupla_de_build('COMODIDAD_INSTANCIA') + tupla_de_build('GASTOS_INSTANCIA'):
@@ -83,13 +93,14 @@ if not SIN_PARCHE:
             src[rel] = src[rel].replace(viejo, nuevo)
 
 aj = src['intranet/v4/assets/ajustes.js']
-mf = re.search(r"\n    function axwDeSistema\(q\) \{[^\n]*\n", aj)
-ok('Registro de cambios: axwDeSistema en ajustes.js', bool(mf))
+mf = re.search(r"\n    function axwAutor\(q\) \{[^\n]*\n", aj)
+ok('Registro de cambios: axwAutor en ajustes.js', bool(mf))
 if mf:
-    r = node(mf.group(0) + ";process.stdout.write(JSON.stringify(" + json.dumps(PERSONAS + SISTEMA) + ".map(axwDeSistema)))")
-    ok('Registro de cambios: persona = correo o id; sistema = migración, postgres, vacío o null', r == [False] * len(PERSONAS) + [True] * len(SISTEMA), repr(r))
-ok('Registro de cambios: «Quién» y «Motivo» pasan por axwDeSistema', "esc(axwDeSistema(f.quien) ? T('Sistema') : f.quien)" in aj
-   and "esc(axwDeSistema(f.quien) ? T('Configuración inicial') : (f.motivo || '—'))" in aj)
+    r = node(mf.group(0) + ";process.stdout.write(JSON.stringify(" + json.dumps(list(AUTORES)) + ".map(axwAutor).concat([axwAutor(null)])))")
+    ok('Registro de cambios: la misma clase que la ficha del bot para cada autor', r == list(AUTORES.values()) + ['inicial'], repr(r))
+ok('Registro de cambios: «Quién» y «Motivo» pasan por axwAutor (soporte y siembra sin motivo)',
+   "esc(axwAutor(f.quien) === 'persona' ? f.quien : T(axwAutor(f.quien) === 'soporte' ? 'AxisWorks (soporte)' : 'Sistema'))" in aj
+   and "esc(axwAutor(f.quien) === 'inicial' ? T('Configuración inicial') : axwAutor(f.quien) === 'soporte' ? '—' : (f.motivo || '—'))" in aj)
 
 da = src['intranet/v4/assets/datos.js']
 ok('Impuestos: se lee es_indonesia de las sociedades', "select('clave,razon,label,activa,es_indonesia')" in da)
@@ -109,6 +120,18 @@ if a > 0 and b > a:
     ok('Impuestos: uno atado a una sociedad que no existe no sale', corre([{'clave': 'otra', 'es_indonesia': True}]) == [2])
     ok('Impuestos: sin poder leer las sociedades → todos, como siempre', corre(None) == [1, 2, 3, 4])
     ok('Impuestos: sociedades sin país conocido → todos, como siempre', corre([{'clave': 'pt'}]) == [1, 2, 3, 4])
+
+ed = src['intranet/v4/assets/editores.js']
+me = re.search(r"\n        var axwP = .*?\n        if \(axwP\.length\) \{[^\n]*\n", ed, re.S)
+ok('Editor de impuestos: solo los países de las sociedades', bool(me))
+if me:
+    def editor(socs, nuevo, pais):
+        js = ("var paises = ['ES', 'ID'], x = { pais: " + json.dumps(pais) + " }, nuevo = " + json.dumps(nuevo) + ", socs = " + json.dumps(socs) + ";"
+              + me.group(0) + "process.stdout.write(JSON.stringify({ p: paises, x: x.pais }))")
+        return node(js)
+    ok('Editor: en bbm (solo ID) un impuesto nuevo nace en ID y solo se ofrece ID', editor([{'clave': 'pt', 'es_indonesia': True}], True, 'ES') == {'p': ['ID'], 'x': 'ID'})
+    ok('Editor: editar uno de España en bbm conserva su país en la lista', editor([{'clave': 'pt', 'es_indonesia': True}], False, 'ES') == {'p': ['ES', 'ID'], 'x': 'ES'})
+    ok('Editor: sin sociedades legibles, todo como siempre', editor(None, True, 'ES') == {'p': ['ES', 'ID'], 'x': 'ES'})
 
 nombre = 'test_restos_siembra' + (' --sin-parche' if SIN_PARCHE else '')
 print(('OK' if not fallos else 'MAL') + ' %s: %d/%d' % (nombre, total - len(fallos), total))
