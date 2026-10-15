@@ -2490,12 +2490,12 @@ MENU_I18N = {
 
 # bbm-idiomas (15-oct-2026, owner: «/ajustes/ no puede salir en español, ¿tengo que ir ventana a ventana avisándote?»): lo que el barrido de
 # pantallas (pruebas/idiomas_pantallas.harness.cjs, todas las del paquete, todos los módulos) encontró en español y no era una clave del
-# diccionario. Lo pinta traduce_instancia.js (el HTML de Lawang sin data-lwt) o lwT (lo que ya pasaba por él sin clave). Inglés: el término que
+# diccionario. Lo pinta traduce_instancia.js (el HTML de Lawang sin marca de diccionario) o lwT (lo que ya pasaba por él sin clave). Inglés: el término que
 # ya usa el diccionario de Lawang para lo mismo (Reparto → Routing, Escrow); indonesio: glosario_id.json (rekening para la cuenta bancaria,
 # perusahaan, kuitansi, invoice). Traducción automática SIN REVISAR por un hablante nativo (departamentos/idiomas: ISO 18587); la valida el
 # equipo de Dion como el resto del glosario. Lo que ya tenía inglés en Lawang solo recibe aquí su indonesio (una clave EN existente no se pisa).
 MENU_I18N.update({
-    # Cuentas de cobro y reparto (pantalla de Lawang sin data-lwt)
+    # Cuentas de cobro y reparto (pantalla de Lawang sin marca de diccionario)
     'Cuentas de Cobro & Reparto': {'en': 'Payment Accounts & Routing', 'id': 'Rekening Pembayaran & Alokasi'},
     'Las cuentas a las que transfiere el cliente, y qué cuenta puede elegir el agente en cada documento y en cada proyecto.': {
         'en': 'The accounts the client transfers to, and which account the agent can choose on each document and each project.',
@@ -5074,11 +5074,19 @@ COMODIDAD_INSTANCIA = (
     ('intranet/v4/assets/nav.js', '    if (cab && cab.parentNode) cab.parentNode.insertBefore(barra, cab.nextSibling);\n    else main.insertBefore(barra, main.firstChild);',
      '    if (mias.length < 2) { /* una sola pestaña: sin barra */ } else if (cab && cab.parentNode) cab.parentNode.insertBefore(barra, cab.nextSibling);\n'
      '    else main.insertBefore(barra, main.firstChild);', 1),
+    # bbm-comodidad F12: Facturas tenía el botón «Recibos» en la cabecera Y la pestaña «Recibos» justo debajo (la barra del grupo Cobros). Quien
+    # puede abrir Recibos tiene la pestaña; quien no, tampoco podía usar el botón. Se quita el botón.
+    ('intranet/v4/facturas/index.html', '<a class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors shadow-sm font-label-md text-label-md" href="/intranet/v4/recibos/">\n'
+     '<span class="material-symbols-outlined text-[18px] text-stone-sand">payments</span>\n<span class="" data-lwt>Recibos</span>\n</a>\n', '', 1),
+)
+# Gastos sin «Proyecto» con el módulo proyectos apagado y su CSV por T (bbm-cola-2 T1, 15-oct-2026). Mismo formato y misma función que
+# COMODIDAD_INSTANCIA (textos_instancia); tupla aparte porque es de otro encargo (bbm-idiomas). Lawang no pasa por aquí.
+GASTOS_INSTANCIA = (
     # bbm-cola-2 T1 (15-oct-2026, owner por agencia-c0: Gastos «lleva textos de Lawang» en un negocio de alquiler de motos). Con el módulo
     # proyectos APAGADO (dato de la base: axwModuloActivo devuelve false solo entonces; sin saber, todo como siempre):
     #   · el formulario no ofrece «Proyecto» (un gasto ya guardado CON proyecto lo sigue enseñando: no se pierde el dato); sin el campo,
     #     el envío manda proyecto_id null, igual que elegir «General (sin proyecto)»;
-    #   · la celda de la lista lleva data-axw-sin="proyectos" (la regla CSS va en gastos/index.html, OCULTA_POR_MODULO);
+    #   · la columna de la lista se queda (cabecera en el HTML y celda en el JS: ocultar solo una descuadraría la tabla);
     #   · la ficha no enseña «Proyecto: General (sin proyecto)».
     # Y la cabecera del CSV pasa por T (en Lawang era español fijo en toda lengua; en español no cambia).
     ('intranet/v4/assets/panel-gastos.js', "  function camposGasto(g) {\n    g = g || {};\n    var socs = sociedades();\n    return [\n",
@@ -5086,17 +5094,11 @@ COMODIDAD_INSTANCIA = (
      "    var sinProy = !g.proyecto_id && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false;\n    return [\n", 1),
     ('intranet/v4/assets/panel-gastos.js', "      { k: 'notas', label: T('Notas'), tipo: 'textarea', valor: g.notas || '' }\n    ];\n",
      "      { k: 'notas', label: T('Notas'), tipo: 'textarea', valor: g.notas || '' }\n    ].filter(function (c) { return !(sinProy && c.k === 'proyecto_id'); });\n", 1),
-    ('intranet/v4/assets/panel-gastos.js', "'<td class=\"px-5 py-3 font-body-sm text-body-sm\">' + esc(proy) + '</td>' +",
-     "'<td class=\"px-5 py-3 font-body-sm text-body-sm\" data-axw-sin=\"proyectos\">' + esc(proy) + '</td>' +", 1),
     ('intranet/v4/assets/panel-gastos.js', "H.dato(T('Proyecto'), proy) +",
      "(!g.proyecto_id && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false ? '' : H.dato(T('Proyecto'), proy)) +", 1),
     ('intranet/v4/assets/panel-gastos.js', "    var filas = [['Fecha', 'Sociedad', 'Proyecto', 'Proveedor', 'Categoría', 'Concepto', 'Nº factura', 'Base', 'Impuesto', 'Total', 'Retención PPh', 'Tipo PPh', 'Retención ingresada', 'Moneda', 'Estado', 'Vence', 'Pagado el', 'Cuenta de pago', 'Motivo anulación']]\n",
      "    var filas = [['Fecha', 'Sociedad', 'Proyecto', 'Proveedor', 'Categoría', 'Concepto', 'Nº factura', 'Base', 'Impuesto', 'Total', 'Retención PPh', 'Tipo PPh', 'Retención ingresada', 'Moneda', 'Estado', 'Vence', 'Pagado el', 'Cuenta de pago', 'Motivo anulación'].map(T)]\n", 1),
     ('intranet/v4/assets/panel-gastos.js', "proyPorId[g.proyecto_id].nombre : 'General',", "proyPorId[g.proyecto_id].nombre : T('General'),", 1),
-    # bbm-comodidad F12: Facturas tenía el botón «Recibos» en la cabecera Y la pestaña «Recibos» justo debajo (la barra del grupo Cobros). Quien
-    # puede abrir Recibos tiene la pestaña; quien no, tampoco podía usar el botón. Se quita el botón.
-    ('intranet/v4/facturas/index.html', '<a class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors shadow-sm font-label-md text-label-md" href="/intranet/v4/recibos/">\n'
-     '<span class="material-symbols-outlined text-[18px] text-stone-sand">payments</span>\n<span class="" data-lwt>Recibos</span>\n</a>\n', '', 1),
 )
 # Solo en las instancias de alquileres (portada «reservas»): el ejemplo del campo y la pestaña «Reservas» de Ajustes, que en ellas solo lleva los impuestos
 TEXTOS_ALQUILER = (
@@ -5142,10 +5144,6 @@ OCULTA_POR_MODULO = (
      '<li data-axw-sin="proyectos" data-lwt>La compra de suelo es inversión, no gasto de explotación: Finanzas la enseña aparte. Nunca se paga un gasto desde una cuenta de escrow.</li>'),
     ('intranet/v4/gastos/index.html', '<select id="lw-gas-f-proyecto" class="',
      '<select id="lw-gas-f-proyecto" data-axw-sin="proyectos" class="'),
-    # bbm-cola-2 T1 (15-oct-2026, owner por agencia-c0: Gastos «lleva textos de Lawang»): la columna «Proyecto» de la lista; su celda la pinta
-    # panel-gastos.js con la misma marca (COMODIDAD_INSTANCIA), y la regla CSS de esta página la cubre
-    ('intranet/v4/gastos/index.html', '<th class="px-5 py-3 font-label-md text-[11px] uppercase tracking-wider text-outline" data-lwt>Proyecto</th>',
-     '<th class="px-5 py-3 font-label-md text-[11px] uppercase tracking-wider text-outline" data-axw-sin="proyectos" data-lwt>Proyecto</th>'),
 )
 # El editor de factura de una instancia SIN el módulo contratos y cuya empresa permite facturar sin contrato nace en el modo «sin contrato» que ya
 # existe (el cliente se elige en el editor) y no enseña el selector de contrato, que solo podía ofrecer «— sin contrato —». Mismo camino que pulsar
@@ -5328,7 +5326,7 @@ def oculta_por_modulo():
 def textos_instancia(nombre):
     """Los textos de inmobiliaria de las pantallas comunes, cambiados en la copia de la instancia (ver TEXTOS_INSTANCIA). Cada trozo tiene que
     aparecer EXACTAMENTE las veces dichas: si Lawang lo cambia, el build para en vez de dejar medio cambio."""
-    for rel_, viejo, nuevo, veces in TEXTOS_INSTANCIA + COMODIDAD_INSTANCIA + (TEXTOS_ALQUILER if portada_de(nombre) == 'reservas' else TEXTOS_OTRA):
+    for rel_, viejo, nuevo, veces in TEXTOS_INSTANCIA + COMODIDAD_INSTANCIA + GASTOS_INSTANCIA + (TEXTOS_ALQUILER if portada_de(nombre) == 'reservas' else TEXTOS_OTRA):
         ruta = os.path.join(DIST, *rel_.split('/'))
         t = open(ruta, encoding='utf-8').read()
         if t.count(viejo) != veces:
@@ -5783,6 +5781,11 @@ def comprueba_pantallas_idiomas(dist, idiomas):
     lenguas = [x for x in (idiomas or []) if x != 'es']
     if not lenguas:
         return
+    # Solo test_builds_instancias.py (el gate de push, que mide que la instancia CONSTRUYE y no puede depender de Chromium; mismo criterio que
+    # test_crea_contrasena --sin-navegador en tools/test.py) lo apaga, y lo dice. Publicar una instancia corre el build entero, con el barrido.
+    if os.environ.get('AXW_IDIOMAS_SIN_NAVEGADOR') == '1':
+        print('idiomas: barrido de pantallas SIN MIRAR (AXW_IDIOMAS_SIN_NAVEGADOR=1, solo el gate): no vale como verde para publicar')
+        return
     # la agencia de ESTE build (erp/modulos.json: todos los módulos encendidos, también desde un worktree) y el informe entero si se pide
     entorno = dict(os.environ, LENGUAS=','.join(lenguas), AXW_AGENCIA_RAIZ=AGENCIA,
                    PARALELO=os.environ.get('PARALELO', '4'))
@@ -5834,7 +5837,7 @@ def instancia(nombre):
         idiomas_instancia(idiomas, pantalla)   # + el idioma de pantalla por defecto (el del registro; también el de la puerta sin sesión)
         documento_idiomas(idiomas)   # BBM-65 (13-oct): el papel de factura/recibí y su correo en el par de la instancia (id·en en bbm)
     menu_i18n()   # rótulos del menú en en/id en todas las páginas (después del núcleo del indonesio)
-    traduce_instancia_js()   # bbm-idiomas (15-oct): el HTML de Lawang sin data-lwt, en el idioma de la instancia (después de MENU_I18N)
+    traduce_instancia_js()   # bbm-idiomas (15-oct): el HTML de Lawang sin marca de diccionario, en el idioma de la instancia (después de MENU_I18N)
     if not _PRIV or not REEMPLAZOS_PUBLICO:
         aborta('falta private/demo_publico.json: sin él quedarían nombres de Lawang en el ERP de la instancia')
     host_sb = url[len('https://'):]

@@ -73,6 +73,18 @@ try:
     mira('salida 1 (hay español): el build PARA', para(lambda: build.comprueba_pantallas_idiomas('dist', ['id', 'en'])))
     build.subprocess.run = corre_con(2)
     mira('salida 2 (no ha podido mirar): el build PARA también', para(lambda: build.comprueba_pantallas_idiomas('dist', ['id', 'en'])))
+    llamadas.clear()
+    build.subprocess.run = corre_con(1)
+    os.environ['AXW_IDIOMAS_SIN_NAVEGADOR'] = '1'
+    try:
+        mira('AXW_IDIOMAS_SIN_NAVEGADOR=1 (solo el gate): no lanza el arnés', not para(lambda: build.comprueba_pantallas_idiomas('dist', ['id', 'en']))
+             and not llamadas)
+    finally:
+        del os.environ['AXW_IDIOMAS_SIN_NAVEGADOR']
+    src = open(os.path.join(AQUI, 'test_builds_instancias.py'), encoding='utf-8').read()
+    mira('el único que lo apaga es test_builds_instancias.py', "AXW_IDIOMAS_SIN_NAVEGADOR='1'" in src
+         and "AXW_IDIOMAS_SIN_NAVEGADOR" not in open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read().replace(
+             "os.environ.get('AXW_IDIOMAS_SIN_NAVEGADOR') == '1'", '').replace('(AXW_IDIOMAS_SIN_NAVEGADOR=1, solo el gate)', ''))
 finally:
     build.subprocess.run = real
 

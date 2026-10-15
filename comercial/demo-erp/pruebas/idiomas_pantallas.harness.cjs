@@ -19,7 +19,15 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require(process.env.PLAYWRIGHT_CORE || 'playwright-core');
+// navegador y playwright-core: los dice tools/navegador.cjs de la agencia (PLAYWRIGHT_CORE → node_modules → el de @playwright/mcp global). Sin
+// ellos el arnés NO ha podido mirar: sale 2, que el build trata como rojo (nunca como «nada en español»).
+const AGENCIA = process.env.AXW_AGENCIA_RAIZ || path.join(__dirname, '..', '..', '..', '..', '..');
+let NAV;
+try { NAV = require(path.join(AGENCIA, 'tools', 'navegador.cjs')); }
+catch (e) { console.log('NO SE HA PODIDO MIRAR: sin tools/navegador.cjs de la agencia (AXW_AGENCIA_RAIZ): ' + e.message); process.exit(2); }
+let chromium;
+try { chromium = NAV.playwrightCore().chromium; }
+catch (e) { console.log('NO SE HA PODIDO MIRAR: ' + e.message); process.exit(2); }
 const RAIZ = path.resolve(process.argv[2] || '');
 const INFORME = process.argv[3] || process.env.AXW_IDIOMAS_INFORME;   // desde el build: el informe entero aunque el build pare
 const ORIGEN = 'https://erp.prueba.test';
@@ -175,8 +183,7 @@ async function mira(ctx, pant, errores) {
 (async () => {
   if (!fs.existsSync(path.join(RAIZ, 'home', 'index.html'))) { console.log('NO SE HA PODIDO MIRAR: falta home/index.html en ' + RAIZ); process.exit(2); }
   let exe = process.env.CHROMIUM_EXE;
-  // el navegador lo dice tools/navegador.cjs de la agencia (AXW_AGENCIA_RAIZ en una copia fuera de su árbol; si no, la del clon de AxisWorks)
-  try { if (!exe) exe = require(path.join(process.env.AXW_AGENCIA_RAIZ || path.join(__dirname, '..', '..', '..', '..', '..'), 'tools', 'navegador.cjs')).usa(); } catch (e) { /* MUDO A PROPOSITO: sin la agencia, el Chromium de Playwright */ }
+  try { if (!exe) exe = NAV.usa(); } catch (e) { /* MUDO A PROPOSITO: sin navegador del sistema, el Chromium de Playwright; si tampoco está, launch lo dice y sale 2 */ }
   const nav = await chromium.launch({ executablePath: exe && fs.existsSync(exe) ? exe : undefined });
   const informe = {};
   const errores = [];
