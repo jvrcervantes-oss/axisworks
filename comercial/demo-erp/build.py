@@ -5331,6 +5331,47 @@ def moneda_documento():
         open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, viejo, nuevo, 'moneda del documento ' + rel_))
 
 
+# Gastos en la moneda de la instancia (calidad-gastos, 15-oct-2026; lo vio Experiencia en bbm y Calidad lo midió: bbm tiene 0 gastos y moneda IDR
+# en Ajustes, y las cifras de arriba decían «0 EUR» porque panel-gastos.js de Lawang cae a ['EUR'] sin gastos). Sin gastos, las cifras salen en la
+# moneda de Ajustes (lwMonedaBase() de guard.js); sin moneda decidida, «—», nunca «0 EUR», y se repintan cuando llega la capa de módulos
+# (AXW_MODULOS_LISTOS, la misma espera que conMonedaBase de datos.js, que vive dentro de su IIFE y aquí no se alcanza). El alta de un gasto nace en
+# esa moneda y la ofrece aunque no esté en la lista de Lawang; sin moneda decidida nace en «— elige —» y es obligatoria (orquestador agencia-c0,
+# 15-oct: ningún EUR por defecto a fuego). Se lee la base EN EJECUCIÓN (config_instancia.moneda vía modulos_activos_datos): el paquete no
+# guarda ninguna moneda. El servidor tampoco la supone: gasto_guarda (migración de calidad-gastos) usa la de Ajustes o da error.
+# Con gastos, la suma por moneda de siempre. Toda instancia; Lawang no pasa por aquí (allí EUR es su moneda). Parte de BBM-64.
+# Prueba: test_moneda_gastos.py (aplica esto al Lawang fijado y ejecuta pintaKpis/camposGasto/payloadDe en Node; sin el parche, rojo).
+MONEDA_GASTOS_PARCHES = (
+    ('intranet/v4/assets/panel-gastos.js', "  var MONEDAS = [['EUR', 'EUR'], ['IDR', 'IDR'], ['USD', 'USD']];\n",
+     "  var MONEDAS = [['EUR', 'EUR'], ['IDR', 'IDR'], ['USD', 'USD']];\n"
+     "  /* AxisWorks (calidad-gastos, 15-oct-2026): la moneda de los gastos es la de Ajustes (lwMonedaBase), no 'EUR' escrito a mano. */\n"
+     "  function axwMonedaGastos() { var m = typeof window.lwMonedaBase === 'function' ? window.lwMonedaBase() : null; return /^[A-Z]{3}$/.test(m || '') ? m : null; }\n"
+     "  function axwMonedasGastos() { var m = axwMonedaGastos(); if (!m) return [['', T('— elige —')]].concat(MONEDAS); return MONEDAS.some(function (x) { return x[0] === m; }) ? MONEDAS : [[m, m]].concat(MONEDAS); }\n"
+     "  var axwMonedaGastosEsperada = false;\n"
+     "  function axwTrasMonedaGastos(fn) {\n"
+     "    var p = window.AXW_MODULOS_LISTOS;\n"
+     "    if (axwMonedaGastosEsperada || !p || typeof p.then !== 'function') return;\n"
+     "    axwMonedaGastosEsperada = true;\n"
+     "    p.then(function () { if (axwMonedaGastos()) fn(); }, function () { /* MUDO A PROPOSITO: sin la capa de módulos la moneda no se sabe y las cifras siguen en «—» */ });\n"
+     "  }\n"),
+    ('intranet/v4/assets/panel-gastos.js',
+     "    var monedas = Object.keys(calc); if (!monedas.length) monedas = ['EUR'];\n"
+     "    var linea = function (k) { return monedas.map(function (m) { return fmt((calc[m] || {})[k] || 0, m); }).join(' · '); };\n",
+     "    var monedas = Object.keys(calc); if (!monedas.length) { var mbG = axwMonedaGastos(); monedas = mbG ? [mbG] : []; if (!mbG) axwTrasMonedaGastos(pintaKpis); }\n"
+     "    var linea = function (k) { return monedas.length ? monedas.map(function (m) { return fmt((calc[m] || {})[k] || 0, m); }).join(' · ') : '—'; };\n"),
+    ('intranet/v4/assets/panel-gastos.js', "tipo: 'select', medio: 1, valor: g.moneda || 'EUR', opciones: MONEDAS }",
+     "tipo: 'select', req: true, medio: 1, valor: g.moneda || axwMonedaGastos() || '', opciones: axwMonedasGastos() }"),
+    ('intranet/v4/assets/panel-gastos.js', "moneda: v.moneda || 'EUR', fecha: v.fecha,",
+     "moneda: v.moneda || axwMonedaGastos() || null, fecha: v.fecha,"),
+)
+
+
+def moneda_gastos():
+    for rel_, viejo, nuevo in MONEDA_GASTOS_PARCHES:
+        ruta = os.path.join(DIST, *rel_.split('/'))
+        t = open(ruta, encoding='utf-8').read()
+        open(ruta, 'w', encoding='utf-8', newline='').write(_una_vez(t, viejo, nuevo, 'moneda de los gastos ' + rel_))
+
+
 DOC_TIPO_REAL_JS ="(vals.rectifica_numero && vals.tipo !== 'proforma' && vals.tipo !== 'recibi' ? 'rectificativa' : vals.tipo)"
 
 
@@ -5467,6 +5508,7 @@ def instancia(nombre):
         portada_reservas()
         extras_pantalla()   # erp-front 14-oct-2026: /productos/ = «Extras y servicios»; las motos solo en Flota
     moneda_documento()   # 13-oct (bbm-p36): factura y recibí nuevos en la moneda de la instancia, no en EUR
+    moneda_gastos()   # 15-oct (calidad-gastos): Gastos en la moneda de la instancia; sin gastos, «0 EUR» era mentira en bbm (IDR)
     idiomas = idiomas_de(nombre)
     pantalla = idioma_pantalla_de(nombre, idiomas)   # bbm-p42: SIEMPRE, también sin `idiomas` (un idioma_pantalla sin lista aborta, no se ignora: revisor)
     global AVISO_IDIOMAS
