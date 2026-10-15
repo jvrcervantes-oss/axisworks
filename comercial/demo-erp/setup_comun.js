@@ -185,7 +185,7 @@
       plantilla_contrato: ['Plantilla de contrato activa', 'El texto con el que se generan los contratos. Una plantilla activada ya no se edita: se crea una versión nueva.'],
       carta_reserva: ['Carta de reserva', 'Qué tipo de contrato es la carta de reserva: vence y libera la unidad sola.'],
       condicion_comision: ['Comisión estándar', 'Sin condición estándar no se calcula ninguna comisión.'],
-      facturable: ['Qué vas a facturar', 'Crea al menos un producto o servicio con precio para poder facturar.'],   // paso opcional de Facturación (erp-setup-2, 14-oct)
+      facturable: ['Qué vas a facturar', 'Para facturar hace falta algo con precio: un producto o servicio, o, si alquilas, un modelo con su tarifa en Flota y tarifas.'],   // paso opcional de Facturación (erp-setup-2, 14-oct)
       // N5 (aaas-2, 14-oct): los tres pasos del AaaS, en su ventana (/agente/). Mientras falte uno, el AaaS está encendido pero no trabaja
       tope_aaas: ['Tope mensual del AaaS', 'Lo máximo que el AaaS puede gastar en un mes. Con 0 no gasta nada.'],
       contexto_aaas: ['Quién es el negocio', 'Unas líneas sobre el negocio para que el AaaS sepa con quién trabaja.'],
@@ -199,10 +199,10 @@
     },
     campo: {
       categoria: 'una categoría', cuenta_propia: 'una cuenta propia', cuenta_cobro: 'una cuenta de cobro', proyecto: 'un proyecto', tipo_vivienda: 'un tipo de unidad',
-      unidad: 'una unidad', producto: 'un producto o servicio con precio', fase: 'una fase de obra', plantilla: 'una plantilla activa', tipo_carta: 'el tipo de la carta de reserva', condicion: 'una condición de comisión',
+      unidad: 'una unidad', producto: 'algo con precio que facturar', fase: 'una fase de obra', plantilla: 'una plantilla activa', tipo_carta: 'el tipo de la carta de reserva', condicion: 'una condición de comisión',
       tope_aaas: 'el tope mensual del AaaS', contexto_aaas: 'quién es el negocio', limites_aaas: 'los límites por módulo'   // N5 (aaas-2)
     },
-    consecuencia: { cuenta_cobro: 'Es opcional: sin ella, las facturas salen sin datos de pago.', facturable: 'Es opcional para terminar la configuración, pero sin ningún producto o servicio con precio no podrás facturar.' },
+    consecuencia: { cuenta_cobro: 'Es opcional: sin ella, las facturas salen sin datos de pago.', facturable: 'Es opcional para terminar la configuración, pero sin nada con precio no podrás facturar.' },
     hint: {
       nombre_repetido: 'Ya hay una categoría con ese nombre.',
       nombre_no_valido: 'El nombre va de 1 a 80 caracteres y no empieza por = + - @.',
@@ -245,8 +245,8 @@
     'Cuenta bancaria propia': 'Your own bank account', 'La cuenta (no escrow) contra la que se importan los extractos del banco.': 'The (non-escrow) account bank statements are imported against.',
     'Cuenta de cobro': 'Payment account', 'La cuenta que sale en facturas, proformas y contratos para que te paguen.': 'The account shown on invoices, proformas and contracts so you get paid.',
     'Primer proyecto': 'First project', 'Las unidades a la venta cuelgan de un proyecto.': 'Units for sale belong to a project.',
-    'Qué vas a facturar': 'What you invoice', 'Crea al menos un producto o servicio con precio para poder facturar.': 'Create at least one product or service with a price to start invoicing.',
-    'un producto o servicio con precio': 'a product or service with a price',
+    'Qué vas a facturar': 'What you invoice', 'Para facturar hace falta algo con precio: un producto o servicio, o, si alquilas, un modelo con su tarifa en Flota y tarifas.': 'To invoice you need something with a price: a product or service or, if you rent, a model with its rate in Fleet and rates.',
+    'algo con precio que facturar': 'something with a price to invoice',
     'Tipos de unidad': 'Unit types', 'Cada unidad es de un tipo (por ejemplo, parcela o villa).': 'Each unit has a type (for example, plot or villa).',
     'Unidades a la venta': 'Units for sale', 'Lo que se reserva, se contrata y se factura.': 'What gets reserved, contracted and invoiced.',
     'Fases de obra': 'Construction stages', 'Las fases de la construcción y qué pago dispara cada una.': 'The construction stages and which payment each one triggers.',
@@ -262,7 +262,7 @@
     'un tipo de unidad': 'a unit type', 'una unidad': 'a unit', 'una fase de obra': 'a construction stage', 'una plantilla activa': 'an active template',
     'el tipo de la carta de reserva': 'the reservation letter type', 'una condición de comisión': 'a commission condition',
     'Es opcional: sin ella, las facturas salen sin datos de pago.': 'Optional: without it, invoices go out without payment details.',
-    'Es opcional para terminar la configuración, pero sin ningún producto o servicio con precio no podrás facturar.': 'Optional to finish the setup, but without any product or service with a price you will not be able to invoice.',
+    'Es opcional para terminar la configuración, pero sin nada con precio no podrás facturar.': 'Optional to finish the setup, but without anything with a price you will not be able to invoice.',
     'Ya hay una categoría con ese nombre.': 'There is already a category with that name.', 'Elige uno de los grupos de la lista.': 'Choose one of the groups in the list.',
     'Ya hay gastos en esta categoría: su grupo no se cambia.': 'This category already has expenses: its group can\'t change.', 'El orden no es válido.': 'The order is not valid.',
     'Este módulo aún no se puede encender: le falta su configuración.': 'This module can\'t be turned on yet: its setup isn\'t defined.',
@@ -287,8 +287,8 @@
     'Cuenta bancaria propia': 'Rekening bank sendiri', 'La cuenta (no escrow) contra la que se importan los extractos del banco.': 'Rekening (bukan escrow) tempat mutasi bank diimpor.',
     'Cuenta de cobro': 'Rekening penerimaan', 'La cuenta que sale en facturas, proformas y contratos para que te paguen.': 'Rekening yang tercantum di invoice, proforma, dan kontrak untuk menerima pembayaran.',
     'Primer proyecto': 'Proyek pertama', 'Las unidades a la venta cuelgan de un proyecto.': 'Unit yang dijual berada di bawah satu proyek.',
-    'Qué vas a facturar': 'Yang Anda tagihkan', 'Crea al menos un producto o servicio con precio para poder facturar.': 'Buat minimal satu produk atau layanan dengan harga agar bisa membuat invoice.',
-    'un producto o servicio con precio': 'satu produk atau layanan dengan harga',
+    'Qué vas a facturar': 'Yang Anda tagihkan', 'Para facturar hace falta algo con precio: un producto o servicio, o, si alquilas, un modelo con su tarifa en Flota y tarifas.': 'Untuk membuat invoice perlu sesuatu yang berharga: produk atau layanan, atau, jika Anda menyewakan, model dengan tarifnya di Armada dan tarif.',
+    'algo con precio que facturar': 'sesuatu dengan harga untuk ditagihkan',
     'Tipos de unidad': 'Jenis unit', 'Cada unidad es de un tipo (por ejemplo, parcela o villa).': 'Setiap unit punya jenis (misalnya kavling atau vila).',
     'Unidades a la venta': 'Unit yang dijual', 'Lo que se reserva, se contrata y se factura.': 'Yang dipesan, dikontrakkan, dan ditagih.',
     'Fases de obra': 'Tahap pembangunan', 'Las fases de la construcción y qué pago dispara cada una.': 'Tahap pembangunan dan pembayaran yang dipicu tiap tahap.',
@@ -304,7 +304,7 @@
     'un tipo de unidad': 'satu jenis unit', 'una unidad': 'satu unit', 'una fase de obra': 'satu tahap pembangunan', 'una plantilla activa': 'satu templat aktif',
     'el tipo de la carta de reserva': 'jenis surat pemesanan', 'una condición de comisión': 'satu ketentuan komisi',
     'Es opcional: sin ella, las facturas salen sin datos de pago.': 'Opsional: tanpa ini, invoice keluar tanpa data pembayaran.',
-    'Es opcional para terminar la configuración, pero sin ningún producto o servicio con precio no podrás facturar.': 'Opsional untuk menyelesaikan penyiapan, tetapi tanpa produk atau layanan dengan harga Anda tidak bisa membuat invoice.',
+    'Es opcional para terminar la configuración, pero sin nada con precio no podrás facturar.': 'Opsional untuk menyelesaikan penyiapan, tetapi tanpa sesuatu yang berharga Anda tidak bisa membuat invoice.',
     'Ya hay una categoría con ese nombre.': 'Sudah ada kategori dengan nama itu.', 'Elige uno de los grupos de la lista.': 'Pilih salah satu grup di daftar.',
     'Ya hay gastos en esta categoría: su grupo no se cambia.': 'Kategori ini sudah punya pengeluaran: grupnya tidak bisa diubah.', 'El orden no es válido.': 'Urutannya tidak valid.',
     'Este módulo aún no se puede encender: le falta su configuración.': 'Modul ini belum bisa diaktifkan: pengaturannya belum ditentukan.',

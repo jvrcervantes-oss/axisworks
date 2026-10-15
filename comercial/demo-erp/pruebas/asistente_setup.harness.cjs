@@ -481,6 +481,8 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
       { user_id: 'u-putu', nombre: 'Putu', email: 'putu@x.test', rol: 'agente', activo: true, herramientas: ['reservas-producto', 'taller'], creado_por: 'dion' },
       { user_id: 'u-prueba', nombre: 'Cuenta de pruebas', email: 'p@x.test', rol: 'admin', activo: true, herramientas: [], creado_por: 'estudio:cuenta-pruebas' },
       { user_id: 'u-baja', nombre: 'Baja', email: 'b@x.test', rol: 'agente', activo: false, herramientas: [], creado_por: 'dion' }];
+    // M5 (15-oct): la cuenta del estudio (dominio axisworks.studio, con mayúsculas y espacios a propósito), super_admin como en bbm
+    const estudio = () => ({ user_id: 'u-estudio', nombre: 'Super Admin', email: ' Hello@AxisWorks.Studio ', rol: 'super_admin', activo: true, herramientas: [], creado_por: null });
     const bq = base('sin_configurar');
     bq.d.pasos.push(Object.assign({}, pasoU)); bq.usuarios = equipo();
     ({ p, ctx } = await abre(nav, bq, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
@@ -526,6 +528,22 @@ const llamadas = (b, n) => b.llamadas.filter(x => x[0] === n);
     ({ p, ctx } = await abre(nav, bf, { url: '/ajustes/configurar/?modulo=facturas&paso=usuarios' }));
     await p.waitForSelector('[data-axw-quien-usuario]', { timeout: 8000 }).catch(() => {});
     ok('S14: en Facturas (administrativo) el administrador principal cuenta', (await txt(p, '[data-axw-quien="cuenta"]')) === '2 personas usan Facturas', await txt(p, '[data-axw-quien="cuenta"]'));
+    await ctx.close();
+    // M5: la cuenta del estudio sale la última, como «Soporte de AxisWorks», sin casilla y sin contar (ni en Facturas, donde el principal sí cuenta)
+    const be = base('sin_configurar'); be.d.pasos.push(Object.assign({}, pasoU, { modulo: 'facturas', obligatorio: false })); be.usuarios = [estudio()].concat(equipo());
+    ({ p, ctx } = await abre(nav, be, { url: '/ajustes/configurar/?modulo=facturas&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien-estudio]', { timeout: 8000 }).catch(() => {});
+    const fe = await p.$$eval('[data-axw-quien="lista"] li', ls => ls.map(l => l.textContent));
+    ok('M5: la cuenta del estudio, la última y rotulada «Soporte de AxisWorks» (no «Administrador principal»)', fe.length === 4 && /Soporte de AxisWorks/.test(fe[3]) && /No cuenta en este paso/.test(fe[3])
+       && fe.filter(t => /Administrador principal/.test(t)).length === 1, JSON.stringify(fe));
+    ok('M5: sin casilla para la cuenta del estudio', !(await p.$('[data-axw-quien-usuario="u-estudio"]')));
+    ok('M5: no cuenta en el recuento (sigue «2 personas usan Facturas»)', (await txt(p, '[data-axw-quien="cuenta"]')) === '2 personas usan Facturas', await txt(p, '[data-axw-quien="cuenta"]'));
+    await ctx.close();
+    // M5: solo Dion y la cuenta del estudio → «Aún no hay nadie más»: el estudio no es «alguien del equipo»
+    const bs = base('sin_configurar'); bs.d.pasos.push(Object.assign({}, pasoU)); bs.usuarios = [equipo()[0], estudio()];
+    ({ p, ctx } = await abre(nav, bs, { url: '/ajustes/configurar/?modulo=reservas-producto&paso=usuarios' }));
+    await p.waitForSelector('[data-axw-quien="solo-tu"]', { timeout: 8000 }).catch(() => {});
+    ok('M5: con solo el principal y el estudio, invita a alguien', !!(await p.$('[data-axw-quien="solo-tu"]')));
     await ctx.close();
     // revisor 13-oct: sin herramienta para el módulo en el mapa, el paso es «otra pantalla» de verdad (y guardar no se cuelga)
     const bt = base('sin_configurar'); bt.d.modulos.push({ modulo: 'taller', estado: 'sin_configurar', falta: 'usuarios' }); bt.d.pasos.push(Object.assign({}, pasoU, { modulo: 'taller' })); bt.usuarios = equipo();

@@ -295,6 +295,14 @@
    *    cada persona justo antes y manda ESE array con solo esta herramienta puesta o quitada (nunca el leído al pintar ni una lista filtrada).
    *  · «Puede crear / solo ver» del diseño no se pinta: la base no tiene niveles por herramienta (lista de Backend). Invitar = alta de Usuarios. */
   var COLS_USUARIO = 'user_id,nombre,email,rol,activo,herramientas,creado_por';
+  // M5 de la auditoría del setup de bbm (15-oct-2026): la cuenta del estudio salía como otro «Administrador principal» y Noelia no sabía quién era.
+  // Se rotula «Soporte de AxisWorks», sin casilla y sin contar, como hace la base (098100: _modulo_setup_pasos no cuenta las cuentas del estudio).
+  // La MISMA regla que _es_cuenta_estudio (098000): dominio exacto tras la última @ = axisworks.studio, sin mayúsculas ni espacios; y lo creado por
+  // el estudio («estudio:…»). Solo decide qué se pinta: quién cuenta lo dice la base al comprobar el paso.
+  function esEstudio(u) {
+    var e = String(u.email || '').trim().toLowerCase(), i = e.lastIndexOf('@');
+    return String(u.creado_por || '').indexOf('estudio:') === 0 || (i > 0 && e.slice(i + 1) === 'axisworks.studio');
+  }
   function herramientaDe(modulo) { var M = window.AXW_MAPA_MODULOS, h = M && M.h && M.h[modulo]; return typeof h === 'string' && h ? h : null; }
   function operativo(modulo) { var o = window.AXW_MAPA_MODULOS && window.AXW_MAPA_MODULOS.o; return Array.isArray(o) && o.indexOf(modulo) >= 0; }
   function cliente() {
@@ -332,7 +340,7 @@
       function recuenta() {
         if (!st.lista) return;
         // la regla de la base: en un módulo operativo el administrador principal no cuenta; en uno administrativo, sí
-        var n = (operativo(ctx.paso.modulo) ? 0 : st.lista.filter(function (u) { return u.rol === 'super_admin'; }).length)
+        var n = (operativo(ctx.paso.modulo) ? 0 : st.lista.filter(function (u) { return u.rol === 'super_admin' && !esEstudio(u); }).length)
               + lista.querySelectorAll('input[data-axw-quien-usuario]:checked').length;
         cuenta.textContent = n === 1 ? U('quien_uno', { m: m }) : U('quien_n', { n: String(n), m: m });
       }
@@ -349,11 +357,12 @@
           return;
         }
         st.lista = r.data.filter(function (u) { return u && u.user_id && u.activo !== false && String(u.creado_por || '') !== 'estudio:cuenta-pruebas'; })
-          .sort(function (a, b) { return (b.rol === 'super_admin') - (a.rol === 'super_admin') || String(a.nombre || a.email || '').localeCompare(String(b.nombre || b.email || '')); });
+          .sort(function (a, b) { return esEstudio(a) - esEstudio(b) || (b.rol === 'super_admin') - (a.rol === 'super_admin') || String(a.nombre || a.email || '').localeCompare(String(b.nombre || b.email || '')); });
         st.lista.forEach(function (u, i) {
-          var nombre = String(u.nombre || u.email || '—'), principal = u.rol === 'super_admin';
+          var nombre = String(u.nombre || u.email || '—'), estudio = esEstudio(u), principal = !estudio && u.rol === 'super_admin';
           var tiene = Array.isArray(u.herramientas) && u.herramientas.indexOf(herr) >= 0;
-          var der = principal ? el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('quien_total') })
+          var der = estudio ? el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', 'data-axw-quien-estudio': u.user_id, text: U('quien_no_cuenta') })
+            : principal ? el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', text: U('quien_total') })
             : el('label', { class: 'axw-sw' }, [
                 el('input', { type: 'checkbox', role: 'switch', 'data-axw-quien-usuario': u.user_id, 'aria-label': U('quien_usa', { p: nombre, m: m }), checked: tiene ? '' : null }),
                 el('i', { 'aria-hidden': 'true' })]);
@@ -362,10 +371,10 @@
                          style: 'width:40px;height:40px;flex:none;display:grid;place-items:center', text: nombre.trim().charAt(0).toUpperCase() }),
             el('div', { class: 'flex flex-col min-w-0 flex-1' }, [
               el('span', { class: 'font-label-md text-label-md text-on-surface', style: 'overflow-wrap:anywhere', text: nombre }),
-              el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', style: 'overflow-wrap:anywhere', text: principal ? U('quien_principal') : String(u.email || '') })]),
+              el('span', { class: 'font-body-sm text-body-sm text-on-surface-variant', style: 'overflow-wrap:anywhere', text: estudio ? U('quien_estudio') : principal ? U('quien_principal') : String(u.email || '') })]),
             der]));
         });
-        if (!st.lista.some(function (u) { return u.rol !== 'super_admin'; }))
+        if (!st.lista.some(function (u) { return u.rol !== 'super_admin' && !esEstudio(u); }))
           lista.appendChild(el('li', { class: 'px-4 py-3 border-t border-outline-variant font-body-md text-body-md text-on-surface-variant', 'data-axw-quien': 'solo-tu', text: U('quien_solo_tu') }));
         recuenta();
       }); }
