@@ -234,7 +234,7 @@ cuerpo = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
 cuerpo = cuerpo[cuerpo.index('\ndef instancia('):]
 i = cuerpo.index('piel_colores_lawang(DIST, nombre)')
 mira('instancia() lo llama tras escribir las páginas «no instalado» y antes de versiona()',
-     cuerpo.index('avisos_para_rotos()') < i < cuerpo.index('versiona(DIST)') and cuerpo.index('pagina_no_instalado(no_instalado') < i)
+     cuerpo.index('avisos_para_rotos(') < i < cuerpo.index('versiona(DIST)') and cuerpo.index('pagina_no_instalado(no_instalado') < i)
 # los recuentos de LAWANG_POR_CONTEXTO cuadran con el inventario: la suma de #485B37 es la del paquete de bbm medido el 13-oct
 mira('las reglas del verde de Lawang suman 44 (37 marca + 7 estado, inventario del 13-oct)',
      sum(r[3] for r in build.LAWANG_POR_CONTEXTO['485B37']) == 44 and sum(r[3] for r in build.LAWANG_POR_CONTEXTO['485B37'] if r[2] == 'ok') == 7)
