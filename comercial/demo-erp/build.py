@@ -2387,6 +2387,13 @@ MENU_I18N = {
     'Vence': {'en': 'Due', 'id': 'Jatuh tempo'},
     'Pagado el': {'en': 'Paid on', 'id': 'Dibayar pada'},
     'Reservas de producto': {'en': 'Product bookings', 'id': 'Booking sewa motor'},
+    # D27 (bbm-comodidad-2, 15-oct): Ajustes › Correo en solo lectura para quien no es super admin (AJUSTES_CORREO_SOLO_SUPER)
+    'El servidor de correo, el remitente y el buzón de avisos del sistema los cambia un super admin.': {
+        'en': 'The mail server, the sender and the system alerts mailbox are changed by a super admin.',
+        'id': 'Server email, pengirim, dan kotak surat notifikasi sistem diubah oleh super admin.'},
+    'Lo cambia un super admin.': {'en': 'Changed by a super admin.', 'id': 'Diubah oleh super admin.'},
+    'La cuenta de pruebas solo mira: no puede cambiar el correo.': {'en': 'The test account can only look: it cannot change the email settings.',
+                                                                    'id': 'Akun uji coba hanya bisa melihat: tidak bisa mengubah pengaturan email.'},
     'Configurar módulos': {'en': 'Module setup', 'id': 'Penyiapan modul'},
     'Interruptores de comisiones': {'en': 'Commission switches', 'id': 'Sakelar komisi'},
     # rótulos que whatsapp_bot_pantalla() injerta en el menú (idiomas-pH, 12-oct): el menú los pasa por lwT aunque estén ocultos
@@ -4092,6 +4099,47 @@ def ajustes_correo_una_copia(js, donde, con_comentarios=False):
 AJUSTES_CORREO_INSTALADOR = ("        var porQuien = textoSimple(e.puesto_por, 120);",
                              "        var porQuien = e.puesto_por === 'instalador' ? T('el instalador') : textoSimple(e.puesto_por, 120);")
 
+# D27 (bbm-comodidad-2, 15-oct-2026, pedido de agencia-c0): desde bbm-admin-puede (20261015190000) un administrador entra en Ajustes › Correo y
+# cambia «Responder a» y el buzón de soporte, pero el servidor, el remitente y el buzón de avisos de sistema siguen siendo del super admin (decisión
+# por defecto del CEO con Seguridad: por ese servidor salen los códigos y los enlaces de contraseña, y el buzón de sistema es el testigo de Cobros).
+# La pantalla ofrecía los tres y la edge contestaba 403. Ahora los pinta en solo lectura con una línea de quién los cambia, y lo decide el SERVIDOR:
+# el campo `puede` de la respuesta `estado` de la edge ajustes-correo ({servidor, email_from, …}: false = no lo puede cambiar). Sin el campo (edge
+# anterior) todo sigue como antes: la pantalla nunca calcula el rol. Reemplazos LITERALES, una vez cada uno: si Lawang cambia la línea, el build PARA.
+AJUSTES_CORREO_SOLO_SUPER = (
+    ("    if (d && 'pide_codigo' in d) srv.pideCodigo = d.pide_codigo === true;\n",
+     "    if (d && 'pide_codigo' in d) srv.pideCodigo = d.pide_codigo === true;\n"
+     "    if (d && d.puede && typeof d.puede === 'object') srv.puede = d.puede;\n"
+     "  }\n"
+     "  function puedeCorreo(k) { return !(srv.puede && srv.puede[k] === false); }   // lo dice la edge; sin el campo, como antes\n"
+     "  function soloSuperCorreo() {\n"
+     "    return T('El servidor de correo, el remitente y el buzón de avisos del sistema los cambia un super admin.');\n",
+     'aplicaRespuestaCorreo: srv.puede'),
+    ("        if (!srv.editando && !srv.pausados) filaContra.appendChild(botonSecundario('Cambiar', 'correo-servidor-editar'));",
+     "        if (!srv.editando && !srv.pausados && puedeCorreo('servidor')) filaContra.appendChild(botonSecundario('Cambiar', 'correo-servidor-editar'));",
+     'botón Cambiar del servidor'),
+    ("    if (!configurado) srv.editando = true;",
+     "    if (!puedeCorreo('servidor')) {   // sin servidor propio el formulario se abría solo: aquí no se abre\n"
+     "      srv.editando = false;\n"
+     "      cont.appendChild(nodo('p', 'px-8 py-4 font-body-sm text-body-sm text-outline border-b border-outline-variant/30', soloSuperCorreo(), { 'data-correo': 'solo-super-servidor' }));\n"
+     "      return;\n"
+     "    }\n"
+     "    if (!configurado) srv.editando = true;",
+     'formulario del servidor'),
+    ("      if (bloqueado(u)) inp.setAttribute('readonly', '');",
+     "      if (bloqueado(u)) inp.setAttribute('readonly', '');\n"
+     "      var soloLee = !puedeCorreo(d.clave);\n"
+     "      if (soloLee) inp.setAttribute('readonly', '');",
+     'direcciones: solo lectura'),
+    ("      cola.appendChild(filaB);",
+     "      if (soloLee) cola.appendChild(nodo('span', 'font-body-sm text-body-sm text-outline', T('Lo cambia un super admin.'), { 'data-correo': 'solo-super-' + d.clave }));\n"
+     "      else cola.appendChild(filaB);",
+     'direcciones: sin botones'),
+    ("    no_super_admin: 'Cambiar el correo exige ser super admin.',",
+     "    no_super_admin: 'Cambiar el correo exige ser super admin.',\n"
+     "    cuenta_pruebas_solo_mira: 'La cuenta de pruebas solo mira: no puede cambiar el correo.',",
+     'texto de cuenta_pruebas_solo_mira'),
+)
+
 
 def ajustes_correo_maestro():
     """Ajustes › Correo del ERP maestro (F3.1 del plan único, 7-oct-2026): «Servidor de salida», «Direcciones» y la casilla del asunto por
@@ -4106,6 +4154,8 @@ def ajustes_correo_maestro():
     t = open(ruta, encoding='utf-8').read()
     ajustes_correo_una_copia(t, 'el ajustes.js de Lawang', con_comentarios=True)
     t = _una_vez(t, AJUSTES_CORREO_INSTALADOR[0], AJUSTES_CORREO_INSTALADOR[1], 'ajustes.js «puesta por el instalador»')
+    for viejo, nuevo, que in AJUSTES_CORREO_SOLO_SUPER:
+        t = _una_vez(t, viejo, nuevo, 'ajustes.js D27 «' + que + '»')
     open(ruta, 'w', encoding='utf-8', newline='').write(t)
 
 
