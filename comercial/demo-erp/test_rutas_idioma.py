@@ -278,5 +278,29 @@ for nombre, viejo, nuevo, debe in (
     ok(rc == 1 and debe in sal, 'contraprueba %s: rojo (%s)' % (nombre, (sal.splitlines() or [''])[-1]))
 shutil.rmtree(tmp)
 
+# 7. El interruptor (agencia-c0, 15-oct: las rutas salen apagadas hasta el ensayo en el LiteSpeed de Hostinger): apagado sin la clave en el registro;
+#    encendido con «rutas_idioma»: true; AXW_RUTAS_IDIOMA=1 enciende solo en un paquete de prueba y sin él PARA; un valor que no es booleano PARA.
+_reg, _env = build._instancia_registro, {k: os.environ.get(k) for k in ('AXW_RUTAS_IDIOMA', 'AXW_PRUEBA_DESPLIEGUE')}
+try:
+    for k in _env:
+        os.environ.pop(k, None)
+    build._instancia_registro = lambda n: {}
+    ok(build.rutas_en_idioma('x') is False, 'interruptor: sin «rutas_idioma» en el registro, apagadas')
+    build._instancia_registro = lambda n: {'rutas_idioma': True}
+    ok(build.rutas_en_idioma('x') is True, 'interruptor: «rutas_idioma»: true, encendidas')
+    build._instancia_registro = lambda n: {'rutas_idioma': 'si'}
+    ok(para(build.rutas_en_idioma, 'x'), 'interruptor: «rutas_idioma»: "si" (no booleano) para el build')
+    build._instancia_registro = lambda n: {}
+    os.environ['AXW_RUTAS_IDIOMA'] = '1'
+    ok(para(build.rutas_en_idioma, 'x'), 'interruptor: AXW_RUTAS_IDIOMA=1 sin paquete de prueba para el build')
+    os.environ['AXW_PRUEBA_DESPLIEGUE'] = os.path.join(tempfile.gettempdir(), 'pkg_x')
+    ok(build.rutas_en_idioma('x') is True, 'interruptor: AXW_RUTAS_IDIOMA=1 en un paquete de prueba, encendidas')
+finally:
+    build._instancia_registro = _reg
+    for k, v in _env.items():
+        os.environ.pop(k, None)
+        if v is not None:
+            os.environ[k] = v
+
 print('\n%d FALLAN' % len(FALLOS) if FALLOS else '\nTODO BIEN')
 sys.exit(1 if FALLOS else 0)

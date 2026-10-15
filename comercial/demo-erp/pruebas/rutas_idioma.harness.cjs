@@ -10,6 +10,8 @@
 //   · el módulo apagado (vencimientos) sale «no instalado» por las dos rutas y su enlace oculto en el menú;
 //   · 0 errores de página.
 // Y con el idioma de pantalla de la base en español (axw_idioma_pantalla_erp = 'es'), la barra vuelve a la ruta española.
+// Las rutas salen APAGADAS por instancia hasta su ensayo en el LiteSpeed (build.py rutas_en_idioma): el paquete para este arnés se construye con
+// AXW_PRUEBA_DESPLIEGUE=<carpeta> AXW_RUTAS_IDIOMA=1; sin ellas no lleva el ayudante y este arnés no tiene nada que medir.
 // En esta PC: PLAYWRIGHT_CORE=C:/Users/jvrce/AppData/Roaming/npm/node_modules/@playwright/mcp/node_modules/playwright-core
 const fs = require('fs');
 const path = require('path');

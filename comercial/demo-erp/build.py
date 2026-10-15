@@ -2633,6 +2633,13 @@ PISA_I18N = {
     'Sin la casilla «Gastos y proveedores» el gráfico enseña solo lo que entra.': {
         'en': 'Without the «Expenses and suppliers» permission the chart shows only inflows.',
         'id': 'Tanpa izin «Pengeluaran dan pemasok», grafik hanya menampilkan uang masuk.'},
+    # «Seguimiento» es el título de la sección del menú (MENU_V4, nav-montaje, herramientas.js, la barra estática de cada página): en Lawang es
+    # «Pipeline» porque ahí cuelgan los leads; en una instancia cuelgan reservas, taller, entrega y flota (M8 de la auditoría del setup de bbm,
+    # 15-oct-2026; término revisado por Idiomas). «Seguimientos enviados» de Leads es otra clave y no cambia. Las pantallas del maestro con
+    # diccionario propio (flota, portada_reservas, reservas_producto) e i18n_id.json dicen lo mismo (test_rotulos_editores.py).
+    'Seguimiento': {'en': 'Operations', 'id': 'Operasional'},
+    # lleva a la pantalla que en inglés se llama «Deals»: con «Operations» en el menú, el inglés de Lawang mandaría a otra sección (Idiomas, 15-oct)
+    'Ver en Operaciones': {'en': 'See in Deals', 'id': 'Lihat di Transaksi'},
 }
 
 # Frases de Lawang montadas con un dato (traduce_instancia.js): regex sobre el texto entero → molde por idioma; {n} = grupo n, traducido si es una
@@ -2643,6 +2650,8 @@ PATRONES_INSTANCIA = [
     ['^(\\d+) dadas de baja$', {'en': '{1} deactivated', 'id': '{1} dinonaktifkan'}],
     ['^de (\\d+) tipos en el catálogo · (\\d+) archivados$', {'en': 'of {1} types in the catalogue · {2} archived', 'id': 'dari {1} jenis di katalog · {2} diarsipkan'}],
     ['^Comunicados: (.+)$', {'en': 'Announcements: {1}', 'id': 'Pengumuman: {1}'}],
+    # el formulario de Lawang pinta un campo obligatorio como «<rótulo> *» en el mismo nodo de texto (bbm-idioma-total, 15-oct)
+    ['^(.+) \\*$', {'en': '{1} *', 'id': '{1} *'}],
 ]
 
 
@@ -2664,14 +2673,44 @@ def traduce_instancia_js():
     open(ruta, 'w', encoding='utf-8', newline='').write(t.rstrip() + '\n' + pisa + js.rstrip() + '\n')
 
 
+def i18n_editores():
+    """Los rótulos de las ventanas de edición en en/id: {texto español: {en, id}} de i18n_editores.json. PARA si una entrada viene vacía (saldría
+    en blanco) o el fichero no se lee: es la fuente que comprueba pruebas/rotulos_editores.cjs sobre el paquete."""
+    f = os.path.join(AQUI, 'i18n_editores.json')
+    try:
+        textos = json.load(open(f, encoding='utf-8'))['textos']
+    except (OSError, ValueError, KeyError) as e:
+        aborta('i18n_editores.json no se puede leer (%s)' % e)
+    malos = [k for k, v in textos.items() if not isinstance(v, dict) or not str(v.get('en') or '').strip() or not str(v.get('id') or '').strip()]
+    if malos:
+        aborta('i18n_editores.json: entrada sin en o sin id: ' + ' | '.join(malos[:5]))
+    return textos
+
+
+def comprueba_rotulos_editores(dist, idiomas):
+    """Sobre el paquete construido: cada rótulo de una ventana de edición (label, ayuda, placeholder, atajos y opciones del formulario de Lawang)
+    tiene su traducción en los idiomas de la instancia que no son el español. No abre navegador: lo corre también el gate de push."""
+    if not [x for x in (idiomas or []) if x != 'es']:
+        return
+    r = subprocess.run(['node', os.path.join(AQUI, 'pruebas', 'rotulos_editores.cjs'), dist], capture_output=True, text=True, encoding='utf-8')
+    if r.returncode != 0:
+        aborta('idiomas: rótulos de editor sin traducir (salida %d de pruebas/rotulos_editores.cjs; añádelos a i18n_editores.json):\n%s'
+               % (r.returncode, (r.stdout or r.stderr or '')[-3000:]))
+    print('idiomas: ' + ' · '.join((r.stdout or '').strip().splitlines()[-2:]))
+
+
 def menu_i18n():
     """Añade MENU_I18N a LW_EN y LW_ID al final de i18n.js de la copia (toda instancia; sin indonesio, LW_ID no existe y se salta)."""
     ruta = os.path.join(DIST, 'contracts', 'assets', 'i18n.js')
     t = open(ruta, encoding='utf-8').read()
     if 'window.LW_EN = EN;' not in t:
         aborta('menu_i18n: i18n.js de Lawang ya no expone window.LW_EN (los rótulos del menú no se podrían traducir)')
+    # Y los rótulos de las ventanas de edición (i18n_editores.json, de Idiomas; bbm-idioma-total 15-oct-2026: el verificador vio «Nuevo gasto» en
+    # inglés en la vista indonesia y «Nueva cuenta de cobro» en español). MENU_I18N manda si los dos tienen la misma clave; ninguno pisa lo de Lawang.
+    d = dict(i18n_editores())
+    d.update(MENU_I18N)
     bloque = ('(function(){var D=%s,E=window.LW_EN,I=window.LW_ID;for(var k in D){if(E&&!Object.prototype.hasOwnProperty.call(E,k))E[k]=D[k].en;'
-              'if(I&&!Object.prototype.hasOwnProperty.call(I,k))I[k]=D[k].id;}})();\n') % json.dumps(MENU_I18N, ensure_ascii=False, sort_keys=True)
+              'if(I&&!Object.prototype.hasOwnProperty.call(I,k))I[k]=D[k].id;}})();\n') % json.dumps(d, ensure_ascii=False, sort_keys=True)
     open(ruta, 'w', encoding='utf-8', newline='').write(t.rstrip() + '\n' + bloque)
 
 
@@ -6230,6 +6269,21 @@ def rutas_idioma_paquete(dist, idioma_build):
           % (envueltas, len(tocados), 'es' if (idioma_build or 'es') == 'es' else 'en'))
 
 
+def rutas_en_idioma(nombre):
+    """¿Esta instancia sale con las rutas en su idioma? Apagadas por defecto (agencia-c0, 15-oct-2026): el simulador de .htaccess no es el LiteSpeed
+    de Hostinger y las reglas nuevas no se han ensayado en él; hasta el verde del ensayo los textos salen solos y la barra sigue en español. Se
+    encienden con «rutas_idioma»: true en erp/instancias.json. AXW_RUTAS_IDIOMA=1 las enciende SOLO en un paquete de prueba (AXW_PRUEBA_DESPLIEGUE),
+    para el arnés de rutas y el propio ensayo: el paquete que se publica no puede salir distinto de lo que dice el registro."""
+    if os.environ.get('AXW_RUTAS_IDIOMA') == '1':
+        if not os.environ.get('AXW_PRUEBA_DESPLIEGUE'):
+            aborta('AXW_RUTAS_IDIOMA=1 solo vale con AXW_PRUEBA_DESPLIEGUE: el paquete real enciende las rutas por erp/instancias.json')
+        return True
+    v = _instancia_registro(nombre).get('rutas_idioma', False)
+    if not isinstance(v, bool):
+        aborta('«rutas_idioma» en erp/instancias.json (%s) tiene que ser true o false, no %r' % (nombre, v))
+    return v
+
+
 def alias_htaccess(destino):
     """Bloque de .htaccess con las rutas inglesas de la instancia (va DETRÁS del legado). Por cada par del mapa cuya carpeta exista: la ruta inglesa
     se sirve por dentro desde la carpeta (sin R: la barra no cambia y no hay bucle con el ayudante, que canoniza en el navegador) y la ruta sin barra
@@ -6469,7 +6523,11 @@ def instancia(nombre):
     print('colores de Lawang a la piel: %d' % piel_colores_lawang(DIST, nombre))
     # bbm-idioma-total (15-oct): las rutas en el idioma de la instancia. DETRÁS de todo lo que escribe páginas o injerta código y antes de versiona(),
     # para que el ?v= recoja las lecturas envueltas. Idioma de rutas del build: el de pantalla del registro, si no el primero de sus idiomas, si no 'es'.
-    rutas_idioma_paquete(DIST, pantalla or (idiomas[0] if idiomas else 'es'))
+    rutas_on = rutas_en_idioma(nombre)
+    if rutas_on:
+        rutas_idioma_paquete(DIST, pantalla or (idiomas[0] if idiomas else 'es'))
+    else:
+        print('rutas: apagadas en %s (sin «rutas_idioma»: true en erp/instancias.json): carpetas y barra en español, como antes' % nombre)
     # ?v= con la huella de lo que SALE de este build, como en la demo pública (28-sep-2026). Sin esto, la v4 llevaba el
     # ?v= del fichero de Lawang (guard.js se reescribe entero aquí: mapa de módulos + ficha) y /panel/ iba sin versión:
     # Hostinger cachea 7 días y el verificador vio el guard.js viejo en /panel/ tras publicar.
@@ -6490,6 +6548,7 @@ def instancia(nombre):
     if idiomas:
         comprueba_idiomas(DIST, idiomas)
         comprueba_documento_idiomas(DIST, idiomas)
+        comprueba_rotulos_editores(DIST, idiomas)   # sin navegador: también en el gate de push
         comprueba_pantallas_idiomas(DIST, idiomas)
     comprueba_resultado(DIST)
     # 4. Copia al clon del repo privado de la instancia (gitignored en la agencia).
@@ -6514,7 +6573,7 @@ def instancia(nombre):
         s_ = os.path.join(DIST, x)
         shutil.copytree(s_, os.path.join(destino, x)) if os.path.isdir(s_) else shutil.copy2(s_, destino)
     open(os.path.join(destino, '.htaccess'), 'w', encoding='utf-8', newline='\n').write(HTACCESS_INSTANCIA.format(
-        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino) + alias_htaccess(destino),   # rutas inglesas DETRÁS del legado
+        nombre=nombre, dominio=dominio, sb=host_sb, legado=legado_htaccess(destino) + (alias_htaccess(destino) if rutas_on else ''),   # rutas inglesas DETRÁS del legado
         dominio_re='(' + '|'.join(re.escape(d) for d in [dominio] + _instancia_alias(nombre)) + ')'))
     open(os.path.join(destino, 'robots.txt'), 'w', encoding='utf-8', newline='\n').write('User-agent: *\nDisallow: /\n')
     comprueba_resultado(destino)

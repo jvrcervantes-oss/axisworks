@@ -48,7 +48,7 @@ catch (e) { console.log('NO SE HA PODIDO MIRAR: sin erp/modulos.json de la agenc
 // clics: como vacia, y además pulsa los botones de cada pantalla de CLIC_PANTALLAS (el asistente de instalación, Ajustes y las pantallas propias
 // de la instancia) y mira lo que aparece: ventanas, pasos, avisos. La base es falsa: pulsar no escribe en ninguna parte.
 const MODOS = (process.env.MODOS || 'vacia,caida,apagados,sinpermiso,clics').split(',');
-const CLIC_PANTALLAS = (process.env.CLIC_PANTALLAS || 'ajustes/configurar,ajustes,flota,entrega,taller,reservas-producto,productos,ventas,gastos,usuarios,recibos,facturas,whatsapp-bot-alta').split(',');
+const CLIC_PANTALLAS = (process.env.CLIC_PANTALLAS || 'ajustes/configurar,ajustes,flota,entrega,taller,reservas-producto,productos,ventas,gastos,usuarios,recibos,facturas,whatsapp-bot-alta,cuentas,vencimientos').split(',');
 const CLIC_MAX = Number(process.env.CLIC_MAX || 25);
 const LENGUAS = (process.env.LENGUAS || 'en,id').split(',');
 const PARALELO = Math.max(1, Number(process.env.PARALELO || 3));
