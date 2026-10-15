@@ -35,7 +35,13 @@ const PERFILES = { tipos: Object.entries(PERF).map(([tipo, p]) => ({ tipo, nombr
 const SIN_DECLARAR = ['bancos', 'sociedades'];
 const sembrado = k => { const d = SIN_DECLARAR.indexOf(k) !== -1 ? null : REG.setup.modulos[k]; if (d == null) return null; if (typeof d === 'string') return { ninguno: d.replace(/^ninguno:?\s*/, '') };
   return { estado: d.estado, pasos: d.pasos.map(p => ({ clave: p.clave, obligatorio: p.obligatorio, irreversible: p.irreversible, donde: p.donde, modulo_requerido: p.modulo_requerido })) }; };
-const DEPENDE = { facturas: ['recibos', 'sociedades'], recibos: [], sociedades: [], 'reservas-producto': ['productos'], productos: [], bancos: [], gastos: [], 'whatsapp-bot': [], base: [] };
+const DEPENDE = { facturas: ['recibos', 'sociedades'], recibos: [], sociedades: [], 'reservas-producto': ['productos'], productos: [], bancos: [], gastos: [], 'whatsapp-bot': [], base: [],
+  contratos: [], comisiones: [], 'cuota-servicio': [] };
+// Candado por tipo (16-oct-2026): `tipo` de la instancia y `tipos` de cada pieza como los manda la edge local (erp_control_tipos, A14). Valores
+// medidos en la base de una instancia de Reservas (erp_modulos.tipos); `cuota-servicio` es inventado: hoy no hay ninguna pieza solo de Servicios.
+// Comisiones va ENCENDIDA siendo de otro tipo (lo que ya estaba encendido se queda, A13): se puede apagar, nunca candado
+const TIPOS_MOD = { base: ['todos'], facturas: ['todos'], recibos: ['todos'], sociedades: ['todos'], productos: ['todos'], bancos: ['todos'], gastos: ['todos'],
+  'whatsapp-bot': ['todos'], 'reservas-producto': ['reservas'], contratos: ['propiedades'], comisiones: ['propiedades'], 'cuota-servicio': ['servicios'] };
 const MODS = Object.keys(DEPENDE);
 const ESTADO_MOD = { base: { estado: 'configurado', hechos: 1, total: 1 }, 'reservas-producto': { estado: 'sin_configurar', hechos: 1, total: 4 },
   productos: null, bancos: null, 'whatsapp-bot': { estado: 'raro' } };
@@ -53,16 +59,18 @@ function techoPon(t) {
   return { ok: true, techo: { ...AAAS, cambia: JSON.stringify(AAAS.techos) !== antes } };
 }
 function estadoInst(activos, conSetup) {
-  return { activos: activos.slice(), marca: 'Sample Rentals', apagados: 3, edges_desplegadas: [], log: [], ...(conSetup ? { aaas: AAAS } : {}),
+  return { activos: activos.slice(), marca: 'Sample Rentals', apagados: 3, edges_desplegadas: [], log: [], ...(conSetup ? { aaas: AAAS, tipo: 'reservas' } : {}),
     ficha: { marca: 'Sample Rentals', dominio_web: 'sample.test', url_intranet: 'https://erp.sample.test', super_admins: [{ correo: 'admin@sample.test', confirmado: true, difiere: false }] },
     modulos: MODS.map(k => { const m = { modulo: k, depende: DEPENDE[k], instalable: true, edges: [], motivo: null };
       if (!conSetup) return m;
-      m.setup = k === 'whatsapp-bot' ? { pasos: [] } : sembrado(k);
+      m.tipos = TIPOS_MOD[k]; m.familia = k === 'whatsapp-bot' ? 'pago' : null;
+      // con tipo puesto, la siembra no guarda los pasos de una pieza de otro tipo (A13)
+      m.setup = k === 'whatsapp-bot' ? { pasos: [] } : TIPOS_MOD[k].some(t => t === 'todos' || t === 'reservas') ? sembrado(k) : null;
       if (activos.indexOf(k) !== -1 && k in ESTADO_MOD) m.setup_estado = ESTADO_MOD[k];
       else if (activos.indexOf(k) !== -1) m.setup_estado = null;
       return m; }) };
 }
-const ACT0 = ['base', 'productos', 'reservas-producto', 'bancos', 'whatsapp-bot'];
+const ACT0 = ['base', 'productos', 'reservas-producto', 'bancos', 'whatsapp-bot', 'comisiones'];
 const llamadas = [];
 function cierra(set) { const s = new Set(set); let cambia = true; while (cambia) { cambia = false; for (const k of [...s]) for (const d of DEPENDE[k] || []) if (!s.has(d)) { s.add(d); cambia = true; } } return [...s]; }
 // EU4 (20261014097000) y A14 (096000) en el doble: encender exige un ensayo del conjunto EXACTO (con base, ordenado); sin él, `sin_ensayo` con
@@ -196,6 +204,28 @@ const ajena = [], marcaGoogle = [];
     return malos;
   });
   { const c1 = await contraste(); ok('contraste S01 a 1440: texto ≥ 4,5:1 e interruptores ≥ 3:1', c1.length === 0, c1.join(' | ')); }
+  // ── candado por tipo (owner, 16-oct): ERP de Reservas → lo de Propiedades o Servicios, con candado y sin poder pulsarse ─────────
+  const tarjeta = k => p.evaluate(k => { const c = document.querySelector('#modulos [data-tarjeta="' + k + '"]'), b = c && c.querySelector('[data-mod]');
+    return c && { otro: c.getAttribute('data-otro-tipo'), na: c.classList.contains('na'), off: b.disabled, on: b.getAttribute('aria-checked'),
+      nota: c.querySelector('.nota').textContent, cand: !!c.querySelector('.ft .cand svg'), aria: b.getAttribute('aria-label') }; }, k);
+  { const t = await tarjeta('contratos');
+    ok('candado: Contratos (Propiedades) en un ERP de Reservas sale con candado, sin poder pulsarse y con su motivo', !!t && t.otro === 'propiedades' && t.na && t.off &&
+      t.cand && t.nota === 'Solo para negocios de tipo Propiedades.' && /con candado/.test(t.aria), JSON.stringify(t)); }
+  { const t = await tarjeta('cuota-servicio');
+    ok('candado: una pieza solo de Servicios, igual', !!t && t.otro === 'servicios' && t.off && t.nota === 'Solo para negocios de tipo Servicios.', JSON.stringify(t)); }
+  { const t = await tarjeta('comisiones');
+    ok('candado: lo de otro tipo que YA está encendido no lleva candado: se puede apagar y lo dice', !!t && t.on === 'true' && !t.off && !t.cand &&
+      /se puede apagar, pero no volver a encender/.test(t.nota), JSON.stringify(t)); }
+  { const l = await Promise.all(['facturas', 'reservas-producto', 'gastos'].map(tarjeta));
+    ok('candado: lo de todos y lo de Reservas sigue libre', l.every(t => t && t.otro === null && !t.off && !t.cand), JSON.stringify(l)); }
+  { const n0 = llamadas.length;
+    await p.evaluate(() => document.querySelector('#modulos [data-mod="contratos"]').click());
+    await p.waitForTimeout(300);
+    ok('candado: pulsarlo no simula ni abre nada', llamadas.length === n0 && !(await p.evaluate(() => !!document.querySelector('#dlg[open]'))), JSON.stringify(llamadas.slice(n0))); }
+  { const cab = await p.evaluate(() => ({ tipo: (document.querySelector('#cabecera-instancia [data-tipo-erp]') || {}).textContent,
+      cuenta: (document.querySelector('#cabecera-instancia [data-candado-cuenta]') || { getAttribute: () => null }).getAttribute('data-candado-cuenta'),
+      orden: [...document.querySelectorAll('#modulos [data-tarjeta]')].map(c => c.getAttribute('data-tarjeta')) }));
+    ok('candado: la cabecera dice el tipo del ERP y cuántos llevan candado (2)', cab.tipo === 'ERP de Reservas' && cab.cuenta === '2', JSON.stringify(cab)); }
   const etiqueta = k => p.evaluate(k => { const b = document.querySelector('#modulos [data-mod="' + k + '"]'); const c = b && b.parentElement;
     const e = c && c.querySelector('[data-setup-estado]'); return e ? e.textContent.trim() : null; }, k);
   ok('estado: reservas-producto a medias (1 de 4)', (await etiqueta('reservas-producto')) === 'A medias · 1 de 4', await etiqueta('reservas-producto'));
@@ -346,6 +376,8 @@ const ajena = [], marcaGoogle = [];
   const r2 = await p.evaluate(() => ({ resumen: (document.querySelector('[data-setup-resumen]') || {}).getAttribute && document.querySelector('[data-setup-resumen]').getAttribute('data-setup-resumen'),
     etiquetas: document.querySelectorAll('#modulos [data-setup-estado]').length }));
   ok('base vieja: lo dice una vez y las tarjetas no inventan estado', r2.resumen === 'sin_dato' && r2.etiquetas === 0, JSON.stringify(r2));
+  { const t = await tarjeta('contratos'), n = await p.evaluate(() => document.querySelectorAll('#modulos [data-otro-tipo],#cabecera-instancia [data-tipo-erp],#cabecera-instancia [data-candado-cuenta]').length);
+    ok('base sin tipo: ningún candado ni tipo inventado (decide la simulación)', n === 0 && !!t && !t.off, JSON.stringify({ n, t })); }
   { const tv = await techoVe(); ok('base vieja: el techo dice que la base aún no lo tiene, sin formulario', tv.estado === 'sin_dato' && !tv.form && !tv.aviso, JSON.stringify(tv)); }
   await p.click('#modulos [data-mod="facturas"]');
   await p.waitForSelector('#dlg[open]');
