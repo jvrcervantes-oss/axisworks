@@ -291,6 +291,8 @@ async function mira(ctx, pant, errores, clics) {
   console.log(errores.length ? 'errores de página (no cuentan aquí): ' + errores.length + ' · ' + errores.slice(0, 3).join(' | ') : '0 errores de página');
   await nav.close();
   console.log(`${miradas} vistas (${PANTALLAS.length} pantallas × ${LENGUAS.join('+')} × ${MODOS.join('+')}) en ${Math.round((Date.now() - t0) / 1000)} s`);
-  console.log(total ? `\n${total} textos en español en una instancia que no es española` : '\nTODO BIEN: nada en español');
+  // en indonesio cuenta también lo que cae al inglés (LW_T_CAIDA_EN): la línea lo dice para no mandar a buscar español que no hay
+  console.log(total ? `\n${total} textos fuera de su idioma (en español${LENGUAS.includes('id') ? ', o en inglés dentro del indonesio' : ''}) en una instancia que no es española`
+    : '\nTODO BIEN: nada en español' + (LENGUAS.includes('id') ? ' ni en inglés dentro del indonesio' : ''));
   process.exit(total ? 1 : 0);
 })().catch(e => { console.log('NO SE HA PODIDO MIRAR: ' + e.message); process.exit(2); });
