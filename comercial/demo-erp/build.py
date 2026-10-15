@@ -5094,6 +5094,17 @@ COMODIDAD_INSTANCIA = (
      "          if (f0.fecha_vencimiento) campoSimpleDoc(filaF, { k: 'fecha_vencimiento', label: 'Vencimiento (opcional)', tipo: 'date', valor: f0.fecha_vencimiento });\n\n"
      "          var secEmisor = seccionPlegableDoc(host, 'Emisor', true, { resumen: resumenEmisorDoc });\n"
      "          campoSimpleDoc(secEmisor, { k: 'sociedad', label: 'Sociedad que cobra',", 1),
+    # bbm-comodidad S5 (15-oct-2026, encargo 20261015_erp_formularios_1a3_campos): con UNA sola cuenta de cobro, la factura y el recibí NUEVOS
+    # nacen con ella en «Cuenta donde se cobra/cobró» (un clic menos y el bloque Emisor se pliega «completo»). Solo en uno nuevo: uno ya guardado
+    # sin cuenta, o una copia, siguen como estaban (reguardarlo no le pone una cuenta que no tenía). Con dos o más, «— sin datos bancarios —».
+    ('intranet/v4/assets/editores.js', "{ k: 'cuenta', label: 'Cuenta donde se cobra', tipo: 'select', valor: f0.cuenta || '', opciones: opcionesCuentaDoc() }",
+     "{ k: 'cuenta', label: 'Cuenta donde se cobra', tipo: 'select', valor: f0.cuenta || (!existente && !copia && Object.keys(CUENTAS_BANCARIAS).length === 1 ? Object.keys(CUENTAS_BANCARIAS)[0] : ''), opciones: opcionesCuentaDoc() }", 1),
+    ('intranet/v4/assets/editores.js', "{ k: 'cuenta', label: 'Cuenta donde se cobró', tipo: 'select', valor: f0.cuenta || '', opciones: opcionesCuentaDoc(true) }",
+     "{ k: 'cuenta', label: 'Cuenta donde se cobró', tipo: 'select', valor: f0.cuenta || (!existente && Object.keys(CUENTAS_BANCARIAS).length === 1 ? Object.keys(CUENTAS_BANCARIAS)[0] : ''), opciones: opcionesCuentaDoc(true) }", 1),
+    # bbm-comodidad S5: una cuenta NUEVA nace «De la sociedad (caja propia)» en «¿De quién es esta cuenta?» (antes «Sin marcar»: Finanzas no la
+    # contaba como caja y un gasto no se podía pagar desde ella hasta editarla). Se puede cambiar; editar una cuenta no cambia nada.
+    ('intranet/v4/assets/editores.js', "{ k: 'es_propia', tipo: 'select', valor: '', label: '¿De quién es esta cuenta?',",
+     "{ k: 'es_propia', tipo: 'select', valor: 'si', label: '¿De quién es esta cuenta?',", 1),
     # bbm-comodidad F10 (15-oct-2026, medido en bbm a 1440): el robot del Asistente (fijo abajo a la derecha, 88 px; 72 px en móvil) tapaba lo último
     # de cada página: «Nuevo modelo» en Flota, la columna Acciones en Facturas, «Configurar» en Ajustes. Se reserva su hueco al final de <main> para
     # que se pueda bajar más allá del robot. Solo en pantalla y solo donde se pinta el robot (la regla viaja en la hoja que inyecta mascota.js).
@@ -5199,6 +5210,20 @@ GASTOS_INSTANCIA = (
     ('intranet/v4/assets/panel-gastos.js',
      "T('No hay categorías de gasto dadas de alta: sin ellas no se puede registrar un gasto. Pídelo a administración.')",
      "T('Aún no hay categorías de gasto: la primera se crea al pulsar «Nuevo gasto».')", 1),
+    # bbm-comodidad S5 (15-oct-2026, encargo 20261015_erp_formularios_1a3_campos; medido en bbm: una sola sociedad): con UNA sola sociedad
+    # activa, «Sociedad que paga» no se pregunta (ya venía elegida y no había otra); el envío lleva esa única. Un gasto ya guardado de OTRA
+    # sociedad (una desactivada) sigue enseñando el campo: no se cambia su sociedad al reguardarlo. Con dos o más, como siempre. La base sigue
+    # comprobando la sociedad (el backend no se cree el front). Retoca el texto ya parcheado de «Proyecto» (va después en esta tupla).
+    ('intranet/v4/assets/panel-gastos.js',
+     "    var sinProy = !g.proyecto_id && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false;\n    return [\n",
+     "    var sinProy = !g.proyecto_id && typeof window.axwModuloActivo === 'function' && window.axwModuloActivo('proyectos') === false;\n"
+     "    var socUnica = socs.length === 1 && (!g.sociedad || g.sociedad === socs[0]);\n    return [\n", 1),
+    ('intranet/v4/assets/panel-gastos.js',
+     "    ].filter(function (c) { return !(sinProy && c.k === 'proyecto_id'); });\n",
+     "    ].filter(function (c) { return !(sinProy && c.k === 'proyecto_id') && !(socUnica && c.k === 'sociedad'); });\n", 1),
+    ('intranet/v4/assets/panel-gastos.js',
+     "sociedad: v.sociedad, proyecto_id: v.proyecto_id || null,",
+     "sociedad: v.sociedad || (sociedades().length === 1 ? sociedades()[0] : v.sociedad), proyecto_id: v.proyecto_id || null,", 1),
 )
 # Solo en las instancias de alquileres (portada «reservas»): el ejemplo del campo y la pestaña «Reservas» de Ajustes, que en ellas solo lleva los impuestos
 TEXTOS_ALQUILER = (
@@ -5221,6 +5246,10 @@ TEXTOS_OTRA = (   # el resto de instancias: un ejemplo neutro, sin la villa de L
 # fila plantilla del HTML, que plantillaFilas() de datos.js clona con sus atributos: no cambia ningún índice de columna de datos.js. Lawang no pasa por aquí.
 OCULTA_POR_MODULO = (
     # (fichero en DIST, trozo de Lawang, el mismo trozo marcado)
+    # bbm-comodidad S5 (15-oct-2026): «Ajustar hito» de Vencimientos sin el módulo contratos llevaba a «No hay hitos» (un hito nace del
+    # calendario de un contrato, sincroniza_vencimientos): un callejón. Se oculta por el módulo, no por el cliente.
+    ('intranet/v4/vencimientos/index.html', '<button data-accion="registrar-hito" data-lwt-nodos class="',
+     '<button data-accion="registrar-hito" data-axw-sin="contratos" data-lwt-nodos class="'),
     # bbm-p40 (13-oct): la columna «Proyectos» de Usuarios (cuántos proyectos tiene cada persona) sin el módulo proyectos
     ('intranet/v4/usuarios/index.html', '<th class="py-3 px-3" data-lwt>Proyectos</th>',
      '<th class="py-3 px-3" data-axw-sin="proyectos" data-lwt>Proyectos</th>'),
