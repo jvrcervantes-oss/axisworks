@@ -5685,7 +5685,10 @@ IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis', 'Panel', 'Bot',
                  'AaaS',   # AaaS: nombre del producto, igual en los tres idiomas (owner, 13-oct)
                  # 15-oct (panel V2 del AaaS, agente.html): «Radar» es el nombre del agente de precios (como Closer/Setter, un nombre,
                  # no una palabra que traducir); Facebook, Instagram y Google Business son marcas
-                 'Radar', 'Facebook', 'Instagram', 'Google Business')
+                 'Radar', 'Facebook', 'Instagram', 'Google Business',
+                 # 16-oct (bbm-comodidad-2, indonesio sin caídas al inglés): los roles de Usuarios, la proforma, «Saldo», «Total: %t» y el
+                 # impuesto PPh se dicen igual en indonesio (el diccionario ya escribía «peran admin atau super admin» y «Proforma ini»)
+                 'admin', 'Super admin', 'Super Admin', 'Proforma', 'Total: %t', 'Saldo', 'PPh')
 # Lo que hay que tocar en el front copiado: (fichero en DIST, trozo de Lawang, sustituto). Cada trozo tiene que aparecer EXACTAMENTE una vez.
 IDIOMAS_PARCHES = (
     ('contracts/assets/idioma.js', "  window.LW_IDIOMA = (v === 'en') ? 'en' : 'es';",

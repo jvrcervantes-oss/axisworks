@@ -159,8 +159,9 @@ const MIRA = () => {
   // reconoce) no es español a la vista; lo que de verdad sale en español ya lo ha contado el recorrido de arriba.
   const valores = new Set([].concat(Object.values(window.LW_EN || {}), Object.values(window.LW_ID || {})));
   const yaVa = s => valores.has(s.trim()) || (typeof window.axwTraduceTexto === 'function' && window.axwTraduceTexto(s) !== s);
-  // una caída que es una traducción india ya hecha por otra vía (axwTraduceTexto) no se ve en inglés: no cuenta
-  const caidas = caidasAntes ? [...caidasAntes].filter(s => !(typeof window.axwTraduceTexto === 'function' && window.axwTraduceTexto(s) !== s)) : [];
+  // Toda caída cuenta. NO se filtra con axwTraduceTexto: pasa por lwT, que en indonesio devuelve el inglés, así que «la cambia» también cuando cae
+  // (la primera versión de este filtro se tragó «Nuevo gasto» y el resto de Gastos y dio 5 caídas donde había decenas, 16-oct-2026).
+  const caidas = caidasAntes ? [...caidasAntes] : [];
   return { lang: document.documentElement.lang, fallos: fallosAntes ? [...fallosAntes].filter(s => !yaVa(s)) : null, caidas, sale };
 };
 const PIE = () => {
