@@ -4113,12 +4113,15 @@ AJUSTES_CORREO_INSTALADOR = ("        var porQuien = textoSimple(e.puesto_por, 1
 AJUSTES_CORREO_SOLO_SUPER = (
     ("    if (d && 'pide_codigo' in d) srv.pideCodigo = d.pide_codigo === true;\n",
      "    if (d && 'pide_codigo' in d) srv.pideCodigo = d.pide_codigo === true;\n"
-     "    if (d && d.puede && typeof d.puede === 'object') srv.puede = d.puede;\n"
-     "  }\n"
-     "  function puedeCorreo(k) { return !(srv.puede && srv.puede[k] === false); }   // lo dice la edge; sin el campo, como antes\n"
-     "  function soloSuperCorreo() {\n"
-     "    return T('El servidor de correo, el remitente y el buzón de avisos del sistema los cambia un super admin.');\n",
+     "    if (d && d.puede && typeof d.puede === 'object') srv.puede = d.puede;\n",
      'aplicaRespuestaCorreo: srv.puede'),
+    # las dos funciones nuevas van ENTERAS (con su llave) delante de valorDireccion, no colgando del cierre de aplicaRespuestaCorreo: si Lawang
+    # añade una línea a esa función, seguiría dentro de ella (revisor de 840deb0)
+    ("  function valorDireccion(clave) {\n",
+     "  function puedeCorreo(k) { return !(srv.puede && srv.puede[k] === false); }   // lo dice la edge; sin el campo, como antes\n"
+     "  function soloSuperCorreo() { return T('El servidor de correo, el remitente y el buzón de avisos del sistema los cambia un super admin.'); }\n"
+     "  function valorDireccion(clave) {\n",
+     'puedeCorreo y soloSuperCorreo'),
     ("        if (!srv.editando && !srv.pausados) filaContra.appendChild(botonSecundario('Cambiar', 'correo-servidor-editar'));",
      "        if (!srv.editando && !srv.pausados && puedeCorreo('servidor')) filaContra.appendChild(botonSecundario('Cambiar', 'correo-servidor-editar'));",
      'botón Cambiar del servidor'),
@@ -5682,7 +5685,10 @@ IGUALES_EN_ID = ('CRM', 'Intranet', 'Total', 'Km gratis', 'Panel', 'Bot',
                  'AaaS',   # AaaS: nombre del producto, igual en los tres idiomas (owner, 13-oct)
                  # 15-oct (panel V2 del AaaS, agente.html): «Radar» es el nombre del agente de precios (como Closer/Setter, un nombre,
                  # no una palabra que traducir); Facebook, Instagram y Google Business son marcas
-                 'Radar', 'Facebook', 'Instagram', 'Google Business')
+                 'Radar', 'Facebook', 'Instagram', 'Google Business',
+                 # 16-oct (bbm-comodidad-2, indonesio sin caídas al inglés): los roles de Usuarios, la proforma, «Saldo», «Total: %t» y el
+                 # impuesto PPh se dicen igual en indonesio (el diccionario ya escribía «peran admin atau super admin» y «Proforma ini»)
+                 'admin', 'Super admin', 'Super Admin', 'Proforma', 'Total: %t', 'Saldo', 'PPh')
 # Lo que hay que tocar en el front copiado: (fichero en DIST, trozo de Lawang, sustituto). Cada trozo tiene que aparecer EXACTAMENTE una vez.
 IDIOMAS_PARCHES = (
     ('contracts/assets/idioma.js', "  window.LW_IDIOMA = (v === 'en') ? 'en' : 'es';",
