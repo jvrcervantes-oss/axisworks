@@ -864,6 +864,9 @@
     'no hubo red': 'there was no network',
     'llegó al límite de uso': 'it hit its usage limit',
     'otro error': 'another error',
+    'la llave no se pudo borrar de la caja fuerte: anúlala también en la cuenta donde la creaste': 'the key could not be erased from the vault: also revoke it in the account where you created it',
+    'Esta conexión apunta a otra llave guardada: pulsa Desconectar y vuelve a pegarla.': 'This connection points to another stored key: press Disconnect and paste it again.',
+    'Desconectada, pero la llave no se pudo borrar de la caja fuerte: anúlala también en la cuenta donde la creaste.': 'Disconnected, but the key could not be erased from the vault: also revoke it in the account where you created it.',
     'Ese proveedor no se puede conectar aquí.': 'That provider cannot be connected here.',
     'La llave de Claude empieza por sk-ant- y no lleva espacios. Está en la consola de Anthropic, en API keys.': 'A Claude key starts with sk-ant- and has no spaces. You find it in the Anthropic console under API keys.',
     'Los ajustes de la conexión no son válidos.': 'The connection settings are not valid.',
@@ -1292,6 +1295,9 @@
     'no hubo red': 'tidak ada jaringan',
     'llegó al límite de uso': 'mencapai batas pemakaian',
     'otro error': 'kesalahan lain',
+    'la llave no se pudo borrar de la caja fuerte: anúlala también en la cuenta donde la creaste': 'kunci tidak bisa dihapus dari brankas: cabut juga di akun tempat Anda membuatnya',
+    'Esta conexión apunta a otra llave guardada: pulsa Desconectar y vuelve a pegarla.': 'Koneksi ini menunjuk ke kunci lain yang tersimpan: tekan Putuskan lalu tempel lagi kuncinya.',
+    'Desconectada, pero la llave no se pudo borrar de la caja fuerte: anúlala también en la cuenta donde la creaste.': 'Terputus, tetapi kunci tidak bisa dihapus dari brankas: cabut juga di akun tempat Anda membuatnya.',
     'Ese proveedor no se puede conectar aquí.': 'Penyedia itu tidak bisa dihubungkan di sini.',
     'La llave de Claude empieza por sk-ant- y no lleva espacios. Está en la consola de Anthropic, en API keys.': 'Kunci Claude diawali sk-ant- dan tanpa spasi. Ada di konsol Anthropic, bagian API keys.',
     'Los ajustes de la conexión no son válidos.': 'Pengaturan koneksi tidak valid.',
@@ -2443,10 +2449,12 @@
   var CANAL = { facebook: 'Facebook', instagram: 'Instagram' };
   var PROVEEDOR = { claude: 'IA (Claude)', meta: 'Facebook e Instagram', google: 'Google Business' };
   var CON_ESTADO = { sin_comprobar: 'guardada, sin comprobar todavía', conectada: 'conectada', caducada: 'caducada: pega una nueva', error: 'con error', desconectada: 'desconectada' };
-  var CON_ERROR = { llave_invalida: 'la llave no es válida', sin_permiso: 'la llave no tiene permiso', caducada: 'la llave caducó', red: 'no hubo red', limite: 'llegó al límite de uso', otro: 'otro error' };
+  var CON_ERROR = { llave_invalida: 'la llave no es válida', sin_permiso: 'la llave no tiene permiso', caducada: 'la llave caducó', red: 'no hubo red', limite: 'llegó al límite de uso', otro: 'otro error',
+                   llave_sin_vaciar: 'la llave no se pudo borrar de la caja fuerte: anúlala también en la cuenta donde la creaste' };
   /* {ok:false, motivo} de cada escritura: su frase. La base es quien decide si vale; la pantalla solo lo cuenta. */
   var CON_MOTIVO = { proveedor: 'Ese proveedor no se puede conectar aquí.', formato: 'La llave de Claude empieza por sk-ant- y no lleva espacios. Está en la consola de Anthropic, en API keys.',
                      ajustes: 'Los ajustes de la conexión no son válidos.', sin_vault: 'Esta base no tiene la caja fuerte para guardar llaves: avisa al estudio.',
+                     otro_secreto: 'Esta conexión apunta a otra llave guardada: pulsa Desconectar y vuelve a pegarla.',
                      error: 'No se ha podido guardar la llave. Prueba otra vez o avisa al estudio.' };
   var PALANCA_MOTIVO = { clave: 'La base no conoce ese agente o esa área: recarga la página.' };
   var ALT_MOTIVO = { forma: 'La base no ha entendido el dato: recarga y vuelve a probar.', dominio: 'Ese dominio no vale: escríbelo sin https:// ni barras, por ejemplo minegocio.com.',
@@ -2979,7 +2987,8 @@
       }
       if (alAcabar) alAcabar();
       /* agente_ajuste_altavoz dice `cambia`: false = ya estaba así (no se ha tocado nada) */
-      var texto = r.data.cambia === false ? T('Ya estaba así: no había nada que cambiar.') : okTexto;
+        /* okTexto puede ser una función de la respuesta: desconectar avisa si la llave no se pudo vaciar (llave_sin_vaciar) */
+      var texto = r.data.cambia === false ? T('Ya estaba así: no había nada que cambiar.') : (typeof okTexto === 'function' ? okTexto(r.data) : okTexto);
       return carga().then(function () { dice(ok, texto); return true; });
     });
   }
@@ -3008,7 +3017,9 @@
     C.dialogo(T('Desconectar la IA'), [h('p', { class: 'ag-sub', text: T('Los agentes dejan de llamar a la IA en el acto. Para volver, el dueño pega la llave otra vez.') })], [
       { texto: T('Confirmar'), accion: 'ag-modal-confirmar', peligro: true, alclic: function (bt, dlg) {
         if (!ocupaV2(bt)) return;
-        escribeV2(bt, llama('agente_conexion_desconecta', { p_proveedor: prov }), T('Desconectada.'), function (k) { return CON_MOTIVO[k]; }, dlg).then(function (hecho) { if (hecho) dlg.cierra(); });
+        escribeV2(bt, llama('agente_conexion_desconecta', { p_proveedor: prov }), function (d) {
+          return d.llave_sin_vaciar === true ? T('Desconectada, pero la llave no se pudo borrar de la caja fuerte: anúlala también en la cuenta donde la creaste.') : T('Desconectada.');
+        }, function (k) { return CON_MOTIVO[k]; }, dlg).then(function (hecho) { if (hecho) dlg.cierra(); });
       } },
       { texto: T('Cancelar'), accion: 'ag-modal-cerrar', cierra: true }
     ]);
