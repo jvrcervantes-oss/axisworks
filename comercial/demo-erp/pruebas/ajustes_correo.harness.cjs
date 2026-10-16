@@ -271,7 +271,9 @@ const err = (status, codigo, extra = {}) => ({ status, body: Object.assign({ ok:
     });
     await espera(p, '[data-correo-fila="email_from"]');
     const f = '[data-correo-fila="email_from"] ';
-    await p.click(f + '[data-accion="correo-ajuste-pedir"]');
+    // Desde Lawang 1b7e8592b (17-oct-2026) «Pedir código» no se ve en reposo: sale al cambiar el valor. La guarda de «sin cambios» se prueba
+    // pulsando el botón por el DOM, que vale con el botón oculto (Lawang nuevo) y a la vista (el fijado de antes).
+    await p.$eval(f + '[data-accion="correo-ajuste-pedir"]', (b) => b.click());
     ok('mismo valor que el actual: lo dice y no llama a la edge', /ya es el actual/.test(await txt(p, '[data-correo="resultado-email_from"]')) && llamadas.length === 1);
     await p.fill(cam('dir-email_from'), 'no-es-un-correo');
     await p.click(f + '[data-accion="correo-ajuste-pedir"]');
