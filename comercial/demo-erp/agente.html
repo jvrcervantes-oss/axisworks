@@ -2987,7 +2987,7 @@
       }
       if (alAcabar) alAcabar();
       /* agente_ajuste_altavoz dice `cambia`: false = ya estaba así (no se ha tocado nada) */
-        /* okTexto puede ser una función de la respuesta: desconectar avisa si la llave no se pudo vaciar (llave_sin_vaciar) */
+      /* okTexto puede ser una función de la respuesta: desconectar avisa si la llave no se pudo vaciar (llave_sin_vaciar) */
       var texto = r.data.cambia === false ? T('Ya estaba así: no había nada que cambiar.') : (typeof okTexto === 'function' ? okTexto(r.data) : okTexto);
       return carga().then(function () { dice(ok, texto); return true; });
     });
