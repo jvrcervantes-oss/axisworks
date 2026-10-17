@@ -782,8 +782,111 @@
           });
         }
         return r;
+      },
+      /* Compradores, documentos KYC, campana y registro de correos por el servidor (LAW-338 L5, 16-oct-2026; SQL de Lawang:
+         supabase/migrations/20261016063536_law338_l5_compradores_datos.sql). Antes la v4 leía clients, documents,
+         contrato_compradores, notificaciones y correos_enviados con `.from()`, y la demo los servía por el doble; ahora las
+         pide por lwDatos y, sin ellas, la campana decía «no se pudieron cargar» y Compradores salía vacío (pin de Lawang,
+         17-oct). Mismas filas de siempre (las de la siembra y las del doble limpiadas por LW_DEMO_LIMPIA), con las columnas,
+         el orden, los topes y los 22023 de la base. */
+      clientes_lista_datos: function (F, a) {
+        if (a.p_ids != null && a.p_ids.length > 5000) falla('clientes_lista_datos: demasiados ids');
+        var cl = filas(F, 'clients').filter(function (c) { return a.p_ids == null || a.p_ids.indexOf(c.id) !== -1; }).sort(porTexto('full_name'));
+        return { clientes: cl.slice(0, 5000).map(function (c) { return elige(c, ['id', 'full_name']); }),
+          recortado: cl.length > 5000 ? ['clientes'] : [] };
+      },
+      comprador_ficha_datos: function (F, a) {
+        var PARTES = ['ficha', 'documento', 'documentos', 'portal', 'soporte'], p = a.p_partes;
+        if (a.p_client == null || !Array.isArray(p) || !p.length || p.some(function (x) { return PARTES.indexOf(x) === -1; })) {
+          falla('comprador_ficha_datos: argumentos');
+        }
+        var c = filas(F, 'clients').filter(function (x) { return x.id === a.p_client; })[0];
+        if (!c) return { ve: false, recortado: [] };   // la base: la RLS no deja verla (o no existe) → ninguna parte
+        var r = { ve: true, recortado: [] };
+        if (p.indexOf('ficha') !== -1) r.ficha = elige(c, ['id', 'numero_cliente', 'full_name', 'email', 'phone', 'nationality', 'passport_number',
+          'tipo', 'forma_juridica', 'registro_num', 'rep_nombre', 'rep_cargo', 'kyc_status', 'idioma_comunicacion', 'propietario', 'created_at']);
+        if (p.indexOf('documento') !== -1) r.documento = elige(c, ['id', 'full_name', 'email', 'passport_number', 'registro_num', 'address']);
+        if (p.indexOf('documentos') !== -1) {
+          var docs = filas(F, 'documents').filter(function (d) { return d.client_id === c.id; }).sort(porDescNulos('uploaded_at'));
+          r.documentos = docs.slice(0, 500).map(function (d) { return elige(d, ['id', 'doc_type', 'storage_path', 'uploaded_at', 'caduca_el']); });
+          if (docs.length > 500) r.recortado.push('documentos');
+        }
+        if (p.indexOf('portal') !== -1) {
+          r.portal = filas(F, 'portal_accesos').filter(function (x) { return x.client_id === c.id; }).sort(porTexto('creado_en'))
+            .map(function (x) { return elige(x, ['email', 'activo', 'ultimo_acceso', 'accesos']); });
+        }
+        if (p.indexOf('soporte') !== -1) {
+          var ult = filas(F, 'mensajes_comprador').filter(function (m) { return m.client_id === c.id; }).sort(porDescNulos('creado_en'))[0];
+          r.soporte = { ultimo: ult ? elige(ult, ['de', 'texto', 'creado_en']) : null,
+            hilos: filas(F, 'hilo_soporte').filter(function (h) { return h.client_id === c.id; }).sort(porDescNulos('actualizado_en'))
+              .map(function (h) { return elige(h, ['estado', 'actualizado_en']); }) };
+        }
+        return r;
+      },
+      operacion_compradores_datos: function (F, a) {
+        var ids = a.p_clientes || [];
+        if (a.p_contrato == null || ids.length > 200) falla('operacion_compradores_datos: argumentos');
+        var docs = filas(F, 'documents').filter(function (d) { return d.contrato_id === a.p_contrato || ids.indexOf(d.client_id) !== -1; })
+          .sort(porDescNulos('uploaded_at'));
+        return {
+          clientes: filas(F, 'clients').filter(function (c) { return ids.indexOf(c.id) !== -1; }).sort(porTexto('full_name'))
+            .map(function (c) { return elige(c, ['id', 'full_name', 'kyc_status']); }),
+          documentos: docs.slice(0, 1000).map(function (d) { return elige(d, ['doc_type', 'uploaded_at', 'caduca_el', 'client_id']); }),
+          recortado: docs.length > 1000 ? ['documentos'] : []
+        };
+      },
+      operaciones_compradores_datos: function (F) {
+        var cli = {}; filas(F, 'clients').forEach(function (c) { cli[c.id] = c; });
+        var vi = filas(F, 'contrato_compradores').slice().sort(function (x, y) {
+          return x.contrato_id === y.contrato_id ? (x.client_id < y.client_id ? -1 : x.client_id > y.client_id ? 1 : 0) : (x.contrato_id < y.contrato_id ? -1 : 1);
+        });
+        var docs = filas(F, 'documents').slice().sort(porDescNulos('uploaded_at'));
+        var rec = [];
+        if (vi.length > 5000) rec.push('vinculos');
+        if (docs.length > 5000) rec.push('documentos');
+        return {
+          vinculos: vi.slice(0, 5000).map(function (v) {   // `cliente` sin pasaporte (#396.3); null si la ficha no se ve
+            var c = cli[v.client_id];
+            return { contrato_id: v.contrato_id, rol: v.rol === undefined ? null : v.rol, cliente: c ? elige(c, ['id', 'full_name', 'email', 'phone', 'kyc_status']) : null };
+          }),
+          documentos: docs.slice(0, 5000).map(function (d) { return elige(d, ['id', 'client_id', 'contrato_id', 'doc_type', 'storage_path', 'status', 'uploaded_at', 'caduca_el']); }),
+          recortado: rec
+        };
+      },
+      notificaciones_datos: function (F, a) {
+        var lim = Math.min(Math.max(a.p_limite == null ? 30 : Number(a.p_limite) || 0, 1), 400);
+        var n = filas(F, 'notificaciones').slice().sort(porDescNulos('creado_en'));
+        return { notificaciones: n.slice(0, lim).map(function (t) { return elige(t, ['tipo', 'titulo', 'detalle', 'enlace', 'creado_en', 'destinatario']); }),
+          hay_mas: n.length > lim };
+      },
+      correos_registro_datos: function (F, a) {
+        var cs = a.p_contratos || [];
+        if ((a.p_factura == null) === (cs.length === 0) || cs.length > 500) falla('correos_registro_datos: pide por contratos o por factura');
+        var e = filas(F, 'correos_enviados').filter(function (x) {
+          return a.p_factura != null ? x.factura_id === a.p_factura : cs.indexOf(x.contrato_id) !== -1;
+        }).sort(porDescNulos('enviado_en'));
+        return { correos: e.slice(0, 200).map(function (x) { return elige(x, ['para', 'asunto', 'via', 'enviado_por', 'enviado_en', 'contrato_id', 'factura_id']); }),
+          recortado: e.length > 200 ? ['correos'] : [] };
+      },
+      /* «Ficha ≠» es una VISTA de la base (documentos_desactualizados: lo que dice cada contrato o factura frente a su ficha)
+         y la demo no la tiene. Vacío estructural, como Ajustes: que ningún documento difiere de su ficha es lo que da una demo
+         recién sembrada, y una diferencia inventada haría creer que la demo tiene un dato roto. */
+      documentos_desactualizados_datos: function (F, a) {
+        if ((a.p_tipo != null) + (a.p_client != null) + (a.p_id != null) !== 1) falla('documentos_desactualizados_datos: un filtro y solo uno');
+        return { documentos: [], recortado: [] };
       }
     };
+    /* Orden de la base: texto ascendente y desempate por id; fecha descendente con los nulos al final y desempate por id
+       descendente (`order by x desc nulls last, id desc`). */
+    function porTexto(k) {
+      return function (x, y) { return x[k] === y[k] ? (x.id < y.id ? -1 : x.id > y.id ? 1 : 0) : x[k] == null ? 1 : y[k] == null ? -1 : (x[k] < y[k] ? -1 : 1); };
+    }
+    function porDescNulos(k) {
+      return function (x, y) {
+        if (x[k] === y[k]) return x.id < y.id ? 1 : x.id > y.id ? -1 : 0;
+        return x[k] == null ? 1 : y[k] == null ? -1 : (x[k] < y[k] ? 1 : -1);
+      };
+    }
   })();
 
   /* ══ Almacén de la pestaña (A2, 11-oct-2026, demo-pA) ═══════════════════════════════════════════════════════════

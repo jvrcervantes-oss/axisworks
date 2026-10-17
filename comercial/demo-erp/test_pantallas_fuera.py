@@ -43,6 +43,7 @@ with tempfile.TemporaryDirectory() as d:
     if hay(d, 'assets/solo_taller.js') or hay(d, 'assets/extra_de_taller.js'):
         fallos.append('poda: lo que solo cargaba la pantalla (y lo que cargaba él) debe salir')
 
+
 # la instancia real: las cuatro fuera (reservas-producto apagado a propósito, 10-oct-2026), ventas y el resto dentro, bbm intacta
 xp = set(build.mapa_modulos('axisworks-demo')['xp'])
 for fuera in ('/taller/', '/whatsapp-bot/', '/textos-contrato/', '/reservas-producto/'):
@@ -55,6 +56,10 @@ for dentro in ('/ventas/', '/crea-contrasena/', '/facturas/', '/home/'):
 # SUYOS y se quedan; whatsapp-bot, textos-contrato y asistente salen del paquete, como en axisworks-demo. Hasta ese commit esta prueba exigía
 # las cuatro dentro y se quedó en rojo sin que nadie lo viera (ningún gate la corre).
 xp_bbm = set(build.mapa_modulos('bbm')['xp'])
+# el MCP de Lawang (17-oct, build.PANTALLAS_SOLO_LAWANG): sus pantallas no caben en ninguna instancia (ia_* y la edge mcp son solo_lawang)
+for inst, x in (('bbm', xp_bbm), ('axisworks-demo', xp)):
+    if not {'/ia/', '/ia/conectar/'} <= x:
+        fallos.append('%s: /ia/ y /ia/conectar/ (MCP de Lawang) deben salir como «Pantalla no incluida»: %s' % (inst, sorted(x)))
 if {'/taller/', '/reservas-producto/'} & xp_bbm:
     fallos.append('bbm lleva sus pantallas (taller y reservas-producto son suyos): %s' % sorted(xp_bbm))
 for fuera in ('/whatsapp-bot/', '/textos-contrato/', '/asistente/'):

@@ -91,7 +91,6 @@ if r == 'pasa':
     mira('los es-ES que no son de interfaz (importe editable, factura impresa) se quedan como estaban', all(lee(d, f) == ORIGINAL[f] for f in build.ES_ES_FIJOS))
     mira('el núcleo del indonesio va al final de i18n.js, una vez', i18n.count('window.LW_ID = {') == 1 and i18n.rstrip().endswith('})();') and '__AXW_LW_ID__' not in i18n)
     mira('el idioma.js parcheado declara los idiomas de la instancia', '["id", "en"]' in lee(d, 'contracts/assets/idioma.js'))
-
 # -- (2) para si algo no casa
 mira('para si cambia la línea de idioma.js', corre(cambia={'contracts/assets/idioma.js': lambda t: t.replace("(v === 'en') ? 'en' : 'es'", "(v === 'en') ? 'en' : 'es' ", 1)})[0] == 'para')
 mira('para si cambia el selector de nav.js', corre(cambia={'intranet/v4/assets/nav.js': lambda t: t.replace("if (t !== 'ES' && t !== 'EN') return;", "if (t !== 'ES' && t !== 'EN' && t !== 'FR') return;", 1)})[0] == 'para')
@@ -265,6 +264,11 @@ for rel in COBERTURA + ('intranet/v4/assets/datos.js',):
         for idioma, dic in (('id', _ID), ('en', _EN)):
             if not _tiene(dic, k) and (rel in COBERTURA or idioma == 'en'):
                 _falta.append('%s [%s] «%s»' % (rel.split('/')[-1], idioma, k[:50]))
+# La barra (topbar.js) sí PARA (17-oct, pin a Lawang 20fbfcd9c4): sus frases van por tbT → lwT, salen en TODAS las pantallas y
+# esta prueba mira el Lawang fijado, así que solo se pone roja al subir el pin, que es cuando hay que traducirlas. Antes los avisos
+# de la campana iban fijos en español y ninguna prueba lo veía.
+_barra = sorted(k for k in _claves('contracts/assets/topbar.js') if not _tiene(_ID, k))
+mira('toda frase de la barra (topbar.js) tiene su indonesio en i18n_id.json (%s)' % '; '.join(k[:40] for k in _barra), not _barra)
 _n_editores = len(_claves('intranet/v4/assets/editores.js'))
 mira('la cobertura mide algo (editores.js pide más de 200 frases; pide %d)' % _n_editores, _n_editores > 200)
 _al_ingles = sum(1 for k in _claves('intranet/v4/assets/datos.js') if not _tiene(_ID, k))

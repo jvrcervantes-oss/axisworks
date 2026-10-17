@@ -192,9 +192,13 @@ ok('NO le llega hasta subir el fijado' in L.linea_aterrizaje(a) and '2 commits p
 b = L.pendientes(rango_aterrizaje=cinco + '..' + cinco)
 ok(L.linea_aterrizaje(b) == '', 'el aviso NO sale si lo subido no toca RUTAS')
 # El registro real: cada parche que nombra existe de verdad en build.py (si alguien renombra el parche, el registro no queda apuntando al aire).
+# Vacío también vale (17-oct, pin a Lawang 20fbfcd9c4): al subir el fijado por encima de los arreglos se quitan los parches y sus filas.
 real = json.load(open(os.path.join(AQUI, 'lawang_portados.json'), encoding='utf-8'))
 build = open(os.path.join(AQUI, 'build.py'), encoding='utf-8').read()
-ok(real and all(('%s = (' % f['parche']) in build for f in real.values()), 'lawang_portados.json: cada parche nombrado existe en build.py')
+ok(isinstance(real, dict) and all(('%s = (' % f['parche']) in build for f in real.values()),
+   'lawang_portados.json: cada parche nombrado existe en build.py')
+ok('FALLA x' in L._etiqueta('ABORTA: esperado por la prueba\nok   algo\nFALLA x\n') and L._etiqueta('ABORTA: ancla\n').startswith('ABORTA'),
+   'la etiqueta del rojo es el FALLA de la prueba, no un ABORTA esperado que imprimió antes')
 
 import shutil  # noqa: E402
 shutil.rmtree(tmp, ignore_errors=True)   # solo la carpeta temporal de esta prueba

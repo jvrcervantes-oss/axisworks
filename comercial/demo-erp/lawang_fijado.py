@@ -265,11 +265,14 @@ def comprobaciones(publico=None):
 
 
 def _etiqueta(salida):
-    """La primera línea que dice QUÉ falló (ABORTA/FALLA/ROJO), sin rutas de la máquina: es lo que se compara entre incidentes."""
-    for linea in salida.splitlines():
-        s = linea.strip()
-        if s.startswith(('ABORTA', 'FALLA', 'ROJO', 'AssertionError', 'Error:')):
-            return s[:220]
+    """La primera línea que dice QUÉ falló, sin rutas de la máquina: es lo que se compara entre incidentes. Una prueba que
+    caza abortos a propósito imprime antes sus ABORTA ESPERADOS (test_lawang_fijado: «la caché … no es el sha», 17-oct), así
+    que un FALLA manda sobre un ABORTA: si no, el rojo se atribuía a la caché y el fallo de verdad quedaba escondido."""
+    lineas = [l.strip() for l in salida.splitlines()]
+    for prefijos in (('FALLA',), ('ABORTA', 'ROJO', 'AssertionError', 'Error:')):
+        for s in lineas:
+            if s.startswith(prefijos):
+                return s[:220]
     return (salida.strip().splitlines() or ['(sin salida)'])[-1][:220]
 
 
