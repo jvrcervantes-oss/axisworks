@@ -156,6 +156,11 @@ mira('el precio nunca viaja: la reserva manda producto, unidad, cliente o contac
 mira('el cobro de mostrador no manda importe: solo p_importe_visto = el precio_total que se enseñaba, y una clave por diálogo',
      "p_importe_visto: Number(x.precio_total)" in CODIGO and CODIGO.count('p_importe_visto') == 1 and 'p_clave: clave' in CODIGO
      and not re.search(r"llama\('caja_cierra'[^)]*(esperado|diferencia)", CODIGO))
+# arqueo a ciegas: las monedas a contar las da la base (d.contar), nunca se sacan del importe, que para el cajero llega null y se pinta «—»
+mira('la caja cuenta las monedas que da la base (d.contar) y un importe en efectivo null se pinta «—» con la nota de arqueo a ciegas',
+     'var monedas = d.contar.filter(' in CODIGO and 'Array.isArray(d.contar)' in CODIGO
+     and "if (n == null || n === '' || isNaN(Number(n))) return '—';" in CODIGO
+     and 'return f.importe === null;' in CODIGO and not re.search(r"monedas\.push\(f\.moneda\)", CODIGO))
 claves_datos = set(re.findall(r"datos\.([a-z_]+)\s*=", CODIGO))
 mira('las unicas claves que se anaden a p_datos son las que la base lee (' + ', '.join(sorted(claves_datos)) + ')',
      claves_datos <= {'unidad_id', 'client_id', 'contacto_nombre', 'contacto_telefono', 'entrega_direccion', 'recogida_direccion', 'notas', 'clave'})

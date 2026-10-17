@@ -429,6 +429,7 @@ a.rp-boton{text-decoration:none}
     'El efectivo se cuenta a ciegas: lo que debería haber se ve al cerrar la caja.': 'Cash is counted blind: what there should be is shown when the till is closed.',
     'Efectivo contado': 'Cash counted',
     'Diferencia': 'Difference',
+    'Nota': 'Note',
     'Cierre con diferencia': 'Closed with a difference',
     'Cierre: cuadra': 'Closed: it balances',
     'Cerrar la caja': 'Close the till',
@@ -639,6 +640,7 @@ a.rp-boton{text-decoration:none}
     'El efectivo se cuenta a ciegas: lo que debería haber se ve al cerrar la caja.': 'Uang tunai dihitung tanpa melihat jumlahnya: jumlah yang seharusnya terlihat saat kas ditutup.',
     'Efectivo contado': 'Tunai yang dihitung',
     'Diferencia': 'Selisih',
+    'Nota': 'Catatan',
     'Cierre con diferencia': 'Ditutup dengan selisih',
     'Cierre: cuadra': 'Ditutup: cocok',
     'Cerrar la caja': 'Tutup kas',
@@ -2279,7 +2281,8 @@ a.rp-boton{text-decoration:none}
     else if (a === 'rp-pagos-mas') cargaPagos(true);
     // la caja: el día se mueve sobre el que dio la base (aritmética de calendario, no el reloj del navegador)
     else if (a === 'rp-caja-hoy') { error(''); cargaCaja(null); }
-    else if (a === 'rp-caja-ant') { if (E.caja) cargaCaja(sumaDias(E.caja.dia, -1)); }
+    // la base admite hasta 400 días atrás: más allá la caja se quedaría vacía y sin día sobre el que moverse
+    else if (a === 'rp-caja-ant') { if (E.caja && E.caja.dia > sumaDias(E.caja.hoy, -400)) cargaCaja(sumaDias(E.caja.dia, -1)); }
     else if (a === 'rp-caja-sig') { if (E.caja && E.caja.dia < E.caja.hoy) cargaCaja(sumaDias(E.caja.dia, 1)); }
     else if (a === 'rp-caja-actualizar') cargaCaja(E.caja && E.caja.dia);
     else if (a === 'rp-caja-cierra') { if (E.caja) { error(''); exito(''); cierraCaja(E.caja); } }
