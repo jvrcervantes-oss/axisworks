@@ -423,6 +423,10 @@ a.rp-boton{text-decoration:none}
     'Por': 'By',
     'Cobros corregidos (la forma de pago estaba mal)': 'Corrected payments (the payment method was wrong)',
     'Efectivo esperado': 'Expected cash',
+    'Efectivo cobrado': 'Cash taken',
+    'Efectivo devuelto': 'Cash refunded',
+    'Devoluciones del día (salen por la misma forma de pago que entró el cobro)': 'Refunds of the day (they go out the same way the payment came in)',
+    'El efectivo se cuenta a ciegas: lo que debería haber se ve al cerrar la caja.': 'Cash is counted blind: what there should be is shown when the till is closed.',
     'Efectivo contado': 'Cash counted',
     'Diferencia': 'Difference',
     'Cierre con diferencia': 'Closed with a difference',
@@ -629,6 +633,10 @@ a.rp-boton{text-decoration:none}
     'Por': 'Oleh',
     'Cobros corregidos (la forma de pago estaba mal)': 'Pembayaran yang dikoreksi (cara bayarnya salah)',
     'Efectivo esperado': 'Tunai yang seharusnya',
+    'Efectivo cobrado': 'Tunai diterima',
+    'Efectivo devuelto': 'Tunai dikembalikan',
+    'Devoluciones del día (salen por la misma forma de pago que entró el cobro)': 'Refund hari ini (keluar dengan cara bayar yang sama seperti pembayarannya masuk)',
+    'El efectivo se cuenta a ciegas: lo que debería haber se ve al cerrar la caja.': 'Uang tunai dihitung tanpa melihat jumlahnya: jumlah yang seharusnya terlihat saat kas ditutup.',
     'Efectivo contado': 'Tunai yang dihitung',
     'Diferencia': 'Selisih',
     'Cierre con diferencia': 'Ditutup dengan selisih',
@@ -2053,7 +2061,8 @@ a.rp-boton{text-decoration:none}
     est.textContent = T('Cargando…');
     return llama('caja_dia_datos', { p_dia: dia || null }).then(function (r) {
       var d = r.data;
-      if (r.error || !d || !esFecha(d.dia) || !Array.isArray(d.cobros) || !Array.isArray(d.corregidos) || !Array.isArray(d.por_forma) || !Array.isArray(d.sin_pagar)) {
+      if (r.error || !d || !esFecha(d.dia) || !Array.isArray(d.cobros) || !Array.isArray(d.corregidos) || !Array.isArray(d.por_forma) || !Array.isArray(d.sin_pagar)
+          || !Array.isArray(d.contar) || !Array.isArray(d.devoluciones)) {
         E.caja = null; vacia($v('caja-cuerpo'));
         est.textContent = T('No se ha podido mirar') + ': ' + textoError(r, true);
         return;
@@ -2076,6 +2085,9 @@ a.rp-boton{text-decoration:none}
         return h('tr', null, [celda(f.moneda), celda(nombreForma(f.forma)), celda(String(f.cobros), 'rp-num'), celda(dinero(f.importe, f.moneda), 'rp-num')]);
       }));
       cuerpo.appendChild(h('div', { class: 'rp-tabla-caja' }, [t]));
+      if (d.por_forma.some(function (f) { return f.importe === null; })) {
+        cuerpo.appendChild(h('p', { class: 'rp-nota', text: T('El efectivo se cuenta a ciegas: lo que debería haber se ve al cerrar la caja.') }));
+      }
     }
     if (d.cobros.length) {
       var abierta = !d.cierre && d.admin === true;
@@ -2100,10 +2112,23 @@ a.rp-boton{text-decoration:none}
       cuerpo.appendChild(h('h4', { text: T('Cobros corregidos (la forma de pago estaba mal)') }));
       cuerpo.appendChild(h('div', { class: 'rp-tabla-caja' }, [tk]));
     }
+    if (d.devoluciones.length) {
+      var tdv = h('table', { class: 'rp-tabla' });
+      tabla(tdv, [['Devuelto'], ['Reserva'], ['Forma de pago'], ['Importe', 'rp-num'], ['Por']], d.devoluciones.map(function (x) {
+        return h('tr', null, [celda(fechaHora(x.creado_en)), celda(x.numero_reserva || '—'), celda(nombreForma(x.forma)),
+          celda(dinero(x.importe, x.moneda), 'rp-num'), celda(x.por || '—')]);
+      }));
+      cuerpo.appendChild(h('h4', { text: T('Devoluciones del día (salen por la misma forma de pago que entró el cobro)') }));
+      cuerpo.appendChild(h('div', { class: 'rp-tabla-caja' }, [tdv]));
+    }
     // el cierre: hecho (con su cuadre) o el botón, solo para hoy o un día pasado
     if (d.cierre && Array.isArray(d.cierre.cuadre)) {
       var pares = [['Cerrada', fechaHora(d.cierre.cerrado_en) + (d.cierre.cerrado_por ? ' · ' + T('por') + ' ' + d.cierre.cerrado_por : '')]];
       d.cierre.cuadre.forEach(function (q) {
+        if (Number(q.efectivo_devuelto) > 0) {
+          pares.push([T('Efectivo cobrado') + ' (' + q.moneda + ')', dinero(q.efectivo_cobrado, q.moneda)]);
+          pares.push([T('Efectivo devuelto') + ' (' + q.moneda + ')', dinero(q.efectivo_devuelto, q.moneda)]);
+        }
         pares.push([T('Efectivo esperado') + ' (' + q.moneda + ')', dinero(q.efectivo_esperado, q.moneda)]);
         pares.push([T('Efectivo contado') + ' (' + q.moneda + ')', dinero(q.efectivo_contado, q.moneda)]);
         pares.push([T('Diferencia') + ' (' + q.moneda + ')', dinero(q.diferencia, q.moneda)]);
@@ -2139,8 +2164,8 @@ a.rp-boton{text-decoration:none}
     return Number(s);
   }
   function cierraCaja(d) {
-    var monedas = [];
-    d.por_forma.forEach(function (f) { if (f.forma === 'efectivo' && Number(f.importe) > 0 && monedas.indexOf(f.moneda) === -1) monedas.push(f.moneda); });
+    // las monedas a contar las dice la base (con cobros o devoluciones en efectivo ese día): el importe puede llegar a ciegas
+    var monedas = d.contar.filter(function (m) { return /^[A-Z]{3}$/.test(String(m)); });
     var campos = {};
     var nodos = [h('p', { class: 'rp-nota', text: T('Cuenta el efectivo de la caja y escribe cuánto hay. Lo que debería haber lo calcula la base al cerrar; si no cuadra, te pedirá una nota.') })];
     if (!monedas.length) nodos.push(h('p', { class: 'rp-nota', text: T('Este día no hay cobros en efectivo: no hay nada que contar.') }));
