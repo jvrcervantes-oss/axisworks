@@ -140,8 +140,9 @@ for nombre, cod in (('la portada', CODIGO), ('la puesta en marcha', CODIGO_AJ)):
     sin_lectura_soc = re.sub(r"\.from\('sociedades'\)\.select\(", '', cod)   # F3: Configurar módulos lee la fila de la empresa (solo select)
     mira('%s: ni .from( (salvo leer sociedades) ni insert/update/upsert/delete ni storage' % nombre, not re.search(r'\.from\(|\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.storage\b', sin_lectura_soc))
 mira('no nombra claves de servicio', not re.search(r'service_role|sb_secret_', SCRIPT + MARCADO + AJ))
-mira('la portada solo LEE y solo portada_reservas_dia_datos, por lwDatos',
-     set(re.findall(r"(?:\.rpc|lwDatos)\('([a-z_]+)'", CODIGO)) == {'portada_reservas_dia_datos'} and '.rpc(' not in CODIGO)
+# + reservas_taller_espera_datos (aviso de unidades que esperan revisión, bbm-flujos-ux 18-oct-2026; la lectura es de bbm-infiltrado, migración 20261018020000)
+mira('la portada solo LEE y solo portada_reservas_dia_datos y reservas_taller_espera_datos, por lwDatos',
+     set(re.findall(r"(?:\.rpc|lwDatos)\('([a-z_]+)'", CODIGO)) == {'portada_reservas_dia_datos', 'reservas_taller_espera_datos'} and '.rpc(' not in CODIGO)
 PASOS_JS = open(os.path.join(AQUI, 'setup_pasos.js'), encoding='utf-8').read()
 mira('Configurar módulos lee ajustes_config_datos (lwDatos) y no llama a la base por su cuenta: escribe por los componentes de setup_pasos.js',
      set(re.findall(r"lwDatos\('([a-z_]+)'", CODIGO_AJ)) == {'ajustes_config_datos'} and not re.findall(r"\.rpc\('", CODIGO_AJ))
