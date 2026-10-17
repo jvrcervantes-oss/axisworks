@@ -147,6 +147,37 @@ async function servidor(b, nombre, a) {
       return { data: { reserva_id: r.id, estado: 'cancelada', rectificativas: [], devuelto: a.p_importe_devuelto, retenido: 300000 - a.p_importe_devuelto, moneda: 'IDR',
         aviso: 300000 - a.p_importe_devuelto > 0 ? 'Queda ' + (300000 - a.p_importe_devuelto) + ' IDR cobrado y sin factura' : null }, error: null };
     }
+    // cobro en el mostrador (20261018140000): p_clave es uuid en la firma; Postgres responde 22P02 a lo que no lo es (18-oct: el script mandaba «equipo-…»)
+    case 'reserva_producto_cobro_mostrador': {
+      if (a.p_clave != null && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(a.p_clave))) return err('22P02', 'invalid input syntax for type uuid: "' + a.p_clave + '"');
+      const r = b.reservas.find(x => x.id === a.p_reserva);
+      if (Number(a.p_importe_visto) !== Number(r.precio_total)) return err('22023', 'El precio ha cambiado', 'precio_cambiado');
+      const ya = (b.cobros || (b.cobros = [])).find(c => c.clave === a.p_clave);
+      if (ya) return { data: ya.res, error: null };
+      r.pago_referencia = 'MOSTRADOR';
+      const res = { reserva_id: r.id, cobro_id: 'k' + (++b.seq), importe: r.precio_total, moneda: r.moneda, forma: a.p_forma, caja_dia: mas(0), caja_de_manana: false };
+      b.cobros.push({ clave: a.p_clave, res });
+      return { data: res, error: null };
+    }
+    // caja del día (20261018140000): con el día abierto, el efectivo llega a ciegas (importe null) a quien no es admin, en los totales y en sus cobros;
+    // la base dice qué monedas contar y si cuadra; la nota solo se la exige a un admin (D13: a quien cuenta a ciegas, el error le serviría para probar cifras)
+    case 'caja_dia_datos': {
+      const hoy = mas(0), dia = a.p_dia || hoy, adm = !!o.cajaAdmin, cierre = b.cierre && b.cierre.dia === dia ? b.cierre : null, ciego = !adm && !cierre;
+      const cobros = [{ id: 'k1', reserva_id: 'r4', numero_reserva: 'RSV-4', forma: 'efectivo', importe: ciego ? null : 200000, moneda: 'IDR', referencia: null, cobrado_en: new Date().toISOString(), cobrado_por: 'Ana', mio: true }];
+      return { data: { dia, hoy, admin: adm, cierre, cobros, corregidos: [], devoluciones: [],
+        por_forma: [{ moneda: 'IDR', forma: 'efectivo', cobros: 1, importe: ciego ? null : 200000 }], contar: ['IDR'],
+        sin_pagar: [{ reserva_id: 'r3', numero_reserva: 'RSV-3', estado: 'en_curso', desde: mas(-5), hasta: mas(-2), importe: 300000, moneda: 'IDR' }],
+        cobradas_sin_facturar: { reservas: 1, desde: new Date().toISOString() } }, error: null };
+    }
+    case 'caja_cierra': {
+      const dif = Number(a.p_contado.IDR) - 200000;
+      if (o.cajaAdmin && dif !== 0 && !a.p_nota) return err('22023', 'La caja no cuadra: hace falta una nota', 'nota_obligatoria');
+      b.cierre = { dia: a.p_dia, cerrado_en: new Date().toISOString(), cerrado_por: 'Ana', nota: a.p_nota, con_diferencia: dif !== 0,
+        cuadre: [{ moneda: 'IDR', efectivo_cobrado: 200000, efectivo_devuelto: 0, efectivo_esperado: 200000, efectivo_contado: Number(a.p_contado.IDR), diferencia: dif }] };
+      return { data: { cierre_id: 'cc1', dia: a.p_dia, con_diferencia: dif !== 0 }, error: null };
+    }
+    case 'reserva_producto_cobro_corrige':
+      return { data: { cobro_id: 'k9', corrige_a: a.p_cobro }, error: null };
     case 'reserva_producto_cambia_unidad': {
       const r = b.reservas.find(x => x.id === a.p_id);
       if (o.cambiaFalla) return err('23P01', 'Esa unidad ya está reservada en esas fechas', 'sin_disponibilidad');
@@ -218,10 +249,11 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     ok('ningun <img>/<script>/<svg> salio de ningun dato', await sinInyeccion(p));
     ok('la reserva del bot sale «Por reclamar»', t1.includes('Por reclamar'));
     const botones = async id => (await p.$$eval('[data-reserva-id="' + id + '"] [data-accion]', bs => bs.map(b => b.getAttribute('data-accion')))).join();
-    ok('bloqueo: detalle, confirmar, cancelar, cambiar unidad', (await botones('r1')) === 'rp-detalle,rp-confirmar,rp-cancelar-simple,rp-cambia-unidad', await botones('r1'));
-    ok('confirmada SIN pago: entregar, cancelar, cancelar con devolucion, cambiar unidad', (await botones('r4')) === 'rp-detalle,rp-entregar,rp-cancelar-simple,rp-cancelar-devolucion,rp-cambia-unidad', await botones('r4'));
-    ok('confirmada CON pago: no se ofrece la cancelacion sin devolucion', (await botones('r2')) === 'rp-detalle,rp-entregar,rp-cancelar-devolucion,rp-cambia-unidad', await botones('r2'));
-    ok('en curso: solo marcar devuelta y cambiar de unidad', (await botones('r3')) === 'rp-detalle,rp-devuelta,rp-cambia-unidad', await botones('r3'));
+    // «Cobrar» (mostrador, 18-oct) sale en toda reserva viva o devuelta sin pagar, con precio y que no es un alquiler previo; nunca en una pagada (r2)
+    ok('bloqueo: detalle, confirmar, cancelar, cambiar unidad, cobrar', (await botones('r1')) === 'rp-detalle,rp-confirmar,rp-cancelar-simple,rp-cambia-unidad,rp-cobrar', await botones('r1'));
+    ok('confirmada SIN pago: entregar, cancelar, cancelar con devolucion, cambiar unidad, cobrar', (await botones('r4')) === 'rp-detalle,rp-entregar,rp-cancelar-simple,rp-cancelar-devolucion,rp-cambia-unidad,rp-cobrar', await botones('r4'));
+    ok('confirmada CON pago: no se ofrece la cancelacion sin devolucion ni cobrar', (await botones('r2')) === 'rp-detalle,rp-entregar,rp-cancelar-devolucion,rp-cambia-unidad', await botones('r2'));
+    ok('en curso sin pagar: marcar devuelta, cambiar de unidad y cobrar', (await botones('r3')) === 'rp-detalle,rp-devuelta,rp-cambia-unidad,rp-cobrar', await botones('r3'));
     // detalle
     await p.click('[data-reserva-id="r1"] [data-accion="rp-detalle"]');
     const det = await txt(p, '[data-rp="dialogo"]');
@@ -788,6 +820,76 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await espera(p, () => !document.querySelector('[data-rp="dialogo"]'));
     ok('manda id y unidad nueva, nada mas', JSON.stringify(llamadas(base, 'reserva_producto_cambia_unidad')[0][1]) === JSON.stringify({ p_id: 'r2', p_unidad_id: 'u1' }));
     ok('la flota se leyo FRESCA al abrir el cambio', llamadas(base, 'producto_flota_datos').length >= 1);
+    await ctx.close();
+  }
+
+  // 5b. cobrar en el mostrador (bbm-infiltrado, 18-oct): manda la forma, el precio que enseñaba y UNA clave uuid por diálogo; la base pone el importe
+  {
+    const { base, p, ctx } = await abre();
+    await p.click('[data-reserva-id="r4"] [data-accion="rp-cobrar"]');
+    await espera(p, () => document.querySelector('select[data-campo="forma"]'));
+    await p.click('[data-accion="rp-modal-cobra"]');
+    ok('cobrar sin elegir la forma no llama', llamadas(base, 'reserva_producto_cobro_mostrador').length === 0 && (await txt(p, '[data-rp="dialogo"]')).includes('Elige cómo paga'));
+    await p.selectOption('select[data-campo="forma"]', 'efectivo');
+    await p.click('[data-accion="rp-modal-cobra"]');
+    await espera(p, () => !document.querySelector('[data-rp="dialogo"]') || document.querySelector('[data-rp="dialogo"] .rp-error:not(.rp-oculto)'));
+    const cm = llamadas(base, 'reserva_producto_cobro_mostrador');
+    const a0 = cm.length ? cm[0][1] : {};
+    ok('manda reserva, forma, el precio visto y una clave uuid; sin importe ni referencia vacía', cm.length === 1 && a0.p_reserva === 'r4' && a0.p_forma === 'efectivo' && a0.p_importe_visto === 200000
+       && a0.p_referencia === null && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(a0.p_clave)) && !('p_importe' in a0), JSON.stringify(cm));
+    ok('la base cobró: el diálogo se cierra y lo anuncia', !(await p.$('[data-rp="dialogo"]')) && (await txt(p, '[data-rp="exito"]')).includes('200.000'), await txt(p, '[data-rp="exito"]'));
+    await ctx.close();
+  }
+
+  // 5c. la pestaña Caja (bbm-infiltrado, 18-oct): arqueo a ciegas para quien no es admin, cerrar con lo contado y nada más, nota cuando no cuadra, corregir un cobro
+  {
+    const { base, p, ctx } = await abre();
+    await tab(p, 'caja');
+    await espera(p, () => document.querySelector('[data-rp="caja-cuerpo"] h3'));
+    const cd = llamadas(base, 'caja_dia_datos');
+    ok('la caja se pide para hoy (p_dia null: el día lo pone la base)', cd.length === 1 && cd[0][1].p_dia === null, JSON.stringify(cd));
+    const cuerpo = await txt(p, '[data-rp="caja-cuerpo"]');
+    ok('quien no es admin cuenta a ciegas: ningún importe del efectivo en pantalla, la nota de arqueo y sin «Corregir cobro»', cuerpo.includes('a ciegas') && !/200[.\s ]000/.test(cuerpo.replace(/RSV-\d+/g, ''))
+       && !(await p.$('[data-accion="rp-caja-corrige"]')), cuerpo.slice(0, 400));
+    ok('sale lo que salió sin pagar y lo cobrado sin facturar', cuerpo.includes('RSV-3') && cuerpo.includes('Cobradas sin facturar'));
+    await p.click('[data-accion="rp-caja-cierra"]');
+    await espera(p, () => document.querySelector('input[data-campo="contado-idr"]'));
+    await p.fill('input[data-campo="contado-idr"]', '1.500.000');
+    await p.click('[data-accion="rp-modal-caja-cierra"]');
+    ok('lo contado con puntos de miles no llama', llamadas(base, 'caja_cierra').length === 0 && (await txt(p, '[data-rp="dialogo"]')).includes('sin puntos de miles'));
+    await p.fill('input[data-campo="contado-idr"]', '150000');
+    await p.click('[data-accion="rp-modal-caja-cierra"]');
+    await espera(p, () => !document.querySelector('[data-rp="dialogo"]'));
+    const cc = llamadas(base, 'caja_cierra');
+    ok('cierra mandando solo el día, lo contado por moneda y la nota (nada de esperado ni diferencia)', cc.length === 1 && JSON.stringify(cc[0][1]) === JSON.stringify({ p_dia: mas(0), p_contado: { IDR: 150000 }, p_nota: null }), JSON.stringify(cc));
+    await espera(p, () => (document.querySelector('[data-rp="caja-cuerpo"]') || {}).textContent.includes('Cierre'));
+    ok('a ciegas cierra sin nota; después de cerrar, la base enseña el cuadre con la diferencia', (await txt(p, '[data-rp="exito"]')).includes('con diferencia')
+       && (await txt(p, '[data-rp="caja-cuerpo"]')).includes('Cierre con diferencia') && !(await p.$('[data-accion="rp-caja-cierra"]')));
+    await ctx.close();
+  }
+  {
+    const { base, p, ctx } = await abre({ base: { cajaAdmin: true } });
+    await tab(p, 'caja');
+    await espera(p, () => document.querySelector('[data-accion="rp-caja-corrige"]'));
+    ok('un admin ve el importe del efectivo y puede corregir un cobro de la caja abierta', (await txt(p, '[data-rp="caja-cuerpo"]')).includes('200.000'));
+    await p.click('[data-accion="rp-caja-cierra"]');
+    await espera(p, () => document.querySelector('input[data-campo="contado-idr"]'));
+    await p.fill('input[data-campo="contado-idr"]', '150000');
+    await p.click('[data-accion="rp-modal-caja-cierra"]');
+    await espera(p, () => document.querySelector('[data-rp="dialogo"] .rp-error:not(.rp-oculto)'));
+    ok('a un admin, si no cuadra, la base le pide la nota y el diálogo sigue abierto', (await txt(p, '[data-rp="dialogo"] .rp-error')).includes('escribe en la nota') && llamadas(base, 'caja_cierra').length === 1);
+    await p.click('[data-accion="rp-modal-volver"]');
+    await espera(p, () => !document.querySelector('[data-rp="dialogo"]'));
+    await p.click('[data-accion="rp-caja-corrige"]');
+    await p.selectOption('[data-rp="dialogo"] select[data-campo="forma"]', 'transferencia');
+    await p.fill('[data-rp="dialogo"] textarea[data-campo="motivo"]', 'no');
+    await p.click('[data-accion="rp-modal-caja-corrige"]');
+    ok('un motivo de menos de 5 letras no llama', llamadas(base, 'reserva_producto_cobro_corrige').length === 0);
+    await p.fill('[data-rp="dialogo"] textarea[data-campo="motivo"]', 'pagó por transferencia');
+    await p.click('[data-accion="rp-modal-caja-corrige"]');
+    await espera(p, () => !document.querySelector('[data-rp="dialogo"]'));
+    const kc = llamadas(base, 'reserva_producto_cobro_corrige');
+    ok('corrige mandando el cobro, la forma, la referencia y el motivo; nunca un importe', kc.length === 1 && JSON.stringify(kc[0][1]) === JSON.stringify({ p_cobro: 'k1', p_forma: 'transferencia', p_referencia: null, p_motivo: 'pagó por transferencia' }), JSON.stringify(kc));
     await ctx.close();
   }
 

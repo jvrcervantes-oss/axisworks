@@ -1102,7 +1102,8 @@ a.rp-boton{text-decoration:none}
      base rechace si no coincide (precio_cambiado). La clave nace al abrir el diálogo: un segundo clic o un reintento sin respuesta devuelve el MISMO
      cobro, nunca otro. La referencia es opcional (nº de transferencia o ticket del datáfono); la base niega un número de tarjeta. */
   var FORMA = { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta (datáfono)' };
-  function claveNueva() {
+  // OJO, nombre propio: con «claveNueva» (la del asistente, más abajo, «equipo-…») la segunda declaración tapaba a esta y p_clave uuid fallaba siempre
+  function claveCobro() {
     if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
     var b = new Uint8Array(16); window.crypto.getRandomValues(b);
     b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
@@ -1117,7 +1118,7 @@ a.rp-boton{text-decoration:none}
     pago_por_revisar: 'Hay un pago de esta reserva en «Pagos por revisar»: resuélvelo antes de cobrar aquí.'
   };
   function cobra(x) {
-    var clave = claveNueva();
+    var clave = claveCobro();
     var forma = h('select', { 'data-campo': 'forma', 'aria-label': T('¿Cómo paga?') });
     forma.appendChild(h('option', { value: '', text: T('Elige cómo paga.') }));
     Object.keys(FORMA).forEach(function (k) { forma.appendChild(h('option', { value: k, text: T(FORMA[k]) })); });

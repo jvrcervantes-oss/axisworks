@@ -153,6 +153,12 @@ mira('el precio nunca viaja: la reserva manda producto, unidad, cliente o contac
      re.search(r"var datos = \{ producto_id: W\.prodId, desde: W\.desde, hasta: W\.hasta, clave: W\.clave \};", CODIGO) is not None
      and not re.search(r'precio_total\s*:|precio_unitario\s*:|p_total|p_importe(?!_devuelto|_visto)|p_precio|descuento|[{,]\s*pago_referencia\s*:|datos\.(estado|precio|moneda|desglose|dias|origen|numero)', CODIGO))
 # cobro en el mostrador: el importe lo pone la base; lo que la pantalla enseñaba solo viaja como p_importe_visto (para que la base RECHACE si no cuadra)
+# dos declaraciones con el mismo nombre en el mismo ámbito: gana la última en silencio (18-oct: claveNueva «equipo-…» tapaba la uuid del cobro → p_clave uuid fallaba)
+_dup = sorted(n for n in set(re.findall(r'(?m)^  function ([A-Za-z0-9_$]+)\s*\(', CODIGO)) if len(re.findall(r'(?m)^  function ' + re.escape(n) + r'\s*\(', CODIGO)) > 1)
+mira('ninguna función del script se declara dos veces (la segunda tapa a la primera)' + (': ' + ', '.join(_dup) if _dup else ''), not _dup)
+mira('la clave del cobro es una uuid (p_clave uuid): sale de claveCobro() con randomUUID, no de la del asistente',
+     re.search(r"function claveCobro\(\) \{\s*if \(window\.crypto && typeof window\.crypto\.randomUUID === 'function'\) return window\.crypto\.randomUUID\(\);", CODIGO) is not None
+     and re.search(r"function cobra\(x\) \{\s*var clave = claveCobro\(\);", CODIGO) is not None)
 mira('el cobro de mostrador no manda importe: solo p_importe_visto = el precio_total que se enseñaba, y una clave por diálogo',
      "p_importe_visto: Number(x.precio_total)" in CODIGO and CODIGO.count('p_importe_visto') == 1 and 'p_clave: clave' in CODIGO
      and not re.search(r"llama\('caja_cierra'[^)]*(esperado|diferencia)", CODIGO))
