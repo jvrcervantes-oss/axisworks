@@ -13,6 +13,8 @@
      cotiza cada modelo: precio, impuesto, días y unidades libres) → cliente (teléfono normalizado, búsqueda de duplicados) → entrega → resumen con UN botón. -->
 <div class="flex flex-col w-full gap-8 rp" data-rp="raiz">
 <style>
+/* la fila a la que lleva un enlace desde «Hoy» (?reserva=) */
+tr.rp-destacada{outline:2px solid currentColor;outline-offset:-2px}
 .rp-oculto{display:none !important}
 .rp-aviso{padding:10px 14px;border-radius:8px;background:#fff3e0;color:#8a4b00;font-size:14px;white-space:pre-line;word-break:break-word}
 .rp-error{padding:10px 14px;border-radius:8px;background:#fde2e0;color:#7a1a14;font-size:14px;white-space:pre-line;word-break:break-word}
@@ -165,7 +167,7 @@ a.rp-boton{text-decoration:none}
 <div class="flex flex-col max-w-3xl">
 <p class="rp-ante font-label-md uppercase"><span data-lwt>Seguimiento</span> · <span data-lwt>Calendario</span></p>
 <h1 class="rp-h1 font-headline-lg"><span data-lwt>Reservas de producto</span><span class="rp-h1-b" data-lwt>Cada moto, día a día.</span></h1>
-<p class="rp-lede" data-lwt>Las reservas de tus productos por fechas (motos, coches…): calendario por unidad, flota y tarifas, y el paso de cada reserva. Los precios los calcula siempre la base; aquí solo se piden.</p>
+<p class="rp-lede" data-lwt>Aquí creas las reservas, ves en el calendario qué unidad está libre cada día y llevas cada reserva de confirmada a devuelta.</p>
 </div>
 <div class="rp-acciones"><button class="rp-boton" type="button" data-accion="rp-nueva" data-primario="1"><span data-lwt>Nueva reserva</span></button></div>
 </div>
@@ -234,10 +236,11 @@ a.rp-boton{text-decoration:none}
 (function () {
   'use strict';
   var EN_RP = {
-    'Reservas de producto': 'Product bookings',
+    'Esa reserva no sale en la lista con sus fechas: puede haber cambiado. Búscala en la lista.': 'That booking does not show in the list for its dates: it may have changed. Look for it in the list.',
+    'Reservas de producto': 'Rentals',
     'Seguimiento': 'Operations', 'Cada moto, día a día.': 'Every bike, day by day.', 'Taller o baja': 'Workshop or retired', '%n días': '%n days', '1 día': '1 day',
     'Dos reservas vivas se pisan en la misma moto: el calendario pinta cada día una sola vez, así que la que empieza después sale recortada o no sale. Míralas en la lista.': 'Two live bookings overlap on the same bike: the calendar paints each day only once, so the one that starts later is cut short or not shown. Check them in the list.',
-    'Las reservas de tus productos por fechas (motos, coches…): calendario por unidad, flota y tarifas, y el paso de cada reserva. Los precios los calcula siempre la base; aquí solo se piden.': 'Bookings of your products by date (motorbikes, cars…): calendar per unit, fleet and rates, and each booking’s status. Prices are always worked out by the database; here they are only requested.',
+    'Aquí creas las reservas, ves en el calendario qué unidad está libre cada día y llevas cada reserva de confirmada a devuelta.': 'Here you create bookings, see on the calendar which unit is free each day, and take each booking from confirmed to returned.',
     'Nueva reserva': 'New booking', 'Reservas': 'Bookings', 'Calendario': 'Calendar', 'Flota y tarifas': 'Fleet and rates', 'Editar flota': 'Edit fleet', 'Pagos por revisar': 'Payments to review',
     'Estado': 'Status', 'Todos': 'All', 'Bloqueo': 'Hold', 'Confirmada': 'Confirmed', 'En curso': 'In progress', 'Devuelta': 'Returned', 'Cancelada': 'Cancelled', 'Caducada': 'Expired',
     'Desde': 'From', 'Hasta': 'To', 'Actualizar': 'Refresh', 'Cargar más': 'Load more', 'Hoy': 'Today',
@@ -250,7 +253,7 @@ a.rp-boton{text-decoration:none}
     'Equipo': 'Team', 'Bot': 'Bot', 'Alquiler previo': 'Earlier rental', 'Cobrado fuera del ERP': 'Paid outside the ERP', 'Sin pago': 'No payment', 'Por reclamar': 'To claim', 'Cliente sin permiso para verlo': 'Customer you cannot see', 'Sin cliente': 'No customer',
     'Caduca': 'Expires', 'Detalles': 'Details', 'Confirmar': 'Confirm', 'Cancelar': 'Cancel', 'Cambiar de unidad': 'Change unit', 'Entregar (en curso)': 'Hand over (in progress)', 'Marcar devuelta': 'Mark as returned',
     'Cancelar con devolución': 'Cancel with refund', 'Cerrar': 'Close', 'Volver': 'Back', 'Trabajando…': 'Working…', 'Cargando…': 'Loading…',
-    'Nueva reserva de producto': 'New product booking',
+    'Nueva reserva de producto': 'New booking',
     'Dirección de entrega': 'Delivery address', 'Dirección de recogida': 'Collection address', 'Notas': 'Notes',
     'día': 'day', 'días': 'days', 'Este producto no tiene tarifas: la base no dejará reservarlo.': 'This product has no rates: the database will not allow booking it.',
     'La devolución tiene que ser posterior a la recogida.': 'The return must be after the pick-up.',
@@ -258,7 +261,7 @@ a.rp-boton{text-decoration:none}
     'Nota (opcional, hasta 300 caracteres)': 'Note (optional, up to 300 characters)', 'Sí, confirmar': 'Yes, confirm', 'Sí, entregar': 'Yes, hand over', 'Sí, devuelta': 'Yes, returned', 'Sí, cancelar': 'Yes, cancel',
     'La nota es demasiado larga.': 'The note is too long.',
     'Una reserva cobrada se cancela con devolución: así queda anotado lo devuelto y lo retenido.': 'A paid booking is cancelled with a refund: that way what was refunded and what was kept is recorded.',
-    'Reserva confirmada.': 'Booking confirmed.', 'Reserva entregada: ahora está en curso.': 'Booking handed over: it is now in progress.', 'Reserva devuelta.': 'Booking returned.', 'Reserva cancelada.': 'Booking cancelled.',
+    'Reserva confirmada. El día de salida, entrega la unidad desde esta misma reserva.': 'Booking confirmed. On the start day, hand over the unit from this booking.', 'Unidad entregada: la reserva está en curso. Cuando vuelva, márcala aquí como devuelta.': 'Unit handed over: the booking is in progress. When it comes back, mark it here as returned.', 'Unidad devuelta. Cuando esté cobrada, factúrala en Ventas › Cobrado sin facturar.': 'Unit returned. Once the booking is paid, invoice it in Sales › Paid, not invoiced.', 'Reserva cancelada.': 'Booking cancelled.',
     'La base no confirmó el cambio de estado: recarga y comprueba.': 'The database did not confirm the status change: reload and check.',
     'Cancelar con devolución: rectifica las facturas emitidas de la reserva, anota lo devuelto al cliente y la cancela. Si no se devuelve nada, pon 0.': 'Cancel with refund: it corrects the issued invoices of the booking, records what is returned to the customer and cancels it. If nothing is returned, enter 0.',
     'Importe devuelto al cliente (0 si no se devuelve nada)': 'Amount refunded to the customer (0 if nothing is refunded)', 'Referencia de la devolución (la transferencia o el reembolso)': 'Refund reference (the transfer or the reimbursement)',
@@ -377,10 +380,11 @@ a.rp-boton{text-decoration:none}
   /* Indonesio (bbm, owner 11-oct-2026 23:22: «Añade Indonesio y quita español»). Mismo patrón que EN_RP: la clave es el texto en español; se fusiona en window.LW_ID
      SOLO si existe (lo crea la cáscara de la instancia que lleva id; en las instancias sin indonesio no existe y nada cambia). Escrito como se habla en un alquiler de motos en Bali. */
   var ID_RP = {
-    'Reservas de producto': 'Booking sewa motor',
+    'Esa reserva no sale en la lista con sus fechas: puede haber cambiado. Búscala en la lista.': 'Booking itu tidak muncul di daftar untuk tanggalnya: mungkin sudah berubah. Cari di daftar.',
+    'Reservas de producto': 'Booking sewa',
     'Seguimiento': 'Operasional', 'Cada moto, día a día.': 'Setiap motor, hari demi hari.', 'Taller o baja': 'Bengkel atau nonaktif', '%n días': '%n hari', '1 día': '1 hari',
     'Dos reservas vivas se pisan en la misma moto: el calendario pinta cada día una sola vez, así que la que empieza después sale recortada o no sale. Míralas en la lista.': 'Dua booking aktif bertumpuk pada motor yang sama: kalender hanya menampilkan setiap hari satu kali, jadi booking yang mulai belakangan terpotong atau tidak tampil. Cek di daftar.',
-    'Las reservas de tus productos por fechas (motos, coches…): calendario por unidad, flota y tarifas, y el paso de cada reserva. Los precios los calcula siempre la base; aquí solo se piden.': 'Booking sewa per tanggal (motor, mobil…): kalender per unit, armada dan tarif, dan status tiap booking. Harga selalu dihitung oleh sistem; di sini hanya diminta.',
+    'Aquí creas las reservas, ves en el calendario qué unidad está libre cada día y llevas cada reserva de confirmada a devuelta.': 'Di sini Anda membuat booking, melihat di kalender unit mana yang tersedia setiap hari, dan memproses tiap booking dari dikonfirmasi sampai sudah kembali.',
     'Nueva reserva': 'Booking baru', 'Reservas': 'Booking', 'Calendario': 'Kalender', 'Flota y tarifas': 'Armada dan tarif', 'Editar flota': 'Ubah armada', 'Pagos por revisar': 'Pembayaran perlu dicek',
     'Estado': 'Status', 'Todos': 'Semua', 'Bloqueo': 'Ditahan', 'Confirmada': 'Dikonfirmasi', 'En curso': 'Sedang disewa', 'Devuelta': 'Sudah kembali', 'Cancelada': 'Dibatalkan', 'Caducada': 'Kedaluwarsa',
     'Desde': 'Dari', 'Hasta': 'Sampai', 'Actualizar': 'Muat ulang', 'Cargar más': 'Muat lagi', 'Hoy': 'Hari ini',
@@ -393,14 +397,14 @@ a.rp-boton{text-decoration:none}
     'Equipo': 'Tim', 'Bot': 'Bot', 'Alquiler previo': 'Sewa sebelumnya', 'Cobrado fuera del ERP': 'Dibayar di luar ERP', 'Sin pago': 'Belum bayar', 'Por reclamar': 'Belum diklaim', 'Cliente sin permiso para verlo': 'Pelanggan yang tidak boleh Anda lihat', 'Sin cliente': 'Tanpa pelanggan',
     'Caduca': 'Berlaku sampai', 'Detalles': 'Detail', 'Confirmar': 'Konfirmasi', 'Cancelar': 'Batalkan', 'Cambiar de unidad': 'Ganti unit', 'Entregar (en curso)': 'Serahkan motor', 'Marcar devuelta': 'Tandai sudah kembali',
     'Cancelar con devolución': 'Batalkan dengan refund', 'Cerrar': 'Tutup', 'Volver': 'Kembali', 'Trabajando…': 'Memproses…', 'Cargando…': 'Memuat…',
-    'Nueva reserva de producto': 'Booking sewa baru', 'Dirección de entrega': 'Alamat antar', 'Dirección de recogida': 'Alamat jemput', 'Notas': 'Catatan',
+    'Nueva reserva de producto': 'Booking baru', 'Dirección de entrega': 'Alamat antar', 'Dirección de recogida': 'Alamat jemput', 'Notas': 'Catatan',
     'día': 'hari', 'días': 'hari', 'Este producto no tiene tarifas: la base no dejará reservarlo.': 'Produk ini belum punya tarif: sistem tidak akan mengizinkan booking.',
     'La devolución tiene que ser posterior a la recogida.': 'Tanggal kembali harus setelah tanggal ambil.',
     'Confirmar la reserva': 'Konfirmasi booking', 'Entregar la unidad': 'Serahkan unit', 'Marcar como devuelta': 'Tandai sudah kembali', 'Cancelar la reserva': 'Batalkan booking',
     'Nota (opcional, hasta 300 caracteres)': 'Catatan (opsional, maks. 300 karakter)', 'Sí, confirmar': 'Ya, konfirmasi', 'Sí, entregar': 'Ya, serahkan', 'Sí, devuelta': 'Ya, sudah kembali', 'Sí, cancelar': 'Ya, batalkan',
     'La nota es demasiado larga.': 'Catatannya terlalu panjang.',
     'Una reserva cobrada se cancela con devolución: así queda anotado lo devuelto y lo retenido.': 'Booking yang sudah dibayar dibatalkan dengan refund: jadi tercatat berapa yang dikembalikan dan berapa yang ditahan.',
-    'Reserva confirmada.': 'Booking dikonfirmasi.', 'Reserva entregada: ahora está en curso.': 'Motor sudah diserahkan: booking sedang berjalan.', 'Reserva devuelta.': 'Motor sudah kembali.', 'Reserva cancelada.': 'Booking dibatalkan.',
+    'Reserva confirmada. El día de salida, entrega la unidad desde esta misma reserva.': 'Booking dikonfirmasi. Pada hari sewa dimulai, serahkan motor langsung dari booking ini.', 'Unidad entregada: la reserva está en curso. Cuando vuelva, márcala aquí como devuelta.': 'Motor sudah diserahkan: booking sedang berjalan. Setelah motor kembali, tandai sudah kembali di sini.', 'Unidad devuelta. Cuando esté cobrada, factúrala en Ventas › Cobrado sin facturar.': 'Motor sudah kembali. Setelah lunas, buat invoice-nya di Penjualan › Dibayar, belum di-invoice.', 'Reserva cancelada.': 'Booking dibatalkan.',
     'La base no confirmó el cambio de estado: recarga y comprueba.': 'Sistem tidak mengonfirmasi perubahan status: muat ulang dan cek.',
     'Cancelar con devolución: rectifica las facturas emitidas de la reserva, anota lo devuelto al cliente y la cancela. Si no se devuelve nada, pon 0.': 'Batalkan dengan refund: invoice booking ini dikoreksi, refund ke pelanggan dicatat, lalu booking dibatalkan. Jika tidak ada refund, isi 0.',
     'Importe devuelto al cliente (0 si no se devuelve nada)': 'Jumlah refund ke pelanggan (0 jika tidak ada)', 'Referencia de la devolución (la transferencia o el reembolso)': 'Referensi refund (nomor transfer atau bukti dana kembali)',
@@ -756,6 +760,18 @@ a.rp-boton{text-decoration:none}
     // el aviso de «lista recortada» lo pone y lo quita esta función; los avisos de otras acciones no se pisan (se sabe por la bandera, no por el texto)
     if (E.resSig) { aviso(T('La lista está recortada: pulsa «Cargar más».')); E.avisoRecorte = true; }
     else if (E.avisoRecorte) { aviso(''); E.avisoRecorte = false; }
+    if (E.irA) irAFila();
+  }
+  /* Enlace desde «Hoy» (?reserva=<id>): la fila de esa reserva sale marcada y con el foco en su primera acción. Se compara el atributo, nunca
+     se mete el id de la URL en un selector. Si no está (cambió de fechas, se canceló), se dice: no se confunde con «no hay». */
+  function irAFila() {
+    var id = E.irA; E.irA = null;
+    var fila = Array.prototype.filter.call($v('res-tabla').querySelectorAll('tr[data-reserva-id]'), function (tr) { return tr.getAttribute('data-reserva-id') === id; })[0];
+    if (!fila) { aviso(T('Esa reserva no sale en la lista con sus fechas: puede haber cambiado. Búscala en la lista.')); return; }
+    fila.classList.add('rp-destacada');
+    if (fila.scrollIntoView) fila.scrollIntoView({ block: 'center' });
+    var b = fila.querySelector('[data-primario="1"]') || fila.querySelector('button');
+    if (b) b.focus();
   }
   /* Qué botones ofrece cada estado. Es COMODIDAD: la base vuelve a comprobar el estado, el permiso y las fechas en cada llamada. */
   // F3-E3: un alquiler previo (la moto ya estaba fuera al empezar con el ERP) se cobró fuera: ni «Sin pago» ni «0 IDR» (la base no le deja pago ni precio)
@@ -858,9 +874,9 @@ a.rp-boton{text-decoration:none}
 
   /* ── cambiar de estado: confirmar · entregar · devuelta · cancelar (sin cobro) ── */
   var PASOS = {
-    confirmada: { titulo: 'Confirmar la reserva', si: 'Sí, confirmar', hecho: 'Reserva confirmada.', primario: true },
-    en_curso: { titulo: 'Entregar la unidad', si: 'Sí, entregar', hecho: 'Reserva entregada: ahora está en curso.', primario: true },
-    devuelta: { titulo: 'Marcar como devuelta', si: 'Sí, devuelta', hecho: 'Reserva devuelta.', primario: true },
+    confirmada: { titulo: 'Confirmar la reserva', si: 'Sí, confirmar', hecho: 'Reserva confirmada. El día de salida, entrega la unidad desde esta misma reserva.', primario: true },
+    en_curso: { titulo: 'Entregar la unidad', si: 'Sí, entregar', hecho: 'Unidad entregada: la reserva está en curso. Cuando vuelva, márcala aquí como devuelta.', primario: true },
+    devuelta: { titulo: 'Marcar como devuelta', si: 'Sí, devuelta', hecho: 'Unidad devuelta. Cuando esté cobrada, factúrala en Ventas › Cobrado sin facturar.', primario: true },
     cancelada: { titulo: 'Cancelar la reserva', si: 'Sí, cancelar', hecho: 'Reserva cancelada.', peligro: true }
   };
   function cambiaEstado(x, nuevo) {
@@ -1901,7 +1917,18 @@ a.rp-boton{text-decoration:none}
       if (t === $v('f-estado') || t === $v('f-desde') || t === $v('f-hasta')) { error(''); E.resSig = null; cargaReservas(false); }
       else if (t === $v('f-pagos-todos')) { E.pagosSig = null; cargaPagos(false); }
     });
+    // enlaces desde «Hoy» (bbm-flujos-ux, 18-oct-2026): ?nueva=1 abre el asistente; ?reserva=<id>&desde=&hasta= filtra la lista por sus fechas y
+    // lleva a su fila. Solo filtran y abren: la base vuelve a aplicar el filtro y el permiso, y nada se pulsa solo.
+    var q = null;
+    try { q = new URLSearchParams(location.search); } catch (e) { /* MUDO A PROPOSITO: sin poder leer la URL se abre la lista, como siempre */ }
+    if (q && q.get('reserva')) {
+      E.irA = q.get('reserva');
+      if (esFecha(q.get('desde')) && esFecha(q.get('hasta'))) { $v('f-desde').value = q.get('desde'); $v('f-hasta').value = q.get('hasta'); }
+    }
     pestana('reservas');
+    if (q && q.get('nueva') === '1') nuevaReserva();
+    // fuera de la URL: recargar la página no vuelve a abrir el asistente ni a mover la lista
+    if (q && (q.get('nueva') || q.get('reserva'))) { try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { /* MUDO A PROPOSITO: solo es limpiar la barra */ } }
   }
 
   function arranca() {

@@ -31,6 +31,7 @@ a.axw-boton{text-decoration:none}
 .ph-dia{display:inline-flex;flex-wrap:wrap;gap:0;padding:4px;border-radius:999px;background:rgb(var(--ph-blanco));border:1px solid rgb(var(--ph-filete))}
 html main .ph .ph-dia .axw-boton.axw-boton{min-height:40px;padding:0 18px;font-size:14px;font-weight:600;background:transparent;box-shadow:none;color:rgb(var(--ph-tinta));white-space:nowrap}
 html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(var(--ph-noche));color:rgb(var(--ph-volt))}
+.ph-taller{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 16px}
 .ph-cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
 .ph-cifra{background:rgb(var(--ph-blanco));border:1px solid rgb(var(--ph-filete));border-radius:20px;padding:20px 22px;min-width:0}
 .ph-cifra h2{margin:0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgb(var(--ph-tinta2))}
@@ -96,7 +97,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
 <p class="ph-lede" data-lwt>Entregas y devoluciones del día, con la dirección y el estado del pago. Pulsa una para ver su ficha.</p>
 </div>
 <div class="ph-acciones">
-<a class="axw-boton axw-oculto" data-primario="1" data-ph="ir-reservas" href="/intranet/v4/reservas-producto/"><span data-lwt>Reservas de producto</span></a>
+<a class="axw-boton axw-oculto" data-primario="1" data-ph="ir-reservas" href="/intranet/v4/reservas-producto/?nueva=1"><span data-lwt>Nueva reserva</span></a>
 </div>
 </div>
 
@@ -107,6 +108,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
 </div>
 
 <p class="axw-error axw-oculto" data-ph="error" role="alert"></p>
+<p class="axw-aviso ph-taller axw-oculto" data-ph="taller-espera" role="status"></p>
 
 <div class="ph-cifras" data-ph="cifras" aria-live="polite">
 <section class="ph-cifra" aria-labelledby="ph-c-entregas"><h2 id="ph-c-entregas" class="font-label-md uppercase" data-lwt>Entregas</h2>
@@ -143,8 +145,13 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
 (function () {
   'use strict';
   var EN_PH = {
-    'Hay más de las que caben aquí.': 'There are more than fit here.', 'Ábrelas en Reservas de producto': 'Open them in Product bookings',
-    'Inicio': 'Home', 'Hoy': 'Today', 'Día anterior': 'Previous day', 'Día siguiente': 'Next day', 'Día siguiente ›': 'Next day ›', 'Reservas de producto': 'Product bookings',
+    '1 unidad espera revisión en el taller.': '1 unit is waiting for a check in the workshop.',
+    '%n unidades esperan revisión en el taller.': '%n units are waiting for a check in the workshop.',
+    'Todavía no hay ningún mecánico en el equipo, y sin revisión no se vuelven a alquilar.': 'There is no mechanic on the team yet, and without a check they cannot be rented again.',
+    'Abrir Taller': 'Open Workshop',
+    'Nueva reserva': 'New booking', 'Abrir esta reserva': 'Open this booking',
+    'Hay más de las que caben aquí.': 'There are more than fit here.', 'Ábrelas en Reservas de producto': 'Open them in Rentals',
+    'Inicio': 'Home', 'Hoy': 'Today', 'Día anterior': 'Previous day', 'Día siguiente': 'Next day', 'Día siguiente ›': 'Next day ›', 'Reservas de producto': 'Rentals',
     'Entregas': 'Handovers', 'Devoluciones': 'Returns',
     'Hoy no hay entregas.': 'No handovers today.', 'Hoy no hay devoluciones.': 'No returns today.',
     'Este día no hay entregas.': 'No handovers on this day.', 'Este día no hay devoluciones.': 'No returns on this day.',
@@ -154,7 +161,7 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
     'Sin cliente': 'No customer', 'Cliente sin permiso para verlo': 'Customer you cannot see',
     'Reserva': 'Booking', 'Modelo': 'Model', 'Unidad': 'Unit', 'Cliente': 'Customer', 'Fechas': 'Dates', 'Estado': 'Status', 'Pago': 'Payment', 'Precio': 'Price',
     'Dirección de entrega': 'Handover address', 'Dirección de recogida': 'Pick-up address', 'Hora': 'Time',
-    'Abrir Reservas de producto': 'Open Product bookings',
+    'Abrir Reservas de producto': 'Open Rentals',
     'Seguimiento': 'Operations', 'Lo que sale y lo que vuelve.': 'What goes out and what comes back.', 'Hoy, %dia.': 'Today, %dia.',
     'Entregas y devoluciones del día, con la dirección y el estado del pago. Pulsa una para ver su ficha.': 'The day\u2019s handovers and returns, with the address and the payment status. Tap one to see its details.',
     'Sin pagar este día': 'Unpaid on this day', 'Salen': 'Going out', 'Vuelven': 'Coming back', 'Sin hora': 'No time', 'Entrega': 'Handover', 'Recogida': 'Pick-up',
@@ -167,8 +174,13 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
   };
   // Indonesio (owner, 11-oct-2026: bbm en indonesio e inglés). Misma clave en español que EN_PH; se fusiona en window.LW_ID solo donde existe (bbm).
   var ID_PH = {
+    '1 unidad espera revisión en el taller.': '1 motor menunggu pengecekan di bengkel.',
+    '%n unidades esperan revisión en el taller.': '%n motor menunggu pengecekan di bengkel.',
+    'Todavía no hay ningún mecánico en el equipo, y sin revisión no se vuelven a alquilar.': 'Belum ada mekanik di tim, dan tanpa pengecekan motor tidak bisa disewakan lagi.',
+    'Abrir Taller': 'Buka Bengkel',
+    'Nueva reserva': 'Booking baru', 'Abrir esta reserva': 'Buka booking ini',
     'Hay más de las que caben aquí.': 'Masih ada lagi yang tidak muat di sini.', 'Ábrelas en Reservas de producto': 'Buka di daftar booking',
-    'Inicio': 'Beranda', 'Hoy': 'Hari ini', 'Día anterior': 'Hari sebelumnya', 'Día siguiente': 'Hari berikutnya', 'Día siguiente ›': 'Hari berikutnya ›', 'Reservas de producto': 'Booking sewa motor',
+    'Inicio': 'Beranda', 'Hoy': 'Hari ini', 'Día anterior': 'Hari sebelumnya', 'Día siguiente': 'Hari berikutnya', 'Día siguiente ›': 'Hari berikutnya ›', 'Reservas de producto': 'Booking sewa',
     'Entregas': 'Serah terima', 'Devoluciones': 'Motor kembali',
     'Hoy no hay entregas.': 'Hari ini tidak ada serah terima.', 'Hoy no hay devoluciones.': 'Hari ini tidak ada motor yang kembali.',
     'Este día no hay entregas.': 'Tidak ada serah terima pada tanggal ini.', 'Este día no hay devoluciones.': 'Tidak ada motor yang kembali pada tanggal ini.',
@@ -220,7 +232,8 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
 
   /* Una entrada por RPC, con el nombre LITERAL (erp/contrato_front.py extrae `lwDatos('x')` y comprueba contra la base que existe). Es una lectura: va por lwDatos. */
   var RPC = {
-    portada_reservas_dia_datos: function (a) { return window.lwDatos('portada_reservas_dia_datos', a); }
+    portada_reservas_dia_datos: function (a) { return window.lwDatos('portada_reservas_dia_datos', a); },
+    reservas_taller_espera_datos: function (a) { return window.lwDatos('reservas_taller_espera_datos', a); }
   };
   function llama(nombre, args) {
     var p;
@@ -229,8 +242,9 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
                                    function (e) { return { data: null, error: e }; });
   }
 
-  var E = { dia: null, hoy: null, filas: {}, puedeReservas: false };
+  var E = { dia: null, hoy: null, filas: {}, puedeReservas: false, puedeTaller: false };
   // solo decide si se OFRECE el enlace; quien entra o no a la pantalla lo vuelve a decidir la base
+  function tieneTaller(f) { return !!f && (f.rol === 'super_admin' || f.rol === 'admin' || (Array.isArray(f.herramientas) && f.herramientas.indexOf('taller') !== -1)); }
   function tieneReservas(f) { return !!f && (f.rol === 'super_admin' || (Array.isArray(f.herramientas) && f.herramientas.indexOf('reservas-producto') !== -1)); }
   var DIA_RE = /^\d{4}-\d{2}-\d{2}$/;
   function fechaCon(s, op) {
@@ -386,9 +400,28 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
     if (x.hora) pares.push(['Hora', x.hora]);
     if (x.entrega_direccion) pares.push(['Dirección de entrega', x.entrega_direccion]);
     if (x.recogida_direccion) pares.push(['Dirección de recogida', x.recogida_direccion]);
-    var acciones = E.puedeReservas ? [h('div', { class: 'axw-acciones' }, [h('a', { class: 'axw-boton', href: '/intranet/v4/reservas-producto/', text: T('Abrir Reservas de producto') })])] : [];
+    // lleva a SU fila en Reservas (bbm-flujos-ux, 18-oct-2026): la lista se filtra por sus fechas y la fila sale marcada con sus acciones; antes
+    // abría la lista entera y había que volver a buscarla. Solo es un enlace: la otra pantalla vuelve a leer y la acción se pulsa a mano.
+    var irA = '/intranet/v4/reservas-producto/?reserva=' + encodeURIComponent(String(x.id)) + '&desde=' + encodeURIComponent(String(x.desde || '').slice(0, 10)) +
+              '&hasta=' + encodeURIComponent(String(x.hasta || '').slice(0, 10));
+    var acciones = E.puedeReservas ? [h('div', { class: 'axw-acciones' }, [h('a', { class: 'axw-boton', href: irA, text: T('Abrir esta reserva') })])] : [];
     C.dialogo(T('Reserva') + ' ' + (x.numero_reserva || ''), [C.resumen(pares)].concat(acciones),
               [{ texto: T('Cerrar'), accion: 'ph-cerrar', cierra: true }]);
+  }
+  /* Unidades que esperan revisión (bbm-flujos-ux, 18-oct-2026; bbm tenía 94 de 190 sin mecánico y nada lo decía en «Hoy»). Es una AYUDA: si la
+     lectura no existe en esta instancia, no hay permiso o falla, no se pinta nada (la cifra de verdad está en /taller/ y lo dice allí); con
+     0 tampoco. hay_mecanico null = la instancia no tiene Taller: no se afirma que falte. El enlace solo se OFRECE a quien puede abrir el Taller. */
+  function avisoTaller() {
+    var p = $v('taller-espera');
+    llama('reservas_taller_espera_datos').then(function (r) {
+      var d = r.data, n = d && typeof d.en_taller === 'number' ? Math.floor(d.en_taller) : 0;
+      vacia(p);
+      if (r.error || n <= 0) { oculta(p, true); return; }
+      p.appendChild(h('span', { text: n === 1 ? T('1 unidad espera revisión en el taller.') : T('%n unidades esperan revisión en el taller.').replace('%n', String(n)) }));
+      if (d.hay_mecanico === false) p.appendChild(h('span', { text: T('Todavía no hay ningún mecánico en el equipo, y sin revisión no se vuelven a alquilar.') }));
+      if (E.puedeTaller) p.appendChild(h('a', { class: 'axw-boton', href: '/intranet/v4/taller/', text: T('Abrir Taller') }));
+      oculta(p, false);
+    });
   }
   function alClic(ev) {
     var el = ev.target.closest ? ev.target.closest('[data-accion]') : null;
@@ -404,7 +437,9 @@ html main .ph .ph-dia .axw-boton.axw-boton[aria-pressed="true"]{background:rgb(v
     window.LW_AUTH.then(function (aut) {
       E.puedeReservas = tieneReservas(aut && aut.ficha);
       oculta($v('ir-reservas'), !E.puedeReservas);
+      E.puedeTaller = tieneTaller(aut && aut.ficha);
       raiz.addEventListener('click', alClic); carga(null);
+      if (E.puedeReservas) avisoTaller();   // la lectura exige la herramienta de reservas: sin ella ni se pide
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca);

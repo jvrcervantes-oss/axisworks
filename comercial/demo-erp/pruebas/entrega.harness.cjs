@@ -535,7 +535,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     await p.click('[data-accion="en-modal-cerrar"]');
     const sin = await p.evaluate(() => window.__sinEn);
     ok('en ingles ninguna cadena queda sin traducir (formulario, errores, confirmacion)', sin.length === 0, J(sin.slice(0, 8)));
-    ok('en ingles hay titulo y botones traducidos', (await txt(p, 'h1')) === 'Delivery' && (await txt(p, '[data-accion="en-guardar"]')) === 'Save');
+    ok('en ingles hay titulo y botones traducidos', (await txt(p, 'h1')) === 'Delivery prices' && (await txt(p, '[data-accion="en-guardar"]')) === 'Save');
     await ctx.close();
   }
   {
@@ -553,7 +553,7 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
   }
   {
     const { p, ctx } = await abre({ idioma: 'id', base: { configurada: true, conServicio: true } });
-    ok('con un idioma que la suite no tiene (id) la pantalla cae a espanol, sin errores de JS', (await txt(p, 'h1')) === 'Entrega' && await sinErrores(p));
+    ok('con un idioma que la suite no tiene (id) la pantalla cae a espanol, sin errores de JS', (await txt(p, 'h1')) === 'Tarifas de entrega' && await sinErrores(p));
     await ctx.close();
   }
 

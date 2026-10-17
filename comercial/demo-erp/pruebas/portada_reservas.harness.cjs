@@ -40,6 +40,11 @@ function nuevaBase(o = {}) {
 }
 const err = (code, message, hint) => ({ data: null, error: { code, message, hint: hint || null, details: null } });
 async function servidor(b, nombre, a) {
+  // aviso de taller (bbm-flujos-ux, 18-oct-2026): se cuenta aparte para no mover las cuentas de llamadas del día; sin `taller` la función no existe
+  if (nombre === 'reservas_taller_espera_datos') {
+    b.tallerPedido = (b.tallerPedido || 0) + 1;
+    return b.o.taller ? { data: JSON.parse(JSON.stringify(b.o.taller)), error: null } : err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
+  }
   b.llamadas.push([nombre, JSON.parse(JSON.stringify(a))]);
   const o = b.o;
   if (o.noDisponible) return err('PGRST202', 'Could not find the function public.' + nombre + ' in the schema cache');
@@ -86,7 +91,10 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
 // Con PAQUETE=<carpeta de un build de la instancia> (revisión previa de Calidad, 12-oct): la misma portada con el idioma.js y el i18n.js REALES de ese paquete (los que
 // parchea build.py --instancia con "idiomas"), no un sustituto. Así se mide el lwT de verdad: cero frases en español (LW_T_ESPANOL) y ni una tilde en la interfaz.
 const PAQUETE = process.env.PAQUETE;
+// bbm abre en inglés desde el 13-oct (bbm-p42, idioma de pantalla de la instancia): para barrer el indonesio, la página simula a quien lo ELIGIÓ (axw_idioma_ui = 'id'),
+// que es el camino real de idioma.js; setContent deja la página en about:blank, sin localStorage propio, por eso se sustituye (18-oct-2026, bbm-flujos-ux).
 const paginaReal = () => `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t · Inicio</title>
+<script>(function () { var m = { axw_idioma_ui: 'id' }; Object.defineProperty(window, 'localStorage', { configurable: true, value: { getItem: function (k) { return Object.prototype.hasOwnProperty.call(m, k) ? m[k] : null; }, setItem: function (k, v) { m[k] = String(v); }, removeItem: function (k) { delete m[k]; } } }); })();</script>
 <script>${fs.readFileSync(path.join(PAQUETE, 'contracts', 'assets', 'idioma.js'), 'utf8')}</script>
 <script>${fs.readFileSync(path.join(PAQUETE, 'contracts', 'assets', 'i18n.js'), 'utf8')}</script></head><body>
 ${MARCADO}
@@ -143,9 +151,13 @@ const TILDES = /[áéíóúñÁÉÍÓÚÑ¿¡]/;
     const fic = await txt(p, '[data-axw="dialogo"]');
     ok('tocar abre la ficha con número, modelo, pago, precio y dirección', fic.includes('RP-00001') && fic.includes('Pagado') && fic.includes('450.000') && fic.includes('Jl. <img'));
     ok('XSS en la ficha', await sinInyeccion(p));
+    // bbm-flujos-ux (18-oct-2026): la ficha lleva a SU reserva (id y fechas en la URL), no a la lista entera
+    const irA = await p.$eval('[data-axw="dialogo"] .axw-acciones a', e => [e.textContent, e.getAttribute('href')]);
+    ok('la ficha ofrece «Abrir esta reserva» con su id y sus fechas', irA[0] === 'Abrir esta reserva' && /reservas-producto\/\?reserva=[^&]+&desde=\d{4}-\d{2}-\d{2}&hasta=\d{4}-\d{2}-\d{2}$/.test(irA[1]), irA.join(' '));
     await p.click('[data-axw="dialogo"] [data-accion="ph-cerrar"]');
     ok('cerrar quita la ficha', !(await p.$('[data-axw="dialogo"]')));
-    ok('con la herramienta, el enlace a Reservas de producto se ofrece', await p.$eval('[data-ph="ir-reservas"]', e => !e.classList.contains('axw-oculto')));
+    ok('con la herramienta, el botón «Nueva reserva» se ofrece y abre el asistente', await p.$eval('[data-ph="ir-reservas"]', e => !e.classList.contains('axw-oculto')
+       && e.textContent.trim() === 'Nueva reserva' && /reservas-producto\/\?nueva=1$/.test(e.getAttribute('href'))));
     // día siguiente
     await p.click('[data-accion="ph-despues"]');
     await espera(p, () => document.querySelector('[data-ph="estado-entregas"]').textContent.includes('Este día'));
@@ -264,6 +276,42 @@ const TILDES = /[áéíóúñÁÉÍÓÚÑ¿¡]/;
       const dlg = await p.$eval('[data-axw="dialogo"] .axw-modal', e => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, w: window.innerWidth }; });
       ok(ancho + ' px: la ficha cabe en la pantalla', dlg.l >= 0 && dlg.r <= dlg.w, JSON.stringify(dlg));
       if (SHOT) await p.screenshot({ path: SHOT + '_' + ancho + '_ficha.png' });
+      await ctx.close();
+    }
+    // 4b. aviso de unidades que esperan revisión (bbm-flujos-ux, 18-oct-2026): el número y si hay mecánico los da la base; sin lectura, nada
+    {
+      const admin = { rol: 'admin', herramientas: ['reservas-producto'] };
+      const avisoDe = async p => { await p.waitForTimeout(150); return p.$eval('[data-ph="taller-espera"]', e => ({ oculto: e.classList.contains('axw-oculto'), t: e.textContent, a: [...e.querySelectorAll('a')].map(x => x.getAttribute('href')) })); };
+      let { base, p, ctx } = await abre({ base: { taller: { en_taller: 94, hay_mecanico: false } }, ficha: admin });
+      let av = await avisoDe(p);
+      ok('taller: 94 sin mecánico → lo dice en «Hoy» con su enlace al Taller', !av.oculto && av.t.includes('94 unidades esperan revisión') && av.t.includes('ningún mecánico') && av.a.length === 1 && /\/taller\/$/.test(av.a[0]), JSON.stringify(av));
+      ok('taller: se pide una vez y no cambia las llamadas del día', base.tallerPedido === 1 && base.llamadas.every(x => x[0] === 'portada_reservas_dia_datos'));
+      if (SHOT) await p.screenshot({ path: SHOT + '_taller_1440.png' });
+      await ctx.close();
+      ({ base, p, ctx } = await abre({ base: { taller: { en_taller: 1, hay_mecanico: true } } }));
+      av = await avisoDe(p);
+      ok('taller: 1 con mecánico, quien no tiene Taller → singular, sin frase de mecánico y sin enlace', !av.oculto && av.t.includes('1 unidad espera revisión') && !av.t.includes('mecánico') && av.a.length === 0, JSON.stringify(av));
+      await ctx.close();
+      ({ base, p, ctx } = await abre({ base: { taller: { en_taller: 3, hay_mecanico: null } }, ficha: admin }));
+      av = await avisoDe(p);
+      ok('taller: sin módulo Taller (null) no afirma que falte un mecánico', !av.oculto && !av.t.includes('mecánico'), JSON.stringify(av));
+      await ctx.close();
+      ({ base, p, ctx } = await abre({ base: { taller: { en_taller: 0, hay_mecanico: false } }, ficha: admin }));
+      ok('taller: 0 → no sale', (await avisoDe(p)).oculto);
+      await ctx.close();
+      ({ base, p, ctx } = await abre({ base: { taller: { en_taller: '<img src=x onerror="window.__xss=1">', hay_mecanico: false } }, ficha: admin }));
+      ok('taller: un número que no es número no se pinta (XSS)', (await avisoDe(p)).oculto && await sinInyeccion(p));
+      await ctx.close();
+      ({ base, p, ctx } = await abre({ ficha: admin }));
+      ok('taller: si la lectura no existe en la instancia, no sale nada y el día se pinta igual', (await avisoDe(p)).oculto && (await p.$$('[data-ph="entregas"] li')).length === 2);
+      await ctx.close();
+      ({ base, p, ctx } = await abre({ base: { taller: { en_taller: 5, hay_mecanico: false } }, ficha: { rol: 'agente', herramientas: [] } }));
+      await p.waitForTimeout(150);
+      ok('taller: sin la herramienta de reservas ni se pide', !base.tallerPedido);
+      await ctx.close();
+      ({ base, p, ctx } = await abre({ base: { taller: { en_taller: 94, hay_mecanico: false } }, ficha: admin, ancho: 390 }));
+      ok('taller: 390 px sin scroll lateral', await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      if (SHOT) await p.screenshot({ path: SHOT + '_taller_390.png' });
       await ctx.close();
     }
     // 5. con el i18n.js REAL del paquete de la instancia (solo si se pasa PAQUETE): indonesio sin español, en cuatro tamaños y con barras de scroll visibles
