@@ -2322,7 +2322,7 @@ def puerta_instancia(dist, idiomas):
 # las mismas que ya usan esas pantallas.
 MENU_I18N = {
     'Taller': {'en': 'Workshop', 'id': 'Bengkel'},
-    'Entrega': {'en': 'Delivery', 'id': 'Antar'},
+    'Tarifas de entrega': {'en': 'Delivery prices', 'id': 'Tarif antar'},
     'Flota y tarifas': {'en': 'Fleet and rates', 'id': 'Armada dan tarif'},
     # la ventana del equipo de agentes (/agente/, 15-oct-2026): su rótulo de menú, que antes era «AaaS» (igual en los tres idiomas)
     'Agentes': {'en': 'Agents', 'id': 'Agen'},
@@ -2350,7 +2350,7 @@ MENU_I18N = {
     'Moneda': {'en': 'Currency', 'id': 'Mata uang'},
     'Vence': {'en': 'Due', 'id': 'Jatuh tempo'},
     'Pagado el': {'en': 'Paid on', 'id': 'Dibayar pada'},
-    'Reservas de producto': {'en': 'Product bookings', 'id': 'Booking sewa motor'},
+    'Reservas de producto': {'en': 'Rentals', 'id': 'Booking sewa'},
     # D27 (bbm-comodidad-2, 15-oct): Ajustes › Correo en solo lectura para quien no es super admin (AJUSTES_CORREO_SOLO_SUPER)
     'El servidor de correo, el remitente y el buzón de avisos del sistema los cambia un super admin.': {
         'en': 'The mail server, the sender and the system alerts mailbox are changed by a super admin.',
@@ -2375,6 +2375,11 @@ MENU_I18N = {
     '. Cada ajuste tiene su formato y su rango: fuera de él no se guarda. Pausar los envíos y cerrar la intranet, en cambio, los puede hacer cualquier admin.': {
         'en': '. Each setting has its own format and range: outside it, it is not saved. Pausing sending and closing the intranet, on the other hand, any admin can do.',
         'id': '. Setiap pengaturan punya format dan rentangnya sendiri: di luar itu tidak disimpan. Sebaliknya, menjeda pengiriman dan menutup intranet bisa dilakukan admin mana pun.'},
+    # bbm-flujos-ux (18-oct-2026): desde admin_puede (15-oct) el administrador cambia Ajustes salvo el correo del sistema y las cuentas bancarias
+    'Cualquier administrador puede ver y cambiar estos ajustes, salvo el correo del sistema y las cuentas bancarias, que solo los puede cambiar un super admin. Cada ajuste tiene su formato y su rango: fuera de él no se guarda.': {
+        'en': 'Any administrator can view and change these settings, except the system email and the bank accounts, which only a super admin can change. Each setting has its own format and range: values outside it are not saved.',
+        'id': 'Admin mana pun bisa melihat dan mengubah pengaturan ini, kecuali email sistem dan rekening bank, yang hanya bisa diubah oleh super admin. Setiap pengaturan punya format dan rentangnya sendiri: di luar itu tidak disimpan.'},
+    'Con esta cuenta puedes ver los ajustes, pero no cambiarlos.': {'en': 'With this account you can view the settings, but not change them.', 'id': 'Dengan akun ini Anda bisa melihat pengaturan, tetapi tidak bisa mengubahnya.'},
     'El ERP ya lo usa por dentro, pero aún no todas las pantallas ni los correos lo enseñan.': {
         'en': 'The ERP already uses it internally, but not every screen or email shows it yet.',
         'id': 'ERP sudah menggunakannya secara internal, tetapi belum semua layar dan email menampilkannya.'},
@@ -4305,15 +4310,15 @@ def entrega_pantalla():
       · herramientas.js: la tarjeta `entrega` tras la de Taller. Sin ella no existiría la casilla en Usuarios.
     Va DESPUÉS de taller_pantalla() porque sus anclas de nav.js y herramientas.js son las líneas que esa deja. Solo se toca lo copiado en DIST, nunca el repo de Lawang."""
     v4 = os.path.join(DIST, 'intranet', 'v4')
-    _pantalla_bot(v4, 'entrega.html', 'entrega', 'Entrega', puerta='data-herramienta="entrega"')
+    _pantalla_bot(v4, 'entrega.html', 'entrega', 'Tarifas de entrega', puerta='data-herramienta="entrega"')
     nav = os.path.join(v4, 'assets', 'nav.js')
     n = open(nav, encoding='utf-8').read()
     n = _una_vez(n, "      { path: 'taller', texto: 'Taller', clave: 'taller', nucleo: true }] },",
                  "      { path: 'taller', texto: 'Taller', clave: 'taller', nucleo: true }," + '\n' +
-                 "      { path: 'entrega', texto: 'Entrega', clave: 'entrega', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (entrega)')
+                 "      { path: 'entrega', texto: 'Tarifas de entrega', clave: 'entrega', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (entrega)')
     n = _una_vez(n, "    { path: 'taller', tras: 'reservas-producto', icono: 'build', texto: 'Taller', nucleo: true },",
                  "    { path: 'taller', tras: 'reservas-producto', icono: 'build', texto: 'Taller', nucleo: true }," + '\n' +
-                 "    { path: 'entrega', tras: 'taller', icono: 'local_shipping', texto: 'Entrega', nucleo: true },", 'nav.js INJERTOS entrega')
+                 "    { path: 'entrega', tras: 'taller', icono: 'local_shipping', texto: 'Tarifas de entrega', nucleo: true },", 'nav.js INJERTOS entrega')
     n = _una_vez(n, "    taller: 'taller',",
                  "    taller: 'taller'," + '\n' + "    entrega: 'entrega',", 'nav.js CLAVE_MENU entrega')
     open(nav, 'w', encoding='utf-8', newline='').write(n)
@@ -4326,7 +4331,7 @@ def entrega_pantalla():
                  "  /*AXW_FIN_TARJETA_TALLER*/" + '\n' +
                  "  /* ENTREGA (F8 pieza 8, 10-oct-2026): la sede, la tarifa por km y los límites de la entrega a domicilio. Permiso propio `entrega`; sin esta tarjeta la casilla no existiría en Usuarios. La base exige además administración. */" + '\n' +
                  "  LW_HERRAMIENTAS.splice(LW_HERRAMIENTAS.findIndex(t => t.herr === 'taller') + 1, 0," + '\n' +
-                 "    { grupo:'Seguimiento', nombre:'Entrega', icon:'ph-truck', href:'/intranet/v4/entrega/', herr:'entrega'," + '\n' +
+                 "    { grupo:'Seguimiento', nombre:'Tarifas de entrega', icon:'ph-truck', href:'/intranet/v4/entrega/', herr:'entrega'," + '\n' +
                  "      para:'Cuánto cuesta llevar la moto al cliente: la oficina, el precio por kilómetro, los límites y el interruptor que activa el cobro de la entrega.'," + '\n' +
                  "      claves:'entrega domicilio km kilometro tarifa sede oficina recogida precio delivery pickup distance office rate' });" + '\n' + "}",
                  'herramientas.js tarjeta Entrega')
@@ -4345,11 +4350,11 @@ def flota_pantalla():
     _pantalla_bot(v4, 'flota.html', 'flota', 'Flota y tarifas', puerta='data-herramienta="flota"')
     nav = os.path.join(v4, 'assets', 'nav.js')
     n = open(nav, encoding='utf-8').read()
-    n = _una_vez(n, "      { path: 'entrega', texto: 'Entrega', clave: 'entrega', nucleo: true }] },",
-                 "      { path: 'entrega', texto: 'Entrega', clave: 'entrega', nucleo: true }," + '\n' +
+    n = _una_vez(n, "      { path: 'entrega', texto: 'Tarifas de entrega', clave: 'entrega', nucleo: true }] },",
+                 "      { path: 'entrega', texto: 'Tarifas de entrega', clave: 'entrega', nucleo: true }," + '\n' +
                  "      { path: 'flota', texto: 'Flota y tarifas', clave: 'flota', nucleo: true }] },", 'nav.js MENU_V4 Seguimiento (flota)')
-    n = _una_vez(n, "    { path: 'entrega', tras: 'taller', icono: 'local_shipping', texto: 'Entrega', nucleo: true },",
-                 "    { path: 'entrega', tras: 'taller', icono: 'local_shipping', texto: 'Entrega', nucleo: true }," + '\n' +
+    n = _una_vez(n, "    { path: 'entrega', tras: 'taller', icono: 'local_shipping', texto: 'Tarifas de entrega', nucleo: true },",
+                 "    { path: 'entrega', tras: 'taller', icono: 'local_shipping', texto: 'Tarifas de entrega', nucleo: true }," + '\n' +
                  "    { path: 'flota', tras: 'entrega', icono: 'two_wheeler', texto: 'Flota y tarifas', nucleo: true },", 'nav.js INJERTOS flota')
     n = _una_vez(n, "    entrega: 'entrega',",
                  "    entrega: 'entrega'," + '\n' + "    flota: 'flota',", 'nav.js CLAVE_MENU flota')
@@ -5165,6 +5170,13 @@ TEXTOS_INSTANCIA = (
     ('intranet/v4/ajustes/index.html', '</b>, y lo comprueba la base de datos, no esta pantalla. Cada ajuste tiene su formato',
      '</b>. Cada ajuste tiene su formato', 1),
     # M7: lo que se dice debajo de cada ajuste hablaba de «funciones de la base» y de «la fase siguiente»
+    # bbm-flujos-ux (18-oct-2026): la cabecera seguía diciendo «cambiarlos exige super admin», y desde admin_puede (15-oct) el administrador los
+    # cambia todos salvo el correo del sistema (servidor, remitente y buzón de avisos, D27) y las cuentas bancarias; el aviso de solo lectura solo lo
+    # ve ya quien no puede (la cuenta de pruebas). El viejo empieza en `-nodos>` y el nuevo en `>`: el lado viejo no es un rótulo que se pinte, y
+    # rotulos_build.test.js toma como rótulo todo texto que siga al atributo de traducir en este fichero
+    ('intranet/v4/ajustes/index.html', '-nodos>Ver los ajustes lo puede cualquier admin; <b class="text-on-surface" data-lwt>cambiarlos exige super admin</b>. Cada ajuste tiene su formato y su rango: fuera de él no se guarda. Pausar los envíos y cerrar la intranet, en cambio, los puede hacer cualquier admin.</p>',
+     '>Cualquier administrador puede ver y cambiar estos ajustes, salvo el correo del sistema y las cuentas bancarias, que solo los puede cambiar un super admin. Cada ajuste tiene su formato y su rango: fuera de él no se guarda.</p>', 1),
+    ('intranet/v4/ajustes/index.html', 'data-lwt>Tu sesión no es super admin: puedes mirar los ajustes, no cambiarlos.</p>', 'data-lwt>Con esta cuenta puedes ver los ajustes, pero no cambiarlos.</p>', 1),
     ('intranet/v4/assets/ajustes.js', "  var TEXTO_LEE = 'Ya lo leen funciones de la base de este ERP. La pantalla, el menú y los demás correos lo leerán en la fase siguiente.';",
      "  var TEXTO_LEE = 'El ERP ya lo usa por dentro, pero aún no todas las pantallas ni los correos lo enseñan.';", 1),
     ('intranet/v4/assets/ajustes.js', "  var TEXTO_NO_LEE = 'Se guarda y queda en el registro, pero todavía no lo lee ninguna pantalla ni correo de esta instalación: llegará con la fase siguiente.';",

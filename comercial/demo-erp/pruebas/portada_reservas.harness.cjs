@@ -86,7 +86,10 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
 // Con PAQUETE=<carpeta de un build de la instancia> (revisión previa de Calidad, 12-oct): la misma portada con el idioma.js y el i18n.js REALES de ese paquete (los que
 // parchea build.py --instancia con "idiomas"), no un sustituto. Así se mide el lwT de verdad: cero frases en español (LW_T_ESPANOL) y ni una tilde en la interfaz.
 const PAQUETE = process.env.PAQUETE;
+// bbm abre en inglés desde el 13-oct (bbm-p42, idioma de pantalla de la instancia): para barrer el indonesio, la página simula a quien lo ELIGIÓ (axw_idioma_ui = 'id'),
+// que es el camino real de idioma.js; setContent deja la página en about:blank, sin localStorage propio, por eso se sustituye (18-oct-2026, bbm-flujos-ux).
 const paginaReal = () => `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>t · Inicio</title>
+<script>(function () { var m = { axw_idioma_ui: 'id' }; Object.defineProperty(window, 'localStorage', { configurable: true, value: { getItem: function (k) { return Object.prototype.hasOwnProperty.call(m, k) ? m[k] : null; }, setItem: function (k, v) { m[k] = String(v); }, removeItem: function (k) { delete m[k]; } } }); })();</script>
 <script>${fs.readFileSync(path.join(PAQUETE, 'contracts', 'assets', 'idioma.js'), 'utf8')}</script>
 <script>${fs.readFileSync(path.join(PAQUETE, 'contracts', 'assets', 'i18n.js'), 'utf8')}</script></head><body>
 ${MARCADO}
@@ -143,9 +146,13 @@ const TILDES = /[áéíóúñÁÉÍÓÚÑ¿¡]/;
     const fic = await txt(p, '[data-axw="dialogo"]');
     ok('tocar abre la ficha con número, modelo, pago, precio y dirección', fic.includes('RP-00001') && fic.includes('Pagado') && fic.includes('450.000') && fic.includes('Jl. <img'));
     ok('XSS en la ficha', await sinInyeccion(p));
+    // bbm-flujos-ux (18-oct-2026): la ficha lleva a SU reserva (id y fechas en la URL), no a la lista entera
+    const irA = await p.$eval('[data-axw="dialogo"] .axw-acciones a', e => [e.textContent, e.getAttribute('href')]);
+    ok('la ficha ofrece «Abrir esta reserva» con su id y sus fechas', irA[0] === 'Abrir esta reserva' && /reservas-producto\/\?reserva=[^&]+&desde=\d{4}-\d{2}-\d{2}&hasta=\d{4}-\d{2}-\d{2}$/.test(irA[1]), irA.join(' '));
     await p.click('[data-axw="dialogo"] [data-accion="ph-cerrar"]');
     ok('cerrar quita la ficha', !(await p.$('[data-axw="dialogo"]')));
-    ok('con la herramienta, el enlace a Reservas de producto se ofrece', await p.$eval('[data-ph="ir-reservas"]', e => !e.classList.contains('axw-oculto')));
+    ok('con la herramienta, el botón «Nueva reserva» se ofrece y abre el asistente', await p.$eval('[data-ph="ir-reservas"]', e => !e.classList.contains('axw-oculto')
+       && e.textContent.trim() === 'Nueva reserva' && /reservas-producto\/\?nueva=1$/.test(e.getAttribute('href'))));
     // día siguiente
     await p.click('[data-accion="ph-despues"]');
     await espera(p, () => document.querySelector('[data-ph="estado-entregas"]').textContent.includes('Este día'));

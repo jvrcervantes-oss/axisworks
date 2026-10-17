@@ -2510,6 +2510,16 @@
     catch (e) { /* MUDO A PROPOSITO: una fecha o zona que no se entiende no cuenta como de hoy; el registro se sigue enseñando entero */ return ''; }
   }
   function cifra(cent, m) { return ent(cent) ? C.dinero(cent / 100, m || null) : null; }
+  /* «espera ganar» de una fila del registro: `valor_esperado` va ya en la unidad de su moneda (`valor_moneda`, la congela el servidor;
+     20261018130000 de la agencia) y no se divide; en bbm (IDR, 0 decimales) dividir entre 100 daba la cifra mal. Las filas de antes solo
+     traen `valor_esperado_cent`, sin moneda escrita: como hasta ahora, en la de la instancia (aaas-bbm, 18-oct) */
+  function esperaGanar(r) {
+    var v = r.valor_esperado;
+    if (typeof v === 'number' && isFinite(v) && v >= 0) {
+      return C.dinero(v, (typeof r.valor_moneda === 'string' && /^[A-Z]{3}$/.test(r.valor_moneda) ? r.valor_moneda : V.d.moneda) || null);
+    }
+    return cifra(r.valor_esperado_cent, V.d.moneda);
+  }
   function mesNombre() {
     try { return new Date(String(V.d.hoy).slice(0, 10) + 'T12:00:00').toLocaleDateString(C.locale(), { month: 'long' }); }
     catch (e) { /* MUDO A PROPOSITO: sin el nombre del mes el rótulo sigue diciendo la moneda */ return ''; }
@@ -2794,7 +2804,8 @@
       if (typeof r.porque === 'string' && r.porque) li.appendChild(h('p', { class: 'ag2-por', text: T('Por qué') + ': ' + r.porque }));
       /* dos monedas en la misma fila: lo que el agente ESPERA ganar (moneda de la instancia, es su estimación) y lo que GASTÓ (moneda del gasto) */
       var num = [];
-      if (ent(r.valor_esperado_cent)) num.push(Tf('Espera ganar {x}', { x: cifra(r.valor_esperado_cent, V.d.moneda) }));
+      var gana = esperaGanar(r);
+      if (gana) num.push(Tf('Espera ganar {x}', { x: gana }));
       if (ent(r.gastado_cent)) num.push(Tf('Gastó {x}', { x: cifra(r.gastado_cent, V.d.dinero.moneda_gasto) }));
       if (num.length) li.appendChild(h('p', { class: 'ag2-num', text: num.join(' · ') }));
       if (typeof r.motivo === 'string' && r.motivo) li.appendChild(h('p', { class: 'ag2-num', text: T('Motivo') + ': ' + (REG_MOTIVO[r.motivo] ? T(REG_MOTIVO[r.motivo]) : r.motivo) }));

@@ -81,7 +81,7 @@ pagina = lee(d, 'intranet/v4/entrega/index.html') if r == 'pasa' else ''
 nav = lee(d, 'intranet/v4/assets/nav.js') if r == 'pasa' else ''
 her = lee(d, 'contracts/assets/herramientas.js') if r == 'pasa' else ''
 mira('la pagina lleva la puerta de la herramienta entrega y ya no la del asistente', 'data-herramienta="entrega"' in pagina and 'data-herramienta="asistente"' not in pagina)
-mira('el titulo es Entrega', '<title data-lw-titulo>Entrega</title>' in pagina)
+mira('el titulo es Tarifas de entrega', '<title data-lw-titulo>Tarifas de entrega</title>' in pagina)
 mira('la pantalla de Lawang (asistente) y la de Taller no se mezclan en la nueva', 'asistente-peticiones' not in pagina and 'Telegram' not in pagina and 'data-tl="raiz"' not in pagina)
 mira('el marcado y el script de la fuente entran una vez', pagina.count('<div class="flex flex-col w-full gap-8" data-en="raiz">') == 1 and pagina.count('var EN_ENT = {') == 1)
 mira('las ayudas comunes se pegan UNA vez (js y css) y las marcas no quedan en la pagina',
@@ -97,7 +97,7 @@ if r == 'pasa':
         c2 = compila(cod, nombre)
         mira('el %s resultante compila%s' % (nombre, (': ' + c2.stderr.strip()[:300]) if c2.returncode else ''), c2.returncode == 0)
     mira('nav.js: entrada de menu, injerto (con nucleo) y casilla, una vez cada uno',
-         nav.count("{ path: 'entrega', texto: 'Entrega', clave: 'entrega', nucleo: true }") == 1
+         nav.count("{ path: 'entrega', texto: 'Tarifas de entrega', clave: 'entrega', nucleo: true }") == 1
          and nav.count("{ path: 'entrega', tras: 'taller'") == 1 and nav.count("entrega: 'entrega',") == 1)
     mira('el injerto de Entrega viene DESPUES del de Taller (cuelga de el)', nav.index("path: 'taller', tras: 'reservas-producto'") < nav.index("path: 'entrega', tras: 'taller'"))
     mira('puedeVer no deja pasar a un rol sin la casilla: CLAVE_MENU de la pantalla existe antes de la linea que la usa', nav.index("entrega: 'entrega',") < nav.index('var k = CLAVE_MENU[path];'))

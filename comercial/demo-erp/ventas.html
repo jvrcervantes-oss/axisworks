@@ -57,7 +57,7 @@
 <div class="lw-cabecera flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
 <div class="flex flex-col gap-2 max-w-3xl">
 <h1 class="font-headline-lg text-headline-lg text-deep-lagoon tracking-tight" data-lwt>Ventas</h1>
-<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>De la reserva a la factura: reclama las reservas que entran sin cliente, crea el borrador, emítelo y corrígelo con una rectificativa si hace falta. Los importes los calcula siempre la base; aquí solo se piden.</p>
+<p class="font-body-md text-body-md text-on-surface-variant" data-lwt>Aquí facturas lo que ya está cobrado y asignas cliente a las reservas que llegan sin él. Si una factura emitida tiene un error, se corrige con una rectificativa.</p>
 </div>
 </div>
 
@@ -121,7 +121,7 @@
   // Indonesio (instancias con "idiomas": ["id", "en"], hoy bbm; owner 11-oct-2026). Misma clave en español; se fusiona en window.LW_ID solo si existe.
   var ID_VT = {
     "Ventas": "Penjualan",
-    "De la reserva a la factura: reclama las reservas que entran sin cliente, crea el borrador, emítelo y corrígelo con una rectificativa si hace falta. Los importes los calcula siempre la base; aquí solo se piden.": "Dari booking ke invoice: klaim booking yang masuk tanpa pelanggan, buat draf, terbitkan, dan koreksi dengan nota kredit jika perlu. Jumlah selalu dihitung oleh database; di sini hanya diminta.",
+    "Aquí facturas lo que ya está cobrado y asignas cliente a las reservas que llegan sin él. Si una factura emitida tiene un error, se corrige con una rectificativa.": "Di sini Anda membuat invoice untuk yang sudah dibayar dan menetapkan pelanggan untuk booking yang masuk tanpa pelanggan. Jika invoice yang sudah terbit salah, koreksi dengan nota kredit.",
     "Operaciones": "Transaksi",
     "Reservas": "Booking",
     "Cobrado sin facturar": "Dibayar, belum di-invoice",
@@ -310,7 +310,7 @@
   };
   var EN_VT = {
     'Ventas': 'Sales',
-    'De la reserva a la factura: reclama las reservas que entran sin cliente, crea el borrador, emítelo y corrígelo con una rectificativa si hace falta. Los importes los calcula siempre la base; aquí solo se piden.': 'From booking to invoice: claim the bookings that arrive without a customer, create the draft, issue it and correct it with a credit note if needed. Amounts are always calculated by the database; here they are only requested.',
+    'Aquí facturas lo que ya está cobrado y asignas cliente a las reservas que llegan sin él. Si una factura emitida tiene un error, se corrige con una rectificativa.': 'Here you invoice what has already been paid and assign a customer to bookings that arrive without one. If an issued invoice has a mistake, you correct it with a credit note.',
     'Operaciones': 'Operations', 'Reservas': 'Bookings', 'Cobrado sin facturar': 'Paid, not invoiced', 'Nueva venta': 'New sale',
     'Origen': 'Source', 'Estado': 'Status', 'Todos': 'All', 'Reserva': 'Booking', 'Venta': 'Sale', 'Contrato': 'Contract',
     'Borrador': 'Draft', 'Abierta': 'Open', 'Cerrada': 'Closed', 'Cancelada': 'Cancelled', 'Actualizar': 'Refresh', 'Cargar más': 'Load more',

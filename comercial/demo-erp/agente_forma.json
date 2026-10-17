@@ -83,7 +83,7 @@
     "falta_configurar": "null | texto (como en agente_panel_estado)",
     "areas": "[{id, orden, nombre: {en, es, id}, parado}] — nombre es DATO: se elige por idioma, nunca pasa por T()",
     "equipo": "[{agente, area, parado}] — parado = SU palanca; la del área va en areas",
-    "registro": "[{id, en, agente, area, accion, estado: 'aplicada' | 'propuesta' | 'rechazada' | 'parada', motivo: null | 'parado' | 'accion' | 'rol' | 'datos' | 'trabajo' | 'nivel' | 'cupo' | 'tope' | 'otro', que, porque, valor_esperado_cent, gastado_cent}] (últimas 50; que/porque = texto de la IA: textContent)",
+    "registro": "[{id, en, agente, area, accion, estado: 'aplicada' | 'propuesta' | 'rechazada' | 'parada', motivo: null | 'parado' | 'accion' | 'rol' | 'datos' | 'trabajo' | 'nivel' | 'cupo' | 'tope' | 'otro', que, porque, valor_esperado_cent, valor_esperado (numeric, en su moneda; sin dividir), valor_moneda (ISO, la del servidor), gastado_cent}] (últimas 50; que/porque = texto de la IA: textContent)",
     "cola": "[{id, creada, agente, canal: 'facebook' | 'instagram', estado: 'pendiente' | 'enviando' | 'enviada' | 'fallida' | 'dudosa' | 'simulada' | 'parada', texto}] (últimas 10; texto de la IA: textContent)",
     "dinero": "{gastado_mes_cent, moneda_gasto, tope_mensual_cent, ganado_mes_cent | null, moneda_ganado | null, ganado_reservas_cent | null, reservas_pagadas_mes, ganado_recibis_cent | null, recibis_mes} — DOS monedas que no se suman; ganado null = sin datos o sin permiso de verlo (Seguridad, 15-oct), nunca 0",
     "altavoz": "{lineas: [{linea, nombre}], dominios: [texto], imagenes: [{url, linea}]}"

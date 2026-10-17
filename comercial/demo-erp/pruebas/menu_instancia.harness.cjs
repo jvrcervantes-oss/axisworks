@@ -87,7 +87,7 @@ const MIDE = () => {
   const p = await ctx.newPage();
   p.on('pageerror', e => errores.push(e.message));
   p.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|Failed to load resource/.test(m.text())) errores.push(m.text()); });
-  const ESPERADO = { id: { taller: 'Bengkel', entrega: 'Antar', flota: 'Armada dan tarif' }, en: { taller: 'Workshop', entrega: 'Delivery', flota: 'Fleet and rates' } };
+  const ESPERADO = { id: { taller: 'Bengkel', entrega: 'Tarif antar', flota: 'Armada dan tarif' }, en: { taller: 'Workshop', entrega: 'Delivery prices', flota: 'Fleet and rates' } };
   // sin elección guardada abre en el idioma de pantalla de la instancia (bbm-p42, 13-oct: bbm en inglés), no en el primero de la lista
   await p.goto(ORIGEN + '/home/', { waitUntil: 'load' });
   const limpio = await p.evaluate(() => [document.documentElement.lang, window.AXW_IDIOMA_PANTALLA]);

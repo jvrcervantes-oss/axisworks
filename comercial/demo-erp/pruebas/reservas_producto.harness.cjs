@@ -226,8 +226,8 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     const p = await ctx.newPage();
     await p.exposeFunction('__srv', (n, a) => servidor(base, n, a));
     if (opts.url) {   // origen de verdad (sessionStorage no vive en about:blank)
-      await p.route('http://rp.prueba/', r => r.fulfill({ contentType: 'text/html; charset=utf-8', body: pagina(opts.idioma || 'es', opts.ficha) }));
-      await p.goto('http://rp.prueba/', { waitUntil: 'load' });
+      await p.route(u => u.href.startsWith('http://rp.prueba/'), r => r.fulfill({ contentType: 'text/html; charset=utf-8', body: pagina(opts.idioma || 'es', opts.ficha) }));
+      await p.goto('http://rp.prueba/' + (opts.query || ''), { waitUntil: 'load' });
     } else await p.setContent(pagina(opts.idioma || 'es', opts.ficha), { waitUntil: 'load' });
     await p.waitForFunction(() => { const t = document.querySelector('[data-rp="res-estado"]').textContent; return !t.includes('Cargando') && !t.includes('Loading'); }, null, { timeout: 5000 });
     return { base, p, ctx };
@@ -1141,6 +1141,39 @@ window.onerror = function (m) { window.__errores.push(String(m)); };
     // Toques (Experiencia), entregar y recoger en el mismo sitio: antes «A domicilio» + dirección + «La recogemos nosotros» + la dirección otra vez + Siguiente;
     // ahora «A domicilio» + dirección + Siguiente + Siguiente (los mismos toques y una dirección menos que escribir). Entregar en la tienda: igual que antes.
     console.log('  toques S4 entrega+recogida en el mismo sitio: antes 3 toques + 2 direcciones · ahora 3 toques + 1 dirección; a domicilio y devuelta en la tienda: antes 2 toques, ahora 4; las dos en la tienda: 1 toque, como antes');
+  }
+
+  // 11. enlaces desde «Hoy» (bbm-flujos-ux, 18-oct-2026): ?reserva= lleva a SU fila con sus acciones (antes: la lista entera y volver a buscarla);
+  //     ?nueva=1 abre el asistente (antes: lista + «Nueva reserva»). Solo filtran y abren: nada se pulsa solo.
+  {
+    const { base, p, ctx } = await abre({ url: true, query: '?reserva=r4&desde=' + mas(10) + '&hasta=' + mas(12) });
+    const pidio = llamadas(base, 'reservas_producto_datos')[0][1];
+    ok('?reserva=: la lista se pide con las fechas de esa reserva', pidio.p_desde === mas(10) && pidio.p_hasta === mas(12), JSON.stringify(pidio));
+    await espera(p, () => document.querySelector('tr.rp-destacada'));
+    ok('?reserva=: su fila sale marcada', (await p.$eval('tr.rp-destacada', e => e.getAttribute('data-reserva-id'))) === 'r4');
+    ok('?reserva=: el foco está en su primera acción (Entregar) y no se ha pulsado nada', (await p.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-accion'))) === 'rp-entregar'
+       && llamadas(base, 'reserva_producto_estado').length === 0);
+    ok('?reserva=: la barra queda limpia (recargar no vuelve a mover la lista)', (await p.evaluate(() => location.search)) === '');
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ url: true, query: '?reserva=no-existe&desde=' + mas(10) + '&hasta=' + mas(12) });
+    await espera(p, () => !document.querySelector('[data-rp="aviso"]').classList.contains('rp-oculto'));
+    ok('?reserva= que no está: lo dice, no se confunde con «no hay»', (await txt(p, '[data-rp="aviso"]')).includes('no sale en la lista') && !(await p.$('tr.rp-destacada')));
+    await ctx.close();
+  }
+  {
+    const { p, ctx } = await abre({ url: true, query: '?reserva=r4&desde=<b>&hasta=x' });
+    ok('?reserva= con fechas que no son fechas: no se meten en el filtro', (await p.$eval('[data-rp="f-desde"]', e => e.value)) === '' && await sinInyeccion(p));
+    await ctx.close();
+  }
+  {
+    const { base, p, ctx } = await abre({ url: true, query: '?nueva=1' });
+    await enPaso(p, 'fechas');
+    ok('?nueva=1: abre el asistente en su primer paso, sin pedir nada más a la base', base.llamadas.filter(x => x[0] !== 'reservas_producto_datos').length === 0);
+    ok('?nueva=1: la barra queda limpia (recargar no lo vuelve a abrir)', (await p.evaluate(() => location.search)) === '');
+    await ctx.close();
+    console.log('  toques desde «Hoy»: entregar una reserva del día antes 4 + buscarla en la lista (filtrar o desplazar) · ahora 4 sin buscar (fila → Abrir esta reserva → Entregar → Sí); nueva reserva antes 2 · ahora 1');
   }
 
   await nav.close();
