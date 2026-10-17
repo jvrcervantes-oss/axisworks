@@ -920,6 +920,20 @@ def paginas_propias():
     os.makedirs(d, exist_ok=True)
     open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(aviso.format(
         t='Creatives', m='We show each project\'s asset library on the call: they are the client\'s real ads.'))
+    # El MCP de Lawang (PANTALLAS_SOLO_LAWANG, revisor del pin a 403c80b1, 17-oct-2026): en las instancias ya sale como «Pantalla no
+    # incluida», pero la demo lo servía entero, sin enlace y llamando a ia_peticion_ver y a la edge `mcp`, que la demo no tiene. Aquí se
+    # sustituye la página (la carpeta se queda: Ajustes trae /ia/ a mano y reraiz ya la reescribió) y se poda lo que solo ella cargaba.
+    for u, t in (('/intranet/v4/ia/', 'Connected apps'), ('/intranet/v4/ia/conectar/', 'Connect an assistant')):
+        if u not in PANTALLAS_SOLO_LAWANG:
+            aborta('paginas_propias: %s ya no está en PANTALLAS_SOLO_LAWANG: revisa este aviso de la demo' % u)
+        f = os.path.join(DIST, *ruta_limpia(u).strip('/').split('/'), 'index.html')
+        if not os.path.isfile(f):
+            aborta('paginas_propias: la demo no trae %s: ¿ha cambiado la v4 de Lawang?' % rel(f))
+        open(f, 'w', encoding='utf-8').write(aviso.format(
+            t=t, m=AVISO_NO_INCLUIDO + ' AI assistants connect to each client\'s own server. We show it on the call.'))
+    solo_ia = {'assets/ia-conectar.js', 'assets/ia-conectar.css'}
+    if set(poda_ficheros_sin_pantalla(DIST, solo_ia)) != solo_ia:
+        aborta('paginas_propias: ia-conectar.js/.css siguen en la demo (otro fichero los nombra): revisa la poda de /ia/conectar/')
     # /entrar/ (el acceso de la intranet real) lleva a la portada de dos puertas: en la demo no hay contraseña.
     os.makedirs(os.path.join(DIST, 'entrar'), exist_ok=True)
     open(os.path.join(DIST, 'entrar', 'index.html'), 'w', encoding='utf-8').write(redir.replace('/home/', '/'))
