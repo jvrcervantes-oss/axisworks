@@ -1833,7 +1833,12 @@ LAWANG_SUELTOS = {'0D5B5F': 'primary-container',        # hover del botón prima
                   'F7EEDC': 'surface-container-low',
                   'EFEADE': 'surface-container',        # --sup-hover
                   'E8E2D5': 'filete', 'F0EBE0': 'filete',  # filetes del papel (documento.css)
-                  '6B6C66': 'on-surface-variant', '676B63': 'on-surface-variant'}   # --muted
+                  '6B6C66': 'on-surface-variant', '676B63': 'on-surface-variant',   # --muted
+                  # Valor de `stone-sand` en Lawang hasta el 17-oct-2026 (mejora 3 de Experiencia lo oscureció a #6F6556 por
+                  # contraste). Sigue escrito a mano en bordes, gráficos, scrollbars y el --ss clásico: sin esta fila, al mover
+                  # el fijado dejaría de ser «de Lawang» y se quedaría su beige en las pieles. Mismo token que antes, misma salida;
+                  # con un fijado anterior el color ya es stone-sand por tw.css y esto solo lo repite (un valor, no ambiguo).
+                  'BEB3A5': 'stone-sand'}
 # La COLA (bbm-p42c, 13-oct; orquestador: «un documento que recibe el cliente no puede llevar tonos de otra marca»): los colores escritos a
 # mano en el código de LAWANG (están en su repo) que no son token ni suelto: sus tonos de estado propios y la cola larga de grises y cremas
 # cálidos, por FAMILIAS. Clasificados por tono y luz (scratchpad familias.py del 13-oct) y revisados a mano: un crema claro es superficie,

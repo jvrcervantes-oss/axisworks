@@ -238,6 +238,10 @@ mira('instancia() lo llama tras escribir las páginas «no instalado» y antes d
 # los recuentos de LAWANG_POR_CONTEXTO cuadran con el inventario: la suma de #485B37 es la del paquete de bbm medido el 13-oct
 mira('las reglas del verde de Lawang suman 44 (37 marca + 7 estado, inventario del 13-oct)',
      sum(r[3] for r in build.LAWANG_POR_CONTEXTO['485B37']) == 44 and sum(r[3] for r in build.LAWANG_POR_CONTEXTO['485B37'] if r[2] == 'ok') == 7)
+# el stone-sand de antes del 17-oct (Lawang lo oscureció a #6F6556) sigue escrito a mano en Lawang: tiene que seguir siendo suyo y
+# del mismo token, con cualquier fijado; quitar la fila de LAWANG_SUELTOS no fallaría hasta mover el fijado (revisor de 197a5b3)
+mira('#BEB3A5 sigue siendo color de Lawang y solo stone-sand (LAWANG_SUELTOS, 17-oct)',
+     build.LAWANG_SUELTOS.get('BEB3A5') == 'stone-sand' and set(build.lawang_paleta().get((190, 179, 165), [])) == {'stone-sand'})
 
 print('%d/%d' % (casos - len(fallos), casos))
 for f in fallos:
