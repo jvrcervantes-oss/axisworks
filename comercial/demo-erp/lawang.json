@@ -1,7 +1,7 @@
 {
-  "sha": "a65249ec5181ab2bafec6e9b85b1e30411acd7ba",
+  "sha": "403c80b1398400769b472da1ce6d70dd3679edd5",
   "doble_qa_sha256": "64681dd51947881b65579bb9fa0f80355d767a286ef97d21c94bdc088ee0160e",
-  "fecha": "2026-10-13",
-  "por": "axw-cola (sesión 665540ff, encargo de agencia-81)",
-  "motivo": "Aterrizar N6.1 (S1+S2) en la subida apilada axw-cola-1: el fijado pasa al main de Lawang con el que ya está publicado bbm (bea97c6 + Lawang a65249ec5, 13-oct 22:29), para que la primera publicación tras la separación no deshaga nada"
+  "fecha": "2026-10-17",
+  "por": "pin-lawang-porta",
+  "motivo": "ERP al día con Lawang"
 }
