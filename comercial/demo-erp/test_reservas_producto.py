@@ -161,6 +161,14 @@ mira('la caja cuenta las monedas que da la base (d.contar) y un importe en efect
      'var monedas = d.contar.filter(' in CODIGO and 'Array.isArray(d.contar)' in CODIGO
      and "if (n == null || n === '' || isNaN(Number(n))) return '—';" in CODIGO
      and 'return f.importe === null;' in CODIGO and not re.search(r"monedas\.push\(f\.moneda\)", CODIGO))
+# D9: «Cerrar la caja» de un día pasado solo sale a un admin (la base lo vuelve a comprobar); hoy, a cualquiera con la herramienta
+mira('cerrar la caja: hoy cualquiera, un día pasado solo un admin, y si no se dice quién la cierra',
+     "} else if (d.dia === d.hoy || (d.dia < d.hoy && d.admin === true)) {" in CODIGO
+     and "T('La caja de un día pasado la cierra un admin.')" in CODIGO)
+# «Día anterior» no baja de 400 días atrás (la base tampoco enseña una caja más vieja)
+mira('el botón «Día anterior» para a 400 días de hoy', "if (E.caja && E.caja.dia > sumaDias(E.caja.hoy, -400)) cargaCaja(sumaDias(E.caja.dia, -1));" in CODIGO)
+# D12: lo que se cuenta es lo cobrado menos lo devuelto ese día, sin el fondo de cambio (Administración, 18-oct; fila [caja-fondo-bbm])
+mira('cerrar la caja dice qué se cuenta: lo cobrado menos lo devuelto de ese día, sin el fondo', "T('Cuenta el efectivo de este día que hay en la caja (lo cobrado menos lo devuelto), sin el fondo de cambio.')" in CODIGO)
 claves_datos = set(re.findall(r"datos\.([a-z_]+)\s*=", CODIGO))
 mira('las unicas claves que se anaden a p_datos son las que la base lee (' + ', '.join(sorted(claves_datos)) + ')',
      claves_datos <= {'unidad_id', 'client_id', 'contacto_nombre', 'contacto_telefono', 'entrega_direccion', 'recogida_direccion', 'notas', 'clave'})

@@ -434,7 +434,7 @@ a.rp-boton{text-decoration:none}
     'Cierre: cuadra': 'Closed: it balances',
     'Cerrar la caja': 'Close the till',
     'La caja de un día pasado la cierra un admin.': 'The till of a past day is closed by an admin.',
-    'Cuenta solo el efectivo que entró hoy, sin el fondo de cambio.': 'Count only the cash that came in today, without the change float.',
+    'Cuenta el efectivo de este día que hay en la caja (lo cobrado menos lo devuelto), sin el fondo de cambio.': 'Count this day\'s cash in the till (what was charged minus what was refunded), without the change float.',
     'Salieron o volvieron sin pagar': 'Went out or came back unpaid',
     'Ninguna.': 'None.',
     'Cobradas sin facturar': 'Paid, not invoiced',
@@ -647,7 +647,7 @@ a.rp-boton{text-decoration:none}
     'Cierre: cuadra': 'Ditutup: cocok',
     'Cerrar la caja': 'Tutup kas',
     'La caja de un día pasado la cierra un admin.': 'Kas hari yang sudah lewat ditutup oleh admin.',
-    'Cuenta solo el efectivo que entró hoy, sin el fondo de cambio.': 'Hitung hanya uang tunai yang masuk hari ini, tanpa uang kembalian awal.',
+    'Cuenta el efectivo de este día que hay en la caja (lo cobrado menos lo devuelto), sin el fondo de cambio.': 'Hitung uang tunai hari ini yang ada di kas (yang ditagih dikurangi yang dikembalikan), tanpa uang kembalian awal.',
     'Salieron o volvieron sin pagar': 'Keluar atau kembali belum dibayar',
     'Ninguna.': 'Tidak ada.',
     'Cobradas sin facturar': 'Lunas belum difaktur',
@@ -2178,7 +2178,7 @@ a.rp-boton{text-decoration:none}
     var campos = {};
     // D13: quien cuenta a ciegas no recibe «no cuadra, escribe una nota» (le diría si la cifra es la buena): la nota va a la vista desde el principio
     // lo esperado es lo cobrado en efectivo ese día menos lo devuelto en efectivo: sin fondo de caja (D12), el fondo de cambio no se cuenta
-    var nodos = [h('p', { class: 'rp-nota', text: T('Cuenta solo el efectivo que entró hoy, sin el fondo de cambio.') }), h('p', { class: 'rp-nota', text: T('Cuenta el efectivo de la caja y escribe cuánto hay. Lo que debería haber lo calcula la base al cerrar; si no cuadra, el cierre queda marcado y se avisa a los administradores.') })];
+    var nodos = [h('p', { class: 'rp-nota', text: T('Cuenta el efectivo de este día que hay en la caja (lo cobrado menos lo devuelto), sin el fondo de cambio.') }), h('p', { class: 'rp-nota', text: T('Cuenta el efectivo de la caja y escribe cuánto hay. Lo que debería haber lo calcula la base al cerrar; si no cuadra, el cierre queda marcado y se avisa a los administradores.') })];
     if (!monedas.length) nodos.push(h('p', { class: 'rp-nota', text: T('Este día no hay cobros en efectivo: no hay nada que contar.') }));
     monedas.forEach(function (m) {
       campos[m] = h('input', { type: 'text', inputmode: 'decimal', 'data-campo': 'contado-' + m.toLowerCase(), 'aria-label': T('Efectivo contado') + ' (' + m + ')' });
@@ -2200,7 +2200,7 @@ a.rp-boton{text-decoration:none}
           if (r.error) {
             var hn = r.error.hint ? String(r.error.hint) : '';
             if (clasifica(r.error).tipo === 'red') { dd.error(T('No se recibió respuesta: el cierre puede haberse guardado. Se ha recargado la caja: míralo antes de volver a intentarlo.')); cargaCaja(d.dia); return; }
-            if (hn === 'nota_obligatoria') { oculta(cajaNota, false); nota.focus(); dd.error(T('La caja no cuadra: escribe en la nota qué ha pasado.')); return; }
+            if (hn === 'nota_obligatoria') { nota.focus(); dd.error(T('La caja no cuadra: escribe en la nota qué ha pasado.')); return; }
             if (hn === 'tarjeta') { dd.error(T('Eso parece un número de tarjeta y no se guarda. Escribe solo el número del ticket del datáfono.')); return; }
             dd.error(mensaje(r.error));
             if (hn === 'ya_cerrada') cargaCaja(d.dia);
