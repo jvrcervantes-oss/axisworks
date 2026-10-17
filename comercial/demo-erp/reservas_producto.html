@@ -721,7 +721,7 @@ a.rp-boton{text-decoration:none}
     return llama('reservas_producto_datos', args).then(function (r) {
       if (!vaListaDe(r, 'reservas')) {
         if (!mas) E.res = [];
-        vacia($v('res-tabla')); E.resCargado = false;
+        vacia($v('res-tabla')); E.resCargado = false; E.irA = null;   // ?reserva= no salta tarde, en la siguiente recarga
         est.textContent = T('No se ha podido mirar') + ': ' + textoError(r, true);
         oculta(raiz.querySelector('[data-accion="rp-res-mas"]'), true);
         return;

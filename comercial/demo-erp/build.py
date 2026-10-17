@@ -2375,10 +2375,10 @@ MENU_I18N = {
     '. Cada ajuste tiene su formato y su rango: fuera de él no se guarda. Pausar los envíos y cerrar la intranet, en cambio, los puede hacer cualquier admin.': {
         'en': '. Each setting has its own format and range: outside it, it is not saved. Pausing sending and closing the intranet, on the other hand, any admin can do.',
         'id': '. Setiap pengaturan punya format dan rentangnya sendiri: di luar itu tidak disimpan. Sebaliknya, menjeda pengiriman dan menutup intranet bisa dilakukan admin mana pun.'},
-    # bbm-flujos-ux (18-oct-2026): desde admin_puede (15-oct) el administrador cambia Ajustes salvo el servidor de correo y las cuentas bancarias
-    'Cualquier administrador puede ver y cambiar estos ajustes, salvo el servidor de correo y las cuentas bancarias, que solo los puede cambiar un super admin. Cada ajuste tiene su formato y su rango: fuera de él no se guarda.': {
-        'en': 'Any administrator can view and change these settings, except the mail server and the bank accounts, which only a super admin can change. Each setting has its own format and range: values outside it are not saved.',
-        'id': 'Admin mana pun bisa melihat dan mengubah pengaturan ini, kecuali server email dan rekening bank, yang hanya bisa diubah oleh super admin. Setiap pengaturan punya format dan rentangnya sendiri: di luar itu tidak disimpan.'},
+    # bbm-flujos-ux (18-oct-2026): desde admin_puede (15-oct) el administrador cambia Ajustes salvo el correo del sistema y las cuentas bancarias
+    'Cualquier administrador puede ver y cambiar estos ajustes, salvo el correo del sistema y las cuentas bancarias, que solo los puede cambiar un super admin. Cada ajuste tiene su formato y su rango: fuera de él no se guarda.': {
+        'en': 'Any administrator can view and change these settings, except the system email and the bank accounts, which only a super admin can change. Each setting has its own format and range: values outside it are not saved.',
+        'id': 'Admin mana pun bisa melihat dan mengubah pengaturan ini, kecuali email sistem dan rekening bank, yang hanya bisa diubah oleh super admin. Setiap pengaturan punya format dan rentangnya sendiri: di luar itu tidak disimpan.'},
     'Con esta cuenta puedes ver los ajustes, pero no cambiarlos.': {'en': 'With this account you can view the settings, but not change them.', 'id': 'Dengan akun ini Anda bisa melihat pengaturan, tetapi tidak bisa mengubahnya.'},
     'El ERP ya lo usa por dentro, pero aún no todas las pantallas ni los correos lo enseñan.': {
         'en': 'The ERP already uses it internally, but not every screen or email shows it yet.',
@@ -5171,9 +5171,11 @@ TEXTOS_INSTANCIA = (
      '</b>. Cada ajuste tiene su formato', 1),
     # M7: lo que se dice debajo de cada ajuste hablaba de «funciones de la base» y de «la fase siguiente»
     # bbm-flujos-ux (18-oct-2026): la cabecera seguía diciendo «cambiarlos exige super admin», y desde admin_puede (15-oct) el administrador los
-    # cambia todos salvo el servidor de correo y las cuentas bancarias; el aviso de solo lectura solo lo ve ya quien no puede (la cuenta de pruebas)
-    ('intranet/v4/ajustes/index.html', 'data-lwt-nodos>Ver los ajustes lo puede cualquier admin; <b class="text-on-surface" data-lwt>cambiarlos exige super admin</b>. Cada ajuste tiene su formato y su rango: fuera de él no se guarda. Pausar los envíos y cerrar la intranet, en cambio, los puede hacer cualquier admin.</p>',
-     'data-lwt>Cualquier administrador puede ver y cambiar estos ajustes, salvo el servidor de correo y las cuentas bancarias, que solo los puede cambiar un super admin. Cada ajuste tiene su formato y su rango: fuera de él no se guarda.</p>', 1),
+    # cambia todos salvo el correo del sistema (servidor, remitente y buzón de avisos, D27) y las cuentas bancarias; el aviso de solo lectura solo lo
+    # ve ya quien no puede (la cuenta de pruebas). El viejo empieza en `-nodos>` y el nuevo en `>`: el lado viejo no es un rótulo que se pinte, y
+    # rotulos_build.test.js toma como rótulo todo texto que siga al atributo de traducir en este fichero
+    ('intranet/v4/ajustes/index.html', '-nodos>Ver los ajustes lo puede cualquier admin; <b class="text-on-surface" data-lwt>cambiarlos exige super admin</b>. Cada ajuste tiene su formato y su rango: fuera de él no se guarda. Pausar los envíos y cerrar la intranet, en cambio, los puede hacer cualquier admin.</p>',
+     '>Cualquier administrador puede ver y cambiar estos ajustes, salvo el correo del sistema y las cuentas bancarias, que solo los puede cambiar un super admin. Cada ajuste tiene su formato y su rango: fuera de él no se guarda.</p>', 1),
     ('intranet/v4/ajustes/index.html', 'data-lwt>Tu sesión no es super admin: puedes mirar los ajustes, no cambiarlos.</p>', 'data-lwt>Con esta cuenta puedes ver los ajustes, pero no cambiarlos.</p>', 1),
     ('intranet/v4/assets/ajustes.js', "  var TEXTO_LEE = 'Ya lo leen funciones de la base de este ERP. La pantalla, el menú y los demás correos lo leerán en la fase siguiente.';",
      "  var TEXTO_LEE = 'El ERP ya lo usa por dentro, pero aún no todas las pantallas ni los correos lo enseñan.';", 1),
