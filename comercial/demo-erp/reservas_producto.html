@@ -180,6 +180,7 @@ a.rp-boton{text-decoration:none}
 <button class="rp-tab" type="button" role="tab" data-accion="rp-tab" data-tab="calendario" aria-selected="false"><span data-lwt>Calendario</span></button>
 <button class="rp-tab" type="button" role="tab" data-accion="rp-tab" data-tab="flota" aria-selected="false"><span data-lwt>Flota y tarifas</span></button>
 <button class="rp-tab" type="button" role="tab" data-accion="rp-tab" data-tab="pagos" aria-selected="false"><span data-lwt>Pagos por revisar</span></button>
+<button class="rp-tab" type="button" role="tab" data-accion="rp-tab" data-tab="caja" aria-selected="false"><span data-lwt>Caja</span></button>
 </div>
 
 <div data-rp="panel" data-tab="reservas" role="tabpanel">
@@ -225,6 +226,18 @@ a.rp-boton{text-decoration:none}
 <div data-rp="pagos-estado" class="rp-vacio"></div>
 <div class="rp-tabla-caja"><table class="rp-tabla" data-rp="pagos-tabla"></table></div>
 <div class="rp-barra"><button class="rp-boton rp-oculto" type="button" data-accion="rp-pagos-mas"><span data-lwt>Cargar más</span></button></div>
+</div>
+
+<div data-rp="panel" data-tab="caja" role="tabpanel" class="rp-oculto">
+<div class="rp-nota" data-lwt>Lo cobrado en el mostrador cada día (efectivo, transferencia y tarjeta) y el cierre de caja. El día y los totales los calcula la base.</div>
+<div class="rp-barra">
+<button class="rp-boton" type="button" data-accion="rp-caja-ant"><span data-lwt>Día anterior</span></button>
+<button class="rp-boton" type="button" data-accion="rp-caja-hoy"><span data-lwt>Hoy</span></button>
+<button class="rp-boton" type="button" data-accion="rp-caja-sig"><span data-lwt>Día siguiente</span></button>
+<button class="rp-boton" type="button" data-accion="rp-caja-actualizar"><span data-lwt>Actualizar</span></button>
+</div>
+<div data-rp="caja-estado" class="rp-vacio"></div>
+<div data-rp="caja-cuerpo" class="flex flex-col gap-4"></div>
 </div>
 </section>
 
@@ -369,7 +382,74 @@ a.rp-boton{text-decoration:none}
     'Aviso de un tipo que esta pantalla aún no conoce.': 'An alert of a type this screen does not know yet.',
     'Avisado': 'Flagged', 'Marcar resuelto': 'Mark resolved', 'Aviso marcado como resuelto.': 'Alert marked as resolved.',
     'La cuenta de pruebas solo mira: no marca avisos.': 'The test account can only look: it does not mark alerts.',
-    'La base no confirmó el aviso: recarga y comprueba.': 'The database did not confirm the alert: reload and check.'
+    'La base no confirmó el aviso: recarga y comprueba.': 'The database did not confirm the alert: reload and check.',
+    'Cobrar': 'Take payment',
+    'Cobrar la reserva': 'Take payment for the booking',
+    'A cobrar': 'To collect',
+    'Efectivo': 'Cash',
+    'Transferencia': 'Bank transfer',
+    'Tarjeta (datáfono)': 'Card (terminal)',
+    '¿Cómo paga?': 'How is it paid?',
+    'Elige cómo paga.': 'Choose how it is paid.',
+    'Referencia (opcional): nº de la transferencia o del ticket del datáfono': 'Reference (optional): transfer number or card terminal receipt number',
+    'Nunca el número de la tarjeta.': 'Never the card number.',
+    'Se cobra la reserva entera y queda pagada. La factura no sale sola: la reserva pasa a Ventas › «Cobrado sin facturar».': 'The whole booking is charged and marked as paid. The invoice is not issued automatically: the booking moves to Sales › “Paid, not invoiced”.',
+    'La referencia es demasiado larga.': 'The reference is too long.',
+    'No se recibió respuesta. Vuelve a pulsar «Cobrar»: si ya se apuntó, no se cobra dos veces.': 'No response was received. Press “Take payment” again: if it was already recorded, it will not be charged twice.',
+    'La base no confirmó el cobro: recarga y comprueba.': 'The database did not confirm the payment: reload and check.',
+    'Cobrado': 'Paid',
+    'Caja del': 'Till of',
+    'La caja de hoy ya estaba cerrada: este cobro cuenta en la caja de mañana.': 'Today\'s till was already closed: this payment counts in tomorrow\'s till.',
+    'El precio de esta reserva ha cambiado desde que se abrió la lista. Se ha recargado: vuelve a abrir «Cobrar».': 'The price of this booking changed after the list was opened. It has been reloaded: open “Take payment” again.',
+    'Esta reserva tiene un enlace de pago en línea abierto: el cliente podría pagar dos veces. Espera a que pague o a que caduque el enlace.': 'This booking has an open online payment link: the customer could pay twice. Wait until they pay or the link expires.',
+    'Eso parece un número de tarjeta y no se guarda. Escribe solo el número del ticket del datáfono.': 'That looks like a card number and it is not stored. Write only the card terminal receipt number.',
+    'Esta reserva ya está pagada. Se ha recargado la lista.': 'This booking is already paid. The list has been reloaded.',
+    'Hay un pago de esta reserva en «Pagos por revisar»: resuélvelo antes de cobrar aquí.': 'There is a payment for this booking in “Payments to review”: resolve it before taking payment here.',
+    'Caja': 'Till',
+    'Abierta': 'Open',
+    'Cerrada': 'Closed',
+    'Día anterior': 'Previous day',
+    'Día siguiente': 'Next day',
+    'Lo cobrado en el mostrador cada día (efectivo, transferencia y tarjeta) y el cierre de caja. El día y los totales los calcula la base.': 'What was taken at the counter each day (cash, transfer and card) and the till closing. The day and the totals are calculated by the database.',
+    'Este día no hay cobros en el mostrador.': 'No counter payments on this day.',
+    'Moneda': 'Currency',
+    'Forma de pago': 'Payment method',
+    'Cobros': 'Payments',
+    'Cobrado por': 'Taken by',
+    'Corregir cobro': 'Correct payment',
+    'Cobros del día': 'The day\'s payments',
+    'Tus cobros del día': 'Your payments of the day',
+    'Corregido': 'Corrected',
+    'Por': 'By',
+    'Cobros corregidos (la forma de pago estaba mal)': 'Corrected payments (the payment method was wrong)',
+    'Efectivo esperado': 'Expected cash',
+    'Efectivo contado': 'Cash counted',
+    'Diferencia': 'Difference',
+    'Cierre con diferencia': 'Closed with a difference',
+    'Cierre: cuadra': 'Closed: it balances',
+    'Cerrar la caja': 'Close the till',
+    'Salieron o volvieron sin pagar': 'Went out or came back unpaid',
+    'Ninguna.': 'None.',
+    'Cobradas sin facturar': 'Paid, not invoiced',
+    'la más antigua, cobrada el': 'the oldest, paid on',
+    'Se facturan en Ventas.': 'They are invoiced in Sales.',
+    'Cuenta el efectivo de la caja y escribe cuánto hay. Lo que debería haber lo calcula la base al cerrar; si no cuadra, te pedirá una nota.': 'Count the cash in the till and write how much there is. The database calculates what there should be when closing; if it does not balance, it will ask you for a note.',
+    'Este día no hay cobros en efectivo: no hay nada que contar.': 'No cash payments on this day: there is nothing to count.',
+    '¿Qué ha pasado? (obligatorio si no cuadra, hasta 500 caracteres)': 'What happened? (required if it does not balance, up to 500 characters)',
+    'Lo contado es un número de 0 en adelante, sin puntos de miles (por ejemplo 1500000).': 'The amount counted is a number from 0 up, without thousands separators (for example 1500000).',
+    'No se recibió respuesta: el cierre puede haberse guardado. Se ha recargado la caja: míralo antes de volver a intentarlo.': 'No response was received: the closing may have been saved. The till has been reloaded: check it before trying again.',
+    'La caja no cuadra: escribe en la nota qué ha pasado.': 'The till does not balance: write in the note what happened.',
+    'La base no confirmó el cierre: recarga y comprueba.': 'The database did not confirm the closing: reload and check.',
+    'Caja cerrada con diferencia: los administradores tienen el aviso.': 'Till closed with a difference: the administrators have been alerted.',
+    'Caja cerrada: cuadra.': 'Till closed: it balances.',
+    '¿Cómo pagó de verdad?': 'How was it actually paid?',
+    'Motivo de la corrección (obligatorio, de 5 a 300 caracteres)': 'Reason for the correction (required, 5 to 300 characters)',
+    'Solo cambia la forma de pago o la referencia: el importe no se toca. El cobro de antes queda guardado como corregido. Para devolver dinero, cancela la reserva con devolución.': 'Only the payment method or the reference change: the amount is not touched. The previous payment stays saved as corrected. To give money back, cancel the booking with a refund.',
+    'Corregir': 'Correct',
+    'Escribe el motivo (de 5 a 300 caracteres).': 'Write the reason (5 to 300 characters).',
+    'No se recibió respuesta: la corrección puede haberse guardado. Se ha recargado la caja: míralo antes de volver a intentarlo.': 'No response was received: the correction may have been saved. The till has been reloaded: check it before trying again.',
+    'La base no confirmó la corrección: recarga y comprueba.': 'The database did not confirm the correction: reload and check.',
+    'Cobro corregido.': 'Payment corrected.'
   };
   if (window.LW_EN && typeof window.LW_EN === 'object') {
     Object.keys(EN_RP).forEach(function (k) { if (!(k in window.LW_EN)) window.LW_EN[k] = EN_RP[k]; });
@@ -508,7 +588,74 @@ a.rp-boton{text-decoration:none}
     'Aviso de un tipo que esta pantalla aún no conoce.': 'Peringatan dengan jenis yang belum dikenal layar ini.',
     'Avisado': 'Ditandai', 'Marcar resuelto': 'Tandai selesai', 'Aviso marcado como resuelto.': 'Peringatan ditandai selesai.',
     'La cuenta de pruebas solo mira: no marca avisos.': 'Akun uji coba hanya bisa melihat: tidak bisa menandai peringatan.',
-    'La base no confirmó el aviso: recarga y comprueba.': 'Basis data tidak mengonfirmasi peringatan: muat ulang dan periksa.'
+    'La base no confirmó el aviso: recarga y comprueba.': 'Basis data tidak mengonfirmasi peringatan: muat ulang dan periksa.',
+    'Cobrar': 'Terima bayar',
+    'Cobrar la reserva': 'Terima pembayaran booking',
+    'A cobrar': 'Yang harus dibayar',
+    'Efectivo': 'Tunai',
+    'Transferencia': 'Transfer bank',
+    'Tarjeta (datáfono)': 'Kartu (mesin EDC)',
+    '¿Cómo paga?': 'Bayar pakai apa?',
+    'Elige cómo paga.': 'Pilih cara bayarnya.',
+    'Referencia (opcional): nº de la transferencia o del ticket del datáfono': 'Referensi (opsional): nomor transfer atau nomor struk EDC',
+    'Nunca el número de la tarjeta.': 'Jangan pernah nomor kartunya.',
+    'Se cobra la reserva entera y queda pagada. La factura no sale sola: la reserva pasa a Ventas › «Cobrado sin facturar».': 'Seluruh booking dibayar dan tercatat lunas. Faktur tidak keluar otomatis: booking masuk ke Penjualan › «Lunas belum difaktur».',
+    'La referencia es demasiado larga.': 'Referensinya terlalu panjang.',
+    'No se recibió respuesta. Vuelve a pulsar «Cobrar»: si ya se apuntó, no se cobra dos veces.': 'Tidak ada jawaban. Tekan «Terima bayar» lagi: kalau sudah tercatat, tidak akan dibayar dua kali.',
+    'La base no confirmó el cobro: recarga y comprueba.': 'Basis data tidak mengonfirmasi pembayaran: muat ulang dan periksa.',
+    'Cobrado': 'Dibayar',
+    'Caja del': 'Kas tanggal',
+    'La caja de hoy ya estaba cerrada: este cobro cuenta en la caja de mañana.': 'Kas hari ini sudah ditutup: pembayaran ini masuk kas besok.',
+    'El precio de esta reserva ha cambiado desde que se abrió la lista. Se ha recargado: vuelve a abrir «Cobrar».': 'Harga booking ini berubah sejak daftar dibuka. Sudah dimuat ulang: buka lagi «Terima bayar».',
+    'Esta reserva tiene un enlace de pago en línea abierto: el cliente podría pagar dos veces. Espera a que pague o a que caduque el enlace.': 'Booking ini punya link pembayaran online yang masih aktif: pelanggan bisa bayar dua kali. Tunggu sampai dia bayar atau link-nya kedaluwarsa.',
+    'Eso parece un número de tarjeta y no se guarda. Escribe solo el número del ticket del datáfono.': 'Itu seperti nomor kartu dan tidak disimpan. Tulis nomor struk EDC saja.',
+    'Esta reserva ya está pagada. Se ha recargado la lista.': 'Booking ini sudah lunas. Daftar sudah dimuat ulang.',
+    'Hay un pago de esta reserva en «Pagos por revisar»: resuélvelo antes de cobrar aquí.': 'Ada pembayaran booking ini di «Pembayaran perlu dicek»: selesaikan dulu sebelum terima bayar di sini.',
+    'Caja': 'Kas',
+    'Abierta': 'Buka',
+    'Cerrada': 'Tutup',
+    'Día anterior': 'Hari sebelumnya',
+    'Día siguiente': 'Hari berikutnya',
+    'Lo cobrado en el mostrador cada día (efectivo, transferencia y tarjeta) y el cierre de caja. El día y los totales los calcula la base.': 'Uang yang diterima di konter setiap hari (tunai, transfer dan kartu) dan tutup kas. Tanggal dan totalnya dihitung oleh basis data.',
+    'Este día no hay cobros en el mostrador.': 'Tidak ada pembayaran di konter pada tanggal ini.',
+    'Moneda': 'Mata uang',
+    'Forma de pago': 'Cara bayar',
+    'Cobros': 'Pembayaran',
+    'Cobrado por': 'Diterima oleh',
+    'Corregir cobro': 'Koreksi pembayaran',
+    'Cobros del día': 'Pembayaran hari ini',
+    'Tus cobros del día': 'Pembayaran Anda hari ini',
+    'Corregido': 'Dikoreksi',
+    'Por': 'Oleh',
+    'Cobros corregidos (la forma de pago estaba mal)': 'Pembayaran yang dikoreksi (cara bayarnya salah)',
+    'Efectivo esperado': 'Tunai yang seharusnya',
+    'Efectivo contado': 'Tunai yang dihitung',
+    'Diferencia': 'Selisih',
+    'Cierre con diferencia': 'Ditutup dengan selisih',
+    'Cierre: cuadra': 'Ditutup: cocok',
+    'Cerrar la caja': 'Tutup kas',
+    'Salieron o volvieron sin pagar': 'Keluar atau kembali belum dibayar',
+    'Ninguna.': 'Tidak ada.',
+    'Cobradas sin facturar': 'Lunas belum difaktur',
+    'la más antigua, cobrada el': 'yang paling lama, dibayar tanggal',
+    'Se facturan en Ventas.': 'Fakturnya dibuat di Penjualan.',
+    'Cuenta el efectivo de la caja y escribe cuánto hay. Lo que debería haber lo calcula la base al cerrar; si no cuadra, te pedirá una nota.': 'Hitung uang tunai di kas dan tulis jumlahnya. Jumlah yang seharusnya dihitung oleh basis data saat menutup; kalau tidak cocok, Anda akan diminta menulis catatan.',
+    'Este día no hay cobros en efectivo: no hay nada que contar.': 'Tidak ada pembayaran tunai pada tanggal ini: tidak ada yang perlu dihitung.',
+    '¿Qué ha pasado? (obligatorio si no cuadra, hasta 500 caracteres)': 'Apa yang terjadi? (wajib kalau tidak cocok, maks. 500 karakter)',
+    'Lo contado es un número de 0 en adelante, sin puntos de miles (por ejemplo 1500000).': 'Jumlah yang dihitung adalah angka dari 0 ke atas, tanpa titik ribuan (misalnya 1500000).',
+    'No se recibió respuesta: el cierre puede haberse guardado. Se ha recargado la caja: míralo antes de volver a intentarlo.': 'Tidak ada jawaban: tutup kas mungkin sudah tersimpan. Kas sudah dimuat ulang: periksa dulu sebelum mencoba lagi.',
+    'La caja no cuadra: escribe en la nota qué ha pasado.': 'Kas tidak cocok: tulis di catatan apa yang terjadi.',
+    'La base no confirmó el cierre: recarga y comprueba.': 'Basis data tidak mengonfirmasi tutup kas: muat ulang dan periksa.',
+    'Caja cerrada con diferencia: los administradores tienen el aviso.': 'Kas ditutup dengan selisih: admin sudah mendapat peringatan.',
+    'Caja cerrada: cuadra.': 'Kas ditutup: cocok.',
+    '¿Cómo pagó de verdad?': 'Sebenarnya bayar pakai apa?',
+    'Motivo de la corrección (obligatorio, de 5 a 300 caracteres)': 'Alasan koreksi (wajib, 5 sampai 300 karakter)',
+    'Solo cambia la forma de pago o la referencia: el importe no se toca. El cobro de antes queda guardado como corregido. Para devolver dinero, cancela la reserva con devolución.': 'Yang berubah hanya cara bayar atau referensinya: jumlahnya tidak diubah. Pembayaran sebelumnya tetap tersimpan sebagai dikoreksi. Untuk mengembalikan uang, batalkan booking dengan refund.',
+    'Corregir': 'Koreksi',
+    'Escribe el motivo (de 5 a 300 caracteres).': 'Tulis alasannya (5 sampai 300 karakter).',
+    'No se recibió respuesta: la corrección puede haberse guardado. Se ha recargado la caja: míralo antes de volver a intentarlo.': 'Tidak ada jawaban: koreksinya mungkin sudah tersimpan. Kas sudah dimuat ulang: periksa dulu sebelum mencoba lagi.',
+    'La base no confirmó la corrección: recarga y comprueba.': 'Basis data tidak mengonfirmasi koreksi: muat ulang dan periksa.',
+    'Cobro corregido.': 'Pembayaran sudah dikoreksi.'
   };
   if (window.LW_ID && typeof window.LW_ID === 'object') {
     Object.keys(ID_RP).forEach(function (k) { if (!(k in window.LW_ID)) window.LW_ID[k] = ID_RP[k]; });
@@ -598,6 +745,10 @@ a.rp-boton{text-decoration:none}
     reserva_producto_crea: function (a) { return SB.rpc('reserva_producto_crea', a); },
     reserva_producto_estado: function (a) { return SB.rpc('reserva_producto_estado', a); },
     reserva_cancela_con_devolucion: function (a) { return SB.rpc('reserva_cancela_con_devolucion', a); },
+    reserva_producto_cobro_mostrador: function (a) { return SB.rpc('reserva_producto_cobro_mostrador', a); },
+    reserva_producto_cobro_corrige: function (a) { return SB.rpc('reserva_producto_cobro_corrige', a); },
+    caja_dia_datos: function (a) { return window.lwDatos('caja_dia_datos', a); },
+    caja_cierra: function (a) { return SB.rpc('caja_cierra', a); },
     reserva_producto_cambia_unidad: function (a) { return SB.rpc('reserva_producto_cambia_unidad', a); },
     reservas_producto_avisos_datos: function (a) { return window.lwDatos('reservas_producto_avisos_datos', a); },
     reservas_producto_aviso_resuelve: function (a) { return SB.rpc('reservas_producto_aviso_resuelve', a); }
@@ -776,7 +927,12 @@ a.rp-boton{text-decoration:none}
     }
     if (x.estado === 'en_curso') ac.appendChild(boton(T('Marcar devuelta'), 'rp-devuelta', Object.assign({ 'data-primario': '1' }, id)));
     if (x.estado === 'bloqueo' || x.estado === 'confirmada' || x.estado === 'en_curso') ac.appendChild(boton(T('Cambiar de unidad'), 'rp-cambia-unidad', id));
+    if (sePuedeCobrar(x)) ac.appendChild(boton(T('Cobrar'), 'rp-cobrar', id));
     return ac;
+  }
+  // bbm-infiltrado (18-oct-2026): cobro en el mostrador. Comodidad: la base vuelve a mirar estado, pago, enlace vivo e importe al cobrar.
+  function sePuedeCobrar(x) {
+    return ['bloqueo', 'confirmada', 'en_curso', 'devuelta'].indexOf(x.estado) !== -1 && !x.pago_referencia && x.origen !== 'previo' && Number(x.precio_total) > 0;
   }
   function reserva(id) { return E.res.filter(function (x) { return x.id === id; })[0]; }
   function detalle(x) {
@@ -922,6 +1078,62 @@ a.rp-boton{text-decoration:none}
             dd.cierra(); error('');
             exito(T('Reserva cancelada con devolución.') + ' ' + T('Devuelto') + ': ' + dinero(d.devuelto, d.moneda) + ' · ' + T('Retenido') + ': ' + dinero(d.retenido, d.moneda));
             if (d.aviso) aviso(String(d.aviso)); else aviso('');
+            return refresca();
+          });
+        } }]);
+  }
+
+  /* ── cobrar en el mostrador (bbm-infiltrado, 18-oct-2026; migración 20261018020000) ──
+     El importe NO sale de aquí: la base cobra el precio congelado de la reserva. Lo que la pantalla enseñaba va en p_importe_visto solo para que la
+     base rechace si no coincide (precio_cambiado). La clave nace al abrir el diálogo: un segundo clic o un reintento sin respuesta devuelve el MISMO
+     cobro, nunca otro. La referencia es opcional (nº de transferencia o ticket del datáfono); la base niega un número de tarjeta. */
+  var FORMA = { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta (datáfono)' };
+  function claveNueva() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    var b = new Uint8Array(16); window.crypto.getRandomValues(b);
+    b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+    var s = Array.prototype.map.call(b, function (n) { return ('0' + n.toString(16)).slice(-2); }).join('');
+    return s.slice(0, 8) + '-' + s.slice(8, 12) + '-' + s.slice(12, 16) + '-' + s.slice(16, 20) + '-' + s.slice(20);
+  }
+  var COBRO_HINT = {
+    precio_cambiado: 'El precio de esta reserva ha cambiado desde que se abrió la lista. Se ha recargado: vuelve a abrir «Cobrar».',
+    enlace_vivo: 'Esta reserva tiene un enlace de pago en línea abierto: el cliente podría pagar dos veces. Espera a que pague o a que caduque el enlace.',
+    tarjeta: 'Eso parece un número de tarjeta y no se guarda. Escribe solo el número del ticket del datáfono.',
+    ya_pagada: 'Esta reserva ya está pagada. Se ha recargado la lista.',
+    pago_por_revisar: 'Hay un pago de esta reserva en «Pagos por revisar»: resuélvelo antes de cobrar aquí.'
+  };
+  function cobra(x) {
+    var clave = claveNueva();
+    var forma = h('select', { 'data-campo': 'forma', 'aria-label': T('¿Cómo paga?') });
+    forma.appendChild(h('option', { value: '', text: T('Elige cómo paga.') }));
+    Object.keys(FORMA).forEach(function (k) { forma.appendChild(h('option', { value: k, text: T(FORMA[k]) })); });
+    var ref = h('input', { type: 'text', maxlength: '100', 'data-campo': 'referencia-cobro', 'aria-label': T('Referencia (opcional): nº de la transferencia o del ticket del datáfono') });
+    return dialogo(T('Cobrar la reserva'), [
+      resumen([['Reserva', x.numero], ['Cliente', quienEs(x)], ['A cobrar', precioDe(x)]]),
+      h('p', { class: 'rp-nota', text: T('Se cobra la reserva entera y queda pagada. La factura no sale sola: la reserva pasa a Ventas › «Cobrado sin facturar».') }),
+      campo('¿Cómo paga?', forma),
+      campo('Referencia (opcional): nº de la transferencia o del ticket del datáfono', ref, [h('p', { class: 'rp-nota', text: T('Nunca el número de la tarjeta.') })])
+    ], [{ texto: T('Volver'), accion: 'rp-modal-volver', cierra: true },
+        { texto: T('Cobrar'), accion: 'rp-modal-cobra', primario: true, alclic: function (bt, dd) {
+          if (!FORMA[forma.value]) { dd.error(T('Elige cómo paga.')); return; }
+          var rf = ref.value.trim();
+          if (rf.length > 100) { dd.error(T('La referencia es demasiado larga.')); return; }
+          if (!ocupa(bt)) return;
+          llama('reserva_producto_cobro_mostrador', { p_reserva: x.id, p_forma: forma.value, p_importe_visto: Number(x.precio_total), p_referencia: rf || null, p_clave: clave }).then(function (r) {
+            libera(bt);
+            if (r.error) {
+              // la misma clave: volver a pulsar no cobra dos veces (la base devuelve el cobro ya apuntado)
+              if (clasifica(r.error).tipo === 'red') { dd.error(T('No se recibió respuesta. Vuelve a pulsar «Cobrar»: si ya se apuntó, no se cobra dos veces.')); return; }
+              var hn = r.error.hint ? String(r.error.hint) : '';
+              dd.error(COBRO_HINT[hn] ? T(COBRO_HINT[hn]) : mensaje(r.error));
+              if (hn === 'precio_cambiado' || hn === 'ya_pagada') cargaReservas(false);
+              return;
+            }
+            var d = r.data || {};
+            if (d.reserva_id !== x.id || !d.cobro_id) { dd.error(T('La base no confirmó el cobro: recarga y comprueba.')); return; }
+            dd.cierra(); error('');
+            exito(T('Cobrado') + ': ' + dinero(d.importe, d.moneda) + ' · ' + T(FORMA[d.forma] || d.forma) + ' · ' + T('Caja del') + ' ' + fechaDia(d.caja_dia));
+            aviso(d.caja_de_manana === true ? T('La caja de hoy ya estaba cerrada: este cobro cuenta en la caja de mañana.') : '');
             return refresca();
           });
         } }]);
@@ -1832,6 +2044,175 @@ a.rp-boton{text-decoration:none}
     });
   }
 
+  /* ───────────── Caja del día (bbm-infiltrado, 18-oct-2026; migración 20261018020000) ─────────────
+     Lo cobrado en el mostrador por forma y moneda, los cobros (un admin los ve todos; los demás, los suyos), lo que salió o volvió sin pagar y el cierre.
+     El día lo decide la base (p_dia null = hoy en la zona de la instancia). Al cerrar, aquí solo se escribe lo CONTADO: lo esperado lo calcula la base
+     y no se enseña antes (arqueo a ciegas: se cuenta sin saber cuánto «debería» haber). Corregir un cobro es de un admin y solo con la caja abierta. */
+  function cargaCaja(dia) {
+    var est = $v('caja-estado');
+    est.textContent = T('Cargando…');
+    return llama('caja_dia_datos', { p_dia: dia || null }).then(function (r) {
+      var d = r.data;
+      if (r.error || !d || !esFecha(d.dia) || !Array.isArray(d.cobros) || !Array.isArray(d.corregidos) || !Array.isArray(d.por_forma) || !Array.isArray(d.sin_pagar)) {
+        E.caja = null; vacia($v('caja-cuerpo'));
+        est.textContent = T('No se ha podido mirar') + ': ' + textoError(r, true);
+        return;
+      }
+      E.caja = d; est.textContent = '';
+      pintaCaja(d);
+    });
+  }
+  function nombreForma(f) { return FORMA[f] ? T(FORMA[f]) : String(f || '—'); }
+  function pintaCaja(d) {
+    var cuerpo = vacia($v('caja-cuerpo'));
+    var cab = h('div', { class: 'rp-barra' }, [h('h3', { text: T('Caja del') + ' ' + fechaDia(d.dia) + (d.dia === d.hoy ? ' · ' + T('Hoy') : '') }),
+      d.cierre ? chip(T('Cerrada'), 'ok') : chip(T('Abierta'), 'espera')]);
+    cuerpo.appendChild(cab);
+    // totales de toda la caja (los necesita quien cierra); el detalle de cobros es por persona salvo para un admin
+    if (!d.por_forma.length) cuerpo.appendChild(h('p', { class: 'rp-vacio', text: T('Este día no hay cobros en el mostrador.') }));
+    else {
+      var t = h('table', { class: 'rp-tabla' });
+      tabla(t, [['Moneda'], ['Forma de pago'], ['Cobros', 'rp-num'], ['Importe', 'rp-num']], d.por_forma.map(function (f) {
+        return h('tr', null, [celda(f.moneda), celda(nombreForma(f.forma)), celda(String(f.cobros), 'rp-num'), celda(dinero(f.importe, f.moneda), 'rp-num')]);
+      }));
+      cuerpo.appendChild(h('div', { class: 'rp-tabla-caja' }, [t]));
+    }
+    if (d.cobros.length) {
+      var abierta = !d.cierre && d.admin === true;
+      var tc = h('table', { class: 'rp-tabla' });
+      var cabs = [['Cobrado'], ['Reserva'], ['Forma de pago'], ['Importe', 'rp-num'], ['Referencia'], ['Cobrado por']];
+      if (abierta) cabs.push(['Acciones']);
+      tabla(tc, cabs, d.cobros.map(function (c) {
+        var tr = h('tr', { 'data-cobro-id': c.id }, [celda(fechaHora(c.cobrado_en)), celda(c.numero_reserva || '—'), celda(nombreForma(c.forma)),
+          celda(dinero(c.importe, c.moneda), 'rp-num'), celda(c.referencia || '—'), celda(c.cobrado_por || '—')]);
+        if (abierta) tr.appendChild(celda(boton(T('Corregir cobro'), 'rp-caja-corrige', { 'data-cobro-id': c.id })));
+        return tr;
+      }));
+      cuerpo.appendChild(h('h4', { text: d.admin === true ? T('Cobros del día') : T('Tus cobros del día') }));
+      cuerpo.appendChild(h('div', { class: 'rp-tabla-caja' }, [tc]));
+    }
+    if (d.corregidos.length) {
+      var tk = h('table', { class: 'rp-tabla' });
+      tabla(tk, [['Reserva'], ['Forma de pago'], ['Importe', 'rp-num'], ['Corregido'], ['Motivo'], ['Por']], d.corregidos.map(function (c) {
+        return h('tr', null, [celda(c.numero_reserva || '—'), celda(nombreForma(c.forma)), celda(dinero(c.importe, c.moneda), 'rp-num'),
+          celda(fechaHora(c.anulado_en)), celda(c.motivo || '—'), celda(c.por || '—')]);
+      }));
+      cuerpo.appendChild(h('h4', { text: T('Cobros corregidos (la forma de pago estaba mal)') }));
+      cuerpo.appendChild(h('div', { class: 'rp-tabla-caja' }, [tk]));
+    }
+    // el cierre: hecho (con su cuadre) o el botón, solo para hoy o un día pasado
+    if (d.cierre && Array.isArray(d.cierre.cuadre)) {
+      var pares = [['Cerrada', fechaHora(d.cierre.cerrado_en) + (d.cierre.cerrado_por ? ' · ' + T('por') + ' ' + d.cierre.cerrado_por : '')]];
+      d.cierre.cuadre.forEach(function (q) {
+        pares.push([T('Efectivo esperado') + ' (' + q.moneda + ')', dinero(q.efectivo_esperado, q.moneda)]);
+        pares.push([T('Efectivo contado') + ' (' + q.moneda + ')', dinero(q.efectivo_contado, q.moneda)]);
+        pares.push([T('Diferencia') + ' (' + q.moneda + ')', dinero(q.diferencia, q.moneda)]);
+      });
+      if (d.cierre.nota) pares.push(['Nota', d.cierre.nota]);
+      cuerpo.appendChild(h('h4', { text: d.cierre.con_diferencia === true ? T('Cierre con diferencia') : T('Cierre: cuadra') }));
+      cuerpo.appendChild(resumen(pares));
+    } else if (d.dia <= d.hoy) {
+      cuerpo.appendChild(h('div', { class: 'rp-acciones' }, [boton(T('Cerrar la caja'), 'rp-caja-cierra', { 'data-primario': '1' })]));
+    }
+    // lo que hay que reclamar y lo que falta facturar
+    cuerpo.appendChild(h('h4', { text: T('Salieron o volvieron sin pagar') }));
+    if (!d.sin_pagar.length) cuerpo.appendChild(h('p', { class: 'rp-vacio', text: T('Ninguna.') }));
+    else {
+      var ts = h('table', { class: 'rp-tabla' });
+      tabla(ts, [['Reserva'], ['Estado'], ['Fechas'], ['Importe', 'rp-num']], d.sin_pagar.map(function (x) {
+        return h('tr', null, [celda(x.numero_reserva || '—'), celda(chipEstado(x.estado)), celda(fechaDia(x.desde) + ' → ' + fechaDia(x.hasta)), celda(dinero(x.importe, x.moneda), 'rp-num')]);
+      }));
+      cuerpo.appendChild(h('div', { class: 'rp-tabla-caja' }, [ts]));
+    }
+    var sf = d.cobradas_sin_facturar || {};
+    if (Number(sf.reservas) > 0) {
+      cuerpo.appendChild(h('p', { class: 'rp-aviso', text: T('Cobradas sin facturar') + ': ' + sf.reservas + (sf.desde ? ' · ' + T('la más antigua, cobrada el') + ' ' + fechaHora(sf.desde) : '') + '. ' + T('Se facturan en Ventas.') }));
+    }
+    oculta(raiz.querySelector('[data-accion="rp-caja-sig"]'), d.dia >= d.hoy);
+  }
+  // lo contado: un número sin puntos de miles, con los decimales de la moneda (la base vuelve a comprobarlo)
+  function contadoDe(texto, moneda) {
+    var s = String(texto || '').trim().replace(',', '.');
+    if (!/^\d+(\.\d+)?$/.test(s)) return null;
+    var decMax = (moneda === 'IDR' || moneda === 'JPY') ? 0 : 2;
+    if ((s.split('.')[1] || '').length > decMax) return null;
+    return Number(s);
+  }
+  function cierraCaja(d) {
+    var monedas = [];
+    d.por_forma.forEach(function (f) { if (f.forma === 'efectivo' && Number(f.importe) > 0 && monedas.indexOf(f.moneda) === -1) monedas.push(f.moneda); });
+    var campos = {};
+    var nodos = [h('p', { class: 'rp-nota', text: T('Cuenta el efectivo de la caja y escribe cuánto hay. Lo que debería haber lo calcula la base al cerrar; si no cuadra, te pedirá una nota.') })];
+    if (!monedas.length) nodos.push(h('p', { class: 'rp-nota', text: T('Este día no hay cobros en efectivo: no hay nada que contar.') }));
+    monedas.forEach(function (m) {
+      campos[m] = h('input', { type: 'text', inputmode: 'decimal', 'data-campo': 'contado-' + m.toLowerCase(), 'aria-label': T('Efectivo contado') + ' (' + m + ')' });
+      nodos.push(h('div', { class: 'rp-campo' }, [h('label', { text: T('Efectivo contado') + ' (' + m + ')' }), campos[m]]));
+    });
+    var nota = h('textarea', { rows: '3', maxlength: '500', 'data-campo': 'nota-caja', 'aria-label': T('¿Qué ha pasado? (obligatorio si no cuadra, hasta 500 caracteres)') });
+    var cajaNota = campo('¿Qué ha pasado? (obligatorio si no cuadra, hasta 500 caracteres)', nota);
+    oculta(cajaNota, true);
+    nodos.push(cajaNota);
+    return dialogo(T('Cerrar la caja') + ' · ' + fechaDia(d.dia), nodos, [{ texto: T('Volver'), accion: 'rp-modal-volver', cierra: true },
+      { texto: T('Cerrar la caja'), accion: 'rp-modal-caja-cierra', primario: true, alclic: function (bt, dd) {
+        var contado = {}, mal = false;
+        monedas.forEach(function (m) { var v = contadoDe(campos[m].value, m); if (v === null) mal = true; else contado[m] = v; });
+        if (mal) { dd.error(T('Lo contado es un número de 0 en adelante, sin puntos de miles (por ejemplo 1500000).')); return; }
+        var n = nota.value.trim();
+        if (n.length > 500) { dd.error(T('La nota es demasiado larga.')); return; }
+        if (!ocupa(bt)) return;
+        llama('caja_cierra', { p_dia: d.dia, p_contado: contado, p_nota: n || null }).then(function (r) {
+          libera(bt);
+          if (r.error) {
+            var hn = r.error.hint ? String(r.error.hint) : '';
+            if (clasifica(r.error).tipo === 'red') { dd.error(T('No se recibió respuesta: el cierre puede haberse guardado. Se ha recargado la caja: míralo antes de volver a intentarlo.')); cargaCaja(d.dia); return; }
+            if (hn === 'nota_obligatoria') { oculta(cajaNota, false); nota.focus(); dd.error(T('La caja no cuadra: escribe en la nota qué ha pasado.')); return; }
+            if (hn === 'tarjeta') { dd.error(T('Eso parece un número de tarjeta y no se guarda. Escribe solo el número del ticket del datáfono.')); return; }
+            dd.error(mensaje(r.error));
+            if (hn === 'ya_cerrada') cargaCaja(d.dia);
+            return;
+          }
+          var c = r.data || {};
+          if (!c.cierre_id || c.dia !== d.dia) { dd.error(T('La base no confirmó el cierre: recarga y comprueba.')); return; }
+          dd.cierra(); error('');
+          exito(c.con_diferencia === true ? T('Caja cerrada con diferencia: los administradores tienen el aviso.') : T('Caja cerrada: cuadra.'));
+          return cargaCaja(d.dia);
+        });
+      } }]);
+  }
+  function corrigeCobro(c) {
+    var forma = h('select', { 'data-campo': 'forma', 'aria-label': T('¿Cómo pagó de verdad?') });
+    Object.keys(FORMA).forEach(function (k) { var o = h('option', { value: k, text: T(FORMA[k]) }); if (k === c.forma) o.selected = true; forma.appendChild(o); });
+    var ref = h('input', { type: 'text', maxlength: '100', value: c.referencia || '', 'data-campo': 'referencia-cobro', 'aria-label': T('Referencia (opcional): nº de la transferencia o del ticket del datáfono') });
+    var motivo = h('textarea', { rows: '2', maxlength: '300', 'data-campo': 'motivo', 'aria-label': T('Motivo de la corrección (obligatorio, de 5 a 300 caracteres)') });
+    return dialogo(T('Corregir cobro'), [
+      resumen([['Reserva', c.numero_reserva], ['Importe', dinero(c.importe, c.moneda)], ['Forma de pago', nombreForma(c.forma)]]),
+      h('p', { class: 'rp-nota', text: T('Solo cambia la forma de pago o la referencia: el importe no se toca. El cobro de antes queda guardado como corregido. Para devolver dinero, cancela la reserva con devolución.') }),
+      campo('¿Cómo pagó de verdad?', forma),
+      campo('Referencia (opcional): nº de la transferencia o del ticket del datáfono', ref),
+      campo('Motivo de la corrección (obligatorio, de 5 a 300 caracteres)', motivo)
+    ], [{ texto: T('Volver'), accion: 'rp-modal-volver', cierra: true },
+        { texto: T('Corregir'), accion: 'rp-modal-caja-corrige', primario: true, alclic: function (bt, dd) {
+          var m = motivo.value.trim(), rf = ref.value.trim();
+          if (m.length < 5 || m.length > 300) { dd.error(T('Escribe el motivo (de 5 a 300 caracteres).')); return; }
+          if (rf.length > 100) { dd.error(T('La referencia es demasiado larga.')); return; }
+          if (!ocupa(bt)) return;
+          llama('reserva_producto_cobro_corrige', { p_cobro: c.id, p_forma: forma.value, p_referencia: rf || null, p_motivo: m }).then(function (r) {
+            libera(bt);
+            if (r.error) {
+              if (clasifica(r.error).tipo === 'red') { dd.error(T('No se recibió respuesta: la corrección puede haberse guardado. Se ha recargado la caja: míralo antes de volver a intentarlo.')); cargaCaja(E.caja && E.caja.dia); return; }
+              var hn = r.error.hint ? String(r.error.hint) : '';
+              dd.error(hn === 'tarjeta' ? T('Eso parece un número de tarjeta y no se guarda. Escribe solo el número del ticket del datáfono.') : mensaje(r.error));
+              return;
+            }
+            var n = r.data || {};
+            if (!n.cobro_id || n.corrige_a !== c.id) { dd.error(T('La base no confirmó la corrección: recarga y comprueba.')); return; }
+            dd.cierra(); error(''); exito(T('Cobro corregido.'));
+            return cargaCaja(E.caja && E.caja.dia);
+          });
+        } }]);
+  }
+  function cobroDeCaja(id) { return E.caja ? E.caja.cobros.filter(function (c) { return c.id === id; })[0] : null; }
+
   /* ───────────────────────────── pestañas y arranque ───────────────────────────── */
   // tras cualquier acción: se vuelve a LEER lo que cambió (la pantalla no se cree su propio estado)
   function refresca() {
@@ -1840,6 +2221,7 @@ a.rp-boton{text-decoration:none}
     if (E.tab === 'calendario') p.push(cargaCalendario());
     if (E.tab === 'flota') p.push(cargaFlotaPestana());
     if (E.tab === 'pagos') p.push(cargaPagos(false));
+    if (E.tab === 'caja') p.push(cargaCaja(E.caja && E.caja.dia));
     return Promise.all(p);
   }
   function pestana(nombre) {
@@ -1850,6 +2232,7 @@ a.rp-boton{text-decoration:none}
     if (nombre === 'calendario') cargaCalendario();
     if (nombre === 'flota') cargaFlotaPestana();
     if (nombre === 'pagos' && !E.pagosCargado) cargaPagos(false);
+    if (nombre === 'caja') cargaCaja(E.caja && E.caja.dia);   // siempre fresca: otro puesto puede haber cobrado o cerrado
   }
 
   function alClic(ev) {
@@ -1869,6 +2252,13 @@ a.rp-boton{text-decoration:none}
     else if (a === 'rp-flota-actualizar') cargaFlotaPestana();
     else if (a === 'rp-pagos-actualizar') { E.pagosSig = null; cargaPagos(false); }
     else if (a === 'rp-pagos-mas') cargaPagos(true);
+    // la caja: el día se mueve sobre el que dio la base (aritmética de calendario, no el reloj del navegador)
+    else if (a === 'rp-caja-hoy') { error(''); cargaCaja(null); }
+    else if (a === 'rp-caja-ant') { if (E.caja) cargaCaja(sumaDias(E.caja.dia, -1)); }
+    else if (a === 'rp-caja-sig') { if (E.caja && E.caja.dia < E.caja.hoy) cargaCaja(sumaDias(E.caja.dia, 1)); }
+    else if (a === 'rp-caja-actualizar') cargaCaja(E.caja && E.caja.dia);
+    else if (a === 'rp-caja-cierra') { if (E.caja) { error(''); exito(''); cierraCaja(E.caja); } }
+    else if (a === 'rp-caja-corrige') { var cb = cobroDeCaja(el.getAttribute('data-cobro-id')); if (cb) { error(''); exito(''); corrigeCobro(cb); } }
     else if (x) {
       error(''); exito('');
       if (a === 'rp-detalle') detalle(x);
@@ -1877,6 +2267,7 @@ a.rp-boton{text-decoration:none}
       else if (a === 'rp-devuelta') cambiaEstado(x, 'devuelta');
       else if (a === 'rp-cancelar-simple') cambiaEstado(x, 'cancelada');
       else if (a === 'rp-cancelar-devolucion') cancelaConDevolucion(x);
+      else if (a === 'rp-cobrar') cobra(x);
       else if (a === 'rp-cambia-unidad') {
         // la flota se lee fresca: una unidad que pasó a taller no se ofrece
         E.flotaCargada = false;

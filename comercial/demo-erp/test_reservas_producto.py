@@ -138,7 +138,9 @@ mira('el navegador no escribe ni lee tablas: ni .from( ni insert/update/upsert/d
 PERMITIDAS = {'reservas_producto_datos', 'producto_flota_datos', 'reserva_producto_pagos_datos', 'clientes_datos', 'reserva_producto_cotiza',
               'reserva_producto_crea', 'reserva_producto_estado', 'reserva_cancela_con_devolucion', 'reserva_producto_cambia_unidad',
               # avisos del AaaS en el detalle de la reserva (aaas-2, 14-oct; agencia 20261014061000 + 061500, que las abre a authenticated)
-              'reservas_producto_avisos_datos', 'reservas_producto_aviso_resuelve'}
+              'reservas_producto_avisos_datos', 'reservas_producto_aviso_resuelve',
+              # cobro en el mostrador y caja del día (bbm-infiltrado, 18-oct; agencia 20261018020000, solo authenticated)
+              'reserva_producto_cobro_mostrador', 'reserva_producto_cobro_corrige', 'caja_dia_datos', 'caja_cierra'}
 llamadas = set(re.findall(r"\bllama\('([a-z_]+)'", CODIGO))
 literales = set(re.findall(r"(?:SB\.rpc|window\.lwDatos)\('([a-z_]+)'", CODIGO))
 mira('cada RPC lleva su nombre LITERAL (para que contrato_front.py la vea) y son exactamente las del plan (' + ', '.join(sorted(literales ^ PERMITIDAS)) + ')', literales == PERMITIDAS)
@@ -149,7 +151,11 @@ mira('ninguna lectura por .rpc(...).select() ni encadenada', '.select(' not in C
 # el navegador pide, no decide: ni precio, ni total, ni estado de pago, ni importe de la reserva
 mira('el precio nunca viaja: la reserva manda producto, unidad, cliente o contacto, fechas, direcciones y notas',
      re.search(r"var datos = \{ producto_id: W\.prodId, desde: W\.desde, hasta: W\.hasta, clave: W\.clave \};", CODIGO) is not None
-     and not re.search(r'precio_total\s*:|precio_unitario\s*:|p_total|p_importe(?!_devuelto)|p_precio|descuento|[{,]\s*pago_referencia\s*:|datos\.(estado|precio|moneda|desglose|dias|origen|numero)', CODIGO))
+     and not re.search(r'precio_total\s*:|precio_unitario\s*:|p_total|p_importe(?!_devuelto|_visto)|p_precio|descuento|[{,]\s*pago_referencia\s*:|datos\.(estado|precio|moneda|desglose|dias|origen|numero)', CODIGO))
+# cobro en el mostrador: el importe lo pone la base; lo que la pantalla enseñaba solo viaja como p_importe_visto (para que la base RECHACE si no cuadra)
+mira('el cobro de mostrador no manda importe: solo p_importe_visto = el precio_total que se enseñaba, y una clave por diálogo',
+     "p_importe_visto: Number(x.precio_total)" in CODIGO and CODIGO.count('p_importe_visto') == 1 and 'p_clave: clave' in CODIGO
+     and not re.search(r"llama\('caja_cierra'[^)]*(esperado|diferencia)", CODIGO))
 claves_datos = set(re.findall(r"datos\.([a-z_]+)\s*=", CODIGO))
 mira('las unicas claves que se anaden a p_datos son las que la base lee (' + ', '.join(sorted(claves_datos)) + ')',
      claves_datos <= {'unidad_id', 'client_id', 'contacto_nombre', 'contacto_telefono', 'entrega_direccion', 'recogida_direccion', 'notas', 'clave'})
