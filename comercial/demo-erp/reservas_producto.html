@@ -1097,7 +1097,7 @@ a.rp-boton{text-decoration:none}
         } }]);
   }
 
-  /* ── cobrar en el mostrador (bbm-infiltrado, 18-oct-2026; migración 20261018020000) ──
+  /* ── cobrar en el mostrador (bbm-infiltrado, 18-oct-2026; migración 20261018140000) ──
      El importe NO sale de aquí: la base cobra el precio congelado de la reserva. Lo que la pantalla enseñaba va en p_importe_visto solo para que la
      base rechace si no coincide (precio_cambiado). La clave nace al abrir el diálogo: un segundo clic o un reintento sin respuesta devuelve el MISMO
      cobro, nunca otro. La referencia es opcional (nº de transferencia o ticket del datáfono); la base niega un número de tarjeta. */
@@ -2058,7 +2058,7 @@ a.rp-boton{text-decoration:none}
     });
   }
 
-  /* ───────────── Caja del día (bbm-infiltrado, 18-oct-2026; migración 20261018020000) ─────────────
+  /* ───────────── Caja del día (bbm-infiltrado, 18-oct-2026; migración 20261018140000) ─────────────
      Lo cobrado en el mostrador por forma y moneda, los cobros (un admin los ve todos; los demás, los suyos), lo que salió o volvió sin pagar y el cierre.
      El día lo decide la base (p_dia null = hoy en la zona de la instancia). Al cerrar, aquí solo se escribe lo CONTADO: lo esperado lo calcula la base
      y no se enseña antes (arqueo a ciegas: se cuenta sin saber cuánto «debería» haber). Corregir un cobro es de un admin y solo con la caja abierta. */
